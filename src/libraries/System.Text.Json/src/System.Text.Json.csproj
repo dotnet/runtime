@@ -49,6 +49,8 @@
     <Compile Include="System\Text\Json\Serialization\Converters\DefaultConverters.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\DefaultConvertersOfTValue.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\DefaultEnumerableConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\DefaultIEnumerableConstructibleConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\DefaultImmutableConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterBoolean.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterByte.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterChar.cs" />

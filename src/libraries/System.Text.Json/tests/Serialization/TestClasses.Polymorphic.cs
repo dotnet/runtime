@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -115,6 +116,20 @@ namespace System.Text.Json.Serialization.Tests
         public object /*ICollection<string>*/ ICollectionT { get; set; }
         public object /*IReadOnlyCollection<string>*/ IReadOnlyCollectionT { get; set; }
         public object /*IReadOnlyList<string>*/ IReadOnlyListT { get; set; }
+        public object /*Stack<string>*/ StackT { get; set; }
+        public object /*Queue<string>*/ QueueT { get; set; }
+        public object /*HashSet<string>*/ HashSetT { get; set; }
+        public object /*LinkedList<string>*/ LinkedListT { get; set; }
+        public object /*SortedSet<string>*/ SortedSetT { get; set; }
+        public object /*IImmutableList<string>*/ IImmutableListT { get; set; }
+        public object /*IImmutableStack<string>*/ IImmutableStackT { get; set; }
+        public object /*IImmutableQueue<string>*/ IImmutableQueueT { get; set; }
+        public object /*IImmutableSet<string>*/ IImmutableSetT { get; set; }
+        public object /*ImmutableHashSet<string>*/ ImmutableHashSetT { get; set; }
+        public object /*ImmutableList<string>*/ ImmutableListT { get; set; }
+        public object /*ImmutableStack<string>*/ ImmutableStackT { get; set; }
+        public object /*ImmutableQueue<string>*/ ImmutableQueueT { get; set; }
+        public object /*ImmutableSortedSet<string>*/ ImmutableSortedSetT { get; set; }
         public object /*int?*/ NullableInt { get; set; }
         public object /*object*/ Object { get; set; }
         public object /*int?[]*/ NullableIntArray { get; set; }
@@ -124,40 +139,27 @@ namespace System.Text.Json.Serialization.Tests
             Address = new Address();
             ((Address)Address).Initialize();
 
-            List = new List<string>
-            {
-                "Hello", "World"
-            };
-
-            Array = new string[]
-            {
-                "Hello", "Again"
-            };
-
-            IEnumerableT = new List<string>
-            {
-                "Hello", "World"
-            };
-
-            IListT = new List<string>
-            {
-                "Hello", "World"
-            };
-
-            ICollectionT = new List<string>
-            {
-                "Hello", "World"
-            };
-
-            IReadOnlyCollectionT = new List<string>
-            {
-                "Hello", "World"
-            };
-
-            IReadOnlyListT = new List<string>
-            {
-                "Hello", "World"
-            };
+            List = new List<string> { "Hello", "World" };
+            Array = new string[] { "Hello", "Again" };
+            IEnumerableT = new List<string> { "Hello", "World" };
+            IListT = new List<string> { "Hello", "World" };
+            ICollectionT = new List<string> { "Hello", "World" };
+            IReadOnlyCollectionT = new List<string> { "Hello", "World" };
+            IReadOnlyListT = new List<string> { "Hello", "World" };
+            StackT = new Stack<string>(new List<string> { "Hello", "World" });
+            QueueT = new Queue<string>(new List<string> { "Hello", "World" });
+            HashSetT = new HashSet<string>(new List<string> { "Hello", "World" });
+            LinkedListT = new LinkedList<string>(new List<string> { "Hello", "World" });
+            SortedSetT = new SortedSet<string>(new List<string> { "Hello", "World" });
+            IImmutableListT = ImmutableList.CreateRange(new List<string> { "Hello", "World" });
+            IImmutableStackT = ImmutableStack.CreateRange(new List<string> { "Hello", "World" });
+            IImmutableQueueT = ImmutableQueue.CreateRange(new List<string> { "Hello", "World" });
+            IImmutableSetT = ImmutableHashSet.CreateRange(new List<string> { "Hello", "World" });
+            ImmutableHashSetT = ImmutableHashSet.CreateRange(new List<string> { "Hello", "World" });
+            ImmutableListT = ImmutableList.CreateRange(new List<string> { "Hello", "World" });
+            ImmutableStackT = ImmutableStack.CreateRange(new List<string> { "Hello", "World" });
+            ImmutableQueueT = ImmutableQueue.CreateRange(new List<string> { "Hello", "World" });
+            ImmutableSortedSetT = ImmutableSortedSet.CreateRange(new List<string> { "Hello", "World" });
 
             NullableInt = new int?(42);
             Object = new object();

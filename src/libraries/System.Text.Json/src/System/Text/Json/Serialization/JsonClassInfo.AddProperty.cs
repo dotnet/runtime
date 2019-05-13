@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization
             return jsonInfo;
         }
 
-        internal JsonPropertyInfo CreateProperty(Type declaredPropertyType, Type runtimePropertyType, PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
+        internal static JsonPropertyInfo CreateProperty(Type declaredPropertyType, Type runtimePropertyType, PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
         {
             Type collectionElementType = null;
             switch (GetClassType(runtimePropertyType))

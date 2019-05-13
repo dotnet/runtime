@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json.Serialization.Converters;
@@ -17,6 +17,8 @@ namespace System.Text.Json.Serialization
         // Cache the converters so they don't get created for every enumerable property.
         private static readonly JsonEnumerableConverter s_jsonArrayConverter = new DefaultArrayConverter();
         private static readonly JsonEnumerableConverter s_jsonEnumerableConverter = new DefaultEnumerableConverter();
+        private static readonly JsonEnumerableConverter s_jsonIEnumerableConstuctibleConverter = new DefaultIEnumerableConstructibleConverter();
+        private static readonly JsonEnumerableConverter s_jsonImmutableConverter = new DefaultImmutableConverter();
 
         public ClassType ClassType;
 
@@ -39,7 +41,6 @@ namespace System.Text.Json.Serialization
         public bool ShouldDeserialize { get; private set; }
 
         public bool IgnoreNullValues { get; private set; }
-
 
         // todo: to minimize hashtable lookups, cache JsonClassInfo:
         //public JsonClassInfo ClassInfo;
@@ -201,10 +202,6 @@ namespace System.Text.Json.Serialization
                     {
                         ShouldDeserialize = true;
                     }
-                    //else
-                    //{
-                    //    // todo: future feature that allows non-List types (e.g. from System.Collections.Immutable) to have converters.
-                    //}
                 }
                 //else if (HasSetter)
                 //{
@@ -227,6 +224,22 @@ namespace System.Text.Json.Serialization
                         if (RuntimePropertyType.IsAssignableFrom(typeof(JsonEnumerableT<>).MakeGenericType(elementType)))
                         {
                             EnumerableConverter = s_jsonEnumerableConverter;
+                        }
+                        // Else if IList can't be assigned from the property type (we populate and return an IList directly)
+                        // and the type can be constructed with an IEnumerable<T>, then use the
+                        // IEnumerableConstructible converter to create the instance.
+                        else if (!typeof(IList).IsAssignableFrom(RuntimePropertyType) &&
+                            RuntimePropertyType.GetConstructor(new Type[] { typeof(List<>).MakeGenericType(elementType) }) != null)
+                        {
+                            EnumerableConverter = s_jsonIEnumerableConstuctibleConverter;
+                        }
+                        // Else if it's a System.Collections.Immutable type with one generic argument.
+                        else if (RuntimePropertyType.IsGenericType &&
+                            RuntimePropertyType.FullName.StartsWith(DefaultImmutableConverter.ImmutableNamespace) &&
+                            RuntimePropertyType.GetGenericArguments().Length == 1)
+                        {
+                            EnumerableConverter = s_jsonImmutableConverter;
+                            ((DefaultImmutableConverter)EnumerableConverter).RegisterImmutableCollectionType(RuntimePropertyType, elementType, options);
                         }
                     }
                 }
@@ -258,6 +271,10 @@ namespace System.Text.Json.Serialization
         {
             return (TAttribute)PropertyInfo?.GetCustomAttribute(typeof(TAttribute), inherit: false);
         }
+
+        public abstract IEnumerable CreateImmutableCollectionFromList(string delegateKey, IList sourceList);
+
+        public abstract IEnumerable CreateIEnumerableConstructibleType(Type enumerableType, IList sourceList);
 
         public abstract IList CreateConverterList();
 

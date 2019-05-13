@@ -51,7 +51,11 @@
     <Compile Include="Serialization\TestClasses.SimpleTestClassWithSimpleObject.cs" />
     <Compile Include="Serialization\TestData.cs" />
     <Compile Include="Serialization\Value.ReadTests.cs" />
+    <Compile Include="Serialization\Value.ReadTests.GenericCollections.cs" />
+    <Compile Include="Serialization\Value.ReadTests.ImmutableCollections.cs" />
     <Compile Include="Serialization\Value.WriteTests.cs" />
+    <Compile Include="Serialization\Value.WriteTests.GenericCollections.cs" />
+    <Compile Include="Serialization\Value.WriteTests.ImmutableCollections.cs" />
     <Compile Include="TestCaseType.cs" />
     <Compile Include="TestClasses.ClassWithComplexObjects.cs" />
     <Compile Include="Utf8JsonReaderTests.cs" />
