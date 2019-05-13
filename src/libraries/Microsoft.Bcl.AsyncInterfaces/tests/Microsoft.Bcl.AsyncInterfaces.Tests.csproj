@@ -7,10 +7,9 @@
     <Compile Include="..\..\Common\tests\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs">
       <Link>Common\tests\System\Threading\Tasks\Sources\ManualResetValueTaskSource.cs</Link>
     </Compile>
-    <!--   // TODO #37354: Once .NET Standard 2.1 includes this type, uncomment this.
     <Compile Include="..\..\System.Threading.Tasks\tests\System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.netcoreapp.cs">
       <Link>System.Threading.Tasks\tests\System.Runtime.CompilerServices\ConfiguredCancelableAsyncEnumerableTests.netcoreapp.cs</Link>
-    </Compile> -->
+    </Compile>
     <Compile Include="..\..\System.Threading.Tasks.Extensions\tests\ManualResetValueTaskSourceTests.cs">
       <Link>System.Threading.Tasks.Extensions\tests\ManualResetValueTaskSourceTests.cs</Link>
     </Compile>

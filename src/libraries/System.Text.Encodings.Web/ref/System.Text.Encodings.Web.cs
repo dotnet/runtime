@@ -121,6 +121,7 @@ namespace System.Text.Unicode
         public static System.Text.Unicode.UnicodeRange Cyrillic { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange CyrillicExtendedA { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange CyrillicExtendedB { get { throw null; } }
+        public static System.Text.Unicode.UnicodeRange CyrillicExtendedC { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange CyrillicSupplement { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange Devanagari { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange DevanagariExtended { get { throw null; } }
@@ -134,6 +135,7 @@ namespace System.Text.Unicode
         public static System.Text.Unicode.UnicodeRange GeneralPunctuation { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange GeometricShapes { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange Georgian { get { throw null; } }
+        public static System.Text.Unicode.UnicodeRange GeorgianExtended { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange GeorgianSupplement { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange Glagolitic { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange GreekandCoptic { get { throw null; } }
@@ -215,6 +217,7 @@ namespace System.Text.Unicode
         public static System.Text.Unicode.UnicodeRange SupplementalPunctuation { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange SylotiNagri { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange Syriac { get { throw null; } }
+        public static System.Text.Unicode.UnicodeRange SyriacSupplement { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange Tagalog { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange Tagbanwa { get { throw null; } }
         public static System.Text.Unicode.UnicodeRange TaiLe { get { throw null; } }

@@ -1,7 +1,0 @@
-Compat issues with assembly System.Runtime.Intrinsics.Experimental:
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.Intrinsics.Arm.Arm64.Aes' in the implementation but not the reference.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.Intrinsics.Arm.Arm64.Base' in the implementation but not the reference.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.Intrinsics.Arm.Arm64.Sha1' in the implementation but not the reference.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.Intrinsics.Arm.Arm64.Sha256' in the implementation but not the reference.
-CannotRemoveAttribute : Attribute 'System.CLSCompliantAttribute' exists on 'System.Runtime.Intrinsics.Arm.Arm64.Simd' in the implementation but not the reference.
-Total Issues: 5

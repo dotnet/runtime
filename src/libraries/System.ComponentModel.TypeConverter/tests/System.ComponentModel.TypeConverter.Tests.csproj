@@ -76,6 +76,7 @@
     <Compile Include="Design\DesigntimeLicenseContextTests.cs" />
     <Compile Include="Design\HelpKeywordAttributeTests.cs" />
     <Compile Include="Design\Serialization\MemberRelationshipServiceTests.cs" />
+    <Compile Include="Design\ServiceContainerTests.cs" />
     <Compile Include="Design\StandardToolWindowsTests.cs" />
     <Compile Include="Design\Serialization\SerializationStoreTests.cs" />
     <Compile Include="Design\Serialization\RootDesignerSerializerAttributeTests.cs" />
@@ -100,6 +101,7 @@
     <Compile Include="DescriptorTestComponent.cs" />
     <Compile Include="Mocks\MockEventDescriptor.cs" />
     <Compile Include="Mocks\MockPropertyDescriptor.cs" />
+    <Compile Include="Mocks\MockServiceProvider.cs" />
     <Compile Include="MultilineStringConverterTests.cs" />
     <Compile Include="NullableConverterTests.cs" />
     <Compile Include="PropertyDescriptorCollectionTests.cs" />

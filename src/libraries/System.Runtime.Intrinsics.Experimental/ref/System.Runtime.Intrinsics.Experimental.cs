@@ -7,6 +7,7 @@
 
 namespace System.Runtime.Intrinsics.Arm.Arm64
 {
+    [System.CLSCompliantAttribute(false)]
     public static partial class Aes
     {
         public static bool IsSupported { get { throw null; } }
@@ -15,6 +16,7 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
         public static System.Runtime.Intrinsics.Vector128<byte> InverseMixColumns(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<byte> MixColumns(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
     }
+    [System.CLSCompliantAttribute(false)]
     public static partial class Base
     {
         public static bool IsSupported { get { throw null; } }
@@ -25,6 +27,7 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
         public static int LeadingZeroCount(uint value) { throw null; }
         public static int LeadingZeroCount(ulong value) { throw null; }
     }
+    [System.CLSCompliantAttribute(false)]
     public static partial class Sha1
     {
         public static bool IsSupported { get { throw null; } }
@@ -35,6 +38,7 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
         public static System.Runtime.Intrinsics.Vector128<uint> SchedulePart1(System.Runtime.Intrinsics.Vector128<uint> w0_3, System.Runtime.Intrinsics.Vector128<uint> w4_7, System.Runtime.Intrinsics.Vector128<uint> w8_11) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> SchedulePart2(System.Runtime.Intrinsics.Vector128<uint> tw0_3, System.Runtime.Intrinsics.Vector128<uint> w12_15) { throw null; }
     }
+    [System.CLSCompliantAttribute(false)]
     public static partial class Sha256
     {
         public static bool IsSupported { get { throw null; } }
@@ -43,6 +47,7 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
         public static System.Runtime.Intrinsics.Vector128<uint> SchedulePart1(System.Runtime.Intrinsics.Vector128<uint> w0_3, System.Runtime.Intrinsics.Vector128<uint> w4_7) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> SchedulePart2(System.Runtime.Intrinsics.Vector128<uint> w0_3, System.Runtime.Intrinsics.Vector128<uint> w8_11, System.Runtime.Intrinsics.Vector128<uint> w12_15) { throw null; }
     }
+    [System.CLSCompliantAttribute(false)]
     public static partial class Simd
     {
         public static bool IsSupported { get { throw null; } }
