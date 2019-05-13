@@ -345,12 +345,15 @@ namespace System
         private static extern IntPtr _UnregisterFrozenSegment(IntPtr segmentHandle);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern long _GetAllocatedBytesForCurrentThread();
+        public static extern long GetAllocatedBytesForCurrentThread();
 
-        public static long GetAllocatedBytesForCurrentThread()
-        {
-            return _GetAllocatedBytesForCurrentThread();
-        }
+
+        /// <summary>
+        /// Get a count of the bytes allocated over the lifetime of the process.
+        /// <param name="precise">If true, gather a precise number, otherwise gather a fairly count. Gathering a precise value triggers at a significant performance penalty.</param>
+        /// </summary>
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public static extern long GetTotalAllocatedBytes(bool precise = false);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern bool _RegisterForFullGCNotification(int maxGenerationPercentage, int largeObjectHeapPercentage);

@@ -34,6 +34,7 @@
 #include "typestring.h"
 #include "sha1.h"
 #include "finalizerthread.h"
+#include "threadsuspend.h"
 
 #ifdef FEATURE_COMINTEROP
     #include "comcallablewrapper.h"
@@ -1287,6 +1288,46 @@ FCIMPL3(Object*, GCInterface::AllocateNewArray, void* arrayTypeHandle, INT32 len
     return OBJECTREFToObject(pRet);
 }
 FCIMPLEND
+
+
+FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
+{
+    FCALL_CONTRACT;
+
+    if (!precise)
+    {
+        // NOTE: we do not want to make imprecise flavor too slow. 
+        // As it could be noticed we read 64bit values that may be concurrently updated.
+        // Such reads are not guaranteed to be atomic on 32bit and inrare cases we may see torn values resultng in outlier results.
+        // That would be extremely rare and in a context of imprecise helper is not worth additional synchronization.
+        uint64_t unused_bytes = Thread::dead_threads_non_alloc_bytes;
+        return GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - unused_bytes;
+    }
+
+    INT64 allocated;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_0();
+
+    // We need to suspend/restart the EE to get each thread's
+    // non-allocated memory from their allocation contexts
+
+    ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
+
+    allocated = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - Thread::dead_threads_non_alloc_bytes;
+
+    for (Thread *pThread = ThreadStore::GetThreadList(NULL); pThread; pThread = ThreadStore::GetThreadList(pThread))
+    {
+        gc_alloc_context* ac = pThread->GetAllocContext();
+        allocated -= ac->alloc_limit - ac->alloc_ptr;
+    }
+
+    ThreadSuspend::RestartEE(FALSE, TRUE);
+
+    HELPER_METHOD_FRAME_END();
+
+    return allocated;
+}
+FCIMPLEND;
 
 #ifdef FEATURE_BASICFREEZE
 
