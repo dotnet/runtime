@@ -24,16 +24,6 @@
 #include "cordbpriv.h"
 #include "assemblyspec.hpp"
 
-// A helper macro for the assembly's module hash (m_pAllowedFiles).
-#define UTF8_TO_LOWER_CASE(str, qb)                                                             \
-{                                                                                               \
-    WRAPPER_NO_CONTRACT;                                                                           \
-    INT32 allocBytes = InternalCasingHelper::InvariantToLower(NULL, 0, str);                    \
-    qb.AllocThrows(allocBytes);                                                                 \
-    InternalCasingHelper::InvariantToLower((LPUTF8) qb.Ptr(), allocBytes, str);                 \
-}
-
-
 class BaseDomain;
 class AppDomain;
 class DomainAssembly;
