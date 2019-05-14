@@ -1604,6 +1604,28 @@ PROFILE_DISABLED_TESTS += \
 	transparentproxy.exe
 endif
 
+REMOTING_DISABLED_TESTS = \
+	async-exc-compilation.exe \
+	bug-544446.exe \
+	context-static.exe \
+	remoting1.exe \
+	remoting2.exe \
+	remoting3.exe \
+	remoting5.exe \
+	nullable_boxing.2.exe
+
+if FULL_AOT_TESTS
+PROFILE_DISABLED_TESTS += $(REMOTING_DISABLED_TESTS)
+endif
+
+if HYBRID_AOT_TESTS
+PROFILE_DISABLED_TESTS += $(REMOTING_DISABLED_TESTS)
+endif
+
+if FULL_AOT_INTERP_TESTS
+PROFILE_DISABLED_TESTS += $(REMOTING_DISABLED_TESTS)
+endif
+
 AOT_DISABLED_TESTS= \
 	constraints-load.exe \
 	calli_sig_check.exe
