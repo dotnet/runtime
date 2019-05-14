@@ -6,7 +6,7 @@
  /* File created by MIDL compiler version 8.01.0622 */
 /* at Mon Jan 18 19:14:07 2038
  */
-/* Compiler settings for D:/coreclr/src/inc/corprof.idl:
+/* Compiler settings for D:/git/coreclr/src/inc/corprof.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
@@ -49,196 +49,196 @@
 #define __ICorProfilerCallback_FWD_DEFINED__
 typedef interface ICorProfilerCallback ICorProfilerCallback;
 
-#endif 	/* __ICorProfilerCallback_FWD_DEFINED__ */
+#endif  /* __ICorProfilerCallback_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback2_FWD_DEFINED__
 #define __ICorProfilerCallback2_FWD_DEFINED__
 typedef interface ICorProfilerCallback2 ICorProfilerCallback2;
 
-#endif 	/* __ICorProfilerCallback2_FWD_DEFINED__ */
+#endif  /* __ICorProfilerCallback2_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback3_FWD_DEFINED__
 #define __ICorProfilerCallback3_FWD_DEFINED__
 typedef interface ICorProfilerCallback3 ICorProfilerCallback3;
 
-#endif 	/* __ICorProfilerCallback3_FWD_DEFINED__ */
+#endif  /* __ICorProfilerCallback3_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback4_FWD_DEFINED__
 #define __ICorProfilerCallback4_FWD_DEFINED__
 typedef interface ICorProfilerCallback4 ICorProfilerCallback4;
 
-#endif 	/* __ICorProfilerCallback4_FWD_DEFINED__ */
+#endif  /* __ICorProfilerCallback4_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback5_FWD_DEFINED__
 #define __ICorProfilerCallback5_FWD_DEFINED__
 typedef interface ICorProfilerCallback5 ICorProfilerCallback5;
 
-#endif 	/* __ICorProfilerCallback5_FWD_DEFINED__ */
+#endif  /* __ICorProfilerCallback5_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback6_FWD_DEFINED__
 #define __ICorProfilerCallback6_FWD_DEFINED__
 typedef interface ICorProfilerCallback6 ICorProfilerCallback6;
 
-#endif 	/* __ICorProfilerCallback6_FWD_DEFINED__ */
+#endif  /* __ICorProfilerCallback6_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback7_FWD_DEFINED__
 #define __ICorProfilerCallback7_FWD_DEFINED__
 typedef interface ICorProfilerCallback7 ICorProfilerCallback7;
 
-#endif 	/* __ICorProfilerCallback7_FWD_DEFINED__ */
+#endif  /* __ICorProfilerCallback7_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback8_FWD_DEFINED__
 #define __ICorProfilerCallback8_FWD_DEFINED__
 typedef interface ICorProfilerCallback8 ICorProfilerCallback8;
 
-#endif 	/* __ICorProfilerCallback8_FWD_DEFINED__ */
+#endif  /* __ICorProfilerCallback8_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback9_FWD_DEFINED__
 #define __ICorProfilerCallback9_FWD_DEFINED__
 typedef interface ICorProfilerCallback9 ICorProfilerCallback9;
 
-#endif 	/* __ICorProfilerCallback9_FWD_DEFINED__ */
+#endif  /* __ICorProfilerCallback9_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo_FWD_DEFINED__
 #define __ICorProfilerInfo_FWD_DEFINED__
 typedef interface ICorProfilerInfo ICorProfilerInfo;
 
-#endif 	/* __ICorProfilerInfo_FWD_DEFINED__ */
+#endif  /* __ICorProfilerInfo_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo2_FWD_DEFINED__
 #define __ICorProfilerInfo2_FWD_DEFINED__
 typedef interface ICorProfilerInfo2 ICorProfilerInfo2;
 
-#endif 	/* __ICorProfilerInfo2_FWD_DEFINED__ */
+#endif  /* __ICorProfilerInfo2_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo3_FWD_DEFINED__
 #define __ICorProfilerInfo3_FWD_DEFINED__
 typedef interface ICorProfilerInfo3 ICorProfilerInfo3;
 
-#endif 	/* __ICorProfilerInfo3_FWD_DEFINED__ */
+#endif  /* __ICorProfilerInfo3_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerObjectEnum_FWD_DEFINED__
 #define __ICorProfilerObjectEnum_FWD_DEFINED__
 typedef interface ICorProfilerObjectEnum ICorProfilerObjectEnum;
 
-#endif 	/* __ICorProfilerObjectEnum_FWD_DEFINED__ */
+#endif  /* __ICorProfilerObjectEnum_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerFunctionEnum_FWD_DEFINED__
 #define __ICorProfilerFunctionEnum_FWD_DEFINED__
 typedef interface ICorProfilerFunctionEnum ICorProfilerFunctionEnum;
 
-#endif 	/* __ICorProfilerFunctionEnum_FWD_DEFINED__ */
+#endif  /* __ICorProfilerFunctionEnum_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerModuleEnum_FWD_DEFINED__
 #define __ICorProfilerModuleEnum_FWD_DEFINED__
 typedef interface ICorProfilerModuleEnum ICorProfilerModuleEnum;
 
-#endif 	/* __ICorProfilerModuleEnum_FWD_DEFINED__ */
+#endif  /* __ICorProfilerModuleEnum_FWD_DEFINED__ */
 
 
 #ifndef __IMethodMalloc_FWD_DEFINED__
 #define __IMethodMalloc_FWD_DEFINED__
 typedef interface IMethodMalloc IMethodMalloc;
 
-#endif 	/* __IMethodMalloc_FWD_DEFINED__ */
+#endif  /* __IMethodMalloc_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerFunctionControl_FWD_DEFINED__
 #define __ICorProfilerFunctionControl_FWD_DEFINED__
 typedef interface ICorProfilerFunctionControl ICorProfilerFunctionControl;
 
-#endif 	/* __ICorProfilerFunctionControl_FWD_DEFINED__ */
+#endif  /* __ICorProfilerFunctionControl_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo4_FWD_DEFINED__
 #define __ICorProfilerInfo4_FWD_DEFINED__
 typedef interface ICorProfilerInfo4 ICorProfilerInfo4;
 
-#endif 	/* __ICorProfilerInfo4_FWD_DEFINED__ */
+#endif  /* __ICorProfilerInfo4_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo5_FWD_DEFINED__
 #define __ICorProfilerInfo5_FWD_DEFINED__
 typedef interface ICorProfilerInfo5 ICorProfilerInfo5;
 
-#endif 	/* __ICorProfilerInfo5_FWD_DEFINED__ */
+#endif  /* __ICorProfilerInfo5_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo6_FWD_DEFINED__
 #define __ICorProfilerInfo6_FWD_DEFINED__
 typedef interface ICorProfilerInfo6 ICorProfilerInfo6;
 
-#endif 	/* __ICorProfilerInfo6_FWD_DEFINED__ */
+#endif  /* __ICorProfilerInfo6_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo7_FWD_DEFINED__
 #define __ICorProfilerInfo7_FWD_DEFINED__
 typedef interface ICorProfilerInfo7 ICorProfilerInfo7;
 
-#endif 	/* __ICorProfilerInfo7_FWD_DEFINED__ */
+#endif  /* __ICorProfilerInfo7_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo8_FWD_DEFINED__
 #define __ICorProfilerInfo8_FWD_DEFINED__
 typedef interface ICorProfilerInfo8 ICorProfilerInfo8;
 
-#endif 	/* __ICorProfilerInfo8_FWD_DEFINED__ */
+#endif  /* __ICorProfilerInfo8_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo9_FWD_DEFINED__
 #define __ICorProfilerInfo9_FWD_DEFINED__
 typedef interface ICorProfilerInfo9 ICorProfilerInfo9;
 
-#endif 	/* __ICorProfilerInfo9_FWD_DEFINED__ */
+#endif  /* __ICorProfilerInfo9_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo10_FWD_DEFINED__
 #define __ICorProfilerInfo10_FWD_DEFINED__
 typedef interface ICorProfilerInfo10 ICorProfilerInfo10;
 
-#endif 	/* __ICorProfilerInfo10_FWD_DEFINED__ */
+#endif  /* __ICorProfilerInfo10_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerMethodEnum_FWD_DEFINED__
 #define __ICorProfilerMethodEnum_FWD_DEFINED__
 typedef interface ICorProfilerMethodEnum ICorProfilerMethodEnum;
 
-#endif 	/* __ICorProfilerMethodEnum_FWD_DEFINED__ */
+#endif  /* __ICorProfilerMethodEnum_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerThreadEnum_FWD_DEFINED__
 #define __ICorProfilerThreadEnum_FWD_DEFINED__
 typedef interface ICorProfilerThreadEnum ICorProfilerThreadEnum;
 
-#endif 	/* __ICorProfilerThreadEnum_FWD_DEFINED__ */
+#endif  /* __ICorProfilerThreadEnum_FWD_DEFINED__ */
 
 
 #ifndef __ICorProfilerAssemblyReferenceProvider_FWD_DEFINED__
 #define __ICorProfilerAssemblyReferenceProvider_FWD_DEFINED__
 typedef interface ICorProfilerAssemblyReferenceProvider ICorProfilerAssemblyReferenceProvider;
 
-#endif 	/* __ICorProfilerAssemblyReferenceProvider_FWD_DEFINED__ */
+#endif  /* __ICorProfilerAssemblyReferenceProvider_FWD_DEFINED__ */
 
 
 #ifndef __ICLRProfiling_FWD_DEFINED__
 #define __ICLRProfiling_FWD_DEFINED__
 typedef interface ICLRProfiling ICLRProfiling;
 
-#endif 	/* __ICLRProfiling_FWD_DEFINED__ */
+#endif  /* __ICLRProfiling_FWD_DEFINED__ */
 
 
 /* header files for imported files */
@@ -273,7 +273,7 @@ typedef /* [public][public][public][public] */ struct __MIDL___MIDL_itf_corprof_
     DWORD dwOSPlatformId;
     DWORD dwOSMajorVersion;
     DWORD dwOSMinorVersion;
-    } 	OSINFO;
+    }   OSINFO;
 
 typedef /* [public][public][public] */ struct __MIDL___MIDL_itf_corprof_0000_0000_0002
     {
@@ -287,7 +287,7 @@ typedef /* [public][public][public] */ struct __MIDL___MIDL_itf_corprof_0000_000
     ULONG ulProcessor;
     OSINFO *rOS;
     ULONG ulOS;
-    } 	ASSEMBLYMETADATA;
+    }   ASSEMBLYMETADATA;
 
 #endif
 typedef const BYTE *LPCBYTE;
@@ -307,7 +307,7 @@ typedef struct _COR_IL_MAP
     ULONG32 oldOffset;
     ULONG32 newOffset;
     BOOL fAccurate;
-    } 	COR_IL_MAP;
+    }   COR_IL_MAP;
 
 #endif //_COR_IL_MAP
 #ifndef _COR_DEBUG_IL_TO_NATIVE_MAP_
@@ -315,17 +315,17 @@ typedef struct _COR_IL_MAP
 typedef 
 enum CorDebugIlToNativeMappingTypes
     {
-        NO_MAPPING	= -1,
-        PROLOG	= -2,
-        EPILOG	= -3
-    } 	CorDebugIlToNativeMappingTypes;
+        NO_MAPPING  = -1,
+        PROLOG  = -2,
+        EPILOG  = -3
+    }   CorDebugIlToNativeMappingTypes;
 
 typedef struct COR_DEBUG_IL_TO_NATIVE_MAP
     {
     ULONG32 ilOffset;
     ULONG32 nativeStartOffset;
     ULONG32 nativeEndOffset;
-    } 	COR_DEBUG_IL_TO_NATIVE_MAP;
+    }   COR_DEBUG_IL_TO_NATIVE_MAP;
 
 #endif // _COR_DEBUG_IL_TO_NATIVE_MAP_
 #ifndef _COR_FIELD_OFFSET_
@@ -334,7 +334,7 @@ typedef struct _COR_FIELD_OFFSET
     {
     mdFieldDef ridOfField;
     ULONG ulOffset;
-    } 	COR_FIELD_OFFSET;
+    }   COR_FIELD_OFFSET;
 
 #endif // _COR_FIELD_OFFSET_
 typedef UINT_PTR ProcessID;
@@ -365,7 +365,7 @@ typedef /* [public][public][public][public][public][public][public][public][publ
     {
     FunctionID functionID;
     UINT_PTR clientID;
-    } 	FunctionIDOrClientID;
+    }   FunctionIDOrClientID;
 
 typedef UINT_PTR __stdcall __stdcall FunctionIDMapper( 
     FunctionID funcId,
@@ -379,10 +379,10 @@ typedef UINT_PTR __stdcall __stdcall FunctionIDMapper2(
 typedef 
 enum _COR_PRF_SNAPSHOT_INFO
     {
-        COR_PRF_SNAPSHOT_DEFAULT	= 0,
-        COR_PRF_SNAPSHOT_REGISTER_CONTEXT	= 0x1,
-        COR_PRF_SNAPSHOT_X86_OPTIMIZED	= 0x2
-    } 	COR_PRF_SNAPSHOT_INFO;
+        COR_PRF_SNAPSHOT_DEFAULT    = 0,
+        COR_PRF_SNAPSHOT_REGISTER_CONTEXT   = 0x1,
+        COR_PRF_SNAPSHOT_X86_OPTIMIZED  = 0x2
+    }   COR_PRF_SNAPSHOT_INFO;
 
 typedef UINT_PTR COR_PRF_FRAME_INFO;
 
@@ -390,36 +390,36 @@ typedef struct _COR_PRF_FUNCTION_ARGUMENT_RANGE
     {
     UINT_PTR startAddress;
     ULONG length;
-    } 	COR_PRF_FUNCTION_ARGUMENT_RANGE;
+    }   COR_PRF_FUNCTION_ARGUMENT_RANGE;
 
 typedef struct _COR_PRF_FUNCTION_ARGUMENT_INFO
     {
     ULONG numRanges;
     ULONG totalArgumentSize;
     COR_PRF_FUNCTION_ARGUMENT_RANGE ranges[ 1 ];
-    } 	COR_PRF_FUNCTION_ARGUMENT_INFO;
+    }   COR_PRF_FUNCTION_ARGUMENT_INFO;
 
 typedef struct _COR_PRF_CODE_INFO
     {
     UINT_PTR startAddress;
     SIZE_T size;
-    } 	COR_PRF_CODE_INFO;
+    }   COR_PRF_CODE_INFO;
 
 typedef /* [public][public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0000_0004
     {
-        COR_PRF_FIELD_NOT_A_STATIC	= 0,
-        COR_PRF_FIELD_APP_DOMAIN_STATIC	= 0x1,
-        COR_PRF_FIELD_THREAD_STATIC	= 0x2,
-        COR_PRF_FIELD_CONTEXT_STATIC	= 0x4,
-        COR_PRF_FIELD_RVA_STATIC	= 0x8
-    } 	COR_PRF_STATIC_TYPE;
+        COR_PRF_FIELD_NOT_A_STATIC  = 0,
+        COR_PRF_FIELD_APP_DOMAIN_STATIC = 0x1,
+        COR_PRF_FIELD_THREAD_STATIC = 0x2,
+        COR_PRF_FIELD_CONTEXT_STATIC    = 0x4,
+        COR_PRF_FIELD_RVA_STATIC    = 0x8
+    }   COR_PRF_STATIC_TYPE;
 
 typedef struct _COR_PRF_FUNCTION
     {
     FunctionID functionId;
     ReJITID reJitId;
-    } 	COR_PRF_FUNCTION;
+    }   COR_PRF_FUNCTION;
 
 typedef struct _COR_PRF_ASSEMBLY_REFERENCE_INFO
     {
@@ -430,13 +430,13 @@ typedef struct _COR_PRF_ASSEMBLY_REFERENCE_INFO
     void *pbHashValue;
     ULONG cbHashValue;
     DWORD dwAssemblyRefFlags;
-    } 	COR_PRF_ASSEMBLY_REFERENCE_INFO;
+    }   COR_PRF_ASSEMBLY_REFERENCE_INFO;
 
 typedef struct _COR_PRF_METHOD
     {
     ModuleID moduleId;
     mdMethodDef methodId;
-    } 	COR_PRF_METHOD;
+    }   COR_PRF_METHOD;
 
 typedef void FunctionEnter( 
     FunctionID funcID);
@@ -496,103 +496,110 @@ typedef HRESULT __stdcall __stdcall StackSnapshotCallback(
 typedef /* [public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0000_0005
     {
-        COR_PRF_MONITOR_NONE	= 0,
-        COR_PRF_MONITOR_FUNCTION_UNLOADS	= 0x1,
-        COR_PRF_MONITOR_CLASS_LOADS	= 0x2,
-        COR_PRF_MONITOR_MODULE_LOADS	= 0x4,
-        COR_PRF_MONITOR_ASSEMBLY_LOADS	= 0x8,
-        COR_PRF_MONITOR_APPDOMAIN_LOADS	= 0x10,
-        COR_PRF_MONITOR_JIT_COMPILATION	= 0x20,
-        COR_PRF_MONITOR_EXCEPTIONS	= 0x40,
-        COR_PRF_MONITOR_GC	= 0x80,
-        COR_PRF_MONITOR_OBJECT_ALLOCATED	= 0x100,
-        COR_PRF_MONITOR_THREADS	= 0x200,
-        COR_PRF_MONITOR_REMOTING	= 0x400,
-        COR_PRF_MONITOR_CODE_TRANSITIONS	= 0x800,
-        COR_PRF_MONITOR_ENTERLEAVE	= 0x1000,
-        COR_PRF_MONITOR_CCW	= 0x2000,
-        COR_PRF_MONITOR_REMOTING_COOKIE	= ( 0x4000 | COR_PRF_MONITOR_REMOTING ) ,
-        COR_PRF_MONITOR_REMOTING_ASYNC	= ( 0x8000 | COR_PRF_MONITOR_REMOTING ) ,
-        COR_PRF_MONITOR_SUSPENDS	= 0x10000,
-        COR_PRF_MONITOR_CACHE_SEARCHES	= 0x20000,
-        COR_PRF_ENABLE_REJIT	= 0x40000,
-        COR_PRF_ENABLE_INPROC_DEBUGGING	= 0x80000,
-        COR_PRF_ENABLE_JIT_MAPS	= 0x100000,
-        COR_PRF_DISABLE_INLINING	= 0x200000,
-        COR_PRF_DISABLE_OPTIMIZATIONS	= 0x400000,
-        COR_PRF_ENABLE_OBJECT_ALLOCATED	= 0x800000,
-        COR_PRF_MONITOR_CLR_EXCEPTIONS	= 0x1000000,
-        COR_PRF_MONITOR_ALL	= 0x107ffff,
-        COR_PRF_ENABLE_FUNCTION_ARGS	= 0x2000000,
-        COR_PRF_ENABLE_FUNCTION_RETVAL	= 0x4000000,
-        COR_PRF_ENABLE_FRAME_INFO	= 0x8000000,
-        COR_PRF_ENABLE_STACK_SNAPSHOT	= 0x10000000,
-        COR_PRF_USE_PROFILE_IMAGES	= 0x20000000,
-        COR_PRF_DISABLE_TRANSPARENCY_CHECKS_UNDER_FULL_TRUST	= 0x40000000,
-        COR_PRF_DISABLE_ALL_NGEN_IMAGES	= 0x80000000,
-        COR_PRF_ALL	= 0x8fffffff,
-        COR_PRF_REQUIRE_PROFILE_IMAGE	= ( ( COR_PRF_USE_PROFILE_IMAGES | COR_PRF_MONITOR_CODE_TRANSITIONS )  | COR_PRF_MONITOR_ENTERLEAVE ) ,
-        COR_PRF_ALLOWABLE_AFTER_ATTACH	= ( ( ( ( ( ( ( ( ( ( COR_PRF_MONITOR_THREADS | COR_PRF_MONITOR_MODULE_LOADS )  | COR_PRF_MONITOR_ASSEMBLY_LOADS )  | COR_PRF_MONITOR_APPDOMAIN_LOADS )  | COR_PRF_ENABLE_STACK_SNAPSHOT )  | COR_PRF_MONITOR_GC )  | COR_PRF_MONITOR_SUSPENDS )  | COR_PRF_MONITOR_CLASS_LOADS )  | COR_PRF_MONITOR_EXCEPTIONS )  | COR_PRF_MONITOR_JIT_COMPILATION )  | COR_PRF_ENABLE_REJIT ) ,
-        COR_PRF_MONITOR_IMMUTABLE	= ( ( ( ( ( ( ( ( ( ( ( ( ( ( COR_PRF_MONITOR_CODE_TRANSITIONS | COR_PRF_MONITOR_REMOTING )  | COR_PRF_MONITOR_REMOTING_COOKIE )  | COR_PRF_MONITOR_REMOTING_ASYNC )  | COR_PRF_ENABLE_INPROC_DEBUGGING )  | COR_PRF_ENABLE_JIT_MAPS )  | COR_PRF_DISABLE_OPTIMIZATIONS )  | COR_PRF_DISABLE_INLINING )  | COR_PRF_ENABLE_OBJECT_ALLOCATED )  | COR_PRF_ENABLE_FUNCTION_ARGS )  | COR_PRF_ENABLE_FUNCTION_RETVAL )  | COR_PRF_ENABLE_FRAME_INFO )  | COR_PRF_USE_PROFILE_IMAGES )  | COR_PRF_DISABLE_TRANSPARENCY_CHECKS_UNDER_FULL_TRUST )  | COR_PRF_DISABLE_ALL_NGEN_IMAGES ) 
-    } 	COR_PRF_MONITOR;
+        COR_PRF_MONITOR_NONE    = 0,
+        COR_PRF_MONITOR_FUNCTION_UNLOADS    = 0x1,
+        COR_PRF_MONITOR_CLASS_LOADS = 0x2,
+        COR_PRF_MONITOR_MODULE_LOADS    = 0x4,
+        COR_PRF_MONITOR_ASSEMBLY_LOADS  = 0x8,
+        COR_PRF_MONITOR_APPDOMAIN_LOADS = 0x10,
+        COR_PRF_MONITOR_JIT_COMPILATION = 0x20,
+        COR_PRF_MONITOR_EXCEPTIONS  = 0x40,
+        COR_PRF_MONITOR_GC  = 0x80,
+        COR_PRF_MONITOR_OBJECT_ALLOCATED    = 0x100,
+        COR_PRF_MONITOR_THREADS = 0x200,
+        COR_PRF_MONITOR_REMOTING    = 0x400,
+        COR_PRF_MONITOR_CODE_TRANSITIONS    = 0x800,
+        COR_PRF_MONITOR_ENTERLEAVE  = 0x1000,
+        COR_PRF_MONITOR_CCW = 0x2000,
+        COR_PRF_MONITOR_REMOTING_COOKIE = ( 0x4000 | COR_PRF_MONITOR_REMOTING ) ,
+        COR_PRF_MONITOR_REMOTING_ASYNC  = ( 0x8000 | COR_PRF_MONITOR_REMOTING ) ,
+        COR_PRF_MONITOR_SUSPENDS    = 0x10000,
+        COR_PRF_MONITOR_CACHE_SEARCHES  = 0x20000,
+        COR_PRF_ENABLE_REJIT    = 0x40000,
+        COR_PRF_ENABLE_INPROC_DEBUGGING = 0x80000,
+        COR_PRF_ENABLE_JIT_MAPS = 0x100000,
+        COR_PRF_DISABLE_INLINING    = 0x200000,
+        COR_PRF_DISABLE_OPTIMIZATIONS   = 0x400000,
+        COR_PRF_ENABLE_OBJECT_ALLOCATED = 0x800000,
+        COR_PRF_MONITOR_CLR_EXCEPTIONS  = 0x1000000,
+        COR_PRF_MONITOR_ALL = 0x107ffff,
+        COR_PRF_ENABLE_FUNCTION_ARGS    = 0x2000000,
+        COR_PRF_ENABLE_FUNCTION_RETVAL  = 0x4000000,
+        COR_PRF_ENABLE_FRAME_INFO   = 0x8000000,
+        COR_PRF_ENABLE_STACK_SNAPSHOT   = 0x10000000,
+        COR_PRF_USE_PROFILE_IMAGES  = 0x20000000,
+        COR_PRF_DISABLE_TRANSPARENCY_CHECKS_UNDER_FULL_TRUST    = 0x40000000,
+        COR_PRF_DISABLE_ALL_NGEN_IMAGES = 0x80000000,
+        COR_PRF_ALL = 0x8fffffff,
+        COR_PRF_REQUIRE_PROFILE_IMAGE   = ( ( COR_PRF_USE_PROFILE_IMAGES | COR_PRF_MONITOR_CODE_TRANSITIONS )  | COR_PRF_MONITOR_ENTERLEAVE ) ,
+        COR_PRF_ALLOWABLE_AFTER_ATTACH  = ( ( ( ( ( ( ( ( ( ( COR_PRF_MONITOR_THREADS | COR_PRF_MONITOR_MODULE_LOADS )  | COR_PRF_MONITOR_ASSEMBLY_LOADS )  | COR_PRF_MONITOR_APPDOMAIN_LOADS )  | COR_PRF_ENABLE_STACK_SNAPSHOT )  | COR_PRF_MONITOR_GC )  | COR_PRF_MONITOR_SUSPENDS )  | COR_PRF_MONITOR_CLASS_LOADS )  | COR_PRF_MONITOR_EXCEPTIONS )  | COR_PRF_MONITOR_JIT_COMPILATION )  | COR_PRF_ENABLE_REJIT ) ,
+        COR_PRF_MONITOR_IMMUTABLE   = ( ( ( ( ( ( ( ( ( ( ( ( ( ( COR_PRF_MONITOR_CODE_TRANSITIONS | COR_PRF_MONITOR_REMOTING )  | COR_PRF_MONITOR_REMOTING_COOKIE )  | COR_PRF_MONITOR_REMOTING_ASYNC )  | COR_PRF_ENABLE_INPROC_DEBUGGING )  | COR_PRF_ENABLE_JIT_MAPS )  | COR_PRF_DISABLE_OPTIMIZATIONS )  | COR_PRF_DISABLE_INLINING )  | COR_PRF_ENABLE_OBJECT_ALLOCATED )  | COR_PRF_ENABLE_FUNCTION_ARGS )  | COR_PRF_ENABLE_FUNCTION_RETVAL )  | COR_PRF_ENABLE_FRAME_INFO )  | COR_PRF_USE_PROFILE_IMAGES )  | COR_PRF_DISABLE_TRANSPARENCY_CHECKS_UNDER_FULL_TRUST )  | COR_PRF_DISABLE_ALL_NGEN_IMAGES ) 
+    }   COR_PRF_MONITOR;
 
 typedef /* [public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0000_0006
     {
-        COR_PRF_HIGH_MONITOR_NONE	= 0,
-        COR_PRF_HIGH_ADD_ASSEMBLY_REFERENCES	= 0x1,
-        COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED	= 0x2,
-        COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS	= 0x4,
-        COR_PRF_HIGH_DISABLE_TIERED_COMPILATION	= 0x8,
-        COR_PRF_HIGH_BASIC_GC	= 0x10,
-        COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS	= 0x20,
-        COR_PRF_HIGH_REQUIRE_PROFILE_IMAGE	= 0,
-        COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED	= 0x40,
-        COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH	= ( ( ( ( COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS )  | COR_PRF_HIGH_BASIC_GC )  | COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS )  | COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED ) ,
-        COR_PRF_HIGH_MONITOR_IMMUTABLE	= COR_PRF_HIGH_DISABLE_TIERED_COMPILATION
-    } 	COR_PRF_HIGH_MONITOR;
+        COR_PRF_HIGH_MONITOR_NONE   = 0,
+        COR_PRF_HIGH_ADD_ASSEMBLY_REFERENCES    = 0x1,
+        COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED  = 0x2,
+        COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS   = 0x4,
+        COR_PRF_HIGH_DISABLE_TIERED_COMPILATION = 0x8,
+        COR_PRF_HIGH_BASIC_GC   = 0x10,
+        COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS   = 0x20,
+        COR_PRF_HIGH_REQUIRE_PROFILE_IMAGE  = 0,
+        COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED  = 0x40,
+        COR_PRF_HIGH_ALLOWABLE_AFTER_ATTACH = ( ( ( ( COR_PRF_HIGH_IN_MEMORY_SYMBOLS_UPDATED | COR_PRF_HIGH_MONITOR_DYNAMIC_FUNCTION_UNLOADS )  | COR_PRF_HIGH_BASIC_GC )  | COR_PRF_HIGH_MONITOR_GC_MOVED_OBJECTS )  | COR_PRF_HIGH_MONITOR_LARGEOBJECT_ALLOCATED ) ,
+        COR_PRF_HIGH_MONITOR_IMMUTABLE  = COR_PRF_HIGH_DISABLE_TIERED_COMPILATION
+    }   COR_PRF_HIGH_MONITOR;
 
 typedef /* [public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0000_0007
     {
-        PROFILER_PARENT_UNKNOWN	= 0xfffffffd,
-        PROFILER_GLOBAL_CLASS	= 0xfffffffe,
-        PROFILER_GLOBAL_MODULE	= 0xffffffff
-    } 	COR_PRF_MISC;
+        PROFILER_PARENT_UNKNOWN = 0xfffffffd,
+        PROFILER_GLOBAL_CLASS   = 0xfffffffe,
+        PROFILER_GLOBAL_MODULE  = 0xffffffff
+    }   COR_PRF_MISC;
 
 typedef /* [public][public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0000_0008
     {
-        COR_PRF_CACHED_FUNCTION_FOUND	= 0,
-        COR_PRF_CACHED_FUNCTION_NOT_FOUND	= ( COR_PRF_CACHED_FUNCTION_FOUND + 1 ) 
-    } 	COR_PRF_JIT_CACHE;
+        COR_PRF_CACHED_FUNCTION_FOUND   = 0,
+        COR_PRF_CACHED_FUNCTION_NOT_FOUND   = ( COR_PRF_CACHED_FUNCTION_FOUND + 1 ) 
+    }   COR_PRF_JIT_CACHE;
 
 typedef /* [public][public][public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0000_0009
     {
-        COR_PRF_TRANSITION_CALL	= 0,
-        COR_PRF_TRANSITION_RETURN	= ( COR_PRF_TRANSITION_CALL + 1 ) 
-    } 	COR_PRF_TRANSITION_REASON;
+        COR_PRF_TRANSITION_CALL = 0,
+        COR_PRF_TRANSITION_RETURN   = ( COR_PRF_TRANSITION_CALL + 1 ) 
+    }   COR_PRF_TRANSITION_REASON;
 
 typedef /* [public][public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0000_0010
     {
-        COR_PRF_SUSPEND_OTHER	= 0,
-        COR_PRF_SUSPEND_FOR_GC	= 1,
-        COR_PRF_SUSPEND_FOR_APPDOMAIN_SHUTDOWN	= 2,
-        COR_PRF_SUSPEND_FOR_CODE_PITCHING	= 3,
-        COR_PRF_SUSPEND_FOR_SHUTDOWN	= 4,
-        COR_PRF_SUSPEND_FOR_INPROC_DEBUGGER	= 6,
-        COR_PRF_SUSPEND_FOR_GC_PREP	= 7,
-        COR_PRF_SUSPEND_FOR_REJIT	= 8
-    } 	COR_PRF_SUSPEND_REASON;
+        COR_PRF_SUSPEND_OTHER   = 0,
+        COR_PRF_SUSPEND_FOR_GC  = 1,
+        COR_PRF_SUSPEND_FOR_APPDOMAIN_SHUTDOWN  = 2,
+        COR_PRF_SUSPEND_FOR_CODE_PITCHING   = 3,
+        COR_PRF_SUSPEND_FOR_SHUTDOWN    = 4,
+        COR_PRF_SUSPEND_FOR_INPROC_DEBUGGER = 6,
+        COR_PRF_SUSPEND_FOR_GC_PREP = 7,
+        COR_PRF_SUSPEND_FOR_REJIT   = 8
+    }   COR_PRF_SUSPEND_REASON;
 
 typedef /* [public][public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0000_0011
     {
-        COR_PRF_DESKTOP_CLR	= 0x1,
-        COR_PRF_CORE_CLR	= 0x2
-    } 	COR_PRF_RUNTIME_TYPE;
+        COR_PRF_DESKTOP_CLR = 0x1,
+        COR_PRF_CORE_CLR    = 0x2
+    }   COR_PRF_RUNTIME_TYPE;
+
+typedef /* [public] */ 
+enum __MIDL___MIDL_itf_corprof_0000_0000_0012
+    {
+        COR_PRF_REJIT_BLOCK_INLINING    = 0x1,
+        COR_PRF_REJIT_INLINING_CALLBACKS    = 0x2
+    }   COR_PRF_REJIT_FLAGS;
 
 
 
@@ -863,7 +870,7 @@ EXTERN_C const IID IID_ICorProfilerCallback;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerCallbackVtbl
     {
@@ -1193,232 +1200,232 @@ EXTERN_C const IID IID_ICorProfilerCallback;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerCallback_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerCallback_QueryInterface(This,riid,ppvObject)    \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerCallback_AddRef(This)	\
+#define ICorProfilerCallback_AddRef(This)   \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerCallback_Release(This)	\
+#define ICorProfilerCallback_Release(This)  \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerCallback_Initialize(This,pICorProfilerInfoUnk)	\
+#define ICorProfilerCallback_Initialize(This,pICorProfilerInfoUnk)  \
     ( (This)->lpVtbl -> Initialize(This,pICorProfilerInfoUnk) ) 
 
-#define ICorProfilerCallback_Shutdown(This)	\
+#define ICorProfilerCallback_Shutdown(This) \
     ( (This)->lpVtbl -> Shutdown(This) ) 
 
-#define ICorProfilerCallback_AppDomainCreationStarted(This,appDomainId)	\
+#define ICorProfilerCallback_AppDomainCreationStarted(This,appDomainId) \
     ( (This)->lpVtbl -> AppDomainCreationStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback_AppDomainCreationFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback_AppDomainCreationFinished(This,appDomainId,hrStatus)   \
     ( (This)->lpVtbl -> AppDomainCreationFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback_AppDomainShutdownStarted(This,appDomainId)	\
+#define ICorProfilerCallback_AppDomainShutdownStarted(This,appDomainId) \
     ( (This)->lpVtbl -> AppDomainShutdownStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback_AppDomainShutdownFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback_AppDomainShutdownFinished(This,appDomainId,hrStatus)   \
     ( (This)->lpVtbl -> AppDomainShutdownFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback_AssemblyLoadStarted(This,assemblyId)	\
+#define ICorProfilerCallback_AssemblyLoadStarted(This,assemblyId)   \
     ( (This)->lpVtbl -> AssemblyLoadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback_AssemblyLoadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback_AssemblyLoadFinished(This,assemblyId,hrStatus) \
     ( (This)->lpVtbl -> AssemblyLoadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback_AssemblyUnloadStarted(This,assemblyId)	\
+#define ICorProfilerCallback_AssemblyUnloadStarted(This,assemblyId) \
     ( (This)->lpVtbl -> AssemblyUnloadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback_AssemblyUnloadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback_AssemblyUnloadFinished(This,assemblyId,hrStatus)   \
     ( (This)->lpVtbl -> AssemblyUnloadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback_ModuleLoadStarted(This,moduleId)	\
+#define ICorProfilerCallback_ModuleLoadStarted(This,moduleId)   \
     ( (This)->lpVtbl -> ModuleLoadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback_ModuleLoadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback_ModuleLoadFinished(This,moduleId,hrStatus) \
     ( (This)->lpVtbl -> ModuleLoadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback_ModuleUnloadStarted(This,moduleId)	\
+#define ICorProfilerCallback_ModuleUnloadStarted(This,moduleId) \
     ( (This)->lpVtbl -> ModuleUnloadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback_ModuleUnloadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback_ModuleUnloadFinished(This,moduleId,hrStatus)   \
     ( (This)->lpVtbl -> ModuleUnloadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback_ModuleAttachedToAssembly(This,moduleId,AssemblyId)	\
+#define ICorProfilerCallback_ModuleAttachedToAssembly(This,moduleId,AssemblyId) \
     ( (This)->lpVtbl -> ModuleAttachedToAssembly(This,moduleId,AssemblyId) ) 
 
-#define ICorProfilerCallback_ClassLoadStarted(This,classId)	\
+#define ICorProfilerCallback_ClassLoadStarted(This,classId) \
     ( (This)->lpVtbl -> ClassLoadStarted(This,classId) ) 
 
-#define ICorProfilerCallback_ClassLoadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback_ClassLoadFinished(This,classId,hrStatus)   \
     ( (This)->lpVtbl -> ClassLoadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback_ClassUnloadStarted(This,classId)	\
+#define ICorProfilerCallback_ClassUnloadStarted(This,classId)   \
     ( (This)->lpVtbl -> ClassUnloadStarted(This,classId) ) 
 
-#define ICorProfilerCallback_ClassUnloadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback_ClassUnloadFinished(This,classId,hrStatus) \
     ( (This)->lpVtbl -> ClassUnloadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback_FunctionUnloadStarted(This,functionId)	\
+#define ICorProfilerCallback_FunctionUnloadStarted(This,functionId) \
     ( (This)->lpVtbl -> FunctionUnloadStarted(This,functionId) ) 
 
-#define ICorProfilerCallback_JITCompilationStarted(This,functionId,fIsSafeToBlock)	\
+#define ICorProfilerCallback_JITCompilationStarted(This,functionId,fIsSafeToBlock)  \
     ( (This)->lpVtbl -> JITCompilationStarted(This,functionId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)    \
     ( (This)->lpVtbl -> JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)	\
+#define ICorProfilerCallback_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)    \
     ( (This)->lpVtbl -> JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction) ) 
 
-#define ICorProfilerCallback_JITCachedFunctionSearchFinished(This,functionId,result)	\
+#define ICorProfilerCallback_JITCachedFunctionSearchFinished(This,functionId,result)    \
     ( (This)->lpVtbl -> JITCachedFunctionSearchFinished(This,functionId,result) ) 
 
-#define ICorProfilerCallback_JITFunctionPitched(This,functionId)	\
+#define ICorProfilerCallback_JITFunctionPitched(This,functionId)    \
     ( (This)->lpVtbl -> JITFunctionPitched(This,functionId) ) 
 
-#define ICorProfilerCallback_JITInlining(This,callerId,calleeId,pfShouldInline)	\
+#define ICorProfilerCallback_JITInlining(This,callerId,calleeId,pfShouldInline) \
     ( (This)->lpVtbl -> JITInlining(This,callerId,calleeId,pfShouldInline) ) 
 
-#define ICorProfilerCallback_ThreadCreated(This,threadId)	\
+#define ICorProfilerCallback_ThreadCreated(This,threadId)   \
     ( (This)->lpVtbl -> ThreadCreated(This,threadId) ) 
 
-#define ICorProfilerCallback_ThreadDestroyed(This,threadId)	\
+#define ICorProfilerCallback_ThreadDestroyed(This,threadId) \
     ( (This)->lpVtbl -> ThreadDestroyed(This,threadId) ) 
 
-#define ICorProfilerCallback_ThreadAssignedToOSThread(This,managedThreadId,osThreadId)	\
+#define ICorProfilerCallback_ThreadAssignedToOSThread(This,managedThreadId,osThreadId)  \
     ( (This)->lpVtbl -> ThreadAssignedToOSThread(This,managedThreadId,osThreadId) ) 
 
-#define ICorProfilerCallback_RemotingClientInvocationStarted(This)	\
+#define ICorProfilerCallback_RemotingClientInvocationStarted(This)  \
     ( (This)->lpVtbl -> RemotingClientInvocationStarted(This) ) 
 
-#define ICorProfilerCallback_RemotingClientSendingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback_RemotingClientSendingMessage(This,pCookie,fIsAsync)    \
     ( (This)->lpVtbl -> RemotingClientSendingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback_RemotingClientReceivingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback_RemotingClientReceivingReply(This,pCookie,fIsAsync)    \
     ( (This)->lpVtbl -> RemotingClientReceivingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback_RemotingClientInvocationFinished(This)	\
+#define ICorProfilerCallback_RemotingClientInvocationFinished(This) \
     ( (This)->lpVtbl -> RemotingClientInvocationFinished(This) ) 
 
-#define ICorProfilerCallback_RemotingServerReceivingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback_RemotingServerReceivingMessage(This,pCookie,fIsAsync)  \
     ( (This)->lpVtbl -> RemotingServerReceivingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback_RemotingServerInvocationStarted(This)	\
+#define ICorProfilerCallback_RemotingServerInvocationStarted(This)  \
     ( (This)->lpVtbl -> RemotingServerInvocationStarted(This) ) 
 
-#define ICorProfilerCallback_RemotingServerInvocationReturned(This)	\
+#define ICorProfilerCallback_RemotingServerInvocationReturned(This) \
     ( (This)->lpVtbl -> RemotingServerInvocationReturned(This) ) 
 
-#define ICorProfilerCallback_RemotingServerSendingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback_RemotingServerSendingReply(This,pCookie,fIsAsync)  \
     ( (This)->lpVtbl -> RemotingServerSendingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback_UnmanagedToManagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback_UnmanagedToManagedTransition(This,functionId,reason)   \
     ( (This)->lpVtbl -> UnmanagedToManagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback_ManagedToUnmanagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback_ManagedToUnmanagedTransition(This,functionId,reason)   \
     ( (This)->lpVtbl -> ManagedToUnmanagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback_RuntimeSuspendStarted(This,suspendReason)	\
+#define ICorProfilerCallback_RuntimeSuspendStarted(This,suspendReason)  \
     ( (This)->lpVtbl -> RuntimeSuspendStarted(This,suspendReason) ) 
 
-#define ICorProfilerCallback_RuntimeSuspendFinished(This)	\
+#define ICorProfilerCallback_RuntimeSuspendFinished(This)   \
     ( (This)->lpVtbl -> RuntimeSuspendFinished(This) ) 
 
-#define ICorProfilerCallback_RuntimeSuspendAborted(This)	\
+#define ICorProfilerCallback_RuntimeSuspendAborted(This)    \
     ( (This)->lpVtbl -> RuntimeSuspendAborted(This) ) 
 
-#define ICorProfilerCallback_RuntimeResumeStarted(This)	\
+#define ICorProfilerCallback_RuntimeResumeStarted(This) \
     ( (This)->lpVtbl -> RuntimeResumeStarted(This) ) 
 
-#define ICorProfilerCallback_RuntimeResumeFinished(This)	\
+#define ICorProfilerCallback_RuntimeResumeFinished(This)    \
     ( (This)->lpVtbl -> RuntimeResumeFinished(This) ) 
 
-#define ICorProfilerCallback_RuntimeThreadSuspended(This,threadId)	\
+#define ICorProfilerCallback_RuntimeThreadSuspended(This,threadId)  \
     ( (This)->lpVtbl -> RuntimeThreadSuspended(This,threadId) ) 
 
-#define ICorProfilerCallback_RuntimeThreadResumed(This,threadId)	\
+#define ICorProfilerCallback_RuntimeThreadResumed(This,threadId)    \
     ( (This)->lpVtbl -> RuntimeThreadResumed(This,threadId) ) 
 
-#define ICorProfilerCallback_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)    \
     ( (This)->lpVtbl -> MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback_ObjectAllocated(This,objectId,classId)	\
+#define ICorProfilerCallback_ObjectAllocated(This,objectId,classId) \
     ( (This)->lpVtbl -> ObjectAllocated(This,objectId,classId) ) 
 
-#define ICorProfilerCallback_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)	\
+#define ICorProfilerCallback_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)    \
     ( (This)->lpVtbl -> ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects) ) 
 
-#define ICorProfilerCallback_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)	\
+#define ICorProfilerCallback_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)   \
     ( (This)->lpVtbl -> ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds) ) 
 
-#define ICorProfilerCallback_RootReferences(This,cRootRefs,rootRefIds)	\
+#define ICorProfilerCallback_RootReferences(This,cRootRefs,rootRefIds)  \
     ( (This)->lpVtbl -> RootReferences(This,cRootRefs,rootRefIds) ) 
 
-#define ICorProfilerCallback_ExceptionThrown(This,thrownObjectId)	\
+#define ICorProfilerCallback_ExceptionThrown(This,thrownObjectId)   \
     ( (This)->lpVtbl -> ExceptionThrown(This,thrownObjectId) ) 
 
-#define ICorProfilerCallback_ExceptionSearchFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback_ExceptionSearchFunctionEnter(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionSearchFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback_ExceptionSearchFunctionLeave(This)	\
+#define ICorProfilerCallback_ExceptionSearchFunctionLeave(This) \
     ( (This)->lpVtbl -> ExceptionSearchFunctionLeave(This) ) 
 
-#define ICorProfilerCallback_ExceptionSearchFilterEnter(This,functionId)	\
+#define ICorProfilerCallback_ExceptionSearchFilterEnter(This,functionId)    \
     ( (This)->lpVtbl -> ExceptionSearchFilterEnter(This,functionId) ) 
 
-#define ICorProfilerCallback_ExceptionSearchFilterLeave(This)	\
+#define ICorProfilerCallback_ExceptionSearchFilterLeave(This)   \
     ( (This)->lpVtbl -> ExceptionSearchFilterLeave(This) ) 
 
-#define ICorProfilerCallback_ExceptionSearchCatcherFound(This,functionId)	\
+#define ICorProfilerCallback_ExceptionSearchCatcherFound(This,functionId)   \
     ( (This)->lpVtbl -> ExceptionSearchCatcherFound(This,functionId) ) 
 
-#define ICorProfilerCallback_ExceptionOSHandlerEnter(This,__unused)	\
+#define ICorProfilerCallback_ExceptionOSHandlerEnter(This,__unused) \
     ( (This)->lpVtbl -> ExceptionOSHandlerEnter(This,__unused) ) 
 
-#define ICorProfilerCallback_ExceptionOSHandlerLeave(This,__unused)	\
+#define ICorProfilerCallback_ExceptionOSHandlerLeave(This,__unused) \
     ( (This)->lpVtbl -> ExceptionOSHandlerLeave(This,__unused) ) 
 
-#define ICorProfilerCallback_ExceptionUnwindFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback_ExceptionUnwindFunctionEnter(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback_ExceptionUnwindFunctionLeave(This)	\
+#define ICorProfilerCallback_ExceptionUnwindFunctionLeave(This) \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionLeave(This) ) 
 
-#define ICorProfilerCallback_ExceptionUnwindFinallyEnter(This,functionId)	\
+#define ICorProfilerCallback_ExceptionUnwindFinallyEnter(This,functionId)   \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyEnter(This,functionId) ) 
 
-#define ICorProfilerCallback_ExceptionUnwindFinallyLeave(This)	\
+#define ICorProfilerCallback_ExceptionUnwindFinallyLeave(This)  \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyLeave(This) ) 
 
-#define ICorProfilerCallback_ExceptionCatcherEnter(This,functionId,objectId)	\
+#define ICorProfilerCallback_ExceptionCatcherEnter(This,functionId,objectId)    \
     ( (This)->lpVtbl -> ExceptionCatcherEnter(This,functionId,objectId) ) 
 
-#define ICorProfilerCallback_ExceptionCatcherLeave(This)	\
+#define ICorProfilerCallback_ExceptionCatcherLeave(This)    \
     ( (This)->lpVtbl -> ExceptionCatcherLeave(This) ) 
 
-#define ICorProfilerCallback_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)	\
+#define ICorProfilerCallback_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots) \
     ( (This)->lpVtbl -> COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots) ) 
 
-#define ICorProfilerCallback_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable)	\
+#define ICorProfilerCallback_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable)  \
     ( (This)->lpVtbl -> COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) ) 
 
-#define ICorProfilerCallback_ExceptionCLRCatcherFound(This)	\
+#define ICorProfilerCallback_ExceptionCLRCatcherFound(This) \
     ( (This)->lpVtbl -> ExceptionCLRCatcherFound(This) ) 
 
-#define ICorProfilerCallback_ExceptionCLRCatcherExecute(This)	\
+#define ICorProfilerCallback_ExceptionCLRCatcherExecute(This)   \
     ( (This)->lpVtbl -> ExceptionCLRCatcherExecute(This) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerCallback_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerCallback_INTERFACE_DEFINED__ */
 
 
 /* interface __MIDL_itf_corprof_0000_0001 */
@@ -1427,35 +1434,35 @@ EXTERN_C const IID IID_ICorProfilerCallback;
 typedef /* [public][public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0001_0001
     {
-        COR_PRF_GC_ROOT_STACK	= 1,
-        COR_PRF_GC_ROOT_FINALIZER	= 2,
-        COR_PRF_GC_ROOT_HANDLE	= 3,
-        COR_PRF_GC_ROOT_OTHER	= 0
-    } 	COR_PRF_GC_ROOT_KIND;
+        COR_PRF_GC_ROOT_STACK   = 1,
+        COR_PRF_GC_ROOT_FINALIZER   = 2,
+        COR_PRF_GC_ROOT_HANDLE  = 3,
+        COR_PRF_GC_ROOT_OTHER   = 0
+    }   COR_PRF_GC_ROOT_KIND;
 
 typedef /* [public][public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0001_0002
     {
-        COR_PRF_GC_ROOT_PINNING	= 0x1,
-        COR_PRF_GC_ROOT_WEAKREF	= 0x2,
-        COR_PRF_GC_ROOT_INTERIOR	= 0x4,
-        COR_PRF_GC_ROOT_REFCOUNTED	= 0x8
-    } 	COR_PRF_GC_ROOT_FLAGS;
+        COR_PRF_GC_ROOT_PINNING = 0x1,
+        COR_PRF_GC_ROOT_WEAKREF = 0x2,
+        COR_PRF_GC_ROOT_INTERIOR    = 0x4,
+        COR_PRF_GC_ROOT_REFCOUNTED  = 0x8
+    }   COR_PRF_GC_ROOT_FLAGS;
 
 typedef /* [public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0001_0003
     {
-        COR_PRF_FINALIZER_CRITICAL	= 0x1
-    } 	COR_PRF_FINALIZER_FLAGS;
+        COR_PRF_FINALIZER_CRITICAL  = 0x1
+    }   COR_PRF_FINALIZER_FLAGS;
 
 typedef /* [public][public][public][public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0001_0004
     {
-        COR_PRF_GC_GEN_0	= 0,
-        COR_PRF_GC_GEN_1	= 1,
-        COR_PRF_GC_GEN_2	= 2,
-        COR_PRF_GC_LARGE_OBJECT_HEAP	= 3
-    } 	COR_PRF_GC_GENERATION;
+        COR_PRF_GC_GEN_0    = 0,
+        COR_PRF_GC_GEN_1    = 1,
+        COR_PRF_GC_GEN_2    = 2,
+        COR_PRF_GC_LARGE_OBJECT_HEAP    = 3
+    }   COR_PRF_GC_GENERATION;
 
 typedef struct COR_PRF_GC_GENERATION_RANGE
     {
@@ -1463,16 +1470,16 @@ typedef struct COR_PRF_GC_GENERATION_RANGE
     ObjectID rangeStart;
     UINT_PTR rangeLength;
     UINT_PTR rangeLengthReserved;
-    } 	COR_PRF_GC_GENERATION_RANGE;
+    }   COR_PRF_GC_GENERATION_RANGE;
 
 typedef /* [public][public][public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0001_0005
     {
-        COR_PRF_CLAUSE_NONE	= 0,
-        COR_PRF_CLAUSE_FILTER	= 1,
-        COR_PRF_CLAUSE_CATCH	= 2,
-        COR_PRF_CLAUSE_FINALLY	= 3
-    } 	COR_PRF_CLAUSE_TYPE;
+        COR_PRF_CLAUSE_NONE = 0,
+        COR_PRF_CLAUSE_FILTER   = 1,
+        COR_PRF_CLAUSE_CATCH    = 2,
+        COR_PRF_CLAUSE_FINALLY  = 3
+    }   COR_PRF_CLAUSE_TYPE;
 
 typedef struct COR_PRF_EX_CLAUSE_INFO
     {
@@ -1480,26 +1487,26 @@ typedef struct COR_PRF_EX_CLAUSE_INFO
     UINT_PTR programCounter;
     UINT_PTR framePointer;
     UINT_PTR shadowStackPointer;
-    } 	COR_PRF_EX_CLAUSE_INFO;
+    }   COR_PRF_EX_CLAUSE_INFO;
 
 typedef /* [public][public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0001_0006
     {
-        COR_PRF_GC_INDUCED	= 1,
-        COR_PRF_GC_OTHER	= 0
-    } 	COR_PRF_GC_REASON;
+        COR_PRF_GC_INDUCED  = 1,
+        COR_PRF_GC_OTHER    = 0
+    }   COR_PRF_GC_REASON;
 
 typedef /* [public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0001_0007
     {
-        COR_PRF_MODULE_DISK	= 0x1,
-        COR_PRF_MODULE_NGEN	= 0x2,
-        COR_PRF_MODULE_DYNAMIC	= 0x4,
-        COR_PRF_MODULE_COLLECTIBLE	= 0x8,
-        COR_PRF_MODULE_RESOURCE	= 0x10,
-        COR_PRF_MODULE_FLAT_LAYOUT	= 0x20,
-        COR_PRF_MODULE_WINDOWS_RUNTIME	= 0x40
-    } 	COR_PRF_MODULE_FLAGS;
+        COR_PRF_MODULE_DISK = 0x1,
+        COR_PRF_MODULE_NGEN = 0x2,
+        COR_PRF_MODULE_DYNAMIC  = 0x4,
+        COR_PRF_MODULE_COLLECTIBLE  = 0x8,
+        COR_PRF_MODULE_RESOURCE = 0x10,
+        COR_PRF_MODULE_FLAT_LAYOUT  = 0x20,
+        COR_PRF_MODULE_WINDOWS_RUNTIME  = 0x40
+    }   COR_PRF_MODULE_FLAGS;
 
 
 
@@ -1560,7 +1567,7 @@ EXTERN_C const IID IID_ICorProfilerCallback2;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerCallback2Vtbl
     {
@@ -1934,257 +1941,257 @@ EXTERN_C const IID IID_ICorProfilerCallback2;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerCallback2_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerCallback2_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerCallback2_AddRef(This)	\
+#define ICorProfilerCallback2_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerCallback2_Release(This)	\
+#define ICorProfilerCallback2_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerCallback2_Initialize(This,pICorProfilerInfoUnk)	\
+#define ICorProfilerCallback2_Initialize(This,pICorProfilerInfoUnk) \
     ( (This)->lpVtbl -> Initialize(This,pICorProfilerInfoUnk) ) 
 
-#define ICorProfilerCallback2_Shutdown(This)	\
+#define ICorProfilerCallback2_Shutdown(This)    \
     ( (This)->lpVtbl -> Shutdown(This) ) 
 
-#define ICorProfilerCallback2_AppDomainCreationStarted(This,appDomainId)	\
+#define ICorProfilerCallback2_AppDomainCreationStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainCreationStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback2_AppDomainCreationFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback2_AppDomainCreationFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainCreationFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback2_AppDomainShutdownStarted(This,appDomainId)	\
+#define ICorProfilerCallback2_AppDomainShutdownStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainShutdownStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback2_AppDomainShutdownFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback2_AppDomainShutdownFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainShutdownFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback2_AssemblyLoadStarted(This,assemblyId)	\
+#define ICorProfilerCallback2_AssemblyLoadStarted(This,assemblyId)  \
     ( (This)->lpVtbl -> AssemblyLoadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback2_AssemblyLoadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback2_AssemblyLoadFinished(This,assemblyId,hrStatus)    \
     ( (This)->lpVtbl -> AssemblyLoadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback2_AssemblyUnloadStarted(This,assemblyId)	\
+#define ICorProfilerCallback2_AssemblyUnloadStarted(This,assemblyId)    \
     ( (This)->lpVtbl -> AssemblyUnloadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback2_AssemblyUnloadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback2_AssemblyUnloadFinished(This,assemblyId,hrStatus)  \
     ( (This)->lpVtbl -> AssemblyUnloadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback2_ModuleLoadStarted(This,moduleId)	\
+#define ICorProfilerCallback2_ModuleLoadStarted(This,moduleId)  \
     ( (This)->lpVtbl -> ModuleLoadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback2_ModuleLoadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback2_ModuleLoadFinished(This,moduleId,hrStatus)    \
     ( (This)->lpVtbl -> ModuleLoadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback2_ModuleUnloadStarted(This,moduleId)	\
+#define ICorProfilerCallback2_ModuleUnloadStarted(This,moduleId)    \
     ( (This)->lpVtbl -> ModuleUnloadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback2_ModuleUnloadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback2_ModuleUnloadFinished(This,moduleId,hrStatus)  \
     ( (This)->lpVtbl -> ModuleUnloadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback2_ModuleAttachedToAssembly(This,moduleId,AssemblyId)	\
+#define ICorProfilerCallback2_ModuleAttachedToAssembly(This,moduleId,AssemblyId)    \
     ( (This)->lpVtbl -> ModuleAttachedToAssembly(This,moduleId,AssemblyId) ) 
 
-#define ICorProfilerCallback2_ClassLoadStarted(This,classId)	\
+#define ICorProfilerCallback2_ClassLoadStarted(This,classId)    \
     ( (This)->lpVtbl -> ClassLoadStarted(This,classId) ) 
 
-#define ICorProfilerCallback2_ClassLoadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback2_ClassLoadFinished(This,classId,hrStatus)  \
     ( (This)->lpVtbl -> ClassLoadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback2_ClassUnloadStarted(This,classId)	\
+#define ICorProfilerCallback2_ClassUnloadStarted(This,classId)  \
     ( (This)->lpVtbl -> ClassUnloadStarted(This,classId) ) 
 
-#define ICorProfilerCallback2_ClassUnloadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback2_ClassUnloadFinished(This,classId,hrStatus)    \
     ( (This)->lpVtbl -> ClassUnloadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback2_FunctionUnloadStarted(This,functionId)	\
+#define ICorProfilerCallback2_FunctionUnloadStarted(This,functionId)    \
     ( (This)->lpVtbl -> FunctionUnloadStarted(This,functionId) ) 
 
-#define ICorProfilerCallback2_JITCompilationStarted(This,functionId,fIsSafeToBlock)	\
+#define ICorProfilerCallback2_JITCompilationStarted(This,functionId,fIsSafeToBlock) \
     ( (This)->lpVtbl -> JITCompilationStarted(This,functionId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback2_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback2_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback2_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)	\
+#define ICorProfilerCallback2_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction) ) 
 
-#define ICorProfilerCallback2_JITCachedFunctionSearchFinished(This,functionId,result)	\
+#define ICorProfilerCallback2_JITCachedFunctionSearchFinished(This,functionId,result)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchFinished(This,functionId,result) ) 
 
-#define ICorProfilerCallback2_JITFunctionPitched(This,functionId)	\
+#define ICorProfilerCallback2_JITFunctionPitched(This,functionId)   \
     ( (This)->lpVtbl -> JITFunctionPitched(This,functionId) ) 
 
-#define ICorProfilerCallback2_JITInlining(This,callerId,calleeId,pfShouldInline)	\
+#define ICorProfilerCallback2_JITInlining(This,callerId,calleeId,pfShouldInline)    \
     ( (This)->lpVtbl -> JITInlining(This,callerId,calleeId,pfShouldInline) ) 
 
-#define ICorProfilerCallback2_ThreadCreated(This,threadId)	\
+#define ICorProfilerCallback2_ThreadCreated(This,threadId)  \
     ( (This)->lpVtbl -> ThreadCreated(This,threadId) ) 
 
-#define ICorProfilerCallback2_ThreadDestroyed(This,threadId)	\
+#define ICorProfilerCallback2_ThreadDestroyed(This,threadId)    \
     ( (This)->lpVtbl -> ThreadDestroyed(This,threadId) ) 
 
-#define ICorProfilerCallback2_ThreadAssignedToOSThread(This,managedThreadId,osThreadId)	\
+#define ICorProfilerCallback2_ThreadAssignedToOSThread(This,managedThreadId,osThreadId) \
     ( (This)->lpVtbl -> ThreadAssignedToOSThread(This,managedThreadId,osThreadId) ) 
 
-#define ICorProfilerCallback2_RemotingClientInvocationStarted(This)	\
+#define ICorProfilerCallback2_RemotingClientInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingClientInvocationStarted(This) ) 
 
-#define ICorProfilerCallback2_RemotingClientSendingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback2_RemotingClientSendingMessage(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientSendingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback2_RemotingClientReceivingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback2_RemotingClientReceivingReply(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientReceivingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback2_RemotingClientInvocationFinished(This)	\
+#define ICorProfilerCallback2_RemotingClientInvocationFinished(This)    \
     ( (This)->lpVtbl -> RemotingClientInvocationFinished(This) ) 
 
-#define ICorProfilerCallback2_RemotingServerReceivingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback2_RemotingServerReceivingMessage(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerReceivingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback2_RemotingServerInvocationStarted(This)	\
+#define ICorProfilerCallback2_RemotingServerInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingServerInvocationStarted(This) ) 
 
-#define ICorProfilerCallback2_RemotingServerInvocationReturned(This)	\
+#define ICorProfilerCallback2_RemotingServerInvocationReturned(This)    \
     ( (This)->lpVtbl -> RemotingServerInvocationReturned(This) ) 
 
-#define ICorProfilerCallback2_RemotingServerSendingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback2_RemotingServerSendingReply(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerSendingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback2_UnmanagedToManagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback2_UnmanagedToManagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> UnmanagedToManagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback2_ManagedToUnmanagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback2_ManagedToUnmanagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> ManagedToUnmanagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback2_RuntimeSuspendStarted(This,suspendReason)	\
+#define ICorProfilerCallback2_RuntimeSuspendStarted(This,suspendReason) \
     ( (This)->lpVtbl -> RuntimeSuspendStarted(This,suspendReason) ) 
 
-#define ICorProfilerCallback2_RuntimeSuspendFinished(This)	\
+#define ICorProfilerCallback2_RuntimeSuspendFinished(This)  \
     ( (This)->lpVtbl -> RuntimeSuspendFinished(This) ) 
 
-#define ICorProfilerCallback2_RuntimeSuspendAborted(This)	\
+#define ICorProfilerCallback2_RuntimeSuspendAborted(This)   \
     ( (This)->lpVtbl -> RuntimeSuspendAborted(This) ) 
 
-#define ICorProfilerCallback2_RuntimeResumeStarted(This)	\
+#define ICorProfilerCallback2_RuntimeResumeStarted(This)    \
     ( (This)->lpVtbl -> RuntimeResumeStarted(This) ) 
 
-#define ICorProfilerCallback2_RuntimeResumeFinished(This)	\
+#define ICorProfilerCallback2_RuntimeResumeFinished(This)   \
     ( (This)->lpVtbl -> RuntimeResumeFinished(This) ) 
 
-#define ICorProfilerCallback2_RuntimeThreadSuspended(This,threadId)	\
+#define ICorProfilerCallback2_RuntimeThreadSuspended(This,threadId) \
     ( (This)->lpVtbl -> RuntimeThreadSuspended(This,threadId) ) 
 
-#define ICorProfilerCallback2_RuntimeThreadResumed(This,threadId)	\
+#define ICorProfilerCallback2_RuntimeThreadResumed(This,threadId)   \
     ( (This)->lpVtbl -> RuntimeThreadResumed(This,threadId) ) 
 
-#define ICorProfilerCallback2_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback2_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback2_ObjectAllocated(This,objectId,classId)	\
+#define ICorProfilerCallback2_ObjectAllocated(This,objectId,classId)    \
     ( (This)->lpVtbl -> ObjectAllocated(This,objectId,classId) ) 
 
-#define ICorProfilerCallback2_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)	\
+#define ICorProfilerCallback2_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)   \
     ( (This)->lpVtbl -> ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects) ) 
 
-#define ICorProfilerCallback2_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)	\
+#define ICorProfilerCallback2_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)  \
     ( (This)->lpVtbl -> ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds) ) 
 
-#define ICorProfilerCallback2_RootReferences(This,cRootRefs,rootRefIds)	\
+#define ICorProfilerCallback2_RootReferences(This,cRootRefs,rootRefIds) \
     ( (This)->lpVtbl -> RootReferences(This,cRootRefs,rootRefIds) ) 
 
-#define ICorProfilerCallback2_ExceptionThrown(This,thrownObjectId)	\
+#define ICorProfilerCallback2_ExceptionThrown(This,thrownObjectId)  \
     ( (This)->lpVtbl -> ExceptionThrown(This,thrownObjectId) ) 
 
-#define ICorProfilerCallback2_ExceptionSearchFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback2_ExceptionSearchFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionSearchFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback2_ExceptionSearchFunctionLeave(This)	\
+#define ICorProfilerCallback2_ExceptionSearchFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionSearchFunctionLeave(This) ) 
 
-#define ICorProfilerCallback2_ExceptionSearchFilterEnter(This,functionId)	\
+#define ICorProfilerCallback2_ExceptionSearchFilterEnter(This,functionId)   \
     ( (This)->lpVtbl -> ExceptionSearchFilterEnter(This,functionId) ) 
 
-#define ICorProfilerCallback2_ExceptionSearchFilterLeave(This)	\
+#define ICorProfilerCallback2_ExceptionSearchFilterLeave(This)  \
     ( (This)->lpVtbl -> ExceptionSearchFilterLeave(This) ) 
 
-#define ICorProfilerCallback2_ExceptionSearchCatcherFound(This,functionId)	\
+#define ICorProfilerCallback2_ExceptionSearchCatcherFound(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionSearchCatcherFound(This,functionId) ) 
 
-#define ICorProfilerCallback2_ExceptionOSHandlerEnter(This,__unused)	\
+#define ICorProfilerCallback2_ExceptionOSHandlerEnter(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerEnter(This,__unused) ) 
 
-#define ICorProfilerCallback2_ExceptionOSHandlerLeave(This,__unused)	\
+#define ICorProfilerCallback2_ExceptionOSHandlerLeave(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerLeave(This,__unused) ) 
 
-#define ICorProfilerCallback2_ExceptionUnwindFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback2_ExceptionUnwindFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback2_ExceptionUnwindFunctionLeave(This)	\
+#define ICorProfilerCallback2_ExceptionUnwindFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionLeave(This) ) 
 
-#define ICorProfilerCallback2_ExceptionUnwindFinallyEnter(This,functionId)	\
+#define ICorProfilerCallback2_ExceptionUnwindFinallyEnter(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyEnter(This,functionId) ) 
 
-#define ICorProfilerCallback2_ExceptionUnwindFinallyLeave(This)	\
+#define ICorProfilerCallback2_ExceptionUnwindFinallyLeave(This) \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyLeave(This) ) 
 
-#define ICorProfilerCallback2_ExceptionCatcherEnter(This,functionId,objectId)	\
+#define ICorProfilerCallback2_ExceptionCatcherEnter(This,functionId,objectId)   \
     ( (This)->lpVtbl -> ExceptionCatcherEnter(This,functionId,objectId) ) 
 
-#define ICorProfilerCallback2_ExceptionCatcherLeave(This)	\
+#define ICorProfilerCallback2_ExceptionCatcherLeave(This)   \
     ( (This)->lpVtbl -> ExceptionCatcherLeave(This) ) 
 
-#define ICorProfilerCallback2_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)	\
+#define ICorProfilerCallback2_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)    \
     ( (This)->lpVtbl -> COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots) ) 
 
-#define ICorProfilerCallback2_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable)	\
+#define ICorProfilerCallback2_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) \
     ( (This)->lpVtbl -> COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) ) 
 
-#define ICorProfilerCallback2_ExceptionCLRCatcherFound(This)	\
+#define ICorProfilerCallback2_ExceptionCLRCatcherFound(This)    \
     ( (This)->lpVtbl -> ExceptionCLRCatcherFound(This) ) 
 
-#define ICorProfilerCallback2_ExceptionCLRCatcherExecute(This)	\
+#define ICorProfilerCallback2_ExceptionCLRCatcherExecute(This)  \
     ( (This)->lpVtbl -> ExceptionCLRCatcherExecute(This) ) 
 
 
-#define ICorProfilerCallback2_ThreadNameChanged(This,threadId,cchName,name)	\
+#define ICorProfilerCallback2_ThreadNameChanged(This,threadId,cchName,name) \
     ( (This)->lpVtbl -> ThreadNameChanged(This,threadId,cchName,name) ) 
 
-#define ICorProfilerCallback2_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)	\
+#define ICorProfilerCallback2_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)    \
     ( (This)->lpVtbl -> GarbageCollectionStarted(This,cGenerations,generationCollected,reason) ) 
 
-#define ICorProfilerCallback2_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback2_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)    \
     ( (This)->lpVtbl -> SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback2_GarbageCollectionFinished(This)	\
+#define ICorProfilerCallback2_GarbageCollectionFinished(This)   \
     ( (This)->lpVtbl -> GarbageCollectionFinished(This) ) 
 
-#define ICorProfilerCallback2_FinalizeableObjectQueued(This,finalizerFlags,objectID)	\
+#define ICorProfilerCallback2_FinalizeableObjectQueued(This,finalizerFlags,objectID)    \
     ( (This)->lpVtbl -> FinalizeableObjectQueued(This,finalizerFlags,objectID) ) 
 
-#define ICorProfilerCallback2_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)	\
+#define ICorProfilerCallback2_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)    \
     ( (This)->lpVtbl -> RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds) ) 
 
-#define ICorProfilerCallback2_HandleCreated(This,handleId,initialObjectId)	\
+#define ICorProfilerCallback2_HandleCreated(This,handleId,initialObjectId)  \
     ( (This)->lpVtbl -> HandleCreated(This,handleId,initialObjectId) ) 
 
-#define ICorProfilerCallback2_HandleDestroyed(This,handleId)	\
+#define ICorProfilerCallback2_HandleDestroyed(This,handleId)    \
     ( (This)->lpVtbl -> HandleDestroyed(This,handleId) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerCallback2_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerCallback2_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback3_INTERFACE_DEFINED__
@@ -2214,7 +2221,7 @@ EXTERN_C const IID IID_ICorProfilerCallback3;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerCallback3Vtbl
     {
@@ -2600,267 +2607,267 @@ EXTERN_C const IID IID_ICorProfilerCallback3;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerCallback3_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerCallback3_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerCallback3_AddRef(This)	\
+#define ICorProfilerCallback3_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerCallback3_Release(This)	\
+#define ICorProfilerCallback3_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerCallback3_Initialize(This,pICorProfilerInfoUnk)	\
+#define ICorProfilerCallback3_Initialize(This,pICorProfilerInfoUnk) \
     ( (This)->lpVtbl -> Initialize(This,pICorProfilerInfoUnk) ) 
 
-#define ICorProfilerCallback3_Shutdown(This)	\
+#define ICorProfilerCallback3_Shutdown(This)    \
     ( (This)->lpVtbl -> Shutdown(This) ) 
 
-#define ICorProfilerCallback3_AppDomainCreationStarted(This,appDomainId)	\
+#define ICorProfilerCallback3_AppDomainCreationStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainCreationStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback3_AppDomainCreationFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback3_AppDomainCreationFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainCreationFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback3_AppDomainShutdownStarted(This,appDomainId)	\
+#define ICorProfilerCallback3_AppDomainShutdownStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainShutdownStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback3_AppDomainShutdownFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback3_AppDomainShutdownFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainShutdownFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback3_AssemblyLoadStarted(This,assemblyId)	\
+#define ICorProfilerCallback3_AssemblyLoadStarted(This,assemblyId)  \
     ( (This)->lpVtbl -> AssemblyLoadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback3_AssemblyLoadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback3_AssemblyLoadFinished(This,assemblyId,hrStatus)    \
     ( (This)->lpVtbl -> AssemblyLoadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback3_AssemblyUnloadStarted(This,assemblyId)	\
+#define ICorProfilerCallback3_AssemblyUnloadStarted(This,assemblyId)    \
     ( (This)->lpVtbl -> AssemblyUnloadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback3_AssemblyUnloadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback3_AssemblyUnloadFinished(This,assemblyId,hrStatus)  \
     ( (This)->lpVtbl -> AssemblyUnloadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback3_ModuleLoadStarted(This,moduleId)	\
+#define ICorProfilerCallback3_ModuleLoadStarted(This,moduleId)  \
     ( (This)->lpVtbl -> ModuleLoadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback3_ModuleLoadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback3_ModuleLoadFinished(This,moduleId,hrStatus)    \
     ( (This)->lpVtbl -> ModuleLoadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback3_ModuleUnloadStarted(This,moduleId)	\
+#define ICorProfilerCallback3_ModuleUnloadStarted(This,moduleId)    \
     ( (This)->lpVtbl -> ModuleUnloadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback3_ModuleUnloadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback3_ModuleUnloadFinished(This,moduleId,hrStatus)  \
     ( (This)->lpVtbl -> ModuleUnloadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback3_ModuleAttachedToAssembly(This,moduleId,AssemblyId)	\
+#define ICorProfilerCallback3_ModuleAttachedToAssembly(This,moduleId,AssemblyId)    \
     ( (This)->lpVtbl -> ModuleAttachedToAssembly(This,moduleId,AssemblyId) ) 
 
-#define ICorProfilerCallback3_ClassLoadStarted(This,classId)	\
+#define ICorProfilerCallback3_ClassLoadStarted(This,classId)    \
     ( (This)->lpVtbl -> ClassLoadStarted(This,classId) ) 
 
-#define ICorProfilerCallback3_ClassLoadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback3_ClassLoadFinished(This,classId,hrStatus)  \
     ( (This)->lpVtbl -> ClassLoadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback3_ClassUnloadStarted(This,classId)	\
+#define ICorProfilerCallback3_ClassUnloadStarted(This,classId)  \
     ( (This)->lpVtbl -> ClassUnloadStarted(This,classId) ) 
 
-#define ICorProfilerCallback3_ClassUnloadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback3_ClassUnloadFinished(This,classId,hrStatus)    \
     ( (This)->lpVtbl -> ClassUnloadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback3_FunctionUnloadStarted(This,functionId)	\
+#define ICorProfilerCallback3_FunctionUnloadStarted(This,functionId)    \
     ( (This)->lpVtbl -> FunctionUnloadStarted(This,functionId) ) 
 
-#define ICorProfilerCallback3_JITCompilationStarted(This,functionId,fIsSafeToBlock)	\
+#define ICorProfilerCallback3_JITCompilationStarted(This,functionId,fIsSafeToBlock) \
     ( (This)->lpVtbl -> JITCompilationStarted(This,functionId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback3_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback3_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback3_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)	\
+#define ICorProfilerCallback3_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction) ) 
 
-#define ICorProfilerCallback3_JITCachedFunctionSearchFinished(This,functionId,result)	\
+#define ICorProfilerCallback3_JITCachedFunctionSearchFinished(This,functionId,result)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchFinished(This,functionId,result) ) 
 
-#define ICorProfilerCallback3_JITFunctionPitched(This,functionId)	\
+#define ICorProfilerCallback3_JITFunctionPitched(This,functionId)   \
     ( (This)->lpVtbl -> JITFunctionPitched(This,functionId) ) 
 
-#define ICorProfilerCallback3_JITInlining(This,callerId,calleeId,pfShouldInline)	\
+#define ICorProfilerCallback3_JITInlining(This,callerId,calleeId,pfShouldInline)    \
     ( (This)->lpVtbl -> JITInlining(This,callerId,calleeId,pfShouldInline) ) 
 
-#define ICorProfilerCallback3_ThreadCreated(This,threadId)	\
+#define ICorProfilerCallback3_ThreadCreated(This,threadId)  \
     ( (This)->lpVtbl -> ThreadCreated(This,threadId) ) 
 
-#define ICorProfilerCallback3_ThreadDestroyed(This,threadId)	\
+#define ICorProfilerCallback3_ThreadDestroyed(This,threadId)    \
     ( (This)->lpVtbl -> ThreadDestroyed(This,threadId) ) 
 
-#define ICorProfilerCallback3_ThreadAssignedToOSThread(This,managedThreadId,osThreadId)	\
+#define ICorProfilerCallback3_ThreadAssignedToOSThread(This,managedThreadId,osThreadId) \
     ( (This)->lpVtbl -> ThreadAssignedToOSThread(This,managedThreadId,osThreadId) ) 
 
-#define ICorProfilerCallback3_RemotingClientInvocationStarted(This)	\
+#define ICorProfilerCallback3_RemotingClientInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingClientInvocationStarted(This) ) 
 
-#define ICorProfilerCallback3_RemotingClientSendingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback3_RemotingClientSendingMessage(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientSendingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback3_RemotingClientReceivingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback3_RemotingClientReceivingReply(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientReceivingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback3_RemotingClientInvocationFinished(This)	\
+#define ICorProfilerCallback3_RemotingClientInvocationFinished(This)    \
     ( (This)->lpVtbl -> RemotingClientInvocationFinished(This) ) 
 
-#define ICorProfilerCallback3_RemotingServerReceivingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback3_RemotingServerReceivingMessage(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerReceivingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback3_RemotingServerInvocationStarted(This)	\
+#define ICorProfilerCallback3_RemotingServerInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingServerInvocationStarted(This) ) 
 
-#define ICorProfilerCallback3_RemotingServerInvocationReturned(This)	\
+#define ICorProfilerCallback3_RemotingServerInvocationReturned(This)    \
     ( (This)->lpVtbl -> RemotingServerInvocationReturned(This) ) 
 
-#define ICorProfilerCallback3_RemotingServerSendingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback3_RemotingServerSendingReply(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerSendingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback3_UnmanagedToManagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback3_UnmanagedToManagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> UnmanagedToManagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback3_ManagedToUnmanagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback3_ManagedToUnmanagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> ManagedToUnmanagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback3_RuntimeSuspendStarted(This,suspendReason)	\
+#define ICorProfilerCallback3_RuntimeSuspendStarted(This,suspendReason) \
     ( (This)->lpVtbl -> RuntimeSuspendStarted(This,suspendReason) ) 
 
-#define ICorProfilerCallback3_RuntimeSuspendFinished(This)	\
+#define ICorProfilerCallback3_RuntimeSuspendFinished(This)  \
     ( (This)->lpVtbl -> RuntimeSuspendFinished(This) ) 
 
-#define ICorProfilerCallback3_RuntimeSuspendAborted(This)	\
+#define ICorProfilerCallback3_RuntimeSuspendAborted(This)   \
     ( (This)->lpVtbl -> RuntimeSuspendAborted(This) ) 
 
-#define ICorProfilerCallback3_RuntimeResumeStarted(This)	\
+#define ICorProfilerCallback3_RuntimeResumeStarted(This)    \
     ( (This)->lpVtbl -> RuntimeResumeStarted(This) ) 
 
-#define ICorProfilerCallback3_RuntimeResumeFinished(This)	\
+#define ICorProfilerCallback3_RuntimeResumeFinished(This)   \
     ( (This)->lpVtbl -> RuntimeResumeFinished(This) ) 
 
-#define ICorProfilerCallback3_RuntimeThreadSuspended(This,threadId)	\
+#define ICorProfilerCallback3_RuntimeThreadSuspended(This,threadId) \
     ( (This)->lpVtbl -> RuntimeThreadSuspended(This,threadId) ) 
 
-#define ICorProfilerCallback3_RuntimeThreadResumed(This,threadId)	\
+#define ICorProfilerCallback3_RuntimeThreadResumed(This,threadId)   \
     ( (This)->lpVtbl -> RuntimeThreadResumed(This,threadId) ) 
 
-#define ICorProfilerCallback3_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback3_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback3_ObjectAllocated(This,objectId,classId)	\
+#define ICorProfilerCallback3_ObjectAllocated(This,objectId,classId)    \
     ( (This)->lpVtbl -> ObjectAllocated(This,objectId,classId) ) 
 
-#define ICorProfilerCallback3_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)	\
+#define ICorProfilerCallback3_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)   \
     ( (This)->lpVtbl -> ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects) ) 
 
-#define ICorProfilerCallback3_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)	\
+#define ICorProfilerCallback3_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)  \
     ( (This)->lpVtbl -> ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds) ) 
 
-#define ICorProfilerCallback3_RootReferences(This,cRootRefs,rootRefIds)	\
+#define ICorProfilerCallback3_RootReferences(This,cRootRefs,rootRefIds) \
     ( (This)->lpVtbl -> RootReferences(This,cRootRefs,rootRefIds) ) 
 
-#define ICorProfilerCallback3_ExceptionThrown(This,thrownObjectId)	\
+#define ICorProfilerCallback3_ExceptionThrown(This,thrownObjectId)  \
     ( (This)->lpVtbl -> ExceptionThrown(This,thrownObjectId) ) 
 
-#define ICorProfilerCallback3_ExceptionSearchFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback3_ExceptionSearchFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionSearchFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback3_ExceptionSearchFunctionLeave(This)	\
+#define ICorProfilerCallback3_ExceptionSearchFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionSearchFunctionLeave(This) ) 
 
-#define ICorProfilerCallback3_ExceptionSearchFilterEnter(This,functionId)	\
+#define ICorProfilerCallback3_ExceptionSearchFilterEnter(This,functionId)   \
     ( (This)->lpVtbl -> ExceptionSearchFilterEnter(This,functionId) ) 
 
-#define ICorProfilerCallback3_ExceptionSearchFilterLeave(This)	\
+#define ICorProfilerCallback3_ExceptionSearchFilterLeave(This)  \
     ( (This)->lpVtbl -> ExceptionSearchFilterLeave(This) ) 
 
-#define ICorProfilerCallback3_ExceptionSearchCatcherFound(This,functionId)	\
+#define ICorProfilerCallback3_ExceptionSearchCatcherFound(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionSearchCatcherFound(This,functionId) ) 
 
-#define ICorProfilerCallback3_ExceptionOSHandlerEnter(This,__unused)	\
+#define ICorProfilerCallback3_ExceptionOSHandlerEnter(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerEnter(This,__unused) ) 
 
-#define ICorProfilerCallback3_ExceptionOSHandlerLeave(This,__unused)	\
+#define ICorProfilerCallback3_ExceptionOSHandlerLeave(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerLeave(This,__unused) ) 
 
-#define ICorProfilerCallback3_ExceptionUnwindFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback3_ExceptionUnwindFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback3_ExceptionUnwindFunctionLeave(This)	\
+#define ICorProfilerCallback3_ExceptionUnwindFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionLeave(This) ) 
 
-#define ICorProfilerCallback3_ExceptionUnwindFinallyEnter(This,functionId)	\
+#define ICorProfilerCallback3_ExceptionUnwindFinallyEnter(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyEnter(This,functionId) ) 
 
-#define ICorProfilerCallback3_ExceptionUnwindFinallyLeave(This)	\
+#define ICorProfilerCallback3_ExceptionUnwindFinallyLeave(This) \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyLeave(This) ) 
 
-#define ICorProfilerCallback3_ExceptionCatcherEnter(This,functionId,objectId)	\
+#define ICorProfilerCallback3_ExceptionCatcherEnter(This,functionId,objectId)   \
     ( (This)->lpVtbl -> ExceptionCatcherEnter(This,functionId,objectId) ) 
 
-#define ICorProfilerCallback3_ExceptionCatcherLeave(This)	\
+#define ICorProfilerCallback3_ExceptionCatcherLeave(This)   \
     ( (This)->lpVtbl -> ExceptionCatcherLeave(This) ) 
 
-#define ICorProfilerCallback3_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)	\
+#define ICorProfilerCallback3_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)    \
     ( (This)->lpVtbl -> COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots) ) 
 
-#define ICorProfilerCallback3_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable)	\
+#define ICorProfilerCallback3_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) \
     ( (This)->lpVtbl -> COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) ) 
 
-#define ICorProfilerCallback3_ExceptionCLRCatcherFound(This)	\
+#define ICorProfilerCallback3_ExceptionCLRCatcherFound(This)    \
     ( (This)->lpVtbl -> ExceptionCLRCatcherFound(This) ) 
 
-#define ICorProfilerCallback3_ExceptionCLRCatcherExecute(This)	\
+#define ICorProfilerCallback3_ExceptionCLRCatcherExecute(This)  \
     ( (This)->lpVtbl -> ExceptionCLRCatcherExecute(This) ) 
 
 
-#define ICorProfilerCallback3_ThreadNameChanged(This,threadId,cchName,name)	\
+#define ICorProfilerCallback3_ThreadNameChanged(This,threadId,cchName,name) \
     ( (This)->lpVtbl -> ThreadNameChanged(This,threadId,cchName,name) ) 
 
-#define ICorProfilerCallback3_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)	\
+#define ICorProfilerCallback3_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)    \
     ( (This)->lpVtbl -> GarbageCollectionStarted(This,cGenerations,generationCollected,reason) ) 
 
-#define ICorProfilerCallback3_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback3_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)    \
     ( (This)->lpVtbl -> SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback3_GarbageCollectionFinished(This)	\
+#define ICorProfilerCallback3_GarbageCollectionFinished(This)   \
     ( (This)->lpVtbl -> GarbageCollectionFinished(This) ) 
 
-#define ICorProfilerCallback3_FinalizeableObjectQueued(This,finalizerFlags,objectID)	\
+#define ICorProfilerCallback3_FinalizeableObjectQueued(This,finalizerFlags,objectID)    \
     ( (This)->lpVtbl -> FinalizeableObjectQueued(This,finalizerFlags,objectID) ) 
 
-#define ICorProfilerCallback3_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)	\
+#define ICorProfilerCallback3_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)    \
     ( (This)->lpVtbl -> RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds) ) 
 
-#define ICorProfilerCallback3_HandleCreated(This,handleId,initialObjectId)	\
+#define ICorProfilerCallback3_HandleCreated(This,handleId,initialObjectId)  \
     ( (This)->lpVtbl -> HandleCreated(This,handleId,initialObjectId) ) 
 
-#define ICorProfilerCallback3_HandleDestroyed(This,handleId)	\
+#define ICorProfilerCallback3_HandleDestroyed(This,handleId)    \
     ( (This)->lpVtbl -> HandleDestroyed(This,handleId) ) 
 
 
-#define ICorProfilerCallback3_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)	\
+#define ICorProfilerCallback3_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)   \
     ( (This)->lpVtbl -> InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData) ) 
 
-#define ICorProfilerCallback3_ProfilerAttachComplete(This)	\
+#define ICorProfilerCallback3_ProfilerAttachComplete(This)  \
     ( (This)->lpVtbl -> ProfilerAttachComplete(This) ) 
 
-#define ICorProfilerCallback3_ProfilerDetachSucceeded(This)	\
+#define ICorProfilerCallback3_ProfilerDetachSucceeded(This) \
     ( (This)->lpVtbl -> ProfilerDetachSucceeded(This) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerCallback3_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerCallback3_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback4_INTERFACE_DEFINED__
@@ -2914,7 +2921,7 @@ EXTERN_C const IID IID_ICorProfilerCallback4;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerCallback4Vtbl
     {
@@ -3339,286 +3346,286 @@ EXTERN_C const IID IID_ICorProfilerCallback4;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerCallback4_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerCallback4_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerCallback4_AddRef(This)	\
+#define ICorProfilerCallback4_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerCallback4_Release(This)	\
+#define ICorProfilerCallback4_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerCallback4_Initialize(This,pICorProfilerInfoUnk)	\
+#define ICorProfilerCallback4_Initialize(This,pICorProfilerInfoUnk) \
     ( (This)->lpVtbl -> Initialize(This,pICorProfilerInfoUnk) ) 
 
-#define ICorProfilerCallback4_Shutdown(This)	\
+#define ICorProfilerCallback4_Shutdown(This)    \
     ( (This)->lpVtbl -> Shutdown(This) ) 
 
-#define ICorProfilerCallback4_AppDomainCreationStarted(This,appDomainId)	\
+#define ICorProfilerCallback4_AppDomainCreationStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainCreationStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback4_AppDomainCreationFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback4_AppDomainCreationFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainCreationFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback4_AppDomainShutdownStarted(This,appDomainId)	\
+#define ICorProfilerCallback4_AppDomainShutdownStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainShutdownStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback4_AppDomainShutdownFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback4_AppDomainShutdownFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainShutdownFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback4_AssemblyLoadStarted(This,assemblyId)	\
+#define ICorProfilerCallback4_AssemblyLoadStarted(This,assemblyId)  \
     ( (This)->lpVtbl -> AssemblyLoadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback4_AssemblyLoadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback4_AssemblyLoadFinished(This,assemblyId,hrStatus)    \
     ( (This)->lpVtbl -> AssemblyLoadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback4_AssemblyUnloadStarted(This,assemblyId)	\
+#define ICorProfilerCallback4_AssemblyUnloadStarted(This,assemblyId)    \
     ( (This)->lpVtbl -> AssemblyUnloadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback4_AssemblyUnloadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback4_AssemblyUnloadFinished(This,assemblyId,hrStatus)  \
     ( (This)->lpVtbl -> AssemblyUnloadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback4_ModuleLoadStarted(This,moduleId)	\
+#define ICorProfilerCallback4_ModuleLoadStarted(This,moduleId)  \
     ( (This)->lpVtbl -> ModuleLoadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback4_ModuleLoadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback4_ModuleLoadFinished(This,moduleId,hrStatus)    \
     ( (This)->lpVtbl -> ModuleLoadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback4_ModuleUnloadStarted(This,moduleId)	\
+#define ICorProfilerCallback4_ModuleUnloadStarted(This,moduleId)    \
     ( (This)->lpVtbl -> ModuleUnloadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback4_ModuleUnloadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback4_ModuleUnloadFinished(This,moduleId,hrStatus)  \
     ( (This)->lpVtbl -> ModuleUnloadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback4_ModuleAttachedToAssembly(This,moduleId,AssemblyId)	\
+#define ICorProfilerCallback4_ModuleAttachedToAssembly(This,moduleId,AssemblyId)    \
     ( (This)->lpVtbl -> ModuleAttachedToAssembly(This,moduleId,AssemblyId) ) 
 
-#define ICorProfilerCallback4_ClassLoadStarted(This,classId)	\
+#define ICorProfilerCallback4_ClassLoadStarted(This,classId)    \
     ( (This)->lpVtbl -> ClassLoadStarted(This,classId) ) 
 
-#define ICorProfilerCallback4_ClassLoadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback4_ClassLoadFinished(This,classId,hrStatus)  \
     ( (This)->lpVtbl -> ClassLoadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback4_ClassUnloadStarted(This,classId)	\
+#define ICorProfilerCallback4_ClassUnloadStarted(This,classId)  \
     ( (This)->lpVtbl -> ClassUnloadStarted(This,classId) ) 
 
-#define ICorProfilerCallback4_ClassUnloadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback4_ClassUnloadFinished(This,classId,hrStatus)    \
     ( (This)->lpVtbl -> ClassUnloadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback4_FunctionUnloadStarted(This,functionId)	\
+#define ICorProfilerCallback4_FunctionUnloadStarted(This,functionId)    \
     ( (This)->lpVtbl -> FunctionUnloadStarted(This,functionId) ) 
 
-#define ICorProfilerCallback4_JITCompilationStarted(This,functionId,fIsSafeToBlock)	\
+#define ICorProfilerCallback4_JITCompilationStarted(This,functionId,fIsSafeToBlock) \
     ( (This)->lpVtbl -> JITCompilationStarted(This,functionId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback4_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback4_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback4_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)	\
+#define ICorProfilerCallback4_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction) ) 
 
-#define ICorProfilerCallback4_JITCachedFunctionSearchFinished(This,functionId,result)	\
+#define ICorProfilerCallback4_JITCachedFunctionSearchFinished(This,functionId,result)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchFinished(This,functionId,result) ) 
 
-#define ICorProfilerCallback4_JITFunctionPitched(This,functionId)	\
+#define ICorProfilerCallback4_JITFunctionPitched(This,functionId)   \
     ( (This)->lpVtbl -> JITFunctionPitched(This,functionId) ) 
 
-#define ICorProfilerCallback4_JITInlining(This,callerId,calleeId,pfShouldInline)	\
+#define ICorProfilerCallback4_JITInlining(This,callerId,calleeId,pfShouldInline)    \
     ( (This)->lpVtbl -> JITInlining(This,callerId,calleeId,pfShouldInline) ) 
 
-#define ICorProfilerCallback4_ThreadCreated(This,threadId)	\
+#define ICorProfilerCallback4_ThreadCreated(This,threadId)  \
     ( (This)->lpVtbl -> ThreadCreated(This,threadId) ) 
 
-#define ICorProfilerCallback4_ThreadDestroyed(This,threadId)	\
+#define ICorProfilerCallback4_ThreadDestroyed(This,threadId)    \
     ( (This)->lpVtbl -> ThreadDestroyed(This,threadId) ) 
 
-#define ICorProfilerCallback4_ThreadAssignedToOSThread(This,managedThreadId,osThreadId)	\
+#define ICorProfilerCallback4_ThreadAssignedToOSThread(This,managedThreadId,osThreadId) \
     ( (This)->lpVtbl -> ThreadAssignedToOSThread(This,managedThreadId,osThreadId) ) 
 
-#define ICorProfilerCallback4_RemotingClientInvocationStarted(This)	\
+#define ICorProfilerCallback4_RemotingClientInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingClientInvocationStarted(This) ) 
 
-#define ICorProfilerCallback4_RemotingClientSendingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback4_RemotingClientSendingMessage(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientSendingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback4_RemotingClientReceivingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback4_RemotingClientReceivingReply(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientReceivingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback4_RemotingClientInvocationFinished(This)	\
+#define ICorProfilerCallback4_RemotingClientInvocationFinished(This)    \
     ( (This)->lpVtbl -> RemotingClientInvocationFinished(This) ) 
 
-#define ICorProfilerCallback4_RemotingServerReceivingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback4_RemotingServerReceivingMessage(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerReceivingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback4_RemotingServerInvocationStarted(This)	\
+#define ICorProfilerCallback4_RemotingServerInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingServerInvocationStarted(This) ) 
 
-#define ICorProfilerCallback4_RemotingServerInvocationReturned(This)	\
+#define ICorProfilerCallback4_RemotingServerInvocationReturned(This)    \
     ( (This)->lpVtbl -> RemotingServerInvocationReturned(This) ) 
 
-#define ICorProfilerCallback4_RemotingServerSendingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback4_RemotingServerSendingReply(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerSendingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback4_UnmanagedToManagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback4_UnmanagedToManagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> UnmanagedToManagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback4_ManagedToUnmanagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback4_ManagedToUnmanagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> ManagedToUnmanagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback4_RuntimeSuspendStarted(This,suspendReason)	\
+#define ICorProfilerCallback4_RuntimeSuspendStarted(This,suspendReason) \
     ( (This)->lpVtbl -> RuntimeSuspendStarted(This,suspendReason) ) 
 
-#define ICorProfilerCallback4_RuntimeSuspendFinished(This)	\
+#define ICorProfilerCallback4_RuntimeSuspendFinished(This)  \
     ( (This)->lpVtbl -> RuntimeSuspendFinished(This) ) 
 
-#define ICorProfilerCallback4_RuntimeSuspendAborted(This)	\
+#define ICorProfilerCallback4_RuntimeSuspendAborted(This)   \
     ( (This)->lpVtbl -> RuntimeSuspendAborted(This) ) 
 
-#define ICorProfilerCallback4_RuntimeResumeStarted(This)	\
+#define ICorProfilerCallback4_RuntimeResumeStarted(This)    \
     ( (This)->lpVtbl -> RuntimeResumeStarted(This) ) 
 
-#define ICorProfilerCallback4_RuntimeResumeFinished(This)	\
+#define ICorProfilerCallback4_RuntimeResumeFinished(This)   \
     ( (This)->lpVtbl -> RuntimeResumeFinished(This) ) 
 
-#define ICorProfilerCallback4_RuntimeThreadSuspended(This,threadId)	\
+#define ICorProfilerCallback4_RuntimeThreadSuspended(This,threadId) \
     ( (This)->lpVtbl -> RuntimeThreadSuspended(This,threadId) ) 
 
-#define ICorProfilerCallback4_RuntimeThreadResumed(This,threadId)	\
+#define ICorProfilerCallback4_RuntimeThreadResumed(This,threadId)   \
     ( (This)->lpVtbl -> RuntimeThreadResumed(This,threadId) ) 
 
-#define ICorProfilerCallback4_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback4_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback4_ObjectAllocated(This,objectId,classId)	\
+#define ICorProfilerCallback4_ObjectAllocated(This,objectId,classId)    \
     ( (This)->lpVtbl -> ObjectAllocated(This,objectId,classId) ) 
 
-#define ICorProfilerCallback4_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)	\
+#define ICorProfilerCallback4_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)   \
     ( (This)->lpVtbl -> ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects) ) 
 
-#define ICorProfilerCallback4_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)	\
+#define ICorProfilerCallback4_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)  \
     ( (This)->lpVtbl -> ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds) ) 
 
-#define ICorProfilerCallback4_RootReferences(This,cRootRefs,rootRefIds)	\
+#define ICorProfilerCallback4_RootReferences(This,cRootRefs,rootRefIds) \
     ( (This)->lpVtbl -> RootReferences(This,cRootRefs,rootRefIds) ) 
 
-#define ICorProfilerCallback4_ExceptionThrown(This,thrownObjectId)	\
+#define ICorProfilerCallback4_ExceptionThrown(This,thrownObjectId)  \
     ( (This)->lpVtbl -> ExceptionThrown(This,thrownObjectId) ) 
 
-#define ICorProfilerCallback4_ExceptionSearchFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback4_ExceptionSearchFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionSearchFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback4_ExceptionSearchFunctionLeave(This)	\
+#define ICorProfilerCallback4_ExceptionSearchFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionSearchFunctionLeave(This) ) 
 
-#define ICorProfilerCallback4_ExceptionSearchFilterEnter(This,functionId)	\
+#define ICorProfilerCallback4_ExceptionSearchFilterEnter(This,functionId)   \
     ( (This)->lpVtbl -> ExceptionSearchFilterEnter(This,functionId) ) 
 
-#define ICorProfilerCallback4_ExceptionSearchFilterLeave(This)	\
+#define ICorProfilerCallback4_ExceptionSearchFilterLeave(This)  \
     ( (This)->lpVtbl -> ExceptionSearchFilterLeave(This) ) 
 
-#define ICorProfilerCallback4_ExceptionSearchCatcherFound(This,functionId)	\
+#define ICorProfilerCallback4_ExceptionSearchCatcherFound(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionSearchCatcherFound(This,functionId) ) 
 
-#define ICorProfilerCallback4_ExceptionOSHandlerEnter(This,__unused)	\
+#define ICorProfilerCallback4_ExceptionOSHandlerEnter(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerEnter(This,__unused) ) 
 
-#define ICorProfilerCallback4_ExceptionOSHandlerLeave(This,__unused)	\
+#define ICorProfilerCallback4_ExceptionOSHandlerLeave(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerLeave(This,__unused) ) 
 
-#define ICorProfilerCallback4_ExceptionUnwindFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback4_ExceptionUnwindFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback4_ExceptionUnwindFunctionLeave(This)	\
+#define ICorProfilerCallback4_ExceptionUnwindFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionLeave(This) ) 
 
-#define ICorProfilerCallback4_ExceptionUnwindFinallyEnter(This,functionId)	\
+#define ICorProfilerCallback4_ExceptionUnwindFinallyEnter(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyEnter(This,functionId) ) 
 
-#define ICorProfilerCallback4_ExceptionUnwindFinallyLeave(This)	\
+#define ICorProfilerCallback4_ExceptionUnwindFinallyLeave(This) \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyLeave(This) ) 
 
-#define ICorProfilerCallback4_ExceptionCatcherEnter(This,functionId,objectId)	\
+#define ICorProfilerCallback4_ExceptionCatcherEnter(This,functionId,objectId)   \
     ( (This)->lpVtbl -> ExceptionCatcherEnter(This,functionId,objectId) ) 
 
-#define ICorProfilerCallback4_ExceptionCatcherLeave(This)	\
+#define ICorProfilerCallback4_ExceptionCatcherLeave(This)   \
     ( (This)->lpVtbl -> ExceptionCatcherLeave(This) ) 
 
-#define ICorProfilerCallback4_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)	\
+#define ICorProfilerCallback4_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)    \
     ( (This)->lpVtbl -> COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots) ) 
 
-#define ICorProfilerCallback4_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable)	\
+#define ICorProfilerCallback4_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) \
     ( (This)->lpVtbl -> COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) ) 
 
-#define ICorProfilerCallback4_ExceptionCLRCatcherFound(This)	\
+#define ICorProfilerCallback4_ExceptionCLRCatcherFound(This)    \
     ( (This)->lpVtbl -> ExceptionCLRCatcherFound(This) ) 
 
-#define ICorProfilerCallback4_ExceptionCLRCatcherExecute(This)	\
+#define ICorProfilerCallback4_ExceptionCLRCatcherExecute(This)  \
     ( (This)->lpVtbl -> ExceptionCLRCatcherExecute(This) ) 
 
 
-#define ICorProfilerCallback4_ThreadNameChanged(This,threadId,cchName,name)	\
+#define ICorProfilerCallback4_ThreadNameChanged(This,threadId,cchName,name) \
     ( (This)->lpVtbl -> ThreadNameChanged(This,threadId,cchName,name) ) 
 
-#define ICorProfilerCallback4_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)	\
+#define ICorProfilerCallback4_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)    \
     ( (This)->lpVtbl -> GarbageCollectionStarted(This,cGenerations,generationCollected,reason) ) 
 
-#define ICorProfilerCallback4_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback4_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)    \
     ( (This)->lpVtbl -> SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback4_GarbageCollectionFinished(This)	\
+#define ICorProfilerCallback4_GarbageCollectionFinished(This)   \
     ( (This)->lpVtbl -> GarbageCollectionFinished(This) ) 
 
-#define ICorProfilerCallback4_FinalizeableObjectQueued(This,finalizerFlags,objectID)	\
+#define ICorProfilerCallback4_FinalizeableObjectQueued(This,finalizerFlags,objectID)    \
     ( (This)->lpVtbl -> FinalizeableObjectQueued(This,finalizerFlags,objectID) ) 
 
-#define ICorProfilerCallback4_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)	\
+#define ICorProfilerCallback4_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)    \
     ( (This)->lpVtbl -> RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds) ) 
 
-#define ICorProfilerCallback4_HandleCreated(This,handleId,initialObjectId)	\
+#define ICorProfilerCallback4_HandleCreated(This,handleId,initialObjectId)  \
     ( (This)->lpVtbl -> HandleCreated(This,handleId,initialObjectId) ) 
 
-#define ICorProfilerCallback4_HandleDestroyed(This,handleId)	\
+#define ICorProfilerCallback4_HandleDestroyed(This,handleId)    \
     ( (This)->lpVtbl -> HandleDestroyed(This,handleId) ) 
 
 
-#define ICorProfilerCallback4_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)	\
+#define ICorProfilerCallback4_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)   \
     ( (This)->lpVtbl -> InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData) ) 
 
-#define ICorProfilerCallback4_ProfilerAttachComplete(This)	\
+#define ICorProfilerCallback4_ProfilerAttachComplete(This)  \
     ( (This)->lpVtbl -> ProfilerAttachComplete(This) ) 
 
-#define ICorProfilerCallback4_ProfilerDetachSucceeded(This)	\
+#define ICorProfilerCallback4_ProfilerDetachSucceeded(This) \
     ( (This)->lpVtbl -> ProfilerDetachSucceeded(This) ) 
 
 
-#define ICorProfilerCallback4_ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock)	\
+#define ICorProfilerCallback4_ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback4_GetReJITParameters(This,moduleId,methodId,pFunctionControl)	\
+#define ICorProfilerCallback4_GetReJITParameters(This,moduleId,methodId,pFunctionControl)   \
     ( (This)->lpVtbl -> GetReJITParameters(This,moduleId,methodId,pFunctionControl) ) 
 
-#define ICorProfilerCallback4_ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback4_ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock) \
     ( (This)->lpVtbl -> ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback4_ReJITError(This,moduleId,methodId,functionId,hrStatus)	\
+#define ICorProfilerCallback4_ReJITError(This,moduleId,methodId,functionId,hrStatus)    \
     ( (This)->lpVtbl -> ReJITError(This,moduleId,methodId,functionId,hrStatus) ) 
 
-#define ICorProfilerCallback4_MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback4_MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)  \
     ( (This)->lpVtbl -> MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback4_SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback4_SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerCallback4_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerCallback4_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback5_INTERFACE_DEFINED__
@@ -3645,7 +3652,7 @@ EXTERN_C const IID IID_ICorProfilerCallback5;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerCallback5Vtbl
     {
@@ -4077,290 +4084,290 @@ EXTERN_C const IID IID_ICorProfilerCallback5;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerCallback5_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerCallback5_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerCallback5_AddRef(This)	\
+#define ICorProfilerCallback5_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerCallback5_Release(This)	\
+#define ICorProfilerCallback5_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerCallback5_Initialize(This,pICorProfilerInfoUnk)	\
+#define ICorProfilerCallback5_Initialize(This,pICorProfilerInfoUnk) \
     ( (This)->lpVtbl -> Initialize(This,pICorProfilerInfoUnk) ) 
 
-#define ICorProfilerCallback5_Shutdown(This)	\
+#define ICorProfilerCallback5_Shutdown(This)    \
     ( (This)->lpVtbl -> Shutdown(This) ) 
 
-#define ICorProfilerCallback5_AppDomainCreationStarted(This,appDomainId)	\
+#define ICorProfilerCallback5_AppDomainCreationStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainCreationStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback5_AppDomainCreationFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback5_AppDomainCreationFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainCreationFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback5_AppDomainShutdownStarted(This,appDomainId)	\
+#define ICorProfilerCallback5_AppDomainShutdownStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainShutdownStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback5_AppDomainShutdownFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback5_AppDomainShutdownFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainShutdownFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback5_AssemblyLoadStarted(This,assemblyId)	\
+#define ICorProfilerCallback5_AssemblyLoadStarted(This,assemblyId)  \
     ( (This)->lpVtbl -> AssemblyLoadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback5_AssemblyLoadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback5_AssemblyLoadFinished(This,assemblyId,hrStatus)    \
     ( (This)->lpVtbl -> AssemblyLoadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback5_AssemblyUnloadStarted(This,assemblyId)	\
+#define ICorProfilerCallback5_AssemblyUnloadStarted(This,assemblyId)    \
     ( (This)->lpVtbl -> AssemblyUnloadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback5_AssemblyUnloadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback5_AssemblyUnloadFinished(This,assemblyId,hrStatus)  \
     ( (This)->lpVtbl -> AssemblyUnloadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback5_ModuleLoadStarted(This,moduleId)	\
+#define ICorProfilerCallback5_ModuleLoadStarted(This,moduleId)  \
     ( (This)->lpVtbl -> ModuleLoadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback5_ModuleLoadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback5_ModuleLoadFinished(This,moduleId,hrStatus)    \
     ( (This)->lpVtbl -> ModuleLoadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback5_ModuleUnloadStarted(This,moduleId)	\
+#define ICorProfilerCallback5_ModuleUnloadStarted(This,moduleId)    \
     ( (This)->lpVtbl -> ModuleUnloadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback5_ModuleUnloadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback5_ModuleUnloadFinished(This,moduleId,hrStatus)  \
     ( (This)->lpVtbl -> ModuleUnloadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback5_ModuleAttachedToAssembly(This,moduleId,AssemblyId)	\
+#define ICorProfilerCallback5_ModuleAttachedToAssembly(This,moduleId,AssemblyId)    \
     ( (This)->lpVtbl -> ModuleAttachedToAssembly(This,moduleId,AssemblyId) ) 
 
-#define ICorProfilerCallback5_ClassLoadStarted(This,classId)	\
+#define ICorProfilerCallback5_ClassLoadStarted(This,classId)    \
     ( (This)->lpVtbl -> ClassLoadStarted(This,classId) ) 
 
-#define ICorProfilerCallback5_ClassLoadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback5_ClassLoadFinished(This,classId,hrStatus)  \
     ( (This)->lpVtbl -> ClassLoadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback5_ClassUnloadStarted(This,classId)	\
+#define ICorProfilerCallback5_ClassUnloadStarted(This,classId)  \
     ( (This)->lpVtbl -> ClassUnloadStarted(This,classId) ) 
 
-#define ICorProfilerCallback5_ClassUnloadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback5_ClassUnloadFinished(This,classId,hrStatus)    \
     ( (This)->lpVtbl -> ClassUnloadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback5_FunctionUnloadStarted(This,functionId)	\
+#define ICorProfilerCallback5_FunctionUnloadStarted(This,functionId)    \
     ( (This)->lpVtbl -> FunctionUnloadStarted(This,functionId) ) 
 
-#define ICorProfilerCallback5_JITCompilationStarted(This,functionId,fIsSafeToBlock)	\
+#define ICorProfilerCallback5_JITCompilationStarted(This,functionId,fIsSafeToBlock) \
     ( (This)->lpVtbl -> JITCompilationStarted(This,functionId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback5_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback5_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback5_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)	\
+#define ICorProfilerCallback5_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction) ) 
 
-#define ICorProfilerCallback5_JITCachedFunctionSearchFinished(This,functionId,result)	\
+#define ICorProfilerCallback5_JITCachedFunctionSearchFinished(This,functionId,result)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchFinished(This,functionId,result) ) 
 
-#define ICorProfilerCallback5_JITFunctionPitched(This,functionId)	\
+#define ICorProfilerCallback5_JITFunctionPitched(This,functionId)   \
     ( (This)->lpVtbl -> JITFunctionPitched(This,functionId) ) 
 
-#define ICorProfilerCallback5_JITInlining(This,callerId,calleeId,pfShouldInline)	\
+#define ICorProfilerCallback5_JITInlining(This,callerId,calleeId,pfShouldInline)    \
     ( (This)->lpVtbl -> JITInlining(This,callerId,calleeId,pfShouldInline) ) 
 
-#define ICorProfilerCallback5_ThreadCreated(This,threadId)	\
+#define ICorProfilerCallback5_ThreadCreated(This,threadId)  \
     ( (This)->lpVtbl -> ThreadCreated(This,threadId) ) 
 
-#define ICorProfilerCallback5_ThreadDestroyed(This,threadId)	\
+#define ICorProfilerCallback5_ThreadDestroyed(This,threadId)    \
     ( (This)->lpVtbl -> ThreadDestroyed(This,threadId) ) 
 
-#define ICorProfilerCallback5_ThreadAssignedToOSThread(This,managedThreadId,osThreadId)	\
+#define ICorProfilerCallback5_ThreadAssignedToOSThread(This,managedThreadId,osThreadId) \
     ( (This)->lpVtbl -> ThreadAssignedToOSThread(This,managedThreadId,osThreadId) ) 
 
-#define ICorProfilerCallback5_RemotingClientInvocationStarted(This)	\
+#define ICorProfilerCallback5_RemotingClientInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingClientInvocationStarted(This) ) 
 
-#define ICorProfilerCallback5_RemotingClientSendingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback5_RemotingClientSendingMessage(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientSendingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback5_RemotingClientReceivingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback5_RemotingClientReceivingReply(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientReceivingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback5_RemotingClientInvocationFinished(This)	\
+#define ICorProfilerCallback5_RemotingClientInvocationFinished(This)    \
     ( (This)->lpVtbl -> RemotingClientInvocationFinished(This) ) 
 
-#define ICorProfilerCallback5_RemotingServerReceivingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback5_RemotingServerReceivingMessage(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerReceivingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback5_RemotingServerInvocationStarted(This)	\
+#define ICorProfilerCallback5_RemotingServerInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingServerInvocationStarted(This) ) 
 
-#define ICorProfilerCallback5_RemotingServerInvocationReturned(This)	\
+#define ICorProfilerCallback5_RemotingServerInvocationReturned(This)    \
     ( (This)->lpVtbl -> RemotingServerInvocationReturned(This) ) 
 
-#define ICorProfilerCallback5_RemotingServerSendingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback5_RemotingServerSendingReply(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerSendingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback5_UnmanagedToManagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback5_UnmanagedToManagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> UnmanagedToManagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback5_ManagedToUnmanagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback5_ManagedToUnmanagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> ManagedToUnmanagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback5_RuntimeSuspendStarted(This,suspendReason)	\
+#define ICorProfilerCallback5_RuntimeSuspendStarted(This,suspendReason) \
     ( (This)->lpVtbl -> RuntimeSuspendStarted(This,suspendReason) ) 
 
-#define ICorProfilerCallback5_RuntimeSuspendFinished(This)	\
+#define ICorProfilerCallback5_RuntimeSuspendFinished(This)  \
     ( (This)->lpVtbl -> RuntimeSuspendFinished(This) ) 
 
-#define ICorProfilerCallback5_RuntimeSuspendAborted(This)	\
+#define ICorProfilerCallback5_RuntimeSuspendAborted(This)   \
     ( (This)->lpVtbl -> RuntimeSuspendAborted(This) ) 
 
-#define ICorProfilerCallback5_RuntimeResumeStarted(This)	\
+#define ICorProfilerCallback5_RuntimeResumeStarted(This)    \
     ( (This)->lpVtbl -> RuntimeResumeStarted(This) ) 
 
-#define ICorProfilerCallback5_RuntimeResumeFinished(This)	\
+#define ICorProfilerCallback5_RuntimeResumeFinished(This)   \
     ( (This)->lpVtbl -> RuntimeResumeFinished(This) ) 
 
-#define ICorProfilerCallback5_RuntimeThreadSuspended(This,threadId)	\
+#define ICorProfilerCallback5_RuntimeThreadSuspended(This,threadId) \
     ( (This)->lpVtbl -> RuntimeThreadSuspended(This,threadId) ) 
 
-#define ICorProfilerCallback5_RuntimeThreadResumed(This,threadId)	\
+#define ICorProfilerCallback5_RuntimeThreadResumed(This,threadId)   \
     ( (This)->lpVtbl -> RuntimeThreadResumed(This,threadId) ) 
 
-#define ICorProfilerCallback5_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback5_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback5_ObjectAllocated(This,objectId,classId)	\
+#define ICorProfilerCallback5_ObjectAllocated(This,objectId,classId)    \
     ( (This)->lpVtbl -> ObjectAllocated(This,objectId,classId) ) 
 
-#define ICorProfilerCallback5_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)	\
+#define ICorProfilerCallback5_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)   \
     ( (This)->lpVtbl -> ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects) ) 
 
-#define ICorProfilerCallback5_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)	\
+#define ICorProfilerCallback5_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)  \
     ( (This)->lpVtbl -> ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds) ) 
 
-#define ICorProfilerCallback5_RootReferences(This,cRootRefs,rootRefIds)	\
+#define ICorProfilerCallback5_RootReferences(This,cRootRefs,rootRefIds) \
     ( (This)->lpVtbl -> RootReferences(This,cRootRefs,rootRefIds) ) 
 
-#define ICorProfilerCallback5_ExceptionThrown(This,thrownObjectId)	\
+#define ICorProfilerCallback5_ExceptionThrown(This,thrownObjectId)  \
     ( (This)->lpVtbl -> ExceptionThrown(This,thrownObjectId) ) 
 
-#define ICorProfilerCallback5_ExceptionSearchFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback5_ExceptionSearchFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionSearchFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback5_ExceptionSearchFunctionLeave(This)	\
+#define ICorProfilerCallback5_ExceptionSearchFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionSearchFunctionLeave(This) ) 
 
-#define ICorProfilerCallback5_ExceptionSearchFilterEnter(This,functionId)	\
+#define ICorProfilerCallback5_ExceptionSearchFilterEnter(This,functionId)   \
     ( (This)->lpVtbl -> ExceptionSearchFilterEnter(This,functionId) ) 
 
-#define ICorProfilerCallback5_ExceptionSearchFilterLeave(This)	\
+#define ICorProfilerCallback5_ExceptionSearchFilterLeave(This)  \
     ( (This)->lpVtbl -> ExceptionSearchFilterLeave(This) ) 
 
-#define ICorProfilerCallback5_ExceptionSearchCatcherFound(This,functionId)	\
+#define ICorProfilerCallback5_ExceptionSearchCatcherFound(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionSearchCatcherFound(This,functionId) ) 
 
-#define ICorProfilerCallback5_ExceptionOSHandlerEnter(This,__unused)	\
+#define ICorProfilerCallback5_ExceptionOSHandlerEnter(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerEnter(This,__unused) ) 
 
-#define ICorProfilerCallback5_ExceptionOSHandlerLeave(This,__unused)	\
+#define ICorProfilerCallback5_ExceptionOSHandlerLeave(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerLeave(This,__unused) ) 
 
-#define ICorProfilerCallback5_ExceptionUnwindFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback5_ExceptionUnwindFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback5_ExceptionUnwindFunctionLeave(This)	\
+#define ICorProfilerCallback5_ExceptionUnwindFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionLeave(This) ) 
 
-#define ICorProfilerCallback5_ExceptionUnwindFinallyEnter(This,functionId)	\
+#define ICorProfilerCallback5_ExceptionUnwindFinallyEnter(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyEnter(This,functionId) ) 
 
-#define ICorProfilerCallback5_ExceptionUnwindFinallyLeave(This)	\
+#define ICorProfilerCallback5_ExceptionUnwindFinallyLeave(This) \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyLeave(This) ) 
 
-#define ICorProfilerCallback5_ExceptionCatcherEnter(This,functionId,objectId)	\
+#define ICorProfilerCallback5_ExceptionCatcherEnter(This,functionId,objectId)   \
     ( (This)->lpVtbl -> ExceptionCatcherEnter(This,functionId,objectId) ) 
 
-#define ICorProfilerCallback5_ExceptionCatcherLeave(This)	\
+#define ICorProfilerCallback5_ExceptionCatcherLeave(This)   \
     ( (This)->lpVtbl -> ExceptionCatcherLeave(This) ) 
 
-#define ICorProfilerCallback5_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)	\
+#define ICorProfilerCallback5_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)    \
     ( (This)->lpVtbl -> COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots) ) 
 
-#define ICorProfilerCallback5_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable)	\
+#define ICorProfilerCallback5_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) \
     ( (This)->lpVtbl -> COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) ) 
 
-#define ICorProfilerCallback5_ExceptionCLRCatcherFound(This)	\
+#define ICorProfilerCallback5_ExceptionCLRCatcherFound(This)    \
     ( (This)->lpVtbl -> ExceptionCLRCatcherFound(This) ) 
 
-#define ICorProfilerCallback5_ExceptionCLRCatcherExecute(This)	\
+#define ICorProfilerCallback5_ExceptionCLRCatcherExecute(This)  \
     ( (This)->lpVtbl -> ExceptionCLRCatcherExecute(This) ) 
 
 
-#define ICorProfilerCallback5_ThreadNameChanged(This,threadId,cchName,name)	\
+#define ICorProfilerCallback5_ThreadNameChanged(This,threadId,cchName,name) \
     ( (This)->lpVtbl -> ThreadNameChanged(This,threadId,cchName,name) ) 
 
-#define ICorProfilerCallback5_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)	\
+#define ICorProfilerCallback5_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)    \
     ( (This)->lpVtbl -> GarbageCollectionStarted(This,cGenerations,generationCollected,reason) ) 
 
-#define ICorProfilerCallback5_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback5_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)    \
     ( (This)->lpVtbl -> SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback5_GarbageCollectionFinished(This)	\
+#define ICorProfilerCallback5_GarbageCollectionFinished(This)   \
     ( (This)->lpVtbl -> GarbageCollectionFinished(This) ) 
 
-#define ICorProfilerCallback5_FinalizeableObjectQueued(This,finalizerFlags,objectID)	\
+#define ICorProfilerCallback5_FinalizeableObjectQueued(This,finalizerFlags,objectID)    \
     ( (This)->lpVtbl -> FinalizeableObjectQueued(This,finalizerFlags,objectID) ) 
 
-#define ICorProfilerCallback5_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)	\
+#define ICorProfilerCallback5_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)    \
     ( (This)->lpVtbl -> RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds) ) 
 
-#define ICorProfilerCallback5_HandleCreated(This,handleId,initialObjectId)	\
+#define ICorProfilerCallback5_HandleCreated(This,handleId,initialObjectId)  \
     ( (This)->lpVtbl -> HandleCreated(This,handleId,initialObjectId) ) 
 
-#define ICorProfilerCallback5_HandleDestroyed(This,handleId)	\
+#define ICorProfilerCallback5_HandleDestroyed(This,handleId)    \
     ( (This)->lpVtbl -> HandleDestroyed(This,handleId) ) 
 
 
-#define ICorProfilerCallback5_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)	\
+#define ICorProfilerCallback5_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)   \
     ( (This)->lpVtbl -> InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData) ) 
 
-#define ICorProfilerCallback5_ProfilerAttachComplete(This)	\
+#define ICorProfilerCallback5_ProfilerAttachComplete(This)  \
     ( (This)->lpVtbl -> ProfilerAttachComplete(This) ) 
 
-#define ICorProfilerCallback5_ProfilerDetachSucceeded(This)	\
+#define ICorProfilerCallback5_ProfilerDetachSucceeded(This) \
     ( (This)->lpVtbl -> ProfilerDetachSucceeded(This) ) 
 
 
-#define ICorProfilerCallback5_ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock)	\
+#define ICorProfilerCallback5_ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback5_GetReJITParameters(This,moduleId,methodId,pFunctionControl)	\
+#define ICorProfilerCallback5_GetReJITParameters(This,moduleId,methodId,pFunctionControl)   \
     ( (This)->lpVtbl -> GetReJITParameters(This,moduleId,methodId,pFunctionControl) ) 
 
-#define ICorProfilerCallback5_ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback5_ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock) \
     ( (This)->lpVtbl -> ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback5_ReJITError(This,moduleId,methodId,functionId,hrStatus)	\
+#define ICorProfilerCallback5_ReJITError(This,moduleId,methodId,functionId,hrStatus)    \
     ( (This)->lpVtbl -> ReJITError(This,moduleId,methodId,functionId,hrStatus) ) 
 
-#define ICorProfilerCallback5_MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback5_MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)  \
     ( (This)->lpVtbl -> MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback5_SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback5_SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
 
-#define ICorProfilerCallback5_ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds)	\
+#define ICorProfilerCallback5_ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds)   \
     ( (This)->lpVtbl -> ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerCallback5_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerCallback5_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback6_INTERFACE_DEFINED__
@@ -4385,7 +4392,7 @@ EXTERN_C const IID IID_ICorProfilerCallback6;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerCallback6Vtbl
     {
@@ -4822,294 +4829,294 @@ EXTERN_C const IID IID_ICorProfilerCallback6;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerCallback6_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerCallback6_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerCallback6_AddRef(This)	\
+#define ICorProfilerCallback6_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerCallback6_Release(This)	\
+#define ICorProfilerCallback6_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerCallback6_Initialize(This,pICorProfilerInfoUnk)	\
+#define ICorProfilerCallback6_Initialize(This,pICorProfilerInfoUnk) \
     ( (This)->lpVtbl -> Initialize(This,pICorProfilerInfoUnk) ) 
 
-#define ICorProfilerCallback6_Shutdown(This)	\
+#define ICorProfilerCallback6_Shutdown(This)    \
     ( (This)->lpVtbl -> Shutdown(This) ) 
 
-#define ICorProfilerCallback6_AppDomainCreationStarted(This,appDomainId)	\
+#define ICorProfilerCallback6_AppDomainCreationStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainCreationStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback6_AppDomainCreationFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback6_AppDomainCreationFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainCreationFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback6_AppDomainShutdownStarted(This,appDomainId)	\
+#define ICorProfilerCallback6_AppDomainShutdownStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainShutdownStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback6_AppDomainShutdownFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback6_AppDomainShutdownFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainShutdownFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback6_AssemblyLoadStarted(This,assemblyId)	\
+#define ICorProfilerCallback6_AssemblyLoadStarted(This,assemblyId)  \
     ( (This)->lpVtbl -> AssemblyLoadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback6_AssemblyLoadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback6_AssemblyLoadFinished(This,assemblyId,hrStatus)    \
     ( (This)->lpVtbl -> AssemblyLoadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback6_AssemblyUnloadStarted(This,assemblyId)	\
+#define ICorProfilerCallback6_AssemblyUnloadStarted(This,assemblyId)    \
     ( (This)->lpVtbl -> AssemblyUnloadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback6_AssemblyUnloadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback6_AssemblyUnloadFinished(This,assemblyId,hrStatus)  \
     ( (This)->lpVtbl -> AssemblyUnloadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback6_ModuleLoadStarted(This,moduleId)	\
+#define ICorProfilerCallback6_ModuleLoadStarted(This,moduleId)  \
     ( (This)->lpVtbl -> ModuleLoadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback6_ModuleLoadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback6_ModuleLoadFinished(This,moduleId,hrStatus)    \
     ( (This)->lpVtbl -> ModuleLoadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback6_ModuleUnloadStarted(This,moduleId)	\
+#define ICorProfilerCallback6_ModuleUnloadStarted(This,moduleId)    \
     ( (This)->lpVtbl -> ModuleUnloadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback6_ModuleUnloadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback6_ModuleUnloadFinished(This,moduleId,hrStatus)  \
     ( (This)->lpVtbl -> ModuleUnloadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback6_ModuleAttachedToAssembly(This,moduleId,AssemblyId)	\
+#define ICorProfilerCallback6_ModuleAttachedToAssembly(This,moduleId,AssemblyId)    \
     ( (This)->lpVtbl -> ModuleAttachedToAssembly(This,moduleId,AssemblyId) ) 
 
-#define ICorProfilerCallback6_ClassLoadStarted(This,classId)	\
+#define ICorProfilerCallback6_ClassLoadStarted(This,classId)    \
     ( (This)->lpVtbl -> ClassLoadStarted(This,classId) ) 
 
-#define ICorProfilerCallback6_ClassLoadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback6_ClassLoadFinished(This,classId,hrStatus)  \
     ( (This)->lpVtbl -> ClassLoadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback6_ClassUnloadStarted(This,classId)	\
+#define ICorProfilerCallback6_ClassUnloadStarted(This,classId)  \
     ( (This)->lpVtbl -> ClassUnloadStarted(This,classId) ) 
 
-#define ICorProfilerCallback6_ClassUnloadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback6_ClassUnloadFinished(This,classId,hrStatus)    \
     ( (This)->lpVtbl -> ClassUnloadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback6_FunctionUnloadStarted(This,functionId)	\
+#define ICorProfilerCallback6_FunctionUnloadStarted(This,functionId)    \
     ( (This)->lpVtbl -> FunctionUnloadStarted(This,functionId) ) 
 
-#define ICorProfilerCallback6_JITCompilationStarted(This,functionId,fIsSafeToBlock)	\
+#define ICorProfilerCallback6_JITCompilationStarted(This,functionId,fIsSafeToBlock) \
     ( (This)->lpVtbl -> JITCompilationStarted(This,functionId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback6_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback6_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback6_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)	\
+#define ICorProfilerCallback6_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction) ) 
 
-#define ICorProfilerCallback6_JITCachedFunctionSearchFinished(This,functionId,result)	\
+#define ICorProfilerCallback6_JITCachedFunctionSearchFinished(This,functionId,result)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchFinished(This,functionId,result) ) 
 
-#define ICorProfilerCallback6_JITFunctionPitched(This,functionId)	\
+#define ICorProfilerCallback6_JITFunctionPitched(This,functionId)   \
     ( (This)->lpVtbl -> JITFunctionPitched(This,functionId) ) 
 
-#define ICorProfilerCallback6_JITInlining(This,callerId,calleeId,pfShouldInline)	\
+#define ICorProfilerCallback6_JITInlining(This,callerId,calleeId,pfShouldInline)    \
     ( (This)->lpVtbl -> JITInlining(This,callerId,calleeId,pfShouldInline) ) 
 
-#define ICorProfilerCallback6_ThreadCreated(This,threadId)	\
+#define ICorProfilerCallback6_ThreadCreated(This,threadId)  \
     ( (This)->lpVtbl -> ThreadCreated(This,threadId) ) 
 
-#define ICorProfilerCallback6_ThreadDestroyed(This,threadId)	\
+#define ICorProfilerCallback6_ThreadDestroyed(This,threadId)    \
     ( (This)->lpVtbl -> ThreadDestroyed(This,threadId) ) 
 
-#define ICorProfilerCallback6_ThreadAssignedToOSThread(This,managedThreadId,osThreadId)	\
+#define ICorProfilerCallback6_ThreadAssignedToOSThread(This,managedThreadId,osThreadId) \
     ( (This)->lpVtbl -> ThreadAssignedToOSThread(This,managedThreadId,osThreadId) ) 
 
-#define ICorProfilerCallback6_RemotingClientInvocationStarted(This)	\
+#define ICorProfilerCallback6_RemotingClientInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingClientInvocationStarted(This) ) 
 
-#define ICorProfilerCallback6_RemotingClientSendingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback6_RemotingClientSendingMessage(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientSendingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback6_RemotingClientReceivingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback6_RemotingClientReceivingReply(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientReceivingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback6_RemotingClientInvocationFinished(This)	\
+#define ICorProfilerCallback6_RemotingClientInvocationFinished(This)    \
     ( (This)->lpVtbl -> RemotingClientInvocationFinished(This) ) 
 
-#define ICorProfilerCallback6_RemotingServerReceivingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback6_RemotingServerReceivingMessage(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerReceivingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback6_RemotingServerInvocationStarted(This)	\
+#define ICorProfilerCallback6_RemotingServerInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingServerInvocationStarted(This) ) 
 
-#define ICorProfilerCallback6_RemotingServerInvocationReturned(This)	\
+#define ICorProfilerCallback6_RemotingServerInvocationReturned(This)    \
     ( (This)->lpVtbl -> RemotingServerInvocationReturned(This) ) 
 
-#define ICorProfilerCallback6_RemotingServerSendingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback6_RemotingServerSendingReply(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerSendingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback6_UnmanagedToManagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback6_UnmanagedToManagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> UnmanagedToManagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback6_ManagedToUnmanagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback6_ManagedToUnmanagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> ManagedToUnmanagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback6_RuntimeSuspendStarted(This,suspendReason)	\
+#define ICorProfilerCallback6_RuntimeSuspendStarted(This,suspendReason) \
     ( (This)->lpVtbl -> RuntimeSuspendStarted(This,suspendReason) ) 
 
-#define ICorProfilerCallback6_RuntimeSuspendFinished(This)	\
+#define ICorProfilerCallback6_RuntimeSuspendFinished(This)  \
     ( (This)->lpVtbl -> RuntimeSuspendFinished(This) ) 
 
-#define ICorProfilerCallback6_RuntimeSuspendAborted(This)	\
+#define ICorProfilerCallback6_RuntimeSuspendAborted(This)   \
     ( (This)->lpVtbl -> RuntimeSuspendAborted(This) ) 
 
-#define ICorProfilerCallback6_RuntimeResumeStarted(This)	\
+#define ICorProfilerCallback6_RuntimeResumeStarted(This)    \
     ( (This)->lpVtbl -> RuntimeResumeStarted(This) ) 
 
-#define ICorProfilerCallback6_RuntimeResumeFinished(This)	\
+#define ICorProfilerCallback6_RuntimeResumeFinished(This)   \
     ( (This)->lpVtbl -> RuntimeResumeFinished(This) ) 
 
-#define ICorProfilerCallback6_RuntimeThreadSuspended(This,threadId)	\
+#define ICorProfilerCallback6_RuntimeThreadSuspended(This,threadId) \
     ( (This)->lpVtbl -> RuntimeThreadSuspended(This,threadId) ) 
 
-#define ICorProfilerCallback6_RuntimeThreadResumed(This,threadId)	\
+#define ICorProfilerCallback6_RuntimeThreadResumed(This,threadId)   \
     ( (This)->lpVtbl -> RuntimeThreadResumed(This,threadId) ) 
 
-#define ICorProfilerCallback6_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback6_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback6_ObjectAllocated(This,objectId,classId)	\
+#define ICorProfilerCallback6_ObjectAllocated(This,objectId,classId)    \
     ( (This)->lpVtbl -> ObjectAllocated(This,objectId,classId) ) 
 
-#define ICorProfilerCallback6_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)	\
+#define ICorProfilerCallback6_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)   \
     ( (This)->lpVtbl -> ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects) ) 
 
-#define ICorProfilerCallback6_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)	\
+#define ICorProfilerCallback6_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)  \
     ( (This)->lpVtbl -> ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds) ) 
 
-#define ICorProfilerCallback6_RootReferences(This,cRootRefs,rootRefIds)	\
+#define ICorProfilerCallback6_RootReferences(This,cRootRefs,rootRefIds) \
     ( (This)->lpVtbl -> RootReferences(This,cRootRefs,rootRefIds) ) 
 
-#define ICorProfilerCallback6_ExceptionThrown(This,thrownObjectId)	\
+#define ICorProfilerCallback6_ExceptionThrown(This,thrownObjectId)  \
     ( (This)->lpVtbl -> ExceptionThrown(This,thrownObjectId) ) 
 
-#define ICorProfilerCallback6_ExceptionSearchFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback6_ExceptionSearchFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionSearchFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback6_ExceptionSearchFunctionLeave(This)	\
+#define ICorProfilerCallback6_ExceptionSearchFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionSearchFunctionLeave(This) ) 
 
-#define ICorProfilerCallback6_ExceptionSearchFilterEnter(This,functionId)	\
+#define ICorProfilerCallback6_ExceptionSearchFilterEnter(This,functionId)   \
     ( (This)->lpVtbl -> ExceptionSearchFilterEnter(This,functionId) ) 
 
-#define ICorProfilerCallback6_ExceptionSearchFilterLeave(This)	\
+#define ICorProfilerCallback6_ExceptionSearchFilterLeave(This)  \
     ( (This)->lpVtbl -> ExceptionSearchFilterLeave(This) ) 
 
-#define ICorProfilerCallback6_ExceptionSearchCatcherFound(This,functionId)	\
+#define ICorProfilerCallback6_ExceptionSearchCatcherFound(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionSearchCatcherFound(This,functionId) ) 
 
-#define ICorProfilerCallback6_ExceptionOSHandlerEnter(This,__unused)	\
+#define ICorProfilerCallback6_ExceptionOSHandlerEnter(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerEnter(This,__unused) ) 
 
-#define ICorProfilerCallback6_ExceptionOSHandlerLeave(This,__unused)	\
+#define ICorProfilerCallback6_ExceptionOSHandlerLeave(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerLeave(This,__unused) ) 
 
-#define ICorProfilerCallback6_ExceptionUnwindFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback6_ExceptionUnwindFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback6_ExceptionUnwindFunctionLeave(This)	\
+#define ICorProfilerCallback6_ExceptionUnwindFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionLeave(This) ) 
 
-#define ICorProfilerCallback6_ExceptionUnwindFinallyEnter(This,functionId)	\
+#define ICorProfilerCallback6_ExceptionUnwindFinallyEnter(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyEnter(This,functionId) ) 
 
-#define ICorProfilerCallback6_ExceptionUnwindFinallyLeave(This)	\
+#define ICorProfilerCallback6_ExceptionUnwindFinallyLeave(This) \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyLeave(This) ) 
 
-#define ICorProfilerCallback6_ExceptionCatcherEnter(This,functionId,objectId)	\
+#define ICorProfilerCallback6_ExceptionCatcherEnter(This,functionId,objectId)   \
     ( (This)->lpVtbl -> ExceptionCatcherEnter(This,functionId,objectId) ) 
 
-#define ICorProfilerCallback6_ExceptionCatcherLeave(This)	\
+#define ICorProfilerCallback6_ExceptionCatcherLeave(This)   \
     ( (This)->lpVtbl -> ExceptionCatcherLeave(This) ) 
 
-#define ICorProfilerCallback6_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)	\
+#define ICorProfilerCallback6_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)    \
     ( (This)->lpVtbl -> COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots) ) 
 
-#define ICorProfilerCallback6_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable)	\
+#define ICorProfilerCallback6_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) \
     ( (This)->lpVtbl -> COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) ) 
 
-#define ICorProfilerCallback6_ExceptionCLRCatcherFound(This)	\
+#define ICorProfilerCallback6_ExceptionCLRCatcherFound(This)    \
     ( (This)->lpVtbl -> ExceptionCLRCatcherFound(This) ) 
 
-#define ICorProfilerCallback6_ExceptionCLRCatcherExecute(This)	\
+#define ICorProfilerCallback6_ExceptionCLRCatcherExecute(This)  \
     ( (This)->lpVtbl -> ExceptionCLRCatcherExecute(This) ) 
 
 
-#define ICorProfilerCallback6_ThreadNameChanged(This,threadId,cchName,name)	\
+#define ICorProfilerCallback6_ThreadNameChanged(This,threadId,cchName,name) \
     ( (This)->lpVtbl -> ThreadNameChanged(This,threadId,cchName,name) ) 
 
-#define ICorProfilerCallback6_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)	\
+#define ICorProfilerCallback6_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)    \
     ( (This)->lpVtbl -> GarbageCollectionStarted(This,cGenerations,generationCollected,reason) ) 
 
-#define ICorProfilerCallback6_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback6_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)    \
     ( (This)->lpVtbl -> SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback6_GarbageCollectionFinished(This)	\
+#define ICorProfilerCallback6_GarbageCollectionFinished(This)   \
     ( (This)->lpVtbl -> GarbageCollectionFinished(This) ) 
 
-#define ICorProfilerCallback6_FinalizeableObjectQueued(This,finalizerFlags,objectID)	\
+#define ICorProfilerCallback6_FinalizeableObjectQueued(This,finalizerFlags,objectID)    \
     ( (This)->lpVtbl -> FinalizeableObjectQueued(This,finalizerFlags,objectID) ) 
 
-#define ICorProfilerCallback6_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)	\
+#define ICorProfilerCallback6_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)    \
     ( (This)->lpVtbl -> RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds) ) 
 
-#define ICorProfilerCallback6_HandleCreated(This,handleId,initialObjectId)	\
+#define ICorProfilerCallback6_HandleCreated(This,handleId,initialObjectId)  \
     ( (This)->lpVtbl -> HandleCreated(This,handleId,initialObjectId) ) 
 
-#define ICorProfilerCallback6_HandleDestroyed(This,handleId)	\
+#define ICorProfilerCallback6_HandleDestroyed(This,handleId)    \
     ( (This)->lpVtbl -> HandleDestroyed(This,handleId) ) 
 
 
-#define ICorProfilerCallback6_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)	\
+#define ICorProfilerCallback6_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)   \
     ( (This)->lpVtbl -> InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData) ) 
 
-#define ICorProfilerCallback6_ProfilerAttachComplete(This)	\
+#define ICorProfilerCallback6_ProfilerAttachComplete(This)  \
     ( (This)->lpVtbl -> ProfilerAttachComplete(This) ) 
 
-#define ICorProfilerCallback6_ProfilerDetachSucceeded(This)	\
+#define ICorProfilerCallback6_ProfilerDetachSucceeded(This) \
     ( (This)->lpVtbl -> ProfilerDetachSucceeded(This) ) 
 
 
-#define ICorProfilerCallback6_ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock)	\
+#define ICorProfilerCallback6_ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback6_GetReJITParameters(This,moduleId,methodId,pFunctionControl)	\
+#define ICorProfilerCallback6_GetReJITParameters(This,moduleId,methodId,pFunctionControl)   \
     ( (This)->lpVtbl -> GetReJITParameters(This,moduleId,methodId,pFunctionControl) ) 
 
-#define ICorProfilerCallback6_ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback6_ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock) \
     ( (This)->lpVtbl -> ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback6_ReJITError(This,moduleId,methodId,functionId,hrStatus)	\
+#define ICorProfilerCallback6_ReJITError(This,moduleId,methodId,functionId,hrStatus)    \
     ( (This)->lpVtbl -> ReJITError(This,moduleId,methodId,functionId,hrStatus) ) 
 
-#define ICorProfilerCallback6_MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback6_MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)  \
     ( (This)->lpVtbl -> MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback6_SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback6_SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
 
-#define ICorProfilerCallback6_ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds)	\
+#define ICorProfilerCallback6_ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds)   \
     ( (This)->lpVtbl -> ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds) ) 
 
 
-#define ICorProfilerCallback6_GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider)	\
+#define ICorProfilerCallback6_GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider)   \
     ( (This)->lpVtbl -> GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerCallback6_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerCallback6_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback7_INTERFACE_DEFINED__
@@ -5133,7 +5140,7 @@ EXTERN_C const IID IID_ICorProfilerCallback7;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerCallback7Vtbl
     {
@@ -5574,298 +5581,298 @@ EXTERN_C const IID IID_ICorProfilerCallback7;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerCallback7_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerCallback7_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerCallback7_AddRef(This)	\
+#define ICorProfilerCallback7_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerCallback7_Release(This)	\
+#define ICorProfilerCallback7_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerCallback7_Initialize(This,pICorProfilerInfoUnk)	\
+#define ICorProfilerCallback7_Initialize(This,pICorProfilerInfoUnk) \
     ( (This)->lpVtbl -> Initialize(This,pICorProfilerInfoUnk) ) 
 
-#define ICorProfilerCallback7_Shutdown(This)	\
+#define ICorProfilerCallback7_Shutdown(This)    \
     ( (This)->lpVtbl -> Shutdown(This) ) 
 
-#define ICorProfilerCallback7_AppDomainCreationStarted(This,appDomainId)	\
+#define ICorProfilerCallback7_AppDomainCreationStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainCreationStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback7_AppDomainCreationFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback7_AppDomainCreationFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainCreationFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback7_AppDomainShutdownStarted(This,appDomainId)	\
+#define ICorProfilerCallback7_AppDomainShutdownStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainShutdownStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback7_AppDomainShutdownFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback7_AppDomainShutdownFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainShutdownFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback7_AssemblyLoadStarted(This,assemblyId)	\
+#define ICorProfilerCallback7_AssemblyLoadStarted(This,assemblyId)  \
     ( (This)->lpVtbl -> AssemblyLoadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback7_AssemblyLoadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback7_AssemblyLoadFinished(This,assemblyId,hrStatus)    \
     ( (This)->lpVtbl -> AssemblyLoadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback7_AssemblyUnloadStarted(This,assemblyId)	\
+#define ICorProfilerCallback7_AssemblyUnloadStarted(This,assemblyId)    \
     ( (This)->lpVtbl -> AssemblyUnloadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback7_AssemblyUnloadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback7_AssemblyUnloadFinished(This,assemblyId,hrStatus)  \
     ( (This)->lpVtbl -> AssemblyUnloadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback7_ModuleLoadStarted(This,moduleId)	\
+#define ICorProfilerCallback7_ModuleLoadStarted(This,moduleId)  \
     ( (This)->lpVtbl -> ModuleLoadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback7_ModuleLoadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback7_ModuleLoadFinished(This,moduleId,hrStatus)    \
     ( (This)->lpVtbl -> ModuleLoadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback7_ModuleUnloadStarted(This,moduleId)	\
+#define ICorProfilerCallback7_ModuleUnloadStarted(This,moduleId)    \
     ( (This)->lpVtbl -> ModuleUnloadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback7_ModuleUnloadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback7_ModuleUnloadFinished(This,moduleId,hrStatus)  \
     ( (This)->lpVtbl -> ModuleUnloadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback7_ModuleAttachedToAssembly(This,moduleId,AssemblyId)	\
+#define ICorProfilerCallback7_ModuleAttachedToAssembly(This,moduleId,AssemblyId)    \
     ( (This)->lpVtbl -> ModuleAttachedToAssembly(This,moduleId,AssemblyId) ) 
 
-#define ICorProfilerCallback7_ClassLoadStarted(This,classId)	\
+#define ICorProfilerCallback7_ClassLoadStarted(This,classId)    \
     ( (This)->lpVtbl -> ClassLoadStarted(This,classId) ) 
 
-#define ICorProfilerCallback7_ClassLoadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback7_ClassLoadFinished(This,classId,hrStatus)  \
     ( (This)->lpVtbl -> ClassLoadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback7_ClassUnloadStarted(This,classId)	\
+#define ICorProfilerCallback7_ClassUnloadStarted(This,classId)  \
     ( (This)->lpVtbl -> ClassUnloadStarted(This,classId) ) 
 
-#define ICorProfilerCallback7_ClassUnloadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback7_ClassUnloadFinished(This,classId,hrStatus)    \
     ( (This)->lpVtbl -> ClassUnloadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback7_FunctionUnloadStarted(This,functionId)	\
+#define ICorProfilerCallback7_FunctionUnloadStarted(This,functionId)    \
     ( (This)->lpVtbl -> FunctionUnloadStarted(This,functionId) ) 
 
-#define ICorProfilerCallback7_JITCompilationStarted(This,functionId,fIsSafeToBlock)	\
+#define ICorProfilerCallback7_JITCompilationStarted(This,functionId,fIsSafeToBlock) \
     ( (This)->lpVtbl -> JITCompilationStarted(This,functionId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback7_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback7_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback7_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)	\
+#define ICorProfilerCallback7_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction) ) 
 
-#define ICorProfilerCallback7_JITCachedFunctionSearchFinished(This,functionId,result)	\
+#define ICorProfilerCallback7_JITCachedFunctionSearchFinished(This,functionId,result)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchFinished(This,functionId,result) ) 
 
-#define ICorProfilerCallback7_JITFunctionPitched(This,functionId)	\
+#define ICorProfilerCallback7_JITFunctionPitched(This,functionId)   \
     ( (This)->lpVtbl -> JITFunctionPitched(This,functionId) ) 
 
-#define ICorProfilerCallback7_JITInlining(This,callerId,calleeId,pfShouldInline)	\
+#define ICorProfilerCallback7_JITInlining(This,callerId,calleeId,pfShouldInline)    \
     ( (This)->lpVtbl -> JITInlining(This,callerId,calleeId,pfShouldInline) ) 
 
-#define ICorProfilerCallback7_ThreadCreated(This,threadId)	\
+#define ICorProfilerCallback7_ThreadCreated(This,threadId)  \
     ( (This)->lpVtbl -> ThreadCreated(This,threadId) ) 
 
-#define ICorProfilerCallback7_ThreadDestroyed(This,threadId)	\
+#define ICorProfilerCallback7_ThreadDestroyed(This,threadId)    \
     ( (This)->lpVtbl -> ThreadDestroyed(This,threadId) ) 
 
-#define ICorProfilerCallback7_ThreadAssignedToOSThread(This,managedThreadId,osThreadId)	\
+#define ICorProfilerCallback7_ThreadAssignedToOSThread(This,managedThreadId,osThreadId) \
     ( (This)->lpVtbl -> ThreadAssignedToOSThread(This,managedThreadId,osThreadId) ) 
 
-#define ICorProfilerCallback7_RemotingClientInvocationStarted(This)	\
+#define ICorProfilerCallback7_RemotingClientInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingClientInvocationStarted(This) ) 
 
-#define ICorProfilerCallback7_RemotingClientSendingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback7_RemotingClientSendingMessage(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientSendingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback7_RemotingClientReceivingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback7_RemotingClientReceivingReply(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientReceivingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback7_RemotingClientInvocationFinished(This)	\
+#define ICorProfilerCallback7_RemotingClientInvocationFinished(This)    \
     ( (This)->lpVtbl -> RemotingClientInvocationFinished(This) ) 
 
-#define ICorProfilerCallback7_RemotingServerReceivingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback7_RemotingServerReceivingMessage(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerReceivingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback7_RemotingServerInvocationStarted(This)	\
+#define ICorProfilerCallback7_RemotingServerInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingServerInvocationStarted(This) ) 
 
-#define ICorProfilerCallback7_RemotingServerInvocationReturned(This)	\
+#define ICorProfilerCallback7_RemotingServerInvocationReturned(This)    \
     ( (This)->lpVtbl -> RemotingServerInvocationReturned(This) ) 
 
-#define ICorProfilerCallback7_RemotingServerSendingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback7_RemotingServerSendingReply(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerSendingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback7_UnmanagedToManagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback7_UnmanagedToManagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> UnmanagedToManagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback7_ManagedToUnmanagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback7_ManagedToUnmanagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> ManagedToUnmanagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback7_RuntimeSuspendStarted(This,suspendReason)	\
+#define ICorProfilerCallback7_RuntimeSuspendStarted(This,suspendReason) \
     ( (This)->lpVtbl -> RuntimeSuspendStarted(This,suspendReason) ) 
 
-#define ICorProfilerCallback7_RuntimeSuspendFinished(This)	\
+#define ICorProfilerCallback7_RuntimeSuspendFinished(This)  \
     ( (This)->lpVtbl -> RuntimeSuspendFinished(This) ) 
 
-#define ICorProfilerCallback7_RuntimeSuspendAborted(This)	\
+#define ICorProfilerCallback7_RuntimeSuspendAborted(This)   \
     ( (This)->lpVtbl -> RuntimeSuspendAborted(This) ) 
 
-#define ICorProfilerCallback7_RuntimeResumeStarted(This)	\
+#define ICorProfilerCallback7_RuntimeResumeStarted(This)    \
     ( (This)->lpVtbl -> RuntimeResumeStarted(This) ) 
 
-#define ICorProfilerCallback7_RuntimeResumeFinished(This)	\
+#define ICorProfilerCallback7_RuntimeResumeFinished(This)   \
     ( (This)->lpVtbl -> RuntimeResumeFinished(This) ) 
 
-#define ICorProfilerCallback7_RuntimeThreadSuspended(This,threadId)	\
+#define ICorProfilerCallback7_RuntimeThreadSuspended(This,threadId) \
     ( (This)->lpVtbl -> RuntimeThreadSuspended(This,threadId) ) 
 
-#define ICorProfilerCallback7_RuntimeThreadResumed(This,threadId)	\
+#define ICorProfilerCallback7_RuntimeThreadResumed(This,threadId)   \
     ( (This)->lpVtbl -> RuntimeThreadResumed(This,threadId) ) 
 
-#define ICorProfilerCallback7_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback7_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback7_ObjectAllocated(This,objectId,classId)	\
+#define ICorProfilerCallback7_ObjectAllocated(This,objectId,classId)    \
     ( (This)->lpVtbl -> ObjectAllocated(This,objectId,classId) ) 
 
-#define ICorProfilerCallback7_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)	\
+#define ICorProfilerCallback7_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)   \
     ( (This)->lpVtbl -> ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects) ) 
 
-#define ICorProfilerCallback7_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)	\
+#define ICorProfilerCallback7_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)  \
     ( (This)->lpVtbl -> ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds) ) 
 
-#define ICorProfilerCallback7_RootReferences(This,cRootRefs,rootRefIds)	\
+#define ICorProfilerCallback7_RootReferences(This,cRootRefs,rootRefIds) \
     ( (This)->lpVtbl -> RootReferences(This,cRootRefs,rootRefIds) ) 
 
-#define ICorProfilerCallback7_ExceptionThrown(This,thrownObjectId)	\
+#define ICorProfilerCallback7_ExceptionThrown(This,thrownObjectId)  \
     ( (This)->lpVtbl -> ExceptionThrown(This,thrownObjectId) ) 
 
-#define ICorProfilerCallback7_ExceptionSearchFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback7_ExceptionSearchFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionSearchFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback7_ExceptionSearchFunctionLeave(This)	\
+#define ICorProfilerCallback7_ExceptionSearchFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionSearchFunctionLeave(This) ) 
 
-#define ICorProfilerCallback7_ExceptionSearchFilterEnter(This,functionId)	\
+#define ICorProfilerCallback7_ExceptionSearchFilterEnter(This,functionId)   \
     ( (This)->lpVtbl -> ExceptionSearchFilterEnter(This,functionId) ) 
 
-#define ICorProfilerCallback7_ExceptionSearchFilterLeave(This)	\
+#define ICorProfilerCallback7_ExceptionSearchFilterLeave(This)  \
     ( (This)->lpVtbl -> ExceptionSearchFilterLeave(This) ) 
 
-#define ICorProfilerCallback7_ExceptionSearchCatcherFound(This,functionId)	\
+#define ICorProfilerCallback7_ExceptionSearchCatcherFound(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionSearchCatcherFound(This,functionId) ) 
 
-#define ICorProfilerCallback7_ExceptionOSHandlerEnter(This,__unused)	\
+#define ICorProfilerCallback7_ExceptionOSHandlerEnter(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerEnter(This,__unused) ) 
 
-#define ICorProfilerCallback7_ExceptionOSHandlerLeave(This,__unused)	\
+#define ICorProfilerCallback7_ExceptionOSHandlerLeave(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerLeave(This,__unused) ) 
 
-#define ICorProfilerCallback7_ExceptionUnwindFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback7_ExceptionUnwindFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback7_ExceptionUnwindFunctionLeave(This)	\
+#define ICorProfilerCallback7_ExceptionUnwindFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionLeave(This) ) 
 
-#define ICorProfilerCallback7_ExceptionUnwindFinallyEnter(This,functionId)	\
+#define ICorProfilerCallback7_ExceptionUnwindFinallyEnter(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyEnter(This,functionId) ) 
 
-#define ICorProfilerCallback7_ExceptionUnwindFinallyLeave(This)	\
+#define ICorProfilerCallback7_ExceptionUnwindFinallyLeave(This) \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyLeave(This) ) 
 
-#define ICorProfilerCallback7_ExceptionCatcherEnter(This,functionId,objectId)	\
+#define ICorProfilerCallback7_ExceptionCatcherEnter(This,functionId,objectId)   \
     ( (This)->lpVtbl -> ExceptionCatcherEnter(This,functionId,objectId) ) 
 
-#define ICorProfilerCallback7_ExceptionCatcherLeave(This)	\
+#define ICorProfilerCallback7_ExceptionCatcherLeave(This)   \
     ( (This)->lpVtbl -> ExceptionCatcherLeave(This) ) 
 
-#define ICorProfilerCallback7_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)	\
+#define ICorProfilerCallback7_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)    \
     ( (This)->lpVtbl -> COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots) ) 
 
-#define ICorProfilerCallback7_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable)	\
+#define ICorProfilerCallback7_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) \
     ( (This)->lpVtbl -> COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) ) 
 
-#define ICorProfilerCallback7_ExceptionCLRCatcherFound(This)	\
+#define ICorProfilerCallback7_ExceptionCLRCatcherFound(This)    \
     ( (This)->lpVtbl -> ExceptionCLRCatcherFound(This) ) 
 
-#define ICorProfilerCallback7_ExceptionCLRCatcherExecute(This)	\
+#define ICorProfilerCallback7_ExceptionCLRCatcherExecute(This)  \
     ( (This)->lpVtbl -> ExceptionCLRCatcherExecute(This) ) 
 
 
-#define ICorProfilerCallback7_ThreadNameChanged(This,threadId,cchName,name)	\
+#define ICorProfilerCallback7_ThreadNameChanged(This,threadId,cchName,name) \
     ( (This)->lpVtbl -> ThreadNameChanged(This,threadId,cchName,name) ) 
 
-#define ICorProfilerCallback7_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)	\
+#define ICorProfilerCallback7_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)    \
     ( (This)->lpVtbl -> GarbageCollectionStarted(This,cGenerations,generationCollected,reason) ) 
 
-#define ICorProfilerCallback7_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback7_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)    \
     ( (This)->lpVtbl -> SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback7_GarbageCollectionFinished(This)	\
+#define ICorProfilerCallback7_GarbageCollectionFinished(This)   \
     ( (This)->lpVtbl -> GarbageCollectionFinished(This) ) 
 
-#define ICorProfilerCallback7_FinalizeableObjectQueued(This,finalizerFlags,objectID)	\
+#define ICorProfilerCallback7_FinalizeableObjectQueued(This,finalizerFlags,objectID)    \
     ( (This)->lpVtbl -> FinalizeableObjectQueued(This,finalizerFlags,objectID) ) 
 
-#define ICorProfilerCallback7_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)	\
+#define ICorProfilerCallback7_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)    \
     ( (This)->lpVtbl -> RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds) ) 
 
-#define ICorProfilerCallback7_HandleCreated(This,handleId,initialObjectId)	\
+#define ICorProfilerCallback7_HandleCreated(This,handleId,initialObjectId)  \
     ( (This)->lpVtbl -> HandleCreated(This,handleId,initialObjectId) ) 
 
-#define ICorProfilerCallback7_HandleDestroyed(This,handleId)	\
+#define ICorProfilerCallback7_HandleDestroyed(This,handleId)    \
     ( (This)->lpVtbl -> HandleDestroyed(This,handleId) ) 
 
 
-#define ICorProfilerCallback7_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)	\
+#define ICorProfilerCallback7_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)   \
     ( (This)->lpVtbl -> InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData) ) 
 
-#define ICorProfilerCallback7_ProfilerAttachComplete(This)	\
+#define ICorProfilerCallback7_ProfilerAttachComplete(This)  \
     ( (This)->lpVtbl -> ProfilerAttachComplete(This) ) 
 
-#define ICorProfilerCallback7_ProfilerDetachSucceeded(This)	\
+#define ICorProfilerCallback7_ProfilerDetachSucceeded(This) \
     ( (This)->lpVtbl -> ProfilerDetachSucceeded(This) ) 
 
 
-#define ICorProfilerCallback7_ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock)	\
+#define ICorProfilerCallback7_ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback7_GetReJITParameters(This,moduleId,methodId,pFunctionControl)	\
+#define ICorProfilerCallback7_GetReJITParameters(This,moduleId,methodId,pFunctionControl)   \
     ( (This)->lpVtbl -> GetReJITParameters(This,moduleId,methodId,pFunctionControl) ) 
 
-#define ICorProfilerCallback7_ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback7_ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock) \
     ( (This)->lpVtbl -> ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback7_ReJITError(This,moduleId,methodId,functionId,hrStatus)	\
+#define ICorProfilerCallback7_ReJITError(This,moduleId,methodId,functionId,hrStatus)    \
     ( (This)->lpVtbl -> ReJITError(This,moduleId,methodId,functionId,hrStatus) ) 
 
-#define ICorProfilerCallback7_MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback7_MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)  \
     ( (This)->lpVtbl -> MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback7_SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback7_SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
 
-#define ICorProfilerCallback7_ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds)	\
+#define ICorProfilerCallback7_ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds)   \
     ( (This)->lpVtbl -> ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds) ) 
 
 
-#define ICorProfilerCallback7_GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider)	\
+#define ICorProfilerCallback7_GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider)   \
     ( (This)->lpVtbl -> GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider) ) 
 
 
-#define ICorProfilerCallback7_ModuleInMemorySymbolsUpdated(This,moduleId)	\
+#define ICorProfilerCallback7_ModuleInMemorySymbolsUpdated(This,moduleId)   \
     ( (This)->lpVtbl -> ModuleInMemorySymbolsUpdated(This,moduleId) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerCallback7_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerCallback7_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback8_INTERFACE_DEFINED__
@@ -5897,7 +5904,7 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerCallback8Vtbl
     {
@@ -6351,305 +6358,305 @@ EXTERN_C const IID IID_ICorProfilerCallback8;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerCallback8_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerCallback8_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerCallback8_AddRef(This)	\
+#define ICorProfilerCallback8_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerCallback8_Release(This)	\
+#define ICorProfilerCallback8_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerCallback8_Initialize(This,pICorProfilerInfoUnk)	\
+#define ICorProfilerCallback8_Initialize(This,pICorProfilerInfoUnk) \
     ( (This)->lpVtbl -> Initialize(This,pICorProfilerInfoUnk) ) 
 
-#define ICorProfilerCallback8_Shutdown(This)	\
+#define ICorProfilerCallback8_Shutdown(This)    \
     ( (This)->lpVtbl -> Shutdown(This) ) 
 
-#define ICorProfilerCallback8_AppDomainCreationStarted(This,appDomainId)	\
+#define ICorProfilerCallback8_AppDomainCreationStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainCreationStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback8_AppDomainCreationFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback8_AppDomainCreationFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainCreationFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback8_AppDomainShutdownStarted(This,appDomainId)	\
+#define ICorProfilerCallback8_AppDomainShutdownStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainShutdownStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback8_AppDomainShutdownFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback8_AppDomainShutdownFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainShutdownFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback8_AssemblyLoadStarted(This,assemblyId)	\
+#define ICorProfilerCallback8_AssemblyLoadStarted(This,assemblyId)  \
     ( (This)->lpVtbl -> AssemblyLoadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback8_AssemblyLoadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback8_AssemblyLoadFinished(This,assemblyId,hrStatus)    \
     ( (This)->lpVtbl -> AssemblyLoadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback8_AssemblyUnloadStarted(This,assemblyId)	\
+#define ICorProfilerCallback8_AssemblyUnloadStarted(This,assemblyId)    \
     ( (This)->lpVtbl -> AssemblyUnloadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback8_AssemblyUnloadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback8_AssemblyUnloadFinished(This,assemblyId,hrStatus)  \
     ( (This)->lpVtbl -> AssemblyUnloadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback8_ModuleLoadStarted(This,moduleId)	\
+#define ICorProfilerCallback8_ModuleLoadStarted(This,moduleId)  \
     ( (This)->lpVtbl -> ModuleLoadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback8_ModuleLoadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback8_ModuleLoadFinished(This,moduleId,hrStatus)    \
     ( (This)->lpVtbl -> ModuleLoadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback8_ModuleUnloadStarted(This,moduleId)	\
+#define ICorProfilerCallback8_ModuleUnloadStarted(This,moduleId)    \
     ( (This)->lpVtbl -> ModuleUnloadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback8_ModuleUnloadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback8_ModuleUnloadFinished(This,moduleId,hrStatus)  \
     ( (This)->lpVtbl -> ModuleUnloadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback8_ModuleAttachedToAssembly(This,moduleId,AssemblyId)	\
+#define ICorProfilerCallback8_ModuleAttachedToAssembly(This,moduleId,AssemblyId)    \
     ( (This)->lpVtbl -> ModuleAttachedToAssembly(This,moduleId,AssemblyId) ) 
 
-#define ICorProfilerCallback8_ClassLoadStarted(This,classId)	\
+#define ICorProfilerCallback8_ClassLoadStarted(This,classId)    \
     ( (This)->lpVtbl -> ClassLoadStarted(This,classId) ) 
 
-#define ICorProfilerCallback8_ClassLoadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback8_ClassLoadFinished(This,classId,hrStatus)  \
     ( (This)->lpVtbl -> ClassLoadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback8_ClassUnloadStarted(This,classId)	\
+#define ICorProfilerCallback8_ClassUnloadStarted(This,classId)  \
     ( (This)->lpVtbl -> ClassUnloadStarted(This,classId) ) 
 
-#define ICorProfilerCallback8_ClassUnloadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback8_ClassUnloadFinished(This,classId,hrStatus)    \
     ( (This)->lpVtbl -> ClassUnloadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback8_FunctionUnloadStarted(This,functionId)	\
+#define ICorProfilerCallback8_FunctionUnloadStarted(This,functionId)    \
     ( (This)->lpVtbl -> FunctionUnloadStarted(This,functionId) ) 
 
-#define ICorProfilerCallback8_JITCompilationStarted(This,functionId,fIsSafeToBlock)	\
+#define ICorProfilerCallback8_JITCompilationStarted(This,functionId,fIsSafeToBlock) \
     ( (This)->lpVtbl -> JITCompilationStarted(This,functionId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback8_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback8_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback8_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)	\
+#define ICorProfilerCallback8_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction) ) 
 
-#define ICorProfilerCallback8_JITCachedFunctionSearchFinished(This,functionId,result)	\
+#define ICorProfilerCallback8_JITCachedFunctionSearchFinished(This,functionId,result)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchFinished(This,functionId,result) ) 
 
-#define ICorProfilerCallback8_JITFunctionPitched(This,functionId)	\
+#define ICorProfilerCallback8_JITFunctionPitched(This,functionId)   \
     ( (This)->lpVtbl -> JITFunctionPitched(This,functionId) ) 
 
-#define ICorProfilerCallback8_JITInlining(This,callerId,calleeId,pfShouldInline)	\
+#define ICorProfilerCallback8_JITInlining(This,callerId,calleeId,pfShouldInline)    \
     ( (This)->lpVtbl -> JITInlining(This,callerId,calleeId,pfShouldInline) ) 
 
-#define ICorProfilerCallback8_ThreadCreated(This,threadId)	\
+#define ICorProfilerCallback8_ThreadCreated(This,threadId)  \
     ( (This)->lpVtbl -> ThreadCreated(This,threadId) ) 
 
-#define ICorProfilerCallback8_ThreadDestroyed(This,threadId)	\
+#define ICorProfilerCallback8_ThreadDestroyed(This,threadId)    \
     ( (This)->lpVtbl -> ThreadDestroyed(This,threadId) ) 
 
-#define ICorProfilerCallback8_ThreadAssignedToOSThread(This,managedThreadId,osThreadId)	\
+#define ICorProfilerCallback8_ThreadAssignedToOSThread(This,managedThreadId,osThreadId) \
     ( (This)->lpVtbl -> ThreadAssignedToOSThread(This,managedThreadId,osThreadId) ) 
 
-#define ICorProfilerCallback8_RemotingClientInvocationStarted(This)	\
+#define ICorProfilerCallback8_RemotingClientInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingClientInvocationStarted(This) ) 
 
-#define ICorProfilerCallback8_RemotingClientSendingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback8_RemotingClientSendingMessage(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientSendingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback8_RemotingClientReceivingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback8_RemotingClientReceivingReply(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientReceivingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback8_RemotingClientInvocationFinished(This)	\
+#define ICorProfilerCallback8_RemotingClientInvocationFinished(This)    \
     ( (This)->lpVtbl -> RemotingClientInvocationFinished(This) ) 
 
-#define ICorProfilerCallback8_RemotingServerReceivingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback8_RemotingServerReceivingMessage(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerReceivingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback8_RemotingServerInvocationStarted(This)	\
+#define ICorProfilerCallback8_RemotingServerInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingServerInvocationStarted(This) ) 
 
-#define ICorProfilerCallback8_RemotingServerInvocationReturned(This)	\
+#define ICorProfilerCallback8_RemotingServerInvocationReturned(This)    \
     ( (This)->lpVtbl -> RemotingServerInvocationReturned(This) ) 
 
-#define ICorProfilerCallback8_RemotingServerSendingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback8_RemotingServerSendingReply(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerSendingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback8_UnmanagedToManagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback8_UnmanagedToManagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> UnmanagedToManagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback8_ManagedToUnmanagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback8_ManagedToUnmanagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> ManagedToUnmanagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback8_RuntimeSuspendStarted(This,suspendReason)	\
+#define ICorProfilerCallback8_RuntimeSuspendStarted(This,suspendReason) \
     ( (This)->lpVtbl -> RuntimeSuspendStarted(This,suspendReason) ) 
 
-#define ICorProfilerCallback8_RuntimeSuspendFinished(This)	\
+#define ICorProfilerCallback8_RuntimeSuspendFinished(This)  \
     ( (This)->lpVtbl -> RuntimeSuspendFinished(This) ) 
 
-#define ICorProfilerCallback8_RuntimeSuspendAborted(This)	\
+#define ICorProfilerCallback8_RuntimeSuspendAborted(This)   \
     ( (This)->lpVtbl -> RuntimeSuspendAborted(This) ) 
 
-#define ICorProfilerCallback8_RuntimeResumeStarted(This)	\
+#define ICorProfilerCallback8_RuntimeResumeStarted(This)    \
     ( (This)->lpVtbl -> RuntimeResumeStarted(This) ) 
 
-#define ICorProfilerCallback8_RuntimeResumeFinished(This)	\
+#define ICorProfilerCallback8_RuntimeResumeFinished(This)   \
     ( (This)->lpVtbl -> RuntimeResumeFinished(This) ) 
 
-#define ICorProfilerCallback8_RuntimeThreadSuspended(This,threadId)	\
+#define ICorProfilerCallback8_RuntimeThreadSuspended(This,threadId) \
     ( (This)->lpVtbl -> RuntimeThreadSuspended(This,threadId) ) 
 
-#define ICorProfilerCallback8_RuntimeThreadResumed(This,threadId)	\
+#define ICorProfilerCallback8_RuntimeThreadResumed(This,threadId)   \
     ( (This)->lpVtbl -> RuntimeThreadResumed(This,threadId) ) 
 
-#define ICorProfilerCallback8_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback8_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback8_ObjectAllocated(This,objectId,classId)	\
+#define ICorProfilerCallback8_ObjectAllocated(This,objectId,classId)    \
     ( (This)->lpVtbl -> ObjectAllocated(This,objectId,classId) ) 
 
-#define ICorProfilerCallback8_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)	\
+#define ICorProfilerCallback8_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)   \
     ( (This)->lpVtbl -> ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects) ) 
 
-#define ICorProfilerCallback8_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)	\
+#define ICorProfilerCallback8_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)  \
     ( (This)->lpVtbl -> ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds) ) 
 
-#define ICorProfilerCallback8_RootReferences(This,cRootRefs,rootRefIds)	\
+#define ICorProfilerCallback8_RootReferences(This,cRootRefs,rootRefIds) \
     ( (This)->lpVtbl -> RootReferences(This,cRootRefs,rootRefIds) ) 
 
-#define ICorProfilerCallback8_ExceptionThrown(This,thrownObjectId)	\
+#define ICorProfilerCallback8_ExceptionThrown(This,thrownObjectId)  \
     ( (This)->lpVtbl -> ExceptionThrown(This,thrownObjectId) ) 
 
-#define ICorProfilerCallback8_ExceptionSearchFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback8_ExceptionSearchFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionSearchFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback8_ExceptionSearchFunctionLeave(This)	\
+#define ICorProfilerCallback8_ExceptionSearchFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionSearchFunctionLeave(This) ) 
 
-#define ICorProfilerCallback8_ExceptionSearchFilterEnter(This,functionId)	\
+#define ICorProfilerCallback8_ExceptionSearchFilterEnter(This,functionId)   \
     ( (This)->lpVtbl -> ExceptionSearchFilterEnter(This,functionId) ) 
 
-#define ICorProfilerCallback8_ExceptionSearchFilterLeave(This)	\
+#define ICorProfilerCallback8_ExceptionSearchFilterLeave(This)  \
     ( (This)->lpVtbl -> ExceptionSearchFilterLeave(This) ) 
 
-#define ICorProfilerCallback8_ExceptionSearchCatcherFound(This,functionId)	\
+#define ICorProfilerCallback8_ExceptionSearchCatcherFound(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionSearchCatcherFound(This,functionId) ) 
 
-#define ICorProfilerCallback8_ExceptionOSHandlerEnter(This,__unused)	\
+#define ICorProfilerCallback8_ExceptionOSHandlerEnter(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerEnter(This,__unused) ) 
 
-#define ICorProfilerCallback8_ExceptionOSHandlerLeave(This,__unused)	\
+#define ICorProfilerCallback8_ExceptionOSHandlerLeave(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerLeave(This,__unused) ) 
 
-#define ICorProfilerCallback8_ExceptionUnwindFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback8_ExceptionUnwindFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback8_ExceptionUnwindFunctionLeave(This)	\
+#define ICorProfilerCallback8_ExceptionUnwindFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionLeave(This) ) 
 
-#define ICorProfilerCallback8_ExceptionUnwindFinallyEnter(This,functionId)	\
+#define ICorProfilerCallback8_ExceptionUnwindFinallyEnter(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyEnter(This,functionId) ) 
 
-#define ICorProfilerCallback8_ExceptionUnwindFinallyLeave(This)	\
+#define ICorProfilerCallback8_ExceptionUnwindFinallyLeave(This) \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyLeave(This) ) 
 
-#define ICorProfilerCallback8_ExceptionCatcherEnter(This,functionId,objectId)	\
+#define ICorProfilerCallback8_ExceptionCatcherEnter(This,functionId,objectId)   \
     ( (This)->lpVtbl -> ExceptionCatcherEnter(This,functionId,objectId) ) 
 
-#define ICorProfilerCallback8_ExceptionCatcherLeave(This)	\
+#define ICorProfilerCallback8_ExceptionCatcherLeave(This)   \
     ( (This)->lpVtbl -> ExceptionCatcherLeave(This) ) 
 
-#define ICorProfilerCallback8_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)	\
+#define ICorProfilerCallback8_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)    \
     ( (This)->lpVtbl -> COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots) ) 
 
-#define ICorProfilerCallback8_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable)	\
+#define ICorProfilerCallback8_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) \
     ( (This)->lpVtbl -> COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) ) 
 
-#define ICorProfilerCallback8_ExceptionCLRCatcherFound(This)	\
+#define ICorProfilerCallback8_ExceptionCLRCatcherFound(This)    \
     ( (This)->lpVtbl -> ExceptionCLRCatcherFound(This) ) 
 
-#define ICorProfilerCallback8_ExceptionCLRCatcherExecute(This)	\
+#define ICorProfilerCallback8_ExceptionCLRCatcherExecute(This)  \
     ( (This)->lpVtbl -> ExceptionCLRCatcherExecute(This) ) 
 
 
-#define ICorProfilerCallback8_ThreadNameChanged(This,threadId,cchName,name)	\
+#define ICorProfilerCallback8_ThreadNameChanged(This,threadId,cchName,name) \
     ( (This)->lpVtbl -> ThreadNameChanged(This,threadId,cchName,name) ) 
 
-#define ICorProfilerCallback8_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)	\
+#define ICorProfilerCallback8_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)    \
     ( (This)->lpVtbl -> GarbageCollectionStarted(This,cGenerations,generationCollected,reason) ) 
 
-#define ICorProfilerCallback8_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback8_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)    \
     ( (This)->lpVtbl -> SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback8_GarbageCollectionFinished(This)	\
+#define ICorProfilerCallback8_GarbageCollectionFinished(This)   \
     ( (This)->lpVtbl -> GarbageCollectionFinished(This) ) 
 
-#define ICorProfilerCallback8_FinalizeableObjectQueued(This,finalizerFlags,objectID)	\
+#define ICorProfilerCallback8_FinalizeableObjectQueued(This,finalizerFlags,objectID)    \
     ( (This)->lpVtbl -> FinalizeableObjectQueued(This,finalizerFlags,objectID) ) 
 
-#define ICorProfilerCallback8_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)	\
+#define ICorProfilerCallback8_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)    \
     ( (This)->lpVtbl -> RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds) ) 
 
-#define ICorProfilerCallback8_HandleCreated(This,handleId,initialObjectId)	\
+#define ICorProfilerCallback8_HandleCreated(This,handleId,initialObjectId)  \
     ( (This)->lpVtbl -> HandleCreated(This,handleId,initialObjectId) ) 
 
-#define ICorProfilerCallback8_HandleDestroyed(This,handleId)	\
+#define ICorProfilerCallback8_HandleDestroyed(This,handleId)    \
     ( (This)->lpVtbl -> HandleDestroyed(This,handleId) ) 
 
 
-#define ICorProfilerCallback8_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)	\
+#define ICorProfilerCallback8_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)   \
     ( (This)->lpVtbl -> InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData) ) 
 
-#define ICorProfilerCallback8_ProfilerAttachComplete(This)	\
+#define ICorProfilerCallback8_ProfilerAttachComplete(This)  \
     ( (This)->lpVtbl -> ProfilerAttachComplete(This) ) 
 
-#define ICorProfilerCallback8_ProfilerDetachSucceeded(This)	\
+#define ICorProfilerCallback8_ProfilerDetachSucceeded(This) \
     ( (This)->lpVtbl -> ProfilerDetachSucceeded(This) ) 
 
 
-#define ICorProfilerCallback8_ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock)	\
+#define ICorProfilerCallback8_ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback8_GetReJITParameters(This,moduleId,methodId,pFunctionControl)	\
+#define ICorProfilerCallback8_GetReJITParameters(This,moduleId,methodId,pFunctionControl)   \
     ( (This)->lpVtbl -> GetReJITParameters(This,moduleId,methodId,pFunctionControl) ) 
 
-#define ICorProfilerCallback8_ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback8_ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock) \
     ( (This)->lpVtbl -> ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback8_ReJITError(This,moduleId,methodId,functionId,hrStatus)	\
+#define ICorProfilerCallback8_ReJITError(This,moduleId,methodId,functionId,hrStatus)    \
     ( (This)->lpVtbl -> ReJITError(This,moduleId,methodId,functionId,hrStatus) ) 
 
-#define ICorProfilerCallback8_MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback8_MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)  \
     ( (This)->lpVtbl -> MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback8_SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback8_SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
 
-#define ICorProfilerCallback8_ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds)	\
+#define ICorProfilerCallback8_ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds)   \
     ( (This)->lpVtbl -> ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds) ) 
 
 
-#define ICorProfilerCallback8_GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider)	\
+#define ICorProfilerCallback8_GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider)   \
     ( (This)->lpVtbl -> GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider) ) 
 
 
-#define ICorProfilerCallback8_ModuleInMemorySymbolsUpdated(This,moduleId)	\
+#define ICorProfilerCallback8_ModuleInMemorySymbolsUpdated(This,moduleId)   \
     ( (This)->lpVtbl -> ModuleInMemorySymbolsUpdated(This,moduleId) ) 
 
 
-#define ICorProfilerCallback8_DynamicMethodJITCompilationStarted(This,functionId,fIsSafeToBlock,pILHeader,cbILHeader)	\
+#define ICorProfilerCallback8_DynamicMethodJITCompilationStarted(This,functionId,fIsSafeToBlock,pILHeader,cbILHeader)   \
     ( (This)->lpVtbl -> DynamicMethodJITCompilationStarted(This,functionId,fIsSafeToBlock,pILHeader,cbILHeader) ) 
 
-#define ICorProfilerCallback8_DynamicMethodJITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback8_DynamicMethodJITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)  \
     ( (This)->lpVtbl -> DynamicMethodJITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerCallback8_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerCallback8_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerCallback9_INTERFACE_DEFINED__
@@ -6673,7 +6680,7 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerCallback9Vtbl
     {
@@ -7131,309 +7138,309 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerCallback9_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerCallback9_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerCallback9_AddRef(This)	\
+#define ICorProfilerCallback9_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerCallback9_Release(This)	\
+#define ICorProfilerCallback9_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerCallback9_Initialize(This,pICorProfilerInfoUnk)	\
+#define ICorProfilerCallback9_Initialize(This,pICorProfilerInfoUnk) \
     ( (This)->lpVtbl -> Initialize(This,pICorProfilerInfoUnk) ) 
 
-#define ICorProfilerCallback9_Shutdown(This)	\
+#define ICorProfilerCallback9_Shutdown(This)    \
     ( (This)->lpVtbl -> Shutdown(This) ) 
 
-#define ICorProfilerCallback9_AppDomainCreationStarted(This,appDomainId)	\
+#define ICorProfilerCallback9_AppDomainCreationStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainCreationStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback9_AppDomainCreationFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback9_AppDomainCreationFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainCreationFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback9_AppDomainShutdownStarted(This,appDomainId)	\
+#define ICorProfilerCallback9_AppDomainShutdownStarted(This,appDomainId)    \
     ( (This)->lpVtbl -> AppDomainShutdownStarted(This,appDomainId) ) 
 
-#define ICorProfilerCallback9_AppDomainShutdownFinished(This,appDomainId,hrStatus)	\
+#define ICorProfilerCallback9_AppDomainShutdownFinished(This,appDomainId,hrStatus)  \
     ( (This)->lpVtbl -> AppDomainShutdownFinished(This,appDomainId,hrStatus) ) 
 
-#define ICorProfilerCallback9_AssemblyLoadStarted(This,assemblyId)	\
+#define ICorProfilerCallback9_AssemblyLoadStarted(This,assemblyId)  \
     ( (This)->lpVtbl -> AssemblyLoadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback9_AssemblyLoadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback9_AssemblyLoadFinished(This,assemblyId,hrStatus)    \
     ( (This)->lpVtbl -> AssemblyLoadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback9_AssemblyUnloadStarted(This,assemblyId)	\
+#define ICorProfilerCallback9_AssemblyUnloadStarted(This,assemblyId)    \
     ( (This)->lpVtbl -> AssemblyUnloadStarted(This,assemblyId) ) 
 
-#define ICorProfilerCallback9_AssemblyUnloadFinished(This,assemblyId,hrStatus)	\
+#define ICorProfilerCallback9_AssemblyUnloadFinished(This,assemblyId,hrStatus)  \
     ( (This)->lpVtbl -> AssemblyUnloadFinished(This,assemblyId,hrStatus) ) 
 
-#define ICorProfilerCallback9_ModuleLoadStarted(This,moduleId)	\
+#define ICorProfilerCallback9_ModuleLoadStarted(This,moduleId)  \
     ( (This)->lpVtbl -> ModuleLoadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback9_ModuleLoadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback9_ModuleLoadFinished(This,moduleId,hrStatus)    \
     ( (This)->lpVtbl -> ModuleLoadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback9_ModuleUnloadStarted(This,moduleId)	\
+#define ICorProfilerCallback9_ModuleUnloadStarted(This,moduleId)    \
     ( (This)->lpVtbl -> ModuleUnloadStarted(This,moduleId) ) 
 
-#define ICorProfilerCallback9_ModuleUnloadFinished(This,moduleId,hrStatus)	\
+#define ICorProfilerCallback9_ModuleUnloadFinished(This,moduleId,hrStatus)  \
     ( (This)->lpVtbl -> ModuleUnloadFinished(This,moduleId,hrStatus) ) 
 
-#define ICorProfilerCallback9_ModuleAttachedToAssembly(This,moduleId,AssemblyId)	\
+#define ICorProfilerCallback9_ModuleAttachedToAssembly(This,moduleId,AssemblyId)    \
     ( (This)->lpVtbl -> ModuleAttachedToAssembly(This,moduleId,AssemblyId) ) 
 
-#define ICorProfilerCallback9_ClassLoadStarted(This,classId)	\
+#define ICorProfilerCallback9_ClassLoadStarted(This,classId)    \
     ( (This)->lpVtbl -> ClassLoadStarted(This,classId) ) 
 
-#define ICorProfilerCallback9_ClassLoadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback9_ClassLoadFinished(This,classId,hrStatus)  \
     ( (This)->lpVtbl -> ClassLoadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback9_ClassUnloadStarted(This,classId)	\
+#define ICorProfilerCallback9_ClassUnloadStarted(This,classId)  \
     ( (This)->lpVtbl -> ClassUnloadStarted(This,classId) ) 
 
-#define ICorProfilerCallback9_ClassUnloadFinished(This,classId,hrStatus)	\
+#define ICorProfilerCallback9_ClassUnloadFinished(This,classId,hrStatus)    \
     ( (This)->lpVtbl -> ClassUnloadFinished(This,classId,hrStatus) ) 
 
-#define ICorProfilerCallback9_FunctionUnloadStarted(This,functionId)	\
+#define ICorProfilerCallback9_FunctionUnloadStarted(This,functionId)    \
     ( (This)->lpVtbl -> FunctionUnloadStarted(This,functionId) ) 
 
-#define ICorProfilerCallback9_JITCompilationStarted(This,functionId,fIsSafeToBlock)	\
+#define ICorProfilerCallback9_JITCompilationStarted(This,functionId,fIsSafeToBlock) \
     ( (This)->lpVtbl -> JITCompilationStarted(This,functionId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback9_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback9_JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> JITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback9_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)	\
+#define ICorProfilerCallback9_JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchStarted(This,functionId,pbUseCachedFunction) ) 
 
-#define ICorProfilerCallback9_JITCachedFunctionSearchFinished(This,functionId,result)	\
+#define ICorProfilerCallback9_JITCachedFunctionSearchFinished(This,functionId,result)   \
     ( (This)->lpVtbl -> JITCachedFunctionSearchFinished(This,functionId,result) ) 
 
-#define ICorProfilerCallback9_JITFunctionPitched(This,functionId)	\
+#define ICorProfilerCallback9_JITFunctionPitched(This,functionId)   \
     ( (This)->lpVtbl -> JITFunctionPitched(This,functionId) ) 
 
-#define ICorProfilerCallback9_JITInlining(This,callerId,calleeId,pfShouldInline)	\
+#define ICorProfilerCallback9_JITInlining(This,callerId,calleeId,pfShouldInline)    \
     ( (This)->lpVtbl -> JITInlining(This,callerId,calleeId,pfShouldInline) ) 
 
-#define ICorProfilerCallback9_ThreadCreated(This,threadId)	\
+#define ICorProfilerCallback9_ThreadCreated(This,threadId)  \
     ( (This)->lpVtbl -> ThreadCreated(This,threadId) ) 
 
-#define ICorProfilerCallback9_ThreadDestroyed(This,threadId)	\
+#define ICorProfilerCallback9_ThreadDestroyed(This,threadId)    \
     ( (This)->lpVtbl -> ThreadDestroyed(This,threadId) ) 
 
-#define ICorProfilerCallback9_ThreadAssignedToOSThread(This,managedThreadId,osThreadId)	\
+#define ICorProfilerCallback9_ThreadAssignedToOSThread(This,managedThreadId,osThreadId) \
     ( (This)->lpVtbl -> ThreadAssignedToOSThread(This,managedThreadId,osThreadId) ) 
 
-#define ICorProfilerCallback9_RemotingClientInvocationStarted(This)	\
+#define ICorProfilerCallback9_RemotingClientInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingClientInvocationStarted(This) ) 
 
-#define ICorProfilerCallback9_RemotingClientSendingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback9_RemotingClientSendingMessage(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientSendingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback9_RemotingClientReceivingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback9_RemotingClientReceivingReply(This,pCookie,fIsAsync)   \
     ( (This)->lpVtbl -> RemotingClientReceivingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback9_RemotingClientInvocationFinished(This)	\
+#define ICorProfilerCallback9_RemotingClientInvocationFinished(This)    \
     ( (This)->lpVtbl -> RemotingClientInvocationFinished(This) ) 
 
-#define ICorProfilerCallback9_RemotingServerReceivingMessage(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback9_RemotingServerReceivingMessage(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerReceivingMessage(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback9_RemotingServerInvocationStarted(This)	\
+#define ICorProfilerCallback9_RemotingServerInvocationStarted(This) \
     ( (This)->lpVtbl -> RemotingServerInvocationStarted(This) ) 
 
-#define ICorProfilerCallback9_RemotingServerInvocationReturned(This)	\
+#define ICorProfilerCallback9_RemotingServerInvocationReturned(This)    \
     ( (This)->lpVtbl -> RemotingServerInvocationReturned(This) ) 
 
-#define ICorProfilerCallback9_RemotingServerSendingReply(This,pCookie,fIsAsync)	\
+#define ICorProfilerCallback9_RemotingServerSendingReply(This,pCookie,fIsAsync) \
     ( (This)->lpVtbl -> RemotingServerSendingReply(This,pCookie,fIsAsync) ) 
 
-#define ICorProfilerCallback9_UnmanagedToManagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback9_UnmanagedToManagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> UnmanagedToManagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback9_ManagedToUnmanagedTransition(This,functionId,reason)	\
+#define ICorProfilerCallback9_ManagedToUnmanagedTransition(This,functionId,reason)  \
     ( (This)->lpVtbl -> ManagedToUnmanagedTransition(This,functionId,reason) ) 
 
-#define ICorProfilerCallback9_RuntimeSuspendStarted(This,suspendReason)	\
+#define ICorProfilerCallback9_RuntimeSuspendStarted(This,suspendReason) \
     ( (This)->lpVtbl -> RuntimeSuspendStarted(This,suspendReason) ) 
 
-#define ICorProfilerCallback9_RuntimeSuspendFinished(This)	\
+#define ICorProfilerCallback9_RuntimeSuspendFinished(This)  \
     ( (This)->lpVtbl -> RuntimeSuspendFinished(This) ) 
 
-#define ICorProfilerCallback9_RuntimeSuspendAborted(This)	\
+#define ICorProfilerCallback9_RuntimeSuspendAborted(This)   \
     ( (This)->lpVtbl -> RuntimeSuspendAborted(This) ) 
 
-#define ICorProfilerCallback9_RuntimeResumeStarted(This)	\
+#define ICorProfilerCallback9_RuntimeResumeStarted(This)    \
     ( (This)->lpVtbl -> RuntimeResumeStarted(This) ) 
 
-#define ICorProfilerCallback9_RuntimeResumeFinished(This)	\
+#define ICorProfilerCallback9_RuntimeResumeFinished(This)   \
     ( (This)->lpVtbl -> RuntimeResumeFinished(This) ) 
 
-#define ICorProfilerCallback9_RuntimeThreadSuspended(This,threadId)	\
+#define ICorProfilerCallback9_RuntimeThreadSuspended(This,threadId) \
     ( (This)->lpVtbl -> RuntimeThreadSuspended(This,threadId) ) 
 
-#define ICorProfilerCallback9_RuntimeThreadResumed(This,threadId)	\
+#define ICorProfilerCallback9_RuntimeThreadResumed(This,threadId)   \
     ( (This)->lpVtbl -> RuntimeThreadResumed(This,threadId) ) 
 
-#define ICorProfilerCallback9_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback9_MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> MovedReferences(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback9_ObjectAllocated(This,objectId,classId)	\
+#define ICorProfilerCallback9_ObjectAllocated(This,objectId,classId)    \
     ( (This)->lpVtbl -> ObjectAllocated(This,objectId,classId) ) 
 
-#define ICorProfilerCallback9_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)	\
+#define ICorProfilerCallback9_ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects)   \
     ( (This)->lpVtbl -> ObjectsAllocatedByClass(This,cClassCount,classIds,cObjects) ) 
 
-#define ICorProfilerCallback9_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)	\
+#define ICorProfilerCallback9_ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds)  \
     ( (This)->lpVtbl -> ObjectReferences(This,objectId,classId,cObjectRefs,objectRefIds) ) 
 
-#define ICorProfilerCallback9_RootReferences(This,cRootRefs,rootRefIds)	\
+#define ICorProfilerCallback9_RootReferences(This,cRootRefs,rootRefIds) \
     ( (This)->lpVtbl -> RootReferences(This,cRootRefs,rootRefIds) ) 
 
-#define ICorProfilerCallback9_ExceptionThrown(This,thrownObjectId)	\
+#define ICorProfilerCallback9_ExceptionThrown(This,thrownObjectId)  \
     ( (This)->lpVtbl -> ExceptionThrown(This,thrownObjectId) ) 
 
-#define ICorProfilerCallback9_ExceptionSearchFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback9_ExceptionSearchFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionSearchFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback9_ExceptionSearchFunctionLeave(This)	\
+#define ICorProfilerCallback9_ExceptionSearchFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionSearchFunctionLeave(This) ) 
 
-#define ICorProfilerCallback9_ExceptionSearchFilterEnter(This,functionId)	\
+#define ICorProfilerCallback9_ExceptionSearchFilterEnter(This,functionId)   \
     ( (This)->lpVtbl -> ExceptionSearchFilterEnter(This,functionId) ) 
 
-#define ICorProfilerCallback9_ExceptionSearchFilterLeave(This)	\
+#define ICorProfilerCallback9_ExceptionSearchFilterLeave(This)  \
     ( (This)->lpVtbl -> ExceptionSearchFilterLeave(This) ) 
 
-#define ICorProfilerCallback9_ExceptionSearchCatcherFound(This,functionId)	\
+#define ICorProfilerCallback9_ExceptionSearchCatcherFound(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionSearchCatcherFound(This,functionId) ) 
 
-#define ICorProfilerCallback9_ExceptionOSHandlerEnter(This,__unused)	\
+#define ICorProfilerCallback9_ExceptionOSHandlerEnter(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerEnter(This,__unused) ) 
 
-#define ICorProfilerCallback9_ExceptionOSHandlerLeave(This,__unused)	\
+#define ICorProfilerCallback9_ExceptionOSHandlerLeave(This,__unused)    \
     ( (This)->lpVtbl -> ExceptionOSHandlerLeave(This,__unused) ) 
 
-#define ICorProfilerCallback9_ExceptionUnwindFunctionEnter(This,functionId)	\
+#define ICorProfilerCallback9_ExceptionUnwindFunctionEnter(This,functionId) \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionEnter(This,functionId) ) 
 
-#define ICorProfilerCallback9_ExceptionUnwindFunctionLeave(This)	\
+#define ICorProfilerCallback9_ExceptionUnwindFunctionLeave(This)    \
     ( (This)->lpVtbl -> ExceptionUnwindFunctionLeave(This) ) 
 
-#define ICorProfilerCallback9_ExceptionUnwindFinallyEnter(This,functionId)	\
+#define ICorProfilerCallback9_ExceptionUnwindFinallyEnter(This,functionId)  \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyEnter(This,functionId) ) 
 
-#define ICorProfilerCallback9_ExceptionUnwindFinallyLeave(This)	\
+#define ICorProfilerCallback9_ExceptionUnwindFinallyLeave(This) \
     ( (This)->lpVtbl -> ExceptionUnwindFinallyLeave(This) ) 
 
-#define ICorProfilerCallback9_ExceptionCatcherEnter(This,functionId,objectId)	\
+#define ICorProfilerCallback9_ExceptionCatcherEnter(This,functionId,objectId)   \
     ( (This)->lpVtbl -> ExceptionCatcherEnter(This,functionId,objectId) ) 
 
-#define ICorProfilerCallback9_ExceptionCatcherLeave(This)	\
+#define ICorProfilerCallback9_ExceptionCatcherLeave(This)   \
     ( (This)->lpVtbl -> ExceptionCatcherLeave(This) ) 
 
-#define ICorProfilerCallback9_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)	\
+#define ICorProfilerCallback9_COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots)    \
     ( (This)->lpVtbl -> COMClassicVTableCreated(This,wrappedClassId,implementedIID,pVTable,cSlots) ) 
 
-#define ICorProfilerCallback9_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable)	\
+#define ICorProfilerCallback9_COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) \
     ( (This)->lpVtbl -> COMClassicVTableDestroyed(This,wrappedClassId,implementedIID,pVTable) ) 
 
-#define ICorProfilerCallback9_ExceptionCLRCatcherFound(This)	\
+#define ICorProfilerCallback9_ExceptionCLRCatcherFound(This)    \
     ( (This)->lpVtbl -> ExceptionCLRCatcherFound(This) ) 
 
-#define ICorProfilerCallback9_ExceptionCLRCatcherExecute(This)	\
+#define ICorProfilerCallback9_ExceptionCLRCatcherExecute(This)  \
     ( (This)->lpVtbl -> ExceptionCLRCatcherExecute(This) ) 
 
 
-#define ICorProfilerCallback9_ThreadNameChanged(This,threadId,cchName,name)	\
+#define ICorProfilerCallback9_ThreadNameChanged(This,threadId,cchName,name) \
     ( (This)->lpVtbl -> ThreadNameChanged(This,threadId,cchName,name) ) 
 
-#define ICorProfilerCallback9_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)	\
+#define ICorProfilerCallback9_GarbageCollectionStarted(This,cGenerations,generationCollected,reason)    \
     ( (This)->lpVtbl -> GarbageCollectionStarted(This,cGenerations,generationCollected,reason) ) 
 
-#define ICorProfilerCallback9_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback9_SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)    \
     ( (This)->lpVtbl -> SurvivingReferences(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback9_GarbageCollectionFinished(This)	\
+#define ICorProfilerCallback9_GarbageCollectionFinished(This)   \
     ( (This)->lpVtbl -> GarbageCollectionFinished(This) ) 
 
-#define ICorProfilerCallback9_FinalizeableObjectQueued(This,finalizerFlags,objectID)	\
+#define ICorProfilerCallback9_FinalizeableObjectQueued(This,finalizerFlags,objectID)    \
     ( (This)->lpVtbl -> FinalizeableObjectQueued(This,finalizerFlags,objectID) ) 
 
-#define ICorProfilerCallback9_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)	\
+#define ICorProfilerCallback9_RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds)    \
     ( (This)->lpVtbl -> RootReferences2(This,cRootRefs,rootRefIds,rootKinds,rootFlags,rootIds) ) 
 
-#define ICorProfilerCallback9_HandleCreated(This,handleId,initialObjectId)	\
+#define ICorProfilerCallback9_HandleCreated(This,handleId,initialObjectId)  \
     ( (This)->lpVtbl -> HandleCreated(This,handleId,initialObjectId) ) 
 
-#define ICorProfilerCallback9_HandleDestroyed(This,handleId)	\
+#define ICorProfilerCallback9_HandleDestroyed(This,handleId)    \
     ( (This)->lpVtbl -> HandleDestroyed(This,handleId) ) 
 
 
-#define ICorProfilerCallback9_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)	\
+#define ICorProfilerCallback9_InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData)   \
     ( (This)->lpVtbl -> InitializeForAttach(This,pCorProfilerInfoUnk,pvClientData,cbClientData) ) 
 
-#define ICorProfilerCallback9_ProfilerAttachComplete(This)	\
+#define ICorProfilerCallback9_ProfilerAttachComplete(This)  \
     ( (This)->lpVtbl -> ProfilerAttachComplete(This) ) 
 
-#define ICorProfilerCallback9_ProfilerDetachSucceeded(This)	\
+#define ICorProfilerCallback9_ProfilerDetachSucceeded(This) \
     ( (This)->lpVtbl -> ProfilerDetachSucceeded(This) ) 
 
 
-#define ICorProfilerCallback9_ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock)	\
+#define ICorProfilerCallback9_ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock)   \
     ( (This)->lpVtbl -> ReJITCompilationStarted(This,functionId,rejitId,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback9_GetReJITParameters(This,moduleId,methodId,pFunctionControl)	\
+#define ICorProfilerCallback9_GetReJITParameters(This,moduleId,methodId,pFunctionControl)   \
     ( (This)->lpVtbl -> GetReJITParameters(This,moduleId,methodId,pFunctionControl) ) 
 
-#define ICorProfilerCallback9_ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback9_ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock) \
     ( (This)->lpVtbl -> ReJITCompilationFinished(This,functionId,rejitId,hrStatus,fIsSafeToBlock) ) 
 
-#define ICorProfilerCallback9_ReJITError(This,moduleId,methodId,functionId,hrStatus)	\
+#define ICorProfilerCallback9_ReJITError(This,moduleId,methodId,functionId,hrStatus)    \
     ( (This)->lpVtbl -> ReJITError(This,moduleId,methodId,functionId,hrStatus) ) 
 
-#define ICorProfilerCallback9_MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback9_MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength)  \
     ( (This)->lpVtbl -> MovedReferences2(This,cMovedObjectIDRanges,oldObjectIDRangeStart,newObjectIDRangeStart,cObjectIDRangeLength) ) 
 
-#define ICorProfilerCallback9_SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)	\
+#define ICorProfilerCallback9_SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength)   \
     ( (This)->lpVtbl -> SurvivingReferences2(This,cSurvivingObjectIDRanges,objectIDRangeStart,cObjectIDRangeLength) ) 
 
 
-#define ICorProfilerCallback9_ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds)	\
+#define ICorProfilerCallback9_ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds)   \
     ( (This)->lpVtbl -> ConditionalWeakTableElementReferences(This,cRootRefs,keyRefIds,valueRefIds,rootIds) ) 
 
 
-#define ICorProfilerCallback9_GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider)	\
+#define ICorProfilerCallback9_GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider)   \
     ( (This)->lpVtbl -> GetAssemblyReferences(This,wszAssemblyPath,pAsmRefProvider) ) 
 
 
-#define ICorProfilerCallback9_ModuleInMemorySymbolsUpdated(This,moduleId)	\
+#define ICorProfilerCallback9_ModuleInMemorySymbolsUpdated(This,moduleId)   \
     ( (This)->lpVtbl -> ModuleInMemorySymbolsUpdated(This,moduleId) ) 
 
 
-#define ICorProfilerCallback9_DynamicMethodJITCompilationStarted(This,functionId,fIsSafeToBlock,pILHeader,cbILHeader)	\
+#define ICorProfilerCallback9_DynamicMethodJITCompilationStarted(This,functionId,fIsSafeToBlock,pILHeader,cbILHeader)   \
     ( (This)->lpVtbl -> DynamicMethodJITCompilationStarted(This,functionId,fIsSafeToBlock,pILHeader,cbILHeader) ) 
 
-#define ICorProfilerCallback9_DynamicMethodJITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)	\
+#define ICorProfilerCallback9_DynamicMethodJITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock)  \
     ( (This)->lpVtbl -> DynamicMethodJITCompilationFinished(This,functionId,hrStatus,fIsSafeToBlock) ) 
 
 
-#define ICorProfilerCallback9_DynamicMethodUnloaded(This,functionId)	\
+#define ICorProfilerCallback9_DynamicMethodUnloaded(This,functionId)    \
     ( (This)->lpVtbl -> DynamicMethodUnloaded(This,functionId) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerCallback9_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerCallback9_INTERFACE_DEFINED__ */
 
 
 /* interface __MIDL_itf_corprof_0000_0009 */
@@ -7442,9 +7449,9 @@ EXTERN_C const IID IID_ICorProfilerCallback9;
 typedef /* [public] */ 
 enum __MIDL___MIDL_itf_corprof_0000_0009_0001
     {
-        COR_PRF_CODEGEN_DISABLE_INLINING	= 0x1,
-        COR_PRF_CODEGEN_DISABLE_ALL_OPTIMIZATIONS	= 0x2
-    } 	COR_PRF_CODEGEN_FLAGS;
+        COR_PRF_CODEGEN_DISABLE_INLINING    = 0x1,
+        COR_PRF_CODEGEN_DISABLE_ALL_OPTIMIZATIONS   = 0x2
+    }   COR_PRF_CODEGEN_FLAGS;
 
 
 
@@ -7625,7 +7632,7 @@ EXTERN_C const IID IID_ICorProfilerInfo;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerInfoVtbl
     {
@@ -7845,124 +7852,124 @@ EXTERN_C const IID IID_ICorProfilerInfo;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerInfo_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerInfo_QueryInterface(This,riid,ppvObject)    \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerInfo_AddRef(This)	\
+#define ICorProfilerInfo_AddRef(This)   \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerInfo_Release(This)	\
+#define ICorProfilerInfo_Release(This)  \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerInfo_GetClassFromObject(This,objectId,pClassId)	\
+#define ICorProfilerInfo_GetClassFromObject(This,objectId,pClassId) \
     ( (This)->lpVtbl -> GetClassFromObject(This,objectId,pClassId) ) 
 
-#define ICorProfilerInfo_GetClassFromToken(This,moduleId,typeDef,pClassId)	\
+#define ICorProfilerInfo_GetClassFromToken(This,moduleId,typeDef,pClassId)  \
     ( (This)->lpVtbl -> GetClassFromToken(This,moduleId,typeDef,pClassId) ) 
 
-#define ICorProfilerInfo_GetCodeInfo(This,functionId,pStart,pcSize)	\
+#define ICorProfilerInfo_GetCodeInfo(This,functionId,pStart,pcSize) \
     ( (This)->lpVtbl -> GetCodeInfo(This,functionId,pStart,pcSize) ) 
 
-#define ICorProfilerInfo_GetEventMask(This,pdwEvents)	\
+#define ICorProfilerInfo_GetEventMask(This,pdwEvents)   \
     ( (This)->lpVtbl -> GetEventMask(This,pdwEvents) ) 
 
-#define ICorProfilerInfo_GetFunctionFromIP(This,ip,pFunctionId)	\
+#define ICorProfilerInfo_GetFunctionFromIP(This,ip,pFunctionId) \
     ( (This)->lpVtbl -> GetFunctionFromIP(This,ip,pFunctionId) ) 
 
-#define ICorProfilerInfo_GetFunctionFromToken(This,moduleId,token,pFunctionId)	\
+#define ICorProfilerInfo_GetFunctionFromToken(This,moduleId,token,pFunctionId)  \
     ( (This)->lpVtbl -> GetFunctionFromToken(This,moduleId,token,pFunctionId) ) 
 
-#define ICorProfilerInfo_GetHandleFromThread(This,threadId,phThread)	\
+#define ICorProfilerInfo_GetHandleFromThread(This,threadId,phThread)    \
     ( (This)->lpVtbl -> GetHandleFromThread(This,threadId,phThread) ) 
 
-#define ICorProfilerInfo_GetObjectSize(This,objectId,pcSize)	\
+#define ICorProfilerInfo_GetObjectSize(This,objectId,pcSize)    \
     ( (This)->lpVtbl -> GetObjectSize(This,objectId,pcSize) ) 
 
-#define ICorProfilerInfo_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)	\
+#define ICorProfilerInfo_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)   \
     ( (This)->lpVtbl -> IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) ) 
 
-#define ICorProfilerInfo_GetThreadInfo(This,threadId,pdwWin32ThreadId)	\
+#define ICorProfilerInfo_GetThreadInfo(This,threadId,pdwWin32ThreadId)  \
     ( (This)->lpVtbl -> GetThreadInfo(This,threadId,pdwWin32ThreadId) ) 
 
-#define ICorProfilerInfo_GetCurrentThreadID(This,pThreadId)	\
+#define ICorProfilerInfo_GetCurrentThreadID(This,pThreadId) \
     ( (This)->lpVtbl -> GetCurrentThreadID(This,pThreadId) ) 
 
-#define ICorProfilerInfo_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)	\
+#define ICorProfilerInfo_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)   \
     ( (This)->lpVtbl -> GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) ) 
 
-#define ICorProfilerInfo_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)	\
+#define ICorProfilerInfo_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken) \
     ( (This)->lpVtbl -> GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken) ) 
 
-#define ICorProfilerInfo_SetEventMask(This,dwEvents)	\
+#define ICorProfilerInfo_SetEventMask(This,dwEvents)    \
     ( (This)->lpVtbl -> SetEventMask(This,dwEvents) ) 
 
-#define ICorProfilerInfo_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)   \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo_SetFunctionIDMapper(This,pFunc)	\
+#define ICorProfilerInfo_SetFunctionIDMapper(This,pFunc)    \
     ( (This)->lpVtbl -> SetFunctionIDMapper(This,pFunc) ) 
 
-#define ICorProfilerInfo_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)	\
+#define ICorProfilerInfo_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)  \
     ( (This)->lpVtbl -> GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) ) 
 
-#define ICorProfilerInfo_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)	\
+#define ICorProfilerInfo_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId) \
     ( (This)->lpVtbl -> GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId) ) 
 
-#define ICorProfilerInfo_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)	\
+#define ICorProfilerInfo_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)    \
     ( (This)->lpVtbl -> GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut) ) 
 
-#define ICorProfilerInfo_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)	\
+#define ICorProfilerInfo_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize) \
     ( (This)->lpVtbl -> GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize) ) 
 
-#define ICorProfilerInfo_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)	\
+#define ICorProfilerInfo_GetILFunctionBodyAllocator(This,moduleId,ppMalloc) \
     ( (This)->lpVtbl -> GetILFunctionBodyAllocator(This,moduleId,ppMalloc) ) 
 
-#define ICorProfilerInfo_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)	\
+#define ICorProfilerInfo_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)  \
     ( (This)->lpVtbl -> SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) ) 
 
-#define ICorProfilerInfo_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)	\
+#define ICorProfilerInfo_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)  \
     ( (This)->lpVtbl -> GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) ) 
 
-#define ICorProfilerInfo_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)	\
+#define ICorProfilerInfo_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)    \
     ( (This)->lpVtbl -> GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId) ) 
 
-#define ICorProfilerInfo_SetFunctionReJIT(This,functionId)	\
+#define ICorProfilerInfo_SetFunctionReJIT(This,functionId)  \
     ( (This)->lpVtbl -> SetFunctionReJIT(This,functionId) ) 
 
-#define ICorProfilerInfo_ForceGC(This)	\
+#define ICorProfilerInfo_ForceGC(This)  \
     ( (This)->lpVtbl -> ForceGC(This) ) 
 
-#define ICorProfilerInfo_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)	\
+#define ICorProfilerInfo_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)   \
     ( (This)->lpVtbl -> SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) ) 
 
-#define ICorProfilerInfo_GetInprocInspectionInterface(This,ppicd)	\
+#define ICorProfilerInfo_GetInprocInspectionInterface(This,ppicd)   \
     ( (This)->lpVtbl -> GetInprocInspectionInterface(This,ppicd) ) 
 
-#define ICorProfilerInfo_GetInprocInspectionIThisThread(This,ppicd)	\
+#define ICorProfilerInfo_GetInprocInspectionIThisThread(This,ppicd) \
     ( (This)->lpVtbl -> GetInprocInspectionIThisThread(This,ppicd) ) 
 
-#define ICorProfilerInfo_GetThreadContext(This,threadId,pContextId)	\
+#define ICorProfilerInfo_GetThreadContext(This,threadId,pContextId) \
     ( (This)->lpVtbl -> GetThreadContext(This,threadId,pContextId) ) 
 
-#define ICorProfilerInfo_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)	\
+#define ICorProfilerInfo_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)  \
     ( (This)->lpVtbl -> BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) ) 
 
-#define ICorProfilerInfo_EndInprocDebugging(This,dwProfilerContext)	\
+#define ICorProfilerInfo_EndInprocDebugging(This,dwProfilerContext) \
     ( (This)->lpVtbl -> EndInprocDebugging(This,dwProfilerContext) ) 
 
-#define ICorProfilerInfo_GetILToNativeMapping(This,functionId,cMap,pcMap,map)	\
+#define ICorProfilerInfo_GetILToNativeMapping(This,functionId,cMap,pcMap,map)   \
     ( (This)->lpVtbl -> GetILToNativeMapping(This,functionId,cMap,pcMap,map) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerInfo_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerInfo_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo2_INTERFACE_DEFINED__
@@ -8107,7 +8114,7 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerInfo2Vtbl
     {
@@ -8472,188 +8479,188 @@ EXTERN_C const IID IID_ICorProfilerInfo2;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerInfo2_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerInfo2_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerInfo2_AddRef(This)	\
+#define ICorProfilerInfo2_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerInfo2_Release(This)	\
+#define ICorProfilerInfo2_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerInfo2_GetClassFromObject(This,objectId,pClassId)	\
+#define ICorProfilerInfo2_GetClassFromObject(This,objectId,pClassId)    \
     ( (This)->lpVtbl -> GetClassFromObject(This,objectId,pClassId) ) 
 
-#define ICorProfilerInfo2_GetClassFromToken(This,moduleId,typeDef,pClassId)	\
+#define ICorProfilerInfo2_GetClassFromToken(This,moduleId,typeDef,pClassId) \
     ( (This)->lpVtbl -> GetClassFromToken(This,moduleId,typeDef,pClassId) ) 
 
-#define ICorProfilerInfo2_GetCodeInfo(This,functionId,pStart,pcSize)	\
+#define ICorProfilerInfo2_GetCodeInfo(This,functionId,pStart,pcSize)    \
     ( (This)->lpVtbl -> GetCodeInfo(This,functionId,pStart,pcSize) ) 
 
-#define ICorProfilerInfo2_GetEventMask(This,pdwEvents)	\
+#define ICorProfilerInfo2_GetEventMask(This,pdwEvents)  \
     ( (This)->lpVtbl -> GetEventMask(This,pdwEvents) ) 
 
-#define ICorProfilerInfo2_GetFunctionFromIP(This,ip,pFunctionId)	\
+#define ICorProfilerInfo2_GetFunctionFromIP(This,ip,pFunctionId)    \
     ( (This)->lpVtbl -> GetFunctionFromIP(This,ip,pFunctionId) ) 
 
-#define ICorProfilerInfo2_GetFunctionFromToken(This,moduleId,token,pFunctionId)	\
+#define ICorProfilerInfo2_GetFunctionFromToken(This,moduleId,token,pFunctionId) \
     ( (This)->lpVtbl -> GetFunctionFromToken(This,moduleId,token,pFunctionId) ) 
 
-#define ICorProfilerInfo2_GetHandleFromThread(This,threadId,phThread)	\
+#define ICorProfilerInfo2_GetHandleFromThread(This,threadId,phThread)   \
     ( (This)->lpVtbl -> GetHandleFromThread(This,threadId,phThread) ) 
 
-#define ICorProfilerInfo2_GetObjectSize(This,objectId,pcSize)	\
+#define ICorProfilerInfo2_GetObjectSize(This,objectId,pcSize)   \
     ( (This)->lpVtbl -> GetObjectSize(This,objectId,pcSize) ) 
 
-#define ICorProfilerInfo2_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)	\
+#define ICorProfilerInfo2_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)  \
     ( (This)->lpVtbl -> IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) ) 
 
-#define ICorProfilerInfo2_GetThreadInfo(This,threadId,pdwWin32ThreadId)	\
+#define ICorProfilerInfo2_GetThreadInfo(This,threadId,pdwWin32ThreadId) \
     ( (This)->lpVtbl -> GetThreadInfo(This,threadId,pdwWin32ThreadId) ) 
 
-#define ICorProfilerInfo2_GetCurrentThreadID(This,pThreadId)	\
+#define ICorProfilerInfo2_GetCurrentThreadID(This,pThreadId)    \
     ( (This)->lpVtbl -> GetCurrentThreadID(This,pThreadId) ) 
 
-#define ICorProfilerInfo2_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)	\
+#define ICorProfilerInfo2_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)  \
     ( (This)->lpVtbl -> GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) ) 
 
-#define ICorProfilerInfo2_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)	\
+#define ICorProfilerInfo2_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)    \
     ( (This)->lpVtbl -> GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken) ) 
 
-#define ICorProfilerInfo2_SetEventMask(This,dwEvents)	\
+#define ICorProfilerInfo2_SetEventMask(This,dwEvents)   \
     ( (This)->lpVtbl -> SetEventMask(This,dwEvents) ) 
 
-#define ICorProfilerInfo2_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo2_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo2_SetFunctionIDMapper(This,pFunc)	\
+#define ICorProfilerInfo2_SetFunctionIDMapper(This,pFunc)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper(This,pFunc) ) 
 
-#define ICorProfilerInfo2_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)	\
+#define ICorProfilerInfo2_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) \
     ( (This)->lpVtbl -> GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) ) 
 
-#define ICorProfilerInfo2_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)	\
+#define ICorProfilerInfo2_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)    \
     ( (This)->lpVtbl -> GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId) ) 
 
-#define ICorProfilerInfo2_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)	\
+#define ICorProfilerInfo2_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)   \
     ( (This)->lpVtbl -> GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut) ) 
 
-#define ICorProfilerInfo2_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)	\
+#define ICorProfilerInfo2_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)    \
     ( (This)->lpVtbl -> GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize) ) 
 
-#define ICorProfilerInfo2_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)	\
+#define ICorProfilerInfo2_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)    \
     ( (This)->lpVtbl -> GetILFunctionBodyAllocator(This,moduleId,ppMalloc) ) 
 
-#define ICorProfilerInfo2_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)	\
+#define ICorProfilerInfo2_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) \
     ( (This)->lpVtbl -> SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) ) 
 
-#define ICorProfilerInfo2_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)	\
+#define ICorProfilerInfo2_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) \
     ( (This)->lpVtbl -> GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) ) 
 
-#define ICorProfilerInfo2_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)	\
+#define ICorProfilerInfo2_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)   \
     ( (This)->lpVtbl -> GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId) ) 
 
-#define ICorProfilerInfo2_SetFunctionReJIT(This,functionId)	\
+#define ICorProfilerInfo2_SetFunctionReJIT(This,functionId) \
     ( (This)->lpVtbl -> SetFunctionReJIT(This,functionId) ) 
 
-#define ICorProfilerInfo2_ForceGC(This)	\
+#define ICorProfilerInfo2_ForceGC(This) \
     ( (This)->lpVtbl -> ForceGC(This) ) 
 
-#define ICorProfilerInfo2_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)	\
+#define ICorProfilerInfo2_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)  \
     ( (This)->lpVtbl -> SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) ) 
 
-#define ICorProfilerInfo2_GetInprocInspectionInterface(This,ppicd)	\
+#define ICorProfilerInfo2_GetInprocInspectionInterface(This,ppicd)  \
     ( (This)->lpVtbl -> GetInprocInspectionInterface(This,ppicd) ) 
 
-#define ICorProfilerInfo2_GetInprocInspectionIThisThread(This,ppicd)	\
+#define ICorProfilerInfo2_GetInprocInspectionIThisThread(This,ppicd)    \
     ( (This)->lpVtbl -> GetInprocInspectionIThisThread(This,ppicd) ) 
 
-#define ICorProfilerInfo2_GetThreadContext(This,threadId,pContextId)	\
+#define ICorProfilerInfo2_GetThreadContext(This,threadId,pContextId)    \
     ( (This)->lpVtbl -> GetThreadContext(This,threadId,pContextId) ) 
 
-#define ICorProfilerInfo2_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)	\
+#define ICorProfilerInfo2_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) \
     ( (This)->lpVtbl -> BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) ) 
 
-#define ICorProfilerInfo2_EndInprocDebugging(This,dwProfilerContext)	\
+#define ICorProfilerInfo2_EndInprocDebugging(This,dwProfilerContext)    \
     ( (This)->lpVtbl -> EndInprocDebugging(This,dwProfilerContext) ) 
 
-#define ICorProfilerInfo2_GetILToNativeMapping(This,functionId,cMap,pcMap,map)	\
+#define ICorProfilerInfo2_GetILToNativeMapping(This,functionId,cMap,pcMap,map)  \
     ( (This)->lpVtbl -> GetILToNativeMapping(This,functionId,cMap,pcMap,map) ) 
 
 
-#define ICorProfilerInfo2_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)	\
+#define ICorProfilerInfo2_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)    \
     ( (This)->lpVtbl -> DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize) ) 
 
-#define ICorProfilerInfo2_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo2_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo2_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)	\
+#define ICorProfilerInfo2_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)   \
     ( (This)->lpVtbl -> GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo2_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo2_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)   \
     ( (This)->lpVtbl -> GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo2_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize)	\
+#define ICorProfilerInfo2_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) \
     ( (This)->lpVtbl -> GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) ) 
 
-#define ICorProfilerInfo2_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)	\
+#define ICorProfilerInfo2_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)  \
     ( (This)->lpVtbl -> GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo2_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo2_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo2_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)	\
+#define ICorProfilerInfo2_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)   \
     ( (This)->lpVtbl -> GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID) ) 
 
-#define ICorProfilerInfo2_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID)	\
+#define ICorProfilerInfo2_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) \
     ( (This)->lpVtbl -> GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) ) 
 
-#define ICorProfilerInfo2_EnumModuleFrozenObjects(This,moduleID,ppEnum)	\
+#define ICorProfilerInfo2_EnumModuleFrozenObjects(This,moduleID,ppEnum) \
     ( (This)->lpVtbl -> EnumModuleFrozenObjects(This,moduleID,ppEnum) ) 
 
-#define ICorProfilerInfo2_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)	\
+#define ICorProfilerInfo2_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)    \
     ( (This)->lpVtbl -> GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData) ) 
 
-#define ICorProfilerInfo2_GetBoxClassLayout(This,classId,pBufferOffset)	\
+#define ICorProfilerInfo2_GetBoxClassLayout(This,classId,pBufferOffset) \
     ( (This)->lpVtbl -> GetBoxClassLayout(This,classId,pBufferOffset) ) 
 
-#define ICorProfilerInfo2_GetThreadAppDomain(This,threadId,pAppDomainId)	\
+#define ICorProfilerInfo2_GetThreadAppDomain(This,threadId,pAppDomainId)    \
     ( (This)->lpVtbl -> GetThreadAppDomain(This,threadId,pAppDomainId) ) 
 
-#define ICorProfilerInfo2_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)	\
+#define ICorProfilerInfo2_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)    \
     ( (This)->lpVtbl -> GetRVAStaticAddress(This,classId,fieldToken,ppAddress) ) 
 
-#define ICorProfilerInfo2_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)	\
+#define ICorProfilerInfo2_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)  \
     ( (This)->lpVtbl -> GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) ) 
 
-#define ICorProfilerInfo2_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)	\
+#define ICorProfilerInfo2_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)    \
     ( (This)->lpVtbl -> GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo2_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)	\
+#define ICorProfilerInfo2_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)  \
     ( (This)->lpVtbl -> GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) ) 
 
-#define ICorProfilerInfo2_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)	\
+#define ICorProfilerInfo2_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)    \
     ( (This)->lpVtbl -> GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo) ) 
 
-#define ICorProfilerInfo2_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges)	\
+#define ICorProfilerInfo2_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) \
     ( (This)->lpVtbl -> GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) ) 
 
-#define ICorProfilerInfo2_GetObjectGeneration(This,objectId,range)	\
+#define ICorProfilerInfo2_GetObjectGeneration(This,objectId,range)  \
     ( (This)->lpVtbl -> GetObjectGeneration(This,objectId,range) ) 
 
-#define ICorProfilerInfo2_GetNotifiedExceptionClauseInfo(This,pinfo)	\
+#define ICorProfilerInfo2_GetNotifiedExceptionClauseInfo(This,pinfo)    \
     ( (This)->lpVtbl -> GetNotifiedExceptionClauseInfo(This,pinfo) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerInfo2_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerInfo2_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo3_INTERFACE_DEFINED__
@@ -8754,7 +8761,7 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerInfo3Vtbl
     {
@@ -9213,231 +9220,231 @@ EXTERN_C const IID IID_ICorProfilerInfo3;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerInfo3_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerInfo3_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerInfo3_AddRef(This)	\
+#define ICorProfilerInfo3_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerInfo3_Release(This)	\
+#define ICorProfilerInfo3_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerInfo3_GetClassFromObject(This,objectId,pClassId)	\
+#define ICorProfilerInfo3_GetClassFromObject(This,objectId,pClassId)    \
     ( (This)->lpVtbl -> GetClassFromObject(This,objectId,pClassId) ) 
 
-#define ICorProfilerInfo3_GetClassFromToken(This,moduleId,typeDef,pClassId)	\
+#define ICorProfilerInfo3_GetClassFromToken(This,moduleId,typeDef,pClassId) \
     ( (This)->lpVtbl -> GetClassFromToken(This,moduleId,typeDef,pClassId) ) 
 
-#define ICorProfilerInfo3_GetCodeInfo(This,functionId,pStart,pcSize)	\
+#define ICorProfilerInfo3_GetCodeInfo(This,functionId,pStart,pcSize)    \
     ( (This)->lpVtbl -> GetCodeInfo(This,functionId,pStart,pcSize) ) 
 
-#define ICorProfilerInfo3_GetEventMask(This,pdwEvents)	\
+#define ICorProfilerInfo3_GetEventMask(This,pdwEvents)  \
     ( (This)->lpVtbl -> GetEventMask(This,pdwEvents) ) 
 
-#define ICorProfilerInfo3_GetFunctionFromIP(This,ip,pFunctionId)	\
+#define ICorProfilerInfo3_GetFunctionFromIP(This,ip,pFunctionId)    \
     ( (This)->lpVtbl -> GetFunctionFromIP(This,ip,pFunctionId) ) 
 
-#define ICorProfilerInfo3_GetFunctionFromToken(This,moduleId,token,pFunctionId)	\
+#define ICorProfilerInfo3_GetFunctionFromToken(This,moduleId,token,pFunctionId) \
     ( (This)->lpVtbl -> GetFunctionFromToken(This,moduleId,token,pFunctionId) ) 
 
-#define ICorProfilerInfo3_GetHandleFromThread(This,threadId,phThread)	\
+#define ICorProfilerInfo3_GetHandleFromThread(This,threadId,phThread)   \
     ( (This)->lpVtbl -> GetHandleFromThread(This,threadId,phThread) ) 
 
-#define ICorProfilerInfo3_GetObjectSize(This,objectId,pcSize)	\
+#define ICorProfilerInfo3_GetObjectSize(This,objectId,pcSize)   \
     ( (This)->lpVtbl -> GetObjectSize(This,objectId,pcSize) ) 
 
-#define ICorProfilerInfo3_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)	\
+#define ICorProfilerInfo3_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)  \
     ( (This)->lpVtbl -> IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) ) 
 
-#define ICorProfilerInfo3_GetThreadInfo(This,threadId,pdwWin32ThreadId)	\
+#define ICorProfilerInfo3_GetThreadInfo(This,threadId,pdwWin32ThreadId) \
     ( (This)->lpVtbl -> GetThreadInfo(This,threadId,pdwWin32ThreadId) ) 
 
-#define ICorProfilerInfo3_GetCurrentThreadID(This,pThreadId)	\
+#define ICorProfilerInfo3_GetCurrentThreadID(This,pThreadId)    \
     ( (This)->lpVtbl -> GetCurrentThreadID(This,pThreadId) ) 
 
-#define ICorProfilerInfo3_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)	\
+#define ICorProfilerInfo3_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)  \
     ( (This)->lpVtbl -> GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) ) 
 
-#define ICorProfilerInfo3_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)	\
+#define ICorProfilerInfo3_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)    \
     ( (This)->lpVtbl -> GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken) ) 
 
-#define ICorProfilerInfo3_SetEventMask(This,dwEvents)	\
+#define ICorProfilerInfo3_SetEventMask(This,dwEvents)   \
     ( (This)->lpVtbl -> SetEventMask(This,dwEvents) ) 
 
-#define ICorProfilerInfo3_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo3_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo3_SetFunctionIDMapper(This,pFunc)	\
+#define ICorProfilerInfo3_SetFunctionIDMapper(This,pFunc)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper(This,pFunc) ) 
 
-#define ICorProfilerInfo3_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)	\
+#define ICorProfilerInfo3_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) \
     ( (This)->lpVtbl -> GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) ) 
 
-#define ICorProfilerInfo3_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)	\
+#define ICorProfilerInfo3_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)    \
     ( (This)->lpVtbl -> GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId) ) 
 
-#define ICorProfilerInfo3_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)	\
+#define ICorProfilerInfo3_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)   \
     ( (This)->lpVtbl -> GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut) ) 
 
-#define ICorProfilerInfo3_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)	\
+#define ICorProfilerInfo3_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)    \
     ( (This)->lpVtbl -> GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize) ) 
 
-#define ICorProfilerInfo3_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)	\
+#define ICorProfilerInfo3_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)    \
     ( (This)->lpVtbl -> GetILFunctionBodyAllocator(This,moduleId,ppMalloc) ) 
 
-#define ICorProfilerInfo3_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)	\
+#define ICorProfilerInfo3_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) \
     ( (This)->lpVtbl -> SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) ) 
 
-#define ICorProfilerInfo3_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)	\
+#define ICorProfilerInfo3_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) \
     ( (This)->lpVtbl -> GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) ) 
 
-#define ICorProfilerInfo3_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)	\
+#define ICorProfilerInfo3_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)   \
     ( (This)->lpVtbl -> GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId) ) 
 
-#define ICorProfilerInfo3_SetFunctionReJIT(This,functionId)	\
+#define ICorProfilerInfo3_SetFunctionReJIT(This,functionId) \
     ( (This)->lpVtbl -> SetFunctionReJIT(This,functionId) ) 
 
-#define ICorProfilerInfo3_ForceGC(This)	\
+#define ICorProfilerInfo3_ForceGC(This) \
     ( (This)->lpVtbl -> ForceGC(This) ) 
 
-#define ICorProfilerInfo3_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)	\
+#define ICorProfilerInfo3_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)  \
     ( (This)->lpVtbl -> SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) ) 
 
-#define ICorProfilerInfo3_GetInprocInspectionInterface(This,ppicd)	\
+#define ICorProfilerInfo3_GetInprocInspectionInterface(This,ppicd)  \
     ( (This)->lpVtbl -> GetInprocInspectionInterface(This,ppicd) ) 
 
-#define ICorProfilerInfo3_GetInprocInspectionIThisThread(This,ppicd)	\
+#define ICorProfilerInfo3_GetInprocInspectionIThisThread(This,ppicd)    \
     ( (This)->lpVtbl -> GetInprocInspectionIThisThread(This,ppicd) ) 
 
-#define ICorProfilerInfo3_GetThreadContext(This,threadId,pContextId)	\
+#define ICorProfilerInfo3_GetThreadContext(This,threadId,pContextId)    \
     ( (This)->lpVtbl -> GetThreadContext(This,threadId,pContextId) ) 
 
-#define ICorProfilerInfo3_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)	\
+#define ICorProfilerInfo3_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) \
     ( (This)->lpVtbl -> BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) ) 
 
-#define ICorProfilerInfo3_EndInprocDebugging(This,dwProfilerContext)	\
+#define ICorProfilerInfo3_EndInprocDebugging(This,dwProfilerContext)    \
     ( (This)->lpVtbl -> EndInprocDebugging(This,dwProfilerContext) ) 
 
-#define ICorProfilerInfo3_GetILToNativeMapping(This,functionId,cMap,pcMap,map)	\
+#define ICorProfilerInfo3_GetILToNativeMapping(This,functionId,cMap,pcMap,map)  \
     ( (This)->lpVtbl -> GetILToNativeMapping(This,functionId,cMap,pcMap,map) ) 
 
 
-#define ICorProfilerInfo3_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)	\
+#define ICorProfilerInfo3_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)    \
     ( (This)->lpVtbl -> DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize) ) 
 
-#define ICorProfilerInfo3_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo3_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo3_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)	\
+#define ICorProfilerInfo3_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)   \
     ( (This)->lpVtbl -> GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo3_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo3_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)   \
     ( (This)->lpVtbl -> GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo3_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize)	\
+#define ICorProfilerInfo3_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) \
     ( (This)->lpVtbl -> GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) ) 
 
-#define ICorProfilerInfo3_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)	\
+#define ICorProfilerInfo3_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)  \
     ( (This)->lpVtbl -> GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo3_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo3_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo3_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)	\
+#define ICorProfilerInfo3_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)   \
     ( (This)->lpVtbl -> GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID) ) 
 
-#define ICorProfilerInfo3_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID)	\
+#define ICorProfilerInfo3_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) \
     ( (This)->lpVtbl -> GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) ) 
 
-#define ICorProfilerInfo3_EnumModuleFrozenObjects(This,moduleID,ppEnum)	\
+#define ICorProfilerInfo3_EnumModuleFrozenObjects(This,moduleID,ppEnum) \
     ( (This)->lpVtbl -> EnumModuleFrozenObjects(This,moduleID,ppEnum) ) 
 
-#define ICorProfilerInfo3_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)	\
+#define ICorProfilerInfo3_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)    \
     ( (This)->lpVtbl -> GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData) ) 
 
-#define ICorProfilerInfo3_GetBoxClassLayout(This,classId,pBufferOffset)	\
+#define ICorProfilerInfo3_GetBoxClassLayout(This,classId,pBufferOffset) \
     ( (This)->lpVtbl -> GetBoxClassLayout(This,classId,pBufferOffset) ) 
 
-#define ICorProfilerInfo3_GetThreadAppDomain(This,threadId,pAppDomainId)	\
+#define ICorProfilerInfo3_GetThreadAppDomain(This,threadId,pAppDomainId)    \
     ( (This)->lpVtbl -> GetThreadAppDomain(This,threadId,pAppDomainId) ) 
 
-#define ICorProfilerInfo3_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)	\
+#define ICorProfilerInfo3_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)    \
     ( (This)->lpVtbl -> GetRVAStaticAddress(This,classId,fieldToken,ppAddress) ) 
 
-#define ICorProfilerInfo3_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)	\
+#define ICorProfilerInfo3_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)  \
     ( (This)->lpVtbl -> GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) ) 
 
-#define ICorProfilerInfo3_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)	\
+#define ICorProfilerInfo3_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)    \
     ( (This)->lpVtbl -> GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo3_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)	\
+#define ICorProfilerInfo3_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)  \
     ( (This)->lpVtbl -> GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) ) 
 
-#define ICorProfilerInfo3_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)	\
+#define ICorProfilerInfo3_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)    \
     ( (This)->lpVtbl -> GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo) ) 
 
-#define ICorProfilerInfo3_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges)	\
+#define ICorProfilerInfo3_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) \
     ( (This)->lpVtbl -> GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) ) 
 
-#define ICorProfilerInfo3_GetObjectGeneration(This,objectId,range)	\
+#define ICorProfilerInfo3_GetObjectGeneration(This,objectId,range)  \
     ( (This)->lpVtbl -> GetObjectGeneration(This,objectId,range) ) 
 
-#define ICorProfilerInfo3_GetNotifiedExceptionClauseInfo(This,pinfo)	\
+#define ICorProfilerInfo3_GetNotifiedExceptionClauseInfo(This,pinfo)    \
     ( (This)->lpVtbl -> GetNotifiedExceptionClauseInfo(This,pinfo) ) 
 
 
-#define ICorProfilerInfo3_EnumJITedFunctions(This,ppEnum)	\
+#define ICorProfilerInfo3_EnumJITedFunctions(This,ppEnum)   \
     ( (This)->lpVtbl -> EnumJITedFunctions(This,ppEnum) ) 
 
-#define ICorProfilerInfo3_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)	\
+#define ICorProfilerInfo3_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)  \
     ( (This)->lpVtbl -> RequestProfilerDetach(This,dwExpectedCompletionMilliseconds) ) 
 
-#define ICorProfilerInfo3_SetFunctionIDMapper2(This,pFunc,clientData)	\
+#define ICorProfilerInfo3_SetFunctionIDMapper2(This,pFunc,clientData)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper2(This,pFunc,clientData) ) 
 
-#define ICorProfilerInfo3_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo3_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)  \
     ( (This)->lpVtbl -> GetStringLayout2(This,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo3_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)	\
+#define ICorProfilerInfo3_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3) ) 
 
-#define ICorProfilerInfo3_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)	\
+#define ICorProfilerInfo3_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo) ) 
 
-#define ICorProfilerInfo3_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)	\
+#define ICorProfilerInfo3_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)   \
     ( (This)->lpVtbl -> GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo) ) 
 
-#define ICorProfilerInfo3_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)	\
+#define ICorProfilerInfo3_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)    \
     ( (This)->lpVtbl -> GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange) ) 
 
-#define ICorProfilerInfo3_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)	\
+#define ICorProfilerInfo3_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)  \
     ( (This)->lpVtbl -> GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo) ) 
 
-#define ICorProfilerInfo3_EnumModules(This,ppEnum)	\
+#define ICorProfilerInfo3_EnumModules(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumModules(This,ppEnum) ) 
 
-#define ICorProfilerInfo3_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)	\
+#define ICorProfilerInfo3_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)   \
     ( (This)->lpVtbl -> GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString) ) 
 
-#define ICorProfilerInfo3_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)	\
+#define ICorProfilerInfo3_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)   \
     ( (This)->lpVtbl -> GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo3_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)	\
+#define ICorProfilerInfo3_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)    \
     ( (This)->lpVtbl -> GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds) ) 
 
-#define ICorProfilerInfo3_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)	\
+#define ICorProfilerInfo3_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)    \
     ( (This)->lpVtbl -> GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerInfo3_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerInfo3_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerObjectEnum_INTERFACE_DEFINED__
@@ -9474,7 +9481,7 @@ EXTERN_C const IID IID_ICorProfilerObjectEnum;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerObjectEnumVtbl
     {
@@ -9526,40 +9533,40 @@ EXTERN_C const IID IID_ICorProfilerObjectEnum;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerObjectEnum_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerObjectEnum_QueryInterface(This,riid,ppvObject)  \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerObjectEnum_AddRef(This)	\
+#define ICorProfilerObjectEnum_AddRef(This) \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerObjectEnum_Release(This)	\
+#define ICorProfilerObjectEnum_Release(This)    \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerObjectEnum_Skip(This,celt)	\
+#define ICorProfilerObjectEnum_Skip(This,celt)  \
     ( (This)->lpVtbl -> Skip(This,celt) ) 
 
-#define ICorProfilerObjectEnum_Reset(This)	\
+#define ICorProfilerObjectEnum_Reset(This)  \
     ( (This)->lpVtbl -> Reset(This) ) 
 
-#define ICorProfilerObjectEnum_Clone(This,ppEnum)	\
+#define ICorProfilerObjectEnum_Clone(This,ppEnum)   \
     ( (This)->lpVtbl -> Clone(This,ppEnum) ) 
 
-#define ICorProfilerObjectEnum_GetCount(This,pcelt)	\
+#define ICorProfilerObjectEnum_GetCount(This,pcelt) \
     ( (This)->lpVtbl -> GetCount(This,pcelt) ) 
 
-#define ICorProfilerObjectEnum_Next(This,celt,objects,pceltFetched)	\
+#define ICorProfilerObjectEnum_Next(This,celt,objects,pceltFetched) \
     ( (This)->lpVtbl -> Next(This,celt,objects,pceltFetched) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerObjectEnum_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerObjectEnum_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerFunctionEnum_INTERFACE_DEFINED__
@@ -9596,7 +9603,7 @@ EXTERN_C const IID IID_ICorProfilerFunctionEnum;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerFunctionEnumVtbl
     {
@@ -9648,40 +9655,40 @@ EXTERN_C const IID IID_ICorProfilerFunctionEnum;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerFunctionEnum_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerFunctionEnum_QueryInterface(This,riid,ppvObject)    \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerFunctionEnum_AddRef(This)	\
+#define ICorProfilerFunctionEnum_AddRef(This)   \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerFunctionEnum_Release(This)	\
+#define ICorProfilerFunctionEnum_Release(This)  \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerFunctionEnum_Skip(This,celt)	\
+#define ICorProfilerFunctionEnum_Skip(This,celt)    \
     ( (This)->lpVtbl -> Skip(This,celt) ) 
 
-#define ICorProfilerFunctionEnum_Reset(This)	\
+#define ICorProfilerFunctionEnum_Reset(This)    \
     ( (This)->lpVtbl -> Reset(This) ) 
 
-#define ICorProfilerFunctionEnum_Clone(This,ppEnum)	\
+#define ICorProfilerFunctionEnum_Clone(This,ppEnum) \
     ( (This)->lpVtbl -> Clone(This,ppEnum) ) 
 
-#define ICorProfilerFunctionEnum_GetCount(This,pcelt)	\
+#define ICorProfilerFunctionEnum_GetCount(This,pcelt)   \
     ( (This)->lpVtbl -> GetCount(This,pcelt) ) 
 
-#define ICorProfilerFunctionEnum_Next(This,celt,ids,pceltFetched)	\
+#define ICorProfilerFunctionEnum_Next(This,celt,ids,pceltFetched)   \
     ( (This)->lpVtbl -> Next(This,celt,ids,pceltFetched) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerFunctionEnum_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerFunctionEnum_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerModuleEnum_INTERFACE_DEFINED__
@@ -9718,7 +9725,7 @@ EXTERN_C const IID IID_ICorProfilerModuleEnum;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerModuleEnumVtbl
     {
@@ -9770,40 +9777,40 @@ EXTERN_C const IID IID_ICorProfilerModuleEnum;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerModuleEnum_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerModuleEnum_QueryInterface(This,riid,ppvObject)  \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerModuleEnum_AddRef(This)	\
+#define ICorProfilerModuleEnum_AddRef(This) \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerModuleEnum_Release(This)	\
+#define ICorProfilerModuleEnum_Release(This)    \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerModuleEnum_Skip(This,celt)	\
+#define ICorProfilerModuleEnum_Skip(This,celt)  \
     ( (This)->lpVtbl -> Skip(This,celt) ) 
 
-#define ICorProfilerModuleEnum_Reset(This)	\
+#define ICorProfilerModuleEnum_Reset(This)  \
     ( (This)->lpVtbl -> Reset(This) ) 
 
-#define ICorProfilerModuleEnum_Clone(This,ppEnum)	\
+#define ICorProfilerModuleEnum_Clone(This,ppEnum)   \
     ( (This)->lpVtbl -> Clone(This,ppEnum) ) 
 
-#define ICorProfilerModuleEnum_GetCount(This,pcelt)	\
+#define ICorProfilerModuleEnum_GetCount(This,pcelt) \
     ( (This)->lpVtbl -> GetCount(This,pcelt) ) 
 
-#define ICorProfilerModuleEnum_Next(This,celt,ids,pceltFetched)	\
+#define ICorProfilerModuleEnum_Next(This,celt,ids,pceltFetched) \
     ( (This)->lpVtbl -> Next(This,celt,ids,pceltFetched) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerModuleEnum_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerModuleEnum_INTERFACE_DEFINED__ */
 
 
 #ifndef __IMethodMalloc_INTERFACE_DEFINED__
@@ -9827,7 +9834,7 @@ EXTERN_C const IID IID_IMethodMalloc;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct IMethodMallocVtbl
     {
@@ -9862,28 +9869,28 @@ EXTERN_C const IID IID_IMethodMalloc;
 #ifdef COBJMACROS
 
 
-#define IMethodMalloc_QueryInterface(This,riid,ppvObject)	\
+#define IMethodMalloc_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define IMethodMalloc_AddRef(This)	\
+#define IMethodMalloc_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define IMethodMalloc_Release(This)	\
+#define IMethodMalloc_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define IMethodMalloc_Alloc(This,cb)	\
+#define IMethodMalloc_Alloc(This,cb)    \
     ( (This)->lpVtbl -> Alloc(This,cb) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __IMethodMalloc_INTERFACE_DEFINED__ */
+#endif  /* __IMethodMalloc_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerFunctionControl_INTERFACE_DEFINED__
@@ -9915,7 +9922,7 @@ EXTERN_C const IID IID_ICorProfilerFunctionControl;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerFunctionControlVtbl
     {
@@ -9960,34 +9967,34 @@ EXTERN_C const IID IID_ICorProfilerFunctionControl;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerFunctionControl_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerFunctionControl_QueryInterface(This,riid,ppvObject) \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerFunctionControl_AddRef(This)	\
+#define ICorProfilerFunctionControl_AddRef(This)    \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerFunctionControl_Release(This)	\
+#define ICorProfilerFunctionControl_Release(This)   \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerFunctionControl_SetCodegenFlags(This,flags)	\
+#define ICorProfilerFunctionControl_SetCodegenFlags(This,flags) \
     ( (This)->lpVtbl -> SetCodegenFlags(This,flags) ) 
 
-#define ICorProfilerFunctionControl_SetILFunctionBody(This,cbNewILMethodHeader,pbNewILMethodHeader)	\
+#define ICorProfilerFunctionControl_SetILFunctionBody(This,cbNewILMethodHeader,pbNewILMethodHeader) \
     ( (This)->lpVtbl -> SetILFunctionBody(This,cbNewILMethodHeader,pbNewILMethodHeader) ) 
 
-#define ICorProfilerFunctionControl_SetILInstrumentedCodeMap(This,cILMapEntries,rgILMapEntries)	\
+#define ICorProfilerFunctionControl_SetILInstrumentedCodeMap(This,cILMapEntries,rgILMapEntries) \
     ( (This)->lpVtbl -> SetILInstrumentedCodeMap(This,cILMapEntries,rgILMapEntries) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerFunctionControl_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerFunctionControl_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo4_INTERFACE_DEFINED__
@@ -10056,7 +10063,7 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerInfo4Vtbl
     {
@@ -10573,262 +10580,262 @@ EXTERN_C const IID IID_ICorProfilerInfo4;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerInfo4_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerInfo4_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerInfo4_AddRef(This)	\
+#define ICorProfilerInfo4_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerInfo4_Release(This)	\
+#define ICorProfilerInfo4_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerInfo4_GetClassFromObject(This,objectId,pClassId)	\
+#define ICorProfilerInfo4_GetClassFromObject(This,objectId,pClassId)    \
     ( (This)->lpVtbl -> GetClassFromObject(This,objectId,pClassId) ) 
 
-#define ICorProfilerInfo4_GetClassFromToken(This,moduleId,typeDef,pClassId)	\
+#define ICorProfilerInfo4_GetClassFromToken(This,moduleId,typeDef,pClassId) \
     ( (This)->lpVtbl -> GetClassFromToken(This,moduleId,typeDef,pClassId) ) 
 
-#define ICorProfilerInfo4_GetCodeInfo(This,functionId,pStart,pcSize)	\
+#define ICorProfilerInfo4_GetCodeInfo(This,functionId,pStart,pcSize)    \
     ( (This)->lpVtbl -> GetCodeInfo(This,functionId,pStart,pcSize) ) 
 
-#define ICorProfilerInfo4_GetEventMask(This,pdwEvents)	\
+#define ICorProfilerInfo4_GetEventMask(This,pdwEvents)  \
     ( (This)->lpVtbl -> GetEventMask(This,pdwEvents) ) 
 
-#define ICorProfilerInfo4_GetFunctionFromIP(This,ip,pFunctionId)	\
+#define ICorProfilerInfo4_GetFunctionFromIP(This,ip,pFunctionId)    \
     ( (This)->lpVtbl -> GetFunctionFromIP(This,ip,pFunctionId) ) 
 
-#define ICorProfilerInfo4_GetFunctionFromToken(This,moduleId,token,pFunctionId)	\
+#define ICorProfilerInfo4_GetFunctionFromToken(This,moduleId,token,pFunctionId) \
     ( (This)->lpVtbl -> GetFunctionFromToken(This,moduleId,token,pFunctionId) ) 
 
-#define ICorProfilerInfo4_GetHandleFromThread(This,threadId,phThread)	\
+#define ICorProfilerInfo4_GetHandleFromThread(This,threadId,phThread)   \
     ( (This)->lpVtbl -> GetHandleFromThread(This,threadId,phThread) ) 
 
-#define ICorProfilerInfo4_GetObjectSize(This,objectId,pcSize)	\
+#define ICorProfilerInfo4_GetObjectSize(This,objectId,pcSize)   \
     ( (This)->lpVtbl -> GetObjectSize(This,objectId,pcSize) ) 
 
-#define ICorProfilerInfo4_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)	\
+#define ICorProfilerInfo4_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)  \
     ( (This)->lpVtbl -> IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) ) 
 
-#define ICorProfilerInfo4_GetThreadInfo(This,threadId,pdwWin32ThreadId)	\
+#define ICorProfilerInfo4_GetThreadInfo(This,threadId,pdwWin32ThreadId) \
     ( (This)->lpVtbl -> GetThreadInfo(This,threadId,pdwWin32ThreadId) ) 
 
-#define ICorProfilerInfo4_GetCurrentThreadID(This,pThreadId)	\
+#define ICorProfilerInfo4_GetCurrentThreadID(This,pThreadId)    \
     ( (This)->lpVtbl -> GetCurrentThreadID(This,pThreadId) ) 
 
-#define ICorProfilerInfo4_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)	\
+#define ICorProfilerInfo4_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)  \
     ( (This)->lpVtbl -> GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) ) 
 
-#define ICorProfilerInfo4_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)	\
+#define ICorProfilerInfo4_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)    \
     ( (This)->lpVtbl -> GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken) ) 
 
-#define ICorProfilerInfo4_SetEventMask(This,dwEvents)	\
+#define ICorProfilerInfo4_SetEventMask(This,dwEvents)   \
     ( (This)->lpVtbl -> SetEventMask(This,dwEvents) ) 
 
-#define ICorProfilerInfo4_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo4_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo4_SetFunctionIDMapper(This,pFunc)	\
+#define ICorProfilerInfo4_SetFunctionIDMapper(This,pFunc)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper(This,pFunc) ) 
 
-#define ICorProfilerInfo4_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)	\
+#define ICorProfilerInfo4_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) \
     ( (This)->lpVtbl -> GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) ) 
 
-#define ICorProfilerInfo4_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)	\
+#define ICorProfilerInfo4_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)    \
     ( (This)->lpVtbl -> GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId) ) 
 
-#define ICorProfilerInfo4_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)	\
+#define ICorProfilerInfo4_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)   \
     ( (This)->lpVtbl -> GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut) ) 
 
-#define ICorProfilerInfo4_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)	\
+#define ICorProfilerInfo4_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)    \
     ( (This)->lpVtbl -> GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize) ) 
 
-#define ICorProfilerInfo4_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)	\
+#define ICorProfilerInfo4_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)    \
     ( (This)->lpVtbl -> GetILFunctionBodyAllocator(This,moduleId,ppMalloc) ) 
 
-#define ICorProfilerInfo4_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)	\
+#define ICorProfilerInfo4_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) \
     ( (This)->lpVtbl -> SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) ) 
 
-#define ICorProfilerInfo4_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)	\
+#define ICorProfilerInfo4_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) \
     ( (This)->lpVtbl -> GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) ) 
 
-#define ICorProfilerInfo4_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)	\
+#define ICorProfilerInfo4_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)   \
     ( (This)->lpVtbl -> GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId) ) 
 
-#define ICorProfilerInfo4_SetFunctionReJIT(This,functionId)	\
+#define ICorProfilerInfo4_SetFunctionReJIT(This,functionId) \
     ( (This)->lpVtbl -> SetFunctionReJIT(This,functionId) ) 
 
-#define ICorProfilerInfo4_ForceGC(This)	\
+#define ICorProfilerInfo4_ForceGC(This) \
     ( (This)->lpVtbl -> ForceGC(This) ) 
 
-#define ICorProfilerInfo4_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)	\
+#define ICorProfilerInfo4_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)  \
     ( (This)->lpVtbl -> SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) ) 
 
-#define ICorProfilerInfo4_GetInprocInspectionInterface(This,ppicd)	\
+#define ICorProfilerInfo4_GetInprocInspectionInterface(This,ppicd)  \
     ( (This)->lpVtbl -> GetInprocInspectionInterface(This,ppicd) ) 
 
-#define ICorProfilerInfo4_GetInprocInspectionIThisThread(This,ppicd)	\
+#define ICorProfilerInfo4_GetInprocInspectionIThisThread(This,ppicd)    \
     ( (This)->lpVtbl -> GetInprocInspectionIThisThread(This,ppicd) ) 
 
-#define ICorProfilerInfo4_GetThreadContext(This,threadId,pContextId)	\
+#define ICorProfilerInfo4_GetThreadContext(This,threadId,pContextId)    \
     ( (This)->lpVtbl -> GetThreadContext(This,threadId,pContextId) ) 
 
-#define ICorProfilerInfo4_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)	\
+#define ICorProfilerInfo4_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) \
     ( (This)->lpVtbl -> BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) ) 
 
-#define ICorProfilerInfo4_EndInprocDebugging(This,dwProfilerContext)	\
+#define ICorProfilerInfo4_EndInprocDebugging(This,dwProfilerContext)    \
     ( (This)->lpVtbl -> EndInprocDebugging(This,dwProfilerContext) ) 
 
-#define ICorProfilerInfo4_GetILToNativeMapping(This,functionId,cMap,pcMap,map)	\
+#define ICorProfilerInfo4_GetILToNativeMapping(This,functionId,cMap,pcMap,map)  \
     ( (This)->lpVtbl -> GetILToNativeMapping(This,functionId,cMap,pcMap,map) ) 
 
 
-#define ICorProfilerInfo4_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)	\
+#define ICorProfilerInfo4_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)    \
     ( (This)->lpVtbl -> DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize) ) 
 
-#define ICorProfilerInfo4_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo4_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo4_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)	\
+#define ICorProfilerInfo4_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)   \
     ( (This)->lpVtbl -> GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo4_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo4_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)   \
     ( (This)->lpVtbl -> GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo4_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize)	\
+#define ICorProfilerInfo4_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) \
     ( (This)->lpVtbl -> GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) ) 
 
-#define ICorProfilerInfo4_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)	\
+#define ICorProfilerInfo4_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)  \
     ( (This)->lpVtbl -> GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo4_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo4_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo4_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)	\
+#define ICorProfilerInfo4_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)   \
     ( (This)->lpVtbl -> GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID) ) 
 
-#define ICorProfilerInfo4_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID)	\
+#define ICorProfilerInfo4_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) \
     ( (This)->lpVtbl -> GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) ) 
 
-#define ICorProfilerInfo4_EnumModuleFrozenObjects(This,moduleID,ppEnum)	\
+#define ICorProfilerInfo4_EnumModuleFrozenObjects(This,moduleID,ppEnum) \
     ( (This)->lpVtbl -> EnumModuleFrozenObjects(This,moduleID,ppEnum) ) 
 
-#define ICorProfilerInfo4_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)	\
+#define ICorProfilerInfo4_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)    \
     ( (This)->lpVtbl -> GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData) ) 
 
-#define ICorProfilerInfo4_GetBoxClassLayout(This,classId,pBufferOffset)	\
+#define ICorProfilerInfo4_GetBoxClassLayout(This,classId,pBufferOffset) \
     ( (This)->lpVtbl -> GetBoxClassLayout(This,classId,pBufferOffset) ) 
 
-#define ICorProfilerInfo4_GetThreadAppDomain(This,threadId,pAppDomainId)	\
+#define ICorProfilerInfo4_GetThreadAppDomain(This,threadId,pAppDomainId)    \
     ( (This)->lpVtbl -> GetThreadAppDomain(This,threadId,pAppDomainId) ) 
 
-#define ICorProfilerInfo4_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)	\
+#define ICorProfilerInfo4_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)    \
     ( (This)->lpVtbl -> GetRVAStaticAddress(This,classId,fieldToken,ppAddress) ) 
 
-#define ICorProfilerInfo4_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)	\
+#define ICorProfilerInfo4_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)  \
     ( (This)->lpVtbl -> GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) ) 
 
-#define ICorProfilerInfo4_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)	\
+#define ICorProfilerInfo4_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)    \
     ( (This)->lpVtbl -> GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo4_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)	\
+#define ICorProfilerInfo4_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)  \
     ( (This)->lpVtbl -> GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) ) 
 
-#define ICorProfilerInfo4_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)	\
+#define ICorProfilerInfo4_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)    \
     ( (This)->lpVtbl -> GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo) ) 
 
-#define ICorProfilerInfo4_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges)	\
+#define ICorProfilerInfo4_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) \
     ( (This)->lpVtbl -> GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) ) 
 
-#define ICorProfilerInfo4_GetObjectGeneration(This,objectId,range)	\
+#define ICorProfilerInfo4_GetObjectGeneration(This,objectId,range)  \
     ( (This)->lpVtbl -> GetObjectGeneration(This,objectId,range) ) 
 
-#define ICorProfilerInfo4_GetNotifiedExceptionClauseInfo(This,pinfo)	\
+#define ICorProfilerInfo4_GetNotifiedExceptionClauseInfo(This,pinfo)    \
     ( (This)->lpVtbl -> GetNotifiedExceptionClauseInfo(This,pinfo) ) 
 
 
-#define ICorProfilerInfo4_EnumJITedFunctions(This,ppEnum)	\
+#define ICorProfilerInfo4_EnumJITedFunctions(This,ppEnum)   \
     ( (This)->lpVtbl -> EnumJITedFunctions(This,ppEnum) ) 
 
-#define ICorProfilerInfo4_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)	\
+#define ICorProfilerInfo4_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)  \
     ( (This)->lpVtbl -> RequestProfilerDetach(This,dwExpectedCompletionMilliseconds) ) 
 
-#define ICorProfilerInfo4_SetFunctionIDMapper2(This,pFunc,clientData)	\
+#define ICorProfilerInfo4_SetFunctionIDMapper2(This,pFunc,clientData)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper2(This,pFunc,clientData) ) 
 
-#define ICorProfilerInfo4_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo4_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)  \
     ( (This)->lpVtbl -> GetStringLayout2(This,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo4_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)	\
+#define ICorProfilerInfo4_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3) ) 
 
-#define ICorProfilerInfo4_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)	\
+#define ICorProfilerInfo4_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo) ) 
 
-#define ICorProfilerInfo4_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)	\
+#define ICorProfilerInfo4_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)   \
     ( (This)->lpVtbl -> GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo) ) 
 
-#define ICorProfilerInfo4_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)	\
+#define ICorProfilerInfo4_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)    \
     ( (This)->lpVtbl -> GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange) ) 
 
-#define ICorProfilerInfo4_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)	\
+#define ICorProfilerInfo4_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)  \
     ( (This)->lpVtbl -> GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo) ) 
 
-#define ICorProfilerInfo4_EnumModules(This,ppEnum)	\
+#define ICorProfilerInfo4_EnumModules(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumModules(This,ppEnum) ) 
 
-#define ICorProfilerInfo4_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)	\
+#define ICorProfilerInfo4_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)   \
     ( (This)->lpVtbl -> GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString) ) 
 
-#define ICorProfilerInfo4_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)	\
+#define ICorProfilerInfo4_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)   \
     ( (This)->lpVtbl -> GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo4_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)	\
+#define ICorProfilerInfo4_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)    \
     ( (This)->lpVtbl -> GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds) ) 
 
-#define ICorProfilerInfo4_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)	\
+#define ICorProfilerInfo4_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)    \
     ( (This)->lpVtbl -> GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags) ) 
 
 
-#define ICorProfilerInfo4_EnumThreads(This,ppEnum)	\
+#define ICorProfilerInfo4_EnumThreads(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumThreads(This,ppEnum) ) 
 
-#define ICorProfilerInfo4_InitializeCurrentThread(This)	\
+#define ICorProfilerInfo4_InitializeCurrentThread(This) \
     ( (This)->lpVtbl -> InitializeCurrentThread(This) ) 
 
-#define ICorProfilerInfo4_RequestReJIT(This,cFunctions,moduleIds,methodIds)	\
+#define ICorProfilerInfo4_RequestReJIT(This,cFunctions,moduleIds,methodIds) \
     ( (This)->lpVtbl -> RequestReJIT(This,cFunctions,moduleIds,methodIds) ) 
 
-#define ICorProfilerInfo4_RequestRevert(This,cFunctions,moduleIds,methodIds,status)	\
+#define ICorProfilerInfo4_RequestRevert(This,cFunctions,moduleIds,methodIds,status) \
     ( (This)->lpVtbl -> RequestRevert(This,cFunctions,moduleIds,methodIds,status) ) 
 
-#define ICorProfilerInfo4_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo4_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo4_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId)	\
+#define ICorProfilerInfo4_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId)  \
     ( (This)->lpVtbl -> GetFunctionFromIP2(This,ip,pFunctionId,pReJitId) ) 
 
-#define ICorProfilerInfo4_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)	\
+#define ICorProfilerInfo4_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)    \
     ( (This)->lpVtbl -> GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds) ) 
 
-#define ICorProfilerInfo4_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map)	\
+#define ICorProfilerInfo4_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) \
     ( (This)->lpVtbl -> GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) ) 
 
-#define ICorProfilerInfo4_EnumJITedFunctions2(This,ppEnum)	\
+#define ICorProfilerInfo4_EnumJITedFunctions2(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumJITedFunctions2(This,ppEnum) ) 
 
-#define ICorProfilerInfo4_GetObjectSize2(This,objectId,pcSize)	\
+#define ICorProfilerInfo4_GetObjectSize2(This,objectId,pcSize)  \
     ( (This)->lpVtbl -> GetObjectSize2(This,objectId,pcSize) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerInfo4_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerInfo4_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo5_INTERFACE_DEFINED__
@@ -10857,7 +10864,7 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerInfo5Vtbl
     {
@@ -11384,269 +11391,269 @@ EXTERN_C const IID IID_ICorProfilerInfo5;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerInfo5_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerInfo5_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerInfo5_AddRef(This)	\
+#define ICorProfilerInfo5_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerInfo5_Release(This)	\
+#define ICorProfilerInfo5_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerInfo5_GetClassFromObject(This,objectId,pClassId)	\
+#define ICorProfilerInfo5_GetClassFromObject(This,objectId,pClassId)    \
     ( (This)->lpVtbl -> GetClassFromObject(This,objectId,pClassId) ) 
 
-#define ICorProfilerInfo5_GetClassFromToken(This,moduleId,typeDef,pClassId)	\
+#define ICorProfilerInfo5_GetClassFromToken(This,moduleId,typeDef,pClassId) \
     ( (This)->lpVtbl -> GetClassFromToken(This,moduleId,typeDef,pClassId) ) 
 
-#define ICorProfilerInfo5_GetCodeInfo(This,functionId,pStart,pcSize)	\
+#define ICorProfilerInfo5_GetCodeInfo(This,functionId,pStart,pcSize)    \
     ( (This)->lpVtbl -> GetCodeInfo(This,functionId,pStart,pcSize) ) 
 
-#define ICorProfilerInfo5_GetEventMask(This,pdwEvents)	\
+#define ICorProfilerInfo5_GetEventMask(This,pdwEvents)  \
     ( (This)->lpVtbl -> GetEventMask(This,pdwEvents) ) 
 
-#define ICorProfilerInfo5_GetFunctionFromIP(This,ip,pFunctionId)	\
+#define ICorProfilerInfo5_GetFunctionFromIP(This,ip,pFunctionId)    \
     ( (This)->lpVtbl -> GetFunctionFromIP(This,ip,pFunctionId) ) 
 
-#define ICorProfilerInfo5_GetFunctionFromToken(This,moduleId,token,pFunctionId)	\
+#define ICorProfilerInfo5_GetFunctionFromToken(This,moduleId,token,pFunctionId) \
     ( (This)->lpVtbl -> GetFunctionFromToken(This,moduleId,token,pFunctionId) ) 
 
-#define ICorProfilerInfo5_GetHandleFromThread(This,threadId,phThread)	\
+#define ICorProfilerInfo5_GetHandleFromThread(This,threadId,phThread)   \
     ( (This)->lpVtbl -> GetHandleFromThread(This,threadId,phThread) ) 
 
-#define ICorProfilerInfo5_GetObjectSize(This,objectId,pcSize)	\
+#define ICorProfilerInfo5_GetObjectSize(This,objectId,pcSize)   \
     ( (This)->lpVtbl -> GetObjectSize(This,objectId,pcSize) ) 
 
-#define ICorProfilerInfo5_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)	\
+#define ICorProfilerInfo5_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)  \
     ( (This)->lpVtbl -> IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) ) 
 
-#define ICorProfilerInfo5_GetThreadInfo(This,threadId,pdwWin32ThreadId)	\
+#define ICorProfilerInfo5_GetThreadInfo(This,threadId,pdwWin32ThreadId) \
     ( (This)->lpVtbl -> GetThreadInfo(This,threadId,pdwWin32ThreadId) ) 
 
-#define ICorProfilerInfo5_GetCurrentThreadID(This,pThreadId)	\
+#define ICorProfilerInfo5_GetCurrentThreadID(This,pThreadId)    \
     ( (This)->lpVtbl -> GetCurrentThreadID(This,pThreadId) ) 
 
-#define ICorProfilerInfo5_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)	\
+#define ICorProfilerInfo5_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)  \
     ( (This)->lpVtbl -> GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) ) 
 
-#define ICorProfilerInfo5_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)	\
+#define ICorProfilerInfo5_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)    \
     ( (This)->lpVtbl -> GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken) ) 
 
-#define ICorProfilerInfo5_SetEventMask(This,dwEvents)	\
+#define ICorProfilerInfo5_SetEventMask(This,dwEvents)   \
     ( (This)->lpVtbl -> SetEventMask(This,dwEvents) ) 
 
-#define ICorProfilerInfo5_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo5_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo5_SetFunctionIDMapper(This,pFunc)	\
+#define ICorProfilerInfo5_SetFunctionIDMapper(This,pFunc)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper(This,pFunc) ) 
 
-#define ICorProfilerInfo5_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)	\
+#define ICorProfilerInfo5_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) \
     ( (This)->lpVtbl -> GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) ) 
 
-#define ICorProfilerInfo5_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)	\
+#define ICorProfilerInfo5_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)    \
     ( (This)->lpVtbl -> GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId) ) 
 
-#define ICorProfilerInfo5_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)	\
+#define ICorProfilerInfo5_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)   \
     ( (This)->lpVtbl -> GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut) ) 
 
-#define ICorProfilerInfo5_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)	\
+#define ICorProfilerInfo5_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)    \
     ( (This)->lpVtbl -> GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize) ) 
 
-#define ICorProfilerInfo5_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)	\
+#define ICorProfilerInfo5_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)    \
     ( (This)->lpVtbl -> GetILFunctionBodyAllocator(This,moduleId,ppMalloc) ) 
 
-#define ICorProfilerInfo5_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)	\
+#define ICorProfilerInfo5_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) \
     ( (This)->lpVtbl -> SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) ) 
 
-#define ICorProfilerInfo5_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)	\
+#define ICorProfilerInfo5_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) \
     ( (This)->lpVtbl -> GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) ) 
 
-#define ICorProfilerInfo5_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)	\
+#define ICorProfilerInfo5_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)   \
     ( (This)->lpVtbl -> GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId) ) 
 
-#define ICorProfilerInfo5_SetFunctionReJIT(This,functionId)	\
+#define ICorProfilerInfo5_SetFunctionReJIT(This,functionId) \
     ( (This)->lpVtbl -> SetFunctionReJIT(This,functionId) ) 
 
-#define ICorProfilerInfo5_ForceGC(This)	\
+#define ICorProfilerInfo5_ForceGC(This) \
     ( (This)->lpVtbl -> ForceGC(This) ) 
 
-#define ICorProfilerInfo5_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)	\
+#define ICorProfilerInfo5_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)  \
     ( (This)->lpVtbl -> SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) ) 
 
-#define ICorProfilerInfo5_GetInprocInspectionInterface(This,ppicd)	\
+#define ICorProfilerInfo5_GetInprocInspectionInterface(This,ppicd)  \
     ( (This)->lpVtbl -> GetInprocInspectionInterface(This,ppicd) ) 
 
-#define ICorProfilerInfo5_GetInprocInspectionIThisThread(This,ppicd)	\
+#define ICorProfilerInfo5_GetInprocInspectionIThisThread(This,ppicd)    \
     ( (This)->lpVtbl -> GetInprocInspectionIThisThread(This,ppicd) ) 
 
-#define ICorProfilerInfo5_GetThreadContext(This,threadId,pContextId)	\
+#define ICorProfilerInfo5_GetThreadContext(This,threadId,pContextId)    \
     ( (This)->lpVtbl -> GetThreadContext(This,threadId,pContextId) ) 
 
-#define ICorProfilerInfo5_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)	\
+#define ICorProfilerInfo5_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) \
     ( (This)->lpVtbl -> BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) ) 
 
-#define ICorProfilerInfo5_EndInprocDebugging(This,dwProfilerContext)	\
+#define ICorProfilerInfo5_EndInprocDebugging(This,dwProfilerContext)    \
     ( (This)->lpVtbl -> EndInprocDebugging(This,dwProfilerContext) ) 
 
-#define ICorProfilerInfo5_GetILToNativeMapping(This,functionId,cMap,pcMap,map)	\
+#define ICorProfilerInfo5_GetILToNativeMapping(This,functionId,cMap,pcMap,map)  \
     ( (This)->lpVtbl -> GetILToNativeMapping(This,functionId,cMap,pcMap,map) ) 
 
 
-#define ICorProfilerInfo5_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)	\
+#define ICorProfilerInfo5_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)    \
     ( (This)->lpVtbl -> DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize) ) 
 
-#define ICorProfilerInfo5_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo5_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo5_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)	\
+#define ICorProfilerInfo5_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)   \
     ( (This)->lpVtbl -> GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo5_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo5_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)   \
     ( (This)->lpVtbl -> GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo5_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize)	\
+#define ICorProfilerInfo5_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) \
     ( (This)->lpVtbl -> GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) ) 
 
-#define ICorProfilerInfo5_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)	\
+#define ICorProfilerInfo5_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)  \
     ( (This)->lpVtbl -> GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo5_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo5_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo5_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)	\
+#define ICorProfilerInfo5_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)   \
     ( (This)->lpVtbl -> GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID) ) 
 
-#define ICorProfilerInfo5_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID)	\
+#define ICorProfilerInfo5_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) \
     ( (This)->lpVtbl -> GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) ) 
 
-#define ICorProfilerInfo5_EnumModuleFrozenObjects(This,moduleID,ppEnum)	\
+#define ICorProfilerInfo5_EnumModuleFrozenObjects(This,moduleID,ppEnum) \
     ( (This)->lpVtbl -> EnumModuleFrozenObjects(This,moduleID,ppEnum) ) 
 
-#define ICorProfilerInfo5_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)	\
+#define ICorProfilerInfo5_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)    \
     ( (This)->lpVtbl -> GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData) ) 
 
-#define ICorProfilerInfo5_GetBoxClassLayout(This,classId,pBufferOffset)	\
+#define ICorProfilerInfo5_GetBoxClassLayout(This,classId,pBufferOffset) \
     ( (This)->lpVtbl -> GetBoxClassLayout(This,classId,pBufferOffset) ) 
 
-#define ICorProfilerInfo5_GetThreadAppDomain(This,threadId,pAppDomainId)	\
+#define ICorProfilerInfo5_GetThreadAppDomain(This,threadId,pAppDomainId)    \
     ( (This)->lpVtbl -> GetThreadAppDomain(This,threadId,pAppDomainId) ) 
 
-#define ICorProfilerInfo5_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)	\
+#define ICorProfilerInfo5_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)    \
     ( (This)->lpVtbl -> GetRVAStaticAddress(This,classId,fieldToken,ppAddress) ) 
 
-#define ICorProfilerInfo5_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)	\
+#define ICorProfilerInfo5_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)  \
     ( (This)->lpVtbl -> GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) ) 
 
-#define ICorProfilerInfo5_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)	\
+#define ICorProfilerInfo5_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)    \
     ( (This)->lpVtbl -> GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo5_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)	\
+#define ICorProfilerInfo5_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)  \
     ( (This)->lpVtbl -> GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) ) 
 
-#define ICorProfilerInfo5_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)	\
+#define ICorProfilerInfo5_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)    \
     ( (This)->lpVtbl -> GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo) ) 
 
-#define ICorProfilerInfo5_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges)	\
+#define ICorProfilerInfo5_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) \
     ( (This)->lpVtbl -> GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) ) 
 
-#define ICorProfilerInfo5_GetObjectGeneration(This,objectId,range)	\
+#define ICorProfilerInfo5_GetObjectGeneration(This,objectId,range)  \
     ( (This)->lpVtbl -> GetObjectGeneration(This,objectId,range) ) 
 
-#define ICorProfilerInfo5_GetNotifiedExceptionClauseInfo(This,pinfo)	\
+#define ICorProfilerInfo5_GetNotifiedExceptionClauseInfo(This,pinfo)    \
     ( (This)->lpVtbl -> GetNotifiedExceptionClauseInfo(This,pinfo) ) 
 
 
-#define ICorProfilerInfo5_EnumJITedFunctions(This,ppEnum)	\
+#define ICorProfilerInfo5_EnumJITedFunctions(This,ppEnum)   \
     ( (This)->lpVtbl -> EnumJITedFunctions(This,ppEnum) ) 
 
-#define ICorProfilerInfo5_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)	\
+#define ICorProfilerInfo5_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)  \
     ( (This)->lpVtbl -> RequestProfilerDetach(This,dwExpectedCompletionMilliseconds) ) 
 
-#define ICorProfilerInfo5_SetFunctionIDMapper2(This,pFunc,clientData)	\
+#define ICorProfilerInfo5_SetFunctionIDMapper2(This,pFunc,clientData)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper2(This,pFunc,clientData) ) 
 
-#define ICorProfilerInfo5_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo5_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)  \
     ( (This)->lpVtbl -> GetStringLayout2(This,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo5_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)	\
+#define ICorProfilerInfo5_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3) ) 
 
-#define ICorProfilerInfo5_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)	\
+#define ICorProfilerInfo5_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo) ) 
 
-#define ICorProfilerInfo5_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)	\
+#define ICorProfilerInfo5_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)   \
     ( (This)->lpVtbl -> GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo) ) 
 
-#define ICorProfilerInfo5_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)	\
+#define ICorProfilerInfo5_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)    \
     ( (This)->lpVtbl -> GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange) ) 
 
-#define ICorProfilerInfo5_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)	\
+#define ICorProfilerInfo5_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)  \
     ( (This)->lpVtbl -> GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo) ) 
 
-#define ICorProfilerInfo5_EnumModules(This,ppEnum)	\
+#define ICorProfilerInfo5_EnumModules(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumModules(This,ppEnum) ) 
 
-#define ICorProfilerInfo5_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)	\
+#define ICorProfilerInfo5_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)   \
     ( (This)->lpVtbl -> GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString) ) 
 
-#define ICorProfilerInfo5_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)	\
+#define ICorProfilerInfo5_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)   \
     ( (This)->lpVtbl -> GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo5_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)	\
+#define ICorProfilerInfo5_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)    \
     ( (This)->lpVtbl -> GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds) ) 
 
-#define ICorProfilerInfo5_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)	\
+#define ICorProfilerInfo5_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)    \
     ( (This)->lpVtbl -> GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags) ) 
 
 
-#define ICorProfilerInfo5_EnumThreads(This,ppEnum)	\
+#define ICorProfilerInfo5_EnumThreads(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumThreads(This,ppEnum) ) 
 
-#define ICorProfilerInfo5_InitializeCurrentThread(This)	\
+#define ICorProfilerInfo5_InitializeCurrentThread(This) \
     ( (This)->lpVtbl -> InitializeCurrentThread(This) ) 
 
-#define ICorProfilerInfo5_RequestReJIT(This,cFunctions,moduleIds,methodIds)	\
+#define ICorProfilerInfo5_RequestReJIT(This,cFunctions,moduleIds,methodIds) \
     ( (This)->lpVtbl -> RequestReJIT(This,cFunctions,moduleIds,methodIds) ) 
 
-#define ICorProfilerInfo5_RequestRevert(This,cFunctions,moduleIds,methodIds,status)	\
+#define ICorProfilerInfo5_RequestRevert(This,cFunctions,moduleIds,methodIds,status) \
     ( (This)->lpVtbl -> RequestRevert(This,cFunctions,moduleIds,methodIds,status) ) 
 
-#define ICorProfilerInfo5_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo5_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo5_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId)	\
+#define ICorProfilerInfo5_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId)  \
     ( (This)->lpVtbl -> GetFunctionFromIP2(This,ip,pFunctionId,pReJitId) ) 
 
-#define ICorProfilerInfo5_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)	\
+#define ICorProfilerInfo5_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)    \
     ( (This)->lpVtbl -> GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds) ) 
 
-#define ICorProfilerInfo5_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map)	\
+#define ICorProfilerInfo5_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) \
     ( (This)->lpVtbl -> GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) ) 
 
-#define ICorProfilerInfo5_EnumJITedFunctions2(This,ppEnum)	\
+#define ICorProfilerInfo5_EnumJITedFunctions2(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumJITedFunctions2(This,ppEnum) ) 
 
-#define ICorProfilerInfo5_GetObjectSize2(This,objectId,pcSize)	\
+#define ICorProfilerInfo5_GetObjectSize2(This,objectId,pcSize)  \
     ( (This)->lpVtbl -> GetObjectSize2(This,objectId,pcSize) ) 
 
 
-#define ICorProfilerInfo5_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)	\
+#define ICorProfilerInfo5_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)    \
     ( (This)->lpVtbl -> GetEventMask2(This,pdwEventsLow,pdwEventsHigh) ) 
 
-#define ICorProfilerInfo5_SetEventMask2(This,dwEventsLow,dwEventsHigh)	\
+#define ICorProfilerInfo5_SetEventMask2(This,dwEventsLow,dwEventsHigh)  \
     ( (This)->lpVtbl -> SetEventMask2(This,dwEventsLow,dwEventsHigh) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerInfo5_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerInfo5_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo6_INTERFACE_DEFINED__
@@ -11674,7 +11681,7 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerInfo6Vtbl
     {
@@ -12209,273 +12216,273 @@ EXTERN_C const IID IID_ICorProfilerInfo6;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerInfo6_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerInfo6_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerInfo6_AddRef(This)	\
+#define ICorProfilerInfo6_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerInfo6_Release(This)	\
+#define ICorProfilerInfo6_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerInfo6_GetClassFromObject(This,objectId,pClassId)	\
+#define ICorProfilerInfo6_GetClassFromObject(This,objectId,pClassId)    \
     ( (This)->lpVtbl -> GetClassFromObject(This,objectId,pClassId) ) 
 
-#define ICorProfilerInfo6_GetClassFromToken(This,moduleId,typeDef,pClassId)	\
+#define ICorProfilerInfo6_GetClassFromToken(This,moduleId,typeDef,pClassId) \
     ( (This)->lpVtbl -> GetClassFromToken(This,moduleId,typeDef,pClassId) ) 
 
-#define ICorProfilerInfo6_GetCodeInfo(This,functionId,pStart,pcSize)	\
+#define ICorProfilerInfo6_GetCodeInfo(This,functionId,pStart,pcSize)    \
     ( (This)->lpVtbl -> GetCodeInfo(This,functionId,pStart,pcSize) ) 
 
-#define ICorProfilerInfo6_GetEventMask(This,pdwEvents)	\
+#define ICorProfilerInfo6_GetEventMask(This,pdwEvents)  \
     ( (This)->lpVtbl -> GetEventMask(This,pdwEvents) ) 
 
-#define ICorProfilerInfo6_GetFunctionFromIP(This,ip,pFunctionId)	\
+#define ICorProfilerInfo6_GetFunctionFromIP(This,ip,pFunctionId)    \
     ( (This)->lpVtbl -> GetFunctionFromIP(This,ip,pFunctionId) ) 
 
-#define ICorProfilerInfo6_GetFunctionFromToken(This,moduleId,token,pFunctionId)	\
+#define ICorProfilerInfo6_GetFunctionFromToken(This,moduleId,token,pFunctionId) \
     ( (This)->lpVtbl -> GetFunctionFromToken(This,moduleId,token,pFunctionId) ) 
 
-#define ICorProfilerInfo6_GetHandleFromThread(This,threadId,phThread)	\
+#define ICorProfilerInfo6_GetHandleFromThread(This,threadId,phThread)   \
     ( (This)->lpVtbl -> GetHandleFromThread(This,threadId,phThread) ) 
 
-#define ICorProfilerInfo6_GetObjectSize(This,objectId,pcSize)	\
+#define ICorProfilerInfo6_GetObjectSize(This,objectId,pcSize)   \
     ( (This)->lpVtbl -> GetObjectSize(This,objectId,pcSize) ) 
 
-#define ICorProfilerInfo6_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)	\
+#define ICorProfilerInfo6_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)  \
     ( (This)->lpVtbl -> IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) ) 
 
-#define ICorProfilerInfo6_GetThreadInfo(This,threadId,pdwWin32ThreadId)	\
+#define ICorProfilerInfo6_GetThreadInfo(This,threadId,pdwWin32ThreadId) \
     ( (This)->lpVtbl -> GetThreadInfo(This,threadId,pdwWin32ThreadId) ) 
 
-#define ICorProfilerInfo6_GetCurrentThreadID(This,pThreadId)	\
+#define ICorProfilerInfo6_GetCurrentThreadID(This,pThreadId)    \
     ( (This)->lpVtbl -> GetCurrentThreadID(This,pThreadId) ) 
 
-#define ICorProfilerInfo6_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)	\
+#define ICorProfilerInfo6_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)  \
     ( (This)->lpVtbl -> GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) ) 
 
-#define ICorProfilerInfo6_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)	\
+#define ICorProfilerInfo6_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)    \
     ( (This)->lpVtbl -> GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken) ) 
 
-#define ICorProfilerInfo6_SetEventMask(This,dwEvents)	\
+#define ICorProfilerInfo6_SetEventMask(This,dwEvents)   \
     ( (This)->lpVtbl -> SetEventMask(This,dwEvents) ) 
 
-#define ICorProfilerInfo6_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo6_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo6_SetFunctionIDMapper(This,pFunc)	\
+#define ICorProfilerInfo6_SetFunctionIDMapper(This,pFunc)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper(This,pFunc) ) 
 
-#define ICorProfilerInfo6_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)	\
+#define ICorProfilerInfo6_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) \
     ( (This)->lpVtbl -> GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) ) 
 
-#define ICorProfilerInfo6_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)	\
+#define ICorProfilerInfo6_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)    \
     ( (This)->lpVtbl -> GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId) ) 
 
-#define ICorProfilerInfo6_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)	\
+#define ICorProfilerInfo6_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)   \
     ( (This)->lpVtbl -> GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut) ) 
 
-#define ICorProfilerInfo6_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)	\
+#define ICorProfilerInfo6_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)    \
     ( (This)->lpVtbl -> GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize) ) 
 
-#define ICorProfilerInfo6_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)	\
+#define ICorProfilerInfo6_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)    \
     ( (This)->lpVtbl -> GetILFunctionBodyAllocator(This,moduleId,ppMalloc) ) 
 
-#define ICorProfilerInfo6_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)	\
+#define ICorProfilerInfo6_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) \
     ( (This)->lpVtbl -> SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) ) 
 
-#define ICorProfilerInfo6_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)	\
+#define ICorProfilerInfo6_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) \
     ( (This)->lpVtbl -> GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) ) 
 
-#define ICorProfilerInfo6_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)	\
+#define ICorProfilerInfo6_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)   \
     ( (This)->lpVtbl -> GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId) ) 
 
-#define ICorProfilerInfo6_SetFunctionReJIT(This,functionId)	\
+#define ICorProfilerInfo6_SetFunctionReJIT(This,functionId) \
     ( (This)->lpVtbl -> SetFunctionReJIT(This,functionId) ) 
 
-#define ICorProfilerInfo6_ForceGC(This)	\
+#define ICorProfilerInfo6_ForceGC(This) \
     ( (This)->lpVtbl -> ForceGC(This) ) 
 
-#define ICorProfilerInfo6_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)	\
+#define ICorProfilerInfo6_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)  \
     ( (This)->lpVtbl -> SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) ) 
 
-#define ICorProfilerInfo6_GetInprocInspectionInterface(This,ppicd)	\
+#define ICorProfilerInfo6_GetInprocInspectionInterface(This,ppicd)  \
     ( (This)->lpVtbl -> GetInprocInspectionInterface(This,ppicd) ) 
 
-#define ICorProfilerInfo6_GetInprocInspectionIThisThread(This,ppicd)	\
+#define ICorProfilerInfo6_GetInprocInspectionIThisThread(This,ppicd)    \
     ( (This)->lpVtbl -> GetInprocInspectionIThisThread(This,ppicd) ) 
 
-#define ICorProfilerInfo6_GetThreadContext(This,threadId,pContextId)	\
+#define ICorProfilerInfo6_GetThreadContext(This,threadId,pContextId)    \
     ( (This)->lpVtbl -> GetThreadContext(This,threadId,pContextId) ) 
 
-#define ICorProfilerInfo6_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)	\
+#define ICorProfilerInfo6_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) \
     ( (This)->lpVtbl -> BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) ) 
 
-#define ICorProfilerInfo6_EndInprocDebugging(This,dwProfilerContext)	\
+#define ICorProfilerInfo6_EndInprocDebugging(This,dwProfilerContext)    \
     ( (This)->lpVtbl -> EndInprocDebugging(This,dwProfilerContext) ) 
 
-#define ICorProfilerInfo6_GetILToNativeMapping(This,functionId,cMap,pcMap,map)	\
+#define ICorProfilerInfo6_GetILToNativeMapping(This,functionId,cMap,pcMap,map)  \
     ( (This)->lpVtbl -> GetILToNativeMapping(This,functionId,cMap,pcMap,map) ) 
 
 
-#define ICorProfilerInfo6_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)	\
+#define ICorProfilerInfo6_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)    \
     ( (This)->lpVtbl -> DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize) ) 
 
-#define ICorProfilerInfo6_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo6_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo6_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)	\
+#define ICorProfilerInfo6_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)   \
     ( (This)->lpVtbl -> GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo6_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo6_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)   \
     ( (This)->lpVtbl -> GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo6_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize)	\
+#define ICorProfilerInfo6_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) \
     ( (This)->lpVtbl -> GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) ) 
 
-#define ICorProfilerInfo6_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)	\
+#define ICorProfilerInfo6_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)  \
     ( (This)->lpVtbl -> GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo6_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo6_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo6_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)	\
+#define ICorProfilerInfo6_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)   \
     ( (This)->lpVtbl -> GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID) ) 
 
-#define ICorProfilerInfo6_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID)	\
+#define ICorProfilerInfo6_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) \
     ( (This)->lpVtbl -> GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) ) 
 
-#define ICorProfilerInfo6_EnumModuleFrozenObjects(This,moduleID,ppEnum)	\
+#define ICorProfilerInfo6_EnumModuleFrozenObjects(This,moduleID,ppEnum) \
     ( (This)->lpVtbl -> EnumModuleFrozenObjects(This,moduleID,ppEnum) ) 
 
-#define ICorProfilerInfo6_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)	\
+#define ICorProfilerInfo6_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)    \
     ( (This)->lpVtbl -> GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData) ) 
 
-#define ICorProfilerInfo6_GetBoxClassLayout(This,classId,pBufferOffset)	\
+#define ICorProfilerInfo6_GetBoxClassLayout(This,classId,pBufferOffset) \
     ( (This)->lpVtbl -> GetBoxClassLayout(This,classId,pBufferOffset) ) 
 
-#define ICorProfilerInfo6_GetThreadAppDomain(This,threadId,pAppDomainId)	\
+#define ICorProfilerInfo6_GetThreadAppDomain(This,threadId,pAppDomainId)    \
     ( (This)->lpVtbl -> GetThreadAppDomain(This,threadId,pAppDomainId) ) 
 
-#define ICorProfilerInfo6_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)	\
+#define ICorProfilerInfo6_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)    \
     ( (This)->lpVtbl -> GetRVAStaticAddress(This,classId,fieldToken,ppAddress) ) 
 
-#define ICorProfilerInfo6_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)	\
+#define ICorProfilerInfo6_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)  \
     ( (This)->lpVtbl -> GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) ) 
 
-#define ICorProfilerInfo6_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)	\
+#define ICorProfilerInfo6_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)    \
     ( (This)->lpVtbl -> GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo6_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)	\
+#define ICorProfilerInfo6_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)  \
     ( (This)->lpVtbl -> GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) ) 
 
-#define ICorProfilerInfo6_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)	\
+#define ICorProfilerInfo6_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)    \
     ( (This)->lpVtbl -> GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo) ) 
 
-#define ICorProfilerInfo6_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges)	\
+#define ICorProfilerInfo6_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) \
     ( (This)->lpVtbl -> GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) ) 
 
-#define ICorProfilerInfo6_GetObjectGeneration(This,objectId,range)	\
+#define ICorProfilerInfo6_GetObjectGeneration(This,objectId,range)  \
     ( (This)->lpVtbl -> GetObjectGeneration(This,objectId,range) ) 
 
-#define ICorProfilerInfo6_GetNotifiedExceptionClauseInfo(This,pinfo)	\
+#define ICorProfilerInfo6_GetNotifiedExceptionClauseInfo(This,pinfo)    \
     ( (This)->lpVtbl -> GetNotifiedExceptionClauseInfo(This,pinfo) ) 
 
 
-#define ICorProfilerInfo6_EnumJITedFunctions(This,ppEnum)	\
+#define ICorProfilerInfo6_EnumJITedFunctions(This,ppEnum)   \
     ( (This)->lpVtbl -> EnumJITedFunctions(This,ppEnum) ) 
 
-#define ICorProfilerInfo6_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)	\
+#define ICorProfilerInfo6_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)  \
     ( (This)->lpVtbl -> RequestProfilerDetach(This,dwExpectedCompletionMilliseconds) ) 
 
-#define ICorProfilerInfo6_SetFunctionIDMapper2(This,pFunc,clientData)	\
+#define ICorProfilerInfo6_SetFunctionIDMapper2(This,pFunc,clientData)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper2(This,pFunc,clientData) ) 
 
-#define ICorProfilerInfo6_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo6_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)  \
     ( (This)->lpVtbl -> GetStringLayout2(This,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo6_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)	\
+#define ICorProfilerInfo6_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3) ) 
 
-#define ICorProfilerInfo6_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)	\
+#define ICorProfilerInfo6_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo) ) 
 
-#define ICorProfilerInfo6_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)	\
+#define ICorProfilerInfo6_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)   \
     ( (This)->lpVtbl -> GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo) ) 
 
-#define ICorProfilerInfo6_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)	\
+#define ICorProfilerInfo6_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)    \
     ( (This)->lpVtbl -> GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange) ) 
 
-#define ICorProfilerInfo6_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)	\
+#define ICorProfilerInfo6_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)  \
     ( (This)->lpVtbl -> GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo) ) 
 
-#define ICorProfilerInfo6_EnumModules(This,ppEnum)	\
+#define ICorProfilerInfo6_EnumModules(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumModules(This,ppEnum) ) 
 
-#define ICorProfilerInfo6_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)	\
+#define ICorProfilerInfo6_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)   \
     ( (This)->lpVtbl -> GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString) ) 
 
-#define ICorProfilerInfo6_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)	\
+#define ICorProfilerInfo6_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)   \
     ( (This)->lpVtbl -> GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo6_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)	\
+#define ICorProfilerInfo6_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)    \
     ( (This)->lpVtbl -> GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds) ) 
 
-#define ICorProfilerInfo6_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)	\
+#define ICorProfilerInfo6_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)    \
     ( (This)->lpVtbl -> GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags) ) 
 
 
-#define ICorProfilerInfo6_EnumThreads(This,ppEnum)	\
+#define ICorProfilerInfo6_EnumThreads(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumThreads(This,ppEnum) ) 
 
-#define ICorProfilerInfo6_InitializeCurrentThread(This)	\
+#define ICorProfilerInfo6_InitializeCurrentThread(This) \
     ( (This)->lpVtbl -> InitializeCurrentThread(This) ) 
 
-#define ICorProfilerInfo6_RequestReJIT(This,cFunctions,moduleIds,methodIds)	\
+#define ICorProfilerInfo6_RequestReJIT(This,cFunctions,moduleIds,methodIds) \
     ( (This)->lpVtbl -> RequestReJIT(This,cFunctions,moduleIds,methodIds) ) 
 
-#define ICorProfilerInfo6_RequestRevert(This,cFunctions,moduleIds,methodIds,status)	\
+#define ICorProfilerInfo6_RequestRevert(This,cFunctions,moduleIds,methodIds,status) \
     ( (This)->lpVtbl -> RequestRevert(This,cFunctions,moduleIds,methodIds,status) ) 
 
-#define ICorProfilerInfo6_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo6_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo6_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId)	\
+#define ICorProfilerInfo6_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId)  \
     ( (This)->lpVtbl -> GetFunctionFromIP2(This,ip,pFunctionId,pReJitId) ) 
 
-#define ICorProfilerInfo6_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)	\
+#define ICorProfilerInfo6_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)    \
     ( (This)->lpVtbl -> GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds) ) 
 
-#define ICorProfilerInfo6_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map)	\
+#define ICorProfilerInfo6_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) \
     ( (This)->lpVtbl -> GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) ) 
 
-#define ICorProfilerInfo6_EnumJITedFunctions2(This,ppEnum)	\
+#define ICorProfilerInfo6_EnumJITedFunctions2(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumJITedFunctions2(This,ppEnum) ) 
 
-#define ICorProfilerInfo6_GetObjectSize2(This,objectId,pcSize)	\
+#define ICorProfilerInfo6_GetObjectSize2(This,objectId,pcSize)  \
     ( (This)->lpVtbl -> GetObjectSize2(This,objectId,pcSize) ) 
 
 
-#define ICorProfilerInfo6_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)	\
+#define ICorProfilerInfo6_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)    \
     ( (This)->lpVtbl -> GetEventMask2(This,pdwEventsLow,pdwEventsHigh) ) 
 
-#define ICorProfilerInfo6_SetEventMask2(This,dwEventsLow,dwEventsHigh)	\
+#define ICorProfilerInfo6_SetEventMask2(This,dwEventsLow,dwEventsHigh)  \
     ( (This)->lpVtbl -> SetEventMask2(This,dwEventsLow,dwEventsHigh) ) 
 
 
-#define ICorProfilerInfo6_EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum)	\
+#define ICorProfilerInfo6_EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum)  \
     ( (This)->lpVtbl -> EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerInfo6_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerInfo6_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo7_INTERFACE_DEFINED__
@@ -12510,7 +12517,7 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerInfo7Vtbl
     {
@@ -13062,283 +13069,283 @@ EXTERN_C const IID IID_ICorProfilerInfo7;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerInfo7_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerInfo7_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerInfo7_AddRef(This)	\
+#define ICorProfilerInfo7_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerInfo7_Release(This)	\
+#define ICorProfilerInfo7_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerInfo7_GetClassFromObject(This,objectId,pClassId)	\
+#define ICorProfilerInfo7_GetClassFromObject(This,objectId,pClassId)    \
     ( (This)->lpVtbl -> GetClassFromObject(This,objectId,pClassId) ) 
 
-#define ICorProfilerInfo7_GetClassFromToken(This,moduleId,typeDef,pClassId)	\
+#define ICorProfilerInfo7_GetClassFromToken(This,moduleId,typeDef,pClassId) \
     ( (This)->lpVtbl -> GetClassFromToken(This,moduleId,typeDef,pClassId) ) 
 
-#define ICorProfilerInfo7_GetCodeInfo(This,functionId,pStart,pcSize)	\
+#define ICorProfilerInfo7_GetCodeInfo(This,functionId,pStart,pcSize)    \
     ( (This)->lpVtbl -> GetCodeInfo(This,functionId,pStart,pcSize) ) 
 
-#define ICorProfilerInfo7_GetEventMask(This,pdwEvents)	\
+#define ICorProfilerInfo7_GetEventMask(This,pdwEvents)  \
     ( (This)->lpVtbl -> GetEventMask(This,pdwEvents) ) 
 
-#define ICorProfilerInfo7_GetFunctionFromIP(This,ip,pFunctionId)	\
+#define ICorProfilerInfo7_GetFunctionFromIP(This,ip,pFunctionId)    \
     ( (This)->lpVtbl -> GetFunctionFromIP(This,ip,pFunctionId) ) 
 
-#define ICorProfilerInfo7_GetFunctionFromToken(This,moduleId,token,pFunctionId)	\
+#define ICorProfilerInfo7_GetFunctionFromToken(This,moduleId,token,pFunctionId) \
     ( (This)->lpVtbl -> GetFunctionFromToken(This,moduleId,token,pFunctionId) ) 
 
-#define ICorProfilerInfo7_GetHandleFromThread(This,threadId,phThread)	\
+#define ICorProfilerInfo7_GetHandleFromThread(This,threadId,phThread)   \
     ( (This)->lpVtbl -> GetHandleFromThread(This,threadId,phThread) ) 
 
-#define ICorProfilerInfo7_GetObjectSize(This,objectId,pcSize)	\
+#define ICorProfilerInfo7_GetObjectSize(This,objectId,pcSize)   \
     ( (This)->lpVtbl -> GetObjectSize(This,objectId,pcSize) ) 
 
-#define ICorProfilerInfo7_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)	\
+#define ICorProfilerInfo7_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)  \
     ( (This)->lpVtbl -> IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) ) 
 
-#define ICorProfilerInfo7_GetThreadInfo(This,threadId,pdwWin32ThreadId)	\
+#define ICorProfilerInfo7_GetThreadInfo(This,threadId,pdwWin32ThreadId) \
     ( (This)->lpVtbl -> GetThreadInfo(This,threadId,pdwWin32ThreadId) ) 
 
-#define ICorProfilerInfo7_GetCurrentThreadID(This,pThreadId)	\
+#define ICorProfilerInfo7_GetCurrentThreadID(This,pThreadId)    \
     ( (This)->lpVtbl -> GetCurrentThreadID(This,pThreadId) ) 
 
-#define ICorProfilerInfo7_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)	\
+#define ICorProfilerInfo7_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)  \
     ( (This)->lpVtbl -> GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) ) 
 
-#define ICorProfilerInfo7_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)	\
+#define ICorProfilerInfo7_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)    \
     ( (This)->lpVtbl -> GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken) ) 
 
-#define ICorProfilerInfo7_SetEventMask(This,dwEvents)	\
+#define ICorProfilerInfo7_SetEventMask(This,dwEvents)   \
     ( (This)->lpVtbl -> SetEventMask(This,dwEvents) ) 
 
-#define ICorProfilerInfo7_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo7_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo7_SetFunctionIDMapper(This,pFunc)	\
+#define ICorProfilerInfo7_SetFunctionIDMapper(This,pFunc)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper(This,pFunc) ) 
 
-#define ICorProfilerInfo7_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)	\
+#define ICorProfilerInfo7_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) \
     ( (This)->lpVtbl -> GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) ) 
 
-#define ICorProfilerInfo7_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)	\
+#define ICorProfilerInfo7_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)    \
     ( (This)->lpVtbl -> GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId) ) 
 
-#define ICorProfilerInfo7_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)	\
+#define ICorProfilerInfo7_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)   \
     ( (This)->lpVtbl -> GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut) ) 
 
-#define ICorProfilerInfo7_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)	\
+#define ICorProfilerInfo7_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)    \
     ( (This)->lpVtbl -> GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize) ) 
 
-#define ICorProfilerInfo7_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)	\
+#define ICorProfilerInfo7_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)    \
     ( (This)->lpVtbl -> GetILFunctionBodyAllocator(This,moduleId,ppMalloc) ) 
 
-#define ICorProfilerInfo7_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)	\
+#define ICorProfilerInfo7_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) \
     ( (This)->lpVtbl -> SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) ) 
 
-#define ICorProfilerInfo7_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)	\
+#define ICorProfilerInfo7_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) \
     ( (This)->lpVtbl -> GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) ) 
 
-#define ICorProfilerInfo7_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)	\
+#define ICorProfilerInfo7_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)   \
     ( (This)->lpVtbl -> GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId) ) 
 
-#define ICorProfilerInfo7_SetFunctionReJIT(This,functionId)	\
+#define ICorProfilerInfo7_SetFunctionReJIT(This,functionId) \
     ( (This)->lpVtbl -> SetFunctionReJIT(This,functionId) ) 
 
-#define ICorProfilerInfo7_ForceGC(This)	\
+#define ICorProfilerInfo7_ForceGC(This) \
     ( (This)->lpVtbl -> ForceGC(This) ) 
 
-#define ICorProfilerInfo7_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)	\
+#define ICorProfilerInfo7_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)  \
     ( (This)->lpVtbl -> SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) ) 
 
-#define ICorProfilerInfo7_GetInprocInspectionInterface(This,ppicd)	\
+#define ICorProfilerInfo7_GetInprocInspectionInterface(This,ppicd)  \
     ( (This)->lpVtbl -> GetInprocInspectionInterface(This,ppicd) ) 
 
-#define ICorProfilerInfo7_GetInprocInspectionIThisThread(This,ppicd)	\
+#define ICorProfilerInfo7_GetInprocInspectionIThisThread(This,ppicd)    \
     ( (This)->lpVtbl -> GetInprocInspectionIThisThread(This,ppicd) ) 
 
-#define ICorProfilerInfo7_GetThreadContext(This,threadId,pContextId)	\
+#define ICorProfilerInfo7_GetThreadContext(This,threadId,pContextId)    \
     ( (This)->lpVtbl -> GetThreadContext(This,threadId,pContextId) ) 
 
-#define ICorProfilerInfo7_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)	\
+#define ICorProfilerInfo7_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) \
     ( (This)->lpVtbl -> BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) ) 
 
-#define ICorProfilerInfo7_EndInprocDebugging(This,dwProfilerContext)	\
+#define ICorProfilerInfo7_EndInprocDebugging(This,dwProfilerContext)    \
     ( (This)->lpVtbl -> EndInprocDebugging(This,dwProfilerContext) ) 
 
-#define ICorProfilerInfo7_GetILToNativeMapping(This,functionId,cMap,pcMap,map)	\
+#define ICorProfilerInfo7_GetILToNativeMapping(This,functionId,cMap,pcMap,map)  \
     ( (This)->lpVtbl -> GetILToNativeMapping(This,functionId,cMap,pcMap,map) ) 
 
 
-#define ICorProfilerInfo7_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)	\
+#define ICorProfilerInfo7_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)    \
     ( (This)->lpVtbl -> DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize) ) 
 
-#define ICorProfilerInfo7_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo7_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo7_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)	\
+#define ICorProfilerInfo7_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)   \
     ( (This)->lpVtbl -> GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo7_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo7_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)   \
     ( (This)->lpVtbl -> GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo7_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize)	\
+#define ICorProfilerInfo7_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) \
     ( (This)->lpVtbl -> GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) ) 
 
-#define ICorProfilerInfo7_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)	\
+#define ICorProfilerInfo7_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)  \
     ( (This)->lpVtbl -> GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo7_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo7_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo7_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)	\
+#define ICorProfilerInfo7_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)   \
     ( (This)->lpVtbl -> GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID) ) 
 
-#define ICorProfilerInfo7_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID)	\
+#define ICorProfilerInfo7_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) \
     ( (This)->lpVtbl -> GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) ) 
 
-#define ICorProfilerInfo7_EnumModuleFrozenObjects(This,moduleID,ppEnum)	\
+#define ICorProfilerInfo7_EnumModuleFrozenObjects(This,moduleID,ppEnum) \
     ( (This)->lpVtbl -> EnumModuleFrozenObjects(This,moduleID,ppEnum) ) 
 
-#define ICorProfilerInfo7_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)	\
+#define ICorProfilerInfo7_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)    \
     ( (This)->lpVtbl -> GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData) ) 
 
-#define ICorProfilerInfo7_GetBoxClassLayout(This,classId,pBufferOffset)	\
+#define ICorProfilerInfo7_GetBoxClassLayout(This,classId,pBufferOffset) \
     ( (This)->lpVtbl -> GetBoxClassLayout(This,classId,pBufferOffset) ) 
 
-#define ICorProfilerInfo7_GetThreadAppDomain(This,threadId,pAppDomainId)	\
+#define ICorProfilerInfo7_GetThreadAppDomain(This,threadId,pAppDomainId)    \
     ( (This)->lpVtbl -> GetThreadAppDomain(This,threadId,pAppDomainId) ) 
 
-#define ICorProfilerInfo7_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)	\
+#define ICorProfilerInfo7_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)    \
     ( (This)->lpVtbl -> GetRVAStaticAddress(This,classId,fieldToken,ppAddress) ) 
 
-#define ICorProfilerInfo7_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)	\
+#define ICorProfilerInfo7_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)  \
     ( (This)->lpVtbl -> GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) ) 
 
-#define ICorProfilerInfo7_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)	\
+#define ICorProfilerInfo7_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)    \
     ( (This)->lpVtbl -> GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo7_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)	\
+#define ICorProfilerInfo7_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)  \
     ( (This)->lpVtbl -> GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) ) 
 
-#define ICorProfilerInfo7_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)	\
+#define ICorProfilerInfo7_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)    \
     ( (This)->lpVtbl -> GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo) ) 
 
-#define ICorProfilerInfo7_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges)	\
+#define ICorProfilerInfo7_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) \
     ( (This)->lpVtbl -> GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) ) 
 
-#define ICorProfilerInfo7_GetObjectGeneration(This,objectId,range)	\
+#define ICorProfilerInfo7_GetObjectGeneration(This,objectId,range)  \
     ( (This)->lpVtbl -> GetObjectGeneration(This,objectId,range) ) 
 
-#define ICorProfilerInfo7_GetNotifiedExceptionClauseInfo(This,pinfo)	\
+#define ICorProfilerInfo7_GetNotifiedExceptionClauseInfo(This,pinfo)    \
     ( (This)->lpVtbl -> GetNotifiedExceptionClauseInfo(This,pinfo) ) 
 
 
-#define ICorProfilerInfo7_EnumJITedFunctions(This,ppEnum)	\
+#define ICorProfilerInfo7_EnumJITedFunctions(This,ppEnum)   \
     ( (This)->lpVtbl -> EnumJITedFunctions(This,ppEnum) ) 
 
-#define ICorProfilerInfo7_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)	\
+#define ICorProfilerInfo7_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)  \
     ( (This)->lpVtbl -> RequestProfilerDetach(This,dwExpectedCompletionMilliseconds) ) 
 
-#define ICorProfilerInfo7_SetFunctionIDMapper2(This,pFunc,clientData)	\
+#define ICorProfilerInfo7_SetFunctionIDMapper2(This,pFunc,clientData)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper2(This,pFunc,clientData) ) 
 
-#define ICorProfilerInfo7_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo7_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)  \
     ( (This)->lpVtbl -> GetStringLayout2(This,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo7_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)	\
+#define ICorProfilerInfo7_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3) ) 
 
-#define ICorProfilerInfo7_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)	\
+#define ICorProfilerInfo7_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo) ) 
 
-#define ICorProfilerInfo7_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)	\
+#define ICorProfilerInfo7_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)   \
     ( (This)->lpVtbl -> GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo) ) 
 
-#define ICorProfilerInfo7_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)	\
+#define ICorProfilerInfo7_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)    \
     ( (This)->lpVtbl -> GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange) ) 
 
-#define ICorProfilerInfo7_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)	\
+#define ICorProfilerInfo7_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)  \
     ( (This)->lpVtbl -> GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo) ) 
 
-#define ICorProfilerInfo7_EnumModules(This,ppEnum)	\
+#define ICorProfilerInfo7_EnumModules(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumModules(This,ppEnum) ) 
 
-#define ICorProfilerInfo7_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)	\
+#define ICorProfilerInfo7_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)   \
     ( (This)->lpVtbl -> GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString) ) 
 
-#define ICorProfilerInfo7_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)	\
+#define ICorProfilerInfo7_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)   \
     ( (This)->lpVtbl -> GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo7_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)	\
+#define ICorProfilerInfo7_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)    \
     ( (This)->lpVtbl -> GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds) ) 
 
-#define ICorProfilerInfo7_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)	\
+#define ICorProfilerInfo7_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)    \
     ( (This)->lpVtbl -> GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags) ) 
 
 
-#define ICorProfilerInfo7_EnumThreads(This,ppEnum)	\
+#define ICorProfilerInfo7_EnumThreads(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumThreads(This,ppEnum) ) 
 
-#define ICorProfilerInfo7_InitializeCurrentThread(This)	\
+#define ICorProfilerInfo7_InitializeCurrentThread(This) \
     ( (This)->lpVtbl -> InitializeCurrentThread(This) ) 
 
-#define ICorProfilerInfo7_RequestReJIT(This,cFunctions,moduleIds,methodIds)	\
+#define ICorProfilerInfo7_RequestReJIT(This,cFunctions,moduleIds,methodIds) \
     ( (This)->lpVtbl -> RequestReJIT(This,cFunctions,moduleIds,methodIds) ) 
 
-#define ICorProfilerInfo7_RequestRevert(This,cFunctions,moduleIds,methodIds,status)	\
+#define ICorProfilerInfo7_RequestRevert(This,cFunctions,moduleIds,methodIds,status) \
     ( (This)->lpVtbl -> RequestRevert(This,cFunctions,moduleIds,methodIds,status) ) 
 
-#define ICorProfilerInfo7_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo7_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo7_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId)	\
+#define ICorProfilerInfo7_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId)  \
     ( (This)->lpVtbl -> GetFunctionFromIP2(This,ip,pFunctionId,pReJitId) ) 
 
-#define ICorProfilerInfo7_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)	\
+#define ICorProfilerInfo7_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)    \
     ( (This)->lpVtbl -> GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds) ) 
 
-#define ICorProfilerInfo7_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map)	\
+#define ICorProfilerInfo7_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) \
     ( (This)->lpVtbl -> GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) ) 
 
-#define ICorProfilerInfo7_EnumJITedFunctions2(This,ppEnum)	\
+#define ICorProfilerInfo7_EnumJITedFunctions2(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumJITedFunctions2(This,ppEnum) ) 
 
-#define ICorProfilerInfo7_GetObjectSize2(This,objectId,pcSize)	\
+#define ICorProfilerInfo7_GetObjectSize2(This,objectId,pcSize)  \
     ( (This)->lpVtbl -> GetObjectSize2(This,objectId,pcSize) ) 
 
 
-#define ICorProfilerInfo7_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)	\
+#define ICorProfilerInfo7_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)    \
     ( (This)->lpVtbl -> GetEventMask2(This,pdwEventsLow,pdwEventsHigh) ) 
 
-#define ICorProfilerInfo7_SetEventMask2(This,dwEventsLow,dwEventsHigh)	\
+#define ICorProfilerInfo7_SetEventMask2(This,dwEventsLow,dwEventsHigh)  \
     ( (This)->lpVtbl -> SetEventMask2(This,dwEventsLow,dwEventsHigh) ) 
 
 
-#define ICorProfilerInfo7_EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum)	\
+#define ICorProfilerInfo7_EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum)  \
     ( (This)->lpVtbl -> EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum) ) 
 
 
-#define ICorProfilerInfo7_ApplyMetaData(This,moduleId)	\
+#define ICorProfilerInfo7_ApplyMetaData(This,moduleId)  \
     ( (This)->lpVtbl -> ApplyMetaData(This,moduleId) ) 
 
-#define ICorProfilerInfo7_GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes)	\
+#define ICorProfilerInfo7_GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes) \
     ( (This)->lpVtbl -> GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes) ) 
 
-#define ICorProfilerInfo7_ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead)	\
+#define ICorProfilerInfo7_ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead)  \
     ( (This)->lpVtbl -> ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerInfo7_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerInfo7_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo8_INTERFACE_DEFINED__
@@ -13377,7 +13384,7 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerInfo8Vtbl
     {
@@ -13950,293 +13957,293 @@ EXTERN_C const IID IID_ICorProfilerInfo8;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerInfo8_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerInfo8_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerInfo8_AddRef(This)	\
+#define ICorProfilerInfo8_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerInfo8_Release(This)	\
+#define ICorProfilerInfo8_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerInfo8_GetClassFromObject(This,objectId,pClassId)	\
+#define ICorProfilerInfo8_GetClassFromObject(This,objectId,pClassId)    \
     ( (This)->lpVtbl -> GetClassFromObject(This,objectId,pClassId) ) 
 
-#define ICorProfilerInfo8_GetClassFromToken(This,moduleId,typeDef,pClassId)	\
+#define ICorProfilerInfo8_GetClassFromToken(This,moduleId,typeDef,pClassId) \
     ( (This)->lpVtbl -> GetClassFromToken(This,moduleId,typeDef,pClassId) ) 
 
-#define ICorProfilerInfo8_GetCodeInfo(This,functionId,pStart,pcSize)	\
+#define ICorProfilerInfo8_GetCodeInfo(This,functionId,pStart,pcSize)    \
     ( (This)->lpVtbl -> GetCodeInfo(This,functionId,pStart,pcSize) ) 
 
-#define ICorProfilerInfo8_GetEventMask(This,pdwEvents)	\
+#define ICorProfilerInfo8_GetEventMask(This,pdwEvents)  \
     ( (This)->lpVtbl -> GetEventMask(This,pdwEvents) ) 
 
-#define ICorProfilerInfo8_GetFunctionFromIP(This,ip,pFunctionId)	\
+#define ICorProfilerInfo8_GetFunctionFromIP(This,ip,pFunctionId)    \
     ( (This)->lpVtbl -> GetFunctionFromIP(This,ip,pFunctionId) ) 
 
-#define ICorProfilerInfo8_GetFunctionFromToken(This,moduleId,token,pFunctionId)	\
+#define ICorProfilerInfo8_GetFunctionFromToken(This,moduleId,token,pFunctionId) \
     ( (This)->lpVtbl -> GetFunctionFromToken(This,moduleId,token,pFunctionId) ) 
 
-#define ICorProfilerInfo8_GetHandleFromThread(This,threadId,phThread)	\
+#define ICorProfilerInfo8_GetHandleFromThread(This,threadId,phThread)   \
     ( (This)->lpVtbl -> GetHandleFromThread(This,threadId,phThread) ) 
 
-#define ICorProfilerInfo8_GetObjectSize(This,objectId,pcSize)	\
+#define ICorProfilerInfo8_GetObjectSize(This,objectId,pcSize)   \
     ( (This)->lpVtbl -> GetObjectSize(This,objectId,pcSize) ) 
 
-#define ICorProfilerInfo8_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)	\
+#define ICorProfilerInfo8_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)  \
     ( (This)->lpVtbl -> IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) ) 
 
-#define ICorProfilerInfo8_GetThreadInfo(This,threadId,pdwWin32ThreadId)	\
+#define ICorProfilerInfo8_GetThreadInfo(This,threadId,pdwWin32ThreadId) \
     ( (This)->lpVtbl -> GetThreadInfo(This,threadId,pdwWin32ThreadId) ) 
 
-#define ICorProfilerInfo8_GetCurrentThreadID(This,pThreadId)	\
+#define ICorProfilerInfo8_GetCurrentThreadID(This,pThreadId)    \
     ( (This)->lpVtbl -> GetCurrentThreadID(This,pThreadId) ) 
 
-#define ICorProfilerInfo8_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)	\
+#define ICorProfilerInfo8_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)  \
     ( (This)->lpVtbl -> GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) ) 
 
-#define ICorProfilerInfo8_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)	\
+#define ICorProfilerInfo8_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)    \
     ( (This)->lpVtbl -> GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken) ) 
 
-#define ICorProfilerInfo8_SetEventMask(This,dwEvents)	\
+#define ICorProfilerInfo8_SetEventMask(This,dwEvents)   \
     ( (This)->lpVtbl -> SetEventMask(This,dwEvents) ) 
 
-#define ICorProfilerInfo8_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo8_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo8_SetFunctionIDMapper(This,pFunc)	\
+#define ICorProfilerInfo8_SetFunctionIDMapper(This,pFunc)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper(This,pFunc) ) 
 
-#define ICorProfilerInfo8_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)	\
+#define ICorProfilerInfo8_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) \
     ( (This)->lpVtbl -> GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) ) 
 
-#define ICorProfilerInfo8_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)	\
+#define ICorProfilerInfo8_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)    \
     ( (This)->lpVtbl -> GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId) ) 
 
-#define ICorProfilerInfo8_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)	\
+#define ICorProfilerInfo8_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)   \
     ( (This)->lpVtbl -> GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut) ) 
 
-#define ICorProfilerInfo8_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)	\
+#define ICorProfilerInfo8_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)    \
     ( (This)->lpVtbl -> GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize) ) 
 
-#define ICorProfilerInfo8_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)	\
+#define ICorProfilerInfo8_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)    \
     ( (This)->lpVtbl -> GetILFunctionBodyAllocator(This,moduleId,ppMalloc) ) 
 
-#define ICorProfilerInfo8_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)	\
+#define ICorProfilerInfo8_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) \
     ( (This)->lpVtbl -> SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) ) 
 
-#define ICorProfilerInfo8_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)	\
+#define ICorProfilerInfo8_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) \
     ( (This)->lpVtbl -> GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) ) 
 
-#define ICorProfilerInfo8_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)	\
+#define ICorProfilerInfo8_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)   \
     ( (This)->lpVtbl -> GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId) ) 
 
-#define ICorProfilerInfo8_SetFunctionReJIT(This,functionId)	\
+#define ICorProfilerInfo8_SetFunctionReJIT(This,functionId) \
     ( (This)->lpVtbl -> SetFunctionReJIT(This,functionId) ) 
 
-#define ICorProfilerInfo8_ForceGC(This)	\
+#define ICorProfilerInfo8_ForceGC(This) \
     ( (This)->lpVtbl -> ForceGC(This) ) 
 
-#define ICorProfilerInfo8_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)	\
+#define ICorProfilerInfo8_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)  \
     ( (This)->lpVtbl -> SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) ) 
 
-#define ICorProfilerInfo8_GetInprocInspectionInterface(This,ppicd)	\
+#define ICorProfilerInfo8_GetInprocInspectionInterface(This,ppicd)  \
     ( (This)->lpVtbl -> GetInprocInspectionInterface(This,ppicd) ) 
 
-#define ICorProfilerInfo8_GetInprocInspectionIThisThread(This,ppicd)	\
+#define ICorProfilerInfo8_GetInprocInspectionIThisThread(This,ppicd)    \
     ( (This)->lpVtbl -> GetInprocInspectionIThisThread(This,ppicd) ) 
 
-#define ICorProfilerInfo8_GetThreadContext(This,threadId,pContextId)	\
+#define ICorProfilerInfo8_GetThreadContext(This,threadId,pContextId)    \
     ( (This)->lpVtbl -> GetThreadContext(This,threadId,pContextId) ) 
 
-#define ICorProfilerInfo8_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)	\
+#define ICorProfilerInfo8_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) \
     ( (This)->lpVtbl -> BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) ) 
 
-#define ICorProfilerInfo8_EndInprocDebugging(This,dwProfilerContext)	\
+#define ICorProfilerInfo8_EndInprocDebugging(This,dwProfilerContext)    \
     ( (This)->lpVtbl -> EndInprocDebugging(This,dwProfilerContext) ) 
 
-#define ICorProfilerInfo8_GetILToNativeMapping(This,functionId,cMap,pcMap,map)	\
+#define ICorProfilerInfo8_GetILToNativeMapping(This,functionId,cMap,pcMap,map)  \
     ( (This)->lpVtbl -> GetILToNativeMapping(This,functionId,cMap,pcMap,map) ) 
 
 
-#define ICorProfilerInfo8_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)	\
+#define ICorProfilerInfo8_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)    \
     ( (This)->lpVtbl -> DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize) ) 
 
-#define ICorProfilerInfo8_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo8_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo8_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)	\
+#define ICorProfilerInfo8_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)   \
     ( (This)->lpVtbl -> GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo8_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo8_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)   \
     ( (This)->lpVtbl -> GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo8_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize)	\
+#define ICorProfilerInfo8_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) \
     ( (This)->lpVtbl -> GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) ) 
 
-#define ICorProfilerInfo8_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)	\
+#define ICorProfilerInfo8_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)  \
     ( (This)->lpVtbl -> GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo8_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo8_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo8_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)	\
+#define ICorProfilerInfo8_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)   \
     ( (This)->lpVtbl -> GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID) ) 
 
-#define ICorProfilerInfo8_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID)	\
+#define ICorProfilerInfo8_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) \
     ( (This)->lpVtbl -> GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) ) 
 
-#define ICorProfilerInfo8_EnumModuleFrozenObjects(This,moduleID,ppEnum)	\
+#define ICorProfilerInfo8_EnumModuleFrozenObjects(This,moduleID,ppEnum) \
     ( (This)->lpVtbl -> EnumModuleFrozenObjects(This,moduleID,ppEnum) ) 
 
-#define ICorProfilerInfo8_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)	\
+#define ICorProfilerInfo8_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)    \
     ( (This)->lpVtbl -> GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData) ) 
 
-#define ICorProfilerInfo8_GetBoxClassLayout(This,classId,pBufferOffset)	\
+#define ICorProfilerInfo8_GetBoxClassLayout(This,classId,pBufferOffset) \
     ( (This)->lpVtbl -> GetBoxClassLayout(This,classId,pBufferOffset) ) 
 
-#define ICorProfilerInfo8_GetThreadAppDomain(This,threadId,pAppDomainId)	\
+#define ICorProfilerInfo8_GetThreadAppDomain(This,threadId,pAppDomainId)    \
     ( (This)->lpVtbl -> GetThreadAppDomain(This,threadId,pAppDomainId) ) 
 
-#define ICorProfilerInfo8_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)	\
+#define ICorProfilerInfo8_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)    \
     ( (This)->lpVtbl -> GetRVAStaticAddress(This,classId,fieldToken,ppAddress) ) 
 
-#define ICorProfilerInfo8_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)	\
+#define ICorProfilerInfo8_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)  \
     ( (This)->lpVtbl -> GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) ) 
 
-#define ICorProfilerInfo8_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)	\
+#define ICorProfilerInfo8_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)    \
     ( (This)->lpVtbl -> GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo8_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)	\
+#define ICorProfilerInfo8_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)  \
     ( (This)->lpVtbl -> GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) ) 
 
-#define ICorProfilerInfo8_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)	\
+#define ICorProfilerInfo8_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)    \
     ( (This)->lpVtbl -> GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo) ) 
 
-#define ICorProfilerInfo8_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges)	\
+#define ICorProfilerInfo8_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) \
     ( (This)->lpVtbl -> GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) ) 
 
-#define ICorProfilerInfo8_GetObjectGeneration(This,objectId,range)	\
+#define ICorProfilerInfo8_GetObjectGeneration(This,objectId,range)  \
     ( (This)->lpVtbl -> GetObjectGeneration(This,objectId,range) ) 
 
-#define ICorProfilerInfo8_GetNotifiedExceptionClauseInfo(This,pinfo)	\
+#define ICorProfilerInfo8_GetNotifiedExceptionClauseInfo(This,pinfo)    \
     ( (This)->lpVtbl -> GetNotifiedExceptionClauseInfo(This,pinfo) ) 
 
 
-#define ICorProfilerInfo8_EnumJITedFunctions(This,ppEnum)	\
+#define ICorProfilerInfo8_EnumJITedFunctions(This,ppEnum)   \
     ( (This)->lpVtbl -> EnumJITedFunctions(This,ppEnum) ) 
 
-#define ICorProfilerInfo8_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)	\
+#define ICorProfilerInfo8_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)  \
     ( (This)->lpVtbl -> RequestProfilerDetach(This,dwExpectedCompletionMilliseconds) ) 
 
-#define ICorProfilerInfo8_SetFunctionIDMapper2(This,pFunc,clientData)	\
+#define ICorProfilerInfo8_SetFunctionIDMapper2(This,pFunc,clientData)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper2(This,pFunc,clientData) ) 
 
-#define ICorProfilerInfo8_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo8_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)  \
     ( (This)->lpVtbl -> GetStringLayout2(This,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo8_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)	\
+#define ICorProfilerInfo8_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3) ) 
 
-#define ICorProfilerInfo8_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)	\
+#define ICorProfilerInfo8_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo) ) 
 
-#define ICorProfilerInfo8_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)	\
+#define ICorProfilerInfo8_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)   \
     ( (This)->lpVtbl -> GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo) ) 
 
-#define ICorProfilerInfo8_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)	\
+#define ICorProfilerInfo8_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)    \
     ( (This)->lpVtbl -> GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange) ) 
 
-#define ICorProfilerInfo8_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)	\
+#define ICorProfilerInfo8_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)  \
     ( (This)->lpVtbl -> GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo) ) 
 
-#define ICorProfilerInfo8_EnumModules(This,ppEnum)	\
+#define ICorProfilerInfo8_EnumModules(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumModules(This,ppEnum) ) 
 
-#define ICorProfilerInfo8_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)	\
+#define ICorProfilerInfo8_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)   \
     ( (This)->lpVtbl -> GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString) ) 
 
-#define ICorProfilerInfo8_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)	\
+#define ICorProfilerInfo8_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)   \
     ( (This)->lpVtbl -> GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo8_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)	\
+#define ICorProfilerInfo8_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)    \
     ( (This)->lpVtbl -> GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds) ) 
 
-#define ICorProfilerInfo8_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)	\
+#define ICorProfilerInfo8_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)    \
     ( (This)->lpVtbl -> GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags) ) 
 
 
-#define ICorProfilerInfo8_EnumThreads(This,ppEnum)	\
+#define ICorProfilerInfo8_EnumThreads(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumThreads(This,ppEnum) ) 
 
-#define ICorProfilerInfo8_InitializeCurrentThread(This)	\
+#define ICorProfilerInfo8_InitializeCurrentThread(This) \
     ( (This)->lpVtbl -> InitializeCurrentThread(This) ) 
 
-#define ICorProfilerInfo8_RequestReJIT(This,cFunctions,moduleIds,methodIds)	\
+#define ICorProfilerInfo8_RequestReJIT(This,cFunctions,moduleIds,methodIds) \
     ( (This)->lpVtbl -> RequestReJIT(This,cFunctions,moduleIds,methodIds) ) 
 
-#define ICorProfilerInfo8_RequestRevert(This,cFunctions,moduleIds,methodIds,status)	\
+#define ICorProfilerInfo8_RequestRevert(This,cFunctions,moduleIds,methodIds,status) \
     ( (This)->lpVtbl -> RequestRevert(This,cFunctions,moduleIds,methodIds,status) ) 
 
-#define ICorProfilerInfo8_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo8_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo8_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId)	\
+#define ICorProfilerInfo8_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId)  \
     ( (This)->lpVtbl -> GetFunctionFromIP2(This,ip,pFunctionId,pReJitId) ) 
 
-#define ICorProfilerInfo8_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)	\
+#define ICorProfilerInfo8_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)    \
     ( (This)->lpVtbl -> GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds) ) 
 
-#define ICorProfilerInfo8_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map)	\
+#define ICorProfilerInfo8_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) \
     ( (This)->lpVtbl -> GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) ) 
 
-#define ICorProfilerInfo8_EnumJITedFunctions2(This,ppEnum)	\
+#define ICorProfilerInfo8_EnumJITedFunctions2(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumJITedFunctions2(This,ppEnum) ) 
 
-#define ICorProfilerInfo8_GetObjectSize2(This,objectId,pcSize)	\
+#define ICorProfilerInfo8_GetObjectSize2(This,objectId,pcSize)  \
     ( (This)->lpVtbl -> GetObjectSize2(This,objectId,pcSize) ) 
 
 
-#define ICorProfilerInfo8_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)	\
+#define ICorProfilerInfo8_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)    \
     ( (This)->lpVtbl -> GetEventMask2(This,pdwEventsLow,pdwEventsHigh) ) 
 
-#define ICorProfilerInfo8_SetEventMask2(This,dwEventsLow,dwEventsHigh)	\
+#define ICorProfilerInfo8_SetEventMask2(This,dwEventsLow,dwEventsHigh)  \
     ( (This)->lpVtbl -> SetEventMask2(This,dwEventsLow,dwEventsHigh) ) 
 
 
-#define ICorProfilerInfo8_EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum)	\
+#define ICorProfilerInfo8_EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum)  \
     ( (This)->lpVtbl -> EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum) ) 
 
 
-#define ICorProfilerInfo8_ApplyMetaData(This,moduleId)	\
+#define ICorProfilerInfo8_ApplyMetaData(This,moduleId)  \
     ( (This)->lpVtbl -> ApplyMetaData(This,moduleId) ) 
 
-#define ICorProfilerInfo8_GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes)	\
+#define ICorProfilerInfo8_GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes) \
     ( (This)->lpVtbl -> GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes) ) 
 
-#define ICorProfilerInfo8_ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead)	\
+#define ICorProfilerInfo8_ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead)  \
     ( (This)->lpVtbl -> ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead) ) 
 
 
-#define ICorProfilerInfo8_IsFunctionDynamic(This,functionId,isDynamic)	\
+#define ICorProfilerInfo8_IsFunctionDynamic(This,functionId,isDynamic)  \
     ( (This)->lpVtbl -> IsFunctionDynamic(This,functionId,isDynamic) ) 
 
-#define ICorProfilerInfo8_GetFunctionFromIP3(This,ip,functionId,pReJitId)	\
+#define ICorProfilerInfo8_GetFunctionFromIP3(This,ip,functionId,pReJitId)   \
     ( (This)->lpVtbl -> GetFunctionFromIP3(This,ip,functionId,pReJitId) ) 
 
-#define ICorProfilerInfo8_GetDynamicFunctionInfo(This,functionId,moduleId,ppvSig,pbSig,cchName,pcchName,wszName)	\
+#define ICorProfilerInfo8_GetDynamicFunctionInfo(This,functionId,moduleId,ppvSig,pbSig,cchName,pcchName,wszName)    \
     ( (This)->lpVtbl -> GetDynamicFunctionInfo(This,functionId,moduleId,ppvSig,pbSig,cchName,pcchName,wszName) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerInfo8_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerInfo8_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo9_INTERFACE_DEFINED__
@@ -14276,7 +14283,7 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerInfo9Vtbl
     {
@@ -14871,303 +14878,303 @@ EXTERN_C const IID IID_ICorProfilerInfo9;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerInfo9_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerInfo9_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerInfo9_AddRef(This)	\
+#define ICorProfilerInfo9_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerInfo9_Release(This)	\
+#define ICorProfilerInfo9_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerInfo9_GetClassFromObject(This,objectId,pClassId)	\
+#define ICorProfilerInfo9_GetClassFromObject(This,objectId,pClassId)    \
     ( (This)->lpVtbl -> GetClassFromObject(This,objectId,pClassId) ) 
 
-#define ICorProfilerInfo9_GetClassFromToken(This,moduleId,typeDef,pClassId)	\
+#define ICorProfilerInfo9_GetClassFromToken(This,moduleId,typeDef,pClassId) \
     ( (This)->lpVtbl -> GetClassFromToken(This,moduleId,typeDef,pClassId) ) 
 
-#define ICorProfilerInfo9_GetCodeInfo(This,functionId,pStart,pcSize)	\
+#define ICorProfilerInfo9_GetCodeInfo(This,functionId,pStart,pcSize)    \
     ( (This)->lpVtbl -> GetCodeInfo(This,functionId,pStart,pcSize) ) 
 
-#define ICorProfilerInfo9_GetEventMask(This,pdwEvents)	\
+#define ICorProfilerInfo9_GetEventMask(This,pdwEvents)  \
     ( (This)->lpVtbl -> GetEventMask(This,pdwEvents) ) 
 
-#define ICorProfilerInfo9_GetFunctionFromIP(This,ip,pFunctionId)	\
+#define ICorProfilerInfo9_GetFunctionFromIP(This,ip,pFunctionId)    \
     ( (This)->lpVtbl -> GetFunctionFromIP(This,ip,pFunctionId) ) 
 
-#define ICorProfilerInfo9_GetFunctionFromToken(This,moduleId,token,pFunctionId)	\
+#define ICorProfilerInfo9_GetFunctionFromToken(This,moduleId,token,pFunctionId) \
     ( (This)->lpVtbl -> GetFunctionFromToken(This,moduleId,token,pFunctionId) ) 
 
-#define ICorProfilerInfo9_GetHandleFromThread(This,threadId,phThread)	\
+#define ICorProfilerInfo9_GetHandleFromThread(This,threadId,phThread)   \
     ( (This)->lpVtbl -> GetHandleFromThread(This,threadId,phThread) ) 
 
-#define ICorProfilerInfo9_GetObjectSize(This,objectId,pcSize)	\
+#define ICorProfilerInfo9_GetObjectSize(This,objectId,pcSize)   \
     ( (This)->lpVtbl -> GetObjectSize(This,objectId,pcSize) ) 
 
-#define ICorProfilerInfo9_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)	\
+#define ICorProfilerInfo9_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)  \
     ( (This)->lpVtbl -> IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) ) 
 
-#define ICorProfilerInfo9_GetThreadInfo(This,threadId,pdwWin32ThreadId)	\
+#define ICorProfilerInfo9_GetThreadInfo(This,threadId,pdwWin32ThreadId) \
     ( (This)->lpVtbl -> GetThreadInfo(This,threadId,pdwWin32ThreadId) ) 
 
-#define ICorProfilerInfo9_GetCurrentThreadID(This,pThreadId)	\
+#define ICorProfilerInfo9_GetCurrentThreadID(This,pThreadId)    \
     ( (This)->lpVtbl -> GetCurrentThreadID(This,pThreadId) ) 
 
-#define ICorProfilerInfo9_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)	\
+#define ICorProfilerInfo9_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)  \
     ( (This)->lpVtbl -> GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) ) 
 
-#define ICorProfilerInfo9_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)	\
+#define ICorProfilerInfo9_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)    \
     ( (This)->lpVtbl -> GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken) ) 
 
-#define ICorProfilerInfo9_SetEventMask(This,dwEvents)	\
+#define ICorProfilerInfo9_SetEventMask(This,dwEvents)   \
     ( (This)->lpVtbl -> SetEventMask(This,dwEvents) ) 
 
-#define ICorProfilerInfo9_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo9_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo9_SetFunctionIDMapper(This,pFunc)	\
+#define ICorProfilerInfo9_SetFunctionIDMapper(This,pFunc)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper(This,pFunc) ) 
 
-#define ICorProfilerInfo9_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)	\
+#define ICorProfilerInfo9_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) \
     ( (This)->lpVtbl -> GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) ) 
 
-#define ICorProfilerInfo9_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)	\
+#define ICorProfilerInfo9_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)    \
     ( (This)->lpVtbl -> GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId) ) 
 
-#define ICorProfilerInfo9_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)	\
+#define ICorProfilerInfo9_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)   \
     ( (This)->lpVtbl -> GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut) ) 
 
-#define ICorProfilerInfo9_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)	\
+#define ICorProfilerInfo9_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)    \
     ( (This)->lpVtbl -> GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize) ) 
 
-#define ICorProfilerInfo9_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)	\
+#define ICorProfilerInfo9_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)    \
     ( (This)->lpVtbl -> GetILFunctionBodyAllocator(This,moduleId,ppMalloc) ) 
 
-#define ICorProfilerInfo9_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)	\
+#define ICorProfilerInfo9_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) \
     ( (This)->lpVtbl -> SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) ) 
 
-#define ICorProfilerInfo9_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)	\
+#define ICorProfilerInfo9_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) \
     ( (This)->lpVtbl -> GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) ) 
 
-#define ICorProfilerInfo9_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)	\
+#define ICorProfilerInfo9_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)   \
     ( (This)->lpVtbl -> GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId) ) 
 
-#define ICorProfilerInfo9_SetFunctionReJIT(This,functionId)	\
+#define ICorProfilerInfo9_SetFunctionReJIT(This,functionId) \
     ( (This)->lpVtbl -> SetFunctionReJIT(This,functionId) ) 
 
-#define ICorProfilerInfo9_ForceGC(This)	\
+#define ICorProfilerInfo9_ForceGC(This) \
     ( (This)->lpVtbl -> ForceGC(This) ) 
 
-#define ICorProfilerInfo9_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)	\
+#define ICorProfilerInfo9_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)  \
     ( (This)->lpVtbl -> SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) ) 
 
-#define ICorProfilerInfo9_GetInprocInspectionInterface(This,ppicd)	\
+#define ICorProfilerInfo9_GetInprocInspectionInterface(This,ppicd)  \
     ( (This)->lpVtbl -> GetInprocInspectionInterface(This,ppicd) ) 
 
-#define ICorProfilerInfo9_GetInprocInspectionIThisThread(This,ppicd)	\
+#define ICorProfilerInfo9_GetInprocInspectionIThisThread(This,ppicd)    \
     ( (This)->lpVtbl -> GetInprocInspectionIThisThread(This,ppicd) ) 
 
-#define ICorProfilerInfo9_GetThreadContext(This,threadId,pContextId)	\
+#define ICorProfilerInfo9_GetThreadContext(This,threadId,pContextId)    \
     ( (This)->lpVtbl -> GetThreadContext(This,threadId,pContextId) ) 
 
-#define ICorProfilerInfo9_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)	\
+#define ICorProfilerInfo9_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) \
     ( (This)->lpVtbl -> BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) ) 
 
-#define ICorProfilerInfo9_EndInprocDebugging(This,dwProfilerContext)	\
+#define ICorProfilerInfo9_EndInprocDebugging(This,dwProfilerContext)    \
     ( (This)->lpVtbl -> EndInprocDebugging(This,dwProfilerContext) ) 
 
-#define ICorProfilerInfo9_GetILToNativeMapping(This,functionId,cMap,pcMap,map)	\
+#define ICorProfilerInfo9_GetILToNativeMapping(This,functionId,cMap,pcMap,map)  \
     ( (This)->lpVtbl -> GetILToNativeMapping(This,functionId,cMap,pcMap,map) ) 
 
 
-#define ICorProfilerInfo9_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)	\
+#define ICorProfilerInfo9_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)    \
     ( (This)->lpVtbl -> DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize) ) 
 
-#define ICorProfilerInfo9_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo9_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo9_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)	\
+#define ICorProfilerInfo9_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)   \
     ( (This)->lpVtbl -> GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo9_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo9_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)   \
     ( (This)->lpVtbl -> GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo9_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize)	\
+#define ICorProfilerInfo9_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) \
     ( (This)->lpVtbl -> GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) ) 
 
-#define ICorProfilerInfo9_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)	\
+#define ICorProfilerInfo9_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)  \
     ( (This)->lpVtbl -> GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo9_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo9_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo9_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)	\
+#define ICorProfilerInfo9_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)   \
     ( (This)->lpVtbl -> GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID) ) 
 
-#define ICorProfilerInfo9_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID)	\
+#define ICorProfilerInfo9_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) \
     ( (This)->lpVtbl -> GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) ) 
 
-#define ICorProfilerInfo9_EnumModuleFrozenObjects(This,moduleID,ppEnum)	\
+#define ICorProfilerInfo9_EnumModuleFrozenObjects(This,moduleID,ppEnum) \
     ( (This)->lpVtbl -> EnumModuleFrozenObjects(This,moduleID,ppEnum) ) 
 
-#define ICorProfilerInfo9_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)	\
+#define ICorProfilerInfo9_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)    \
     ( (This)->lpVtbl -> GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData) ) 
 
-#define ICorProfilerInfo9_GetBoxClassLayout(This,classId,pBufferOffset)	\
+#define ICorProfilerInfo9_GetBoxClassLayout(This,classId,pBufferOffset) \
     ( (This)->lpVtbl -> GetBoxClassLayout(This,classId,pBufferOffset) ) 
 
-#define ICorProfilerInfo9_GetThreadAppDomain(This,threadId,pAppDomainId)	\
+#define ICorProfilerInfo9_GetThreadAppDomain(This,threadId,pAppDomainId)    \
     ( (This)->lpVtbl -> GetThreadAppDomain(This,threadId,pAppDomainId) ) 
 
-#define ICorProfilerInfo9_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)	\
+#define ICorProfilerInfo9_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)    \
     ( (This)->lpVtbl -> GetRVAStaticAddress(This,classId,fieldToken,ppAddress) ) 
 
-#define ICorProfilerInfo9_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)	\
+#define ICorProfilerInfo9_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)  \
     ( (This)->lpVtbl -> GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) ) 
 
-#define ICorProfilerInfo9_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)	\
+#define ICorProfilerInfo9_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)    \
     ( (This)->lpVtbl -> GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo9_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)	\
+#define ICorProfilerInfo9_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)  \
     ( (This)->lpVtbl -> GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) ) 
 
-#define ICorProfilerInfo9_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)	\
+#define ICorProfilerInfo9_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)    \
     ( (This)->lpVtbl -> GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo) ) 
 
-#define ICorProfilerInfo9_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges)	\
+#define ICorProfilerInfo9_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) \
     ( (This)->lpVtbl -> GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) ) 
 
-#define ICorProfilerInfo9_GetObjectGeneration(This,objectId,range)	\
+#define ICorProfilerInfo9_GetObjectGeneration(This,objectId,range)  \
     ( (This)->lpVtbl -> GetObjectGeneration(This,objectId,range) ) 
 
-#define ICorProfilerInfo9_GetNotifiedExceptionClauseInfo(This,pinfo)	\
+#define ICorProfilerInfo9_GetNotifiedExceptionClauseInfo(This,pinfo)    \
     ( (This)->lpVtbl -> GetNotifiedExceptionClauseInfo(This,pinfo) ) 
 
 
-#define ICorProfilerInfo9_EnumJITedFunctions(This,ppEnum)	\
+#define ICorProfilerInfo9_EnumJITedFunctions(This,ppEnum)   \
     ( (This)->lpVtbl -> EnumJITedFunctions(This,ppEnum) ) 
 
-#define ICorProfilerInfo9_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)	\
+#define ICorProfilerInfo9_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)  \
     ( (This)->lpVtbl -> RequestProfilerDetach(This,dwExpectedCompletionMilliseconds) ) 
 
-#define ICorProfilerInfo9_SetFunctionIDMapper2(This,pFunc,clientData)	\
+#define ICorProfilerInfo9_SetFunctionIDMapper2(This,pFunc,clientData)   \
     ( (This)->lpVtbl -> SetFunctionIDMapper2(This,pFunc,clientData) ) 
 
-#define ICorProfilerInfo9_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo9_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)  \
     ( (This)->lpVtbl -> GetStringLayout2(This,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo9_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)	\
+#define ICorProfilerInfo9_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3) ) 
 
-#define ICorProfilerInfo9_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)	\
+#define ICorProfilerInfo9_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)  \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo) ) 
 
-#define ICorProfilerInfo9_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)	\
+#define ICorProfilerInfo9_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)   \
     ( (This)->lpVtbl -> GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo) ) 
 
-#define ICorProfilerInfo9_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)	\
+#define ICorProfilerInfo9_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)    \
     ( (This)->lpVtbl -> GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange) ) 
 
-#define ICorProfilerInfo9_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)	\
+#define ICorProfilerInfo9_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)  \
     ( (This)->lpVtbl -> GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo) ) 
 
-#define ICorProfilerInfo9_EnumModules(This,ppEnum)	\
+#define ICorProfilerInfo9_EnumModules(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumModules(This,ppEnum) ) 
 
-#define ICorProfilerInfo9_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)	\
+#define ICorProfilerInfo9_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)   \
     ( (This)->lpVtbl -> GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString) ) 
 
-#define ICorProfilerInfo9_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)	\
+#define ICorProfilerInfo9_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)   \
     ( (This)->lpVtbl -> GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo9_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)	\
+#define ICorProfilerInfo9_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)    \
     ( (This)->lpVtbl -> GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds) ) 
 
-#define ICorProfilerInfo9_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)	\
+#define ICorProfilerInfo9_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)    \
     ( (This)->lpVtbl -> GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags) ) 
 
 
-#define ICorProfilerInfo9_EnumThreads(This,ppEnum)	\
+#define ICorProfilerInfo9_EnumThreads(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumThreads(This,ppEnum) ) 
 
-#define ICorProfilerInfo9_InitializeCurrentThread(This)	\
+#define ICorProfilerInfo9_InitializeCurrentThread(This) \
     ( (This)->lpVtbl -> InitializeCurrentThread(This) ) 
 
-#define ICorProfilerInfo9_RequestReJIT(This,cFunctions,moduleIds,methodIds)	\
+#define ICorProfilerInfo9_RequestReJIT(This,cFunctions,moduleIds,methodIds) \
     ( (This)->lpVtbl -> RequestReJIT(This,cFunctions,moduleIds,methodIds) ) 
 
-#define ICorProfilerInfo9_RequestRevert(This,cFunctions,moduleIds,methodIds,status)	\
+#define ICorProfilerInfo9_RequestRevert(This,cFunctions,moduleIds,methodIds,status) \
     ( (This)->lpVtbl -> RequestRevert(This,cFunctions,moduleIds,methodIds,status) ) 
 
-#define ICorProfilerInfo9_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo9_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)    \
     ( (This)->lpVtbl -> GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo9_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId)	\
+#define ICorProfilerInfo9_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId)  \
     ( (This)->lpVtbl -> GetFunctionFromIP2(This,ip,pFunctionId,pReJitId) ) 
 
-#define ICorProfilerInfo9_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)	\
+#define ICorProfilerInfo9_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)    \
     ( (This)->lpVtbl -> GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds) ) 
 
-#define ICorProfilerInfo9_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map)	\
+#define ICorProfilerInfo9_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) \
     ( (This)->lpVtbl -> GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) ) 
 
-#define ICorProfilerInfo9_EnumJITedFunctions2(This,ppEnum)	\
+#define ICorProfilerInfo9_EnumJITedFunctions2(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumJITedFunctions2(This,ppEnum) ) 
 
-#define ICorProfilerInfo9_GetObjectSize2(This,objectId,pcSize)	\
+#define ICorProfilerInfo9_GetObjectSize2(This,objectId,pcSize)  \
     ( (This)->lpVtbl -> GetObjectSize2(This,objectId,pcSize) ) 
 
 
-#define ICorProfilerInfo9_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)	\
+#define ICorProfilerInfo9_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)    \
     ( (This)->lpVtbl -> GetEventMask2(This,pdwEventsLow,pdwEventsHigh) ) 
 
-#define ICorProfilerInfo9_SetEventMask2(This,dwEventsLow,dwEventsHigh)	\
+#define ICorProfilerInfo9_SetEventMask2(This,dwEventsLow,dwEventsHigh)  \
     ( (This)->lpVtbl -> SetEventMask2(This,dwEventsLow,dwEventsHigh) ) 
 
 
-#define ICorProfilerInfo9_EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum)	\
+#define ICorProfilerInfo9_EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum)  \
     ( (This)->lpVtbl -> EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum) ) 
 
 
-#define ICorProfilerInfo9_ApplyMetaData(This,moduleId)	\
+#define ICorProfilerInfo9_ApplyMetaData(This,moduleId)  \
     ( (This)->lpVtbl -> ApplyMetaData(This,moduleId) ) 
 
-#define ICorProfilerInfo9_GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes)	\
+#define ICorProfilerInfo9_GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes) \
     ( (This)->lpVtbl -> GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes) ) 
 
-#define ICorProfilerInfo9_ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead)	\
+#define ICorProfilerInfo9_ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead)  \
     ( (This)->lpVtbl -> ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead) ) 
 
 
-#define ICorProfilerInfo9_IsFunctionDynamic(This,functionId,isDynamic)	\
+#define ICorProfilerInfo9_IsFunctionDynamic(This,functionId,isDynamic)  \
     ( (This)->lpVtbl -> IsFunctionDynamic(This,functionId,isDynamic) ) 
 
-#define ICorProfilerInfo9_GetFunctionFromIP3(This,ip,functionId,pReJitId)	\
+#define ICorProfilerInfo9_GetFunctionFromIP3(This,ip,functionId,pReJitId)   \
     ( (This)->lpVtbl -> GetFunctionFromIP3(This,ip,functionId,pReJitId) ) 
 
-#define ICorProfilerInfo9_GetDynamicFunctionInfo(This,functionId,moduleId,ppvSig,pbSig,cchName,pcchName,wszName)	\
+#define ICorProfilerInfo9_GetDynamicFunctionInfo(This,functionId,moduleId,ppvSig,pbSig,cchName,pcchName,wszName)    \
     ( (This)->lpVtbl -> GetDynamicFunctionInfo(This,functionId,moduleId,ppvSig,pbSig,cchName,pcchName,wszName) ) 
 
 
-#define ICorProfilerInfo9_GetNativeCodeStartAddresses(This,functionID,reJitId,cCodeStartAddresses,pcCodeStartAddresses,codeStartAddresses)	\
+#define ICorProfilerInfo9_GetNativeCodeStartAddresses(This,functionID,reJitId,cCodeStartAddresses,pcCodeStartAddresses,codeStartAddresses)  \
     ( (This)->lpVtbl -> GetNativeCodeStartAddresses(This,functionID,reJitId,cCodeStartAddresses,pcCodeStartAddresses,codeStartAddresses) ) 
 
-#define ICorProfilerInfo9_GetILToNativeMapping3(This,pNativeCodeStartAddress,cMap,pcMap,map)	\
+#define ICorProfilerInfo9_GetILToNativeMapping3(This,pNativeCodeStartAddress,cMap,pcMap,map)    \
     ( (This)->lpVtbl -> GetILToNativeMapping3(This,pNativeCodeStartAddress,cMap,pcMap,map) ) 
 
-#define ICorProfilerInfo9_GetCodeInfo4(This,pNativeCodeStartAddress,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo9_GetCodeInfo4(This,pNativeCodeStartAddress,cCodeInfos,pcCodeInfos,codeInfos)   \
     ( (This)->lpVtbl -> GetCodeInfo4(This,pNativeCodeStartAddress,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerInfo9_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerInfo9_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerInfo10_INTERFACE_DEFINED__
@@ -15199,10 +15206,16 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
         virtual HRESULT STDMETHODCALLTYPE GetLOHObjectSizeThreshold( 
             DWORD *pThreshold) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE RequestReJITWithInliners( 
+            /* [in] */ DWORD dwRejitFlags,
+            /* [in] */ ULONG cFunctions,
+            /* [size_is][in] */ ModuleID moduleIds[  ],
+            /* [size_is][in] */ mdMethodDef methodIds[  ]) = 0;
+        
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerInfo10Vtbl
     {
@@ -15801,6 +15814,13 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             ICorProfilerInfo10 * This,
             DWORD *pThreshold);
         
+        HRESULT ( STDMETHODCALLTYPE *RequestReJITWithInliners )( 
+            ICorProfilerInfo10 * This,
+            /* [in] */ DWORD dwRejitFlags,
+            /* [in] */ ULONG cFunctions,
+            /* [size_is][in] */ ModuleID moduleIds[  ],
+            /* [size_is][in] */ mdMethodDef methodIds[  ]);
+        
         END_INTERFACE
     } ICorProfilerInfo10Vtbl;
 
@@ -15814,313 +15834,316 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerInfo10_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerInfo10_QueryInterface(This,riid,ppvObject)  \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerInfo10_AddRef(This)	\
+#define ICorProfilerInfo10_AddRef(This) \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerInfo10_Release(This)	\
+#define ICorProfilerInfo10_Release(This)    \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerInfo10_GetClassFromObject(This,objectId,pClassId)	\
+#define ICorProfilerInfo10_GetClassFromObject(This,objectId,pClassId)   \
     ( (This)->lpVtbl -> GetClassFromObject(This,objectId,pClassId) ) 
 
-#define ICorProfilerInfo10_GetClassFromToken(This,moduleId,typeDef,pClassId)	\
+#define ICorProfilerInfo10_GetClassFromToken(This,moduleId,typeDef,pClassId)    \
     ( (This)->lpVtbl -> GetClassFromToken(This,moduleId,typeDef,pClassId) ) 
 
-#define ICorProfilerInfo10_GetCodeInfo(This,functionId,pStart,pcSize)	\
+#define ICorProfilerInfo10_GetCodeInfo(This,functionId,pStart,pcSize)   \
     ( (This)->lpVtbl -> GetCodeInfo(This,functionId,pStart,pcSize) ) 
 
-#define ICorProfilerInfo10_GetEventMask(This,pdwEvents)	\
+#define ICorProfilerInfo10_GetEventMask(This,pdwEvents) \
     ( (This)->lpVtbl -> GetEventMask(This,pdwEvents) ) 
 
-#define ICorProfilerInfo10_GetFunctionFromIP(This,ip,pFunctionId)	\
+#define ICorProfilerInfo10_GetFunctionFromIP(This,ip,pFunctionId)   \
     ( (This)->lpVtbl -> GetFunctionFromIP(This,ip,pFunctionId) ) 
 
-#define ICorProfilerInfo10_GetFunctionFromToken(This,moduleId,token,pFunctionId)	\
+#define ICorProfilerInfo10_GetFunctionFromToken(This,moduleId,token,pFunctionId)    \
     ( (This)->lpVtbl -> GetFunctionFromToken(This,moduleId,token,pFunctionId) ) 
 
-#define ICorProfilerInfo10_GetHandleFromThread(This,threadId,phThread)	\
+#define ICorProfilerInfo10_GetHandleFromThread(This,threadId,phThread)  \
     ( (This)->lpVtbl -> GetHandleFromThread(This,threadId,phThread) ) 
 
-#define ICorProfilerInfo10_GetObjectSize(This,objectId,pcSize)	\
+#define ICorProfilerInfo10_GetObjectSize(This,objectId,pcSize)  \
     ( (This)->lpVtbl -> GetObjectSize(This,objectId,pcSize) ) 
 
-#define ICorProfilerInfo10_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank)	\
+#define ICorProfilerInfo10_IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) \
     ( (This)->lpVtbl -> IsArrayClass(This,classId,pBaseElemType,pBaseClassId,pcRank) ) 
 
-#define ICorProfilerInfo10_GetThreadInfo(This,threadId,pdwWin32ThreadId)	\
+#define ICorProfilerInfo10_GetThreadInfo(This,threadId,pdwWin32ThreadId)    \
     ( (This)->lpVtbl -> GetThreadInfo(This,threadId,pdwWin32ThreadId) ) 
 
-#define ICorProfilerInfo10_GetCurrentThreadID(This,pThreadId)	\
+#define ICorProfilerInfo10_GetCurrentThreadID(This,pThreadId)   \
     ( (This)->lpVtbl -> GetCurrentThreadID(This,pThreadId) ) 
 
-#define ICorProfilerInfo10_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken)	\
+#define ICorProfilerInfo10_GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) \
     ( (This)->lpVtbl -> GetClassIDInfo(This,classId,pModuleId,pTypeDefToken) ) 
 
-#define ICorProfilerInfo10_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)	\
+#define ICorProfilerInfo10_GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken)   \
     ( (This)->lpVtbl -> GetFunctionInfo(This,functionId,pClassId,pModuleId,pToken) ) 
 
-#define ICorProfilerInfo10_SetEventMask(This,dwEvents)	\
+#define ICorProfilerInfo10_SetEventMask(This,dwEvents)  \
     ( (This)->lpVtbl -> SetEventMask(This,dwEvents) ) 
 
-#define ICorProfilerInfo10_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo10_SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo10_SetFunctionIDMapper(This,pFunc)	\
+#define ICorProfilerInfo10_SetFunctionIDMapper(This,pFunc)  \
     ( (This)->lpVtbl -> SetFunctionIDMapper(This,pFunc) ) 
 
-#define ICorProfilerInfo10_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)	\
+#define ICorProfilerInfo10_GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken)    \
     ( (This)->lpVtbl -> GetTokenAndMetaDataFromFunction(This,functionId,riid,ppImport,pToken) ) 
 
-#define ICorProfilerInfo10_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)	\
+#define ICorProfilerInfo10_GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId)   \
     ( (This)->lpVtbl -> GetModuleInfo(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId) ) 
 
-#define ICorProfilerInfo10_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)	\
+#define ICorProfilerInfo10_GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut)  \
     ( (This)->lpVtbl -> GetModuleMetaData(This,moduleId,dwOpenFlags,riid,ppOut) ) 
 
-#define ICorProfilerInfo10_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)	\
+#define ICorProfilerInfo10_GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize)   \
     ( (This)->lpVtbl -> GetILFunctionBody(This,moduleId,methodId,ppMethodHeader,pcbMethodSize) ) 
 
-#define ICorProfilerInfo10_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)	\
+#define ICorProfilerInfo10_GetILFunctionBodyAllocator(This,moduleId,ppMalloc)   \
     ( (This)->lpVtbl -> GetILFunctionBodyAllocator(This,moduleId,ppMalloc) ) 
 
-#define ICorProfilerInfo10_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)	\
+#define ICorProfilerInfo10_SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader)    \
     ( (This)->lpVtbl -> SetILFunctionBody(This,moduleId,methodid,pbNewILMethodHeader) ) 
 
-#define ICorProfilerInfo10_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)	\
+#define ICorProfilerInfo10_GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId)    \
     ( (This)->lpVtbl -> GetAppDomainInfo(This,appDomainId,cchName,pcchName,szName,pProcessId) ) 
 
-#define ICorProfilerInfo10_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)	\
+#define ICorProfilerInfo10_GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId)  \
     ( (This)->lpVtbl -> GetAssemblyInfo(This,assemblyId,cchName,pcchName,szName,pAppDomainId,pModuleId) ) 
 
-#define ICorProfilerInfo10_SetFunctionReJIT(This,functionId)	\
+#define ICorProfilerInfo10_SetFunctionReJIT(This,functionId)    \
     ( (This)->lpVtbl -> SetFunctionReJIT(This,functionId) ) 
 
-#define ICorProfilerInfo10_ForceGC(This)	\
+#define ICorProfilerInfo10_ForceGC(This)    \
     ( (This)->lpVtbl -> ForceGC(This) ) 
 
-#define ICorProfilerInfo10_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries)	\
+#define ICorProfilerInfo10_SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) \
     ( (This)->lpVtbl -> SetILInstrumentedCodeMap(This,functionId,fStartJit,cILMapEntries,rgILMapEntries) ) 
 
-#define ICorProfilerInfo10_GetInprocInspectionInterface(This,ppicd)	\
+#define ICorProfilerInfo10_GetInprocInspectionInterface(This,ppicd) \
     ( (This)->lpVtbl -> GetInprocInspectionInterface(This,ppicd) ) 
 
-#define ICorProfilerInfo10_GetInprocInspectionIThisThread(This,ppicd)	\
+#define ICorProfilerInfo10_GetInprocInspectionIThisThread(This,ppicd)   \
     ( (This)->lpVtbl -> GetInprocInspectionIThisThread(This,ppicd) ) 
 
-#define ICorProfilerInfo10_GetThreadContext(This,threadId,pContextId)	\
+#define ICorProfilerInfo10_GetThreadContext(This,threadId,pContextId)   \
     ( (This)->lpVtbl -> GetThreadContext(This,threadId,pContextId) ) 
 
-#define ICorProfilerInfo10_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)	\
+#define ICorProfilerInfo10_BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext)    \
     ( (This)->lpVtbl -> BeginInprocDebugging(This,fThisThreadOnly,pdwProfilerContext) ) 
 
-#define ICorProfilerInfo10_EndInprocDebugging(This,dwProfilerContext)	\
+#define ICorProfilerInfo10_EndInprocDebugging(This,dwProfilerContext)   \
     ( (This)->lpVtbl -> EndInprocDebugging(This,dwProfilerContext) ) 
 
-#define ICorProfilerInfo10_GetILToNativeMapping(This,functionId,cMap,pcMap,map)	\
+#define ICorProfilerInfo10_GetILToNativeMapping(This,functionId,cMap,pcMap,map) \
     ( (This)->lpVtbl -> GetILToNativeMapping(This,functionId,cMap,pcMap,map) ) 
 
 
-#define ICorProfilerInfo10_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)	\
+#define ICorProfilerInfo10_DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize)   \
     ( (This)->lpVtbl -> DoStackSnapshot(This,thread,callback,infoFlags,clientData,context,contextSize) ) 
 
-#define ICorProfilerInfo10_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall)	\
+#define ICorProfilerInfo10_SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall)    \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks2(This,pFuncEnter,pFuncLeave,pFuncTailcall) ) 
 
-#define ICorProfilerInfo10_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)	\
+#define ICorProfilerInfo10_GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs)  \
     ( (This)->lpVtbl -> GetFunctionInfo2(This,funcId,frameInfo,pClassId,pModuleId,pToken,cTypeArgs,pcTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo10_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo10_GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset)  \
     ( (This)->lpVtbl -> GetStringLayout(This,pBufferLengthOffset,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo10_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize)	\
+#define ICorProfilerInfo10_GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize)    \
     ( (This)->lpVtbl -> GetClassLayout(This,classID,rFieldOffset,cFieldOffset,pcFieldOffset,pulClassSize) ) 
 
-#define ICorProfilerInfo10_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs)	\
+#define ICorProfilerInfo10_GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) \
     ( (This)->lpVtbl -> GetClassIDInfo2(This,classId,pModuleId,pTypeDefToken,pParentClassId,cNumTypeArgs,pcNumTypeArgs,typeArgs) ) 
 
-#define ICorProfilerInfo10_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo10_GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos)   \
     ( (This)->lpVtbl -> GetCodeInfo2(This,functionID,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo10_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)	\
+#define ICorProfilerInfo10_GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID)  \
     ( (This)->lpVtbl -> GetClassFromTokenAndTypeArgs(This,moduleID,typeDef,cTypeArgs,typeArgs,pClassID) ) 
 
-#define ICorProfilerInfo10_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID)	\
+#define ICorProfilerInfo10_GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID)    \
     ( (This)->lpVtbl -> GetFunctionFromTokenAndTypeArgs(This,moduleID,funcDef,classId,cTypeArgs,typeArgs,pFunctionID) ) 
 
-#define ICorProfilerInfo10_EnumModuleFrozenObjects(This,moduleID,ppEnum)	\
+#define ICorProfilerInfo10_EnumModuleFrozenObjects(This,moduleID,ppEnum)    \
     ( (This)->lpVtbl -> EnumModuleFrozenObjects(This,moduleID,ppEnum) ) 
 
-#define ICorProfilerInfo10_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)	\
+#define ICorProfilerInfo10_GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData)   \
     ( (This)->lpVtbl -> GetArrayObjectInfo(This,objectId,cDimensions,pDimensionSizes,pDimensionLowerBounds,ppData) ) 
 
-#define ICorProfilerInfo10_GetBoxClassLayout(This,classId,pBufferOffset)	\
+#define ICorProfilerInfo10_GetBoxClassLayout(This,classId,pBufferOffset)    \
     ( (This)->lpVtbl -> GetBoxClassLayout(This,classId,pBufferOffset) ) 
 
-#define ICorProfilerInfo10_GetThreadAppDomain(This,threadId,pAppDomainId)	\
+#define ICorProfilerInfo10_GetThreadAppDomain(This,threadId,pAppDomainId)   \
     ( (This)->lpVtbl -> GetThreadAppDomain(This,threadId,pAppDomainId) ) 
 
-#define ICorProfilerInfo10_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)	\
+#define ICorProfilerInfo10_GetRVAStaticAddress(This,classId,fieldToken,ppAddress)   \
     ( (This)->lpVtbl -> GetRVAStaticAddress(This,classId,fieldToken,ppAddress) ) 
 
-#define ICorProfilerInfo10_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress)	\
+#define ICorProfilerInfo10_GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) \
     ( (This)->lpVtbl -> GetAppDomainStaticAddress(This,classId,fieldToken,appDomainId,ppAddress) ) 
 
-#define ICorProfilerInfo10_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)	\
+#define ICorProfilerInfo10_GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress)   \
     ( (This)->lpVtbl -> GetThreadStaticAddress(This,classId,fieldToken,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo10_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress)	\
+#define ICorProfilerInfo10_GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) \
     ( (This)->lpVtbl -> GetContextStaticAddress(This,classId,fieldToken,contextId,ppAddress) ) 
 
-#define ICorProfilerInfo10_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)	\
+#define ICorProfilerInfo10_GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo)   \
     ( (This)->lpVtbl -> GetStaticFieldInfo(This,classId,fieldToken,pFieldInfo) ) 
 
-#define ICorProfilerInfo10_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges)	\
+#define ICorProfilerInfo10_GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges)    \
     ( (This)->lpVtbl -> GetGenerationBounds(This,cObjectRanges,pcObjectRanges,ranges) ) 
 
-#define ICorProfilerInfo10_GetObjectGeneration(This,objectId,range)	\
+#define ICorProfilerInfo10_GetObjectGeneration(This,objectId,range) \
     ( (This)->lpVtbl -> GetObjectGeneration(This,objectId,range) ) 
 
-#define ICorProfilerInfo10_GetNotifiedExceptionClauseInfo(This,pinfo)	\
+#define ICorProfilerInfo10_GetNotifiedExceptionClauseInfo(This,pinfo)   \
     ( (This)->lpVtbl -> GetNotifiedExceptionClauseInfo(This,pinfo) ) 
 
 
-#define ICorProfilerInfo10_EnumJITedFunctions(This,ppEnum)	\
+#define ICorProfilerInfo10_EnumJITedFunctions(This,ppEnum)  \
     ( (This)->lpVtbl -> EnumJITedFunctions(This,ppEnum) ) 
 
-#define ICorProfilerInfo10_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds)	\
+#define ICorProfilerInfo10_RequestProfilerDetach(This,dwExpectedCompletionMilliseconds) \
     ( (This)->lpVtbl -> RequestProfilerDetach(This,dwExpectedCompletionMilliseconds) ) 
 
-#define ICorProfilerInfo10_SetFunctionIDMapper2(This,pFunc,clientData)	\
+#define ICorProfilerInfo10_SetFunctionIDMapper2(This,pFunc,clientData)  \
     ( (This)->lpVtbl -> SetFunctionIDMapper2(This,pFunc,clientData) ) 
 
-#define ICorProfilerInfo10_GetStringLayout2(This,pStringLengthOffset,pBufferOffset)	\
+#define ICorProfilerInfo10_GetStringLayout2(This,pStringLengthOffset,pBufferOffset) \
     ( (This)->lpVtbl -> GetStringLayout2(This,pStringLengthOffset,pBufferOffset) ) 
 
-#define ICorProfilerInfo10_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3)	\
+#define ICorProfilerInfo10_SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3) \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3(This,pFuncEnter3,pFuncLeave3,pFuncTailcall3) ) 
 
-#define ICorProfilerInfo10_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo)	\
+#define ICorProfilerInfo10_SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo) \
     ( (This)->lpVtbl -> SetEnterLeaveFunctionHooks3WithInfo(This,pFuncEnter3WithInfo,pFuncLeave3WithInfo,pFuncTailcall3WithInfo) ) 
 
-#define ICorProfilerInfo10_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)	\
+#define ICorProfilerInfo10_GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo)  \
     ( (This)->lpVtbl -> GetFunctionEnter3Info(This,functionId,eltInfo,pFrameInfo,pcbArgumentInfo,pArgumentInfo) ) 
 
-#define ICorProfilerInfo10_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)	\
+#define ICorProfilerInfo10_GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange)   \
     ( (This)->lpVtbl -> GetFunctionLeave3Info(This,functionId,eltInfo,pFrameInfo,pRetvalRange) ) 
 
-#define ICorProfilerInfo10_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo)	\
+#define ICorProfilerInfo10_GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo) \
     ( (This)->lpVtbl -> GetFunctionTailcall3Info(This,functionId,eltInfo,pFrameInfo) ) 
 
-#define ICorProfilerInfo10_EnumModules(This,ppEnum)	\
+#define ICorProfilerInfo10_EnumModules(This,ppEnum) \
     ( (This)->lpVtbl -> EnumModules(This,ppEnum) ) 
 
-#define ICorProfilerInfo10_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)	\
+#define ICorProfilerInfo10_GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString)  \
     ( (This)->lpVtbl -> GetRuntimeInformation(This,pClrInstanceId,pRuntimeType,pMajorVersion,pMinorVersion,pBuildNumber,pQFEVersion,cchVersionString,pcchVersionString,szVersionString) ) 
 
-#define ICorProfilerInfo10_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)	\
+#define ICorProfilerInfo10_GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress)  \
     ( (This)->lpVtbl -> GetThreadStaticAddress2(This,classId,fieldToken,appDomainId,threadId,ppAddress) ) 
 
-#define ICorProfilerInfo10_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)	\
+#define ICorProfilerInfo10_GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds)   \
     ( (This)->lpVtbl -> GetAppDomainsContainingModule(This,moduleId,cAppDomainIds,pcAppDomainIds,appDomainIds) ) 
 
-#define ICorProfilerInfo10_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)	\
+#define ICorProfilerInfo10_GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags)   \
     ( (This)->lpVtbl -> GetModuleInfo2(This,moduleId,ppBaseLoadAddress,cchName,pcchName,szName,pAssemblyId,pdwModuleFlags) ) 
 
 
-#define ICorProfilerInfo10_EnumThreads(This,ppEnum)	\
+#define ICorProfilerInfo10_EnumThreads(This,ppEnum) \
     ( (This)->lpVtbl -> EnumThreads(This,ppEnum) ) 
 
-#define ICorProfilerInfo10_InitializeCurrentThread(This)	\
+#define ICorProfilerInfo10_InitializeCurrentThread(This)    \
     ( (This)->lpVtbl -> InitializeCurrentThread(This) ) 
 
-#define ICorProfilerInfo10_RequestReJIT(This,cFunctions,moduleIds,methodIds)	\
+#define ICorProfilerInfo10_RequestReJIT(This,cFunctions,moduleIds,methodIds)    \
     ( (This)->lpVtbl -> RequestReJIT(This,cFunctions,moduleIds,methodIds) ) 
 
-#define ICorProfilerInfo10_RequestRevert(This,cFunctions,moduleIds,methodIds,status)	\
+#define ICorProfilerInfo10_RequestRevert(This,cFunctions,moduleIds,methodIds,status)    \
     ( (This)->lpVtbl -> RequestRevert(This,cFunctions,moduleIds,methodIds,status) ) 
 
-#define ICorProfilerInfo10_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo10_GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos)   \
     ( (This)->lpVtbl -> GetCodeInfo3(This,functionID,reJitId,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
-#define ICorProfilerInfo10_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId)	\
+#define ICorProfilerInfo10_GetFunctionFromIP2(This,ip,pFunctionId,pReJitId) \
     ( (This)->lpVtbl -> GetFunctionFromIP2(This,ip,pFunctionId,pReJitId) ) 
 
-#define ICorProfilerInfo10_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)	\
+#define ICorProfilerInfo10_GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds)   \
     ( (This)->lpVtbl -> GetReJITIDs(This,functionId,cReJitIds,pcReJitIds,reJitIds) ) 
 
-#define ICorProfilerInfo10_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map)	\
+#define ICorProfilerInfo10_GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map)    \
     ( (This)->lpVtbl -> GetILToNativeMapping2(This,functionId,reJitId,cMap,pcMap,map) ) 
 
-#define ICorProfilerInfo10_EnumJITedFunctions2(This,ppEnum)	\
+#define ICorProfilerInfo10_EnumJITedFunctions2(This,ppEnum) \
     ( (This)->lpVtbl -> EnumJITedFunctions2(This,ppEnum) ) 
 
-#define ICorProfilerInfo10_GetObjectSize2(This,objectId,pcSize)	\
+#define ICorProfilerInfo10_GetObjectSize2(This,objectId,pcSize) \
     ( (This)->lpVtbl -> GetObjectSize2(This,objectId,pcSize) ) 
 
 
-#define ICorProfilerInfo10_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)	\
+#define ICorProfilerInfo10_GetEventMask2(This,pdwEventsLow,pdwEventsHigh)   \
     ( (This)->lpVtbl -> GetEventMask2(This,pdwEventsLow,pdwEventsHigh) ) 
 
-#define ICorProfilerInfo10_SetEventMask2(This,dwEventsLow,dwEventsHigh)	\
+#define ICorProfilerInfo10_SetEventMask2(This,dwEventsLow,dwEventsHigh) \
     ( (This)->lpVtbl -> SetEventMask2(This,dwEventsLow,dwEventsHigh) ) 
 
 
-#define ICorProfilerInfo10_EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum)	\
+#define ICorProfilerInfo10_EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum) \
     ( (This)->lpVtbl -> EnumNgenModuleMethodsInliningThisMethod(This,inlinersModuleId,inlineeModuleId,inlineeMethodId,incompleteData,ppEnum) ) 
 
 
-#define ICorProfilerInfo10_ApplyMetaData(This,moduleId)	\
+#define ICorProfilerInfo10_ApplyMetaData(This,moduleId) \
     ( (This)->lpVtbl -> ApplyMetaData(This,moduleId) ) 
 
-#define ICorProfilerInfo10_GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes)	\
+#define ICorProfilerInfo10_GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes)    \
     ( (This)->lpVtbl -> GetInMemorySymbolsLength(This,moduleId,pCountSymbolBytes) ) 
 
-#define ICorProfilerInfo10_ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead)	\
+#define ICorProfilerInfo10_ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead) \
     ( (This)->lpVtbl -> ReadInMemorySymbols(This,moduleId,symbolsReadOffset,pSymbolBytes,countSymbolBytes,pCountSymbolBytesRead) ) 
 
 
-#define ICorProfilerInfo10_IsFunctionDynamic(This,functionId,isDynamic)	\
+#define ICorProfilerInfo10_IsFunctionDynamic(This,functionId,isDynamic) \
     ( (This)->lpVtbl -> IsFunctionDynamic(This,functionId,isDynamic) ) 
 
-#define ICorProfilerInfo10_GetFunctionFromIP3(This,ip,functionId,pReJitId)	\
+#define ICorProfilerInfo10_GetFunctionFromIP3(This,ip,functionId,pReJitId)  \
     ( (This)->lpVtbl -> GetFunctionFromIP3(This,ip,functionId,pReJitId) ) 
 
-#define ICorProfilerInfo10_GetDynamicFunctionInfo(This,functionId,moduleId,ppvSig,pbSig,cchName,pcchName,wszName)	\
+#define ICorProfilerInfo10_GetDynamicFunctionInfo(This,functionId,moduleId,ppvSig,pbSig,cchName,pcchName,wszName)   \
     ( (This)->lpVtbl -> GetDynamicFunctionInfo(This,functionId,moduleId,ppvSig,pbSig,cchName,pcchName,wszName) ) 
 
 
-#define ICorProfilerInfo10_GetNativeCodeStartAddresses(This,functionID,reJitId,cCodeStartAddresses,pcCodeStartAddresses,codeStartAddresses)	\
+#define ICorProfilerInfo10_GetNativeCodeStartAddresses(This,functionID,reJitId,cCodeStartAddresses,pcCodeStartAddresses,codeStartAddresses) \
     ( (This)->lpVtbl -> GetNativeCodeStartAddresses(This,functionID,reJitId,cCodeStartAddresses,pcCodeStartAddresses,codeStartAddresses) ) 
 
-#define ICorProfilerInfo10_GetILToNativeMapping3(This,pNativeCodeStartAddress,cMap,pcMap,map)	\
+#define ICorProfilerInfo10_GetILToNativeMapping3(This,pNativeCodeStartAddress,cMap,pcMap,map)   \
     ( (This)->lpVtbl -> GetILToNativeMapping3(This,pNativeCodeStartAddress,cMap,pcMap,map) ) 
 
-#define ICorProfilerInfo10_GetCodeInfo4(This,pNativeCodeStartAddress,cCodeInfos,pcCodeInfos,codeInfos)	\
+#define ICorProfilerInfo10_GetCodeInfo4(This,pNativeCodeStartAddress,cCodeInfos,pcCodeInfos,codeInfos)  \
     ( (This)->lpVtbl -> GetCodeInfo4(This,pNativeCodeStartAddress,cCodeInfos,pcCodeInfos,codeInfos) ) 
 
 
-#define ICorProfilerInfo10_GetObjectReferences(This,objectId,cNumReferences,pcNumReferences,references,offsets)	\
+#define ICorProfilerInfo10_GetObjectReferences(This,objectId,cNumReferences,pcNumReferences,references,offsets) \
     ( (This)->lpVtbl -> GetObjectReferences(This,objectId,cNumReferences,pcNumReferences,references,offsets) ) 
 
-#define ICorProfilerInfo10_IsFrozenObject(This,objectId,pbFrozen)	\
+#define ICorProfilerInfo10_IsFrozenObject(This,objectId,pbFrozen)   \
     ( (This)->lpVtbl -> IsFrozenObject(This,objectId,pbFrozen) ) 
 
-#define ICorProfilerInfo10_GetLOHObjectSizeThreshold(This,pThreshold)	\
+#define ICorProfilerInfo10_GetLOHObjectSizeThreshold(This,pThreshold)   \
     ( (This)->lpVtbl -> GetLOHObjectSizeThreshold(This,pThreshold) ) 
+
+#define ICorProfilerInfo10_RequestReJITWithInliners(This,dwRejitFlags,cFunctions,moduleIds,methodIds)   \
+    ( (This)->lpVtbl -> RequestReJITWithInliners(This,dwRejitFlags,cFunctions,moduleIds,methodIds) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerInfo10_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerInfo10_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerMethodEnum_INTERFACE_DEFINED__
@@ -16157,7 +16180,7 @@ EXTERN_C const IID IID_ICorProfilerMethodEnum;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerMethodEnumVtbl
     {
@@ -16209,40 +16232,40 @@ EXTERN_C const IID IID_ICorProfilerMethodEnum;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerMethodEnum_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerMethodEnum_QueryInterface(This,riid,ppvObject)  \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerMethodEnum_AddRef(This)	\
+#define ICorProfilerMethodEnum_AddRef(This) \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerMethodEnum_Release(This)	\
+#define ICorProfilerMethodEnum_Release(This)    \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerMethodEnum_Skip(This,celt)	\
+#define ICorProfilerMethodEnum_Skip(This,celt)  \
     ( (This)->lpVtbl -> Skip(This,celt) ) 
 
-#define ICorProfilerMethodEnum_Reset(This)	\
+#define ICorProfilerMethodEnum_Reset(This)  \
     ( (This)->lpVtbl -> Reset(This) ) 
 
-#define ICorProfilerMethodEnum_Clone(This,ppEnum)	\
+#define ICorProfilerMethodEnum_Clone(This,ppEnum)   \
     ( (This)->lpVtbl -> Clone(This,ppEnum) ) 
 
-#define ICorProfilerMethodEnum_GetCount(This,pcelt)	\
+#define ICorProfilerMethodEnum_GetCount(This,pcelt) \
     ( (This)->lpVtbl -> GetCount(This,pcelt) ) 
 
-#define ICorProfilerMethodEnum_Next(This,celt,elements,pceltFetched)	\
+#define ICorProfilerMethodEnum_Next(This,celt,elements,pceltFetched)    \
     ( (This)->lpVtbl -> Next(This,celt,elements,pceltFetched) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerMethodEnum_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerMethodEnum_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerThreadEnum_INTERFACE_DEFINED__
@@ -16279,7 +16302,7 @@ EXTERN_C const IID IID_ICorProfilerThreadEnum;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerThreadEnumVtbl
     {
@@ -16331,40 +16354,40 @@ EXTERN_C const IID IID_ICorProfilerThreadEnum;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerThreadEnum_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerThreadEnum_QueryInterface(This,riid,ppvObject)  \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerThreadEnum_AddRef(This)	\
+#define ICorProfilerThreadEnum_AddRef(This) \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerThreadEnum_Release(This)	\
+#define ICorProfilerThreadEnum_Release(This)    \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerThreadEnum_Skip(This,celt)	\
+#define ICorProfilerThreadEnum_Skip(This,celt)  \
     ( (This)->lpVtbl -> Skip(This,celt) ) 
 
-#define ICorProfilerThreadEnum_Reset(This)	\
+#define ICorProfilerThreadEnum_Reset(This)  \
     ( (This)->lpVtbl -> Reset(This) ) 
 
-#define ICorProfilerThreadEnum_Clone(This,ppEnum)	\
+#define ICorProfilerThreadEnum_Clone(This,ppEnum)   \
     ( (This)->lpVtbl -> Clone(This,ppEnum) ) 
 
-#define ICorProfilerThreadEnum_GetCount(This,pcelt)	\
+#define ICorProfilerThreadEnum_GetCount(This,pcelt) \
     ( (This)->lpVtbl -> GetCount(This,pcelt) ) 
 
-#define ICorProfilerThreadEnum_Next(This,celt,ids,pceltFetched)	\
+#define ICorProfilerThreadEnum_Next(This,celt,ids,pceltFetched) \
     ( (This)->lpVtbl -> Next(This,celt,ids,pceltFetched) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerThreadEnum_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerThreadEnum_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICorProfilerAssemblyReferenceProvider_INTERFACE_DEFINED__
@@ -16388,7 +16411,7 @@ EXTERN_C const IID IID_ICorProfilerAssemblyReferenceProvider;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICorProfilerAssemblyReferenceProviderVtbl
     {
@@ -16423,28 +16446,28 @@ EXTERN_C const IID IID_ICorProfilerAssemblyReferenceProvider;
 #ifdef COBJMACROS
 
 
-#define ICorProfilerAssemblyReferenceProvider_QueryInterface(This,riid,ppvObject)	\
+#define ICorProfilerAssemblyReferenceProvider_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICorProfilerAssemblyReferenceProvider_AddRef(This)	\
+#define ICorProfilerAssemblyReferenceProvider_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICorProfilerAssemblyReferenceProvider_Release(This)	\
+#define ICorProfilerAssemblyReferenceProvider_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICorProfilerAssemblyReferenceProvider_AddAssemblyReference(This,pAssemblyRefInfo)	\
+#define ICorProfilerAssemblyReferenceProvider_AddAssemblyReference(This,pAssemblyRefInfo)   \
     ( (This)->lpVtbl -> AddAssemblyReference(This,pAssemblyRefInfo) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICorProfilerAssemblyReferenceProvider_INTERFACE_DEFINED__ */
+#endif  /* __ICorProfilerAssemblyReferenceProvider_INTERFACE_DEFINED__ */
 
 
 #ifndef __ICLRProfiling_INTERFACE_DEFINED__
@@ -16473,7 +16496,7 @@ EXTERN_C const IID IID_ICLRProfiling;
     };
     
     
-#else 	/* C style interface */
+#else   /* C style interface */
 
     typedef struct ICLRProfilingVtbl
     {
@@ -16513,28 +16536,28 @@ EXTERN_C const IID IID_ICLRProfiling;
 #ifdef COBJMACROS
 
 
-#define ICLRProfiling_QueryInterface(This,riid,ppvObject)	\
+#define ICLRProfiling_QueryInterface(This,riid,ppvObject)   \
     ( (This)->lpVtbl -> QueryInterface(This,riid,ppvObject) ) 
 
-#define ICLRProfiling_AddRef(This)	\
+#define ICLRProfiling_AddRef(This)  \
     ( (This)->lpVtbl -> AddRef(This) ) 
 
-#define ICLRProfiling_Release(This)	\
+#define ICLRProfiling_Release(This) \
     ( (This)->lpVtbl -> Release(This) ) 
 
 
-#define ICLRProfiling_AttachProfiler(This,dwProfileeProcessID,dwMillisecondsMax,pClsidProfiler,wszProfilerPath,pvClientData,cbClientData)	\
+#define ICLRProfiling_AttachProfiler(This,dwProfileeProcessID,dwMillisecondsMax,pClsidProfiler,wszProfilerPath,pvClientData,cbClientData)   \
     ( (This)->lpVtbl -> AttachProfiler(This,dwProfileeProcessID,dwMillisecondsMax,pClsidProfiler,wszProfilerPath,pvClientData,cbClientData) ) 
 
 #endif /* COBJMACROS */
 
 
-#endif 	/* C style interface */
+#endif  /* C style interface */
 
 
 
 
-#endif 	/* __ICLRProfiling_INTERFACE_DEFINED__ */
+#endif  /* __ICLRProfiling_INTERFACE_DEFINED__ */
 
 
 /* Additional Prototypes for ALL interfaces */

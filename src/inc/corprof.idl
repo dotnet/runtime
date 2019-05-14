@@ -717,6 +717,21 @@ typedef enum
     COR_PRF_CORE_CLR    = 0x2,
 } COR_PRF_RUNTIME_TYPE;
 
+/*
+ * COR_PRF_REJIT_FLAGS contains values used to control the behavior of
+ * RequestReJITWithInliners.
+ */
+typedef enum
+{
+    // ReJITted methods will be prevented from being inlined
+    COR_PRF_REJIT_BLOCK_INLINING = 0x1,
+
+    // This flag controls whether the runtime will call GetReJITParameters
+    // on methods that are ReJITted because they inline a method that was requested
+    // for ReJIT
+    COR_PRF_REJIT_INLINING_CALLBACKS    = 0x2
+} COR_PRF_REJIT_FLAGS;
+
 
 /* -------------------------------------------------------------------------- *
  * Forward declarations
@@ -3921,7 +3936,7 @@ interface ICorProfilerInfo9 : ICorProfilerInfo8
 
     //Given the native code start address, return the the blocks of virtual memory that store this code (method code is not necessarily stored in a single contiguous memory region)
     HRESULT GetCodeInfo4(UINT_PTR pNativeCodeStartAddress, ULONG32 cCodeInfos, ULONG32* pcCodeInfos, COR_PRF_CODE_INFO codeInfos[]);
-}
+};
 
 [
     object,
@@ -3939,6 +3954,23 @@ interface ICorProfilerInfo10 : ICorProfilerInfo9
 
     // Gets the value of the configured LOH Threshold.
     HRESULT GetLOHObjectSizeThreshold(DWORD *pThreshold);
+
+    /*
+     * This method will ReJIT the methods requested, as well as any inliners
+     * of the methods requested.
+     * 
+     * RequestReJIT does not do any tracking of inlined methods. The profiler
+     * was expected to track inlining and call RequestReJIT for all inliners
+     * to make sure every instance of an inlined method was ReJITted.
+     * This poses a problem with ReJIT on attach, since the profiler was
+     * not present to monitor inlining. This method can be called to guarantee
+     * that the full set of inliners will be ReJITted as well.
+     */
+    HRESULT RequestReJITWithInliners(
+                [in]                       DWORD       dwRejitFlags,
+                [in]                       ULONG       cFunctions,
+                [in, size_is(cFunctions)]  ModuleID    moduleIds[],
+                [in, size_is(cFunctions)]  mdMethodDef methodIds[]);
 }
 
 /*

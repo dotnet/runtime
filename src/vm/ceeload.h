@@ -82,6 +82,7 @@ class TypeHandleList;
 class TrackingMap;
 struct MethodInModule;
 class PersistentInlineTrackingMapNGen;
+class JITInlineTrackingMap;
 
 extern VerboseLevel g_CorCompileVerboseLevel;
 #endif
@@ -108,6 +109,7 @@ extern VerboseLevel g_CorCompileVerboseLevel;
 #endif
 
 typedef DPTR(PersistentInlineTrackingMapNGen) PTR_PersistentInlineTrackingMapNGen;
+typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
 
 //
 // LookupMaps are used to implement RID maps
@@ -2522,8 +2524,13 @@ public:
     void NotifyProfilerLoadFinished(HRESULT hr);
 #endif // PROFILING_SUPPORTED
 
-    BOOL HasInlineTrackingMap();
-    COUNT_T GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
+    BOOL HasNativeOrReadyToRunInlineTrackingMap();
+    COUNT_T GetNativeOrReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData);
+#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+    BOOL HasJitInlineTrackingMap();
+    PTR_JITInlineTrackingMap GetJitInlineTrackingMap() { LIMITED_METHOD_CONTRACT; return m_pJitInlinerTrackingMap; }
+    void AddInlining(MethodDesc *inliner, MethodDesc *inlinee);
+#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 public:
     void NotifyEtwLoadFinished(HRESULT hr);
@@ -3178,6 +3185,10 @@ private:
 
     // This is a compressed read only copy of m_inlineTrackingMap, which is being saved to NGEN image.
     PTR_PersistentInlineTrackingMapNGen m_pPersistentInlineTrackingMapNGen;
+
+#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+    PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;
+#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
 
 
     LPCSTR               *m_AssemblyRefByNameTable;  // array that maps mdAssemblyRef tokens into their simple name

@@ -32,6 +32,14 @@ inline BOOL ReJitManager::IsReJITEnabled()
     return  profilerStartupRejit || (rejitOnAttachEnabled.val(CLRConfig::EXTERNAL_ProfAPI_RejitOnAttach) != 0);
 }
 
+inline BOOL ReJitManager::IsReJITInlineTrackingEnabled()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    static ConfigDWORD rejitInliningEnabled;
+    return rejitInliningEnabled.val(CLRConfig::EXTERNAL_ProfAPI_RejitOnAttach) != 0;
+}
+
 #ifndef DACCESS_COMPILE
 //static
 inline void ReJitManager::ReportReJITError(CodeVersionManager::CodePublishError* pErrorRecord)
@@ -91,6 +99,11 @@ inline BOOL ReJitManager::IsReJITEnabled()
 // static 
 inline void ReJitManager::InitStatic()
 {
+}
+
+inline BOOL ReJitManager::IsReJITInlineTrackingEnabled()
+{
+    return FALSE;
 }
 
 #endif // FEATURE_REJIT

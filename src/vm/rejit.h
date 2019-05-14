@@ -69,7 +69,27 @@ protected:
 
 #endif  // FEATURE_REJIT
 
+#ifndef DACCESS_COMPILE
+// Used to walk the NGEN/R2R inlining data
+class NativeImageInliningIterator
+{
+public:
+    NativeImageInliningIterator();
 
+    HRESULT Reset(Module *pInlineeModule, MethodDesc *pInlinee);
+    BOOL Next();
+    MethodDesc *GetMethodDesc();
+
+private:
+    Module *m_pModule;
+    MethodDesc *m_pInlinee;
+    NewArrayHolder<MethodInModule> m_dynamicBuffer;
+    COUNT_T m_dynamicBufferSize;
+    COUNT_T m_currentPos;
+
+    const COUNT_T s_bufferSize = 10;
+};
+#endif // DACCESS_COMPILE
 
 //---------------------------------------------------------------------------------------
 // The big honcho.  One of these per AppDomain, plus one for the
@@ -80,6 +100,7 @@ class ReJitManager
 {
     friend class ClrDataAccess;
     friend class DacDbiInterfaceImpl;
+    friend class CEEInfo;
 
 private:
 
@@ -98,10 +119,13 @@ public:
 
     static BOOL IsReJITEnabled();
 
+    static BOOL IsReJITInlineTrackingEnabled();
+
     static HRESULT RequestReJIT(
-        ULONG       cFunctions,
-        ModuleID    rgModuleIDs[],
-        mdMethodDef rgMethodDefs[]);
+        ULONG                   cFunctions,
+        ModuleID                rgModuleIDs[],
+        mdMethodDef             rgMethodDefs[],
+        COR_PRF_REJIT_FLAGS   flags);
     
     static HRESULT RequestRevert(
         ULONG       cFunctions,
@@ -126,11 +150,12 @@ public:
 private:
 
     static HRESULT UpdateActiveILVersions(
-        ULONG       cFunctions,
-        ModuleID    rgModuleIDs[],
-        mdMethodDef rgMethodDefs[],
-        HRESULT     rgHrStatuses[],
-        BOOL        fIsRevert);
+        ULONG               cFunctions,
+        ModuleID            rgModuleIDs[],
+        mdMethodDef         rgMethodDefs[],
+        HRESULT             rgHrStatuses[],
+        BOOL                fIsRevert,
+        COR_PRF_REJIT_FLAGS flags);
 
     struct CodeActivationBatch
     {
@@ -154,11 +179,31 @@ private:
         static bool IsNull(const element_t &e) { return (e == NULL); }
     };
 
+    static HRESULT ReJitManager::UpdateActiveILVersion(
+        SHash<CodeActivationBatchTraits> *pMgrToCodeActivationBatch,
+        Module *            pModule,
+        mdMethodDef         methodDef,
+        BOOL                fIsRevert,
+        COR_PRF_REJIT_FLAGS flags);
+
+    static HRESULT UpdateNativeInlinerActiveILVersions(
+        SHash<CodeActivationBatchTraits> *pMgrToCodeActivationBatch,
+        MethodDesc         *pInlinee,
+        BOOL                fIsRevert,
+        COR_PRF_REJIT_FLAGS flags);
+    
+    static HRESULT UpdateJitInlinerActiveILVersions(
+        SHash<CodeActivationBatchTraits> *pMgrToCodeActivationBatch,
+        MethodDesc         *pInlinee,
+        BOOL                fIsRevert,
+        COR_PRF_REJIT_FLAGS flags);
+
     static HRESULT BindILVersion(
-        CodeVersionManager* pCodeVersionManager,
-        PTR_Module pModule,
-        mdMethodDef methodDef,
-        ILCodeVersion *pILCodeVersion);
+        CodeVersionManager *pCodeVersionManager,
+        PTR_Module          pModule,
+        mdMethodDef         methodDef,
+        ILCodeVersion      *pILCodeVersion,
+        COR_PRF_REJIT_FLAGS flags);
 
 #endif // FEATURE_REJIT
 

@@ -1260,6 +1260,11 @@
     <Comment> Profiler must implement ICorProfilerCallback7 interface for this call to be supported. </Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x80131383">
+    <SymbolicName>CORPROF_E_REJIT_INLINING_DISABLED</SymbolicName>
+    <Comment> The runtime's tracking of inlined methods for ReJIT is not enabled. </Comment>
+</HRESULT>
+
 <HRESULT NumericValue="0x80131401">
 	<SymbolicName>SECURITY_E_INCOMPATIBLE_SHARE</SymbolicName>
 	<Message>"Loading this assembly would produce a different grant set from other instances."</Message>
