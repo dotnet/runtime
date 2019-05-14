@@ -1,0 +1,3 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- required in order to include runtime facade to obsoleted type System.Xml.IApplicationResourceStreamResolver -->
+</Project>

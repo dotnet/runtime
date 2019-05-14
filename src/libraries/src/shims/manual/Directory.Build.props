@@ -1,26 +1,16 @@
 <Project>
   <PropertyGroup>
-    <BuildConfigurations>
-      netcoreapp;
-      uap;
-      uapaot;
-    </BuildConfigurations>
-    <IsNETCoreApp>true</IsNETCoreApp>
-    <IsUAP>true</IsUAP>
+    <!-- ensure these projects use a different intermediate and output directory than generated projects -->
+    <OutDirName>manual.$(MSBuildProjectName)</OutDirName>
   </PropertyGroup>
-  <!-- need to by-pass the Directory.Build.props in the shims directory for this project -->
-  <Import Project="..\..\Directory.Build.props" />
+  
+  <Import Project="..\Directory.Build.props" />
+
+  <!-- import generated projects in order to share generated properties -->
+  <Import Project="..\generated\$(MSBuildProjectName).csproj" />
+
   <PropertyGroup>
-    <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <StrongNameKeyId>ECMA</StrongNameKeyId>
-    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <GenFacadesForceZeroVersionSeeds>true</GenFacadesForceZeroVersionSeeds>
-    <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
     <IsRuntimeAssembly>true</IsRuntimeAssembly>
-    <HasMatchingContract>true</HasMatchingContract>
-    <IncludeDefaultReferences>false</IncludeDefaultReferences>
-    <ContractAssemblyPath>$(NetFxRefPath)$(MSBuildProjectName).dll</ContractAssemblyPath>
-    <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true'">$(DefineConstants);netcoreapp</DefineConstants>
     <!-- Use runtime assemblies for the TargetGroup, using build configuration OSGroup -->
     <_runtimeOSGroup>$(_bc_OSGroup)</_runtimeOSGroup>
     <_runtimeOSGroup Condition="'$(TargetsUAP)' == 'true'">Windows_NT</_runtimeOSGroup>
@@ -30,6 +20,6 @@
   <ItemGroup>
     <ReferencePath
       Include="$(RefPath)System.*.dll;$(RefPath)Microsoft.Win32.*.dll;$(RefPath)netstandard.dll"
-      Exclude="$(RefPath)System.dll;$(RefPath)System.Data.dll" />
+      Exclude="$(RefPath)$(MSBuildProjectName).dll" />
   </ItemGroup>
 </Project>

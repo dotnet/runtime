@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- IMPORTANT: please rebuild this project and check in the generated output 
+                  when making changes to this file -->
+  <ItemGroup>
+    <GenFacadesContracts Include="@(NetFxReference)" ContractDir="NetFxRefPath" />
+    <GenFacadesContracts Include="netstandard" ContractDir="NETStandard21RefPath" />
+  </ItemGroup>
+  
+  <Target Name="GenerateShimProjectFiles"
+          Inputs="$(MSBuildProjectFile)"
+          Outputs="generated/%(GenFacadesContracts.Identity).csproj">
+     <PropertyGroup>
+       <_contractName>%(GenFacadesContracts.Identity)</_contractName>
+       <_contractStrongNameKeyId>%(GenFacadesContracts.StrongNameKeyId)</_contractStrongNameKeyId>
+       <_contractStrongNameKeyId Condition="'$(_contractStrongNameKeyId)' == ''">Microsoft</_contractStrongNameKeyId>
+       <_contractDirProperty>%(GenFacadesContracts.ContractDir)</_contractDirProperty>
+       <_contractAssembly>$(%(GenFacadesContracts.ContractDir))$(_contractName).dll</_contractAssembly>
+       <_contractProjectFile>generated/$(_contractName).csproj</_contractProjectFile>
+     </PropertyGroup>
+
+     <GetAssemblyIdentity AssemblyFiles="$(_contractAssembly)">
+       <Output TaskParameter="Assemblies" ItemName="_contractIdentity" />
+     </GetAssemblyIdentity>
+
+     <PropertyGroup>
+       <_contractAssemblyVersion>%(_contractIdentity.Version)</_contractAssemblyVersion>
+       <_contractAssemblyPublicKey>%(_contractIdentity.PublicKeyToken)</_contractAssemblyPublicKey>
+       <_contractStrongNameKeyId Condition="'$(_contractAssemblyPublicKey)' == 'b77a5c561934e089'">ECMA</_contractStrongNameKeyId>
+       <_contractStrongNameKeyId Condition="'$(_contractAssemblyPublicKey)' == 'b03f5f7f11d50a3a'">Microsoft</_contractStrongNameKeyId>
+       <_contractStrongNameKeyId Condition="'$(_contractAssemblyPublicKey)' == '31bf3856ad364e35'">MicrosoftShared</_contractStrongNameKeyId>
+       <_contractStrongNameKeyId Condition="'$(_contractAssemblyPublicKey)' == 'cc7b13ffcd2ddd51'">Open</_contractStrongNameKeyId>
+       <_contractProjectContent><![CDATA[<Project>
+  <!-- this is a generated project, to make changes update the template above this directory
+       and rebuild generateShims.proj -->
+  <!-- only import SDK if this project is built directly -->
+  <Import Condition="'%24(MSBuildProjectFullPath)' == '%24(MSBuildThisFileFullPath)'" Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <AssemblyVersion>$(_contractAssemblyVersion)</AssemblyVersion>
+    <StrongNameKeyId>$(_contractStrongNameKeyId)</StrongNameKeyId>
+    <ContractAssemblyPath>%24($(_contractDirProperty))%24(MSBuildProjectName).dll</ContractAssemblyPath>
+  </PropertyGroup>
+  <Import Condition="'%24(MSBuildProjectFullPath)' == '%24(MSBuildThisFileFullPath)'" Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>
+]]></_contractProjectContent>
+     </PropertyGroup>
+
+     <Error Condition="'$(_contractStrongNameKeyId)' == ''" Text="Could not determine StrongNameKeyId for contract $(_contractName) with public key token $(_contractAssemblyPublicKey)" />
+     
+     <WriteLinesToFile
+        File="$(_contractProjectFile)"
+        Lines="$(_contractProjectContent)"
+        Overwrite="true" />
+      <Message Importance="High" Text="Generated $(_contractProjectFile)" />
+  </Target>
+
+  <!-- boilerplate to satisfy Microsoft.Common.Targets -->
+  <PropertyGroup>
+    <SkipCopyBuildProduct>true</SkipCopyBuildProduct>
+  </PropertyGroup>
+  <Target Name="CreateManifestResourceNames" />
+  <Target Name="CoreCompile" DependsOnTargets="GenerateShimProjectFiles" />
+</Project>
