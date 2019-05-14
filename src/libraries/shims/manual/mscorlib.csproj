@@ -1,12 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <ProjectGuid>{CEAE2042-461E-490A-974C-AD7FBD4E294E}</ProjectGuid>
-    <Configurations>Debug;Release</Configurations>
-  </PropertyGroup>
-  <ItemGroup>
-    <!-- Compiler throws error if you try to use System.Void and instructs you to use void keyword instead. So we have manually added a typeforward for this type. -->
-    <GenFacadesOmitType Include="System.Void" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="mscorlib.forwards.cs" />
   </ItemGroup>

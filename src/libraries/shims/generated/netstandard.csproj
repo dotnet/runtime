@@ -1,0 +1,12 @@
+<Project>
+  <!-- this is a generated project, to make changes update the template above this directory
+       and rebuild generateShims.proj -->
+  <!-- only import SDK if this project is built directly -->
+  <Import Condition="'$(MSBuildProjectFullPath)' == '$(MSBuildThisFileFullPath)'" Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <AssemblyVersion>2.1.0.0</AssemblyVersion>
+    <StrongNameKeyId>Open</StrongNameKeyId>
+    <ContractAssemblyPath>$(NETStandard21RefPath)$(MSBuildProjectName).dll</ContractAssemblyPath>
+  </PropertyGroup>
+  <Import Condition="'$(MSBuildProjectFullPath)' == '$(MSBuildThisFileFullPath)'" Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>

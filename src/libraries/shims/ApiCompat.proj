@@ -14,10 +14,10 @@
     <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
     <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandard.txt</ApiCompatNSBaselineFile>
     <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
-    <ApiCompatImplementationDirs>$(RefPath),$(GenFacadesOutputPath)</ApiCompatImplementationDirs>
+    <ApiCompatImplementationDirs>$(RefPath)</ApiCompatImplementationDirs>
     <!-- If we are targeting uap or uapaot run ApiCompat against the implementation assemblies instead since they don't match the reference assemblies -->
     <!-- also include $(RefPath) last to pick up windows.winmd dependency, which we don't place in RuntimePath -->
-    <ApiCompatImplementationDirs Condition="$(TargetGroup.StartsWith('uap')) or '$(TargetsAOT)' == 'true'">$(RuntimePath),$(GenFacadesOutputPath),$(RefPath)</ApiCompatImplementationDirs>
+    <ApiCompatImplementationDirs Condition="$(TargetGroup.StartsWith('uap')) or '$(TargetsAOT)' == 'true'">$(RuntimePath),$(RefPath)</ApiCompatImplementationDirs>
     <!-- Set to true to build this project -->
     <!-- Separate property otherwise /p:BaselineApiCompat=true would force it to run even for non-UAP -->
     <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
@@ -36,7 +36,7 @@
   <!-- Run ApiCompat -->
   <Target Name="RunApiCompat"
           Condition="'$(_RunApiCompat)' == 'true'"
-          Inputs="$(ApiCompatResponseFile);@(GenFacadesContracts)"
+          Inputs="$(ApiCompatResponseFile)"
           Outputs="$(ApiCompatBaselineFile);$(ApiCompatNSBaselineFile)">
 
     <PropertyGroup>
@@ -89,7 +89,7 @@
 
   <Target Name="Build" DependsOnTargets="RunApiCompat" />
   <Target Name="Clean">
-    <RemoveDir Directories="$(BaseIntermediateOutputPath);$(GenFacadesOutputPath)" />
+    <RemoveDir Directories="$(BaseIntermediateOutputPath)" />
   </Target>
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
 
