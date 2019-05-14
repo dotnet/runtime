@@ -536,6 +536,7 @@ namespace System.Net.Http.Functional.Tests
         protected static readonly IList<HttpHeaderData> TrailingHeaders = new HttpHeaderData[] {
             new HttpHeaderData("MyCoolTrailerHeader", "amazingtrailer"),
             new HttpHeaderData("EmptyHeader", ""),
+            new HttpHeaderData("Accept-Encoding", "identity,gzip"),
             new HttpHeaderData("Hello", "World") };
 
         protected static Frame MakeDataFrame(int streamId, byte[] data, bool endStream = false) =>
@@ -570,6 +571,7 @@ namespace System.Net.Http.Functional.Tests
                             "data\r\n" +
                             "0\r\n" +
                             "MyCoolTrailerHeader: amazingtrailer\r\n" +
+                            "Accept-encoding: identity,gzip\r\n" +
                             "Hello: World\r\n" +
                             "\r\n"));
 
@@ -587,6 +589,7 @@ namespace System.Net.Http.Functional.Tests
 
                         Assert.Contains("amazingtrailer", response.TrailingHeaders.GetValues("MyCoolTrailerHeader"));
                         Assert.Contains("World", response.TrailingHeaders.GetValues("Hello"));
+                        Assert.Contains("identity,gzip", response.TrailingHeaders.GetValues("Accept-encoding"));
 
                         string data = await response.Content.ReadAsStringAsync();
                         Assert.Contains("data", data);
