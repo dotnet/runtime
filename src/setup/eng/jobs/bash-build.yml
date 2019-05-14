@@ -25,10 +25,10 @@ jobs:
         name: dnceng-freebsd-internal
       ${{ if ne(parameters.displayName, 'Build_FreeBSD_x64') }}:
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
-          name: NetCorePublic-Int-Pool
+          name: NetCorePublic-Pool
           queue: buildpool.ubuntu.1604.amd64.open
         ${{ if ne(variables['System.TeamProject'], 'public') }}:
-          name: NetCoreInternal-Int-Pool
+          name: NetCoreInternal-Pool
           queue: buildpool.ubuntu.1604.amd64
     strategy: ${{ parameters.strategy }}
     variables:
