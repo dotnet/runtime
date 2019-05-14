@@ -254,11 +254,10 @@ namespace System.Threading
         /// <remarks>
         /// For a thread pool implementation that may have different types of work items, the count includes all types.
         /// </remarks>
-        public static extern long CompletedWorkItemCount
-        {
-            [MethodImpl(MethodImplOptions.InternalCall)]
-            get;
-        }
+        public static long CompletedWorkItemCount => GetCompletedWorkItemCount();
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        private static extern long GetCompletedWorkItemCount();
 
         private static extern long PendingUnmanagedWorkItemCount
         {
