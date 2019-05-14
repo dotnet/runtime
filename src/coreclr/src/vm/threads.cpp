@@ -8000,12 +8000,13 @@ NOINLINE void Thread::OnIncrementCountOverflow(UINT32 *threadLocalCount, UINT64 
 
 UINT64 Thread::GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCount)
 {
-    CONTRACTL
-    {
+    CONTRACTL {
         NOTHROW;
-        MODE_ANY;
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
+
+    _ASSERTE(overflowCount != nullptr);
 
     // enumerate all threads, summing their local counts.
     ThreadStoreLockHolder tsl;
@@ -8023,10 +8024,9 @@ UINT64 Thread::GetTotalCount(SIZE_T threadLocalCountOffset, UINT64 *overflowCoun
 
 UINT64 Thread::GetTotalThreadPoolCompletionCount()
 {
-    CONTRACTL
-    {
+    CONTRACTL {
         NOTHROW;
-        MODE_ANY;
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
