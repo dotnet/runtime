@@ -13,12 +13,12 @@ jobs:
       # Use a hosted pool when possible.
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
         ${{ if contains(parameters.targetArchitecture, 'arm') }}:
-          name: NetCorePublic-Int-Pool
+          name: NetCorePublic-Pool
           queue: buildpool.windows.10.amd64.vs2017.open
         ${{ if not(contains(parameters.targetArchitecture, 'arm')) }}:
           name: Hosted VS2017
       ${{ if ne(variables['System.TeamProject'], 'public') }}:
-        name: NetCoreInternal-Int-Pool
+        name: NetCoreInternal-Pool
         queue: buildpool.windows.10.amd64.vs2017
     strategy:
       matrix: 
