@@ -467,7 +467,6 @@ ThrowWin32
 ThrowLastError       -->ThrowWin32(GetLastError())
 ThrowOutOfMemory        COMPlusThrowOM defers to this
 ThrowStackOverflow      COMPlusThrowSO defers to this
-ThrowMessage            ThrowHR(E_FAIL, Message)
 
 */
 
@@ -478,7 +477,6 @@ ThrowMessage            ThrowHR(E_FAIL, Message)
 #define ThrowHR             COMPlusThrowHR
 #define ThrowWin32          COMPlusThrowWin32
 #define ThrowLastError()    COMPlusThrowWin32(GetLastError())
-#define ThrowMessage        "Don't use this in the VM directory"
 
 */
 
