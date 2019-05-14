@@ -823,6 +823,8 @@ namespace System.IO.Compression
                 }
                 else // if we are not in streaming mode, we have to decide if we want to write zip64 headers
                 {
+                    // We are in seekable mode so we will not need to write a data descriptor
+                    _generalPurposeBitFlag &= ~BitFlagValues.DataDescriptor;
                     if (SizesTooLarge()
 #if DEBUG_FORCE_ZIP64
                         || (_archive._forceZip64 && _archive.Mode == ZipArchiveMode.Update)
@@ -1020,6 +1022,9 @@ namespace System.IO.Compression
 
         private void WriteDataDescriptor()
         {
+            // We enter here because we cannot seek, so the data descriptor bit should be on
+            Debug.Assert((_generalPurposeBitFlag & BitFlagValues.DataDescriptor) != 0);
+
             // data descriptor can be 32-bit or 64-bit sizes. 32-bit is more compatible, so use that if possible
             // signature is optional but recommended by the spec
 
@@ -1231,7 +1236,6 @@ namespace System.IO.Compression
                         // go back and finish writing
                         if (_entry._archive.ArchiveStream.CanSeek)
                             // finish writing local header if we have seek capabilities
-
                             _entry.WriteCrcAndSizesInLocalHeader(_usedZip64inLH);
                         else
                             // write out data descriptor if we don't have seek capabilities
