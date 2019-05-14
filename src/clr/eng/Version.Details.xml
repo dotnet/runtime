@@ -14,7 +14,7 @@
     <Dependency Name="microsoft.dotnet.build.tasks.feed" Version="2.2.0-beta.19229.8">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>a7a250e9c13147134543c35fef2fb81f19592edf</Sha>
-    </Dependency-->
+    </Dependency>
     <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-preview6.19259.1">
       <Uri>https://github.com/dotnet/corefx</Uri>
       <Sha>f7cd353ab8b08ff45d45985851505e5f8f19f9ac</Sha>
