@@ -35,6 +35,37 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadPrimitivesWithWhitespace()
+        {
+            int i = JsonSerializer.Parse<int>(Encoding.UTF8.GetBytes(@" 1 "));
+            Assert.Equal(1, i);
+
+            int i2 = JsonSerializer.Parse<int>("2\t");
+            Assert.Equal(2, i2);
+
+            int? i3 = JsonSerializer.Parse<int?>("\r\nnull");
+            Assert.Null(i3);
+
+            long l = JsonSerializer.Parse<long>(Encoding.UTF8.GetBytes("\t" + long.MaxValue.ToString()));
+            Assert.Equal(long.MaxValue, l);
+
+            long l2 = JsonSerializer.Parse<long>(long.MaxValue.ToString() + " \r\n");
+            Assert.Equal(long.MaxValue, l2);
+
+            string s = JsonSerializer.Parse<string>(Encoding.UTF8.GetBytes(@"""Hello"" "));
+            Assert.Equal("Hello", s);
+
+            string s2 = JsonSerializer.Parse<string>(@"  ""Hello"" ");
+            Assert.Equal("Hello", s2);
+
+            bool b = JsonSerializer.Parse<bool>(" \ttrue ");
+            Assert.Equal(true, b);
+
+            bool b2 = JsonSerializer.Parse<bool>(" false\n");
+            Assert.Equal(false, b2);
+        }
+
+        [Fact]
         public static void ReadPrimitivesFail()
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<int>(Encoding.UTF8.GetBytes(@"a")));
@@ -87,6 +118,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<int[]>("[2] {3}"));
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<int[]>(Encoding.UTF8.GetBytes(@"[2] {3}")));
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<string>(@"""Hello"" 42"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<string>(Encoding.UTF8.GetBytes(@"""Hello"" 42")));
         }
 
         [Fact]

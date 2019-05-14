@@ -33,6 +33,23 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static async Task ReadSimpleObjectWithTrailingTriviaAsync()
+        {
+            byte[] data = Encoding.UTF8.GetBytes(SimpleTestClass.s_json + " /* Multi\r\nLine Comment */\t");
+            using (MemoryStream stream = new MemoryStream(data))
+            {
+                JsonSerializerOptions options = new JsonSerializerOptions
+                {
+                    DefaultBufferSize = 1,
+                    ReadCommentHandling = JsonCommentHandling.Skip,
+                };
+
+                SimpleTestClass obj = await JsonSerializer.ReadAsync<SimpleTestClass>(stream, options);
+                obj.Verify();
+            }
+        }
+
+        [Fact]
         public static async Task ReadPrimitivesAsync()
         {
             using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(@"1")))
@@ -40,6 +57,22 @@ namespace System.Text.Json.Serialization.Tests
                 JsonSerializerOptions options = new JsonSerializerOptions
                 {
                     DefaultBufferSize = 1
+                };
+
+                int i = await JsonSerializer.ReadAsync<int>(stream, options);
+                Assert.Equal(1, i);
+            }
+        }
+
+        [Fact]
+        public static async Task ReadPrimitivesWithTrailingTriviaAsync()
+        {
+            using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes(" 1\t// Comment\r\n/* Multi\r\nLine */")))
+            {
+                JsonSerializerOptions options = new JsonSerializerOptions
+                {
+                    DefaultBufferSize = 1,
+                    ReadCommentHandling = JsonCommentHandling.Skip,
                 };
 
                 int i = await JsonSerializer.ReadAsync<int>(stream, options);
