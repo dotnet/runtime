@@ -104,13 +104,5 @@
                       PrivateAssets="All"
                       Publish="True" />
 
-    <!-- Publishing cecil (targeting netstandard1.3) for net472
-         results in an extra dll being published (see
-         https://github.com/dotnet/sdk/issues/3194). Work around this
-         by excluding assets from that particular package. -->
-    <PackageReference Include="System.Diagnostics.DiagnosticSource" Version="4.3.0"
-                      Condition=" '$(TargetFramework)' == 'net472' "
-                      ExcludeAssets="All" />
-
   </ItemGroup>
 </Project>
