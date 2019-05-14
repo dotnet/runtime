@@ -532,12 +532,12 @@ struct HijackArgs
     union
     {
         struct {  
-             DWORD64 D0;  
-             DWORD64 D1;  
-             DWORD64 D2;  
-             DWORD64 D3;  
+             NEON128 Q0;  
+             NEON128 Q1;  
+             NEON128 Q2;  
+             NEON128 Q3;  
          }; 
-        size_t FPReturnValue[4];
+        NEON128 FPReturnValue[4];
     };
 };
 
