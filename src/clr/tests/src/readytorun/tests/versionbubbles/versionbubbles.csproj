@@ -15,6 +15,8 @@
     <CLRTestPriority>1</CLRTestPriority>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
+    <!-- https://github.com/dotnet/coreclr/issues/22245 -->
+    <GCStressIncompatible Condition="'$(Platform)' == 'arm'">true</GCStressIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
