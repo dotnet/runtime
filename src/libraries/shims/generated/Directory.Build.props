@@ -14,7 +14,7 @@
     <!-- reference everything but self -->
     <ReferencePath
       Include="$(RefPath)*.dll"
-      Exclude="$(RefPath)$(MSBuildProjectName).dll" />
+      Exclude="$(RefPath)$(MSBuildProjectName).dll;$(RefPath)netstandard.dll" />
 
     <!-- required by compiler to resolve core types -->
     <ProjectReference Condition="'$(MSBuildProjectName)' != 'netstandard'"
