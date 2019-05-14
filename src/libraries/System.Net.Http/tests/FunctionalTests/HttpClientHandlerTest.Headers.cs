@@ -202,6 +202,28 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(value, headers.GetValues("Expires").First());
         }
 
+        [Theory]
+        [InlineData("Accept-Encoding", "identity,gzip")]
+        public async Task SendAsync_RequestHeaderInResponse_Success(string name, string value)
+        {
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    var message = new HttpRequestMessage(HttpMethod.Get, uri) { Version = VersionFromUseHttp2 };
+                    HttpResponseMessage response = await client.SendAsync(message);
+
+                    Assert.Equal(value, response.Headers.GetValues(name).First());
+                }
+            },
+            async server =>
+            {
+                IList<HttpHeaderData> headers = new HttpHeaderData[] { new HttpHeaderData(name, value) };
+
+                HttpRequestData requestData = await server.HandleRequestAsync(HttpStatusCode.OK, headers);
+            });
+        }
+
         [OuterLoop("Uses external server")]
         [Theory]
         [InlineData(false)]
