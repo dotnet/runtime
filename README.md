@@ -344,8 +344,8 @@ Daily Builds
 
 [ubuntu-14.04-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_ubuntu.14.04-x64_Release_version_badge.svg
 [ubuntu-14.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
-[ubuntu-14.04-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.14.04-x64.deb
-[ubuntu-14.04-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.14.04-x64.deb.sha512
+[ubuntu-14.04-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-x64.deb
+[ubuntu-14.04-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-x64.deb.sha512
 [ubuntu-14.04-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb
 [ubuntu-14.04-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb.sha512
 [ubuntu-14.04-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.deb
@@ -400,8 +400,8 @@ Daily Builds
 [ubuntu-16.04-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_ubuntu.16.04-x64_Release_version_badge.svg
 [ubuntu-16.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [ubuntu-16.04-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb
-[ubuntu-16.04-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.16.04-x64.deb
-[ubuntu-16.04-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.16.04-x64.deb.sha512
+[ubuntu-16.04-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-x64.deb
+[ubuntu-16.04-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-x64.deb.sha512
 [ubuntu-16.04-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb.sha512
 [ubuntu-16.04-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.deb
 [ubuntu-16.04-hostfxr-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.deb.sha512
@@ -455,8 +455,8 @@ Daily Builds
 [ubuntu-18.04-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_ubuntu.18.04-x64_Release_version_badge.svg
 [ubuntu-18.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [ubuntu-18.04-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb
-[ubuntu-18.04-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.18.04-x64.deb
-[ubuntu-18.04-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.18.04-x64.deb.sha512
+[ubuntu-18.04-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-x64.deb
+[ubuntu-18.04-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-x64.deb.sha512
 [ubuntu-18.04-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb.sha512
 [ubuntu-18.04-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.deb
 [ubuntu-18.04-hostfxr-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.deb.sha512
@@ -500,8 +500,8 @@ Daily Builds
 [ubuntu-19.04-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_ubuntu.19.04-x64_Release_version_badge.svg
 [ubuntu-19.04-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
 [ubuntu-19.04-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb
-[ubuntu-19.04-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.19.04-x64.deb
-[ubuntu-19.04-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-ubuntu.19.04-x64.deb.sha512
+[ubuntu-19.04-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-x64.deb
+[ubuntu-19.04-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-x64.deb.sha512
 [ubuntu-19.04-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb.sha512
 [ubuntu-19.04-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.deb
 [ubuntu-19.04-hostfxr-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.deb.sha512
@@ -544,8 +544,8 @@ Daily Builds
 
 [debian-8.2-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_debian.8-x64_Release_version_badge.svg
 [debian-8.2-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
-[debian-8.2-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-debian.8-x64.deb
-[debian-8.2-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-debian.8-x64.deb.sha512
+[debian-8.2-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-x64.deb
+[debian-8.2-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-x64.deb.sha512
 [debian-8.2-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb
 [debian-8.2-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb.sha512
 [debian-8.2-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.deb
@@ -603,8 +603,8 @@ Daily Builds
 
 [debian-9-badge-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/sharedfx_debian.9-x64_Release_version_badge.svg
 [debian-9-version-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/latest.version
-[debian-9-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-debian.9-x64.deb
-[debian-9-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-debian.9-x64.deb.sha512
+[debian-9-runtime-deps-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-x64.deb
+[debian-9-runtime-deps-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-runtime-deps-latest-x64.deb.sha512
 [debian-9-host-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb
 [debian-9-host-checksum-master]: https://dotnetclichecksums.blob.core.windows.net/dotnet/Runtime/master/dotnet-host-latest-x64.deb.sha512
 [debian-9-hostfxr-master]: https://dotnetcli.blob.core.windows.net/dotnet/Runtime/master/dotnet-hostfxr-latest-x64.deb
