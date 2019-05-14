@@ -58,7 +58,7 @@ public:
     MethodDesc * GetMethodDescForEntryPoint(PCODE entryPoint);
 
     BOOL HasHashtableOfTypes();
-    BOOL TryLookupTypeTokenFromName(NameHandle *pName, mdToken * pFoundTypeToken);
+    BOOL TryLookupTypeTokenFromName(const NameHandle *pName, mdToken * pFoundTypeToken);
 
     BOOL SkipTypeValidation()
     {

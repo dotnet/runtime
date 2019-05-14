@@ -205,6 +205,32 @@ mdToken EEClassHashTable::UncompressModuleAndClassDef(HashDatum Data)
         return ((dwData >> 1) & 0x00ffffff) | mdtTypeDef;
 }
 
+static void ConstructKeyFromDataCaseInsensitive(EEClassHashTable::ConstructKeyCallback* pCallback, LPSTR pszNameSpace, LPSTR pszName)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
+    LPUTF8 Key[2];
+
+    StackSString nameSpace(SString::Utf8, pszNameSpace);
+    nameSpace.LowerCase();
+
+    StackScratchBuffer nameSpaceBuffer;
+    Key[0] = (LPUTF8)nameSpace.GetUTF8(nameSpaceBuffer);
+
+    StackSString name(SString::Utf8, pszName);
+    name.LowerCase();
+
+    StackScratchBuffer nameBuffer;
+    Key[1] = (LPUTF8)name.GetUTF8(nameBuffer);
+
+    pCallback->UseKeys(Key);
+}
+
 VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  : Entry to compare
                                             ConstructKeyCallback *pCallback) // This class will process the output
 {
@@ -217,9 +243,6 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
         SUPPORTS_DAC;
     }
     CONTRACTL_END;
-
-    LPUTF8 Key[2];
-    Key[0] = Key[1] = NULL;
 
     {
 #ifdef _DEBUG_IMPL
@@ -279,62 +302,27 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
                 IfFailThrow(pInternalImport->GetNameOfTypeDef(UncompressedCl, (LPCSTR *)&pszName, (LPCSTR *)&pszNameSpace));
             }
         }
-        
+
         if (!m_bCaseInsensitive)
         {
+            LPUTF8 Key[2];
+
             Key[0] = pszNameSpace;
             Key[1] = pszName;
+
+            pCallback->UseKeys(Key);
         }
         else
         {
-            CONTRACT_VIOLATION(ThrowsViolation|FaultViolation);
-
 #ifndef DACCESS_COMPILE
-            // We can call the nothrow version here because we fulfilled the requirement of calling
-            // InitTables() in the "new" method.
-            INT32 iNSLength = InternalCasingHelper::InvariantToLowerNoThrow(NULL, 0, pszNameSpace);
-            if (!iNSLength)
-            {
-                COMPlusThrowOM();
-            }
-
-            INT32 iNameLength = InternalCasingHelper::InvariantToLowerNoThrow(NULL, 0, pszName);
-            if (!iNameLength)
-            {
-                COMPlusThrowOM();
-            }
-
-            // Prefast overflow sanity check before alloc.
-            INT32 iAllocSize;
-            if (!ClrSafeInt<INT32>::addition(iNSLength, iNameLength, iAllocSize))
-                COMPlusThrowOM();
-            LPUTF8 pszOutNameSpace = (LPUTF8) _alloca(iAllocSize);
-            if (iNSLength == 1)
-            {
-                *pszOutNameSpace = '\0';
-            }
-            else
-            {
-                if (!InternalCasingHelper::InvariantToLowerNoThrow(pszOutNameSpace, iNSLength, pszNameSpace))
-                {
-                    COMPlusThrowOM();
-                }
-            }
-            LPUTF8 pszOutName = (LPUTF8) pszOutNameSpace + iNSLength;
-
-            if (!InternalCasingHelper::InvariantToLowerNoThrow(pszOutName, iNameLength, pszName))
-            {
-                COMPlusThrowOM();
-            }
-            Key[0] = pszOutNameSpace;
-            Key[1] = pszOutName;
+            CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
+            ConstructKeyFromDataCaseInsensitive(pCallback, pszNameSpace, pszName);
 #else
             DacNotImpl();
 #endif // #ifndef DACCESS_COMPILE
         }
     }
 
-    pCallback->UseKeys(Key);
 }
 
 #ifndef DACCESS_COMPILE
@@ -519,7 +507,7 @@ EEClassHashEntry_t *EEClassHashTable::FindItem(LPCUTF8 pszNamespace, LPCUTF8 psz
     return NULL;
 }
 
-EEClassHashEntry_t *EEClassHashTable::FindNextNestedClass(NameHandle* pName, PTR_VOID *pData, LookupContext *pContext)
+EEClassHashEntry_t *EEClassHashTable::FindNextNestedClass(const NameHandle* pName, PTR_VOID *pData, LookupContext *pContext)
 {
     CONTRACTL
     {
@@ -692,7 +680,7 @@ EEClassHashEntry_t * EEClassHashTable::GetValue(LPCUTF8 pszNamespace, LPCUTF8 ps
 }
 
 
-EEClassHashEntry_t * EEClassHashTable::GetValue(NameHandle* pName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext)
+EEClassHashEntry_t * EEClassHashTable::GetValue(const NameHandle* pName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext)
 {
     CONTRACTL
     {

@@ -78,7 +78,7 @@ BOOL ReadyToRunInfo::HasHashtableOfTypes()
     return !m_availableTypesHashtable.IsNull();
 }
 
-BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(NameHandle *pName, mdToken * pFoundTypeToken)
+BOOL ReadyToRunInfo::TryLookupTypeTokenFromName(const NameHandle *pName, mdToken * pFoundTypeToken)
 {
     CONTRACTL
     {

@@ -81,11 +81,11 @@ public:
     EEClassHashEntry_t *InsertValueUsingPreallocatedEntry(EEClassHashEntry_t *pStorageForNewEntry, LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID Data, EEClassHashEntry_t *pEncloser);
     EEClassHashEntry_t *GetValue(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext);
     EEClassHashEntry_t *GetValue(LPCUTF8 pszFullyQualifiedName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext);
-    EEClassHashEntry_t *GetValue(NameHandle* pName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext);
+    EEClassHashEntry_t *GetValue(const NameHandle* pName, PTR_VOID *pData, BOOL IsNested, LookupContext *pContext);
     EEClassHashEntry_t *AllocNewEntry(AllocMemTracker *pamTracker);
     EEClassHashTable   *MakeCaseInsensitiveTable(Module *pModule, AllocMemTracker *pamTracker);
     EEClassHashEntry_t *FindItem(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, BOOL IsNested, LookupContext *pContext);
-    EEClassHashEntry_t *FindNextNestedClass(NameHandle* pName, PTR_VOID *pData, LookupContext *pContext);
+    EEClassHashEntry_t *FindNextNestedClass(const NameHandle* pName, PTR_VOID *pData, LookupContext *pContext);
     EEClassHashEntry_t *FindNextNestedClass(LPCUTF8 pszNamespace, LPCUTF8 pszClassName, PTR_VOID *pData, LookupContext *pContext);
     EEClassHashEntry_t *FindNextNestedClass(LPCUTF8 pszFullyQualifiedName, PTR_VOID *pData, LookupContext *pContext);
 
