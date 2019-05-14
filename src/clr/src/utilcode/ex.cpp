@@ -1063,26 +1063,6 @@ void DECLSPEC_NORETURN ThrowOutOfMemory()
 
 #include "corexcep.h"
 
-void DECLSPEC_NORETURN ThrowMessage(LPCSTR string, ...)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-    
-    StackSString message;
-
-    va_list args;
-    va_start(args, string);
-    message.VPrintf(string, args);
-    va_end(args);
-
-    EX_THROW(HRMsgException, (E_FAIL, message));
-}
-
-
 //--------------------------------------------------------------------------------
 // Helper for EX_THROW_WITH_INNER()
 //
