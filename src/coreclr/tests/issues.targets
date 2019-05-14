@@ -528,9 +528,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/GC/Scenarios/Dynamo/dynamo/*">
             <Issue>17129</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/mandelbrot/mandelbrot-7/*">
-            <Issue>24224</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Unix arm32 specific -->
