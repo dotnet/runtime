@@ -706,7 +706,7 @@ public:
             void dumpAllRegisterLiveRangesForBlock(emitter* emit, const CodeGenInterface* codeGen) const;
             void dumpRegisterLiveRangesForBlockBeforeCodeGenerated(const CodeGenInterface* codeGen) const;
             bool hasVarLiveRangesToDump() const;
-            bool hasVarLiverRangesFromLastBlockToDump() const;
+            bool hasVarLiveRangesFromLastBlockToDump() const;
             void endBlockLiveRanges();
 #endif // DEBUG
         };
@@ -718,6 +718,9 @@ public:
 
         VariableLiveDescriptor* m_vlrLiveDsc; // Array of descriptors that manage VariableLiveRanges.
                                               // Its indices correspond to lvaTable indexes (or lvSlotNum).
+
+        VariableLiveDescriptor* m_vlrLiveDscForProlog; // Array of descriptors that manage VariableLiveRanges.
+                                                       // Its indices correspond to lvaTable indexes (or lvSlotNum).
 
         bool m_LastBasicBlockHasBeenEmited; // When true no more siEndVariableLiveRange is considered.
                                             // No update/start happens when code has been generated.
@@ -737,7 +740,8 @@ public:
         void siEndAllVariableLiveRange(VARSET_VALARG_TP varsToClose);
         void siEndAllVariableLiveRange();
 
-        LiveRangeList* getLiveRangesForVar(unsigned int varNum) const;
+        LiveRangeList* getLiveRangesForVarForBody(unsigned int varNum) const;
+        LiveRangeList* getLiveRangesForVarForProlog(unsigned int varNum) const;
         size_t getLiveRangesCount() const;
 
         // For parameters locations on prolog
