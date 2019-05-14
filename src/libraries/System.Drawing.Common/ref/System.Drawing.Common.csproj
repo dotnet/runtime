@@ -1,11 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{D7AEA698-275D-441F-B7A7-8491D1F0EFF0}</ProjectGuid>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netstandard'">true</IsPartialFacadeAssembly>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
     <Configurations>net461-Debug;net461-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Drawing.Common.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true' OR '$(TargetsNETStandard)' == 'true'">
+    <Compile Include="System.Drawing.Common.netstandard.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' OR '$(TargetsUap)' == 'true'">  
+    <Compile Include="System.Drawing.Common.Forwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' OR '$(TargetsUap)' == 'true'">
     <ProjectReference Include="..\..\System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />

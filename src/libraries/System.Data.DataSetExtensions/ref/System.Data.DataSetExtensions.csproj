@@ -2,10 +2,12 @@
   <PropertyGroup>
     <ProjectGuid>{50A5A8BC-C6A9-4000-8B52-667BEE00459D}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
-    <IsPartialFacadeAssembly Condition="'$(TargetsNETStandard)' != 'true'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(TargetsNETStandard)' == 'true'">
     <Compile Include="System.Data.DataSetExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNETStandard)' != 'true'">
+    <Compile Include="System.Data.DataSetExtensions.Forwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNETStandard)' != 'true'">
     <ProjectReference Include="..\..\System.ComponentModel.TypeConverter\ref\System.ComponentModel.TypeConverter.csproj" />
