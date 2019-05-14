@@ -10672,26 +10672,37 @@ void CodeGen::genSetScopeInfoUsingVariableRanges()
 
         if (compiler->compMap2ILvarNum(varNum) != (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
         {
-            VariableLiveKeeper::LiveRangeList* liveRanges = varLiveKeeper->getLiveRangesForVar(varNum);
+            VariableLiveKeeper::LiveRangeList* liveRanges = nullptr;
 
-            for (VariableLiveKeeper::VariableLiveRange& liveRange : *liveRanges)
+            for (int rangeIndex = 0; rangeIndex < 2; rangeIndex++)
             {
-                UNATIVE_OFFSET startOffs = liveRange.m_StartEmitLocation.CodeOffset(getEmitter());
-                UNATIVE_OFFSET endOffs   = liveRange.m_EndEmitLocation.CodeOffset(getEmitter());
-
-                if (varDsc->lvIsParam && (startOffs == endOffs))
+                if (rangeIndex == 0)
                 {
-                    // If the length is zero, it means that the prolog is empty. In that case,
-                    // CodeGen::genSetScopeInfo will report the liveness of all arguments
-                    // as spanning the first instruction in the method, so that they can
-                    // at least be inspected on entry to the method.
-                    endOffs++;
+                    liveRanges = varLiveKeeper->getLiveRangesForVarForProlog(varNum);
                 }
+                else
+                {
+                    liveRanges = varLiveKeeper->getLiveRangesForVarForBody(varNum);
+                }
+                for (VariableLiveKeeper::VariableLiveRange& liveRange : *liveRanges)
+                {
+                    UNATIVE_OFFSET startOffs = liveRange.m_StartEmitLocation.CodeOffset(getEmitter());
+                    UNATIVE_OFFSET endOffs   = liveRange.m_EndEmitLocation.CodeOffset(getEmitter());
 
-                genSetScopeInfo(liveRangeIndex, startOffs, endOffs - startOffs, varNum,
-                                varNum /* I dont know what is the which in eeGetLvInfo */, true,
-                                &liveRange.m_VarLocation);
-                liveRangeIndex++;
+                    if (varDsc->lvIsParam && (startOffs == endOffs))
+                    {
+                        // If the length is zero, it means that the prolog is empty. In that case,
+                        // CodeGen::genSetScopeInfo will report the liveness of all arguments
+                        // as spanning the first instruction in the method, so that they can
+                        // at least be inspected on entry to the method.
+                        endOffs++;
+                    }
+
+                    genSetScopeInfo(liveRangeIndex, startOffs, endOffs - startOffs, varNum,
+                                    varNum /* I dont know what is the which in eeGetLvInfo */, true,
+                                    &liveRange.m_VarLocation);
+                    liveRangeIndex++;
+                }
             }
         }
     }
@@ -11996,7 +12007,7 @@ bool CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::hasVarLiveRan
 }
 
 // Returns true if a live range for this variable has been recorded from last call to EndBlock
-bool CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::hasVarLiverRangesFromLastBlockToDump() const
+bool CodeGenInterface::VariableLiveKeeper::VariableLiveDescriptor::hasVarLiveRangesFromLastBlockToDump() const
 {
     return m_VariableLifeBarrier->hasLiveRangesToDump();
 }
@@ -12050,11 +12061,13 @@ CodeGenInterface::VariableLiveKeeper::VariableLiveKeeper(unsigned int  totalLoca
     if (m_LiveDscCount > 0)
     {
         // Allocate memory for "m_vlrLiveDsc" and initialize each "VariableLiveDescriptor"
-        m_vlrLiveDsc = allocator.allocate<VariableLiveDescriptor>(m_LiveDscCount);
+        m_vlrLiveDsc          = allocator.allocate<VariableLiveDescriptor>(m_LiveDscCount);
+        m_vlrLiveDscForProlog = allocator.allocate<VariableLiveDescriptor>(m_LiveDscCount);
 
         for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
         {
             new (m_vlrLiveDsc + varNum, jitstd::placement_t()) VariableLiveDescriptor(allocator);
+            new (m_vlrLiveDscForProlog + varNum, jitstd::placement_t()) VariableLiveDescriptor(allocator);
         }
     }
 }
@@ -12297,7 +12310,7 @@ void CodeGenInterface::VariableLiveKeeper::siEndAllVariableLiveRange()
 }
 
 //------------------------------------------------------------------------
-// getLiveRangesForVar: Return the "VariableLiveRange" that correspond to
+// getLiveRangesForVarForBody: Return the "VariableLiveRange" that correspond to
 //  the given "varNum".
 //
 // Arguments:
@@ -12307,16 +12320,39 @@ void CodeGenInterface::VariableLiveKeeper::siEndAllVariableLiveRange()
 // Return Value:
 //  A const pointer to the list of variable locations reported for the variable.
 //
-// Assumtions:
+// Assumptions:
 //  This variable should be an argument, a special argument or an IL local
 //  variable.
-CodeGenInterface::VariableLiveKeeper::LiveRangeList* CodeGenInterface::VariableLiveKeeper::getLiveRangesForVar(
+CodeGenInterface::VariableLiveKeeper::LiveRangeList* CodeGenInterface::VariableLiveKeeper::getLiveRangesForVarForBody(
     unsigned int varNum) const
 {
     // There should be at least one variable for which its liveness is tracked
     noway_assert(varNum < m_LiveDscCount);
 
     return m_vlrLiveDsc[varNum].getLiveRanges();
+}
+
+//------------------------------------------------------------------------
+// getLiveRangesForVarForProlog: Return the "VariableLiveRange" that correspond to
+//  the given "varNum".
+//
+// Arguments:
+//  varNum  - the index of the variable in m_vlrLiveDsc, which is the same as
+//      in lvaTable.
+//
+// Return Value:
+//  A const pointer to the list of variable locations reported for the variable.
+//
+// Assumptions:
+//  This variable should be an argument, a special argument or an IL local
+//  variable.
+CodeGenInterface::VariableLiveKeeper::LiveRangeList* CodeGenInterface::VariableLiveKeeper::getLiveRangesForVarForProlog(
+    unsigned int varNum) const
+{
+    // There should be at least one variable for which its liveness is tracked
+    noway_assert(varNum < m_LiveDscCount);
+
+    return m_vlrLiveDscForProlog[varNum].getLiveRanges();
 }
 
 //------------------------------------------------------------------------
@@ -12338,11 +12374,14 @@ size_t CodeGenInterface::VariableLiveKeeper::getLiveRangesCount() const
     {
         for (unsigned int varNum = 0; varNum < m_LiveDscCount; varNum++)
         {
-            VariableLiveDescriptor* varLiveDsc = m_vlrLiveDsc + varNum;
-
-            if (m_Compiler->compMap2ILvarNum(varNum) != (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
+            for (int i = 0; i < 2; i++)
             {
-                liveRangesCount += varLiveDsc->getLiveRanges()->size();
+                VariableLiveDescriptor* varLiveDsc = (i == 0 ? m_vlrLiveDscForProlog : m_vlrLiveDsc) + varNum;
+
+                if (m_Compiler->compMap2ILvarNum(varNum) != (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
+                {
+                    liveRangesCount += varLiveDsc->getLiveRanges()->size();
+                }
             }
         }
     }
@@ -12368,7 +12407,7 @@ void CodeGenInterface::VariableLiveKeeper::psiStartVariableLiveRange(CodeGenInte
     // are arguments and special arguments.
     noway_assert(varNum < m_LiveArgsCount);
 
-    VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDsc[varNum];
+    VariableLiveDescriptor* varLiveDsc = &m_vlrLiveDscForProlog[varNum];
     varLiveDsc->startLiveRangeFromEmitter(varLocation, m_Compiler->getEmitter());
 }
 
@@ -12385,7 +12424,7 @@ void CodeGenInterface::VariableLiveKeeper::psiClosePrologVariableRanges()
 
     for (unsigned int varNum = 0; varNum < m_LiveArgsCount; varNum++)
     {
-        VariableLiveDescriptor* varLiveDsc = m_vlrLiveDsc + varNum;
+        VariableLiveDescriptor* varLiveDsc = m_vlrLiveDscForProlog + varNum;
 
         if (varLiveDsc->hasVariableLiveRangeOpen())
         {
@@ -12414,7 +12453,7 @@ void CodeGenInterface::VariableLiveKeeper::dumpBlockVariableLiveRanges(const Bas
             {
                 VariableLiveDescriptor* varLiveDsc = m_vlrLiveDsc + varNum;
 
-                if (varLiveDsc->hasVarLiverRangesFromLastBlockToDump())
+                if (varLiveDsc->hasVarLiveRangesFromLastBlockToDump())
                 {
                     hasDumpedHistory = true;
                     printf("IL Var Num %d:\n", m_Compiler->compMap2ILvarNum(varNum));
