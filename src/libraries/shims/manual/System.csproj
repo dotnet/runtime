@@ -1,8 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <ProjectGuid>{1FB7650D-7165-49B9-98B0-E345D56983DB}</ProjectGuid>
-    <Configurations>Debug;Release</Configurations>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.forwards.cs" />
   </ItemGroup>

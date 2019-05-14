@@ -19,7 +19,16 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- shared folder for ApiCompat.proj and shims.proj -->
-    <GenFacadesOutputPath>$(ArtifactsObjDir)shims/$(TargetGroup)/</GenFacadesOutputPath>
+    <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
+    <GenFacadesIgnoreMissingTypes>true</GenFacadesIgnoreMissingTypes>
+    <IncludeDefaultReferences>false</IncludeDefaultReferences>
+    <HasMatchingContract>true</HasMatchingContract>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'System.Runtime' OR '$(MSBuildProjectName)' == 'mscorlib' OR '$(MSBuildProjectName)' == 'netstandard'">
+    <!-- Omit System.Void since C# doesn't permit the use of the `System.Void`
+         typename and instead requires callers to use the `void` keyword. -->
+    <GenFacadesOmitType Include="System.Void" />
+    <Compile Include="$(MSBuildThisFileDirectory)System.Void.cs" />
+  </ItemGroup>
 </Project>

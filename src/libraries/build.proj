@@ -114,7 +114,8 @@
   <!-- set up inputs for UpdateVSConfigurations in a target to avoid globbing all the time -->
   <Target Name="_setProjectsToUpdate" BeforeTargets="UpdateVSConfigurations">
     <ItemGroup>
-      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*csproj" />
+      <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*csproj" 
+                        Exclude="$(MSBuildThisFileDirectory)src/shims/**/*.*csproj"/>
       <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*ilproj" />
       <ProjectsToUpdate Include="$(MSBuildThisFileDirectory)src/**/*.*vbproj" />
       <_solutionsToUpdateFiles Include="$(MSBuildThisFileDirectory)src/*/Directory.Build.props" />

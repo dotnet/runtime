@@ -1,20 +1,13 @@
 <Project>
+  <!-- IMPORTANT: please rebuild generateShims.proj when making changes to this file -->
   <ItemGroup>
-    <NetFxReference Include="mscorlib">
-      <ExcludeFromRuntime>true</ExcludeFromRuntime>
-    </NetFxReference>
+    <NetFxReference Include="mscorlib" />
     <NetFxReference Condition="'$(TargetGroup)' != 'netcoreapp2.0'" Include="Microsoft.VisualBasic" />
-    <NetFxReference Include="System">
-      <ExcludeFromRuntime>true</ExcludeFromRuntime>
-    </NetFxReference>
-    <NetFxReference Include="System.ComponentModel.DataAnnotations">
-      <StrongNameSig>MSSharedLib</StrongNameSig>
-    </NetFxReference>
+    <NetFxReference Include="System" />
+    <NetFxReference Include="System.ComponentModel.DataAnnotations" />
     <NetFxReference Include="System.Configuration" />
     <NetFxReference Include="System.Core" />
-    <NetFxReference Include="System.Data">
-      <ExcludeFromRuntime>true</ExcludeFromRuntime>
-    </NetFxReference>
+    <NetFxReference Include="System.Data" />
     <NetFxReference Include="System.Drawing" />
     <NetFxReference Include="System.IO.Compression.FileSystem" />
     <NetFxReference Include="System.Net" />
@@ -22,17 +15,13 @@
     <NetFxReference Include="System.Runtime.Serialization" />
     <NetFxReference Include="System.Security" />
     <NetFxReference Include="System.ServiceProcess" />
-    <NetFxReference Include="System.ServiceModel.Web">
-      <StrongNameSig>MSSharedLib</StrongNameSig>
-    </NetFxReference>
+    <NetFxReference Include="System.ServiceModel.Web" />
     <NetFxReference Include="System.Transactions" />
     <NetFxReference Include="System.Web" />
     <NetFxReference Include="System.Windows" />
     <NetFxReference Include="System.Xml" />
     <NetFxReference Include="System.Xml.Serialization" />
     <NetFxReference Include="System.Xml.Linq" />
-    <NetFxReference Include="WindowsBase">
-      <StrongNameSig>MSSharedLib</StrongNameSig>
-    </NetFxReference>
+    <NetFxReference Include="WindowsBase" />
   </ItemGroup>
 </Project>

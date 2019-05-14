@@ -120,4 +120,23 @@ CannotSealType : Type 'System.Linq.EnumerableExecutor' is effectively (has a pri
 MembersMustExist : Member 'System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
 MembersMustExist : Member 'System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
-Total Issues: 121
+
+TypeCannotChangeClassification : Type 'System.Action<T1, T2, T3, T4, T5, T6, T7, T8, T9>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Action<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, TResult>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, TResult>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, TResult>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, TResult>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, TResult>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, TResult>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, TResult>' is a 'class' in the implementation but is a 'delegate' in the contract.
+TypeCannotChangeClassification : Type 'System.Func<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, TResult>' is a 'class' in the implementation but is a 'delegate' in the contract.
+CannotChangeAttribute : Attribute 'System.Diagnostics.SwitchLevelAttribute' on 'System.Diagnostics.BooleanSwitch' changed from '[SwitchLevelAttribute(typeof(bool))]' in the contract to '[SwitchLevelAttribute(typeof(Boolean))]' in the implementation.
+TypeCannotChangeClassification : Type 'System.IO.FileAttributes' is a 'class' in the implementation but is a 'struct' in the contract.
+TypeCannotChangeClassification : Type 'System.IO.HandleInheritability' is a 'class' in the implementation but is a 'struct' in the contract.
