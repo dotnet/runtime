@@ -95,7 +95,7 @@
 
 #define NGEN_STATICS_ALLCLASSES_WERE_LOADED -1
 
-BOOL Module::HasInlineTrackingMap()
+BOOL Module::HasNativeOrReadyToRunInlineTrackingMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 #ifdef FEATURE_READYTORUN
@@ -107,7 +107,7 @@ BOOL Module::HasInlineTrackingMap()
     return (m_pPersistentInlineTrackingMapNGen != NULL);
 }
 
-COUNT_T Module::GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData)
+COUNT_T Module::GetNativeOrReadyToRunInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, COUNT_T inlinersSize, MethodInModule inliners[], BOOL *incompleteData)
 {
     WRAPPER_NO_CONTRACT;
 #ifdef FEATURE_READYTORUN
@@ -123,11 +123,28 @@ COUNT_T Module::GetInliners(PTR_Module inlineeOwnerMod, mdMethodDef inlineeTkn, 
     return 0;
 }
 
+#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+BOOL Module::HasJitInlineTrackingMap()
+{
+    LIMITED_METHOD_CONTRACT;
 
-#ifndef DACCESS_COMPILE 
+    return m_pJitInlinerTrackingMap != NULL;
+}
 
+void Module::AddInlining(MethodDesc *inliner, MethodDesc *inlinee)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(inliner != NULL && inlinee != NULL);
+    _ASSERTE(inlinee->GetModule() == this);
 
+    if (m_pJitInlinerTrackingMap != NULL)
+    {
+        m_pJitInlinerTrackingMap->AddInlining(inliner, inlinee);
+    }
+}
+#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
+#ifndef DACCESS_COMPILE
 // ===========================================================================
 // Module
 // ===========================================================================
@@ -636,6 +653,14 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     // module has EnC turned on.
     if (g_pConfig->ForceEnc() && IsEditAndContinueCapable())
         EnableEditAndContinue();
+
+#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+    m_pJitInlinerTrackingMap = NULL;
+    if (ReJitManager::IsReJITInlineTrackingEnabled())
+    {
+        m_pJitInlinerTrackingMap = new JITInlineTrackingMap(GetLoaderAllocator());
+    }
+#endif // defined (PROFILING_SUPPORTED) &&!defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
     LOG((LF_CLASSLOADER, LL_INFO10, "Loaded pModule: \"%ws\".\n", GetDebugName()));
 

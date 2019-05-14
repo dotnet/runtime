@@ -35,7 +35,8 @@
 #include "eetoprofinterfaceimpl.h"
 #include "eetoprofinterfaceimpl.inl"
 #include "profilepriv.h"
-#endif
+#include "rejit.h"
+#endif // PROFILING_SUPPORTED
 #include "ecall.h"
 #include "generics.h"
 #include "typestring.h"
@@ -8038,6 +8039,21 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             goto exit;
         }
 
+#if defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+        if (CORProfilerEnableRejit())
+        {
+            CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
+            CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+            ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
+            if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
+            {
+                result = INLINE_FAIL;
+                szFailReason = "ReJIT methods cannot be inlined.";
+                goto exit;
+            }
+        }
+#endif // defined(FEATURE_REJIT) && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+
         // If the profiler wishes to be notified of JIT events and the result from
         // the above tests will cause a function to be inlined, we need to tell the
         // profiler that this inlining is going to take place, and give them a
@@ -8051,7 +8067,6 @@ CorInfoInline CEEInfo::canInline (CORINFO_METHOD_HANDLE hCaller,
             else
             {
                 BOOL fShouldInline;
-
                 HRESULT hr = g_profControlBlock.pProfInterface->JITInlining(
                     (FunctionID)pCaller,
                     (FunctionID)pCallee,
@@ -8223,6 +8238,35 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
         }
 
     }
+
+
+#if defined FEATURE_REJIT && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+    if(inlineResult == INLINE_PASS)
+    {
+        // We don't want to track the chain of methods, so intentionally use m_pMethodBeingCompiled
+        // to just track the methods that pCallee is eventually inlined in
+        MethodDesc *pCallee = GetMethod(inlineeHnd);
+        MethodDesc *pCaller = m_pMethodBeingCompiled;
+        pCallee->GetModule()->AddInlining(pCaller, pCallee);
+
+        if (CORProfilerEnableRejit())
+        {
+            // If ReJIT is enabled, there is a chance that a race happened where the profiler
+            // requested a ReJIT on a method, but before the ReJIT occurred an inlining happened.
+            // If we end up reporting an inlining on a method with non-default IL it means the race
+            // happened and we need to manually request ReJIT for it since it was missed.
+            CodeVersionManager* pCodeVersionManager = pCallee->GetCodeVersionManager();
+            CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+            ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pCallee);
+            if (ilVersion.GetRejitState() != ILCodeVersion::kStateActive || !ilVersion.HasDefaultIL())
+            {
+                ModuleID modId = pCaller->GetModule()->GetModuleID();
+                mdMethodDef methodDef = pCaller->GetMemberDef();
+                ReJitManager::RequestReJIT(1, &modId, &methodDef, static_cast<COR_PRF_REJIT_FLAGS>(0));
+            }
+        }
+    }
+#endif // defined FEATURE_REJIT && !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
     EE_TO_JIT_TRANSITION();
 }

@@ -577,7 +577,7 @@ public:
 
     // end ICorProfilerInfo8
 
-    // beging ICorProfilerInfo9
+    // begin ICorProfilerInfo9
 
     COM_METHOD GetNativeCodeStartAddresses(
         FunctionID functionID, 
@@ -613,7 +613,13 @@ public:
 
     COM_METHOD GetLOHObjectSizeThreshold(DWORD *pThreshold);
 
-    // end ICorProfilerInfo10
+    COM_METHOD RequestReJITWithInliners(
+        DWORD       dwRejitFlags,
+        ULONG       cFunctions,
+        ModuleID    moduleIds[],
+        mdMethodDef methodIds[]);
+
+    // end ICorProfilerInfo10    
 
 protected:
 

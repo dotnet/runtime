@@ -682,6 +682,10 @@ Crst InlineTrackingMap
     AcquiredBefore IbcProfile
 End
 
+Crst JitInlineTrackingMap
+    AcquiredBefore ReJITDomainTable ThreadStore LoaderAllocator
+End
+
 Crst EventPipe
     AcquiredAfter PendingTypeLoadEntry
     AcquiredBefore ThreadIdDispenser ThreadStore DomainLocalBlock InstMethodHashTable
