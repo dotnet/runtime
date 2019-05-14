@@ -33,7 +33,7 @@ namespace System.Text.Json.Serialization
 
                         if (HandleValue(tokenType, options, ref reader, ref state))
                         {
-                            return;
+                            continue;
                         }
                     }
                     else if (tokenType == JsonTokenType.PropertyName)
@@ -82,14 +82,14 @@ namespace System.Text.Json.Serialization
                         }
                         else if (HandleValue(tokenType, options, ref reader, ref state))
                         {
-                            return;
+                            continue;
                         }
                     }
                     else if (tokenType == JsonTokenType.EndObject)
                     {
                         if (HandleEndObject(options, ref state, ref reader))
                         {
-                            return;
+                            continue;
                         }
                     }
                     else if (tokenType == JsonTokenType.StartArray)
@@ -100,21 +100,21 @@ namespace System.Text.Json.Serialization
                         }
                         else if (HandleValue(tokenType, options, ref reader, ref state))
                         {
-                            return;
+                            continue;
                         }
                     }
                     else if (tokenType == JsonTokenType.EndArray)
                     {
                         if (HandleEndArray(options, ref state, ref reader))
                         {
-                            return;
+                            continue;
                         }
                     }
                     else if (tokenType == JsonTokenType.Null)
                     {
                         if (HandleNull(ref reader, ref state, options))
                         {
-                            return;
+                            continue;
                         }
                     }
                 }

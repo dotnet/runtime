@@ -72,5 +72,24 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal("null", obj);
             }
         }
+
+        [Fact]
+        public static void NullAcceptsLeadingAndTrailingTrivia()
+        {
+            {
+                TestClassWithNull obj = JsonSerializer.Parse<TestClassWithNull>(" null");
+                Assert.Null(obj);
+            }
+
+            {
+                object obj = JsonSerializer.Parse<object>("null ");
+                Assert.Null(obj);
+            }
+
+            {
+                object obj = JsonSerializer.Parse<object>(" null\t");
+                Assert.Null(obj);
+            }
+        }
     }
 }
