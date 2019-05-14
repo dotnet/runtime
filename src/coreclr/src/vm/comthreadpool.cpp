@@ -190,12 +190,19 @@ FCIMPL0(INT32, ThreadPoolNative::GetThreadCount)
 FCIMPLEND
 
 /*****************************************************************************************************/
-FCIMPL0(INT64, ThreadPoolNative::GetCompletedWorkItemCount)
+INT64 QCALLTYPE ThreadPoolNative::GetCompletedWorkItemCount()
 {
-    FCALL_CONTRACT;
-    return (INT64)Thread::GetTotalThreadPoolCompletionCount();
+    QCALL_CONTRACT;
+
+    INT64 result = 0;
+
+    BEGIN_QCALL;
+
+    result = (INT64)Thread::GetTotalThreadPoolCompletionCount();
+
+    END_QCALL;
+    return result;
 }
-FCIMPLEND
 
 /*****************************************************************************************************/
 FCIMPL0(INT64, ThreadPoolNative::GetPendingUnmanagedWorkItemCount)
