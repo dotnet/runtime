@@ -599,3 +599,68 @@ COUNT_T PersistentInlineTrackingMapR2R::GetInliners(PTR_Module inlineeOwnerMod, 
 }
 
 #endif //FEATURE_READYTORUN
+
+
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
+JITInlineTrackingMap::JITInlineTrackingMap(LoaderAllocator *pAssociatedLoaderAllocator) :
+    m_mapCrst(CrstJitInlineTrackingMap),
+    m_map()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_map.Init(pAssociatedLoaderAllocator);
+}
+
+BOOL JITInlineTrackingMap::InliningExistsDontTakeLock(MethodDesc *inliner, MethodDesc *inlinee)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(m_mapCrst.OwnedByCurrentThread());
+    _ASSERTE(inliner != NULL);
+    _ASSERTE(inlinee != NULL);
+
+    BOOL found = FALSE;
+    auto lambda = [&](OBJECTREF obj, MethodDesc *lambdaInlinee, MethodDesc *lambdaInliner)
+    {
+        _ASSERTE(inlinee == lambdaInlinee);
+
+        if (lambdaInliner == inliner)
+        {
+            found = TRUE;
+            return false;
+        }
+
+        return true;
+    };
+
+    m_map.VisitValuesOfKey(inlinee, lambda);
+
+    return found;
+}
+
+void JITInlineTrackingMap::AddInlining(MethodDesc *inliner, MethodDesc *inlinee)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    CrstHolder holder(&m_mapCrst);
+    AddInliningDontTakeLock(inliner, inlinee);
+}
+
+void JITInlineTrackingMap::AddInliningDontTakeLock(MethodDesc *inliner, MethodDesc *inlinee)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(m_mapCrst.OwnedByCurrentThread());
+    _ASSERTE(inliner != NULL);
+    _ASSERTE(inlinee != NULL);
+
+    GCX_COOP();
+
+    if (!InliningExistsDontTakeLock(inliner, inlinee))
+    {
+        LoaderAllocator *loaderAllocatorOfInliner = inliner->GetLoaderAllocator();
+        m_map.Add(inlinee, inliner, loaderAllocatorOfInliner);
+    }
+}
+
+#endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)

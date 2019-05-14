@@ -31,6 +31,7 @@
       <![CDATA[
 $(CLRTestBatchPreCommands)
 set COMPlus_TieredCompilation=0
+set COMPlus_ProfApi_RejitOnAttach=0
 set COMPlus_JITMinOpts=0
 set COMPlus_JitDebuggable=0
 set COMPlus_JitStressModeNamesNot=STRESS_RANDOM_INLINE
@@ -41,6 +42,7 @@ set COMPlus_JitObjectStackAllocation=1
       <![CDATA[
 $(BashCLRTestPreCommands)
 export COMPlus_TieredCompilation=0
+export COMPlus_ProfApi_RejitOnAttach=0
 export COMPlus_JITMinOpts=0
 export COMPlus_JitDebuggable=0
 export COMPlus_JitStressModeNamesNot=STRESS_RANDOM_INLINE

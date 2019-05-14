@@ -185,6 +185,7 @@ private:
     LoaderAllocator *m_pLoaderAllocator = 0;
     OBJECTHANDLE m_loaderAllocatorToDependentTrackerHash = 0;
     OBJECTHANDLE m_keyToDependentTrackersHash = 0;
+    OBJECTHANDLE m_globalDependentTrackerRootHandle = 0;
 };
 
 class CrossLoaderAllocatorHashSetup

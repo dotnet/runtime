@@ -580,7 +580,14 @@ ReJITID ILCodeVersionNode::GetVersionId() const
 ILCodeVersion::RejitFlags ILCodeVersionNode::GetRejitState() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_rejitState.Load();
+    return static_cast<ILCodeVersion::RejitFlags>(m_rejitState.Load() & ILCodeVersion::kStateMask);
+}
+
+BOOL ILCodeVersionNode::GetEnableReJITCallback() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return (m_rejitState.Load() & ILCodeVersion::kSuppressParams) == ILCodeVersion::kSuppressParams;
 }
 
 PTR_COR_ILMETHOD ILCodeVersionNode::GetIL() const
@@ -613,7 +620,29 @@ PTR_ILCodeVersionNode ILCodeVersionNode::GetNextILVersionNode() const
 void ILCodeVersionNode::SetRejitState(ILCodeVersion::RejitFlags newState)
 {
     LIMITED_METHOD_CONTRACT;
-    m_rejitState.Store(newState);
+    // We're doing a non thread safe modification to m_rejitState
+    _ASSERTE(LockOwnedByCurrentThread());
+
+    ILCodeVersion::RejitFlags oldNonMaskFlags = 
+        static_cast<ILCodeVersion::RejitFlags>(m_rejitState.Load() & ~ILCodeVersion::kStateMask);
+    m_rejitState.Store(static_cast<ILCodeVersion::RejitFlags>(newState | oldNonMaskFlags));
+}
+
+void ILCodeVersionNode::SetEnableReJITCallback(BOOL state)
+{
+    LIMITED_METHOD_CONTRACT;
+    // We're doing a non thread safe modification to m_rejitState
+    _ASSERTE(LockOwnedByCurrentThread());
+
+    ILCodeVersion::RejitFlags oldFlags = m_rejitState.Load();
+    if (state)
+    {
+        m_rejitState.Store(static_cast<ILCodeVersion::RejitFlags>(oldFlags | ILCodeVersion::kSuppressParams));
+    }
+    else
+    {
+        m_rejitState.Store(static_cast<ILCodeVersion::RejitFlags>(oldFlags & ~ILCodeVersion::kSuppressParams));
+    }
 }
 
 void ILCodeVersionNode::SetIL(COR_ILMETHOD* pIL)
@@ -784,6 +813,19 @@ ILCodeVersion::RejitFlags ILCodeVersion::GetRejitState() const
     }
 }
 
+BOOL ILCodeVersion::GetEnableReJITCallback() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    if (m_storageKind == StorageKind::Explicit)
+    {
+        return AsNode()->GetEnableReJITCallback();
+    }
+    else
+    {
+        return FALSE;
+    }
+}
+
 PTR_COR_ILMETHOD ILCodeVersion::GetIL() const
 {
     CONTRACTL
@@ -876,6 +918,12 @@ void ILCodeVersion::SetRejitState(RejitFlags newState)
 {
     LIMITED_METHOD_CONTRACT;
     AsNode()->SetRejitState(newState);
+}
+
+void ILCodeVersion::SetEnableReJITCallback(BOOL state)
+{
+    LIMITED_METHOD_CONTRACT;
+    return AsNode()->SetEnableReJITCallback(state);
 }
 
 void ILCodeVersion::SetIL(COR_ILMETHOD* pIL)

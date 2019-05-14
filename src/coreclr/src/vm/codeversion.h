@@ -177,11 +177,18 @@ public:
         kStateActive = 0x00000002,
 
         kStateMask = 0x0000000F,
+
+        // Indicates that the method being ReJITted is an inliner of the actual 
+        // ReJIT request and we should not issue the GetReJITParameters for this 
+        // method.
+        kSuppressParams = 0x80000000
     };
 
     RejitFlags GetRejitState() const;
+    BOOL GetEnableReJITCallback() const;
 #ifndef DACCESS_COMPILE
     void SetRejitState(RejitFlags newState);
+    void SetEnableReJITCallback(BOOL state);
 #endif
 
 #ifdef DACCESS_COMPILE
@@ -326,12 +333,14 @@ public:
     DWORD GetJitFlags() const;
     const InstrumentedILOffsetMapping* GetInstrumentedILMap() const;
     ILCodeVersion::RejitFlags GetRejitState() const;
+    BOOL GetEnableReJITCallback() const;
     PTR_ILCodeVersionNode GetNextILVersionNode() const;
 #ifndef DACCESS_COMPILE
     void SetIL(COR_ILMETHOD* pIL);
     void SetJitFlags(DWORD flags);
     void SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap);
     void SetRejitState(ILCodeVersion::RejitFlags newState);
+    void SetEnableReJITCallback(BOOL state);
     void SetNextILVersionNode(ILCodeVersionNode* pNextVersionNode);
 #endif
 
