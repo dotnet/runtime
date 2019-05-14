@@ -38,7 +38,7 @@ public:
     static FCDECL1(void, Pulse, Object* pThisUNSAFE);
     static FCDECL1(void, PulseAll, Object* pThisUNSAFE);
     static FCDECL1(FC_BOOL_RET, IsLockHeld, Object* pThisUNSAFE);
-    static FCDECL0(INT64, GetMonitorLockContentionCount);
+    static INT64 QCALLTYPE GetMonitorLockContentionCount();
 };
 
 #endif // _OBJECTNATIVE_H_
