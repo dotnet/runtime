@@ -638,6 +638,8 @@ mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **args)
 	MonoJitICallInfo *info = mono_find_jit_icall_by_addr (func);
 
 	g_assert (info);
+	g_assertf (info->name, "%d", (int)mono_jit_icall_info_index (info));
+	g_assertf (info->func, "%d", (int)mono_jit_icall_info_index (info));
 
 	return mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, args);
 }
