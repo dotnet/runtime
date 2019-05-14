@@ -53,15 +53,21 @@ namespace System.Text.Json.Serialization
         {
             get
             {
-                StringBuilder path = new StringBuilder();
+                StringBuilder path;
 
                 if (_previous == null || _index == 0)
                 {
-                    path.Append($"[{Current.JsonClassInfo.Type.FullName}]");
+                    // No path if we've walked beyond the end of our JSON document
+                    if (Current.JsonClassInfo == null)
+                    {
+                        return "<none>";
+                    }
+
+                    path = new StringBuilder($"[{Current.JsonClassInfo.Type.FullName}]");
                 }
                 else
                 {
-                    path.Append($"[{_previous[0].JsonClassInfo.Type.FullName}]");
+                    path = new StringBuilder($"[{_previous[0].JsonClassInfo.Type.FullName}]");
 
                     for (int i = 0; i < _index; i++)
                     {
