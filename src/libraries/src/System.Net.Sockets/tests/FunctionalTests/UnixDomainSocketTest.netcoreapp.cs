@@ -445,7 +445,7 @@ namespace System.Net.Sockets.Tests
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
                     // UDS support added in April 2018 Update
-                    if (!PlatformDetection.IsWindows10Version1803OrGreater)
+                    if (!PlatformDetection.IsWindows10Version1803OrGreater || PlatformDetection.IsWindowsNanoServer)
                     {
                         return false;
                     }
