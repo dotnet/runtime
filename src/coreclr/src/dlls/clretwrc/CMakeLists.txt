@@ -21,3 +21,5 @@ add_library_clr(clretwrc SHARED
 
 # add the install targets
 install_clr(clretwrc)
+
+add_dependencies(clretwrc eventing_headers)
