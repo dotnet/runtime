@@ -1391,10 +1391,14 @@ TypeName::GetTypeHaveAssemblyHelper(
         for (COUNT_T i = 0; i < names.GetCount(); i ++)
         {
             // each extra name represents one more level of nesting
-            LPCWSTR wname = names[i]->GetUnicode();
+            StackSString name(*(names[i]));
 
-            MAKE_UTF8PTR_FROMWIDE(name, wname);
-            typeName.SetName(name);
+            // The type name is expected to be lower-cased by the caller for case-insensitive lookups
+            if (bIgnoreCase)
+                name.LowerCase();
+
+            StackScratchBuffer buffer;
+            typeName.SetName(name.GetUTF8(buffer));
 
             // typeName.m_pBucket gets set here if the type is found
             // it will be used in the next iteration to look up the nested type

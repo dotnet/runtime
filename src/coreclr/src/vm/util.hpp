@@ -1121,28 +1121,6 @@ BOOL EnableARM();
 
 int GetRandomInt(int maxVal);
 
-class InternalCasingHelper {
-
-    private:
-    // Convert szIn to lower case in the Invariant locale.
-    // TODO: NLS Arrowhead -Called by the two ToLowers)
-    static INT32 InvariantToLowerHelper(__out_bcount_opt(cMaxBytes) LPUTF8 szOut, int cMaxBytes, __in_z LPCUTF8 szIn, BOOL fAllowThrow);
-
-    public:
-    //
-    // Native helper functions to do correct casing operations in
-    // runtime native code.
-    //
-
-    // Convert szIn to lower case in the Invariant locale. (WARNING: May throw.)
-    static INT32 InvariantToLower(__out_bcount_opt(cMaxBytes) LPUTF8 szOut, int cMaxBytes, __in_z LPCUTF8 szIn);
-
-    // Convert szIn to lower case in the Invariant locale. (WARNING: This version
-    // won't throw but it will use stack space as an intermediary (so don't
-    // use for ridiculously long strings.)
-    static INT32 InvariantToLowerNoThrow(__out_bcount_opt(cMaxBytes) LPUTF8 szOut, int cMaxBytes, __in_z LPCUTF8 szIn);
-};
-
 //
 //
 // COMCHARACTER

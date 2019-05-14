@@ -6616,11 +6616,11 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleBySearch(Assembly *callingAssemb
         if (SUCCEEDED(spec.Init(szComma)))
         {
             // Need to perform case insensitive hashing.
-            CQuickBytes qbLC;
-            {
-                UTF8_TO_LOWER_CASE(szLibName, qbLC);
-                szLibName = (LPUTF8) qbLC.Ptr();
-            }
+            SString moduleName(SString::Utf8, szLibName);
+            moduleName.LowerCase();
+
+            StackScratchBuffer buffer;
+            szLibName = (LPSTR)moduleName.GetUTF8(buffer);
 
             Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED);
             Module *pModule = pAssembly->FindModuleByName(szLibName);
