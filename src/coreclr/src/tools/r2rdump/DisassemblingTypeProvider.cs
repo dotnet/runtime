@@ -64,7 +64,7 @@ namespace R2RDump
 
         public virtual string GetGenericMethodParameter(DisassemblingGenericContext genericContext, int index)
         {
-            if (index >= genericContext.MethodParameters.Length)
+            if (genericContext.MethodParameters == null || index >= genericContext.MethodParameters.Length)
             {
                 return "!!" + index.ToString();
             }
@@ -73,7 +73,7 @@ namespace R2RDump
 
         public virtual string GetGenericTypeParameter(DisassemblingGenericContext genericContext, int index)
         {
-            if (index >= genericContext.TypeParameters.Length)
+            if (genericContext.TypeParameters == null || index >= genericContext.TypeParameters.Length)
             {
                 return "!" + index.ToString();
             }
