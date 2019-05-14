@@ -149,9 +149,57 @@ namespace System.IO.Compression.Tests
             }
         }
 
+        [Fact]
+        public static void CreateNormal_VerifyDataDescriptor()
+        {
+            using var memoryStream = new MemoryStream();
+            // We need an non-seekable stream so the data descriptor bit is turned on when saving
+            var wrappedStream = new WrappedStream(memoryStream, true, true, false, null);
+
+            // Creation will go through the path that sets the data descriptor bit when the stream is unseekable
+            using (var archive = new ZipArchive(wrappedStream, ZipArchiveMode.Create))
+            {
+                CreateEntry(archive, "A", "xxx");
+                CreateEntry(archive, "B", "yyy");
+            }
+
+            AssertDataDescriptor(memoryStream, true);
+
+            // Update should flip the data descriptor bit to zero on save
+            using (var archive = new ZipArchive(memoryStream, ZipArchiveMode.Update))
+            {
+                ZipArchiveEntry entry = archive.Entries[0];
+                using Stream entryStream = entry.Open();
+                StreamReader reader = new StreamReader(entryStream);
+                string content = reader.ReadToEnd();
+                
+                // Append a string to this entry
+                entryStream.Seek(0, SeekOrigin.End);
+                StreamWriter writer = new StreamWriter(entryStream);
+                writer.Write("zzz");
+                writer.Flush();
+            }
+
+            AssertDataDescriptor(memoryStream, false);
+        }
+
         private static string ReadStringFromSpan(Span<byte> input)
         {
             return Text.Encoding.UTF8.GetString(input.ToArray());
+        }
+
+        private static void CreateEntry(ZipArchive archive, string fileName, string fileContents)
+        {
+            ZipArchiveEntry entry = archive.CreateEntry(fileName);
+            using StreamWriter writer = new StreamWriter(entry.Open());
+            writer.Write(fileContents);
+        }
+
+        private static void AssertDataDescriptor(MemoryStream memoryStream, bool hasDataDescriptor)
+        {
+            byte[] fileBytes = memoryStream.ToArray();
+            Assert.Equal(hasDataDescriptor ? 8 : 0, fileBytes[6]);
+            Assert.Equal(0, fileBytes[7]);
         }
     }
 }
