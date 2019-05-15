@@ -21,7 +21,6 @@ Abstract:
 #include "pal/palinternal.h"
 #include "pal/thread.hpp"
 #include "pal/dbgmsg.h"
-#include "pal/unicode_data.h"
 
 using namespace CorUnix;
 

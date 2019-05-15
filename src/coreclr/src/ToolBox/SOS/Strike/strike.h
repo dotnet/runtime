@@ -23,7 +23,6 @@
 #endif
 
 #ifdef PAL_STDCPP_COMPAT
-#define _iswprint   PAL_iswprint
 #define _wcslen     PAL_wcslen
 #define _wcsncmp    PAL_wcsncmp
 #define _wcsrchr    PAL_wcsrchr
@@ -33,7 +32,6 @@
 #define _wcscat     PAL_wcscat
 #define _wcsstr     PAL_wcsstr
 #else // PAL_STDCPP_COMPAT
-#define _iswprint   iswprint
 #define _wcslen     wcslen
 #define _wcsncmp    wcsncmp
 #define _wcsrchr    wcsrchr

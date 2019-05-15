@@ -46,7 +46,6 @@ nativeStringResourceTable_mscorrc_debug
 #PAL_IsDebuggerPresent
 #PAL_ProbeMemory
 #PAL_Random
-#PAL_iswspace
 #PAL_memcpy
 #PAL_malloc
 #PAL_realloc
@@ -56,7 +55,6 @@ nativeStringResourceTable_mscorrc_debug
 #PAL_fprintf
 #PAL__wcstoui64
 #PAL_wcstoul
-#PAL_iswprint
 #PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange
 #PAL_VirtualUnwindOutOfProc
 #PAL_wcslen
