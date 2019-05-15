@@ -72,13 +72,32 @@ namespace System.Memory.Tests.SequenceReader
         public void Rewind_Exception()
         {
             ReadOnlySequence<byte> bytes = SequenceFactory.Create(new byte[][] {
-                new byte[] { 0          },
-                new byte[] { 1, 2       },
-                new byte[] { 3, 4       },
-                new byte[] { 5, 6, 7, 8 }
+                new byte[] { 0    },
+                new byte[] { 1, 2 }
             });
 
+            // Can't go negative
             Assert.Throws<ArgumentOutOfRangeException>(() => new SequenceReader<byte>(bytes).Rewind(-1));
+
+            // Can't pull more than we consumed
+            Assert.Throws<ArgumentOutOfRangeException>(() => new SequenceReader<byte>(bytes).Rewind(1));
+        }
+
+        [Fact]
+        public void RewindEmptyFirstSpan()
+        {
+            // This is to hit the "if (memory.Length == 0)" branch in ResetReader.
+            ReadOnlySequence<byte> bytes = SequenceFactory.Create(new byte[][] {
+                new byte[0],
+                new byte[] { 1, 2 },
+                new byte[] { 3, 4 }
+            });
+
+            var reader = new SequenceReader<byte>(bytes);
+            reader.Advance(3);
+            Assert.True(reader.IsNext(4));
+            reader.Rewind(2);
+            Assert.Equal(new byte[] { 1, 2 }, reader.CurrentSpan.ToArray());
         }
     }
 }

@@ -9,6 +9,25 @@ namespace System.Memory.Tests.SequenceReader
 {
     public class IsNext
     {
+        [Theory,
+            InlineData(true),
+            InlineData(false)]
+        public void IsNext_Empty(bool advancePast)
+        {
+            var reader = new SequenceReader<char>(ReadOnlySequence<char>.Empty);
+
+            Assert.False(reader.IsNext('Z', advancePast));
+            Assert.Equal(0, reader.Consumed);
+
+            // Nothing is always next
+            Assert.True(reader.IsNext(ReadOnlySpan<char>.Empty, advancePast));
+            Assert.Equal(0, reader.Consumed);
+
+            // Something isn't
+            Assert.False(reader.IsNext(new char[] { '\0' }, advancePast));
+            Assert.Equal(0, reader.Consumed);
+        }
+
         [Fact]
         public void IsNext_Span()
         {
@@ -19,7 +38,7 @@ namespace System.Memory.Tests.SequenceReader
                 new byte[] { 5, 6, 7, 8 }
             });
 
-            SequenceReader<byte> reader = new SequenceReader<byte>(bytes);
+            var reader = new SequenceReader<byte>(bytes);
             Assert.True(reader.IsNext(ReadOnlySpan<byte>.Empty, advancePast: false));
             Assert.True(reader.IsNext(ReadOnlySpan<byte>.Empty, advancePast: true));
             Assert.True(reader.IsNext(new byte[] { 0 }, advancePast: false));
@@ -41,6 +60,28 @@ namespace System.Memory.Tests.SequenceReader
             Assert.True(reader.IsNext(new byte[] { 4, 5, 6 }, advancePast: true));
             Assert.True(reader.TryPeek(out byte value));
             Assert.Equal(7, value);
+
+            Assert.True(reader.IsNext(new byte[] { 7, 8 }, advancePast: true));
+            Assert.True(reader.End);
+        }
+
+        [Fact]
+        public void IsNext_Value()
+        {
+            ReadOnlySequence<char> chars = SequenceFactory.Create(new char[][] {
+                new char[] { 'A'           },
+                new char[] { 'B', 'C'      },
+            });
+
+            var reader = new SequenceReader<char>(chars);
+            Assert.False(reader.IsNext('Z', advancePast: false));
+            Assert.False(reader.IsNext('B', advancePast: false));
+            Assert.True(reader.IsNext('A', advancePast: false));
+            Assert.True(reader.IsNext('A', advancePast: true));
+            Assert.True(reader.IsNext('B', advancePast: true));
+            Assert.True(reader.IsNext('C', advancePast: true));
+            Assert.False(reader.IsNext('C', advancePast: true));
+            Assert.True(reader.End);
         }
     }
 }
