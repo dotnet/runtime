@@ -2,12 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal static class DefaultConverters
     {
+        private static readonly Dictionary<Type, object> s_valueConverters = new Dictionary<Type, object>()
+        {
+            { typeof(DateTimeOffset), new JsonValueConverterDateTimeOffset() },
+            { typeof(Guid), new JsonValueConverterGuid() },
+            { typeof(JsonElement), new JsonValueConverterJsonElement() }
+        };
+
+        internal static bool IsValueConvertable(Type type)
+        {
+            return typeof(IConvertible).IsAssignableFrom(type) || s_valueConverters.ContainsKey(type);
+        }
+
         internal static object Create(Type type)
         {
             if (type.IsEnum)
@@ -54,19 +67,16 @@ namespace System.Text.Json.Serialization.Converters
                     return new JsonValueConverterString();
             }
 
-            if (type == typeof(DateTimeOffset))
+            if (s_valueConverters.TryGetValue(type, out object value))
             {
-                return new JsonValueConverterDateTimeOffset();
+                return value;
             }
-            if (type == typeof(JsonElement))
-            {
-                return new JsonValueConverterJsonElement();
-            }
+
             if (type == typeof(object))
             {
                 return new JsonValueConverterObject();
             }
-            
+
             return null;
         }
     }
