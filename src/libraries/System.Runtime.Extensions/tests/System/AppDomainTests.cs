@@ -43,12 +43,16 @@ namespace System.Tests
         [Fact]
         public void TargetFrameworkTest()
         {
-            string targetFrameworkName = ".NETStandard,Version=v2.0";
-            if (PlatformDetection.IsInAppContainer)
+            string targetFrameworkName = ".NETCoreApp,Version=v2.1";
+            if (PlatformDetection.IsFullFramework)
+            {
+                targetFrameworkName = ".NETFramework,Version=v4.7.2";
+            }
+            else if (PlatformDetection.IsInAppContainer)
             {
                 targetFrameworkName = ".NETCore,Version=v5.0";
             }
-            if (PlatformDetection.IsNetNative)
+            else if (PlatformDetection.IsNetNative)
             {
                 targetFrameworkName = ".NETCoreApp,Version=v2.0";
             }
