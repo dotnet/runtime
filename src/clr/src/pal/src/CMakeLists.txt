@@ -212,7 +212,6 @@ set(SOURCES
   loader/module.cpp
   loader/modulename.cpp
   locale/unicode.cpp
-  locale/unicode_data.cpp
   locale/utf8.cpp
   map/common.cpp
   map/map.cpp

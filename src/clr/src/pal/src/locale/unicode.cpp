@@ -23,7 +23,6 @@ Revision History:
 #include "pal/thread.hpp"
 
 #include "pal/palinternal.h"
-#include "pal/unicode_data.h"
 #include "pal/dbgmsg.h"
 #include "pal/file.h"
 #include "pal/utf8.h"
@@ -79,89 +78,6 @@ static const CP_MAPPING CP_TO_NATIVE_TABLE[] = {
 // - On OSX, When writing strings to the console, the Terminal.app will interpret them as UTF-8.
 // - We want Ansi marshalling to mean marshal to UTF-8 on Mac and Linux
 static const UINT PAL_ACP = 65001;
-
-#if !HAVE_COREFOUNDATION
-/*++
-Function:
-UnicodeDataComp
-This is the comparison function used by the bsearch function to search
-for unicode characters in the UnicodeData array.
-
-Parameter:
-pnKey
-The unicode character value to search for.
-elem
-A pointer to a UnicodeDataRec.
-
-Return value:
-<0 if pnKey < elem->nUnicodeValue
-0 if pnKey == elem->nUnicodeValue
->0 if pnKey > elem->nUnicodeValue
---*/
-static int UnicodeDataComp(const void *pnKey, const void *elem)
-{
-    WCHAR uValue = ((UnicodeDataRec*)elem)->nUnicodeValue;
-    WORD  rangeValue = ((UnicodeDataRec*)elem)->rangeValue;
-
-    if (*((INT*)pnKey) < uValue)
-    {
-        return -1;
-    }
-    else
-    {
-        if (*((INT*)pnKey) > (uValue + rangeValue))
-        {
-            return 1;
-        }
-        else
-        {
-            return 0;
-        }
-    }
-}
-
-/*++
-Function:
-GetUnicodeData
-This function is used to get information about a Unicode character.
-
-Parameters:
-nUnicodeValue
-The numeric value of the Unicode character to get information about.
-pDataRec
-The UnicodeDataRec to fill in with the data for the Unicode character.
-
-Return value:
-TRUE if the Unicode character was found.
-
---*/
-BOOL GetUnicodeData(INT nUnicodeValue, UnicodeDataRec *pDataRec)
-{
-    BOOL bRet;
-    if (nUnicodeValue <= (INT)UNICODE_DATA_DIRECT_ACCESS)
-    {
-        *pDataRec = UnicodeData[nUnicodeValue];
-        bRet = TRUE;
-    }
-    else
-    {
-        UnicodeDataRec *dataRec;
-        INT nNumOfChars = UNICODE_DATA_SIZE;
-        dataRec = (UnicodeDataRec *) bsearch(&nUnicodeValue, UnicodeData, nNumOfChars,
-                       sizeof(UnicodeDataRec), UnicodeDataComp);
-        if (dataRec == NULL)
-        {
-            bRet = FALSE;
-        }
-        else
-        {
-            bRet = TRUE;
-            *pDataRec = *dataRec;
-        }
-    }
-    return bRet;
-}
-#endif /* !HAVE_COREFOUNDATION */
 
 /*++
 Function:
