@@ -34,7 +34,7 @@
     <PackageReference Include="xunit" Version="$(XUnitPackageVersion)" />
     <PackageReference Condition="'$(TargetsAot)' == 'true'" Include="xunit.runner.utility" Version="$(XUnitPackageVersion)" />
     <PackageReference Include="$(MicrosoftDotNetXUnitExtensionsPackage)" Version="$(MicrosoftDotNetXUnitExtensionsPackageVersion)" />
-    <PackageReference Include="$(MicrosoftDotNetRemoteExecutorPackage)" Version="$(MicrosoftDotNetRemoteExecutorPackageVersion)" />
+    <PackageReference Include="$(MicrosoftDotNetRemoteExecutorPackage)" Version="$(MicrosoftDotNetRemoteExecutorPackageVersion)" IncludeAssets="build" ExcludeAssets="none" />
     <PackageReference Condition="'$(TargetsNetCoreApp)' == 'true'" Include="$(MicrosoftDotNetXUnitConsoleRunnerPackage)" Version="$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)" />
     <PackageReference Condition="'$(TargetsNetFx)' == 'true'" Include="$(XUnitRunnerConsolePackageName)" Version="$(XUnitPackageVersion)" />
     <PackageReference Condition="'$(TargetsUap)' == 'true'" Include="$(MicrosoftDotNetUapTestToolsPackageName)" Version="$(MicrosoftDotNetUapTestToolsPackageVersion)" />
@@ -304,6 +304,22 @@
         <Private>false</Private>
         <NuGetPackageId>$(XUnitTestAdapterPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
+      </ReferenceCopyLocalPaths>
+    </ItemGroup>
+
+  </Target>
+
+  <Target Name="AddRemoteExecutorLib"
+          BeforeTargets="ResolveReferences">
+
+    <Error Condition="!Exists('$(PackagesDir)$(MicrosoftDotNetRemoteExecutorPackage)\$(MicrosoftDotNetRemoteExecutorPackageVersion)\lib\netstandard2.0\Microsoft.DotNet.RemoteExecutor.dll')"
+           Text="Error: looks the package $(PackagesDir)$(MicrosoftDotNetRemoteExecutorPackage)\$(MicrosoftDotNetRemoteExecutorPackageVersion) not restored or missing Microsoft.DotNet.RemoteExecutor.dll." />
+
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(MicrosoftDotNetRemoteExecutorPackage)\$(MicrosoftDotNetRemoteExecutorPackageVersion)\lib\netstandard2.0\*.*">
+        <Private>false</Private>
+        <NuGetPackageId>$(MicrosoftDotNetRemoteExecutorPackage)</NuGetPackageId>
+        <NuGetPackageVersion>$(MicrosoftDotNetRemoteExecutorPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
 
