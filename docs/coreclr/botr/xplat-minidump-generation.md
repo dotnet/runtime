@@ -53,9 +53,19 @@ Any configuration or policy is set with environment variables which are passed a
 Environment variables supported:
 
 - `COMPlus_DbgEnableMiniDump`: if set to "1", enables this core dump generation. The default is NOT to generate a dump.
-- `COMPlus_DbgMiniDumpType`: if set to "1" generates _MiniDumpNormal_, "2" _MiniDumpWithPrivateReadWriteMemory_, "3" _MiniDumpFilterTriage_, "4" _MiniDumpWithFullMemory_. Default is _MiniDumpNormal_.
+- `COMPlus_DbgMiniDumpType`: See below. Default is "2" MiniDumpWithPrivateReadWriteMemory.
 - `COMPlus_DbgMiniDumpName`: if set, use as the template to create the dump path and file name. The pid can be placed in the name with %d. The default is _/tmp/coredump.%d_.
 - `COMPlus_CreateDumpDiagnostics`: if set to "1", enables the _createdump_ utilities diagnostic messages (TRACE macro).
+
+COMPlus_DbgMiniDumpType values:
+
+
+|Value|Minidump Enum|Description|
+|-|:----------:|----------|
+|1| MiniDumpNormal                               | Include just the information necessary to capture stack traces for all existing threads in a process. Limited GC heap memory and information. |
+|2| MiniDumpWithPrivateReadWriteMemory (default) | Includes the GC heaps and information necessary to capture stack traces for all existing threads in a process. |
+|3| MiniDumpFilterTriage                         | Include just the information necessary to capture stack traces for all existing threads in a process. Limited GC heap memory and information. |
+|4| MiniDumpWithFullMemory                       | Include all accessible memory in the process. The raw memory data is included at the end, so that the initial structures can be mapped directly without the raw memory information. This option can result in a very large file. |
 
 (Please refer to MSDN for the meaning of the [minidump enum values](https://msdn.microsoft.com/en-us/library/windows/desktop/ms680519(v=vs.85).aspx) reported above)
 
