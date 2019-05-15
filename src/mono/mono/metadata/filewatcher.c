@@ -9,9 +9,9 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
+
+#if !ENABLE_NETCORE
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -177,3 +177,5 @@ ves_icall_System_IO_KqueueMonitor_kevent_notimeout (int *kq_ptr, gpointer change
 }
 
 #endif /* #if HAVE_KQUEUE */
+
+#endif /* !ENABLE_NETCORE */

@@ -92,6 +92,10 @@
 #define TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
 #endif
 
+#if DISABLE_SOCKETS
+#define DISABLE_SOCKET_TRANSPORT
+#endif
+
 #ifndef DISABLE_SDB
 
 #include <mono/utils/mono-os-mutex.h>

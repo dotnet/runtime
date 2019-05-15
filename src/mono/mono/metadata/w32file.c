@@ -187,6 +187,8 @@ static guint32 convert_attrs(MonoFileAttributes attrs)
 
 /* System.IO.MonoIO internal calls */
 
+#if !ENABLE_NETCORE
+
 MonoBoolean
 ves_icall_System_IO_MonoIO_CreateDirectory (const gunichar2 *path, gint32 *error)
 {
@@ -839,6 +841,18 @@ void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,
 	mono_w32file_unlock (handle, position, length, error);
 }
 
+
+#ifndef HOST_WIN32
+void mono_w32handle_dump (void);
+
+void ves_icall_System_IO_MonoIO_DumpHandles (void)
+{
+	mono_w32handle_dump ();
+}
+#endif /* !HOST_WIN32 */
+
+#endif /* !ENABLE_NETCORE */
+
 //Support for io-layer free mmap'd files.
 
 #if defined (TARGET_IOS) || defined (TARGET_ANDROID)
@@ -883,12 +897,3 @@ mono_filesize_from_fd (int fd)
 }
 
 #endif
-
-#ifndef HOST_WIN32
-void mono_w32handle_dump (void);
-
-void ves_icall_System_IO_MonoIO_DumpHandles (void)
-{
-	mono_w32handle_dump ();
-}
-#endif /* !HOST_WIN32 */

@@ -7696,11 +7696,15 @@ ves_icall_System_Runtime_Activation_ActivationServices_AllocateUninitializedClas
 	}
 }
 
+#if !ENABLE_NETCORE
+
 MonoStringHandle
 ves_icall_System_IO_get_temp_path (MonoError *error)
 {
 	return mono_string_new_handle (mono_domain_get (), g_get_tmp_dir (), error);
 }
+
+#endif
 
 #if defined(ENABLE_MONODROID) || defined(ENABLE_MONOTOUCH)
 
@@ -8584,11 +8588,15 @@ ves_icall_System_Runtime_InteropServices_WindowsRuntime_UnsafeNativeMethods_Wind
 
 #endif
 
+#if !ENABLE_NETCORE
+
 void
 ves_icall_System_IO_LogcatTextWriter_Log (const char *appname, gint32 level, const char *message)
 {
 	g_log (appname, (GLogLevelFlags)level, "%s", message);
 }
+
+#endif
 
 static MonoIcallTableCallbacks icall_table;
 static mono_mutex_t icall_mutex;

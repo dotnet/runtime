@@ -10,10 +10,10 @@
  */
 
 #include <config.h>
+#include <glib.h>
+#include <mono/metadata/threadpool-io.h>
 
 #ifndef DISABLE_SOCKETS
-
-#include <glib.h>
 
 #if defined(HOST_WIN32)
 #include <windows.h>
@@ -25,7 +25,6 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-mlist.h>
 #include <mono/metadata/threadpool.h>
-#include <mono/metadata/threadpool-io.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-lazy-init.h>

@@ -618,6 +618,7 @@ typedef struct {
 	MonoObject *additional;
 } MonoStreamingContext;
 
+#if !ENABLE_NETCORE
 typedef struct {
 	MonoObject obj;
 	MonoBoolean readOnly;
@@ -756,6 +757,7 @@ typedef struct {
 	MonoString *currency_english_name;
 	MonoString *currency_native_name;
 } MonoRegionInfo;
+#endif
 
 typedef struct {
 	MonoObject object;

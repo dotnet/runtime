@@ -113,6 +113,8 @@ typedef struct _MonoFSAsyncResult {
 */
 /* System.IO.MonoIO */
 
+#if !ENABLE_NETCORE
+
 ICALL_EXPORT
 MonoBoolean
 ves_icall_System_IO_MonoIO_CreateDirectory (const gunichar2 *path, gint32 *error);
@@ -237,6 +239,12 @@ ves_icall_System_IO_MonoIO_ReplaceFile (const gunichar2 *source_file_name, const
 					const gunichar2 *destination_backup_file_name, MonoBoolean ignore_metadata_errors,
 					gint32 *error);
 
+ICALL_EXPORT
+void
+ves_icall_System_IO_MonoIO_DumpHandles (void);
+
+#endif /* !ENABLE_NETCORE */
+
 #if defined (TARGET_IOS) || defined (TARGET_ANDROID)
 
 MONO_API MONO_RT_EXTERNAL_ONLY gint64
@@ -246,10 +254,6 @@ extern gint64
 mono_filesize_from_fd (int fd);
 
 #endif
-
-ICALL_EXPORT
-void
-ves_icall_System_IO_MonoIO_DumpHandles (void);
 
 #if !defined(HOST_WIN32)
 
