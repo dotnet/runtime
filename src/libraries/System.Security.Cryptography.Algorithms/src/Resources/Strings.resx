@@ -147,6 +147,9 @@
   <data name="Cryptography_ECC_NamedCurvesOnly" xml:space="preserve">
     <value>Only named curves are supported on this platform.</value>
   </data>
+  <data name="Cryptography_FromXmlParseError" xml:space="preserve">
+    <value>The provided XML could not be read.</value>
+  </data>
   <data name="Cryptography_HashAlgorithmNameNullOrEmpty" xml:space="preserve">
     <value>The hash algorithm name cannot be null or empty.</value>
   </data>
@@ -182,6 +185,9 @@
   </data>
   <data name="Cryptography_InvalidDsaParameters_QRestriction_LargeKey" xml:space="preserve">
     <value>The specified DSA parameters are not valid; Q's length must be one of 20, 32 or 64 bytes.</value>
+  </data>
+  <data name="Cryptography_InvalidFromXmlString" xml:space="preserve">
+    <value>Input string does not contain a valid encoding of the '{0}' '{1}' parameter.</value>
   </data>
   <data name="Cryptography_InvalidECCharacteristic2Curve" xml:space="preserve">
     <value>The specified Characteristic2 curve parameters are not valid. Polynomial, A, B, G.X, G.Y, and Order are required. A, B, G.X, G.Y must be the same length, and the same length as Q.X, Q.Y and D if those are specified. Seed, Cofactor and Hash are optional. Other parameters are not allowed.</value>

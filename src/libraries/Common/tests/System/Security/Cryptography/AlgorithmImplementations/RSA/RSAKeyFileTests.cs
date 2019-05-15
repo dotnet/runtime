@@ -13,8 +13,6 @@ namespace System.Security.Cryptography.Rsa.Tests
         public static bool Supports384BitPrivateKey { get; } = RSAFactory.Supports384PrivateKey;
         public static bool SupportsLargeExponent { get; } = RSAFactory.SupportsLargeExponent;
 
-        public static bool Supports16384 { get; } = TestRsa16384();
-
         [ConditionalFact(nameof(SupportsLargeExponent))]
         public static void ReadWriteBigExponentPrivatePkcs1()
         {
@@ -63,7 +61,7 @@ yZWUxoxAdjfrBGsx+U6BHM0Myqqe7fY7hjWzj4aBCw==",
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(nameof(Supports16384))]
+        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
         public static void ReadWritePublicPkcs1()
         {
             ReadWriteBase64PublicPkcs1(
@@ -139,7 +137,7 @@ m5NTLEHDwUd7idstLzPXuah0WEjgao5oO1BEUR4byjYlJ+F89Cs4BhUCAwEAAQ==",
                 TestData.DiminishedDPParameters);
         }
 
-        [ConditionalFact(nameof(Supports16384))]
+        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
         public static void ReadWriteRsa16384SubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -191,7 +189,7 @@ rAigcwt6noH/hX5ZO5X869SV1WvLOvhCt4Ru7LOzqUULk+Y3+gSNHX34/+Jw+VCq
                 TestData.RSA16384Params);
         }
 
-        [ConditionalFact(nameof(Supports16384))]
+        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
         public static void ReadWrite16384Pkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -466,7 +464,7 @@ rBZc";
                 TestData.RSA1032Parameters);
         }
 
-        [ConditionalFact(nameof(Supports16384))]
+        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
         public static void ReadEncryptedRsa16384()
         {
             // PBES2: PBKDF2 + des (single DES, not 3DES).
@@ -1406,24 +1404,6 @@ pWre7nAO4O6sP1JzXvVmwrS5C/hw";
                         tooBig.AsSpan(WriteShift, bytesWritten).ByteArrayToHex(),
                         arrayExport.ByteArrayToHex());
                 }
-            }
-        }
-
-        private static bool TestRsa16384()
-        {
-            try
-            {
-                using (RSA rsa = RSAFactory.Create())
-                {
-                    rsa.ImportParameters(TestData.RSA16384Params);
-                }
-
-                return true;
-            }
-            catch (CryptographicException)
-            {
-                // The key is too big for this platform.
-                return false;
             }
         }
 

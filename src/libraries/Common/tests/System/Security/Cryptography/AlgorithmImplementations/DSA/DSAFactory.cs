@@ -24,6 +24,13 @@ namespace System.Security.Cryptography.Dsa.Tests
             return s_provider.Create(keySize);
         }
 
+        public static DSA Create(in DSAParameters dsaParameters)
+        {
+            DSA dsa = s_provider.Create();
+            dsa.ImportParameters(dsaParameters);
+            return dsa;
+        }
+
         /// <summary>
         /// If false, 186-2 is assumed which implies key size of 1024 or less and only SHA-1
         /// If true, 186-3 includes support for keysizes >1024 and SHA-2 algorithms
