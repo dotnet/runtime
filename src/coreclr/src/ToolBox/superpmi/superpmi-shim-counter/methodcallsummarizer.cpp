@@ -14,10 +14,10 @@ MethodCallSummarizer::MethodCallSummarizer(WCHAR* logPath)
     names    = nullptr;
     counts   = nullptr;
 
-    WCHAR*       executableName    = GetCommandLineW();
-    const WCHAR* dataFileExtension = W(".csv");
+    const WCHAR* fileName  = GetCommandLineW();
+    const WCHAR* extension = W(".csv");
 
-    dataFileName = getResultFileName(logPath, executableName, dataFileExtension);
+    dataFileName = GetResultFileName(logPath, fileName, extension);
 }
 
 // lots of ways will be faster.. this happens to be decently simple and good enough for the task at hand and nicely
