@@ -202,7 +202,7 @@ HRESULT SymWriter::GetOrCreateDocument(
 {
     ULONG UrlEntry;
     DWORD strLength = WszWideCharToMultiByte(CP_UTF8, 0, wcsUrl, -1, 0, 0, 0, 0);
-    LPSTR multiByteURL = (LPSTR) new char [strLength+1];
+    LPSTR multiByteURL = (LPSTR) new char [strLength];
     HRESULT hr  = S_OK;
 
     if (multiByteURL == NULL)
@@ -210,7 +210,7 @@ HRESULT SymWriter::GetOrCreateDocument(
         return E_OUTOFMEMORY;
     }
 
-    WszWideCharToMultiByte(CP_UTF8, 0, wcsUrl, -1, multiByteURL, strLength+1, 0, 0);
+    WszWideCharToMultiByte(CP_UTF8, 0, wcsUrl, -1, multiByteURL, strLength, 0, 0);
 
     if (m_pStringPool->FindString(multiByteURL, &UrlEntry) == S_FALSE) // no file of that name has been seen before
     {

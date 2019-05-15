@@ -173,19 +173,6 @@ namespace BINDER_SPACE
 
         SimpleNameToFileNameMap * m_pTrustedPlatformAssemblyMap;
         TpaFileNameHash    * m_pFileNameHash;
-        
-        bool m_fCanExplicitlyBindToNativeImages;
-public:        
-        inline void SetExplicitBindToNativeImages(bool fCanExplicitlyBindToNativeImages)
-        {
-            m_fCanExplicitlyBindToNativeImages = fCanExplicitlyBindToNativeImages;
-        }
-        
-        inline bool CanExplicitlyBindToNativeImages()
-        {
-            return m_fCanExplicitlyBindToNativeImages;
-        }
-protected:        
     };
 
 #include "applicationcontext.inl"
