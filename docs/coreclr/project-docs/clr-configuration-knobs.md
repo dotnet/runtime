@@ -759,6 +759,7 @@ Name | Description | Type | Class | Default Value | Flags
 
 Name | Description | Type | Class | Default Value | Flags
 -----|-------------|------|-------|---------------|-------
+`DefaultStackSize` | Stack size to use for new VM threads when thread is created with default stack size (dwStackSize == 0). | `DWORD` | `INTERNAL` | `0` |
 `Thread_DeadThreadCountThresholdForGCTrigger` | In the heuristics to clean up dead threads, this threshold must be reached before triggering a GC will be considered. Set to 0 to disable triggering a GC based on dead threads. | `DWORD` | `INTERNAL` | `75` |
 `Thread_DeadThreadGCTriggerPeriodMilliseconds` | In the heuristics to clean up dead threads, this much time must have elapsed since the previous max-generation GC before triggering another GC will be considered | `DWORD` | `INTERNAL` | `1000 * 60 * 30` |
 
