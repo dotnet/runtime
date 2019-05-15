@@ -332,16 +332,6 @@ typedef long time_t;
 #define _TIME_T_DEFINED
 #endif // !PAL_STDCPP_COMPAT
 
-#define C1_UPPER                  0x0001      /* upper case */
-#define C1_LOWER                  0x0002      /* lower case */
-#define C1_DIGIT                  0x0004      /* decimal digits */
-#define C1_SPACE                  0x0008      /* spacing characters */
-#define C1_PUNCT                  0x0010      /* punctuation characters */
-#define C1_CNTRL                  0x0020      /* control characters */
-#define C1_BLANK                  0x0040      /* blank characters */
-#define C1_XDIGIT                 0x0080      /* other digits */
-#define C1_ALPHA                  0x0100      /* any linguistic character */
-
 #define DLL_PROCESS_ATTACH 1
 #define DLL_THREAD_ATTACH  2
 #define DLL_THREAD_DETACH  3
@@ -4085,14 +4075,6 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define wcsncpy       PAL_wcsncpy
 #define wcstok        PAL_wcstok
 #define wcscspn       PAL_wcscspn
-#define iswprint      PAL_iswprint
-#define iswalpha      PAL_iswalpha
-#define iswdigit      PAL_iswdigit
-#define iswspace      PAL_iswspace
-#define iswupper      PAL_iswupper
-#define iswxdigit     PAL_iswxdigit
-#define towlower      PAL_towlower
-#define towupper      PAL_towupper
 #define realloc       PAL_realloc
 #define fopen         PAL_fopen
 #define strtok        PAL_strtok
@@ -4193,6 +4175,12 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 
 typedef int errno_t;
 
+#if defined(__WINT_TYPE__)
+typedef __WINT_TYPE__ wint_t;
+#else
+typedef unsigned int wint_t;
+#endif
+
 #ifndef PAL_STDCPP_COMPAT
 
 typedef struct {
@@ -4260,7 +4248,14 @@ PALIMPORT int __cdecl isupper(int);
 PALIMPORT int __cdecl islower(int);
 PALIMPORT int __cdecl tolower(int);
 PALIMPORT int __cdecl toupper(int);
-
+PALIMPORT int __cdecl iswalpha(wint_t);
+PALIMPORT int __cdecl iswdigit(wint_t);
+PALIMPORT int __cdecl iswupper(wint_t);
+PALIMPORT int __cdecl iswprint(wint_t);
+PALIMPORT int __cdecl iswspace(wint_t);
+PALIMPORT int __cdecl iswxdigit(wint_t);
+PALIMPORT wint_t __cdecl towupper(wint_t);
+PALIMPORT wint_t __cdecl towlower(wint_t);
 #endif // PAL_STDCPP_COMPAT
 
 /* _TRUNCATE */
@@ -4312,14 +4307,6 @@ PALIMPORT LONG __cdecl PAL_wcstol(const WCHAR *, WCHAR **, int);
 PALIMPORT DLLEXPORT ULONG __cdecl PAL_wcstoul(const WCHAR *, WCHAR **, int);
 PALIMPORT size_t __cdecl PAL_wcsspn (const WCHAR *, const WCHAR *);
 PALIMPORT double __cdecl PAL_wcstod(const WCHAR *, WCHAR **);
-PALIMPORT int __cdecl PAL_iswalpha(WCHAR);
-PALIMPORT DLLEXPORT int __cdecl PAL_iswprint(WCHAR);
-PALIMPORT int __cdecl PAL_iswupper(WCHAR);
-PALIMPORT DLLEXPORT int __cdecl PAL_iswspace(WCHAR);
-PALIMPORT int __cdecl PAL_iswdigit(WCHAR);
-PALIMPORT int __cdecl PAL_iswxdigit(WCHAR);
-PALIMPORT WCHAR __cdecl PAL_towlower(WCHAR);
-PALIMPORT WCHAR __cdecl PAL_towupper(WCHAR);
 
 PALIMPORT WCHAR * __cdecl _wcslwr(WCHAR *);
 PALIMPORT DLLEXPORT ULONGLONG _wcstoui64(const WCHAR *, WCHAR **, int);

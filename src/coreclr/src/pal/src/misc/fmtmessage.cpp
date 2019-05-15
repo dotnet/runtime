@@ -22,7 +22,6 @@ Revision History:
 
 #include "pal/palinternal.h"
 #include "pal/dbgmsg.h"
-#include "pal/unicode_data.h"
 #include "pal/critsect.h"
 #include "pal/module.h"
 #include "pal/misc.h"
@@ -38,6 +37,7 @@ Revision History:
 #include <dlfcn.h>
 #endif  // NEED_DLCOMPAT
 #include <errno.h>
+#include <wctype.h>
 
 SET_DEFAULT_DEBUG_CHANNEL(MISC);
 
@@ -446,7 +446,7 @@ FormatMessageW(
                 *lpWorkingString = '\0';
                 goto exit;
             }
-            else if ( PAL_iswdigit( *lpSourceString ) )
+            else if ( iswdigit( *lpSourceString ) )
             {
                 /* Get the insert number. */
                 WCHAR Number[] = { '\0', '\0', '\0' };
@@ -455,11 +455,11 @@ FormatMessageW(
                 Number[ 0 ] = *lpSourceString;
                 lpSourceString++;
                 
-                if ( PAL_iswdigit( *lpSourceString ) )
+                if ( iswdigit( *lpSourceString ) )
                 {
                     Number[ 1 ] = *lpSourceString;
                     lpSourceString++;
-                    if ( PAL_iswdigit( *lpSourceString ) )
+                    if ( iswdigit( *lpSourceString ) )
                     {
                         ERROR( "Invalid insert indentifier.\n" );
                         SetLastError( ERROR_INVALID_PARAMETER );
