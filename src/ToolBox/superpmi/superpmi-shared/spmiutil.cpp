@@ -138,98 +138,94 @@ bool LoadRealJitLib(HMODULE& jitLib, WCHAR* jitLibPath)
     return true;
 }
 
-void cleanupExecutableName(WCHAR* executableName)
+void ReplaceIllegalCharacters(WCHAR* fileName)
 {
     WCHAR* quote = nullptr;
 
     // If there are any quotes in the file name convert them to spaces.
-    while ((quote = wcsstr(executableName, W("\""))) != nullptr)
+    while ((quote = wcsstr(fileName, W("\""))) != nullptr)
     {
         *quote = W(' ');
     }
 
     // Remove any illegal or annoying characters from the file name by converting them to underscores.
-    while ((quote = wcspbrk(executableName, W("=<>:\"/\\|?! *.,"))) != nullptr)
+    while ((quote = wcspbrk(fileName, W("=<>:\"/\\|?! *.,"))) != nullptr)
     {
         *quote = W('_');
     }
 }
 
-void generateRandomSuffix(WCHAR* buffer, size_t length)
-{
-    unsigned randNumber = 0;
-#ifdef FEATURE_PAL
-    PAL_Random(&randNumber, sizeof(randNumber));
-#else  // !FEATURE_PAL
-    rand_s(&randNumber);
-#endif // !FEATURE_PAL
-
-    swprintf_s(buffer, length, W("%08X"), randNumber);
-}
-
 // All lengths in this function exclude the terminal NULL.
-WCHAR* getResultFileName(const WCHAR* folderPath, WCHAR* executableName, const WCHAR* extension)
+WCHAR* GetResultFileName(const WCHAR* folderPath, const WCHAR* fileName, const WCHAR* extension)
 {
-    cleanupExecutableName(executableName);
+    const size_t folderPathLength   = wcslen(folderPath);
+    const size_t fileNameLength     = wcslen(fileName);
+    const size_t extensionLength    = wcslen(extension);
+    const size_t maxPathLength      = MAX_PATH - 50; // subtract 50 because excel doesn't like paths longer then 230.
+    const size_t randomStringLength = 8;
 
-    size_t executableNameLength = wcslen(executableName);
-    size_t extensionLength      = wcslen(extension);
-    size_t folderPathLength     = wcslen(folderPath);
+    size_t fullPathLength   = folderPathLength + 1 + extensionLength;
+    bool appendRandomString = false;
 
-    size_t dataFileNameLength = folderPathLength + 1 + executableNameLength + 1 + extensionLength;
+    if (fileNameLength > 0)
+    {
+        fullPathLength += fileNameLength;
+    }
+    else
+    {
+        fullPathLength += randomStringLength;
+        appendRandomString = true;
+    }
 
-    const size_t maxAcceptablePathLength =
-        MAX_PATH - 50; // subtract 50 because excel doesn't like paths longer then 230.
+    size_t charsToDelete = 0;
 
-#ifdef FEATURE_PAL
-        assert(executableNameLength == 0);
-#endif // FEATURE_PAL
-
-    if (dataFileNameLength > maxAcceptablePathLength || executableNameLength == 0)
+    if (fullPathLength > maxPathLength)
     {
         // The path name is too long; creating the file will fail. This can happen because we use the command line,
         // which for ngen includes lots of environment variables, for example.
-        // Shorten the executable file name and add a random string to it to avoid collisions.
+        // Shorten the file name and add a random string to the end to avoid collisions.
 
-        const size_t randStringLength = 8;
+        charsToDelete = fullPathLength - maxPathLength + randomStringLength;
 
-#ifndef FEATURE_CORECLR
-
-        size_t lengthToBeDeleted = (dataFileNameLength - maxAcceptablePathLength) + randStringLength;
-
-        if (executableNameLength <= lengthToBeDeleted)
+        if (fileNameLength >= charsToDelete)
         {
-            LogError("getResultFileName - path to the output file is too long '%ws\\%ws.%ws(%d)'", folderPath,
-                     executableName, extension, dataFileNameLength);
-            return nullptr;
+            appendRandomString = true;
+            fullPathLength = maxPathLength;
         }
-
-        executableNameLength -= lengthToBeDeleted;
-        executableName[executableNameLength] = 0;
-
-#endif // FEATURE_CORECLR
-
-        executableNameLength += randStringLength;
-        WCHAR randNumberString[randStringLength + 1];
-        generateRandomSuffix(randNumberString, randStringLength + 1);
-        wcsncat_s(executableName, executableNameLength + 1, randNumberString, randStringLength);
-
-        executableNameLength = wcslen(executableName);
-
-        dataFileNameLength = folderPathLength + 1 + executableNameLength + 1 + extensionLength;
-        if (dataFileNameLength > maxAcceptablePathLength)
+        else
         {
-            LogError("getResultFileName - were not able to short the result file name.", folderPath, executableName,
-                     extension, dataFileNameLength);
+            LogError("GetResultFileName - path to the output file is too long '%ws\\%ws.%ws(%d)'", folderPath, fileName, extension, fullPathLength);
             return nullptr;
         }
     }
 
-    WCHAR* dataFileName = new WCHAR[dataFileNameLength + 1];
-    dataFileName[0]     = 0;
-    wcsncat_s(dataFileName, dataFileNameLength + 1, folderPath, folderPathLength);
-    wcsncat_s(dataFileName, dataFileNameLength + 1, DIRECTORY_SEPARATOR_STR_W, 1);
-    wcsncat_s(dataFileName, dataFileNameLength + 1, executableName, executableNameLength);
-    wcsncat_s(dataFileName, dataFileNameLength + 1, extension, extensionLength);
-    return dataFileName;
+    WCHAR* fullPath = new WCHAR[fullPathLength + 1];
+    fullPath[0] = W('\0');
+    wcsncat_s(fullPath, fullPathLength + 1, folderPath, folderPathLength);
+    wcsncat_s(fullPath, fullPathLength + 1, DIRECTORY_SEPARATOR_STR_W, 1);
+
+    if (fileNameLength > charsToDelete)
+    {
+        wcsncat_s(fullPath, fullPathLength + 1, fileName, fileNameLength - charsToDelete);
+        ReplaceIllegalCharacters(fullPath + folderPathLength + 1);
+    }
+
+    if (appendRandomString)
+    {
+       unsigned randomNumber = 0;
+
+#ifdef FEATURE_PAL
+       PAL_Random(&randomNumber, sizeof(randomNumber));
+#else  // !FEATURE_PAL
+       rand_s(&randomNumber);
+#endif // !FEATURE_PAL
+
+       WCHAR randomString[randomStringLength + 1];
+       swprintf_s(randomString, randomStringLength + 1, W("%08X"), randomNumber);
+       wcsncat_s(fullPath, fullPathLength + 1, randomString, randomStringLength);
+    }
+
+    wcsncat_s(fullPath, fullPathLength + 1, extension, extensionLength);
+
+    return fullPath;
 }
