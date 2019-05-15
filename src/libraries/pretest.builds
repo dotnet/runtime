@@ -6,13 +6,7 @@
     <GenerateTestSharedFrameworkDepsFile Condition="'$(BinplaceTestSharedFramework)' == 'true'">true</GenerateTestSharedFrameworkDepsFile>
   </PropertyGroup>
 
-  <Target Name="Build" DependsOnTargets="GenerateTestSharedFrameworkDepsFile;GenerateSharedLibraryForILC;GenerateLaunchSettingsFiles" />
-
-  <!-- Generate the shared library for running ILC tests for configuration Release-x64 -->
-  <Target Name="GenerateSharedLibraryForILC" Condition="'$(EnableMultiFileILCTests)' == 'true'">
-    <Message Importance="High" Text="Generating shared library for running ILC tests." Condition="Exists('$(InternalTestILCFolder)\ilc.exe')" />
-    <Exec Command="$(InternalTestILCFolder)\ilc.exe -buildSharedAssemblies -buildType ret -frameworkPath &quot;$(ILCFXInputFolder)&quot;" StandardOutputImportance="Low" Condition="Exists('$(TestHostRootPath)\TestILC\ilc.exe')" />
-  </Target>
+  <Target Name="Build" DependsOnTargets="GenerateTestSharedFrameworkDepsFile;GenerateLaunchSettingsFiles" />
 
   <!-- Generate launch settings support files to enable VS debugging. -->
   <Target Name="GenerateLaunchSettingsFiles" Condition="'$(EnableLaunchSettings)' == 'true'">

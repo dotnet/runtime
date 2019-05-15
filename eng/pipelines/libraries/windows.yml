@@ -96,18 +96,6 @@ jobs:
               _framework: uap
               _helixQueues: $(uapNetfxQueues)
 
-            UAPAOT_x86_Release:
-              _BuildConfig: Release
-              _architecture: x86
-              _framework: uapaot
-              _helixQueues: $(uapNetfxQueues)
-
-            UAPAOT_x64_Release:
-              _BuildConfig: Release
-              _architecture: x64
-              _framework: uapaot
-              _helixQueues: $(uapNetfxQueues)
-
       pool:
         ${{ if eq(parameters.isOfficialBuild, 'true') }}:
           name: NetCoreInternal-Pool
@@ -189,7 +177,6 @@ jobs:
                     $(_msbuildCommonParameters)
             displayName: Build Packages and Tests
 
-      # TODO: UAPAOT official builds should send to helix using continuation runner.
       # Legs without HELIX testing
       - job: WindowsNoTest
         displayName: Windows
@@ -211,16 +198,6 @@ jobs:
                 _BuildConfig: Release
                 _architecture: arm
                 _framework: uap
-
-              UAPAOT_arm_Release:
-                _BuildConfig: Release
-                _architecture: arm
-                _framework: uapaot
-
-              UAPAOT_arm64_Release:
-                _BuildConfig: Release
-                _architecture: arm64
-                _framework: uapaot
 
         pool:
           ${{ if eq(parameters.isOfficialBuild, 'true') }}:

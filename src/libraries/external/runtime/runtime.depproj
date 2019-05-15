@@ -7,8 +7,6 @@
     <SwapNativeForIL Condition="'$(TargetGroup)'=='uap10.0.16299' OR '$(TargetsAOT)'=='true'">false</SwapNativeForIL>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsAOT)'=='true'">
-    <!-- System.Private.* can't be on the ILCInputFolder since ilc.exe needs to use the matching one from its toolchain. -->
-    <BinPlaceILCInputFolder>false</BinPlaceILCInputFolder>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <AssetTargetFallback>uap10.0</AssetTargetFallback>
     <NoWarn>$(NoWarn);NU1701</NoWarn>
