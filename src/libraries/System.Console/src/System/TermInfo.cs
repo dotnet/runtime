@@ -24,6 +24,7 @@ namespace System
         {
             Bell = 1,
             Clear = 5,
+            ClrEol = 6,
             CursorAddress = 10,
             CursorLeft = 14,
             CursorPositionReport = 294,

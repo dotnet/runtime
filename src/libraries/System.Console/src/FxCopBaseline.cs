@@ -14,7 +14,7 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2002:DoNotLockOnObjectsWithWeakIdentity", Scope = "member", Target = "System.IO.SyncTextReader.#ReadKey(System.Boolean&):System.ConsoleKeyInfo")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2002:DoNotLockOnObjectsWithWeakIdentity", Scope = "member", Target = "System.IO.SyncTextReader.#get_KeyAvailable():System.Boolean")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2002:DoNotLockOnObjectsWithWeakIdentity", Scope = "member", Target = "System.ConsolePal.#ResetColor()")]
-[assembly: SuppressMessage("Microsoft.Reliability", "CA2002:DoNotLockOnObjectsWithWeakIdentity", Scope = "member", Target = "System.ConsolePal.#GetCursorPosition(System.Int32&,System.Int32&)")]
+[assembly: SuppressMessage("Microsoft.Reliability", "CA2002:DoNotLockOnObjectsWithWeakIdentity", Scope = "member", Target = "System.ConsolePal.#TryGetCursorPosition(System.Int32&,System.Int32&,System.Boolean):System.Boolean")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2002:DoNotLockOnObjectsWithWeakIdentity", Scope = "member", Target = "System.ConsolePal.#RefreshColors(System.ConsoleColor&,System.ConsoleColor)")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2002:DoNotLockOnObjectsWithWeakIdentity", Scope = "member", Target = "System.ConsolePal.#EnsureInitializedCore()")]
 [assembly: SuppressMessage("Microsoft.Reliability", "CA2002:DoNotLockOnObjectsWithWeakIdentity", Scope = "member", Target = "System.ConsolePal.#WriteStdoutAnsiString(System.String,System.Boolean)")]
