@@ -24,6 +24,7 @@ namespace System.Text.Json.Serialization.Tests
         public object MySingle { get; set; }
         public object MyDouble { get; set; }
         public object MyDateTime { get; set; }
+        public object MyGuid { get; set; }
         public object MyEnum { get; set; }
 
         public static readonly string s_json =
@@ -44,6 +45,7 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyDouble"" : 2.2," +
                 @"""MyDecimal"" : 3.3," +
                 @"""MyDateTime"" : ""2019-01-30T12:01:02.0000000Z""," +
+                @"""MyGuid"" : ""5BB9D872-DA8A-471E-AA70-08E19102683D""," +
                 @"""MyEnum"" : 2" + // int by default
             @"}";
 
@@ -70,6 +72,7 @@ namespace System.Text.Json.Serialization.Tests
             MyDouble = 2.2d;
             MyDecimal = 3.3m;
             MyDateTime = new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc);
+            MyGuid = new Guid("5BB9D872-DA8A-471E-AA70-08E19102683D");
             MyEnum = SampleEnum.Two;
         }
 
@@ -130,6 +133,9 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonElement>(MyDateTime);
             Assert.Equal(JsonValueType.String, ((JsonElement)MyDateTime).Type);
             Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), ((JsonElement)MyDateTime).GetDateTime());
+            Assert.IsType<JsonElement>(MyGuid);
+            Assert.Equal(JsonValueType.String, ((JsonElement)MyGuid).Type);
+            Assert.Equal(new Guid("5BB9D872-DA8A-471E-AA70-08E19102683D"), ((JsonElement)MyGuid).GetGuid());
             Assert.IsType<JsonElement>(MyEnum);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MyEnum).Type);
             Assert.Equal(SampleEnum.Two, (SampleEnum)((JsonElement)MyEnum).GetUInt32());
