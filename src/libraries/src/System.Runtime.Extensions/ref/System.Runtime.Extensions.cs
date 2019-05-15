@@ -1437,7 +1437,7 @@ namespace System.IO
         public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding) { }
         public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks) { }
         public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize) { }
-        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding, bool detectEncodingFromByteOrderMarks, int bufferSize, bool leaveOpen) { }
+        public StreamReader(System.IO.Stream stream, System.Text.Encoding encoding = null, bool detectEncodingFromByteOrderMarks = true, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamReader(string path) { }
         public StreamReader(string path, bool detectEncodingFromByteOrderMarks) { }
         public StreamReader(string path, System.Text.Encoding encoding) { }
@@ -1470,7 +1470,7 @@ namespace System.IO
         public StreamWriter(System.IO.Stream stream) { }
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding) { }
         public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding, int bufferSize) { }
-        public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding, int bufferSize, bool leaveOpen) { }
+        public StreamWriter(System.IO.Stream stream, System.Text.Encoding encoding = null, int bufferSize = -1, bool leaveOpen = false) { }
         public StreamWriter(string path) { }
         public StreamWriter(string path, bool append) { }
         public StreamWriter(string path, bool append, System.Text.Encoding encoding) { }
