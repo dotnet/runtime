@@ -2252,6 +2252,12 @@
 	<Comment>During a GC initialization, the GCHeapAffinitizeRanges config couldn't be parsed due to its invalid format.</Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x8013200C">
+	<SymbolicName>CLR_E_CROSSGEN_NO_IBC_DATA_FOUND</SymbolicName>
+	<Message>"Cannot compile using the PartialNgen flag because no IBC data was found."</Message>
+	<Comment>During crossgen compilation, the PartialNgen flag was set, but no IBC data was found in the resources section of the input image, and no IBC file was externally provided.</Comment>
+</HRESULT>
+
 <HRESULT NumericValue="E_ACCESSDENIED">
 	<SymbolicName>COR_E_UNAUTHORIZEDACCESS</SymbolicName>
 	<Comment> 0x80070005 // Access is denied.</Comment>
