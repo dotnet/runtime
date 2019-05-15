@@ -3378,6 +3378,13 @@ void ZapImage::LoadProfileData()
             m_zapper->Warning(W("Warning: Invalid profile data was ignored for %s\n"), m_pModuleFileName);
         }
     }
+
+#ifdef CROSSGEN_COMPILE
+    if (m_zapper->m_pOpt->m_fPartialNGen && (m_pRawProfileData == NULL || m_cRawProfileData == 0))
+    {
+        ThrowHR(CLR_E_CROSSGEN_NO_IBC_DATA_FOUND);
+    }
+#endif
 }
 
 // Initializes our form of the profile data stored in the assembly.
