@@ -3182,7 +3182,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
             }
 
             // If we have an assembly name list for disassembly, also check this method's assembly.
-            if (s_pJitDisasmIncludeAssembliesList != nullptr)
+            if (s_pJitDisasmIncludeAssembliesList != nullptr && !s_pJitDisasmIncludeAssembliesList->IsEmpty())
             {
                 const char* assemblyName = info.compCompHnd->getAssemblyName(
                     info.compCompHnd->getModuleAssembly(info.compCompHnd->getClassModule(info.compClassHnd)));
