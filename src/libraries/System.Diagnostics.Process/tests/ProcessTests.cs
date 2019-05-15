@@ -755,6 +755,33 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue(31908, TargetFrameworkMonikers.Uap)]
+        public void TotalProcessorTime_PerformLoop_TotalProcessorTimeValid()
+        {
+            CreateDefaultProcess();
+
+            DateTime startTime = DateTime.UtcNow;
+            TimeSpan processorTimeBeforeSpin = Process.GetCurrentProcess().TotalProcessorTime;
+           
+            // Perform loop to occupy cpu, takes less than a second.
+            int i = int.MaxValue / 16;
+            while (i > 0)
+            {
+                i--;
+            }
+
+            TimeSpan processorTimeAfterSpin = Process.GetCurrentProcess().TotalProcessorTime;
+            DateTime endTime = DateTime.UtcNow;
+
+            double timeDiff = (endTime - startTime).TotalMilliseconds;
+            double cpuTimeDiff = (processorTimeAfterSpin - processorTimeBeforeSpin).TotalMilliseconds;
+
+            double cpuUsage = cpuTimeDiff / (timeDiff * Environment.ProcessorCount);
+
+            Assert.InRange(cpuUsage, 0, 1);
+        }
+
+        [Fact]
         public void UserProcessorTime_GetNotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
