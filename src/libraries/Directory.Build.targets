@@ -83,10 +83,6 @@
     <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
     </BinPlaceConfiguration>
-    <!-- Setup the ILCInputFolder directory for testing aot -->
-    <BinPlaceConfiguration Condition="'$(BinPlaceILCInputFolder)' == 'true'" Include="uapaot-Windows_NT">
-      <RuntimePath>$(ILCFXInputFolder)</RuntimePath>
-    </BinPlaceConfiguration>
     <!-- And the UAP folder for the F5 (CoreCLR UAP-debugging) scenario -->
     <BinPlaceConfiguration Condition="'$(BinPlaceUAPFramework)' == 'true'" Include="uap-Windows_NT">
       <RuntimePath>$(UAPTestSharedFrameworkPath)</RuntimePath>

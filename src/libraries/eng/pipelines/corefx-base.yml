@@ -142,8 +142,6 @@ jobs:
                 restoreDirectory: '$(Build.SourcesDirectory)\.packages'
                 verbosityRestore: 'normal'
                 externalFeedCredentials: 'dotnet-core-internal-tooling'
-              env:
-                TargetGroup: $(_framework)
 
           - ${{ if eq(job.customBuildSteps[0], '') }}:
             - script: $(_buildScript)

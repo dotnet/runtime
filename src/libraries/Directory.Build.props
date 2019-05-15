@@ -390,7 +390,6 @@
 
     <!-- We add extra binplacing for the test shared framework until we can get hardlinking with the runtime directory working on all platforms -->
     <BinPlaceTestSharedFramework Condition="'$(_bc_TargetGroup)' == 'netcoreapp' AND '$(BuildTests)'!='false'">true</BinPlaceTestSharedFramework>
-    <BinPlaceILCInputFolder Condition="$(_bc_TargetGroup.EndsWith('aot')) And '$(BinPlaceILCInputFolder)' == ''">true</BinPlaceILCInputFolder>
     <BinPlaceUAPFramework Condition="'$(_bc_TargetGroup)' == 'uap'">true</BinPlaceUAPFramework>
     <BinPlaceNETFXRuntime Condition="'$(_bc_TargetGroup)' == 'netfx'">true</BinPlaceNETFXRuntime>
 
@@ -398,8 +397,6 @@
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildConfiguration)'))</TestHostRootPath>
     <NETCoreAppTestHostFxrPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'host', 'fxr', '$(NETCoreAppTestSharedFxVersion)'))</NETCoreAppTestHostFxrPath>
     <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(NETCoreAppTestSharedFxVersion)'))</NETCoreAppTestSharedFrameworkPath>
-    <ILCFXInputFolder>$(TestHostRootPath)ILCInputFolder</ILCFXInputFolder>
-    <InternalTestILCFolder>$(TestHostRootPath)TestILC</InternalTestILCFolder>
 
     <!-- For UAP, we'll produce the layout and hard-link this into each test's directory -->
     <UAPTestSharedFrameworkPath>$(TestHostRootPath)UAPLayout</UAPTestSharedFrameworkPath>
@@ -422,13 +419,6 @@
   <ItemGroup Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildTests)' != 'true'">
     <ProjectExclusions Include="$(SourceDir)CoreFx.Private.TestUtilities/**/*.csproj" />
   </ItemGroup>
-
-  <!-- Properties related to multi-file mode for ILC tests -->
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <!-- Only enable multi-file for Release-x64 and Debug-x86 for now -->
-    <!-- Temporarily disabling multifile test configurations. For more info, please check: https://github.com/dotnet/corefx/issues/22826
-    <EnableMultiFileILCTests Condition="'$(ConfigurationGroup)|$(ArchGroup)' == 'Release|x64' Or '$(ConfigurationGroup)|$(ArchGroup)' == 'Debug|x86' Or '$(ConfigurationGroup)|$(ArchGroup)' == 'Release|arm'">true</EnableMultiFileILCTests> -->
-  </PropertyGroup>
 
   <!-- Specify the default constants for each target group -->
   <PropertyGroup>
