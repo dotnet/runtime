@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 namespace Microsoft.Extensions.Options
@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Options
         public static readonly string DefaultName = string.Empty;
 
         /// <summary>
-        /// Creates a wrapper around an instance of TOptions to return itself as an IOptions.
+        /// Creates a wrapper around an instance of <typeparamref name="TOptions"/> to return itself as an <see cref="IOptions{TOptions}"/>.
         /// </summary>
         /// <typeparam name="TOptions"></typeparam>
         /// <param name="options"></param>

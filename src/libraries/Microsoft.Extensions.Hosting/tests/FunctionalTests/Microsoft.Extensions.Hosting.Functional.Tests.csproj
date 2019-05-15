@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="$(MSBuildThisFileDirectory)..\..\..\Logging\Logging.Testing\src\build\Microsoft.Extensions.Logging.Testing.props" />
+  
+  <PropertyGroup>
+    <TargetFrameworks>netcoreapp3.0;net472</TargetFrameworks>
+    <!-- https://github.com/aspnet/AspNetCore/issues/6549 -->
+    <BuildHelixPayload>false</BuildHelixPayload>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="testroot\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\IntegrationTesting\src\Microsoft.Extensions.Hosting.IntegrationTesting.csproj" />
+
+    <Reference Include="Microsoft.Extensions.Hosting" />
+    <Reference Include="Microsoft.Extensions.Logging.Testing" />
+  </ItemGroup>
+
+</Project>

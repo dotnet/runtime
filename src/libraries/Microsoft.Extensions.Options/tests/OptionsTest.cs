@@ -177,7 +177,7 @@ namespace Microsoft.Extensions.Options.Tests
                         {
                             { nameof(NullableOptions.MyNullableBool), "true" },
                             { nameof(NullableOptions.MyNullableInt), "1" },
-                            { nameof(NullableOptions.MyNullableDateTime), new DateTime(2015, 1, 1).ToString(CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern) }
+                            { nameof(NullableOptions.MyNullableDateTime), new DateTime(2015, 1, 1).ToString(CultureInfo.InvariantCulture.DateTimeFormat.ShortDatePattern) }
                         },
                         new Dictionary<string, object>
                         {
@@ -191,7 +191,7 @@ namespace Microsoft.Extensions.Options.Tests
                         {
                             { nameof(NullableOptions.MyNullableBool), "false" },
                             { nameof(NullableOptions.MyNullableInt), "-1" },
-                            { nameof(NullableOptions.MyNullableDateTime), new DateTime(1995, 12, 31).ToString(CultureInfo.CurrentCulture.DateTimeFormat.ShortDatePattern) }
+                            { nameof(NullableOptions.MyNullableDateTime), new DateTime(1995, 12, 31).ToString(CultureInfo.InvariantCulture.DateTimeFormat.ShortDatePattern) }
                         },
                         new Dictionary<string, object>
                         {

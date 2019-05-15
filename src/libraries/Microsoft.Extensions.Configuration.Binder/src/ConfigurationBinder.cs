@@ -308,7 +308,7 @@ namespace Microsoft.Extensions.Configuration
                 // If we don't have an instance, try to create one
                 if (instance == null)
                 {
-                    // We are alrady done if binding to a new collection instance worked
+                    // We are already done if binding to a new collection instance worked
                     instance = AttemptBindToCollectionInterfaces(type, config, options);
                     if (instance != null)
                     {
@@ -414,7 +414,7 @@ namespace Microsoft.Extensions.Configuration
                     }
                     else if (keyTypeIsEnum)
                     {
-                        var key = Convert.ToInt32(Enum.Parse(keyType, child.Key));
+                        var key = Enum.Parse(keyType, child.Key);
                         setter.SetValue(dictionary, item, new object[] { key });
                     }
                 }

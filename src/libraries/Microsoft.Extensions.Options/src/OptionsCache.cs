@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -7,7 +7,7 @@ using System.Collections.Concurrent;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Used to cache TOptions instances.
+    /// Used to cache <typeparamref name="TOptions"/> instances.
     /// </summary>
     /// <typeparam name="TOptions">The type of options being requested.</typeparam>
     public class OptionsCache<TOptions> : IOptionsMonitorCache<TOptions> where TOptions : class
@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Options
         public void Clear() => _cache.Clear();
 
         /// <summary>
-        /// Gets a named options instance, or adds a new instance created with createOptions.
+        /// Gets a named options instance, or adds a new instance created with <paramref name="createOptions"/>.
         /// </summary>
         /// <param name="name">The name of the options instance.</param>
         /// <param name="createOptions">The func used to create the new instance.</param>

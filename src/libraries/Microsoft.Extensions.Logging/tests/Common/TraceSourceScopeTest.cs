@@ -2,14 +2,13 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Diagnostics;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Microsoft.Extensions.Logging.Test
 {
     public class TraceSourceScopeTest
     {
-#if NET461
+#if NET472
         [Fact]
         public static void DiagnosticsScope_PushesAndPops_LogicalOperationStack()
         {
@@ -34,7 +33,7 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Same(a, c);
             Assert.Same(state, b);
         }
-#elif NETCOREAPP2_2
+#elif NETCOREAPP3_0
 #else
 #error Target framework needs to be updated
 #endif

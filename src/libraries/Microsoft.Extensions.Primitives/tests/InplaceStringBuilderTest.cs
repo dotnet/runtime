@@ -5,6 +5,9 @@ using System;
 using Microsoft.Extensions.Primitives;
 using Xunit;
 
+// InplaceStringBuilder is obsolete
+#pragma warning disable CS0618
+
 namespace Microsoft.Extensions.Primitives
 {
     public class InplaceStringBuilderTest
@@ -136,3 +139,5 @@ namespace Microsoft.Extensions.Primitives
         }
     }
 }
+
+#pragma warning restore CS0618

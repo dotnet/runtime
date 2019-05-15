@@ -1,9 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp2.2;net461</TargetFrameworks>
-    <!-- Some of the other test projects reference this assembly to re-use shared test code. -->
-    <IsProjectReferenceProvider>true</IsProjectReferenceProvider>
+    <TargetFrameworks>netcoreapp3.0;net472</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>

@@ -8,7 +8,12 @@ Microsoft.Extensions.DependencyInjection.IServiceCollection</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageTags>dependencyinjection;di</PackageTags>
     <DefineConstants>$(DefineConstants);ActivatorUtilities_In_DependencyInjection</DefineConstants>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyInjection.Tests" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(SharedSourceRoot)ParameterDefaultValue\*.cs" />

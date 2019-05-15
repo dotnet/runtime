@@ -8,7 +8,8 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Creates IChangeTokens so that IOptionsMonitor gets notified when IConfiguration changes.
+    /// Creates <see cref="IChangeToken"/>s so that <see cref="IOptionsMonitor{TOptions}"/> gets
+    /// notified when <see cref="IConfiguration"/> changes.
     /// </summary>
     /// <typeparam name="TOptions"></typeparam>
     public class ConfigurationChangeTokenSource<TOptions> : IOptionsChangeTokenSource<TOptions>
@@ -16,14 +17,14 @@ namespace Microsoft.Extensions.Options
         private IConfiguration _config;
 
         /// <summary>
-        /// Constructor taking the IConfiguration instance to watch.
+        /// Constructor taking the <see cref="IConfiguration"/> instance to watch.
         /// </summary>
         /// <param name="config">The configuration instance.</param>
         public ConfigurationChangeTokenSource(IConfiguration config) : this(Options.DefaultName, config)
         { }
 
         /// <summary>
-        /// Constructor taking the IConfiguration instance to watch.
+        /// Constructor taking the <see cref="IConfiguration"/> instance to watch.
         /// </summary>
         /// <param name="name">The name of the options instance being watche.</param>
         /// <param name="config">The configuration instance.</param>
@@ -43,7 +44,7 @@ namespace Microsoft.Extensions.Options
         public string Name { get; }
 
         /// <summary>
-        /// Returns the reloadToken from IConfiguration.
+        /// Returns the reloadToken from the <see cref="IConfiguration"/>.
         /// </summary>
         /// <returns></returns>
         public IChangeToken GetChangeToken()

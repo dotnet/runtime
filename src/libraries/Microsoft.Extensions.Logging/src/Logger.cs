@@ -3,60 +3,45 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.Logging.Abstractions.Internal;
 
 namespace Microsoft.Extensions.Logging
 {
     internal class Logger : ILogger
     {
-        private readonly LoggerFactory _loggerFactory;
-
-        private LoggerInformation[] _loggers;
-
-        private int _scopeCount;
-
-        public Logger(LoggerFactory loggerFactory)
-        {
-            _loggerFactory = loggerFactory;
-        }
-
-        public LoggerInformation[] Loggers
-        {
-            get { return _loggers; }
-            set
-            {
-                var scopeSize = 0;
-                foreach (var loggerInformation in value)
-                {
-                    if (loggerInformation.CreateScopes)
-                    {
-                        scopeSize++;
-                    }
-                }
-                _scopeCount = scopeSize;
-                _loggers = value;
-            }
-        }
+        public LoggerInformation[] Loggers { get; set; }
+        public MessageLogger[] MessageLoggers { get; set; }
+        public ScopeLogger[] ScopeLoggers { get; set; }
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-            var loggers = Loggers;
+            var loggers = MessageLoggers;
             if (loggers == null)
             {
                 return;
             }
 
             List<Exception> exceptions = null;
-            foreach (var loggerInfo in loggers)
+            for (var i = 0; i < loggers.Length; i++)
             {
+                ref readonly var loggerInfo = ref loggers[i];
                 if (!loggerInfo.IsEnabled(logLevel))
                 {
                     continue;
                 }
 
+                LoggerLog(logLevel, eventId, loggerInfo.Logger, exception, formatter, ref exceptions, state);
+            }
+
+            if (exceptions != null && exceptions.Count > 0)
+            {
+                ThrowLoggingError(exceptions);
+            }
+
+            static void LoggerLog(LogLevel logLevel, EventId eventId, ILogger logger, Exception exception, Func<TState, Exception, string> formatter, ref List<Exception> exceptions, in TState state)
+            {
                 try
                 {
-                    loggerInfo.Logger.Log(logLevel, eventId, state, exception, formatter);
+                    logger.Log(logLevel, eventId, state, exception, formatter);
                 }
                 catch (Exception ex)
                 {
@@ -68,33 +53,44 @@ namespace Microsoft.Extensions.Logging
                     exceptions.Add(ex);
                 }
             }
-
-            if (exceptions != null && exceptions.Count > 0)
-            {
-                throw new AggregateException(
-                    message: "An error occurred while writing to logger(s).", innerExceptions: exceptions);
-            }
         }
 
         public bool IsEnabled(LogLevel logLevel)
         {
-            var loggers = Loggers;
+            var loggers = MessageLoggers;
             if (loggers == null)
             {
                 return false;
             }
 
             List<Exception> exceptions = null;
-            foreach (var loggerInfo in loggers)
+            var i = 0;
+            for (; i < loggers.Length; i++)
             {
+                ref readonly var loggerInfo = ref loggers[i];
                 if (!loggerInfo.IsEnabled(logLevel))
                 {
                     continue;
                 }
 
+                if (LoggerIsEnabled(logLevel, loggerInfo.Logger, ref exceptions))
+                {
+                    break;
+                }
+            }
+
+            if (exceptions != null && exceptions.Count > 0)
+            {
+                ThrowLoggingError(exceptions);
+            }
+
+            return i < loggers.Length ? true : false;
+
+            static bool LoggerIsEnabled(LogLevel logLevel, ILogger logger, ref List<Exception> exceptions)
+            {
                 try
                 {
-                    if (loggerInfo.Logger.IsEnabled(logLevel))
+                    if (logger.IsEnabled(logLevel))
                     {
                         return true;
                     }
@@ -108,70 +104,34 @@ namespace Microsoft.Extensions.Logging
 
                     exceptions.Add(ex);
                 }
-            }
 
-            if (exceptions != null && exceptions.Count > 0)
-            {
-                throw new AggregateException(
-                    message: "An error occurred while writing to logger(s).",
-                    innerExceptions: exceptions);
+                return false;
             }
-
-            return false;
         }
 
         public IDisposable BeginScope<TState>(TState state)
         {
-            var loggers = Loggers;
+            var loggers = ScopeLoggers;
 
             if (loggers == null)
             {
                 return NullScope.Instance;
             }
 
-            var scopeProvider = _loggerFactory.ScopeProvider;
-            var scopeCount = _scopeCount;
-
-            if (scopeProvider != null)
+            if (loggers.Length == 1)
             {
-                // if external scope is used for all providers
-                // we can return it's IDisposable directly
-                // without wrapping and saving on allocation
-                if (scopeCount == 0)
-                {
-                    return scopeProvider.Push(state);
-                }
-                else
-                {
-                    scopeCount++;
-                }
-
+                return loggers[0].CreateScope(state);
             }
 
-            var scope = new Scope(scopeCount);
+            var scope = new Scope(loggers.Length);
             List<Exception> exceptions = null;
-            for (var index = 0; index < loggers.Length; index++)
+            for (var i = 0; i < loggers.Length; i++)
             {
-                var loggerInformation = loggers[index];
-                if (!loggerInformation.CreateScopes)
-                {
-                    continue;
-                }
+                ref readonly var scopeLogger = ref loggers[i];
 
                 try
                 {
-                    scopeCount--;
-                    // _loggers and _scopeCount are not updated atomically
-                    // there might be a situation when count was updated with
-                    // lower value then we have loggers
-                    // This is small race that happens only on configuraiton reload
-                    // and we are protecting from it by checkig that there is enough space
-                    // in Scope
-                    if (scopeCount >= 0)
-                    {
-                        var disposable = loggerInformation.Logger.BeginScope(state);
-                        scope.SetDisposable(scopeCount, disposable);
-                    }
+                    scope.SetDisposable(i, scopeLogger.CreateScope(state));
                 }
                 catch (Exception ex)
                 {
@@ -184,18 +144,18 @@ namespace Microsoft.Extensions.Logging
                 }
             }
 
-            if (scopeProvider != null)
-            {
-                scope.SetDisposable(0, scopeProvider.Push(state));
-            }
-
             if (exceptions != null && exceptions.Count > 0)
             {
-                throw new AggregateException(
-                    message: "An error occurred while writing to logger(s).", innerExceptions: exceptions);
+                ThrowLoggingError(exceptions);
             }
 
             return scope;
+        }
+
+        private static void ThrowLoggingError(List<Exception> exceptions)
+        {
+            throw new AggregateException(
+                message: "An error occurred while writing to logger(s).", innerExceptions: exceptions);
         }
 
         private class Scope : IDisposable

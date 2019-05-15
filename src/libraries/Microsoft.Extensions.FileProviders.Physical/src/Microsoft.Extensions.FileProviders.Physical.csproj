@@ -5,7 +5,13 @@
     <Description>File provider for physical files for Microsoft.Extensions.FileProviders.</Description>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsShipping>true</IsShipping>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.FileProviders.Physical.Tests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(SharedSourceRoot)EmptyDisposable.cs" />

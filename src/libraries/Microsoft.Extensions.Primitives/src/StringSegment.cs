@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
+// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
@@ -35,6 +35,13 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="buffer">The original <see cref="string"/> used as buffer.</param>
         /// <param name="offset">The offset of the segment within the <paramref name="buffer"/>.</param>
         /// <param name="length">The length of the segment.</param>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="buffer"/> is <code>null</code>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="offset"/> or <paramref name="length"/> is less than zero, or <paramref name="offset"/> +
+        /// <paramref name="length"/> is greater than the number of characters in <paramref name="buffer"/>.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public StringSegment(string buffer, int offset, int length)
         {
@@ -49,32 +56,6 @@ namespace Microsoft.Extensions.Primitives
             Buffer = buffer;
             Offset = offset;
             Length = length;
-        }
-
-        private static void ThrowInvalidArguments(string buffer, int offset, int length)
-        {
-            // Only have single throw in method so is marked as "does not return" and isn't inlined to caller
-            throw GetInvalidArgumentException(buffer, offset, length);
-        }
-
-        private static Exception GetInvalidArgumentException(string buffer, int offset, int length)
-        {
-            if (buffer == null)
-            {
-                return ThrowHelper.GetArgumentNullException(ExceptionArgument.buffer);
-            }
-
-            if (offset < 0)
-            {
-                return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.offset);
-            }
-
-            if (length < 0)
-            {
-                return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.length);
-            }
-
-            return ThrowHelper.GetArgumentException(ExceptionResource.Argument_InvalidOffsetLength);
         }
 
         /// <summary>
@@ -99,19 +80,19 @@ namespace Microsoft.Extensions.Primitives
         {
             get
             {
-                if (!HasValue)
+                if (HasValue)
                 {
-                    return null;
+                    return Buffer.Substring(Offset, Length);
                 }
                 else
                 {
-                    return Buffer.Substring(Offset, Length);
+                    return null;
                 }
             }
         }
 
         /// <summary>
-        /// Gets whether or not this <see cref="StringSegment"/> contains a valid value.
+        /// Gets whether this <see cref="StringSegment"/> contains a valid value.
         /// </summary>
         public bool HasValue
         {
@@ -123,6 +104,9 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="index">The offset into the <see cref="StringSegment"/></param>
         /// <returns>The <see cref="char"/> at a specified position.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="index"/> is greater than or equal to <see cref="Length"/> or less than zero.
+        /// </exception>
         public char this[int index]
         {
             get
@@ -152,8 +136,8 @@ namespace Microsoft.Extensions.Primitives
         /// Compares substrings of two specified <see cref="StringSegment"/> objects using the specified rules,
         /// and returns an integer that indicates their relative position in the sort order.
         /// </summary>
-        /// <param name="a">The first StringSegment to compare.</param>
-        /// <param name="b">The second StringSegment to compare.</param>
+        /// <param name="a">The first <see cref="StringSegment"/> to compare.</param>
+        /// <param name="b">The second <see cref="StringSegment"/> to compare.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the comparison.</param>
         /// <returns>
         /// A 32-bit signed integer indicating the lexical relationship between the two comparands.
@@ -188,11 +172,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="other">An object to compare with this object.</param>
         /// <returns><code>true</code> if the current object is equal to the other parameter; otherwise, <code>false</code>.</returns>
-        public bool Equals(StringSegment other)
-        {
-            return Equals(other, StringComparison.Ordinal);
-        }
-
+        public bool Equals(StringSegment other) => Equals(other, StringComparison.Ordinal);
 
         /// <summary>
         /// Indicates whether the current object is equal to another object of the same type.
@@ -202,23 +182,22 @@ namespace Microsoft.Extensions.Primitives
         /// <returns><code>true</code> if the current object is equal to the other parameter; otherwise, <code>false</code>.</returns>
         public bool Equals(StringSegment other, StringComparison comparisonType)
         {
-            int textLength = other.Length;
-            if (Length != textLength)
+            if (Length != other.Length)
             {
                 return false;
             }
 
-            return string.Compare(Buffer, Offset, other.Buffer, other.Offset, textLength, comparisonType) == 0;
+            return string.Compare(Buffer, Offset, other.Buffer, other.Offset, other.Length, comparisonType) == 0;
         }
 
         // This handles StringSegment.Equals(string, StringSegment, StringComparison) and StringSegment.Equals(StringSegment, string, StringComparison)
         // via the implicit type converter
         /// <summary>
-        /// Determines whether two specified StringSegment objects have the same value. A parameter specifies the culture, case, and
+        /// Determines whether two specified <see cref="StringSegment"/> objects have the same value. A parameter specifies the culture, case, and
         /// sort rules used in the comparison.
         /// </summary>
-        /// <param name="a">The first StringSegment to compare.</param>
-        /// <param name="b">The second StringSegment to compare.</param>
+        /// <param name="a">The first <see cref="StringSegment"/> to compare.</param>
+        /// <param name="b">The second <see cref="StringSegment"/> to compare.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules for the comparison.</param>
         /// <returns><code>true</code> if the objects are equal; otherwise, <code>false</code>.</returns>
         public static bool Equals(StringSegment a, StringSegment b, StringComparison comparisonType)
@@ -242,6 +221,10 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="text">The <see cref="string"/> to compare with the current <see cref="StringSegment"/>.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
         /// <returns><code>true</code> if the specified <see cref="string"/> is equal to the current <see cref="StringSegment"/>; otherwise, <code>false</code>.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="text"/> is <code>null</code>.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(string text, StringComparison comparisonType)
         {
             if (text == null)
@@ -249,7 +232,7 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
-            int textLength = text.Length;
+            var textLength = text.Length;
             if (!HasValue || Length != textLength)
             {
                 return false;
@@ -259,22 +242,20 @@ namespace Microsoft.Extensions.Primitives
         }
 
         /// <inheritdoc />
-        /// <remarks>
-        /// This GetHashCode is expensive since it allocates on every call.
-        /// However this is required to ensure we retain any behavior (such as hash code randomization) that
-        /// string.GetHashCode has.
-        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override int GetHashCode()
         {
-            if (!HasValue)
-            {
-                return 0;
-            }
-            else
-            {
-                // TODO: PERF; Note that .NET Core strings use randomized hash codes for security reasons.
-                return Value.GetHashCode();
-            }
+#if NETCOREAPP
+            return string.GetHashCode(AsSpan());
+#elif NETSTANDARD
+            // This GetHashCode is expensive since it allocates on every call.
+            // However this is required to ensure we retain any behavior (such as hash code randomization) that
+            // string.GetHashCode has.
+            return Value?.GetHashCode() ?? 0;
+#else
+#error Target frameworks need to be updated.
+#endif
+
         }
 
         /// <summary>
@@ -283,10 +264,7 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="left">The first <see cref="StringSegment"/> to compare, or <code>null</code>.</param>
         /// <param name="right">The second <see cref="StringSegment"/> to compare, or <code>null</code>.</param>
         /// <returns><code>true</code> if the value of <paramref name="left"/> is the same as the value of <paramref name="right"/>; otherwise, <code>false</code>.</returns>
-        public static bool operator ==(StringSegment left, StringSegment right)
-        {
-            return left.Equals(right);
-        }
+        public static bool operator ==(StringSegment left, StringSegment right) => left.Equals(right);
 
         /// <summary>
         /// Checks if two specified <see cref="StringSegment"/> have different values.
@@ -294,20 +272,14 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="left">The first <see cref="StringSegment"/> to compare, or <code>null</code>.</param>
         /// <param name="right">The second <see cref="StringSegment"/> to compare, or <code>null</code>.</param>
         /// <returns><code>true</code> if the value of <paramref name="left"/> is different from the value of <paramref name="right"/>; otherwise, <code>false</code>.</returns>
-        public static bool operator !=(StringSegment left, StringSegment right)
-        {
-            return !left.Equals(right);
-        }
+        public static bool operator !=(StringSegment left, StringSegment right) => !left.Equals(right);
 
         // PERF: Do NOT add a implicit converter from StringSegment to String. That would negate most of the perf safety.
         /// <summary>
         /// Creates a new <see cref="StringSegment"/> from the given <see cref="string"/>.
         /// </summary>
         /// <param name="value">The <see cref="string"/> to convert to a <see cref="StringSegment"/></param>
-        public static implicit operator StringSegment(string value)
-        {
-            return new StringSegment(value);
-        }
+        public static implicit operator StringSegment(string value) => new StringSegment(value);
 
         /// <summary>
         /// Creates a see <see cref="ReadOnlySpan{T}"/> from the given <see cref="StringSegment"/>.
@@ -327,6 +299,10 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="text">The <see cref="string"/>to compare.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
         /// <returns><code>true</code> if <paramref name="text"/> matches the beginning of this <see cref="StringSegment"/>; otherwise, <code>false</code>.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="text"/> is <code>null</code>.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool StartsWith(string text, StringComparison comparisonType)
         {
             if (text == null)
@@ -334,13 +310,15 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
+            var result = false;
             var textLength = text.Length;
-            if (!HasValue || Length < textLength)
+
+            if (HasValue && Length >= textLength)
             {
-                return false;
+                result = string.Compare(Buffer, Offset, text, 0, textLength, comparisonType) == 0;
             }
 
-            return string.Compare(Buffer, Offset, text, 0, textLength, comparisonType) == 0;
+            return result;
         }
 
         /// <summary>
@@ -349,6 +327,10 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="text">The <see cref="string"/>to compare.</param>
         /// <param name="comparisonType">One of the enumeration values that specifies the rules to use in the comparison.</param>
         /// <returns><code>true</code> if <paramref name="text"/> matches the end of this <see cref="StringSegment"/>; otherwise, <code>false</code>.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="text"/> is <code>null</code>.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool EndsWith(string text, StringComparison comparisonType)
         {
             if (text == null)
@@ -356,13 +338,16 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
 
+            var result = false;
             var textLength = text.Length;
-            if (!HasValue || Length < textLength)
+            var comparisonLength = Offset + Length - textLength;
+
+            if (HasValue && comparisonLength > 0)
             {
-                return false;
+                result = string.Compare(Buffer, comparisonLength, text, 0, textLength, comparisonType) == 0;
             }
 
-            return string.Compare(Buffer, Offset + Length - textLength, text, 0, textLength, comparisonType) == 0;
+            return result;
         }
 
         /// <summary>
@@ -372,10 +357,10 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="offset">The zero-based starting character position of a substring in this <see cref="StringSegment"/>.</param>
         /// <returns>A <see cref="string"/> that is equivalent to the substring of remaining length that begins at
         /// <paramref name="offset"/> in this <see cref="StringSegment"/></returns>
-        public string Substring(int offset)
-        {
-            return Substring(offset, Length - offset);
-        }
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="offset"/> is greater than or equal to <see cref="Length"/> or less than zero.
+        /// </exception>
+        public string Substring(int offset) => Substring(offset, Length - offset);
 
         /// <summary>
         /// Retrieves a substring from this <see cref="StringSegment"/>.
@@ -385,21 +370,16 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="length">The number of characters in the substring.</param>
         /// <returns>A <see cref="string"/> that is equivalent to the substring of length <paramref name="length"/> that begins at
         /// <paramref name="offset"/> in this <see cref="StringSegment"/></returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="offset"/> or <paramref name="length"/> is less than zero, or <paramref name="offset"/> + <paramref name="length"/> is
+        /// greater than <see cref="Length"/>.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string Substring(int offset, int length)
         {
-            if (!HasValue)
+            if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.offset);
-            }
-
-            if (offset < 0 || offset + length > Length)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.offset);
-            }
-
-            if (length < 0 || Offset + offset + length > Buffer.Length)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+                ThrowInvalidArguments(offset, length);
             }
 
             return Buffer.Substring(Offset + offset, length);
@@ -412,10 +392,10 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="offset">The zero-based starting character position of a substring in this <see cref="StringSegment"/>.</param>
         /// <returns>A <see cref="StringSegment"/> that begins at <paramref name="offset"/> in this <see cref="StringSegment"/>
         /// whose length is the remainder.</returns>
-        public StringSegment Subsegment(int offset)
-        {
-            return Subsegment(offset, Length - offset);
-        }
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="offset"/> is greater than or equal to <see cref="Length"/> or less than zero.
+        /// </exception>
+        public StringSegment Subsegment(int offset) => Subsegment(offset, Length - offset);
 
         /// <summary>
         /// Retrieves a <see cref="StringSegment"/> that represents a substring from this <see cref="StringSegment"/>.
@@ -424,21 +404,15 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="offset">The zero-based starting character position of a substring in this <see cref="StringSegment"/>.</param>
         /// <param name="length">The number of characters in the substring.</param>
         /// <returns>A <see cref="StringSegment"/> that is equivalent to the substring of length <paramref name="length"/> that begins at <paramref name="offset"/> in this <see cref="StringSegment"/></returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="offset"/> or <paramref name="length"/> is less than zero, or <paramref name="offset"/> + <paramref name="length"/> is
+        /// greater than <see cref="Length"/>.
+        /// </exception>
         public StringSegment Subsegment(int offset, int length)
         {
-            if (!HasValue)
+            if (!HasValue || offset < 0 || length < 0 || (uint)(offset + length) > (uint)Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.offset);
-            }
-
-            if (offset < 0 || offset + length > Length)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.offset);
-            }
-
-            if (length < 0 || Offset + offset + length > Buffer.Length)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+                ThrowInvalidArguments(offset, length);
             }
 
             return new StringSegment(Buffer, Offset + offset, length);
@@ -452,26 +426,32 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="start">The zero-based index position at which the search starts. </param>
         /// <param name="count">The number of characters to examine.</param>
         /// <returns>The zero-based index position of <paramref name="c"/> from the beginning of the <see cref="StringSegment"/> if that character is found, or -1 if it is not.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="start"/> or <paramref name="count"/> is less than zero, or <paramref name="start"/> + <paramref name="count"/> is
+        /// greater than <see cref="Length"/>.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOf(char c, int start, int count)
         {
-            if (start < 0 || Offset + start > Buffer.Length)
+            var offset = Offset + start;
+
+            if (!HasValue || start < 0 || (uint)offset > (uint)Buffer.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
             }
 
-            if (count < 0 || Offset + start + count > Buffer.Length)
+            if (count < 0)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
             }
-            var index = Buffer.IndexOf(c, start + Offset, count);
+
+            var index = Buffer.IndexOf(c, offset, count);
             if (index != -1)
             {
-                return index - Offset;
+                index -= Offset;
             }
-            else
-            {
-                return index;
-            }
+
+            return index;
         }
 
         /// <summary>
@@ -481,20 +461,17 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="c">The Unicode character to seek.</param>
         /// <param name="start">The zero-based index position at which the search starts. </param>
         /// <returns>The zero-based index position of <paramref name="c"/> from the beginning of the <see cref="StringSegment"/> if that character is found, or -1 if it is not.</returns>
-        public int IndexOf(char c, int start)
-        {
-            return IndexOf(c, start, Length - start);
-        }
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="start"/> is greater than or equal to <see cref="Length"/> or less than zero.
+        /// </exception>
+        public int IndexOf(char c, int start) => IndexOf(c, start, Length - start);
 
         /// <summary>
         /// Gets the zero-based index of the first occurrence of the character <paramref name="c"/> in this <see cref="StringSegment"/>.
         /// </summary>
         /// <param name="c">The Unicode character to seek.</param>
         /// <returns>The zero-based index position of <paramref name="c"/> from the beginning of the <see cref="StringSegment"/> if that character is found, or -1 if it is not.</returns>
-        public int IndexOf(char c)
-        {
-            return IndexOf(c, 0, Length);
-        }
+        public int IndexOf(char c) => IndexOf(c, 0, Length);
 
         /// <summary>
         /// Reports the zero-based index of the first occurrence in this instance of any character in a specified array
@@ -504,32 +481,40 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="anyOf">A Unicode character array containing one or more characters to seek.</param>
         /// <param name="startIndex">The search starting position.</param>
         /// <param name="count">The number of character positions to examine.</param>
-        /// <returns>The zero-based index position of the first occurrence in this instance where any character in anyOf
-        /// was found; -1 if no character in anyOf was found.</returns>
+        /// <returns>The zero-based index position of the first occurrence in this instance where any character in <paramref name="anyOf"/>
+        /// was found; -1 if no character in <paramref name="anyOf"/> was found.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// <paramref name="anyOf"/> is <code>null</code>.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="startIndex"/> or <paramref name="count"/> is less than zero, or <paramref name="startIndex"/> + <paramref name="count"/> is
+        /// greater than <see cref="Length"/>.
+        /// </exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int IndexOfAny(char[] anyOf, int startIndex, int count)
         {
-            if (!HasValue)
+            var index = -1;
+
+            if (HasValue)
             {
-                return -1;
+                if (startIndex < 0 || Offset + startIndex > Buffer.Length)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
+                }
+
+                if (count < 0 || Offset + startIndex + count > Buffer.Length)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
+                }
+
+                index = Buffer.IndexOfAny(anyOf, Offset + startIndex, count);
+                if (index != -1)
+                {
+                    index -= Offset;
+                }
             }
 
-            if (startIndex < 0 || Offset + startIndex > Buffer.Length)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
-            }
-
-            if (count < 0 || Offset + startIndex + count > Buffer.Length)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
-            }
-
-            var index = Buffer.IndexOfAny(anyOf, Offset + startIndex, count);
-            if (index == -1)
-            {
-                return index;
-            }
-
-            return index - Offset;
+            return index;
         }
 
         /// <summary>
@@ -538,8 +523,11 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         /// <param name="anyOf">A Unicode character array containing one or more characters to seek.</param>
         /// <param name="startIndex">The search starting position.</param>
-        /// <returns>The zero-based index position of the first occurrence in this instance where any character in anyOf
-        /// was found; -1 if no character in anyOf was found.</returns>
+        /// <returns>The zero-based index position of the first occurrence in this instance where any character in <paramref name="anyOf"/>
+        /// was found; -1 if no character in <paramref name="anyOf"/> was found.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="startIndex"/> is greater than or equal to <see cref="Length"/> or less than zero.
+        /// </exception>
         public int IndexOfAny(char[] anyOf, int startIndex)
         {
             return IndexOfAny(anyOf, startIndex, Length - startIndex);
@@ -550,8 +538,8 @@ namespace Microsoft.Extensions.Primitives
         /// of Unicode characters.
         /// </summary>
         /// <param name="anyOf">A Unicode character array containing one or more characters to seek.</param>
-        /// <returns>The zero-based index position of the first occurrence in this instance where any character in anyOf
-        /// was found; -1 if no character in anyOf was found.</returns>
+        /// <returns>The zero-based index position of the first occurrence in this instance where any character in <paramref name="anyOf"/>
+        /// was found; -1 if no character in <paramref name="anyOf"/> was found.</returns>
         public int IndexOfAny(char[] anyOf)
         {
             return IndexOfAny(anyOf, 0, Length);
@@ -564,89 +552,107 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>The zero-based index position of value if that character is found, or -1 if it is not.</returns>
         public int LastIndexOf(char value)
         {
-            if (!HasValue)
+            var index = -1;
+
+            if (HasValue)
             {
-                return -1;
+                index = Buffer.LastIndexOf(value, Offset + Length - 1, Length);
+                if (index != -1)
+                {
+                    index -= Offset;
+                }
             }
 
-            var index = Buffer.LastIndexOf(value, Offset + Length - 1, Length);
-            if (index == -1)
-            {
-                return -1;
-            }
-
-            return index - Offset;
+            return index;
         }
 
         /// <summary>
         /// Removes all leading and trailing whitespaces.
         /// </summary>
         /// <returns>The trimmed <see cref="StringSegment"/>.</returns>
-        public StringSegment Trim()
-        {
-            return TrimStart().TrimEnd();
-        }
+        public StringSegment Trim() => TrimStart().TrimEnd();
 
         /// <summary>
         /// Removes all leading whitespaces.
         /// </summary>
         /// <returns>The trimmed <see cref="StringSegment"/>.</returns>
-        public StringSegment TrimStart()
+        public unsafe StringSegment TrimStart()
         {
             var trimmedStart = Offset;
-            while (trimmedStart < Offset + Length)
-            {
-                if (!char.IsWhiteSpace(Buffer, trimmedStart))
-                {
-                    break;
-                }
+            var length = Offset + Length;
 
-                trimmedStart++;
+            fixed (char* p = Buffer)
+            {
+                while (trimmedStart < length)
+                {
+                    var c = p[trimmedStart];
+
+                    if (!char.IsWhiteSpace(c))
+                    {
+                        break;
+                    }
+
+                    trimmedStart++;
+                }
             }
 
-            return new StringSegment(Buffer, trimmedStart, Offset + Length - trimmedStart);
+            return new StringSegment(Buffer, trimmedStart, length - trimmedStart);
         }
 
         /// <summary>
         /// Removes all trailing whitespaces.
         /// </summary>
         /// <returns>The trimmed <see cref="StringSegment"/>.</returns>
-        public StringSegment TrimEnd()
+        public unsafe StringSegment TrimEnd()
         {
-            var trimmedEnd = Offset + Length - 1;
-            while (trimmedEnd >= Offset)
-            {
-                if (!char.IsWhiteSpace(Buffer, trimmedEnd))
-                {
-                    break;
-                }
+            var offset = Offset;
+            var trimmedEnd = offset + Length - 1;
 
-                trimmedEnd--;
+            fixed (char* p = Buffer)
+            {
+                while (trimmedEnd >= offset)
+                {
+                    var c = p[trimmedEnd];
+
+                    if (!char.IsWhiteSpace(c))
+                    {
+                        break;
+                    }
+
+                    trimmedEnd--;
+                }
             }
 
-            return new StringSegment(Buffer, Offset, trimmedEnd - Offset + 1);
+            return new StringSegment(Buffer, offset, trimmedEnd - offset + 1);
         }
 
         /// <summary>
-        /// Splits a string into StringSegments that are based on the characters in an array.
+        /// Splits a string into <see cref="StringSegment"/>s that are based on the characters in an array.
         /// </summary>
         /// <param name="chars">A character array that delimits the substrings in this string, an empty array that
         /// contains no delimiters, or null.</param>
-        /// <returns>An <see cref="StringTokenizer"/> whose elements contain the StringSegmeents from this instance
-        /// that are delimited by one or more characters in separator.</returns>
+        /// <returns>An <see cref="StringTokenizer"/> whose elements contain the <see cref="StringSegment"/>s from this instance
+        /// that are delimited by one or more characters in <paramref name="chars"/>.</returns>
         public StringTokenizer Split(char[] chars)
         {
             return new StringTokenizer(this, chars);
         }
 
         /// <summary>
-        /// Indicates whether the specified StringSegment is null or an Empty string.
+        /// Indicates whether the specified <see cref="StringSegment"/> is null or an Empty string.
         /// </summary>
-        /// <param name="value">The StringSegment to test.</param>
+        /// <param name="value">The <see cref="StringSegment"/> to test.</param>
         /// <returns></returns>
         public static bool IsNullOrEmpty(StringSegment value)
         {
-            return !value.HasValue || value.Length == 0;
+            var res = false;
+
+            if (!value.HasValue || value.Length == 0)
+            {
+                res = true;
+            }
+
+            return res;
         }
 
         /// <summary>
@@ -656,6 +662,59 @@ namespace Microsoft.Extensions.Primitives
         public override string ToString()
         {
             return Value ?? string.Empty;
+        }
+
+        // Methods that do no return (i.e. throw) are not inlined
+        // https://github.com/dotnet/coreclr/pull/6103
+        private static void ThrowInvalidArguments(string buffer, int offset, int length)
+        {
+            // Only have single throw in method so is marked as "does not return" and isn't inlined to caller
+            throw GetInvalidArgumentsException();
+
+            Exception GetInvalidArgumentsException()
+            {
+                if (buffer == null)
+                {
+                    return ThrowHelper.GetArgumentNullException(ExceptionArgument.buffer);
+                }
+
+                if (offset < 0)
+                {
+                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.offset);
+                }
+
+                if (length < 0)
+                {
+                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.length);
+                }
+
+                return ThrowHelper.GetArgumentException(ExceptionResource.Argument_InvalidOffsetLength);
+            }
+        }
+
+        private void ThrowInvalidArguments(int offset, int length)
+        {
+            throw GetInvalidArgumentsException(HasValue);
+
+            Exception GetInvalidArgumentsException(bool hasValue)
+            {
+                if (!hasValue)
+                {
+                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.offset);
+                }
+
+                if (offset < 0)
+                {
+                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.offset);
+                }
+
+                if (length < 0)
+                {
+                    return ThrowHelper.GetArgumentOutOfRangeException(ExceptionArgument.length);
+                }
+
+                return ThrowHelper.GetArgumentException(ExceptionResource.Argument_InvalidOffsetLengthStringSegment);
+            }
         }
     }
 }
