@@ -2609,22 +2609,22 @@ private:
     DWORD m_dwExtraData;
     LPCWSTR m_wszManagedPDBSearchPath;
 
-	// Currently The DiasymWriter does not use the correct PDB signature for NGEN PDBS unless 
-	// the NGEN DLL whose symbols are being generated end in .ni.dll.   Thus we copy
-	// to this name if it does not follow this covention (as is true with readyToRun
-	// dlls).   This variable remembers this temp file path so we can delete it after
-	// Pdb generation.   If DiaSymWriter is fixed, we can remove this.  
-	SString m_tempSourceDllName;
+    // Currently The DiasymWriter does not use the correct PDB signature for NGEN PDBS unless 
+    // the NGEN DLL whose symbols are being generated end in .ni.dll.   Thus we copy
+    // to this name if it does not follow this covention (as is true with readyToRun
+    // dlls).   This variable remembers this temp file path so we can delete it after
+    // Pdb generation.   If DiaSymWriter is fixed, we can remove this.  
+    SString m_tempSourceDllName;
 
     // Interfaces for reading IL PDB info
     ReleaseHolder<ISymUnmanagedBinder> m_pBinder;
     ReleaseHolder<ISymUnmanagedReader> m_pReader;
     NewInterfaceArrayHolder<ISymUnmanagedDocument> m_rgpDocs;       // All docs in the PDB Mod
-	// I know m_ilPdbCount and m_finalPdbDocCount are confusing.Here is the reason :
-	// For NGenMethodLinesPdbWriter::WriteDebugSILLinesSubsection, we won't write the path info.  
-	// In order to let WriteDebugSILLinesSubsection find "UNKNOWN_SOURCE_FILE_PATH" which does 
-	// not exist in m_rgpDocs, no matter if we have IL PDB or not, we let m_finalPdbDocCount 
-	// equal m_ilPdbDocCount + 1 and write the extra one path as "UNKNOWN_SOURCE_FILE_PATH"
+    // I know m_ilPdbCount and m_finalPdbDocCount are confusing.Here is the reason :
+    // For NGenMethodLinesPdbWriter::WriteDebugSILLinesSubsection, we won't write the path info.  
+    // In order to let WriteDebugSILLinesSubsection find "UNKNOWN_SOURCE_FILE_PATH" which does 
+    // not exist in m_rgpDocs, no matter if we have IL PDB or not, we let m_finalPdbDocCount 
+    // equal m_ilPdbDocCount + 1 and write the extra one path as "UNKNOWN_SOURCE_FILE_PATH"
     ULONG32 m_ilPdbDocCount;
     ULONG32 m_finalPdbDocCount;
 
@@ -2664,7 +2664,7 @@ public:
         ZeroMemory(m_wszPDBFilePath, sizeof(m_wszPDBFilePath));
     }
 
-	~NGenModulePdbWriter();
+    ~NGenModulePdbWriter();
     
     HRESULT WritePDBData();
 
@@ -2967,10 +2967,10 @@ HRESULT NGenModulePdbWriter::InitILPdbData()
 
 NGenModulePdbWriter::~NGenModulePdbWriter()
 {
-	// Delete any temporary files we created. 
-	if (m_tempSourceDllName.GetCount() != 0)
-		DeleteFileW(m_tempSourceDllName);
-	m_tempSourceDllName.Clear();
+    // Delete any temporary files we created. 
+    if (m_tempSourceDllName.GetCount() != 0)
+        DeleteFileW(m_tempSourceDllName);
+    m_tempSourceDllName.Clear();
 }
 
 //---------------------------------------------------------------------------------------
@@ -3006,29 +3006,30 @@ HRESULT NGenModulePdbWriter::WritePDBData()
 
     PEImageLayout * pLoadedLayout = m_pModule->GetFile()->GetLoaded();
 
-	// Currently DiaSymReader does not work properly generating NGEN PDBS unless 
-	// the DLL whose PDB is being generated ends in .ni.*.   Unfortunately, readyToRun
-	// images do not follow this convention and end up producing bad PDBS.  To fix
-	// this (without changing diasymreader.dll which ships indepdendently of .NET Core)
-	// we copy the file to somethign with this convention before generating the PDB
-	// and delete it when we are done.  
-	SString dllPath = pLoadedLayout->GetPath();
-	if (!dllPath.EndsWithCaseInsensitive(W(".ni.dll")) && !dllPath.EndsWithCaseInsensitive(W(".ni.exe")))
-	{
-		SString::Iterator fileNameStart = dllPath.End();
-		dllPath.FindBack(fileNameStart, DIRECTORY_SEPARATOR_STR_W);
+    // Currently DiaSymReader does not work properly generating NGEN PDBS unless 
+    // the DLL whose PDB is being generated ends in .ni.*.   Unfortunately, readyToRun
+    // images do not follow this convention and end up producing bad PDBS.  To fix
+    // this (without changing diasymreader.dll which ships indepdendently of .NET Core)
+    // we copy the file to somethign with this convention before generating the PDB
+    // and delete it when we are done.  
+    SString dllPath = pLoadedLayout->GetPath();
+    if (!dllPath.EndsWithCaseInsensitive(W(".ni.dll")) && !dllPath.EndsWithCaseInsensitive(W(".ni.exe")))
+    {
+        SString::Iterator fileNameStart = dllPath.End();
+        if (!dllPath.FindBack(fileNameStart, DIRECTORY_SEPARATOR_STR_W))
+            fileNameStart = dllPath.Begin();
 
-		SString::Iterator ext = dllPath.End();
-		dllPath.FindBack(ext, '.');
+        SString::Iterator ext = dllPath.End();
+        dllPath.FindBack(ext, '.');
 
-		// m_tempSourceDllName = Convertion of  INPUT.dll  to INPUT.ni.dll where the PDB lives.  
-		m_tempSourceDllName = m_wszPdbPath;
-		m_tempSourceDllName += SString(dllPath, fileNameStart, ext - fileNameStart);
-		m_tempSourceDllName += W(".ni");
-		m_tempSourceDllName += SString(dllPath, ext, dllPath.End() - ext);
-		CopyFileW(dllPath, m_tempSourceDllName, false);
-		dllPath = m_tempSourceDllName;
-	}
+        // m_tempSourceDllName = Convertion of  INPUT.dll  to INPUT.ni.dll where the PDB lives.  
+        m_tempSourceDllName = m_wszPdbPath;
+        m_tempSourceDllName += SString(dllPath, fileNameStart, ext - fileNameStart);
+        m_tempSourceDllName += W(".ni");
+        m_tempSourceDllName += SString(dllPath, ext, dllPath.End() - ext);
+        CopyFileW(dllPath, m_tempSourceDllName, false);
+        dllPath = m_tempSourceDllName;
+    }
 
     ReleaseHolder<ISymNGenWriter> pWriter1;
     hr = m_Create(dllPath, m_wszPdbPath, &pWriter1);
@@ -3173,8 +3174,8 @@ HRESULT NGenModulePdbWriter::WriteMethodPDBData(PEImageLayout * pLoadedLayout, U
     _ASSERTE(pHotCodeStart);
 
     PCODE pColdCodeStart = methodRegionInfo.coldStartAddress;
-	SString mAssemblyName;
-	mAssemblyName.SetUTF8(m_pModule->GetAssembly()->GetSimpleName());
+    SString mAssemblyName;
+    mAssemblyName.SetUTF8(m_pModule->GetAssembly()->GetSimpleName());
     SString assemblyName;
     assemblyName.SetUTF8(hotDesc->GetAssembly()->GetSimpleName());
     SString methodToken;
@@ -3187,10 +3188,10 @@ HRESULT NGenModulePdbWriter::WriteMethodPDBData(PEImageLayout * pLoadedLayout, U
             fullName, 
             hotDesc, 
             TypeString::FormatNamespace | TypeString::FormatSignature);
-		fullName.Append(W("$#"));
-		if (!mAssemblyName.Equals(assemblyName))
-			fullName.Append(assemblyName);
-		fullName.Append(W("#"));
+        fullName.Append(W("$#"));
+        if (!mAssemblyName.Equals(assemblyName))
+            fullName.Append(assemblyName);
+        fullName.Append(W("#"));
         fullName.Append(methodToken);
         BSTRHolder hotNameHolder(SysAllocString(fullName.GetUnicode()));
         hr = m_pWriter->AddSymbol(hotNameHolder,
@@ -3210,10 +3211,10 @@ HRESULT NGenModulePdbWriter::WriteMethodPDBData(PEImageLayout * pLoadedLayout, U
                 fullNameCold, 
                 hotDesc, 
                 TypeString::FormatNamespace | TypeString::FormatSignature);
-			fullNameCold.Append(W("$#"));
-			if (!mAssemblyName.Equals(assemblyName))
-				fullNameCold.Append(assemblyName);
-			fullNameCold.Append(W("#"));
+            fullNameCold.Append(W("$#"));
+            if (!mAssemblyName.Equals(assemblyName))
+                fullNameCold.Append(assemblyName);
+            fullNameCold.Append(W("#"));
             fullNameCold.Append(methodToken);
 
             BSTRHolder coldNameHolder(SysAllocString(fullNameCold.GetUnicode()));
@@ -3548,7 +3549,7 @@ HRESULT NGenMethodLinesPdbWriter::WritePDBData()
     
     ULONG32 iIlNativeMap = 0;
     ULONG32 iMapIndexPairs = 0;
-	
+    
     // Traverse IL PDB entries and IL-to-native map entries (both sorted by IL) in
     // parallel
     // 
@@ -3612,16 +3613,16 @@ HRESULT NGenMethodLinesPdbWriter::WritePDBData()
                 // Reset our memory of the last unmatched entry in the IL PDB
                 iSeqPointLastUnmatched = (ULONG32) -1;
             }
-			else if (iMapIndexPairs > 0)
-			{
-				DWORD lastMatchedilNativeIndex = rgMapIndexPairs[iMapIndexPairs - 1].m_iIlNativeMap;
-				if (m_rgIlNativeMap[iIlNativeMap].ilOffset == m_rgIlNativeMap[lastMatchedilNativeIndex].ilOffset &&
-					m_rgIlNativeMap[iIlNativeMap].nativeOffset < m_rgIlNativeMap[lastMatchedilNativeIndex].nativeOffset)
-				{
-					rgMapIndexPairs[iMapIndexPairs - 1].m_iIlNativeMap = iIlNativeMap;
-				}
+            else if (iMapIndexPairs > 0)
+            {
+                DWORD lastMatchedilNativeIndex = rgMapIndexPairs[iMapIndexPairs - 1].m_iIlNativeMap;
+                if (m_rgIlNativeMap[iIlNativeMap].ilOffset == m_rgIlNativeMap[lastMatchedilNativeIndex].ilOffset &&
+                    m_rgIlNativeMap[iIlNativeMap].nativeOffset < m_rgIlNativeMap[lastMatchedilNativeIndex].nativeOffset)
+                {
+                    rgMapIndexPairs[iMapIndexPairs - 1].m_iIlNativeMap = iIlNativeMap;
+                }
 
-			}
+            }
             // Go to next ilnative map entry
             iIlNativeMap++;
             continue;
@@ -3938,7 +3939,7 @@ HRESULT NGenMethodLinesPdbWriter::WriteDebugSLinesSubsection(
     BOOL fAtLeastOneBlockWritten = FALSE;
     CV_DebugSLinesFileBlockHeader_t * pLinesFileBlockHeader = NULL;
     CV_Line_t * pLineCur = NULL;
-	CV_Line_t * pLinePrev = NULL;
+    CV_Line_t * pLinePrev = NULL;
     CV_Line_t * pLineBlockStart = NULL;
     BOOL fBeginNewBlock = TRUE;
     ULONG32 iSeqPointsPrev = (ULONG32) -1;
@@ -3959,21 +3960,20 @@ HRESULT NGenMethodLinesPdbWriter::WriteDebugSLinesSubsection(
         // skip all but the first map containing a given IP offset.
         if (pLinePrev != NULL && m_rgIlNativeMap[iIlNativeMap].nativeOffset == pLinePrev->offset)
         {
-			if (ilOffsetPrev == kUnmappedIP)
-			{
-				// if the previous IL offset is kUnmappedIP, then we should rewrite it. 
-				pLineCur = pLinePrev;
-			}
-			else if (iSeqPoints != kUnmappedIP &&
-				m_rgilOffsets[iSeqPoints] < ilOffsetPrev)
-			{
-				pLineCur = pLinePrev;
-			}
-			else
-			{
-				// Found a native offset dupe, ignore the current map entry
-				continue;
-			}
+            if (ilOffsetPrev == kUnmappedIP)
+            {
+                // if the previous IL offset is kUnmappedIP, then we should rewrite it. 
+                pLineCur = pLinePrev;
+            }
+            else if (iSeqPoints != kUnmappedIP && m_rgilOffsets[iSeqPoints] < ilOffsetPrev)
+            {
+                pLineCur = pLinePrev;
+            }
+            else
+            {
+                // Found a native offset dupe, ignore the current map entry
+                continue;
+            }
         }
 
         if ((iSeqPoints != kUnmappedIP) && (iSeqPoints != iSeqPointsPrev))
@@ -4090,8 +4090,8 @@ HRESULT NGenMethodLinesPdbWriter::WriteDebugSLinesSubsection(
             m_rgnLineStarts[iSeqPoints];
         pLineCur->deltaLineEnd = 0;
         pLineCur->fStatement = 1;
-		ilOffsetPrev = (iSeqPoints == kUnmappedIP) ? kUnmappedIP : m_rgilOffsets[iSeqPoints];
-		pLinePrev = pLineCur;
+        ilOffsetPrev = (iSeqPoints == kUnmappedIP) ? kUnmappedIP : m_rgilOffsets[iSeqPoints];
+        pLinePrev = pLineCur;
         pLineCur++;
     }       // for (ULONG32 iMapIndexPairs=0; iMapIndexPairs < cMapIndexPairs; iMapIndexPairs++)
 
