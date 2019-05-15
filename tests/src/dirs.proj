@@ -25,7 +25,6 @@
       <DisabledProjects Include="Common\external\external.csproj" />
       <DisabledProjects Include="Common\PerfHarness\PerfHarness.csproj" />
       <DisabledProjects Include="GC\Performance\Framework\GCPerfTestFramework.csproj" />
-      <DisabledProjects Include="JIT\superpmi\superpmicollect.csproj" Condition="'$(BuildOS)' != 'Windows_NT'" />
       <DisabledProjects Include="JIT\config\**" />
       <DisabledProjects Include="Performance\performance.csproj" />
       <DisabledProjects Include="Performance\Scenario\JitBench\unofficial_dotnet\JitBench.csproj" /> <!-- no official build support for SDK-style netcoreapp2.0 projects -->
