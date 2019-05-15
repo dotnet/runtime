@@ -33,6 +33,7 @@ namespace System.IO.Tests
 
         [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
         public static void NullEncodingThrows()
         {
             // [] Check for ArgumentNullException on null encoding
@@ -40,7 +41,7 @@ namespace System.IO.Tests
 
             Assert.Throws<ArgumentNullException>(() => new StreamWriter(new MemoryStream(), null));
         }
-        
+
         [Fact]
         public static void UTF8Encoding()
         {

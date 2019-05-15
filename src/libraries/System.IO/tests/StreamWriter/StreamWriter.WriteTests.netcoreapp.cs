@@ -201,5 +201,41 @@ namespace System.IO.Tests
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => writer.WriteLineAsync(ReadOnlyMemory<char>.Empty, new CancellationToken(true)));
             }
         }
+
+        [Fact]
+        public void StreamWriter_WithOptionalArguments_NoExceptions()
+        {
+            Encoding UTF8NoBOM = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+  
+            // check enabled leaveOpen and default encoding 
+            using (var tempStream = new MemoryStream())
+            {
+                using (var sw = new StreamWriter(tempStream, leaveOpen: true))
+                {
+                    Assert.Equal(UTF8NoBOM, sw.Encoding);
+                }
+                Assert.True(tempStream.CanRead);
+            }
+
+            // check null encoding, default encoding, default leaveOpen
+            using (var tempStream = new MemoryStream())
+            {
+                using (var sw = new StreamWriter(tempStream, encoding: null))
+                {
+                    Assert.Equal(UTF8NoBOM, sw.Encoding);
+                }
+                Assert.False(tempStream.CanRead);
+            }
+
+            // check bufferSize, default BOM, default leaveOpen
+            using (var tempStream = new MemoryStream())
+            {
+                using (var sw = new StreamWriter(tempStream, bufferSize: -1))
+                {
+                    Assert.Equal(UTF8NoBOM, sw.Encoding);
+                }
+                Assert.False(tempStream.CanRead);
+            }
+        }
     }
 }

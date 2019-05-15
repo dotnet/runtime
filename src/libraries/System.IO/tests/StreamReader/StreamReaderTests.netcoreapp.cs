@@ -199,5 +199,75 @@ namespace System.IO.Tests
             await Assert.ThrowsAsync<ObjectDisposedException>(() => sr.ReadAsync(Memory<char>.Empty).AsTask());
             await Assert.ThrowsAsync<ObjectDisposedException>(() => sr.ReadBlockAsync(Memory<char>.Empty).AsTask());
         }
+
+        [Fact]
+        public void StreamReader_WithOptionalArguments()
+        {
+            byte[] ByteOrderMaskUtf7 = new byte[] { 0x2B, 0x2F, 0x76, 0x38 };
+            byte[] ByteOrderMaskUtf8 = new byte[] { 0xEF, 0xBB, 0xBF };
+            byte[] ByteOrderMaskUtf16_BE = new byte[] { 0xFE, 0xFF, 0x20, 0x20 };
+            byte[] ByteOrderMaskUtf16_LE = new byte[] { 0xFF, 0xFE, 0x20, 0x20 };
+            byte[] ByteOrderMaskUtf32 = new byte[] { 0x00, 0x00, 0xFE, 0xFF };
+
+            // check enabled leaveOpen and default encoding 
+            using (var tempStream = new MemoryStream())
+            {
+                using (var sr = new StreamReader(tempStream, leaveOpen: true))
+                {
+                    Assert.Equal(Encoding.UTF8, sr.CurrentEncoding);
+                }
+                Assert.True(tempStream.CanRead);
+            }
+
+            // check null encoding, default encoding, default leaveOpen
+            using (var tempStream = new MemoryStream())
+            {
+                using (var sr = new StreamReader(tempStream, encoding: null))
+                {
+                    Assert.Equal(Encoding.UTF8, sr.CurrentEncoding);
+                }
+                Assert.False(tempStream.CanRead);
+            }
+
+            // check bufferSize, default BOM and default leaveOpen
+            using (var tempStream = new MemoryStream(ByteOrderMaskUtf16_BE))
+            {
+                using (var sr = new StreamReader(tempStream, bufferSize: -1))
+                {
+                    sr.Read();
+                    Assert.Equal(Encoding.BigEndianUnicode, sr.CurrentEncoding);
+                }
+                Assert.False(tempStream.CanRead);
+            }
+
+            // check BOM enabled/disabled encoding, enabled/disabled leaveOpen
+            using (var tempStream = new MemoryStream(ByteOrderMaskUtf16_BE))
+            {
+                // check disabled BOM, default encoding
+                using (var sr = new StreamReader(new MemoryStream(ByteOrderMaskUtf7), detectEncodingFromByteOrderMarks: false))
+                {
+                    sr.Read();
+                    Assert.Equal(Encoding.UTF8, sr.CurrentEncoding);
+                }
+
+                // check disabled BOM, default enconding and leaveOpen
+                tempStream.Seek(0, SeekOrigin.Begin);
+                using (var sr = new StreamReader(tempStream, detectEncodingFromByteOrderMarks: false, leaveOpen: true))
+                {
+                    sr.Read();
+                    Assert.Equal(Encoding.UTF8, sr.CurrentEncoding);
+                }
+                Assert.True(tempStream.CanRead);
+
+                // check enabled BOM and leaveOpen 
+                tempStream.Seek(0, SeekOrigin.Begin);
+                using (var sr = new StreamReader(tempStream, detectEncodingFromByteOrderMarks: true))
+                {
+                    sr.Read();
+                    Assert.Equal(Encoding.BigEndianUnicode, sr.CurrentEncoding);
+                }
+                Assert.False(tempStream.CanRead);
+            }
+        }
     }
 }
