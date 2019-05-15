@@ -50,29 +50,14 @@ namespace System.Diagnostics.Tests
 
         public static T RetryOnAllPlatforms<T>(Func<T> func)
         {
-            T entry = default(T);
-            int retries = 20;
-            while (retries > 0)
+            // Harden the tests increasing the retry count and the timeout.
+            T result = default;
+            RetryHelper.Execute(() =>
             {
-                try
-                {
-                    entry = func();
-                    retries = -1;
-                }
-                catch (InvalidOperationException)
-                {
-                    Thread.Sleep(100);
-                    retries--;
-                }
-                catch (ArgumentException)
-                {
-                    Thread.Sleep(100);
-                    retries--;
-                }
-            }
+                result = func();
+            }, maxAttempts: 10, (iteration) => iteration * 300);
 
-            Assert.NotEqual(0, retries);
-            return entry;
+            return result;
         }
     }
 }
