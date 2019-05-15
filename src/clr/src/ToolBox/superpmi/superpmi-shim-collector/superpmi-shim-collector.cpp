@@ -65,15 +65,11 @@ void SetLogPath()
 void SetLogPathName()
 {
     // NOTE: under PAL, we don't get the command line, so we depend on the random number generator to give us a unique
-    // filename.
-    const WCHAR* originalExecutableName = GetCommandLineW();
-    size_t       executableNameLength   = wcslen(originalExecutableName);
-    WCHAR*       executableName         = new WCHAR[executableNameLength + 1];
-    wcscpy_s(executableName, executableNameLength + 1, originalExecutableName);
-    executableName[executableNameLength] = W('\0');
+    // filename
+    const WCHAR* fileName  = GetCommandLineW();
+    const WCHAR* extension = W(".mc");
 
-    const WCHAR* DataFileExtension = W(".mc");
-    g_dataFileName                 = getResultFileName(g_logPath, executableName, DataFileExtension);
+    g_dataFileName = GetResultFileName(g_logPath, fileName, extension);
 }
 
 // TODO: this only works for ANSI file paths...
