@@ -83,6 +83,7 @@
     <Compile Include="System\Security\Cryptography\RSASignaturePaddingMode.cs" />
     <Compile Include="System\Security\Cryptography\SignatureDescription.cs" />
     <Compile Include="System\Security\Cryptography\TripleDES.cs" />
+    <Compile Include="System\Security\Cryptography\XmlKeyHelper.cs" />
     <Compile Include="$(CommonPath)\Internal\Cryptography\BasicSymmetricCipher.cs">
       <Link>Internal\Cryptography\BasicSymmetricCipher.cs</Link>
     </Compile>
