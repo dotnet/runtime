@@ -33,7 +33,7 @@
     <PackageReference Include="Microsoft.DotNet.CodeAnalysis" Version="$(MicrosoftDotNetCodeAnalysisPackageVersion)" />
 
     <!-- roslyn -->
-    <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="$(MicrosoftNetCompilersToolsetVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+    <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="3.2.0-beta1-19229-02" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
   <!-- excluded from source build -->
