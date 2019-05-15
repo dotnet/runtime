@@ -10,46 +10,11 @@
   -->
   <PropertyGroup>
     <ProjectNTfsCurrentRef>a801a54ca7cc0973da761acb95a7863395515ebe</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>a801a54ca7cc0973da761acb95a7863395515ebe</ProjectNTfsTestILCCurrentRef>
-    <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
-  </PropertyGroup>
-
-  <!-- Product dependency versions. -->
-  <PropertyGroup>
-    <!-- SNI runtime package -->
-    <RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
     <ProjectNTfsExpectedPrerelease>beta-27715-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-27715-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-27715-00</ProjectNTfsTestILCPackageVersion>
-
-    <!-- CoreFX-built SNI identity package -->
-    <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
-
-    <!-- xunit test dependency version  -->
-    <MicrosoftNETTestSdkPackageVersion>16.0.1</MicrosoftNETTestSdkPackageVersion>
-    <XUnitPackageVersion>2.4.1-pre.build.4059</XUnitPackageVersion>
-    <XUnitPerformancePackageVersion>1.0.0-beta-build0020</XUnitPerformancePackageVersion>
-    <TraceEventPackageVersion>2.0.5</TraceEventPackageVersion>
-    <MicrosoftDotNetUapTestToolsPackageVersion>1.0.31</MicrosoftDotNetUapTestToolsPackageVersion>
-
-    <!-- Code coverage package version -->
-    <CoverletConsolePackageVersion>1.5.0</CoverletConsolePackageVersion>
-    <DotNetReportGeneratorGlobalToolPackageVersion>4.1.4</DotNetReportGeneratorGlobalToolPackageVersion>
-
-    <MicrosoftDotNetIBCMergePackageVersion>4.6.0-alpha-00001</MicrosoftDotNetIBCMergePackageVersion>
-    <TestILCAmd64retPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCAmd64retPackageVersion>
-    <TestILCArmretPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCArmretPackageVersion>
-    <TestILCX86retPackageVersion>$(ProjectNTfsTestILCPackageVersion)</TestILCX86retPackageVersion>
-  </PropertyGroup>
-
-  <!-- Publish symbol build task package -->
-  <PropertyGroup>
-    <PublishSymbolsPackage>Microsoft.SymbolUploader.Build.Task</PublishSymbolsPackage>
-    <PublishSymbolsPackageVersion>1.0.0-beta-63604-05</PublishSymbolsPackageVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
@@ -60,17 +25,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <RemoteDependencyBuildInfo Include="Sni">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)sni/$(DependencyBranch)</BuildInfoPath>
-      <CurrentRef>$(SniCurrentRef)</CurrentRef>
-    </RemoteDependencyBuildInfo>
     <RemoteDependencyBuildInfo Include="ProjectNTfs">
       <BuildInfoPath>$(BaseDotNetBuildInfo)projectn-tfs/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(ProjectNTfsCurrentRef)</CurrentRef>
-    </RemoteDependencyBuildInfo>
-    <RemoteDependencyBuildInfo Include="ProjectNTfsTestILC">
-      <BuildInfoPath>$(BaseDotNetBuildInfo)projectn-tfs-testilc/$(DependencyBranch)</BuildInfoPath>
-      <CurrentRef>$(ProjectNTfsTestILCCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
 
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
@@ -82,61 +39,5 @@
       <ElementName>ProjectNTfsExpectedPrerelease</ElementName>
       <BuildInfoName>ProjectNTfs</BuildInfoName>
     </XmlUpdateStep>
-    <XmlUpdateStep Include="ProjectNTfsTestILC">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>ProjectNTfsTestILCExpectedPrerelease</ElementName>
-      <BuildInfoName>ProjectNTfsTestILC</BuildInfoName>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="ProjectNTfsTestILC">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>ProjectNTfsTestILCPackageVersion</ElementName>
-      <PackageId>TestILC.amd64ret</PackageId>
-    </XmlUpdateStep>
-    <XmlUpdateStep Include="Sni">
-      <Path>$(MSBuildThisFileFullPath)</Path>
-      <ElementName>RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion</ElementName>
-      <PackageId>runtime.win-x64.runtime.native.System.Data.SqlClient.sni</PackageId>
-    </XmlUpdateStep>
   </ItemGroup>
-
-  <!-- Set up dependencies on packages that aren't found in a BuildInfo. -->
-  <ItemGroup>
-    <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.5" />
-    <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.5.1" />
-    <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.5.2" />
-    <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6" />
-    <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6.1" />
-    <TargetingPackDependency Include="Microsoft.TargetingPack.NETFramework.v4.6.2" />
-    <StaticDependency Include="@(TargetingPackDependency)">
-      <Version>1.0.1</Version>
-    </StaticDependency>
-
-    <StaticDependency Include="Microsoft.TargetingPack.Private.WinRT">
-      <Version>1.0.5</Version>
-    </StaticDependency>
-
-    <XUnitDependency Include="xunit"/>
-    <XUnitDependency Include="xunit.runner.utility"/>
-    <XUnitDependency Include="xunit.runner.console"/>
-    <StaticDependency Include="@(XUnitDependency)">
-      <Version>$(XUnitPackageVersion)</Version>
-    </StaticDependency>
-
-    <PerformancePackDependency Include="xunit.performance.core" />
-    <PerformancePackDependency Include="xunit.performance.api" />
-    <PerformancePackDependency Include="xunit.performance.execution" />
-    <PerformancePackDependency Include="xunit.performance.metrics" />
-    <StaticDependency Include="@(PerformancePackDependency)">
-      <Version>$(XUnitPerformancePackageVersion)</Version>
-    </StaticDependency>
-
-    <DependencyBuildInfo Include="@(StaticDependency)">
-      <PackageId>%(Identity)</PackageId>
-      <UpdateStableVersions>true</UpdateStableVersions>
-    </DependencyBuildInfo>
-  </ItemGroup>
-
-  <!-- Override isolated build dependency versions with versions from Repo API. -->
-  <Import Project="$(DotNetPackageVersionPropsPath)"
-          Condition="'$(DotNetPackageVersionPropsPath)' != ''" />
 </Project>

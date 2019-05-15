@@ -151,36 +151,6 @@
 
   </Target>
 
-  <Target Name="VerifyMatchingProjectNVersions"
-          BeforeTargets="Build">
-
-    <Error Condition="'$(ProjectNTfsExpectedPrerelease)' != '$(ProjectNTfsTestILCExpectedPrerelease)'" Text="The versions of ProjectN Targeting pack and TestILC have gone out of sync. Please make sure both of the prerelease versions on dependencies.props match." />
-
-  </Target>
-
-  <Target Name="CopyTestILCToolsToTestHost"
-          AfterTargets="AfterResolveReferences"
-          Condition="'$(TargetsAot)' == 'true'">
-
-    <PropertyGroup>
-      <TestILCToolsPackageName>TestILC</TestILCToolsPackageName>
-      <TestILCToolsPackageName Condition="'$(ArchGroup)' == 'x64'">$(TestILCToolsPackageName).amd64ret</TestILCToolsPackageName>
-      <TestILCToolsPackageName Condition="'$(ArchGroup)' == 'x86'">$(TestILCToolsPackageName).x86ret</TestILCToolsPackageName>
-      <TestILCToolsPackageName Condition="'$(ArchGroup)' == 'arm'">$(TestILCToolsPackageName).armret</TestILCToolsPackageName>
-      <TestILCFolder Condition="'$(TestILCFolder)' == ''">$(PackagesDir)$(TestILCToolsPackageName)\$(ProjectNTfsTestILCPackageVersion)\TestILC</TestILCFolder>
-    </PropertyGroup>
-
-    <ItemGroup Condition="Exists('$(TestILCFolder)')">
-      <TestILCFolderContents Include="$(TestILCFolder)\**\*" />
-    </ItemGroup>
-
-    <Copy Condition="Exists('$(TestILCFolder)')"
-          SourceFiles="@(TestILCFolderContents)"
-          DestinationFolder="$(InternalTestILCFolder)\%(RecursiveDir)"
-          SkipUnchangedFiles="true" />
-
-  </Target>
-
   <Target Name="AddTestPlatformDependencies"
           Condition="'$(EnableVSTestReferences)' == 'true'"
           BeforeTargets="ResolveReferences">
