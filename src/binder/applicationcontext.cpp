@@ -144,8 +144,6 @@ namespace BINDER_SPACE
 
             m_pFailureCache = pFailureCache;
         }
-
-        m_fCanExplicitlyBindToNativeImages = false;
         
     Exit:
         BINDER_LOG_LEAVE_HR(W("ApplicationContext::Init"), hr);

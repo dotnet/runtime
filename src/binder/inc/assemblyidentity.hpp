@@ -40,7 +40,7 @@ namespace BINDER_SPACE
             IDENTITY_FLAG_CONTENT_TYPE           = 0x800,
             IDENTITY_FLAG_FULL_NAME              = (IDENTITY_FLAG_SIMPLE_NAME |
                                                     IDENTITY_FLAG_VERSION)
-        } IdentityFlags;
+        };
 
         AssemblyIdentity()
         {
