@@ -1,3 +1,3 @@
-..\Performance\CodeQuality\Bytemark\Bytemark.csproj
-..\Methodical\fp\exgen\10w5d_cs_do.csproj
-..\Generics\Coverage\chaos65204782cs.csproj
+../Performance/CodeQuality/Bytemark/Bytemark.csproj
+../Methodical/fp/exgen/10w5d_cs_do.csproj
+../Generics/Coverage/chaos65204782cs.csproj
