@@ -360,6 +360,46 @@ extern int valgrind_register;
 
 #define INS_INFO(opcode) (&mini_ins_info [((opcode) - OP_START - 1) * 4])
 
+/* instruction description for use in regalloc/scheduling */
+
+enum {
+	MONO_INST_DEST = 0,
+	MONO_INST_SRC1 = 1,             /* we depend on the SRCs to be consecutive */
+	MONO_INST_SRC2 = 2,
+	MONO_INST_SRC3 = 3,
+	MONO_INST_LEN = 4,
+	MONO_INST_CLOB = 5,
+	/* Unused, commented out to reduce the size of the mdesc tables
+	MONO_INST_FLAGS,
+	MONO_INST_COST,
+	MONO_INST_DELAY,
+	MONO_INST_RES,
+	*/
+	MONO_INST_MAX = 6
+};
+
+typedef union MonoInstSpec { // instruction specification
+	struct {
+		char dest;
+		char src1;
+		char src2;
+		char src3;
+		unsigned char len;
+		char clob;
+		// char flags;
+		// char cost;
+		// char delay;
+		// char res;
+	};
+	struct {
+		char xdest;
+		char src [3];
+		unsigned char xlen;
+		char xclob;
+	};
+	char bytes[MONO_INST_MAX];
+} MonoInstSpec;
+
 extern const char mini_ins_info[];
 extern const gint8 mini_ins_sreg_counts [];
 
@@ -883,23 +923,6 @@ mono_inst_set_src_registers (MonoInst *ins, int *regs)
 	ins->sreg2 = regs [1];
 	ins->sreg3 = regs [2];
 }
-
-/* instruction description for use in regalloc/scheduling */
-enum {
-	MONO_INST_DEST,
-	MONO_INST_SRC1,		/* we depend on the SRCs to be consecutive */
-	MONO_INST_SRC2,
-	MONO_INST_SRC3,
-	MONO_INST_LEN,
-	MONO_INST_CLOB,
-	/* Unused, commented out to reduce the size of the mdesc tables
-	MONO_INST_FLAGS,
-	MONO_INST_COST,
-	MONO_INST_DELAY,
-	MONO_INST_RES,
-	*/
-	MONO_INST_MAX
-};
 
 typedef union {
 	struct {
@@ -1761,11 +1784,11 @@ typedef struct {
 	int type;
 } StackSlot;
 
-extern const char MONO_ARCH_CPU_SPEC [];
+extern const MonoInstSpec MONO_ARCH_CPU_SPEC [];
 #define MONO_ARCH_CPU_SPEC_IDX_COMBINE(a) a ## _idx
 #define MONO_ARCH_CPU_SPEC_IDX(a) MONO_ARCH_CPU_SPEC_IDX_COMBINE(a)
 extern const guint16 MONO_ARCH_CPU_SPEC_IDX(MONO_ARCH_CPU_SPEC) [];
-#define ins_get_spec(op) ((const char*)&MONO_ARCH_CPU_SPEC + MONO_ARCH_CPU_SPEC_IDX(MONO_ARCH_CPU_SPEC)[(op) - OP_LOAD])
+#define ins_get_spec(op) ((const char*)&MONO_ARCH_CPU_SPEC [MONO_ARCH_CPU_SPEC_IDX(MONO_ARCH_CPU_SPEC)[(op) - OP_LOAD]])
 
 #ifndef DISABLE_JIT
 
