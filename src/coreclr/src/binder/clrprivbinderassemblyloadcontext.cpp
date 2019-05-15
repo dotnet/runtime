@@ -216,10 +216,7 @@ HRESULT CLRPrivBinderAssemblyLoadContext::SetupContext(DWORD      dwAppDomainId,
             {
                 // Save the reference to the AppDomain in which the binder lives
                 pBinder->m_appContext.SetAppDomainId(dwAppDomainId);
-                
-                // Mark that this binder can explicitly bind to native images
-                pBinder->m_appContext.SetExplicitBindToNativeImages(true);
-                
+
                 // Save reference to the TPABinder that is required to be present.
                 _ASSERTE(pTPABinder != NULL);
                 pBinder->m_pTPABinder = pTPABinder;

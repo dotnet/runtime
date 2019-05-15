@@ -129,7 +129,7 @@ WCHAR StringLexer::DecodeUTF16Character()
     // See http://www.ietf.org/rfc/rfc2781.txt for details on UTF-16 encoding.
 
     WCHAR wcCurrentChar = 0;
-    SIZE_T nCharacters = m_end - m_cursor + 1;
+    SCOUNT_T nCharacters = m_end - m_cursor + 1;
     WCHAR wcChar1 = GetRawCharacter();
 
     if (wcChar1 < 0xd800)

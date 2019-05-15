@@ -1409,7 +1409,7 @@ uint32_t SegmentInsertBlockFromFreeListWorker(TableSegment *pSegment, uint32_t u
                 void * pvCommit = pSegment->rgValue + (uCommitLine * HANDLE_HANDLES_PER_BLOCK);
 
                 // we should commit one more page of handles
-                uint32_t dwCommit = OS_PAGE_SIZE;
+                size_t dwCommit = OS_PAGE_SIZE;
 
                 // commit the memory
                 if (!GCToOSInterface::VirtualCommit(pvCommit, dwCommit))
@@ -1774,7 +1774,7 @@ BOOL DoesSegmentNeedsToTrimExcessPages(TableSegment *pSegment)
     if (uEmptyLine < uDecommitLine)
     {
         // derive some useful info about the page size
-        uintptr_t dwPageRound = (uintptr_t)OS_PAGE_SIZE - 1;
+        uintptr_t dwPageRound = OS_PAGE_SIZE - 1;
         uintptr_t dwPageMask  = ~dwPageRound;
 
         // compute the address corresponding to the empty line

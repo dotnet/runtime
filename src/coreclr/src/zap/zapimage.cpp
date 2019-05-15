@@ -2238,20 +2238,20 @@ BOOL ZapImage::ShouldCompileMethodDef(mdMethodDef md)
     mdToken tkExtends;
     if (td != mdTypeDefNil)
     {
-        m_pMDImport->GetTypeDefProps(td, NULL, &tkExtends);
+        IfFailThrow(m_pMDImport->GetTypeDefProps(td, NULL, &tkExtends));
         
         mdAssembly tkAssembly;
         DWORD dwAssemblyFlags;
         
-        m_pMDImport->GetAssemblyFromScope(&tkAssembly);
+        IfFailThrow(m_pMDImport->GetAssemblyFromScope(&tkAssembly));
         if (TypeFromToken(tkAssembly) == mdtAssembly)
         {
-            m_pMDImport->GetAssemblyProps(tkAssembly,
+            IfFailThrow(m_pMDImport->GetAssemblyProps(tkAssembly,
                                             NULL, NULL,     // Public Key
                                             NULL,           // Hash Algorithm
                                             NULL,           // Name
                                             NULL,           // MetaData
-                                            &dwAssemblyFlags);
+                                            &dwAssemblyFlags));
             
             if (IsAfContentType_WindowsRuntime(dwAssemblyFlags))
             {
@@ -2259,7 +2259,7 @@ BOOL ZapImage::ShouldCompileMethodDef(mdMethodDef md)
                 {
                     LPCSTR szNameSpace = NULL;
                     LPCSTR szName = NULL;
-                    m_pMDImport->GetNameOfTypeRef(tkExtends, &szNameSpace, &szName);
+                    IfFailThrow(m_pMDImport->GetNameOfTypeRef(tkExtends, &szNameSpace, &szName));
                     
                     if (!strcmp(szNameSpace, "System") && !_stricmp((szName), "Attribute"))
                     {
