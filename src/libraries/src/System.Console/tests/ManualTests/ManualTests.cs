@@ -24,6 +24,18 @@ namespace System
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ReadLine_BackSpaceCanMoveAccrossWrappedLines()
+        {
+            Console.WriteLine("Please press 'a' until it wraps to the next terminal line, then press 'Backspace' until the input is erased, and then type a single 'a' and press 'Enter'.");
+            Console.Write("Input: ");
+            Console.Out.Flush();
+
+            string result = Console.ReadLine();
+            Assert.Equal("a", result);
+            AssertUserExpectedResults("the previous line is 'Input: a'");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
         public static void InPeek()
         {
             Console.WriteLine("Please type \"peek\" (without the quotes). You shouldn't see it as you type:");
