@@ -11,7 +11,7 @@ extern uint32_t g_pageSizeUnixInl;
 
 #define OS_PAGE_SIZE GCToOSInterface::GetPageSize()
 
-__forceinline uint32_t GCToOSInterface::GetPageSize()
+__forceinline size_t GCToOSInterface::GetPageSize()
 {
     return g_pageSizeUnixInl;
 }

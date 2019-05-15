@@ -52,8 +52,6 @@ private:
     LPWSTR       _pwzTextualIdentity;
     LPWSTR       _pwzTextualIdentityILFull;
 
-    DWORD _dw;
-
 public:
     // IUnknown methods
     STDMETHODIMP            QueryInterface(REFIID riid,void ** ppv);

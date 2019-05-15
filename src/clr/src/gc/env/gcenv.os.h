@@ -444,7 +444,7 @@ public:
     static void GetMemoryStatus(uint32_t* memory_load, uint64_t* available_physical, uint64_t* available_page_file);
 
     // Get size of an OS memory page
-    static uint32_t GetPageSize();
+    static size_t GetPageSize();
 
     //
     // Misc

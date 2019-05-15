@@ -1802,7 +1802,7 @@ void GcInfoEncoder::Build()
         const size_t sizeofEncodedNumBitsPerPointer = BitStreamWriter::SizeofVarLengthUnsigned(numBitsPerPointer, POINTER_SIZE_ENCBASE);
         const size_t sizeofNoIndirection = m_NumCallSites * (numRegisters + numStackSlots);
         const size_t sizeofIndirection = sizeofEncodedNumBitsPerPointer  // Encode the pointer sizes
-                                         + (m_NumCallSites * numBitsPerPointer) // Encoe the pointers
+                                         + (m_NumCallSites * numBitsPerPointer) // Encode the pointers
                                          + 7 // Up to 7 bits of alignment padding
                                          + sizeofSets; // Encode the actual live sets
 
