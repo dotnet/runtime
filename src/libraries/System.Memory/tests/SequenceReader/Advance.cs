@@ -37,6 +37,21 @@ namespace System.Memory.Tests.SequenceReader
             Assert.Equal(3, skipReader.AdvancePastAny(new byte[] { 2, 3, 1 }));
             Assert.True(skipReader.TryRead(out value));
             Assert.Equal(4, value);
+            skipReader.Rewind(skipReader.Consumed);
+            Assert.Equal(0, skipReader.AdvancePast(2));
+            Assert.Equal(3, skipReader.AdvancePastAny(2, 3, 1));
+            Assert.True(skipReader.TryRead(out value));
+            Assert.Equal(4, value);
+            skipReader.Rewind(skipReader.Consumed);
+            Assert.Equal(0, skipReader.AdvancePast(2));
+            Assert.Equal(3, skipReader.AdvancePastAny(2, 3, 1, 7));
+            Assert.True(skipReader.TryRead(out value));
+            Assert.Equal(4, value);
+            skipReader.Rewind(skipReader.Consumed - 1);
+            Assert.Equal(0, skipReader.AdvancePast(1));
+            Assert.Equal(2, skipReader.AdvancePastAny(2, 3));
+            Assert.True(skipReader.TryRead(out value));
+            Assert.Equal(4, value);
         }
 
         [Fact]

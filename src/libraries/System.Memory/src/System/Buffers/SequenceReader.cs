@@ -147,10 +147,13 @@ namespace System.Buffers
         /// <summary>
         /// Move the reader back the specified number of items.
         /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if trying to rewind a negative amount or more than <see cref="Consumed"/>.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Rewind(long count)
         {
-            if (count < 0)
+            if (count < 0 || count > Consumed)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count);
             }
@@ -324,13 +327,22 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Copies data from the current <see cref="Position"/> to the given <paramref name="destination"/> span.
+        /// Copies data from the current <see cref="Position"/> to the given <paramref name="destination"/> span if there
+        /// is enough data to fill it.
         /// </summary>
-        /// <param name="destination">Destination to copy to.</param>
-        /// <returns>True if there is enough data to copy to the <paramref name="destination"/>.</returns>
+        /// <remarks>
+        /// This API is used to copy a fixed amount of data out of the sequence if possible. It does not advance
+        /// the reader. To look ahead for a specific stream of data <see cref="IsNext(ReadOnlySpan{T}, bool)"/> can be used.
+        /// </remarks>
+        /// <param name="destination">Destination span to copy to.</param>
+        /// <returns>True if there is enough data to completely fill the <paramref name="destination"/> span.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryCopyTo(Span<T> destination)
         {
+            // This API doesn't advance to facilitate conditional advancement based on the data returned.
+            // We don't provide an advance option to allow easier utilizing of stack allocated destination spans.
+            // (Because we can make this method readonly we can guarantee that we won't capture the span.)
+
             ReadOnlySpan<T> firstSpan = UnreadSpan;
             if (firstSpan.Length >= destination.Length)
             {
@@ -338,11 +350,13 @@ namespace System.Buffers
                 return true;
             }
 
+            // Not enough in the current span to satisfy the request, fall through to the slow path
             return TryCopyMultisegment(destination);
         }
 
         internal bool TryCopyMultisegment(Span<T> destination)
         {
+            // If we don't have enough to fill the requested buffer, return false
             if (Remaining < destination.Length)
                 return false;
 
