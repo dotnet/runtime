@@ -124,7 +124,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue(37198)]
         [Theory, InlineData(true), InlineData(false)]
         [OuterLoop("Opens program")]
         public void ProcessStart_UseShellExecute_OnUnix_SuccessWhenProgramInstalled(bool isFolder)
@@ -153,6 +152,31 @@ namespace System.Diagnostics.Tests
                     px.Kill();
                     px.WaitForExit();
                     Assert.True(px.HasExited);
+                }
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] // On OSX, ProcessName returns the script interpreter.
+        public void ProcessNameMatchesScriptName()
+        {
+            string scriptName = GetTestFileName();
+            string filename = Path.Combine(TestDirectory, scriptName);
+            File.WriteAllText(filename, $"#!/bin/sh\nsleep 600\n"); // sleep 10 min.
+            // set x-bit
+            int mode = Convert.ToInt32("744", 8);
+            Assert.Equal(0, chmod(filename, mode));
+
+            using (var process = Process.Start(new ProcessStartInfo { FileName = filename }))
+            {
+                try
+                {
+                    Assert.Equal(scriptName, process.ProcessName);
+                }
+                finally
+                {
+                    process.Kill();
+                    process.WaitForExit();
                 }
             }
         }
@@ -294,7 +318,6 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ActiveIssue(37198)]
         [Theory, InlineData("vi")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [OuterLoop("Opens program")]

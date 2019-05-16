@@ -98,7 +98,7 @@ namespace System.IO
         /// in the string.  The extracted value will be everything between (not including) those parentheses.
         /// </summary>
         /// <returns></returns>
-        public string MoveAndExtractNextInOuterParens(bool extractValue = true)
+        public string MoveAndExtractNextInOuterParens()
         {
             // Move to the next position
             MoveNextOrFail();
@@ -118,7 +118,7 @@ namespace System.IO
             }
 
             // Extract the contents of the parens, then move our ending position to be after the paren
-            string result = extractValue ? _buffer.Substring(_startIndex + 1, lastParen - _startIndex - 1) : null;
+            string result = _buffer.Substring(_startIndex + 1, lastParen - _startIndex - 1);
             _endIndex = lastParen + 1;
 
             return result;
