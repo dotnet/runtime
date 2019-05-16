@@ -295,7 +295,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                 {
                     Assert.True(false, "Test Infrastructure Failure: " + infraEx.Message)%3B
                 }
-                else
+                else if (ret != CoreclrTestWrapperLib.EXIT_SUCCESS_CODE)
                 {
                     List<string> allOutput = new List<string>()%3B
 
@@ -333,7 +333,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                         output.WriteLine(line)%3B
                     }
 
-                    Assert.True(ret == CoreclrTestWrapperLib.EXIT_SUCCESS_CODE, string.Join(Environment.NewLine, allOutput))%3B
+                    Assert.True(false, string.Join(Environment.NewLine, allOutput))%3B
                 }
             }
         }
