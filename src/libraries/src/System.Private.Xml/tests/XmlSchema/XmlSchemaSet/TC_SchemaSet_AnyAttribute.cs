@@ -5,6 +5,7 @@
 using Xunit;
 using Xunit.Abstractions;
 using System.IO;
+using System.Linq;
 using System.Xml.Schema;
 
 namespace System.Xml.Tests
@@ -121,14 +122,28 @@ namespace System.Xml.Tests
             return XmlSchema.Read(new StringReader(xsd), null);
         }
 
+            public XmlSchema GetSimpleSchema(string ns, string attrNs)
+            {
+                var xsd = @"<xs:schema xmlns:xs='http://www.w3.org/2001/XMLSchema' targetNamespace='" + attrNs + @"' xmlns='" + attrNs + @"'>
+                        <xs:complexType name = 't'>
+                            <xs:sequence >
+                            <xs:element name = 'e1' type = 'xs:string' />
+                            </xs:sequence >
+                            <xs:anyAttribute namespace='" + ns + @"'/>
+                        </xs:complexType>
+                        </xs:schema>";
+
+                return XmlSchema.Read(new StringReader(xsd), null);
+            }
+
         //Intersection namespaces
         [Theory]
         //[Variation(Desc = "complextype Any ns - ##any, attrgroup Any ns2, allow ns2 attribute")]
-        [InlineData("##any", "ns2", "ns2", 0)]
+        [InlineData("##any", "ns2", "ns2", 0, "##targetNamespace")]
         //[Variation(Desc = "complextype Any ns - ##any, attrgroup Any ns2, not allow ns1 attribute")]
         [InlineData("##any", "ns2", "ns1", 1)]
         //[Variation(Desc = "complextype Any ns - ns2, attrgroup Any ##any, allow ns2 attribute")]
-        [InlineData("ns2", "##any", "ns2", 0)]
+        [InlineData("ns2", "##any", "ns2", 0, "##targetNamespace")]
         //[Variation(Desc = "complextype Any ns - ns2, attrgroup Any ##any, not allow ns1 attribute")]
         [InlineData("ns2", "##any", "ns1", 1)]
         //[Variation(Desc = "complextype Any ns - ns1 ns2, attrgroup Any ##other, not allow ns1 attribute")]
@@ -148,10 +163,10 @@ namespace System.Xml.Tests
         //[Variation(Desc = "complextype Any ns - ns1 ns3, attrgroup Any ns1 ns2, not allow ns2 attribute")]
         [InlineData("ns1 ns3", "ns1 ns2", "ns2", 1)]
         //[Variation(Desc = "complextype Any ns - ns1 ns3, attrgroup Any ns1 ns2, allow ns1 attribute")]
-        [InlineData("ns1 ns3", "ns1 ns2", "ns1", 0)]
+        [InlineData("ns1 ns3", "ns1 ns2", "ns1", 0, "ns1")]
         //[Variation(Desc = "complextype Any ns - ##other, attrgroup Any ##other, not allow ns1 attribute")]
         [InlineData("##other", "##other", "ns1", 1)]
-        public void v1(string ns1, string ns2, string attrNs, int expectedError)
+        public void v1(string ns1, string ns2, string attrNs, int expectedError, string expectedNs = null)
         {
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.XmlResolver = new XmlUrlResolver();
@@ -160,26 +175,33 @@ namespace System.Xml.Tests
             xss.Compile();
 
             Assert.Equal(expectedError, _errorCount);
+
+            // Full framework does not set the namespace property for intersections and unions
+            if (!PlatformDetection.IsFullFramework && expectedNs != null)
+            {
+                XmlSchemaAnyAttribute attributeWildcard = ((XmlSchemaComplexType)xss.GlobalTypes[new XmlQualifiedName("t", attrNs)]).AttributeWildcard;
+                CompareWildcardNamespaces(expectedNs, attributeWildcard.Namespace);
+            }
         }
 
         [Theory]
         //[Variation(Desc = "basetype Any ns - ##any, derivedType Any ns - ns1, allow ns2 attribute")]
-        [InlineData("##any", "ns1", "ns2", 0)]
+        [InlineData("##any", "ns1", "ns2", 0, "##any")]
         //[Variation(Desc = "basetype Any ns - ns1, derivedType Any ns - ##any, allow ns2 attribute")]
-        [InlineData("ns1", "##any", "ns2", 0)]
+        [InlineData("ns1", "##any", "ns2", 0, "##any")]
         //[Variation(Desc = "basetype Any ns - ns1 ns2, derivedType Any ns - ns2 ns3 , allow ns3 attribute")]
-        [InlineData("ns1 ns2", "ns2 ns3", "ns3", 0)]
+        [InlineData("ns1 ns2", "ns2 ns3", "ns3", 0, "ns1 ns2 ##targetNamespace")]
         //[Variation(Desc = "basetype Any ns - ##other, derivedType Any ns - ##other , not allow current ns")]
         [InlineData("##other", "##other", "ns1", 1)]
         //[Variation(Desc = "basetype Any ns - ns1 ns2, derivedType Any ns - ##other , allow ns1")]
-        [InlineData("ns1 ns2", "##other", "ns1", 0)]
+        [InlineData("ns1 ns2", "##other", "ns1", 0, "##other")]
         //[Variation(Desc = "basetype Any ns - ns1 ns2, derivedType Any ns - ##other , allow ns2")]
-        [InlineData("ns1 ns2", "##other", "ns2", 0)]
+        [InlineData("ns1 ns2", "##other", "ns2", 0, "##other")]
         //[Variation(Desc = "basetype Any ns - ##other, derivedType Any ns - ns1 ns2 , allow ns2")]
-        [InlineData("##other", "ns1 ns2", "ns1", 0)]
+        [InlineData("##other", "ns1 ns2", "ns1", 0, "##other")]
         //[Variation(Desc = "basetype Any ns - ##other, derivedType Any ns - ns1 ns2 , allow ns2")]
-        [InlineData("##other", "ns1 ns2", "ns2", 0)]
-        public void v2(string ns1, string ns2, string attrNs, int expectedError)
+        [InlineData("##other", "ns1 ns2", "ns2", 0, "##other")]
+        public void v2(string ns1, string ns2, string attrNs, int expectedError, string expectedNs = null)
         {
             XmlSchemaSet xss = new XmlSchemaSet();
             xss.XmlResolver = new XmlUrlResolver();
@@ -188,6 +210,42 @@ namespace System.Xml.Tests
             xss.Compile();
 
             Assert.Equal(expectedError, _errorCount);
+
+            // Full framework does not set the namespace property for intersections and unions
+            if (!PlatformDetection.IsFullFramework && expectedNs != null)
+            {
+                XmlSchemaAnyAttribute attributeWildcard = ((XmlSchemaComplexType)xss.GlobalTypes[new XmlQualifiedName("t1", attrNs)]).AttributeWildcard;
+                CompareWildcardNamespaces(expectedNs, attributeWildcard.Namespace);
+            }
+        }
+
+        [Theory]
+        //[Variation(Desc = "ns - ##any, allow any attribute")]
+        [InlineData("##any", "ns1", "##any")]
+        //[Variation(Desc = "ns - ##other, not allow ns1 attribute")]
+        [InlineData("##other", "ns1", "##other")]
+        //[Variation(Desc = "ns - ns1 ns2, allow ns1 and ns2 attribute")]
+        [InlineData("ns1 ns2", "ns1", "ns1 ns2")]
+        //[Variation(Desc = "##targetNamespace, allow current ns")]
+        [InlineData("##targetNamespace", "ns1", "##targetNamespace")]
+        public void v3(string ns, string attrNs, string expectedNs)
+        {
+            XmlSchemaSet xss = new XmlSchemaSet();
+            xss.XmlResolver = new XmlUrlResolver();
+            xss.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
+            xss.Add(GetSimpleSchema(ns, attrNs));
+            xss.Compile();
+
+            XmlSchemaAnyAttribute attributeWildcard = ((XmlSchemaComplexType)xss.GlobalTypes[new XmlQualifiedName("t", attrNs)]).AttributeWildcard;
+            CompareWildcardNamespaces(expectedNs, attributeWildcard.Namespace);
+        }
+
+        private static void CompareWildcardNamespaces(string expected, string actual)
+        {
+            var orderedExpected = string.Join(" ", expected.Split(' ').OrderBy(ns => ns));
+            var orderedActual = string.Join(" ", actual.Split(' ').OrderBy(ns => ns));
+
+            Assert.Equal(orderedExpected, orderedActual);
         }
     }
 }
