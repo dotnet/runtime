@@ -596,19 +596,6 @@ const bool dspGCtbls = true;
 
 #ifdef DEBUG
 
-struct JitOptions
-{
-    const char* methodName; // Method to display output for
-    const char* className;  // Class  to display output for
-
-    double   CGknob;   // Tweakable knob for testing
-    unsigned testMask; // Tweakable mask for testing
-
-    JitOptions* lastDummyField; // Ensures instantiation uses right order of arguments
-};
-
-extern JitOptions jitOpts;
-
 // Forward declarations for UninitializedWord and IsUninitialized are needed by alloc.h
 template <typename T>
 inline T UninitializedWord(Compiler* comp);

@@ -43,21 +43,6 @@ HINSTANCE g_hInst = nullptr;
 
 /*****************************************************************************/
 
-#ifdef DEBUG
-
-JitOptions jitOpts = {
-    nullptr, // methodName
-    nullptr, // className
-    0.1,     // CGknob
-    0,       // testMask
-
-    (JitOptions*)nullptr // lastDummyField.
-};
-
-#endif // DEBUG
-
-/*****************************************************************************/
-
 extern "C" DLLEXPORT void __stdcall jitStartup(ICorJitHost* jitHost)
 {
     if (g_jitInitialized)
