@@ -9075,7 +9075,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
             }
             if (isCopyBlock && destLclVarTree == nullptr && !src->OperIs(GT_LCL_VAR))
             {
-                fgMorphBlockOperand(src, asgType, genTypeSize(asgType), false /*isDest*/);
+                fgMorphBlockOperand(src, asgType, genTypeSize(asgType), false /*isBlkReqd*/);
                 return tree;
             }
         }
@@ -9179,10 +9179,18 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
 
         // For initBlk, a non constant source is not going to allow us to fiddle
         // with the bits to create a single assigment.
-        // Nor do we (for now) support transforming an InitBlock of SIMD type.
-        if (isInitBlock && (!src->IsConstInitVal() || varTypeIsSIMD(asgType)))
+        // Nor do we (for now) support transforming an InitBlock of SIMD type, unless
+        // it is a direct assignment to a lclVar and the value is zero.
+        if (isInitBlock)
         {
-            return nullptr;
+            if (!src->IsConstInitVal())
+            {
+                return nullptr;
+            }
+            if (varTypeIsSIMD(asgType) && (!src->IsIntegralConst(0) || (destVarDsc == nullptr)))
+            {
+                return nullptr;
+            }
         }
 
         if (destVarDsc != nullptr)
@@ -9342,8 +9350,6 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
                 noway_assert(destVarDsc != nullptr);
 
                 src = new (this, GT_SIMD) GenTreeSIMD(asgType, src, SIMDIntrinsicInit, destVarDsc->lvBaseType, size);
-                tree->gtOp.gtOp2 = src;
-                return tree;
             }
             else
 #endif
@@ -9362,13 +9368,13 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
         // Ensure that the dest is setup appropriately.
         if (dest->gtEffectiveVal()->OperIsIndir())
         {
-            dest = fgMorphBlockOperand(dest, asgType, size, true /*isDest*/);
+            dest = fgMorphBlockOperand(dest, asgType, size, false /*isBlkReqd*/);
         }
 
         // Ensure that the rhs is setup appropriately.
         if (isCopyBlock)
         {
-            src = fgMorphBlockOperand(src, asgType, size, false /*isDest*/);
+            src = fgMorphBlockOperand(src, asgType, size, false /*isBlkReqd*/);
         }
 
         // Set the lhs and rhs on the assignment.
@@ -9469,12 +9475,7 @@ GenTree* Compiler::fgMorphInitBlock(GenTree* tree)
         }
         else
         {
-            if (dest->OperIs(GT_IND))
-            {
-                assert(dest->TypeGet() == TYP_STRUCT);
-                blockSize = genTypeSize(dest->TypeGet());
-            }
-            else if (dest->OperIs(GT_DYN_BLK))
+            if (dest->OperIs(GT_DYN_BLK))
             {
                 blockSize = 0;
             }
@@ -9526,16 +9527,8 @@ GenTree* Compiler::fgMorphInitBlock(GenTree* tree)
 
         if (!destDoFldAsg)
         {
-            // If we're doing an InitBlock and we've transformed the dest to a non-Blk
-            // we need to change it back.
-            if (!dest->OperIsBlk())
-            {
-                noway_assert(blockSize != 0);
-                tree->gtOp.gtOp1 = origDest;
-                tree->gtType     = origDest->gtType;
-            }
-
-            dest             = fgMorphBlockOperand(dest, dest->TypeGet(), blockSize, true);
+            // For an InitBlock we always require a block operand.
+            dest             = fgMorphBlockOperand(dest, dest->TypeGet(), blockSize, true /*isBlkReqd*/);
             tree->gtOp.gtOp1 = dest;
             tree->gtFlags |= (dest->gtFlags & GTF_ALL_EFFECT);
         }
@@ -9964,10 +9957,10 @@ GenTree* Compiler::fgMorphBlkNode(GenTree* tree, bool isDest)
 // fgMorphBlockOperand: Canonicalize an operand of a block assignment
 //
 // Arguments:
-//    tree     - The block operand
-//    asgType  - The type of the assignment
+//    tree       - The block operand
+//    asgType    - The type of the assignment
 //    blockWidth - The size of the block
-//    isDest     - true iff this is the destination of the assignment
+//    isBlkReqd  - true iff this operand must remain a block node
 //
 // Return Value:
 //    Returns the morphed block operand
@@ -9979,7 +9972,7 @@ GenTree* Compiler::fgMorphBlkNode(GenTree* tree, bool isDest)
 //    Although 'tree' WAS an operand of a block assignment, the assignment
 //    may have been retyped to be a scalar assignment.
 
-GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigned blockWidth, bool isDest)
+GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigned blockWidth, bool isBlkReqd)
 {
     GenTree* effectiveVal = tree->gtEffectiveVal();
 
@@ -9987,19 +9980,19 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
     {
         if (effectiveVal->OperIsIndir())
         {
-            GenTree* addr = effectiveVal->AsIndir()->Addr();
-            if ((addr->OperGet() == GT_ADDR) && (addr->gtGetOp1()->TypeGet() == asgType))
+            if (!isBlkReqd)
             {
-                effectiveVal = addr->gtGetOp1();
+                GenTree* addr = effectiveVal->AsIndir()->Addr();
+                if ((addr->OperGet() == GT_ADDR) && (addr->gtGetOp1()->TypeGet() == asgType))
+                {
+                    effectiveVal = addr->gtGetOp1();
+                }
+                else if (effectiveVal->OperIsBlk())
+                {
+                    effectiveVal = fgMorphBlkToInd(effectiveVal->AsBlk(), asgType);
+                }
             }
-            else if (effectiveVal->OperIsBlk())
-            {
-                effectiveVal = fgMorphBlkToInd(effectiveVal->AsBlk(), asgType);
-            }
-            else
-            {
-                effectiveVal->gtType = asgType;
-            }
+            effectiveVal->gtType = asgType;
         }
         else if (effectiveVal->TypeGet() != asgType)
         {
@@ -10026,22 +10019,6 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
         {
             lclNode = effectiveVal->AsLclVarCommon();
         }
-#ifdef FEATURE_SIMD
-        if (varTypeIsSIMD(asgType))
-        {
-            if ((indirTree != nullptr) && (lclNode == nullptr) && (indirTree->Addr()->OperGet() == GT_ADDR) &&
-                (indirTree->Addr()->gtGetOp1()->OperIsSimdOrHWintrinsic()))
-            {
-                assert(!isDest);
-                needsIndirection = false;
-                effectiveVal     = indirTree->Addr()->gtGetOp1();
-            }
-            if (effectiveVal->OperIsSimdOrHWintrinsic())
-            {
-                needsIndirection = false;
-            }
-        }
-#endif // FEATURE_SIMD
         if (lclNode != nullptr)
         {
             LclVarDsc* varDsc = &(lvaTable[lclNode->gtLclNum]);
@@ -10064,24 +10041,21 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
         {
             if (indirTree != nullptr)
             {
-                if (indirTree->OperIsBlk())
+                if (indirTree->OperIsBlk() && !isBlkReqd)
                 {
-                    if (!isDest || (asgType != TYP_STRUCT))
-                    {
-                        (void)fgMorphBlkToInd(effectiveVal->AsBlk(), asgType);
-                    }
+                    (void)fgMorphBlkToInd(effectiveVal->AsBlk(), asgType);
                 }
                 else
                 {
-                    // We should never find a TYP_STRUCT GT_IND on the lhs of an assignment.
-                    assert(!isDest || (asgType != TYP_STRUCT));
+                    // If we have an indirection and a block is required, it should already be a block.
+                    assert(indirTree->OperIsBlk() || !isBlkReqd);
                 }
             }
             else
             {
                 GenTree* newTree;
                 GenTree* addr = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
-                if (isDest)
+                if (isBlkReqd)
                 {
                     CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleIfPresent(effectiveVal);
                     if (clsHnd == NO_CLASS_HANDLE)
@@ -10091,7 +10065,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
                     else
                     {
                         newTree = gtNewObjNode(clsHnd, addr);
-                        if (isDest && (newTree->OperGet() == GT_OBJ))
+                        if (newTree->OperGet() == GT_OBJ)
                         {
                             gtSetObjGcInfo(newTree->AsObj());
                         }
@@ -10573,7 +10547,8 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         var_types asgType = dest->TypeGet();
         if (requiresCopyBlock)
         {
-            dest            = fgMorphBlockOperand(dest, asgType, blockWidth, true /*isDest*/);
+            bool isBlkReqd  = (asgType == TYP_STRUCT);
+            dest            = fgMorphBlockOperand(dest, asgType, blockWidth, isBlkReqd);
             asg->gtOp.gtOp1 = dest;
             asg->gtFlags |= (dest->gtFlags & GTF_ALL_EFFECT);
 
@@ -10594,7 +10569,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
             }
 
             // Eliminate the "OBJ or BLK" node on the rhs.
-            rhs             = fgMorphBlockOperand(rhs, asgType, blockWidth, false /*!isDest*/);
+            rhs             = fgMorphBlockOperand(rhs, asgType, blockWidth, false /*!isBlkReqd*/);
             asg->gtOp.gtOp2 = rhs;
 
             goto _Done;
@@ -10626,7 +10601,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         else if (destDoFldAsg)
         {
             fieldCnt = destLclVar->lvFieldCnt;
-            rhs      = fgMorphBlockOperand(rhs, asgType, blockWidth, false /*isDest*/);
+            rhs      = fgMorphBlockOperand(rhs, asgType, blockWidth, false /*isBlkReqd*/);
             if (srcAddr == nullptr)
             {
                 srcAddr = fgMorphGetStructAddr(&rhs, destLclVar->lvVerTypeInfo.GetClassHandle(), true /* rValue */);
@@ -10636,7 +10611,7 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         {
             assert(srcDoFldAsg);
             fieldCnt = srcLclVar->lvFieldCnt;
-            dest     = fgMorphBlockOperand(dest, asgType, blockWidth, true /*isDest*/);
+            dest     = fgMorphBlockOperand(dest, asgType, blockWidth, false /*isBlkReqd*/);
             if (dest->OperIsBlk())
             {
                 (void)fgMorphBlkToInd(dest->AsBlk(), TYP_STRUCT);
