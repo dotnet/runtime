@@ -96,6 +96,7 @@ class LoadingEntry_LockHolder;
 class   DispatchMapBuilder;
 class LoaderAllocator;
 class ComCallWrapperTemplate;
+enum class ParseNativeTypeFlags : int;
 
 typedef DPTR(DictionaryLayout) PTR_DictionaryLayout;
 typedef DPTR(FieldMarshaler) PTR_FieldMarshaler;
@@ -356,15 +357,14 @@ class EEClassLayoutInfo
        BOOL fExplicitOffsets,       // explicit offsets?
        MethodTable *pParentMT,       // the loaded superclass
        ULONG cTotalFields,              // total number of fields (instance and static)
-       HENUMInternal *phEnumField,  // enumerator for field
+       HENUMInternal *phEnumField,  // enumerator for fields
        Module* pModule,             // Module that defines the scope, loader and heap (for allocate FieldMarshalers)
        const SigTypeContext *pTypeContext,          // Type parameters for NStruct being loaded
        EEClassLayoutInfo *pEEClassLayoutInfoOut,  // caller-allocated structure to fill in.
-       LayoutRawFieldInfo *pInfoArrayOut, // caller-allocated array to fill in.  Needs room for cMember+1 elements
+       LayoutRawFieldInfo *pInfoArrayOut, // caller-allocated array to fill in.  Needs room for cTotalFields+1 elements
        LoaderAllocator * pAllocator,
        AllocMemTracker    *pamTracker
     );
-
 
     friend class ClassLoader;
     friend class EEClass;
@@ -374,12 +374,54 @@ class EEClassLayoutInfo
 #endif
 
     private:
+        static void ParseFieldNativeTypes(
+            IMDInternalImport* pInternalImport,
+            const mdTypeDef cl, // cl of the NStruct being loaded
+            HENUMInternal* phEnumField, // enumerator for fields
+            const ULONG cTotalFields,
+            Module* pModule, // Module that defines the scope, loader and heap (for allocate FieldMarshalers)
+            ParseNativeTypeFlags nativeTypeFlags,
+            const SigTypeContext* pTypeContext, // Type parameters for NStruct being loaded
+            BOOL* fDisqualifyFromManagedSequential,
+            LayoutRawFieldInfo* pFieldInfoArrayOut, // caller-allocated array to fill in.  Needs room for cTotalFields+1 elements
+            EEClassLayoutInfo* pEEClassLayoutInfoOut, // caller-allocated structure to fill in.
+            ULONG* cInstanceFields // [out] number of instance fields
+#ifdef _DEBUG
+            ,
+            LPCUTF8 szNamespace,
+            LPCUTF8 szName
+#endif
+        );
+
+        static void SetOffsetsAndSortFields(
+            IMDInternalImport* pInternalImport,
+            const mdTypeDef cl,
+            LayoutRawFieldInfo* pFieldInfoArray, // An array of LayoutRawFieldInfos.
+            const ULONG cInstanceFields,
+            const BOOL fExplicitOffsets,
+            const UINT32 cbAdjustedParentLayoutNativeSize,
+            Module* pModule, // Module that defines the scope for the type-load
+            LayoutRawFieldInfo** pSortArrayOut // A caller-allocated array to fill in with pointers to elements in pFieldInfoArray in ascending order when sequential layout, and declaration order otherwise.
+        );
+
+        static void CalculateSizeAndFieldOffsets(
+            const UINT32 parentSize,
+            ULONG numInstanceFields,
+            BOOL fExplicitOffsets,
+            LayoutRawFieldInfo* const* pSortedFieldInfoArray, // An array of pointers to LayoutRawFieldInfo's in ascending order when sequential layout.
+            ULONG classSizeInMetadata,
+            BYTE packingSize,
+            BYTE parentAlignmentRequirement,
+            BOOL calculatingNativeLayout,
+            EEClassLayoutInfo* pEEClassLayoutInfoOut // A pointer to a caller-allocated EEClassLayoutInfo that we are filling in.
+        );
+
         // size (in bytes) of fixed portion of NStruct.
         UINT32      m_cbNativeSize;
         UINT32      m_cbManagedSize;
 
     public:
-        // 1,2,4 or 8: this is equal to the largest of the alignment requirements
+        // this is equal to the largest of the alignment requirements
         // of each of the EEClass's members. If the NStruct extends another NStruct,
         // the base NStruct is treated as the first member for the purpose of
         // this calculation.

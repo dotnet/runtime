@@ -33,7 +33,7 @@
 // Forward refernces
 class FieldDesc;
 class MethodTable;
-
+class FieldMarshaler;
 class FieldMarshaler_NestedLayoutClass;
 class FieldMarshaler_NestedValueClass;
 class FieldMarshaler_StringUni;
@@ -87,8 +87,7 @@ enum NStructFieldType
 //=======================================================================
 #define DEFAULT_PACKING_SIZE 32
 
-
-enum class ParseNativeTypeFlags
+enum class ParseNativeTypeFlags : int
 {
     None    = 0x00,
     IsAnsi  = 0x01,
@@ -125,6 +124,17 @@ BOOL IsFieldBlittable(FieldMarshaler* pFM);
 BOOL IsStructMarshalable(TypeHandle th);
 
 //=======================================================================
+// This structure contains information about where a field is placed in a structure, as well as it's size and alignment.
+// It is used as part of type-loading to determine native layout and (where applicable) managed sequential layout.
+//=======================================================================
+struct RawFieldPlacementInfo
+{
+    UINT32 m_offset;
+    UINT32 m_size;
+    UINT32 m_alignment;
+};
+
+//=======================================================================
 // The classloader stores an intermediate representation of the layout
 // metadata in an array of these structures. The dual-pass nature
 // is a bit extra overhead but building this structure requiring loading
@@ -134,34 +144,24 @@ BOOL IsStructMarshalable(TypeHandle th);
 //
 // Each redirected field gets one entry in LayoutRawFieldInfo.
 // The array is terminated by one dummy record whose m_MD == mdMemberDefNil.
-// WARNING!! Before you change this struct see the comment above the m_FieldMarshaler field
 //=======================================================================
 struct LayoutRawFieldInfo
 {
     mdFieldDef  m_MD;             // mdMemberDefNil for end of array
     UINT8       m_nft;            // NFT_* value
-    UINT32      m_offset;         // native offset of field
-    UINT32      m_cbNativeSize;   // native size of field in bytes
+    RawFieldPlacementInfo m_nativePlacement; // Description of the native field placement
     ULONG       m_sequence;       // sequence # from metadata
-    BOOL        m_fIsOverlapped;
 
 
-    //----- Post v1.0 addition: The LayoutKind.Sequential attribute now affects managed layout as well.
-    //----- So we need to keep a parallel set of layout data for the managed side. The Size and AlignmentReq
-    //----- is redundant since we can figure it out from the sig but since we're already accessing the sig
-    //----- in ParseNativeType, we might as well capture it at that time.
-    UINT32      m_managedSize;    // managed size of field
-    UINT32      m_managedAlignmentReq; // natural alignment of field
-    UINT32      m_managedOffset;  // managed offset of field
-    UINT32      m_pad;            // needed to keep m_FieldMarshaler 8-byte aligned
+    // The LayoutKind.Sequential attribute now affects managed layout as well.
+    // So we need to keep a parallel set of layout data for the managed side. The Size and AlignmentReq
+    // is redundant since we can figure it out from the sig but since we're already accessing the sig
+    // in ParseNativeType, we might as well capture it at that time.
+    RawFieldPlacementInfo m_managedPlacement;
 
-    // WARNING!
-    // We in-place create a field marshaler in the following
-    // memory, so keep it 8-byte aligned or 
-    // the vtable pointer initialization will cause a 
-    // misaligned memory write on IA64.
-    // The entire struct's size must also be multiple of 8 bytes
-    struct
+    // This field is needs to be 8-byte aligned
+    // to ensure that the FieldMarshaler vtable pointer is aligned correctly.
+    alignas(8) struct
     {
         private:
             char m_space[MAXFIELDMARSHALERSIZE];

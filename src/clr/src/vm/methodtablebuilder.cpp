@@ -4182,7 +4182,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                     pSrcFieldMarshaler->CopyTo(pNextFieldMarshaler, MAXFIELDMARSHALERSIZE);
 
                     pNextFieldMarshaler->SetFieldDesc(pFD);
-                    pNextFieldMarshaler->SetExternalOffset(pwalk->m_offset);
+                    pNextFieldMarshaler->SetExternalOffset(pwalk->m_nativePlacement.m_offset);
 
                     ((BYTE*&)pNextFieldMarshaler) += MAXFIELDMARSHALERSIZE;
                     break;
@@ -4220,7 +4220,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                     (*pByValueClassCache)[dwCurrentDeclaredField]->GetNumInstanceFieldBytes();
 
                 if (pLayoutFieldInfo)
-                    IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_offset));
+                    IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_nativePlacement.m_offset));
                 else
                     pFD->SetOffset(FIELD_OFFSET_VALUE_CLASS);
             }
@@ -4229,7 +4229,7 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 (DWORD_PTR &)pFD->m_pMTOfEnclosingClass =
                     (*pByValueClassCache)[dwCurrentDeclaredField]->GetNumInstanceFieldBytes();
 
-                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_managedOffset));
+                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_managedPlacement.m_offset));
             }
             else
             {
@@ -4250,9 +4250,9 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
             // mark it as either GC or non-GC and as unplaced; it will get placed later on in an optimized way.
 
             if ((IsBlittable() || HasExplicitFieldOffsetLayout()) && !fIsStatic)
-                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_offset));
+                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_nativePlacement.m_offset));
             else if (IsManagedSequential() && !fIsStatic)
-                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_managedOffset));
+                IfFailThrow(pFD->SetOffset(pLayoutFieldInfo->m_managedPlacement.m_offset));
             else if (bCurrentFieldIsGCPointer)
                 pFD->SetOffset(FIELD_OFFSET_UNPLACED_GC_PTR);
             else

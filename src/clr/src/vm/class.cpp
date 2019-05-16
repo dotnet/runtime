@@ -3336,6 +3336,246 @@ void EEClass::SetPackableField(EEClassFieldId eField, DWORD dwValue)
 
 #ifndef DACCESS_COMPILE
 
+void EEClassLayoutInfo::SetOffsetsAndSortFields(
+    IMDInternalImport* pInternalImport,
+    const mdTypeDef cl,
+    LayoutRawFieldInfo* pFieldInfoArray,
+    const ULONG cInstanceFields,
+    const BOOL fExplicitOffsets,
+    const UINT32 cbAdjustedParentLayoutNativeSize,
+    Module* pModule,
+    LayoutRawFieldInfo** pSortArrayOut
+)
+{
+    HRESULT hr;
+    MD_CLASS_LAYOUT classlayout;
+    hr = pInternalImport->GetClassLayoutInit(cl, &classlayout);
+    if (FAILED(hr))
+    {
+        COMPlusThrowHR(hr, BFA_CANT_GET_CLASSLAYOUT);
+    }
+
+    LayoutRawFieldInfo* pfwalk = pFieldInfoArray;
+    mdFieldDef fd;
+    ULONG ulOffset;
+    while (SUCCEEDED(hr = pInternalImport->GetClassLayoutNext(
+        &classlayout,
+        &fd,
+        &ulOffset)) &&
+        fd != mdFieldDefNil)
+    {
+        // watch for the last entry: must be mdFieldDefNil
+        while ((mdFieldDefNil != pfwalk->m_MD) && (pfwalk->m_MD < fd))
+            pfwalk++;
+
+        // if we haven't found a matching token, it must be a static field with layout -- ignore it
+        if (pfwalk->m_MD != fd) continue;
+
+        if (!fExplicitOffsets)
+        {
+            // ulOffset is the sequence
+            pfwalk->m_sequence = ulOffset;
+        }
+        else
+        {
+            // ulOffset is the explicit offset
+            pfwalk->m_nativePlacement.m_offset = ulOffset;
+            pfwalk->m_sequence = (ULONG)-1;
+
+            // Treat base class as an initial member.
+            if (!SafeAddUINT32(&(pfwalk->m_nativePlacement.m_offset), cbAdjustedParentLayoutNativeSize))
+                COMPlusThrowOM();
+        }
+    }
+    IfFailThrow(hr);
+
+    LayoutRawFieldInfo** pSortArrayEnd = pSortArrayOut;
+    // now sort the array
+    if (!fExplicitOffsets)
+    {
+        // sort sequential by ascending sequence
+        for (ULONG i = 0; i < cInstanceFields; i++)
+        {
+            LayoutRawFieldInfo** pSortWalk = pSortArrayEnd;
+            while (pSortWalk != pSortArrayOut)
+            {
+                if (pFieldInfoArray[i].m_sequence >= (*(pSortWalk - 1))->m_sequence)
+                    break;
+
+                pSortWalk--;
+            }
+
+            // pSortWalk now points to the target location for new LayoutRawFieldInfo*.
+            MoveMemory(pSortWalk + 1, pSortWalk, (pSortArrayEnd - pSortWalk) * sizeof(LayoutRawFieldInfo*));
+            *pSortWalk = &pFieldInfoArray[i];
+            pSortArrayEnd++;
+        }
+    }
+    else // no sorting for explicit layout
+    {
+        for (ULONG i = 0; i < cInstanceFields; i++)
+        {
+            if (pFieldInfoArray[i].m_MD != mdFieldDefNil)
+            {
+                if (pFieldInfoArray[i].m_nativePlacement.m_offset == (UINT32)-1)
+                {
+                    LPCUTF8 szFieldName;
+                    if (FAILED(pInternalImport->GetNameOfFieldDef(pFieldInfoArray[i].m_MD, &szFieldName)))
+                    {
+                        szFieldName = "Invalid FieldDef record";
+                    }
+                    pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport,
+                        cl,
+                        szFieldName,
+                        IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET);
+                }
+                else if ((INT)pFieldInfoArray[i].m_nativePlacement.m_offset < 0)
+                {
+                    LPCUTF8 szFieldName;
+                    if (FAILED(pInternalImport->GetNameOfFieldDef(pFieldInfoArray[i].m_MD, &szFieldName)))
+                    {
+                        szFieldName = "Invalid FieldDef record";
+                    }
+                    pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport,
+                        cl,
+                        szFieldName,
+                        IDS_CLASSLOAD_NSTRUCT_NEGATIVE_OFFSET);
+                }
+            }
+
+            *pSortArrayEnd = &pFieldInfoArray[i];
+            pSortArrayEnd++;
+        }
+    }
+}
+
+void EEClassLayoutInfo::CalculateSizeAndFieldOffsets(
+    const UINT32 parentSize,
+    ULONG numInstanceFields,
+    BOOL fExplicitOffsets,
+    LayoutRawFieldInfo* const* pSortedFieldInfoArray,
+    ULONG classSizeInMetadata,
+    BYTE packingSize,
+    BYTE parentAlignmentRequirement,
+    BOOL calculatingNativeLayout,
+    EEClassLayoutInfo* pEEClassLayoutInfoOut
+)
+{
+    UINT32 cbCurOffset = parentSize;
+    BYTE LargestAlignmentRequirement = max(1, min(packingSize, parentAlignmentRequirement));
+
+    // Start with the size inherited from the parent (if any).
+    uint32_t calcTotalSize = parentSize;
+
+    LayoutRawFieldInfo* const* pSortWalk;
+    ULONG i;
+    for (pSortWalk = pSortedFieldInfoArray, i = numInstanceFields; i; i--, pSortWalk++)
+    {
+        LayoutRawFieldInfo* pfwalk = *pSortWalk;
+        RawFieldPlacementInfo* placementInfo;
+
+        if (calculatingNativeLayout)
+        {
+            placementInfo = &pfwalk->m_nativePlacement;
+        }
+        else
+        {
+            placementInfo = &pfwalk->m_managedPlacement;
+        }
+
+        BYTE alignmentRequirement = placementInfo->m_alignment;
+
+        alignmentRequirement = min(alignmentRequirement, packingSize);
+
+        LargestAlignmentRequirement = max(LargestAlignmentRequirement, alignmentRequirement);
+
+        switch (alignmentRequirement)
+        {
+        case 1:
+        case 2:
+        case 4:
+        case 8:
+        case 16:
+        case 32:
+            break;
+        default:
+            COMPlusThrowHR(COR_E_INVALIDPROGRAM, BFA_METADATA_CORRUPT);
+        }
+
+        if (!fExplicitOffsets)
+        {
+            // Insert enough padding to align the current data member.
+            while (cbCurOffset % alignmentRequirement)
+            {
+                if (!SafeAddUINT32(&cbCurOffset, 1))
+                    COMPlusThrowOM();
+            }
+
+            // if we overflow we will catch it below
+            placementInfo->m_offset = cbCurOffset;
+            cbCurOffset += placementInfo->m_size;
+        }
+
+        uint32_t fieldEnd = placementInfo->m_offset + placementInfo->m_size;
+        if (fieldEnd < placementInfo->m_offset)
+            COMPlusThrowOM();
+
+        // size of the structure is the size of the last field.  
+        if (fieldEnd > calcTotalSize)
+            calcTotalSize = fieldEnd;
+    }
+
+    if (classSizeInMetadata != 0)
+    {
+        ULONG classSize = classSizeInMetadata;
+        if (!SafeAddULONG(&classSize, (ULONG)parentSize))
+            COMPlusThrowOM();
+
+        // size must be large enough to accomodate layout. If not, we use the layout size instead.
+        calcTotalSize = max(classSize, calcTotalSize);
+    }
+    else
+    {
+        // There was no class size given in metadata, so let's round up to a multiple of the alignment requirement
+        // to make array allocations of this structure simple to keep aligned.
+        calcTotalSize += (LargestAlignmentRequirement - calcTotalSize % LargestAlignmentRequirement) % LargestAlignmentRequirement;
+
+        if (calcTotalSize % LargestAlignmentRequirement != 0)
+        {
+            if (!SafeAddUINT32(&calcTotalSize, LargestAlignmentRequirement - (calcTotalSize % LargestAlignmentRequirement)))
+                COMPlusThrowOM();
+        }
+    }
+
+    // We'll cap the total native size at a (somewhat) arbitrary limit to ensure
+    // that we don't expose some overflow bug later on.
+    if (calcTotalSize >= MAX_SIZE_FOR_INTEROP && calculatingNativeLayout)
+        COMPlusThrowOM();
+
+    // This is a zero-sized struct - need to record the fact and bump it up to 1.
+    if (calcTotalSize == 0)
+    {
+        pEEClassLayoutInfoOut->SetIsZeroSized(TRUE);
+        calcTotalSize = 1;
+    }
+
+    // The packingSize acts as a ceiling on all individual alignment
+    // requirements so it follows that the largest alignment requirement
+    // is also capped.
+    _ASSERTE(LargestAlignmentRequirement <= packingSize);
+
+    if (calculatingNativeLayout)
+    {
+        pEEClassLayoutInfoOut->m_cbNativeSize = calcTotalSize;
+        pEEClassLayoutInfoOut->m_LargestAlignmentRequirementOfAllMembers = LargestAlignmentRequirement;
+    }
+    else
+    {
+        pEEClassLayoutInfoOut->m_cbManagedSize = calcTotalSize;
+        pEEClassLayoutInfoOut->m_ManagedLargestAlignmentRequirementOfAllMembers = LargestAlignmentRequirement;
+    }
+}
+
 //=======================================================================
 // Called from the clsloader to load up and summarize the field metadata
 // for layout classes.
@@ -3375,7 +3615,6 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
     }
     CONTRACTL_END;
 
-    HRESULT hr;
     // Internal interface for the NStruct being loaded.
     IMDInternalImport *pInternalImport = pModule->GetMDImport();
 
@@ -3414,17 +3653,8 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
                                 !pParentMT->IsValueTypeClass();
 
 
-    //====================================================================
-    // First, some validation checks.
-    //====================================================================
+    // Set some defaults based on the parent type of this type (if one exists).
     _ASSERTE(!(fHasNonTrivialParent && !(pParentMT->HasLayout())));
-
-    MD_CLASS_LAYOUT classlayout;
-    hr = pInternalImport->GetClassLayoutInit(cl, &classlayout);
-    if (FAILED(hr))
-    {
-        COMPlusThrowHR(hr, BFA_CANT_GET_CLASSLAYOUT);
-    }
 
     pEEClassLayoutInfoOut->m_numCTMFields        = fHasNonTrivialParent ? pParentMT->GetLayoutInfo()->m_numCTMFields : 0;
     pEEClassLayoutInfoOut->SetFieldMarshalers(NULL);
@@ -3433,28 +3663,11 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         pEEClassLayoutInfoOut->SetIsBlittable(pParentMT->IsBlittable());
     pEEClassLayoutInfoOut->SetIsZeroSized(FALSE);    
     pEEClassLayoutInfoOut->SetHasExplicitSize(FALSE);
-    pEEClassLayoutInfoOut->m_cbPackingSize = packingSize;
-
-    LayoutRawFieldInfo *pfwalk = pInfoArrayOut;
+    pEEClassLayoutInfoOut->m_cbPackingSize = packingSize;    
     
-    S_UINT32 cbSortArraySize = S_UINT32(cTotalFields) * S_UINT32(sizeof(LayoutRawFieldInfo *));
-    if (cbSortArraySize.IsOverflow())
-    {
-        ThrowHR(COR_E_TYPELOAD);
-    }
-    LayoutRawFieldInfo **pSortArray = (LayoutRawFieldInfo **)_alloca(cbSortArraySize.Value());
-    LayoutRawFieldInfo **pSortArrayEnd = pSortArray;
-    
-    ULONG maxRid = pInternalImport->GetCountWithTokenKind(mdtFieldDef);
-    
-    
-    //=====================================================================
-    // Phase 1: Figure out the NFT of each field based on both the CLR
-    // signature of the field and the FieldMarshaler metadata. 
-    //=====================================================================
     BOOL fParentHasLayout = pParentMT && pParentMT->HasLayout();
     UINT32 cbAdjustedParentLayoutNativeSize = 0;
-    EEClassLayoutInfo *pParentLayoutInfo = NULL;;
+    EEClassLayoutInfo *pParentLayoutInfo = NULL;
     if (fParentHasLayout)
     {
         pParentLayoutInfo = pParentMT->GetLayoutInfo();
@@ -3469,208 +3682,60 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         }
     }
 
-    mdFieldDef fd;
-    ULONG i;
     ULONG cInstanceFields = 0;
-    for (i = 0; pInternalImport->EnumNext(phEnumField, &fd); i++)
-    {
-        DWORD dwFieldAttrs;
-        ULONG rid = RidFromToken(fd);
 
-        if((rid == 0)||(rid > maxRid))
-        {
-            COMPlusThrowHR(COR_E_TYPELOAD, BFA_BAD_FIELD_TOKEN);
-        }
-
-        IfFailThrow(pInternalImport->GetFieldDefProps(fd, &dwFieldAttrs));
-        
-        PCCOR_SIGNATURE pNativeType = NULL;
-        ULONG cbNativeType;
-        // We ignore marshaling data attached to statics and literals,
-        // since these do not contribute to instance data.
-        if (!IsFdStatic(dwFieldAttrs) && !IsFdLiteral(dwFieldAttrs))
-        {
-            PCCOR_SIGNATURE pCOMSignature;
-            ULONG       cbCOMSignature;
-
-            if (IsFdHasFieldMarshal(dwFieldAttrs))
-            {
-                hr = pInternalImport->GetFieldMarshal(fd, &pNativeType, &cbNativeType);
-                if (FAILED(hr))
-                    cbNativeType = 0;
-            }
-            else
-                cbNativeType = 0;
-            
-            IfFailThrow(pInternalImport->GetSigOfFieldDef(fd,&cbCOMSignature, &pCOMSignature));
-            
-            IfFailThrow(::validateTokenSig(fd,pCOMSignature,cbCOMSignature,dwFieldAttrs,pInternalImport));
-            
-            // fill the appropriate entry in pInfoArrayOut
-            pfwalk->m_MD = fd;
-            pfwalk->m_offset = (UINT32) -1;
-            pfwalk->m_sequence = 0;
-
-#ifdef _DEBUG
-            LPCUTF8 szFieldName;
-            if (FAILED(pInternalImport->GetNameOfFieldDef(fd, &szFieldName)))
-            {
-                szFieldName = "Invalid FieldDef record";
-            }
-#endif
-
-            ParseNativeTypeFlags flags = ParseNativeTypeFlags::None;
+    ParseNativeTypeFlags nativeTypeFlags = ParseNativeTypeFlags::None;
 #ifdef FEATURE_COMINTEROP
-            if (isWinRT)
-                flags = ParseNativeTypeFlags::IsWinRT;
-            else // WinRT types have nlType == nltAnsi but should be treated as Unicode
+    if (isWinRT)
+        nativeTypeFlags = ParseNativeTypeFlags::IsWinRT;
+    else // WinRT types have nlType == nltAnsi but should be treated as Unicode
 #endif // FEATURE_COMINTEROP
-            if (nlType == nltAnsi)
-                flags =  ParseNativeTypeFlags::IsAnsi;
+        if (nlType == nltAnsi)
+            nativeTypeFlags = ParseNativeTypeFlags::IsAnsi;
 
-            ParseNativeType(pModule,
-                            pCOMSignature,
-                            cbCOMSignature,
-                            flags,
-                            pfwalk,
-                            pNativeType,
-                            cbNativeType,
-                            pInternalImport,
-                            cl,
-                            pTypeContext,
-                            &fDisqualifyFromManagedSequential
-#ifdef _DEBUG
-                            ,
-                            szNamespace,
-                            szName,
-                            szFieldName
-#endif
-                                );
-
-            if (!IsFieldBlittable((FieldMarshaler*)(&pfwalk->m_FieldMarshaler)))
-                pEEClassLayoutInfoOut->SetIsBlittable(FALSE);
-
-            cInstanceFields++;
-            pfwalk++;
-        }
-    }
-
-    _ASSERTE(i == cTotalFields);
-
-    // NULL out the last entry
-    pfwalk->m_MD = mdFieldDefNil;
-    
-    
-    //
-    // fill in the layout information 
-    //
-    
-    // pfwalk points to the beginging of the array
-    pfwalk = pInfoArrayOut;
-
-    ULONG ulOffset;
-    while (SUCCEEDED(hr = pInternalImport->GetClassLayoutNext(
-                                     &classlayout,
-                                     &fd,
-                                     &ulOffset)) &&
-                                     fd != mdFieldDefNil)
-    {
-        // watch for the last entry: must be mdFieldDefNil
-        while ((mdFieldDefNil != pfwalk->m_MD)&&(pfwalk->m_MD < fd))
-            pfwalk++;
-
-        // if we haven't found a matching token, it must be a static field with layout -- ignore it
-        if(pfwalk->m_MD != fd) continue;
-
-        if (!fExplicitOffsets)
-        {
-            // ulOffset is the sequence
-            pfwalk->m_sequence = ulOffset;
-        }
-        else
-        {
-            // ulOffset is the explicit offset
-            pfwalk->m_offset = ulOffset;
-            pfwalk->m_sequence = (ULONG) -1;
-
-            // Treat base class as an initial member.
-            if (!SafeAddUINT32(&(pfwalk->m_offset), cbAdjustedParentLayoutNativeSize))
-                COMPlusThrowOM();
-        }
-    }
-    IfFailThrow(hr);
-
-    // now sort the array
-    if (!fExplicitOffsets)
-    { 
-        // sort sequential by ascending sequence
-        for (i = 0; i < cInstanceFields; i++)
-        {
-            LayoutRawFieldInfo**pSortWalk = pSortArrayEnd;
-            while (pSortWalk != pSortArray)
-            {
-                if (pInfoArrayOut[i].m_sequence >= (*(pSortWalk-1))->m_sequence)
-                    break;
-
-                pSortWalk--;
-            }
-
-            // pSortWalk now points to the target location for new FieldInfo.
-            MoveMemory(pSortWalk + 1, pSortWalk, (pSortArrayEnd - pSortWalk) * sizeof(LayoutRawFieldInfo*));
-            *pSortWalk = &pInfoArrayOut[i];
-            pSortArrayEnd++;
-        }
-    }
-    else // no sorting for explicit layout
-    {
-        for (i = 0; i < cInstanceFields; i++)
-        {
-            if(pInfoArrayOut[i].m_MD != mdFieldDefNil)
-            {
-                if (pInfoArrayOut[i].m_offset == (UINT32)-1)
-                {
-                    LPCUTF8 szFieldName;
-                    if (FAILED(pInternalImport->GetNameOfFieldDef(pInfoArrayOut[i].m_MD, &szFieldName)))
-                    {
-                        szFieldName = "Invalid FieldDef record";
-                    }
-                    pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, 
-                                                                   cl,
-                                                                   szFieldName,
-                                                                   IDS_CLASSLOAD_NSTRUCT_EXPLICIT_OFFSET);
-                }
-                else if ((INT)pInfoArrayOut[i].m_offset < 0)
-                {
-                    LPCUTF8 szFieldName;
-                    if (FAILED(pInternalImport->GetNameOfFieldDef(pInfoArrayOut[i].m_MD, &szFieldName)))
-                    {
-                        szFieldName = "Invalid FieldDef record";
-                    }
-                    pModule->GetAssembly()->ThrowTypeLoadException(pInternalImport, 
-                                                                   cl,
-                                                                   szFieldName,
-                                                                   IDS_CLASSLOAD_NSTRUCT_NEGATIVE_OFFSET);
-                }
-            }
-                
-            *pSortArrayEnd = &pInfoArrayOut[i];
-            pSortArrayEnd++;
-        }
-    }
-
-    //=====================================================================
-    // Phase 2: Compute the native size (in bytes) of each field.
-    // Store this in pInfoArrayOut[].cbNativeSize;
-    //=====================================================================
+    ParseFieldNativeTypes(
+        pInternalImport,
+        cl,
+        phEnumField,
+        cTotalFields,
+        pModule,
+        nativeTypeFlags,
+        pTypeContext,
+        &fDisqualifyFromManagedSequential,
+        pInfoArrayOut,
+        pEEClassLayoutInfoOut,
+        &cInstanceFields
+        DEBUGARG(szNamespace)
+        DEBUGARG(szName)
+        );
 
     // Now compute the native size of each field
-    for (pfwalk = pInfoArrayOut; pfwalk->m_MD != mdFieldDefNil; pfwalk++)
+    for (LayoutRawFieldInfo* pfwalk = pInfoArrayOut; pfwalk->m_MD != mdFieldDefNil; pfwalk++)
     {
-        pEEClassLayoutInfoOut->m_numCTMFields++;
+        pfwalk->m_nativePlacement.m_size = ((FieldMarshaler*) & (pfwalk->m_FieldMarshaler))->NativeSize();
+        pfwalk->m_nativePlacement.m_alignment = ((FieldMarshaler*) & (pfwalk->m_FieldMarshaler))->AlignmentRequirement();
 
-        pfwalk->m_cbNativeSize = ((FieldMarshaler*)&(pfwalk->m_FieldMarshaler))->NativeSize();
+#ifdef _DEBUG
+        // @perf: If the type is blittable, the managed and native layouts have to be identical
+        // so they really shouldn't be calculated twice. Until this code has been well tested and
+        // stabilized, however, it is useful to compute both and assert that they are equal in the blittable
+        // case. The managed size is only calculated in the managed-sequential case.
+        if (!fDisqualifyFromManagedSequential && pEEClassLayoutInfoOut->IsBlittable())
+        {
+            _ASSERTE(pfwalk->m_managedPlacement.m_size == pfwalk->m_nativePlacement.m_size);
+        }
+#endif
     }
+    
+    S_UINT32 cbSortArraySize = S_UINT32(cTotalFields) * S_UINT32(sizeof(LayoutRawFieldInfo*));
+    if (cbSortArraySize.IsOverflow())
+    {
+        ThrowHR(COR_E_TYPELOAD);
+    }
+    LayoutRawFieldInfo** pSortArray = (LayoutRawFieldInfo * *)_alloca(cbSortArraySize.Value());
+    SetOffsetsAndSortFields(pInternalImport, cl, pInfoArrayOut, cInstanceFields, fExplicitOffsets, cbAdjustedParentLayoutNativeSize, pModule, pSortArray);
 
+    // If this type has 
     if (pEEClassLayoutInfoOut->m_numCTMFields)
     {
         pEEClassLayoutInfoOut->SetFieldMarshalers((FieldMarshaler*)(pamTracker->Track(pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(MAXFIELDMARSHALERSIZE) * S_SIZE_T(pEEClassLayoutInfoOut->m_numCTMFields)))));
@@ -3697,293 +3762,62 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
 
     }
 
-
-    //=====================================================================
-    // Phase 3: If FieldMarshaler requires autooffsetting, compute the offset
-    // of each field and the size of the total structure. We do the layout
-    // according to standard VC layout rules:
-    //
-    //   Each field has an alignment requirement. The alignment-requirement
-    //   of a scalar field is the smaller of its size and the declared packsize.
-    //   The alignment-requirement of a struct field is the smaller of the
-    //   declared packsize and the largest of the alignment-requirement
-    //   of its fields. The alignment requirement of an array is that
-    //   of one of its elements.
-    //
-    //   In addition, each struct gets padding at the end to ensure
-    //   that an array of such structs contain no unused space between
-    //   elements.
-    //=====================================================================
+    ULONG classSizeInMetadata = 0;
+    if (FAILED(pInternalImport->GetClassTotalSize(cl, &classSizeInMetadata)))
     {
-        BYTE   LargestAlignmentRequirement = 1;
-        UINT32 cbCurOffset = 0;
-
-        // Treat base class as an initial member.
-        if (!SafeAddUINT32(&cbCurOffset, cbAdjustedParentLayoutNativeSize))
-            COMPlusThrowOM();
-
-        if (fParentHasLayout)
-        {
-            BYTE alignmentRequirement;
-            
-            alignmentRequirement = min(packingSize, pParentLayoutInfo->GetLargestAlignmentRequirementOfAllMembers());
-    
-            LargestAlignmentRequirement = max(LargestAlignmentRequirement, alignmentRequirement);                                          
-        }
-
-        // Start with the size inherited from the parent (if any).
-        unsigned calcTotalSize = cbAdjustedParentLayoutNativeSize;
-     
-        LayoutRawFieldInfo **pSortWalk;
-        for (pSortWalk = pSortArray, i=cInstanceFields; i; i--, pSortWalk++)
-        {
-            pfwalk = *pSortWalk;
-    
-            BYTE alignmentRequirement = static_cast<BYTE>(((FieldMarshaler*)&(pfwalk->m_FieldMarshaler))->AlignmentRequirement());
-            if (!(alignmentRequirement == 1 ||
-                     alignmentRequirement == 2 ||
-                     alignmentRequirement == 4 ||
-                  alignmentRequirement == 8 ||
-                  alignmentRequirement == 16 ||
-                  alignmentRequirement == 32))
-            {
-                COMPlusThrowHR(COR_E_INVALIDPROGRAM, BFA_METADATA_CORRUPT);
-            }
-    
-            alignmentRequirement = min(alignmentRequirement, packingSize);
-    
-            LargestAlignmentRequirement = max(LargestAlignmentRequirement, alignmentRequirement);
-    
-            // This assert means I forgot to special-case some NFT in the
-            // above switch.
-            _ASSERTE(alignmentRequirement <= 32);
-    
-            // Check if this field is overlapped with other(s)
-            pfwalk->m_fIsOverlapped = FALSE;
-            if (fExplicitOffsets) {
-                LayoutRawFieldInfo *pfwalk1;
-                DWORD dwBegin = pfwalk->m_offset;
-                DWORD dwEnd = dwBegin+pfwalk->m_cbNativeSize;
-                for (pfwalk1 = pInfoArrayOut; pfwalk1 < pfwalk; pfwalk1++)
-                {
-                    if((pfwalk1->m_offset >= dwEnd) || (pfwalk1->m_offset+pfwalk1->m_cbNativeSize <= dwBegin)) continue;
-                    pfwalk->m_fIsOverlapped = TRUE;
-                    pfwalk1->m_fIsOverlapped = TRUE;
-                }
-            }
-            else
-            {
-                // Insert enough padding to align the current data member.
-                while (cbCurOffset % alignmentRequirement)
-                {
-                    if (!SafeAddUINT32(&cbCurOffset, 1))
-                        COMPlusThrowOM();
-                }
-    
-                // Insert current data member.
-                pfwalk->m_offset = cbCurOffset;
-    
-                // if we overflow we will catch it below
-                cbCurOffset += pfwalk->m_cbNativeSize;
-            } 
-    
-            unsigned fieldEnd = pfwalk->m_offset + pfwalk->m_cbNativeSize;
-            if (fieldEnd < pfwalk->m_offset)
-                COMPlusThrowOM();
-    
-                // size of the structure is the size of the last field.  
-            if (fieldEnd > calcTotalSize)
-                calcTotalSize = fieldEnd;
-        }
-    
-        ULONG clstotalsize = 0;
-        if (FAILED(pInternalImport->GetClassTotalSize(cl, &clstotalsize)))
-        {
-            clstotalsize = 0;
-        }
-        
-        if (clstotalsize != 0)
-        {
-            if (!SafeAddULONG(&clstotalsize, (ULONG)cbAdjustedParentLayoutNativeSize))
-                COMPlusThrowOM();
-    
-            // size must be large enough to accomodate layout. If not, we use the layout size instead.
-            if (clstotalsize < calcTotalSize)
-            {
-                clstotalsize = calcTotalSize;
-            }
-            calcTotalSize = clstotalsize;   // use the size they told us 
-        } 
-        else
-        {
-            // The did not give us an explict size, so lets round up to a good size (for arrays) 
-            while (calcTotalSize % LargestAlignmentRequirement != 0)
-            {
-                if (!SafeAddUINT32(&calcTotalSize, 1))
-                    COMPlusThrowOM();
-            }
-        }
-        
-        // We'll cap the total native size at a (somewhat) arbitrary limit to ensure
-        // that we don't expose some overflow bug later on.
-        if (calcTotalSize >= MAX_SIZE_FOR_INTEROP)
-            COMPlusThrowOM();
-
-        // This is a zero-sized struct - need to record the fact and bump it up to 1.
-        if (calcTotalSize == 0)
-        {
-            pEEClassLayoutInfoOut->SetIsZeroSized(TRUE);
-            calcTotalSize = 1;
-        }
-    
-        pEEClassLayoutInfoOut->m_cbNativeSize = calcTotalSize;
-    
-        // The packingSize acts as a ceiling on all individual alignment
-        // requirements so it follows that the largest alignment requirement
-        // is also capped.
-        _ASSERTE(LargestAlignmentRequirement <= packingSize);
-        pEEClassLayoutInfoOut->m_LargestAlignmentRequirementOfAllMembers = LargestAlignmentRequirement;
+        classSizeInMetadata = 0;
     }
 
+    BYTE parentAlignmentRequirement = 0;
+    if (fParentHasLayout)
+    {
+        parentAlignmentRequirement = pParentLayoutInfo->GetLargestAlignmentRequirementOfAllMembers();
+    }
 
+    CalculateSizeAndFieldOffsets(
+        cbAdjustedParentLayoutNativeSize,
+        cInstanceFields,
+        fExplicitOffsets,
+        pSortArray,
+        classSizeInMetadata,
+        packingSize,
+        parentAlignmentRequirement,
+        /*calculatingNativeLayout*/ TRUE, pEEClassLayoutInfoOut);
 
-    //=====================================================================
-    // Phase 4: Now we do the same thing again for managedsequential layout.
-    //=====================================================================
+    // Calculate the managedsequential layout if the type is eligible.
     if (!fDisqualifyFromManagedSequential)
     {
-        BYTE   LargestAlignmentRequirement = 1;
-        UINT32 cbCurOffset = 0;
-    
+        BYTE parentManagedAlignmentRequirement = 0;
+        UINT32 parentSize = 0;
         if (pParentMT && pParentMT->IsManagedSequential())
         {
-            // Treat base class as an initial member.
-            if (!SafeAddUINT32(&cbCurOffset, pParentMT->GetNumInstanceFieldBytes()))
-                COMPlusThrowOM();
-    
-            BYTE alignmentRequirement = 0;
-                
-            alignmentRequirement = min(packingSize, pParentLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers);
-    
-            LargestAlignmentRequirement = max(LargestAlignmentRequirement, alignmentRequirement);                                          
+            parentManagedAlignmentRequirement = pParentLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
+            parentSize = pParentMT->GetNumInstanceFieldBytes();
         }
-    
-        // The current size of the structure as a whole, we start at 1, because we disallow 0 sized structures.
-        // NOTE: We do not need to do the same checking for zero-sized types as phase 3 because only ValueTypes
-        //       can be ManagedSequential and ValueTypes can not be inherited from.
-        unsigned calcTotalSize = 1;
-     
-        LayoutRawFieldInfo **pSortWalk;
-        for (pSortWalk = pSortArray, i=cInstanceFields; i; i--, pSortWalk++)
-        {
-            pfwalk = *pSortWalk;
-    
-            BYTE alignmentRequirement = ((BYTE)(pfwalk->m_managedAlignmentReq));
-            if (!(alignmentRequirement == 1 ||
-                     alignmentRequirement == 2 ||
-                     alignmentRequirement == 4 ||
-                  alignmentRequirement == 8 ||
-                  alignmentRequirement == 16 ||
-                  alignmentRequirement == 32))
-            {
-                COMPlusThrowHR(COR_E_INVALIDPROGRAM, BFA_METADATA_CORRUPT);
-            }
-            
-            alignmentRequirement = min(alignmentRequirement, packingSize);
-            
-            LargestAlignmentRequirement = max(LargestAlignmentRequirement, alignmentRequirement);
-            
-            _ASSERTE(alignmentRequirement <= 32);
-            
-            // Insert enough padding to align the current data member.
-            while (cbCurOffset % alignmentRequirement)
-            {
-                if (!SafeAddUINT32(&cbCurOffset, 1))
-                    COMPlusThrowOM();
-            }
-            
-            // Insert current data member.
-            pfwalk->m_managedOffset = cbCurOffset;
-            
-            // if we overflow we will catch it below
-            cbCurOffset += pfwalk->m_managedSize;
-            
-            unsigned fieldEnd = pfwalk->m_managedOffset + pfwalk->m_managedSize;
-            if (fieldEnd < pfwalk->m_managedOffset)
-                COMPlusThrowOM();
-            
-                // size of the structure is the size of the last field.  
-            if (fieldEnd > calcTotalSize)
-                calcTotalSize = fieldEnd;
-            
-#ifdef _DEBUG
-            // @perf: If the type is blittable, the managed and native layouts have to be identical
-            // so they really shouldn't be calculated twice. Until this code has been well tested and
-            // stabilized, however, it is useful to compute both and assert that they are equal in the blittable
-            // case.
-            if (pEEClassLayoutInfoOut->IsBlittable())
-            {
-                _ASSERTE(pfwalk->m_managedOffset == pfwalk->m_offset);
-                _ASSERTE(pfwalk->m_managedSize   == pfwalk->m_cbNativeSize);
-            }
-#endif
-        } //for
-        
-        ULONG clstotalsize = 0;
-        if (FAILED(pInternalImport->GetClassTotalSize(cl, &clstotalsize)))
-        {
-            clstotalsize = 0;
-        }
-        
-        if (clstotalsize != 0)
-        {
-            pEEClassLayoutInfoOut->SetHasExplicitSize(TRUE);
-            
-            if (pParentMT && pParentMT->IsManagedSequential())
-            {
-                // Treat base class as an initial member.
-                UINT32 parentSize = pParentMT->GetNumInstanceFieldBytes();
-                if (!SafeAddULONG(&clstotalsize, parentSize))
-                    COMPlusThrowOM();
-            }
-    
-            // size must be large enough to accomodate layout. If not, we use the layout size instead.
-            if (clstotalsize < calcTotalSize)
-            {
-                clstotalsize = calcTotalSize;
-            }
-            calcTotalSize = clstotalsize;   // use the size they told us 
-        } 
-        else
-        {
-            // The did not give us an explict size, so lets round up to a good size (for arrays) 
-            while (calcTotalSize % LargestAlignmentRequirement != 0)
-            {
-                if (!SafeAddUINT32(&calcTotalSize, 1))
-                    COMPlusThrowOM();
-            }
-        } 
-    
-        pEEClassLayoutInfoOut->m_cbManagedSize = calcTotalSize;
 
-        // The packingSize acts as a ceiling on all individual alignment
-        // requirements so it follows that the largest alignment requirement
-        // is also capped.
-        _ASSERTE(LargestAlignmentRequirement <= packingSize);
-        pEEClassLayoutInfoOut->m_ManagedLargestAlignmentRequirementOfAllMembers = LargestAlignmentRequirement;
+        CalculateSizeAndFieldOffsets(
+            parentSize,
+            cInstanceFields,
+            /* fExplicitOffsets */ FALSE,
+            pSortArray,
+            classSizeInMetadata,
+            packingSize,
+            parentManagedAlignmentRequirement,
+            /*calculatingNativeLayout*/ FALSE,
+            pEEClassLayoutInfoOut);
 
 #ifdef _DEBUG
-            // @perf: If the type is blittable, the managed and native layouts have to be identical
-            // so they really shouldn't be calculated twice. Until this code has been well tested and
-            // stabilized, however, it is useful to compute both and assert that they are equal in the blittable
-            // case.
-            if (pEEClassLayoutInfoOut->IsBlittable())
-            {
-                _ASSERTE(pEEClassLayoutInfoOut->m_cbManagedSize == pEEClassLayoutInfoOut->m_cbNativeSize);
-                _ASSERTE(pEEClassLayoutInfoOut->m_ManagedLargestAlignmentRequirementOfAllMembers == pEEClassLayoutInfoOut->m_LargestAlignmentRequirementOfAllMembers);
-            }
+        // @perf: If the type is blittable, the managed and native layouts have to be identical
+        // so they really shouldn't be calculated twice. Until this code has been well tested and
+        // stabilized, however, it is useful to compute both and assert that they are equal in the blittable
+        // case.
+        if (pEEClassLayoutInfoOut->IsBlittable())
+        {
+            _ASSERTE(pEEClassLayoutInfoOut->m_cbManagedSize == pEEClassLayoutInfoOut->m_cbNativeSize);
+            _ASSERTE(pEEClassLayoutInfoOut->m_ManagedLargestAlignmentRequirementOfAllMembers == pEEClassLayoutInfoOut->m_LargestAlignmentRequirementOfAllMembers);
+        }
 #endif
-    } //if
+    }
 
     pEEClassLayoutInfoOut->SetIsManagedSequential(!fDisqualifyFromManagedSequential);
 
@@ -3996,14 +3830,14 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         LOG((LF_INTEROP, LL_INFO100000, "Packsize      = %lu\n", (ULONG)packingSize));
         LOG((LF_INTEROP, LL_INFO100000, "Max align req = %lu\n", (ULONG)(pEEClassLayoutInfoOut->m_LargestAlignmentRequirementOfAllMembers)));
         LOG((LF_INTEROP, LL_INFO100000, "----------------------------\n"));
-        for (pfwalk = pInfoArrayOut; pfwalk->m_MD != mdFieldDefNil; pfwalk++)
+        for (LayoutRawFieldInfo* pfwalk = pInfoArrayOut; pfwalk->m_MD != mdFieldDefNil; pfwalk++)
         {
             LPCUTF8 fieldname;
             if (FAILED(pInternalImport->GetNameOfFieldDef(pfwalk->m_MD, &fieldname)))
             {
                 fieldname = "??";
             }
-            LOG((LF_INTEROP, LL_INFO100000, "+%-5lu  ", (ULONG)(pfwalk->m_offset)));
+            LOG((LF_INTEROP, LL_INFO100000, "+%-5lu  ", (ULONG)(pfwalk->m_nativePlacement.m_offset)));
             LOG((LF_INTEROP, LL_INFO100000, "%s", fieldname));
             LOG((LF_INTEROP, LL_INFO100000, "\n"));
 
@@ -4015,7 +3849,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         if (fHasNonTrivialParent)
         {
             FieldMarshaler *pParentFM = pParentMT->GetLayoutInfo()->GetFieldMarshalers();
-            for (i = 0; i < pParentMT->GetLayoutInfo()->m_numCTMFields; i++)
+            for (UINT i = 0; i < pParentMT->GetLayoutInfo()->m_numCTMFields; i++)
             {
                 if (pParentFM->GetNStructFieldType() == NFT_ILLEGAL)
                     illegalMarshaler = TRUE;                                 
@@ -4032,4 +3866,120 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif // _PREFAST_
+
+//=====================================================================
+// ParseNativeFieldTypes:
+// Figure out the native field type of each field based on both the CLR
+// signature of the field and the FieldMarshaler metadata. 
+//=====================================================================
+void EEClassLayoutInfo::ParseFieldNativeTypes(
+    IMDInternalImport* pInternalImport,
+    const mdTypeDef cl,
+    HENUMInternal* phEnumField,
+    const ULONG cTotalFields,
+    Module* pModule,
+    ParseNativeTypeFlags nativeTypeFlags,
+    const SigTypeContext* pTypeContext,
+    BOOL* fDisqualifyFromManagedSequential,
+    LayoutRawFieldInfo* pFieldInfoArrayOut,
+    EEClassLayoutInfo* pEEClassLayoutInfoOut,
+    ULONG* cInstanceFields
+#ifdef _DEBUG
+    ,
+    LPCUTF8 szNamespace,
+    LPCUTF8 szName
+#endif
+)
+{
+    HRESULT hr;
+    mdFieldDef fd;
+    ULONG maxRid = pInternalImport->GetCountWithTokenKind(mdtFieldDef);
+
+    ULONG i;
+    for (i = 0; pInternalImport->EnumNext(phEnumField, &fd); i++)
+    {
+        DWORD dwFieldAttrs;
+        ULONG rid = RidFromToken(fd);
+
+        if ((rid == 0) || (rid > maxRid))
+        {
+            COMPlusThrowHR(COR_E_TYPELOAD, BFA_BAD_FIELD_TOKEN);
+        }
+
+        IfFailThrow(pInternalImport->GetFieldDefProps(fd, &dwFieldAttrs));
+
+        PCCOR_SIGNATURE pNativeType = NULL;
+        ULONG cbNativeType;
+        // We ignore marshaling data attached to statics and literals,
+        // since these do not contribute to instance data.
+        if (!IsFdStatic(dwFieldAttrs) && !IsFdLiteral(dwFieldAttrs))
+        {
+            PCCOR_SIGNATURE pCOMSignature;
+            ULONG       cbCOMSignature;
+
+            if (IsFdHasFieldMarshal(dwFieldAttrs))
+            {
+                hr = pInternalImport->GetFieldMarshal(fd, &pNativeType, &cbNativeType);
+                if (FAILED(hr))
+                {
+                    cbNativeType = 0;
+                }
+            }
+            else
+            {
+                cbNativeType = 0;
+            }
+
+            IfFailThrow(pInternalImport->GetSigOfFieldDef(fd, &cbCOMSignature, &pCOMSignature));
+
+            IfFailThrow(::validateTokenSig(fd, pCOMSignature, cbCOMSignature, dwFieldAttrs, pInternalImport));
+
+            // fill the appropriate entry in pInfoArrayOut
+            pFieldInfoArrayOut->m_MD = fd;
+            pFieldInfoArrayOut->m_nativePlacement.m_offset = (UINT32)-1;
+            pFieldInfoArrayOut->m_sequence = 0;
+
+#ifdef _DEBUG
+            LPCUTF8 szFieldName;
+            if (FAILED(pInternalImport->GetNameOfFieldDef(fd, &szFieldName)))
+            {
+                szFieldName = "Invalid FieldDef record";
+            }
+#endif
+
+            ParseNativeType(pModule,
+                pCOMSignature,
+                cbCOMSignature,
+                nativeTypeFlags,
+                pFieldInfoArrayOut,
+                pNativeType,
+                cbNativeType,
+                pInternalImport,
+                cl,
+                pTypeContext,
+                fDisqualifyFromManagedSequential
+#ifdef _DEBUG
+                ,
+                szNamespace,
+                szName,
+                szFieldName
+#endif
+            );
+
+            if (!IsFieldBlittable((FieldMarshaler*)(&pFieldInfoArrayOut->m_FieldMarshaler)))
+                pEEClassLayoutInfoOut->SetIsBlittable(FALSE);
+
+            (*cInstanceFields)++;
+            pFieldInfoArrayOut++;
+        }
+    }
+
+    _ASSERTE(i == cTotalFields);
+
+    // Set the number of fields here.
+    pEEClassLayoutInfoOut->m_numCTMFields += *cInstanceFields;
+    // NULL out the last entry
+    pFieldInfoArrayOut->m_MD = mdFieldDefNil;
+
+}
 #endif // DACCESS_COMPILE
