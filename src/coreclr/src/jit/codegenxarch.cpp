@@ -4672,6 +4672,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
             return;
         }
 
+        // TODO-CQ: It would be better to simply contain the zero, rather than
+        // generating zero into a register.
         if (varTypeIsSIMD(targetType) && (targetReg != REG_NA) && op1->IsCnsIntOrI())
         {
             // This is only possible for a zero-init.
