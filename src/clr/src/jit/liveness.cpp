@@ -50,6 +50,13 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
         // loads aliasing it across a store to it.
         assert(!varDsc->lvAddrExposed);
 
+        if (compRationalIRForm && (varDsc->lvType != TYP_STRUCT) && !varTypeIsMultiReg(varDsc))
+        {
+            // If this is an enregisterable variable that is not marked doNotEnregister,
+            // we should only see direct references (not ADDRs).
+            assert(varDsc->lvDoNotEnregister || tree->OperIs(GT_LCL_VAR, GT_STORE_LCL_VAR));
+        }
+
         if (isUse && !VarSetOps::IsMember(this, fgCurDefSet, varDsc->lvVarIndex))
         {
             // This is an exposed use; add it to the set of uses.

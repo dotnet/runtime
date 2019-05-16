@@ -755,8 +755,8 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             break;
 
         case GT_BLK:
-            // We should only see GT_BLK for TYP_STRUCT.
-            assert(node->TypeGet() == TYP_STRUCT);
+            // We should only see GT_BLK for TYP_STRUCT or for InitBlocks.
+            assert((node->TypeGet() == TYP_STRUCT) || use.User()->OperIsInitBlkOp());
             break;
 
         case GT_OBJ:
