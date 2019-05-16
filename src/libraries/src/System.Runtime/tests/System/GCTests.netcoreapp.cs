@@ -64,5 +64,52 @@ namespace System.Tests
                 Assert.InRange(memoryInfo2.FragmentedBytes, memoryInfo1.FragmentedBytes + 1, long.MaxValue);
             }).Dispose();
         }
+
+        [Fact]
+        public static void GetTotalAllocatedBytes()
+        {
+            byte[] stash;
+
+            long CallGetTotalAllocatedBytesAndCheck(long previous, out long differenceBetweenPreciseAndImprecise)
+            {
+                long precise = GC.GetTotalAllocatedBytes(true);
+                long imprecise = GC.GetTotalAllocatedBytes(false);
+
+                if (precise <= 0)
+                {
+                    throw new Exception($"Bytes allocated is not positive, this is unlikely. precise = {precise}");
+                }
+
+                if (imprecise < precise)
+                {
+                    throw new Exception($"Imprecise total bytes allocated less than precise, imprecise is required to be a conservative estimate (that estimates high). imprecise = {imprecise}, precise = {precise}");
+                }
+
+                if (previous > precise)
+                {
+                    throw new Exception($"Expected more memory to be allocated. previous = {previous}, precise = {precise}, difference = {previous - precise}");
+                }
+
+                differenceBetweenPreciseAndImprecise = imprecise - precise;
+                return precise;
+            }
+
+            long CallGetTotalAllocatedBytes(long previous)
+            {
+                long differenceBetweenPreciseAndImprecise;
+                previous = CallGetTotalAllocatedBytesAndCheck(previous, out differenceBetweenPreciseAndImprecise);
+                stash = new byte[differenceBetweenPreciseAndImprecise];
+                previous = CallGetTotalAllocatedBytesAndCheck(previous, out differenceBetweenPreciseAndImprecise);
+                return previous;
+            }
+
+            long previous = 0;
+
+            for (int i = 0; i < 1000; ++i)
+            {
+                stash = new byte[1234];
+                previous = CallGetTotalAllocatedBytes(previous);
+            }
+        }
     }
 }
