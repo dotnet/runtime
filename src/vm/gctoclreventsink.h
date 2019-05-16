@@ -76,8 +76,8 @@ public:
     void FireBGCAllocWaitBegin(uint32_t reason);
     void FireBGCAllocWaitEnd(uint32_t reason);
     void FireGCFullNotify_V1(uint32_t genNumber, uint32_t isAlloc);
-    void FireSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation, uint64_t appDomainID);
-    void FirePrvSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation, uint64_t appDomainID);
+    void FireSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation);
+    void FirePrvSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation);
     void FireDestroyGCHandle(void *handleID);
     void FirePrvDestroyGCHandle(void *handleID);
 };

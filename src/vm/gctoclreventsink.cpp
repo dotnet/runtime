@@ -319,14 +319,14 @@ void GCToCLREventSink::FireGCFullNotify_V1(uint32_t genNumber, uint32_t isAlloc)
     FireEtwGCFullNotify_V1(genNumber, isAlloc, GetClrInstanceId());
 }
 
-void GCToCLREventSink::FireSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation, uint64_t appDomainID)
+void GCToCLREventSink::FireSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation)
 {
-    FireEtwSetGCHandle(handleID, objectID, kind, generation, appDomainID, GetClrInstanceId());
+    FireEtwSetGCHandle(handleID, objectID, kind, generation, (uint64_t)dac_cast<TADDR>(AppDomain::GetCurrentDomain()), GetClrInstanceId());
 }
 
-void GCToCLREventSink::FirePrvSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation, uint64_t appDomainID)
+void GCToCLREventSink::FirePrvSetGCHandle(void *handleID, void *objectID, uint32_t kind, uint32_t generation)
 {
-    FireEtwPrvSetGCHandle(handleID, objectID, kind, generation, appDomainID, GetClrInstanceId());
+    FireEtwPrvSetGCHandle(handleID, objectID, kind, generation, (uint64_t)dac_cast<TADDR>(AppDomain::GetCurrentDomain()), GetClrInstanceId());
 }
 
 void GCToCLREventSink::FireDestroyGCHandle(void *handleID)

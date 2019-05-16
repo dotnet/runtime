@@ -1249,7 +1249,6 @@ void EEPolicy::HandleCodeContractFailure(LPCWSTR pMessage, LPCWSTR pCondition, L
     // GetActionOnFailure will notify the host for us.
     EPolicyAction action = pPolicy->GetActionOnFailure(FAIL_CodeContract);
     Thread* pThread = GetThread();
-    AppDomain* pCurrentDomain = ::GetAppDomain();
 
     switch(action) {
     case eThrowException:

@@ -47,7 +47,7 @@
 #define FireEtwGCMarkHandles(HeapNum, ClrInstanceID) 0
 #define FireEtwGCMarkOlderGenerationRoots(HeapNum, ClrInstanceID) 0
 #define FireEtwFinalizeObject(TypeID, ObjectID, ClrInstanceID) 0
-#define FireEtwSetGCHandle(HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID) 0
+#define FireEtwSetGCHandle(HandleID, ObjectID, Kind, Generation, ClrInstanceID) 0
 #define FireEtwDestroyGCHandle(HandleID, ClrInstanceID) 0
 #define FireEtwGCSampledObjectAllocationLow(Address, TypeID, ObjectCountForTypeSample, TotalSizeForTypeSample, ClrInstanceID) 0
 #define FireEtwPinObjectAtGCTime(HandleID, ObjectID, ObjectSize, TypeName, ClrInstanceID) 0
@@ -376,7 +376,7 @@
 #define FireEtwFailFast(FailFastUserMessage, FailedEIP, OSExitCode, ClrExitCode, ClrInstanceID) 0
 #define FireEtwPrvFinalizeObject(TypeID, ObjectID, ClrInstanceID, TypeName) 0
 #define FireEtwCCWRefCountChange(HandleID, ObjectID, COMInterfacePointer, NewRefCount, AppDomainID, ClassName, NameSpace, Operation, ClrInstanceID) 0
-#define FireEtwPrvSetGCHandle(HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID) 0
+#define FireEtwPrvSetGCHandle(HandleID, ObjectID, Kind, Generation, ClrInstanceID) 0
 #define FireEtwPrvDestroyGCHandle(HandleID, ClrInstanceID) 0
 #define FireEtwFusionMessageEvent(ClrInstanceID, Prepend, Message) 0
 #define FireEtwFusionErrorCodeEvent(ClrInstanceID, Category, ErrorCode) 0

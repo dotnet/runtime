@@ -53,7 +53,7 @@ typedef PTR_PTR_HandleTable PTR_HHANDLETABLE;
 /*
  * handle manager init and shutdown routines
  */
-HHANDLETABLE    HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCount, ADIndex uADIndex);
+HHANDLETABLE    HndCreateHandleTable(const uint32_t *pTypeFlags, uint32_t uTypeCount);
 void            HndDestroyHandleTable(HHANDLETABLE hTable);
 #endif // !DACCESS_COMPILE
 
@@ -62,10 +62,6 @@ void            HndDestroyHandleTable(HHANDLETABLE hTable);
  */
 void            HndSetHandleTableIndex(HHANDLETABLE hTable, uint32_t uTableIndex);
 uint32_t        HndGetHandleTableIndex(HHANDLETABLE hTable);
-ADIndex         HndGetHandleTableADIndex(HHANDLETABLE hTable);
-
-GC_DAC_VISIBLE
-ADIndex         HndGetHandleADIndex(OBJECTHANDLE handle);
 
 #ifndef DACCESS_COMPILE
 /*
@@ -143,9 +139,8 @@ uint32_t        HndCountAllHandles(BOOL fUseLocks);
 
 
 #ifdef _DEBUG_IMPL
-void ValidateAssignObjrefForHandle(OBJECTREF, ADIndex appDomainIndex);
-void ValidateFetchObjrefForHandle(OBJECTREF, ADIndex appDomainIndex);
-void ValidateAppDomainForHandle(OBJECTHANDLE handle);
+void ValidateAssignObjrefForHandle(OBJECTREF);
+void ValidateFetchObjrefForHandle(OBJECTREF);
 #endif
 
 /*
@@ -185,8 +180,7 @@ OBJECTREF HndFetchHandle(OBJECTHANDLE handle)
     _ASSERTE("Attempt to access destroyed handle." && *(_UNCHECKED_OBJECTREF *)handle != DEBUG_DestroyedHandleValue);
 
     // Make sure the objref for handle is valid
-    ValidateFetchObjrefForHandle(ObjectToOBJECTREF(*(Object **)handle), 
-                            HndGetHandleTableADIndex(HndGetHandleTable(handle)));
+    ValidateFetchObjrefForHandle(ObjectToOBJECTREF(*(Object **)handle));
 #endif // _DEBUG_IMPL
 
     // wrap the raw objectref and return it

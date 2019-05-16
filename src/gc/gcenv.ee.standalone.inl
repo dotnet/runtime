@@ -191,12 +191,6 @@ inline void GCToEEInterface::HandleFatalError(unsigned int exitCode)
     g_theGCToCLR->HandleFatalError(exitCode);
 }
 
-inline bool GCToEEInterface::ShouldFinalizeObjectForUnload(void* pDomain, Object* obj)
-{
-    assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->ShouldFinalizeObjectForUnload(pDomain, obj);
-}
-
 inline bool GCToEEInterface::EagerFinalized(Object* obj)
 {
     assert(g_theGCToCLR != nullptr);
@@ -269,40 +263,10 @@ inline IGCToCLREventSink* GCToEEInterface::EventSink()
     return g_theGCToCLR->EventSink();
 }
 
-inline uint32_t GCToEEInterface::GetDefaultDomainIndex()
-{
-    assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->GetDefaultDomainIndex();   
-}
-
-inline void *GCToEEInterface::GetAppDomainAtIndex(uint32_t appDomainIndex)
-{
-    assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->GetAppDomainAtIndex(appDomainIndex);
-}
-
-inline bool GCToEEInterface::AppDomainCanAccessHandleTable(uint32_t appDomainID)
-{
-    assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->AppDomainCanAccessHandleTable(appDomainID);
-}
-
-inline uint32_t GCToEEInterface::GetIndexOfAppDomainBeingUnloaded()
-{
-    assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->GetIndexOfAppDomainBeingUnloaded();
-}
-
 inline uint32_t GCToEEInterface::GetTotalNumSizedRefHandles()
 {
     assert(g_theGCToCLR != nullptr);
     return g_theGCToCLR->GetTotalNumSizedRefHandles();
-}
-
-inline bool GCToEEInterface::AppDomainIsRudeUnload(void *appDomain)
-{
-    assert(g_theGCToCLR != nullptr);
-    return g_theGCToCLR->AppDomainIsRudeUnload(appDomain);
 }
 
 inline bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)

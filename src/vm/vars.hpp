@@ -482,7 +482,6 @@ extern int g_IGCTrimCommit;
 #endif
 
 extern BOOL g_fEnableETW;
-extern BOOL g_fEnableARM;
 
 // Returns a BOOL to indicate if the runtime is active or not
 BOOL IsRuntimeActive(); 

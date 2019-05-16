@@ -2,9 +2,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 # Local GC meta-issue: https://github.com/dotnet/coreclr/issues/11518
 
-# https://github.com/dotnet/coreclr/issues/11517
-remove_definitions(-DFEATURE_APPDOMAIN_RESOURCE_MONITORING)
-
 # https://github.com/dotnet/coreclr/issues/11516
 remove_definitions(-DSTRESS_HEAP)
 

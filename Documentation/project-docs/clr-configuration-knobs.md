@@ -72,12 +72,6 @@ Name | Description | Type | Class | Default Value | Flags
 `ADTakeSnapShot` | Superseded by test hooks | `DWORD` | `INTERNAL` | `0` |
 `EnableFullDebug` | Heavy-weight checking for AD boundary violations (AD leaks) | `DWORD` | `INTERNAL` | |
 
-#### ARM Configuration Knobs
-
-Name | Description | Type | Class | Default Value | Flags
------|-------------|------|-------|---------------|-------
-`ARMEnabled` | AppDomain Resource Monitoring. Set to 1 to enable it | `DWORD` | `UNSUPPORTED` | `(DWORD)0` |
-
 #### Assembly Loader Configuration Knobs
 
 Name | Description | Type | Class | Default Value | Flags
