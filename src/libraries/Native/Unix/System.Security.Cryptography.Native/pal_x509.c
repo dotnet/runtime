@@ -480,7 +480,7 @@ static X509* ReadNextPublicCert(DIR* dir, X509Stack* tmpStack, char* pathTmp, si
     return NULL;
 }
 
-X509_STORE* CryptoNative_X509ChainNew(X509Stack* systemTrust, const char* userTrustPath)
+X509_STORE* CryptoNative_X509ChainNew(X509Stack* systemTrust, X509Stack* userTrust)
 {
     X509_STORE* store = X509_STORE_new();
 
@@ -503,56 +503,30 @@ X509_STORE* CryptoNative_X509ChainNew(X509Stack* systemTrust, const char* userTr
         }
     }
 
-    if (userTrustPath != NULL)
+
+    if (userTrust != NULL)
     {
-        char* pathTmp;
-        size_t pathTmpSize;
-        char* nextFileWrite;
-        DIR* trustDir = OpenUserStore(userTrustPath, &pathTmp, &pathTmpSize, &nextFileWrite);
+        int count = sk_X509_num(userTrust);
+        int clearError = 0;
 
-        if (trustDir != NULL)
+        for (int i = 0; i < count; i++)
         {
-            X509* cert;
-            X509Stack* tmpStack = sk_X509_new_null();
-
-            while ((cert = ReadNextPublicCert(trustDir, tmpStack, pathTmp, pathTmpSize, nextFileWrite)) != NULL)
+            if (!X509_STORE_add_cert(store, sk_X509_value(userTrust, i)))
             {
-                // cert refcount is 1
-                if (!X509_STORE_add_cert(store, cert))
+                unsigned long error = ERR_peek_last_error();
+
+                if (error != ERR_PACK(ERR_LIB_X509, X509_F_X509_STORE_ADD_CERT, X509_R_CERT_ALREADY_IN_HASH_TABLE))
                 {
-                    // cert refcount is still 1
-                    if (ERR_get_error() !=
-                        ERR_PACK(ERR_LIB_X509, X509_F_X509_STORE_ADD_CERT, X509_R_CERT_ALREADY_IN_HASH_TABLE))
-                    {
-                        // cert refcount goes to 0
-                        X509_free(cert);
-                        X509_STORE_free(store);
-                        store = NULL;
-                        break;
-                    }
+                    X509_STORE_free(store);
+                    return NULL;
                 }
 
-                // if add_cert succeeded, reduce refcount to 1
-                // if add_cert failed (duplicate add), reduce refcount to 0
-                X509_free(cert);
+                clearError = 1;
             }
+        }
 
-            sk_X509_free(tmpStack);
-            free(pathTmp);
-            closedir(trustDir);
-
-            // store is only NULL if X509_STORE_add_cert failed, in which case we
-            // want to leave the error state intact, so the exception will report
-            // what went wrong (probably out of memory).
-            if (store == NULL)
-            {
-                return NULL;
-            }
-
-            // PKCS12_parse can cause spurious errors.
-            // d2i_PKCS12_fp may have failed for invalid files.
-            // X509_STORE_add_cert may have reported duplicate addition.
-            // Just clear it all.
+        if (clearError)
+        {
             ERR_clear_error();
         }
     }

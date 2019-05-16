@@ -309,11 +309,12 @@
       <DependentUpon>System\Security\Cryptography\X509Certificates\Asn1\DistributionPointNameAsn.xml</DependentUpon>
     </Compile>
     <Compile Include="System\Security\Cryptography\X509Certificates\Asn1\ReasonFlagsAsn.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\CachedDirectoryStoreProvider.cs" />
+    <Compile Include="Internal\Cryptography\Pal.Unix\CachedSystemStoreProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertCollectionLoader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificateAssetDownloader.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CertificatePal.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\ChainPal.cs" />
-    <Compile Include="Internal\Cryptography\Pal.Unix\CollectionBackedStoreProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\CrlCache.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\DirectoryBasedStoreProvider.cs" />
     <Compile Include="Internal\Cryptography\Pal.Unix\ExportProvider.cs" />

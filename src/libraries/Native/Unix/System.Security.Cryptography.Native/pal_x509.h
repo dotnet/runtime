@@ -337,10 +337,9 @@ Returns the input value.
 DLLEXPORT X509* CryptoNative_X509UpRef(X509* x509);
 
 /*
-Create a new X509_STORE, considering the certificates from systemTrust and any readable PFX
-in userTrustPath to be trusted
+Create a new X509_STORE, considering the certificates from systemTrust and userTrust
 */
-DLLEXPORT X509_STORE* CryptoNative_X509ChainNew(X509Stack* systemTrust, const char* userTrustPath);
+DLLEXPORT X509_STORE* CryptoNative_X509ChainNew(X509Stack* systemTrust, X509Stack* userTrust);
 
 /*
 Adds all of the simple certificates from null-or-empty-password PFX files in storePath to stack.
