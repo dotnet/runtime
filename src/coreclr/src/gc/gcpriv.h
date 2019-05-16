@@ -3997,10 +3997,6 @@ private:
 
     }
 
-    BOOL FinalizeSegForAppDomain (void *pDomain, 
-                                  BOOL fRunFinalizers, 
-                                  unsigned int Seg);
-
 public:
     ~CFinalize();
     bool Initialize();
@@ -4019,9 +4015,6 @@ public:
     void SetSegForShutDown(BOOL fHasLock);
     size_t GetNumberFinalizableObjects();
     void DiscardNonCriticalObjects();
-
-    //Methods used by the app domain unloading call to finalize objects in an app domain
-    bool FinalizeAppDomain (void *pDomain, bool fRunFinalizers);
 
     void CheckFinalizerObjects();
 };

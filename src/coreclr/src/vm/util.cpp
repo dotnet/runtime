@@ -3148,49 +3148,6 @@ BOOL DelayLoadOleaut32CheckDisabled()
 }
 #endif
 
-BOOL EnableARM()
-{
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    CONTRACTL
-    {
-        NOTHROW;
-        // TODO: this should really be GC_TRIGGERS so we wouldn't need the 
-        // CONTRACT_VIOLATION below but the hosting API that calls this
-        // can be called on a COOP thread and it has a GC_NOTRIGGER contract. 
-        // We should use the AD unload thread to call this function on.
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    BOOL fARMEnabled = g_fEnableARM;
-
-    if (!fARMEnabled)
-    {
-        if (ThreadStore::s_pThreadStore)
-        {
-            // We need to establish the baselines for the CPU usage counting.
-            Thread *pThread = NULL;
-            CONTRACT_VIOLATION(GCViolation);
-
-            // Take the thread store lock while we enumerate threads.
-            ThreadStoreLockHolder tsl ;
-
-            while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
-            {
-                if (pThread->IsUnstarted() || pThread->IsDead())
-                    continue;
-                pThread->QueryThreadProcessorUsage();
-            }
-        }
-        g_fEnableARM = TRUE;
-    }
-
-    return fARMEnabled;
-#else // FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    return FALSE;
-#endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
-}
-
 #endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
 
 

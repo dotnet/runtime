@@ -469,17 +469,6 @@ public:
 
     virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary) = 0;
 
-    // Relocates async pinned handles from a condemned handle store to the default domain's handle store.
-    //
-    // The two callbacks are called when:
-    //   1. clearIfComplete is called whenever the handle table observes an async pin that is still live.
-    //      The callback gives a chance for the EE to unpin the referents if the overlapped operation is complete.
-    //   2. setHandle is called whenever the GC has relocated the async pin to a new handle table. The passed-in
-    //      handle is the newly-allocated handle in the default domain that should be assigned to the overlapped object.
-    virtual void RelocateAsyncPinnedHandles(IGCHandleStore* pTarget, void (*clearIfComplete)(Object*), void (*setHandle)(Object*, OBJECTHANDLE)) = 0;
-
-    virtual bool EnumerateAsyncPinnedHandles(async_pin_enum_fn callback, void* context) = 0;
-
     virtual ~IGCHandleStore() {};
 };
 
@@ -490,11 +479,9 @@ public:
 
     virtual void Shutdown() = 0;
 
-    virtual void* GetHandleContext(OBJECTHANDLE handle) = 0;
-
     virtual IGCHandleStore* GetGlobalHandleStore() = 0;
 
-    virtual IGCHandleStore* CreateHandleStore(void* context) = 0;
+    virtual IGCHandleStore* CreateHandleStore() = 0;
 
     virtual void DestroyHandleStore(IGCHandleStore* store) = 0;
 
@@ -555,8 +542,7 @@ public:
     to synchronize with the GC, when the VM wants to update something that
     the GC is potentially using, if it's doing a background GC.
 
-    Concrete examples of this are moving async pinned handles across appdomains
-    and profiling/ETW scenarios.
+    Concrete examples of this are profiling/ETW scenarios.
     ===========================================================================
     */
 
@@ -585,9 +571,6 @@ public:
     with the GC.
     ===========================================================================
     */
-
-    // Finalizes an app domain by finalizing objects within that app domain.
-    virtual bool FinalizeAppDomain(void* pDomain, bool fRunFinalizers) = 0;
 
     // Finalizes all registered objects for shutdown, even if they are still reachable.
     virtual void SetFinalizeQueueForShutdown(bool fHasLock) = 0;
@@ -663,7 +646,7 @@ public:
 
     // Returns the number of GCs that have transpired in the given generation
     // since the beginning of the life of the process. Also used by the VM
-    // for debug code and app domains.
+    // for debug code.
     virtual int CollectionCount(int generation, int get_bgc_fgc_coutn = 0) = 0;
 
     // Begins a no-GC region, returning a code indicating whether entering the no-GC
@@ -909,7 +892,6 @@ void updateGCShadow(Object** ptr, Object* val);
 
 #define GC_CALL_INTERIOR            0x1
 #define GC_CALL_PINNED              0x2
-#define GC_CALL_CHECK_APP_DOMAIN    0x4
 
 //flags for IGCHeapAlloc(...)
 enum GC_ALLOC_FLAGS
@@ -952,11 +934,7 @@ struct ScanContext
     uintptr_t stack_limit; // Lowest point on the thread stack that the scanning logic is permitted to read
     bool promotion; //TRUE: Promotion, FALSE: Relocation.
     bool concurrent; //TRUE: concurrent scanning 
-#if defined (FEATURE_APPDOMAIN_RESOURCE_MONITORING) || defined (DACCESS_COMPILE)
-    AppDomain *pCurrentDomain;
-#else
     void* _unused1;
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING || DACCESS_COMPILE
     void* pMD;
 #if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
     EtwGCRootKind dwEtwRootKind;

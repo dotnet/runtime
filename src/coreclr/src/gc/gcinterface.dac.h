@@ -53,15 +53,11 @@ public:
 
 class dac_handle_table {
 public:
-    // On the handle table side, this is an ADIndex. They should still have
-    // the same layout.
-    //
     // We do try to keep everything that the DAC knows about as close to the
     // start of the struct as possible to avoid having padding members. However,
     // HandleTable has rgTypeFlags at offset 0 for performance reasons and
     // we don't want to disrupt that.
     uint32_t padding[HANDLE_MAX_INTERNAL_TYPES];
-    DWORD uADIndex;
 };
 
 class dac_handle_table_bucket {

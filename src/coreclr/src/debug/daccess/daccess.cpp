@@ -8472,7 +8472,6 @@ StackWalkAction DacStackReferenceWalker::Callback(CrawlFrame *pCF, VOID *pData)
 
     MethodDesc *pMD = pCF->GetFunction();
     gcctx->sc->pMD = pMD;
-    gcctx->sc->pCurrentDomain = pCF->GetAppDomain();
 
     PREGDISPLAY pRD = pCF->GetRegisterSet();
     dsc->sp = (TADDR)GetRegdisplaySP(pRD);;

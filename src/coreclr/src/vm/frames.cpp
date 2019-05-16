@@ -1111,7 +1111,7 @@ void HijackFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
         case RT_ByRef:
             LOG((LF_GC, INFO3, "Hijack Frame Carefully Promoting pointer" FMT_ADDR "to",
                 DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(*objPtr))));
-            PromoteCarefully(fn, objPtr, sc, GC_CALL_INTERIOR | GC_CALL_CHECK_APP_DOMAIN);
+            PromoteCarefully(fn, objPtr, sc, GC_CALL_INTERIOR);
             LOG((LF_GC, INFO3, FMT_ADDR "\n", DBG_ADDR(OBJECTREF_TO_UNCHECKED_OBJECTREF(*objPtr))));
             break;
 
@@ -1340,7 +1340,7 @@ void TransitionFrame::PromoteCallerStackUsingGCRefMap(promote_func* fn, ScanCont
             fn(dac_cast<PTR_PTR_Object>(ppObj), sc, CHECK_APP_DOMAIN);
             break;
         case GCREFMAP_INTERIOR:
-            PromoteCarefully(fn, dac_cast<PTR_PTR_Object>(ppObj), sc, GC_CALL_INTERIOR | GC_CALL_CHECK_APP_DOMAIN);
+            PromoteCarefully(fn, dac_cast<PTR_PTR_Object>(ppObj), sc, GC_CALL_INTERIOR);
             break;
         case GCREFMAP_METHOD_PARAM:
             if (sc->promotion)
