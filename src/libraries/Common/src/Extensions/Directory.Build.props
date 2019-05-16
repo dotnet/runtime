@@ -5,29 +5,20 @@
     <!-- This does not represent the TFM for the code. It's only here because /t:Pack requires it. -->
     <TargetFramework>netstandard1.0</TargetFramework>
     <IsPackable>true</IsPackable>
+    <IsSourcePackage>true</IsSourcePackage>
     <IsShipping>false</IsShipping>
     <NoBuild>true</NoBuild>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <EnableDefaultItems>false</EnableDefaultItems>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
-    <ContentTargetFolders>contentFiles</ContentTargetFolders>
+    <DebugType>none</DebugType>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <DefaultExcludeItems>$(DefaultExcludeItems);$(BaseOutputPath);$(BaseIntermediateOutputPath);</DefaultExcludeItems>
     <NoWarn>$(NoWarn);NU5105;CS8021</NoWarn>
     <IsProjectReferenceProvider>false</IsProjectReferenceProvider>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="$(MSBuildProjectDirectory)\**\*.cs" Exclude="$(DefaultExcludeItems)">
-      <Pack>true</Pack>
-      <PackagePath>$(ContentTargetFolders)\cs\netstandard1.0\shared\</PackagePath>
-    </Compile>
-    <EmbeddedResource Include="$(MSBuildProjectDirectory)\**\*.resx" Exclude="$(DefaultExcludeItems)">
-      <Pack>true</Pack>
-      <PackagePath>$(ContentTargetFolders)\any\any\shared\</PackagePath>
-    </EmbeddedResource>
-  </ItemGroup>
 
 </Project>
