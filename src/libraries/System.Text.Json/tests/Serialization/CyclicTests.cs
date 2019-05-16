@@ -17,5 +17,16 @@ namespace System.Text.Json.Serialization.Tests
             // We don't allow cycles; we throw InvalidOperation instead of an unrecoverable StackOverflow.
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.ToString(obj));
         }
+
+        [Fact]
+        [ActiveIssue(37313)]
+        public static void WriteTestClassWithArrayOfElementsOfTheSameClassWithoutCyclesDoesNotFail()
+        {
+            TestClassWithArrayOfElementsOfTheSameClass obj = new TestClassWithArrayOfElementsOfTheSameClass();
+
+            //It shouldn't throw when there is no real cycle reference, and just empty object is created
+            string json = JsonSerializer.ToString(obj);
+            Assert.Equal(@"{}", json);
+        }
     }
 }
