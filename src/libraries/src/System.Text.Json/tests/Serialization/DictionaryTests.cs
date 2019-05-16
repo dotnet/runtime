@@ -65,9 +65,39 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void DictionaryOfObjectFail()
+        public static void DictionaryOfObject()
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<Dictionary<string, object>>(@"{""Key1"":1"));
+            Dictionary<string, object> obj = JsonSerializer.Parse<Dictionary<string, object>>(@"{""Key1"":1}");
+            Assert.Equal(1, obj.Count);
+            JsonElement element = (JsonElement)obj["Key1"];
+            Assert.Equal(JsonValueType.Number, element.Type);
+            Assert.Equal(1, element.GetInt32());
+
+            string json = JsonSerializer.ToString(obj);
+            Assert.Equal(@"{""Key1"":1}", json);
+        }
+
+        [Fact]
+        public static void DictionaryOfObject_37569()
+        {
+            // https://github.com/dotnet/corefx/issues/37569
+            Dictionary<string, object> dictionary = new Dictionary<string, object>
+            {
+                ["key"] = new Poco { Id = 10 },
+            };
+
+            string json = JsonSerializer.ToString(dictionary);
+            Assert.Equal(@"{""key"":{""Id"":10}}", json);
+
+            dictionary = JsonSerializer.Parse<Dictionary<string, object>>(json);
+            Assert.Equal(1, dictionary.Count);
+            JsonElement element = (JsonElement)dictionary["key"];
+            Assert.Equal(@"{""Id"":10}", element.ToString());
+        }
+
+        class Poco
+        {
+            public int Id { get; set; }
         }
 
         [Fact]
