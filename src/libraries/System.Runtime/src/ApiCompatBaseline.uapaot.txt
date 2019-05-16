@@ -18,3 +18,4 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Memory<T>' does not implement int
 CannotRemoveBaseTypeOrInterface : Type 'System.ReadOnlyMemory<T>' does not implement interface 'System.IEquatable<System.ReadOnlyMemory<T>>' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.GC.GetGCMemoryInfo()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.GCMemoryInfo' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.GC.GetTotalAllocatedBytes(System.Boolean)' does not exist in the implementation but it does exist in the contract.
