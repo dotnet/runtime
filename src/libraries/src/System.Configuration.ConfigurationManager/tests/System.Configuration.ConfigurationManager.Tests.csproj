@@ -3,6 +3,7 @@
     <ProjectGuid>{7669C397-C21C-4C08-83F1-BE6691911E88}</ProjectGuid>
     <!-- XUnit AppDomains BaseDirectory path doesn't contain a trailing slash, which impacts our tests. -->
     <XUnitNoAppdomain>true</XUnitNoAppdomain>
+    <XUnitMaxThreads>1</XUnitMaxThreads>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
