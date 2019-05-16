@@ -52,8 +52,11 @@ namespace System.Text.Json.Serialization
                     return false;
                 }
 
+                // We've got a property info. If we're a Value or polymorphic Value
+                // (ClassType.Unknown), return true.
                 ClassType type = JsonPropertyInfo.ClassType;
-                return type == ClassType.Value || type == ClassType.Unknown;
+                return type == ClassType.Value || type == ClassType.Unknown
+                    || (type == ClassType.Dictionary && KeyName != null && JsonClassInfo.ElementClassInfo.ClassType == ClassType.Unknown);
             }
         }
 
