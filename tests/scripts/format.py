@@ -172,11 +172,10 @@ def main(argv):
         os.remove(bootstrapPath)
 
     if returncode != 0:
-        buildUrl = my_env["BUILD_URL"]
         print("There were errors in formatting. Please run jit-format locally with: \n")
         print(errorMessage)
         print("\nOr download and apply generated patch:")
-        print("wget " + buildUrl + "artifact/format.patch")
+        print("wget .../artifact/format.patch")
         print("git apply format.patch")
 
     return returncode
