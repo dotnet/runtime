@@ -2088,16 +2088,9 @@ gboolean mono_compile_is_broken (MonoCompile *cfg, MonoMethod *method, gboolean 
 MonoInst *mono_get_got_var (MonoCompile *cfg);
 void      mono_add_seq_point (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, int native_offset);
 void      mono_add_var_location (MonoCompile *cfg, MonoInst *var, gboolean is_reg, int reg, int offset, int from, int to);
-MonoInst* mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **args);
-
-#ifdef __cplusplus
-template <typename T>
-inline MonoInst*
-mono_emit_jit_icall (MonoCompile *cfg, T func, MonoInst **args)
-{
-	return mono_emit_jit_icall (cfg, (gconstpointer)func, args);
-}
-#endif // __cplusplus
+MonoInst* mono_emit_jit_icall_info (MonoCompile *cfg, MonoJitICallInfo *jit_icall_info, MonoInst **args); // FIXME remove/reduce
+MonoInst* mono_emit_jit_icall_id (MonoCompile *cfg, MonoJitICallId jit_icall_id, MonoInst **args);
+#define mono_emit_jit_icall(cfg, name, args) (mono_emit_jit_icall_id ((cfg), MONO_JIT_ICALL_ ## name, (args)))
 
 MonoInst* mono_emit_jit_icall_by_info (MonoCompile *cfg, int il_offset, MonoJitICallInfo *info, MonoInst **args);
 MonoInst* mono_emit_method_call (MonoCompile *cfg, MonoMethod *method, MonoInst **args, MonoInst *this_ins);

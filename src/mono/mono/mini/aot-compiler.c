@@ -4170,13 +4170,12 @@ add_extra_method (MonoAotCompile *acfg, MonoMethod *method)
 }
 
 static void
-add_jit_icall_wrapper (gpointer key, gpointer value, gpointer user_data)
+add_jit_icall_wrapper (MonoAotCompile *acfg, MonoJitICallInfo *callinfo)
 {
-	MonoAotCompile *acfg = (MonoAotCompile *)user_data;
-	MonoJitICallInfo *callinfo = (MonoJitICallInfo *)value;
-
 	if (!callinfo->sig)
 		return;
+
+	g_assert (callinfo->name && callinfo->func);
 
 	add_method (acfg, mono_marshal_get_icall_wrapper (callinfo, TRUE));
 }
@@ -4605,8 +4604,9 @@ add_wrappers (MonoAotCompile *acfg)
 		add_method (acfg, mono_marshal_get_isinst_with_cache ());
 
 		/* JIT icall wrappers */
-		/* FIXME: locking - this is "safe" as full-AOT threads don't mutate the icall hash*/
-		g_hash_table_foreach (mono_get_jit_icall_info (), add_jit_icall_wrapper, acfg);
+		/* FIXME: locking - this is "safe" as full-AOT threads don't mutate the icall data */
+		for (int i = 0; i < MONO_JIT_ICALL_count; ++i)
+			add_jit_icall_wrapper (acfg, &mono_jit_icall_info.array [i]);
 	}
 
 	/* 
@@ -6023,7 +6023,7 @@ get_file_index (MonoAotCompile *acfg, const char *source_file)
  *   Emit the native code in CODE, handling relocations along the way. If GOT_ONLY
  * is true, calls are made through the GOT too. This is used for emitting trampolines
  * in full-aot mode, since calls made from trampolines couldn't go through the PLT,
- * since trampolines are needed to make PTL work.
+ * since trampolines are needed to make PLT work.
  */
 static void
 emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, guint32 code_len, MonoJumpInfo *relocs, gboolean got_only, MonoDebugMethodJitInfo *debug_info)
@@ -7209,11 +7209,9 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 		break;
 	}
 	case MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR:
-		// FIXME Check with https://github.com/mono/mono/pull/13792
 		debug_sym = g_strdup_printf ("%s_jit_icall_native_trampoline_func_%d", prefix, ji->data.index);
 		break;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
-		// FIXME Check with https://github.com/mono/mono/pull/13792
 		debug_sym = g_strdup_printf ("%s_jit_icall_native_specific_trampoline_lazy_fetch_%u", prefix, ji->data.uindex);
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
@@ -13571,7 +13569,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 		if (strcmp (acfg->image->assembly->aname.name, "mscorlib") == 0) {
 			add_gc_wrappers (acfg);
 
-			g_hash_table_foreach (mono_get_jit_icall_info (), add_jit_icall_wrapper, acfg);
+			for (int i = 0; i < MONO_JIT_ICALL_count; ++i)
+				add_jit_icall_wrapper (acfg, &mono_jit_icall_info.array [i]);
 		}
 	}
 

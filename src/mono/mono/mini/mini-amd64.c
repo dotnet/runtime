@@ -3020,6 +3020,10 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 {
 	gboolean no_patch = FALSE;
 
+	g_assert (patch_type == MONO_PATCH_INFO_METHOD ||	// data is MonoMethod*; MONO_PATCH_INFO_METHOD_JUMP is already reasonable
+		  patch_type == MONO_PATCH_INFO_JIT_ICALL ||	// data is function name
+		  patch_type == MONO_PATCH_INFO_ABS);		// data is code pointer, hashed to MonoJumpInfo* with additional patch type/data
+
 	/* 
 	 * FIXME: Add support for thunks
 	 */

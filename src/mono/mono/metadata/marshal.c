@@ -2892,8 +2892,8 @@ emit_return_noilgen (MonoMethodBuilder *mb)
 
 /**
  * mono_marshal_get_icall_wrapper:
- * Generates IL code for the icall wrapper. The generated method
- * calls the unmanaged code in \p func.
+ * Generates IL code for the JIT icall wrapper. The generated method
+ * calls the unmanaged code in \p callinfo->func.
  */
 MonoMethod *
 mono_marshal_get_icall_wrapper (MonoJitICallInfo *callinfo, gboolean check_exceptions)

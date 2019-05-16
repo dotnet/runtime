@@ -632,16 +632,23 @@ mono_emit_native_call (MonoCompile *cfg, gconstpointer func, MonoMethodSignature
 	return (MonoInst*)call;
 }
 
+// FiXME remove or make static
 MonoInst*
-mono_emit_jit_icall (MonoCompile *cfg, gconstpointer func, MonoInst **args)
+mono_emit_jit_icall_info (MonoCompile *cfg, MonoJitICallInfo *info, MonoInst **args)
 {
-	MonoJitICallInfo *info = mono_find_jit_icall_by_addr (func);
-
 	g_assert (info);
 	g_assertf (info->name, "%d", (int)mono_jit_icall_info_index (info));
 	g_assertf (info->func, "%d", (int)mono_jit_icall_info_index (info));
 
 	return mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, args);
+}
+
+
+MonoInst*
+mono_emit_jit_icall_id (MonoCompile *cfg, MonoJitICallId jit_icall_id, MonoInst **args)
+{
+	g_assert ((guint)jit_icall_id < MONO_JIT_ICALL_count);
+	return mono_emit_jit_icall_info (cfg, &mono_jit_icall_info.array [jit_icall_id], args);
 }
 
 /*

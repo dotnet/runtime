@@ -9112,18 +9112,6 @@ mono_find_jit_icall_by_addr (gconstpointer addr)
 }
 
 /*
- * mono_get_jit_icall_info:
- *
- *   Return the hashtable mapping JIT icall names to MonoJitICallInfo structures. The
- * caller should access it while holding the icall lock.
- */
-GHashTable*
-mono_get_jit_icall_info (void)
-{
-	return jit_icall_hash_name;
-}
-
-/*
  * mono_lookup_jit_icall_symbol:
  *
  *   Given the jit icall NAME, returns its C symbol if possible, or NULL.
@@ -9161,7 +9149,7 @@ mono_no_trampolines (void)
 	g_assert_not_reached ();
 }
 
-MonoJitICallInfo *
+void
 mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean avoid_wrapper, const char *c_symbol)
 {
 	g_assert (func);
@@ -9190,8 +9178,7 @@ mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const 
 			name, existing_info->name, func, existing_info->func, i);
 	}
 
-	g_assertf (!info->inited, "%s", name);
-
+	g_assertf (!info->name && !info->func, "%s", name);
 	info->name = name;
 	info->func = func;
 	info->sig = sig;
@@ -9204,11 +9191,7 @@ mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const 
 	g_hash_table_insert (jit_icall_hash_name, (gpointer)info->name, info);
 	g_hash_table_insert (jit_icall_hash_addr, (gpointer)func, info);
 
-	g_assertf (!info->inited, "%s", name);
-	info->inited = TRUE;
-
 	mono_icall_unlock ();
-	return info;
 }
 
 int

@@ -424,7 +424,7 @@ mini_emit_memory_copy_internal (MonoCompile *cfg, MonoInst *dest, MonoInst *src,
 				size &= ~(TARGET_SIZEOF_VOID_P - 1);
 
 				EMIT_NEW_ICONST (cfg, iargs [2], size);
-				mono_emit_jit_icall (cfg, mono_gc_get_range_copy_func (), iargs);
+				mono_emit_jit_icall (cfg, mono_gc_wbarrier_range_copy, iargs);
 			}
 			return;
 		}
