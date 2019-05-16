@@ -12,6 +12,7 @@
     <HarvestIncludePaths Include="lib/netstandard1.3" />
     <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
     <InboxOnTargetFramework Include="netcoreapp2.0" />
+    <InboxOnTargetFramework Include="netstandard2.1" />
     <InboxOnTargetFramework Include="net45" />
     <InboxOnTargetFramework Include="wp80" />
     <InboxOnTargetFramework Include="portable-net45+wp8" />

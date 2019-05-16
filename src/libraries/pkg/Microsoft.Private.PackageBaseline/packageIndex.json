@@ -3371,6 +3371,7 @@
       "InboxOn": {
         "netcoreapp2.0": "4.1.0.0",
         "netcoreapp2.1": "4.1.1.0",
+        "netstandard2.1": "4.0.0.0",
         "net45": "4.0.0.0",
         "monoandroid10": "Any",
         "xamarinmac20": "Any"
@@ -3392,6 +3393,7 @@
       "BaselineVersion": "4.3.0",
       "InboxOn": {
         "netcoreapp2.0": "4.0.3.0",
+        "netstandard2.1": "4.0.0.0",
         "net45": "4.0.0.0",
         "portable45-net45+wp8": "4.0.0.0",
         "monoandroid10": "Any",
@@ -3418,6 +3420,7 @@
       "BaselineVersion": "4.3.0",
       "InboxOn": {
         "netcoreapp2.0": "4.0.3.0",
+        "netstandard2.1": "4.0.0.0",
         "net45": "4.0.0.0",
         "portable45-net45+wp8": "4.0.0.0",
         "monoandroid10": "Any",

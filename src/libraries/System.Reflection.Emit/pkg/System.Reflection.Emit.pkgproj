@@ -12,6 +12,7 @@
     <HarvestIncludePaths Include="lib/netstandard1.3" />
     <InboxOnTargetFramework Include="monoandroid10;xamarinmac20" />
     <InboxOnTargetFramework Include="netcoreapp2.0" />
+    <InboxOnTargetFramework Include="netstandard2.1" />
     <InboxOnTargetFramework Include="net45" />
 
     <!-- this package is part of the implementation closure of NETStandard.Library
