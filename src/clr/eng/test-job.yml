@@ -96,7 +96,7 @@ jobs:
       timeoutInMinutes: 360
     ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs', 'outerloop-gcstress0x3-gcstress0xc') }}:
       timeoutInMinutes: 480
-    ${{ if eq(parameters.testGroup, 'outerloop-gcstress-extra') }}:
+    ${{ if in(parameters.testGroup, 'outerloop-gcstress-extra', 'outerloop-r2r-extra') }}:
       timeoutInMinutes: 600
 
     steps:
@@ -173,7 +173,7 @@ jobs:
         ${{ if in(parameters.testGroup, 'outerloop-gcstress0x3-gcstress0xc') }}:
           timeoutPerTestCollectionInMinutes: 240
           timeoutPerTestInMinutes: 60
-        ${{ if in(parameters.testGroup, 'outerloop-gcstress-extra') }}:
+        ${{ if in(parameters.testGroup, 'outerloop-gcstress-extra', 'outerloop-r2r-extra') }}:
           timeoutPerTestCollectionInMinutes: 300
           timeoutPerTestInMinutes: 90
 
@@ -236,6 +236,25 @@ jobs:
           - gcstress0xc_jitstress1
           - gcstress0xc_jitstress2
           - gcstress0xc_jitminopts_heapverify1
+        ${{ if eq(parameters.testGroup, 'outerloop-r2r-extra') }}:
+          scenarios:
+          - jitstress1
+          - jitstress2
+          - jitstress1_tiered
+          - jitstress2_tiered
+          - jitstressregs1
+          - jitstressregs2
+          - jitstressregs3
+          - jitstressregs4
+          - jitstressregs8
+          - jitstressregs0x10
+          - jitstressregs0x80
+          - jitstressregs0x1000
+          - jitminopts
+          - forcerelocs
+          - gcstress15
+          - no_tiered_compilation
+
 
     # Publish Logs
     - task: PublishPipelineArtifact@0
