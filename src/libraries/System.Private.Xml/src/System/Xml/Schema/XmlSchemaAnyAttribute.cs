@@ -17,7 +17,7 @@ namespace System.Xml.Schema
         [XmlAttribute("namespace")]
         public string Namespace
         {
-            get { return _ns; }
+            get { return _ns ?? NamespaceList.ToString(); }
             set { _ns = value; }
         }
 
