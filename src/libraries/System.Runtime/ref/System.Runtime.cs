@@ -1273,6 +1273,7 @@ namespace System
         public static GCMemoryInfo GetGCMemoryInfo() { throw null; }
         public static int GetGeneration(object obj) { throw null; }
         public static int GetGeneration(System.WeakReference wo) { throw null; }
+        public static long GetTotalAllocatedBytes(bool precise = false) { throw null; }
         public static long GetTotalMemory(bool forceFullCollection) { throw null; }
         public static void KeepAlive(object obj) { }
         public static void RegisterForFullGCNotification(int maxGenerationThreshold, int largeObjectHeapThreshold) { }
