@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace System.Reflection.Emit
 {
-    public struct OpCode
+    public readonly struct OpCode : IEquatable<OpCode>
     {
         //
         // Use packed bitfield for flags to avoid code bloat
@@ -33,8 +33,8 @@ namespace System.Reflection.Emit
 
         internal const int StackChangeShift = 28;               // XXXX0000000000000000000000000000
 
-        private OpCodeValues m_value;
-        private int m_flags;
+        private readonly OpCodeValues m_value;
+        private readonly int m_flags;
 
         internal OpCode(OpCodeValues value, int flags)
         {
