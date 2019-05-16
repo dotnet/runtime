@@ -16,8 +16,8 @@ namespace System.Text.Json.Serialization
                 return false;
             }
 
-            // If we don't have a valid property, that means we read "null" for a root object so just return.
-            if (state.Current.JsonPropertyInfo == null)
+            // If null is read at the top level and the type is nullable, then the root is "null" so just return.
+            if (reader.CurrentDepth == 0 && (state.Current.JsonPropertyInfo == null || state.Current.JsonPropertyInfo.CanBeNull))
             {
                 Debug.Assert(state.IsLastFrame);
                 Debug.Assert(state.Current.ReturnValue == null);
