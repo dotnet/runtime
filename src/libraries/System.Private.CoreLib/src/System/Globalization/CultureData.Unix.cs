@@ -264,6 +264,19 @@ namespace System.Globalization
             {
                 switch (icuFormatString[i])
                 {
+                    case '\'':
+                        result[resultPos++] = icuFormatString[i++];
+                        while (i < icuFormatString.Length)
+                        {
+                            char current = icuFormatString[i++];
+                            result[resultPos++] = current;
+                            if (current == '\'')
+                            {
+                                break;
+                            }
+                        }
+                        break;
+
                     case ':':
                     case '.':
                     case 'H':
