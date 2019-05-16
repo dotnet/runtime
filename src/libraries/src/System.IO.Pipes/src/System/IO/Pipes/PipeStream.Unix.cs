@@ -202,7 +202,7 @@ namespace System.IO.Pipes
                         if (!t.IsCompletedSuccessfully)
                         {
                             var cancelTcs = new TaskCompletionSource<bool>();
-                            using (cancellationToken.Register(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), cancelTcs))
+                            using (cancellationToken.UnsafeRegister(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), cancelTcs))
                             {
                                 if (t == await Task.WhenAny(t, cancelTcs.Task).ConfigureAwait(false))
                                 {

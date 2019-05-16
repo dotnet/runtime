@@ -179,7 +179,9 @@ namespace System.Net.WebSockets
             _receiveBuffer = new byte[ReceiveBufferMinLength];
 
             // Set up the abort source so that if it's triggered, we transition the instance appropriately.
-            _abortSource.Token.Register(s =>
+            // There's no need to store the resulting CancellationTokenRegistration, as this instance owns
+            // the CancellationTokenSource, and the lifetime of that CTS matches the lifetime of the registration.
+            _abortSource.Token.UnsafeRegister(s =>
             {
                 var thisRef = (ManagedWebSocket)s;
 
