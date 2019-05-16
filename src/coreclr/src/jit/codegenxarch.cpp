@@ -8485,15 +8485,6 @@ void* CodeGen::genCreateAndStoreGCInfoJIT32(unsigned codeSize,
         }
     }
 
-#ifdef DEBUG
-    if (jitOpts.testMask & 128)
-    {
-        for (unsigned offs = 0; offs < codeSize; offs++)
-        {
-            gcInfo.gcFindPtrsInFrame(infoPtr, codePtr, offs);
-        }
-    }
-#endif // DEBUG
 #endif // DUMP_GC_TABLES
 
     /* Make sure we ended up generating the expected number of bytes */
