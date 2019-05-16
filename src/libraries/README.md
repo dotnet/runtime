@@ -10,12 +10,12 @@ Runtime-specific library code ([System.Private.CoreLib](https://github.com/dotne
 
 ## .NET Core
 
-Official Starting Page: https://dotnet.github.io
+Official Starting Page: https://dotnet.microsoft.com/
 
-* [How to use .NET Core](https://github.com/dotnet/core/#get-started) (with VS, VS Code, command-line CLI)
-  * [Install official releases](https://www.microsoft.com/net/core)
-  * [Documentation](https://docs.microsoft.com/en-us/dotnet) (Get Started, Tutorials, Porting from .NET Framework, API reference, ...)
-    * [Deploying apps](https://docs.microsoft.com/en-us/dotnet/core/deploying)
+* [How to use .NET Core](https://docs.microsoft.com/dotnet/core/get-started) (with VS, VS Code, command-line CLI)
+  * [Install official releases](https://dotnet.microsoft.com/download)
+  * [Documentation](https://docs.microsoft.com/dotnet/core) (Get Started, Tutorials, Porting from .NET Framework, API reference, ...)
+    * [Deploying apps](https://docs.microsoft.com/dotnet/core/deploying)
   * [Supported OS versions](https://github.com/dotnet/core/blob/master/os-lifecycle-policy.md)
 * [Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md)
 * [Releases](https://github.com/dotnet/core/tree/master/release-notes)
@@ -45,8 +45,9 @@ This section is **in progress** here: [New contributor Docs - Contributing](http
 ### Useful Links
 
 * [.NET Core source index](https://source.dot.net) / [.NET Framework source index](https://referencesource.microsoft.com)
-* [API Reference docs](https://docs.microsoft.com/en-us/dotnet/core/api)
+* [API Reference docs](https://docs.microsoft.com/dotnet/api/?view=netcore-3.0)
 * [.NET API Catalog](http://apisof.net) (incl. APIs from daily builds and API usage info)
+* [API docs writing guidelines](https://github.com/dotnet/dotnet-api-docs/wiki) - useful when writing /// comments
 
 ### Community
 
