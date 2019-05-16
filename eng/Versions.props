@@ -14,7 +14,7 @@
     <MicrosoftNETCorePlatformsVersion>3.0.0-preview6.19264.9</MicrosoftNETCorePlatformsVersion>
     <MicrosoftBclAsyncInterfacesVersion>1.0.0-preview6.19264.9</MicrosoftBclAsyncInterfacesVersion>
     <!-- core-setup -->
-    <MicrosoftNETCoreAppVersion>3.0.0-preview6-27714-15</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreAppVersion>3.0.0-preview6-27715-11</MicrosoftNETCoreAppVersion>
     <!-- dotnet-optimization -->
     <MicrosoftDotNetBuildTasksFeedVersion>2.2.0-beta.19229.8</MicrosoftDotNetBuildTasksFeedVersion>
     <optimizationIBCCoreCLRVersion>99.99.99-master-20190510.1</optimizationIBCCoreCLRVersion>
