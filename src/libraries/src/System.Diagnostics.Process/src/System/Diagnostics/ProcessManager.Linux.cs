@@ -108,7 +108,7 @@ namespace System.Diagnostics
         /// <summary>
         /// Creates a ProcessInfo from the specified process ID.
         /// </summary>
-        internal static ProcessInfo CreateProcessInfo(int pid, ReusableTextReader reusableReader = null, string processName = null)
+        internal static ProcessInfo CreateProcessInfo(int pid, ReusableTextReader reusableReader = null)
         {
             if (reusableReader == null)
             {
@@ -117,21 +117,21 @@ namespace System.Diagnostics
 
             Interop.procfs.ParsedStat stat;
             return Interop.procfs.TryReadStatFile(pid, out stat, reusableReader) ?
-                CreateProcessInfo(stat, reusableReader, processName) :
+                CreateProcessInfo(ref stat, reusableReader) :
                 null;
         }
 
         /// <summary>
         /// Creates a ProcessInfo from the data parsed from a /proc/pid/stat file and the associated tasks directory.
         /// </summary>
-        internal static ProcessInfo CreateProcessInfo(Interop.procfs.ParsedStat procFsStat, ReusableTextReader reusableReader, string processName)
+        internal static ProcessInfo CreateProcessInfo(ref Interop.procfs.ParsedStat procFsStat, ReusableTextReader reusableReader, string processName = null)
         {
             int pid = procFsStat.pid;
 
             var pi = new ProcessInfo()
             {
                 ProcessId = pid,
-                ProcessName = processName ?? Process.GetProcessName(pid) ?? string.Empty,
+                ProcessName = processName ?? Process.GetUntruncatedProcessName(ref procFsStat) ?? string.Empty,
                 BasePriority = (int)procFsStat.nice,
                 VirtualBytes = (long)procFsStat.vsize,
                 WorkingSet = procFsStat.rss * Environment.SystemPageSize,

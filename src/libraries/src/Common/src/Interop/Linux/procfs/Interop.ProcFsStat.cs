@@ -33,7 +33,7 @@ internal static partial class Interop
             // the MoveNext() with the appropriate ParseNext* call and assignment.
 
             internal int pid;
-            // internal string comm;
+            internal string comm;
             internal char state;
             internal int ppid;
             //internal int pgrp;
@@ -238,7 +238,7 @@ internal static partial class Interop
             var results = default(ParsedStat);
 
             results.pid = parser.ParseNextInt32();
-            parser.MoveAndExtractNextInOuterParens(extractValue: false); // comm
+            results.comm = parser.MoveAndExtractNextInOuterParens();
             results.state = parser.ParseNextChar();
             results.ppid = parser.ParseNextInt32();
             parser.MoveNextOrFail(); // pgrp

@@ -30,9 +30,11 @@ namespace System.Diagnostics
             var processes = new List<Process>();
             foreach (int pid in ProcessManager.EnumerateProcessIds())
             {
-                if (string.Equals(processName, Process.GetProcessName(pid), StringComparison.OrdinalIgnoreCase))
+                Interop.procfs.ParsedStat parsedStat;
+                if (Interop.procfs.TryReadStatFile(pid, out parsedStat, reusableReader) &&
+                    string.Equals(processName, Process.GetUntruncatedProcessName(ref parsedStat), StringComparison.OrdinalIgnoreCase))
                 {
-                    ProcessInfo processInfo = ProcessManager.CreateProcessInfo(pid, reusableReader, processName);
+                    ProcessInfo processInfo = ProcessManager.CreateProcessInfo(ref parsedStat, reusableReader, processName);
                     processes.Add(new Process(machineName, false, processInfo.ProcessId, processInfo));
                 }
             }
@@ -256,12 +258,10 @@ namespace System.Diagnostics
         }
 
         /// <summary>Gets the name that was used to start the process, or null if it could not be retrieved.</summary>
-        /// <param name="processId">The pid for the target process, or -1 for the current process.</param>
-        internal static string GetProcessName(int processId = -1)
+        /// <param name="stat">The stat for the target process.</param>
+        internal static string GetUntruncatedProcessName(ref Interop.procfs.ParsedStat stat)
         {
-            string cmdLineFilePath = processId == -1 ?
-                Interop.procfs.SelfCmdLineFilePath :
-                Interop.procfs.GetCmdLinePathForProcess(processId);
+            string cmdLineFilePath = Interop.procfs.GetCmdLinePathForProcess(stat.pid);
 
             byte[] rentedArray = null;
             try
@@ -282,7 +282,7 @@ namespace System.Diagnostics
                             buffer.CopyTo(tmp);
                             byte[] toReturn = rentedArray;
                             buffer = rentedArray = tmp;
-                            if (rentedArray != null)
+                            if (toReturn != null)
                             {
                                 ArrayPool<byte>.Shared.Return(toReturn);
                             }
@@ -293,32 +293,62 @@ namespace System.Diagnostics
                         bytesRead += n;
 
                         // cmdline contains the argv array separated by '\0' bytes.
-                        // we determine the process name using argv[0].
-                        int argv0End = buffer.Slice(0, bytesRead).IndexOf((byte)'\0');
-                        if (argv0End != -1)
+                        // stat.comm contains a possibly truncated version of the process name.
+                        // When the program is a native executable, the process name will be in argv[0].
+                        // When the program is a script, argv[0] contains the interpreter, and argv[1] contains the script name.
+                        Span<byte> argRemainder = buffer.Slice(0, bytesRead);
+                        int argEnd = argRemainder.IndexOf((byte)'\0');
+                        if (argEnd != -1)
                         {
-                            // Strip directory names from argv[0].
-                            int nameStart = buffer.Slice(0, argv0End).LastIndexOf((byte)'/') + 1;
+                            // Check if argv[0] has the process name.
+                            string name = GetUntruncatedNameFromArg(argRemainder.Slice(0, argEnd), prefix: stat.comm);
+                            if (name != null)
+                            {
+                                return name;
+                            }
 
-                            return Encoding.UTF8.GetString(buffer.Slice(nameStart, argv0End - nameStart));
+                            // Check if argv[1] has the process name.
+                            argRemainder = argRemainder.Slice(argEnd + 1);
+                            argEnd = argRemainder.IndexOf((byte)'\0');
+                            if (argEnd != -1)
+                            {
+                                name = GetUntruncatedNameFromArg(argRemainder.Slice(0, argEnd), prefix: stat.comm);
+                                return name ?? stat.comm;
+                            }
                         }
 
                         if (n == 0)
                         {
-                            return null;
+                            return stat.comm;
                         }
                     }
                 }
             }
             catch (IOException)
             {
-                return null;
+                return stat.comm;
             }
             finally
             {
                 if (rentedArray != null)
                 {
                     ArrayPool<byte>.Shared.Return(rentedArray);
+                }
+            }
+
+            string GetUntruncatedNameFromArg(Span<byte> arg, string prefix)
+            {
+                // Strip directory names from arg.
+                int nameStart = arg.LastIndexOf((byte)'/') + 1;
+                string argString = Encoding.UTF8.GetString(arg.Slice(nameStart));
+
+                if (argString.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    return argString;
+                }
+                else
+                {
+                    return null;
                 }
             }
         }
