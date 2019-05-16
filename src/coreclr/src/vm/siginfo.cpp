@@ -4871,7 +4871,7 @@ void PromoteCarefully(promote_func   fn,
     //
     // Sanity check that the flags contain only these three values
     //
-    assert((flags & ~(GC_CALL_INTERIOR|GC_CALL_PINNED|GC_CALL_CHECK_APP_DOMAIN)) == 0);
+    assert((flags & ~(GC_CALL_INTERIOR|GC_CALL_PINNED)) == 0);
 
     //
     // Sanity check that GC_CALL_INTERIOR FLAG is set
@@ -5010,7 +5010,7 @@ VOID MetaSig::GcScanRoots(ArgDestination *pValue,
 #ifdef _DEBUG
             pOldLocation = *pArgPtr;
 #endif
-            (*fn)(pArgPtr, sc, GC_CALL_CHECK_APP_DOMAIN );
+            (*fn)(pArgPtr, sc, 0 );
 
             // !!! Do not cast to (OBJECTREF*)
             // !!! If we are in the relocate phase, we may have updated root,
@@ -5038,7 +5038,7 @@ VOID MetaSig::GcScanRoots(ArgDestination *pValue,
             pOldLocation = *pArgPtr;
 #endif
 
-            (*fnc)(fn, pArgPtr, sc, GC_CALL_INTERIOR|GC_CALL_CHECK_APP_DOMAIN);
+            (*fnc)(fn, pArgPtr, sc, GC_CALL_INTERIOR);
 
             // !!! Do not cast to (OBJECTREF*)
             // !!! If we are in the relocate phase, we may have updated root,

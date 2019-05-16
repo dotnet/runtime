@@ -2512,103 +2512,6 @@ public:
     PTR_LoaderHeap GetLowFrequencyHeap();
     PTR_LoaderHeap GetHighFrequencyHeap();
 
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    #define ARM_ETW_ALLOC_THRESHOLD (4 * 1024 * 1024)
-    // cache line size in ULONGLONG - 128 bytes which are 16 ULONGLONG's
-    #define ARM_CACHE_LINE_SIZE_ULL 16
-
-    inline ULONGLONG GetAllocBytes()
-    {
-        LIMITED_METHOD_CONTRACT;
-        ULONGLONG ullTotalAllocBytes = 0;
-
-        // Ensure that m_pullAllocBytes is non-null to avoid an AV in a race between GC and AD unload.
-        // A race can occur when a new appdomain is created, but an OOM is thrown when allocating for m_pullAllocBytes, causing the AD unload.
-        if(NULL != m_pullAllocBytes)
-        {
-            for (DWORD i = 0; i < m_dwNumHeaps; i++)
-            {
-                ullTotalAllocBytes += m_pullAllocBytes[i * ARM_CACHE_LINE_SIZE_ULL];
-            }
-        }
-        return ullTotalAllocBytes;
-    }
-
-    void RecordAllocBytes(size_t allocatedBytes, DWORD dwHeapNumber)
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(dwHeapNumber < m_dwNumHeaps);
-        
-        // Ensure that m_pullAllocBytes is non-null to avoid an AV in a race between GC and AD unload.
-        // A race can occur when a new appdomain is created, but an OOM is thrown when allocating for m_pullAllocBytes, causing the AD unload.
-        if(NULL != m_pullAllocBytes)
-        {
-            m_pullAllocBytes[dwHeapNumber * ARM_CACHE_LINE_SIZE_ULL] += allocatedBytes;
-        }
-
-        ULONGLONG ullTotalAllocBytes = GetAllocBytes();
-
-        if ((ullTotalAllocBytes - m_ullLastEtwAllocBytes) >= ARM_ETW_ALLOC_THRESHOLD)
-        {
-            m_ullLastEtwAllocBytes = ullTotalAllocBytes;
-            FireEtwAppDomainMemAllocated((ULONGLONG)this, ullTotalAllocBytes, GetClrInstanceId());
-        }
-    }
-
-    inline ULONGLONG GetSurvivedBytes()
-    {
-        LIMITED_METHOD_CONTRACT;
-        ULONGLONG ullTotalSurvivedBytes = 0;
-
-        // Ensure that m_pullSurvivedBytes is non-null to avoid an AV in a race between GC and AD unload.
-        // A race can occur when a new appdomain is created, but an OOM is thrown when allocating for m_pullSurvivedBytes, causing the AD unload.
-        if(NULL != m_pullSurvivedBytes)
-        {
-            for (DWORD i = 0; i < m_dwNumHeaps; i++)
-            {
-                ullTotalSurvivedBytes += m_pullSurvivedBytes[i * ARM_CACHE_LINE_SIZE_ULL];
-            }
-        }
-        return ullTotalSurvivedBytes;
-    }
-
-    void RecordSurvivedBytes(size_t promotedBytes, DWORD dwHeapNumber)
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(dwHeapNumber < m_dwNumHeaps);
-   
-        // Ensure that m_pullSurvivedBytes is non-null to avoid an AV in a race between GC and AD unload.
-        // A race can occur when a new appdomain is created, but an OOM is thrown when allocating for m_pullSurvivedBytes, causing the AD unload.
-        if(NULL != m_pullSurvivedBytes)
-        {
-            m_pullSurvivedBytes[dwHeapNumber * ARM_CACHE_LINE_SIZE_ULL] += promotedBytes;
-        }
-    }
-
-    inline void ResetSurvivedBytes()
-    {
-        LIMITED_METHOD_CONTRACT;
-        
-        // Ensure that m_pullSurvivedBytes is non-null to avoid an AV in a race between GC and AD unload.
-        // A race can occur when a new appdomain is created, but an OOM is thrown when allocating for m_pullSurvivedBytes, causing the AD unload.
-        if(NULL != m_pullSurvivedBytes)
-        {
-            for (DWORD i = 0; i < m_dwNumHeaps; i++)
-            {
-                m_pullSurvivedBytes[i * ARM_CACHE_LINE_SIZE_ULL] = 0;
-            }
-        }
-    }
-
-    // Return the total processor time (user and kernel) used by threads executing in this AppDomain so far.
-    // The result is in 100ns units.
-    ULONGLONG QueryProcessorUsage();
-
-    // Add to the current count of processor time used by threads within this AppDomain. This API is called by
-    // threads transitioning between AppDomains.
-    void UpdateProcessorUsage(ULONGLONG ullAdditionalUsage);
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
-
 private:
     size_t EstimateSize();
     EEClassFactoryInfoHashTable* SetupClassFactHash();
@@ -2748,17 +2651,6 @@ private:
 
     // The thread-pool index of this app domain among existing app domains (starting from 1)
     TPIndex m_tpIndex;
-
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    ULONGLONG* m_pullAllocBytes;
-    ULONGLONG* m_pullSurvivedBytes;
-    DWORD m_dwNumHeaps;
-    ULONGLONG m_ullLastEtwAllocBytes;
-    // Total processor time (user and kernel) utilized by threads running in this AppDomain so far. May not
-    // account for threads currently executing in the AppDomain until a call to QueryProcessorUsage() is
-    // made.
-    Volatile<ULONGLONG> m_ullTotalProcessorUsage;
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
     Volatile<Stage> m_Stage;
 
@@ -3220,19 +3112,6 @@ public:
 
 #endif // DACCESS_COMPILE
 
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    // The *AD* methods are what we got from tracing through EE roots.
-    // RecordTotalSurvivedBytes is the total promoted from a GC.
-    static void ResetADSurvivedBytes();
-    static ULONGLONG GetADSurvivedBytes();
-    static void RecordTotalSurvivedBytes(size_t totalSurvivedBytes);
-    static ULONGLONG GetTotalSurvivedBytes()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_totalSurvivedBytes;
-    }
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
-
     //****************************************************************************************
     // Routines to deal with the base library (currently mscorlib.dll)
     LPCWSTR BaseLibrary()
@@ -3340,11 +3219,6 @@ private:
     SPTR_DECL(SystemDomain, m_pSystemDomain);
 
     LoaderAllocator * m_pDelayedUnloadListOfLoaderAllocators;
-
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    // This is what gets promoted for the whole GC heap.
-    static size_t m_totalSurvivedBytes;
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
 #ifndef DACCESS_COMPILE
     static CrstStatic m_DelayedUnloadCrst;

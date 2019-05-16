@@ -1114,11 +1114,6 @@ extern LONG g_OLEAUT32_Loaded;
 
 BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);
 
-#ifndef DACCESS_COMPILE
-// returns if ARM was already enabled or not.
-BOOL EnableARM();
-#endif // !DACCESS_COMPILE
-
 int GetRandomInt(int maxVal);
 
 //

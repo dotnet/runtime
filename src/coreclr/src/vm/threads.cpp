@@ -808,13 +808,6 @@ Thread* SetupThread(BOOL fInternal)
         FastInterlockOr((ULONG *) &pThread->m_State, Thread::TS_TPWorkerThread);
     }
 
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    if (g_fEnableARM)
-    {
-        pThread->QueryThreadProcessorUsage();
-    }
-#endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
-
 #ifdef FEATURE_EVENT_TRACE
     ETW::ThreadLog::FireThreadCreated(pThread);
 #endif // FEATURE_EVENT_TRACE
@@ -864,15 +857,6 @@ void DestroyThread(Thread *th)
     _ASSERTE (th == GetThread());
 
     _ASSERTE(g_fEEShutDown || th->m_dwLockCount == 0 || th->m_fRudeAborted);
-
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    if (g_fEnableARM)
-    {
-        AppDomain* pDomain = th->GetDomain();
-        pDomain->UpdateProcessorUsage(th->QueryThreadProcessorUsage());
-        FireEtwThreadTerminated((ULONGLONG)th, (ULONGLONG)pDomain, GetClrInstanceId());
-    }
-#endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
     th->FinishSOWork();
 
@@ -965,14 +949,6 @@ HRESULT Thread::DetachThread(BOOL fDLLThreadDetach)
     _ASSERTE ((m_State & Thread::TS_Detached) == 0);
 
     _ASSERTE (this == GetThread());
-
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    if (g_fEnableARM && m_pDomain)
-    {
-        m_pDomain->UpdateProcessorUsage(QueryThreadProcessorUsage());
-        FireEtwThreadTerminated((ULONGLONG)this, (ULONGLONG)m_pDomain, GetClrInstanceId());
-    }
-#endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
     FinishSOWork();
 
@@ -1555,10 +1531,6 @@ Thread::Thread()
     contextHolder.SuppressRelease();
     savedRedirectContextHolder.SuppressRelease();
 
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    m_ullProcessorUsageBaseline = 0;
-#endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
-
 #ifdef FEATURE_COMINTEROP
     m_uliInitializeSpyCookie.QuadPart = 0ul;
     m_fInitializeSpyRegistered = false;
@@ -1825,12 +1797,6 @@ BOOL Thread::HasStarted(BOOL bRequiresTSL)
 
         ThreadStore::TransferStartedThread(this, bRequiresTSL);
 
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-        if (g_fEnableARM)
-        {
-            QueryThreadProcessorUsage();
-        }
-#endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
 #ifdef FEATURE_EVENT_TRACE
         ETW::ThreadLog::FireThreadCreated(this);
 #endif // FEATURE_EVENT_TRACE
@@ -8917,56 +8883,6 @@ ThreadStore::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 }
 
 #endif // #ifdef DACCESS_COMPILE
-
-
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-// For the purposes of tracking resource usage we implement a simple cpu resource usage counter on each
-// thread. Every time QueryThreadProcessorUsage() is invoked it returns the amount of cpu time (a combination
-// of user and kernel mode time) used since the last call to QueryThreadProcessorUsage(). The result is in 100
-// nanosecond units.
-ULONGLONG Thread::QueryThreadProcessorUsage()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Get current values for the amount of kernel and user time used by this thread over its entire lifetime.
-    FILETIME sCreationTime, sExitTime, sKernelTime, sUserTime;
-    HANDLE hThread = GetThreadHandle();
-    BOOL fResult = GetThreadTimes(hThread,
-                                  &sCreationTime,
-                                  &sExitTime,
-                                  &sKernelTime,
-                                  &sUserTime);
-    if (!fResult)
-    {
-#ifdef _DEBUG
-        ULONG error = GetLastError();
-        printf("GetThreadTimes failed: %d; handle is %p\n", error, hThread);
-        _ASSERTE(FALSE);
-#endif
-        return 0;
-    }
-
-    // Combine the user and kernel times into a single value (FILETIME is just a structure representing an
-    // unsigned int64 in two 32-bit pieces).
-    _ASSERTE(sizeof(FILETIME) == sizeof(UINT64));
-    ULONGLONG ullCurrentUsage = *(ULONGLONG*)&sKernelTime + *(ULONGLONG*)&sUserTime;
-
-    // Store the current processor usage as the new baseline, and retrieve the previous usage.
-    ULONGLONG ullPreviousUsage = VolatileLoad(&m_ullProcessorUsageBaseline);
-    if (ullPreviousUsage >= ullCurrentUsage ||
-        ullPreviousUsage != (ULONGLONG)InterlockedCompareExchange64(
-            (LONGLONG*)&m_ullProcessorUsageBaseline, 
-            (LONGLONG)ullCurrentUsage, 
-            (LONGLONG)ullPreviousUsage))
-    {
-        // another thread beat us to it, and already reported this usage.  
-        return 0; 
-    }
-
-    // The result is the difference between this value and the previous usage value.
-    return ullCurrentUsage - ullPreviousUsage;
-}
-#endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
 OBJECTHANDLE Thread::GetOrCreateDeserializationTracker()
 {

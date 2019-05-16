@@ -57,18 +57,6 @@ OBJECTHANDLE GCHandleStore::CreateDependentHandle(Object* primary, Object* secon
     return handle;
 }
 
-void GCHandleStore::RelocateAsyncPinnedHandles(IGCHandleStore* pTarget, void (*clearIfComplete)(Object*), void (*setHandle)(Object*, OBJECTHANDLE))
-{
-    // assumption - the IGCHandleStore is an instance of GCHandleStore
-    GCHandleStore* other = static_cast<GCHandleStore*>(pTarget);
-    ::Ref_RelocateAsyncPinHandles(&_underlyingBucket, &other->_underlyingBucket, clearIfComplete, setHandle);
-}
-
-bool GCHandleStore::EnumerateAsyncPinnedHandles(async_pin_enum_fn callback, void* context)
-{
-    return !!::Ref_HandleAsyncPinHandles(callback, context);
-}
-
 GCHandleStore::~GCHandleStore()
 {
     ::Ref_DestroyHandleTableBucket(&_underlyingBucket);
@@ -94,7 +82,7 @@ IGCHandleStore* GCHandleManager::GetGlobalHandleStore()
     return g_gcGlobalHandleStore;
 }
 
-IGCHandleStore* GCHandleManager::CreateHandleStore(void* context)
+IGCHandleStore* GCHandleManager::CreateHandleStore()
 {
 #ifndef FEATURE_REDHAWK
     GCHandleStore* store = new (nothrow) GCHandleStore();
@@ -103,7 +91,7 @@ IGCHandleStore* GCHandleManager::CreateHandleStore(void* context)
         return nullptr;
     }
 
-    bool success = ::Ref_InitializeHandleTableBucket(&store->_underlyingBucket, context);
+    bool success = ::Ref_InitializeHandleTableBucket(&store->_underlyingBucket);
     if (!success)
     {
         delete store;
@@ -120,11 +108,6 @@ IGCHandleStore* GCHandleManager::CreateHandleStore(void* context)
 void GCHandleManager::DestroyHandleStore(IGCHandleStore* store)
 {
     delete store;
-}
-
-void* GCHandleManager::GetHandleContext(OBJECTHANDLE handle)
-{
-    return (void*)((uintptr_t)::HndGetHandleTableADIndex(::HndGetHandleTable(handle)).m_dwIndex);
 }
 
 OBJECTHANDLE GCHandleManager::CreateGlobalHandleOfType(Object* object, HandleType type)

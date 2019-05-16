@@ -3844,9 +3844,6 @@ VOID ETW::EnumerationLog::StartRundown()
 
     EX_TRY
     {
-        BOOL bIsArmRundownEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context,
-                                                                 TRACE_LEVEL_INFORMATION,
-                                                                 CLR_RUNDOWNAPPDOMAINRESOURCEMANAGEMENT_KEYWORD);
         BOOL bIsPerfTrackRundownEnabled = ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context,
                                                                  TRACE_LEVEL_INFORMATION,
                                                                  CLR_RUNDOWNPERFTRACK_KEYWORD);
@@ -3868,8 +3865,6 @@ VOID ETW::EnumerationLog::StartRundown()
            ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_Context, 
                                         TRACE_LEVEL_INFORMATION, 
                                         CLR_RUNDOWNJITTEDMETHODILTONATIVEMAP_KEYWORD)
-           ||
-           bIsArmRundownEnabled
            ||
            bIsPerfTrackRundownEnabled
            ||
@@ -3909,17 +3904,7 @@ VOID ETW::EnumerationLog::StartRundown()
 
             ETW::EnumerationLog::EnumerationHelper(NULL, NULL, enumerationOptions);
             
-            if (bIsArmRundownEnabled)
-            {
-                // When an ETW event consumer asks for ARM rundown, that not only enables
-                // the ETW events, but also causes some minor behavioral changes in the
-                // CLR, such as gathering CPU usage baselines for each thread right now,
-                // and also gathering resource usage information later on (keyed off of
-                // g_fEnableARM, which we'll set right now).
-                EnableARM();
-            }
-
-            if (bIsArmRundownEnabled || bIsThreadingRundownEnabled)
+            if (bIsThreadingRundownEnabled)
             {
                 SendThreadRundownEvent();
             }

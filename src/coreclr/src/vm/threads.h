@@ -4835,18 +4835,8 @@ public:
     // Holds per-thread information the debugger uses to expose locking information
     // See ThreadDebugBlockingInfo.h for more details
     ThreadDebugBlockingInfo DebugBlockingInfo;
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    // For the purposes of tracking resource usage we implement a simple cpu resource usage counter on each
-    // thread. Every time QueryThreadProcessorUsage() is invoked it returns the amount of cpu time (a
-    // combination of user and kernel mode time) used since the last call to QueryThreadProcessorUsage(). The
-    // result is in 100 nanosecond units.
-    ULONGLONG QueryThreadProcessorUsage();
 
 private:
-    // The amount of processor time (both user and kernel) in 100ns units used by this thread at the time of
-    // the last call to QueryThreadProcessorUsage().
-    ULONGLONG m_ullProcessorUsageBaseline;
-#endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
     // Disables pumping and thread join in RCW creation
     bool m_fDisableComObjectEagerCleanup;
@@ -4854,7 +4844,6 @@ private:
     // See ThreadStore::TriggerGCForDeadThreadsIfNecessary()
     bool m_fHasDeadThreadBeenConsideredForGCTrigger;
 
-private:
     CLRRandom m_random;
 
 public:

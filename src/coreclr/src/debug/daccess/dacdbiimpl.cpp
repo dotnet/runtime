@@ -5716,8 +5716,7 @@ ULONG DacDbiInterfaceImpl::GetAppDomainIdFromVmObjectHandle(VMPTR_OBJECTHANDLE v
 {
     DD_ENTER_MAY_THROW;
 
-    OBJECTHANDLE handle = (OBJECTHANDLE) vmHandle.GetDacPtr();
-    return HndGetHandleADIndex(handle).m_dwIndex;
+    return DefaultADID;
 }
 
 // Get the target address from a VMPTR_OBJECTHANDLE, i.e., the handle address
@@ -7553,7 +7552,7 @@ void DacStackReferenceWalker::GCEnumCallbackDac(LPVOID hCallback, OBJECTREF *pOb
     DacGcReference *data = dsc->pWalker->GetNextObject<DacGcReference>(dsc);
     if (data != NULL)
     {
-        data->vmDomain.SetDacTargetPtr(dac_cast<PTR_AppDomain>(dsc->pCurrentDomain).GetAddr());
+        data->vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
         if (obj)
             data->pObject = obj | 1;
         else if (loc.targetPtr)
@@ -7589,7 +7588,7 @@ void DacStackReferenceWalker::GCReportCallbackDac(PTR_PTR_Object ppObj, ScanCont
     DacGcReference *data = dsc->pWalker->GetNextObject<DacGcReference>(dsc);
     if (data != NULL)
     {
-        data->vmDomain.SetDacTargetPtr(dac_cast<PTR_AppDomain>(dsc->pCurrentDomain).GetAddr());
+        data->vmDomain.SetDacTargetPtr(AppDomain::GetCurrentDomain().GetAddr());
         data->objHnd.SetDacTargetPtr(obj);
         data->dwType = CorReferenceStack;
         data->i64ExtraData = 0;
