@@ -127,8 +127,20 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool X509ExtensionGetCritical(IntPtr ex);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509ChainNew")]
-        internal static extern SafeX509StoreHandle X509ChainNew(SafeX509StackHandle systemTrust, string userTrustPath);
+        [DllImport(Libraries.CryptoNative)]
+        private static extern SafeX509StoreHandle CryptoNative_X509ChainNew(SafeX509StackHandle systemTrust, SafeX509StackHandle userTrust);
+
+        internal static SafeX509StoreHandle X509ChainNew(SafeX509StackHandle systemTrust, SafeX509StackHandle userTrust)
+        {
+            SafeX509StoreHandle store = CryptoNative_X509ChainNew(systemTrust, userTrust);
+
+            if (store.IsInvalid)
+            {
+                throw CreateOpenSslCryptographicException();
+            }
+
+            return store;
+        }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreDestory")]
         internal static extern void X509StoreDestory(IntPtr v);

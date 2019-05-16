@@ -20,14 +20,14 @@ namespace Internal.Cryptography.Pal
         // 10 is plenty big.
         private const int DefaultChainCapacity = 10;
 
-        private static readonly string s_userRootPath =
-            DirectoryBasedStoreProvider.GetStorePath(X509Store.RootStoreName);
+        private static readonly CachedDirectoryStoreProvider s_userRootStore =
+            new CachedDirectoryStoreProvider(X509Store.RootStoreName);
 
-        private static readonly string s_userIntermediatePath =
-            DirectoryBasedStoreProvider.GetStorePath(X509Store.IntermediateCAStoreName);
+        private static readonly CachedDirectoryStoreProvider s_userIntermediateStore =
+            new CachedDirectoryStoreProvider(X509Store.IntermediateCAStoreName);
 
-        private static readonly string s_userPersonalPath =
-            DirectoryBasedStoreProvider.GetStorePath(X509Store.MyStoreName);
+        private static readonly CachedDirectoryStoreProvider s_userPersonalStore =
+            new CachedDirectoryStoreProvider(X509Store.MyStoreName);
 
         private SafeX509Handle _leafHandle;
         private SafeX509StoreHandle _store;
@@ -82,8 +82,9 @@ namespace Internal.Cryptography.Pal
             DateTime verificationTime,
             TimeSpan remainingDownloadTime)
         {
-            SafeX509StackHandle systemTrust = StorePal.GetMachineRoot().GetNativeCollection();
-            SafeX509StackHandle systemIntermediate = StorePal.GetMachineIntermediate().GetNativeCollection();
+            CachedSystemStoreProvider.GetNativeCollections(
+                out SafeX509StackHandle systemTrust,
+                out SafeX509StackHandle systemIntermediate);
 
             SafeX509StoreHandle store = null;
             SafeX509StackHandle untrusted = null;
@@ -91,11 +92,11 @@ namespace Internal.Cryptography.Pal
 
             try
             {
-                store = Interop.Crypto.X509ChainNew(systemTrust, s_userRootPath);
+                store = Interop.Crypto.X509ChainNew(systemTrust, s_userRootStore.GetNativeCollection());
 
                 untrusted = Interop.Crypto.NewX509Stack();
-                Interop.Crypto.X509StackAddDirectoryStore(untrusted, s_userIntermediatePath);
-                Interop.Crypto.X509StackAddDirectoryStore(untrusted, s_userPersonalPath);
+                Interop.Crypto.X509StackAddMultiple(untrusted, s_userIntermediateStore.GetNativeCollection());
+                Interop.Crypto.X509StackAddMultiple(untrusted, s_userPersonalStore.GetNativeCollection());
                 Interop.Crypto.X509StackAddMultiple(untrusted, systemIntermediate);
                 Interop.Crypto.X509StoreSetVerifyTime(store, verificationTime);
 
