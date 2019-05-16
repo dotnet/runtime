@@ -23,10 +23,6 @@ public:
 
     virtual OBJECTHANDLE CreateDependentHandle(Object* primary, Object* secondary);
 
-    virtual void RelocateAsyncPinnedHandles(IGCHandleStore* pTarget, void (*clearIfCompleteCallback)(Object* object), void (*setHandle)(Object* object, OBJECTHANDLE handle));
-
-    virtual bool EnumerateAsyncPinnedHandles(async_pin_enum_fn callback, void* context);
-
     virtual ~GCHandleStore();
 
     HandleTableBucket _underlyingBucket;
@@ -41,11 +37,9 @@ public:
 
     virtual void Shutdown();
 
-    virtual void* GetHandleContext(OBJECTHANDLE handle);
-
     virtual IGCHandleStore* GetGlobalHandleStore();
 
-    virtual IGCHandleStore* CreateHandleStore(void* context);
+    virtual IGCHandleStore* CreateHandleStore();
 
     virtual void DestroyHandleStore(IGCHandleStore* store);
 

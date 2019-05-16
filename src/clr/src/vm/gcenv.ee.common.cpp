@@ -158,7 +158,7 @@ void GcEnumObject(LPVOID pData, OBJECTREF *pObj, uint32_t flags)
     //
     // Sanity check that the flags contain only these three values
     //
-    assert((flags & ~(GC_CALL_INTERIOR|GC_CALL_PINNED|GC_CALL_CHECK_APP_DOMAIN)) == 0);
+    assert((flags & ~(GC_CALL_INTERIOR|GC_CALL_PINNED)) == 0);
 
     // for interior pointers, we optimize the case in which
     //  it points into the current threads stack area
@@ -204,13 +204,6 @@ StackWalkAction GcStackCrawlCallBack(CrawlFrame* pCF, VOID* pData)
     //
 
     GCCONTEXT   *gcctx = (GCCONTEXT*) pData;
-
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    if (g_fEnableARM)
-    {
-        gcctx->sc->pCurrentDomain = pCF->GetAppDomain();
-    }
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
     MethodDesc *pMD = pCF->GetFunction();
 

@@ -338,38 +338,6 @@ struct HandleTypeCache
     int32_t lFreeIndex;
 };
 
-/*
- * Async pin EE callback context, used to call back tot he EE when enumerating
- * over async pinned handles.
- */
-class AsyncPinCallbackContext
-{
-private:
-    async_pin_enum_fn m_callback;
-    void* m_context;
-
-public:
-    /*
-     * Constructs a new AsyncPinCallbackContext from a callback and a context,
-     * which will be passed to the callback as its second parameter every time
-     * it is invoked.
-     */
-    AsyncPinCallbackContext(async_pin_enum_fn callback, void* context)
-        : m_callback(callback), m_context(context)
-    {}
-
-    /*
-     * Invokes the callback with the given argument, returning the callback's
-     * result.'
-     */
-    bool Invoke(Object* argument) const
-    {
-        assert(m_callback != nullptr);
-        return m_callback(argument, m_context);
-    }
-};
-
-
 /*---------------------------------------------------------------------------*/
 
 
@@ -508,11 +476,6 @@ struct HandleTable
      * N.B. this is at offset 0 due to frequent access by cache free codepath
      */
     uint32_t rgTypeFlags[HANDLE_MAX_INTERNAL_TYPES];
-
-    /*
-     * per-table AppDomain info
-     */
-    ADIndex uADIndex;
 
     /*
      * lock for this table
@@ -780,22 +743,6 @@ TableSegment *SegmentAlloc(HandleTable *pTable);
  *
  */
 void SegmentFree(TableSegment *pSegment);
-
-/*
- * TableHandleAsyncPinHandles
- *
- * Mark ready for all non-pending OverlappedData that get moved to default domain.
- *
- */
-BOOL TableHandleAsyncPinHandles(HandleTable *pTable, const AsyncPinCallbackContext& callbackCtx);
-
-/*
- * TableRelocateAsyncPinHandles
- *
- * Replaces async pin handles with ones in default domain.
- *
- */
-void TableRelocateAsyncPinHandles(HandleTable *pTable, HandleTable *pTargetTable, void (*clearIfComplete)(Object*), void (*setHandle)(Object*, OBJECTHANDLE));
 
 /*
  * Check if a handle is part of a HandleTable

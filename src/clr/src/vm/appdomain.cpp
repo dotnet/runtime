@@ -115,10 +115,6 @@ GlobalStringLiteralMap* SystemDomain::m_pGlobalStringLiteralMap = NULL;
 DECLSPEC_ALIGN(16) 
 static BYTE         g_pSystemDomainMemory[sizeof(SystemDomain)];
 
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-size_t              SystemDomain::m_totalSurvivedBytes = 0;
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
-
 CrstStatic          SystemDomain::m_SystemDomainCrst;
 CrstStatic          SystemDomain::m_DelayedUnloadCrst;
 
@@ -1949,95 +1945,12 @@ void SystemDomain::LazyInitGlobalStringLiteralMap()
         AppDomain* pAppDomain = ::GetAppDomain();
         if (pAppDomain && pAppDomain->IsActive())
         {
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-            if (g_fEnableARM)
-            {
-                sc->pCurrentDomain = pAppDomain;
-            }
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
             pAppDomain->EnumStaticGCRefs(fn, sc);
         }
     }
 
     RETURN;
 }
-
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-void SystemDomain::ResetADSurvivedBytes()
-{
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-
-    _ASSERTE(GCHeapUtilities::IsGCInProgress());
-
-    SystemDomain* sysDomain = SystemDomain::System();
-    if (sysDomain)
-    {
-        AppDomain* pAppDomain = ::GetAppDomain();
-        if (pAppDomain && pAppDomain->IsUserActive())
-        {
-            pAppDomain->ResetSurvivedBytes();
-        }
-    }
-
-    RETURN;
-}
-
-ULONGLONG SystemDomain::GetADSurvivedBytes()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    SystemDomain* sysDomain = SystemDomain::System();
-    ULONGLONG ullTotalADSurvived = 0;
-    if (sysDomain)
-    {
-        AppDomain* pAppDomain = ::GetAppDomain();
-        if (pAppDomain && pAppDomain->IsUserActive())
-        {
-            ULONGLONG ullSurvived = pAppDomain->GetSurvivedBytes();
-            ullTotalADSurvived += ullSurvived;
-        }
-    }
-
-    return ullTotalADSurvived;
-}
-
-void SystemDomain::RecordTotalSurvivedBytes(size_t totalSurvivedBytes)
-{
-    CONTRACT_VOID
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
-
-    m_totalSurvivedBytes = totalSurvivedBytes;
-
-    SystemDomain* sysDomain = SystemDomain::System();
-    if (sysDomain)
-    {
-        AppDomain* pAppDomain = ::GetAppDomain();
-        if (pAppDomain && pAppDomain->IsUserActive())
-        {
-            FireEtwAppDomainMemSurvived((ULONGLONG)pAppDomain, pAppDomain->GetSurvivedBytes(), totalSurvivedBytes, GetClrInstanceId());
-        }
-    }
-
-    RETURN;
-}
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
 // Only called when EE is suspended.
 DWORD SystemDomain::GetTotalNumSizedRefHandles()
@@ -2977,12 +2890,6 @@ AppDomain::AppDomain()
     m_dwCreationHolders=0;
 #endif
 
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    m_ullTotalProcessorUsage = 0;
-    m_pullAllocBytes = NULL;
-    m_pullSurvivedBytes = NULL;
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
-
 #ifdef FEATURE_TYPEEQUIVALENCE
     m_pTypeEquivalenceTable = NULL;
 #endif // FEATURE_TYPEEQUIVALENCE
@@ -3079,27 +2986,6 @@ void AppDomain::Init()
     m_MemoryPressure = 0;
 
 #ifndef CROSSGEN_COMPILE
-
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-    // NOTE: it's important that we initialize ARM data structures before calling
-    // IGCHandleManager::CreateHandleStore, this is because AD::Init() can race with GC
-    // and once we add ourselves to the handle table map the GC can start walking
-    // our handles and calling AD::RecordSurvivedBytes() which touches ARM data.
-    if (GCHeapUtilities::IsServerHeap())
-        m_dwNumHeaps = CPUGroupInfo::CanEnableGCCPUGroups() ?
-                           CPUGroupInfo::GetNumActiveProcessors() :
-                           GetCurrentProcessCpuCount();
-    else
-        m_dwNumHeaps = 1;
-    m_pullAllocBytes = new ULONGLONG [m_dwNumHeaps * ARM_CACHE_LINE_SIZE_ULL];
-    m_pullSurvivedBytes = new ULONGLONG [m_dwNumHeaps * ARM_CACHE_LINE_SIZE_ULL];
-    for (DWORD i = 0; i < m_dwNumHeaps; i++)
-    {
-        m_pullAllocBytes[i * ARM_CACHE_LINE_SIZE_ULL] = 0;
-        m_pullSurvivedBytes[i * ARM_CACHE_LINE_SIZE_ULL] = 0;
-    }
-    m_ullLastEtwAllocBytes = 0;
-#endif //FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
     // Default domain reuses the handletablemap that was created during EEStartup
     m_handleStore = GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore();
@@ -7069,66 +6955,6 @@ PTR_LoaderAllocator SystemDomain::GetGlobalLoaderAllocator()
 {
     return PTR_LoaderAllocator(PTR_HOST_MEMBER_TADDR(SystemDomain,System(),m_GlobalAllocator));
 }
-
-#ifdef FEATURE_APPDOMAIN_RESOURCE_MONITORING
-
-#ifndef CROSSGEN_COMPILE
-// Return the total processor time (user and kernel) used by threads executing in this AppDomain so far. The
-// result is in 100ns units.
-ULONGLONG AppDomain::QueryProcessorUsage()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifndef DACCESS_COMPILE
-    Thread *pThread = NULL;
-
-    // Need to update our accumulated processor time count with current values from each thread that is
-    // currently executing in this domain.
-
-    // Take the thread store lock while we enumerate threads.
-    ThreadStoreLockHolder tsl;
-    while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
-    {
-        // Skip unstarted and dead threads and those that are currently executing in a different AppDomain.
-        if (pThread->IsUnstarted() || pThread->IsDead() || pThread->GetDomain(INDEBUG(TRUE)) != this)
-            continue;
-
-        // Add the amount of time spent by the thread in the AppDomain since the last time we asked (calling
-        // Thread::QueryThreadProcessorUsage() will reset the thread's counter).
-        UpdateProcessorUsage(pThread->QueryThreadProcessorUsage());
-    }
-#endif // !DACCESS_COMPILE
-
-    // Return the updated total.
-    return m_ullTotalProcessorUsage;
-}
-
-// Add to the current count of processor time used by threads within this AppDomain. This API is called by
-// threads transitioning between AppDomains.
-void AppDomain::UpdateProcessorUsage(ULONGLONG ullAdditionalUsage)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    // Need to be careful to synchronize here, multiple threads could be racing to update this count.
-    ULONGLONG ullOldValue;
-    ULONGLONG ullNewValue;
-    do
-    {
-        ullOldValue = m_ullTotalProcessorUsage;
-        ullNewValue = ullOldValue + ullAdditionalUsage;
-    } while (InterlockedCompareExchange64((LONGLONG*)&m_ullTotalProcessorUsage,
-                                          (LONGLONG)ullNewValue,
-                                          (LONGLONG)ullOldValue) != (LONGLONG)ullOldValue);
-}
-#endif // CROSSGEN_COMPILE
-
-#endif // FEATURE_APPDOMAIN_RESOURCE_MONITORING
 
 #if defined(FEATURE_TYPEEQUIVALENCE)
 

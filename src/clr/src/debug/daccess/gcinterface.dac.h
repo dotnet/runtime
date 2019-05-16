@@ -44,9 +44,6 @@ GC_DAC_VISIBLE
 OBJECTREF HndFetchHandle(OBJECTHANDLE handle);
 
 GC_DAC_VISIBLE
-struct ADIndex HndGetHandleADIndex(OBJECTHANDLE handle);
-
-GC_DAC_VISIBLE
 uintptr_t HndGetHandleExtraInfo(OBJECTHANDLE handle);
 
 #endif // DACCESS_COMPILE

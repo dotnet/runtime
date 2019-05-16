@@ -185,8 +185,6 @@ int g_IGCTrimCommit = 0;
 
 BOOL g_fEnableETW = FALSE;
 
-BOOL g_fEnableARM = FALSE;
-
 //
 // Global state variable indicating if the EE is in its init phase.
 //

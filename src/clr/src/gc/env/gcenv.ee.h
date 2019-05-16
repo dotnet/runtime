@@ -71,7 +71,6 @@ public:
     static void EnableFinalization(bool foundFinalizers);
 
     static void HandleFatalError(unsigned int exitCode);
-    static bool ShouldFinalizeObjectForUnload(void* pDomain, Object* obj);
     static bool EagerFinalized(Object* obj);
     static MethodTable* GetFreeObjectMethodTable();
     static bool GetBooleanConfigValue(const char* key, bool* value);
@@ -85,12 +84,7 @@ public:
     static void WalkAsyncPinned(Object* object, void* context, void(*callback)(Object*, Object*, void*));
     static IGCToCLREventSink* EventSink();
 
-    static uint32_t GetDefaultDomainIndex();
-    static void *GetAppDomainAtIndex(uint32_t appDomainIndex);
-    static bool AppDomainCanAccessHandleTable(uint32_t appDomainID);
-    static uint32_t GetIndexOfAppDomainBeingUnloaded();
     static uint32_t GetTotalNumSizedRefHandles();
-    static bool AppDomainIsRudeUnload(void *appDomain);
 
     static bool AnalyzeSurvivorsRequested(int condemnedGeneration);
     static void AnalyzeSurvivorsFinished(int condemnedGeneration);

@@ -712,11 +712,6 @@ HRESULT EEConfig::sync()
     iGCLatencyMode = GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_GCLatencyMode, iGCLatencyMode);
 #endif
 
-    if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_ARMEnabled))
-    {
-        g_fEnableARM = TRUE;
-    }
-
     bool gcConcurrentWasForced = false;
     // The CLRConfig value for UNSUPPORTED_gcConcurrent defaults to -1, and treats any
     // positive value as 'forcing' concurrent GC to be on. Because the standard logic

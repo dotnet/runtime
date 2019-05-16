@@ -78,9 +78,7 @@ int GetCurrentThreadHomeHeapNumber();
  */
 bool Ref_Initialize();
 void Ref_Shutdown();
-bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket, void* context);
-BOOL Ref_HandleAsyncPinHandles(async_pin_enum_fn callback, void* context);
-void Ref_RelocateAsyncPinHandles(HandleTableBucket *pSource, HandleTableBucket *pTarget, void (*clearIfComplete)(Object*), void (*setHandle)(Object*, OBJECTHANDLE));
+bool Ref_InitializeHandleTableBucket(HandleTableBucket* bucket);
 void Ref_RemoveHandleTableBucket(HandleTableBucket *pBucket);
 void Ref_DestroyHandleTableBucket(HandleTableBucket *pBucket);
 
