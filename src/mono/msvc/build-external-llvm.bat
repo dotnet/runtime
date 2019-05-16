@@ -23,6 +23,8 @@ setlocal
 set TEMP_PATH=%PATH%
 set BUILD_RESULT=1
 
+set BUILD_EXTERNAL_LLVM_SCRIPT_PATH=%~dp0
+
 set CL_BIN_NAME=cl.exe
 set LINK_BIN_NAME=link.exe
 set GIT_BIN_NAME=git.exe
@@ -275,7 +277,7 @@ if exist "%LLVM_BUILD_DIR%\install.vcxproj" (
     "%MSBUILD%" "%LLVM_BUILD_DIR%\install.vcxproj" /p:Configuration=%VS_CONFIGURATION% /p:Platform=%VS_PLATFORM% /v:m /nologo
 )
 
-call "install-llvm-mono-build.bat" "%LLVM_INSTALL_DIR%" "%MONO_DIST_DIR%" || (
+call "%BUILD_EXTERNAL_LLVM_SCRIPT_PATH%\install-llvm-mono-build.bat" "%LLVM_INSTALL_DIR%" "%MONO_DIST_DIR%" || (
     goto ON_ERROR
 )
 
