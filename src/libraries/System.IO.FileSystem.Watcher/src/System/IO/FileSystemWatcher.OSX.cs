@@ -169,7 +169,7 @@ namespace System.IO
                 _includeChildren = includeChildren;
                 _filterFlags = filter;
                 _cancellationToken = cancelToken;
-                _cancellationToken.Register(obj => ((RunningInstance)obj).CancellationCallback(), this);
+                _cancellationToken.UnsafeRegister(obj => ((RunningInstance)obj).CancellationCallback(), this);
                 _stopping = false;
             }
 

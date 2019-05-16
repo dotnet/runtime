@@ -70,7 +70,7 @@ namespace System.IO.Pipes
                 if (state == NoResult)
                 {
                     // Register the cancellation
-                    _cancellationRegistration = cancellationToken.Register(thisRef => ((PipeCompletionSource<TResult>)thisRef).Cancel(), this);
+                    _cancellationRegistration = cancellationToken.UnsafeRegister(thisRef => ((PipeCompletionSource<TResult>)thisRef).Cancel(), this);
 
                     // Grab the state for case if IO completed while we were setting the registration.
                     state = Interlocked.Exchange(ref _state, NoResult);
