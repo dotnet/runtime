@@ -692,14 +692,14 @@ BOOL IsAssemblySpecifiedInCA(ASSEMBLY * pAssembly, SString dependencyNameFromCA)
     // First, check for this:
     //    DependencyAttribute("Foo", LoadHint.Always)
     StackSString simpleName(SString::Utf8, pAssembly->GetSimpleName());
-    if (simpleName.EqualsCaseInsensitive(dependencyNameFromCA, PEImage::GetFileSystemLocale()))
+    if (simpleName.EqualsCaseInsensitive(dependencyNameFromCA))
         return TRUE;
 
     // Now, check for this:
     //    DependencyAttribute("Foo,", LoadHint.Always)
     SString comma(W(","));
     StackSString simpleNameWithComma(simpleName, comma);
-    if (simpleNameWithComma.EqualsCaseInsensitive(dependencyNameFromCA, PEImage::GetFileSystemLocale()))
+    if (simpleNameWithComma.EqualsCaseInsensitive(dependencyNameFromCA))
         return TRUE;
 
     // Finally:

@@ -31,8 +31,6 @@ PtrHashMap *PEImage::s_Images = NULL;
 CrstStatic  PEImage::s_ijwHashLock;
 PtrHashMap *PEImage::s_ijwFixupDataHash;
 
-extern LocaleID g_lcid; // fusion path comparison lcid
-
 /* static */
 void PEImage::Startup()
 {
@@ -60,11 +58,6 @@ void PEImage::Startup()
     s_ijwFixupDataHash->Init(CompareIJWDataBase, FALSE, &ijwLock);
 
     PEImageLayout::Startup();
-#ifdef FEATURE_USE_LCID
-    g_lcid = MAKELCID(LOCALE_INVARIANT, SORT_DEFAULT);
-#else // FEATURE_USE_LCID
-    g_lcid = NULL; // invariant
-#endif //FEATURE_USE_LCID
 
     RETURN;
 }
@@ -344,18 +337,6 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
     CHECK_OK;
 }
 
-#ifdef FEATURE_USE_LCID
-LCID g_lcid =0; // fusion path comparison lcid
-#else
-LPCWSTR g_lcid=NULL;
-#endif
-/* static */
-LocaleID PEImage::GetFileSystemLocale()
-{
-    LIMITED_METHOD_CONTRACT;
-    return g_lcid;
-}
-
 BOOL PEImage::PathEquals(const SString &p1, const SString &p2)
 {
     CONTRACTL
@@ -369,7 +350,7 @@ BOOL PEImage::PathEquals(const SString &p1, const SString &p2)
 #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
     return p1.Equals(p2);
 #else
-    return p1.EqualsCaseInsensitive(p2, g_lcid);
+    return p1.EqualsCaseInsensitive(p2);
 #endif
 }
 

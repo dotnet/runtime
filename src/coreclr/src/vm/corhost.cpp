@@ -2348,12 +2348,6 @@ void CExecutionEngine::GetLastThrownObjectExceptionFromThread(void **ppvExceptio
 
 } // HRESULT CExecutionEngine::GetLastThrownObjectExceptionFromThread()
 
-
-LocaleID RuntimeGetFileSystemLocale()
-{
-    return PEImage::GetFileSystemLocale();
-};
-
 HRESULT CorHost2::DllGetActivationFactory(DWORD appDomainID, LPCWSTR wszTypeName, IActivationFactory ** factory)
 {
 #ifdef FEATURE_COMINTEROP_WINRT_MANAGED_ACTIVATION
