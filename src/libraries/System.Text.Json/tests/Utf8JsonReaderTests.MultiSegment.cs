@@ -454,18 +454,18 @@ namespace System.Text.Json.Tests
 
         [Theory]
         [InlineData("[123, 456]", "123456", "123456")]
-        [InlineData("/*a*/[{\"testA\":[{\"testB\":[{\"testC\":123}]}]}]", "testAtestBtestC123", "/*a*/testAtestBtestC123")]
-        [InlineData("{\"testA\":[1/*hi*//*bye*/, 2, 3], \"testB\": 4}", "testA123testB4", "testA1/*hi*//*bye*/23testB4")]
+        [InlineData("/*a*/[{\"testA\":[{\"testB\":[{\"testC\":123}]}]}]", "testAtestBtestC123", "atestAtestBtestC123")]
+        [InlineData("{\"testA\":[1/*hi*//*bye*/, 2, 3], \"testB\": 4}", "testA123testB4", "testA1hibye23testB4")]
         [InlineData("{\"test\":[[[123,456]]]}", "test123456", "test123456")]
-        [InlineData("/*a*//*z*/[/*b*//*z*/123/*c*//*z*/,/*d*//*z*/456/*e*//*z*/]/*f*//*z*/", "123456", "/*a*//*z*//*b*//*z*/123/*c*//*z*//*d*//*z*/456/*e*//*z*//*f*//*z*/")]
-        [InlineData("[123,/*hi*/456/*bye*/]", "123456", "123/*hi*/456/*bye*/")]
-        [InlineData("[123,//hi\n456//bye\n]", "123456", "123//hi\n456//bye\n")]
-        [InlineData("[123,//hi\r456//bye\r]", "123456", "123//hi\r456//bye\r")]
-        [InlineData("[123,//hi\r\n456]", "123456", "123//hi\r\n456")]
+        [InlineData("/*a*//*z*/[/*b*//*z*/123/*c*//*z*/,/*d*//*z*/456/*e*//*z*/]/*f*//*z*/", "123456", "azbz123czdz456ezfz")]
+        [InlineData("[123,/*hi*/456/*bye*/]", "123456", "123hi456bye")]
+        [InlineData("[123,//hi\n456//bye\n]", "123456", "123hi456bye")]
+        [InlineData("[123,//hi\r456//bye\r]", "123456", "123hi456bye")]
+        [InlineData("[123,//hi\r\n456]", "123456", "123hi456")]
         [InlineData("/*a*//*z*/{/*b*//*z*/\"test\":/*c*//*z*/[/*d*//*z*/[/*e*//*z*/[/*f*//*z*/123/*g*//*z*/,/*h*//*z*/456/*i*//*z*/]/*j*//*z*/]/*k*//*z*/]/*l*//*z*/}/*m*//*z*/",
-    "test123456", "/*a*//*z*//*b*//*z*/test/*c*//*z*//*d*//*z*//*e*//*z*//*f*//*z*/123/*g*//*z*//*h*//*z*/456/*i*//*z*//*j*//*z*//*k*//*z*//*l*//*z*//*m*//*z*/")]
+        "test123456", "azbztestczdzezfz123gzhz456izjzkzlzmz")]
         [InlineData("//a\n//z\n{//b\n//z\n\"test\"://c\n//z\n[//d\n//z\n[//e\n//z\n[//f\n//z\n123//g\n//z\n,//h\n//z\n456//i\n//z\n]//j\n//z\n]//k\n//z\n]//l\n//z\n}//m\n//z\n",
-    "test123456", "//a\n//z\n//b\n//z\ntest//c\n//z\n//d\n//z\n//e\n//z\n//f\n//z\n123//g\n//z\n//h\n//z\n456//i\n//z\n//j\n//z\n//k\n//z\n//l\n//z\n//m\n//z\n")]
+        "test123456", "azbztestczdzezfz123gzhz456izjzkzlzmz")]
         public static void AllowCommentStackMismatchMultiSegment(string jsonString, string expectedWithoutComments, string expectedWithComments)
         {
             byte[] data = Encoding.UTF8.GetBytes(jsonString);
@@ -474,6 +474,9 @@ namespace System.Text.Json.Tests
             TestReadingJsonWithComments(data, sequence, expectedWithoutComments, expectedWithComments);
 
             sequence = JsonTestHelper.GetSequence(data, 1);
+            TestReadingJsonWithComments(data, sequence, expectedWithoutComments, expectedWithComments);
+
+            sequence = JsonTestHelper.GetSequence(data, 6);
             TestReadingJsonWithComments(data, sequence, expectedWithoutComments, expectedWithComments);
 
             var firstSegment = new BufferSegment<byte>(ReadOnlyMemory<byte>.Empty);
@@ -582,9 +585,29 @@ namespace System.Text.Json.Tests
             }
         }
 
+        // For first line in each case:
+        //     . represents contiguous characters in input.
+        //     | represents end of a segment in the sequence. Character below | is last character of particular segment.
+        //     
+        //     Note: \ for escape sequence has neither a . nor a |
+        //
+        // Second line in each case represents whether the resulting token after parsing has a value sequence or not.
+        //     T(rue) indicates presence of value sequence and F(alse) indicates otherwise. T or F is written above first
+        //       character of partiular token.
+        //     - indicates that token that begins at character right below it has been skipped during parsing and hence there
+        //       is no truth value representation of the same in the expectedValueSequence* in each case.
         [Theory]
+        //              . .........|.... .... ........ ... ........|............... ...............|......................|||
+        //              F T                 F F            T                           F      T           F     F      F   FF
         [InlineData(0, "{\"property name\": [\"value 1\", \"value 2 across sequence\", 12345, 1234567890, true, false, null]}")]
+
+        //              .. .............. .... ........ ... .......|................ .....|.................|......|......|..||
+        //              FF F                 F F            T                           T      F           T     T      T   FFF
         [InlineData(1, "[{\"property name\": [\"value 1\", \"value 2 across sequence\", 12345, 1234567890, true, false, null]}]")]
+
+        //              . .............. .................... | . ...........|............ ..................|...... . |..
+        // Skip:        F F                 F-                    T                         -                           FF
+        // Allow:       F F                 FF                    T                         T                           FF
         [InlineData(2, "{\"property name\": [// comment value\r\n\"value 2 across sequence\"// another comment value\r\n]}")]
         public static void CheckOnlyOneOfValueSpanOrSequenceIsSet(int testCase, string jsonString)
         {
@@ -632,7 +655,7 @@ namespace System.Text.Json.Tests
                     buffers[4] = dataUtf8.AsSpan(88, 2).ToArray();
                     sequence = BufferFactory.Create(buffers);
                     expectedHasValueSequenceSkip = new bool[] { false, false, false, true, false, false };
-                    expectedHasValueSequenceAllow = new bool[] { false, false, false, true, true, true, false, false };
+                    expectedHasValueSequenceAllow = new bool[] { false, false, false, false, true, true, false, false };
                     break;
                 default:
                     return;
@@ -717,10 +740,11 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [MemberData(nameof(SingleLineCommentData))]
-        public static void ConsumeSingleLineCommentMultiSpanTest(string expected)
+        [MemberData(nameof(CommentTestLineSeparators))]
+        public static void ConsumeSingleLineCommentMultiSpanTest(string lineSeparator)
         {
-            string jsonData = "{" + expected + "}";
+            string expected = "Comment";
+            string jsonData = "{//" + expected + lineSeparator + "}";
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonData);
             ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
 
@@ -737,10 +761,11 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [MemberData(nameof(SingleLineCommentData))]
-        public static void SkipSingleLineCommentMultiSpanTest(string expected)
+        [MemberData(nameof(CommentTestLineSeparators))]
+        public static void SkipSingleLineCommentMultiSpanTest(string lineSeparator)
         {
-            string jsonData = "{" + expected + "}";
+            string expected = "Comment";
+            string jsonData = "{//" + expected + lineSeparator + "}";
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonData);
             ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);
 
