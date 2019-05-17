@@ -2070,14 +2070,17 @@ void CodeGen::genLclHeap(GenTree* tree)
     GenTree* size = tree->gtOp.gtOp1;
     noway_assert((genActualType(size->gtType) == TYP_INT) || (genActualType(size->gtType) == TYP_I_IMPL));
 
-    regNumber   targetReg       = tree->gtRegNum;
-    regNumber   regCnt          = REG_NA;
-    regNumber   pspSymReg       = REG_NA;
-    var_types   type            = genActualType(size->gtType);
-    emitAttr    easz            = emitTypeSize(type);
-    BasicBlock* endLabel        = nullptr;
-    BasicBlock* loop            = nullptr;
-    unsigned    stackAdjustment = 0;
+    regNumber            targetReg                = tree->gtRegNum;
+    regNumber            regCnt                   = REG_NA;
+    regNumber            pspSymReg                = REG_NA;
+    var_types            type                     = genActualType(size->gtType);
+    emitAttr             easz                     = emitTypeSize(type);
+    BasicBlock*          endLabel                 = nullptr;
+    BasicBlock*          loop                     = nullptr;
+    unsigned             stackAdjustment          = 0;
+    const target_ssize_t ILLEGAL_LAST_TOUCH_DELTA = (target_ssize_t)-1;
+    target_ssize_t       lastTouchDelta =
+        ILLEGAL_LAST_TOUCH_DELTA; // The number of bytes from SP to the last stack address probed.
 
     noway_assert(isFramePointerUsed()); // localloc requires Frame Pointer to be established since SP changes
     noway_assert(genStackLevel == 0);   // Can't have anything on the stack
@@ -2131,8 +2134,6 @@ void CodeGen::genLclHeap(GenTree* tree)
         inst_RV_IV(INS_and, regCnt, ~(STACK_ALIGN - 1), emitActualTypeSize(type));
     }
 
-    stackAdjustment = 0;
-
     // If we have an outgoing arg area then we must adjust the SP by popping off the
     // outgoing arg area. We will restore it right before we return from this method.
     //
@@ -2172,6 +2173,8 @@ void CodeGen::genLclHeap(GenTree* tree)
                 stpCount -= 1;
             }
 
+            lastTouchDelta = 0;
+
             goto ALLOC_DONE;
         }
         else if (!compiler->info.compInitMem && (amount < compiler->eeGetPageSize())) // must be < not <=
@@ -2184,6 +2187,8 @@ void CodeGen::genLclHeap(GenTree* tree)
             getEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SP, 0);
 
             inst_RV_IV(INS_sub, REG_SP, amount, EA_PTRSIZE);
+
+            lastTouchDelta = amount;
 
             goto ALLOC_DONE;
         }
@@ -2228,6 +2233,8 @@ void CodeGen::genLclHeap(GenTree* tree)
         assert(genIsValidIntReg(regCnt));
         inst_RV_IV(INS_subs, regCnt, 16, emitActualTypeSize(type));
         inst_JMP(EJ_ne, loop);
+
+        lastTouchDelta = 0;
     }
     else
     {
@@ -2296,15 +2303,28 @@ void CodeGen::genLclHeap(GenTree* tree)
 
         // Now just move the final value to SP
         getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, regCnt);
+
+        // lastTouchDelta is dynamic, and can be up to a page. So if we have outgoing arg space,
+        // we're going to assume the worst and probe.
     }
 
 ALLOC_DONE:
-    // Re-adjust SP to allocate out-going arg area
+    // Re-adjust SP to allocate outgoing arg area. We must probe this adjustment.
     if (stackAdjustment != 0)
     {
         assert((stackAdjustment % STACK_ALIGN) == 0); // This must be true for the stack to remain aligned
-        assert(stackAdjustment > 0);
-        genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_SPBASE, REG_SPBASE, (ssize_t)stackAdjustment, rsGetRsvdReg());
+        assert((lastTouchDelta == ILLEGAL_LAST_TOUCH_DELTA) || (lastTouchDelta >= 0));
+
+        if ((lastTouchDelta == ILLEGAL_LAST_TOUCH_DELTA) ||
+            (stackAdjustment + (unsigned)lastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES >
+             compiler->eeGetPageSize()))
+        {
+            genStackPointerConstantAdjustmentLoopWithProbe(-(ssize_t)stackAdjustment, REG_ZR);
+        }
+        else
+        {
+            genStackPointerConstantAdjustment(-(ssize_t)stackAdjustment);
+        }
 
         // Return the stackalloc'ed address in result register.
         // TargetReg = SP + stackAdjustment.

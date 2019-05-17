@@ -1209,6 +1209,9 @@ typedef unsigned char   regNumberSmall;
   #define JCC_SIZE_MEDIUM         (4)
   #define JCC_SIZE_LARGE          (6)
 
+  // The first thing in an ARM32 prolog pushes LR to the stack, so this can be 0.
+  #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 0
+
 #elif defined(_TARGET_ARM64_)
 
   #define CPU_LOAD_STORE_ARCH      1
@@ -1544,6 +1547,8 @@ typedef unsigned char   regNumberSmall;
   #define LDC_SIZE_SMALL          (4)
 
   #define JMP_SIZE_SMALL          (4)
+
+  #define STACK_PROBE_BOUNDARY_THRESHOLD_BYTES 504
 
 #else
   #error Unsupported or unset target architecture
