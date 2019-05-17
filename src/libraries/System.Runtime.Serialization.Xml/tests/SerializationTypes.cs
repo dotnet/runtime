@@ -1264,3 +1264,21 @@ public partial class MsgDocumentType
     [System.Xml.Serialization.XmlAttribute("refs", DataType = "IDREFS")]
     public string[] Refs { get; set; }
 }
+
+public class RootClass
+{
+    [XmlArray]
+    public List<Parameter> Parameters { get; set; }
+}
+
+[XmlInclude(typeof(Parameter<string>))]
+public class Parameter
+{
+    [XmlAttribute]
+    public string Name { get; set; }
+}
+
+public class Parameter<T> : Parameter
+{
+    public T Value { get; set; }
+}
