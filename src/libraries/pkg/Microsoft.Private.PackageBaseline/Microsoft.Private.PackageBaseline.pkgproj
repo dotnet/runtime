@@ -30,10 +30,10 @@
       <FrameworkLayout Include="$(UAPPackageRefPath)">
         <TargetFramework>$(UAPvNextTFM)</TargetFramework>
       </FrameworkLayout>
-      <FrameworkLayout Include="$(PackagesDir)$(NETStandardLibraryPackageId)\$(NETStandardLibraryPackageVersion)\build\netstandard2.0\ref">
+      <FrameworkLayout Include="$(NuGetPackageRoot)$(NETStandardLibraryPackageId)\$(NETStandardLibraryPackageVersion)\build\netstandard2.0\ref">
         <TargetFramework>netstandard2.0</TargetFramework>
       </FrameworkLayout>
-      <FrameworkLayout Include="$(PackagesDir)$(NETStandardLibraryPackageId)\$(NETStandardLibraryPackageVersion)\build\net461\ref">
+      <FrameworkLayout Include="$(NuGetPackageRoot)$(NETStandardLibraryPackageId)\$(NETStandardLibraryPackageVersion)\build\net461\ref">
         <TargetFramework>net461</TargetFramework>
       </FrameworkLayout>
     </ItemGroup>

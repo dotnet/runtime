@@ -6,7 +6,7 @@
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
     <NETStandardSupportPackageId>NETStandard.Library.NETFramework</NETStandardSupportPackageId>
     <NETStandardSupportPackageVersion>2.0.1-servicing-26011-01</NETStandardSupportPackageVersion>
-    <NETStandardSupportRoot>$(PackagesDir)$(NETStandardSupportPackageId.ToLower())\$(NETStandardSupportPackageVersion)\build</NETStandardSupportRoot>
+    <NETStandardSupportRoot>$(NuGetPackageRoot)$(NETStandardSupportPackageId.ToLower())\$(NETStandardSupportPackageVersion)\build</NETStandardSupportRoot>
     <AddNetStandardSupportPackage Condition="'$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net47'">true</AddNetStandardSupportPackage>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsNetFx)' != 'true'">

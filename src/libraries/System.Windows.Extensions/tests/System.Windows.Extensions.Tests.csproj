@@ -25,10 +25,10 @@
     <Compile Include="System\Media\SystemSoundsTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)system.componentmodel.typeconverter.testdata\$(SystemComponentmodelTypeconverterTestdataVersion)\content\**\*.*">
+    <SupplementalTestData Include="$(NuGetPackageRoot)system.componentmodel.typeconverter.testdata\$(SystemComponentmodelTypeconverterTestdataVersion)\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
-    <SupplementalTestData Include="$(PackagesDir)system.windows.extensions.testdata\$(SystemWindowsExtensionsTestdataVersion)\content\**\*.*">
+    <SupplementalTestData Include="$(NuGetPackageRoot)system.windows.extensions.testdata\$(SystemWindowsExtensionsTestdataVersion)\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
   </ItemGroup>

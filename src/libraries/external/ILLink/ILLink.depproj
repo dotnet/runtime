@@ -14,14 +14,14 @@
   <Target Name="IncludeToolsFiles"
           AfterTargets="ResolvePackageAssets">
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(PackagesDir)\$(ILLinkTasksPackageId)\$(ILLinkTasksPackageVersion)\tools\netcoreapp2.0\*.*">
+      <ReferenceCopyLocalPaths Include="$(NuGetPackageRoot)$(ILLinkTasksPackageId)\$(ILLinkTasksPackageVersion)\tools\netcoreapp2.0\*.*">
         <NuGetPackageId>$(ILLinkTasksPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(ILLinkTasksPackageVersion)</NuGetPackageVersion>
         <SubFolder>/netcoreapp2.0/</SubFolder>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(PackagesDir)\$(ILLinkTasksPackageId)\$(ILLinkTasksPackageVersion)\tools\net46\*.*">
+      <ReferenceCopyLocalPaths Include="$(NuGetPackageRoot)$(ILLinkTasksPackageId)\$(ILLinkTasksPackageVersion)\tools\net46\*.*">
         <NuGetPackageId>$(ILLinkTasksPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(ILLinkTasksPackageVersion)</NuGetPackageVersion>
         <SubFolder>/net46/</SubFolder>

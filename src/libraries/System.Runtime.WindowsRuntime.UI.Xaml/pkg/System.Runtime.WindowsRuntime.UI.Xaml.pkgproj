@@ -19,7 +19,7 @@
 
     <!-- We can't harvest an asset from more than one path -->
      <!-- Disable support for netcoreapp1.0 - netcoreapp2.0 for now.  To support these we need to build the src project for the old TFMs 
-    <File Include="$(PackagesDir)\System.Runtime.WindowsRuntime.UI.Xaml\4.3.0\runtimes\win8\lib\netstandard1.3\System.Runtime.WindowsRuntime.UI.Xaml.dll">
+    <File Include="$(NuGetPackageRoot)System.Runtime.WindowsRuntime.UI.Xaml\4.3.0\runtimes\win8\lib\netstandard1.3\System.Runtime.WindowsRuntime.UI.Xaml.dll">
       <TargetPath>runtimes/win/lib/netcoreapp1.0</TargetPath>
       <TargetFramework>netcoreapp1.0</TargetFramework>
     </File>-->

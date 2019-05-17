@@ -11,7 +11,7 @@
     <Compile Include="MyResourceType.cs" />
     <Compile Include="TestData.cs" />
     <Compile Include="BinaryResourceWriterUnitTest.cs" />
-    <SupplementalTestData Include="$(PackagesDir)system.drawing.common.testdata\$(TestDataPackageVersion)\content\**\*.*" Link="%(RecursiveDir)%(Filename)%(Extension)" />
+    <SupplementalTestData Include="$(NuGetPackageRoot)system.drawing.common.testdata\$(TestDataPackageVersion)\content\**\*.*" Link="%(RecursiveDir)%(Filename)%(Extension)" />
     <EmbeddedResource Include="TestData.resources" WithCulture="false" Type="Non-Resx" />
   </ItemGroup>
   <!-- use the following target to regenerate the test resources file
