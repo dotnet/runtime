@@ -36,6 +36,6 @@ jobs:
       displayName: Publish format.patch
       inputs:
         PathtoPublish: '$(Build.SourcesDirectory)/format.patch'
-        ArtifactName: $(osGroup).$(archType) format.patch
+        ArtifactName: format.$(osGroup).$(archType).patch
       continueOnError: true
       condition: failed()
