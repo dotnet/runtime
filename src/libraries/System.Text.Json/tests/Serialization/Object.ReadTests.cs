@@ -135,6 +135,16 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadClassWithNestedComments()
+        {
+            var options = new JsonSerializerOptions();
+            options.ReadCommentHandling = JsonCommentHandling.Skip;
+
+            TestClassWithNestedObjectCommentsOuter obj = JsonSerializer.Parse<TestClassWithNestedObjectCommentsOuter>(TestClassWithNestedObjectCommentsOuter.s_data, options);
+            obj.Verify();
+        }
+
+        [Fact]
         public static void ReadEmpty()
         {
             SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>("{}");
