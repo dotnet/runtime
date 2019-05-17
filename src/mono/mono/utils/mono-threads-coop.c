@@ -34,6 +34,12 @@
 #include <mono/utils/mach-support.h>
 #endif
 
+/* On platforms that doesn't have full context support (or doesn't do conservative stack scan), use copy stack data */
+/* when entering safe/unsafe GC regions. For platforms with full context support (doing conservative stack scan), */
+/* there is already logic in place to take context before getting in a state where thread could be conservative */
+/* scanned by GC. Avoiding doing additional stack copy will increse performance when entering safe/unsafe regions */
+/* when running in hybrid/cooperative supspend mode. */
+#if defined (ENABLE_COPY_STACK_DATA)
 #ifdef _MSC_VER
 // __builtin_unwind_init not available under MSVC but equivalent implementation is done using
 // copy_stack_data_internal_win32_wrapper.
@@ -43,6 +49,9 @@
 #define SAVE_REGS_ON_STACK do {} while (0)
 #else 
 #define SAVE_REGS_ON_STACK __builtin_unwind_init ();
+#endif
+#else
+#define SAVE_REGS_ON_STACK do {} while (0)
 #endif
 
 volatile size_t mono_polling_required;
@@ -198,6 +207,7 @@ copy_stack_data_internal (MonoThreadInfo *info, MonoStackData *stackdata_begin, 
 	state->gc_stackdata_size = stackdata_size;
 }
 
+#if defined (ENABLE_COPY_STACK_DATA)
 #ifdef _MSC_VER
 typedef void (*CopyStackDataFunc)(MonoThreadInfo *, MonoStackData *, gconstpointer, gconstpointer);
 
@@ -246,6 +256,12 @@ static void
 copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
 {
 	copy_stack_data_internal (info, stackdata_begin, NULL, NULL);
+}
+#endif
+#else
+static void
+copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
+{
 }
 #endif
 
