@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <AssemblyName>NETClientPrimitives</AssemblyName>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{85C57688-DA98-4DE3-AC9B-526E4747434C}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <ProjectTypeGuids>{209912F9-0DA1-4184-9CC1-8D583BAF4A28};{87799F5D-CEBD-499D-BDBA-B2C6105CD766}</ProjectTypeGuids>
+    <!-- Test unsupported outside of windows -->
+    <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
+    <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Contracts/Component.Contracts.cs" />
+    <Compile Include="../../Contracts/WindowsRuntimeImportAttribute.cs" />
+    <Compile Include="../../Contracts/NativeComponent.cs" />
+    <Compile Include="Program.cs" />
+    <Compile Include="BooleanTests.cs" />
+    <Compile Include="EnumTests.cs" />
+    <Compile Include="StringTests.cs" />
+    <Compile Include="NullableTests.cs" />
+    <Compile Include="TypeTests.cs" />
+    <Compile Include="ExceptionTests.cs" />
+    <Compile Include="ArrayTests.cs" />
+    <Compile Include="KeyValuePairTests.cs" />
+    <Compile Include="UriTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../NativeComponent/CMakeLists.txt" />
+    <ProjectReference Include="../../../../Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
+  </ItemGroup>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
