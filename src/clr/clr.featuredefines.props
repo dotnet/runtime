@@ -26,7 +26,6 @@
         <FeatureArrayStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureArrayStubAsIL>
         <FeatureMulticastStubAsIL Condition="'$(Platform)' != 'x86'">true</FeatureMulticastStubAsIL>
         <FeatureStubsAsIL Condition="'$(Platform)' == 'arm64'">true</FeatureStubsAsIL>
-        <FeatureUseLcid>true</FeatureUseLcid>
         <FeatureCominterop>true</FeatureCominterop>
         <FeatureClassicCominterop>true</FeatureClassicCominterop>
         <FeatureCominteropUnmanagedActivation>true</FeatureCominteropUnmanagedActivation>
@@ -59,7 +58,6 @@
         <DefineConstants Condition="'$(FeaturePal)' == 'true'">$(DefineConstants);FEATURE_PAL</DefineConstants>
         <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
         <DefineConstants Condition="'$(FeatureXplatEventSource)' == 'true'">$(DefineConstants);FEATURE_EVENTSOURCE_XPLAT</DefineConstants>
-        <DefineConstants Condition="'$(FeatureUseLcid)' == 'true'">$(DefineConstants);FEATURE_USE_LCID</DefineConstants>
         <DefineConstants Condition="'$(FeatureWin32Registry)' == 'true'">$(DefineConstants);FEATURE_WIN32_REGISTRY</DefineConstants>
         <DefineConstants Condition="'$(FeatureDefaultInterfaces)' == 'true'">$(DefineConstants);FEATURE_DEFAULT_INTERFACES</DefineConstants>
         <DefineConstants Condition="'$(FeatureTypeEquivalence)' == 'true'">$(DefineConstants);FEATURE_TYPEEQUIVALENCE</DefineConstants>

@@ -125,9 +125,6 @@ private:
     enum tagUTF8 { Utf8 };
     enum tagANSI { Ansi };
     enum tagASCII {Ascii };
-#ifdef SSTRING_CONSOLECODEPAGE
-    enum tagCONSOLE { Console };
-#endif
 
     static void Startup();
     static CHECK CheckStartup();
@@ -151,10 +148,6 @@ private:
     SString(enum tagUTF8 dummytag, const UTF8 *string, COUNT_T count);
     SString(enum tagANSI dummytag, const ANSI *string);
     SString(enum tagANSI dummytag, const ANSI *string, COUNT_T count);
-#ifdef SSTRING_CONSOLECODEPAGE
-    SString(enum tagCONSOLE dummytag, const CONSOLE *string);
-    SString(enum tagCONSOLE dummytag, const CONSOLE *string, COUNT_T count);
-#endif
     SString(WCHAR character);
 
     // NOTE: Literals MUST be read-only never-freed strings.
@@ -180,9 +173,6 @@ private:
     void SetASCII(const ASCII *string);
     void SetUTF8(const UTF8 *string);
     void SetANSI(const ANSI *string);
-#ifdef SSTRING_CONSOLECODEPAGE
-    void SetConsole(const CONSOLE *string);
-#endif
 
     // Set this string to a copy of the first count chars of the given string
     void Set(const WCHAR *string, COUNT_T count);
@@ -195,9 +185,6 @@ private:
 
     void SetUTF8(const UTF8 *string, COUNT_T count);
     void SetANSI(const ANSI *string, COUNT_T count);
-#ifdef SSTRING_CONSOLECODEPAGE
-    void SetConsole(const CONSOLE *string, COUNT_T count);
-#endif
 
     // Set this string to the unicode character
     void Set(WCHAR character);
@@ -241,31 +228,26 @@ private:
     // Compute a content-based hash value
     ULONG Hash() const;
     ULONG HashCaseInsensitive() const;
-    ULONG HashCaseInsensitive(LocaleID locale) const;
 
     // Do a string comparison. Return 0 if the strings
     // have the same value,  -1 if this is "less than" s, or 1 if
     // this is "greater than" s.
     int Compare(const SString &s) const;
     int CompareCaseInsensitive(const SString &s) const; // invariant locale
-    int CompareCaseInsensitive(const SString &s, LocaleID locale) const;
 
     // Do a case sensitive string comparison. Return TRUE if the strings
     // have the same value FALSE if not.
     BOOL Equals(const SString &s) const;
     BOOL EqualsCaseInsensitive(const SString &s) const; // invariant locale
-    BOOL EqualsCaseInsensitive(const SString &s, LocaleID locale) const;
 
     // Match s to a portion of the string starting at the position.
     // Return TRUE if the strings have the same value
     // (regardless of representation), FALSE if not.
     BOOL Match(const CIterator &i, const SString &s) const;
     BOOL MatchCaseInsensitive(const CIterator &i, const SString &s) const; // invariant locale
-    BOOL MatchCaseInsensitive(const CIterator &i, const SString &s, LocaleID locale) const;
 
     BOOL Match(const CIterator &i, WCHAR c) const;
     BOOL MatchCaseInsensitive(const CIterator &i, WCHAR c) const; // invariant locale
-    BOOL MatchCaseInsensitive(const CIterator &i, WCHAR c, LocaleID locale) const;
 
     // Like match, but advances the iterator past the match
     // if successful
@@ -292,12 +274,10 @@ private:
     // Returns TRUE if this string begins with the contents of s
     BOOL BeginsWith(const SString &s) const;
     BOOL BeginsWithCaseInsensitive(const SString &s) const; // invariant locale
-    BOOL BeginsWithCaseInsensitive(const SString &s, LocaleID locale) const;
 
     // Returns TRUE if this string ends with the contents of s
     BOOL EndsWith(const SString &s) const;
     BOOL EndsWithCaseInsensitive(const SString &s) const; // invariant locale
-    BOOL EndsWithCaseInsensitive(const SString &s, LocaleID locale) const;
 
     // Sets this string to an empty string "".
     void Clear();
@@ -572,9 +552,6 @@ private:
     const UTF8 *GetUTF8(AbstractScratchBuffer &scratch) const;
     const UTF8 *GetUTF8(AbstractScratchBuffer &scratch, COUNT_T *pcbUtf8) const;
     const ANSI *GetANSI(AbstractScratchBuffer &scratch) const;
-#ifdef SSTRING_CONSOLECODEPAGE
-    const CONSOLE *GetConsole(AbstractScratchBuffer &scratch) const;
-#endif
 
     // Used when the representation is known, throws if the representation doesn't match
     const UTF8 *GetUTF8NoConvert() const;
@@ -583,9 +560,6 @@ private:
     void ConvertToUnicode(SString &dest) const;
     void ConvertToANSI(SString &dest) const;
     COUNT_T ConvertToUTF8(SString &dest) const;
-#ifdef SSTRING_CONSOLECODEPAGE
-    void ConvertToConsole(SString &dest) const;
-#endif
 
     //-------------------------------------------------------------------
     // Accessing the string contents directly
@@ -761,22 +735,14 @@ private:
     SString(void *buffer, COUNT_T size);
 
  private:
-    static int CaseCompareHelperA(const CHAR *buffer1, const CHAR *buffer2, COUNT_T count, LocaleID lcid, BOOL stopOnNull, BOOL stopOnCount);
-    static int CaseCompareHelper(const WCHAR *buffer1, const WCHAR *buffer2, COUNT_T count, LocaleID lcid, BOOL stopOnNull, BOOL stopOnCount);
+    static int CaseCompareHelperA(const CHAR *buffer1, const CHAR *buffer2, COUNT_T count, BOOL stopOnNull, BOOL stopOnCount);
+    static int CaseCompareHelper(const WCHAR *buffer1, const WCHAR *buffer2, COUNT_T count, BOOL stopOnNull, BOOL stopOnCount);
     
     // Internal helpers:
 
     static const BYTE s_EmptyBuffer[2];
 
     static UINT s_ACP;
-    SVAL_DECL(BOOL, s_IsANSIMultibyte);
-
-#ifdef SSTRING_CONSOLECODEPAGE
-    static UINT s_ConsoleCP;
-    static BOOL s_IsConsoleMultibyte;
-#endif
-
-    const static LocaleID s_defaultLCID;
 
     SPTR_DECL(SString,s_Empty);
 
@@ -787,9 +753,6 @@ private:
     UTF8 *GetRawUTF8() const;
     ANSI *GetRawANSI() const;
     WCHAR *GetRawUnicode() const;
-#ifdef SSTRING_CONSOLECODEPAGE
-    CONSOLE *GetRawConsole() const;
-#endif
 
     void InitEmpty();
 
@@ -951,22 +914,6 @@ public:
         WRAPPER_NO_CONTRACT;
         SetANSI(string, count);
     }
-
-#ifdef SSTRING_CONSOLECODEPAGE
-    FORCEINLINE InlineSString(enum tagCONSOLE dummytag, const CONSOLE *string)
-      : SString(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE))
-    {
-        WRAPPER_NO_CONTRACT;
-        SetCONSOLE(string);
-    }
-
-    FORCEINLINE InlineSString(enum tagCONSOLE dummytag, const CONSOLE *string, COUNT_T count)
-      : SString(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE))
-    {
-        WRAPPER_NO_CONTRACT;
-        SetCONSOLE(string, count);
-    }
-#endif
 
     FORCEINLINE InlineSString(WCHAR character)
       : SString(m_inline, SBUFFER_PADDED_SIZE(MEMSIZE))
