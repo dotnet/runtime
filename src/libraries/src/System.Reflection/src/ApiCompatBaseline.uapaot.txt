@@ -1,9 +1,6 @@
-Compat issues with assembly System.Runtime:
-TypesMustExist : Type 'System.ArgIterator' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.GC.GetTotalAllocatedBytes(System.Boolean)' does not exist in the implementation but it does exist in the contract.
+Compat issues with assembly System.Reflection:
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Reflection.CustomAttributeNamedArgument' in the contract but not the implementation.
 TypeCannotChangeClassification : Type 'System.Reflection.CustomAttributeNamedArgument' is marked as readonly in the contract so it must also be marked readonly in the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Reflection.CustomAttributeTypedArgument' in the contract but not the implementation.
 TypeCannotChangeClassification : Type 'System.Reflection.CustomAttributeTypedArgument' is marked as readonly in the contract so it must also be marked readonly in the implementation.
-MembersMustExist : Member 'System.String System.Runtime.CompilerServices.RuntimeFeature.DefaultImplementationsOfInterfaces' does not exist in the implementation but it does exist in the contract.
-Total Issues: 7
+Total Issues: 4
