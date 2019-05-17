@@ -9,7 +9,7 @@ namespace System.Diagnostics
 {
     public partial class Process
     {
-        private const int NanoSecondsTo100NanosecondsFactor = 100;
+        private const int NanosecondsTo100NanosecondsFactor = 100;
 
         /// <summary>Gets the amount of time the process has spent running code inside the operating system core.</summary>
         public TimeSpan PrivilegedProcessorTime
@@ -18,7 +18,7 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                return new TimeSpan(Convert.ToInt64(info.ri_system_time / NanoSecondsTo100NanosecondsFactor));
+                return new TimeSpan(Convert.ToInt64(info.ri_system_time / NanosecondsTo100NanosecondsFactor));
             }
         }
 
@@ -78,7 +78,7 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                return new TimeSpan(Convert.ToInt64((info.ri_system_time + info.ri_user_time) / NanoSecondsTo100NanosecondsFactor));
+                return new TimeSpan(Convert.ToInt64((info.ri_system_time + info.ri_user_time) / NanosecondsTo100NanosecondsFactor));
             }
         }
 
@@ -92,7 +92,7 @@ namespace System.Diagnostics
             {
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.rusage_info_v3 info = Interop.libproc.proc_pid_rusage(_processId);
-                return new TimeSpan(Convert.ToInt64(info.ri_user_time / NanoSecondsTo100NanosecondsFactor));
+                return new TimeSpan(Convert.ToInt64(info.ri_user_time / NanosecondsTo100NanosecondsFactor));
             }
         }
 

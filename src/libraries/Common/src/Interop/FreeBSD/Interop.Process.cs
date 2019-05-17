@@ -13,7 +13,7 @@ internal static partial class Interop
 {
     internal static partial class Process
     {
-        private const ulong SecondsToNanoSeconds = 1000000000;
+        private const ulong SecondsToNanoseconds = 1000000000;
 
         // Constants from sys/syslimits.h
         private const int PATH_MAX  = 1024;
@@ -412,8 +412,8 @@ internal static partial class Interop
                     {
                         ret.startTime = (int)info->ki_start.tv_sec;
                         ret.nice = info->ki_nice;
-                        ret.userTime = (ulong)info->ki_rusage.ru_utime.tv_sec * SecondsToNanoSeconds + (ulong)info->ki_rusage.ru_utime.tv_usec;
-                        ret.systemTime = (ulong)info->ki_rusage.ru_stime.tv_sec * SecondsToNanoSeconds + (ulong)info->ki_rusage.ru_stime.tv_usec;
+                        ret.userTime = (ulong)info->ki_rusage.ru_utime.tv_sec * SecondsToNanoseconds + (ulong)info->ki_rusage.ru_utime.tv_usec;
+                        ret.systemTime = (ulong)info->ki_rusage.ru_stime.tv_sec * SecondsToNanoseconds + (ulong)info->ki_rusage.ru_stime.tv_usec;
                     }
                     else
                     {
@@ -424,8 +424,8 @@ internal static partial class Interop
                             {
                                 ret.startTime = (int)list[i].ki_start.tv_sec;
                                 ret.nice = list[i].ki_nice;
-                                ret.userTime = (ulong)list[i].ki_rusage.ru_utime.tv_sec * SecondsToNanoSeconds + (ulong)list[i].ki_rusage.ru_utime.tv_usec;
-                                ret.systemTime = (ulong)list[i].ki_rusage.ru_stime.tv_sec * SecondsToNanoSeconds + (ulong)list[i].ki_rusage.ru_stime.tv_usec;
+                                ret.userTime = (ulong)list[i].ki_rusage.ru_utime.tv_sec * SecondsToNanoseconds + (ulong)list[i].ki_rusage.ru_utime.tv_usec;
+                                ret.systemTime = (ulong)list[i].ki_rusage.ru_stime.tv_sec * SecondsToNanoseconds + (ulong)list[i].ki_rusage.ru_stime.tv_usec;
                                 break;
                             }
                         }
