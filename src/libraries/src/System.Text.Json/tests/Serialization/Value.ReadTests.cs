@@ -310,6 +310,19 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(4, i[1][1]);
         }
 
+        [Fact]
+        public static void ReadArrayWithInterleavedComments()
+        {
+            var options = new JsonSerializerOptions();
+            options.ReadCommentHandling = JsonCommentHandling.Skip;
+
+            int[][] i = JsonSerializer.Parse<int[][]>(Encoding.UTF8.GetBytes("[[1,2] // Inline [\n,[3, /* Multi\n]] Line*/4]]"), options);
+            Assert.Equal(1, i[0][0]);
+            Assert.Equal(2, i[0][1]);
+            Assert.Equal(3, i[1][0]);
+            Assert.Equal(4, i[1][1]);
+        }
+
         public class TestClassWithBadData
         {
             public TestChildClassWithBadData[] Children { get; set; }
