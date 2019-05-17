@@ -102,12 +102,22 @@ static WCHAR MapChar(WCHAR wc, DWORD dwFlags, LocaleID lcid)
 
     if (dwFlags == LCMAP_UPPERCASE)
     {
-        wTmp = toupper(wc);
+        wTmp =
+#ifdef SELF_NO_HOST
+            toupper(wc);
+#else
+            PAL_ToUpperInvariant(wc);
+#endif
     }
     else
     {
         _ASSERTE(dwFlags == LCMAP_LOWERCASE);
-        wTmp = tolower(wc);
+        wTmp =
+#ifdef SELF_NO_HOST
+            tolower(wc);
+#else
+            PAL_ToLowerInvariant(wc);
+#endif
     }
 #endif // !FEATURE_PAL
 
