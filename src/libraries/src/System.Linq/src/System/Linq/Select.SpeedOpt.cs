@@ -171,7 +171,7 @@ namespace System.Linq
             public SelectRangeIterator(int start, int end, Func<int, TResult> selector)
             {
                 Debug.Assert(start < end);
-                Debug.Assert((end - start) <= int.MaxValue);
+                Debug.Assert((uint)(end - start) <= (uint)int.MaxValue);
                 Debug.Assert(selector != null);
 
                 _start = start;
