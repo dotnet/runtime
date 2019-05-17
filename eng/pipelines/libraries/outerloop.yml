@@ -5,11 +5,20 @@ resources:
   - container: rhel7_container
     image: microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2
 
-  - container: ubuntu_1604_arm64_cross_container
-    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921
+  - container: rhel6_container
+    image: microsoft/dotnet-buildtools-prereqs:centos-6-376e1a3-20174311014331
 
   - container: alpine_36_container
     image: microsoft/dotnet-buildtools-prereqs:alpine-3.6-WithNode-f4d3fe3-20181213005010
+
+  - container: alpine_37_arm64_container
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-alpine10fcdcf-20190208200917
+
+  - container: ubuntu_1604_arm64_cross_container
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-arm64-a3ae44b-20180315221921
+
+  - container: ubuntu_1604_arm_cross_container
+    image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-ef0ac75-20175511035548
 
 jobs:
   # Windows outerloop legs
