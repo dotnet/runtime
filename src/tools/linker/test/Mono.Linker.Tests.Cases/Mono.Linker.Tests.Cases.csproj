@@ -107,6 +107,7 @@
     <Compile Include="Attributes\OnlyKeepUsed\ThreadStaticIsPreservedOnField.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\CoreLibraryUnusedAssemblyAttributesAreRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\UnusedAttributeOnReturnTypeIsRemoved.cs" />
+    <Compile Include="Attributes\OnlyKeepUsed\UnusedAttributeOnGenericParameterIsRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\UnusedAttributeTypeOnModuleIsRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\UnusedAttributeWithTypeForwarderIsRemoved.cs" />
     <Compile Include="Attributes\OnlyKeepUsed\CanLinkCoreLibrariesWithOnlyKeepUsedAttributes.cs" />
@@ -597,6 +598,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnReturnParameterDefinition.il" />
+    <Content Include="Attributes\OnlyKeepUsed\Dependencies\AssemblyWithUnusedAttributeOnGenericParameter.il" />
     <Content Include="Attributes\OnlyKeepUsed\UnusedAttributePreservedViaLinkXmlIsKept.xml" />
     <Content Include="CommandLine\Dependencies\ResponseFilesWork.rsp" />
     <Content Include="Inheritance.AbstractClasses\NoKeptCtor\OverrideRemoval\PreservesOverriddenMethodOverrideOfUsedVirtualStillRemoved.xml" />
