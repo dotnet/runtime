@@ -179,7 +179,7 @@ private:
         static bool IsNull(const element_t &e) { return (e == NULL); }
     };
 
-    static HRESULT ReJitManager::UpdateActiveILVersion(
+    static HRESULT UpdateActiveILVersion(
         SHash<CodeActivationBatchTraits> *pMgrToCodeActivationBatch,
         Module *            pModule,
         mdMethodDef         methodDef,

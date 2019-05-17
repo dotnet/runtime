@@ -68,10 +68,11 @@ void SetLogFilePath()
     }
 }
 
+extern "C"
 #ifdef FEATURE_PAL
 DLLEXPORT // For Win32 PAL LoadLibrary emulation
 #endif
-    extern "C" BOOL
+    BOOL
     DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     switch (ul_reason_for_call)
