@@ -7,17 +7,6 @@ MembersMustExist : Member 'System.AppContext.remove_ProcessExit(System.EventHand
 MembersMustExist : Member 'System.AppContext.remove_UnhandledException(System.UnhandledExceptionEventHandler)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.AppContext.SetData(System.String, System.Object)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.WeakReference..ctor()' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.AddRange(System.Collections.Generic.IEnumerable<T>)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.InsertItemsRange(System.Int32, System.Collections.Generic.IEnumerable<T>)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.InsertRange(System.Int32, System.Collections.Generic.IEnumerable<T>)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.RemoveItemsRange(System.Int32, System.Int32)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.RemoveRange(System.Int32, System.Int32)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.ReplaceItemsRange(System.Int32, System.Int32, System.Collections.Generic.IEnumerable<T>)' does not exist in the reference but it does exist in the implementation.
-MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.ReplaceRange(System.Int32, System.Int32, System.Collections.Generic.IEnumerable<T>)' does not exist in the reference but it does exist in the implementation.
-CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Reflection.CustomAttributeNamedArgument' in the implementation but not the reference.
-TypeCannotChangeClassification : Type 'System.Reflection.CustomAttributeNamedArgument' is marked as readonly in the implementation so it must also be marked readonly in the reference.
-CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Reflection.CustomAttributeTypedArgument' in the implementation but not the reference.
-TypeCannotChangeClassification : Type 'System.Reflection.CustomAttributeTypedArgument' is marked as readonly in the implementation so it must also be marked readonly in the reference.
 MembersMustExist : Member 'System.Reflection.Module.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
 CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.Serialization.DeserializationBlockedException' does not inherit from base type 'System.Runtime.Serialization.SerializationException' in the reference but it does in the implementation.
 MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.DeserializationInProgress.get()' does not exist in the reference but it does exist in the implementation.
@@ -25,4 +14,4 @@ MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.StartD
 MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.ThrowIfDeserializationInProgress()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.ThrowIfDeserializationInProgress(System.String, System.Int32)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.UpdateValue(System.String, System.Object, System.Type)' does not exist in the reference but it does exist in the implementation.
-Total Issues: 26
+Total Issues: 15
