@@ -279,6 +279,9 @@ ICALL_EXPORT
 gint64 ves_icall_System_Threading_Volatile_Read8 (void *ptr);
 
 ICALL_EXPORT
+guint64 ves_icall_System_Threading_Volatile_ReadU8 (void *ptr);
+
+ICALL_EXPORT
 void * ves_icall_System_Threading_Volatile_ReadIntPtr (void *ptr);
 
 ICALL_EXPORT
@@ -301,6 +304,9 @@ void ves_icall_System_Threading_Volatile_Write4 (void *ptr, gint32);
 
 ICALL_EXPORT
 void ves_icall_System_Threading_Volatile_Write8 (void *ptr, gint64);
+
+ICALL_EXPORT
+void ves_icall_System_Threading_Volatile_WriteU8 (void *ptr, guint64);
 
 ICALL_EXPORT
 void ves_icall_System_Threading_Volatile_WriteIntPtr (void *ptr, void *);

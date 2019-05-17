@@ -3054,6 +3054,21 @@ ves_icall_System_Threading_Volatile_Read8 (void *ptr)
 	return mono_atomic_load_i64 ((volatile gint64 *)ptr);
 }
 
+guint64
+ves_icall_System_Threading_Volatile_ReadU8 (void *ptr)
+{
+#if SIZEOF_VOID_P == 4
+	if (G_UNLIKELY ((size_t)ptr & 0x7)) {
+		guint64 val;
+		mono_interlocked_lock ();
+		val = *(guint64*)ptr;
+		mono_interlocked_unlock ();
+		return val;
+	}
+#endif
+	return (guint64)mono_atomic_load_i64 ((volatile gint64 *)ptr);
+}
+
 void *
 ves_icall_System_Threading_Volatile_ReadIntPtr (void *ptr)
 {
@@ -3183,6 +3198,21 @@ ves_icall_System_Threading_Volatile_Write8 (void *ptr, gint64 value)
 #endif
 
 	mono_atomic_store_i64 ((volatile gint64 *)ptr, value);
+}
+
+void
+ves_icall_System_Threading_Volatile_WriteU8 (void *ptr, guint64 value)
+{
+#if SIZEOF_VOID_P == 4
+	if (G_UNLIKELY ((size_t)ptr & 0x7)) {
+		mono_interlocked_lock ();
+		*(guint64*)ptr = value;
+		mono_interlocked_unlock ();
+		return;
+	}
+#endif
+
+	mono_atomic_store_i64 ((volatile gint64 *)ptr, (gint64)value);
 }
 
 void
