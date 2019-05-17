@@ -323,9 +323,7 @@ namespace System
         /// </summary>
         public static TimeZoneInfo FindSystemTimeZoneById(string id)
         {
-            // Special case for Utc as it will not exist in the dictionary with the rest
-            // of the system time zones.  There is no need to do this check for Local.Id
-            // since Local is a real time zone that exists in the dictionary cache
+            // Special case for Utc to avoid having TryGetTimeZone creating a new Utc object
             if (string.Equals(id, UtcId, StringComparison.OrdinalIgnoreCase))
             {
                 return Utc;
