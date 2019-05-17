@@ -1,5 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<root>
+﻿<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -356,5 +355,11 @@
   </data>
   <data name="SerializationNotSupportedCollection" xml:space="preserve">
     <value>The collection type '{0}' on '{1}' is not supported.</value>
+  </data>
+  <data name="InvalidCharacterAtStartOfComment" xml:space="preserve">
+    <value>'{0}' is invalid after '/' at the beginning of the comment. Expected either '/' or '*'.</value>
+  </data>
+  <data name="UnexpectedEndOfDataWhileReadingComment" xml:space="preserve">
+    <value>Unexpected end of data while reading a comment.</value>
   </data>
 </root>
