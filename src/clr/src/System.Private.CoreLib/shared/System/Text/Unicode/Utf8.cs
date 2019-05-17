@@ -130,7 +130,7 @@ namespace System.Text.Unicode
         /// in <paramref name="source"/> will be replaced with U+FFFD in <paramref name="destination"/>, and
         /// this method will not return <see cref="OperationStatus.InvalidData"/>.
         /// </remarks>
-        public static unsafe OperationStatus ToUtf16(ReadOnlySpan<byte> source, Span<char> destination, out int numBytesRead, out int numCharsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
+        public static unsafe OperationStatus ToUtf16(ReadOnlySpan<byte> source, Span<char> destination, out int bytesRead, out int charsWritten, bool replaceInvalidSequences = true, bool isFinalBlock = true)
         {
             // Throwaway span accesses - workaround for https://github.com/dotnet/coreclr/issues/23437
 
@@ -212,8 +212,8 @@ namespace System.Text.Unicode
 
                 // Not possible to make any further progress - report to our caller how far we got.
 
-                numBytesRead = (int)(pInputBufferRemaining - pOriginalSource);
-                numCharsWritten = (int)(pOutputBufferRemaining - pOriginalDestination);
+                bytesRead = (int)(pInputBufferRemaining - pOriginalSource);
+                charsWritten = (int)(pOutputBufferRemaining - pOriginalDestination);
                 return operationStatus;
             }
         }
