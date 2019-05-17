@@ -5,6 +5,7 @@
 - [Corestart 2.0: What's new for performance in .NET Core 2.0](https://www.ageofascent.com/2017/11/05/perfromance-dotnet-core-2-corestart-conference/)
 - [Performance improvements in .NET Core 2.0](https://devblogs.microsoft.com/dotnet/performance-improvements-in-net-core/)
 - [Performance improvements in .NET Core 2.1](https://devblogs.microsoft.com/dotnet/performance-improvements-in-net-core-2-1/)
+- [Performance improvements in .NET Core 3.0](https://devblogs.microsoft.com/dotnet/performance-improvements-in-net-core-3-0/)
 
 
 ### Posts that take a high-level look at the entire source:
