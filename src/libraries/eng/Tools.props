@@ -10,11 +10,6 @@
 
     <!-- Need to keep in sync with CodeAnalysis.targets file. -->
     <AnalyzerPropsFile>$(ArtifactsToolsetDir)Common\Tools.Analyzers.props</AnalyzerPropsFile>
-
-    <DotNetRoot Condition="'$(DotNetRoot)' == ''">$([MSBuild]::NormalizeDirectory('$(RepoRoot)', '.dotnet'))</DotNetRoot>
-    <DotNetCmd>$(DotNetRoot)dotnet</DotNetCmd>
-    <DotNetCmd Condition="'$(OS)' == 'Windows_NT'">$(DotNetCmd).exe</DotNetCmd>
-    <DotNetCmd>"$(DotNetCmd)"</DotNetCmd>
   </PropertyGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
@@ -81,7 +76,7 @@
       <OptionalToolProjectPath>$(OptionalToolDir)Tools.csproj</OptionalToolProjectPath>
     </PropertyGroup>
 
-    <Exec Command="$(DotNetCmd) restore &quot;$(OptionalToolProjectPath)&quot; --interactive --ignore-failed-sources /p:TargetGroup=$(TargetGroup)"
+    <Exec Command="&quot;$(DotNetTool)&quot; restore &quot;$(OptionalToolProjectPath)&quot; --interactive --ignore-failed-sources /p:TargetGroup=$(TargetGroup)"
           WorkingDirectory="$(RepoRoot)" />
 
   </Target>
@@ -95,7 +90,7 @@
 
     <!-- List all global tools and save the output. -->
     <Exec Condition="Exists('$(GlobalToolsDir)')"
-          Command="$(DotNetCmd) tool list --tool-path &quot;$(GlobalToolsDir)&quot;"
+          Command="&quot;$(DotNetTool)&quot; tool list --tool-path &quot;$(GlobalToolsDir)&quot;"
           WorkingDirectory="$(RepoRoot)"
           ConsoleToMsBuild="true"
           ContinueOnError="WarnAndContinue">
@@ -104,7 +99,7 @@
 
     <!-- Uninstall the global tool if it exists with a different version. -->
     <Exec Condition="Exists('$(GlobalToolsDir)') AND $(DotNetListToolsOutput.Contains('%(RepoTool.Identity)')) AND !$([System.Text.RegularExpressions.Regex]::IsMatch('$(DotNetListToolsOutput)', '$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Identity)'))\s+$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Version)'))'))"
-          Command="$(DotNetCmd) tool uninstall --tool-path &quot;$(GlobalToolsDir)&quot; %(RepoTool.Identity)"
+          Command="&quot;$(DotNetTool)&quot; tool uninstall --tool-path &quot;$(GlobalToolsDir)&quot; %(RepoTool.Identity)"
           WorkingDirectory="$(RepoRoot)"
           ContinueOnError="WarnAndContinue" />
 
@@ -113,7 +108,7 @@
       Creates the global tools folder automatically if it doesn't exist.
     -->
     <Exec Condition="!Exists('$(GlobalToolsDir)') OR !$([System.Text.RegularExpressions.Regex]::IsMatch('$(DotNetListToolsOutput)', '$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Identity)'))\s+$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Version)'))'))"
-          Command="$(DotNetCmd) tool install --tool-path &quot;$(GlobalToolsDir)&quot; %(RepoTool.Identity) --version %(RepoTool.Version) --add-source https:%2F%2Fapi.nuget.org/v3/index.json"
+          Command="&quot;$(DotNetTool)&quot; tool install --tool-path &quot;$(GlobalToolsDir)&quot; %(RepoTool.Identity) --version %(RepoTool.Version) --add-source https:%2F%2Fapi.nuget.org/v3/index.json"
           WorkingDirectory="$(RepoRoot)"
           ContinueOnError="WarnAndContinue" />
 

@@ -5,7 +5,7 @@
     <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
 
     <NETStandardVersion Condition="'$(NETStandardVersion)' == ''">2.0</NETStandardVersion>
-    <NETStandardPackageRefPath Condition="'$(NETStandardPackageRefPath)' == ''">$(PackagesDir)$(NETStandardLibraryPackageId.ToLower())\$(NETStandardLibraryPackageVersion)\build\netstandard$(NETStandardVersion)\ref</NETStandardPackageRefPath>
+    <NETStandardPackageRefPath Condition="'$(NETStandardPackageRefPath)' == ''">$(NuGetPackageRoot)$(NETStandardLibraryPackageId.ToLower())\$(NETStandardLibraryPackageVersion)\build\netstandard$(NETStandardVersion)\ref</NETStandardPackageRefPath>
 
     <IncludeReferenceFiles Condition="'$(IncludeReferenceFiles)' == '' AND '$(PackageTargetRuntime)' == ''">true</IncludeReferenceFiles>
     <IncludeLibFiles Condition="'$(IncludeLibFiles)' == '' AND '$(PackageTargetRuntime)' != ''">true</IncludeLibFiles>

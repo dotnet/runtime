@@ -114,19 +114,6 @@
 
     <!-- Use msbuild path functions as that property is used in bash scripts. -->
     <SourceDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src'))</SourceDir>
-
-    <!-- Input Directories -->
-    <PackagesDir>$(DotNetRestorePackagesPath)</PackagesDir>
-    <PackagesDir Condition="'$(PackagesDir)'=='' AND '$(NuGetPackageRoot)' != ''">$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))</PackagesDir>
-    <PackagesDir Condition="'$(PackagesDir)'==''">$(RepoRoot).packages/</PackagesDir>
-    <!-- Respect environment variable for the .NET install directory if set; otherwise, use the current default location -->
-    <DotNetRoot Condition="'$(DotNetRoot)' == ''">$(DOTNET_INSTALL_DIR)</DotNetRoot>
-    <DotNetRoot Condition="'$(DotNetRoot)' == ''">$(RepoRoot).dotnet\</DotNetRoot>
-    <DotNetRoot Condition="!HasTrailingSlash('$(DotNetRoot)')">$(DotNetRoot)\</DotNetRoot>
-    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(DotNetRoot)</DotnetCliPath>
-    <ToolHostCmd Condition="'$(ToolHostCmd)'==''">"$(DotNetRoot)dotnet"</ToolHostCmd>
-    <DotNetCmd>$(DotNetRoot)dotnet</DotNetCmd>
-    <DotNetCmd Condition="'$(OS)' == 'Windows_NT'">$(DotNetCmd).exe</DotNetCmd>
   </PropertyGroup>
 
   <!-- workaround https://github.com/dotnet/sdk/issues/2288

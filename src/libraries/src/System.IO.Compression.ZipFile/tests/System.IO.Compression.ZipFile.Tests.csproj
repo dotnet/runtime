@@ -38,7 +38,7 @@
     <Compile Include="ZipFile.Extract.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)system.io.compression.testdata\1.0.8\content\**\*.*">
+    <SupplementalTestData Include="$(NuGetPackageRoot)system.io.compression.testdata\1.0.8\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
   </ItemGroup>

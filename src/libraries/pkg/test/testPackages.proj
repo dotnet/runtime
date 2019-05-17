@@ -40,7 +40,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <TestSupportFiles Include="$(DotnetCliPath)\**\*.*" Exclude="$(DotnetCliPath)\sdk\NuGetFallbackFolder\**\*.*">
+    <TestSupportFiles Include="$(DotNetRoot)**\*.*" Exclude="$(DotNetRoot)sdk\NuGetFallbackFolder\**\*.*">
       <DestinationFolder>$(TestToolsDir)%(RecursiveDir)</DestinationFolder>
     </TestSupportFiles>
     <TestSupportFiles Include="$(SourceDir)shims\netfxreference.props">

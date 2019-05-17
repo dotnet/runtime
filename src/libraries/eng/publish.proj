@@ -1,6 +1,6 @@
 <Project>
   <Import Project="..\Directory.Build.props" />
-  <Import Project="$(PackagesDir)/$(PublishSymbolsPackage.ToLower())/$(PublishSymbolsPackageVersion)/build/PublishSymbols.targets" />
+  <Import Project="$(NuGetPackageRoot)/$(PublishSymbolsPackage.ToLower())/$(PublishSymbolsPackageVersion)/build/PublishSymbols.targets" />
 
   <!-- We need to import Directory.Build.targets at the beginning because there is where we import the restored tools targets, in 
   this case we need Microsoft.DotNet.Build.Tasks.Feed targets to be imported. -->

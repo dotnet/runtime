@@ -153,7 +153,7 @@
     <Compile Include="XTypeDescriptionProviderTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)system.componentmodel.typeconverter.testdata\1.0.1\content\**\*.*">
+    <SupplementalTestData Include="$(NuGetPackageRoot)system.componentmodel.typeconverter.testdata\1.0.1\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
   </ItemGroup>
