@@ -1763,6 +1763,77 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(value.IntValue, actual.IntValue);
     }
 
+    [Fact]
+    public static void Xml_XsdValidationAndDeserialization()
+    {
+        var xsdstring = @"<?xml version='1.0' encoding='utf-8'?>
+<xs:schema attributeFormDefault='unqualified' elementFormDefault='unqualified' xmlns:xs='http://www.w3.org/2001/XMLSchema'>
+  <xs:element name='RootClass'>
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name='Parameters' type='parameters' minOccurs='1' maxOccurs='unbounded' />
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:complexType name='parameters'>
+    <xs:sequence>
+      <xs:element name='Parameter' type='parameter' minOccurs='1' maxOccurs='unbounded' />
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name='parameter'>
+    <xs:attribute type='xs:string' name='Name' use='required' />
+  </xs:complexType>
+  <xs:complexType name='stringParameter' >
+    <xs:complexContent>
+      <xs:extension base='parameter'>
+        <xs:sequence>
+          <xs:element name='Value' minOccurs='0' maxOccurs='1'/>
+        </xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+</xs:schema>
+";
+        var param = "<?xml version=\"1.0\" encoding=\"utf-8\"?>" +
+  "<RootClass xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">" +
+        "<Parameters>" +
+            "<Parameter xsi:type=\"stringParameter\" Name=\"SomeName\">" +
+                "<Value />" +
+            "</Parameter>" +
+         "</Parameters>" +
+    "</RootClass>";
+
+        using (var stream = new MemoryStream())
+        {
+            using (var writer = new StreamWriter(stream))
+            {
+                writer.Write(param);
+                writer.Flush();
+                stream.Position = 0;
+
+                var xmlReaderSettings = new XmlReaderSettings();
+                xmlReaderSettings.ValidationType = ValidationType.Schema;
+                xmlReaderSettings.ValidationEventHandler += (sender, args) =>
+                {
+                    throw new XmlSchemaValidationException(args.Message);
+                };
+                xmlReaderSettings.Schemas.Add(null, XmlReader.Create(new StringReader(xsdstring)));
+
+                var xmlReader = XmlReader.Create(stream, xmlReaderSettings);
+
+                var overrides = new XmlAttributeOverrides();
+                var parametersXmlAttribute = new XmlAttributes { XmlType = new XmlTypeAttribute("stringParameter") };
+                overrides.Add(typeof(Parameter<string>), parametersXmlAttribute);
+
+                var serializer = new XmlSerializer(typeof(RootClass), overrides);
+                var result=(RootClass)serializer.Deserialize(xmlReader);
+
+                Assert.Equal("SomeName", result.Parameters[0].Name);
+                Assert.Equal(string.Empty, ((Parameter<string>)result.Parameters[0]).Value);
+            }
+        }
+    }
+
     private static readonly string s_defaultNs = "http://tempuri.org/";
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false, string wrapperName = null)
     {
