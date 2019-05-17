@@ -118,7 +118,7 @@ private:
     FORCEINLINE BYTE* GetNextAlignedAddress(BYTE *pAddress)
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(m_pBuffer <= pAddress && m_pLimit > pAddress);
+        _ASSERTE(m_pBuffer <= pAddress && pAddress <= m_pLimit);
 
         pAddress = (BYTE*)ALIGN_UP(pAddress, AlignmentSize);
 
