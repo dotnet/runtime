@@ -15,21 +15,21 @@ wait_on_pids()
 
 usage()
 {
-    echo "Runs .NET CoreFX tests on FreeBSD, Linux, NetBSD or OSX"
+    echo "Runs .NET CoreFX tests on FreeBSD, NetBSD or Linux"
     echo "usage: run-test [options]"
     echo
     echo "Input sources:"
     echo "    --runtime <location>              Location of root of the binaries directory"
-    echo "                                      containing the FreeBSD, Linux, NetBSD or OSX runtime"
+    echo "                                      containing the FreeBSD, NetBSD or Linux runtime"
     echo "                                      default: <repo_root>/bin/testhost/netcoreapp-<OS>-<ConfigurationGroup>-<Arch>"
     echo "    --corefx-tests <location>         Location of the root binaries location containing"
     echo "                                      the tests to run"
-    echo "                                      default: <repo_root>/bin"
+    echo "                                      default: <repo_root>/artifacts/bin"
     echo
     echo "Flavor/OS/Architecture options:"
     echo "    --configurationGroup <config>     ConfigurationGroup to run (Debug/Release)"
     echo "                                      default: Debug"
-    echo "    --os <os>                         OS to run (FreeBSD, Linux, NetBSD or OSX)"
+    echo "    --os <os>                         OS to run (FreeBSD, NetBSD or Linux)"
     echo "                                      default: detect current OS"
     echo "    --arch <Architecture>             Architecture to run (x64, arm, armel, x86, arm64)"
     echo "                                      default: detect current architecture"
@@ -47,14 +47,6 @@ usage()
     echo "                                      listed one line, relative to the directory specified by --corefx-tests"
     echo "    --timeout <time>                  Specify a per-test timeout value (using 'timeout' tool syntax; default is 10 minutes (10m))"
     echo
-    echo "Runtime Code Coverage options:"
-    echo "    --coreclr-coverage                Optional argument to get coreclr code coverage reports"
-    echo "    --coreclr-objs <location>         Location of root of the object directory"
-    echo "                                      containing the FreeBSD, Linux, NetBSD or OSX coreclr build"
-    echo "                                      default: <repo_root>/bin/obj/<OS>.x64.<ConfigurationGroup"
-    echo "    --coreclr-src <location>          Location of root of the directory"
-    echo "                                      containing the coreclr source files"
-    echo
     exit 1
 }
 
@@ -70,26 +62,23 @@ function handle_ctrl_c {
 # Register the Ctrl-C handler
 trap handle_ctrl_c INT
 
-ProjectRoot="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+ProjectRoot="$(dirname "$(dirname "$(realpath ${BASH_SOURCE[0]})")")"
+
 # Location parameters
 # OS/ConfigurationGroup defaults
 ConfigurationGroup="Debug"
 OSName=$(uname -s)
 case $OSName in
-    Darwin)
-        OS=OSX
-        ;;
-
     FreeBSD)
         OS=FreeBSD
         ;;
 
-    Linux)
-        OS=Linux
-        ;;
-
     NetBSD)
         OS=NetBSD
+        ;;
+
+    Linux)
+        OS=Linux
         ;;
 
     *)
@@ -224,9 +213,9 @@ run_test()
 
   echo
   echo "Running tests in $dirName"
-  echo "${TimeoutTool}./RunTests.sh $Runtime"
+  echo "${TimeoutTool}./RunTests.sh --runtime-path $Runtime"
   echo
-  ${TimeoutTool}./RunTests.sh "$Runtime"
+  ${TimeoutTool}./RunTests.sh --runtime-path "$Runtime"
   exitCode=$?
 
   if [ $exitCode -ne 0 ]
@@ -234,57 +223,6 @@ run_test()
       echo "error: One or more tests failed while running tests from '$fileNameWithoutExtension'.  Exit code $exitCode."
   fi
 
-  popd > /dev/null
-  exit $exitCode
-}
-
-coreclr_code_coverage()
-{
-  if [ ! "$OS" == "FreeBSD" ] && [ ! "$OS" == "Linux" ] && [ ! "$OS" == "NetBSD" ] && [ ! "$OS" == "OSX" ]
-  then
-      echo "error: Code Coverage not supported on $OS"
-      exit 1
-  fi
-
-  if [ "$CoreClrSrc" == "" ]
-    then
-      echo "error: Coreclr source files are required to generate code coverage reports"
-      echo "Coreclr source files root path can be passed using '--coreclr-src' argument"
-      exit 1
-  fi
-
-  local coverageDir="$ProjectRoot/artifacts/bin/Coverage"
-  local toolsDir="$coverageDir/tools"
-  local reportsDir="$coverageDir/reports"
-  local packageName="unix-code-coverage-tools.1.0.0.nupkg"
-  rm -rf $coverageDir
-  mkdir -p $coverageDir
-  mkdir -p $toolsDir
-  mkdir -p $reportsDir
-  pushd $toolsDir > /dev/null
-
-  echo "Pulling down code coverage tools"
-
-  which curl > /dev/null 2> /dev/null
-  if [ $? -ne 0 ]; then
-    wget -q -O $packageName https://www.myget.org/F/dotnet-buildtools/api/v2/package/unix-code-coverage-tools/1.0.0
-  else
-    curl -sSL -o $packageName https://www.myget.org/F/dotnet-buildtools/api/v2/package/unix-code-coverage-tools/1.0.0
-  fi
-
-  echo "Unzipping to $toolsDir"
-  unzip -q -o $packageName
-
-  # Invoke gcovr
-  chmod a+rwx ./gcovr
-  chmod a+rwx ./$OS/llvm-cov
-
-  echo
-  echo "Generating coreclr code coverage reports at $reportsDir/coreclr.html"
-  echo "./gcovr $CoreClrObjs --gcov-executable=$toolsDir/$OS/llvm-cov -r $CoreClrSrc --html --html-details -o $reportsDir/coreclr.html"
-  echo
-  ./gcovr $CoreClrObjs --gcov-executable=$toolsDir/$OS/llvm-cov -r $CoreClrSrc --html --html-details -o $reportsDir/coreclr.html
-  exitCode=$?
   popd > /dev/null
   exit $exitCode
 }
@@ -320,15 +258,6 @@ do
         --arch)
         __Arch=$2
         ;;
-        --coreclr-coverage)
-        CoreClrCoverage=ON
-        ;;
-        --coreclr-objs)
-        CoreClrObjs=$2
-        ;;
-        --coreclr-src)
-        CoreClrSrc=$2
-        ;;
         --sequential)
         RunTestSequential=1
         ;;
@@ -346,12 +275,6 @@ do
         ;;
         --timeout)
         TimeoutTime=$2
-        ;;
-        --outerloop)
-        OuterLoop=""
-        ;;
-        --IgnoreForCI)
-        IgnoreForCI="-notrait category=IgnoreForCI"
         ;;
         *)
         ;;
@@ -379,9 +302,9 @@ then
     exit 1
 fi
 
-if [ ! "$OS" == "FreeBSD" ] && [ ! "$OS" == "Linux" ] && [ ! "$OS" == "NetBSD" ] && [ ! "$OS" == "OSX" ]
+if [ ! "$OS" == "FreeBSD" ] && [ ! "$OS" == "NetBSD" ] && [ ! "$OS" == "Linux" ]
 then
-    echo "error: OS should be FreeBSD, Linux, NetBSD or OSX"
+    echo "error: OS should be FreeBSD, NetBSD or Linux"
     exit 1
 fi
 
@@ -422,11 +345,6 @@ then
     run_selected_tests
 else
     run_all_tests "$CoreFxTests/tests/"*.Tests
-fi
-
-if [ "$CoreClrCoverage" == "ON" ]
-then
-    coreclr_code_coverage
 fi
 
 if [ "$TestsFailed" -gt 0 ]
