@@ -98,6 +98,9 @@
     <Compile Include="$(CommonPath)\System\Memory\PointerMemoryManager.cs">
       <Link>Common\System\Memory\PointerMemoryManager.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\CryptoPool.cs">
+      <Link>Common\System\Security\Cryptography\CryptoPool.cs</Link>
+    </Compile>
     <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml</Link>
     </AsnXml>

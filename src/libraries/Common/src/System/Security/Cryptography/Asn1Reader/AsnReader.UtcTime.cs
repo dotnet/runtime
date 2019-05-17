@@ -86,8 +86,7 @@ namespace System.Security.Cryptography.Asn1
             if (rented != null)
             {
                 Debug.Fail($"UtcTime did not fit in tmpSpace ({contents.Length} total)");
-                Array.Clear(rented, 0, contents.Length);
-                ArrayPool<byte>.Shared.Return(rented);
+                CryptoPool.Return(rented, contents.Length);
             }
 
             _data = _data.Slice(bytesRead);

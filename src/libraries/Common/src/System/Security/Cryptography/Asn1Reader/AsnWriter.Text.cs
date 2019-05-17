@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
@@ -177,13 +176,11 @@ namespace System.Security.Cryptography.Asn1
 
             byte[] tmp;
 
-            // TODO: Split this for netstandard vs netcoreapp for span?.
-            var localPool = ArrayPool<byte>.Shared;
             unsafe
             {
                 fixed (char* strPtr = &MemoryMarshal.GetReference(str))
                 {
-                    tmp = localPool.Rent(size);
+                    tmp = CryptoPool.Rent(size);
 
                     fixed (byte* destPtr = tmp)
                     {
@@ -200,8 +197,7 @@ namespace System.Security.Cryptography.Asn1
             }
 
             WriteConstructedCerOctetString(tag, tmp.AsSpan(0, size));
-            Array.Clear(tmp, 0, size);
-            localPool.Return(tmp);
+            CryptoPool.Return(tmp, size);
         }
     }
 }

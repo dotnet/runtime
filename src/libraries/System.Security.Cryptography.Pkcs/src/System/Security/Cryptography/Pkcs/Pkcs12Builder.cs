@@ -184,13 +184,13 @@ namespace System.Security.Cryptography.Pkcs
 
                     ReadOnlySpan<byte> encodedSpan = contentsWriter.EncodeAsSpan();
 
-                    rentedAuthSafe = ArrayPool<byte>.Shared.Rent(encodedSpan.Length);
+                    rentedAuthSafe = CryptoPool.Rent(encodedSpan.Length);
                     encodedSpan.CopyTo(rentedAuthSafe);
                     authSafeSpan = rentedAuthSafe.AsSpan(0, encodedSpan.Length);
 
                     // Get an array of the proper size for the hash.
                     byte[] macKey = hasher.GetHashAndReset();
-                    rentedMac = ArrayPool<byte>.Shared.Rent(macKey.Length);
+                    rentedMac = CryptoPool.Rent(macKey.Length);
                     macSpan = rentedMac.AsSpan(0, macKey.Length);
 
                     // Since the biggest supported hash is SHA-2-512 (64 bytes), the
@@ -290,12 +290,14 @@ namespace System.Security.Cryptography.Pkcs
 
                 if (rentedMac != null)
                 {
-                    ArrayPool<byte>.Shared.Return(rentedMac);
+                    // Already cleared
+                    CryptoPool.Return(rentedMac, clearSize: 0);
                 }
 
                 if (rentedAuthSafe != null)
                 {
-                    ArrayPool<byte>.Shared.Return(rentedAuthSafe);
+                    // Already cleared
+                    CryptoPool.Return(rentedAuthSafe, clearSize: 0);
                 }
             }
         }

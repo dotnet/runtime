@@ -54,18 +54,18 @@ namespace Internal.Cryptography
             // OpenSSL 1.1 does not allow partial overlap.
             if (input == output && inputOffset != outputOffset)
             {
-                byte[] tmp = ArrayPool<byte>.Shared.Rent(count);
+                byte[] tmp = CryptoPool.Rent(count);
+                int written = 0;
 
                 try
                 {
-                    int written = CipherUpdate(input, inputOffset, count, tmp, 0);
+                    written = CipherUpdate(input, inputOffset, count, tmp, 0);
                     Buffer.BlockCopy(tmp, 0, output, outputOffset, written);
                     return written;
                 }
                 finally
                 {
-                    CryptographicOperations.ZeroMemory(tmp.AsSpan(0, count));
-                    ArrayPool<byte>.Shared.Return(tmp);
+                    CryptoPool.Return(tmp, written);
                 }
             }
 

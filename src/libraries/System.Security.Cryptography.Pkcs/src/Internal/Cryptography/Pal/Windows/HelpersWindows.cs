@@ -420,8 +420,7 @@ namespace Internal.Cryptography.Pal.Windows
 
             if (rented != null)
             {
-                Array.Clear(rented, 0, maxClear);
-                ArrayPool<byte>.Shared.Return(rented);
+                CryptoPool.Return(rented, maxClear);
             }
 
             return new CspParameters(provType)
@@ -445,15 +444,12 @@ namespace Internal.Cryptography.Pal.Windows
             {
                 if (len > buf.Length)
                 {
-                    ArrayPool<byte> pool = ArrayPool<byte>.Shared;
-
                     if (rented != null)
                     {
-                        Array.Clear(rented, 0, clearLen);
-                        pool.Return(rented);
+                        CryptoPool.Return(rented, clearLen);
                     }
 
-                    rented = pool.Rent(len);
+                    rented = CryptoPool.Rent(len);
                     buf = rented;
                     len = rented.Length;
                 }

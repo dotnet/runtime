@@ -56,18 +56,22 @@ namespace System.Security.Cryptography.Asn1
         {
             byte[] rented = null;
 
+            // An X.509 time is 15 characters (yyyyMMddHHmmssZ), beyond that is fractions (no limit) or
+            // BER specified offset.
+            Span<byte> tmpSpace = stackalloc byte[64];
+
             ReadOnlySpan<byte> contents = GetOctetStringContents(
                 expectedTag,
                 UniversalTagNumber.GeneralizedTime,
                 out int bytesRead,
-                ref rented);
+                ref rented,
+                tmpSpace);
 
             DateTimeOffset value = ParseGeneralizedTime(RuleSet, contents, disallowFractions);
 
             if (rented != null)
             {
-                Array.Clear(rented, 0, contents.Length);
-                ArrayPool<byte>.Shared.Return(rented);
+                CryptoPool.Return(rented, contents.Length);
             }
 
             _data = _data.Slice(bytesRead);

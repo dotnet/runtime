@@ -152,7 +152,7 @@ namespace System.Security.Cryptography.Asn1
             // Every 8 content bytes turns into 7 integer bytes, so scale the count appropriately.
             // Add one while we're shrunk to account for the needed padding byte or the len%8 discarded bytes.
             int bytesRequired = ((bytesRead / ContentByteCount) + 1) * SemanticByteCount;
-            byte[] tmpBytes = ArrayPool<byte>.Shared.Rent(bytesRequired);
+            byte[] tmpBytes = CryptoPool.Rent(bytesRequired);
             // Ensure all the bytes are zeroed out for BigInteger's parsing.
             Array.Clear(tmpBytes, 0, tmpBytes.Length);
 
@@ -202,8 +202,7 @@ namespace System.Security.Cryptography.Asn1
             largeValue = new BigInteger(tmpBytes);
             smallValue = null;
 
-            Array.Clear(tmpBytes, 0, bytesWritten);
-            ArrayPool<byte>.Shared.Return(tmpBytes);
+            CryptoPool.Return(tmpBytes, bytesWritten);
         }
 
         private string ReadObjectIdentifierAsString(Asn1Tag expectedTag, out int totalBytesRead)

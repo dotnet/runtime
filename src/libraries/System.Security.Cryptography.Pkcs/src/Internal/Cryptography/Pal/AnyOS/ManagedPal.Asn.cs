@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -46,7 +45,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                     }
                     else
                     {
-                        poolBytes = ArrayPool<byte>.Shared.Rent(reader.PeekContentBytes().Length);
+                        poolBytes = CryptoPool.Rent(reader.PeekContentBytes().Length);
 
                         if (!reader.TryCopyOctetStringBytes(poolBytes, out bytesWritten))
                         {
@@ -70,8 +69,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             {
                 if (poolBytes != null)
                 {
-                    Array.Clear(poolBytes, 0, data.Length);
-                    ArrayPool<byte>.Shared.Return(poolBytes);
+                    CryptoPool.Return(poolBytes, data.Length);
                 }
             }
         }

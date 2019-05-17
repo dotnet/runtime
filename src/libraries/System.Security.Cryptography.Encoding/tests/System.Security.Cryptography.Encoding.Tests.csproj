@@ -6,6 +6,9 @@
   </PropertyGroup>
   <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" />
   <ItemGroup>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\CryptoPool.cs">
+      <Link>Common\System\Security\Cryptography\CryptoPool.cs</Link>
+    </Compile>
     <Compile Include="Asn1\Reader\Asn1ReaderTests.cs" />
     <Compile Include="Asn1\Reader\ComprehensiveReadTests.cs" />
     <Compile Include="Asn1\Reader\ParseTag.cs" />

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
@@ -137,7 +136,7 @@ namespace System.Security.Cryptography.Pkcs
             }
             else
             {
-                IRented = ArrayPool<byte>.Shared.Rent(ILen);
+                IRented = CryptoPool.Rent(ILen);
                 I = IRented.AsSpan(0, ILen);
             }
 
@@ -212,7 +211,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 if (IRented != null)
                 {
-                    ArrayPool<byte>.Shared.Return(IRented);
+                    CryptoPool.Return(IRented, clearSize: 0);
                 }
 
                 hash.Dispose();

@@ -69,8 +69,7 @@ namespace System.Security.Cryptography.Pkcs
                 int bufSize = 2 * dsaParameters.Q.Length;
 
 #if netcoreapp
-                ArrayPool<byte> pool = ArrayPool<byte>.Shared;
-                byte[] rented = pool.Rent(bufSize);
+                byte[] rented = CryptoPool.Rent(bufSize);
                 Span<byte> ieee = new Span<byte>(rented, 0, bufSize);
 
                 try
@@ -88,8 +87,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
                 finally
                 {
-                    ieee.Clear();
-                    pool.Return(rented);
+                    CryptoPool.Return(rented, bufSize);
                 }
 #endif
             }
@@ -136,9 +134,8 @@ namespace System.Security.Cryptography.Pkcs
                 signatureAlgorithm = new Oid(oidValue, oidValue);
 
 #if netcoreapp
-                ArrayPool<byte> pool = ArrayPool<byte>.Shared;
                 // The Q size cannot be bigger than the KeySize.
-                byte[] rented = pool.Rent(dsa.KeySize / 8);
+                byte[] rented = CryptoPool.Rent(dsa.KeySize / 8);
                 int bytesWritten = 0;
 
                 try
@@ -160,8 +157,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
                 finally
                 {
-                    Array.Clear(rented, 0, bytesWritten);
-                    pool.Return(rented);
+                    CryptoPool.Return(rented, bytesWritten);
                 }
 
                 signatureValue = null;

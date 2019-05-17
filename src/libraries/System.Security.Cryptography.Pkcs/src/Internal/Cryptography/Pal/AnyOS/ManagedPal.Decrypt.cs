@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -130,7 +129,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         }
                         else
                         {
-                            tmp = ArrayPool<byte>.Shared.Rent(decrypted.Length);
+                            tmp = CryptoPool.Rent(decrypted.Length);
 
                             if (reader.TryCopyOctetStringBytes(tmp, out int written))
                             {
@@ -154,7 +153,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         if (tmp != null)
                         {
                             // Already cleared
-                            ArrayPool<byte>.Shared.Return(tmp);
+                            CryptoPool.Return(tmp, clearSize: 0);
                         }
                     }
                 }
@@ -194,7 +193,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             {
                 exception = null;
                 int encryptedContentLength = encryptedContent.Length;
-                byte[] encryptedContentArray = ArrayPool<byte>.Shared.Rent(encryptedContentLength);
+                byte[] encryptedContentArray = CryptoPool.Rent(encryptedContentLength);
 
                 try
                 {
@@ -203,6 +202,10 @@ namespace Internal.Cryptography.Pal.AnyOS
                     using (SymmetricAlgorithm alg = OpenAlgorithm(contentEncryptionAlgorithm))
                     using (ICryptoTransform decryptor = alg.CreateDecryptor(cek, alg.IV))
                     {
+                        // If we extend this library to accept additional algorithm providers
+                        // then a different array pool needs to be used.
+                        Debug.Assert(alg.GetType().Assembly == typeof(Aes).Assembly);
+
                         return decryptor.OneShot(
                             encryptedContentArray,
                             0,
@@ -216,8 +219,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 }
                 finally
                 {
-                    Array.Clear(encryptedContentArray, 0, encryptedContentLength);
-                    ArrayPool<byte>.Shared.Return(encryptedContentArray);
+                    CryptoPool.Return(encryptedContentArray, encryptedContentLength);
                     encryptedContentArray = null;
                 }
             }

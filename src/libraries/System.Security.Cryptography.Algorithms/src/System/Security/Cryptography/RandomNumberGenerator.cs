@@ -54,6 +54,7 @@ namespace System.Security.Cryptography
 
         public virtual void GetBytes(Span<byte> data)
         {
+            // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
             try
             {
@@ -76,6 +77,7 @@ namespace System.Security.Cryptography
 
         public virtual void GetNonZeroBytes(Span<byte> data)
         {
+            // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
             try
             {

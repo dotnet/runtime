@@ -74,8 +74,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
 #if netcoreapp
-                ArrayPool<byte> pool = ArrayPool<byte>.Shared;
-                byte[] rented = pool.Rent(bufSize);
+                byte[] rented = CryptoPool.Rent(bufSize);
                 Span<byte> ieee = new Span<byte>(rented, 0, bufSize);
 
                 try
@@ -93,8 +92,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
                 finally
                 {
-                    ieee.Clear();
-                    pool.Return(rented);
+                    CryptoPool.Return(rented, bufSize);
                 }
 #endif
             }
@@ -141,8 +139,6 @@ namespace System.Security.Cryptography.Pkcs
                 signatureAlgorithm = new Oid(oidValue, oidValue);
 
 #if netcoreapp
-                ArrayPool<byte> pool = ArrayPool<byte>.Shared;
-
                 int bufSize;
                 checked
                 {
@@ -151,7 +147,7 @@ namespace System.Security.Cryptography.Pkcs
                     bufSize = 2 * fieldSize;
                 }
 
-                byte[] rented = pool.Rent(bufSize);
+                byte[] rented = CryptoPool.Rent(bufSize);
                 int bytesWritten = 0;
 
                 try
@@ -173,8 +169,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
                 finally
                 {
-                    Array.Clear(rented, 0, bytesWritten);
-                    pool.Return(rented);
+                    CryptoPool.Return(rented, bytesWritten);
                 }
 #endif
 
