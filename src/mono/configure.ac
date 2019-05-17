@@ -162,7 +162,7 @@ case "$host" in
 		fi
 		HOST_CC="gcc"
 		RID="win-x86"
-		CORETARGETS="/p:TargetsWindows=true"
+		CORETARGETS="-p:TargetsWindows=true"
 		COREARCH="x86"
 		# Boehm not supported on 64-bit Windows.
 		case "$host" in
@@ -312,7 +312,7 @@ case "$host" in
 		libmono_cflags="-D_REENTRANT"
 		libdl="-ldl"
 		libgc_threads=pthreads
-		CORETARGETS="/p:TargetsUnix=true"
+		CORETARGETS="-p:TargetsUnix=true"
 		use_sigposix=yes
 		if test "x$cross_compiling" != "xno"; then
                 	# to bypass the underscore linker check, not
@@ -404,7 +404,7 @@ case "$host" in
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
 		AC_DEFINE(USE_MACH_SEMA, 1, [...])
-		CORETARGETS="/p:TargetsUnix=true /p:TargetsOSX=true"
+		CORETARGETS="-p:TargetsUnix=true -p:TargetsOSX=true"
 		libdl=
 		libgc_threads=pthreads
 		has_dtrace=yes
@@ -492,7 +492,7 @@ case "$host" in
 		dnl ppc Linux is the same? test further
 		disable_munmap=yes
 		RID="aix-ppc64"
-		CORETARGETS="/p:TargetsUnix=true"
+		CORETARGETS="-p:TargetsUnix=true"
 		;;
 	*)
 		AC_MSG_WARN([*** Please add $host to configure.ac checks!])

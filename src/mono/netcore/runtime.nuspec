@@ -10,6 +10,6 @@ The Mono runtime, and the base library, called mscorlib. It includes the garbage
     </metadata>
     <files>
         <file src="..\mcs\class\System.Private.CoreLib\bin\$COREARCH$\System.Private.CoreLib.dll" target="runtimes\$RID$\native" />
-        <file src="..\mono\mini\.libs\libmonosgen-2.0$PLATFORM_AOT_SUFFIX$" target="runtimes\$RID$\native" />
+        <file src="..\mono\mini\.libs\$PLATFORM_AOT_PREFIX$monosgen-2.0$PLATFORM_AOT_SUFFIX$" target="runtimes\$RID$\native" />
     </files>
 </package>
