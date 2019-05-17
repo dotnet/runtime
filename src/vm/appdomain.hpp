@@ -3127,13 +3127,12 @@ public:
         WRAPPER_NO_CONTRACT;
 
         // See if it is the installation path to mscorlib
-        if (path.EqualsCaseInsensitive(m_BaseLibrary, PEImage::GetFileSystemLocale()))
+        if (path.EqualsCaseInsensitive(m_BaseLibrary))
             return TRUE;
 
         // Or, it might be the GAC location of mscorlib
         if (System()->SystemAssembly() != NULL
-            && path.EqualsCaseInsensitive(System()->SystemAssembly()->GetManifestFile()->GetPath(),
-                                          PEImage::GetFileSystemLocale()))
+            && path.EqualsCaseInsensitive(System()->SystemAssembly()->GetManifestFile()->GetPath()))
             return TRUE;
 
         return FALSE;
@@ -3145,19 +3144,8 @@ public:
 
         // See if it is the installation path to mscorlib.resources
         SString s(SString::Ascii,g_psBaseLibrarySatelliteAssemblyName);
-        if (path.EqualsCaseInsensitive(s, PEImage::GetFileSystemLocale()))
+        if (path.EqualsCaseInsensitive(s))
             return TRUE;
-
-        // workaround!  Must implement some code to do this string comparison for
-        // mscorlib.resources in a culture-specific directory in the GAC.
-
-        /*
-        // Or, it might be the GAC location of mscorlib.resources
-        if (System()->SystemAssembly() != NULL
-            && path.EqualsCaseInsensitive(System()->SystemAssembly()->GetManifestFile()->GetPath(),
-                                          PEImage::GetFileSystemLocale()))
-            return TRUE;
-        */
 
         return FALSE;
     }

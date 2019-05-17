@@ -313,12 +313,6 @@ BOOL RunningInteractive();
 #define RunningInteractive() FALSE
 #endif // !FEATURE_PAL
 
-// Determines if the process is running as Local System or as a service. Note that this function uses the
-// process' identity and not the thread's (if the thread is impersonating).
-//
-// If the function succeeds, it returns ERROR_SUCCESS, else it returns the error code returned by GetLastError()
-DWORD RunningAsLocalSystemOrService(OUT BOOL& fIsLocalSystemOrService);
-
 #ifndef Wsz_mbstowcs
 #define Wsz_mbstowcs(szOut, szIn, iSize) WszMultiByteToWideChar(CP_ACP, 0, szIn, -1, szOut, iSize)
 #endif

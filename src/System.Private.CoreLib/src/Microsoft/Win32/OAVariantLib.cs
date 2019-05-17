@@ -82,12 +82,7 @@ namespace Microsoft.Win32
                 throw new ArgumentNullException(nameof(culture));
             Variant result = new Variant();
             ChangeTypeEx(ref result, ref source,
-#if FEATURE_USE_LCID
                          culture.LCID,
-#else
-        // @CORESYSTODO: what does CoreSystem expect for this argument?
-                        0,
-#endif
                          targetClass.TypeHandle.Value, GetCVTypeFromClass(targetClass), options);
             return result;
         }

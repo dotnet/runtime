@@ -15,8 +15,6 @@
 #ifndef __BASE_ASSEMBLY_SPEC_INL__
 #define __BASE_ASSEMBLY_SPEC_INL__
 
-extern LocaleID g_lcid;
-
 BOOL AreSameBinderInstance(ICLRPrivBinder *pBinderA, ICLRPrivBinder *pBinderB);
 
 inline int BaseAssemblySpec::CompareStrings(LPCUTF8 string1, LPCUTF8 string2)
@@ -26,7 +24,7 @@ inline int BaseAssemblySpec::CompareStrings(LPCUTF8 string1, LPCUTF8 string2)
     SString s2;
     s1.SetUTF8(string1);
     s2.SetUTF8(string2);        
-    return s1.CompareCaseInsensitive(s2,g_lcid);
+    return s1.CompareCaseInsensitive(s2);
 }
 
 

@@ -36,12 +36,6 @@ STDAPI MetaDataGetDispenser(            // Return HRESULT
     REFIID      riid,                   // Interface wanted on class factory.
     LPVOID FAR  *ppv);                  // Return interface pointer here.
 
-// Helper function to check whether policy allows accessing the file
-STDAPI RuntimeCheckLocationAccess(LPCWSTR wszLocation);
-STDAPI RuntimeIsNativeImageOptedOut(IAssemblyName* pAssemblyDef);
-
-LocaleID RuntimeGetFileSystemLocale();
-
 BOOL RuntimeFileNotFound(HRESULT hr);
 
 // Helper function to get an Internal interface with an in-memory metadata section
