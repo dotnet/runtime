@@ -213,28 +213,18 @@ namespace System.Security.Cryptography
             if (keyParameters != null && algId.Parameters != null)
             {
                 ReadOnlySpan<byte> algIdParameters = algId.Parameters.Value.Span;
-                byte[] verify = ArrayPool<byte>.Shared.Rent(algIdParameters.Length);
 
-                try
+                // X.509 SubjectPublicKeyInfo specifies DER encoding.
+                // RFC 5915 specifies DER encoding for EC Private Keys.
+                // So we can compare as DER.
+                using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
                 {
-                    // X.509 SubjectPublicKeyInfo specifies DER encoding.
-                    // RFC 5915 specifies DER encoding for EC Private Keys.
-                    // So we can compare as DER.
-                    using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+                    keyParameters.Value.Encode(writer);
+
+                    if (!writer.ValueEquals(algIdParameters))
                     {
-                        keyParameters.Value.Encode(writer);
-                        if (!writer.TryEncode(verify, out int written) ||
-                            written != algIdParameters.Length ||
-                            !algIdParameters.SequenceEqual(new ReadOnlySpan<byte>(verify, 0, written)))
-                        {
-                            throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
-                        }
+                        throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                     }
-                }
-                finally
-                {
-                    // verify contains public information and does not need to be cleared.
-                    ArrayPool<byte>.Shared.Return(verify);
                 }
             }
         }
@@ -353,36 +343,16 @@ namespace System.Security.Cryptography
         private static void WriteUncompressedPublicKey(in ECParameters ecParameters, AsnWriter writer)
         {
             int publicKeyLength = ecParameters.Q.X.Length * 2 + 1;
-            Span<byte> publicKeyBytes = stackalloc byte[0];
-            byte[] publicKeyRented = null;
 
-            if (publicKeyLength < 256)
-            {
-                publicKeyBytes = stackalloc byte[publicKeyLength];
-            }
-            else
-            {
-                publicKeyRented = ArrayPool<byte>.Shared.Rent(publicKeyLength);
-                publicKeyBytes = publicKeyRented.AsSpan(0, publicKeyLength);
-            }
-
-            try
-            {
-                publicKeyBytes[0] = 0x04;
-                ecParameters.Q.X.AsSpan().CopyTo(publicKeyBytes.Slice(1));
-                ecParameters.Q.Y.AsSpan().CopyTo(publicKeyBytes.Slice(1 + ecParameters.Q.X.Length));
-
-                writer.WriteBitString(publicKeyBytes);
-            }
-            finally
-            {
-                CryptographicOperations.ZeroMemory(publicKeyBytes);
-
-                if (publicKeyRented != null)
+            writer.WriteBitString(
+                publicKeyLength,
+                ecParameters,
+                (publicKeyBytes, ecParams) =>
                 {
-                    ArrayPool<byte>.Shared.Return(publicKeyRented);
-                }
-            }
+                    publicKeyBytes[0] = 0x04;
+                    ecParams.Q.X.AsSpan().CopyTo(publicKeyBytes.Slice(1));
+                    ecParams.Q.Y.AsSpan().CopyTo(publicKeyBytes.Slice(1 + ecParams.Q.X.Length));
+                });
         }
 
         internal static AsnWriter WriteECPrivateKey(in ECParameters ecParameters)

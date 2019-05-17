@@ -210,7 +210,7 @@ namespace System.Security.Cryptography
 
             // No supported encryption algorithms produce more bytes of decryption output than there
             // were of decryption input.
-            byte[] decrypted = ArrayPool<byte>.Shared.Rent(epki.EncryptedData.Length);
+            byte[] decrypted = CryptoPool.Rent(epki.EncryptedData.Length);
             Memory<byte> decryptedMemory = decrypted;
 
             try
@@ -246,7 +246,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(decryptedMemory.Span);
-                ArrayPool<byte>.Shared.Return(decrypted);
+                CryptoPool.Return(decrypted, clearSize: 0);
             }
         }
 
@@ -340,7 +340,7 @@ namespace System.Security.Cryptography
                 Span<byte> salt = stackalloc byte[16];
 
                 // We need at least one block size beyond the input data size.
-                encryptedRent = ArrayPool<byte>.Shared.Rent(
+                encryptedRent = CryptoPool.Rent(
                     checked(pkcs8Span.Length + (cipher.BlockSize / 8)));
 
                 RandomNumberGenerator.Fill(salt);
@@ -385,7 +385,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(encryptedSpan);
-                ArrayPool<byte>.Shared.Return(encryptedRent);
+                CryptoPool.Return(encryptedRent, clearSize: 0);
 
                 writer?.Dispose();
                 cipher.Dispose();
@@ -428,7 +428,7 @@ namespace System.Security.Cryptography
 
             // No supported encryption algorithms produce more bytes of decryption output than there
             // were of decryption input.
-            byte[] decrypted = ArrayPool<byte>.Shared.Rent(epki.EncryptedData.Length);
+            byte[] decrypted = CryptoPool.Rent(epki.EncryptedData.Length);
 
             try
             {
@@ -445,7 +445,7 @@ namespace System.Security.Cryptography
             }
             catch (CryptographicException e)
             {
-                ArrayPool<byte>.Shared.Return(decrypted);
+                CryptoPool.Return(decrypted);
                 throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
             }
         }
@@ -485,7 +485,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(decrypted);
-                ArrayPool<byte>.Shared.Return(decrypted.Array);
+                CryptoPool.Return(decrypted.Array, clearSize: 0);
             }
         }
 
@@ -524,7 +524,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(decrypted);
-                ArrayPool<byte>.Shared.Return(decrypted.Array);
+                CryptoPool.Return(decrypted.Array, clearSize: 0);
             }
         }
     }

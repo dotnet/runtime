@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
 
                 byte[] converted;
                 int signatureLength = Interop.Crypto.EcDsaSize(key);
-                byte[] signature = ArrayPool<byte>.Shared.Rent(signatureLength);
+                byte[] signature = CryptoPool.Rent(signatureLength);
                 try
                 {
                     if (!Interop.Crypto.EcDsaSign(hash, new Span<byte>(signature, 0, signatureLength), ref signatureLength, key))
@@ -107,8 +107,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Array.Clear(signature, 0, signatureLength);
-                    ArrayPool<byte>.Shared.Return(signature);
+                    CryptoPool.Return(signature, signatureLength);
                 }
 
                 if (converted.Length <= destination.Length)

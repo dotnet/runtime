@@ -150,23 +150,34 @@ namespace System.Security.Cryptography
                 throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
             }
 
-            for (int i = 256; ; i = checked(i * 2))
+            // The biggest hash algorithm supported is SHA512, which is only 64 bytes (512 bits).
+            // So this should realistically never hit the fallback
+            // (it'd require a derived type to add support for a different hash algorithm, and that
+            // algorithm to have a large output.)
+            Span<byte> buf = stackalloc byte[128];
+            ReadOnlySpan<byte> hash = stackalloc byte[0];
+
+            if (TryHashData(data, buf, hashAlgorithm, out int hashLength))
             {
-                int hashLength = 0;
-                byte[] hash = ArrayPool<byte>.Shared.Rent(i);
+                hash = buf.Slice(0, hashLength);
+            }
+            else
+            {
+                // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
+                byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
                 try
                 {
-                    if (TryHashData(data, hash, hashAlgorithm, out hashLength))
-                    {
-                        return VerifyHash(new ReadOnlySpan<byte>(hash, 0, hashLength), signature);
-                    }
+                    data.CopyTo(array);
+                    hash = HashData(array, 0, data.Length, hashAlgorithm);
                 }
                 finally
                 {
-                    Array.Clear(hash, 0, hashLength);
-                    ArrayPool<byte>.Shared.Return(hash);
+                    Array.Clear(array, 0, data.Length);
+                    ArrayPool<byte>.Shared.Return(array);
                 }
             }
+
+            return VerifyHash(hash, signature);
         }
 
         public bool VerifyData(Stream data, byte[] signature, HashAlgorithmName hashAlgorithm)
@@ -200,6 +211,7 @@ namespace System.Security.Cryptography
 
         protected virtual bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
+            // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
             try
             {

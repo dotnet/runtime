@@ -69,7 +69,7 @@ namespace System.Security.Cryptography
             {
                 if (encrypt && data.Length == 0)
                 {
-                    byte[] rented = ArrayPool<byte>.Shared.Rent(modulusSizeInBytes);
+                    byte[] rented = CryptoPool.Rent(modulusSizeInBytes);
                     Span<byte> paddedMessage = new Span<byte>(rented, 0, modulusSizeInBytes);
 
                     try
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
                     finally
                     {
                         CryptographicOperations.ZeroMemory(paddedMessage);
-                        ArrayPool<byte>.Shared.Return(rented);
+                        CryptoPool.Return(rented, clearSize: 0);
                     }
                 }
 
@@ -157,7 +157,7 @@ namespace System.Security.Cryptography
             {
                 if (encrypt && data.Length == 0)
                 {
-                    byte[] rented = ArrayPool<byte>.Shared.Rent(modulusSizeInBytes);
+                    byte[] rented = CryptoPool.Rent(modulusSizeInBytes);
                     Span<byte> paddedMessage = new Span<byte>(rented, 0, modulusSizeInBytes);
 
                     try
@@ -183,7 +183,7 @@ namespace System.Security.Cryptography
                     finally
                     {
                         CryptographicOperations.ZeroMemory(paddedMessage);
-                        ArrayPool<byte>.Shared.Return(rented);
+                        CryptoPool.Return(rented, clearSize: 0);
                     }
                 }
 

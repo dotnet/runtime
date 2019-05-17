@@ -244,7 +244,8 @@ namespace Internal.Cryptography.Pal
             }
             finally
             {
-                ArrayPool<byte>.Shared.Return(crlDistributionPoints.Array);
+                // The data came from a certificate, so it's public.
+                CryptoPool.Return(crlDistributionPoints.Array, clearSize: 0);
             }
 
             return null;

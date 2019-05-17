@@ -318,6 +318,8 @@ namespace System.Security.Cryptography
             if (blocksToProcess > 1 && _transform.CanTransformMultipleBlocks)
             {
                 int numWholeBlocksInBytes = blocksToProcess * _inputBlockSize;
+
+                // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
                 byte[] tempInputBuffer = ArrayPool<byte>.Shared.Rent(numWholeBlocksInBytes);
                 byte[] tempOutputBuffer = null;
 
@@ -354,6 +356,7 @@ namespace System.Security.Cryptography
                             Buffer.BlockCopy(tempInputBuffer, numWholeReadBlocksInBytes, _inputBuffer, 0, numIgnoredBytes);
                         }
 
+                        // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
                         tempOutputBuffer = ArrayPool<byte>.Shared.Rent(numWholeReadBlocks * _outputBlockSize);
                         numOutputBytes = _transform.TransformBlock(tempInputBuffer, 0, numWholeReadBlocksInBytes, tempOutputBuffer, 0);
                         Buffer.BlockCopy(tempOutputBuffer, 0, buffer, currentOutputIndex, numOutputBytes);
@@ -366,21 +369,30 @@ namespace System.Security.Cryptography
                         bytesToDeliver -= numOutputBytes;
                         currentOutputIndex += numOutputBytes;
                     }
-                }
-                finally
-                {
-                    // If we rented and then an exception happened we don't know how much was written to,
-                    // clear the whole thing and return it.
-                    if (tempOutputBuffer != null)
-                    {
-                        CryptographicOperations.ZeroMemory(tempOutputBuffer);
-                        ArrayPool<byte>.Shared.Return(tempOutputBuffer);
-                        tempOutputBuffer = null;
-                    }
 
                     CryptographicOperations.ZeroMemory(new Span<byte>(tempInputBuffer, 0, numWholeBlocksInBytes));
                     ArrayPool<byte>.Shared.Return(tempInputBuffer);
                     tempInputBuffer = null;
+                }
+                catch
+                {
+                    // If we rented and then an exception happened we don't know how much was written to,
+                    // clear the whole thing and let it get reclaimed by the GC.
+                    if (tempOutputBuffer != null)
+                    {
+                        CryptographicOperations.ZeroMemory(tempOutputBuffer);
+                        tempOutputBuffer = null;
+                    }
+
+                    // For the input buffer we know how much was written, so clear that.
+                    // But still let it get reclaimed by the GC.
+                    if (tempInputBuffer != null)
+                    {
+                        CryptographicOperations.ZeroMemory(new Span<byte>(tempInputBuffer, 0, numWholeBlocksInBytes));
+                        tempInputBuffer = null;
+                    }
+
+                    throw;
                 }
             }
 
@@ -557,6 +569,8 @@ namespace System.Security.Cryptography
                     if (_transform.CanTransformMultipleBlocks && numWholeBlocks > 1)
                     {
                         int numWholeBlocksInBytes = numWholeBlocks * _inputBlockSize;
+                        
+                        // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
                         byte[] tempOutputBuffer = ArrayPool<byte>.Shared.Rent(numWholeBlocks * _outputBlockSize);
                         numOutputBytes = 0;
 
@@ -576,12 +590,15 @@ namespace System.Security.Cryptography
 
                             currentInputIndex += numWholeBlocksInBytes;
                             bytesToWrite -= numWholeBlocksInBytes;
-                        }
-                        finally
-                        {
                             CryptographicOperations.ZeroMemory(new Span<byte>(tempOutputBuffer, 0, numOutputBytes));
                             ArrayPool<byte>.Shared.Return(tempOutputBuffer);
                             tempOutputBuffer = null;
+                        }
+                        catch
+                        {
+                            CryptographicOperations.ZeroMemory(new Span<byte>(tempOutputBuffer, 0, numOutputBytes));
+                            tempOutputBuffer = null;
+                            throw;
                         }
                     }
                     else

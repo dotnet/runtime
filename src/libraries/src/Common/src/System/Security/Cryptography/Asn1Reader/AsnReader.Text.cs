@@ -656,8 +656,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (rented != null)
                 {
-                    Array.Clear(rented, 0, contents.Length);
-                    ArrayPool<byte>.Shared.Return(rented);
+                    CryptoPool.Return(rented, contents.Length);
                 }
             }
         }
@@ -697,8 +696,7 @@ namespace System.Security.Cryptography.Asn1
             {
                 if (rented != null)
                 {
-                    Array.Clear(rented, 0, contents.Length);
-                    ArrayPool<byte>.Shared.Return(rented);
+                    CryptoPool.Return(rented, contents.Length);
                 }
             }
         }

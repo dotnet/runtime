@@ -310,7 +310,7 @@ namespace System.Security.Cryptography
                         throw new CryptographicException(SR.Cryptography_InvalidPaddingMode);
                 }
 
-                byte[] rented = ArrayPool<byte>.Shared.Rent(rsaSize);
+                byte[] rented = CryptoPool.Rent(rsaSize);
                 Span<byte> tmp = new Span<byte>(rented, 0, rsaSize);
 
                 try
@@ -333,8 +333,8 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    tmp.Clear();
-                    ArrayPool<byte>.Shared.Return(rented);
+                    CryptographicOperations.ZeroMemory(tmp);
+                    CryptoPool.Return(rented, clearSize: 0);
                 }
             }
 
@@ -369,24 +369,23 @@ namespace System.Security.Cryptography
                 }
 
                 int maxOutputSize = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
-                byte[] rented = ArrayPool<byte>.Shared.Rent(maxOutputSize);
-                Span<byte> contentsSpan = Span<byte>.Empty;
+                byte[] rented = CryptoPool.Rent(maxOutputSize);
+                int bytesWritten = 0;
 
                 try
                 {
-                    if (!TryDecrypt(keys.PrivateKey, data, rented, padding, out int bytesWritten))
+                    if (!TryDecrypt(keys.PrivateKey, data, rented, padding, out bytesWritten))
                     {
                         Debug.Fail($"TryDecrypt returned false with a modulus-sized destination");
                         throw new CryptographicException();
                     }
 
-                    contentsSpan = new Span<byte>(rented, 0, bytesWritten);
+                    Span<byte> contentsSpan = new Span<byte>(rented, 0, bytesWritten);
                     return contentsSpan.ToArray();
                 }
                 finally
                 {
-                    CryptographicOperations.ZeroMemory(contentsSpan);
-                    ArrayPool<byte>.Shared.Return(rented);
+                    CryptoPool.Return(rented, bytesWritten);
                 }
             }
 
@@ -438,7 +437,7 @@ namespace System.Security.Cryptography
                 Debug.Assert(padding.Mode == RSAEncryptionPaddingMode.Oaep);
                 RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
 
-                byte[] rented = ArrayPool<byte>.Shared.Rent(modulusSizeInBytes);
+                byte[] rented = CryptoPool.Rent(modulusSizeInBytes);
                 Span<byte> unpaddedData = Span<byte>.Empty;
 
                 try
@@ -456,7 +455,7 @@ namespace System.Security.Cryptography
                 finally
                 {
                     CryptographicOperations.ZeroMemory(unpaddedData);
-                    ArrayPool<byte>.Shared.Return(rented);
+                    CryptoPool.Return(rented, clearSize: 0);
                 }
             }
 
@@ -585,7 +584,7 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                byte[] rented = ArrayPool<byte>.Shared.Rent(rsaSize);
+                byte[] rented = CryptoPool.Rent(rsaSize);
                 Span<byte> buf = new Span<byte>(rented, 0, rsaSize);
                 processor.EncodePss(hash, buf, keySize);
 
@@ -596,7 +595,7 @@ namespace System.Security.Cryptography
                 finally
                 {
                     CryptographicOperations.ZeroMemory(buf);
-                    ArrayPool<byte>.Shared.Return(rented);
+                    CryptoPool.Return(rented, clearSize: 0);
                 }
             }
 
@@ -653,7 +652,7 @@ namespace System.Security.Cryptography
                         return false;
                     }
 
-                    byte[] rented = ArrayPool<byte>.Shared.Rent(rsaSize);
+                    byte[] rented = CryptoPool.Rent(rsaSize);
                     Span<byte> unwrapped = new Span<byte>(rented, 0, rsaSize);
 
                     try
@@ -673,8 +672,8 @@ namespace System.Security.Cryptography
                     }
                     finally
                     {
-                        unwrapped.Clear();
-                        ArrayPool<byte>.Shared.Return(rented);
+                        CryptographicOperations.ZeroMemory(unwrapped);
+                        CryptoPool.Return(rented, clearSize: 0);
                     }
                 }
 

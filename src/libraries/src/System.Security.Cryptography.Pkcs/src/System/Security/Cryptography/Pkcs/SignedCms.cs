@@ -243,7 +243,7 @@ namespace System.Security.Cryptography.Pkcs
                     return inner;
                 }
 
-                rented = ArrayPool<byte>.Shared.Rent(wrappedContent.Length);
+                rented = CryptoPool.Rent(wrappedContent.Length);
 
                 if (!reader.TryCopyOctetStringBytes(rented, out bytesWritten))
                 {
@@ -260,8 +260,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 if (rented != null)
                 {
-                    rented.AsSpan(0, bytesWritten).Clear();
-                    ArrayPool<byte>.Shared.Return(rented);
+                    CryptoPool.Return(rented, bytesWritten);
                 }
             }
 

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
+using System.Diagnostics;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 using static Interop.BCrypt;
@@ -16,6 +16,12 @@ namespace System.Security.Cryptography
 #endif
         public sealed partial class DSACng : DSA
         {
+            // As of FIPS 186-4 the maximum Q size is 32 bytes.
+            //
+            // See also: cbGroupSize at
+            // https://docs.microsoft.com/en-us/windows/desktop/api/bcrypt/ns-bcrypt-_bcrypt_dsa_key_blob_v2
+            private const int WindowsMaxQSize = 32;
+
             public override byte[] CreateSignature(byte[] rgbHash)
             {
                 if (rgbHash == null)
@@ -23,45 +29,26 @@ namespace System.Security.Cryptography
                     throw new ArgumentNullException(nameof(rgbHash));
                 }
 
-                ReadOnlySpan<byte> source = rgbHash;
-                byte[] arrayToReturnToArrayPool = AdjustHashSizeIfNecessaryWithArrayPool(ref source);
-                try
+                Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
+                ReadOnlySpan<byte> source = AdjustHashSizeIfNecessary(rgbHash, stackBuf);
+
+                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
-                    using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
+                    unsafe
                     {
-                        unsafe
-                        {
-                            return CngCommon.SignHash(keyHandle, source, AsymmetricPaddingMode.None, null, source.Length * 2);
-                        }
-                    }
-                }
-                finally
-                {
-                    if (arrayToReturnToArrayPool != null)
-                    {
-                        Array.Clear(arrayToReturnToArrayPool, 0, source.Length);
-                        ArrayPool<byte>.Shared.Return(arrayToReturnToArrayPool);
+                        return CngCommon.SignHash(keyHandle, source, AsymmetricPaddingMode.None, null, source.Length * 2);
                     }
                 }
             }
 
             public override unsafe bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
             {
-                byte[] arrayToReturnToArrayPool = AdjustHashSizeIfNecessaryWithArrayPool(ref hash);
-                try
+                Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
+                ReadOnlySpan<byte> source = AdjustHashSizeIfNecessary(hash, stackBuf);
+
+                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
-                    using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
-                    {
-                        return CngCommon.TrySignHash(keyHandle, hash, destination, AsymmetricPaddingMode.None, null, out bytesWritten);
-                    }
-                }
-                finally
-                {
-                    if (arrayToReturnToArrayPool != null)
-                    {
-                        Array.Clear(arrayToReturnToArrayPool, 0, hash.Length);
-                        ArrayPool<byte>.Shared.Return(arrayToReturnToArrayPool);
-                    }
+                    return CngCommon.TrySignHash(keyHandle, source, destination, AsymmetricPaddingMode.None, null, out bytesWritten);
                 }
             }
 
@@ -81,29 +68,22 @@ namespace System.Security.Cryptography
 
             public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
             {
-                byte[] arrayToReturnToArrayPool = AdjustHashSizeIfNecessaryWithArrayPool(ref hash);
-                try
+                Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
+                ReadOnlySpan<byte> source = AdjustHashSizeIfNecessary(hash, stackBuf);
+
+                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
                 {
-                    using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
+                    unsafe
                     {
-                        unsafe
-                        {
-                            return CngCommon.VerifyHash(keyHandle, hash, signature, AsymmetricPaddingMode.None, null);
-                        }
-                    }
-                }
-                finally
-                {
-                    if (arrayToReturnToArrayPool != null)
-                    {
-                        Array.Clear(arrayToReturnToArrayPool, 0, hash.Length);
-                        ArrayPool<byte>.Shared.Return(arrayToReturnToArrayPool);
+                        return CngCommon.VerifyHash(keyHandle, source, signature, AsymmetricPaddingMode.None, null);
                     }
                 }
             }
 
-            private byte[] AdjustHashSizeIfNecessaryWithArrayPool(ref ReadOnlySpan<byte> hash)
+            private ReadOnlySpan<byte> AdjustHashSizeIfNecessary(ReadOnlySpan<byte> hash, Span<byte> stackBuf)
             {
+                Debug.Assert(stackBuf.Length == WindowsMaxQSize);
+                
                 // Windows CNG requires that the hash output and q match sizes, but we can better
                 // interoperate with other FIPS 186-3 implementations if we perform truncation
                 // here, before sending it to CNG. Since this is a scenario presented in the
@@ -114,23 +94,22 @@ namespace System.Security.Cryptography
                 // presented in the CAVP reference test suite, we can confirm our implementation.
 
                 int qLength = ComputeQLength();
+                Debug.Assert(qLength <= WindowsMaxQSize);
 
                 if (qLength == hash.Length)
                 {
-                    return null;
+                    return hash;
                 }
-                else if (qLength < hash.Length)
+
+                if (qLength < hash.Length)
                 {
-                    hash = hash.Slice(0, qLength);
-                    return null;
+                    return hash.Slice(0, qLength);
                 }
-                else
-                {
-                    byte[] arrayPoolPaddedHash = ArrayPool<byte>.Shared.Rent(qLength);
-                    hash.CopyTo(new Span<byte>(arrayPoolPaddedHash, qLength - hash.Length, hash.Length));
-                    hash = new ReadOnlySpan<byte>(arrayPoolPaddedHash, 0, qLength);
-                    return arrayPoolPaddedHash;
-                }
+
+                int zeroByteCount = qLength - hash.Length;
+                stackBuf.Slice(0, zeroByteCount).Clear();
+                hash.CopyTo(stackBuf.Slice(zeroByteCount));
+                return stackBuf.Slice(0, qLength);
             }
 
             private int ComputeQLength()

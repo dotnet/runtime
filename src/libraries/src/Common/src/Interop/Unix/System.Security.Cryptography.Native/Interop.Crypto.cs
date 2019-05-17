@@ -3,10 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32.SafeHandles;
 
@@ -131,11 +129,6 @@ internal static partial class Interop
             return GetDynamicBuffer((ptr, buf, i) => GetAsn1StringBytes(ptr, buf, i), asn1);
         }
 
-        internal static ArraySegment<byte> RentAsn1StringBytes(IntPtr asn1)
-        {
-            return RentDynamicBuffer((ptr, buf, i) => GetAsn1StringBytes(ptr, buf, i), asn1);
-        }
-
         internal static byte[] GetX509Thumbprint(SafeX509Handle x509)
         {
             return GetDynamicBuffer((handle, buf, i) => GetX509Thumbprint(handle, buf, i), x509);
@@ -217,29 +210,6 @@ internal static partial class Interop
             }
 
             return bytes;
-        }
-
-        private static ArraySegment<byte> RentDynamicBuffer<THandle>(NegativeSizeReadMethod<THandle> method, THandle handle)
-        {
-            int negativeSize = method(handle, null, 0);
-
-            if (negativeSize > 0)
-            {
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
-
-            int targetSize = -negativeSize;
-            byte[] bytes = ArrayPool<byte>.Shared.Rent(targetSize);
-
-            int ret = method(handle, bytes, targetSize);
-
-            if (ret != 1)
-            {
-                ArrayPool<byte>.Shared.Return(bytes);
-                throw Interop.Crypto.CreateOpenSslCryptographicException();
-            }
-
-            return new ArraySegment<byte>(bytes, 0, targetSize);
         }
     }
 }

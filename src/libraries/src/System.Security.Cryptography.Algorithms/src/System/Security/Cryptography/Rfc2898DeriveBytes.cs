@@ -43,7 +43,8 @@ namespace System.Security.Cryptography
             if (password == null)
                 throw new NullReferenceException();  // This "should" be ArgumentNullException but for compat, we throw NullReferenceException.
 
-            _salt = salt.CloneByteArray();
+            _salt = new byte[salt.Length + sizeof(uint)];
+            salt.AsSpan().CopyTo(_salt);
             _iterations = (uint)iterations;
             _password = password.CloneByteArray();
             HashAlgorithm = hashAlgorithm;
@@ -88,7 +89,9 @@ namespace System.Security.Cryptography
             if (iterations <= 0)
                 throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
 
-            _salt = Helpers.GenerateRandom(saltSize);
+            _salt = new byte[saltSize + sizeof(uint)];
+            RandomNumberGenerator.Fill(_salt.AsSpan(0, saltSize));
+
             _iterations = (uint)iterations;
             _password = Encoding.UTF8.GetBytes(password);
             HashAlgorithm = hashAlgorithm;
@@ -119,7 +122,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                return _salt.CloneByteArray();
+                return _salt.AsSpan(0, _salt.Length - sizeof(uint)).ToArray();
             }
 
             set
@@ -128,7 +131,9 @@ namespace System.Security.Cryptography
                     throw new ArgumentNullException(nameof(value));
                 if (value.Length < MinimumSaltSize)
                     throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt);
-                _salt = value.CloneByteArray();
+
+                _salt = new byte[value.Length + sizeof(uint)];
+                value.AsSpan().CopyTo(_salt);
                 Initialize();
             }
         }
@@ -183,19 +188,18 @@ namespace System.Security.Cryptography
 
             while (offset < cb)
             {
-                byte[] T_block = Func();
+                Func();
                 int remainder = cb - offset;
-                if (remainder > _blockSize)
+                if (remainder >= _blockSize)
                 {
-                    Buffer.BlockCopy(T_block, 0, password, offset, _blockSize);
+                    Buffer.BlockCopy(_buffer, 0, password, offset, _blockSize);
                     offset += _blockSize;
                 }
                 else
                 {
-                    Buffer.BlockCopy(T_block, 0, password, offset, remainder);
-                    offset += remainder;
-                    Buffer.BlockCopy(T_block, remainder, _buffer, _startIndex, _blockSize - remainder);
-                    _endIndex += (_blockSize - remainder);
+                    Buffer.BlockCopy(_buffer, 0, password, offset, remainder);
+                    _startIndex = remainder;
+                    _endIndex = _buffer.Length;
                     return password;
                 }
             }
@@ -252,43 +256,40 @@ namespace System.Security.Cryptography
         // This function is defined as follows:
         // Func (S, i) = HMAC(S || i) ^ HMAC2(S || i) ^ ... ^ HMAC(iterations) (S || i) 
         // where i is the block number.
-        private byte[] Func()
+        private void Func()
         {
-            byte[] temp = new byte[_salt.Length + sizeof(uint)];
-            Buffer.BlockCopy(_salt, 0, temp, 0, _salt.Length);
-            Helpers.WriteInt(_block, temp, _salt.Length);
+            Helpers.WriteInt(_block, _salt, _salt.Length - sizeof(uint));
+            Debug.Assert(_blockSize == _buffer.Length);
 
-            byte[] ui = ArrayPool<byte>.Shared.Rent(_blockSize);
-            try
+            // The biggest _blockSize we have is from SHA512, which is 64 bytes.
+            // Since we have a closed set of supported hash algorithms (OpenHmac())
+            // we can know this always fits.
+            // 
+            Span<byte> uiSpan = stackalloc byte[64];
+            uiSpan = uiSpan.Slice(0, _blockSize);
+
+            if (!_hmac.TryComputeHash(_salt, uiSpan, out int bytesWritten) || bytesWritten != _blockSize)
             {
-                Span<byte> uiSpan = new Span<byte>(ui, 0, _blockSize);
+                throw new CryptographicException();
+            }
 
-                if (!_hmac.TryComputeHash(temp, uiSpan, out int bytesWritten) || bytesWritten != _blockSize)
-                    throw new CryptographicException();
+            uiSpan.CopyTo(_buffer);
 
-                byte[] ret = new byte[_blockSize];
-                uiSpan.CopyTo(ret);
-
-                for (int i = 2; i <= _iterations; i++)
+            for (int i = 2; i <= _iterations; i++)
+            {
+                if (!_hmac.TryComputeHash(uiSpan, uiSpan, out bytesWritten) || bytesWritten != _blockSize)
                 {
-                    if (!_hmac.TryComputeHash(uiSpan, uiSpan, out bytesWritten) || bytesWritten != _blockSize)
-                        throw new CryptographicException();
-
-                    for (int j = 0; j < _blockSize; j++)
-                    {
-                        ret[j] ^= ui[j];
-                    }
+                    throw new CryptographicException();
                 }
 
-                // increment the block count.
-                _block++;
-                return ret;
+                for (int j = _buffer.Length - 1; j >= 0; j--)
+                {
+                    _buffer[j] ^= uiSpan[j];
+                }
             }
-            finally
-            {
-                Array.Clear(ui, 0, _blockSize);
-                ArrayPool<byte>.Shared.Return(ui);
-            }
+
+            // increment the block count.
+            _block++;
         }
     }
 }

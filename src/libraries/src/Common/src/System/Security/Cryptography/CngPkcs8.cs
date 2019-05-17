@@ -151,7 +151,7 @@ namespace System.Security.Cryptography
                     finally
                     {
                         CryptographicOperations.ZeroMemory(decryptedSpan);
-                        ArrayPool<byte>.Shared.Return(decrypted.Array);
+                        CryptoPool.Return(decrypted.Array);
                     }
                 }
             }
@@ -203,7 +203,7 @@ namespace System.Security.Cryptography
                     finally
                     {
                         CryptographicOperations.ZeroMemory(decryptedSpan);
-                        ArrayPool<byte>.Shared.Return(decrypted.Array);
+                        CryptoPool.Return(decrypted.Array, clearSize: 0);
                     }
                 }
             }
@@ -233,7 +233,7 @@ namespace System.Security.Cryptography
             //  * secp521r1 needs ~300 bytes (named) or ~730 (explicit)
             //  * KeySize (bits) should avoid re-rent for named, and probably
             //    gets one re-rent for explicit.
-            byte[] rented = ArrayPool<byte>.Shared.Rent(key.KeySize);
+            byte[] rented = CryptoPool.Rent(key.KeySize);
             int rentWritten = 0;
 
             // If we use 6 bits from each byte, that's 22 * 6 = 132
@@ -250,8 +250,9 @@ namespace System.Security.Cryptography
                     out rentWritten))
                 {
                     int size = rented.Length;
-                    ArrayPool<byte>.Shared.Return(rented);
-                    rented = ArrayPool<byte>.Shared.Rent(checked(size * 2));
+                    byte[] current = rented;
+                    rented = CryptoPool.Rent(checked(size * 2));
+                    CryptoPool.Return(current, rentWritten);
                 }
 
                 return KeyFormatHelper.ReencryptPkcs8(
@@ -263,8 +264,7 @@ namespace System.Security.Cryptography
             finally
             {
                 randomString.Clear();
-                CryptographicOperations.ZeroMemory(rented.AsSpan(0, rentWritten));
-                ArrayPool<byte>.Shared.Return(rented);
+                CryptoPool.Return(rented, rentWritten);
             }
         }
 
@@ -275,7 +275,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(pbeParameters != null);
 
-            byte[] rented = ArrayPool<byte>.Shared.Rent(key.KeySize);
+            byte[] rented = CryptoPool.Rent(key.KeySize);
             int rentWritten = 0;
 
             try
@@ -287,8 +287,9 @@ namespace System.Security.Cryptography
                     out rentWritten))
                 {
                     int size = rented.Length;
-                    ArrayPool<byte>.Shared.Return(rented);
-                    rented = ArrayPool<byte>.Shared.Rent(checked(size * 2));
+                    byte[] current = rented;
+                    rented = CryptoPool.Rent(checked(size * 2));
+                    CryptoPool.Return(current, rentWritten);
                 }
 
                 return KeyFormatHelper.ReencryptPkcs8(
@@ -299,8 +300,7 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                CryptographicOperations.ZeroMemory(rented.AsSpan(0, rentWritten));
-                ArrayPool<byte>.Shared.Return(rented);
+                CryptoPool.Return(rented, rentWritten);
             }
         }
 

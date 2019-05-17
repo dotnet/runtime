@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -139,7 +138,7 @@ namespace System.Security.Cryptography
                     RandomNumberGenerator.Fill(seed);
 
                     // 2(e)
-                    dbMask = ArrayPool<byte>.Shared.Rent(db.Length);
+                    dbMask = CryptoPool.Rent(db.Length);
                     dbMaskSpan = new Span<byte>(dbMask, 0, db.Length);
                     Mgf1(hasher, seed, dbMaskSpan);
 
@@ -166,8 +165,8 @@ namespace System.Security.Cryptography
             {
                 if (dbMask != null)
                 {
-                    dbMaskSpan.Clear();
-                    ArrayPool<byte>.Shared.Return(dbMask);
+                    CryptographicOperations.ZeroMemory(dbMaskSpan);
+                    CryptoPool.Return(dbMask, clearSize: 0);
                 }
             }
         }
@@ -199,7 +198,7 @@ namespace System.Security.Cryptography
                 // seed = seedMask XOR maskedSeed
                 Xor(seed, maskedSeed);
 
-                byte[] tmp = ArrayPool<byte>.Shared.Rent(source.Length);
+                byte[] tmp = CryptoPool.Rent(source.Length);
 
                 try
                 {
@@ -261,8 +260,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Array.Clear(tmp, 0, source.Length);
-                    ArrayPool<byte>.Shared.Return(tmp);
+                    CryptoPool.Return(tmp, source.Length);
                 }
             }
         }
@@ -303,7 +301,7 @@ namespace System.Security.Cryptography
             Span<byte> hDest = em.Slice(dbLen, _hLen);
             em[emLen - 1] = 0xBC;
 
-            byte[] dbMaskRented = ArrayPool<byte>.Shared.Rent(dbLen);
+            byte[] dbMaskRented = CryptoPool.Rent(dbLen);
             Span<byte> dbMask = new Span<byte>(dbMaskRented, 0, dbLen);
 
             using (IncrementalHash hasher = IncrementalHash.CreateHash(_hashAlgorithmName))
@@ -348,8 +346,8 @@ namespace System.Security.Cryptography
                 }
             }
 
-            dbMask.Clear();
-            ArrayPool<byte>.Shared.Return(dbMaskRented);
+            CryptographicOperations.ZeroMemory(dbMask);
+            CryptoPool.Return(dbMaskRented, clearSize: 0);
         }
 
         internal bool VerifyPss(ReadOnlySpan<byte> mHash, ReadOnlySpan<byte> em, int keySize)
@@ -397,7 +395,7 @@ namespace System.Security.Cryptography
             }
 
             // 7. dbMask = MGF(H, emLen - hLen - 1)
-            byte[] dbMaskRented = ArrayPool<byte>.Shared.Rent(maskedDb.Length);
+            byte[] dbMaskRented = CryptoPool.Rent(maskedDb.Length);
             Span<byte> dbMask = new Span<byte>(dbMaskRented, 0, maskedDb.Length);
 
             try
@@ -457,8 +455,8 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                dbMask.Clear();
-                ArrayPool<byte>.Shared.Return(dbMaskRented);
+                CryptographicOperations.ZeroMemory(dbMask);
+                CryptoPool.Return(dbMaskRented, clearSize: 0);
             }
         }
 

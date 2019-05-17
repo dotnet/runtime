@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
-
 namespace System.Security.Cryptography
 {
     public abstract class AsymmetricAlgorithm : IDisposable
@@ -180,28 +178,23 @@ namespace System.Security.Cryptography
 
             while (true)
             {
-                Span<byte> writtenSpan = Span<byte>.Empty;
-                byte[] buf = ArrayPool<byte>.Shared.Rent(bufSize);
+                byte[] buf = CryptoPool.Rent(bufSize);
+                int bytesWritten = 0;
                 bufSize = buf.Length;
 
                 fixed (byte* bufPtr = buf)
                 {
                     try
                     {
-                        if (exporter(password, pbeParameters, buf, out int bytesWritten))
+                        if (exporter(password, pbeParameters, buf, out bytesWritten))
                         {
-                            writtenSpan = new Span<byte>(buf, 0, bytesWritten);
+                            Span<byte> writtenSpan = new Span<byte>(buf, 0, bytesWritten);
                             return writtenSpan.ToArray();
                         }
                     }
                     finally
                     {
-                        if (writtenSpan.Length > 0)
-                        {
-                            CryptographicOperations.ZeroMemory(writtenSpan);
-                        }
-
-                        ArrayPool<byte>.Shared.Return(buf);
+                        CryptoPool.Return(buf, bytesWritten);
                     }
 
                     bufSize = checked(bufSize * 2);
@@ -215,28 +208,23 @@ namespace System.Security.Cryptography
 
             while (true)
             {
-                Span<byte> writtenSpan = Span<byte>.Empty;
-                byte[] buf = ArrayPool<byte>.Shared.Rent(bufSize);
+                byte[] buf = CryptoPool.Rent(bufSize);
+                int bytesWritten = 0;
                 bufSize = buf.Length;
 
                 fixed (byte* bufPtr = buf)
                 {
                     try
                     {
-                        if (exporter(buf, out int bytesWritten))
+                        if (exporter(buf, out bytesWritten))
                         {
-                            writtenSpan = new Span<byte>(buf, 0, bytesWritten);
+                            Span<byte> writtenSpan = new Span<byte>(buf, 0, bytesWritten);
                             return writtenSpan.ToArray();
                         }
                     }
                     finally
                     {
-                        if (writtenSpan.Length > 0)
-                        {
-                            CryptographicOperations.ZeroMemory(writtenSpan);
-                        }
-
-                        ArrayPool<byte>.Shared.Return(buf);
+                        CryptoPool.Return(buf, bytesWritten);
                     }
 
                     bufSize = checked(bufSize * 2);
