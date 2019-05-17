@@ -46,31 +46,36 @@ resources:
 jobs:
   # Windows legs
   - template: /eng/pipelines/windows.yml
-    ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
-      parameters:
-        isOfficialBuild: true
+    parameters:
+      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
   # Linux legs
   - template: /eng/pipelines/linux.yml
-    ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
-      parameters:
-        isOfficialBuild: true
+    parameters:
+      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
   # MacOS legs
   - template: /eng/pipelines/macos.yml
-    ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
-      parameters:
-        isOfficialBuild: true
+    parameters:
+      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
-  # Only run in official builds
-  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
-    # Redhat6 leg is only for official builds
-    - template: /eng/pipelines/redhat6.yml
+  # RedHat6 leg
+  - template: /eng/pipelines/redhat6.yml
+    parameters:
+      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
     # FreeBSD leg is only for official builds
     # - template: /eng/pipelines/freebsd.yml
+    #   parameters:
+    #     isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+    #     fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
-    # Publish step
+  # Publish step. Only run in official builds
+  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}:
     - template: /eng/pipelines/publish.yml
       parameters:
         dependsOn:

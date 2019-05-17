@@ -188,7 +188,7 @@ jobs:
             - template: /eng/pipelines/helix.yml
               parameters:
                 # send tests to helix only on public builds, official scheduled builds or manual official builds.
-                condition: or(eq(${{ parameters.isOfficialBuild }}, False), notIn(variables['Build.Reason'], 'BatchedCI', 'IndividualCI'))
+                condition: eq(${{ parameters.isOfficialBuild }}, False)
                 targetOS: ${{ parameters.targetOS }}
                 archGroup: $(_architecture)
                 configuration: $(_BuildConfig)

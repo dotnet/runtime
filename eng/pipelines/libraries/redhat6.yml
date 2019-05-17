@@ -1,9 +1,19 @@
-# RedHat 6 leg. Only for used in Official Builds
+# RedHat 6 leg
+parameters:
+  # Required: value to specify if the job is comming from an official build to run extra steps and sign binaries
+  #   Default: false
+  isOfficialBuild: false
+  # Required: value to specify if the full test matrix should be tested
+  #   Default: false
+  fullMatrix: false
+  # Required: value to specify if the build is comming from an outerloop pipeline.
+  #   Default: false
+  isOuterloopBuild: false
 
 jobs:
 - template: corefx-base.yml
   parameters:
-    isOfficialBuild: true
+    isOfficialBuild: ${{ parameters.isOfficialBuild }}
     targetOS: Linux
     jobs:
 
@@ -26,6 +36,5 @@ jobs:
       submitToHelix: true
 
       variables:
-        - _skipTests: true
-        - _outerloop: true # Only runs in official builds
-        - redhatHelixQueue: RedHat.6.Amd64
+        - _outerloop: ${{ parameters.isOuterloopBuild }}
+        - redhatHelixQueue: RedHat.6.Amd64.Open
