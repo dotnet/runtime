@@ -67,7 +67,12 @@ namespace TestLibrary
         public static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         public static bool IsMacOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
         public static bool IsWindows7 => IsWindows && Environment.OSVersion.Version.Major == 6 && Environment.OSVersion.Version.Minor == 1;
+        public static bool IsWinRTSupported => IsWindows && !IsWindows7;
         public static bool IsWindowsNanoServer => (!IsWindowsIoTCore && GetInstallationType().Equals("Nano Server", StringComparison.OrdinalIgnoreCase));
+        
+        // Windows 10 October 2018 Update
+        public static bool IsWindows10Version1809OrGreater =>
+            IsWindows && GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 17763;
         public static bool IsWindowsIoTCore
         {
             get
@@ -193,6 +198,37 @@ namespace TestLibrary
             }
         }
 
+        internal static uint GetWindowsVersion()
+        {
+            if (!IsWindows)
+            {
+                return 0;
+            }
+
+            Assert.AreEqual(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
+            return osvi.dwMajorVersion;
+        }
+        internal static uint GetWindowsMinorVersion()
+        {
+            if (!IsWindows)
+            {
+                return 0;
+            }
+
+            Assert.AreEqual(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
+            return osvi.dwMinorVersion;
+        }
+        internal static uint GetWindowsBuildNumber()
+        {
+            if (!IsWindows)
+            {
+                return 0;
+            }
+
+            Assert.AreEqual(0, Ntdll.RtlGetVersionEx(out Ntdll.RTL_OSVERSIONINFOEX osvi));
+            return osvi.dwBuildNumber;
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetRegistryValueString(string key, string value)
         {
@@ -229,6 +265,45 @@ namespace TestLibrary
             Marshal.FreeCoTaskMem(data);
 
             return stringValue;
+        }
+
+        private static class Ntdll
+        {
+            [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+            internal unsafe struct RTL_OSVERSIONINFOEX
+            {
+                internal uint dwOSVersionInfoSize;
+                internal uint dwMajorVersion;
+                internal uint dwMinorVersion;
+                internal uint dwBuildNumber;
+                internal uint dwPlatformId;
+                internal fixed char szCSDVersion[128];
+            }
+
+            [DllImport(nameof(Ntdll), ExactSpelling=true)]
+            private static extern int RtlGetVersion(ref RTL_OSVERSIONINFOEX lpVersionInformation);
+
+            internal static unsafe int RtlGetVersionEx(out RTL_OSVERSIONINFOEX osvi)
+            {
+                osvi = new RTL_OSVERSIONINFOEX();
+                osvi.dwOSVersionInfoSize = (uint)sizeof(RTL_OSVERSIONINFOEX);
+                return RtlGetVersion(ref osvi);
+            }
+
+            internal static unsafe string RtlGetVersion()
+            {            
+                const string Version = "Microsoft Windows";
+                if (RtlGetVersionEx(out RTL_OSVERSIONINFOEX osvi) == 0)
+                {
+                    return osvi.szCSDVersion[0] != '\0' ?
+                        string.Format("{0} {1}.{2}.{3} {4}", Version, osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber, new string(&(osvi.szCSDVersion[0]))) :
+                        string.Format("{0} {1}.{2}.{3}", Version, osvi.dwMajorVersion, osvi.dwMinorVersion, osvi.dwBuildNumber);
+                }
+                else
+                {
+                    return Version;
+                }
+            }
         }
 
         private sealed class Kernel32

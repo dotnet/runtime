@@ -1,0 +1,104 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+namespace Component.Contracts
+{
+    [interface_name("Component.Contracts.IBooleanTesting", 971AF13A-9793-4AF7-B2F2-72D829195592)]
+    runtimeclass BooleanTesting
+    {
+        BooleanTesting();
+        Boolean And(Boolean left, Boolean right);
+    }
+
+    [interface_name("Component.Contracts.IStringTesting", C6F1F632-47B6-4A52-86D2-A89807ED2677)]
+    runtimeclass StringTesting
+    {
+        StringTesting();
+        String ConcatStrings(String left, String right);
+    }
+
+    [interface_name("Component.Contracts.INullableTesting", 939D4EE5-8D41-4C4B-8948-86017CEB9244)]
+    runtimeclass NullableTesting
+    {
+        NullableTesting();
+        Boolean IsNull(Windows.Foundation.IReference<Int32> value);
+        Int32 GetIntValue(Windows.Foundation.IReference<Int32> value);
+    }
+
+    [interface_name("Component.Contracts.ITypeTesting", BB545A14-9AE7-491A-874D-1C03D239FB70)]
+    runtimeclass TypeTesting
+    {
+        TypeTesting();
+        String GetTypeName(Windows.UI.Xaml.Interop.TypeName typeName);
+    }
+    
+    [interface_name("Component.Contracts.IExceptionTesting", 9162201d-b591-4f30-8f41-f0f79f6ecea3)]
+    runtimeclass ExceptionTesting
+    {
+        ExceptionTesting();
+        void ThrowException(Windows.Foundation.HResult hr);
+        Windows.Foundation.HResult GetException(Int32 hr);
+    }
+
+    [interface_name("Component.Contracts.IKeyValuePairTesting", ccd10099-3a45-4382-970d-b76f52780bcd)]
+    runtimeclass KeyValuePairTesting
+    {
+        KeyValuePairTesting();
+        Windows.Foundation.Collections.IKeyValuePair<Int32, Int32> MakeSimplePair(Int32 key, Int32 value);
+        Windows.Foundation.Collections.IKeyValuePair<String, String> MakeMarshaledPair(String key, String value);
+        Windows.Foundation.Collections.IKeyValuePair<Int32, Windows.Foundation.Collections.IIterable<Int32> > MakeProjectedPair(Int32 key, Int32[] values);
+    }
+
+    [interface_name("Component.Contracts.IUriTesting", e0af24b3-e6c6-4e89-b8d1-a332979ef398)]
+    runtimeclass UriTesting
+    {
+        UriTesting();
+        String GetFromUri(Windows.Foundation.Uri uri);
+        Windows.Foundation.Uri CreateUriFromString(String uri);
+    }
+
+    [interface_name("Component.Contracts.IArrayTesting", 821B532D-CC5E-4218-90AB-A8361AC92794)]
+    runtimeclass ArrayTesting
+    {
+        ArrayTesting();
+        Int32 Sum(Int32[] array);
+        Boolean Xor(Boolean[] array);
+    }
+
+    [uuid(4bb923ae-986a-4aad-9bfb-13e0b5ecffa4)]
+    interface IBindingViewModel
+    {
+        Windows.UI.Xaml.Interop.INotifyCollectionChanged Collection { get; };
+        void AddElement(Int32 i);
+        String Name { get; set; };
+    }
+
+    runtimeclass BindingViewModel : [default] IBindingViewModel, Windows.UI.Xaml.Data.INotifyPropertyChanged
+    {
+        BindingViewModel();
+    }
+
+    [interface_name("Component.Contracts.IBindingProjectionsTesting", 857e28e1-3e7f-4f6f-8554-efc73feba286)]
+    runtimeclass BindingProjectionsTesting
+    {
+        BindingProjectionsTesting();
+        IBindingViewModel CreateViewModel();
+        Windows.Foundation.IClosable InitializeXamlFrameworkForCurrentThread();
+    }
+
+    enum TestEnum
+    {
+        A = 1,
+        B = 2,
+        C = 3
+    };
+
+    [interface_name("Component.Contracts.IEnumTesting", d89d71b2-2671-444d-8576-536d206dea49)]
+    runtimeclass EnumTesting
+    {
+        EnumTesting();
+        TestEnum GetA();
+        Boolean IsB(TestEnum val);
+    }
+}
