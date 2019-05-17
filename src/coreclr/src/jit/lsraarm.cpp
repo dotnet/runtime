@@ -41,6 +41,11 @@ int LinearScan::BuildLclHeap(GenTree* tree)
     //   >4 ptr words               Yes             1
     //   Non-const                  Yes             1
     //   Non-const                  No              1
+    //
+    // If the outgoing argument space is too large to encode in an "add/sub sp, icon"
+    // instruction, we also need a temp (we can use the same temp register needed
+    // for the other cases above, if there are multiple conditions that require a
+    // temp register).
 
     GenTree* size = tree->gtGetOp1();
     int      internalIntCount;
@@ -88,6 +93,15 @@ int LinearScan::BuildLclHeap(GenTree* tree)
         srcCount         = 1;
         internalIntCount = 1;
         BuildUse(size);
+    }
+
+    // If we have an outgoing argument space, we are going to probe that SP change, and we require
+    // a temporary register for doing the probe. Note also that if the outgoing argument space is
+    // large enough that it can't be directly encoded in SUB/ADD instructions, we also need a temp
+    // register to load the large sized constant into a register.
+    if (compiler->lvaOutgoingArgSpaceSize > 0)
+    {
+        internalIntCount = 1;
     }
 
     // If we are needed in temporary registers we should be sure that
