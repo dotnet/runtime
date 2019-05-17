@@ -1279,4 +1279,53 @@ namespace System.Text.Json.Serialization.Tests
         // A 400 character property name with a unicode character making it 401 bytes.
         public int Aѧ34567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890 { get; set; }
     }
+
+    public class TestClassWithNestedObjectCommentsInner : ITestClass
+    {
+        public SimpleTestClass MyData { get; set; }
+
+        public static readonly string s_json =
+            @"{" +
+                @"""MyData"":" + SimpleTestClass.s_json + " // Trailing comment\n" +
+                "/* Multi\nLine Comment with } */\n" +
+            @"}";
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
+
+        public void Initialize()
+        {
+            MyData = new SimpleTestClass();
+            MyData.Initialize();
+        }
+
+        public void Verify()
+        {
+            Assert.NotNull(MyData);
+            MyData.Verify();
+        }
+    }
+
+    public class TestClassWithNestedObjectCommentsOuter : ITestClass
+    {
+        public TestClassWithNestedObjectCommentsInner MyData { get; set; }
+
+        public static readonly byte[] s_data = Encoding.UTF8.GetBytes(
+            @"{" +
+                " // This } will be ignored\n" +
+                @"""MyData"":" + TestClassWithNestedObjectCommentsInner.s_json +
+                " /* As will this [ */\n" +
+            @"}");
+
+        public void Initialize()
+        {
+            MyData = new TestClassWithNestedObjectCommentsInner();
+            MyData.Initialize();
+        }
+
+        public void Verify()
+        {
+            Assert.NotNull(MyData);
+            MyData.Verify();
+        }
+    }
 }
