@@ -4618,6 +4618,9 @@ PALIMPORT DLLEXPORT int __cdecl _putenv(const char *);
 
 #define ERANGE          34
 
+PALIMPORT WCHAR __cdecl PAL_ToUpperInvariant(WCHAR);
+PALIMPORT WCHAR __cdecl PAL_ToLowerInvariant(WCHAR);
+
 /******************* PAL-specific I/O completion port *****************/
 
 typedef struct _PAL_IOCP_CPU_INFORMATION {
