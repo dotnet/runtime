@@ -74,7 +74,7 @@ bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeSession &session, Eve
     unsigned int eventSize = sizeof(EventPipeEventInstance) + payload.GetSize();
     
     // Make sure we have enough space to write the event.
-    if(m_pCurrent + eventSize >= m_pLimit)
+    if(m_pCurrent + eventSize > m_pLimit)
     {
         return false;
     }
