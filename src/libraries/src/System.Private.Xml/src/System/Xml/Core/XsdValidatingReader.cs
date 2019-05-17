@@ -1011,13 +1011,13 @@ namespace System.Xml
 
             try
             {
-                if (xmlType != null)
+                if (xmlType != null && typedValue != null)
                 {
                     return xmlType.ValueConverter.ToString(typedValue);
                 }
                 else
                 {
-                    return typedValue as string;
+                    return typedValue as string ?? string.Empty;
                 }
             }
             catch (InvalidCastException e)
