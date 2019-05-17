@@ -2112,7 +2112,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfValueNotFound, marker);
+                    ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfValueNotFound, JsonConstants.Slash);
                 }
             }
 
@@ -2126,8 +2126,10 @@ namespace System.Text.Json
         private bool SkipSingleLineComment(ReadOnlySpan<byte> localBuffer, out int idx)
         {
             idx = localBuffer.IndexOfAny(JsonConstants.LineFeed, JsonConstants.CarriageReturn);
+            int toConsume = 0;
             if (idx != -1)
             {
+                toConsume = idx;
                 if (localBuffer[idx] == JsonConstants.LineFeed)
                 {
                     goto EndOfComment;
@@ -2140,7 +2142,7 @@ namespace System.Text.Json
                 {
                     if (localBuffer[idx + 1] == JsonConstants.LineFeed)
                     {
-                        idx++;
+                        toConsume = idx + 1;
                     }
                     goto EndOfComment;
                 }
@@ -2148,6 +2150,7 @@ namespace System.Text.Json
             if (IsLastSpan)
             {
                 idx = localBuffer.Length;
+                toConsume = idx;
                 // Assume everything on this line is a comment and there is no more data.
                 _bytePositionInLine += 2 + localBuffer.Length;
                 goto Done;
@@ -2158,12 +2161,12 @@ namespace System.Text.Json
             }
 
         EndOfComment:
-            idx++;
+            toConsume += 1;
             _bytePositionInLine = 0;
             _lineNumber++;
 
         Done:
-            _consumed += 2 + idx;
+            _consumed += 2 + toConsume;
             return true;
         }
 
@@ -2183,28 +2186,30 @@ namespace System.Text.Json
                 }
                 if (foundIdx != 0 && localBuffer[foundIdx + idx - 1] == JsonConstants.Asterisk)
                 {
-                    idx += foundIdx;
+                    // foundIdx points just after '*' in the end-of-comment delimiter. Hence increment idx by one
+                    // position less to make it point right before beginning of end-of-comment delimiter i.e. */
+                    idx += foundIdx - 1;
                     break;
                 }
                 idx += foundIdx + 1;
             }
 
-            Debug.Assert(idx >= 1);
-
             // Consume the /* and */ characters that are part of the multi-line comment.
-            // Since idx is pointing at right after the final '*' (i.e. before the last '/'), we don't need to count that character.
-            // Hence, we increment consumed by 3 (instead of 4).
-            _consumed += 4 + idx - 1;
+            // idx points right before the final '*' (which is right before the last '/'). Hence increment _consumed
+            // by 4 to exclude the start/end-of-comment delimiters.
+            _consumed += 4 + idx;
 
-            (int newLines, int newLineIndex) = JsonReaderHelper.CountNewLines(localBuffer.Slice(0, idx - 1));
+            (int newLines, int newLineIndex) = JsonReaderHelper.CountNewLines(localBuffer.Slice(0, idx));
             _lineNumber += newLines;
             if (newLineIndex != -1)
             {
-                _bytePositionInLine = idx - newLineIndex;
+                // newLineIndex points at last newline character and byte positions in the new line start
+                // after that. Hence add 1 to skip the newline character.
+                _bytePositionInLine = idx - newLineIndex + 1;
             }
             else
             {
-                _bytePositionInLine += 4 + idx - 1;
+                _bytePositionInLine += 4 + idx;
             }
             return true;
         }
@@ -2227,13 +2232,13 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfValueNotFound, marker);
+                    ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.InvalidCharacterAtStartOfComment, marker);
                 }
             }
 
             if (IsLastSpan)
             {
-                ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfValueNotFound, JsonConstants.Slash);
+                ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.UnexpectedEndOfDataWhileReadingComment);
             }
             return false;
         }
@@ -2245,7 +2250,9 @@ namespace System.Text.Json
                 return false;
             }
 
-            ValueSpan = _buffer.Slice(previousConsumed, idx + 2);   // Include the double slash and potential line feed at the end of the comment as part of it.
+            // Exclude the // at start of the comment. idx points right before the line separator
+            // at the end of the comment.
+            ValueSpan = _buffer.Slice(previousConsumed + 2, idx);
             if (_tokenType != JsonTokenType.Comment)
             {
                 _previousTokenType = _tokenType;
@@ -2261,7 +2268,9 @@ namespace System.Text.Json
                 return false;
             }
 
-            ValueSpan = _buffer.Slice(previousConsumed, idx + 3); // Include the slash/asterisk and final slash at the end of the comment as part of it.
+            // Exclude the /* at start of the comment. idx already points right before the terminal '*/'
+            // for the end of multiline comment.
+            ValueSpan = _buffer.Slice(previousConsumed + 2, idx);
             if (_tokenType != JsonTokenType.Comment)
             {
                 _previousTokenType = _tokenType;
