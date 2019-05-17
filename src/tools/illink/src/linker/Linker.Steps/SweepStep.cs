@@ -285,6 +285,9 @@ namespace Mono.Linker.Steps {
 			if (type.HasCustomAttributes)
 				SweepCustomAttributes (type);
 
+			if (type.HasGenericParameters)
+				SweepCustomAttributeCollection (type.GenericParameters);
+
 			if (type.HasProperties)
 				SweepCustomAttributeCollection (type.Properties);
 
@@ -312,8 +315,10 @@ namespace Mono.Linker.Steps {
 		{
 			for (int i = type.Interfaces.Count - 1; i >= 0; i--) {
 				var iface = type.Interfaces [i];
-				if (Annotations.IsMarked (iface))
+				if (Annotations.IsMarked (iface)) {
+					SweepCustomAttributes (iface);
 					continue;
+				}
 				InterfaceRemoved (type, iface);
 				type.Interfaces.RemoveAt (i);
 			}
@@ -398,6 +403,9 @@ namespace Mono.Linker.Steps {
 				SweepDebugInfo (methods);
 
 			foreach (var method in methods) {
+				if (method.HasGenericParameters)
+					SweepCustomAttributeCollection (method.GenericParameters);
+
 				SweepCustomAttributes (method.MethodReturnType);
 
 				if (!method.HasParameters)

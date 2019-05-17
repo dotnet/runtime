@@ -73,8 +73,9 @@ namespace Mono.Linker.Tests.TestCases
 			var lineCount = outputPath.ReadAllLines ().Length;
 
 			// When reduced tracing is not enabled there are around 16k of lines in the output file.
-			// With reduced tracing there should be less than 65, but to be safe, we'll check for less than 100.
-			const int expectedMaxLines = 100;
+			// With reduced tracing there should be less than 65, but to be safe, we'll check for less than 200.
+			// Reduced tracing on System.Private.CoreLib.dll produces about 130 lines just for NullableAttribute usages.
+			const int expectedMaxLines = 200;
 			Assert.That (lineCount, Is.LessThan (expectedMaxLines), $"There were `{lineCount}` lines in the dump file.  This is more than expected max of {expectedMaxLines} and likely indicates reduced tracing was not enabled.  Dump file can be found at: {outputPath}");
 		}
 
