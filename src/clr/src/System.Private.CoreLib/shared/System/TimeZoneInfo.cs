@@ -51,7 +51,7 @@ namespace System
         private const string UtcId = "UTC";
         private const string LocalId = "Local";
 
-        private static readonly TimeZoneInfo s_utcTimeZone = CreateCustomTimeZone(UtcId, TimeSpan.Zero, UtcId, UtcId);
+        private static readonly TimeZoneInfo s_utcTimeZone = CreateCustomTimeZone(UtcId, TimeSpan.Zero, "(UTC) Coordinated Universal Time", "Coordinated Universal Time");
 
         private static CachedData s_cachedData = new CachedData();
 
@@ -293,7 +293,7 @@ namespace System
             AdjustmentRule result = rule;
             for (int i = 1; i < _adjustmentRules.Length; i++)
             {
-                // use ReferenceEquals here instead of AdjustmentRule.Equals because 
+                // use ReferenceEquals here instead of AdjustmentRule.Equals because
                 // ReferenceEquals is much faster. This is safe because all the callers
                 // of GetPreviousAdjustmentRule pass in a rule that was retrieved from
                 // _adjustmentRules.  A different approach will be needed if this ever changes.
@@ -1063,7 +1063,7 @@ namespace System
 
             return result;
         }
-        
+
         private AdjustmentRule? GetAdjustmentRuleForTime(DateTime dateTime, bool dateTimeisUtc, out int? ruleIndex)
         {
             if (_adjustmentRules == null || _adjustmentRules.Length == 0)
@@ -1382,8 +1382,8 @@ namespace System
                 if (previousYearRule != null && previousYearRule.IsEndDateMarkerForEndOfYear())
                 {
                     DaylightTimeStruct previousDaylightTime = zone.GetDaylightTime(
-                        daylightTime.Start.Year - 1, 
-                        previousYearRule, 
+                        daylightTime.Start.Year - 1,
+                        previousYearRule,
                         previousYearRuleIndex);
                     startTime = previousDaylightTime.Start - utc - previousYearRule.BaseUtcOffsetDelta;
                     ignoreYearAdjustment = true;
@@ -1416,7 +1416,7 @@ namespace System
                     else
                     {
                         DaylightTimeStruct nextdaylightTime = zone.GetDaylightTime(
-                            daylightTime.End.Year + 1, 
+                            daylightTime.End.Year + 1,
                             nextYearRule,
                             nextYearRuleIndex);
                         endTime = nextdaylightTime.End - utc - nextYearRule.BaseUtcOffsetDelta - nextYearRule.DaylightDelta;
@@ -1738,7 +1738,7 @@ namespace System
             else
             {
                 rule = zone.GetAdjustmentRuleForTime(time, dateTimeisUtc: true, ruleIndex: out ruleIndex);
-                Debug.Assert(rule == null || ruleIndex.HasValue, 
+                Debug.Assert(rule == null || ruleIndex.HasValue,
                     "If GetAdjustmentRuleForTime returned an AdjustmentRule, ruleIndex should also be set.");
 
                 // As we get the associated rule using the adjusted targetTime, we should use the adjusted year (targetTime.Year) too as after adding the baseOffset,
@@ -1893,9 +1893,17 @@ namespace System
             if (result == TimeZoneInfoResult.Success)
             {
                 if (cachedData._systemTimeZones == null)
+                {
                     cachedData._systemTimeZones = new Dictionary<string, TimeZoneInfo>(StringComparer.OrdinalIgnoreCase);
+                    cachedData._systemTimeZones.Add(UtcId, s_utcTimeZone);
+                }
 
-                cachedData._systemTimeZones.Add(id, match!); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                // Avoid using multiple Utc objects to ensure consistency and correctness as we have some code
+                // uses reference equality with the Utc object.
+                if (!id.Equals(UtcId,  StringComparison.OrdinalIgnoreCase))
+                {
+                    cachedData._systemTimeZones.Add(id, match!); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                }
 
                 if (dstDisabled && match!._supportsDaylightSavingTime) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
                 {
@@ -1981,7 +1989,7 @@ namespace System
 
         private static readonly TimeSpan MaxOffset = TimeSpan.FromHours(14.0);
         private static readonly TimeSpan MinOffset = -MaxOffset;
-        
+
         /// <summary>
         /// Helper function that validates the TimeSpan is within +/- 14.0 hours
         /// </summary>
@@ -1994,7 +2002,7 @@ namespace System
                 + adjustmentRule.BaseUtcOffsetDelta
                 + (adjustmentRule.HasDaylightSaving ? adjustmentRule.DaylightDelta : TimeSpan.Zero);
         }
-        
+
         /// <summary>
         /// Helper function that performs adjustment rule validation
         /// </summary>
