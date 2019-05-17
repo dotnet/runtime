@@ -3,12 +3,14 @@ parameters:
   # Required: value to specify if the job is comming from an official build to run extra steps and sign binaries
   #   Default: false
   isOfficialBuild: false
+  # Required: value to specify if the full test matrix should be tested
+  #   Default: false
+  fullMatrix: false
   # Required: value to specify if the build is comming from an outerloop pipeline.
   #   Default: false
   isOuterloopBuild: false
 
 jobs:
-
 - template: corefx-base.yml
   parameters:
     isOfficialBuild: ${{ parameters.isOfficialBuild }}
@@ -20,14 +22,14 @@ jobs:
       displayName: MacOS
       strategy:
         matrix:
-          ${{ if eq(parameters.isOfficialBuild, 'false') }}:
+          ${{ if eq(parameters.fullMatrix, 'false') }}:
             x64_Debug:
               _BuildConfig: Debug
               _architecture: x64
               _framework: netcoreapp
               _helixQueues: $(macOSQueues)
 
-          ${{ if eq(parameters.isOfficialBuild, 'true') }}:
+          ${{ if eq(parameters.fullMatrix, 'true') }}:
             x64_Release:
               _BuildConfig: Release
               _architecture: x64
@@ -49,13 +51,10 @@ jobs:
       submitToHelix: true
 
       variables:
-        - _skipTests: true
-        - _outerloop: ${{ parameters.isOfficialBuild }}
-        - ${{ if eq(parameters.isOuterloopBuild, 'true') }}:
-          - _outerloop: true
-
+        - _outerloop: ${{ parameters.isOuterloopBuild }}
+        
         - ${{ if eq(parameters.isOfficialBuild, 'false') }}:
           - macOSQueues: OSX.1012.Amd64.Open+OSX.1013.Amd64.Open
 
         - ${{ if eq(parameters.isOfficialBuild, 'true') }}:
-          - macOSQueues: OSX.1012.Amd64+OSX.1013.Amd64+OSX.1014.Amd64
+          - macOSQueues: OSX.1012.Amd64.Open+OSX.1013.Amd64.Open+OSX.1014.Amd64.Open

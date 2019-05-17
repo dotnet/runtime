@@ -13,19 +13,25 @@ resources:
 
 jobs:
   # Windows outerloop legs
-  - ${{ if endsWith(variables['Build.DefinitionName'], 'windows') }}:
+  - ${{ if or(endsWith(variables['Build.DefinitionName'], 'windows'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}:
     - template: /eng/pipelines/windows.yml
       parameters:
+        isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+        fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
         isOuterloopBuild: true
 
   # Linux outerloop legs
-  - ${{ if endsWith(variables['Build.DefinitionName'], 'linux') }}:
+  - ${{ if or(endsWith(variables['Build.DefinitionName'], 'linux'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}:
     - template: /eng/pipelines/linux.yml
       parameters:
+        isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+        fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
         isOuterloopBuild: true
 
   # MacOS outerloop legs
-  - ${{ if endsWith(variables['Build.DefinitionName'], 'osx') }}:
+  - ${{ if or(endsWith(variables['Build.DefinitionName'], 'osx'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}:
     - template: /eng/pipelines/macos.yml
       parameters:
+        isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
+        fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
         isOuterloopBuild: true
