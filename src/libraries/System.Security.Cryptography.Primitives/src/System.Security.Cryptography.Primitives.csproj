@@ -30,6 +30,9 @@
     <Compile Include="$(CommonPath)\Internal\Cryptography\Helpers.cs">
       <Link>Internal\Cryptography\Helpers.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\CryptoPool.cs">
+      <Link>Common\System\Security\Cryptography\CryptoPool.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Security\Cryptography\KeySizeHelpers.cs">
       <Link>Common\System\Security\Cryptography\KeySizeHelpers.cs</Link>
     </Compile>
@@ -40,6 +43,7 @@
   <ItemGroup>
     <Reference Include="System.Buffers" />
     <Reference Include="System.Diagnostics.Debug" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />

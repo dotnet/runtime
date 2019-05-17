@@ -169,8 +169,7 @@ namespace System.Security.Cryptography.Asn1
             // The worst case is "1.1.1.1.1", which takes 4 bytes (5 components, with the first two condensed)
             // Longer numbers get smaller: "2.1.127" is only 2 bytes. (81d (0x51) and 127 (0x7F))
             // So length / 2 should prevent any reallocations.
-            var localPool = ArrayPool<byte>.Shared;
-            byte[] tmp = localPool.Rent(oidValue.Length / 2);
+            byte[] tmp = CryptoPool.Rent(oidValue.Length / 2);
             int tmpOffset = 0;
 
             try
@@ -227,8 +226,7 @@ namespace System.Security.Cryptography.Asn1
             }
             finally
             {
-                Array.Clear(tmp, 0, tmpOffset);
-                localPool.Return(tmp);
+                CryptoPool.Return(tmp, tmpOffset);
             }
         }
 

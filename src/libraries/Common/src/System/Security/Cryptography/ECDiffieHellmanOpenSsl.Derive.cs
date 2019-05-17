@@ -157,7 +157,7 @@ namespace System.Security.Cryptography
 
                         if (secretLength > StackAllocMax)
                         {
-                            rented = ArrayPool<byte>.Shared.Rent(secretLength);
+                            rented = CryptoPool.Rent(secretLength);
                             secret = new Span<byte>(rented, 0, secretLength);
                         }
                         else
@@ -190,8 +190,7 @@ namespace System.Security.Cryptography
 
                     if (rented != null)
                     {
-                        Array.Clear(rented, 0, secretLength);
-                        ArrayPool<byte>.Shared.Return(rented);
+                        CryptoPool.Return(rented, secretLength);
                     }
                 }
             }

@@ -97,7 +97,7 @@ namespace System.Security.Cryptography
 
             try
             {
-                buf = ArrayPool<byte>.Shared.Rent(rsaSize);
+                buf = CryptoPool.Rent(rsaSize);
                 destination = new Span<byte>(buf, 0, rsaSize);
 
                 if (!TryDecrypt(key, data, destination, rsaPadding, oaepProcessor, out int bytesWritten))
@@ -111,7 +111,7 @@ namespace System.Security.Cryptography
             finally
             {
                 CryptographicOperations.ZeroMemory(destination);
-                ArrayPool<byte>.Shared.Return(buf);
+                CryptoPool.Return(buf, clearSize: 0);
             }
         }
 
@@ -216,7 +216,7 @@ namespace System.Security.Cryptography
 
             if (rsaPaddingProcessor != null)
             {
-                paddingBuf = ArrayPool<byte>.Shared.Rent(rsaSize);
+                paddingBuf = CryptoPool.Rent(rsaSize);
                 decryptBuf = paddingBuf;
             }
 
@@ -248,7 +248,7 @@ namespace System.Security.Cryptography
                     // DecryptBuf is paddingBuf if paddingBuf is not null, erase it before returning it.
                     // If paddingBuf IS null then decryptBuf was destination, and shouldn't be cleared.
                     CryptographicOperations.ZeroMemory(decryptBuf);
-                    ArrayPool<byte>.Shared.Return(paddingBuf);
+                    CryptoPool.Return(paddingBuf, clearSize: 0);
                 }
             }
         }
@@ -318,7 +318,7 @@ namespace System.Security.Cryptography
             if (rsaPaddingProcessor != null)
             {
                 Debug.Assert(rsaPadding == Interop.Crypto.RsaPadding.NoPadding);
-                byte[] rented = ArrayPool<byte>.Shared.Rent(rsaSize);
+                byte[] rented = CryptoPool.Rent(rsaSize);
                 Span<byte> tmp = new Span<byte>(rented, 0, rsaSize);
 
                 try
@@ -329,7 +329,7 @@ namespace System.Security.Cryptography
                 finally
                 {
                     CryptographicOperations.ZeroMemory(tmp);
-                    ArrayPool<byte>.Shared.Return(rented);
+                    CryptoPool.Return(rented, clearSize: 0);
                 }
             }
             else
@@ -712,15 +712,14 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                byte[] pssRented = ArrayPool<byte>.Shared.Rent(bytesRequired);
+                byte[] pssRented = CryptoPool.Rent(bytesRequired);
                 Span<byte> pssBytes = new Span<byte>(pssRented, 0, bytesRequired);
 
                 processor.EncodePss(hash, pssBytes, KeySize);
 
                 int ret = Interop.Crypto.RsaSignPrimitive(pssBytes, destination, rsa);
 
-                pssBytes.Clear();
-                ArrayPool<byte>.Shared.Return(pssRented);
+                CryptoPool.Return(pssRented, bytesRequired);
 
                 CheckReturn(ret);
 
@@ -787,7 +786,7 @@ namespace System.Security.Cryptography
                     return false;
                 }
 
-                byte[] rented = ArrayPool<byte>.Shared.Rent(requiredBytes);
+                byte[] rented = CryptoPool.Rent(requiredBytes);
                 Span<byte> unwrapped = new Span<byte>(rented, 0, requiredBytes);
 
                 try
@@ -804,8 +803,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    unwrapped.Clear();
-                    ArrayPool<byte>.Shared.Return(rented);
+                    CryptoPool.Return(rented, requiredBytes);
                 }
             }
 

@@ -97,24 +97,17 @@ namespace System.Security.Cryptography
             if (_disposed)
                 throw new ObjectDisposedException(null);
 
-            // Default the buffer size to 4K.
+            // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
 
-            try
+            int bytesRead;
+            while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
             {
-                int bytesRead;
-                while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) > 0)
-                {
-                    HashCore(buffer, 0, bytesRead);
-                }
+                HashCore(buffer, 0, bytesRead);
+            }
 
-                return CaptureHashCodeAndReinitialize();
-            }
-            finally
-            {
-                CryptographicOperations.ZeroMemory(buffer);
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
+            ArrayPool<byte>.Shared.Return(buffer, clearArray: true);
+            return CaptureHashCodeAndReinitialize();
         }
 
         private byte[] CaptureHashCodeAndReinitialize()
@@ -219,17 +212,12 @@ namespace System.Security.Cryptography
 
         protected virtual void HashCore(ReadOnlySpan<byte> source)
         {
+            // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] array = ArrayPool<byte>.Shared.Rent(source.Length);
-            try
-            {
-                source.CopyTo(array);
-                HashCore(array, 0, source.Length);
-            }
-            finally
-            {
-                Array.Clear(array, 0, source.Length);
-                ArrayPool<byte>.Shared.Return(array);
-            }
+            source.CopyTo(array);
+            HashCore(array, 0, source.Length);
+            Array.Clear(array, 0, source.Length);
+            ArrayPool<byte>.Shared.Return(array);
         }
 
         protected virtual bool TryHashFinal(Span<byte> destination, out int bytesWritten)

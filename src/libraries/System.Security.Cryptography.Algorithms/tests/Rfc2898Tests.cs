@@ -214,14 +214,23 @@ namespace System.Security.Cryptography.DeriveBytesTests
             Assert.NotEqual(first, second);
         }
 
-        [Fact]
-        public static void GetBytes_StreamLike()
+        [Theory]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(10)]
+        [InlineData(16)]
+        [InlineData(20)]
+        [InlineData(25)]
+        [InlineData(32)]
+        [InlineData(40)]
+        [InlineData(192)]
+        public static void GetBytes_StreamLike(int size)
         {
             byte[] first;
 
             using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
             {
-                first = deriveBytes.GetBytes(32);
+                first = deriveBytes.GetBytes(size);
             }
 
             byte[] second = new byte[first.Length];
@@ -238,7 +247,40 @@ namespace System.Security.Cryptography.DeriveBytesTests
 
             Assert.Equal(first, second);
         }
-        
+
+        [Theory]
+        [InlineData(2)]
+        [InlineData(5)]
+        [InlineData(10)]
+        [InlineData(16)]
+        [InlineData(20)]
+        [InlineData(25)]
+        [InlineData(32)]
+        [InlineData(40)]
+        [InlineData(192)]
+        public static void GetBytes_StreamLike_OneAtATime(int size)
+        {
+            byte[] first;
+
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPasswordB, s_testSaltB))
+            {
+                first = deriveBytes.GetBytes(size);
+            }
+
+            byte[] second = new byte[first.Length];
+
+            // Reset
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPasswordB, s_testSaltB))
+            {
+                for (int i = 0; i < second.Length; i++)
+                {
+                    second[i] = deriveBytes.GetBytes(1)[0];
+                }
+            }
+
+            Assert.Equal(first, second);
+        }
+
         [Fact]
         public static void GetBytes_KnownValues_1()
         {

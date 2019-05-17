@@ -190,7 +190,7 @@ namespace System.Security.Cryptography
 
                 SafeDsaHandle key = _key.Value;
                 int signatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
-                byte[] signature = ArrayPool<byte>.Shared.Rent(signatureSize);
+                byte[] signature = CryptoPool.Rent(signatureSize);
                 try
                 {
                     bool success = Interop.Crypto.DsaSign(key, rgbHash, new Span<byte>(signature, 0, signatureSize), out signatureSize);
@@ -211,8 +211,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Array.Clear(signature, 0, signatureSize);
-                    ArrayPool<byte>.Shared.Return(signature);
+                    CryptoPool.Return(signature, signatureSize);
                 }
             }
 
@@ -221,7 +220,7 @@ namespace System.Security.Cryptography
                 byte[] converted;
                 SafeDsaHandle key = _key.Value;
                 int signatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
-                byte[] signature = ArrayPool<byte>.Shared.Rent(signatureSize);
+                byte[] signature = CryptoPool.Rent(signatureSize);
                 try
                 {
                     bool success = Interop.Crypto.DsaSign(key, hash, new Span<byte>(signature, 0, signatureSize), out signatureSize);
@@ -242,8 +241,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Array.Clear(signature, 0, signatureSize);
-                    ArrayPool<byte>.Shared.Return(signature);
+                    CryptoPool.Return(signature, signatureSize);
                 }
 
                 if (converted.Length <= destination.Length)

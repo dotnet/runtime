@@ -92,6 +92,7 @@ namespace System.Security.Cryptography
         protected virtual bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
             byte[] result;
+            // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
             try
             {
@@ -270,7 +271,7 @@ namespace System.Security.Cryptography
             for (int i = 256; ; i = checked(i * 2))
             {
                 int hashLength = 0;
-                byte[] hash = ArrayPool<byte>.Shared.Rent(i);
+                byte[] hash = CryptoPool.Rent(i);
                 try
                 {
                     if (TryHashData(data, hash, hashAlgorithm, out hashLength))
@@ -280,8 +281,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    Array.Clear(hash, 0, hashLength);
-                    ArrayPool<byte>.Shared.Return(hash);
+                    CryptoPool.Return(hash, hashLength);
                 }
             }
         }
@@ -329,7 +329,7 @@ namespace System.Security.Cryptography
 
             while (true)
             {
-                byte[] rented = ArrayPool<byte>.Shared.Rent(rentSize);
+                byte[] rented = CryptoPool.Rent(rentSize);
                 rentSize = rented.Length;
                 int pkcs1Size = 0;
 
@@ -350,8 +350,7 @@ namespace System.Security.Cryptography
                     }
                     finally
                     {
-                        CryptographicOperations.ZeroMemory(rented.AsSpan(0, pkcs1Size));
-                        ArrayPool<byte>.Shared.Return(rented);
+                        CryptoPool.Return(rented, pkcs1Size);
                     }
                 }
             }
@@ -377,7 +376,7 @@ namespace System.Security.Cryptography
 
             while (true)
             {
-                byte[] rented = ArrayPool<byte>.Shared.Rent(rentSize);
+                byte[] rented = CryptoPool.Rent(rentSize);
                 rentSize = rented.Length;
                 int pkcs1Size = 0;
 
@@ -395,8 +394,7 @@ namespace System.Security.Cryptography
                     }
                     finally
                     {
-                        CryptographicOperations.ZeroMemory(rented.AsSpan(0, pkcs1Size));
-                        ArrayPool<byte>.Shared.Return(rented);
+                        CryptoPool.Return(rented, pkcs1Size);
                     }
                 }
             }

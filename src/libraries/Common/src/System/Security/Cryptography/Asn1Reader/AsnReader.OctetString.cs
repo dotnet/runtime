@@ -230,7 +230,7 @@ namespace System.Security.Cryptography.Asn1
             memory = PeekEncodedValue();
 
             // Guaranteed long enough
-            byte[] rented = ArrayPool<byte>.Shared.Rent(memory.Length);
+            byte[] rented = CryptoPool.Rent(memory.Length);
             int dataLength = 0;
 
             try
@@ -247,8 +247,7 @@ namespace System.Security.Cryptography.Asn1
             }
             finally
             {
-                rented.AsSpan(0, dataLength).Clear();
-                ArrayPool<byte>.Shared.Return(rented);
+                CryptoPool.Return(rented, dataLength);
             }
         }
 
@@ -571,7 +570,7 @@ namespace System.Security.Cryptography.Asn1
 
             if (tmpSpace.Length < octetStringLength)
             {
-                rented = ArrayPool<byte>.Shared.Rent(octetStringLength);
+                rented = CryptoPool.Rent(octetStringLength);
                 tmpSpace = rented;
             }
 

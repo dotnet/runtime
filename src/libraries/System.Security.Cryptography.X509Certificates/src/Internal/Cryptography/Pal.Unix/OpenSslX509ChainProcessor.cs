@@ -6,6 +6,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -203,7 +204,7 @@ namespace Internal.Cryptography.Pal
                         ref _remainingDownloadTime);
 
                     // The AIA record is contained in a public structure, so no need to clear it.
-                    ArrayPool<byte>.Shared.Return(authorityInformationAccess.Array);
+                    CryptoPool.Return(authorityInformationAccess.Array, clearSize: 0);
 
                     if (downloaded == null)
                     {
@@ -229,7 +230,7 @@ namespace Internal.Cryptography.Pal
                 {
                     int chainSize = Interop.Crypto.GetX509StackFieldCount(chainStack);
                     Span<IntPtr> tempChain = stackalloc IntPtr[DefaultChainCapacity];
-                    IntPtr[] tempChainRent = null;
+                    byte[] tempChainRent = null;
 
                     if (chainSize <= tempChain.Length)
                     {
@@ -237,8 +238,9 @@ namespace Internal.Cryptography.Pal
                     }
                     else
                     {
-                        tempChainRent = ArrayPool<IntPtr>.Shared.Rent(chainSize);
-                        tempChain = tempChainRent.AsSpan(0, chainSize);
+                        int targetSize = checked(chainSize * IntPtr.Size);
+                        tempChainRent = CryptoPool.Rent(targetSize);
+                        tempChain = MemoryMarshal.Cast<byte, IntPtr>(tempChainRent.AsSpan(0, targetSize));
                     }
 
                     for (int i = 0; i < chainSize; i++)
@@ -276,10 +278,7 @@ namespace Internal.Cryptography.Pal
 
                     if (tempChainRent != null)
                     {
-                        // While the IntPtrs aren't secret, clearing them helps prevent
-                        // accidental use-after-free because of pooling.
-                        tempChain.Clear();
-                        ArrayPool<IntPtr>.Shared.Return(tempChainRent);
+                        CryptoPool.Return(tempChainRent);
                     }
                 }
             }
@@ -450,7 +449,7 @@ namespace Internal.Cryptography.Pal
                 string requestUrl = UrlPathAppend(baseUri, urlEncoded);
 
                 // Nothing sensitive is in the encoded request (it was sent via HTTP-non-S)
-                ArrayPool<byte>.Shared.Return(encoded.Array);
+                CryptoPool.Return(encoded.Array, clearSize: 0);
                 ArrayPool<char>.Shared.Return(urlEncoded.Array);
 
                 // https://tools.ietf.org/html/rfc6960#appendix-A describes both a GET and a POST
@@ -855,7 +854,7 @@ namespace Internal.Cryptography.Pal
             }
 
             string baseUrl = FindHttpAiaRecord(authorityInformationAccess, Oids.OcspEndpoint);
-            ArrayPool<byte>.Shared.Return(authorityInformationAccess.Array);
+            CryptoPool.Return(authorityInformationAccess.Array, clearSize: 0);
             return baseUrl;
         }
 
@@ -984,6 +983,7 @@ namespace Internal.Cryptography.Pal
                             if (_errors == null)
                             {
                                 int size = Math.Max(DefaultChainCapacity, errorDepth + 1);
+                                // Since ErrorCollection is a non-public type, this is a private pool.
                                 _errors = ArrayPool<ErrorCollection>.Shared.Rent(size);
 
                                 // We only do spares writes.

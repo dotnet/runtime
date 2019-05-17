@@ -366,7 +366,7 @@ namespace System.Security.Cryptography.Pkcs
                     out bool isPkcs12);
 
                 int cipherBlockBytes = cipher.BlockSize / 8;
-                byte[] encryptedRent = ArrayPool<byte>.Shared.Rent(contentsSpan.Length + cipherBlockBytes);
+                byte[] encryptedRent = CryptoPool.Rent(contentsSpan.Length + cipherBlockBytes);
                 Span<byte> encryptedSpan = Span<byte>.Empty;
                 Span<byte> iv = stackalloc byte[cipherBlockBytes];
                 Span<byte> salt = stackalloc byte[16];
@@ -424,7 +424,7 @@ namespace System.Security.Cryptography.Pkcs
                 finally
                 {
                     CryptographicOperations.ZeroMemory(encryptedSpan);
-                    ArrayPool<byte>.Shared.Return(encryptedRent);
+                    CryptoPool.Return(encryptedRent, clearSize: 0);
                     writer?.Dispose();
                 }
             }

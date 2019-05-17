@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Numerics;
 
@@ -92,7 +91,7 @@ namespace System.Security.Cryptography.Asn1
                 GetIntegerContents(expectedTag, UniversalTagNumber.Integer, out int headerLength);
 
             // TODO: Split this for netcoreapp/netstandard to use the Big-Endian BigInteger parsing
-            byte[] tmp = ArrayPool<byte>.Shared.Rent(contents.Length);
+            byte[] tmp = CryptoPool.Rent(contents.Length);
             BigInteger value;
 
             try
@@ -107,9 +106,9 @@ namespace System.Security.Cryptography.Asn1
             }
             finally
             {
-                // Clear the whole tmp so that not even the sign bit is returned to the array pool.
-                Array.Clear(tmp, 0, tmp.Length);
-                ArrayPool<byte>.Shared.Return(tmp);
+                // Let CryptoPool.Return clear the whole tmp so that not even the sign bit
+                // is returned to the array pool.
+                CryptoPool.Return(tmp);
             }
 
             _data = _data.Slice(headerLength + contents.Length);
