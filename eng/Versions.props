@@ -7,7 +7,7 @@
     <!-- Opt-out repo features -->
     <UsingToolXliff>false</UsingToolXliff>
     <UsingToolNetFrameworkReferenceAssemblies>true</UsingToolNetFrameworkReferenceAssemblies>
-    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.19179.4</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.19264.13</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <!-- corefx -->
     <MicrosoftNetFrameworkReferenceAssembliesVersion>1.0.0-alpha-004</MicrosoftNetFrameworkReferenceAssembliesVersion>
     <MicrosoftPrivateCoreFxNETCoreAppVersion>4.6.0-preview6.19264.9</MicrosoftPrivateCoreFxNETCoreAppVersion>
