@@ -18,5 +18,7 @@
 #cmakedefine01 HAVE_MACH_ABSOLUTE_TIME
 #cmakedefine01 HAVE_SCHED_GETAFFINITY
 #cmakedefine01 HAVE_PTHREAD_GETAFFINITY_NP
+#cmakedefine01 HAVE_PTHREAD_NP_H
+#cmakedefine01 HAVE_CPUSET_T
 
 #endif // __CONFIG_H__

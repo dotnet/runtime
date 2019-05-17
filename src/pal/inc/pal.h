@@ -37,6 +37,7 @@ Abstract:
 #define __PAL_H__
 
 #ifdef PAL_STDCPP_COMPAT
+#include <limits.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -256,19 +257,6 @@ typedef char * va_list;
 
 #endif // __GNUC__
 
-#endif // !PAL_STDCPP_COMPAT
-
-/******************* PAL-Specific Entrypoints *****************************/
-
-#define IsDebuggerPresent PAL_IsDebuggerPresent
-
-PALIMPORT
-BOOL
-PALAPI
-PAL_IsDebuggerPresent(VOID);
-
-#define MAXIMUM_SUSPEND_COUNT  MAXCHAR
-
 #define CHAR_BIT      8
 
 #define SCHAR_MIN   (-128)
@@ -286,6 +274,17 @@ PAL_IsDebuggerPresent(VOID);
 #define LONG_MIN    (-2147483647L - 1)
 #define LONG_MAX      2147483647L
 #define ULONG_MAX     0xffffffffUL
+
+#endif // !PAL_STDCPP_COMPAT
+
+/******************* PAL-Specific Entrypoints *****************************/
+
+#define IsDebuggerPresent PAL_IsDebuggerPresent
+
+PALIMPORT
+BOOL
+PALAPI
+PAL_IsDebuggerPresent(VOID);
 
 #define FLT_MAX 3.402823466e+38F
 #define DBL_MAX 1.7976931348623157e+308
