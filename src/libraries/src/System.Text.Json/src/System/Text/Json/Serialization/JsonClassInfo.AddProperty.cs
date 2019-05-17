@@ -54,13 +54,19 @@ namespace System.Text.Json.Serialization
 
         internal static JsonPropertyInfo CreateProperty(Type declaredPropertyType, Type runtimePropertyType, PropertyInfo propertyInfo, Type parentClassType, JsonSerializerOptions options)
         {
+            bool hasIgnoreAttribute = (JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(propertyInfo) != null);
+            if (hasIgnoreAttribute)
+            {
+                return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(propertyInfo, options);
+            }
+
             Type collectionElementType = null;
             switch (GetClassType(runtimePropertyType))
             {
                 case ClassType.Enumerable:
                 case ClassType.Dictionary:
                 case ClassType.Unknown:
-                    collectionElementType = GetElementType(runtimePropertyType);
+                    collectionElementType = GetElementType(runtimePropertyType, parentClassType, propertyInfo);
                     break;
             }
 
@@ -79,9 +85,11 @@ namespace System.Text.Json.Serialization
             JsonPropertyInfo jsonInfo = (JsonPropertyInfo)Activator.CreateInstance(
                 propertyInfoClassType,
                 BindingFlags.Instance | BindingFlags.Public,
-                binder: null,
-                new object[] { parentClassType, declaredPropertyType, runtimePropertyType, propertyInfo, collectionElementType, options },
+                binder: null, 
+                args: null,
                 culture: null);
+
+            jsonInfo.Initialize(parentClassType, declaredPropertyType, runtimePropertyType, propertyInfo, collectionElementType, options);
 
             return jsonInfo;
         }

@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
 
 namespace System.Text.Json.Serialization
 {
@@ -18,46 +17,32 @@ namespace System.Text.Json.Serialization
         // should this be cached somewhere else so that it's not populated per TClass as well as TProperty?
         private static readonly Type s_underlyingType = typeof(TProperty);
 
-        public JsonPropertyInfoNullable(
-            Type parentClassType,
-            Type declaredPropertyType,
-            Type runtimePropertyType,
-            PropertyInfo propertyInfo,
-            Type elementType,
-            JsonSerializerOptions options) :
-            base(parentClassType, declaredPropertyType, runtimePropertyType, propertyInfo, elementType, options)
-        {
-        }
-
         public override void Read(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
         {
             Debug.Assert(ElementClassInfo == null);
+            Debug.Assert(ShouldDeserialize);
 
-            if (ShouldDeserialize)
+            if (ValueConverter != null && ValueConverter.TryRead(s_underlyingType, ref reader, out TProperty value))
             {
-                if (ValueConverter != null)
+                if (state.Current.ReturnValue == null)
                 {
-                    if (ValueConverter.TryRead(s_underlyingType, ref reader, out TProperty value))
-                    {
-                        if (state.Current.ReturnValue == null)
-                        {
-                            state.Current.ReturnValue = value;
-                        }
-                        else
-                        {
-                            Set((TClass)state.Current.ReturnValue, value);
-                        }
-
-                        return;
-                    }
+                    state.Current.ReturnValue = value;
+                }
+                else
+                {
+                    Set((TClass)state.Current.ReturnValue, value);
                 }
 
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state.PropertyPath);
+                return;
             }
+
+            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state.PropertyPath);
         }
 
         public override void ReadEnumerable(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
         {
+            Debug.Assert(ShouldDeserialize);
+
             if (ValueConverter == null || !ValueConverter.TryRead(typeof(TProperty), ref reader, out TProperty value))
             {
                 ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state.PropertyPath);
@@ -65,21 +50,23 @@ namespace System.Text.Json.Serialization
             }
 
             TProperty? nullableValue = new TProperty?(value);
-            JsonSerializer.ApplyValueToEnumerable(ref nullableValue, options, ref state, ref reader);
+            JsonSerializer.ApplyValueToEnumerable(ref nullableValue, ref state, ref reader);
         }
 
         public override void Write(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
         {
+            Debug.Assert(ShouldSerialize);
+
             if (current.Enumerator != null)
             {
                 // Forward the setter to the value-based JsonPropertyInfo.
                 JsonPropertyInfo propertyInfo = ElementClassInfo.GetPolicyProperty();
                 propertyInfo.WriteEnumerable(options, ref current, writer);
             }
-            else if (ShouldSerialize)
+            else
             {
                 TProperty? value;
-                if (_isPropertyPolicy)
+                if (IsPropertyPolicy)
                 {
                     value = (TProperty?)current.CurrentValue;
                 }
@@ -90,18 +77,18 @@ namespace System.Text.Json.Serialization
 
                 if (value == null)
                 {
-                    Debug.Assert(_escapedName != null);
+                    Debug.Assert(EscapedName != null);
 
                     if (!IgnoreNullValues)
                     {
-                        writer.WriteNull(_escapedName);
+                        writer.WriteNull(EscapedName);
                     }
                 }
                 else if (ValueConverter != null)
                 {
-                    if (_escapedName != null)
+                    if (EscapedName != null)
                     {
-                        ValueConverter.Write(_escapedName, value.GetValueOrDefault(), writer);
+                        ValueConverter.Write(EscapedName, value.GetValueOrDefault(), writer);
                     }
                     else
                     {
@@ -113,6 +100,8 @@ namespace System.Text.Json.Serialization
 
         public override void WriteEnumerable(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
         {
+            Debug.Assert(ShouldSerialize);
+
             if (ValueConverter != null)
             {
                 Debug.Assert(current.Enumerator != null);

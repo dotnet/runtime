@@ -17,16 +17,9 @@ namespace System.Text.Json.Serialization
         {
             Debug.Assert(state.Current.JsonPropertyInfo.ClassType == ClassType.Enumerable);
 
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
-            if (!jsonPropertyInfo.ShouldSerialize)
-            {
-                // Ignore writing this property.
-                return true;
-            }
-
             if (state.Current.Enumerator == null)
             {
-                IEnumerable enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
+                IEnumerable enumerable = (IEnumerable)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
 
                 if (enumerable == null)
                 {

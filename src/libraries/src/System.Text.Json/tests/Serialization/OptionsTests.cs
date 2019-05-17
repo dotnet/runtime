@@ -91,6 +91,54 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ExtensionDataUsesReaderOptions()
+        {
+            // We just verify trailing commas.
+            const string json = @"{""MyIntMissing"":2,}";
+
+            // Verify baseline without options.
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<ClassWithExtensionProperty>(json));
+
+            // Verify baseline with options.
+            var options = new JsonSerializerOptions();
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<ClassWithExtensionProperty>(json, options));
+
+            // Set AllowTrailingCommas to true.
+            options = new JsonSerializerOptions();
+            options.AllowTrailingCommas = true;
+            JsonSerializer.Parse<ClassWithExtensionProperty>(json, options);
+        }
+
+        [Fact]
+        public static void ExtensionDataUsesWriterOptions()
+        {
+            // We just verify whitespace.
+
+            ClassWithExtensionProperty obj = JsonSerializer.Parse<ClassWithExtensionProperty>(@"{""MyIntMissing"":2}");
+
+            // Verify baseline without options.
+            string json = JsonSerializer.ToString(obj);
+            Assert.False(HasNewLine());
+
+            // Verify baseline with options.
+            var options = new JsonSerializerOptions();
+            json = JsonSerializer.ToString(obj, options);
+            Assert.False(HasNewLine());
+
+            // Set AllowTrailingCommas to true.
+            options = new JsonSerializerOptions();
+            options.WriteIndented = true;
+            json = JsonSerializer.ToString(obj, options);
+            Assert.True(HasNewLine());
+
+            bool HasNewLine()
+            {
+                int iEnd = json.IndexOf("2", json.IndexOf("MyIntMissing"));
+                return json.Substring(iEnd + 1).StartsWith(Environment.NewLine);
+            }
+        }
+
+        [Fact]
         public static void ReadCommentHandling()
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<object>("/* commment */"));

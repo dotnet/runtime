@@ -16,12 +16,9 @@ namespace System.Text.Json.Serialization
             ref Utf8JsonReader reader,
             ref ReadStack state)
         {
-            JsonPropertyInfo jsonPropertyInfo;
+            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
 
-            jsonPropertyInfo = state.Current.JsonPropertyInfo;
-
-            bool skip = jsonPropertyInfo != null && !jsonPropertyInfo.ShouldDeserialize;
-            if (skip || state.Current.Skip())
+            if (state.Current.SkipProperty)
             {
                 // The array is not being applied to the object.
                 state.Push();
@@ -38,27 +35,26 @@ namespace System.Text.Json.Serialization
                 jsonPropertyInfo = state.Current.JsonClassInfo.CreatePolymorphicProperty(jsonPropertyInfo, typeof(object), options);
             }
 
+            // Verify that we don't have a multidimensional array.
             Type arrayType = jsonPropertyInfo.RuntimePropertyType;
             if (!typeof(IEnumerable).IsAssignableFrom(arrayType) || (arrayType.IsArray && arrayType.GetArrayRank() > 1))
             {
                 ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(arrayType, reader, state.PropertyPath);
             }
 
-            Debug.Assert(state.Current.IsPropertyEnumerable || state.Current.IsDictionary);
+            Debug.Assert(state.Current.IsProcessingEnumerableOrDictionary);
 
-            if (state.Current.EnumerableCreated)
+            if (state.Current.PropertyInitialized)
             {
                 // A nested json array so push a new stack frame.
                 Type elementType = state.Current.JsonClassInfo.ElementClassInfo.GetPolicyProperty().RuntimePropertyType;
 
                 state.Push();
-
                 state.Current.Initialize(elementType, options);
-                state.Current.PopStackOnEnd = true;
             }
             else
             {
-                state.Current.EnumerableCreated = true;
+                state.Current.PropertyInitialized = true;
             }
 
             jsonPropertyInfo = state.Current.JsonPropertyInfo;
@@ -85,8 +81,8 @@ namespace System.Text.Json.Serialization
 
         private static bool HandleEndArray(
             JsonSerializerOptions options,
-            ref ReadStack state,
-            ref Utf8JsonReader reader)
+            ref Utf8JsonReader reader,
+            ref ReadStack state)
         {
             bool lastFrame = state.IsLastFrame;
 
@@ -99,7 +95,6 @@ namespace System.Text.Json.Serialization
 
             IEnumerable value = ReadStackFrame.GetEnumerableValue(state.Current);
             bool setPropertyDirectly;
-            bool popStackOnEnd = state.Current.PopStackOnEnd;
 
             if (state.Current.TempEnumerableValues != null)
             {
@@ -109,22 +104,15 @@ namespace System.Text.Json.Serialization
                 value = converter.CreateFromList(ref state, (IList)value, options);
                 setPropertyDirectly = true;
             }
-            else if (!popStackOnEnd)
+            else if (state.Current.IsEnumerableProperty)
             {
-                Debug.Assert(state.Current.IsPropertyEnumerable);
-
-                // We added the items to the list property already.
+                // We added the items to the list already.
                 state.Current.ResetProperty();
                 return false;
             }
             else
             {
                 setPropertyDirectly = false;
-            }
-
-            if (popStackOnEnd)
-            {
-                state.Pop();
             }
 
             if (lastFrame)
@@ -143,12 +131,15 @@ namespace System.Text.Json.Serialization
                 }
                 // else there must be an outer object, so we'll return false here.
             }
-
-            ApplyObjectToEnumerable(value, options, ref state, ref reader, setPropertyDirectly: setPropertyDirectly);
-
-            if (!popStackOnEnd)
+            else if (state.Current.IsEnumerable)
             {
-                Debug.Assert(state.Current.IsPropertyEnumerable);
+                state.Pop();
+            }
+
+            ApplyObjectToEnumerable(value, ref state, ref reader, setPropertyDirectly: setPropertyDirectly);
+
+            if (state.Current.IsEnumerableProperty)
+            {
                 state.Current.ResetProperty();
             }
 
@@ -158,11 +149,12 @@ namespace System.Text.Json.Serialization
         // If this method is changed, also change ApplyValueToEnumerable.
         internal static void ApplyObjectToEnumerable(
             object value,
-            JsonSerializerOptions options,
             ref ReadStack state,
             ref Utf8JsonReader reader,
             bool setPropertyDirectly = false)
         {
+            Debug.Assert(!state.Current.SkipProperty);
+
             if (state.Current.IsEnumerable)
             {
                 if (state.Current.TempEnumerableValues != null)
@@ -174,7 +166,7 @@ namespace System.Text.Json.Serialization
                     ((IList)state.Current.ReturnValue).Add(value);
                 }
             }
-            else if (!setPropertyDirectly && state.Current.IsPropertyEnumerable)
+            else if (!setPropertyDirectly && state.Current.IsEnumerableProperty)
             {
                 Debug.Assert(state.Current.JsonPropertyInfo != null);
                 Debug.Assert(state.Current.ReturnValue != null);
@@ -189,10 +181,11 @@ namespace System.Text.Json.Serialization
                     list.Add(value);
                 }
             }
-            else if (state.Current.IsDictionary)
+            else if (state.Current.IsDictionary || (state.Current.IsDictionaryProperty && !setPropertyDirectly))
             {
                 Debug.Assert(state.Current.ReturnValue != null);
                 IDictionary dictionary = (IDictionary)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
+
                 string key = state.Current.KeyName;
                 Debug.Assert(!string.IsNullOrEmpty(key));
                 if (!dictionary.Contains(key))
@@ -214,10 +207,11 @@ namespace System.Text.Json.Serialization
         // If this method is changed, also change ApplyObjectToEnumerable.
         internal static void ApplyValueToEnumerable<TProperty>(
             ref TProperty value,
-            JsonSerializerOptions options,
             ref ReadStack state,
             ref Utf8JsonReader reader)
         {
+            Debug.Assert(!state.Current.SkipProperty);
+
             if (state.Current.IsEnumerable)
             {
                 if (state.Current.TempEnumerableValues != null)
@@ -229,7 +223,7 @@ namespace System.Text.Json.Serialization
                     ((IList<TProperty>)state.Current.ReturnValue).Add(value);
                 }
             }
-            else if (state.Current.IsPropertyEnumerable)
+            else if (state.Current.IsEnumerableProperty)
             {
                 Debug.Assert(state.Current.JsonPropertyInfo != null);
                 Debug.Assert(state.Current.ReturnValue != null);
@@ -244,7 +238,7 @@ namespace System.Text.Json.Serialization
                     list.Add(value);
                 }
             }
-            else if (state.Current.IsDictionary)
+            else if (state.Current.IsProcessingDictionary)
             {
                 Debug.Assert(state.Current.ReturnValue != null);
                 IDictionary<string, TProperty> dictionary = (IDictionary<string, TProperty>)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);

@@ -351,6 +351,11 @@ namespace System.Text.Json.Serialization
         protected JsonAttribute() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
+    public sealed partial class JsonExtensionDataAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonExtensionDataAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonIgnoreAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonIgnoreAttribute() { }

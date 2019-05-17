@@ -77,5 +77,19 @@ namespace System.Text.Json
         /// Otherwise, returns <see langword="false"/>.
         /// </summary>
         public static bool IsDigit(byte value) => (uint)(value - '0') <= '9' - '0';
+
+        /// <summary>
+        /// Calls Encoding.UTF8.GetString that supports netstandard.
+        /// </summary>
+        /// <param name="bytes">The utf8 bytes to convert.</param>
+        /// <returns></returns>
+        internal static string Utf8GetString(ReadOnlySpan<byte> bytes)
+        {
+            return Encoding.UTF8.GetString(bytes
+#if netstandard
+                        .ToArray()
+#endif
+                );
+        }
     }
 }
