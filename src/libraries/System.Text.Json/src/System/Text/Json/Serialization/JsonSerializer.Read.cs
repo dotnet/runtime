@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Collections;
 using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
@@ -13,9 +14,6 @@ namespace System.Text.Json.Serialization
     /// </summary>
     public static partial class JsonSerializer
     {
-        internal static readonly JsonPropertyInfo s_missingProperty = new JsonPropertyInfoNotNullable<object, object, object>();
-
-        // todo: for readability, refactor this method to split by ClassType(Enumerable, Object, or Value) like Write()
         private static void ReadCore(
             JsonSerializerOptions options,
             ref Utf8JsonReader reader,
@@ -38,63 +36,49 @@ namespace System.Text.Json.Serialization
                     }
                     else if (tokenType == JsonTokenType.PropertyName)
                     {
-                        if (!state.Current.Drain)
-                        {
-                            Debug.Assert(state.Current.ReturnValue != default);
-                            Debug.Assert(state.Current.JsonClassInfo != default);
-
-                            if (state.Current.IsDictionary)
-                            {
-                                string keyName = reader.GetString();
-                                if (options.DictionaryKeyPolicy != null)
-                                {
-                                    keyName = options.DictionaryKeyPolicy.ConvertName(keyName);
-                                }
-
-                                state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetPolicyProperty();
-                                state.Current.KeyName = keyName;
-                            }
-                            else
-                            {
-                                ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-                                if (reader._stringHasEscaping)
-                                {
-                                    int idx = propertyName.IndexOf(JsonConstants.BackSlash);
-                                    Debug.Assert(idx != -1);
-                                    propertyName = GetUnescapedString(propertyName, idx);
-                                }
-
-                                state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(options, propertyName, ref state.Current);
-                                if (state.Current.JsonPropertyInfo == null)
-                                {
-                                    state.Current.JsonPropertyInfo = s_missingProperty;
-                                }
-
-                                state.Current.PropertyIndex++;
-                            }
-                        }
+                        HandlePropertyName(options, ref reader, ref state);
                     }
                     else if (tokenType == JsonTokenType.StartObject)
                     {
-                        if (!state.Current.IsProcessingProperty)
+                        if (state.Current.SkipProperty)
+                        {
+                            state.Push();
+                            state.Current.Drain = true;
+                        }
+                        else if (state.Current.IsProcessingValue)
+                        {
+                            if (HandleValue(tokenType, options, ref reader, ref state))
+                            {
+                                continue;
+                            }
+                        }
+                        else if (state.Current.IsProcessingDictionary)
+                        {
+                            HandleStartDictionary(options, ref reader, ref state);
+                        }
+                        else
                         {
                             HandleStartObject(options, ref reader, ref state);
-                        }
-                        else if (HandleValue(tokenType, options, ref reader, ref state))
-                        {
-                            continue;
                         }
                     }
                     else if (tokenType == JsonTokenType.EndObject)
                     {
-                        if (HandleEndObject(options, ref state, ref reader))
+                        if (state.Current.Drain)
                         {
-                            continue;
+                            state.Pop();
+                        }
+                        else if (state.Current.IsProcessingDictionary)
+                        {
+                            HandleEndDictionary(options, ref reader, ref state);
+                        }
+                        else
+                        {
+                            HandleEndObject(options, ref reader, ref state);
                         }
                     }
                     else if (tokenType == JsonTokenType.StartArray)
                     {
-                        if (!state.Current.IsProcessingProperty)
+                        if (!state.Current.IsProcessingValue)
                         {
                             HandleStartArray(options, ref reader, ref state);
                         }
@@ -105,7 +89,7 @@ namespace System.Text.Json.Serialization
                     }
                     else if (tokenType == JsonTokenType.EndArray)
                     {
-                        if (HandleEndArray(options, ref state, ref reader))
+                        if (HandleEndArray(options, ref reader, ref state))
                         {
                             continue;
                         }

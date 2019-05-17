@@ -8,7 +8,7 @@ namespace System.Text.Json.Serialization
     {
         private static bool HandleValue(JsonTokenType tokenType, JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
         {
-            if (state.Current.Skip())
+            if (state.Current.SkipProperty)
             {
                 return false;
             }

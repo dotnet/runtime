@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
 {
-    [DebuggerDisplay("Current: ClassType.{Current.JsonClassInfo.ClassType} {Current.JsonClassInfo.Type.Name}")]
+    [DebuggerDisplay("Current: ClassType.{Current.JsonClassInfo.ClassType}, {Current.JsonClassInfo.Type.Name}")]
     internal struct ReadStack
     {
         // A fields is used instead of a property to avoid value semantics.
@@ -83,7 +83,7 @@ namespace System.Text.Json.Serialization
 
         private string GetPropertyName(in ReadStackFrame frame)
         {
-            if (frame.JsonPropertyInfo != null && frame.JsonClassInfo.ClassType == ClassType.Object)
+            if (frame.JsonPropertyInfo?.PropertyInfo != null && frame.JsonClassInfo.ClassType == ClassType.Object)
             {
                 return $".{frame.JsonPropertyInfo.PropertyInfo.Name}";
             }

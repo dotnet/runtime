@@ -1280,6 +1280,15 @@ namespace System.Text.Json.Serialization.Tests
         public int Aѧ34567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890 { get; set; }
     }
 
+    public class ClassWithExtensionProperty
+    {
+        public SimpleTestClass MyNestedClass { get; set; }
+        public int MyInt { get; set; }
+
+        [JsonExtensionData]
+        public IDictionary<string, JsonElement> MyOverflow { get; set; }
+    }
+
     public class TestClassWithNestedObjectCommentsInner : ITestClass
     {
         public SimpleTestClass MyData { get; set; }

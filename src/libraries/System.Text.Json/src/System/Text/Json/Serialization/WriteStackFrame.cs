@@ -46,9 +46,9 @@ namespace System.Text.Json.Serialization
 
         public void WriteObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, bool writeNull = false)
         {
-            if (JsonPropertyInfo?._escapedName != null)
+            if (JsonPropertyInfo?.EscapedName != null)
             {
-                WriteObjectOrArrayStart(classType, JsonPropertyInfo?._escapedName, writer, writeNull);
+                WriteObjectOrArrayStart(classType, JsonPropertyInfo?.EscapedName, writer, writeNull);
             }
             else if (KeyName != null)
             {

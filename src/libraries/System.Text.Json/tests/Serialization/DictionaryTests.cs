@@ -103,7 +103,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void FirstGenericArgNotStringFail()
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<Dictionary<int, int>>(@"{""Key1"":1}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Parse<Dictionary<int, int>>(@"{""Key1"":1}"));
         }
 
         [Fact]
@@ -301,8 +301,18 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ObjectToStringFail()
         {
+            // Baseline
             string json = @"{""MyDictionary"":{""Key"":""Value""}}";
+            JsonSerializer.Parse<Dictionary<string, object>>(json);
+
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<Dictionary<string, string>>(json));
+        }
+
+        [Fact, ActiveIssue("JsonElement fails since it is a struct.")]
+        public static void ObjectToJsonElement()
+        {
+            string json = @"{""MyDictionary"":{""Key"":""Value""}}";
+            JsonSerializer.Parse<Dictionary<string, JsonElement>>(json);
         }
 
         [Fact]
@@ -315,27 +325,77 @@ namespace System.Text.Json.Serialization.Tests
                 JsonSerializer.Parse<Dictionary<string, string>>(json);
 
                 // We don't support non-generic IDictionary
-                Assert.Throws<JsonException>(() => JsonSerializer.Parse<Hashtable>(json));
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Parse<Hashtable>(json));
             }
 
             {
                 Hashtable ht = new Hashtable();
                 ht.Add("Key", "Value");
-                Assert.Throws<JsonException>(() => JsonSerializer.ToString(ht));
+
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.ToString(ht));
             }
 
             {
                 string json = @"{""Key"":""Value""}";
 
                 // We don't support non-generic IDictionary
-                Assert.Throws<JsonException>(() => JsonSerializer.Parse<IDictionary>(json));
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Parse<IDictionary>(json));
             }
 
             {
                 IDictionary ht = new Hashtable();
                 ht.Add("Key", "Value");
-                Assert.Throws<JsonException>(() => JsonSerializer.ToString(ht));
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.ToString(ht));
             }
+        }
+
+        [Fact]
+        public static void ClassWithNoSetter()
+        {
+            string json = @"{""MyDictionary"":{""Key"":""Value""}}";
+            ClassWithDictionaryButNoSetter obj = JsonSerializer.Parse<ClassWithDictionaryButNoSetter>(json);
+            Assert.Equal("Value", obj.MyDictionary["Key"]);
+        }
+
+        [Fact]
+        public static void DictionaryNotSupported()
+        {
+            string json = @"{""MyDictionary"":{""Key"":""Value""}}";
+
+            try
+            {
+                JsonSerializer.Parse<ClassWithNotSupportedDictionary>(json);
+                Assert.True(false, "Expected NotSupportedException to be thrown.");
+            }
+            catch (NotSupportedException e)
+            {
+                // The exception should contain className.propertyName and the invalid type.
+                Assert.Contains("ClassWithNotSupportedDictionary.MyDictionary", e.Message);
+                Assert.Contains("Dictionary`2[System.Int32,System.Int32]", e.Message);
+            }
+        }
+
+        [Fact]
+        public static void DictionaryNotSupportedButIgnored()
+        {
+            string json = @"{""MyDictionary"":{""Key"":1}}";
+            ClassWithNotSupportedDictionaryButIgnored obj = JsonSerializer.Parse<ClassWithNotSupportedDictionaryButIgnored>(json);
+            Assert.Null(obj.MyDictionary);
+        }
+
+        public class ClassWithDictionaryButNoSetter
+        {
+            public Dictionary<string, string> MyDictionary { get; } = new Dictionary<string, string>();
+        }
+
+        public class ClassWithNotSupportedDictionary
+        {
+            public Dictionary<int, int> MyDictionary { get; set; }
+        }
+
+        public class ClassWithNotSupportedDictionaryButIgnored
+        {
+            [JsonIgnore] public Dictionary<int, int> MyDictionary { get; set; }
         }
     }
 }
