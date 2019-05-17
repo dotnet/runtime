@@ -86,22 +86,22 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)system.drawing.common.testdata\$(TestDataPackageVersion)\content\**\*.*">
+    <SupplementalTestData Include="$(NuGetPackageRoot)system.drawing.common.testdata\$(TestDataPackageVersion)\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
-    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\$(TestDataPackageVersion)\content\bitmaps\48x48_multiple_entries_4bit.ico">
+    <EmbeddedResource Include="$(NuGetPackageRoot)system.drawing.common.testdata\$(TestDataPackageVersion)\content\bitmaps\48x48_multiple_entries_4bit.ico">
       <LogicalName>System.Drawing.Tests.48x48_multiple_entries_4bit.ico</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\$(TestDataPackageVersion)\content\bitmaps\bitmap_173x183_indexed_8bit.bmp">
+    <EmbeddedResource Include="$(NuGetPackageRoot)system.drawing.common.testdata\$(TestDataPackageVersion)\content\bitmaps\bitmap_173x183_indexed_8bit.bmp">
       <LogicalName>System.Drawing.Tests.bitmap_173x183_indexed_8bit.bmp</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\$(TestDataPackageVersion)\content\bitmaps\empty.file">
+    <EmbeddedResource Include="$(NuGetPackageRoot)system.drawing.common.testdata\$(TestDataPackageVersion)\content\bitmaps\empty.file">
       <LogicalName>System.Drawing.Tests.empty.file</LogicalName>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\$(TestDataPackageVersion)\content\bitmaps\invalid.ico">
+    <EmbeddedResource Include="$(NuGetPackageRoot)system.drawing.common.testdata\$(TestDataPackageVersion)\content\bitmaps\invalid.ico">
       <LogicalName>System.Drawing.Tests.invalid.ico</LogicalName>
     </EmbeddedResource>
-	<EmbeddedResource Include="$(PackagesDir)system.drawing.common.testdata\$(TestDataPackageVersion)\content\bitmaps\256x256_one_entry_32bit.ico">
+	<EmbeddedResource Include="$(NuGetPackageRoot)system.drawing.common.testdata\$(TestDataPackageVersion)\content\bitmaps\256x256_one_entry_32bit.ico">
       <LogicalName>System.Drawing.Tests.Icon_toolboxBitmapAttributeTest</LogicalName>
     </EmbeddedResource>
     <Compile Include="Printing\MarginsTests.cs" />

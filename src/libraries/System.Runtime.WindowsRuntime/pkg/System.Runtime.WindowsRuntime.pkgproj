@@ -22,7 +22,7 @@
 
     <!-- We can't harvest an assert to more than one path -->
     <!-- Disable support for netcoreapp1.0 - netcoreapp2.0 for now.  To support these we need to build the src project for the old TFMs 
-    <File Include="$(PackagesDir)\System.Runtime.WindowsRuntime\4.3.0\runtimes\win8\lib\netstandard1.3\System.Runtime.WindowsRuntime.dll">
+    <File Include="$(NuGetPackageRoot)System.Runtime.WindowsRuntime\4.3.0\runtimes\win8\lib\netstandard1.3\System.Runtime.WindowsRuntime.dll">
       <TargetPath>runtimes/win/lib/netcoreapp1.0</TargetPath>
       <TargetFramework>netcoreapp1.0</TargetFramework>
     </File>  -->

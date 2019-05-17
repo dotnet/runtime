@@ -98,7 +98,7 @@
           AfterTargets="AfterResolveReferences">
 
     <ItemGroup>
-      <TraceEventNativeFiles Include="$(PackagesDir)\$(MicrosoftDiagnosticsTracingTraceEventPackageName)\$(TraceEventPackageVersion)\lib\native\**\*.*" />
+      <TraceEventNativeFiles Include="$(NuGetPackageRoot)$(MicrosoftDiagnosticsTracingTraceEventPackageName)\$(TraceEventPackageVersion)\lib\native\**\*.*" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -127,7 +127,7 @@
           AfterTargets="AfterResolveReferences">
 
     <PropertyGroup>
-      <UAPToolsFolder Condition="'$(UAPToolsFolder)'==''">$(PackagesDir)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion)\Tools\$(ArchGroup)</UAPToolsFolder>
+      <UAPToolsFolder Condition="'$(UAPToolsFolder)'==''">$(NuGetPackageRoot)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion)\Tools\$(ArchGroup)</UAPToolsFolder>
       <UAPToolsFolder>$(UAPToolsFolder.Replace('/', '\'))</UAPToolsFolder>
     </PropertyGroup>
 
@@ -162,7 +162,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_microsoftNetTestSdkAssets Include="$(PackagesDir)$(MicrosoftNetTestSdkPackageName)\$(MicrosoftNETTestSdkPackageVersion)\build\$(TestSdkTFM)\*.*" />
+      <_microsoftNetTestSdkAssets Include="$(NuGetPackageRoot)$(MicrosoftNetTestSdkPackageName)\$(MicrosoftNETTestSdkPackageVersion)\build\$(TestSdkTFM)\*.*" />
       <ReferenceCopyLocalPaths Include="@(_microsoftNetTestSdkAssets)">
         <Private>false</Private>
         <NuGetPackageId>$(MicrosoftNetTestSdkPackageName)</NuGetPackageId>
@@ -171,7 +171,7 @@
     </ItemGroup>
 
     <Error Condition="'@(_microsoftNetTestSdkAssets)' == ''"
-           Text="Error: no assets for test sdk package were found under: $(PackagesDir)$(MicrosoftNetTestSdkPackageName)\$(MicrosoftNETTestSdkPackageVersion)\build\$(TestSdkTFM)\*.*" />
+           Text="Error: no assets for test sdk package were found under: $(NuGetPackageRoot)$(MicrosoftNetTestSdkPackageName)\$(MicrosoftNETTestSdkPackageVersion)\build\$(TestSdkTFM)\*.*" />
 
   </Target>
 
@@ -179,25 +179,25 @@
           Condition="'$(TargetGroup)' == 'netcoreapp'"
           BeforeTargets="ResolveReferences">
 
-    <Error Condition="!Exists('$(PackagesDir)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)\lib\netcoreapp2.0\$(XUnitRunner).dll')"
-           Text="Error: looks the package $(PackagesDir)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion) not restored or missing $(XUnitRunner).dll." />
-    <Error Condition="'$(EnableVSTestReferences)' == 'true' AND !Exists('$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\netcoreapp1.0\$(XUnitAdapter).dll')"
-           Text="Error: looks the package $(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitAdapter).dll." />
-    <Error Condition="'$(EnableVSTestReferences)' == 'true' AND !Exists('$(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion)\lib\netstandard1.5\$(TestPlatformHost).dll')"
-           Text="Error: looks the package $(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion) not restored or missing $(TestPlatformHost).dll." />
+    <Error Condition="!Exists('$(NuGetPackageRoot)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)\lib\netcoreapp2.0\$(XUnitRunner).dll')"
+           Text="Error: looks the package $(NuGetPackageRoot)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion) not restored or missing $(XUnitRunner).dll." />
+    <Error Condition="'$(EnableVSTestReferences)' == 'true' AND !Exists('$(NuGetPackageRoot)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\netcoreapp1.0\$(XUnitAdapter).dll')"
+           Text="Error: looks the package $(NuGetPackageRoot)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitAdapter).dll." />
+    <Error Condition="'$(EnableVSTestReferences)' == 'true' AND !Exists('$(NuGetPackageRoot)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion)\lib\netstandard1.5\$(TestPlatformHost).dll')"
+           Text="Error: looks the package $(NuGetPackageRoot)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion) not restored or missing $(TestPlatformHost).dll." />
 
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)\lib\netcoreapp2.0\*.*">
+      <ReferenceCopyLocalPaths Include="$(NuGetPackageRoot)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)\lib\netcoreapp2.0\*.*">
         <Private>false</Private>
         <NuGetPackageId>$(MicrosoftDotNetXUnitConsoleRunnerPackage)</NuGetPackageId>
         <NuGetPackageVersion>$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
-      <ReferenceCopyLocalPaths Condition="'$(EnableVSTestReferences)' == 'true'" Include="$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\netcoreapp1.0\*.*">
+      <ReferenceCopyLocalPaths Condition="'$(EnableVSTestReferences)' == 'true'" Include="$(NuGetPackageRoot)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\netcoreapp1.0\*.*">
         <Private>false</Private>
         <NuGetPackageId>$(XUnitTestAdapterPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
-      <ReferenceCopyLocalPaths Condition="'$(EnableVSTestReferences)' == 'true'" Include="$(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion)\lib\netstandard1.5\$(TestPlatformHost).dll">
+      <ReferenceCopyLocalPaths Condition="'$(EnableVSTestReferences)' == 'true'" Include="$(NuGetPackageRoot)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion)\lib\netstandard1.5\$(TestPlatformHost).dll">
         <Private>false</Private>
         <NuGetPackageId>$(TestPlatformHostPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(MicrosoftNETTestSdkPackageVersion)</NuGetPackageVersion>
@@ -210,18 +210,18 @@
           Condition="'$(TargetsUap)' == 'true'"
           BeforeTargets="ResolveReferences">
 
-    <Error Condition="'$(EnableVSTestReferences)' == 'true' AND !Exists('$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\uap10.0\$(XUnitAdapter).dll')"
-            Text="Error: looks the package $(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitAdapter).dll." />
-    <Error Condition="'$(EnableVSTestReferences)' == 'true' AND !Exists('$(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion)\lib\uap10.0\$(TestPlatformHost).dll')"
-            Text="Error: looks the package $(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion) not restored or missing $(TestPlatformHost).dll." />
+    <Error Condition="'$(EnableVSTestReferences)' == 'true' AND !Exists('$(NuGetPackageRoot)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\uap10.0\$(XUnitAdapter).dll')"
+            Text="Error: looks the package $(NuGetPackageRoot)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitAdapter).dll." />
+    <Error Condition="'$(EnableVSTestReferences)' == 'true' AND !Exists('$(NuGetPackageRoot)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion)\lib\uap10.0\$(TestPlatformHost).dll')"
+            Text="Error: looks the package $(NuGetPackageRoot)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion) not restored or missing $(TestPlatformHost).dll." />
 
     <ItemGroup>
-      <ReferenceCopyLocalPaths Condition="'$(EnableVSTestReferences)' == 'true'" Include="$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\uap10.0\*.dll">
+      <ReferenceCopyLocalPaths Condition="'$(EnableVSTestReferences)' == 'true'" Include="$(NuGetPackageRoot)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\uap10.0\*.dll">
         <Private>false</Private>
         <NuGetPackageId>$(XUnitTestAdapterPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
-      <ReferenceCopyLocalPaths Condition="'$(EnableVSTestReferences)' == 'true'" Include="$(PackagesDir)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion)\lib\uap10.0\$(TestPlatformHost).dll">
+      <ReferenceCopyLocalPaths Condition="'$(EnableVSTestReferences)' == 'true'" Include="$(NuGetPackageRoot)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion)\lib\uap10.0\$(TestPlatformHost).dll">
         <Private>false</Private>
         <NuGetPackageId>$(TestPlatformHostPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(MicrosoftNETTestSdkPackageVersion)</NuGetPackageVersion>
@@ -234,18 +234,18 @@
           Condition="'$(TargetsAot)' == 'true'"
           BeforeTargets="ResolveReferences">
 
-    <Error Condition="!Exists('$(PackagesDir)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion)\lib\netcoreapp2.0\$(XUnitRunner).dll')"
-           Text="Error: looks the package $(PackagesDir)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion) not restored or missing $(XUnitRunner).dll." />
-    <Error Condition="!Exists('$(PackagesDir)xunit.runner.utility\$(XUnitPackageVersion)\lib\netcoreapp1.0\xunit.runner.utility.netcoreapp10.dll')"
-           Text="Error: looks the package $(PackagesDir)xunit.runner.utility\$(XUnitPackageVersion) not restored or missing xunit.runner.utility.netcoreapp10.dll." />
+    <Error Condition="!Exists('$(NuGetPackageRoot)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion)\lib\netcoreapp2.0\$(XUnitRunner).dll')"
+           Text="Error: looks the package $(NuGetPackageRoot)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion) not restored or missing $(XUnitRunner).dll." />
+    <Error Condition="!Exists('$(NuGetPackageRoot)xunit.runner.utility\$(XUnitPackageVersion)\lib\netcoreapp1.0\xunit.runner.utility.netcoreapp10.dll')"
+           Text="Error: looks the package $(NuGetPackageRoot)xunit.runner.utility\$(XUnitPackageVersion) not restored or missing xunit.runner.utility.netcoreapp10.dll." />
 
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion)\lib\netcoreapp2.0\*.dll">
+      <ReferenceCopyLocalPaths Include="$(NuGetPackageRoot)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion)\lib\netcoreapp2.0\*.dll">
         <Private>false</Private>
         <NuGetPackageId>$(MicrosoftDotNetUapTestToolsPackageName)</NuGetPackageId>
         <NuGetPackageVersion>$(MicrosoftDotNetUapTestToolsPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
-      <ReferenceCopyLocalPaths Include="$(PackagesDir)xunit.runner.utility\$(XUnitPackageVersion)\lib\netcoreapp1.0\*.dll">
+      <ReferenceCopyLocalPaths Include="$(NuGetPackageRoot)xunit.runner.utility\$(XUnitPackageVersion)\lib\netcoreapp1.0\*.dll">
         <Private>false</Private>
         <NuGetPackageId>xunit.runner.utility</NuGetPackageId>
         <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
@@ -258,19 +258,19 @@
           Condition="'$(TargetGroup)' == 'netfx'"
           BeforeTargets="ResolveReferences">
 
-    <Error Condition="!Exists('$(PackagesDir)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion)\tools\net472\$(XUnitRunner).exe')"
-           Text="Error: looks the package $(PackagesDir)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion) not restored or missing $(XUnitRunner).exe." />
-    <Error Condition="'$(EnableVSTestReferences)' == 'true' AND !Exists('$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\_common\$(XUnitAdapter).dll')"
-           Text="Error: looks the package $(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitAdapter).dll." />
+    <Error Condition="!Exists('$(NuGetPackageRoot)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion)\tools\net472\$(XUnitRunner).exe')"
+           Text="Error: looks the package $(NuGetPackageRoot)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion) not restored or missing $(XUnitRunner).exe." />
+    <Error Condition="'$(EnableVSTestReferences)' == 'true' AND !Exists('$(NuGetPackageRoot)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\_common\$(XUnitAdapter).dll')"
+           Text="Error: looks the package $(NuGetPackageRoot)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion) not restored or missing $(XUnitAdapter).dll." />
 
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion)\tools\net472\*.*"
-                               Exclude="$(PackagesDir)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion)\tools\net472\xunit.console.*exe.config">
+      <ReferenceCopyLocalPaths Include="$(NuGetPackageRoot)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion)\tools\net472\*.*"
+                               Exclude="$(NuGetPackageRoot)$(XUnitRunnerConsolePackageName)\$(XUnitPackageVersion)\tools\net472\xunit.console.*exe.config">
         <Private>false</Private>
         <NuGetPackageId>$(XUnitRunnerConsolePackageName)</NuGetPackageId>
         <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
-      <ReferenceCopyLocalPaths Condition="'$(EnableVSTestReferences)' == 'true'" Include="$(PackagesDir)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\_common\*.*">
+      <ReferenceCopyLocalPaths Condition="'$(EnableVSTestReferences)' == 'true'" Include="$(NuGetPackageRoot)$(XUnitTestAdapterPackageId)\$(XUnitPackageVersion)\build\_common\*.*">
         <Private>false</Private>
         <NuGetPackageId>$(XUnitTestAdapterPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
@@ -282,11 +282,11 @@
   <Target Name="AddRemoteExecutorLib"
           BeforeTargets="ResolveReferences">
 
-    <Error Condition="!Exists('$(PackagesDir)$(MicrosoftDotNetRemoteExecutorPackage)\$(MicrosoftDotNetRemoteExecutorPackageVersion)\lib\netstandard2.0\Microsoft.DotNet.RemoteExecutor.dll')"
-           Text="Error: looks the package $(PackagesDir)$(MicrosoftDotNetRemoteExecutorPackage)\$(MicrosoftDotNetRemoteExecutorPackageVersion) not restored or missing Microsoft.DotNet.RemoteExecutor.dll." />
+    <Error Condition="!Exists('$(NuGetPackageRoot)$(MicrosoftDotNetRemoteExecutorPackage)\$(MicrosoftDotNetRemoteExecutorPackageVersion)\lib\netstandard2.0\Microsoft.DotNet.RemoteExecutor.dll')"
+           Text="Error: looks the package $(NuGetPackageRoot)$(MicrosoftDotNetRemoteExecutorPackage)\$(MicrosoftDotNetRemoteExecutorPackageVersion) not restored or missing Microsoft.DotNet.RemoteExecutor.dll." />
 
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(PackagesDir)$(MicrosoftDotNetRemoteExecutorPackage)\$(MicrosoftDotNetRemoteExecutorPackageVersion)\lib\netstandard2.0\*.*">
+      <ReferenceCopyLocalPaths Include="$(NuGetPackageRoot)$(MicrosoftDotNetRemoteExecutorPackage)\$(MicrosoftDotNetRemoteExecutorPackageVersion)\lib\netstandard2.0\*.*">
         <Private>false</Private>
         <NuGetPackageId>$(MicrosoftDotNetRemoteExecutorPackage)</NuGetPackageId>
         <NuGetPackageVersion>$(MicrosoftDotNetRemoteExecutorPackageVersion)</NuGetPackageVersion>

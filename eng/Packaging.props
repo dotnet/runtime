@@ -14,7 +14,7 @@
 
     <XmlDocPackage>Microsoft.Private.Intellisense</XmlDocPackage>
     <XmlDocPackageVersion>3.0.0-preview3-190305-0</XmlDocPackageVersion>
-    <XmlDocFileRoot>$(PackagesDir)$(XmlDocPackage.ToLowerInvariant())/$(XmlDocPackageVersion)/xmldocs/netcoreapp</XmlDocFileRoot>
+    <XmlDocFileRoot>$(NuGetPackageRoot)$(XmlDocPackage.ToLowerInvariant())/$(XmlDocPackageVersion)/xmldocs/netcoreapp</XmlDocFileRoot>
     <XmlDocDir>$(ArtifactsBinDir)docs</XmlDocDir>
 
     <!-- By default the packaging targets will package desktop facades as ref,

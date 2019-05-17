@@ -7,6 +7,6 @@
     <Compile Include="Tests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(PackagesDir)system.io.packaging.testdata\1.0.1\content\**\*.*" />
+    <SupplementalTestData Include="$(NuGetPackageRoot)system.io.packaging.testdata\1.0.1\content\**\*.*" />
   </ItemGroup>
 </Project>
