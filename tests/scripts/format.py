@@ -172,12 +172,18 @@ def main(argv):
         os.remove(bootstrapPath)
 
     if returncode != 0:
-        buildUrl = my_env["BUILD_URL"]
         print("There were errors in formatting. Please run jit-format locally with: \n")
         print(errorMessage)
         print("\nOr download and apply generated patch:")
-        print("wget " + buildUrl + "artifact/format.patch")
-        print("git apply format.patch")
+        print("1. From the GitHub 'Checks' page on the Pull Request, with the failing Formatting")
+        print("   job selected (e.g., 'Formatting Linux x64'), click the 'View more details on")
+        print("   Azure Pipelines' link.")
+        print("3. Select the 'Summary' tab.")
+        print("4. Open the 'Build artifacts published' entry.")
+        print("5. Find the link to the OS/architecture appropriate format patch file.")
+        print("6. Click on the link to download it.")
+        print("7. Unzip the patch file.")
+        print("8. git apply format.patch")
 
     return returncode
 
