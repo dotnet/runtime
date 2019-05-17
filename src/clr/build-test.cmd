@@ -206,7 +206,8 @@ if not defined VSINSTALLDIR (
 if not exist "%VSINSTALLDIR%DIA SDK" goto NoDIA
 
 pushd "%__NativeTestIntermediatesDir%"
-call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" ""%__ProjectFilesDir%"" %__VSVersion% %__BuildArch%
+set __ExtraCmakeArgs="-DCMAKE_SYSTEM_VERSION=10.0"
+call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" ""%__ProjectFilesDir%"" %__VSVersion% %__BuildArch% !__ExtraCmakeArgs!
 @if defined _echo @echo on
 popd
 
