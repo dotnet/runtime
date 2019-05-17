@@ -11,7 +11,7 @@ using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization
 {
-    [DebuggerDisplay("ClassType.{ClassType} {Type.Name}")]
+    [DebuggerDisplay("ClassType.{ClassType}, {Type.Name}")]
     internal sealed partial class JsonClassInfo
     {
         // The length of the property name embedded in the key (in bytes).
@@ -27,6 +27,8 @@ namespace System.Text.Json.Serialization
 
         internal ClassType ClassType { get; private set; }
 
+        public JsonPropertyInfo DataExtensionProperty { get; private set; }
+
         // If enumerable, the JsonClassInfo for the element type.
         internal JsonClassInfo ElementClassInfo { get; private set; }
 
@@ -37,6 +39,8 @@ namespace System.Text.Json.Serialization
             // Todo: on classes with many properties (about 50) we need to switch to a hashtable for performance.
             // Todo: when using PropertyNameCaseInsensitive we also need to use the hashtable with case-insensitive
             // comparison to handle Turkish etc. cultures properly.
+
+            Debug.Assert(_propertyRefs != null);
 
             // Set the sorted property cache. Overwrite any existing cache which can occur in multi-threaded cases.
             if (frame.PropertyRefCache != null)
@@ -51,9 +55,9 @@ namespace System.Text.Json.Serialization
                     for (int iProperty = 0; iProperty < _propertyRefs.Count; iProperty++)
                     {
                         PropertyRef propertyRef = _propertyRefs[iProperty];
-
                         bool found = false;
                         int iCacheProperty = 0;
+
                         for (; iCacheProperty < cache.Count; iCacheProperty++)
                         {
                             if (IsPropertyRefEqual(ref propertyRef, cache[iCacheProperty]))
@@ -99,10 +103,7 @@ namespace System.Text.Json.Serialization
                         {
                             JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo.PropertyType, propertyInfo, type, options);
 
-                            if (jsonPropertyInfo.NameAsString == null)
-                            {
-                                ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(this, jsonPropertyInfo);
-                            }
+                            Debug.Assert(jsonPropertyInfo.NameUsedToCompareAsString != null);
 
                             // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
                             if (!propertyNames.Add(jsonPropertyInfo.NameUsedToCompareAsString))
@@ -113,7 +114,10 @@ namespace System.Text.Json.Serialization
                             jsonPropertyInfo.ClearUnusedValuesAfterAdd();
                         }
                     }
+
+                    DetermineExtensionDataProperty();
                     break;
+
                 case ClassType.Enumerable:
                 case ClassType.Dictionary:
                     // Add a single property that maps to the class type so we can have policies applied.
@@ -123,7 +127,7 @@ namespace System.Text.Json.Serialization
                     CreateObject = options.ClassMaterializerStrategy.CreateConstructor(policyProperty.RuntimePropertyType);
 
                     // Create a ClassInfo that maps to the element type which is used for (de)serialization and policies.
-                    Type elementType = GetElementType(type);
+                    Type elementType = GetElementType(type, parentType : null, memberInfo: null);
                     ElementClassInfo = options.GetOrAddClass(elementType);
                     break;
                 case ClassType.Value:
@@ -137,12 +141,53 @@ namespace System.Text.Json.Serialization
             }
         }
 
+        private void DetermineExtensionDataProperty()
+        {
+            JsonPropertyInfo jsonPropertyInfo = GetPropertyThatHasAttribute(typeof(JsonExtensionDataAttribute));
+            if (jsonPropertyInfo != null)
+            {
+                Type declaredPropertyType = jsonPropertyInfo.DeclaredPropertyType;
+                if (!typeof(IDictionary<string, JsonElement>).IsAssignableFrom(declaredPropertyType) &&
+                    !typeof(IDictionary<string, object>).IsAssignableFrom(declaredPropertyType))
+                {
+                    ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(this, jsonPropertyInfo);
+                }
+
+                DataExtensionProperty = jsonPropertyInfo;
+            }
+        }
+
+        private JsonPropertyInfo GetPropertyThatHasAttribute(Type attributeType)
+        {
+            Debug.Assert(_propertyRefs != null);
+
+            JsonPropertyInfo property = null;
+
+            for (int iProperty = 0; iProperty < _propertyRefs.Count; iProperty++)
+            {
+                PropertyRef propertyRef = _propertyRefs[iProperty];
+                JsonPropertyInfo jsonPropertyInfo = propertyRef.Info;
+                Attribute attribute = jsonPropertyInfo.PropertyInfo.GetCustomAttribute(attributeType);
+                if (attribute != null)
+                {
+                    if (property != null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateAttribute(attributeType);
+                    }
+
+                    property = jsonPropertyInfo;
+                }
+            }
+
+            return property;
+        }
+
         internal JsonPropertyInfo GetProperty(JsonSerializerOptions options, ReadOnlySpan<byte> propertyName, ref ReadStackFrame frame)
         {
             // If we should compare with case-insensitive, normalize to an uppercase format since that is what is cached on the propertyInfo.
             if (options.PropertyNameCaseInsensitive)
             {
-                string utf16PropertyName = Encoding.UTF8.GetString(propertyName.ToArray());
+                string utf16PropertyName = JsonHelpers.Utf8GetString(propertyName);
                 string upper = utf16PropertyName.ToUpperInvariant();
                 propertyName = Encoding.UTF8.GetBytes(upper);
             }
@@ -200,10 +245,9 @@ namespace System.Text.Json.Serialization
 
             if (!hasPropertyCache)
             {
-                if (propertyIndex == 0)
+                if (propertyIndex == 0 && frame.PropertyRefCache == null)
                 {
                     // Create the temporary list on first property access to prevent a partially filled List.
-                    Debug.Assert(frame.PropertyRefCache == null);
                     frame.PropertyRefCache = new List<PropertyRef>();
                 }
 
@@ -258,7 +302,7 @@ namespace System.Text.Json.Serialization
             if (propertyRef.Key == other.Key)
             {
                 if (propertyRef.Info.Name.Length <= PropertyNameKeyLength ||
-                    propertyRef.Info.Name.SequenceEqual(other.Info.Name))
+                    propertyRef.Info.Name.AsSpan().SequenceEqual(other.Info.Name.AsSpan()))
                 {
                     return true;
                 }
@@ -308,37 +352,41 @@ namespace System.Text.Json.Serialization
             return key;
         }
 
-        public static Type GetElementType(Type propertyType)
+        // Return the element type of the IEnumerable, or return null if not an IEnumerable.
+        public static Type GetElementType(Type propertyType, Type parentType, MemberInfo memberInfo)
         {
-            Type elementType = null;
-            if (typeof(IEnumerable).IsAssignableFrom(propertyType))
+            if (!typeof(IEnumerable).IsAssignableFrom(propertyType))
             {
-                elementType = propertyType.GetElementType();
-                if (elementType == null)
-                {
-                    Type[] args = propertyType.GetGenericArguments();
+                return null;
+            }
 
-                    if (propertyType.IsGenericType)
-                    {
-                        if (GetClassType(propertyType) == ClassType.Dictionary &&
-                            args.Length >= 2) // It is >= 2 in case there is a Dictionary<TKey, TValue, TSomeExtension>.
-                        {
-                            elementType = args[1];
-                        }
-                        else if (GetClassType(propertyType) == ClassType.Enumerable && args.Length >= 1) // It is >= 1 in case there is an IEnumerable<T, TSomeExtension>.
-                        {
-                            elementType = args[0];
-                        }
-                    }
-                    else
-                    {
-                        // Unable to determine collection type; attempt to use object which will be used to create loosely-typed collection.
-                        elementType = typeof(object);
-                    }
+            // Check for Array.
+            Type elementType = propertyType.GetElementType();
+            if (elementType != null)
+            {
+                return elementType;
+            }
+
+            // Check for Dictionary<TKey, TValue> or IEnumerable<T>
+            if (propertyType.IsGenericType)
+            {
+                Type[] args = propertyType.GetGenericArguments();
+                ClassType classType = GetClassType(propertyType);
+
+                if (classType == ClassType.Dictionary &&
+                    args.Length >= 2 && // It is >= 2 in case there is a IDictionary<TKey, TValue, TSomeExtension>.
+                    args[0].UnderlyingSystemType == typeof(string))
+                {
+                    return args[1];
+                }
+
+                if (classType == ClassType.Enumerable && args.Length >= 1) // It is >= 1 in case there is an IEnumerable<T, TSomeExtension>.
+                {
+                    return args[0];
                 }
             }
 
-            return elementType;
+            throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(propertyType, parentType, memberInfo);
         }
 
         internal static ClassType GetClassType(Type type)

@@ -75,25 +75,29 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"MyString", obj.MyString);
             Assert.Equal(@"MyStringWithIgnore", obj.MyStringWithIgnore);
             Assert.Equal(2, obj.MyStringsWithIgnore.Length);
+            Assert.Equal(1, obj.MyDictionaryWithIgnore["Key"]);
 
             // Verify serialize.
             string json = JsonSerializer.ToString(obj);
             Assert.Contains(@"""MyString""", json);
             Assert.DoesNotContain(@"MyStringWithIgnore", json);
             Assert.DoesNotContain(@"MyStringsWithIgnore", json);
+            Assert.DoesNotContain(@"MyDictionaryWithIgnore", json);
 
             // Verify deserialize default.
             obj = JsonSerializer.Parse<ClassWithIgnoreAttributeProperty>(@"{}");
             Assert.Equal(@"MyString", obj.MyString);
             Assert.Equal(@"MyStringWithIgnore", obj.MyStringWithIgnore);
             Assert.Equal(2, obj.MyStringsWithIgnore.Length);
+            Assert.Equal(1, obj.MyDictionaryWithIgnore["Key"]);
 
             // Verify deserialize ignores the json for MyStringWithIgnore and MyStringsWithIgnore.
             obj = JsonSerializer.Parse<ClassWithIgnoreAttributeProperty>(
-                @"{""MyString"":""Hello"", ""MyStringWithIgnore"":""IgnoreMe"", ""MyStringsWithIgnore"":[""IgnoreMe""]}");
+                @"{""MyString"":""Hello"", ""MyStringWithIgnore"":""IgnoreMe"", ""MyStringsWithIgnore"":[""IgnoreMe""], ""MyDictionaryWithIgnore"":{""Key"":9}}");
             Assert.Contains(@"Hello", obj.MyString);
             Assert.Equal(@"MyStringWithIgnore", obj.MyStringWithIgnore);
             Assert.Equal(2, obj.MyStringsWithIgnore.Length);
+            Assert.Equal(1, obj.MyDictionaryWithIgnore["Key"]);
         }
 
         // Todo: add tests with missing object property and missing collection property.
@@ -175,10 +179,14 @@ namespace System.Text.Json.Serialization.Tests
         {
             public ClassWithIgnoreAttributeProperty()
             {
+                MyDictionaryWithIgnore = new Dictionary<string, int> { { "Key", 1 } };
                 MyString = "MyString";
                 MyStringWithIgnore = "MyStringWithIgnore";
                 MyStringsWithIgnore = new string[] { "1", "2" };
             }
+
+            [JsonIgnore]
+            public Dictionary<string, int> MyDictionaryWithIgnore { get; set; }
 
             [JsonIgnore]
             public string MyStringWithIgnore { get; set; }

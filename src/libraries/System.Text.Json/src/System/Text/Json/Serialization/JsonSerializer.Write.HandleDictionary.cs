@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,22 +18,11 @@ namespace System.Text.Json.Serialization
             ref WriteStack state)
         {
             JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
-            if (!jsonPropertyInfo.ShouldSerialize)
-            {
-                // Ignore writing this property.
-                return true;
-            }
-
             if (state.Current.Enumerator == null)
             {
-                // Verify that the Dictionary can be serialized by having <string> as first generic argument.
-                Type[] args = jsonPropertyInfo.RuntimePropertyType.GetGenericArguments();
-                if (args.Length == 0 || args[0].UnderlyingSystemType != typeof(string))
-                {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonClassInfo.Type, state.PropertyPath);
-                }
+                IEnumerable enumerable;
 
-                IEnumerable enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
+                enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
                 if (enumerable == null)
                 {
                     // Write a null object or enumerable.
@@ -48,28 +36,36 @@ namespace System.Text.Json.Serialization
 
             if (state.Current.Enumerator.MoveNext())
             {
-                // Check for polymorphism.
-                if (elementClassInfo.ClassType == ClassType.Unknown)
+                // Handle DataExtension.
+                if (ReferenceEquals(jsonPropertyInfo, state.Current.JsonClassInfo.DataExtensionProperty))
                 {
-                    object currentValue = ((IDictionaryEnumerator)state.Current.Enumerator).Entry.Value;
-                    GetRuntimeClassInfo(currentValue, ref elementClassInfo, options);
-                }
-
-                if (elementClassInfo.ClassType == ClassType.Value)
-                {
-                    elementClassInfo.GetPolicyProperty().WriteDictionary(options, ref state.Current, writer);
-                }
-                else if (state.Current.Enumerator.Current == null)
-                {
-                    writer.WriteNull(jsonPropertyInfo.Name);
+                    WriteExtensionData(writer, ref state.Current);
                 }
                 else
                 {
-                    // An object or another enumerator requires a new stack frame.
-                    var enumerator = (IDictionaryEnumerator)state.Current.Enumerator;
-                    object value = enumerator.Value;
-                    state.Push(elementClassInfo, value);
-                    state.Current.KeyName = (string)enumerator.Key;
+                    // Check for polymorphism.
+                    if (elementClassInfo.ClassType == ClassType.Unknown)
+                    {
+                        object currentValue = ((IDictionaryEnumerator)state.Current.Enumerator).Entry.Value;
+                        GetRuntimeClassInfo(currentValue, ref elementClassInfo, options);
+                    }
+
+                    if (elementClassInfo.ClassType == ClassType.Value)
+                    {
+                        elementClassInfo.GetPolicyProperty().WriteDictionary(options, ref state.Current, writer);
+                    }
+                    else if (state.Current.Enumerator.Current == null)
+                    {
+                        writer.WriteNull(jsonPropertyInfo.Name);
+                    }
+                    else
+                    {
+                        // An object or another enumerator requires a new stack frame.
+                        var enumerator = (IDictionaryEnumerator)state.Current.Enumerator;
+                        object value = enumerator.Value;
+                        state.Push(elementClassInfo, value);
+                        state.Current.KeyName = (string)enumerator.Key;
+                    }
                 }
 
                 return false;
@@ -159,6 +155,22 @@ namespace System.Text.Json.Serialization
                     }
                 }
 #endif
+            }
+        }
+
+        private static void WriteExtensionData(Utf8JsonWriter writer, ref WriteStackFrame frame)
+        {
+            DictionaryEntry entry = ((IDictionaryEnumerator)frame.Enumerator).Entry;
+            if (entry.Value is JsonElement element)
+            {
+                Debug.Assert(entry.Key is string);
+
+                string propertyName = (string)entry.Key;
+                element.WriteAsProperty(propertyName.AsSpan(), writer);
+            }
+            else
+            {
+                ThrowHelper.ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(frame.JsonClassInfo, entry.Value.GetType());
             }
         }
     }
