@@ -30,7 +30,7 @@ template <class TKey_, class TValue_>
     }
     else if ((entriesInArrayTotal >= 2) && (pStartOfValuesData[entriesInArrayTotal - 2] == (TValue)0))
     {
-        usedEntries = (DWORD)pStartOfValuesData[entriesInArrayTotal - 1];
+        usedEntries = (DWORD)(SIZE_T)pStartOfValuesData[entriesInArrayTotal - 1];
     }
     else if (pStartOfValuesData[entriesInArrayTotal - 1] == (TValue)0)
     {

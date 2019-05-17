@@ -509,7 +509,7 @@ BOOL NativeImageInliningIterator::Next()
 
 MethodDesc *NativeImageInliningIterator::GetMethodDesc()
 {
-    if (m_currentPos == -1 || m_currentPos >= m_dynamicBufferSize)
+    if (m_currentPos == (COUNT_T)-1 || m_currentPos >= m_dynamicBufferSize)
     {
         return NULL;
     }
