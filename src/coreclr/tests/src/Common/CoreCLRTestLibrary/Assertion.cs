@@ -685,6 +685,16 @@ namespace TestLibrary
             }
         }
 
+        static public void OfType<T>(object obj)
+        {
+            if (!(obj is T))
+            {
+                Assert.HandleFail(
+                    "Assert.IsOfType",
+                    $"Expected an object of type [{typeof(T).AssemblyQualifiedName}], got type of type [{obj.GetType().AssemblyQualifiedName}].");
+            }
+        }
+
         /// <summary>
         /// Throws an AssertFailedException.
         /// </summary>
