@@ -103,14 +103,15 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         [Fact]
         public void ListenerWithFilter()
         {
-            int processId;
+            // Ensure we use an arbitrary ID that doesn't match the process ID or thread ID.
+            int traceTransferId = 1;
             using (Process p = Process.GetCurrentProcess())
             {
-                processId = p.Id;
+                while (traceTransferId == p.Id || traceTransferId == Environment.CurrentManagedThreadId)
+                {
+                    traceTransferId++;
+                }
             }
-
-            // Ensure we use an arbitrary ID that doesn't match the process ID.
-            int traceTransferId = processId + 1;
 
             string file = GetTestFilePath();
             Guid guid = Guid.NewGuid();
