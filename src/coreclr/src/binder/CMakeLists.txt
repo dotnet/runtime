@@ -22,7 +22,6 @@ set(BINDER_COMMON_SOURCES
     assemblyidentitycache.cpp
     coreclrbindercommon.cpp
     fusionassemblyname.cpp
-    fusionhelpers.cpp
 )
 
 set(BINDER_COMMON_HEADERS

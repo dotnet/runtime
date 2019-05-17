@@ -184,8 +184,7 @@ public:
 
 #ifndef FEATURE_PAL
     static void GetPathFromDll(HINSTANCE hMod, SString &result);
-#endif // !FEATURE_PAL    
-    static LocaleID GetFileSystemLocale();
+#endif // !FEATURE_PAL
     static BOOL PathEquals(const SString &p1, const SString &p2);
     BOOL IsTrustedNativeImage(){LIMITED_METHOD_CONTRACT; return m_bIsTrustedNativeImage;};
     void SetIsTrustedNativeImage(){LIMITED_METHOD_CONTRACT; m_bIsTrustedNativeImage=TRUE;};
