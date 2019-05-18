@@ -16,6 +16,7 @@
       COMPlus_EnableBMI1;
       COMPlus_EnableBMI2;
       COMPlus_EnableFMA;
+      COMPlus_EnableHWIntrinsic;
       COMPlus_EnableIncompleteISAClass;
       COMPlus_EnableLZCNT;
       COMPlus_EnablePCLMULQDQ;
@@ -24,9 +25,9 @@
       COMPlus_EnableSSE2;
       COMPlus_EnableSSE3;
       COMPlus_EnableSSE3_4;
-      COMPlus_EnableSSSE3;
       COMPlus_EnableSSE41;
       COMPlus_EnableSSE42;
+      COMPlus_EnableSSSE3;
       COMPlus_FeatureSIMD;
       COMPlus_ForceRelocs;
       COMPlus_GCStress;
@@ -62,6 +63,27 @@
     <TestEnvironment Include="jitstress2" JitStress="2" />
     <TestEnvironment Include="jitstress1_tiered" JitStress="1" TieredCompilation="1" />
     <TestEnvironment Include="jitstress2_tiered" JitStress="2" TieredCompilation="1" />
+    <TestEnvironment Include="jitstress_isas_incompletehwintrinsic" EnableIncompleteISAClass="1"  />
+    <TestEnvironment Include="jitstress_isas_nohwintrinsic" EnableHWIntrinsic="0" />
+    <TestEnvironment Include="jitstress_isas_nohwintrinsic_nosimd" EnableHWIntrinsic="0" FeatureSIMD="0" />
+    <TestEnvironment Include="jitstress_isas_nosimd" FeatureSIMD="0" />
+    <TestEnvironment Include="jitstress_isas_x86_noaes" EnableAES="0" /> <!-- Depends on SSE2 -->
+    <TestEnvironment Include="jitstress_isas_x86_noavx" EnableAVX="0" /> <!-- Depends on SSE42 -->
+    <TestEnvironment Include="jitstress_isas_x86_noavx2" EnableAVX2="0" /> <!-- Depends on AVX -->
+    <TestEnvironment Include="jitstress_isas_x86_nobmi1" EnableBMI1="0" /> <!-- No dependencies -->
+    <TestEnvironment Include="jitstress_isas_x86_nobmi2" EnableBMI2="0" /> <!-- No dependencies -->
+    <TestEnvironment Include="jitstress_isas_x86_nofma" EnableFMA="0" /> <!-- Depends on AVX -->
+    <TestEnvironment Include="jitstress_isas_x86_nohwintrinsic" EnableBMI1="0" EnableBMI2="0" EnableLZCNT="0" EnableSSE="0" />
+    <TestEnvironment Include="jitstress_isas_x86_nolzcnt" EnableLZCNT="0" /> <!-- No dependencies -->
+    <TestEnvironment Include="jitstress_isas_x86_nopclmulqdq" EnablePCLMULQDQ="0" /> <!-- Depends on SSE2 -->
+    <TestEnvironment Include="jitstress_isas_x86_nopopcnt" EnablePOPCNT="0" /> <!-- Depends on SSE42 -->
+    <TestEnvironment Include="jitstress_isas_x86_nosse" EnableSSE="0" /> <!-- No dependencies -->
+    <TestEnvironment Include="jitstress_isas_x86_nosse2" EnableSSE2="0" /> <!-- Depends on SSE -->
+    <TestEnvironment Include="jitstress_isas_x86_nosse3" EnableSSE3="0" /> <!-- Depends on SSE2 -->
+    <TestEnvironment Include="jitstress_isas_x86_nosse3_4" EnableSSE3_4="0" /> <!-- Depends on SSE2 -->
+    <TestEnvironment Include="jitstress_isas_x86_nosse41" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
+    <TestEnvironment Include="jitstress_isas_x86_nosse42" EnableSSE42="0" /> <!-- Depends on SSE41 -->
+    <TestEnvironment Include="jitstress_isas_x86_nossse3" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
     <TestEnvironment Include="jitstressregs1" JitStressRegs="1" />
     <TestEnvironment Include="jitstressregs2" JitStressRegs="2" />
     <TestEnvironment Include="jitstressregs3" JitStressRegs="3" />
@@ -79,16 +101,6 @@
     <TestEnvironment Include="jitstress2_jitstressregs0x80" JitStress="2" JitStressRegs="0x80" />
     <TestEnvironment Include="jitstress2_jitstressregs0x1000" JitStress="2" JitStressRegs="0x1000" />
     <TestEnvironment Include="tailcallstress" TailcallStress="1" />
-    <TestEnvironment Include="jitsse2only" EnableAVX="0" EnableSSE3_4="0" />
-    <TestEnvironment Include="jitnosimd" FeatureSIMD="0" />
-    <TestEnvironment Include="jitincompletehwintrinsic" EnableIncompleteISAClass="1" />
-    <!-- testing the legacy SSE encoding -->
-    <TestEnvironment Include="jitx86hwintrinsicnoavx" EnableIncompleteISAClass="1" EnableAVX="0" />
-    <!-- testing SNB/IVB -->
-    <TestEnvironment Include="jitx86hwintrinsicnoavx2" EnableIncompleteISAClass="1" EnableAVX2="0" />
-    <!-- match "jitnosimd", may need to remove after decoupling HW intrinsic from FeatureSIMD -->
-    <TestEnvironment Include="jitx86hwintrinsicnosimd" EnableIncompleteISAClass="1" FeatureSIMD="0" />
-    <TestEnvironment Include="jitnox86hwintrinsic" EnableIncompleteISAClass="1" EnableSSE="0" EnableSSE2="0" EnableSSE3="0" EnableSSSE3="0" EnableSSE41="0" EnableSSE42="0" EnableAVX="0" EnableAVX2="0" EnableAES="0" EnableBMI1="0" EnableBMI2="0" EnableFMA="0" EnableLZCNT="0" EnablePCLMULQDQ="0" EnablePOPCNT="0" />
     <TestEnvironment Include="gcstress0x3" GCStress="0x3" />
     <TestEnvironment Include="gcstress0xc" GCStress="0xC" />
     <TestEnvironment Include="zapdisable" ZapDisable="1" ReadyToRun="0" />
