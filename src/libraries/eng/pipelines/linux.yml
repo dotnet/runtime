@@ -6,14 +6,15 @@ parameters:
   # Required: value to specify if the full test matrix should be tested
   #   Default: false
   fullMatrix: false
-  # Required: value to specify if the build is comming from an outerloop pipeline.
-  #   Default: false
-  isOuterloopBuild: false
+  # Optional: value to scope the tests.
+  #   Default: empty
+  testScope: ''
 
 jobs:
 - template: corefx-base.yml
   parameters:
     isOfficialBuild: ${{ parameters.isOfficialBuild }}
+    testScope: ${{ parameters.testScope }}
     targetOS: Linux
     jobs:
 
@@ -50,7 +51,7 @@ jobs:
              _buildScriptPrefix: ''
              _buildExtraArguments: /p:RuntimeOS=linux-musl
 
-          ${{ if eq(parameters.isOuterloopBuild, 'true') }}:
+          ${{ if or(eq(parameters.testScope, 'outerloop'), eq(parameters.testScope, 'all')) }}:
             x64_Debug:
               _BuildConfig: Debug
               _architecture: x64
@@ -106,7 +107,6 @@ jobs:
       submitToHelix: true
 
       variables:
-        - _outerloop: ${{ parameters.isOuterloopBuild }}
         - linuxArm64Queues: \(Ubuntu.1604.Arm64.Open\)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-b049512-20190321153539
 
         - ${{ if eq(parameters.fullMatrix, 'false') }}:
@@ -121,7 +121,7 @@ jobs:
 
     # Legs without helix testing
     # Only run this leg in PRs.
-    - ${{ if and(eq(parameters.isOfficialBuild, 'false'), eq(parameters.isOuterloopBuild, 'false')) }}:
+    - ${{ if and(eq(parameters.isOfficialBuild, 'false'), and(ne(parameters.testScope, 'outerloop'), ne(parameters.testScope, 'all'))) }}:
       - job: LinuxNoTest
         displayName: Linux
         strategy:
@@ -149,6 +149,3 @@ jobs:
         buildExtraArguments: $(_buildExtraArguments)
         buildScriptPrefix: $(_buildScriptPrefix)
         submitToHelix: false
-
-        variables:
-          - _outerloop: ${{ parameters.isOuterloopBuild }}

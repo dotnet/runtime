@@ -8,7 +8,7 @@ parameters:
   msbuildScript: ''
   targetOS: ''
   officialBuildId: ''
-  outerloop: '' # true | false
+  testScope: '' # empty | innerloop | outerloop | all
   condition: always()
 
 steps:
@@ -18,7 +18,7 @@ steps:
             /p:ArchGroup=${{ parameters.archGroup }}
             /p:ConfigurationGroup=${{ parameters.configuration }}
             /p:OSGroup=${{ parameters.targetOS }}
-            /p:OuterLoop=${{ parameters.outerloop }}
+            /p:testScope=${{ parameters.testScope }}
             /p:TargetGroup=${{ parameters.framework }}
             /p:HelixTargetQueues=${{ parameters.helixQueues }}
             /p:HelixBuild=$(Build.BuildNumber)

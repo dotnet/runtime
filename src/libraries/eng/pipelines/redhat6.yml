@@ -6,14 +6,15 @@ parameters:
   # Required: value to specify if the full test matrix should be tested
   #   Default: false
   fullMatrix: false
-  # Required: value to specify if the build is comming from an outerloop pipeline.
-  #   Default: false
-  isOuterloopBuild: false
+  # Optional: value to scope the tests.
+  #   Default: empty
+  testScope: ''
 
 jobs:
 - template: corefx-base.yml
   parameters:
     isOfficialBuild: ${{ parameters.isOfficialBuild }}
+    testScope: ${{ parameters.testScope }}
     targetOS: Linux
     jobs:
 
@@ -36,5 +37,4 @@ jobs:
       submitToHelix: true
 
       variables:
-        - _outerloop: ${{ parameters.isOuterloopBuild }}
         - redhatHelixQueue: RedHat.6.Amd64.Open

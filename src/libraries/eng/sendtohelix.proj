@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Set helix source -->
     <HelixSourcePrefix>pr/</HelixSourcePrefix>
-    <HelixSourcePrefix Condition="'$(OfficialBuildId)' != ''">official/</HelixSourcePrefix>
     <HelixSource Condition="'$(HelixSource)' == ''">$(HelixSourcePrefix)dotnet/corefx</HelixSource>
     <HelixSource Condition="'$(BUILD_SOURCEBRANCH)' != ''">$(HelixSource)/$(BUILD_SOURCEBRANCH)</HelixSource>
     
@@ -37,11 +36,9 @@
 
   <PropertyGroup Condition="'$(HelixType)' == ''">
     <!-- For PRs we want helixtype to be the same for all frameworks except package testing-->
-    <HelixType>test/functional/cli/</HelixType>
-    <HelixType Condition="'$(Outerloop)' == 'true' AND '$(OfficialBuildId)' == ''">$(HelixType)/outerloop/</HelixType>
+    <TestFilter Condition="'$(TestFilter)' == ''">innerloop</TestFilter>
+    <HelixType>test/functional/cli/$(TestFilter)/</HelixType>
     <HelixType Condition="'$(TargetGroup)' == 'AllConfigurations'">test/functional/packaging/</HelixType>
-    <HelixType Condition="'$(TargetGroup)' == 'netfx' AND '$(OfficialBuildId)' != ''">test/functional/desktop/cli/</HelixType>
-    <HelixType Condition="'$(TargetGroup)' == 'uap' AND '$(OfficialBuildId)' != ''">test/functional/uwp/</HelixType>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(TargetGroup)' == 'AllConfigurations'">

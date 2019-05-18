@@ -36,7 +36,7 @@ usage()
 
   echo "Advanced settings:"
   echo "  --coverage               Collect code coverage when testing"
-  echo "  --outerloop              Include tests which are marked as OuterLoop"
+  echo "  --testscope              Test scope, allowed values: innerloop, outerloop, all"
   echo "  --allconfigurations      Build packages for all build configurations"
   echo "  --os                     Build operating system: Windows_NT or Unix"
   echo "  --arch                   Build platform: x86, x64, arm or arm64"
@@ -100,8 +100,8 @@ while [[ $# > 0 ]]; do
       arguments="$arguments /p:BuildTests=true"
       shift 1
       ;;
-     -outerloop)
-      arguments="$arguments /p:OuterLoop=true"
+     -testscope)
+      arguments="$arguments /p:TestScope=$2"
       shift 1
       ;;
      -coverage)
