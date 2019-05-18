@@ -94,7 +94,7 @@ jobs:
       timeoutInMinutes: 240
     ${{ if eq(parameters.testGroup, 'outerloop') }}:
       timeoutInMinutes: 360
-    ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs', 'outerloop-gcstress0x3-gcstress0xc') }}:
+    ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstress-isas-arm', 'outerloop-jitstress-isas-x86', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs', 'outerloop-gcstress0x3-gcstress0xc') }}:
       timeoutInMinutes: 480
     ${{ if in(parameters.testGroup, 'outerloop-gcstress-extra', 'outerloop-r2r-extra') }}:
       timeoutInMinutes: 600
@@ -167,7 +167,7 @@ jobs:
         ${{ if eq(parameters.testGroup, 'outerloop') }}:
           timeoutPerTestCollectionInMinutes: 60
           timeoutPerTestInMinutes: 10
-        ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs') }}:
+        ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstress-isas-arm', 'outerloop-jitstress-isas-x86', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs') }}:
           timeoutPerTestCollectionInMinutes: 120
           timeoutPerTestInMinutes: 30
         ${{ if in(parameters.testGroup, 'outerloop-gcstress0x3-gcstress0xc') }}:
@@ -203,6 +203,35 @@ jobs:
           - jitstress2_tiered
           - zapdisable
           - tailcallstress
+        ${{ if eq(parameters.testGroup, 'outerloop-jitstress-isas-arm') }}:
+          scenarios:
+          - jitstress_isas_incompletehwintrinsic
+          - jitstress_isas_nohwintrinsic
+          - jitstress_isas_nohwintrinsic_nosimd
+          - jitstress_isas_nosimd
+        ${{ if eq(parameters.testGroup, 'outerloop-jitstress-isas-x86') }}:
+          scenarios:
+          - jitstress_isas_incompletehwintrinsic
+          - jitstress_isas_nohwintrinsic
+          - jitstress_isas_nohwintrinsic_nosimd
+          - jitstress_isas_nosimd
+          - jitstress_isas_x86_noaes
+          - jitstress_isas_x86_noavx
+          - jitstress_isas_x86_noavx2
+          - jitstress_isas_x86_nobmi1
+          - jitstress_isas_x86_nobmi2
+          - jitstress_isas_x86_nofma
+          - jitstress_isas_x86_nohwintrinsic
+          - jitstress_isas_x86_nolzcnt
+          - jitstress_isas_x86_nopclmulqdq
+          - jitstress_isas_x86_nopopcnt
+          - jitstress_isas_x86_nosse
+          - jitstress_isas_x86_nosse2
+          - jitstress_isas_x86_nosse3
+          - jitstress_isas_x86_nosse3_4
+          - jitstress_isas_x86_nosse41
+          - jitstress_isas_x86_nosse42
+          - jitstress_isas_x86_nossse3
         ${{ if eq(parameters.testGroup, 'outerloop-jitstressregs') }}:
           scenarios:
           - jitstressregs1
