@@ -10096,12 +10096,7 @@ field_access_end:
 
 		case MONO_CEE_MONO_ICALL: {
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
-			gpointer func;
-			MonoJitICallInfo *info;
-
-			func = mono_method_get_wrapper_data (method, token);
-			// FIXME int instead of pointer
-			info = mono_find_jit_icall_by_addr (func);
+			MonoJitICallInfo * const info = mono_find_jit_icall_info ((MonoJitICallId)token);
 			g_assertf (info, "Could not find icall address in wrapper %s", mono_method_full_name (method, 1));
 
 			CHECK_STACK (info->sig->param_count);

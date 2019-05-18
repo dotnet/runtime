@@ -1870,7 +1870,8 @@ mini_get_interp_lmf_wrapper (const char *name, gpointer target)
 	mono_mb_emit_byte (mb, CEE_LDARG_1);
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	mono_mb_emit_op (mb, CEE_MONO_ICALL, target);
+	mono_mb_emit_byte (mb, CEE_MONO_ICALL);
+	mono_mb_emit_i4 (mb, index ? MONO_JIT_ICALL_mono_interp_to_native_trampoline : MONO_JIT_ICALL_mono_interp_entry_from_trampoline);
 
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif

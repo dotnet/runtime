@@ -552,8 +552,8 @@ mono_mb_emit_icall_id (MonoMethodBuilder *mb, MonoJitICallId jit_icall_id)
 	g_assertf (jit_icall_info->func, "%d", (int)jit_icall_id);
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-	// FIXME Output enum instead of func.
-	mono_mb_emit_op (mb, CEE_MONO_ICALL, (gpointer)jit_icall_info->func);
+	mono_mb_emit_byte (mb, CEE_MONO_ICALL);
+	mono_mb_emit_i4 (mb, jit_icall_id);
 }
 
 void
