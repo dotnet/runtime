@@ -693,7 +693,8 @@ void CodeGen::genSIMDScalarMove(
                 // to zero all but the lower bits.
                 unsigned int insertpsImm =
                     (INSERTPS_TARGET_SELECT(0) | INSERTPS_ZERO(1) | INSERTPS_ZERO(2) | INSERTPS_ZERO(3));
-                inst_RV_RV_IV(INS_insertps, EA_16BYTE, targetReg, srcReg, insertpsImm);
+                assert((insertpsImm >= 0) && (insertpsImm <= 255));
+                inst_RV_RV_IV(INS_insertps, EA_16BYTE, targetReg, srcReg, (int8_t)insertpsImm);
             }
             else
             {
@@ -930,7 +931,8 @@ void CodeGen::genSIMDIntrinsicInit(GenTreeSIMD* simdNode)
         }
 
         ins = getOpForSIMDIntrinsic(SIMDIntrinsicShuffleSSE2, baseType);
-        getEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, targetReg, shuffleControl);
+        assert((shuffleControl >= 0) && (shuffleControl <= 255));
+        getEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, targetReg, (int8_t)shuffleControl);
     }
 
     genProduceReg(simdNode);
@@ -1002,7 +1004,8 @@ void CodeGen::genSIMDIntrinsicInitN(GenTreeSIMD* simdNode)
         regNumber operandReg = operandRegs[initCount - i - 1];
         if (offset != 0)
         {
-            getEmitter()->emitIns_R_I(insLeftShift, EA_16BYTE, vectorReg, baseTypeSize);
+            assert((baseTypeSize >= 0) && (baseTypeSize <= 255));
+            getEmitter()->emitIns_R_I(insLeftShift, EA_16BYTE, vectorReg, (int8_t)baseTypeSize);
         }
         genSIMDScalarMove(targetType, baseType, vectorReg, operandReg, SMT_PreserveUpper);
 
@@ -1369,7 +1372,7 @@ void CodeGen::genSIMDIntrinsic64BitConvert(GenTreeSIMD* simdNode)
 
         // get the absolute value of src and put it into tmpReg2 and targetReg
         inst_RV_RV(INS_movdqu, tmpReg2, op1Reg, baseType, emitActualTypeSize(simdType));
-        getEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(simdType), tmpReg, op1Reg, SHUFFLE_WWYY);
+        getEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(simdType), tmpReg, op1Reg, (int8_t)SHUFFLE_WWYY);
         getEmitter()->emitIns_R_I(INS_psrad, emitActualTypeSize(simdType), tmpReg, 32);
         inst_RV_RV(INS_pxor, tmpReg2, tmpReg, baseType, emitActualTypeSize(simdType));
         inst_RV_RV(INS_psubq, tmpReg2, tmpReg, baseType, emitActualTypeSize(simdType));
@@ -1558,7 +1561,8 @@ void CodeGen::genSIMDIntrinsicWiden(GenTreeSIMD* simdNode)
             {
                 ival = 0xe8;
             }
-            getEmitter()->emitIns_R_R_I(INS_vpermq, emitSize, targetReg, op1Reg, ival);
+            assert((ival >= 0) && (ival <= 255));
+            getEmitter()->emitIns_R_R_I(INS_vpermq, emitSize, targetReg, op1Reg, (int8_t)ival);
         }
         else if (targetReg != op1Reg)
         {
@@ -1615,7 +1619,7 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
         }
         else
         {
-            inst_RV_RV_IV(INS_shufps, EA_16BYTE, targetReg, tmpReg, SHUFFLE_YXYX);
+            inst_RV_RV_IV(INS_shufps, EA_16BYTE, targetReg, tmpReg, (int8_t)SHUFFLE_YXYX);
         }
     }
     else if (varTypeIsLong(baseType))
@@ -1639,8 +1643,8 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
             getEmitter()->emitIns_R_R_I(INS_vinserti128, EA_32BYTE, tmpReg, tmpReg2, 0x01);
             inst_RV_RV(ins_Copy(simdType), tmpReg2, op1Reg, simdType, emitSize);
             getEmitter()->emitIns_R_R_I(INS_vinserti128, EA_32BYTE, tmpReg2, op2Reg, 0x01);
-            getEmitter()->emitIns_R_R_I(INS_pshufd, emitSize, tmpReg, tmpReg, SHUFFLE_XXZX);
-            getEmitter()->emitIns_R_R_I(INS_pshufd, emitSize, targetReg, tmpReg2, SHUFFLE_XXZX);
+            getEmitter()->emitIns_R_R_I(INS_pshufd, emitSize, tmpReg, tmpReg, (int8_t)SHUFFLE_XXZX);
+            getEmitter()->emitIns_R_R_I(INS_pshufd, emitSize, targetReg, tmpReg2, (int8_t)SHUFFLE_XXZX);
             inst_RV_RV_RV(INS_punpcklqdq, targetReg, targetReg, tmpReg, emitSize);
         }
         else
@@ -1656,9 +1660,9 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
             instruction shiftRightIns = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
             emitAttr    emitSize      = emitTypeSize(simdType);
 
-            getEmitter()->emitIns_R_R_I(INS_pshufd, emitSize, targetReg, op1Reg, SHUFFLE_ZXXX);
+            getEmitter()->emitIns_R_R_I(INS_pshufd, emitSize, targetReg, op1Reg, (int8_t)SHUFFLE_ZXXX);
             getEmitter()->emitIns_R_I(shiftRightIns, emitSize, targetReg, 8);
-            getEmitter()->emitIns_R_R_I(INS_pshufd, emitSize, tmpReg, op2Reg, SHUFFLE_XXZX);
+            getEmitter()->emitIns_R_R_I(INS_pshufd, emitSize, tmpReg, op2Reg, (int8_t)SHUFFLE_XXZX);
             getEmitter()->emitIns_R_I(shiftLeftIns, emitSize, tmpReg, 8);
             inst_RV_RV(INS_por, targetReg, tmpReg, simdType);
         }
@@ -1681,6 +1685,8 @@ void CodeGen::genSIMDIntrinsicNarrow(GenTreeSIMD* simdNode)
         instruction ins           = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
         instruction shiftLeftIns  = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, baseType);
         instruction shiftRightIns = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, baseType);
+
+        assert((shiftCount >= 0) && (shiftCount <= 127));
 
         if (level == SIMD_AVX2_Supported)
         {
@@ -1850,7 +1856,7 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 
         // Extract first and third double word results from tmpReg
         // tmpReg = shuffle(0,0,2,0) of tmpReg
-        getEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(targetType), tmpReg, tmpReg, SHUFFLE_XXZX);
+        getEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(targetType), tmpReg, tmpReg, (int8_t)SHUFFLE_XXZX);
 
         // targetReg[63:0] = op1[0] * op2[0]
         // targetReg[127:64] = op1[2] * op2[2]
@@ -1859,7 +1865,8 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
 
         // Extract first and third double word results from targetReg
         // targetReg = shuffle(0,0,2,0) of targetReg
-        getEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(targetType), targetReg, targetReg, SHUFFLE_XXZX);
+        getEmitter()->emitIns_R_R_I(INS_pshufd, emitActualTypeSize(targetType), targetReg, targetReg,
+                                    (int8_t)SHUFFLE_XXZX);
 
         // pack the results into a single vector
         inst_RV_RV(INS_punpckldq, targetReg, tmpReg, targetType, emitActualTypeSize(targetType));
@@ -1898,7 +1905,7 @@ void CodeGen::genSIMDIntrinsicBinOp(GenTreeSIMD* simdNode)
     {
         // These are 16 byte operations, so we subtract from 16 bytes, not the vector register length.
         unsigned shiftCount = 16 - simdNode->gtSIMDSize;
-        assert(shiftCount != 0);
+        assert((shiftCount > 0) && (shiftCount <= 16));
         instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftLeftInternal, TYP_SIMD16);
         getEmitter()->emitIns_R_I(ins, EA_16BYTE, targetReg, shiftCount);
         ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
@@ -1975,7 +1982,8 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 
             if (varTypeIsFloating(baseType))
             {
-                getEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, otherReg, ival);
+                assert((ival >= 0) && (ival <= 255));
+                getEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, otherReg, (int8_t)ival);
             }
             else
             {
@@ -2003,7 +2011,8 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
                 inst_RV_RV(ins_Copy(targetType), targetReg, op1Reg, targetType, emitActualTypeSize(targetType));
             }
 
-            getEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, op2Reg, ival);
+            assert((ival >= 0) && (ival <= 255));
+            getEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(targetType), targetReg, op2Reg, (int8_t)ival);
         }
         break;
 
@@ -2061,7 +2070,8 @@ void CodeGen::genSIMDIntrinsicRelOp(GenTreeSIMD* simdNode)
 
                 if (varTypeIsFloating(baseType))
                 {
-                    getEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(simdType), tmpReg1, otherReg, ival);
+                    assert((ival >= 0) && (ival <= 255));
+                    getEmitter()->emitIns_R_R_I(ins, emitActualTypeSize(simdType), tmpReg1, otherReg, (int8_t)ival);
                 }
                 else
                 {
@@ -2219,9 +2229,9 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
             //
             inst_RV_RV(INS_mulps, targetReg, op2Reg);
             inst_RV_RV(INS_movaps, tmpReg1, targetReg);
-            inst_RV_RV_IV(INS_shufps, EA_16BYTE, tmpReg1, tmpReg1, SHUFFLE_ZXXY);
+            inst_RV_RV_IV(INS_shufps, EA_16BYTE, tmpReg1, tmpReg1, (int8_t)SHUFFLE_ZXXY);
             inst_RV_RV(INS_addps, targetReg, tmpReg1);
-            inst_RV_RV_IV(INS_shufps, EA_16BYTE, tmpReg1, tmpReg1, SHUFFLE_XXWW);
+            inst_RV_RV_IV(INS_shufps, EA_16BYTE, tmpReg1, tmpReg1, (int8_t)SHUFFLE_XXWW);
             inst_RV_RV(INS_addps, targetReg, tmpReg1);
         }
         else if (baseType == TYP_FLOAT)
@@ -2240,10 +2250,10 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
             //
             inst_RV_RV(INS_mulps, targetReg, op2Reg);
             inst_RV_RV(INS_movaps, tmpReg1, targetReg);
-            inst_RV_RV_IV(INS_shufps, EA_16BYTE, tmpReg1, tmpReg1, SHUFFLE_ZWXY);
+            inst_RV_RV_IV(INS_shufps, EA_16BYTE, tmpReg1, tmpReg1, (int8_t)SHUFFLE_ZWXY);
             inst_RV_RV(INS_addps, targetReg, tmpReg1);
             inst_RV_RV(INS_movaps, tmpReg1, targetReg);
-            inst_RV_RV_IV(INS_shufps, EA_16BYTE, tmpReg1, tmpReg1, SHUFFLE_XYZW);
+            inst_RV_RV_IV(INS_shufps, EA_16BYTE, tmpReg1, tmpReg1, (int8_t)SHUFFLE_XYZW);
             inst_RV_RV(INS_addps, targetReg, tmpReg1);
         }
         else
@@ -2290,7 +2300,8 @@ void CodeGen::genSIMDIntrinsicDotProduct(GenTreeSIMD* simdNode)
                 // dpps computes the dot product of the upper & lower halves of the 32-byte register.
                 // Notice that if this is a TYP_SIMD16 or smaller on AVX, then we don't need a tmpReg.
                 unsigned mask = ((simdNode->gtFlags & GTF_SIMD12_OP) != 0) ? 0x71 : 0xf1;
-                inst_RV_RV_IV(INS_dpps, emitSize, targetReg, op2Reg, mask);
+                assert((mask >= 0) && (mask <= 255));
+                inst_RV_RV_IV(INS_dpps, emitSize, targetReg, op2Reg, (int8_t)mask);
                 // dpps computes the dot product of the upper & lower halves of the 32-byte register.
                 // Notice that if this is a TYP_SIMD16 or smaller on AVX, then we don't need a tmpReg.
                 // If this is TYP_SIMD32, we need to combine the lower & upper results.
@@ -2578,6 +2589,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
         if (byteShiftCnt != 0)
         {
             instruction ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
+            assert((byteShiftCnt > 0) && (byteShiftCnt < 32));
             getEmitter()->emitIns_R_I(ins, emitActualTypeSize(simdType), targetReg, byteShiftCnt);
         }
     }
@@ -2604,6 +2616,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
                 index -= 8;
             }
 
+            assert((index >= 0) && (index <= 8));
             getEmitter()->emitIns_R_R_I(INS_pextrw, emitTypeSize(TYP_INT), targetReg, srcReg, index);
 
             bool ZeroOrSignExtnReqd = true;
@@ -2647,6 +2660,7 @@ void CodeGen::genSIMDIntrinsicGetItem(GenTreeSIMD* simdNode)
                     inst_RV_RV(ins_Copy(simdType), tmpReg, srcReg, simdType, emitActualTypeSize(simdType));
                 }
 
+                assert((byteShiftCnt > 0) && (byteShiftCnt <= 32));
                 ins = getOpForSIMDIntrinsic(SIMDIntrinsicShiftRightInternal, TYP_SIMD16);
                 getEmitter()->emitIns_R_I(ins, emitActualTypeSize(simdType), tmpReg, byteShiftCnt);
             }
@@ -2743,6 +2757,8 @@ void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
         // (Note that for mov_xmm2i, the int register is always in the reg2 position.
         inst_RV_RV(ins, op2Reg, tmpReg, baseType);
 
+        assert((index >= 0) && (index <= 15));
+
         // First insert the lower 16-bits of tmpReg in targetReg at 2*index position
         // since every float has two 16-bit words.
         getEmitter()->emitIns_R_R_I(INS_pinsrw, emitTypeSize(TYP_INT), targetReg, tmpReg, 2 * index);
@@ -2754,7 +2770,8 @@ void CodeGen::genSIMDIntrinsicSetItem(GenTreeSIMD* simdNode)
     else
     {
         unsigned int insertpsImm = (INSERTPS_SOURCE_SELECT(0) | INSERTPS_TARGET_SELECT(index));
-        inst_RV_RV_IV(INS_insertps, EA_16BYTE, targetReg, op2Reg, insertpsImm);
+        assert((insertpsImm >= 0) && (insertpsImm <= 255));
+        inst_RV_RV_IV(INS_insertps, EA_16BYTE, targetReg, op2Reg, (int8_t)insertpsImm);
     }
 
     genProduceReg(simdNode);
@@ -2778,7 +2795,7 @@ void CodeGen::genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode)
     GenTree* op2 = simdNode->gtGetOp2();
     assert(op2->isContained());
     assert(op2->IsCnsIntOrI());
-    int       shuffleControl = (int)op2->AsIntConCommon()->IconValue();
+    ssize_t   shuffleControl = op2->AsIntConCommon()->IconValue();
     var_types baseType       = simdNode->gtSIMDBaseType;
     var_types targetType     = simdNode->TypeGet();
     regNumber targetReg      = simdNode->gtRegNum;
@@ -2791,7 +2808,8 @@ void CodeGen::genSIMDIntrinsicShuffleSSE2(GenTreeSIMD* simdNode)
     }
 
     instruction ins = getOpForSIMDIntrinsic(simdNode->gtSIMDIntrinsicID, baseType);
-    getEmitter()->emitIns_R_R_I(ins, emitTypeSize(baseType), targetReg, targetReg, shuffleControl);
+    assert((shuffleControl >= 0) && (shuffleControl <= 255));
+    getEmitter()->emitIns_R_R_I(ins, emitTypeSize(baseType), targetReg, targetReg, (int8_t)shuffleControl);
     genProduceReg(simdNode);
 }
 
@@ -2871,7 +2889,7 @@ void CodeGen::genLoadIndTypeSIMD12(GenTree* treeNode)
     getEmitter()->emitIns_R_AR(ins_Load(TYP_DOUBLE), EA_8BYTE, targetReg, operandReg, 0);
 
     // combine upper 4 bytes and lower 8 bytes in targetReg
-    getEmitter()->emitIns_R_R_I(INS_shufps, emitActualTypeSize(TYP_SIMD16), targetReg, tmpReg, SHUFFLE_YXYX);
+    getEmitter()->emitIns_R_R_I(INS_shufps, emitActualTypeSize(TYP_SIMD16), targetReg, tmpReg, (int8_t)SHUFFLE_YXYX);
 
     genProduceReg(treeNode);
 }
@@ -2953,7 +2971,7 @@ void CodeGen::genLoadLclTypeSIMD12(GenTree* treeNode)
     getEmitter()->emitIns_R_S(ins_Move_Extend(TYP_DOUBLE, false), EA_8BYTE, targetReg, varNum, offs);
 
     // combine upper 4 bytes and lower 8 bytes in targetReg
-    getEmitter()->emitIns_R_R_I(INS_shufps, emitActualTypeSize(TYP_SIMD16), targetReg, tmpReg, SHUFFLE_YXYX);
+    getEmitter()->emitIns_R_R_I(INS_shufps, emitActualTypeSize(TYP_SIMD16), targetReg, tmpReg, (int8_t)SHUFFLE_YXYX);
 
     genProduceReg(treeNode);
 }
