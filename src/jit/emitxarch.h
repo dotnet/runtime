@@ -40,10 +40,11 @@ struct CnsVal
 };
 
 UNATIVE_OFFSET emitInsSize(code_t code);
-UNATIVE_OFFSET emitInsSizeRM(instruction ins);
 UNATIVE_OFFSET emitInsSizeSV(code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp);
 UNATIVE_OFFSET emitInsSizeSV(instrDesc* id, code_t code, int var, int dsp, int val);
+UNATIVE_OFFSET emitInsSizeRR(instrDesc* id, code_t code);
+UNATIVE_OFFSET emitInsSizeRR(instrDesc* id, code_t code, int val);
 UNATIVE_OFFSET emitInsSizeRR(instruction ins, regNumber reg1, regNumber reg2, emitAttr attr);
 UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code);
 UNATIVE_OFFSET emitInsSizeAM(instrDesc* id, code_t code, int val);
@@ -67,7 +68,7 @@ unsigned emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, code_t& co
 unsigned emitGetRexPrefixSize(instruction ins);
 unsigned emitGetVexPrefixSize(instruction ins, emitAttr attr);
 unsigned emitGetPrefixSize(code_t code);
-unsigned emitGetVexPrefixAdjustedSize(instruction ins, emitAttr attr, code_t code);
+unsigned emitGetAdjustedSize(instruction ins, emitAttr attr, code_t code);
 
 unsigned insEncodeReg012(instruction ins, regNumber reg, emitAttr size, code_t* code);
 unsigned insEncodeReg345(instruction ins, regNumber reg, emitAttr size, code_t* code);
@@ -95,22 +96,6 @@ bool EncodedBySSE38orSSE3A(instruction ins);
 bool Is4ByteSSEInstruction(instruction ins);
 
 bool AreUpper32BitsZero(regNumber reg);
-
-// Adjust code size for CRC32 that has 4-byte opcode
-// but does not use SSE38 or EES3A encoding.
-UNATIVE_OFFSET emitAdjustSizeCrc32(instruction ins, emitAttr attr)
-{
-    UNATIVE_OFFSET szDelta = 0;
-    if (ins == INS_crc32)
-    {
-        szDelta += 1;
-        if (attr == EA_2BYTE)
-        {
-            szDelta += 1;
-        }
-    }
-    return szDelta;
-}
 
 bool hasRexPrefix(code_t code)
 {
