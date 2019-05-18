@@ -1623,6 +1623,11 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method)
 	if (method->wrapper_type != MONO_WRAPPER_NONE)
 		return FALSE;
 
+	/* Our usage of `emit_store_value_as_local ()` for nint, nuint and nfloat
+	 * is kinda hacky, and doesn't work with the inliner */
+	if (mono_class_get_magic_index (method->klass) >= 0)
+		return FALSE;
+
 	return TRUE;
 }
 

@@ -351,6 +351,11 @@ public class BuiltinTests {
 		return a == b;
 	}
 
+	static bool decimal_cmp_can_inline (decimal a, decimal b)
+	{
+		return a == b;
+	}
+
 	static int test_0_nint_implicit_decimal ()
 	{
 		nint a = new nint (10);
@@ -854,6 +859,9 @@ public class BuiltinTests {
 
 		if ((int) x.GetA () != 20)
 			return 6;
+
+		if (!decimal_cmp_can_inline ((int) x.GetA (), 20))
+			return 66;
 
 		if ((float) SomeNativeStructWithNuint.b != 21f)
 			return 7;
