@@ -198,12 +198,14 @@ CrashInfo::GatherCrashInfo(MINIDUMP_TYPE minidumpType)
             }
         }
     }
-    // Add all the heap (read/write) memory regions (m_otherMappings contains the heaps)
+    // Add all the heap read/write memory regions (m_otherMappings contains the heaps). On Alpine
+    // the heap regions are marked RWX instead of just RW.
     else if (minidumpType & MiniDumpWithPrivateReadWriteMemory)
     {
         for (const MemoryRegion& region : m_otherMappings)
         {
-            if (region.Permissions() == (PF_R | PF_W))
+            uint32_t permissions = region.Permissions();
+            if (permissions == (PF_R | PF_W) || permissions == (PF_R | PF_W | PF_X))
             {
                 InsertMemoryBackedRegion(region);
             }
