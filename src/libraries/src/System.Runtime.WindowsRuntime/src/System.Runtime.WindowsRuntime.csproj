@@ -34,21 +34,7 @@
     <ProjectReference Include="..\..\System.ObjectModel\src\System.ObjectModel.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <!-- We need to add this for now because these three types exist in System.Private.Interop.dll and Windows.winmd. -->
-    <SeedTypePreference Include="Windows.Foundation.Point">
-      <Aliases>Alias_System_Private_Interop</Aliases>
-    </SeedTypePreference>
-    <SeedTypePreference Include="Windows.Foundation.Rect">
-      <Aliases>Alias_System_Private_Interop</Aliases>
-    </SeedTypePreference>
-    <SeedTypePreference Include="Windows.Foundation.Size">
-      <Aliases>Alias_System_Private_Interop</Aliases>
-    </SeedTypePreference>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <ReferenceFromRuntime Include="System.Private.Interop" >
-      <Aliases>Alias_System_Private_Interop</Aliases>
-    </ReferenceFromRuntime>
+    <ReferenceFromRuntime Include="System.Private.Interop" />
     <ReferenceFromRuntime Include="System.Private.Corelib" />
     <Reference Include="Windows" />
     <Reference Include="mscorlib" />
