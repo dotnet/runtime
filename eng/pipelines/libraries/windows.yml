@@ -6,15 +6,16 @@ parameters:
   # Required: value to specify if the full test matrix should be tested
   #   Default: false
   fullMatrix: false
-  # Required: value to specify if the build is comming from an outerloop pipeline.
-  #   Default: false
-  isOuterloopBuild: false
+  # Optional: value to scope the tests.
+  #   Default: empty
+  testScope: ''
 
 jobs:
 
 - template: corefx-base.yml
   parameters:
     isOfficialBuild: ${{ parameters.isOfficialBuild }}
+    testScope: ${{ parameters.testScope }}
     targetOS: Windows_NT
     jobs:
 
@@ -51,7 +52,7 @@ jobs:
               _helixQueues: $(uapNetfxQueues)
 
           # Run arm on the matrix or in Outerloop
-          ${{ if or(eq(parameters.fullMatrix, 'true'), eq(parameters.isOuterloopBuild, 'true')) }}:
+          ${{ if or(eq(parameters.fullMatrix, 'true'), or(eq(parameters.testScope, 'outerloop'), eq(parameters.testScope, 'all'))) }}:
             arm64_Release:
               _BuildConfig: Release
               _architecture: arm64
@@ -108,8 +109,6 @@ jobs:
       buildExtraArguments: /p:RuntimeOS=win10
 
       variables:
-        - _outerloop: ${{ parameters.isOuterloopBuild }}
-
         - nanoQueues: "`(Windows.Nano.1803.Amd64.Open`)windows.10.amd64.serverrs4.open@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1803-helix-amd64-05227e1-20190509225944"
         - uapNetfxQueues: Windows.10.Amd64.ClientRS5.Open
         - windowsArmQueue: Windows.10.Arm64.Open
@@ -121,7 +120,7 @@ jobs:
           - netcoreappWindowsQueues: Windows.7.Amd64.Open+Windows.81.Amd64.Open+Windows.10.Amd64.ClientRS4.Open+Windows.10.Amd64.ServerRS5.Open          
 
     # There is no point of running legs without outerloop tests, when in an outerloop build.
-    - ${{ if eq(parameters.isOuterloopBuild, 'false') }}:
+    - ${{ if and(ne(parameters.testScope, 'outerloop'), ne(parameters.testScope, 'all')) }}:
       # Packaging all configurations
       - job: AllConfigurations
         displayName: Packaging All Configurations
@@ -150,7 +149,6 @@ jobs:
         buildExtraArguments: /p:RuntimeOS=win10
 
         variables:
-          - _outerloop: false
           - allConfigurationsQueues: Windows.10.Amd64.ClientRS5.Open
 
         _jobFramework: -allConfigurations
@@ -194,6 +192,3 @@ jobs:
 
         submitToHelix: false
         buildExtraArguments: /p:RuntimeOS=win10
-
-        variables:
-          - _outerloop: ${{ parameters.isOuterloopBuild }}
