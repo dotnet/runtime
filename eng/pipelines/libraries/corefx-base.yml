@@ -22,8 +22,8 @@ parameters:
   #     _framework: (netcoreapp, netfx, uap, etc).
   #     _helixQueues: Windows.Amd64 (Only needed if submitToHelix -> true.) -- Queues should be separated by + if multiple.
 
-  # Required: as part of the variables object, the following values need to be passed:
-  #     _outerloop: true | false
+  # Required: empty | innerloop | outerloop | all
+  testScope: ''
 
   # Optional: _publishTests -> Boolean -> Publish test assets to blob storage if true.
   # Default: false
@@ -75,6 +75,10 @@ jobs:
         - _msbuildCommonParameters: ''
         - _archiveTestsParameter: ''
         - _finalFrameworkArg: -framework $(_framework)
+        - _testScopeArg: ''
+
+        - ${{ if ne(parameters.testScope, '') }}:
+          - _testScopeArg: -testScope ${{ parameters.testScope }}
 
         - ${{ if ne(job._jobFramework, '')}}:
           - _finalFrameworkArg: ${{ job._jobFramework }}
@@ -148,7 +152,7 @@ jobs:
                     -build
                     -buildtests
                     $(_commonArguments)
-                    /p:OuterLoop=$(_outerloop)
+                    $(_testScopeArg)
                     $(_msbuildCommonParameters)
               displayName: Build Sources and Tests
 
@@ -195,7 +199,7 @@ jobs:
                 helixQueues: $(_helixQueues)
                 msbuildScript: $(_msbuildCommand)
                 framework: $(_framework)
-                outerloop: $(_outerloop)
+                testScope: ${{ parameters.testScope }}
 
                 ${{ if eq(parameters.isOfficialBuild, 'true') }}:
                   officialBuildId: $(Build.BuildNumber)

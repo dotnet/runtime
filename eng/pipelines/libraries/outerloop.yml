@@ -27,7 +27,7 @@ jobs:
       parameters:
         isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
         fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
-        isOuterloopBuild: true
+        testScope: outerloop
 
   # Linux outerloop legs
   - ${{ if or(endsWith(variables['Build.DefinitionName'], 'linux'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}:
@@ -35,7 +35,7 @@ jobs:
       parameters:
         isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
         fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
-        isOuterloopBuild: true
+        testScope: outerloop
 
   # MacOS outerloop legs
   - ${{ if or(endsWith(variables['Build.DefinitionName'], 'osx'), endsWith(variables['Build.DefinitionName'], 'outerloop')) }}:
@@ -43,4 +43,4 @@ jobs:
       parameters:
         isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
         fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
-        isOuterloopBuild: true
+        testScope: outerloop
