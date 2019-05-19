@@ -124,7 +124,7 @@ get_method_image (MonoMethod *method)
 // nor does the C++ overload fmod (mono_fmod instead). These functions therefore
 // must be extern "C".
 #define register_icall(func, sig, no_wrapper) \
-	(mono_register_jit_icall_info (&mono_jit_icall_info.func, func, #func, (sig), (no_wrapper), #func))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), #func))
 
 MonoMethodSignature*
 mono_signature_no_pinvoke (MonoMethod *method)

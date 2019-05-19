@@ -179,7 +179,22 @@ mono_icall_get_file_path_prefix (const gchar *path)
 }
 #endif /* HOST_WIN32 */
 
+#if MONO_LLVM_LOADED
+
+static
 MonoJitICallInfos mono_jit_icall_info;
+
+MonoJitICallInfos*
+mono_get_jit_icall_info (void)
+{
+	return &mono_jit_icall_info;
+}
+
+#else
+
+MonoJitICallInfos mono_jit_icall_info;
+
+#endif
 
 MonoObjectHandle
 ves_icall_System_Array_GetValueImpl (MonoArrayHandle array, guint32 pos, MonoError *error)

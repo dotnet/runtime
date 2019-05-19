@@ -1712,7 +1712,7 @@ mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 	} else {
 		g_assert (TLS_KEY_THREAD == 0); // FIXME static_assert
 		const MonoJitICallId jit_icall_id = (MonoJitICallId)(MONO_JIT_ICALL_mono_tls_get_thread + key);
-		g_assert (mono_jit_icall_info.array [jit_icall_id].func == (gpointer)mono_tls_get_tls_getter (key));
+		g_assert (mono_get_jit_icall_info ()->array [jit_icall_id].func == (gpointer)mono_tls_get_tls_getter (key));
 		return mono_emit_jit_icall_id (cfg, jit_icall_id, NULL);
 	}
 }
@@ -10103,7 +10103,7 @@ field_access_end:
 			sp -= info->sig->param_count;
 
 			// FIXME int instead of pointer
-			if (info == &mono_jit_icall_info.mono_threads_attach_coop) {
+			if (info == &mono_get_jit_icall_info ()->mono_threads_attach_coop) {
 				MonoInst *addr;
 				MonoBasicBlock *next_bb;
 

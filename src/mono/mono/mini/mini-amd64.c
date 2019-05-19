@@ -6824,9 +6824,9 @@ mono_arch_register_lowlevel_calls (void)
 
 #if defined(TARGET_WIN32) || defined(HOST_WIN32)
 #if _MSC_VER
-	mono_register_jit_icall_info (&mono_jit_icall_info.mono_chkstk_win64, __chkstk, "mono_chkstk_win64", NULL, TRUE, "__chkstk");
+	mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_chkstk_win64, __chkstk, "mono_chkstk_win64", NULL, TRUE, "__chkstk");
 #else
-	mono_register_jit_icall_info (&mono_jit_icall_info.mono_chkstk_win64, ___chkstk_ms, "mono_chkstk_win64", NULL, TRUE, "___chkstk_ms");
+	mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_chkstk_win64, ___chkstk_ms, "mono_chkstk_win64", NULL, TRUE, "___chkstk_ms");
 #endif
 #endif
 }

@@ -698,7 +698,7 @@ register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const c
 }
 
 #define register_opcode_emulation(opcode, name, sig, func, no_wrapper) \
-	(register_opcode_emulation ((opcode), &mono_jit_icall_info.name, #name, (sig), func, #func, (no_wrapper)))
+	(register_opcode_emulation ((opcode), &mono_get_jit_icall_info ()->name, #name, (sig), func, #func, (no_wrapper)))
 
 /*
  * For JIT icalls implemented in C.
@@ -714,7 +714,7 @@ register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const c
  * must be extern "C".
  */
 #define register_icall(func, sig, avoid_wrapper) \
-	(mono_register_jit_icall_info (&mono_jit_icall_info.func, func, #func, (sig), (avoid_wrapper), #func))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (avoid_wrapper), #func))
 
 #define register_icall_no_wrapper(func, sig) register_icall (func, sig, TRUE)
 #define register_icall_with_wrapper(func, sig) register_icall (func, sig, FALSE)
@@ -731,7 +731,7 @@ register_opcode_emulation (int opcode, MonoJitICallInfo *jit_icall_info, const c
  * This also passes last parameter c_symbol=NULL since there is not a directly linkable symbol.
  */
 #define register_dyn_icall(func, name, sig, save) \
-	(mono_register_jit_icall_info (&mono_jit_icall_info.name, (func), #name, (sig), (save), NULL))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->name, (func), #name, (sig), (save), NULL))
 
 MonoLMF *
 mono_get_lmf (void)

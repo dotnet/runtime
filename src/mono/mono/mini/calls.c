@@ -648,7 +648,7 @@ MonoInst*
 mono_emit_jit_icall_id (MonoCompile *cfg, MonoJitICallId jit_icall_id, MonoInst **args)
 {
 	g_assert ((guint)jit_icall_id < MONO_JIT_ICALL_count);
-	return mono_emit_jit_icall_info (cfg, &mono_jit_icall_info.array [jit_icall_id], args);
+	return mono_emit_jit_icall_info (cfg, &mono_get_jit_icall_info ()->array [jit_icall_id], args);
 }
 
 /*

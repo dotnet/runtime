@@ -334,16 +334,28 @@ MONO_JIT_ICALLS
 	MonoJitICallInfo array [MONO_JIT_ICALL_count];
 } MonoJitICallInfos;
 
+#if MONO_LLVM_LOADED
+
+MonoJitICallInfos*
+mono_get_jit_icall_info (void) MONO_LLVM_INTERNAL;
+
+#else
+
 extern MonoJitICallInfos mono_jit_icall_info;
 
-#define mono_jit_icall_info_index(x) ((x) - mono_jit_icall_info.array)
+#define mono_get_jit_icall_info() (&mono_jit_icall_info)
+
+#endif
+
+#define mono_jit_icall_info_index(x) ((int)((x) - mono_get_jit_icall_info ()->array))
+#define mono_jit_icall_info_id(x) ((MonoJitICallId)mono_jit_icall_info_index(x))
 
 static inline MonoJitICallInfo*
 mono_check_jit_icall_info (gconstpointer jit_icall_info)
 {
 	// All pointers to MonoJitICallInfo must be within mono_jit_icall_info.
 	// This enables converting to and from a small integer or enum.
-	g_assert ((char*)jit_icall_info >= (char*)&mono_jit_icall_info && (char*)jit_icall_info < (char*)(&mono_jit_icall_info + 1));
+	g_assert ((char*)jit_icall_info >= (char*)mono_get_jit_icall_info () && (char*)jit_icall_info < (char*)(mono_get_jit_icall_info () + 1));
 
 	// Allow encoding in 16 bits, and maybe 9 (but not 8). FIXME static_assert.
 	g_assert (MONO_JIT_ICALL_count < 0x200);
@@ -356,7 +368,7 @@ mono_find_jit_icall_info (MonoJitICallId index)
 {
 	g_assert (index && (guint)index < MONO_JIT_ICALL_count);
 
-	MonoJitICallInfo *info = &mono_jit_icall_info.array [index];
+	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->array [index];
 
 	g_assert (info->func);
 

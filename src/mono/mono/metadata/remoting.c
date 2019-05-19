@@ -113,7 +113,7 @@ mono_compile_method_icall (MonoMethod *method);
 //
 // This is not the same as other register_icall (last parameter NULL vs. #func)
 #define register_icall(func, sig, save) \
-	(mono_register_jit_icall_info (&mono_jit_icall_info.func, func, #func, (sig), (save), NULL))
+	(mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (save), NULL))
 
 static inline void
 remoting_lock (void)
