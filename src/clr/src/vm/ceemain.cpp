@@ -1097,7 +1097,7 @@ LONG FilterStartupException(PEXCEPTION_POINTERS p, PVOID pv)
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
-// EEStartup is responcible for all the one time intialization of the runtime.  Some of the highlights of
+// EEStartup is responsible for all the one time intialization of the runtime.  Some of the highlights of
 // what it does include
 //     * Creates the default and shared, appdomains. 
 //     * Loads mscorlib.dll and loads up the fundamental types (System.Object ...)
