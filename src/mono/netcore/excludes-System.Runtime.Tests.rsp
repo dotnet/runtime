@@ -15,18 +15,8 @@
 -nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleFalse_WhenUsingAssemblyLoad
 -nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleFalse_WhenUsingAssemblyLoadContext
 
-# Mono ignores attributes defined on parameters in delegates
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_DecimalParameterWithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_ReferenceTypeParameterWithMissingValue
+# Mono ignores [Optional] attribute defined on parameters in delegates
 -nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameterUnassingableFromMissing_WithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_ValueTypeParameterWithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_MissingTypeForDefaultParameter_Succeeds
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_NullableIntWithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_StringParameterWithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_DecimalParameterWithAttributeAndMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_DateTimeParameterWithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_AllPrimitiveParametersWithSomeExplicitValues
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_AllPrimitiveParametersWithMissingValues
 -nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameter_WithMissingValue
 -nomethod System.Tests.DelegateTests.DynamicInvoke_ParameterSpecification_ArrayOfMissing
 
@@ -43,9 +33,17 @@
 # Boxed pointers are not supported? https://github.com/mono/mono/blob/ced517784b2a07fb851e2227dac04e0df2262d57/mcs/class/corlib/ReferenceSources/RuntimeType.cs#L229
 -nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestByRefLikeRefReturn
 
+# crashes runtime:
+-nomethod System.Reflection.Tests.PointerTests.PointerFieldGetValue
+# Mono throws unexpected ArgumentExceptions for these:
+-nomethod System.Reflection.Tests.PointerTests.IntPtrFieldSetValue
+-nomethod System.Reflection.Tests.PointerTests.PointerFieldSetValue
+-nomethod System.Reflection.Tests.PointerTests.PointerPropertySetValue
+-nomethod System.Reflection.Tests.PointerTests.PointerPropertyGetValue
+-nomethod System.Reflection.Tests.PointerTests.PointerMethodDelegateParameter
+-nomethod System.Reflection.Tests.PointerTests.PointerMethodParameter
 
 # TODO: ignore in CoreFX for mono runtime:
--nomethod System.Reflection.Tests.PointerTests.*
 -nomethod System.Tests.StringTests.NormalizationTest
 -nomethod System.Tests.GCTests.KeepAlive
 -nomethod System.Tests.GCTests.LargeObjectHeapCompactionModeRoundTrips
