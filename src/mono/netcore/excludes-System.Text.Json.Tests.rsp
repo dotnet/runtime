@@ -1,4 +1,0 @@
-# JsonSerializer.Parse<Enum>(...) generates invalid IL through DynamicMethod
-# Mono throws "System.MemberAccessException: Cannot create an abstract class: System.Enum" from System.Reflection.Emit.DynamicMethod.CreateDelegate
-# CoreCLR creates the delegate, but fails to execute it with "System.InvalidOperationException: Instances of abstract classes cannot be created."
--nomethod System.Text.Json.Serialization.Tests.ValueTests.ValueFail

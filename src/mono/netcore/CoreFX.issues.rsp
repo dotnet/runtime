@@ -1,0 +1,908 @@
+-notrait category=OuterLoop 
+-notrait category=RequiresElevation
+-notrait category=nonnetcoreapptests
+-notrait category=nonmonotests
+-notrait category=failing
+
+####################################################################
+##  Microsoft.Bcl.AsyncInterfaces.Tests
+####################################################################
+
+-nomethod System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.*
+
+####################################################################
+##  Microsoft.VisualBasic.Core.Tests
+####################################################################
+
+-nomethod Microsoft.VisualBasic.Tests.ErrObjectTests.Clear
+-nomethod Microsoft.VisualBasic.ApplicationServices.Tests.AssemblyInfoTests.LoadedAssemblies
+
+####################################################################
+##  System.Buffers.Tests
+####################################################################
+
+# CoreCLR specific test
+# https://github.com/mono/mono/blob/cc5886e3d54a7fae15bfd8bda1e8781fcbf2be25/netcore/System.Private.CoreLib/shared/System/Buffers/TlsOverPerCoreLockedStacksArrayPool.cs#L319-L325
+-nomethod System.Buffers.ArrayPool.Tests.CollectionTests.PollingEventFires
+
+####################################################################
+##  System.CodeDom.Tests
+####################################################################
+
+# TODO: Hangs
+-noclass System.CodeDom.Compiler.Tests.ExecutorTests
+
+####################################################################
+##  System.Collections.NonGeneric.Tests
+####################################################################
+
+# Mono currently supports Array.Copy from object[] array containing boxed ints to float[] array with primitive widening
+-nomethod *ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType*
+-nomethod *ICollection_NonGeneric_CopyTo_ArrayOfEnumType*
+
+####################################################################
+##  System.Collections.Specialized.Tests
+####################################################################
+
+# TODO: Wrong exception
+-nomethod System.Collections.Specialized.Tests.NameValueCollectionCtorTests.Ctor_NegativeCapacity_ThrowsArgumentOutOfRangeException
+
+####################################################################
+##  System.Collections.Tests
+####################################################################
+
+-nomethod Generic.Dictionary.DictionaryConcurrentAccessDetectionTests.DictionaryConcurrentAccessDetection_*
+-nomethod System.Collections.Generic.Tests.ComparerTests.MostComparisons
+
+####################################################################
+##  System.Diagnostics.Process.Tests
+####################################################################
+
+-nomethod System.Diagnostics.Tests.ProcessTests.Kill_EntireProcessTree_True_CalledOnTreeContainingCallingProcess_ThrowsInvalidOperationException
+-nomethod System.Diagnostics.Tests.ProcessTests.ProcessStart_UseShellExecute_ExecuteOrder
+-nomethod System.Diagnostics.Tests.ProcessTests.GetProcesses_RemoteMachinePath_ReturnsExpected
+
+####################################################################
+##  System.Diagnostics.TraceSource.Tests
+####################################################################
+
+-nomethod System.Diagnostics.TraceSourceTests.TraceSourceClassTests.PruneTest
+-nomethod System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.EntryAssemblyName_Null_NotIncludedInTrace
+
+####################################################################
+##  System.Diagnostics.Tracing.Tests
+####################################################################
+
+-nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms004.twoprms004.Test.DynamicCSharpRunTest
+-nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.regclass.regclass007.regclass007.Test.DynamicCSharpRunTest
+-nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmethod.regclass.regclass018.regclass018.Test.DynamicCSharpRunTest
+-nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.regclass.regclass029.regclass029.Test.DynamicCSharpRunTest
+-nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct029.regstrct029.Test.DynamicCSharpRunTest
+
+####################################################################
+##  System.Dynamic.Runtime.Tests
+####################################################################
+
+-nomethod BasicEventSourceTests.TestsManifestNegative.Test_GenerateManifest_InvalidEventSources
+-nomethod BasicEventSourceTests.TestsWrite.Test_Write_T_EventListener
+-nomethod BasicEventSourceTests.TestsWrite.Test_Write_T_EventListener_UseEvents
+
+####################################################################
+##  System.IO.FileSystem.Tests
+####################################################################
+
+# Depends on precise GC
+-nomethod System.IO.Tests.FileStream_Dispose.FinalizeFlushesWriteBuffer
+# TODO: Hangs
+-nomethod System.IO.Tests.Directory_SetCurrentDirectory+Directory_SetCurrentDirectory_SymLink.SetToPathContainingSymLink
+
+####################################################################
+##  System.IO.Tests
+####################################################################
+
+# Mono allows large arrays (int.MaxValue elements)
+-nomethod System.IO.Tests.MemoryStream_ConstructorTests.MemoryStream_Ctor_InvalidCapacities
+
+####################################################################
+##  System.Linq.Expressions.Tests
+####################################################################
+
+-nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.NewArrayBounds*
+-nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableFloatToULongTest
+-nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedFloatToNullableULongTest
+-nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedFloatToULongTest
+-nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableFloatToNullableULongTest
+-nomethod System.Linq.Expressions.Tests.BindTests.GlobalField
+-nomethod System.Linq.Expressions.Tests.BindTests.ConstantField
+-nomethod System.Linq.Expressions.Tests.Return.TailCallThenReturn
+-nomethod System.Linq.Expressions.Tests.ArrayAccessTests.ArrayAccess_MultiDimensionalOf1
+-nomethod System.Linq.Expressions.Tests.ArrayAccessTests.NonZeroBasedOneDimensionalArrayAccess
+-nomethod System.Linq.Expressions.Tests.ArrayAccessTests.ArrayIndex_MultiDimensionalOf1
+-nomethod System.Linq.Expressions.Tests.UnaryArithmeticNegateCheckedNullableTests.VerifyIL_NullableShortNegateChecked
+-noclass System.Linq.Expressions.Tests.StackSpillerTests
+-nomethod System.Linq.Expressions.Tests.ExceptionHandlingExpressions.ExceptionThrownInFilter
+-nomethod System.Linq.Expressions.Tests.ExceptionHandlingExpressions.ExpressionsUnwrapeExternallyThrownRuntimeWrappedException
+-nomethod System.Linq.Expressions.Tests.MemberAccessTests.Property_NoGetOrSetAccessors_ThrowsArgumentException
+-nomethod System.Linq.Expressions.Tests.IndexExpressionTests.IndexedPropertySetterValueTypeNotMatchPropertyType
+-nomethod System.Linq.Expressions.Tests.IndexExpressionTests.IndexedPropertyGetReturnsWrongType
+-nomethod System.Linq.Expressions.Tests.IndexExpressionTests.NoAccessorIndexedProperty
+-nomethod System.Linq.Expressions.Tests.IndexExpressionTests.IndexedPropertySetterNoParams
+-nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertFloatToUIntTest
+-nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertNullableFloatToUIntTest
+-nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.SingleNegativeBoundErrorMessage
+-nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.MultipleNegativeBoundErrorMessage
+-nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertNullableFloatToNullableUIntTest
+-nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertFloatToNullableUIntTest
+-noclass System.Linq.Expressions.Tests.LambdaTests
+-nomethod System.Linq.Expressions.Tests.BinaryCoalesceTests.VerifyIL_NullableIntCoalesceToNullableInt
+-nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedDoubleToULongTest
+-nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedDoubleToNullableULongTest
+-nomethod System.Linq.Expressions.Tests.UnaryArithmeticNegateCheckedTests.VerifyIL_ShortNegateChecked
+-nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableDoubleToULongTest
+-nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableDoubleToNullableULongTest
+-nomethod System.Linq.Expressions.Tests.BlockTests.InsignificantBlock
+-nomethod System.Linq.Expressions.Tests.CallTests.EnumArgAndReturn
+-nomethod System.Linq.Expressions.Tests.CallTests.MethodName_TypeArgsDontMatchConstraints_ThrowsArgumentException
+-nomethod System.Linq.Expressions.Tests.ArrayIndexTests.NonZeroBasedOneDimensionalArrayIndex
+-nomethod System.Linq.Expressions.Tests.ArrayIndexTests.NonZeroBasedOneDimensionalArrayIndexMethod
+-nomethod System.Linq.Expressions.Tests.CompilerTests.VerifyIL_*
+
+####################################################################
+##  System.Linq.Parallel.Tests
+####################################################################
+
+-nomethod System.Linq.Parallel.Tests.PlinqModesTests.WithExecutionMode_Multiple
+
+####################################################################
+##  System.Memory.Tests
+####################################################################
+
+# CoreCLR specific test
+# https://github.com/mono/mono/blob/18f0bf055eb2bfa8981062bdad3af2fb4bbc9be4/netcore/System.Private.CoreLib/shared/System/String.cs#L790-L800
+# https://github.com/mono/mono/blob/18f0bf055eb2bfa8981062bdad3af2fb4bbc9be4/netcore/System.Private.CoreLib/shared/System/String.cs#L811-L821
+-nomethod System.Tests.StringTests.NormalizationTest
+
+-nomethod System.SpanTests.SpanTests.MemoryMarshal_GenericStaticReturningSpan
+-nomethod System.SpanTests.SpanTests.Span_Property
+-nomethod System.SpanTests.SpanTests.ReadOnlySpan_Property
+-nomethod System.SpanTests.SpanTests.ReadOnlyMemory_PropertyReturningReadOnlySpan
+-nomethod System.SpanTests.SpanTests.MemoryExtensions_StaticReturningReadOnlySpan
+-nomethod System.SpanTests.SpanTests.Span_StaticOperator
+-nomethod System.SpanTests.SpanTests.MemoryManager_MethodReturningSpan
+-nomethod System.SpanTests.SpanTests.ReadOnlySpan_Constructor
+-nomethod System.SpanTests.SpanTests.ReadOnlySpan_Operator
+-nomethod System.SpanTests.SpanTests.Span_Constructor
+-nomethod System.SpanTests.SpanTests.Span_InstanceMethod
+-nomethod System.SpanTests.SpanTests.Memory_PropertyReturningSpan
+-nomethod System.SpanTests.SpanTests.ReadOnlySpan_InstanceMethod
+-nomethod System.Buffers.Tests.ArrayBufferWriterTests_String.Invalid_Ctor
+-nomethod System.Buffers.Tests.ArrayBufferWriterTests_Char.Invalid_Ctor
+-nomethod System.Buffers.Tests.ArrayBufferWriterTests_Byte.Invalid_Ctor
+
+####################################################################
+##  System.Net.Http.Functional.Tests
+####################################################################
+
+# TODO: Crashes runtime inside Interop.Http.MultiPerform (marshalling issue?)
+-nomethod *PlatformHandler*
+# TODO: Hangs
+-nomethod *ExpectedDiagnosticSourceActivityLogging*
+
+# Works, but may trigger UI!
+-nomethod System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test.SetDelegate_ConnectionSucceeds
+-nomethod System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test.AutomaticOrManual_DoesntFailRegardlessOfWhetherClientCertsAreAvailable
+
+####################################################################
+##  System.Net.HttpListener.Tests
+####################################################################
+
+# TODO:
+# System.ArgumentException : Cannot bind to the target method because its signature is not compatible with that of the delegate type.
+# at System.Delegate.CreateDelegate(Type type, Object firstArgument, MethodInfo method, Boolean throwOnBindFailure, Boolean allowClosed)
+# at System.Delegate.CreateDelegate(Type type, MethodInfo method, Boolean throwOnBindFailure)
+# at System.Delegate.CreateDelegate(Type type, MethodInfo method)
+# at System.Reflection.RuntimeMethodInfo.CreateDelegate(Type delegateType)
+# at System.Net.CookieExtensions.IsRfc2965Variant(Cookie cookie)
+-noclass System.Net.Tests.HttpListenerResponseCookiesTests
+
+####################################################################
+##  System.Net.Sockets.Tests
+####################################################################
+
+-nomethod System.Net.Sockets.Tests.UdpClientTest.Finalize_NoExceptionsThrown
+# TODO: Hangs
+-nomethod System.Net.Sockets.Tests.CreateSocket.CtorAndAccept_SocketNotKeptAliveViaInheritance
+
+####################################################################
+##  System.Reflection.Emit.ILGeneration.Tests
+####################################################################
+
+-noclass System.Reflection.Emit.Tests.CustomAttributeBuilderTests
+-nomethod System.Reflection.Emit.Tests.SignatureHelperAddArgument.*
+-nomethod System.Reflection.Emit.Tests.SignatureHelperGetPropertySigHelper.*
+-nomethod System.Reflection.Emit.Tests.ILGeneratorEmit3.Emit_OpCodes_LocalBuilder_TooManyLocals_ThrowsInvalidOperationException
+-nomethod System.Reflection.Emit.Tests.ILGeneratorEmit3.Emit_OpCodes_LocalBuilder_LocalFromDifferentMethod_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.DeclareLocal_TypeCreated_ThrowsInvalidOperationException
+-nomethod System.Reflection.Emit.Tests.ILGeneratorDeclareLocal.DeclareLocal_GlobalFunctionsCreated_ThrowsInvalidOperationException
+-nomethod System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_Module_CallingConventions_Type_Length_ReturnsThree
+-nomethod System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_Module_Type_TypeArray
+-nomethod System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_CallingConventions_Type_Length_ReturnsThree
+-nomethod System.Reflection.Emit.Tests.SignatureHelperGetMethodSigHelper.GetMethodSigHelper_Module_Type_TypeArray_NullObjectInParameterType_ThrowsArgumentNullException
+-nomethod System.Reflection.Emit.Tests.ILGeneratorEmit2.Emit_OpCodes_LocalBuilder_TooManyLocals_ThrowsInvalidOperationException
+-nomethod System.Reflection.Emit.Tests.ILGeneratorEmit2.Emit_OpCodes_LocalBuilder_LocalFromDifferentMethod_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.SetCustomAttributeTests.SetCustomAttribute_NullArgument_ThrowsArgumentNullException
+-nomethod System.Reflection.Emit.Tests.ILGeneratorEmit4.TestEmitCalliNonBlittable
+-nomethod System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArgument_NullObjectInRequiredCustomModifiers_ThrowsArgumentNullException
+-nomethod System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArgument_NullObjectInOptionalCustomModifiers_ThrowsArgumentNullException
+-nomethod System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArgument_DifferentCountsForCustomModifiers_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArguments_SignatureFinished_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.SignatureHelperAddArguments.AddArguments
+
+####################################################################
+##  System.Reflection.Emit.Tests
+####################################################################
+
+# Mono behaves like coreclr but the test doesn't detect it
+-nomethod System.Reflection.Emit.Tests.AssemblyTests.DefineDynamicModule
+
+-nomethod System.Reflection.Emit.Tests.MethodBuilderEquals.Equals
+-nomethod System.Reflection.Emit.Tests.ConstructorBuilderToString.ToString_NullRequiredOptionalCustomModifiers
+-nomethod System.Reflection.Emit.Tests.ConstructorBuilderToString.ToString_NoRequiredOptionalCustomModifiers
+-nomethod System.Reflection.Emit.Tests.EnumBuilderMethodTests.DefineLiteral
+-nomethod System.Reflection.Emit.Tests.EnumBuilderMethodTests.DefineLiteral_InvalidLiteralValue_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.EnumBuilderMethodTests.SetCustomAttribute_ConstructorInfo_ByteArray
+-nomethod System.Reflection.Emit.Tests.EnumBuilderMethodTests.SetCustomAttribute_CustomAttributeBuilder
+-nomethod System.Reflection.Emit.Tests.EnumBuilderPropertyTests.Guid_TypeCreated
+-nomethod System.Reflection.Emit.Tests.FieldBuilderSetConstant.SetConstant_InvalidType_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.GenericTypeParameterBuilderSetInterfaceConstraints.SetInterfaceConstraints_OneCustomInterface
+-nomethod System.Reflection.Emit.Tests.GenericTypeParameterBuilderSetInterfaceConstraints.SetInterfaceConstraints_MultipleCustomInterfaces
+-nomethod System.Reflection.Emit.Tests.MethodBuilderDefineGenericParameters.DefineGenericParameters_SingleTypeParameter_SetImplementationFlagsCalled_ThrowsInvalidOperationException
+-nomethod System.Reflection.Emit.Tests.MethodBuilderDefineGenericParameters.DefineGenericParameters_TwoTypeParameters_SetImplementationFlagsCalled_ThrowsInvalidOperationException
+-nomethod System.Reflection.Emit.Tests.MethodBuilderDefineGenericParameters.DefineGenericParameters_SingleTypeParameter_AlreadyDefined_ThrowsInvalidOperationException
+-nomethod System.Reflection.Emit.Tests.MethodBuilderDefineGenericParameters.DefineGenericParameters_TwoTypeParameters_AlreadyDefined_ThrowsInvalidOperationException
+-nomethod System.Reflection.Emit.Tests.MethodBuilderGetILGenerator.GetILGenerator_NoMethodBody_ThrowsInvalidOperationException
+-nomethod System.Reflection.Emit.Tests.MethodBuilderMakeGenericMethod.TestNotThrowsExceptionOnNull
+-nomethod System.Reflection.Emit.Tests.MethodBuilderMakeGenericMethod.TestNotThrowsExceptionOnEmptyArray1
+-nomethod System.Reflection.Emit.Tests.MethodBuilderMakeGenericMethod.TestNotThrowsExceptionOnEmptyArray2
+-nomethod System.Reflection.Emit.Tests.MethodBuilderReturnParameter.ReturnParameter_NoBody_ThrowsInvalidOperationException
+-nomethod System.Reflection.Emit.Tests.MethodBuilderSetParameters.SetParameters
+-nomethod System.Reflection.Emit.Tests.MethodBuilderSetParameters.SetParameters_NullParameter_ThrowsArgumentNullException
+-nomethod System.Reflection.Emit.Tests.MethodBuilderToString.ToString_AllFieldsSet
+-nomethod System.Reflection.Emit.Tests.MethodBuilderToString.ToString_NameAndAttributeSet
+-nomethod System.Reflection.Emit.Tests.MethodBuilderToString.ToString_NameAttributeAndSignatureSetSet
+-nomethod System.Reflection.Emit.Tests.MethodBuilderToString.ToString_NonGenericMethod
+-nomethod System.Reflection.Emit.Tests.MethodBuilderToString.ToString_GenericMethod
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderDefineEnum.DefineEnum
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderDefineEnum.DefineEnum_DynamicUnderlyingType_Works
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderDefineEnum.DefineEnum_ByRefUnderlyingType_ThrowsCOMExceptionOnCreation
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderDefineType.DefineType
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderGetArrayMethod.GetArrayMethod_ValidArrayValues_VoidReturnType
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderGetArrayMethod.GetArrayMethod_ValidArrayValues_ValueReturnType
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderGetArrayMethod.GetArrayMethod_ValidArrayValues_ReferenceReturnType
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderGetArrayMethod.GetArrayMethod_ValidArrayValues_ValueParameterType
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderGetArrayMethod.GetArrayMethod_ValidArrayValues_ReferenceParameterType
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderGetArrayMethod.GetArrayMethod_JaggedArray
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderGetArrayMethod.GetArrayMethod_MultiDimensionalArray
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderGetArrayMethod.GetArrayMethod_NullParameters
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderGetArrayMethod.GetArrayMethod_ArrayClassNotArray_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.ModuleBuilderGetArrayMethod.GetArrayMethod_InvalidArgument_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.PropertyBuilderTest2.AddOtherMethod
+-nomethod System.Reflection.Emit.Tests.PropertyBuilderTest11.SetConstant
+-nomethod System.Reflection.Emit.Tests.PropertyBuilderTest11.SetConstant_TypeNotConstant_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.PropertyBuilderTest12.SetCustomAttribute_CustomAttributeBuilder_TypeNotCreated_ThrowsInvalidOperationException
+-nomethod System.Reflection.Emit.Tests.PropertyBuilderTest12.SetCustomAttribute_ConstructorInfo_ByteArray_TypeAlreadyCreated_ThrowsInvalidOperationException
+-nomethod System.Reflection.Emit.Tests.PropertyBuilderTest15.TestThrowsExceptionForCreateTypeCalled
+-nomethod System.Reflection.Emit.Tests.PropertyBuilderTest16.SetValue_ThrowsNotSupportedException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderAddInterfaceImplementation.AddInterfaceImplementation_TypeNotInterface_ThrowsTypeLoadExceptionOnCreation
+-nomethod System.Reflection.Emit.Tests.TypeBuilderAddInterfaceImplementation.AddInterfaceImplementation_TypeDoesntImplementInterface_ThrowsTypeLoadExceptionOnCreation
+-nomethod System.Reflection.Emit.Tests.TypeBuilderAssemblyQualifiedName.AssemblyQualifiedName
+-nomethod System.Reflection.Emit.Tests.TypeBuilderCreateType.CreateType_BadAttributes
+-nomethod System.Reflection.Emit.Tests.TypeBuilderCreateTypeInfo.CreateType_InvalidTypeAttributes_Throws
+
+# Extra RTSpecialName attribute
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineConstructor.DefineConstructor
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineConstructor.DefineConstructor_NullRequiredAndOptionalCustomModifiers
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineDefaultConstructor.DefineDefaultConstructor
+-nomethod System.Reflection.Emit.Tests.MethodBuilderDefineTypeInitializer.DefineTypeInitializer
+
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineMethodTests.DefineMethod
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineFieldTests.DefineField
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineFieldTests.DefineField_InvalidFieldAttributes_ThrowsTypeLoadExceptionOnCreation
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineFieldTests.DefineField_DynamicFieldTypeNotCreated_ThrowsTypeLoadException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineGenericParameters.DefineGenericParameters_AlreadyDefinedGenericParameters_ThrowsInvalidOperationException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineEvent.DefineEvent
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineEvent.DefineProperty_InvalidUnicodeChars
+-nomethod System.Reflection.Emit.Tests.MethodBuilderDefineMethodOverride.DefineMethodOverride_NothingToOverride_ThrowsTypeLoadExceptionOnCreation
+-nomethod System.Reflection.Emit.Tests.MethodBuilderDefineMethodOverride.DefineMethodOverride_ClassDoesNotImplementOrInheritMethod_ThrowsTypeLoadExceptionOnCreation
+-nomethod System.Reflection.Emit.Tests.MethodBuilderDefineMethodOverride.DefineMethodOverride_BodyAndDeclarationTheSame_ThrowsTypeLoadExceptionOnCreation
+-nomethod System.Reflection.Emit.Tests.MethodBuilderDefineMethodOverride.DefineMethodOverride_CalledTwiceWithDifferentBodies_ThrowsTypeLoadExceptionOnCreation
+-nomethod System.Reflection.Emit.Tests.MethodBuilderDefineMethodOverride.DefineMethodOverride_BodyAndDeclarationHaveDifferentSignatures_ThrowsTypeLoadExceptionOnCreation
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineNestedType.DefineNestedType
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineNestedType.DefineNestedType_LongName_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineNestedType.DefineNestedType_InvalidAttributes_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineNestedType.DefineNestedType_InvalidParent_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineNestedType.DefineNestedType_InvalidInterfaceType_ThrowsTypeLoadExceptionOnCreation
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineProperty.DefineProperty
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineProperty.DefineProperty_OpenGenericReturnType_ThrowsBadImageFormatExceptionGettingCreatedPropertyType
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineProperty.DefineProperty_NullParameterType_ThrowsArgumentNullException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineProperty.DefineProperty_OpenGenericParameterType_ThrowsBadImageFormatExceptionGettingCreatedPropertyType
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineProperty.DefineProperty_DynamicPropertyTypeNotCreated_ThrowsTypeLoadException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineProperty.DefineProperty_DynamicParameterTypeNotCreated_ThrowsTypeLoadException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderDefineProperty.DefineProperty_CalledMultipleTimes_Works
+-nomethod System.Reflection.Emit.Tests.TypeBuilderGetConstructor.GetConstructor_TypeNotTypeBuilder_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderGetConstructor.GetConstructor_DeclaringTypeOfConstructorNotGenericTypeDefinitionOfType_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderGetConstructor.GetConstructor_TypeNotGeneric_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderGetField.GetField_TypeNotTypeBuilder_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderGetField.GetField_DeclaringTypeOfFieldNotGenericTypeDefinitionOfType_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderGetField.GetField_TypeNotGeneric_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderGetMethod.GetMethod_TypeNotTypeBuilder_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderGetMethod.GetMethod_MethodDefinitionNotInTypeGenericDefinition_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderGetMethod.GetMethod_MethodNotGenericTypeDefinition_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderGetMethod.GetMethod_TypeIsNotGeneric_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.TypeBuilderGUID.Guid_TypeCreated_NotEmpty
+
+-nomethod System.Reflection.Emit.Tests.AssemblyTests.DefineDynamicAssembly_AssemblyName_AssemblyBuilderAccess
+-nomethod System.Reflection.Emit.Tests.AssemblyTests.DefineDynamicAssembly_AssemblyName_AssemblyBuilderAccess_CustomAttributeBuilder
+
+####################################################################
+##  System.Reflection.Tests
+####################################################################
+
+# Invalid argument tests
+-nomethod System.Reflection.Tests.AssemblyNameTests.SetProcessorArchitecture_InvalidArchitecture_TakesLowerThreeBitsIfLessThanOrEqualToMax
+-nomethod System.Reflection.Tests.AssemblyNameTests.Ctor_String_Invalid
+-nomethod System.Reflection.Tests.AssemblyNameTests.Version
+-nomethod System.Reflection.Tests.GetTypeTests.GetType_EmptyString
+-nomethod System.Reflection.Tests.MethodInfoTests.Invoke_OptionalParameterUnassingableFromMissing_WithMissingValue_ThrowsArgumentException
+
+# Static ctors cannot be invoke with one Invoke overload
+-nomethod System.Reflection.Tests.ConstructorInfoTests.Invoke_StaticConstructor_ThrowsMemberAccessException
+# Different exception thrown
+-nomethod System.Reflection.Tests.ConstructorInfoTests.Invoke_AbstractClass_ThrowsMemberAccessException
+-nomethod System.Reflection.Tests.PropertyInfoTests.GetValue_Invalid
+-nomethod System.Reflection.Tests.TypeInfoTests.IsEnumDefined_Invalid
+-nomethod System.Reflection.Tests.AssemblyTests.AssemblyLoadFromStringNeg
+
+# Fails because our Object class has extra instance methods
+-nomethod System.Reflection.Tests.TypeInfoTests.FindMembers
+-nomethod System.Reflection.Tests.TypeInfoTests.GetMethods
+-nomethod System.Reflection.Tests.TypeInfoTests.GetMembers
+-nomethod System.Reflection.Tests.TypeInfoTests.GetMethod
+
+# CustomConstantAttribute not supported
+-nomethod System.Reflection.Tests.ParameterInfoTests.RawDefaultValueFromAttribute
+
+# Not implemented
+-nomethod System.Reflection.Tests.AssemblyTests.AssemblyLoadFromBytes
+-nomethod System.Reflection.Tests.AssemblyTests.AssemblyLoadFromBytesWithSymbols
+
+# TODO
+-nomethod System.Reflection.Tests.AssemblyNameTests.Ctor_ValidArchitectureName_Succeeds
+-nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs__CornerCase_HasElementTypes
+-nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs_GenericTypeParameters
+-nomethod System.Reflection.Tests.MemberInfoTests.GenericMethodsInheritTheReflectedTypeOfTheirTemplate
+-nomethod System.Reflection.Tests.AssemblyNameTests.SetPublicKeyToken_GetPublicKeyToken
+-nomethod System.Reflection.Tests.AssemblyNameTests.FullName
+-nomethod System.Reflection.Tests.AssemblyTests.LoadFile
+-nomethod System.Reflection.Tests.AssemblyTests.GetType_DoesntSearchMscorlib
+-nomethod System.Reflection.Tests.AssemblyTests.LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies
+-nomethod System.Reflection.Tests.GetTypeTests.GetType
+-nomethod System.Reflection.Tests.AssemblyNetCoreAppTests.AssemblyGetForwardedTypesLoadFailure
+-nomethod System.Reflection.Tests.AssemblyNetCoreAppTests.AssemblyGetForwardedTypes
+-nomethod System.Reflection.Tests.TypeInfoTests.IsAssignableFrom
+
+####################################################################
+##  System.Resources.Extensions.Tests
+####################################################################
+
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ExceptionforReadOnlyStream
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.EmptyResources
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ExceptionforDuplicateKey
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.PrimitiveResources
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ResourceManagerLoadsCorrectReader
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.BinaryFormattedResources
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.TypeConverterByteArrayResources
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.TypeConverterStringResources
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ExceptionforNullResourceId
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.CanReadViaResourceManager
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.EmbeddedResourcesAreUpToDate
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ExceptionforNullStream
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ExceptionForAddAfterGenerate
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ExceptionforNullFile
+-nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.StreamResources
+
+####################################################################
+##  System.Resources.ResourceManager.Tests
+####################################################################
+
+# TODO: Missing assembly resolve events on AppDomain and AssemblyLoadContext
+-nomethod System.Resources.Tests.ResourceManagerTests.GetString_ExpectEvents
+
+####################################################################
+##  System.Runtime.InteropServices.Tests
+####################################################################
+
+# Obsolete methods
+-nomethod System.Runtime.InteropServices.Tests.IntPtrTests.ReadIntPtr_NotReadable_ThrowsArgumentException
+-nomethod System.Runtime.InteropServices.Tests.IntPtrTests.WriteIntPtr_BlittableObject_Roundtrips
+-nomethod System.Runtime.InteropServices.Tests.IntPtrTests.WriteIntPtr_StructWithReferenceTypes_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.Int64Tests.WriteInt64_StructWithReferenceTypes_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.Int64Tests.ReadInt64_BlittableObject_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.Int16Tests.ReadInt16_NullObject_ThrowsAccessViolationException
+-nomethod System.Runtime.InteropServices.Tests.Int16Tests.ReadInt16_NotReadable_ThrowsArgumentException
+-nomethod System.Runtime.InteropServices.Tests.Int16Tests.WriteInt16_NotReadable_ThrowsArgumentException
+-nomethod System.Runtime.InteropServices.Tests.Int16Tests.WriteInt16_BlittableObject_Roundtrips
+-nomethod System.Runtime.InteropServices.Tests.Int16Tests.ReadInt16_StructWithReferenceTypes_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.Int16Tests.WriteInt16_NullObject_ThrowsAccessViolationException
+-nomethod System.Runtime.InteropServices.Tests.Int16Tests.ReadInt16_BlittableObject_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.Int16Tests.WriteInt16_StructWithReferenceTypes_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.IntPtrTests.ReadIntPtr_BlittableObject_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.Int64Tests.WriteInt64_NotReadable_ThrowsArgumentException
+-nomethod System.Runtime.InteropServices.Tests.Int64Tests.WriteInt64_BlittableObject_Roundtrips
+-nomethod System.Runtime.InteropServices.Tests.Int64Tests.WriteInt64_NullObject_ThrowsAccessViolationException
+-nomethod System.Runtime.InteropServices.Tests.Int64Tests.ReadInt64_NotReadable_ThrowsArgumentException
+-nomethod System.Runtime.InteropServices.Tests.Int32Tests.ReadInt32_NullObject_ThrowsAccessViolationException
+-nomethod System.Runtime.InteropServices.Tests.Int32Tests.WriteInt32_NullObject_ThrowsAccessViolationException
+-nomethod System.Runtime.InteropServices.Tests.Int32Tests.WriteInt32_BlittableObject_Roundtrips
+-nomethod System.Runtime.InteropServices.Tests.Int32Tests.WriteInt32_NotReadable_ThrowsArgumentException
+-nomethod System.Runtime.InteropServices.Tests.Int32Tests.WriteInt32_StructWithReferenceTypes_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.Int32Tests.ReadInt32_StructWithReferenceTypes_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.Int32Tests.ReadInt32_NotReadable_ThrowsArgumentException
+-nomethod System.Runtime.InteropServices.Tests.Int32Tests.ReadInt32_BlittableObject_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.IntPtrTests.ReadIntPtr_NullObject_ThrowsAccessViolationException
+-nomethod System.Runtime.InteropServices.Tests.IntPtrTests.WriteIntPtr_NullObject_ThrowsAccessViolationException
+-nomethod System.Runtime.InteropServices.Tests.IntPtrTests.WriteIntPtr_NotReadable_ThrowsArgumentException
+-nomethod System.Runtime.InteropServices.Tests.IntPtrTests.ReadIntPtr_StructWithReferenceTypes_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.ByteTests.ReadByte_BlittableObject_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.ByteTests.WriteByte_NullObject_ThrowsAccessViolationException
+-nomethod System.Runtime.InteropServices.Tests.ByteTests.WriteByte_StructWithReferenceTypes_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.ByteTests.ReadByte_StructWithReferenceTypes_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.ByteTests.WriteByte_BlittableObject_Roundtrips
+-nomethod System.Runtime.InteropServices.Tests.ByteTests.WriteByte_NotReadable_ThrowsArgumentException
+-nomethod System.Runtime.InteropServices.Tests.ByteTests.ReadByte_NullObject_ThrowsAccessViolationException
+-nomethod System.Runtime.InteropServices.Tests.ByteTests.ReadByte_NotReadable_ThrowsArgumentException
+-nomethod System.Runtime.InteropServices.Tests.Int64Tests.ReadInt64_NullObject_ThrowsAccessViolationException
+-nomethod System.Runtime.InteropServices.Tests.Int64Tests.ReadInt64_StructWithReferenceTypes_ReturnsExpected
+-nomethod System.Runtime.InteropServices.Tests.GetExceptionCodeTests.*
+
+# Not sure what to check
+-nomethod System.Runtime.InteropServices.Tests.DestroyStructureTests.DestroyStructure_NonRuntimeType_ThrowsArgumentException
+-nomethod System.Runtime.InteropServices.Tests.OffsetOfTests.OffsetOf_NotMarshallable_ThrowsArgumentException
+
+# Not sure what to check + checks that the name in the argument exception is null
+-nomethod System.Runtime.InteropServices.Tests.SizeOfTests.SizeOf_InvalidType_ThrowsArgumentException
+
+# Check that the name in the argument exception is null or different
+-nomethod System.Runtime.InteropServices.Tests.OffsetOfTests.OffsetOf_NullFieldName_ThrowsArgumentNullException
+-nomethod System.Runtime.InteropServices.Tests.OffsetOfTests.OffsetOf_NonRuntimeField_ThrowsArgumentException
+
+# Hardcodes offsets
+-nomethod System.Runtime.InteropServices.Tests.OffsetOfTests.OffsetOf_Decimal_ReturnsExpected
+
+# Wants exception messages to be non-empty
+-nomethod System.Runtime.InteropServices.Tests.GetExceptionForHRTests.GetExceptionForHR_ErrorInfo_ReturnsValidException
+-nomethod System.Runtime.InteropServices.Tests.GetExceptionForHRTests.GetExceptionForHR_NoErrorInfo_ReturnsValidException
+-nomethod System.Runtime.InteropServices.Tests.ThrowExceptionForHRTests.ThrowExceptionForHR_NoErrorInfo_ReturnsValidException
+-nomethod System.Runtime.InteropServices.Tests.ThrowExceptionForHRTests.ThrowExceptionForHR_ErrorInfo_ReturnsValidException
+
+# Not implemented
+-nomethod System.Runtime.InteropServices.Tests.GetExceptionPointersTests.GetExceptionPointers_ReturnsExpected
+
+# Supported on Mono
+-nomethod System.Runtime.InteropServices.Tests.GetFunctionPointerForDelegateTests.GetFunctionPointer_GenericDelegate_ThrowsArgumentException
+
+# Causes an unhandled exception in a finalizer
+-nomethod *HandleCollectorTests*
+
+# typeof(object).Assembly.ImageRuntimeVersion returns null because the corelib metadata version string is empty
+-nomethod System.Runtime.InteropServices.RuntimeEnvironmentTests.RuntimeEnvironmentSysVersion
+
+-nomethod System.Runtime.InteropServices.Tests.PtrToStructureTests.PtrToStructure_ZeroPointer_ThrowsArgumentNullException
+-nomethod System.Runtime.InteropServices.Tests.StructureToPtrTests.StructureToPtr_ByValBoolArray_Success
+-nomethod System.Runtime.InteropServices.Tests.StructureToPtrTests.StructureToPtr_ByValDateArray_Success
+-nomethod System.Runtime.InteropServices.Tests.StructureToPtrTests.StructureToPtr_InvalidLengthByValArrayInStruct_ThrowsArgumentException
+
+-nomethod System.Runtime.InteropServices.Tests.GetDelegateForFunctionPointerTests.GetDelegateForFunctionPointer_CantCast_ThrowsInvalidCastException
+
+####################################################################
+##  System.Runtime.Numerics.Tests
+####################################################################
+
+-nomethod System.Numerics.Tests.ComplexTests.Sin_Advanced
+-nomethod System.Numerics.Tests.ComplexTests.Sinh_Advanced
+-nomethod System.Numerics.Tests.ComplexTests.Cos_Advanced
+-nomethod System.Numerics.Tests.ComplexTests.Cosh_Advanced
+-nomethod System.Numerics.Tests.ComplexTests.Exp
+
+####################################################################
+##  System.Runtime.Serialization.Formatters.Tests
+####################################################################
+
+-nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.SerializeHugeObjectGraphs
+-nomethod System.Runtime.Serialization.Formatters.Tests.FormatterServicesTests.GetUninitializedObject_OpenGenericClass_ThrowsMemberAccessException
+-nomethod System.Runtime.Serialization.Formatters.Tests.SerializationGuardTests.BlockReflectionDodging
+-nomethod System.Runtime.Serialization.Formatters.Tests.FormatterServicesTests.GetUninitializedObject_NotSupportedType_ThrowsArgumentException
+-nomethod System.Runtime.Serialization.Formatters.Tests.FormatterServicesTests.GetUninitializedObject_StaticConstructorThrows_ThrowsTypeInitializationException
+-nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateAgainstBlobs
+-nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.RoundtripManyObjectsInOneStream
+-nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateBasicObjectsRoundtrip
+
+####################################################################
+##  System.Runtime.Tests
+####################################################################
+
+# Mono for some reason returns true for `(Array)(new int*[0]) is object[]` while .NET Core returns false
+-nomethod System.Tests.ArrayTests.LastIndexOf_ArrayOfPointers_ThrowsNotSupportedException
+-nomethod System.Tests.ArrayTests.Reverse_ArrayOfPointers_ThrowsNotSupportedException
+-nomethod System.Tests.ArrayTests.IndexOf_ArrayOfPointers_ThrowsNotSupportedException
+
+# https://github.com/mono/mono/issues/14291 incorrect line numbers
+-nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineSameMethod
+-nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineOtherMethod
+
+# RuntimeAssembly.IsCollectible is not implemented yet
+-nomethod System.Reflection.Tests.IsCollectibleTests.MemberInfoGeneric_IsCollectibleFalse_WhenUsingAssemblyLoad
+-nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleTrue_WhenUsingTestAssemblyLoadContext
+-nomethod System.Reflection.Tests.IsCollectibleTests.MemberInfo_IsCollectibleFalse_WhenUsingAssemblyLoad
+-nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleFalse_WhenUsingAssemblyLoad
+-nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleFalse_WhenUsingAssemblyLoadContext
+
+# Mono ignores attributes defined on parameters in delegates
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_DecimalParameterWithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_ReferenceTypeParameterWithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameterUnassingableFromMissing_WithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_ValueTypeParameterWithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_MissingTypeForDefaultParameter_Succeeds
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_NullableIntWithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_StringParameterWithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_DecimalParameterWithAttributeAndMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_DateTimeParameterWithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_AllPrimitiveParametersWithSomeExplicitValues
+-nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_AllPrimitiveParametersWithMissingValues
+-nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameter_WithMissingValue
+-nomethod System.Tests.DelegateTests.DynamicInvoke_ParameterSpecification_ArrayOfMissing
+
+# mono doesn't support termination signals, the test kills a process via libc's kill(pid)
+# and expects it to trigger domain.ProcessExit event
+-nomethod System.Tests.ExitCodeTests.SigTermExitCode
+
+# causes 'error: Return type can't be a byref type Parameter name: returnType':
+# while the test passes, xunit fails in the end if it's enabled
+-nomethod System.Tests.Types.VoidTests.IsByRef_Get_ReturnsExpected
+
+# Boxed pointers are not supported? https://github.com/mono/mono/blob/ced517784b2a07fb851e2227dac04e0df2262d57/mcs/class/corlib/ReferenceSources/RuntimeType.cs#L229
+-nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestByRefLikeRefReturn
+
+# TODO: ignore in CoreFX for mono runtime:
+-nomethod System.Reflection.Tests.PointerTests.*
+-nomethod System.Tests.StringTests.NormalizationTest
+-nomethod System.Tests.GCTests.KeepAlive
+-nomethod System.Tests.GCTests.LargeObjectHeapCompactionModeRoundTrips
+-nomethod System.Tests.GCTests.GetGCMemoryInfo
+-nomethod System.Tests.GCTests.Collect_CallsFinalizer
+-nomethod System.Tests.GCTests.GetAllocatedBytesForCurrentThread
+-nomethod System.Tests.GCTests.GetTotalMemoryTest_ForceCollection
+-nomethod System.Tests.GCTests.LatencyRoundtrips    
+-nomethod System.Tests.GCTests.KeepAlive_Null
+-nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.GetOrCreateValue
+-nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.Add
+-nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.GetValue
+-nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignature
+-nomethod System.Tests.EnumTests.Parse
+-nomethod System.Tests.EnumTests.Parse_NetCoreApp11
+-nomethod System.Tests.ArgIteratorTests.ArgIterator_Throws_PlatformNotSupportedException
+
+####################################################################
+##  System.Text.Json.Tests
+####################################################################
+
+# JsonSerializer.Parse<Enum>(...) generates invalid IL through DynamicMethod
+# Mono throws "System.MemberAccessException: Cannot create an abstract class: System.Enum" from System.Reflection.Emit.DynamicMethod.CreateDelegate
+# CoreCLR creates the delegate, but fails to execute it with "System.InvalidOperationException: Instances of abstract classes cannot be created."
+-nomethod System.Text.Json.Serialization.Tests.ValueTests.ValueFail
+
+####################################################################
+##  System.Threading.Tests
+####################################################################
+
+-nomethod System.Threading.Tests.MutexTests.CrossProcess_NamedMutex_ProtectedFileAccessAtomic
+-nomethod System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest1_WaitAsync_NegativeCases
+-nomethod System.Threading.Tests.MutexTests.OpenExisting_InvalidNames
+-nomethod System.Threading.Tests.MutexTests.Ctor_InvalidNames_Unix
+-nomethod System.Threading.Tests.SemaphoreTests.OpenExisting_NotSupported_Unix
+-nomethod System.Threading.Tests.SemaphoreTests.Ctor_NamesArentSupported_Unix
+-nomethod System.Threading.Tests.SynchronizationContextTests.WaitNotificationTest
+
+####################################################################
+##  System.Threading.ThreadPool.Tests
+####################################################################
+
+# Tests for ThreadPool.SetMaxThreads(-1, -1) == true, which only happens to work on CoreCLR because
+# the managed SetMaxThreadsNative prototype uses "int"s while the unmanaged code uses "DWORD"s and
+# thus it interprets it as large positive numbers.
+-nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest
+
+# TODO: Differences in behaviour between NetFX and CoreFX
+-nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinThreadsTo0Test
+-nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest_ChangedInDotNetCore
+
+####################################################################
+##  System.Xml.XmlSchemaSet.Tests
+####################################################################
+
+-nomethod System.Xml.Tests.TC_SchemaSet_Misc.*
+
+####################################################################
+##  System.ComponentModel.Composition.Tests
+####################################################################
+
+-nomethod System.ComponentModel.Composition.CompositionServicesTests.GetDefaultContractNameTest
+-nomethod System.ComponentModel.Composition.MetadataViewProviderTests.GetMetadataView_InterfaceWithIndexer_ShouldThrowNotSupportedException
+-nomethod Tests.Integration.ExportFactoryTests.ExportFactoryStandardImports_ShouldWorkProperly
+
+####################################################################
+##  System.Composition.TypedParts.Tests
+####################################################################
+
+-nomethod System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssemblies_AssembliesAndConvention_ThrowsCompositionFailedExceptionOnCreation
+-nomethod System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssemblies_Assemblies_ThrowsCompositionFailedExceptionOnCreation
+-nomethod System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssembly_AssemblyConventions_ThrowsCompositionFailedExceptionOnCreation
+-nomethod System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssembly_Assembly_ThrowsCompositionFailedExceptionOnCreation
+
+####################################################################
+##  System.Data.Common.Tests
+####################################################################
+
+-nomethod System.Data.Tests.SqlTypes.SqlCharsTest.ReadWriteXmlTest
+-nomethod System.Data.Tests.SqlTypes.SqlInt32Test.ReadWriteXmlTest
+-nomethod System.Data.Tests.SqlTypes.SqlInt64Test.ReadWriteXmlTest
+-nomethod System.Data.Tests.SqlTypes.SqlDoubleTest.ReadWriteXmlTest
+-nomethod System.Data.Tests.SqlTypes.SqlInt16Test.ReadWriteXmlTest
+-nomethod System.Data.Tests.SqlTypes.SqlDecimalTest.ReadWriteXmlTest
+-nomethod System.Data.Tests.SqlTypes.SqlStringTest.ReadWriteXmlTest
+-nomethod System.Data.Common.Tests.DbConnectionTests.ProviderFactoryTest
+
+####################################################################
+##  System.Data.SqlClient.Tests
+####################################################################
+
+-nomethod System.Data.SqlClient.Tests.AADAccessTokenTest.InvalidCombinationOfAccessToken
+-nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.GetEnumerator_Success
+-nomethod System.Data.SqlClient.Tests.ExceptionTest.NamedPipeInvalidConnStringTest_ManagedSNI
+-nomethod System.Data.SqlClient.Tests.AADAccessTokenTest.InvalidCombinationOfAccessToken
+-nomethod System.Data.SqlClient.Tests.AADAccessTokenTest.InvalidCombinationOfAccessToken
+-nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.CopyTo_NonGeneric_Success
+-nomethod System.Data.SqlClient.Tests.AADAccessTokenTest.InvalidCombinationOfAccessToken
+-nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.Indexer_Success
+-nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.Indexer_Throws
+-nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.CopyTo_Throws
+-nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.CopyTo_NonGeneric_Throws
+-nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.CopyTo_Success
+-nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.SyncRoot_Success
+-nomethod System.Data.SqlClient.Tests.ExceptionTest.IndependentConnectionExceptionTestOpenConnection
+-nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.IsSynchronized_Success
+-nomethod System.Data.SqlClient.Tests.ExceptionTest.IndependentConnectionExceptionTestExecuteReader
+-nomethod System.Data.SqlClient.Tests.ExceptionTest.ExceptionTests
+-nomethod System.Data.SqlClient.Tests.ExceptionTest.VariousExceptionTests
+-nomethod System.Data.SqlClient.Tests.CloneTests.CloneSqlConnection
+-nomethod System.Data.SqlClient.Tests.SqlConnectionBasicTests.ConnectionTest
+-nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteNonQueryAsyncTest
+-nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteReaderAsyncTest
+-nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteNonQueryAsyncErrorTest
+-nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteScalarAsyncErrorTest
+-nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteScalarAsyncTest
+
+####################################################################
+##  System.Diagnostics.StackTrace.Tests
+####################################################################
+
+-nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames
+-nomethod System.Diagnostics.Tests.StackFrameTests.Ctor_SkipFrames
+-nomethod System.Diagnostics.Tests.StackFrameTests.Ctor_Filename_LineNumber_ColNumber
+-nomethod System.Diagnostics.Tests.StackFrameTests.ToString_Invoke_ReturnsExpected
+-nomethod System.Diagnostics.Tests.StackFrameTests.Ctor_SkipFrames_FNeedFileInfo
+-nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames_FNeedFileInfo
+
+####################################################################
+##  System.Drawing.Common.Tests
+####################################################################
+
+-nomethod System.Drawing.Drawing2D.Tests.ColorBlendTests.Ctor_LargeCount_ThrowsOutOfMemoryException
+-nomethod System.Drawing.Drawing2D.Tests.BlendTests.Ctor_LargeCount_ThrowsOutOfMemoryException
+
+####################################################################
+##  System.Numerics.Vectors.Tests
+####################################################################
+
+-nomethod System.Numerics.Tests.GenericVectorTests.ConstructorWithUnsupportedTypes_DateTime
+-nomethod System.Numerics.Tests.GenericVectorTests.ConstructorWithUnsupportedTypes_Char
+-nomethod System.Numerics.Tests.GenericVectorTests.ConstructorWithUnsupportedTypes_Guid
+
+####################################################################
+##  System.Reflection.Context.Tests
+####################################################################
+
+-nomethod System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_MemberAttributes_Success
+-nomethod System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_ParameterAttributes_Success
+-nomethod System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_Interface_Throws
+
+####################################################################
+##  System.Reflection.CoreCLR.Tests
+####################################################################
+
+-nomethod System.Reflection.Tests.AssemblyTests.LoadFromStream_Location_IsEmpty
+
+####################################################################
+##  System.Reflection.Metadata.Tests
+####################################################################
+
+-nomethod System.Reflection.Metadata.Tests.AssemblyDefinitionTests.ValidateAssemblyNameWithCultureSet
+-nomethod System.Reflection.Metadata.Tests.AssemblyDefinitionTests.ValidateAssemblyNameForAssemblyDefinition
+
+####################################################################
+##  System.Reflection.TypeExtensions.CoreCLR.Tests
+####################################################################
+
+-nomethod System.Reflection.Tests.MetadataTokenTests.SuccessImpliesNonNilWithCorrectTable
+
+####################################################################
+##  System.Runtime.Loader.DefaultContext.Tests
+####################################################################
+
+-nomethod System.Runtime.Loader.Tests.DefaultLoadContextTests.LoadInDefaultContext
+
+####################################################################
+##  System.Runtime.Loader.RefEmitLoadContext.Tests
+####################################################################
+
+-nomethod System.Runtime.Loader.Tests.RefEmitLoadContextTests.LoadRefEmitAssembly
+
+####################################################################
+##  System.Threading.Overlapped.Tests
+####################################################################
+
+-nomethod OverlappedTests.PropertyTest2
+-nomethod OverlappedTests.PackNegTest
+-nomethod OverlappedTests.PackNegTest1
+-nomethod OverlappedTests.UnPackTest
+-nomethod OverlappedTests.PropertyTest3
+-nomethod OverlappedTests.PropertyTest1
+-nomethod ThreadPoolBoundHandleTests.BindHandle_MinusOneAsHandle_ThrowsArgumentException
+-nomethod ThreadPoolBoundHandleTests.PreAllocatedOverlapped_NonBlittableTypeAsPinData_Throws
+-nomethod ThreadPoolBoundHandleTests.PreAllocatedOverlapped_ObjectArrayWithNonBlittableTypeAsPinData_Throws
+-nomethod ThreadPoolBoundHandleTests.GetNativeOverlappedState_NullAsNativeOverlapped_ThrowsArgumentNullException
+-nomethod ThreadPoolBoundHandleTests.BindHandle_ZeroAsHandle_ThrowsArgumentException
+-nomethod ThreadPoolBoundHandleTests.BindHandle_NullAsHandle_ThrowsArgumentNullException
+-nomethod ThreadPoolBoundHandsleTests.PreAllocatedOverlapped_NullAsCallback_ThrowsArgumentNullException
+-nomethod ThreadPoolBoundHandleTests.BindHandle_ValidHandle_ThrowsPlatformNotSupportedException
+-nomethod ThreadPoolBoundHandleTests.PreAllocatedOverlapped_NullAsCallback_ThrowsArgumentNullException
+
+####################################################################
+##  System.Runtime.Extensions.Tests
+####################################################################
+
+# Environment.FailFast is not implemented
+-nomethod System.Tests.EnvironmentTests.FailFast_ExceptionStackTrace_InnerException
+-nomethod System.Tests.EnvironmentTests.FailFast_ExceptionStackTrace_ArgumentException
+-nomethod System.Tests.EnvironmentTests.FailFast_ExceptionStackTrace_StackOverflowException
+
+# Mono expands generic Types in stacktraces unlike the .NET Core (sounds more like a feature: https://gist.github.com/EgorBo/3abb37d2ff4fc904bc7472c62498f933)
+-nomethod System.Tests.EnvironmentStackTrace.StackTraceTest
+
+# AssemblyLoadContext.InternalLoad is not implemented
+-nomethod System.Tests.AppDomainTests.LoadBytes
+
+# These events are not wired up in mono
+-nomethod System.Tests.AppDomainTests.TypeResolve
+-nomethod System.Tests.AppDomainTests.GetAssemblies
+-nomethod System.Tests.AppDomainTests.ResourceResolve
+-nomethod System.Tests.AppDomainTests.AssemblyLoad
+-nomethod System.Tests.AppDomainTests.FirstChanceException_Called
+
+# AssemblyLoadContext.SetProfileOptimizationRoot is no-op (not implemented)
+-nomethod System.Runtime.Tests.ProfileOptimizationTest.ProfileOptimization_CheckFileExists
+
+####################################################################
+##  System.Reflection.TypeExtensions.Tests
+####################################################################
+
+-nomethod System.Reflection.Tests.ConstructorInfoInvokeArrayTests.Invoke_1DArrayConstructor
+-nomethod System.Reflection.Tests.ConstructorInfoTests.Invoke_Invalid
+-nomethod System.Reflection.Tests.ConstructorInfoInvokeArrayTests.Invoke_LargeDimensionalArrayConstructor
+-nomethod System.Reflection.Tests.TypeTests.IsAssignableFrom
+-nomethod System.Reflection.Tests.PropertyInfoTests.GetGetMethod_GetSetMethod
+-nomethod System.Reflection.Tests.TypeTests.GetMethods
+
+####################################################################
+##  System.Reflection.Emit.Lightweight.Tests
+####################################################################
+
+-nomethod System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Int_Module_CoreclrIgnoresSkipVisibility
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.Test_TwoDimTest
+-nomethod System.Reflection.Emit.Tests.DynamicMethodToString.ToStringTest
+-nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.ByRefReturnType_DoesNotThrow
+-nomethod System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Module_CoreclrIgnoresSkipVisibility
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.Test_GenericMethod
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_IntGenerics_Success
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_CtorMethodAndField_Success
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_String_Success
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NullInput_ThrowsArgumentNullException
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_StringGenerics_Success
+-nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.InvalidOwner_ThrowsArgumentException
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.Test_CallGM
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_Exception_Success
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_DynamicMethod_Success
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NegativeInputSize_ThrowsArgumentOutOfRangeException
+-nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.NullObjectInParameterTypes_ThrowsArgumentException
+
+####################################################################
+##  System.Runtime.Loader.Tests
+####################################################################
+
+-nomethod System.Runtime.Loader.Tests.ContextualReflectionTest.*
+-nomethod System.Runtime.Loader.Tests.SatelliteAssembliesTests.SatelliteLoadsCorrectly
+-nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.*
+-nomethod System.Runtime.Loader.Tests.ContextualReflectionTest.*
+-nomethod System.Runtime.Loader.Tests.SatelliteAssembliesTests.describeLib
+
+####################################################################
+##  System.Reflection.MetadataLoadContext.Tests
+####################################################################
+
+-nomethod System.Reflection.Tests.TypeTests_AmbiguityResolution_NoParameterBinding.*
+-nomethod System.Reflection.Tests.TypeTests_GetInterface.*
+-nomethod System.Reflection.Tests.IdentityTests.*
+-nomethod System.Reflection.Tests.TypeTests_GetMember.*
+-nomethod System.Reflection.Tests.TypeTests_StructLayoutAttribute.*
+-nomethod System.Reflection.Tests.CustomAttributeTests.*
+-nomethod System.Reflection.Tests.TypeTests_HiddenEvents.GetEventHidesEventsBySimpleNameCompare
+-nomethod System.Reflection.Tests.TypeInfoDeclaredNestedTypeTests.*
+-nomethod System.Reflection.Tests.TypeTests_PrefixingOnlyAllowedOnGetMember.TestGetMemberAll
+-nomethod System.Reflection.Tests.TypeInvariants.TestInvariantCode
+-nomethod System.Reflection.Tests.TypeInfoPropertyTests.TestIsNested
+-nomethod System.Reflection.Tests.TypeInfoPropertyTests.TestIsNestedPublic
+-nomethod System.Reflection.Tests.ParameterTests.TestPseudoCustomAttributes
+-nomethod System.Reflection.Tests.TypeTests_HiddenMethods.GetMethodDoesNotHideHiddenMethods
+-nomethod System.Reflection.Tests.TypeTests_HiddenProperties.GetPropertyHidesPropertiesByNameAndSigAndCallingConventionCompare
+-nomethod System.Reflection.Tests.AssemblyTests.CrossAssemblyTypeRefToNestedType
+-nomethod System.Reflection.Tests.TypeTests_HiddenFields.GetFieldDoesNotHideHiddenFields
+-nomethod System.Reflection.Tests.TypeTests.TypesWithStrangeCharacters
+-nomethod System.Reflection.Tests.TypeTests.TestExplicitOffsetPseudoCustomAttribute
+-nomethod System.Reflection.Tests.TypeTests.GetEnumUnderlyingType
+-nomethod System.Reflection.Tests.TypeTests_HiddenTestingOrder.HideDetectionHappensAfterPrivateInBaseClassChecks
+
+####################################################################
+##  System.Utf8String.Experimental.Tests
+####################################################################
+
+-nomethod System.Tests.MemoryTests.*
+-nomethod System.Tests.Utf8StringTests.*
+-nomethod System.Tests.Utf8ExtensionsTests.*
+-nomethod System.Tests.ReflectionTests.*
+-nomethod System.Net.Http.Tests.Utf8StringContentTests.*
+
+####################################################################
+##  System.ComponentModel.Composition.Registration.Tests
+####################################################################
+
+-nomethod System.ComponentModel.Composition.Registration.Tests.PartBuilderInheritanceTests.*
+-nomethod System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderTests.*
+-nomethod System.ComponentModel.Composition.Registration.Tests.PartBuilderUnitTests.*
+-nomethod System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTInheritanceTests.*
+-nomethod System.ComponentModel.Composition.Registration.Tests.ExportBuilderUnitTests.*
+-nomethod System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests.*
+-nomethod System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTTests.*
+-nomethod System.ComponentModel.Composition.Registration.Tests.PartBuilderTests.*
+-nomethod System.ComponentModel.Composition.Registration.Tests.ExportBuilderTests.*
+-nomethod System.ComponentModel.Composition.Registration.Tests.ImportBuilderTests.*
+-nomethod System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderUnitTests.*
+-nomethod System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderExportFuncUnitTests.*
+-nomethod System.ComponentModel.Composition.Registration.Tests.PartBuilderInterfaceTests.*
+-nomethod System.ComponentModel.Composition.Registration.Tests.ExportInterfacesContractExclusionTests.*
+
+####################################################################
+##  System.Xml.Xsl.XslTransformApi.Tests
+####################################################################
+
+-nomethod System.Xml.Tests.CTransformResolverTest.TC_AbsolutePath_Transform
+-nomethod System.Xml.Tests.CXmlResolverTest.TC_AbsolutePath_Transform

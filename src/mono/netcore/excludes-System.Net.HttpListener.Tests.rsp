@@ -1,8 +1,0 @@
-# TODO:
-# System.ArgumentException : Cannot bind to the target method because its signature is not compatible with that of the delegate type.
-# at System.Delegate.CreateDelegate(Type type, Object firstArgument, MethodInfo method, Boolean throwOnBindFailure, Boolean allowClosed)
-# at System.Delegate.CreateDelegate(Type type, MethodInfo method, Boolean throwOnBindFailure)
-# at System.Delegate.CreateDelegate(Type type, MethodInfo method)
-# at System.Reflection.RuntimeMethodInfo.CreateDelegate(Type delegateType)
-# at System.Net.CookieExtensions.IsRfc2965Variant(Cookie cookie)
--noclass System.Net.Tests.HttpListenerResponseCookiesTests

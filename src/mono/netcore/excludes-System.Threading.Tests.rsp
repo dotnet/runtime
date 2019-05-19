@@ -1,9 +1,0 @@
--nomethod System.Threading.Tests.MutexTests.CrossProcess_NamedMutex_ProtectedFileAccessAtomic
--nomethod System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest1_WaitAsync_NegativeCases
-
-# TODO
--nomethod System.Threading.Tests.MutexTests.OpenExisting_InvalidNames
--nomethod System.Threading.Tests.MutexTests.Ctor_InvalidNames_Unix
--nomethod System.Threading.Tests.SemaphoreTests.OpenExisting_NotSupported_Unix
--nomethod System.Threading.Tests.SemaphoreTests.Ctor_NamesArentSupported_Unix
--nomethod System.Threading.Tests.SynchronizationContextTests.WaitNotificationTest

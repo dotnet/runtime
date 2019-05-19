@@ -1,3 +1,0 @@
-# CoreCLR specific test
-# https://github.com/mono/mono/blob/cc5886e3d54a7fae15bfd8bda1e8781fcbf2be25/netcore/System.Private.CoreLib/shared/System/Buffers/TlsOverPerCoreLockedStacksArrayPool.cs#L319-L325
--nomethod System.Buffers.ArrayPool.Tests.CollectionTests.PollingEventFires

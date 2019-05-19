@@ -1,8 +1,0 @@
-# Tests for ThreadPool.SetMaxThreads(-1, -1) == true, which only happens to work on CoreCLR because
-# the managed SetMaxThreadsNative prototype uses "int"s while the unmanaged code uses "DWORD"s and
-# thus it interprets it as large positive numbers.
--nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest
-
-# TODO: Differences in behaviour between NetFX and CoreFX
--nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinThreadsTo0Test
--nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest_ChangedInDotNetCore

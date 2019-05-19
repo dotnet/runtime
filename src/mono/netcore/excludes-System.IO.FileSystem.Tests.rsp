@@ -1,4 +1,0 @@
-# Depends on precise GC
--nomethod System.IO.Tests.FileStream_Dispose.FinalizeFlushesWriteBuffer
-# TODO: Hangs
--nomethod System.IO.Tests.Directory_SetCurrentDirectory+Directory_SetCurrentDirectory_SymLink.SetToPathContainingSymLink

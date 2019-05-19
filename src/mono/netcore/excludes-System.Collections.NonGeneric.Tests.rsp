@@ -1,3 +1,0 @@
-# Mono currently supports Array.Copy from object[] array containing boxed ints to float[] array with primitive widening
--nomethod *ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType*
--nomethod *ICollection_NonGeneric_CopyTo_ArrayOfEnumType*

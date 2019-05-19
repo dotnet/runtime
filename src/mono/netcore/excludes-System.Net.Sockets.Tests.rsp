@@ -1,4 +1,0 @@
-# TODO
--nomethod System.Net.Sockets.Tests.UdpClientTest.Finalize_NoExceptionsThrown
-# TODO: Hangs
--nomethod System.Net.Sockets.Tests.CreateSocket.CtorAndAccept_SocketNotKeptAliveViaInheritance

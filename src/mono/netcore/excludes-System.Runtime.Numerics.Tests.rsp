@@ -1,5 +1,0 @@
--nomethod System.Numerics.Tests.ComplexTests.Sin_Advanced
--nomethod System.Numerics.Tests.ComplexTests.Sinh_Advanced
--nomethod System.Numerics.Tests.ComplexTests.Cos_Advanced
--nomethod System.Numerics.Tests.ComplexTests.Cosh_Advanced
--nomethod System.Numerics.Tests.ComplexTests.Exp

@@ -1,2 +1,0 @@
-# TODO: Missing assembly resolve events on AppDomain and AssemblyLoadContext
--nomethod System.Resources.Tests.ResourceManagerTests.GetString_ExpectEvents

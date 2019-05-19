@@ -1,3 +1,0 @@
-# TODO
--nomethod System.Diagnostics.TraceSourceTests.TraceSourceClassTests.PruneTest
--nomethod System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.EntryAssemblyName_Null_NotIncludedInTrace

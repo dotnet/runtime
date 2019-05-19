@@ -1,4 +1,0 @@
-# TODO
--nomethod BasicEventSourceTests.TestsManifestNegative.Test_GenerateManifest_InvalidEventSources
--nomethod BasicEventSourceTests.TestsWrite.Test_Write_T_EventListener
--nomethod BasicEventSourceTests.TestsWrite.Test_Write_T_EventListener_UseEvents

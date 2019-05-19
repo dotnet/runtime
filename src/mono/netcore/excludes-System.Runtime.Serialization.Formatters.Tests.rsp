@@ -1,1 +1,0 @@
--nomethod 'System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.SerializeHugeObjectGraphs'
