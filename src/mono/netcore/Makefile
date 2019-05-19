@@ -156,7 +156,6 @@ EXCLUDED_COREFX_TESTS_NOT_PASSING = \
 	System.Reflection.MetadataLoadContext.Tests \
 	System.Reflection.TypeExtensions.CoreCLR.Tests \
 	System.Reflection.TypeExtensions.Tests \
-	System.Runtime.Extensions.Tests \
 	System.Runtime.InteropServices.Tests \
 	System.Runtime.Loader.DefaultContext.Tests \
 	System.Runtime.Loader.RefEmitLoadContext.Tests \
