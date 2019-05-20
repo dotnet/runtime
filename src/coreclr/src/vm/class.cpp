@@ -1649,7 +1649,7 @@ TypeHandle MethodTable::SetupCoClassForInterface()
 
     if (!IsProjectedFromWinRT()) // ignore classic COM interop CA on WinRT types
     {
-        HRESULT hr = GetMDImport()->GetCustomAttributeByName(GetCl(), INTEROP_COCLASS_TYPE , (const void **)&pVal, &cbVal);
+        HRESULT hr = GetCustomAttribute(WellKnownAttribute::CoClass, (const void **)&pVal, &cbVal);
         if (hr == S_OK)
         {
             CustomAttributeParser cap(pVal, cbVal);
@@ -2026,7 +2026,7 @@ void EEClass::GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL 
         *pfBestFitMapping = FALSE;
         *pfThrowOnUnmappableChar = FALSE;
         
-        ReadBestFitCustomAttribute(pMT->GetMDImport(), pMT->GetCl(), pfBestFitMapping, pfThrowOnUnmappableChar);
+        ReadBestFitCustomAttribute(pMT->GetModule(), pMT->GetCl(), pfBestFitMapping, pfThrowOnUnmappableChar);
 
         DWORD flags = VMFLAG_BESTFITMAPPING_INITED;
         if (*pfBestFitMapping) flags |= VMFLAG_BESTFITMAPPING;
@@ -3954,7 +3954,6 @@ void EEClassLayoutInfo::ParseFieldNativeTypes(
                 pFieldInfoArrayOut,
                 pNativeType,
                 cbNativeType,
-                pInternalImport,
                 cl,
                 pTypeContext,
                 fDisqualifyFromManagedSequential

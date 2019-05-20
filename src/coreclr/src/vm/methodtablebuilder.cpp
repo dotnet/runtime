@@ -1420,17 +1420,17 @@ MethodTableBuilder::BuildMethodTableThrowing(
     {
         bmtProp->fIsValueClass = true;
 
-        HRESULT hr = GetMDImport()->GetCustomAttributeByName(bmtInternal->pType->GetTypeDefToken(),
-                                                                g_CompilerServicesUnsafeValueTypeAttribute,
-                                                                NULL, NULL);
+        HRESULT hr = GetCustomAttribute(bmtInternal->pType->GetTypeDefToken(),
+                                        WellKnownAttribute::UnsafeValueType,
+                                        NULL, NULL);
         IfFailThrow(hr);
         if (hr == S_OK)
         {
             SetUnsafeValueClass();
         }
 
-        hr = GetMDImport()->GetCustomAttributeByName(bmtInternal->pType->GetTypeDefToken(),
-            g_CompilerServicesIsByRefLikeAttribute,
+        hr = GetCustomAttribute(bmtInternal->pType->GetTypeDefToken(),
+            WellKnownAttribute::IsByRefLike,
             NULL, NULL);
         IfFailThrow(hr);
         if (hr == S_OK)
@@ -1486,8 +1486,8 @@ MethodTableBuilder::BuildMethodTableThrowing(
     // We check this here fairly early to ensure other downstream checks on these types can be slightly more efficient.
     if (GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly())
     {
-        HRESULT hr = GetMDImport()->GetCustomAttributeByName(bmtInternal->pType->GetTypeDefToken(),
-            g_CompilerServicesIntrinsicAttribute,
+        HRESULT hr = GetCustomAttribute(bmtInternal->pType->GetTypeDefToken(),
+            WellKnownAttribute::Intrinsic,
             NULL,
             NULL);
 
@@ -3389,9 +3389,9 @@ MethodTableBuilder::EnumerateClassFields()
 
                 // If this static field is thread static, then we need
                 // to increment bmtEnumFields->dwNumThreadStaticFields
-                hr = pMDInternalImport->GetCustomAttributeByName(tok,
-                                                                 g_ThreadStaticAttributeClassName,
-                                                                 NULL, NULL);
+                hr = GetCustomAttribute(tok,
+                                        WellKnownAttribute::ThreadStatic,
+                                        NULL, NULL);
                 IfFailThrow(hr);
                 if (hr == S_OK)
                 {
@@ -3794,9 +3794,9 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
             HRESULT hr;
  
-            hr = pInternalImport->GetCustomAttributeByName(bmtMetaData->pFields[i],
-                                                           g_ThreadStaticAttributeClassName,
-                                                           NULL, NULL);
+            hr = GetCustomAttribute(bmtMetaData->pFields[i],
+                                    WellKnownAttribute::ThreadStatic,
+                                    NULL, NULL);
             IfFailThrow(hr);
             if (hr == S_OK)
             {
@@ -3806,9 +3806,9 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
 
             if (ElementType == ELEMENT_TYPE_VALUETYPE)
             {
-                hr = pInternalImport->GetCustomAttributeByName(bmtMetaData->pFields[i],
-                                                               g_CompilerServicesFixedAddressValueTypeAttribute,
-                                                               NULL, NULL);
+                hr = GetCustomAttribute(bmtMetaData->pFields[i],
+                                        WellKnownAttribute::FixedAddressValueType,
+                                        NULL, NULL);
                 IfFailThrow(hr);
                 if (hr == S_OK)
                 {
@@ -5124,12 +5124,10 @@ MethodTableBuilder::InitNewMethodDesc(
     // Check for methods marked as [Intrinsic]
     if (GetModule()->IsSystem() || GetAssembly()->IsSIMDVectorAssembly())
     {
-        HRESULT hr = GetMDImport()->GetCustomAttributeByName(pMethod->GetMethodSignature().GetToken(),
-            g_CompilerServicesIntrinsicAttribute,
-            NULL,
-            NULL);
-
-        if (hr == S_OK || bmtProp->fIsHardwareIntrinsic)
+        if (bmtProp->fIsHardwareIntrinsic || (S_OK == GetCustomAttribute(pMethod->GetMethodSignature().GetToken(),
+                                                    WellKnownAttribute::Intrinsic,
+                                                    NULL,
+                                                    NULL)))
         {
             pNewMD->SetIsJitIntrinsic();
         }
@@ -10358,7 +10356,7 @@ MethodTableBuilder::SetupMethodTable2(
         {
             const BYTE *        pVal;                 
             ULONG               cbVal;        
-            HRESULT hr = GetMDImport()->GetCustomAttributeByName(GetCl(), g_WindowsFoundationMarshalingBehaviorAttributeClassName, (const void **) &pVal, &cbVal);
+            HRESULT hr = GetCustomAttribute(GetCl(), WellKnownAttribute::WinRTMarshalingBehaviorAttribute, (const void **) &pVal, &cbVal);
             if (hr == S_OK)
             {
                 CustomAttributeParser cap(pVal, cbVal);
@@ -11240,7 +11238,7 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
     // Check to see if the type is a COM event interface (classic COM interop only).
     if (IsInterface() && !GetHalfBakedClass()->IsProjectedFromWinRT())
     {
-        HRESULT hr = pMDImport->GetCustomAttributeByName(GetCl(), INTEROP_COMEVENTINTERFACE_TYPE, NULL, NULL);
+        HRESULT hr = GetCustomAttribute(GetCl(), WellKnownAttribute::ComEventInterface, NULL, NULL);
         if (hr == S_OK)
         {
             bmtProp->fComEventItfType = true;
@@ -11608,7 +11606,7 @@ void MethodTableBuilder::GetCoClassAttribInfo()
     if (!GetHalfBakedClass()->IsProjectedFromWinRT()) // ignore classic COM interop CA on WinRT interfaces
     {
         // Retrieve the CoClassAttribute CA.
-        HRESULT hr = GetMDImport()->GetCustomAttributeByName(GetCl(), INTEROP_COCLASS_TYPE, NULL, NULL);
+        HRESULT hr = GetCustomAttribute(GetCl(), WellKnownAttribute::CoClass, NULL, NULL);
         if (hr == S_OK)
         {
             // COM class interfaces may lazily populate the m_pCoClassForIntf field of EEClass. This field is

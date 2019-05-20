@@ -97,3 +97,94 @@ inline static int ComputeGenericInstanceHashCode(int definitionHashcode, int ari
     }
     return (hashcode + _rotl(hashcode, 15));
 }
+
+/*
+
+The below hash combining function is based on the xxHash32 logic implemented
+in System.HashCode. In particular it is a port of the 2 element hash
+combining routines, which are in turn based on xxHash32 logic.
+
+The xxHash32 implementation is based on the code published by Yann Collet:
+https://raw.githubusercontent.com/Cyan4973/xxHash/5c174cfa4e45a42f94082dc0d4539b39696afea1/xxhash.c
+
+  xxHash - Fast Hash algorithm
+  Copyright (C) 2012-2016, Yann Collet
+  
+  BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
+  
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are
+  met:
+  
+  * Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+  * Redistributions in binary form must reproduce the above
+  copyright notice, this list of conditions and the following disclaimer
+  in the documentation and/or other materials provided with the
+  distribution.
+  
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  
+  You can contact the author at :
+  - xxHash homepage: http://www.xxhash.com
+  - xxHash source repository : https://github.com/Cyan4973/xxHash
+
+*/
+
+inline static UINT32 HashMDToken(mdToken token)
+{
+    // Hash function to generate a value useable for reasonable hashes from a single 32bit value
+    // This function was taken from http://burtleburtle.net/bob/hash/integer.html
+    UINT32 a = token;
+    a -= (a<<6);
+    a ^= (a>>17);
+    a -= (a<<9);
+    a ^= (a<<4);
+    a -= (a<<3);
+    a ^= (a<<10);
+    a ^= (a>>15);
+    return a;
+}
+
+inline static UINT32 XXHash32_MixEmptyState()
+{
+    // Unlike System.HashCode, these hash values are required to be stable, so don't
+    // mixin a random process specific value
+    return 374761393U; // Prime5
+}
+
+inline static UINT32 XXHash32_QueueRound(UINT32 hash, UINT32 queuedValue)
+{
+    return ((UINT32)_rotl((int)(hash + queuedValue * 3266489917U/*Prime3*/), 17)) * 668265263U/*Prime4*/;
+}
+
+inline static UINT32 XXHash32_MixFinal(UINT32 hash)
+{
+    hash ^= hash >> 15;
+    hash *= 2246822519U/*Prime2*/;
+    hash ^= hash >> 13;
+    hash *= 3266489917U/*Prime3*/;
+    hash ^= hash >> 16;
+    return hash;
+}
+
+inline static UINT32 CombineTwoValuesIntoHash(UINT32 value1, UINT32 value2)
+{
+    // This matches the behavior of System.HashCode.Combine(value1, value2) as of the time of authoring
+    DWORD hash = XXHash32_MixEmptyState();
+    hash += 8;
+    hash = XXHash32_QueueRound(hash, value1);
+    hash = XXHash32_QueueRound(hash, value2);
+    hash = XXHash32_MixFinal(hash);
+    return hash;
+}

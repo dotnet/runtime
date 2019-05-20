@@ -562,6 +562,7 @@ void ZapImage::AllocateVirtualSections()
         if (IsReadyToRunCompilation())
         {
             m_pAvailableTypesSection = NewVirtualSection(pTextSection, IBCUnProfiledSection | WarmRange | ReadonlySection);
+            m_pAttributePresenceSection = NewVirtualSection(pTextSection, IBCUnProfiledSection | WarmRange | ReadonlyDataSection, 16/* Must be 16 byte aligned */);
         }
 #endif    
 
@@ -1833,6 +1834,7 @@ void ZapImage::Compile()
         OutputEntrypointsTableForReadyToRun();
         OutputDebugInfoForReadyToRun();
         OutputTypesTableForReadyToRun(m_pMDImport);
+        OutputAttributePresenceFilter(m_pMDImport);
         OutputInliningTableForReadyToRun();
         OutputProfileDataForReadyToRun();
         if (IsLargeVersionBubbleEnabled())
