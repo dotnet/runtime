@@ -103,7 +103,6 @@ VOID ParseNativeType(Module*    pModule,
     LayoutRawFieldInfo*         pfwalk,
     PCCOR_SIGNATURE             pNativeType,
     ULONG                       cbNativeType,
-    IMDInternalImport*          pInternalImport,
     mdTypeDef                   cl,
     const SigTypeContext *      pTypeContext,
     BOOL                       *pfDisqualifyFromManagedSequential
@@ -1024,7 +1023,7 @@ private:
 class FieldMarshaler_FixedArray : public FieldMarshaler
 {
 public:
-    FieldMarshaler_FixedArray(IMDInternalImport *pMDImport, mdTypeDef cl, UINT32 numElems, VARTYPE vt, MethodTable* pElementMT);
+    FieldMarshaler_FixedArray(Module *pModule, mdTypeDef cl, UINT32 numElems, VARTYPE vt, MethodTable* pElementMT);
 
     VOID UpdateNativeImpl(OBJECTREF* pCLRValue, LPVOID pNativeValue, OBJECTREF *ppCleanupWorkListOnStack) const;
     VOID UpdateCLRImpl(const VOID *pNativeValue, OBJECTREF *ppProtectedCLRValue, OBJECTREF *ppProtectedOldCLRValue) const;

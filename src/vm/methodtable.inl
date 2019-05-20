@@ -1194,6 +1194,15 @@ inline IMDInternalImport* MethodTable::GetMDImport()
 }
 
 //==========================================================================================
+inline HRESULT MethodTable::GetCustomAttribute(
+                               WellKnownAttribute attribute,
+                               const void  **ppData,
+                               ULONG *pcbData)
+{
+    return GetModule()->GetCustomAttribute(GetCl(), attribute, ppData, pcbData);
+}
+
+//==========================================================================================
 inline BOOL MethodTable::IsSealed()
 {
     LIMITED_METHOD_CONTRACT;

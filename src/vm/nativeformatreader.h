@@ -10,6 +10,27 @@
 
 #pragma once
 
+#ifndef DACCESS_COMPILE
+
+#if defined(_AMD64_) || defined(_X86_)
+#include "emmintrin.h"
+#define USE_INTEL_INTRINSICS_FOR_CUCKOO_FILTER
+#elif defined(_ARM_) || defined(_ARM64_) 
+
+#ifndef FEATURE_PAL // The Mac and Linux build environments are not setup for NEON simd.
+#define USE_ARM_INTRINSICS_FOR_CUCKOO_FILTER
+
+#if defined(_ARM_)
+#include "arm_neon.h"
+#else
+#include "arm64_neon.h"
+#endif
+#endif // FEATURE_PAL
+
+#endif // _ARM_ || _ARM64_
+
+#endif // DACCESS_COMPILE
+
 // To reduce differences between C# and C++ versions
 #define byte uint8_t
 #define uint uint32_t
@@ -45,7 +66,7 @@ namespace NativeFormat
         {
             _ASSERTE(false);
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
             // Failfast instead of throwing, to avoid violating NOTHROW contracts of callers
             EEPOLICY_HANDLE_FATAL_ERROR(COR_E_BADIMAGEFORMAT);
 #endif
@@ -521,6 +542,127 @@ namespace NativeFormat
             NativeParser parser = GetParserForBucket(bucket, &endOffset);
 
             return Enumerator(parser, endOffset, (byte)hashcode);
+        }
+    };
+
+    class NativeCuckooFilter;
+    typedef DPTR(NativeCuckooFilter) PTR_NativeCuckooFilter;
+
+    class NativeCuckooFilter
+    {
+        PTR_BYTE _base;
+        UInt32 _size;
+        LONG _disableFilter;
+        
+        bool IsPowerOfTwo(UInt32 number)
+        {
+            return (number & (number - 1)) == 0;
+        }
+  
+    public:
+        static UInt32 ComputeFingerprintHash(UInt16 fingerprint)
+        {
+            // As the number of buckets is not reasonably greater than 65536, just use fingerprint as its own hash
+            // This implies that the hash of the entrypoint should be an independent hash function as compared
+            // to the fingerprint
+            return fingerprint;
+        }
+
+        NativeCuckooFilter()
+        {
+            _base = NULL;
+            _size = 0;
+            _disableFilter = 0;
+        }
+
+        NativeCuckooFilter(PTR_BYTE base_, UInt32 size, UInt32 rvaOfTable, UInt32 filterSize)
+        {
+            if (((rvaOfTable & 0xF) != 0) || ((filterSize & 0xF) != 0))
+            {
+                // Native cuckoo filters must be aligned at 16byte boundaries within the PE file
+                NativeReader exceptionReader;
+                exceptionReader.ThrowBadImageFormatException();
+            }
+            if ((filterSize != 0) && !IsPowerOfTwo(filterSize))
+            {
+                // Native cuckoo filters must be power of two in size
+                NativeReader exceptionReader;
+                exceptionReader.ThrowBadImageFormatException();
+            }
+            _base = base_ + rvaOfTable;
+            _size = filterSize;
+            _disableFilter = 0;
+        }
+
+        void DisableFilter()
+        {
+            // Set disable filter flag using interlocked to ensure that future
+            // attempts to read the filter will capture the change.
+            InterlockedExchange(&_disableFilter, 1);
+        }
+
+        bool HashComputationImmaterial()
+        {
+            if ((_base == NULL) || (_size == 0))
+                return true;
+            return false;
+        }
+
+        bool MayExist(UInt32 hashcode, UInt16 fingerprint)
+        {
+            if ((_base == NULL) || (_disableFilter))
+                return true;
+
+            if (_size == 0)
+                return false; // Empty table means none of the attributes exist
+
+            // Fingerprints of 0 don't actually exist. Just use 1, and lose some entropy
+            if (fingerprint == 0)
+                fingerprint = 1;
+
+            UInt32 bucketCount = _size / 16;
+            UInt32 bucketMask = bucketCount - 1; // filters are power of 2 in size
+
+            UInt32 bucketAIndex = hashcode & bucketMask;
+            UInt32 bucketBIndex = bucketAIndex ^ (ComputeFingerprintHash(fingerprint) & bucketMask);
+
+#if defined(USE_INTEL_INTRINSICS_FOR_CUCKOO_FILTER)
+            __m128i bucketA = _mm_loadu_si128(&((__m128i*)_base)[bucketAIndex]);
+            __m128i bucketB = _mm_loadu_si128(&((__m128i*)_base)[bucketBIndex]);
+            __m128i fingerprintSIMD = _mm_set1_epi16(fingerprint);
+            __m128i bucketACompare = _mm_cmpeq_epi16(bucketA, fingerprintSIMD);
+            __m128i bucketBCompare = _mm_cmpeq_epi16(bucketB, fingerprintSIMD);
+            __m128i bothCompare = _mm_or_si128(bucketACompare, bucketBCompare);
+            return !!_mm_movemask_epi8(bothCompare);
+#elif defined(USE_ARM_INTRINSICS_FOR_CUCKOO_FILTER)
+            uint16x8_t bucketA = vld1q_u16((uint16_t*)&((uint16x8_t*)_base)[bucketAIndex]);
+            uint16x8_t bucketB = vld1q_u16((uint16_t*)&((uint16x8_t*)_base)[bucketBIndex]);
+            uint16x8_t fingerprintSIMD = vdupq_n_u16(fingerprint);
+            uint16x8_t bucketACompare = vceqq_u16(bucketA, fingerprintSIMD);
+            uint16x8_t bucketBCompare = vceqq_u16(bucketB, fingerprintSIMD);
+            uint16x8_t bothCompare = vorrq_u16(bucketACompare, bucketBCompare);
+            uint64_t bits0Lane = vgetq_lane_u64(bothCompare, 0);
+            uint64_t bits1Lane = vgetq_lane_u64(bothCompare, 1);
+            return !!(bits0Lane | bits1Lane);
+#else // Non-intrinsic implementation supporting NativeReader to cross DAC boundary
+            NativeReader reader(_base, _size);
+
+            // Check for existence in bucketA
+            for (int i = 0; i < 8; i++)
+            {
+                if (reader.ReadUInt16(bucketAIndex * 16 + i * sizeof(UInt16)) == fingerprint)
+                    return true;
+            }
+
+            // Check for existence in bucketB
+            for (int i = 0; i < 8; i++)
+            {
+                if (reader.ReadUInt16(bucketBIndex * 16 + i * sizeof(UInt16)) == fingerprint)
+                    return true;
+            }
+
+            return false;
+#endif
         }
     };
 }

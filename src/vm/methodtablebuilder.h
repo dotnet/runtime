@@ -185,6 +185,18 @@ private:
     PTR_EEClass GetHalfBakedClass() { LIMITED_METHOD_CONTRACT; return m_pHalfBakedClass; }
     PTR_MethodTable GetHalfBakedMethodTable() { LIMITED_METHOD_CONTRACT; return m_pHalfBakedMT; } 
 
+    HRESULT GetCustomAttribute(mdToken parentToken, WellKnownAttribute attribute, const void  **ppData, ULONG *pcbData)
+    {
+        WRAPPER_NO_CONTRACT;
+        if (GetModule()->IsReadyToRun())
+        {
+            if (!GetModule()->GetReadyToRunInfo()->MayHaveCustomAttribute(attribute, parentToken))
+                return S_FALSE;
+        }
+
+        return GetMDImport()->GetCustomAttributeByName(parentToken, GetWellKnownAttributeName(attribute), ppData, pcbData);
+    }
+
     // <NOTE> The following functions are used during MethodTable construction to access/set information about the type being constructed.
     // Beware that some of the fields of the underlying EEClass/MethodTable being constructed may not
     // be initialized.  Because of this, ideally the code will gradually be cleaned up so that

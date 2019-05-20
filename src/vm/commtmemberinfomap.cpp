@@ -214,24 +214,15 @@ void ComMTMemberInfoMap::Init(size_t sizeOfPtr)
     CONTRACTL_END;
 
     HRESULT     hr = S_OK;
-    mdTypeDef   td;                     // Token for the class.
     BYTE const  *pData;                 // Pointer to a custom attribute blob.
     ULONG       cbData;                 // Size of a custom attribute blob.
-
-    // Get the TypeDef and some info about it.
-    td = m_pMT->GetCl();
 
     m_bHadDuplicateDispIds = FALSE;
 
     // See if there is a default property.
     m_DefaultProp[0] = 0; // init to 'none'.
-    hr = m_pMT->GetMDImport()->GetCustomAttributeByName(
-        td, INTEROP_DEFAULTMEMBER_TYPE, reinterpret_cast<const void**>(&pData), &cbData);
-    if (hr == S_FALSE)
-    {
-        hr = m_pMT->GetMDImport()->GetCustomAttributeByName(
-            td, "System.Reflection.DefaultMemberAttribute", reinterpret_cast<const void**>(&pData), &cbData);
-    }
+    hr = m_pMT->GetCustomAttribute(
+        WellKnownAttribute::DefaultMember, reinterpret_cast<const void**>(&pData), &cbData);
     
     if (hr == S_OK && cbData > 5 && pData[0] == 1 && pData[1] == 0)
     {

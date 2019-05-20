@@ -866,6 +866,16 @@ public:
         return pModule->GetMDImport();
     }
 
+    HRESULT GetCustomAttribute(WellKnownAttribute attribute,
+                               const void  **ppData,
+                               ULONG *pcbData) const
+    {
+        WRAPPER_NO_CONTRACT;
+        Module *pModule = GetModule();
+        PREFIX_ASSUME(pModule != NULL);
+        return pModule->GetCustomAttribute(GetMemberDef(), attribute, ppData, pcbData);
+    }
+
 #ifndef DACCESS_COMPILE 
     IMetaDataEmit* GetEmitter()
     {

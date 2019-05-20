@@ -113,4 +113,6 @@ _mm_store_ps(float *__p, __m128 __a)
     *(__m128*)__p = __a;
 }
 
+#undef __DEFAULT_FN_ATTRS
+
 #endif // __GNUC__

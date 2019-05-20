@@ -374,6 +374,13 @@ namespace R2RDump
                         _writer.WriteLine($"[ID 0x{manifestAsmIndex + assemblyRefCount + 2:X2}]: {_r2r.ManifestReferenceAssemblies[manifestAsmIndex]}");
                     }
                     break;
+                case R2RSection.SectionType.READYTORUN_SECTION_ATTRIBUTEPRESENCE:
+                    int attributesStartOffset = _r2r.GetOffset(section.RelativeVirtualAddress);
+                    int attributesEndOffset = attributesStartOffset + section.Size;
+                    NativeCuckooFilter attributes = new NativeCuckooFilter(_r2r.Image, attributesStartOffset, attributesEndOffset);
+                    _writer.WriteLine("Attribute presence filter");
+                    _writer.WriteLine(attributes.ToString());
+                    break;
             }
         }
 

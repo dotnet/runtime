@@ -2745,9 +2745,9 @@ HRESULT TypeIdentifierData::Init(Module *pModule, mdToken tk)
     ULONG cbData;
     const BYTE *pData;
 
-    IfFailRet(pInternalImport->GetCustomAttributeByName(
+    IfFailRet(pModule->GetCustomAttribute(
         tk, 
-        g_TypeIdentifierAttributeClassName,
+        WellKnownAttribute::TypeIdentifier,
         (const void **)&pData, 
         &cbData));
     
@@ -2797,13 +2797,12 @@ HRESULT TypeIdentifierData::Init(Module *pModule, mdToken tk)
         if (IsTdInterface(dwAttrType) && IsTdImport(dwAttrType))
         {
             // ComImport interfaces get scope from their GUID
-            hr = pInternalImport->GetCustomAttributeByName(tk, INTEROP_GUID_TYPE, (const void **)&pData, &cbData);
+            hr = pModule->GetCustomAttribute(tk, WellKnownAttribute::Guid, (const void **)&pData, &cbData);
         }
         else
         {
             // other equivalent types get it from the declaring assembly
-            IMDInternalImport *pAssemblyImport = pModule->GetAssembly()->GetManifestImport();
-            hr = pAssemblyImport->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly), INTEROP_GUID_TYPE, (const void **)&pData, &cbData);
+            hr = pModule->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::Guid, (const void **)&pData, &cbData);
         }
 
         if (hr != S_OK)
@@ -3131,7 +3130,7 @@ BOOL IsTypeDefEquivalent(mdToken tk, Module *pModule)
     }
 
     // Check for the TypeIdentifierAttribute and auto opt-in
-    HRESULT hr = pInternalImport->GetCustomAttributeByName(tk, g_TypeIdentifierAttributeClassName, NULL, NULL);
+    HRESULT hr = pModule->GetCustomAttribute(tk, WellKnownAttribute::TypeIdentifier, NULL, NULL);
     IfFailThrow(hr);
 
     // 1. Type is within assembly marked with ImportedFromTypeLibAttribute or PrimaryInteropAssemblyAttribute
@@ -3172,7 +3171,7 @@ BOOL IsTypeDefEquivalent(mdToken tk, Module *pModule)
         else
         {
             // COMEvent
-            hr = pInternalImport->GetCustomAttributeByName(tk, INTEROP_COMEVENTINTERFACE_TYPE, NULL, NULL);
+            hr = pModule->GetCustomAttribute(tk, WellKnownAttribute::ComEventInterface, NULL, NULL);
             IfFailThrow(hr);
 
             if (hr == S_OK)

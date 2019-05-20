@@ -67,7 +67,6 @@ VOID ParseNativeType(Module*                     pModule,
                          LayoutRawFieldInfo*         pfwalk,
                          PCCOR_SIGNATURE             pNativeType,
                          ULONG                       cbNativeType,
-                         IMDInternalImport*          pInternalImport,
                          mdTypeDef                   cl,
                          const SigTypeContext *      pTypeContext,
                          BOOL                       *pfDisqualifyFromManagedSequential  // set to TRUE if needed (never set to FALSE, it may come in as TRUE!)
@@ -217,7 +216,7 @@ do                                                      \
             {
                 if (fAnsi)
                 {
-                    ReadBestFitCustomAttribute(pInternalImport, cl, &BestFit, &ThrowOnUnmappableChar);
+                    ReadBestFitCustomAttribute(pModule, cl, &BestFit, &ThrowOnUnmappableChar);
                     INITFIELDMARSHALER(NFT_ANSICHAR, FieldMarshaler_Ansi, (BestFit, ThrowOnUnmappableChar));
                 }
                 else
@@ -227,7 +226,7 @@ do                                                      \
             }
             else if (ntype == NATIVE_TYPE_I1 || ntype == NATIVE_TYPE_U1)
             {
-                ReadBestFitCustomAttribute(pInternalImport, cl, &BestFit, &ThrowOnUnmappableChar);
+                ReadBestFitCustomAttribute(pModule, cl, &BestFit, &ThrowOnUnmappableChar);
                 INITFIELDMARSHALER(NFT_ANSICHAR, FieldMarshaler_Ansi, (BestFit, ThrowOnUnmappableChar));
             }
             else if (ntype == NATIVE_TYPE_I2 || ntype == NATIVE_TYPE_U2)
@@ -518,7 +517,7 @@ do                                                      \
                     if (IsStructMarshalable(thNestedType))
                     {
 #ifdef _DEBUG
-                        INITFIELDMARSHALER(NFT_NESTEDVALUECLASS, FieldMarshaler_NestedValueClass, (thNestedType.GetMethodTable(), IsFixedBuffer(pfwalk->m_MD, pInternalImport)));
+                        INITFIELDMARSHALER(NFT_NESTEDVALUECLASS, FieldMarshaler_NestedValueClass, (thNestedType.GetMethodTable(), IsFixedBuffer(pfwalk->m_MD, pModule->GetMDImport())));
 #else
                         INITFIELDMARSHALER(NFT_NESTEDVALUECLASS, FieldMarshaler_NestedValueClass, (thNestedType.GetMethodTable()));
 #endif
@@ -624,7 +623,7 @@ do                                                      \
 #endif // FEATURE_COMINTEROP
                     if (fAnsi)
                     {
-                        ReadBestFitCustomAttribute(pInternalImport, cl, &BestFit, &ThrowOnUnmappableChar);
+                        ReadBestFitCustomAttribute(pModule, cl, &BestFit, &ThrowOnUnmappableChar);
                         INITFIELDMARSHALER(NFT_STRINGANSI, FieldMarshaler_StringAnsi, (BestFit, ThrowOnUnmappableChar));
                     }
                     else
@@ -637,7 +636,7 @@ do                                                      \
                     switch (ntype)
                     {
                         case NATIVE_TYPE_LPSTR:
-                            ReadBestFitCustomAttribute(pInternalImport, cl, &BestFit, &ThrowOnUnmappableChar);
+                            ReadBestFitCustomAttribute(pModule, cl, &BestFit, &ThrowOnUnmappableChar);
                             INITFIELDMARSHALER(NFT_STRINGANSI, FieldMarshaler_StringAnsi, (BestFit, ThrowOnUnmappableChar));
                             break;
 
@@ -682,7 +681,7 @@ do                                                      \
 
                                 if (fAnsi)
                                 {
-                                    ReadBestFitCustomAttribute(pInternalImport, cl, &BestFit, &ThrowOnUnmappableChar);
+                                    ReadBestFitCustomAttribute(pModule, cl, &BestFit, &ThrowOnUnmappableChar);
                                     INITFIELDMARSHALER(NFT_FIXEDSTRINGANSI, FieldMarshaler_FixedStringAnsi, (nchars, BestFit, ThrowOnUnmappableChar));
                                 }
                                 else
@@ -786,7 +785,7 @@ do                                                      \
                     // Since these always export to arrays of BSTRs, we don't need to fetch the native type.
 
                     // Compat: FixedArrays of System.Arrays map to fixed arrays of BSTRs.
-                    INITFIELDMARSHALER(NFT_FIXEDARRAY, FieldMarshaler_FixedArray, (pInternalImport, cl, numElements, VT_BSTR, g_pStringClass));
+                    INITFIELDMARSHALER(NFT_FIXEDARRAY, FieldMarshaler_FixedArray, (pModule, cl, numElements, VT_BSTR, g_pStringClass));
                 }
             }
 #endif // FEATURE_CLASSIC_COMINTEROP
@@ -929,7 +928,7 @@ do                                                      \
                     // We need to special case fixed sized arrays of ANSI chars since the OleVariant code
                     // that is used by the generic fixed size array marshaller doesn't support them
                     // properly. 
-                    ReadBestFitCustomAttribute(pInternalImport, cl, &BestFit, &ThrowOnUnmappableChar);
+                    ReadBestFitCustomAttribute(pModule, cl, &BestFit, &ThrowOnUnmappableChar);
                     INITFIELDMARSHALER(NFT_FIXEDCHARARRAYANSI, FieldMarshaler_FixedCharArrayAnsi, (numElements, BestFit, ThrowOnUnmappableChar));
                     break;                    
                 }
@@ -937,7 +936,7 @@ do                                                      \
                 {
                     VARTYPE elementVT = arrayMarshalInfo.GetElementVT();
 
-                    INITFIELDMARSHALER(NFT_FIXEDARRAY, FieldMarshaler_FixedArray, (pInternalImport, cl, numElements, elementVT, arrayMarshalInfo.GetElementTypeHandle().GetMethodTable()));
+                    INITFIELDMARSHALER(NFT_FIXEDARRAY, FieldMarshaler_FixedArray, (pModule, cl, numElements, elementVT, arrayMarshalInfo.GetElementTypeHandle().GetMethodTable()));
                     break;
                 }
             }
@@ -2728,7 +2727,7 @@ VOID FieldMarshaler_FixedCharArrayAnsi::UpdateCLRImpl(const VOID *pNativeValue, 
 // Embedded array
 // See FieldMarshaler for details.
 //=======================================================================
-FieldMarshaler_FixedArray::FieldMarshaler_FixedArray(IMDInternalImport *pMDImport, mdTypeDef cl, UINT32 numElems, VARTYPE vt, MethodTable* pElementMT)
+FieldMarshaler_FixedArray::FieldMarshaler_FixedArray(Module *pModule, mdTypeDef cl, UINT32 numElems, VARTYPE vt, MethodTable* pElementMT)
 : m_numElems(numElems)
 , m_vt(vt)
 , m_BestFitMap(FALSE)
@@ -2750,7 +2749,7 @@ FieldMarshaler_FixedArray::FieldMarshaler_FixedArray(IMDInternalImport *pMDImpor
     {
         BOOL BestFitMap = FALSE;
         BOOL ThrowOnUnmappableChar = FALSE;
-        ReadBestFitCustomAttribute(pMDImport, cl, &BestFitMap, &ThrowOnUnmappableChar);      
+        ReadBestFitCustomAttribute(pModule, cl, &BestFitMap, &ThrowOnUnmappableChar);      
         m_BestFitMap = !!BestFitMap;
         m_ThrowOnUnmappableChar = !!ThrowOnUnmappableChar;
     }

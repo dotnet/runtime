@@ -1755,34 +1755,6 @@ FCIMPL2(void, MarshalNative::DoGetTypeLibGuidForAssembly, GUID * result, Assembl
 }
 FCIMPLEND
 
-FCIMPL3(void, MarshalNative::GetTypeLibVersionForAssembly, AssemblyBaseObject* refAsmUNSAFE, INT32 *pMajorVersion, INT32 *pMinorVersion)
-{
-    FCALL_CONTRACT;
-
-    // Validate the arguments.
-    _ASSERTE(refAsmUNSAFE != NULL);
-
-    ASSEMBLYREF refAsm = (ASSEMBLYREF) refAsmUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(refAsm);
-
-    HRESULT hr = S_OK;
-
-    // Retrieve the assembly from the ASSEMBLYREF.
-    Assembly *pAssembly = refAsm->GetAssembly();
-    _ASSERTE(pAssembly);
-
-    // Retrieve the version for the assembly.
-    USHORT usMaj, usMin;
-    IfFailThrow(::GetTypeLibVersionForAssembly(pAssembly, &usMaj, &usMin));
-
-    // Set the out parameters.
-    *pMajorVersion = usMaj;
-    *pMinorVersion = usMin;
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
 FCIMPL1(int, MarshalNative::GetStartComSlot, ReflectClassBaseObject* tUNSAFE)
 {
     FCALL_CONTRACT;

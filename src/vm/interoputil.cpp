@@ -898,24 +898,24 @@ void FillExceptionData(
 //---------------------------------------------------------------------------
 // If pImport has the DefaultDllImportSearchPathsAttribute, 
 // set the value of the attribute in pDlImportSearchPathFlags and return true.
-BOOL GetDefaultDllImportSearchPathsAttributeValue(IMDInternalImport *pImport, mdToken token, DWORD * pDllImportSearchPathFlags)
+BOOL GetDefaultDllImportSearchPathsAttributeValue(Module *pModule, mdToken token, DWORD * pDllImportSearchPathFlags)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(CheckPointer(pImport));
+        PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
 
     BYTE* pData = NULL;
     LONG cData = 0;
 
-    HRESULT hr = pImport->GetCustomAttributeByName(token,
-                                                   g_DefaultDllImportSearchPathsAttribute,
-                                                   (const VOID **)(&pData),
-                                                   (ULONG *)&cData);
+    HRESULT hr = pModule->GetCustomAttribute(token,
+                                            WellKnownAttribute::DefaultDllImportSearchPaths,
+                                            (const VOID **)(&pData),
+                                            (ULONG *)&cData);
 
     IfFailThrow(hr);
     if(cData == 0 )
@@ -954,7 +954,7 @@ int GetLCIDParameterIndex(MethodDesc *pMD)
     if (!pMD->GetMethodTable()->IsProjectedFromWinRT()) //  ignore LCIDConversionAttribute on WinRT methods
     {
         // Check to see if the method has the LCIDConversionAttribute.
-        hr = pMD->GetMDImport()->GetCustomAttributeByName(pMD->GetMemberDef(), INTEROP_LCIDCONVERSION_TYPE, (const void**)&pVal, &cbVal);
+        hr = pMD->GetCustomAttribute(WellKnownAttribute::LCIDConversion, (const void**)&pVal, &cbVal);
         if (hr == S_OK)
         {
             CustomAttributeParser caLCID(pVal, cbVal);
@@ -1030,6 +1030,7 @@ BOOL IsMemberVisibleFromCom(MethodTable *pDeclaringMT, mdToken tk, mdMethodDef m
     DWORD                   dwFlags;
 
     IMDInternalImport *pInternalImport = pDeclaringMT->GetMDImport();
+    Module *pModule = pDeclaringMT->GetModule();
 
     // Check to see if the member is public.
     switch (TypeFromToken(tk))
@@ -1077,7 +1078,7 @@ BOOL IsMemberVisibleFromCom(MethodTable *pDeclaringMT, mdToken tk, mdMethodDef m
             if (!pDeclaringMT->IsProjectedFromWinRT() && !pDeclaringMT->IsExportedToWinRT() && !pDeclaringMT->IsWinRTObjectType())
             {
                 // Check to see if the associate has the ComVisible attribute set (non-WinRT members only).
-                hr = pInternalImport->GetCustomAttributeByName(mdAssociate, INTEROP_COMVISIBLE_TYPE, (const void**)&pVal, &cbVal);
+                hr = pModule->GetCustomAttribute(mdAssociate, WellKnownAttribute::ComVisible, (const void**)&pVal, &cbVal);
                 if (hr == S_OK)
                 {
                     CustomAttributeParser cap(pVal, cbVal);
@@ -1101,7 +1102,7 @@ BOOL IsMemberVisibleFromCom(MethodTable *pDeclaringMT, mdToken tk, mdMethodDef m
     if (!pDeclaringMT->IsProjectedFromWinRT() && !pDeclaringMT->IsExportedToWinRT() && !pDeclaringMT->IsWinRTObjectType())
     {
         // Check to see if the member has the ComVisible attribute set (non-WinRT members only).
-        hr = pInternalImport->GetCustomAttributeByName(tk, INTEROP_COMVISIBLE_TYPE, (const void**)&pVal, &cbVal);
+        hr = pModule->GetCustomAttribute(tk, WellKnownAttribute::ComVisible, (const void**)&pVal, &cbVal);
         if (hr == S_OK)
         {
             CustomAttributeParser cap(pVal, cbVal);
@@ -1321,7 +1322,7 @@ HRESULT GetStringizedTypeLibGuidForAssembly(Assembly *pAssembly, CQuickArray<BYT
     {
         // If the ComCompatibleVersionAttribute is set, then use the version
         // number in the attribute when generating the GUID.
-        IfFailGo(pAssembly->GetManifestImport()->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly), INTEROP_COMCOMPATIBLEVERSION_TYPE, (const void**)&pbData, &cbData));
+        IfFailGo(pAssembly->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::ComCompatibleVersion, (const void**)&pbData, &cbData));
     }
 
     if (hr == S_OK && cbData >= (2 + 4 * sizeof(INT32)))
@@ -1635,13 +1636,13 @@ ReadBestFitCustomAttribute(MethodDesc* pMD, BOOL* BestFit, BOOL* ThrowOnUnmappab
     }
     CONTRACTL_END;
     
-    ReadBestFitCustomAttribute(pMD->GetMDImport(),
+    ReadBestFitCustomAttribute(pMD->GetModule(),
         pMD->GetMethodTable()->GetCl(),
         BestFit, ThrowOnUnmappableChar);
 }
 
 VOID
-ReadBestFitCustomAttribute(IMDInternalImport* pInternalImport, mdTypeDef cl, BOOL* BestFit, BOOL* ThrowOnUnmappableChar)
+ReadBestFitCustomAttribute(Module* pModule, mdTypeDef cl, BOOL* BestFit, BOOL* ThrowOnUnmappableChar)
 {
     // Set the attributes to their defaults, just to be safe.
     *BestFit = TRUE;
@@ -1652,7 +1653,7 @@ ReadBestFitCustomAttribute(IMDInternalImport* pInternalImport, mdTypeDef cl, BOO
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(CheckPointer(pInternalImport));
+        PRECONDITION(CheckPointer(pModule));
     }
     CONTRACTL_END;
     
@@ -1668,7 +1669,7 @@ ReadBestFitCustomAttribute(IMDInternalImport* pInternalImport, mdTypeDef cl, BOO
     // 30 for the ThrowOnUnmappableChar bool
 
     // Try the assembly first
-    hr = pInternalImport->GetCustomAttributeByName(TokenFromRid(1, mdtAssembly), INTEROP_BESTFITMAPPING_TYPE, (const VOID**)(&pData), &cbCount);
+    hr = pModule->GetCustomAttribute(TokenFromRid(1, mdtAssembly), WellKnownAttribute::BestFitMapping, (const VOID**)(&pData), &cbCount);
     if ((hr == S_OK) && (pData) && (cbCount > 4) && (pData[0] == 1) && (pData[1] == 0))
     {
         _ASSERTE((cbCount == 5) || (cbCount == 30));
@@ -1685,7 +1686,7 @@ ReadBestFitCustomAttribute(IMDInternalImport* pInternalImport, mdTypeDef cl, BOO
     // Now try the interface/class/struct
     if (IsNilToken(cl))
         return;
-    hr = pInternalImport->GetCustomAttributeByName(cl, INTEROP_BESTFITMAPPING_TYPE, (const VOID**)(&pData), &cbCount);
+    hr = pModule->GetCustomAttribute(cl, WellKnownAttribute::BestFitMapping, (const VOID**)(&pData), &cbCount);
     if ((hr == S_OK) && (pData) && (cbCount > 4) && (pData[0] == 1) && (pData[1] == 0))
     {
         _ASSERTE((cbCount == 5) || (cbCount == 30));
@@ -1781,7 +1782,7 @@ int InternalWideToAnsi(__in_ecount(iNumWideChars) LPCWSTR szWideString, int iNum
 namespace
 {
     HRESULT TryParseClassInterfaceAttribute(
-        _In_ IMDInternalImport *import,
+        _In_ Module *pModule,
         _In_ mdToken tkObj,
         _Out_ CorClassIfaceAttr *val)
     {
@@ -1790,14 +1791,14 @@ namespace
             NOTHROW;
             GC_TRIGGERS;
             MODE_ANY;
-            PRECONDITION(CheckPointer(import));
+            PRECONDITION(CheckPointer(pModule));
             PRECONDITION(CheckPointer(val));
         }
         CONTRACTL_END
 
         const BYTE *pVal = nullptr;
         ULONG cbVal = 0;
-        HRESULT hr = import->GetCustomAttributeByName(tkObj, INTEROP_CLASSINTERFACE_TYPE, (const void**)&pVal, &cbVal);
+        HRESULT hr = pModule->GetCustomAttribute(tkObj, WellKnownAttribute::ClassInterface, (const void**)&pVal, &cbVal);
         if (hr != S_OK)
         {
             *val = clsIfNone;
@@ -1840,7 +1841,7 @@ CorClassIfaceAttr ReadClassInterfaceTypeCustomAttribute(TypeHandle type)
         CorClassIfaceAttr attrValueMaybe;
 
         // First look for the class interface attribute at the class level.
-        HRESULT hr = TryParseClassInterfaceAttribute(type.GetMethodTable()->GetMDImport(), type.GetCl(), &attrValueMaybe);
+        HRESULT hr = TryParseClassInterfaceAttribute(type.GetModule(), type.GetCl(), &attrValueMaybe);
         if (FAILED(hr))
             ThrowHR(hr, BFA_BAD_CLASS_INT_CA_FORMAT);
 
@@ -1848,7 +1849,7 @@ CorClassIfaceAttr ReadClassInterfaceTypeCustomAttribute(TypeHandle type)
         {
             // Check the class interface attribute at the assembly level.
             Assembly *pAssembly = type.GetAssembly();
-            hr = TryParseClassInterfaceAttribute(pAssembly->GetManifestImport(), pAssembly->GetManifestToken(), &attrValueMaybe);
+            hr = TryParseClassInterfaceAttribute(pAssembly->GetManifestModule(), pAssembly->GetManifestToken(), &attrValueMaybe);
             if (FAILED(hr))
                 ThrowHR(hr, BFA_BAD_CLASS_INT_CA_FORMAT);
         }
@@ -2604,7 +2605,7 @@ BOOL ClassSupportsIClassX(MethodTable *pMT)
     }
 
     // If the class is decorated with an explicit ClassInterfaceAttribute, we're going to say yes.
-    if (S_OK == pMT->GetMDImport()->GetCustomAttributeByName(pMT->GetCl(), INTEROP_CLASSINTERFACE_TYPE, NULL, NULL))
+    if (S_OK == pMT->GetCustomAttribute(WellKnownAttribute::ClassInterface, NULL, NULL))
         return TRUE;
 
     MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
@@ -2769,7 +2770,7 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
         return DefaultInterfaceType_IUnknown;
     
     // Start by checking for the ComDefaultInterface attribute.
-    hr = pClassMT->GetMDImport()->GetCustomAttributeByName(pClassMT->GetCl(), INTEROP_COMDEFAULTINTERFACE_TYPE, &pvData, &cbData);
+    hr = pClassMT->GetCustomAttribute(WellKnownAttribute::ComDefaultInterface, &pvData, &cbData);
     IfFailThrow(hr);
     if (hr == S_OK && cbData > 2)
     {
@@ -3043,7 +3044,7 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
     for (; pMT != NULL; pMT = pMT->GetParentMethodTable())
     {
         // See if there is any [source] interface at this level of the hierarchy.
-        hr = pMT->GetMDImport()->GetCustomAttributeByName(pMT->GetCl(), INTEROP_COMSOURCEINTERFACES_TYPE, &pvData, &cbData);
+        hr = pMT->GetCustomAttribute(WellKnownAttribute::ComSourceInterfaces, &pvData, &cbData);
         IfFailThrow(hr);
         if (hr == S_OK && cbData > 2)
         {
@@ -3565,6 +3566,7 @@ static BOOL SpecialIsGenericTypeVisibleFromCom(TypeHandle hndType)
     mdTypeDef               mdType = pMT->GetCl();
     IMDInternalImport *     pInternalImport = pMT->GetMDImport();
     Assembly *              pAssembly = pMT->GetAssembly();
+    Module *                pModule = pMT->GetModule();
 
     // If the type is a COM imported interface then it is visible from COM.
     if (pMT->IsInterface() && pMT->IsComImport())
@@ -3606,7 +3608,7 @@ static BOOL SpecialIsGenericTypeVisibleFromCom(TypeHandle hndType)
         return FALSE;
 
     // Check to see if the type has the ComVisible attribute set.
-    hr = pInternalImport->GetCustomAttributeByName(mdType, INTEROP_COMVISIBLE_TYPE, (const void**)&pVal, &cbVal);
+    hr = pModule->GetCustomAttribute(mdType, WellKnownAttribute::ComVisible, (const void**)&pVal, &cbVal);
     if (hr == S_OK)
     {
         CustomAttributeParser cap(pVal, cbVal);
@@ -3621,7 +3623,7 @@ static BOOL SpecialIsGenericTypeVisibleFromCom(TypeHandle hndType)
     }
 
     // Check to see if the assembly has the ComVisible attribute set.
-    hr = pAssembly->GetManifestImport()->GetCustomAttributeByName(pAssembly->GetManifestToken(), INTEROP_COMVISIBLE_TYPE, (const void**)&pVal, &cbVal);
+    hr = pModule->GetCustomAttribute(pAssembly->GetManifestToken(), WellKnownAttribute::ComVisible, (const void**)&pVal, &cbVal);
     if (hr == S_OK)
     {
         CustomAttributeParser cap(pVal, cbVal);

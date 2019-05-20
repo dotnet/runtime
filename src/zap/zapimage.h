@@ -222,6 +222,7 @@ public:
 
 #ifdef FEATURE_READYTORUN_COMPILER
     ZapVirtualSection * m_pAvailableTypesSection;
+    ZapVirtualSection * m_pAttributePresenceSection;
 #endif
 
     // Preloader sections
@@ -597,6 +598,8 @@ private:
     void OutputInliningTableForReadyToRun();
     void OutputProfileDataForReadyToRun();
     void OutputManifestMetadataForReadyToRun();
+    HRESULT ComputeAttributePresenceTable(IMDInternalImport * pMDImport, SArray<UINT16> *table);
+    void OutputAttributePresenceFilter(IMDInternalImport * pMDImport);
 
     void CopyDebugDirEntry();
     void CopyWin32Resources();

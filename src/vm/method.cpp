@@ -157,7 +157,7 @@ BOOL NDirectMethodDesc::HasDefaultDllImportSearchPathsAttribute()
 
     _ASSERTE(!IsZapped());
 
-    BOOL attributeIsFound = GetDefaultDllImportSearchPathsAttributeValue(GetMDImport(),GetMemberDef(),&ndirect.m_DefaultDllImportSearchPathsAttributeValue);
+    BOOL attributeIsFound = GetDefaultDllImportSearchPathsAttributeValue(GetModule(),GetMemberDef(),&ndirect.m_DefaultDllImportSearchPathsAttributeValue);
 
     if(attributeIsFound )
     {
@@ -5281,8 +5281,8 @@ BOOL MethodDesc::HasNativeCallableAttribute()
     }
     CONTRACTL_END;
 
-    HRESULT hr = GetMDImport()->GetCustomAttributeByName(GetMemberDef(),
-        g_NativeCallableAttribute,
+    HRESULT hr = GetModule()->GetCustomAttribute(GetMemberDef(),
+        WellKnownAttribute::NativeCallable,
         NULL,
         NULL);
     if (hr == S_OK)
