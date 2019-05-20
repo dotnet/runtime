@@ -2996,14 +2996,14 @@ merge_parsed_options (GPtrArray *parsed_options, int *ref_argc, char **ref_argv 
 static char *
 mono_parse_options (const char *options, int *ref_argc, char **ref_argv [], gboolean prepend)
 {
+	if (options == NULL)
+		return NULL;
+
 	GPtrArray *array = g_ptr_array_new ();
 	GString *buffer = g_string_new ("");
 	const char *p;
 	gboolean in_quotes = FALSE;
 	char quote_char = '\0';
-
-	if (options == NULL)
-		return NULL;
 
 	for (p = options; *p; p++){
 		switch (*p){
