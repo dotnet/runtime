@@ -266,11 +266,11 @@ The tests can also be filtered based on xunit trait attributes defined in [`Micr
 ```cs
 [OuterLoop()]
 ```
-Tests marked as `OuterLoop` are for scenarios that don't need to run every build. They may take longer than normal tests, cover seldom hit code paths, or require special setup or resources to execute. These tests are excluded by default when testing through `dotnet msbuild` but can be enabled manually by adding the `-outerloop` switch or `/p:OuterLoop=true` e.g.
+Tests marked as `OuterLoop` are for scenarios that don't need to run every build. They may take longer than normal tests, cover seldom hit code paths, or require special setup or resources to execute. These tests are excluded by default when testing through `dotnet msbuild` but can be enabled manually by adding the `-testscope outerloop` switch or `/p:TestScope=outerloop` e.g.
 
 ```cmd
-build -test -outerloop
-cd src/System.Text.RegularExpressions/tests && dotnet msbuild /t:RebuildAndTest /p:OuterLoop=true
+build -test -testscope outerloop
+cd src/System.Text.RegularExpressions/tests && dotnet msbuild /t:RebuildAndTest /p:TestScope=outerloop
 ```
 
 #### PlatformSpecificAttribute
