@@ -208,8 +208,12 @@ namespace Mono.Linker {
 		public AssemblyDefinition Resolve (string name)
 		{
 			if (File.Exists (name)) {
-				AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly (name, _readerParameters);
-				return _resolver.CacheAssembly (assembly);
+				try {
+					AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly (name, _readerParameters);
+					return _resolver.CacheAssembly (assembly);
+				} catch (Exception e) {
+					throw new AssemblyResolutionException (new AssemblyNameReference (name, new Version ()), e);
+				}
 			}
 
 			return Resolve (new AssemblyNameReference (name, new Version ()));
