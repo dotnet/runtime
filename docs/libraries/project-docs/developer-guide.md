@@ -8,7 +8,7 @@ The repo can be built for the following platforms, using the provided setup and 
 | x64   | &#x2714; | &#x2714; | &#x2714; | &#x2714; |
 | x86   | &#x2714; |          |          |          |
 | ARM   | &#x2714; | &#x2714; |          |          |
-| ARM64 |          | &#x2714; |          |          |
+| ARM64 | &#x2714; | &#x2714; |          |          |
 |       | [Instructions](../building/windows-instructions.md) | [Instructions](../building/unix-instructions.md) | [Instructions](../building/unix-instructions.md) | [Instructions](../building/unix-instructions.md) |
 
 
