@@ -16,8 +16,8 @@ namespace System.Text.Json.Serialization
     /// </summary>
     internal abstract class JsonPropertyInfoCommon<TClass, TDeclaredProperty, TRuntimeProperty> : JsonPropertyInfo
     {
-        public Func<TClass, TDeclaredProperty> Get { get; private set; }
-        public Action<TClass, TDeclaredProperty> Set { get; private set; }
+        public Func<object, TDeclaredProperty> Get { get; private set; }
+        public Action<object, TDeclaredProperty> Set { get; private set; }
 
         public JsonValueConverter<TRuntimeProperty> ValueConverter { get; internal set; }
 
@@ -36,13 +36,13 @@ namespace System.Text.Json.Serialization
                 if (propertyInfo.GetMethod?.IsPublic == true)
                 {
                     HasGetter = true;
-                    Get = (Func<TClass, TDeclaredProperty>)Delegate.CreateDelegate(typeof(Func<TClass, TDeclaredProperty>), propertyInfo.GetGetMethod());
+                    Get = MemberAccessor.CreatePropertyGetter<TClass, TDeclaredProperty>(propertyInfo);
                 }
 
                 if (propertyInfo.SetMethod?.IsPublic == true)
                 {
                     HasSetter = true;
-                    Set = (Action<TClass, TDeclaredProperty>)Delegate.CreateDelegate(typeof(Action<TClass, TDeclaredProperty>), propertyInfo.GetSetMethod());
+                    Set = MemberAccessor.CreatePropertySetter<TClass, TDeclaredProperty>(propertyInfo);
                 }
             }
             else
@@ -69,18 +69,18 @@ namespace System.Text.Json.Serialization
                 return obj;
             }
 
-            Debug.Assert(Get != null);
-            return Get((TClass)obj);
+            Debug.Assert(HasGetter);
+            return Get(obj);
         }
 
         public override void SetValueAsObject(object obj, object value)
         {
-            Debug.Assert(Set != null);
+            Debug.Assert(HasSetter);
             TDeclaredProperty typedValue = (TDeclaredProperty)value;
 
             if (typedValue != null || !IgnoreNullValues)
             {
-                Set((TClass)obj, (TDeclaredProperty)value);
+                Set(obj, typedValue);
             }
         }
 

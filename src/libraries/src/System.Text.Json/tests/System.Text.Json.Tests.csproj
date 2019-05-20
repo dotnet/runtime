@@ -50,6 +50,7 @@
     <Compile Include="Serialization\TestClasses.SimpleTestClassWithObject.cs" />
     <Compile Include="Serialization\TestClasses.SimpleTestClassWithObjectArrays.cs" />
     <Compile Include="Serialization\TestClasses.SimpleTestClassWithSimpleObject.cs" />
+    <Compile Include="Serialization\TestClasses.SimpleTestStruct.cs" />
     <Compile Include="Serialization\TestData.cs" />
     <Compile Include="Serialization\Value.ReadTests.cs" />
     <Compile Include="Serialization\Value.ReadTests.GenericCollections.cs" />
