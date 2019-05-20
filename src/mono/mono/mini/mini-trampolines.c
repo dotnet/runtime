@@ -430,6 +430,8 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	gboolean imt_call, virtual_;
 	gpointer *orig_vtable_slot, *vtable_slot_to_patch = NULL;
 	MonoJitInfo *ji = NULL;
+	MonoDomain *domain = mono_domain_get ();
+	MonoMethod *orig_method = m;
 
 	error_init (error);
 
@@ -657,8 +659,6 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 
 	/* the method was jumped to */
 	if (!code) {
-		MonoDomain *domain = mono_domain_get ();
-
 		mini_patch_jump_sites (domain, m, mono_get_addr_from_ftnptr (addr));
 
 		/* Patch the got entries pointing to this method */
@@ -739,6 +739,8 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 				no_patch = TRUE;
 			}
 #if LLVM_API_VERSION > 100
+			if (!no_patch)
+				mini_patch_llvm_jit_callees (domain, orig_method, addr);
 			/* LLVM code doesn't make direct calls */
 			if (ji && ji->from_llvm)
 				no_patch = TRUE;

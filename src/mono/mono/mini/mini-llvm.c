@@ -1994,8 +1994,18 @@ get_callee (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gcons
 }
 
 static LLVMValueRef
-emit_jit_callee (EmitContext *ctx, const char *name, LLVMTypeRef llvm_sig, gpointer target)
+get_jit_callee (EmitContext *ctx, const char *name, LLVMTypeRef llvm_sig, MonoJumpInfoType type, gconstpointer data)
 {
+	gpointer target;
+
+	// This won't be patched so compile the wrapper immediately
+	if (type == MONO_PATCH_INFO_JIT_ICALL) {
+		MonoJitICallInfo *info = mono_find_jit_icall_by_name ((char*)data);
+		target = (gpointer)mono_icall_get_wrapper_full (info, TRUE);
+	} else {
+		target = resolve_patch (ctx->cfg, type, data);
+	}
+
 #if LLVM_API_VERSION > 100
 	LLVMValueRef tramp_var = LLVMAddGlobal (ctx->lmodule, LLVMPointerType (llvm_sig, 0), name);
 	LLVMSetInitializer (tramp_var, LLVMConstIntToPtr (LLVMConstInt (LLVMInt64Type (), (guint64)(size_t)target, FALSE), LLVMPointerType (llvm_sig, 0)));
@@ -2448,13 +2458,12 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 			 * - On x86, LLVM generated code doesn't push the arguments
 			 * - The trampoline takes the throw address as an arguments, not a pc offset.
 			 */
-			gpointer target = resolve_patch (ctx->cfg, MONO_PATCH_INFO_JIT_ICALL, icall_name);
-			callee = emit_jit_callee (ctx, "llvm_throw_corlib_exception_trampoline", sig, target);
+			callee = get_jit_callee (ctx, "llvm_throw_corlib_exception_trampoline", sig, MONO_PATCH_INFO_JIT_ICALL, icall_name);
 
 #if LLVM_API_VERSION > 100
 			/*
 			 * Make sure that ex_bb starts with the invoke, so the block address points to it, and not to the load 
-			 * added by emit_jit_callee ().
+			 * added by get_jit_callee ().
 			 */
 			ex2_bb = gen_bb (ctx, "EX2_BB");
 			LLVMBuildBr (builder, ex2_bb);
@@ -3858,15 +3867,6 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		MonoJitICallInfo *info = mono_find_jit_icall_by_addr (call->fptr);
 
 		if (info) {
-			/*
-			  MonoJumpInfo ji;
-
-			  memset (&ji, 0, sizeof (ji));
-			  ji.type = MONO_PATCH_INFO_JIT_ICALL_ADDR;
-			  ji.data.target = info->name;
-
-			  target = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, &ji, FALSE);
-			*/
 			if (cfg->compile_aot) {
 				callee = get_callee (ctx, llvm_sig, MONO_PATCH_INFO_JIT_ICALL, (char*)info->name);
 				if (!callee) {
@@ -3874,8 +3874,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 					return;
 				}
 			} else {
-				target = (gpointer)mono_icall_get_wrapper (info);
-				callee = emit_jit_callee (ctx, "", llvm_sig, target);
+				callee = get_jit_callee (ctx, "", llvm_sig, MONO_PATCH_INFO_JIT_ICALL, (char*)info->name);
 			}
 		} else {
 			if (cfg->compile_aot) {
@@ -3903,7 +3902,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 						target = mono_resolve_patch_target (cfg->method, cfg->domain, NULL, abs_ji, FALSE, error);
 						mono_error_assert_ok (error);
-						callee = emit_jit_callee (ctx, "", llvm_sig, target);
+						callee = get_jit_callee (ctx, "", llvm_sig, abs_ji->type, abs_ji->data.target);
 					} else {
 						g_assert_not_reached ();
 					}
@@ -4231,17 +4230,17 @@ emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef
 		if (ctx->cfg->compile_aot) {
 			callee = get_callee (ctx, sig_to_llvm_sig (ctx, throw_sig), MONO_PATCH_INFO_JIT_ICALL, icall_name);
 		} else {
-			gpointer target;
+			const char *name;
 #ifdef TARGET_X86
 			/* 
 			 * LLVM doesn't push the exception argument, so we need a different
 			 * trampoline.
 			 */
-			target = resolve_patch (ctx->cfg, MONO_PATCH_INFO_JIT_ICALL, rethrow ? "llvm_rethrow_exception_trampoline" : "llvm_throw_exception_trampoline");
+			name = rethrow ? "llvm_rethrow_exception_trampoline" : "llvm_throw_exception_trampoline";
 #else
-			target = resolve_patch (ctx->cfg, MONO_PATCH_INFO_JIT_ICALL, icall_name);
+			name = icall_name;
 #endif
-			callee = emit_jit_callee (ctx, icall_name, sig_to_llvm_sig (ctx, throw_sig), target);
+			callee = get_jit_callee (ctx, icall_name, sig_to_llvm_sig (ctx, throw_sig), MONO_PATCH_INFO_JIT_ICALL, name);
 		}
 
 		mono_memory_barrier ();
@@ -6289,8 +6288,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (ctx->cfg->compile_aot) {
 				callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL, icall_name);
 			} else {
-				gpointer target = resolve_patch (ctx->cfg, MONO_PATCH_INFO_JIT_ICALL, icall_name);
-				callee = emit_jit_callee (ctx, icall_name, sig, target);
+				callee = get_jit_callee (ctx, icall_name, sig, MONO_PATCH_INFO_JIT_ICALL, icall_name);
 			}
 			LLVMBuildCall (builder, callee, NULL, 0, "");
 			LLVMBuildBr (builder, cont_bb);
@@ -7270,17 +7268,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			if (ctx->llvm_only) {
 				emit_resume_eh (ctx, bb);
 			} else {
+				LLVMTypeRef icall_sig = LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE);
 				if (ctx->cfg->compile_aot) {
-					callee = get_callee (ctx, LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE), MONO_PATCH_INFO_JIT_ICALL, "llvm_resume_unwind_trampoline");
+					callee = get_callee (ctx, icall_sig, MONO_PATCH_INFO_JIT_ICALL, "llvm_resume_unwind_trampoline");
 				} else {
 #if LLVM_API_VERSION > 100
-					MonoJitICallInfo *info;
-
-					info = mono_find_jit_icall_by_name ("llvm_resume_unwind_trampoline");
-					g_assert (info);
-					gpointer target = (void*)info->func;
-					LLVMTypeRef icall_sig = LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE);
-					callee = emit_jit_callee (ctx, "llvm_resume_unwind_trampoline", icall_sig, target);
+					callee = get_jit_callee (ctx, "llvm_resume_unwind_trampoline", icall_sig, MONO_PATCH_INFO_JIT_ICALL, "llvm_resume_unwind_trampoline");
 #else
 					g_assert_not_reached ();
 					callee = NULL;
