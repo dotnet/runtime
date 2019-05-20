@@ -207,7 +207,8 @@ FakesAssemblies/
 browse.VC.db
 
 # Local settings folder for Visual Studio Code
-.vscode/
+**/.vscode/**
+!**/.vscode/c_cpp_properties.json
 
 ### MonoDevelop ###
 
