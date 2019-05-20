@@ -14,6 +14,7 @@
 
 #include "nativeformatreader.h"
 #include "inlinetracking.h"
+#include "wellknownattributes.h"
 
 typedef DPTR(struct READYTORUN_SECTION) PTR_READYTORUN_SECTION;
 
@@ -40,6 +41,7 @@ class ReadyToRunInfo
     NativeFormat::NativeHashtable   m_instMethodEntryPoints;
     NativeFormat::NativeHashtable   m_availableTypesHashtable;
     NativeFormat::NativeHashtable   m_pMetaDataHashtable;
+    NativeFormat::NativeCuckooFilter m_attributesPresence;
 
     Crst                            m_Crst;
     PtrHashMap                      m_entryPointToMethodDescMap;
@@ -134,6 +136,9 @@ public:
     {
         return m_pPersistentInlineTrackingMap;
     }
+
+    bool MayHaveCustomAttribute(WellKnownAttribute attribute, mdToken token);
+    void DisableCustomAttributeFilter();
 
 private:
     BOOL GetTypeNameFromToken(IMDInternalImport * pImport, mdToken mdType, LPCUTF8 * ppszName, LPCUTF8 * ppszNameSpace);

@@ -229,8 +229,7 @@ BOOL Assembly::IsDisabledPrivateReflection()
 
     if (m_isDisabledPrivateReflection == UNINITIALIZED)
     {
-        IMDInternalImport *pImport = GetManifestImport();
-        HRESULT hr = pImport->GetCustomAttributeByName(GetManifestToken(), DISABLED_PRIVATE_REFLECTION_TYPE, NULL, 0);
+        HRESULT hr = GetManifestModule()->GetCustomAttribute(GetManifestToken(), WellKnownAttribute::DisablePrivateReflectionType, NULL, 0);
         IfFailThrow(hr);
 
         if (hr == S_OK)
