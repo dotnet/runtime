@@ -102,7 +102,7 @@ while [[ $# > 0 ]]; do
       ;;
      -testscope)
       arguments="$arguments /p:TestScope=$2"
-      shift 1
+      shift 2
       ;;
      -coverage)
       arguments="$arguments /p:Coverage=true"
