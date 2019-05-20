@@ -12,6 +12,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             get
             {
+                yield return new object[] { typeof(SimpleTestStruct), SimpleTestStruct.s_data };
                 yield return new object[] { typeof(SimpleTestClass), SimpleTestClass.s_data };
                 yield return new object[] { typeof(SimpleTestClassWithNullables), SimpleTestClassWithNullables.s_data };
                 yield return new object[] { typeof(SimpleTestClassWithNulls), SimpleTestClassWithNulls.s_data };
@@ -46,6 +47,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             get
             {
+                yield return new object[] { new SimpleTestStruct() };
                 yield return new object[] { new SimpleTestClass() };
                 yield return new object[] { new SimpleTestClassWithNullables() };
                 yield return new object[] { new SimpleTestClassWithNulls() };
