@@ -8,6 +8,12 @@
  *
  *****************************************************************/
 
+// ******************************************************************************
+// WARNING!!!: These values are used by SOS in the diagnostics repo. Values should 
+// added or removed in a backwards and forwards compatible way.
+// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/gcinfodecoder.h
+// ******************************************************************************
+
 #ifndef _GC_INFO_DECODER_
 #define _GC_INFO_DECODER_
 
