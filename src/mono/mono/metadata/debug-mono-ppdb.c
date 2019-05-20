@@ -154,8 +154,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 		}
 
 		ppdb_image = mono_image_open_metadata_only (ppdb_filename, &status);
-		if (!ppdb_image)
-			g_free (ppdb_filename);
+		g_free (ppdb_filename);
 	}
 	if (!ppdb_image)
 		return NULL;
