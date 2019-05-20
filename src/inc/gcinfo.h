@@ -2,6 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+// ******************************************************************************
+// WARNING!!!: These values are used by SOS in the diagnostics repo. Values should 
+// added or removed in a backwards and forwards compatible way.
+// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/gcinfo.h
+// ******************************************************************************
 
 /*****************************************************************************/
 #ifndef _GCINFO_H_
