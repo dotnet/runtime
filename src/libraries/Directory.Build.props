@@ -303,9 +303,7 @@
     <Features>strict</Features>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-
-    <!-- We cannot enable deterministic builds yet but we would like to in the future see https://github.com/dotnet/corefx/issues/2003 -->
-    <Deterministic>false</Deterministic>
+    <Deterministic>true</Deterministic>
 
     <!-- We decided to keep this disabled by default to see some history of way have a look at https://github.com/dotnet/corefx/issues/3140 -->
     <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
