@@ -10,6 +10,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override bool TryRead(Type valueType, ref Utf8JsonReader reader, out DateTimeOffset value)
         {
+            if (reader.TokenType != JsonTokenType.String)
+            {
+                value = default;
+                return false;
+            }
+
             return reader.TryGetDateTimeOffset(out value);
         }
 
