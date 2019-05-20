@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization
                 }
                 else
                 {
-                    Set((TClass)state.Current.ReturnValue, value);
+                    Set(state.Current.ReturnValue, value);
                 }
 
                 return;
@@ -72,7 +72,7 @@ namespace System.Text.Json.Serialization
                 }
                 else
                 {
-                    value = Get((TClass)current.CurrentValue);
+                    value = Get(current.CurrentValue);
                 }
 
                 if (value == null)

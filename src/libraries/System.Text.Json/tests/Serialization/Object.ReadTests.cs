@@ -9,6 +9,13 @@ namespace System.Text.Json.Serialization.Tests
     public static partial class ObjectTests
     {
         [Fact]
+        public static void ReadSimpleStruct()
+        {
+            SimpleTestStruct obj = JsonSerializer.Parse<SimpleTestStruct>(SimpleTestStruct.s_json);
+            obj.Verify();
+        }
+
+        [Fact]
         public static void ReadSimpleClass()
         {
             SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(SimpleTestClass.s_json);

@@ -37,8 +37,8 @@ namespace System.Text.Json.Serialization
                         // Null values were already handled.
                         Debug.Assert(value != null);
 
-                        Set((TClass)state.Current.ReturnValue, value);
-                    }
+                            Set(state.Current.ReturnValue, value);
+                        }
 
                     return;
                 }
@@ -73,7 +73,7 @@ namespace System.Text.Json.Serialization
             }
             else
             {
-                value = (TRuntimeProperty)Get((TClass)current.CurrentValue);
+                value = (TRuntimeProperty)Get(current.CurrentValue);
             }
 
             if (value == null)
