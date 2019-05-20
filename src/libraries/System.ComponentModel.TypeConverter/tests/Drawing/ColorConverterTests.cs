@@ -3,9 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.ComponentModel.Design.Serialization;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace System.ComponentModel.TypeConverterTests
@@ -445,6 +447,25 @@ namespace System.ComponentModel.TypeConverterTests
         {
             var conv = new ColorConverter();
             Assert.False(conv.GetStandardValuesExclusive());
+        }
+
+        [Fact]
+        public void ConvertToStringTests()
+        {
+            var conv = new ColorConverter();
+            Assert.Equal("Blue", conv.ConvertTo(Color.Blue, typeof(string)));
+            Assert.Equal("ActiveCaption", conv.ConvertTo(SystemColors.ActiveCaption, typeof(string)));
+        }
+
+        [Fact]
+        public void ConvertToInstanceDescriptorTests()
+        {
+            var conv = new ColorConverter();
+            InstanceDescriptor descriptor = (InstanceDescriptor)conv.ConvertTo(Color.Blue, typeof(InstanceDescriptor));
+            Assert.Equal("Blue", descriptor.MemberInfo.Name);
+
+            descriptor = (InstanceDescriptor)conv.ConvertTo(SystemColors.ActiveCaption, typeof(InstanceDescriptor));
+            Assert.Equal("ActiveCaption", descriptor.MemberInfo.Name);
         }
     }
 }
