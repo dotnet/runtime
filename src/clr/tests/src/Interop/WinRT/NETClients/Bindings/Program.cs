@@ -10,7 +10,7 @@ namespace NetClient
     {
         static int Main(string[] args)
         {
-            if (!TestLibrary.Utilities.IsWinRTSupported || TestLibrary.Utilities.IsWindowsNanoServer || !TestLibrary.Utilities.IsWindows10Version1809OrGreater)
+            if (!TestLibrary.Utilities.IsWinRTSupported || !TestLibrary.Utilities.IsWindows10Version1809OrGreater)
             {
                 Console.WriteLine("XAML Islands are unsupported on this platform.");
                 return 100;
