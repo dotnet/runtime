@@ -166,7 +166,7 @@ namespace System.Text.Json.Serialization
                 Debug.Assert(entry.Key is string);
 
                 string propertyName = (string)entry.Key;
-                element.WriteAsProperty(propertyName.AsSpan(), writer);
+                element.WriteAsProperty(propertyName, writer);
             }
             else
             {

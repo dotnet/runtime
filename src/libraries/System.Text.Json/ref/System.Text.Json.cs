@@ -73,6 +73,7 @@ namespace System.Text.Json
         public bool TryGetUInt64(out ulong value) { throw null; }
         public void WriteAsProperty(System.ReadOnlySpan<byte> utf8PropertyName, System.Text.Json.Utf8JsonWriter writer) { }
         public void WriteAsProperty(System.ReadOnlySpan<char> propertyName, System.Text.Json.Utf8JsonWriter writer) { }
+        public void WriteAsProperty(string propertyName, System.Text.Json.Utf8JsonWriter writer) { }
         public void WriteAsValue(System.Text.Json.Utf8JsonWriter writer) { }
         public partial struct ArrayEnumerator : System.Collections.Generic.IEnumerable<System.Text.Json.JsonElement>, System.Collections.Generic.IEnumerator<System.Text.Json.JsonElement>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
         {
