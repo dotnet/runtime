@@ -294,7 +294,10 @@ namespace System.Text.Json.Serialization
         {
             return new JsonWriterOptions
             {
-                Indented = WriteIndented
+                Indented = WriteIndented,
+#if !DEBUG
+                SkipValidation = true
+#endif
             };
         }
 
