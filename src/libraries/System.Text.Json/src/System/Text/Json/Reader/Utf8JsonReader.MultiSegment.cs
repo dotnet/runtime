@@ -2203,7 +2203,7 @@ namespace System.Text.Json
 
             if (marker != JsonConstants.Asterisk)
             {
-                ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfValueNotFound, marker);
+                ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedStartOfValueNotFound, JsonConstants.Slash);
             }
 
             return SkipMultiLineCommentMultiSegment(localBuffer.Slice(1), leftOver);
