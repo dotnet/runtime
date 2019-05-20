@@ -74,6 +74,32 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<int>(@""""""));
         }
 
+        [Theory]
+        [InlineData(typeof(bool))]
+        [InlineData(typeof(byte))]
+        [InlineData(typeof(char))]
+        [InlineData(typeof(DateTime))]
+        [InlineData(typeof(DateTimeOffset))]
+        [InlineData(typeof(decimal))]
+        [InlineData(typeof(double))]
+        [InlineData(typeof(JsonTokenType))]
+        [InlineData(typeof(Guid))]
+        [InlineData(typeof(short))]
+        [InlineData(typeof(int))]
+        [InlineData(typeof(long))]
+        [InlineData(typeof(sbyte))]
+        [InlineData(typeof(float))]
+        [InlineData(typeof(string))]
+        [InlineData(typeof(ushort))]
+        [InlineData(typeof(uint))]
+        [InlineData(typeof(ulong))]
+        public static void PrimitivesShouldFailWithArrayOrObjectAssignment(Type primitiveType)
+        {
+            // This test lines up with the built in JsonValueConverters
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse(@"[]", primitiveType));
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse(@"{}", primitiveType));
+        }
+
         [Fact]
         public static void ReadPrimitiveArray()
         {

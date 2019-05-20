@@ -10,6 +10,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override bool TryRead(Type valueType, ref Utf8JsonReader reader, out Guid value)
         {
+            if (reader.TokenType != JsonTokenType.String)
+            {
+                value = default;
+                return false;
+            }
+
             return reader.TryGetGuid(out value);
         }
 
