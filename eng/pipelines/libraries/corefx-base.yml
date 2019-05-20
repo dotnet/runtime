@@ -78,7 +78,7 @@ jobs:
         - _testScopeArg: ''
 
         - ${{ if ne(parameters.testScope, '') }}:
-          - _testScopeArg: -testScope ${{ parameters.testScope }}
+          - _testScopeArg: -testscope ${{ parameters.testScope }}
 
         - ${{ if ne(job._jobFramework, '')}}:
           - _finalFrameworkArg: ${{ job._jobFramework }}
