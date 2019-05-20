@@ -305,7 +305,7 @@ namespace System.IO
             if (value != null)
             {
                 foreach (ReadOnlyMemory<char> chunk in value.GetChunks())
-                    Write(chunk);
+                    Write(chunk.Span);
             }
         }
 
