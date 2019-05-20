@@ -377,6 +377,21 @@ null,
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        public static void WriteNullStringAsProperty(bool indented)
+        {
+            WritePropertyValueBothForms(
+                indented,
+                null,
+                "\"\"",
+                @"{
+  """": """"
+}",
+                "{\"\":\"\"}");
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         public static void WriteNumberAsProperty(bool indented)
         {
             WritePropertyValueBothForms(
@@ -864,6 +879,7 @@ null,
                 {
                     foreach (JsonElement val in root.EnumerateArray())
                     {
+                        val.WriteAsProperty(CharLabel, writer);
                         val.WriteAsProperty(CharLabel.AsSpan(), writer);
                         val.WriteAsProperty(byteUtf8, writer);
                     }
@@ -871,19 +887,23 @@ null,
                     writer.Flush();
 
                     AssertContents(
-                        "\"char\":null,\"byte\":null," +
-                            "\"char\":false,\"byte\":false," +
-                            "\"char\":true,\"byte\":true," +
-                            "\"char\":\"hi\",\"byte\":\"hi\"," +
-                            "\"char\":5,\"byte\":5," +
-                            "\"char\":{},\"byte\":{}," +
-                            "\"char\":[],\"byte\":[]",
+                        "\"char\":null,\"char\":null,\"byte\":null," +
+                            "\"char\":false,\"char\":false,\"byte\":false," +
+                            "\"char\":true,\"char\":true,\"byte\":true," +
+                            "\"char\":\"hi\",\"char\":\"hi\",\"byte\":\"hi\"," +
+                            "\"char\":5,\"char\":5,\"byte\":5," +
+                            "\"char\":{},\"char\":{},\"byte\":{}," +
+                            "\"char\":[],\"char\":[],\"byte\":[]",
                         buffer);
                 }
                 else
                 {
                     foreach (JsonElement val in root.EnumerateArray())
                     {
+                        JsonTestHelper.AssertThrows<InvalidOperationException>(
+                            ref writer,
+                            (ref Utf8JsonWriter w) => val.WriteAsProperty(CharLabel, w));
+
                         JsonTestHelper.AssertThrows<InvalidOperationException>(
                             ref writer,
                             (ref Utf8JsonWriter w) => val.WriteAsProperty(CharLabel.AsSpan(), w));
@@ -1010,6 +1030,13 @@ null,
         {
             WritePropertyValue(
                 indented,
+                propertyName,
+                jsonIn,
+                expectedIndent,
+                expectedMinimal);
+
+            WritePropertyValue(
+                indented,
                 propertyName.AsSpan(),
                 jsonIn,
                 expectedIndent,
@@ -1017,10 +1044,46 @@ null,
 
             WritePropertyValue(
                 indented,
-                Encoding.UTF8.GetBytes(propertyName),
+                Encoding.UTF8.GetBytes(propertyName ?? ""),
                 jsonIn,
                 expectedIndent,
                 expectedMinimal);
+        }
+
+        private static void WritePropertyValue(
+            bool indented,
+            string propertyName,
+            string jsonIn,
+            string expectedIndent,
+            string expectedMinimal)
+        {
+            var buffer = new ArrayBufferWriter<byte>(1024);
+            string temp = $" [  {jsonIn}  ]";
+            using (JsonDocument doc = JsonDocument.Parse(temp, s_readerOptions))
+            {
+                JsonElement target = doc.RootElement[0];
+
+                var options = new JsonWriterOptions
+                {
+                    Indented = indented,
+                };
+
+                var writer = new Utf8JsonWriter(buffer, options);
+
+                writer.WriteStartObject();
+                target.WriteAsProperty(propertyName, writer);
+                writer.WriteEndObject();
+                writer.Flush();
+
+                if (indented && s_replaceNewlines)
+                {
+                    AssertContents(
+                        expectedIndent.Replace(CompiledNewline, Environment.NewLine),
+                        buffer);
+                }
+
+                AssertContents(indented ? expectedIndent : expectedMinimal, buffer);
+            }
         }
 
         private static void WritePropertyValue(
