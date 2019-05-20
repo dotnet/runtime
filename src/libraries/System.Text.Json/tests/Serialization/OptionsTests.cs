@@ -148,9 +148,17 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<object>("/* commment */", options));
 
             options = new JsonSerializerOptions();
-            options.ReadCommentHandling = JsonCommentHandling.Allow;
+            options.ReadCommentHandling = JsonCommentHandling.Skip;
 
-            JsonSerializer.Parse<object>("/* commment */", options);
+            int value = JsonSerializer.Parse<int>("1 /* commment */", options);
+        }
+
+        [Fact]
+        public static void ReadCommentHandlingDoesNotSupportAllow()
+        {
+            var options = new JsonSerializerOptions();
+
+            Assert.Throws<ArgumentException>(() => options.ReadCommentHandling = JsonCommentHandling.Allow);
         }
 
         [Fact]

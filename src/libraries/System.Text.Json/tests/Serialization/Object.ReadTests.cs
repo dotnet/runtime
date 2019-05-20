@@ -36,21 +36,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("/* Multi\nLine\nComment */ ", "\t// trailing comment\n ")]
         public static void ReadSimpleClassIgnoresLeadingOrTrailingTrivia(string leadingTrivia, string trailingTrivia)
         {
-            {
-                var options = new JsonSerializerOptions();
-                options.ReadCommentHandling = JsonCommentHandling.Skip;
+            var options = new JsonSerializerOptions();
+            options.ReadCommentHandling = JsonCommentHandling.Skip;
 
-                SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(leadingTrivia + SimpleTestClass.s_json + trailingTrivia, options);
-                obj.Verify();
-            }
-
-            {
-                var options = new JsonSerializerOptions();
-                options.ReadCommentHandling = JsonCommentHandling.Allow;
-
-                SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(leadingTrivia + SimpleTestClass.s_json + trailingTrivia, options);
-                obj.Verify();
-            }
+            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(leadingTrivia + SimpleTestClass.s_json + trailingTrivia, options);
+            obj.Verify();
         }
 
         [Fact]
@@ -132,13 +122,6 @@ namespace System.Text.Json.Serialization.Tests
 
             ClassWithComplexObjects obj = JsonSerializer.Parse<ClassWithComplexObjects>(leadingTrivia + ClassWithComplexObjects.s_json + trailingTrivia, options);
             obj.Verify();
-
-            // Throws due to JsonDocument.TryParse not supporting Allow
-            //var options = new JsonSerializerOptions();
-            //options.ReadCommentHandling = JsonCommentHandling.Allow;
-            //
-            //obj = JsonSerializer.Parse<ClassWithComplexObjects>(leadingTrivia + ClassWithComplexObjects.s_json + trailingTrivia, options);
-            //obj.Verify();
         }
 
         [Fact]
