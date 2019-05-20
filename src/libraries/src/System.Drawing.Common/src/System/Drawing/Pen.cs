@@ -148,7 +148,7 @@ namespace System.Drawing
             }
             else if (_immutable)
             {
-                throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Brush)));
+                throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
             }
 
             if (_nativePen != IntPtr.Zero)
