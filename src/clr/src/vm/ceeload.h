@@ -36,6 +36,8 @@
 #include "corcompile.h"
 #include <gcinfodecoder.h>
 
+#include "wellknownattributes.h"
+
 #ifdef FEATURE_PREJIT
 #include "dataimage.h"
 #endif // FEATURE_PREJIT
@@ -1627,6 +1629,7 @@ private:
 #if PROFILING_SUPPORTED_DATA 
     DWORD                   m_dwTypeCount;
     DWORD                   m_dwExportedTypeCount;
+    DWORD                   m_dwCustomAttributeCount;
 #endif // PROFILING_SUPPORTED_DATA
 
 #ifdef FEATURE_PREJIT
@@ -1888,6 +1891,20 @@ protected:
 #endif
 
     CHECK CheckActivated();
+
+    HRESULT GetCustomAttribute(mdToken parentToken,
+                               WellKnownAttribute attribute,
+                               const void  **ppData,
+                               ULONG *pcbData)
+    {
+        if (IsReadyToRun())
+        {
+            if (!GetReadyToRunInfo()->MayHaveCustomAttribute(attribute, parentToken))
+                return S_FALSE;
+        }
+
+        return GetMDImport()->GetCustomAttributeByName(parentToken, GetWellKnownAttributeName(attribute), ppData, pcbData);
+    }
 
     IMDInternalImport *GetMDImport() const
     {

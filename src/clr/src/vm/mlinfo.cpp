@@ -2961,7 +2961,7 @@ lExit:
                     if (SUCCEEDED(pInternalImport->GetDefaultValue(token, &defaultValue)) && defaultValue.m_bType == ELEMENT_TYPE_VOID)
                     {
                         // check if it has params attribute
-                        if (pInternalImport->GetCustomAttributeByName(token, INTEROP_PARAMARRAY_TYPE, 0,0) == S_OK)
+                        if (pModule->GetCustomAttribute(token, WellKnownAttribute::ParamArray, 0,0) == S_OK)
                             m_fOleVarArgCandidate = TRUE;
                     }
                 }

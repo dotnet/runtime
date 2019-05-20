@@ -609,6 +609,10 @@ HRESULT MDInternalRO::EnumAllInit(      // return S_FALSE if record not found
         phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountFiles();
         break;
 
+    case mdtCustomAttribute:
+        phEnum->m_ulCount = m_LiteWeightStgdb.m_MiniMd.getCountCustomAttributes();
+        break;
+
     default:
         _ASSERTE(!"Bad token kind!");
         break;

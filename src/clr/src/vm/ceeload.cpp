@@ -219,6 +219,7 @@ void Module::UpdateNewlyAddedTypes()
 
     DWORD countTypesAfterProfilerUpdate = GetMDImport()->GetCountWithTokenKind(mdtTypeDef);
     DWORD countExportedTypesAfterProfilerUpdate = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
+    DWORD countCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
 
     // typeDefs rids 0 and 1 aren't included in the count, thus X typeDefs before means rid X+1 was valid and our incremental addition should start at X+2
     for (DWORD typeDefRid = m_dwTypeCount + 2; typeDefRid < countTypesAfterProfilerUpdate + 2; typeDefRid++)
@@ -232,8 +233,15 @@ void Module::UpdateNewlyAddedTypes()
         GetAssembly()->AddExportedType(TokenFromRid(exportedTypeDef, mdtExportedType));
     }
 
+    if ((countCustomAttributeCount != m_dwCustomAttributeCount) && IsReadyToRun())
+    {
+        // Set of custom attributes has changed. Disable the cuckoo filter from ready to run, and do normal custom attribute parsing
+        GetReadyToRunInfo()->DisableCustomAttributeFilter();
+    }
+
     m_dwTypeCount = countTypesAfterProfilerUpdate;
     m_dwExportedTypeCount = countExportedTypesAfterProfilerUpdate;
+    m_dwCustomAttributeCount = countCustomAttributeCount;
 }
 
 void Module::NotifyProfilerLoadFinished(HRESULT hr)
@@ -257,6 +265,7 @@ void Module::NotifyProfilerLoadFinished(HRESULT hr)
         {
             m_dwTypeCount = GetMDImport()->GetCountWithTokenKind(mdtTypeDef);
             m_dwExportedTypeCount = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
+            m_dwCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
         }
 
         // Notify the profiler, this may cause metadata to be updated
@@ -622,6 +631,7 @@ void Module::Initialize(AllocMemTracker *pamTracker, LPCWSTR szName)
     // a safe initial value now.
     m_dwTypeCount = 0;
     m_dwExportedTypeCount = 0;
+    m_dwCustomAttributeCount = 0;
 
     // Prepare statics that are known at module load time
     AllocateStatics(pamTracker);
@@ -2535,10 +2545,9 @@ BOOL Module::HasDefaultDllImportSearchPathsAttribute()
     {
         return (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS) != 0 ;
     }
-    IMDInternalImport *mdImport = GetAssembly()->GetManifestImport();
 
     BOOL attributeIsFound = FALSE;
-    attributeIsFound = GetDefaultDllImportSearchPathsAttributeValue(mdImport, TokenFromRid(1, mdtAssembly),&m_DefaultDllImportSearchPathsAttributeValue);
+    attributeIsFound = GetDefaultDllImportSearchPathsAttributeValue(this, TokenFromRid(1, mdtAssembly),&m_DefaultDllImportSearchPathsAttributeValue);
     if(attributeIsFound)
     {
         FastInterlockOr(&m_dwPersistedFlags, DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED | DEFAULT_DLL_IMPORT_SEARCH_PATHS_STATUS);

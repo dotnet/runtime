@@ -205,12 +205,6 @@ public:
     static FCDECL2(void, DoGetTypeLibGuidForAssembly, GUID * result, AssemblyBaseObject* refAsmUNSAFE);
 
     //====================================================================
-    // Given a assembly, return the version number of the type library
-    // that would be exported from the assembly.
-    //====================================================================
-    static FCDECL3(void, GetTypeLibVersionForAssembly, AssemblyBaseObject* refAsmUNSAFE, INT32 *pMajorVersion, INT32 *pMinorVersion);
-
-    //====================================================================
     // These methods are used to map COM slots to method info's.
     //====================================================================
     static FCDECL1(int, GetStartComSlot, ReflectClassBaseObject* tUNSAFE);

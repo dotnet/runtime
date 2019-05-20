@@ -81,6 +81,10 @@ A [NativeArray](NativeArray.cs) used for finding the index of the entrypoint Run
 
 A [NativeHashtable](NativeHashtable.cs) mapping type hashcodes of types defined in the program to the rowIds. The hashcode is calculated with [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(namespace) ^ [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(name)
 
+### READYTORUN_SECTION_ATTRIBUTEPRESENCE
+
+A [NativeCuckooFilter](NativeHashtable.cs) to discover which tokens have which "System.Runtime." prefixed attributes. The System.Runtime.CompilerServices.NullableAttribute is not used in this calculation. The filter is composed of a name hash of the type name using [ComputeNameHashCode](../../vm/typehashingalgorithms.h)(namespace + name) hash combined with a hash of each token that produced it. In addition the upper 16 bits is used as the fingerprint in the filter. 
+
 ### READYTORUN_SECTION_INSTANCE_METHOD_ENTRYPOINTS
 
 A [NativeHashtable](NativeHashtable.cs) mapping type hashcodes of generic instances to the (methodFlags, methodRowId, list of types, runtimeFunctionId). Each type in the list of types corresponds to a generic type in the method.
