@@ -74,7 +74,7 @@ namespace System.Text.Json.Serialization
 
             if (jsonPropertyInfo.ClassType == ClassType.Value)
             {
-                jsonPropertyInfo.Write(options, ref state.Current, writer);
+                jsonPropertyInfo.Write(ref state.Current, writer);
                 state.Current.NextProperty();
                 return true;
             }
@@ -116,7 +116,7 @@ namespace System.Text.Json.Serialization
 
                 state.Current.NextProperty();
 
-                JsonClassInfo nextClassInfo = options.GetOrAddClass(jsonPropertyInfo.RuntimePropertyType);
+                JsonClassInfo nextClassInfo = jsonPropertyInfo.RuntimeClassInfo;
                 state.Push(nextClassInfo, currentValue);
 
                 // Set the PropertyInfo so we can obtain the property name in order to write it.

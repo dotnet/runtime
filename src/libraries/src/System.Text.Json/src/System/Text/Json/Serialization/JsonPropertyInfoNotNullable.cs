@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization
         JsonPropertyInfoCommon<TClass, TDeclaredProperty, TRuntimeProperty>
         where TRuntimeProperty : TDeclaredProperty
     {
-        public override void Read(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
+        public override void Read(JsonTokenType tokenType, ref ReadStack state, ref Utf8JsonReader reader)
         {
             Debug.Assert(ShouldDeserialize);
 
@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization
             {
                 // Forward the setter to the value-based JsonPropertyInfo.
                 JsonPropertyInfo propertyInfo = ElementClassInfo.GetPolicyProperty();
-                propertyInfo.ReadEnumerable(tokenType, options, ref state, ref reader);
+                propertyInfo.ReadEnumerable(tokenType, ref state, ref reader);
             }
             else
             {
@@ -48,7 +48,7 @@ namespace System.Text.Json.Serialization
         }
 
         // If this method is changed, also change JsonPropertyInfoNullable.ReadEnumerable and JsonSerializer.ApplyObjectToEnumerable
-        public override void ReadEnumerable(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader)
+        public override void ReadEnumerable(JsonTokenType tokenType, ref ReadStack state, ref Utf8JsonReader reader)
         {
             Debug.Assert(ShouldDeserialize);
 
@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization
             JsonSerializer.ApplyValueToEnumerable(ref value, ref state, ref reader);
         }
 
-        public override void Write(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
+        public override void Write(ref WriteStackFrame current, Utf8JsonWriter writer)
         {
             Debug.Assert(current.Enumerator == null);
             Debug.Assert(ShouldSerialize);
@@ -98,13 +98,13 @@ namespace System.Text.Json.Serialization
             }
         }
 
-        public override void WriteDictionary(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
+        public override void WriteDictionary(ref WriteStackFrame current, Utf8JsonWriter writer)
         {
             Debug.Assert(ShouldSerialize);
-            JsonSerializer.WriteDictionary(ValueConverter, options, ref current, writer);
+            JsonSerializer.WriteDictionary(ValueConverter, Options, ref current, writer);
         }
 
-        public override void WriteEnumerable(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer)
+        public override void WriteEnumerable(ref WriteStackFrame current, Utf8JsonWriter writer)
         {
             Debug.Assert(ShouldSerialize);
 

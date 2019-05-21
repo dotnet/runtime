@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization
 
             bool lastCall = (!state.Current.IsProcessingEnumerableOrDictionary && state.Current.ReturnValue == null);
 
-            jsonPropertyInfo.Read(tokenType, options, ref state, ref reader);
+            jsonPropertyInfo.Read(tokenType, ref state, ref reader);
             return lastCall;
         }
     }
