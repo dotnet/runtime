@@ -712,19 +712,31 @@ namespace System.Threading
             Debug.Assert(asyncWaiter != null, "Waiter should have been constructed");
             Debug.Assert(Monitor.IsEntered(m_lockObj!), "Requires the lock be held");
 
-            // Wait until either the task is completed, timeout occurs, or cancellation is requested.
-            // We need to ensure that the Task.Delay task is appropriately cleaned up if the await
-            // completes due to the asyncWaiter completing, so we use our own token that we can explicitly
-            // cancel, and we chain the caller's supplied token into it.
-            using (var cts = cancellationToken.CanBeCanceled ?
-                CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, default) :
-                new CancellationTokenSource())
+            if (millisecondsTimeout != Timeout.Infinite)
             {
-                var waitCompleted = Task.WhenAny(asyncWaiter, Task.Delay(millisecondsTimeout, cts.Token));
-                if (asyncWaiter == await waitCompleted.ConfigureAwait(false))
+                // Wait until either the task is completed, cancellation is requested, or the timeout occurs.
+                // We need to ensure that the Task.Delay task is appropriately cleaned up if the await
+                // completes due to the asyncWaiter completing, so we use our own token that we can explicitly
+                // cancel, and we chain the caller's supplied token into it.
+                using (var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, default))
                 {
-                    cts.Cancel(); // ensure that the Task.Delay task is cleaned up
-                    return true; // successfully acquired
+                    if (asyncWaiter == await TaskFactory.CommonCWAnyLogic(new Task[] { asyncWaiter, Task.Delay(millisecondsTimeout, cts.Token) }).ConfigureAwait(false))
+                    {
+                        cts.Cancel(); // ensure that the Task.Delay task is cleaned up
+                        return true; // successfully acquired
+                    }
+                }
+            }
+            else // millisecondsTimeout == Timeout.Infinite
+            {
+                // Wait until either the task is completed or cancellation is requested.
+                var cancellationTask = new Task();
+                using (cancellationToken.UnsafeRegister(s => ((Task)s!).TrySetResult(), cancellationTask))
+                {
+                    if (asyncWaiter == await TaskFactory.CommonCWAnyLogic(new Task[] { asyncWaiter, cancellationTask }).ConfigureAwait(false))
+                    {
+                        return true; // successfully acquired
+                    }
                 }
             }
 
