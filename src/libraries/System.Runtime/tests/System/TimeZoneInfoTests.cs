@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -136,7 +137,7 @@ namespace System.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET Framework has a bug. See https://github.com/dotnet/corefx/issues/26479")]
-        public static void CaseInsensiveLookup()
+        public static void CaseInsensitiveLookup()
         {
             Assert.Equal(TimeZoneInfo.FindSystemTimeZoneById(s_strBrasilia), TimeZoneInfo.FindSystemTimeZoneById(s_strBrasilia.ToLowerInvariant()));
             Assert.Equal(TimeZoneInfo.FindSystemTimeZoneById(s_strJohannesburg), TimeZoneInfo.FindSystemTimeZoneById(s_strJohannesburg.ToUpperInvariant()));
@@ -2241,6 +2242,15 @@ namespace System.Tests
                     }
                 }
             }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void EnsureUtcObjectSingleton()
+        {
+            TimeZoneInfo utcObject = TimeZoneInfo.GetSystemTimeZones().Single(x => x.Id.Equals("UTC", StringComparison.OrdinalIgnoreCase));
+            Assert.True(ReferenceEquals(utcObject, TimeZoneInfo.Utc));
+            Assert.True(ReferenceEquals(TimeZoneInfo.FindSystemTimeZoneById("UTC"), TimeZoneInfo.Utc));
         }
 
         private static void VerifyConvertException<TException>(DateTimeOffset inputTime, string destinationTimeZoneId) where TException : Exception
