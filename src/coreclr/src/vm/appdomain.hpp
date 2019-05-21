@@ -2073,8 +2073,8 @@ public:
     BOOL RemoveAssemblyFromCache(DomainAssembly* pAssembly);
 
     BOOL AddExceptionToCache(AssemblySpec* pSpec, Exception *ex);
-    void AddUnmanagedImageToCache(LPCWSTR libraryName, HMODULE hMod);
-    HMODULE FindUnmanagedImageInCache(LPCWSTR libraryName);
+    void AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HANDLE hMod);
+    NATIVE_LIBRARY_HANDLE FindUnmanagedImageInCache(LPCWSTR libraryName);
     //****************************************************************************************
     //
     // Adds or removes an assembly to the domain.
@@ -2724,7 +2724,6 @@ public:
     size_t                    m_MemoryPressure;
 
     ArrayList m_NativeDllSearchDirectories;
-    BOOL m_ReversePInvokeCanEnter;
     bool m_ForceTrivialWaitOperations;
 
 public:

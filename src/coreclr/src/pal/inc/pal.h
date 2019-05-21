@@ -2655,13 +2655,6 @@ PAL_LoadLibraryDirect(
         IN LPCWSTR lpLibFileName);
 
 PALIMPORT
-HMODULE
-PALAPI
-PAL_RegisterLibraryDirect(
-        IN NATIVE_LIBRARY_HANDLE dl_handle,
-        IN LPCWSTR lpLibFileName);
-
-PALIMPORT
 BOOL
 PALAPI
 PAL_FreeLibraryDirect(

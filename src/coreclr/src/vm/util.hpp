@@ -810,9 +810,18 @@ inline void UnsafeTlsFreeForHolder(DWORD* addr)
 typedef Holder<DWORD*, DoNothing<DWORD*>, UnsafeTlsFreeForHolder> TlsHolder;
 
 // A holder for HMODULE.
-FORCEINLINE void VoidFreeLibrary(HMODULE h) { WRAPPER_NO_CONTRACT; CLRFreeLibrary(h); }
+FORCEINLINE void VoidFreeNativeLibrary(NATIVE_LIBRARY_HANDLE h)
+{
+    WRAPPER_NO_CONTRACT;
 
-typedef Wrapper<HMODULE, DoNothing<HMODULE>, VoidFreeLibrary, NULL> ModuleHandleHolder;
+#ifdef FEATURE_PAL
+    PAL_FreeLibraryDirect(h);
+#else
+    FreeLibrary(h);
+#endif
+}
+
+typedef Wrapper<NATIVE_LIBRARY_HANDLE, DoNothing<NATIVE_LIBRARY_HANDLE>, VoidFreeNativeLibrary, NULL> NativeLibraryHandleHolder;
 
 #ifndef FEATURE_PAL
 
