@@ -8,6 +8,14 @@
     <InboxOnTargetFramework Include="net45">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
+    <!-- Since UAP are package based we still want to enable
+         OOBing libraries that happen to overlap with their framework package.
+         This avoids us having to lock the API in our NuGet packages just
+         to match what shipped inbox: since we can provide a new library
+         we can update it to add API without raising the netstandard version. -->
+    <ValidatePackageSuppression Include="TreatAsOutOfBox">
+      <Value>UAP</Value>
+    </ValidatePackageSuppression>
 
     <HarvestIncludePaths Include="ref/netcore50;lib/netcore50;ref/portable-net45+win8;lib/portable-net45+win8" />
   </ItemGroup>
