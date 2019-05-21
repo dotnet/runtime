@@ -715,17 +715,18 @@ GenTree* Compiler::addRangeCheckIfNeeded(NamedIntrinsic intrinsic, GenTree* last
 // Arguments:
 //    isa - Instruction set
 // Return Value:
-//    true if
+//    true if EnableHWIntrinsic=true and
 //    - isa is a scalar ISA
 //    - isa is a SIMD ISA and featureSIMD=true
 //    - isa is fully implemented or EnableIncompleteISAClass=true
 bool Compiler::compSupportsHWIntrinsic(InstructionSet isa)
 {
-    return (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) && (
+    return JitConfig.EnableHWIntrinsic() && (featureSIMD || HWIntrinsicInfo::isScalarIsa(isa)) &&
+           (
 #ifdef DEBUG
-                                                                     JitConfig.EnableIncompleteISAClass() ||
+               JitConfig.EnableIncompleteISAClass() ||
 #endif
-                                                                     HWIntrinsicInfo::isFullyImplementedIsa(isa));
+               HWIntrinsicInfo::isFullyImplementedIsa(isa));
 }
 
 //------------------------------------------------------------------------
