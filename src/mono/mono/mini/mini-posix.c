@@ -1106,9 +1106,14 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 			g_async_safe_printf ("=================================================================\n");
 			mono_gdb_render_native_backtraces (crashed_pid);
 			_exit (1);
+		} else if (pid > 0) {
+			waitpid (pid, &status, 0);
+		} else {
+			// If we can't fork, do as little as possible before exiting
+#ifndef DISABLE_CRASH_REPORTING
+			output = NULL;
+#endif
 		}
-
-		waitpid (pid, &status, 0);
 
 		if (double_faulted) {
 			g_async_safe_printf("\nExiting early due to double fault.\n");
