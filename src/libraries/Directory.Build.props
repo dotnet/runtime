@@ -411,6 +411,7 @@
     <DefineConstants Condition="'$(TargetGroup)' == 'uapaot'">$(DefineConstants),uapaot</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netfx'">$(DefineConstants),netfx</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netstandard'">$(DefineConstants),netstandard</DefineConstants>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.0'">$(DefineConstants),NETSTANDARD10</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants),netcoreapp</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp2.0'">$(DefineConstants),netcoreapp20</DefineConstants>
   </PropertyGroup>

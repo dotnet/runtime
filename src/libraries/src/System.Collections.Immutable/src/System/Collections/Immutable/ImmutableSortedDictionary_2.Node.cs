@@ -329,7 +329,7 @@ namespace System.Collections.Immutable
                 return this.RemoveRecursive(key, keyComparer, out mutated);
             }
 
-#if FEATURE_ITEMREFAPI
+#if !NETSTANDARD10
             /// <summary>
             /// Returns a read-only reference to the value associated with the provided key.
             /// </summary>
