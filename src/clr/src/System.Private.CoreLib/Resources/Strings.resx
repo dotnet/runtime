@@ -2843,7 +2843,7 @@
     <value>A case-insensitive lookup for resource file "{0}" in assembly "{1}" found multiple entries. Remove the duplicates or specify the exact case.</value>
   </data>
   <data name="MissingManifestResource_NoNeutralAsm" xml:space="preserve">
-    <value>Could not find any resources appropriate for the specified culture or the neutral culture.  Make sure "{0}" was correctly embedded or linked into assembly "{1}" at compile time, or that all the satellite assemblies required are loadable and fully signed.</value>
+    <value>Could not find the resource "{0}" among the resources {2} embedded in the assembly "{1}", nor among the resources in any satellite assemblies for the specified culture. Perhaps the resources were embedded with an incorrect name.</value>
   </data>
   <data name="MissingManifestResource_NoNeutralDisk" xml:space="preserve">
     <value>Could not find any resources appropriate for the specified culture (or the neutral culture) on disk.</value>
