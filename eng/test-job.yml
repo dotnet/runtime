@@ -94,7 +94,7 @@ jobs:
       timeoutInMinutes: 240
     ${{ if eq(parameters.testGroup, 'outerloop') }}:
       timeoutInMinutes: 360
-    ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstress-isas-arm', 'outerloop-jitstress-isas-x86', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs', 'outerloop-gcstress0x3-gcstress0xc') }}:
+    ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstress-isas-arm', 'outerloop-jitstress-isas-x86', 'outerloop-jitstressregs-x86', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs', 'outerloop-gcstress0x3-gcstress0xc') }}:
       timeoutInMinutes: 480
     ${{ if in(parameters.testGroup, 'outerloop-gcstress-extra', 'outerloop-r2r-extra') }}:
       timeoutInMinutes: 600
@@ -167,7 +167,7 @@ jobs:
         ${{ if eq(parameters.testGroup, 'outerloop') }}:
           timeoutPerTestCollectionInMinutes: 60
           timeoutPerTestInMinutes: 10
-        ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstress-isas-arm', 'outerloop-jitstress-isas-x86', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs') }}:
+        ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstress-isas-arm', 'outerloop-jitstress-isas-x86', 'outerloop-jitstressregs-x86', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs') }}:
           timeoutPerTestCollectionInMinutes: 120
           timeoutPerTestInMinutes: 30
         ${{ if in(parameters.testGroup, 'outerloop-gcstress0x3-gcstress0xc') }}:
@@ -232,6 +232,16 @@ jobs:
           - jitstress_isas_x86_nosse41
           - jitstress_isas_x86_nosse42
           - jitstress_isas_x86_nossse3
+        ${{ if eq(parameters.testGroup, 'outerloop-jitstressregs-x86') }}:
+          scenarios:
+          - jitstressregs1_x86_noavx
+          - jitstressregs2_x86_noavx
+          - jitstressregs3_x86_noavx
+          - jitstressregs4_x86_noavx
+          - jitstressregs8_x86_noavx
+          - jitstressregs0x10_x86_noavx
+          - jitstressregs0x80_x86_noavx
+          - jitstressregs0x1000_x86_noavx
         ${{ if eq(parameters.testGroup, 'outerloop-jitstressregs') }}:
           scenarios:
           - jitstressregs1
