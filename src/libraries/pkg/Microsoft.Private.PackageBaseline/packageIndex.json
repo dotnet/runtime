@@ -201,6 +201,9 @@
     "Microsoft.Private.CoreFx.NETCoreApp": {
       "InboxOn": {}
     },
+    "Microsoft.Private.CoreFx.OOB": {
+      "InboxOn": {}
+    },
     "Microsoft.Private.PackageBaseline": {
       "InboxOn": {}
     },
