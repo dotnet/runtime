@@ -17,7 +17,7 @@ Many of the CoreFX libraries type-forward their public APIs to the implementatio
 ### (2) Submit PR to both CoreCLR and CoreFX
 - Link the two PRs together via comment in PR description, and link both to the issue itself.
 - Both PRs will reviewed together by the project maintainers
-- CoreCLR runs CoreFX tests but they are behind CoreFX. You may need to disable the outdated tests in https://github.com/dotnet/coreclr/blob/master/tests/CoreFX/CoreFX.issues.json to make your PR green.
+- CoreCLR runs CoreFX tests but they are behind CoreFX. You may need to disable the outdated tests in https://github.com/dotnet/coreclr/blob/master/tests/CoreFX/CoreFX.issues.rsp to make your PR green.
 
 ### (3) What happens next
 - We will merge the CoreCLR PR first
