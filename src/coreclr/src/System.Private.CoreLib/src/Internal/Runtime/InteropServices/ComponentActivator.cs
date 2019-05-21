@@ -32,7 +32,12 @@ namespace Internal.Runtime.InteropServices
             {
                 throw new ArgumentNullException(argName);
             }
+
+#if PLATFORM_WINDOWS
+            string? result = Marshal.PtrToStringUni(arg);
+#else
             string? result = Marshal.PtrToStringUTF8(arg);
+#endif
 
             if (result == null)
             {
