@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
-
+<Project>
   <Import Project="dir.common.props" />
 
   <PropertyGroup>
@@ -14,10 +12,10 @@
     <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
   </PropertyGroup>
 
-  <!-- Version numbers for both managed & native binaries -->
+  <!-- Version numbers for native binaries -->
   <PropertyGroup>
-    <MajorVersion>4</MajorVersion>
-    <MinorVersion>6</MinorVersion>
+    <MajorVersion>$(NativeMajorVersion)</MajorVersion>
+    <MinorVersion>$(NativeMinorVersion)</MinorVersion>
   </PropertyGroup>
 
   <!--
@@ -35,26 +33,8 @@
   <!-- Common properties -->
   <PropertyGroup>
 
-    <ProjectDir>$(__ProjectDir)\</ProjectDir>
-    <ProjectDir Condition="'$(__ProjectDir)'==''">$(MSBuildThisFileDirectory)</ProjectDir>
-
-    <SourceDir>$(__SourceDir)\</SourceDir>
-    <SourceDir Condition="'$(__SourceDir)'==''">$(ProjectDir)src\</SourceDir>
-
     <!-- This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used to find source code for debugging -->
     <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">coreclr</GitHubRepositoryName>
-
-    <RootBinDir>$(__RootBinDir)\</RootBinDir>
-    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)bin\</RootBinDir>
-
-    <BinDir>$(__BinDir)\</BinDir>
-    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(PlatformConfigPathPart)\</BinDir>
-
-    <!-- We don't append back slash because this path is used by nuget.exe as output directory and it
-         fails to write packages to it if the path contains the forward slash.
-    -->
-    <PackagesBinDir>$(__PackagesBinDir)</PackagesBinDir>
-    <PackagesBinDir Condition="'$(__PackagesBinDir)'==''">$(BinDir).nuget\</PackagesBinDir>
 
     <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools\</ToolsDir>
     <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ProjectDir).dotnet\</DotnetCliPath>
@@ -71,6 +51,11 @@
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
 
     <OverrideRestoreOutputPath>true</OverrideRestoreOutputPath>
+
+    <!-- If true, indicates that this is not an officially supported release -->
+    <!-- It is important to flip this to false in official release branches -->
+    <!-- Keep it in sync with PRERELEASE in clrdefinitions.cmake -->
+    <IsPrerelease>true</IsPrerelease>
   </PropertyGroup>
 
   <!-- Output paths -->
@@ -92,87 +77,8 @@
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
-  <!-- Setup common target properties that we use to conditionally include sources -->
-  <PropertyGroup>
-    <TargetsFreeBSD Condition="'$(BuildOS)' == 'FreeBSD'">true</TargetsFreeBSD>
-    <TargetsLinux Condition="'$(BuildOS)' == 'Linux'">true</TargetsLinux>
-    <TargetsNetBSD Condition="'$(BuildOS)' == 'NetBSD'">true</TargetsNetBSD>
-    <TargetsOSX Condition="'$(BuildOS)' == 'OSX'">true</TargetsOSX>
-    <TargetsWindows Condition="'$(BuildOS)' == 'Windows_NT'">true</TargetsWindows>
-
-    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
-
-    <!-- We are only tracking Linux Distributions for Nuget RID mapping -->
-    <DistroRid Condition="'$(TargetsLinux)' == 'true'">$(__DistroRid)</DistroRid>
-
-  </PropertyGroup>
-
   <!-- Provides properties for dependency versions and configures dependency verification/auto-upgrade. -->
   <Import Project="$(ProjectDir)dependencies.props" />
-
-  <!-- Packaging properties -->
-  <PropertyGroup>
-    <LicenseUrl>https://github.com/dotnet/coreclr/blob/master/LICENSE.TXT</LicenseUrl>
-    <PackageDescriptionFile>$(SourceDir).nuget/descriptions.json</PackageDescriptionFile>
-    <PackageLicenseFile>$(ProjectDir)LICENSE.TXT</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
-    <SyncInfoDirectory>$(BaseIntermediateOutputPath)</SyncInfoDirectory>
-
-    <!-- If true, indicates that this is not an officially supported release -->
-    <!-- It is important to flip this to false in official release branches -->
-    <!-- Keep it in sync with PRERELEASE in clrdefinitions.cmake -->
-    <IsPrerelease>true</IsPrerelease>
-
-    <!-- This should be kept in sync with package details in src/.nuget/init/project.json -->
-    <RuntimeIdGraphDefinitionVersion>1.0.2-beta-24224-02</RuntimeIdGraphDefinitionVersion>
-    <RuntimeIdGraphDefinitionFile>$(PackagesDir)/microsoft.netcore.platforms/$(RuntimeIdGraphDefinitionVersion)/runtime.json</RuntimeIdGraphDefinitionFile>
-
-    <!-- This link should be updated for each release milestone, currently this points to 1.1.0-beta -->
-    <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
-
-    <ProjectUrl>https://dot.net</ProjectUrl>
-
-    <!-- On Windows, MSbuild can still run against Desktop FX while it runs on .NET Core on non-Windows. this requires
-         pulling in different packaging dependencies.
-     -->
-    <PackagingTaskDir Condition="'$(MSBuildRuntimeType)' != 'core'">$(ToolsDir)net46/</PackagingTaskDir>
-    <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
-    <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
-    <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
-    <MinOSForArch>win7</MinOSForArch>
-    <MinOSForArch Condition="'$(PackagePlatform)' == 'arm'">win8</MinOSForArch>
-    <MinOSForArch Condition="'$(PackagePlatform)' == 'arm64'">win10</MinOSForArch>
-    <!-- This property must be set to disable local package installation -->
-    <SkipInstallLocallyBuiltPackages>true</SkipInstallLocallyBuiltPackages>
-
-    <!-- Define packaging attributes for cross target components -->
-    <HasCrossTargetComponents Condition="'$(TargetsWindows)' == 'true' and ('$(PackagePlatform)' =='arm64' or '$(PackagePlatform)' =='arm')">true</HasCrossTargetComponents>
-    <HasCrossTargetComponents Condition="'$(TargetsLinux)' == 'true' and ('$(PackagePlatform)' =='arm64' or '$(PackagePlatform)' =='arm') and '$(__DoCrossArchBuild)' == '1'">true</HasCrossTargetComponents>
-    <CrossTargetComponentFolder Condition="'$(PackagePlatform)' == 'arm64'">x64</CrossTargetComponentFolder>
-    <CrossTargetComponentFolder Condition="'$(PackagePlatform)' == 'arm' and '$(TargetsWindows)' == 'true'">x86</CrossTargetComponentFolder>
-    <CrossTargetComponentFolder Condition="'$(PackagePlatform)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
-
-    <!-- Created package output locations must be kept in sync with eng/build-job.yml -->
-    <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
-    <SymbolPackageOutputPath>$(PackagesBinDir)/symbolpkg/</SymbolPackageOutputPath>
-    <PackageIndexFile>$(MSBuildThisFileDirectory)/src/.nuget/packageIndex.json</PackageIndexFile>
-
-    <!-- coreclr doesn't currently use the index so don't force it to be in sync -->
-    <SkipIndexCheck>true</SkipIndexCheck>
-  </PropertyGroup>
-
-  <!-- Add required legal files to packages -->
-  <ItemGroup Condition="'$(MSBuildProjectExtension)' == '.pkgproj'">
-    <File Condition="Exists('$(PackageLicenseFile)')"
-          Include="$(PackageLicenseFile)" >
-      <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>
-    <File Condition="Exists('$(PackageThirdPartyNoticesFile)')"
-          Include="$(PackageThirdPartyNoticesFile)" >
-      <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>
-    <PackageIndex Include="$(PackageIndexFile)" />
-  </ItemGroup>
 
   <!-- Use Roslyn Compilers to build -->
   <Import Project="$(RoslynPropsFile)" Condition="Exists('$(RoslynPropsFile)')" />

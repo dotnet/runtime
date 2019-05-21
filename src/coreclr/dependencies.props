@@ -13,17 +13,6 @@
 
   <Import Project="eng/Versions.props" />
 
-  <PropertyGroup>
-    <!-- Central place to set the versions of all nuget packages produced in the repo -->
-    <PackageVersion Condition="'$(PackageVersion)' == ''">3.0.0</PackageVersion>
-
-    <!-- Set the boolean below to true to generate packages with stabilized versions -->
-    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
-    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
-
-    <PreReleaseLabel>preview6</PreReleaseLabel>
-  </PropertyGroup>
-
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
     <CoreClrCurrentRef>f1ee12b0dab462d0f58b87e878250146a125d9ff</CoreClrCurrentRef>
@@ -36,7 +25,6 @@
     <XunitPackageVersion>2.4.1-pre.build.4059</XunitPackageVersion>
     <XunitPerformanceApiPackageVersion>1.0.0-beta-build0015</XunitPerformanceApiPackageVersion>
     <MicrosoftDiagnosticsTracingTraceEventPackageVersion>2.0.40</MicrosoftDiagnosticsTracingTraceEventPackageVersion>
-    <IbcMergePackageVersion>5.0.6-beta.19203.1</IbcMergePackageVersion>
     <CommandLineParserVersion>2.2.0</CommandLineParserVersion>
 
     <!-- Scenario tests install this version of Microsoft.NetCore.App, then patch coreclr binaries via xcopy. At the moment it is
@@ -67,7 +55,7 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)buildtools/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(BuildToolsCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
-    
+
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
     </DependencyBuildInfo>

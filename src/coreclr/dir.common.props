@@ -16,6 +16,15 @@
     <RestorePackagesPath>$(PackagesDir)</RestorePackagesPath>
   </PropertyGroup>
 
+  <!-- Version numbers for native binaries
+       [ARCADE REMOVE] These properties can be removed once native binaries use Arcade versioning
+       They are included in common for packaging, which is onboarded to Arcade, but uses the version
+       numbers for native binaries for some outputs. -->
+  <PropertyGroup>
+    <NativeMajorVersion>4</NativeMajorVersion>
+    <NativeMinorVersion>6</NativeMinorVersion>
+  </PropertyGroup>
+
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
     <BuildArch>$(__BuildArch)</BuildArch>
@@ -40,4 +49,53 @@
 
     <PlatformConfigPathPart>$(BuildOS).$(BuildArch).$(BuildType)</PlatformConfigPathPart>
   </PropertyGroup>
+
+  <!-- Common properties -->
+  <PropertyGroup>
+
+    <ProjectDir>$(__ProjectDir)\</ProjectDir>
+    <ProjectDir Condition="'$(__ProjectDir)'==''">$(MSBuildThisFileDirectory)</ProjectDir>
+
+    <SourceDir>$(__SourceDir)\</SourceDir>
+    <SourceDir Condition="'$(__SourceDir)'==''">$(ProjectDir)src\</SourceDir>
+
+    <RootBinDir>$(__RootBinDir)\</RootBinDir>
+    <RootBinDir Condition="'$(__RootBinDir)'==''">$(ProjectDir)bin\</RootBinDir>
+
+    <BinDir>$(__BinDir)\</BinDir>
+    <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(PlatformConfigPathPart)\</BinDir>
+
+    <!-- We don't append back slash because this path is used by nuget.exe as output directory and it
+         fails to write packages to it if the path contains the forward slash.
+    -->
+    <PackagesBinDir>$(__PackagesBinDir)</PackagesBinDir>
+    <PackagesBinDir Condition="'$(__PackagesBinDir)'==''">$(BinDir).nuget\</PackagesBinDir>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Central place to set the versions of all nuget packages produced in the repo -->
+    <PackageVersion Condition="'$(PackageVersion)' == ''">3.0.0</PackageVersion>
+
+    <!-- Set the boolean below to true to generate packages with stabilized versions -->
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
+    <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
+
+    <PreReleaseLabel>preview6</PreReleaseLabel>
+  </PropertyGroup>
+
+  <!-- Set up common target properties that we use to conditionally include sources -->
+  <PropertyGroup>
+    <TargetsFreeBSD Condition="'$(BuildOS)' == 'FreeBSD'">true</TargetsFreeBSD>
+    <TargetsLinux Condition="'$(BuildOS)' == 'Linux'">true</TargetsLinux>
+    <TargetsNetBSD Condition="'$(BuildOS)' == 'NetBSD'">true</TargetsNetBSD>
+    <TargetsOSX Condition="'$(BuildOS)' == 'OSX'">true</TargetsOSX>
+    <TargetsWindows Condition="'$(BuildOS)' == 'Windows_NT'">true</TargetsWindows>
+
+    <TargetsUnix Condition="'$(TargetsFreeBSD)' == 'true' or '$(TargetsLinux)' == 'true' or '$(TargetsNetBSD)' == 'true' or '$(TargetsOSX)' == 'true'">true</TargetsUnix>
+
+    <!-- We are only tracking Linux Distributions for Nuget RID mapping -->
+    <DistroRid Condition="'$(TargetsLinux)' == 'true'">$(__DistroRid)</DistroRid>
+
+  </PropertyGroup>
+
 </Project>

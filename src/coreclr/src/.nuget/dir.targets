@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 
-  <Target Name="VerifyVCRedist" BeforeTargets="GetSymbolPackageFiles" Condition="'$(_runtimeOSFamily)' == 'win'">
-    <Error Condition="'$(UniversalCRTSDKDir)' == ''" Text="Unable to find VC Redist binaries - check that UniversalCRTSDKDir environment variable is set" />
-  </Target>
+  <PropertyGroup>
+    <!-- Reset PackageOutputPath. The ProjectDefaults targets from Arcade set it to be in the artifacts directory,
+         but our publishing step currently looks under PackagesBinDir -->
+    <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
+  </PropertyGroup>
+
+  <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingPackageVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />
+
   <!--
     Finds symbol files and injects them into the package build.
   -->
@@ -64,7 +70,7 @@
       <!--
         Search for all xplat symbol file extensions on every xplat native binary. Some binaries have
         no ".so" or ".dylib" extension, so we can't tell which convention its symbol files would
-        use. On xplat, the symbol extension is simply appended. 
+        use. On xplat, the symbol extension is simply appended.
       -->
       <NonWindowsNativeFile Include="@(NativeWithSymbolFile)"
                             Exclude="@(WindowsNativeFile)" />
@@ -93,19 +99,4 @@
     </ItemGroup>
   </Target>
 
-  <!-- OverrideLicenseUrl is temporary till we update the buildtools to v2 -->  
-  <Target Name="OverrideLicenseUrl" BeforeTargets="GenerateNuSpec">
-    <PropertyGroup>
-      <LicenseUrl>https://github.com/dotnet/coreclr/blob/master/LICENSE.TXT</LicenseUrl>
-    </PropertyGroup>
-  </Target>
-
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)\.., dir.targets))\dir.targets" />
-  <ItemGroup>
-    <!-- Add version file to packages -->
-    <File Condition="Exists('$(SyncInfoFile)')"
-          Include="$(SyncInfoFile)">
-          <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    </File>
-  </ItemGroup>
 </Project>
