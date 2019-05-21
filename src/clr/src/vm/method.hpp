@@ -3030,10 +3030,10 @@ public:
     //  Find the entry point name and function address
     //  based on the module and data from NDirectMethodDesc
     //
-    LPVOID FindEntryPoint(HINSTANCE hMod) const;
+    LPVOID FindEntryPoint(NATIVE_LIBRARY_HANDLE hMod) const;
 
 private:
-    FARPROC FindEntryPointWithMangling(HINSTANCE mod, PTR_CUTF8 entryPointName) const;
+    FARPROC FindEntryPointWithMangling(NATIVE_LIBRARY_HANDLE mod, PTR_CUTF8 entryPointName) const;
 
 public:
 
