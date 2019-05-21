@@ -16,6 +16,13 @@
     </ItemGroup>
   </Target>
 
+  <!-- Used for packaging -->
+  <Target Name="IsNotNetCoreAppProject" Returns="@(IsNotNetCoreAppProjectResult)">
+    <ItemGroup>
+      <IsNotNetCoreAppProjectResult Condition="'$(IsNetCoreApp)' != 'true'" Include="$(MSBuildProjectName)" Version="$(PackageVersion)" />
+    </ItemGroup>
+  </Target>
+
   <!-- Routing dotnet test to a test project's BuildAndTest target. -->
   <Target Name="VSTest"
           Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'"
