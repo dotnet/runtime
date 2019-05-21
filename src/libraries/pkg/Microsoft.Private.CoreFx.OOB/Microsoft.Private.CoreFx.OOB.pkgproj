@@ -20,7 +20,11 @@
     </MSBuild>
 
     <ItemGroup>
+      <NonNetCoreAppPackage Include="Microsoft.Diagnostics.Tracing.EventSource.Redist" />
+      <NonNetCoreAppPackage Include="Microsoft.IO.Redist" />
+
       <Dependency Include="@(PrereleaseLibraryPackage)"
+                  Exclude="@(NonNetCoreAppPackage)"
                   Condition="!$([System.String]::new('%(Identity)').Contains('Private')) and !$([System.String]::new('%(Identity)').EndsWith('Experimental')) and !$([System.String]::new('%(Identity)').StartsWith('runtime.'))" />
     </ItemGroup>
     
