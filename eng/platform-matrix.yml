@@ -242,6 +242,7 @@ jobs:
         osGroup: Windows_NT
         osIdentifier: Windows_NT
         helixQueues:
+        # TODO: Due to the limited capacity of the machines in Windows.10.Arm64.Open queue limit this to CI builds and only to Windows_NT/arm
         - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
           - Windows.10.Arm64.Open
         - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -258,7 +259,7 @@ jobs:
         osGroup: Windows_NT
         osIdentifier: Windows_NT
         helixQueues:
-        # TODO: add Windows.10.Arm64.Open once Jenkins has been shutdown
+        # TODO: Consider adding Windows.10.Arm64.Open here if capacity is enough for handling both Windows_NT/arm and Windows_NT/arm64 testing
         - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - Windows.10.Arm64
         ${{ insert }}: ${{ parameters.jobParameters }}
