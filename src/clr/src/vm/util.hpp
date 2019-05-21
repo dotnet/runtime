@@ -796,23 +796,13 @@ InternalSetupForComCall(-1, -1, -1, false)
 
 #include "unsafe.h"
 
-inline void UnsafeTlsFreeForHolder(DWORD* addr)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (addr && *addr != TLS_OUT_OF_INDEXES) {
-        UnsafeTlsFree(*addr);
-        *addr = TLS_OUT_OF_INDEXES;
-    }
-}
-
-// A holder to make sure tls slot is released and memory for allocated one is set to TLS_OUT_OF_INDEXES
-typedef Holder<DWORD*, DoNothing<DWORD*>, UnsafeTlsFreeForHolder> TlsHolder;
-
-// A holder for HMODULE.
+// A holder for NATIVE_LIBRARY_HANDLE.
 FORCEINLINE void VoidFreeNativeLibrary(NATIVE_LIBRARY_HANDLE h)
 {
     WRAPPER_NO_CONTRACT;
+
+    if (h == NULL)
+        return;
 
 #ifdef FEATURE_PAL
     PAL_FreeLibraryDirect(h);
