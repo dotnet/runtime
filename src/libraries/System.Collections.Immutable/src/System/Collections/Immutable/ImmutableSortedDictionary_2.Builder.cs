@@ -202,7 +202,7 @@ namespace System.Collections.Immutable
                 }
             }
 
-#if FEATURE_ITEMREFAPI
+#if !NETSTANDARD10
             /// <summary>
             /// Returns a read-only reference to the value associated with the provided key.
             /// </summary>

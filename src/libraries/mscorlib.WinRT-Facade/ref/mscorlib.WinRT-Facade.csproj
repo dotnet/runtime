@@ -8,7 +8,6 @@
     <BinPlaceRef>false</BinPlaceRef>
     <ProjectGuid>{4773F3C0-646E-4542-9FD5-D07A7737403A}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;uap-Debug;uap-Release</Configurations>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.0'">$(DefineConstants);NETSTANDARD10</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.2'">$(DefineConstants);NETSTANDARD12</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
