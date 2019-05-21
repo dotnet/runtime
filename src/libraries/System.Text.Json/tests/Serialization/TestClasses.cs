@@ -387,21 +387,6 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
-    public class TestClassWithCycle
-    {
-        public TestClassWithCycle Parent { get; set; }
-
-        public void Initialize()
-        {
-            Parent = this;
-        }
-    }
-
-    public class TestClassWithArrayOfElementsOfTheSameClass
-    {
-        public TestClassWithArrayOfElementsOfTheSameClass[] Array { get; set; }
-    }
-
     public class TestClassWithGenericList : ITestClass
     {
         public List<string> MyData { get; set; }

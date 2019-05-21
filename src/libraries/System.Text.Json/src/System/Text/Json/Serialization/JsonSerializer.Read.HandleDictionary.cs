@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization
             if (jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue) == null)
             {
                 // Create the dictionary.
-                JsonClassInfo dictionaryClassInfo = options.GetOrAddClass(jsonPropertyInfo.RuntimePropertyType);
+                JsonClassInfo dictionaryClassInfo = jsonPropertyInfo.RuntimeClassInfo;
                 IDictionary value = (IDictionary)dictionaryClassInfo.CreateObject();
                 if (value != null)
                 {

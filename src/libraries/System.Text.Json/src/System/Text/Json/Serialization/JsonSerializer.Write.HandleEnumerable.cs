@@ -48,7 +48,7 @@ namespace System.Text.Json.Serialization
 
                 if (elementClassInfo.ClassType == ClassType.Value)
                 {
-                    elementClassInfo.GetPolicyProperty().WriteEnumerable(options, ref state.Current, writer);
+                    elementClassInfo.GetPolicyProperty().WriteEnumerable(ref state.Current, writer);
                 }
                 else if (state.Current.Enumerator.Current == null)
                 {

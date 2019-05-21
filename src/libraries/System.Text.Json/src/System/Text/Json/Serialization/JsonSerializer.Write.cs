@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization
                         break;
                     case ClassType.Value:
                         Debug.Assert(current.JsonPropertyInfo.ClassType == ClassType.Value);
-                        current.JsonPropertyInfo.Write(options, ref current, writer);
+                        current.JsonPropertyInfo.Write(ref current, writer);
                         finishedSerializing = true;
                         break;
                     case ClassType.Object:
