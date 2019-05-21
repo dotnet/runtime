@@ -4,14 +4,14 @@
 
 /*============================================================
 **
-** 
-** 
+**
+**
 **
 **
 ** Purpose: Searches for resources in Assembly manifest, used
 ** for assembly-based resource lookup.
 **
-** 
+**
 ===========================================================*/
 
 namespace System.Resources
@@ -34,7 +34,7 @@ namespace System.Resources
     // Note: this type is integral to the construction of exception objects,
     // and sometimes this has to be done in low memory situtations (OOM) or
     // to create TypeInitializationExceptions due to failure of a static class
-    // constructor. This type needs to be extremely careful and assume that 
+    // constructor. This type needs to be extremely careful and assume that
     // any type it references may have previously failed to construct, so statics
     // belonging to that type may not be initialized. FrameworkEventSource.Log
     // is one such example.
@@ -93,7 +93,7 @@ namespace System.Resources
             {
                 // Handle case in here where someone added a callback for assembly load events.
                 // While no other threads have called into GetResourceSet, our own thread can!
-                // At that point, we could already have an RS in our hash table, and we don't 
+                // At that point, we could already have an RS in our hash table, and we don't
                 // want to add it twice.
                 lock (localResourceSets)
                 {
@@ -165,7 +165,7 @@ namespace System.Resources
             }
             catch (ArgumentException e)
             { // we should catch ArgumentException only.
-                // Note we could go into infinite loops if mscorlib's 
+                // Note we could go into infinite loops if mscorlib's
                 // NeutralResourcesLanguageAttribute is mangled.  If this assert
                 // fires, please fix the build process for the BCL directory.
                 if (a == typeof(object).Assembly)
@@ -333,7 +333,7 @@ namespace System.Resources
             return stream;
         }
 
-        // Looks up a .resources file in the assembly manifest using 
+        // Looks up a .resources file in the assembly manifest using
         // case-insensitive lookup rules.  Yes, this is slow.  The metadata
         // dev lead refuses to make all assembly manifest resource lookups case-insensitive,
         // even optionally case-insensitive.
@@ -416,7 +416,7 @@ namespace System.Resources
             if (_mediator.UserResourceSet != null)
                 return false;
 
-            // Ignore the actual version of the ResourceReader and 
+            // Ignore the actual version of the ResourceReader and
             // RuntimeResourceSet classes.  Let those classes deal with
             // versioning themselves.
 
@@ -463,6 +463,27 @@ namespace System.Resources
             throw new MissingSatelliteAssemblyException(SR.Format(SR.MissingSatelliteAssembly_Culture_Name, _mediator.NeutralResourcesCulture, satAssemName), missingCultureName);
         }
 
+        private static string GetManifestResourceNamesList(Assembly assembly)
+        {
+            try
+            {
+                string postfix = "\"";
+                string [] resourceSetNames = assembly.GetManifestResourceNames();
+
+                // If we have more than 10 resource sets, we just print the first 10 for the sake of the exception message readability.
+                if (resourceSetNames.Length > 10)
+                {
+                    resourceSetNames = resourceSetNames[..10];
+                    postfix = "\", ...";
+                }
+                return "\"" + String.Join("\", \"", resourceSetNames) + postfix;
+            }
+            catch
+            {
+                return "\"\"";
+            }
+        }
+
         private void HandleResourceStreamMissing(string fileName)
         {
             Debug.Assert(_mediator.BaseName != null);
@@ -483,7 +504,9 @@ namespace System.Resources
                 resName = _mediator.LocationInfo.Namespace + Type.Delimiter;
             resName += fileName;
             Debug.Assert(_mediator.MainAssembly != null);
-            throw new MissingManifestResourceException(SR.Format(SR.MissingManifestResource_NoNeutralAsm, resName, _mediator.MainAssembly.GetName().Name));
+            throw new MissingManifestResourceException(
+                            SR.Format(SR.MissingManifestResource_NoNeutralAsm,
+                            resName, _mediator.MainAssembly.GetName().Name, GetManifestResourceNamesList(_mediator.MainAssembly)));
         }
     }
 }
