@@ -3,9 +3,6 @@
     <ProjectGuid>{C7EFF4EE-70DC-453B-B817-4AF67921AB03}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;netstandard1.3-Debug;netstandard1.3-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' != 'netstandard1.0'">
-    <DefineConstants>$(DefineConstants);FEATURE_ITEMREFAPI</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Collections.Immutable.cs" />
   </ItemGroup>
@@ -22,5 +19,8 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Runtime.InteropServices" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3' or '$(TargetGroup)' == 'netstandard'">
+    <Reference Include="System.Memory" />
   </ItemGroup>
 </Project>

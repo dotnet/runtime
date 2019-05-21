@@ -129,7 +129,7 @@ namespace System.Collections.Immutable
             }
         }
 
-#if FEATURE_ITEMREFAPI
+#if !NETSTANDARD10
         /// <summary>
         /// Gets a read-only reference to the element at the specified index in the read-only list.
         /// </summary>
