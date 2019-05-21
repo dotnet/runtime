@@ -6,6 +6,6 @@
     "Microsoft.DotNet.Arcade.Sdk": "1.0.0-beta.19270.2",
     "Microsoft.DotNet.Helix.Sdk": "2.0.0-beta.19270.2",
     "FIX-85B6-MERGE-9C38-CONFLICT": "1.0.0",
-    "Microsoft.NET.Sdk.IL": "3.0.0-preview6-27719-72"
+    "Microsoft.NET.Sdk.IL": "3.0.0-preview6-27720-72"
   }
 }
