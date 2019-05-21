@@ -1,0 +1,5 @@
+Compat issues with assembly System.Reflection.Primitives:
+CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Reflection.Emit.OpCode' in the contract but not the implementation.
+CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.OpCode' does not implement interface 'System.IEquatable<System.Reflection.Emit.OpCode>' in the implementation but it does in the contract.
+TypeCannotChangeClassification : Type 'System.Reflection.Emit.OpCode' is marked as readonly in the contract so it must also be marked readonly in the implementation.
+Total Issues: 3
