@@ -103,7 +103,6 @@ set __CrossgenAltJit=
 set __SkipRestoreArg=/p:RestoreDuringBuild=true
 set __OfficialBuildIdArg=
 set __CrossArch=
-set __SkipNugetPackage=0
 set __PgoOptDataVersion=
 set __IbcOptDataVersion=
 set __IbcMergeVersion=
@@ -168,11 +167,11 @@ if [!__PassThroughArgs!]==[] (
     set __PassThroughArgs=%__PassThroughArgs% %1
 )
 
-if /i "%1" == "-freebsdmscorlib"     (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=FreeBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-linuxmscorlib"       (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Linux&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-netbsdmscorlib"      (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=NetBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-osxmscorlib"         (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=OSX&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "-windowsmscorlib"     (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Windows_NT&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-freebsdmscorlib"     (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=FreeBSD&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-linuxmscorlib"       (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-netbsdmscorlib"      (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=NetBSD&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-osxmscorlib"         (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=OSX&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-windowsmscorlib"     (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Windows_NT&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-nativemscorlib"      (set __BuildNativeCoreLib=1&set __BuildCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -197,11 +196,11 @@ if /i "%1" == "-OfficialBuildId"     (set __OfficialBuildIdArg=/p:OfficialBuildI
 
 REM TODO these are deprecated remove them eventually
 REM don't add more, use the - syntax instead
-if /i "%1" == "freebsdmscorlib"     (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=FreeBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "linuxmscorlib"       (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Linux&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "netbsdmscorlib"      (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=NetBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "osxmscorlib"         (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=OSX&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
-if /i "%1" == "windowsmscorlib"     (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Windows_NT&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "freebsdmscorlib"     (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=FreeBSD&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "linuxmscorlib"       (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Linux&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "netbsdmscorlib"      (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=NetBSD&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "osxmscorlib"         (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=OSX&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "windowsmscorlib"     (set __BuildSOS=0&set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set __BuildOS=Windows_NT&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "nativemscorlib"      (set __BuildNativeCoreLib=1&set __BuildCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildManagedTools=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -300,9 +299,6 @@ REM Set the remaining variables based upon the determined build configuration
 if %__PgoOptimize%==0 set __RestoreOptData=0
 if /i %__BuildType% NEQ Release set __RestoreOptData=0
 
-REM REVIEW: why no System.Private.CoreLib NuGet package build for ARM64?
-if /i "%__BuildArch%"=="arm64" set __SkipNugetPackage=0
-
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 if "%__NMakeMakefiles%"=="1" (set "__IntermediatesDir=%__RootBinDir%\nmakeobj\%__BuildOS%.%__BuildArch%.%__BuildType%")
@@ -372,6 +368,10 @@ call %__ProjectDir%\dotnet.cmd msbuild /nologo /verbosity:minimal /clp:Summary /
   /p:UsePartialNGENOptimization=false /maxcpucount^
   %__ProjectDir%\build.proj /t:GenerateVersionHeader /p:GenerateVersionHeader=true /p:NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h"^
   %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
+if not !errorlevel! == 0 (
+    echo %__MsgPrefix%Error: Failed to generate version headers.
+    exit /b !errorlevel!
+)
 
 REM =========================================================================================
 REM ===
@@ -394,10 +394,10 @@ if %__RestoreOptData% EQU 1 (
 
 REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
 set OptDataProjectFilePath=%__ProjectDir%\src\.nuget\optdata\optdata.csproj
-for /f "tokens=*" %%s in ('call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpPgoDataPackageVersion /nologo') do (
+for /f "tokens=*" %%s in ('call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpPgoDataPackageVersion /p:ArcadeBuild^=true /nologo') do (
     set __PgoOptDataVersion=%%s
 )
-for /f "tokens=*" %%s in ('call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpIbcDataPackageVersion /nologo') do (
+for /f "tokens=*" %%s in ('call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpIbcDataPackageVersion /p:ArcadeBuild^=true /nologo') do (
     set __IbcOptDataVersion=%%s
 )
 
@@ -604,12 +604,6 @@ if %__BuildCoreLib% EQU 1 (
             set __ExtraBuildArgs=!__ExtraBuildArgs! /p:BuildManagedTools=true
         )
 
-        if "%__SkipNugetPackage%" == "1" (
-            set __ExtraBuildArgs=!__ExtraBuildArgs! /p:BuildNugetPackage=false
-        ) else (
-            set __ExtraBuildArgs=!__ExtraBuildArgs! /p:BuildNugetPackage=true
-        )
-
         set __BuildLogRootName=System.Private.CoreLib
         set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
         set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
@@ -636,7 +630,7 @@ if %__BuildCoreLib% EQU 1 (
         call %__ProjectDir%\dotnet.cmd msbuild /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
           /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
           /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
-          /p:UsePartialNGENOptimization=false /maxcpucount /p:DotNetUseShippingVersions=true /p:ArcadeBuild=true^
+          /p:UsePartialNGENOptimization=false /maxcpucount /p:ArcadeBuild=true^
           %__ProjectDir%\src\build.proj^
           !__Logging! %__CommonMSBuildArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
         if not !errorlevel! == 0 (
@@ -650,10 +644,10 @@ if %__BuildCoreLib% EQU 1 (
     if %__IbcOptimize% EQU 1 (
         echo %__MsgPrefix%Commencing IBCMerge of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
         set IbcMergeProjectFilePath=%__ProjectDir%\src\.nuget\optdata\ibcmerge.csproj
-        for /f "tokens=*" %%s in ('call "%__ProjectDir%\dotnet.cmd" msbuild "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackageVersion /nologo') do @(
+        for /f "tokens=*" %%s in ('call "%__ProjectDir%\dotnet.cmd" msbuild "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackageVersion /p:ArcadeBuild=true /nologo') do @(
             set __IbcMergeVersion=%%s
         )
-  
+
         set IbcMergePath=%__PackagesDir%\microsoft.dotnet.ibcmerge\!__IbcMergeVersion!\tools\netcoreapp2.0\ibcmerge.dll
         if exist !IbcMergePath! (
             echo %__MsgPrefix%Optimizing using IBC training data
@@ -714,7 +708,7 @@ if %__BuildCoreLib% EQU 1 (
                     type %__CrossGenCoreLibLog%
                     goto CrossgenFailure
                 )
-                
+
                 REM Verify that the optimization data has been applied
                 set NEXTCMD=!IBCMergeCommand! -mi "%__BinDir%\IL\System.Private.CoreLib.dll"
                 echo %__MsgPrefix%!NEXTCMD! >> "%__CrossGenCoreLibLog%"
@@ -834,29 +828,20 @@ if %__BuildPackages% EQU 1 (
 
     echo %__MsgPrefix%Building Packages for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-    set __BuildLogRootName=Nuget
-    set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-    set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-    set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
-    set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
-    set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
-    set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-    set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
+    set __BuildLog="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.binlog"
 
     REM The conditions as to what to build are captured in the builds file.
-    call %__ProjectDir%\dotnet.cmd msbuild /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
-      /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
-      /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
-      /p:UsePartialNGENOptimization=false /maxcpucount^
-      %__SourceDir%\.nuget\packages.builds^
-      !__Logging! /p:Platform=%__BuildArch% %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
-
+    REM Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
+    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%~dp0eng\common\build.ps1"^
+        -r -b -projects %__SourceDir%\.nuget\packages.builds^
+        -verbosity minimal /nodeReuse:false /bl:!__BuildLog!^
+        /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
+        /p:UsePartialNGENOptimization=false /p:ArcadeBuild=true^
+        /p:Platform=%__BuildArch% %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
     if not !errorlevel! == 0 (
-        echo %__MsgPrefix%Error: Nuget package generation failed. Refer to the build log files for details:
+        echo %__MsgPrefix%Error: Nuget package generation failed. Refer to the build log file for details:
         echo     !__BuildLog!
-        echo     !__BuildWrn!
-        echo     !__BuildErr!
-        exit /b 1
+        exit /b !errorlevel!
     )
 
     REM } Scope environment changes end

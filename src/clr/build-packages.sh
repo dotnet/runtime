@@ -125,15 +125,16 @@ if [ "${__DistroRid}" = "linux-musl-arm64" ]; then
     export OutputRID=${__DistroRid}
 fi
 
-$__ProjectRoot/dotnet.sh msbuild /nologo /verbosity:minimal /clp:Summary \
-                         /p:__BuildOS=$__BuildOS /flp:v=detailed\;Append\;LogFile=build-packages.log \
-                         /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll\;LogFile=binclash.log \
-                         /p:PortableBuild=true src/.nuget/packages.builds \
-                         /p:__DistroRid=$__DistroRid /p:BuildNugetPackage=false \
-                         $buildArgs $unprocessedBuildArgs
+logFile=$__ProjectRoot/bin/Logs/build-packages.binlog
+$__ProjectRoot/eng/common/build.sh -r -b -projects $__ProjectRoot/src/.nuget/packages.builds \
+                                   -verbosity minimal -bl:$logFile \
+                                   /p:__BuildOS=$__BuildOS /p:ArcadeBuild=true \
+                                   /p:PortableBuild=true /p:__DistroRid=$__DistroRid \
+                                   $buildArgs $unprocessedBuildArgs
 if [ $? -ne 0 ]
 then
-    echo "ERROR: An error occurred while building packages; See build-packages.log for more details."
+    echo "ERROR: An error occurred while building packages; See log for more details:"
+    echo "    $logFile"
     exit 1
 fi
 

@@ -24,6 +24,7 @@ bld/
 [Bb]in/
 [Oo]bj/
 msbuild.log
+msbuild.binlog
 
 # add back architecture directories ignored in 'Build results'
 !tests/x86

@@ -3,9 +3,8 @@
   <!-- List the projects that need to be restored only -->
  <ItemGroup Condition="'$(IncludeRestoreOnlyProjects)' == 'true'">
     <ProjectReference Condition="'$(BuildType)'=='Release'" Include="$(SourceDir).nuget/optdata/optdata.csproj" />
-    <ProjectReference Include="$(SourceDir).nuget/init/init.csproj" />
  </ItemGroup>
-  
+
   <!-- List the projects that need to be built -->
   <ItemGroup>
     <ProjectReference Condition="'$(SkipSOS)' != 'true'" Include="ToolBox\SOS\NETCore\SOS.NETCore.csproj" />

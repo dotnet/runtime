@@ -6,4 +6,11 @@
     <Company>Microsoft Corporation</Company>
     <Product>Microsoft%AE .NET Core</Product>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- If true, indicates that this is not an officially supported release -->
+    <!-- It is important to flip this to false in official release branches -->
+    <!-- Keep it in sync with PRERELEASE in clrdefinitions.cmake -->
+    <IsPrerelease>true</IsPrerelease>
+  </PropertyGroup>
 </Project>
