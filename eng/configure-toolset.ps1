@@ -3,3 +3,7 @@
 # using the globally installed dotnet
 
 $script:useInstalledDotNetCli = $false
+
+# Always use the local repo packages directory instead of
+# the user's NuGet cache
+$script:useGlobalNuGetCache = $false

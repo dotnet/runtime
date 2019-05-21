@@ -114,6 +114,7 @@ jobs:
           displayName: Restore internal tools
           inputs:
             command: restore
+            arguments: /p:ArcadeBuild=true
             feedsToUse: config
             projects: 'src/.nuget/optdata/ibcmerge.csproj'
             nugetConfigPath: 'eng/internal/NuGet.config'
@@ -167,10 +168,10 @@ jobs:
 
     # Build packages
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build-packages.sh -BuildArch=$(archType) -BuildType=$(buildConfigUpper) $(crossPackagesArg) -OfficialBuildId=$(Build.BuildNumber) $(portableBuildArg)
+      - script: ./build-packages.sh -BuildArch=$(archType) -BuildType=$(buildConfigUpper) $(crossPackagesArg) -OfficialBuildId=$(Build.BuildNumber) $(portableBuildArg) -ci
         displayName: Build packages
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build-packages.cmd -BuildArch=$(archType) -BuildType=$(buildConfigUpper) -OfficialBuildId=$(Build.BuildNumber)
+      - script: build-packages.cmd -BuildArch=$(archType) -BuildType=$(buildConfigUpper) -OfficialBuildId=$(Build.BuildNumber) -ci
         displayName: Build packages
 
     # Publish official build
@@ -198,7 +199,7 @@ jobs:
           displayName: Publish packages to blob feed
           env:
             # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed
-            NUGET_PACKAGES: $(Build.SourcesDirectory)\.packages 
+            NUGET_PACKAGES: $(Build.SourcesDirectory)\.packages
       # Save nuget packages in pipeline for update dotnet/versions
       - task: PublishPipelineArtifact@0
         displayName: Save packages as pipeline artifact

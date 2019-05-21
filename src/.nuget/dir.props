@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildThisFileDirectory)..\..\dir.props" />
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+  <Import Project="packaging.props" />
 
   <PropertyGroup>
-    <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
+    <!-- defined in Packaging.targets, but we need this before targets are imported -->
     <PackagePlatform>AnyCPU</PackagePlatform>
 
     <!-- build the transport package which includes product and symbols in addition to standard packages -->
