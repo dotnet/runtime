@@ -959,9 +959,15 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.NotNull(@this);
             Assert.NotNull(other);
             Assert.Equal(@this.Id, other.Id);
-            Assert.Equal(@this.DisplayName, other.DisplayName);
-            Assert.Equal(@this.StandardName, other.StandardName);
-            Assert.Equal(@this.DaylightName, other.DaylightName);
+
+            if (isSamePlatform)
+            {
+                // These properties can change in between TFMs.
+                Assert.Equal(@this.DisplayName, other.DisplayName);
+                Assert.Equal(@this.StandardName, other.StandardName);
+                Assert.Equal(@this.DaylightName, other.DaylightName);
+            }
+
             Assert.Equal(@this.BaseUtcOffset, other.BaseUtcOffset);
             Assert.Equal(@this.SupportsDaylightSavingTime, other.SupportsDaylightSavingTime);
         }

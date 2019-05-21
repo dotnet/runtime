@@ -20,9 +20,9 @@ namespace System.Reflection.Emit
         Return = 7,
         Throw = 8,
     }
-    public partial struct OpCode
+    public readonly partial struct OpCode : IEquatable<System.Reflection.Emit.OpCode>
     {
-        private object _dummy;
+        private readonly object _dummy;
         public System.Reflection.Emit.FlowControl FlowControl { get { throw null; } }
         public string Name { get { throw null; } }
         public System.Reflection.Emit.OpCodeType OpCodeType { get { throw null; } }
