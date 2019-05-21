@@ -1070,10 +1070,13 @@ mono_print_ji (const MonoJumpInfo *ji)
 		g_free (s);
 		break;
 	}
-	case MONO_PATCH_INFO_JIT_ICALL: {
+	case MONO_PATCH_INFO_JIT_ICALL: //temporary
+		g_assert (!22);
 		printf ("[JIT_ICALL %s]", ji->data.name);
 		break;
-	}
+	case MONO_PATCH_INFO_JIT_ICALL_ID:
+		printf ("[JIT_ICALL %s]", mono_find_jit_icall_info (ji->data.jit_icall_id)->name);
+		break;
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_VTABLE: {
 		char *name = mono_class_full_name (ji->data.klass);
@@ -1197,7 +1200,8 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_OBJC_SELECTOR_REF: // Hash on the selector name
 	case MONO_PATCH_INFO_LDSTR_LIT:
 		return g_str_hash (ji->data.name);
-	case MONO_PATCH_INFO_JIT_ICALL:
+	case MONO_PATCH_INFO_JIT_ICALL: //temporary
+		g_assert (!23);
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 		return hash | g_str_hash (ji->data.name);
@@ -1246,6 +1250,17 @@ mono_patch_info_hash (gconstpointer data)
 		return hash;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		return hash | ji->data.uindex;
+	case MONO_PATCH_INFO_JIT_ICALL_ID:
+#if 0 // Temporarily MONO_PATCH_INFO_JIT_ICALL and MONO_PATCH_INFO_JIT_ICALL_ID can be mixed.
+      // This lets us partially convert without failing due to duplicate PLT entries?
+      // Or so I thought. In the face of errors, conversion completed.
+		{
+			MonoJumpInfo ji2;
+			ji2.type = MONO_PATCH_INFO_JIT_ICALL;
+			ji2.data.name = mono_find_jit_icall_info (ji->data.jit_icall_id)->name;
+			return mono_patch_info_hash (&ji2);
+		}
+#endif
 	case MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		return hash | ji->data.index;
@@ -1283,10 +1298,23 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 	const MonoJumpInfo *ji1 = (MonoJumpInfo*)ka;
 	const MonoJumpInfo *ji2 = (MonoJumpInfo*)kb;
 
-	if (ji1->type != ji2->type)
-		return 0;
+	MonoJumpInfoType const ji1_type = ji1->type;
+	MonoJumpInfoType const ji2_type = ji2->type;
 
-	switch (ji1->type) {
+	if (ji1_type != ji2_type) {
+#if 0 // Temporarily MONO_PATCH_INFO_JIT_ICALL and MONO_PATCH_INFO_JIT_ICALL_ID can be mixed.
+      // This lets us partially convert without failing due to duplicate PLT entries?
+      // Or so I thought. In the face of errors, conversion completed.
+		if (ji1_type == MONO_PATCH_INFO_JIT_ICALL_ID && ji2_type == MONO_PATCH_INFO_JIT_ICALL)
+			return mono_patch_info_equal (ji2, ji1);
+
+		if (ji1_type == MONO_PATCH_INFO_JIT_ICALL && ji2_type == MONO_PATCH_INFO_JIT_ICALL_ID)
+			return g_str_equal (ji1->data.name, mono_get_jit_icall_info (ji2->data.jit_icall_id)->name);
+#endif
+		return 0;
+	}
+
+	switch (ji1_type) {
 	case MONO_PATCH_INFO_RVA:
 	case MONO_PATCH_INFO_LDSTR:
 	case MONO_PATCH_INFO_TYPE_FROM_HANDLE:
@@ -1297,9 +1325,10 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 		       ji1->data.token->has_context == ji2->data.token->has_context &&
 		       ji1->data.token->context.class_inst == ji2->data.token->context.class_inst &&
 		       ji1->data.token->context.method_inst == ji2->data.token->context.method_inst;
+	case MONO_PATCH_INFO_JIT_ICALL: //temporary
+		g_assert (!11);
 	case MONO_PATCH_INFO_OBJC_SELECTOR_REF:
 	case MONO_PATCH_INFO_LDSTR_LIT:
-	case MONO_PATCH_INFO_JIT_ICALL:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 		return g_str_equal (ji1->data.name, ji2->data.name);
@@ -1325,6 +1354,8 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 	case MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		return ji1->data.index == ji2->data.index;
+	case MONO_PATCH_INFO_JIT_ICALL_ID:
+		return ji1->data.jit_icall_id == ji2->data.jit_icall_id;
 	case MONO_PATCH_INFO_VIRT_METHOD:
 		return ji1->data.virt_method->klass == ji2->data.virt_method->klass && ji1->data.virt_method->method == ji2->data.virt_method->method;
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
@@ -1365,9 +1396,17 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_METHOD_REL:
 		target = code + patch_info->data.offset;
 		break;
-	case MONO_PATCH_INFO_JIT_ICALL: {
-		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
-		g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL %s", patch_info->data.name);
+	case MONO_PATCH_INFO_JIT_ICALL: //temporary
+		g_assert (!12);
+	case MONO_PATCH_INFO_JIT_ICALL_ID: {
+		MonoJitICallInfo *mi;
+		if (patch_info->type == MONO_PATCH_INFO_JIT_ICALL) { //temporary
+			mi = mono_find_jit_icall_by_name (patch_info->data.name);
+			g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL %s", patch_info->data.name);
+		}
+		else
+			mi = mono_find_jit_icall_info (patch_info->data.jit_icall_id);
+		g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL_ID %s", patch_info->data.name);
 		target = mono_icall_get_wrapper (mi);
 		break;
 	}

@@ -2096,8 +2096,8 @@ mono_postprocess_patches (MonoCompile *cfg)
 			 * absolute address.
 			 */
 			if (info) {
-				patch_info->type = MONO_PATCH_INFO_JIT_ICALL;
-				patch_info->data.name = info->name;
+				patch_info->type = MONO_PATCH_INFO_JIT_ICALL_ID;
+				patch_info->data.jit_icall_id = mono_jit_icall_info_id (info);
 			}
 
 			if (patch_info->type == MONO_PATCH_INFO_ABS) {

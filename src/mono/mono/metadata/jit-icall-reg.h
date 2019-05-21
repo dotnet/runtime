@@ -1,6 +1,27 @@
 /**
  * \file
- *   Enum and static storage for JIT icalls.
+ *   Enum for JIT icalls: MonoJitICallId MONO_JIT_ICALL_mono_foo, etc.
+ *   Static storage for JIT icall info: mono_get_jit_icall_info().
+ *
+ *   mono_find_jit_icall_info (MonoJitICallId)
+ *     Convert enum to pointer.
+ *
+ *   mono_find_jit_icall_info ((MonoJitICallId)int)
+ *     Convert int to pointer.
+ *
+ *  mono_jit_icall_info_id(pointer)
+ *     Convert pointer to enum.
+ *
+ *   mono_jit_icall_info_index(pointer)
+ *     Convert pointer to int.
+ *
+ *   &mono_get_icall_info ()->name
+ *     Convert name to pointer.
+ *
+ *   MONO_JIT_ICALL_ ## name
+ *     Convert name to enum.
+ *
+ *   All conversions are just a few instructions.
  *
  * Author:
  *   Jay Krell (jaykrell@microsoft.com)
@@ -11,8 +32,7 @@
 
 // No include guard needed.
 
-// Eventually, changes within MONO_JIT_ICALLS might require revising MONO_AOT_FILE_VERSION.
-// i.e. if AOT persists enum/int instead of string. For now, this is not the case.
+// Changes within MONO_JIT_ICALLS require revising MONO_AOT_FILE_VERSION.
 #define MONO_JIT_ICALLS \
 	\
 MONO_JIT_ICALL (ZeroIsReserved)	\
@@ -334,6 +354,8 @@ MONO_JIT_ICALLS
 	MonoJitICallInfo array [MONO_JIT_ICALL_count];
 } MonoJitICallInfos;
 
+// Indirect mono_jit_icall_info access through a function or macro due to loaded LLVM.
+//
 #if MONO_LLVM_LOADED
 
 MonoJitICallInfos*
@@ -347,9 +369,13 @@ extern MonoJitICallInfos mono_jit_icall_info;
 
 #endif
 
-#define mono_jit_icall_info_index(x) ((int)((x) - mono_get_jit_icall_info ()->array))
+// Convert MonoJitICallInfo* to an int or enum.
+//
+#define mono_jit_icall_info_index(x) ((x) - mono_get_jit_icall_info ()->array)
 #define mono_jit_icall_info_id(x) ((MonoJitICallId)mono_jit_icall_info_index(x))
 
+// Check and cast a MonoJitICallInfo*.
+//
 static inline MonoJitICallInfo*
 mono_check_jit_icall_info (gconstpointer jit_icall_info)
 {
@@ -363,14 +389,14 @@ mono_check_jit_icall_info (gconstpointer jit_icall_info)
 	return (MonoJitICallInfo*)jit_icall_info;
 }
 
+// Given an enum/id, get the MonoJitICallInfo*.
+//
 static inline MonoJitICallInfo*
-mono_find_jit_icall_info (MonoJitICallId index)
+mono_find_jit_icall_info (MonoJitICallId id)
 {
-	g_assert (index && (guint)index < MONO_JIT_ICALL_count);
+	const guint index = (guint)id;
 
-	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->array [index];
+	g_assert (index < MONO_JIT_ICALL_count);
 
-	g_assert (info->func);
-
-	return info;
+	return &mono_get_jit_icall_info ()->array [index];
 }

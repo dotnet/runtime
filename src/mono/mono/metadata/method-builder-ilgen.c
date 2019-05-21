@@ -546,8 +546,7 @@ mono_mb_emit_native_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, gpoin
 void
 mono_mb_emit_icall_id (MonoMethodBuilder *mb, MonoJitICallId jit_icall_id)
 {
-	g_assert (jit_icall_id > 0 && jit_icall_id < MONO_JIT_ICALL_count);
-	MonoJitICallInfo const * const jit_icall_info = &mono_get_jit_icall_info ()->array [jit_icall_id];
+	MonoJitICallInfo const * const jit_icall_info = mono_find_jit_icall_info (jit_icall_id);
 	g_assertf (jit_icall_info->name, "%d", (int)jit_icall_id);
 	g_assertf (jit_icall_info->func, "%d", (int)jit_icall_id);
 
