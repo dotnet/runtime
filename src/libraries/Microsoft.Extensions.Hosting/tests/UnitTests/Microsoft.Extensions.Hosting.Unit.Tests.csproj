@@ -5,7 +5,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="testroot\**\*" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="testroot\**\*" />
+    <Content Include="appSettings.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -14,12 +15,6 @@
     <Reference Include="Microsoft.Extensions.Configuration.Json" />
     <Reference Include="Microsoft.Extensions.Logging.Testing" />
     <Reference Include="Microsoft.Extensions.Options" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="appSettings.json">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>

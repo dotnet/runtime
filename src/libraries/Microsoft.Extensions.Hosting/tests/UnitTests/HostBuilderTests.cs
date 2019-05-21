@@ -118,10 +118,8 @@ namespace Microsoft.Extensions.Hosting
         [Fact]
         public void CanConfigureAppConfigurationFromFile()
         {
-            // Needs to look in the project directory like VS would
-            var projectDir = Path.Combine(TestPathUtilities.GetRepoRootDirectory(), "src", "Hosting", "Hosting", "test");
             var hostBuilder = new HostBuilder()
-                .UseContentRoot(projectDir)
+                .UseContentRoot(AppContext.BaseDirectory)
                 .ConfigureAppConfiguration((context, configBuilder) =>
                 {
                     configBuilder.AddJsonFile("appSettings.json", optional: false);
