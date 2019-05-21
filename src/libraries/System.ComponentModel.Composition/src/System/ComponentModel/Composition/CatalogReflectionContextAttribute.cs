@@ -6,9 +6,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Microsoft.Internal;
 
-using PermissionSet = System.Security.PermissionSet;
-using PermissionState = System.Security.Permissions.PermissionState;
-
 namespace System.ComponentModel.Composition
 {
     /// <summary>
@@ -32,11 +29,6 @@ namespace System.ComponentModel.Composition
             if (_reflectionContextType == null)
             {
                 throw new ArgumentNullException(nameof(_reflectionContextType));
-            }
-
-            if (!_reflectionContextType.IsPublic)
-            {
-                new PermissionSet(PermissionState.Unrestricted).Demand();
             }
 
             ReflectionContext reflectionContext = null;

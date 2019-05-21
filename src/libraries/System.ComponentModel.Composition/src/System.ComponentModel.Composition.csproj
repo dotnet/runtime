@@ -215,6 +215,5 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Security.Permissions" />
   </ItemGroup>
 </Project>

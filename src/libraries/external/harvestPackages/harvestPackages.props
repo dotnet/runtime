@@ -1,4 +1,4 @@
-<Project>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 <!-- The versions can be updated by running UpdateToLatestStablePackages target in harvestPackages.depproj -->
 <ItemGroup>
 <PackageReference Include="Microsoft.CSharp">
@@ -62,10 +62,10 @@
   <Version>4.5.0</Version>
 </PackageReference>
 <PackageReference Include="System.Data.SqlClient">
-  <Version>4.5.1</Version>
+  <Version>4.6.1</Version>
 </PackageReference>
 <PackageReference Include="System.Diagnostics.DiagnosticSource">
-  <Version>4.5.0</Version>
+  <Version>4.5.1</Version>
 </PackageReference>
 <PackageReference Include="System.Diagnostics.PerformanceCounter">
   <Version>4.5.0</Version>
@@ -80,7 +80,7 @@
   <Version>4.5.0</Version>
 </PackageReference>
 <PackageReference Include="System.Drawing.Common">
-  <Version>4.5.0</Version>
+  <Version>4.5.1</Version>
 </PackageReference>
 <PackageReference Include="System.IO.FileSystem.AccessControl">
   <Version>4.5.0</Version>
@@ -89,7 +89,7 @@
   <Version>4.5.0</Version>
 </PackageReference>
 <PackageReference Include="System.IO.Pipelines">
-  <Version>4.5.0</Version>
+  <Version>4.5.3</Version>
 </PackageReference>
 <PackageReference Include="System.IO.Ports">
   <Version>4.5.0</Version>
@@ -101,10 +101,10 @@
   <Version>4.5.0</Version>
 </PackageReference>
 <PackageReference Include="System.Net.Http.WinHttpHandler">
-  <Version>4.5.0</Version>
+  <Version>4.5.3</Version>
 </PackageReference>
 <PackageReference Include="System.Net.WebSockets.WebSocketProtocol">
-  <Version>4.5.1</Version>
+  <Version>4.5.3</Version>
 </PackageReference>
 <PackageReference Include="System.Numerics.Tensors">
   <Version>0.1.0</Version>
@@ -122,13 +122,13 @@
   <Version>1.6.0</Version>
 </PackageReference>
 <PackageReference Include="System.Reflection.TypeExtensions">
-  <Version>4.5.0</Version>
+  <Version>4.5.1</Version>
 </PackageReference>
 <PackageReference Include="System.Runtime.Caching">
   <Version>4.5.0</Version>
 </PackageReference>
 <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
-  <Version>4.5.1</Version>
+  <Version>4.5.2</Version>
 </PackageReference>
 <PackageReference Include="System.Runtime.WindowsRuntime">
   <Version>4.3.0</Version>
@@ -143,10 +143,10 @@
   <Version>4.5.0</Version>
 </PackageReference>
 <PackageReference Include="System.Security.Cryptography.OpenSsl">
-  <Version>4.5.0</Version>
+  <Version>4.5.1</Version>
 </PackageReference>
 <PackageReference Include="System.Security.Cryptography.Pkcs">
-  <Version>4.5.0</Version>
+  <Version>4.5.2</Version>
 </PackageReference>
 <PackageReference Include="System.Security.Cryptography.ProtectedData">
   <Version>4.5.0</Version>
@@ -158,7 +158,7 @@
   <Version>4.5.0</Version>
 </PackageReference>
 <PackageReference Include="System.Security.Principal.Windows">
-  <Version>4.5.0</Version>
+  <Version>4.5.1</Version>
 </PackageReference>
 <PackageReference Include="System.ServiceModel.Syndication">
   <Version>4.5.0</Version>
@@ -167,7 +167,7 @@
   <Version>4.5.0</Version>
 </PackageReference>
 <PackageReference Include="System.Text.Encoding.CodePages">
-  <Version>4.5.0</Version>
+  <Version>4.5.1</Version>
 </PackageReference>
 <PackageReference Include="System.Text.Encodings.Web">
   <Version>4.5.0</Version>
@@ -182,7 +182,7 @@
   <Version>4.9.0</Version>
 </PackageReference>
 <PackageReference Include="System.Threading.Tasks.Extensions">
-  <Version>4.5.1</Version>
+  <Version>4.5.2</Version>
 </PackageReference>
 <PackageReference Include="System.ValueTuple">
   <Version>4.5.0</Version>
