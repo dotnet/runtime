@@ -197,6 +197,7 @@ namespace System.Text.Json
         public bool GetBoolean() { throw null; }
         public System.DateTime GetDateTime() { throw null; }
         public System.DateTimeOffset GetDateTimeOffset() { throw null; }
+        public string GetComment() { throw null; }
         public decimal GetDecimal() { throw null; }
         public double GetDouble() { throw null; }
         public System.Guid GetGuid() { throw null; }
