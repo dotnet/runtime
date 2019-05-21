@@ -136,7 +136,7 @@ namespace System.Text.Json.Serialization
             if (typeof(IList).IsAssignableFrom(propType))
             {
                 // If IList, add the members as we create them.
-                JsonClassInfo collectionClassInfo = options.GetOrAddClass(propType);
+                JsonClassInfo collectionClassInfo = state.Current.JsonPropertyInfo.RuntimeClassInfo;
                 IList collection = (IList)collectionClassInfo.CreateObject();
                 return collection;
             }

@@ -53,13 +53,13 @@ namespace System.Text.Json.Serialization
                 ValueConverter = DefaultConverters<TRuntimeProperty>.s_converter;
             }
 
-            GetPolicies(options);
+            GetPolicies();
         }
 
-        public override void GetPolicies(JsonSerializerOptions options)
+        public override void GetPolicies()
         {
             ValueConverter = DefaultConverters<TRuntimeProperty>.s_converter;
-            base.GetPolicies(options);
+            base.GetPolicies();
         }
 
         public override object GetValueAsObject(object obj)

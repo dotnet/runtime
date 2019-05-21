@@ -20,6 +20,11 @@ namespace System.Text.Json.Serialization
         private static readonly JsonEnumerableConverter s_jsonIEnumerableConstuctibleConverter = new DefaultIEnumerableConstructibleConverter();
         private static readonly JsonEnumerableConverter s_jsonImmutableConverter = new DefaultImmutableConverter();
 
+        private JsonClassInfo _runtimeClassInfo;
+
+        private Type _elementType;
+        private JsonClassInfo _elementClassInfo;
+
         public static readonly JsonPropertyInfo s_missingProperty = new JsonPropertyInfoNotNullable<object, object, object>();
 
         public ClassType ClassType;
@@ -43,8 +48,38 @@ namespace System.Text.Json.Serialization
         public bool IsPropertyPolicy {get; protected set;}
         public bool IgnoreNullValues { get; private set; }
 
-        // todo: to minimize hashtable lookups, cache JsonClassInfo:
-        //public JsonClassInfo ClassInfo;
+        // Options can be referenced here since all JsonPropertyInfos originate from a JsonClassInfo that is cached on JsonSerializerOptions.
+        protected JsonSerializerOptions Options { get; set; }
+
+        public JsonClassInfo RuntimeClassInfo
+        {
+            get
+            {
+                if (_runtimeClassInfo == null)
+                {
+                    _runtimeClassInfo = Options.GetOrAddClass(RuntimePropertyType);
+                }
+
+                return _runtimeClassInfo;
+            }
+        }
+
+        /// <summary>
+        /// Return the JsonClassInfo for the element type, or null if the the property is not an enumerable or dictionary.
+        /// </summary>
+        public JsonClassInfo ElementClassInfo
+        {
+            get
+            {
+                if (_elementClassInfo == null && _elementType != null)
+                {
+                    Debug.Assert(ClassType == ClassType.Enumerable || ClassType == ClassType.Dictionary);
+                    _elementClassInfo = Options.GetOrAddClass(_elementType);
+                }
+
+                return _elementClassInfo;
+            }
+        }
 
         public virtual void Initialize(
             Type parentClassType,
@@ -59,18 +94,13 @@ namespace System.Text.Json.Serialization
             RuntimePropertyType = runtimePropertyType;
             PropertyInfo = propertyInfo;
             ClassType = JsonClassInfo.GetClassType(runtimePropertyType);
-            if (elementType != null)
-            {
-                Debug.Assert(ClassType == ClassType.Enumerable || ClassType == ClassType.Dictionary);
-                ElementClassInfo = options.GetOrAddClass(elementType);
-            }
-
+            _elementType = elementType;
+            Options = options;
             IsNullableType = runtimePropertyType.IsGenericType && runtimePropertyType.GetGenericTypeDefinition() == typeof(Nullable<>);
             CanBeNull = IsNullableType || !runtimePropertyType.IsValueType;
         }
 
         public bool CanBeNull { get; private set; }
-        public JsonClassInfo ElementClassInfo { get; private set; }
         public JsonEnumerableConverter EnumerableConverter { get; private set; }
 
         public bool IsNullableType { get; private set; }
@@ -83,14 +113,14 @@ namespace System.Text.Json.Serialization
 
         public Type RuntimePropertyType { get; private set; }
 
-        public virtual void GetPolicies(JsonSerializerOptions options)
+        public virtual void GetPolicies()
         {
-            DetermineSerializationCapabilities(options);
-            DeterminePropertyName(options);
-            IgnoreNullValues = options.IgnoreNullValues;
+            DetermineSerializationCapabilities();
+            DeterminePropertyName();
+            IgnoreNullValues = Options.IgnoreNullValues;
         }
 
-        private void DeterminePropertyName(JsonSerializerOptions options)
+        private void DeterminePropertyName()
         {
             if (PropertyInfo == null)
             {
@@ -108,9 +138,9 @@ namespace System.Text.Json.Serialization
 
                 NameAsString = name;
             }
-            else if (options.PropertyNamingPolicy != null)
+            else if (Options.PropertyNamingPolicy != null)
             {
-                string name = options.PropertyNamingPolicy.ConvertName(PropertyInfo.Name);
+                string name = Options.PropertyNamingPolicy.ConvertName(PropertyInfo.Name);
                 if (name == null)
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(ParentClassType, this);
@@ -129,7 +159,7 @@ namespace System.Text.Json.Serialization
             Name = Encoding.UTF8.GetBytes(NameAsString);
 
             // Set the compare name.
-            if (options.PropertyNameCaseInsensitive)
+            if (Options.PropertyNameCaseInsensitive)
             {
                 NameUsedToCompareAsString = NameAsString.ToUpperInvariant();
                 NameUsedToCompare = Encoding.UTF8.GetBytes(NameUsedToCompareAsString);
@@ -173,12 +203,12 @@ namespace System.Text.Json.Serialization
 #endif
         }
 
-        private void DetermineSerializationCapabilities(JsonSerializerOptions options)
+        private void DetermineSerializationCapabilities()
         {
             if (ClassType != ClassType.Enumerable && ClassType != ClassType.Dictionary)
             {
                 // We serialize if there is a getter + not ignoring readonly properties.
-                ShouldSerialize = HasGetter && (HasSetter || !options.IgnoreReadOnlyProperties);
+                ShouldSerialize = HasGetter && (HasSetter || !Options.IgnoreReadOnlyProperties);
 
                 // We deserialize if there is a setter. 
                 ShouldDeserialize = HasSetter;
@@ -233,13 +263,13 @@ namespace System.Text.Json.Serialization
                             RuntimePropertyType.GetGenericArguments().Length == 1)
                         {
                             EnumerableConverter = s_jsonImmutableConverter;
-                            ((DefaultImmutableConverter)EnumerableConverter).RegisterImmutableCollectionType(RuntimePropertyType, elementType, options);
+                            ((DefaultImmutableConverter)EnumerableConverter).RegisterImmutableCollectionType(RuntimePropertyType, elementType, Options);
                         }
                     }
                 }
                 else
                 {
-                    ShouldSerialize = HasGetter && !options.IgnoreReadOnlyProperties;
+                    ShouldSerialize = HasGetter && !Options.IgnoreReadOnlyProperties;
                 }
             }
         }
@@ -264,8 +294,9 @@ namespace System.Text.Json.Serialization
         public static JsonPropertyInfo CreateIgnoredPropertyPlaceholder(PropertyInfo propertyInfo, JsonSerializerOptions options)
         {
             JsonPropertyInfo jsonPropertyInfo = new JsonPropertyInfoNotNullable<int, int, int>();
+            jsonPropertyInfo.Options = options;
             jsonPropertyInfo.PropertyInfo = propertyInfo;
-            jsonPropertyInfo.DeterminePropertyName(options);
+            jsonPropertyInfo.DeterminePropertyName();
 
             Debug.Assert(!jsonPropertyInfo.ShouldDeserialize);
             Debug.Assert(!jsonPropertyInfo.ShouldSerialize);
@@ -288,13 +319,13 @@ namespace System.Text.Json.Serialization
 
         public abstract Type GetDictionaryConcreteType();
 
-        public abstract void Read(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader);
-        public abstract void ReadEnumerable(JsonTokenType tokenType, JsonSerializerOptions options, ref ReadStack state, ref Utf8JsonReader reader);
+        public abstract void Read(JsonTokenType tokenType, ref ReadStack state, ref Utf8JsonReader reader);
+        public abstract void ReadEnumerable(JsonTokenType tokenType, ref ReadStack state, ref Utf8JsonReader reader);
         public abstract void SetValueAsObject(object obj, object value);
 
-        public abstract void Write(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer);
+        public abstract void Write(ref WriteStackFrame current, Utf8JsonWriter writer);
 
-        public virtual void WriteDictionary(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer) { }
-        public abstract void WriteEnumerable(JsonSerializerOptions options, ref WriteStackFrame current, Utf8JsonWriter writer);
+        public virtual void WriteDictionary(ref WriteStackFrame current, Utf8JsonWriter writer) { }
+        public abstract void WriteEnumerable(ref WriteStackFrame current, Utf8JsonWriter writer);
     }
 }

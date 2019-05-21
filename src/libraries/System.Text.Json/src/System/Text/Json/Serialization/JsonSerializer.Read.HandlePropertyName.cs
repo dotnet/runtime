@@ -101,17 +101,15 @@ namespace System.Text.Json.Serialization
             IDictionary extensionData = (IDictionary)jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
             if (extensionData == null)
             {
-                Type type = jsonPropertyInfo.DeclaredPropertyType;
-
                 // Create the appropriate dictionary type. We already verified the types.
-                Debug.Assert(type.IsGenericType);
-                Debug.Assert(type.GetGenericArguments().Length == 2);
-                Debug.Assert(type.GetGenericArguments()[0].UnderlyingSystemType == typeof(string));
+                Debug.Assert(jsonPropertyInfo.DeclaredPropertyType.IsGenericType);
+                Debug.Assert(jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments().Length == 2);
+                Debug.Assert(jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[0].UnderlyingSystemType == typeof(string));
                 Debug.Assert(
-                    type.GetGenericArguments()[1].UnderlyingSystemType == typeof(object) ||
-                    type.GetGenericArguments()[1].UnderlyingSystemType == typeof(JsonElement));
+                    jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[1].UnderlyingSystemType == typeof(object) ||
+                    jsonPropertyInfo.DeclaredPropertyType.GetGenericArguments()[1].UnderlyingSystemType == typeof(JsonElement));
 
-                extensionData = (IDictionary)options.GetOrAddClass(type).CreateObject();
+                extensionData = (IDictionary)jsonPropertyInfo.RuntimeClassInfo.CreateObject();
                 jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, extensionData);
             }
 
