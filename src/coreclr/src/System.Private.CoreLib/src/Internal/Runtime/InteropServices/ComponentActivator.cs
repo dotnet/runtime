@@ -78,6 +78,11 @@ namespace Internal.Runtime.InteropServices
                     delegateType = MarshalToString(delegateTypeNative, nameof(delegateTypeNative));
                 }
 
+                if (flags != 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(flags));
+                }
+
                 if (functionHandle == IntPtr.Zero)
                 {
                     throw new ArgumentNullException(nameof(functionHandle));
