@@ -84,6 +84,14 @@
     <TestEnvironment Include="jitstress_isas_x86_nosse41" EnableSSE41="0" /> <!-- Depends on SSSE3 and SSE3_4 -->
     <TestEnvironment Include="jitstress_isas_x86_nosse42" EnableSSE42="0" /> <!-- Depends on SSE41 -->
     <TestEnvironment Include="jitstress_isas_x86_nossse3" EnableSSSE3="0" /> <!-- Depends on SSE3 -->
+    <TestEnvironment Include="jitstressregs1_x86_noavx" JitStressRegs="1" EnableAVX="0" />
+    <TestEnvironment Include="jitstressregs2_x86_noavx" JitStressRegs="2" EnableAVX="0" />
+    <TestEnvironment Include="jitstressregs3_x86_noavx" JitStressRegs="3" EnableAVX="0" />
+    <TestEnvironment Include="jitstressregs4_x86_noavx" JitStressRegs="4" EnableAVX="0" />
+    <TestEnvironment Include="jitstressregs8_x86_noavx" JitStressRegs="8" EnableAVX="0" />
+    <TestEnvironment Include="jitstressregs0x10_x86_noavx" JitStressRegs="0x10" EnableAVX="0" />
+    <TestEnvironment Include="jitstressregs0x80_x86_noavx" JitStressRegs="0x80" EnableAVX="0" />
+    <TestEnvironment Include="jitstressregs0x1000_x86_noavx" JitStressRegs="0x1000" EnableAVX="0" />
     <TestEnvironment Include="jitstressregs1" JitStressRegs="1" />
     <TestEnvironment Include="jitstressregs2" JitStressRegs="2" />
     <TestEnvironment Include="jitstressregs3" JitStressRegs="3" />
