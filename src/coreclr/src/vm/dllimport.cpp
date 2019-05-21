@@ -5732,7 +5732,7 @@ void CreateCLRToDispatchCOMStub(
 #endif // FEATURE_COMINTEROP
 
 /*static*/
-LPVOID NDirect::NDirectGetEntryPoint(NDirectMethodDesc *pMD, HINSTANCE hMod)
+LPVOID NDirect::NDirectGetEntryPoint(NDirectMethodDesc *pMD, NATIVE_LIBRARY_HANDLE hMod)
 {
     // GetProcAddress cannot be called while preemptive GC is disabled.
     // It requires the OS to take the loader lock.
@@ -6148,7 +6148,7 @@ INT_PTR NDirect::GetNativeLibraryExport(NATIVE_LIBRARY_HANDLE handle, LPCWSTR sy
     if ((address == NULL) && throwOnError)
         COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDR_WIN_DLL, symbolName);
 #else // !FEATURE_PAL
-    INT_PTR address = reinterpret_cast<INT_PTR>(PAL_GetProcAddressDirect((NATIVE_LIBRARY_HANDLE)handle, lpstr));
+    INT_PTR address = reinterpret_cast<INT_PTR>(PAL_GetProcAddressDirect(handle, lpstr));
     if ((address == NULL) && throwOnError)
         COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDR_UNIX_SO, symbolName);
 #endif // !FEATURE_PAL
@@ -6632,7 +6632,7 @@ NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModuleBySearch(Assembly *callingAssemb
 }
 
 // This Method returns an instance of the PAL-Registered handle
-HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
+NATIVE_LIBRARY_HANDLE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker)
 {
     CONTRACTL
     {
@@ -6648,12 +6648,9 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
     PREFIX_ASSUME( name != NULL );
     MAKE_WIDEPTR_FROMUTF8( wszLibName, name );
 
-    ModuleHandleHolder hmod = LoadLibraryModuleViaCallback(pMD, wszLibName);
+    NativeLibraryHandleHolder hmod = LoadLibraryModuleViaCallback(pMD, wszLibName);
     if (hmod != NULL)
     {
-#ifdef FEATURE_PAL
-        hmod = PAL_RegisterLibraryDirect(hmod, wszLibName);
-#endif // FEATURE_PAL
         return hmod.Extract();
     }
 
@@ -6666,9 +6663,6 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
         hmod = LoadLibraryModuleViaHost(pMD, wszLibName);
         if (hmod != NULL)
         {
-#ifdef FEATURE_PAL
-            hmod = PAL_RegisterLibraryDirect(hmod, wszLibName);
-#endif // FEATURE_PAL
             return hmod.Extract();
         }
     }
@@ -6682,10 +6676,6 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
     hmod = LoadLibraryModuleBySearch(pMD, pErrorTracker, wszLibName);
     if (hmod != NULL)
     {
-#ifdef FEATURE_PAL
-        hmod = PAL_RegisterLibraryDirect(hmod, wszLibName);
-#endif // FEATURE_PAL
-
         // If we have a handle add it to the cache.
         pDomain->AddUnmanagedImageToCache(wszLibName, hmod);
         return hmod.Extract();
@@ -6696,9 +6686,6 @@ HINSTANCE NDirect::LoadLibraryModule(NDirectMethodDesc * pMD, LoadLibErrorTracke
         hmod = LoadLibraryModuleViaEvent(pMD, wszLibName);
         if (hmod != NULL)
         {
-#ifdef FEATURE_PAL
-            hmod = PAL_RegisterLibraryDirect(hmod, wszLibName);
-#endif // FEATURE_PAL
             return hmod.Extract();
         }
     }
@@ -6753,7 +6740,7 @@ VOID NDirect::NDirectLink(NDirectMethodDesc *pMD)
     LoadLibErrorTracker errorTracker;
 
     BOOL fSuccess = FALSE;
-    HINSTANCE hmod = LoadLibraryModule( pMD, &errorTracker );
+    NATIVE_LIBRARY_HANDLE hmod = LoadLibraryModule( pMD, &errorTracker );
     if ( hmod )
     {
         LPVOID pvTarget = NDirectGetEntryPoint(pMD, hmod);

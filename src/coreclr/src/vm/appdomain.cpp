@@ -2880,7 +2880,6 @@ AppDomain::AppDomain()
 
     m_pRefClassFactHash = NULL;
 
-    m_ReversePInvokeCanEnter=TRUE;
     m_ForceTrivialWaitOperations = false;
     m_Stage=STAGE_CREATING;
 
@@ -4702,7 +4701,7 @@ BOOL AppDomain::AddExceptionToCache(AssemblySpec* pSpec, Exception *ex)
     return m_AssemblyCache.StoreException(pSpec, ex);
 }
 
-void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, HMODULE hMod)
+void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, NATIVE_LIBRARY_HANDLE hMod)
 {
     CONTRACTL
     {
@@ -4723,9 +4722,9 @@ void AppDomain::AddUnmanagedImageToCache(LPCWSTR libraryName, HMODULE hMod)
 }
 
 
-HMODULE AppDomain::FindUnmanagedImageInCache(LPCWSTR libraryName)
+NATIVE_LIBRARY_HANDLE AppDomain::FindUnmanagedImageInCache(LPCWSTR libraryName)
 {
-    CONTRACT(HMODULE)
+    CONTRACT(NATIVE_LIBRARY_HANDLE)
     {
         THROWS;
         GC_TRIGGERS;
@@ -4739,7 +4738,7 @@ HMODULE AppDomain::FindUnmanagedImageInCache(LPCWSTR libraryName)
 
     AssemblySpec spec;
     spec.SetCodeBase(libraryName);
-    RETURN (HMODULE) m_UnmanagedCache.LookupEntry(&spec, 0);
+    RETURN (NATIVE_LIBRARY_HANDLE) m_UnmanagedCache.LookupEntry(&spec, 0);
 }
 
 BOOL AppDomain::RemoveFileFromCache(PEAssembly *pFile)
