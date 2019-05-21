@@ -13,4 +13,6 @@
 #cmakedefine HAVE__BUILTIN_UNREACHABLE
 #cmakedefine HAVE_SYNC_ATOMICS
 
+#cmakedefine HAVE_ATOMIC_OPS_H
+
 #endif
