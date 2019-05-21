@@ -5,8 +5,6 @@
          plan on shipping a new desktop version out of band. Instead add API
          to a different assembly. -->
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
-    <!-- uap10.0.16300 will pick netcore50 otherwise -->
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard2.0;uap10.0.16300</PackageTargetFramework>
     <Configurations>netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
