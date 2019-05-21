@@ -94,9 +94,9 @@ jobs:
       timeoutInMinutes: 240
     ${{ if eq(parameters.testGroup, 'outerloop') }}:
       timeoutInMinutes: 360
-    ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstress-isas-arm', 'outerloop-jitstress-isas-x86', 'outerloop-jitstressregs-x86', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs', 'outerloop-gcstress0x3-gcstress0xc') }}:
+    ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstress-isas-arm', 'outerloop-jitstressregs-x86', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs', 'outerloop-gcstress0x3-gcstress0xc') }}:
       timeoutInMinutes: 480
-    ${{ if in(parameters.testGroup, 'outerloop-gcstress-extra', 'outerloop-r2r-extra') }}:
+    ${{ if in(parameters.testGroup, 'outerloop-jitstress-isas-x86', 'outerloop-gcstress-extra', 'outerloop-r2r-extra') }}:
       timeoutInMinutes: 600
 
     steps:
