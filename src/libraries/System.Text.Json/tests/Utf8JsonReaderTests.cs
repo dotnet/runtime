@@ -1259,7 +1259,7 @@ namespace System.Text.Json.Tests
                         foundComment = true;
                         indexAfterFirstComment = json.BytesConsumed;
                         Assert.Equal(indexAfterFirstComment, json.CurrentState.BytesConsumed);
-                        string actualComment = Encoding.UTF8.GetString(json.ValueSpan.ToArray()); // TODO: https://github.com/dotnet/corefx/issues/33347
+                        string actualComment = json.GetComment();
                         Assert.Equal(expectedComment, actualComment);
                         break;
                 }
@@ -1329,7 +1329,7 @@ namespace System.Text.Json.Tests
                         foundComment = true;
                         indexAfterFirstComment = json.BytesConsumed;
                         Assert.Equal(indexAfterFirstComment, json.CurrentState.BytesConsumed);
-                        string actualComment = Encoding.UTF8.GetString(json.ValueSpan.ToArray());
+                        string actualComment = json.GetComment();
                         Assert.Equal(expectedComment, actualComment);
                         break;
                 }
@@ -1356,7 +1356,7 @@ namespace System.Text.Json.Tests
                             foundComment = true;
                             indexAfterFirstComment = jsonSlice.BytesConsumed;
                             Assert.Equal(indexAfterFirstComment, jsonSlice.CurrentState.BytesConsumed);
-                            string actualComment = Encoding.UTF8.GetString(jsonSlice.ValueSpan.ToArray());
+                            string actualComment = jsonSlice.GetComment();
                             Assert.Equal(expectedComment, actualComment);
                             break;
                     }
@@ -1380,7 +1380,7 @@ namespace System.Text.Json.Tests
                                 foundComment = true;
                                 indexAfterFirstComment = jsonSlice.BytesConsumed;
                                 Assert.Equal(indexAfterFirstComment, jsonSlice.CurrentState.BytesConsumed);
-                                string actualComment = Encoding.UTF8.GetString(jsonSlice.ValueSpan.ToArray());
+                                string actualComment = jsonSlice.GetComment();
                                 Assert.Equal(expectedComment, actualComment);
                                 break;
                         }
@@ -2097,8 +2097,8 @@ namespace System.Text.Json.Tests
                     case JsonTokenType.Comment:
                         if (expected != null)
                         {
-                            byte[] data = json.HasValueSequence ? json.ValueSequence.ToArray() : json.ValueSpan.ToArray();
-                            Assert.Equal(expected, Encoding.UTF8.GetString(data));
+                            string actualComment = json.GetComment();
+                            Assert.Equal(expected, actualComment);
                         }
                         else
                         {
@@ -3331,6 +3331,58 @@ namespace System.Text.Json.Tests
                     new object [] {"\r\n" },
                     new object [] {"\n" },
                 };
+            }
+        }
+
+        public static IEnumerable<object[]> GetCommentTestData
+        {
+            get
+            {
+                var dataList = new List<object[]>();
+                foreach (string delim in new[] { "\r", "\r\n", "\n" })
+                {
+                    // NOTE: Leading and trailing spaces in the comments are significant.
+                    var singleLineComment = " Single Line Comment ";
+                    dataList.Add(new object[] { $"{{//{singleLineComment}{delim}}}", singleLineComment });
+
+                    var multilineComment = $" Multiline {delim} Comment ";
+                    dataList.Add(new object[] { $"{{/*{multilineComment}*/{delim}}}", multilineComment });
+                }
+                return dataList;
+            }
+        }
+
+        public static IEnumerable<object[]> GetCommentUnescapeData
+        {
+            get
+            {
+                var dataList = new List<object[]>();
+
+                var rawComments = new string[]
+                {
+                    "A string with {0}valid UTF8 \\t tab",
+                    "A string with {0}invalid UTF8 \\xc3\\x28",
+                    "A string with {0}valid UTF16 \\u002e \\u0009 म",
+                    "A string with {0}invalid UTF16 \\uDD1E"
+                };
+
+                // single line comments
+                foreach (string raw in rawComments)
+                {
+                    string str = string.Format(raw, "");
+                    string cmt = "//" + str;
+                    dataList.Add(new object[] { cmt, str });
+                }
+
+                // multiline comments
+                foreach (string raw in rawComments)
+                {
+                    string str = string.Format(raw, "\n");
+                    string cmt = "/*" + str + "*/";
+                    dataList.Add(new object[] { cmt, str });
+                }
+
+                return dataList;
             }
         }
     }

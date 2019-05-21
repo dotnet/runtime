@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -475,10 +476,11 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void InvalidConversion()
         {
-            string jsonString = "[\"stringValue\", true, 1234]";
+            string jsonString = "[\"stringValue\", true, /* Comment within */ 1234] // Comment outside";
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
-            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+            var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = JsonCommentHandling.Allow });
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state);
             while (json.Read())
             {
                 if (json.TokenType != JsonTokenType.String)
@@ -526,6 +528,17 @@ namespace System.Text.Json.Tests
                     JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetGuid());
 
                     JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.TryGetGuid(out _));
+                }
+
+                if (json.TokenType != JsonTokenType.Comment)
+                {
+                    try
+                    {
+                        string value = json.GetComment();
+                        Assert.True(false, "Expected GetComment to throw InvalidOperationException due to mismatch token type.");
+                    }
+                    catch (InvalidOperationException)
+                    { }
                 }
 
                 if (json.TokenType != JsonTokenType.True && json.TokenType != JsonTokenType.False)
@@ -764,8 +777,6 @@ namespace System.Text.Json.Tests
             }
         }
 
-
-
         [Theory]
         [MemberData(nameof(InvalidUTF8Strings))]
         public static void TestingGetStringInvalidUTF8(byte[] dataUtf8)
@@ -800,6 +811,53 @@ namespace System.Text.Json.Tests
                     }
                 }
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetCommentTestData))]
+        public static void TestingGetComment(string jsonData, string expected)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonData);
+            var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = JsonCommentHandling.Allow });
+            var reader = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state);
+
+            Assert.True(reader.Read());
+            Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+
+            Assert.True(reader.Read());
+            Assert.Equal(JsonTokenType.Comment, reader.TokenType);
+            Assert.Equal(expected, reader.GetComment());
+
+            Assert.True(reader.Read());
+            Assert.Equal(JsonTokenType.EndObject, reader.TokenType);
+
+            Assert.False(reader.Read());
+        }
+
+        [Theory]
+        [MemberData(nameof(GetCommentUnescapeData))]
+        public static void TestGetCommentUnescape(string jsonData, string expected)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonData);
+            var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = JsonCommentHandling.Allow });
+            var reader = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state);
+            bool commentFound = false;
+            while (reader.Read())
+            {
+                switch (reader.TokenType)
+                {
+                    case JsonTokenType.Comment:
+                        commentFound = true;
+                        string comment = reader.GetComment();
+                        Assert.Equal(expected, comment);
+                        Assert.NotEqual(Regex.Unescape(expected), comment);
+                        break;
+                    default:
+                        Assert.True(false);
+                        break;
+                }
+            }
+            Assert.True(commentFound);
         }
 
         [Theory]
