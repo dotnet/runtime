@@ -1717,10 +1717,6 @@ get_aotconst_name (MonoJumpInfoType type, gconstpointer data, int got_offset)
 	char *name;
 
 	switch (type) {
-	case MONO_PATCH_INFO_JIT_ICALL: //temporary
-		g_assert (!8);
-		name = g_strdup_printf ("jit_icall_%s", data);
-		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
 		name = g_strdup_printf ("jit_icall_%s", mono_find_jit_icall_info ((MonoJitICallId)(gsize)data)->name);
 		break;
@@ -1846,17 +1842,9 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	char *callee_name = NULL;
 
 	if (ctx->module->static_link && ctx->module->assembly->image != mono_get_corlib ()) {
-		if (type == MONO_PATCH_INFO_JIT_ICALL //temporary
-				|| type == MONO_PATCH_INFO_JIT_ICALL_ID) {
-			MonoJitICallInfo *info;
-			if (type == MONO_PATCH_INFO_JIT_ICALL) { //temporary
-				g_assert (!9);
-				info = mono_find_jit_icall_by_name ((const char*)data);
-			}
-			else
-				info = mono_find_jit_icall_info((MonoJitICallId)(gsize)data);
+		if (type == MONO_PATCH_INFO_JIT_ICALL_ID) {
+			MonoJitICallInfo * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
 			g_assert (info);
-
 			if (info->func != info->wrapper) {
 				type = MONO_PATCH_INFO_METHOD;
 				data = mono_icall_get_wrapper_method (info);
@@ -1895,14 +1883,8 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	 * Change references to jit icalls to the icall wrappers when in corlib, so
 	 * they can be called directly.
 	 */
-	if (ctx->module->assembly->image == mono_get_corlib () && (type == MONO_PATCH_INFO_JIT_ICALL || type == MONO_PATCH_INFO_JIT_ICALL_ID)) {
-		MonoJitICallInfo *info;
-		if (type == MONO_PATCH_INFO_JIT_ICALL) { //temporary
-			g_assert (!10);
-			info = mono_find_jit_icall_by_name ((const char*)data);
-		}
-		else
-			info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
+	if (ctx->module->assembly->image == mono_get_corlib () && type == MONO_PATCH_INFO_JIT_ICALL_ID) {
+		MonoJitICallInfo * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
 		g_assert (info);
 
 		if (info->func != info->wrapper) {
@@ -2016,11 +1998,8 @@ get_jit_callee (EmitContext *ctx, const char *name, LLVMTypeRef llvm_sig, MonoJu
 	gpointer target;
 
 	// This won't be patched so compile the wrapper immediately
-	if (type == MONO_PATCH_INFO_JIT_ICALL || //temporary
-		type == MONO_PATCH_INFO_JIT_ICALL_ID) {
-		MonoJitICallInfo * const info =
-			(type == MONO_PATCH_INFO_JIT_ICALL) ? mono_find_jit_icall_by_name ((char*)data)
-							    : mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
+	if (type == MONO_PATCH_INFO_JIT_ICALL_ID) {
+		MonoJitICallInfo * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
 		target = (gpointer)mono_icall_get_wrapper_full (info, TRUE);
 	} else {
 		target = resolve_patch (ctx->cfg, type, data);

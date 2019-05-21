@@ -3021,7 +3021,6 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 	gboolean no_patch = FALSE;
 
 	g_assert (patch_type == MONO_PATCH_INFO_METHOD ||	// data is MonoMethod*; MONO_PATCH_INFO_METHOD_JUMP is already reasonable
-		  //patch_type == MONO_PATCH_INFO_JIT_ICALL ||	// data is function name //temporary
 		  patch_type == MONO_PATCH_INFO_JIT_ICALL_ID ||	// data is function id
 		  patch_type == MONO_PATCH_INFO_ABS);		// data is code pointer, hashed to MonoJumpInfo* with additional patch type/data
 
@@ -3050,22 +3049,15 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 					near_call = FALSE;
 			}
 
-			if (patch_type == MONO_PATCH_INFO_JIT_ICALL || patch_type == MONO_PATCH_INFO_JIT_ICALL_ID) {
+			if (patch_type == MONO_PATCH_INFO_JIT_ICALL_ID) {
 				/* 
 				 * The call might go directly to a native function without
 				 * the wrapper.
 				 */
-				MonoJitICallInfo *mi;
-				if (patch_type == MONO_PATCH_INFO_JIT_ICALL) { //temporary
-					g_assert (!6);
-					mi = mono_find_jit_icall_by_name ((const char *)data);
-				} else
-					mi = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
-				if (mi) {
-					gconstpointer target = mono_icall_get_wrapper (mi);
-					if ((((guint64)target) >> 32) != 0)
-						near_call = FALSE;
-				}
+				MonoJitICallInfo * const mi = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
+				gconstpointer target = mono_icall_get_wrapper (mi);
+				if ((((guint64)target) >> 32) != 0)
+					near_call = FALSE;
 			}
 		}
 		else {
@@ -6852,10 +6844,6 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 		if (!amd64_is_imm32 (disp)) {
 			printf ("TYPE: %d\n", ji->type);
 			switch (ji->type) {
-			case MONO_PATCH_INFO_JIT_ICALL: //temporary
-				g_assert (!7);
-				printf ("V: %s\n", ji->data.name);
-				break;
 			case MONO_PATCH_INFO_JIT_ICALL_ID:
 				printf ("V: %s\n", mono_find_jit_icall_info (ji->data.jit_icall_id)->name);
 				break;

@@ -5,26 +5,8 @@ PATCH_INFO(METHOD, "method")
 PATCH_INFO(METHOD_JUMP, "method_jump")
 PATCH_INFO(METHOD_REL, "method_rel")
 PATCH_INFO(METHODCONST, "methodconst")
-/* Either the address of a C function implementing a JIT icall, or a wrapper around it */
-// MONO_PATCH_INFO_JIT_ICALL is obsolete but is deliberately kept for reasons:
-//  - It is easier to search the tree for MONO_PATCH_INFO_JIT_ICALL and verify
-//    all instances are converted to allow MONO_PATCH_INFO_JIT_ICALL_ID and that
-//    they all fail an assert, than it is to visit all converted MONO_PATCH_INFO_JIT_ICALL
-//    and verify they are converted, Basically, you want instantiations of
-//    MONO_PATCH_INFO_JIT_ICALL to drain away, and only leave support/detection for it.
-//  - While this PR currently converts all MONO_PATCH_INFO_JIT_ICALL instantiations,
-//    having them both temporarily allows splitting this PR up into smaller chunks.
-//    Arguably the support should have gone in ahead of any uses.
-//  - Changing the name, instead of giving it new semantics, allows for cross-branch
-//    porting of changes with arguably ease. It is not intended to port MONO_PATCH_INFO_JIT_ICALL_ID,
-//    cross branch, but one cannot rule out nearby lines being ported.
-//    Actually changing MONO_PATCH_INFO_JIT_ICALL to MONO_PATCH_INFO_JIT_ICALL_ID encourages
-//    merge conflicts and extra attention, instead of accidentally porting a change
-//    that uses the wrong type along with MONO_PATCH_INFO_JIT_ICALL.
-//  - As the tree stabilizes near MONO_PATCH_INFO_JIT_ICALL[_ID], i.e. once it has
-//    has released once or twice, MONO_PATCH_INFO_JIT_ICALL can be later cleaned up.
-//
-PATCH_INFO(JIT_ICALL, "jit_icall") // obsolete, temporary
+// Either the address of a C function implementing a JIT icall, or a wrapper around it
+PATCH_INFO(JIT_ICALL_ID, "jit_icall_id") // replaced MONO_PATCH_INFO_JIT_ICALL, using enum instead of string
 PATCH_INFO(SWITCH, "switch")
 PATCH_INFO(EXC, "exc")
 PATCH_INFO(EXC_NAME, "exc_name")
@@ -91,5 +73,3 @@ PATCH_INFO(METHOD_FTNDESC, "method_ftndesc")
 
 PATCH_INFO(TRAMPOLINE_FUNC_ADDR, "trampoline_func_addr")
 PATCH_INFO(SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR, "specific_trampoline_lazy_fetch_addr")
-// Either the address of a C function implementing a JIT icall, or a wrapper around it
-PATCH_INFO(JIT_ICALL_ID, "jit_icall_id") // replaced jit_icall, using enum instead of string

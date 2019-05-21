@@ -4897,8 +4897,6 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 	case MONO_PATCH_INFO_IP:
 		*((gconstpointer *)(ip)) = target;
 		break;
-	case MONO_PATCH_INFO_JIT_ICALL: //temporary
-		g_assert (!14);
 	case MONO_PATCH_INFO_ABS:
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_METHOD_JUMP:

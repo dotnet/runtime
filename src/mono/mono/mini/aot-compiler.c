@@ -3878,8 +3878,6 @@ static inline gboolean
 is_plt_patch (MonoJumpInfo *patch_info)
 {
 	switch (patch_info->type) {
-	case MONO_PATCH_INFO_JIT_ICALL: //temporary
-		g_assert (!15);
 	case MONO_PATCH_INFO_METHOD:
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
@@ -6170,18 +6168,9 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						g_assert (strlen (sym) < 1000);
 						direct_call_target = g_strdup_printf ("%s%s", acfg->user_symbol_prefix, sym);
 					}
-				} else if (patch_info->type == MONO_PATCH_INFO_JIT_ICALL //temporary
-						|| patch_info->type == MONO_PATCH_INFO_JIT_ICALL_ID) {
-					MonoJitICallInfo *info;
-					const char *sym;
-					if (patch_info->type == MONO_PATCH_INFO_JIT_ICALL) { //temporary
-						g_assert (!1);
-						info = mono_find_jit_icall_by_name (patch_info->data.name);
-						sym = mono_lookup_jit_icall_symbol (patch_info->data.name);
-					} else {
-						info = mono_find_jit_icall_info (patch_info->data.jit_icall_id);
-						sym = info->c_symbol;
-					}
+				} else if (patch_info->type == MONO_PATCH_INFO_JIT_ICALL_ID) {
+					MonoJitICallInfo * const info = mono_find_jit_icall_info (patch_info->data.jit_icall_id);
+					const char * const sym = info->c_symbol;
 					if (!got_only && sym && acfg->aot_opts.direct_icalls && info->func == info->wrapper) {
 						/* Call to a jit icall without a wrapper */
 						direct_call = TRUE;
@@ -6511,8 +6500,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		encode_value (patch_info->data.uindex, p, &p);
 		break;
-	case MONO_PATCH_INFO_JIT_ICALL: //temporary
-		g_assert (!2);
 	case MONO_PATCH_INFO_LDSTR_LIT:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL: {
@@ -7208,10 +7195,6 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
 		debug_sym = g_strdup_printf ("%s_jit_icall_%s", prefix, mono_find_jit_icall_info (ji->data.jit_icall_id)->name);
-		break;
-	case MONO_PATCH_INFO_JIT_ICALL: //temporary
-		g_assert (!3);
-		debug_sym = g_strdup_printf ("%s_jit_icall_%s", prefix, ji->data.name);
 		break;
 	case MONO_PATCH_INFO_RGCTX_FETCH:
 		debug_sym = g_strdup_printf ("%s_rgctx_fetch_%d", prefix, acfg->label_generator ++);
@@ -9539,18 +9522,9 @@ mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 				sym = lookup_icall_symbol_name_aot (method);
 			else if (llvm_acfg->aot_opts.direct_pinvoke)
 				sym = get_pinvoke_import (llvm_acfg, method);
-		} else if (type == MONO_PATCH_INFO_JIT_ICALL || //temporary
-				type == MONO_PATCH_INFO_JIT_ICALL_ID) {
-			MonoJitICallInfo *info;
-			const char *name;
-			if (type == MONO_PATCH_INFO_JIT_ICALL) {//temporary
-				g_assert (!4);
-				info = mono_find_jit_icall_by_name ((const char*)data);
-				name = mono_lookup_jit_icall_symbol ((const char*)data);
-			} else {
-				info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
-				name = info->c_symbol;
-			}
+		} else if (type == MONO_PATCH_INFO_JIT_ICALL_ID) {
+			MonoJitICallInfo const * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
+			char const * const name = info->c_symbol;
 			if (name && info->func == info->wrapper)
 				sym = name;
 		}

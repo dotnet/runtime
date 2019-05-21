@@ -3773,8 +3773,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		}
 		break;
 	}
-	case MONO_PATCH_INFO_JIT_ICALL://temporary
-		g_assert (!5);
 	case MONO_PATCH_INFO_LDSTR_LIT:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
@@ -5123,16 +5121,13 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 		}
 	}
 
-	g_assert (ji.type != MONO_PATCH_INFO_JIT_ICALL); //temporary
-
 	/*
 	 * The trampoline expects us to return a function descriptor on platforms which use
 	 * it, but resolve_patch_target returns a direct function pointer for some type of
 	 * patches, so have to translate between the two.
 	 * FIXME: Clean this up, but how ?
 	 */
-	if (ji.type == MONO_PATCH_INFO_ABS || ji.type == MONO_PATCH_INFO_JIT_ICALL_ID ||
-		ji.type == MONO_PATCH_INFO_JIT_ICALL //temporary
+	if (ji.type == MONO_PATCH_INFO_ABS || ji.type == MONO_PATCH_INFO_JIT_ICALL_ID
 		|| ji.type == MONO_PATCH_INFO_ICALL_ADDR
 		|| ji.type == MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR || ji.type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR
 		|| ji.type == MONO_PATCH_INFO_JIT_ICALL_ADDR || ji.type == MONO_PATCH_INFO_RGCTX_FETCH) {
@@ -5140,7 +5135,6 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		/* Our function descriptors have a 0 environment, gcc created ones don't */
 		if (ji.type != MONO_PATCH_INFO_JIT_ICALL_ID &&
-				ji.type != MONO_PATCH_INFO_JIT_ICALL //temporary
 				&& ji.type != MONO_PATCH_INFO_JIT_ICALL_ADDR && ji.type != MONO_PATCH_INFO_ICALL_ADDR
 				&& ji.type != MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR && ji.type != MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR)
 			g_assert (((gpointer*)target) [2] == 0);

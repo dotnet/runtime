@@ -4680,8 +4680,6 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 		/* everything is dealt with at epilog output time */
 		break;
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
-	case MONO_PATCH_INFO_JIT_ICALL: //temporary
-		g_assert (!21);
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
 	case MONO_PATCH_INFO_ABS:
 	case MONO_PATCH_INFO_RGCTX_FETCH:
