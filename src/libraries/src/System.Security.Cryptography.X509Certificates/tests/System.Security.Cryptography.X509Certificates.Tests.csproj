@@ -86,7 +86,6 @@
       <Link>Common\System\IO\PersistedFiles.Names.Unix.cs</Link>
     </Compile>
     <Compile Include="HostnameMatchTests.Unix.cs" />
-    <Compile Include="TestEnvironmentConfiguration.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true'">
     <Compile Include="X509StoreMutableTests.OSX.cs" />
