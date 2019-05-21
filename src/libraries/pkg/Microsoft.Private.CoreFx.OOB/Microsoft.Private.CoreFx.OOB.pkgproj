@@ -1,0 +1,30 @@
+﻿<Project DefaultTargets="Build" InitialTargets="FindNetCoreAppPackages">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
+  <PropertyGroup>
+    <!-- We use the PackageVersion property defined in Packaging.props for the Prerelease packages which are using it to be built -->
+    <_PreReleasePackageVersion>$(PackageVersion)</_PreReleasePackageVersion>
+    <!-- We don't need to harvest the stable packages to build this -->
+    <HarvestStablePackage>false</HarvestStablePackage>
+  </PropertyGroup>
+
+  <Target Name="FindNetCoreAppPackages">
+
+    <ItemGroup>
+      <PkgProjGlobPath Include="$(SourceDir)/**/*.pkgproj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(PkgProjGlobPath)"
+             Targets="IsNotNetCoreAppProject"
+             BuildInParallel="true">
+      <Output TaskParameter="TargetOutputs" ItemName="PrereleaseLibraryPackage" />
+    </MSBuild>
+
+    <ItemGroup>
+      <Dependency Include="@(PrereleaseLibraryPackage)"
+                  Condition="!$([System.String]::new('%(Identity)').Contains('Private')) and !$([System.String]::new('%(Identity)').EndsWith('Experimental')) and !$([System.String]::new('%(Identity)').StartsWith('runtime.'))" />
+    </ItemGroup>
+    
+  </Target>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
+</Project>
