@@ -325,6 +325,11 @@
 -nomethod System.CodeDom.Compiler.Tests.VBCodeGenerationTests.MetadataAttributes
 -nomethod System.CodeDom.Compiler.Tests.VBCodeGenerationTests.ProviderSupports
 -nomethod System.Runtime.InteropServices.RuntimeInformationTests.DescriptionNameTests.VerifyRuntimeDebugNameOnNetCoreApp
+-nomethod System.Tests.AppDomainTests.MonitoringIsEnabled
+-nomethod System.Tests.AppDomainTests.MonitoringSurvivedMemorySize
+-nomethod System.Tests.AppDomainTests.MonitoringSurvivedProcessMemorySize
+-nomethod System.Tests.AppDomainTests.MonitoringTotalAllocatedMemorySize
+-nomethod System.Tests.AppDomainTests.MonitoringTotalProcessorTime
 
 # Disable Tests from SqlClient entirely
 -nonamespace System.Data.SqlClient.Tests
