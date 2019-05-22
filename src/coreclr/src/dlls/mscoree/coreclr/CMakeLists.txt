@@ -131,7 +131,9 @@ endif(WIN32)
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     list(APPEND CORECLR_LIBRARIES
+        ${START_WHOLE_ARCHIVE}
         tracepointprovider
+        ${END_WHOLE_ARCHIVE}
     )
 endif(CMAKE_SYSTEM_NAME STREQUAL Linux)
 
