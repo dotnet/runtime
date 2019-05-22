@@ -41,6 +41,7 @@ jobs:
             _dockerContainer: ubuntu_1604_arm64_cross_container
             _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
             _buildExtraArguments: -warnAsError false
+            _publishTests: true
 
           musl_x64_Release:
              _BuildConfig: Release
@@ -50,6 +51,7 @@ jobs:
              _dockerContainer: alpine_36_container
              _buildScriptPrefix: ''
              _buildExtraArguments: /p:RuntimeOS=linux-musl
+             _publishTests: true
 
           ${{ if or(eq(parameters.testScope, 'outerloop'), eq(parameters.testScope, 'all')) }}:
             x64_Debug:
@@ -88,6 +90,7 @@ jobs:
               _dockerContainer: ubuntu_1604_arm_cross_container
               _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm '
               _buildExtraArguments: -warnAsError false
+              _publishTests: true
 
             musl_arm64_Release:
               _BuildConfig: Release
@@ -97,6 +100,7 @@ jobs:
               _dockerContainer: alpine_37_arm64_container
               _buildScriptPrefix: 'ROOTFS_DIR=/crossrootfs/arm64 '
               _buildExtraArguments: -warnAsError false /p:BuildNativeCompiler=--clang5.0 /p:RuntimeOS=linux-musl
+              _publishTests: true
 
       pool:
         name: Hosted Ubuntu 1604
