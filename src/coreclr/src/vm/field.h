@@ -455,9 +455,8 @@ public:
     {
         CONTRACTL
         {
-          THROWS;
-          GC_TRIGGERS;
-          INJECT_FAULT(COMPlusThrowOM());
+          NOTHROW;
+          GC_NOTRIGGER;
         }
         CONTRACTL_END
 
