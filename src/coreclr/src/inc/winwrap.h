@@ -139,12 +139,6 @@
 #undef GetTimeFormat
 #undef LCMapString
 
-// winnetwk.h
-#undef WNetGetConnection
-
-// Win32 Fusion API's
-#undef QueryActCtxW
-
 #endif // !defined(__TODO_PORT_TO_WRAPPERS__)
 
 //
@@ -219,7 +213,6 @@
 #define WszMultiByteToWideChar MultiByteToWideChar
 #define WszWideCharToMultiByte WideCharToMultiByte
 #define WszCreateSemaphore CreateSemaphoreW
-#define WszQueryActCtxW QueryActCtxW
 
 
 #ifdef FEATURE_CORESYSTEM

@@ -1079,28 +1079,28 @@ bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_strin
 void CLRCriticalSection::Initialize()
 {
     WRAPPER_NO_CONTRACT;
-    UnsafeInitializeCriticalSection(&m_cs);
+    InitializeCriticalSection(&m_cs);
 }
 
 // Destroy the critical section
 void CLRCriticalSection::Destroy()
 {
     WRAPPER_NO_CONTRACT;
-    UnsafeDeleteCriticalSection(&m_cs);
+    DeleteCriticalSection(&m_cs);
 }
 
 // Enter the critical section. Blocks until the section can be entered.
 void CLRCriticalSection::Enter()
 {
     WRAPPER_NO_CONTRACT;
-    UnsafeEnterCriticalSection(&m_cs);
+    EnterCriticalSection(&m_cs);
 }
 
 // Leave the critical section
 void CLRCriticalSection::Leave()
 {
     WRAPPER_NO_CONTRACT;
-    UnsafeLeaveCriticalSection(&m_cs);
+    LeaveCriticalSection(&m_cs);
 }
 
 // An implementatino of GCEvent that delegates to

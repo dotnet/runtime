@@ -27,7 +27,7 @@ void CLREventBase::CreateAutoEvent (BOOL bInitialState  // If TRUE, initial stat
     SetAutoEvent();
 
     {
-        HANDLE h = UnsafeCreateEvent(NULL,FALSE,bInitialState,NULL);
+        HANDLE h = WszCreateEvent(NULL,FALSE,bInitialState,NULL);
         if (h == NULL) {
             ThrowOutOfMemory();
         }
@@ -77,7 +77,7 @@ void CLREventBase::CreateManualEvent (BOOL bInitialState  // If TRUE, initial st
     CONTRACTL_END;
 
     {
-        HANDLE h = UnsafeCreateEvent(NULL,TRUE,bInitialState,NULL);
+        HANDLE h = WszCreateEvent(NULL,TRUE,bInitialState,NULL);
         if (h == NULL) {
             ThrowOutOfMemory();
         }
@@ -128,7 +128,7 @@ void CLREventBase::CreateMonitorEvent(SIZE_T Cookie)
     FastInterlockOr(&m_dwFlags, CLREVENT_FLAGS_AUTO_EVENT);
 
     {
-        HANDLE h = UnsafeCreateEvent(NULL,FALSE,FALSE,NULL);
+        HANDLE h = WszCreateEvent(NULL,FALSE,FALSE,NULL);
         if (h == NULL) {
             ThrowOutOfMemory();
         }
@@ -226,7 +226,7 @@ void CLREventBase::CreateOSAutoEvent (BOOL bInitialState  // If TRUE, initial st
     SetOSEvent();
     SetAutoEvent();
 
-    HANDLE h = UnsafeCreateEvent(NULL,FALSE,bInitialState,NULL);
+    HANDLE h = WszCreateEvent(NULL,FALSE,bInitialState,NULL);
     if (h == NULL) {
         ThrowOutOfMemory();
     }
@@ -274,7 +274,7 @@ void CLREventBase::CreateOSManualEvent (BOOL bInitialState  // If TRUE, initial 
 
     SetOSEvent();
 
-    HANDLE h = UnsafeCreateEvent(NULL,TRUE,bInitialState,NULL);
+    HANDLE h = WszCreateEvent(NULL,TRUE,bInitialState,NULL);
     if (h == NULL) {
         ThrowOutOfMemory();
     }
@@ -342,7 +342,7 @@ BOOL CLREventBase::Set()
     _ASSERTE(Thread::Debug_AllowCallout());
 
     {    
-        return UnsafeSetEvent(m_handle);
+        return SetEvent(m_handle);
     }
 
 }
@@ -365,7 +365,7 @@ BOOL CLREventBase::Reset()
               !"Can not call Reset on AutoEvent");
 
     {
-        return UnsafeResetEvent(m_handle);
+        return ResetEvent(m_handle);
     }
 }
 
@@ -484,7 +484,7 @@ void CLRSemaphore::Create (DWORD dwInitial, DWORD dwMax)
     CONTRACTL_END;
 
     {
-        HANDLE h = UnsafeCreateSemaphore(NULL,dwInitial,dwMax,NULL);
+        HANDLE h = WszCreateSemaphore(NULL,dwInitial,dwMax,NULL);
         if (h == NULL) {
             ThrowOutOfMemory();
         }
@@ -514,7 +514,7 @@ BOOL CLRSemaphore::Release(LONG lReleaseCount, LONG *lpPreviousCount)
     CONTRACTL_END;
 
     {
-        return ::UnsafeReleaseSemaphore(m_handle, lReleaseCount, lpPreviousCount);
+        return ::ReleaseSemaphore(m_handle, lReleaseCount, lpPreviousCount);
     }
 }
 
@@ -589,7 +589,7 @@ void CLRLifoSemaphore::Create(INT32 initialSignalCount, INT32 maximumSignalCount
     _ASSERTE(m_handle == nullptr);
 
 #ifdef FEATURE_PAL
-    HANDLE h = UnsafeCreateSemaphore(nullptr, 0, maximumSignalCount, nullptr);
+    HANDLE h = WszCreateSemaphore(nullptr, 0, maximumSignalCount, nullptr);
 #else // !FEATURE_PAL
     HANDLE h = CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, maximumSignalCount);
 #endif // FEATURE_PAL
@@ -966,7 +966,7 @@ void CLRLifoSemaphore::Release(INT32 releaseCount)
 
     // Wake waiters
 #ifdef FEATURE_PAL
-    BOOL released = UnsafeReleaseSemaphore(m_handle, countOfWaitersToWake, nullptr);
+    BOOL released = ReleaseSemaphore(m_handle, countOfWaitersToWake, nullptr);
     _ASSERTE(released);
 #else // !FEATURE_PAL
     while (--countOfWaitersToWake >= 0)
