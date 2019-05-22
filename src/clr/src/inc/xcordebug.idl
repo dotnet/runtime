@@ -54,32 +54,3 @@ interface ICorDebugProcess4 : IUnknown
     HRESULT ProcessStateChanged([in] CorDebugStateChange eChange);
 
 };
-
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-
-/* A private API for use on Windows phone to invoke CLR hosting
- * callbacks on IHostNetCFDebugControlManager. This allows the
- * host's UI thread to be suspended and resumed on demand.
- *
- * This API should not be used for anything other than the 
- * Windows Phone scenario, it should never be made public,
- * and as soon as we support mixed-mode debugging it should
- * be retired by removing the interface and failing any
- * QueryInterface call for it.
-*/
-[
-    object,
-    local,
-    uuid(34B27FB0-A318-450D-A0DD-11B70B21F41D),
-    pointer_default(unique)
-]
-interface ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly : IUnknown
-{
-    // Invokes IHostNetCFDebugControlManager::NotifyPause() on the debuggee's host
-    HRESULT InvokePauseCallback();
-
-    // Invokes IHostNetCFDebugControlManager::NotifyResume() on the debuggee's host
-    HRESULT InvokeResumeCallback();
-};
-
-#endif

@@ -1299,18 +1299,10 @@ FCIMPL1(Object*, StubHelpers::GetWinRTFactoryObject, MethodDesc *pCMD)
         if (callback.IsFreeThreaded())
             lpCtxCookie = NULL;
         
-        // Cache the result in the AD-wide cache, unless this is a proxy to a DCOM object on Apollo.  In the
-        // Apollo app model, out of process WinRT servers can have lifetimes independent of the application,
-        // and the cache may wind up with stale pointers if we save proxies to OOP factories.  In addition,
-        // their app model is such that OOP WinRT objects cannot rely on having static state as they can be
-        // forcibly terminated at any point.  Therefore, not caching an OOP WinRT factory object in Apollo
-        // does not lead to correctness issues.
-        //
-        // This is not the same on the desktop, where OOP objects may contain static state, and therefore
-        // we need to keep them alive.
-#ifdef FEATURE_WINDOWSPHONE 
+        // Cache the result in the AD-wide cache, unless this is a proxy to a DCOM object.
+        // Out of process WinRT servers can have lifetimes independent of the application,
+        // and the cache may wind up with stale pointers if we save proxies to OOP factories.
         if (!callback.IsDCOMProxy())
-#endif // FEATURE_WINDOWSPHONE
         {
             pDomain->CacheWinRTFactoryObject(pMTOfTypeToCreate, &refFactory, lpCtxCookie);
         }

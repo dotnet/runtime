@@ -696,15 +696,8 @@ RETAIL_CONFIG_STRING_INFO(EXTERNAL_ZapRequireList, W("ZapRequireList"), "")
 RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_ZapSet, W("ZapSet"), "", CLRConfig::REGUTIL_default)
 
 #ifdef FEATURE_LAZY_COW_PAGES
-
-#ifdef FEATURE_WINDOWSPHONE
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_ZapLazyCOWPagesEnabled, W("ZapLazyCOWPagesEnabled"), 1, "");
-#else //FEATURE_WINDOWSPHONE
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_ZapLazyCOWPagesEnabled, W("ZapLazyCOWPagesEnabled"), 0, "");
-#endif //FEATURE_WINDOWSPHONE
-
 CONFIG_DWORD_INFO(INTERNAL_DebugAssertOnMissedCOWPage, W("DebugAssertOnMissedCOWPage"), 1, "");
-
 #endif //FEATURE_LAZY_COW_PAGES
 
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ReadyToRun, W("ReadyToRun"), 1, "Enable/disable use of ReadyToRun native code") // On by default for CoreCLR
