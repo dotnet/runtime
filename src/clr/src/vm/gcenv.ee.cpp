@@ -1530,7 +1530,7 @@ void GCToEEInterface::VerifySyncTableEntry()
 
 void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPublicKeywords, int currentPrivateLevel, int currentPrivateKeywords)
 {
-#if defined(__linux__)
+#if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
     LIMITED_METHOD_CONTRACT;
     // LTTng does not have a notion of enabling events via "keyword"/"level" but we have to 
     // somehow implement a similar behavior to it. 
@@ -1572,5 +1572,5 @@ void GCToEEInterface::UpdateGCEventStatus(int currentPublicLevel, int currentPub
         GCEventKeyword privateKeywords = static_cast<GCEventKeyword>(privateProviderKeywords);
         GCHeapUtilities::RecordEventStateChange(false, privateKeywords, privateLevel);
     }
-#endif // __linux__
+#endif // __linux__ && FEATURE_EVENT_TRACE
 }
