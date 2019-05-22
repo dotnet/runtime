@@ -199,6 +199,13 @@ namespace System.Tests
             Assert.Throws<ArgumentNullException>(() => Attribute.GetCustomAttributes(typeof(TestClass2).GetMethod("TestMethod2"), null, false));
             Assert.Throws<ArgumentNullException>(() => Attribute.GetCustomAttributes(typeof(TestClass2).GetMethod("TestMethod2").GetParameters()[0], null, false));
         }
+
+        [Fact]
+        public static void MultipleAttributesTest()
+        {
+            Assert.Equal("System.Tests.MyCustomAttribute System.Tests.MyCustomAttribute", string.Join(" ", typeof(MultipleAttributes).GetCustomAttributes(inherit: false)));
+            Assert.Equal("System.Tests.MyCustomAttribute System.Tests.MyCustomAttribute", string.Join(" ", typeof(MultipleAttributes).GetCustomAttributes(inherit: true)));
+        }
     }
     public static class GetCustomAttribute
     {
@@ -785,5 +792,11 @@ namespace System.Tests
             get { return ""; }
             set { }
         }
+    }
+
+    [MyCustomAttribute("Test")]
+    [MyCustomAttribute("Test")]
+    class MultipleAttributes
+    {
     }
 }
