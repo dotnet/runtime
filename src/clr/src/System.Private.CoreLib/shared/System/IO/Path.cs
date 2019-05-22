@@ -468,7 +468,7 @@ namespace System.IO
             return Join(path1.AsSpan(), path2.AsSpan(), path3.AsSpan(), path4.AsSpan());
         }
 
-        public static string Join(params string[] paths)
+        public static string Join(params string?[] paths)
         {
             if (paths == null)
             {
@@ -481,7 +481,7 @@ namespace System.IO
             }
             
             int maxSize = 0;
-            foreach (string path in paths)
+            foreach (string? path in paths)
             {
                 maxSize += path?.Length ?? 0;
             }
@@ -493,12 +493,11 @@ namespace System.IO
 
             for (int i = 0; i < paths.Length; i++)
             {
-                if ((paths[i]?.Length ?? 0) == 0)
+                string? path = paths[i];
+                if (path == null || path.Length == 0)
                 {
                     continue;
                 }
-
-                string path = paths[i];
 
                 if (builder.Length == 0)
                 {
