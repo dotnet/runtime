@@ -6747,9 +6747,7 @@ void GetNativeWinRTFactoryObject(MethodTable *pMT, Thread *pThread, MethodTable 
         RCW::CF_SupportsIInspectable |          // Returns a WinRT RCW
         RCW::CF_DontResolveClass;               // Don't care about the exact type
 
-#ifdef FEATURE_WINDOWSPHONE
     flags |= RCW::CF_DetectDCOMProxy;           // Attempt to detect that the factory is a DCOM proxy in order to suppress caching
-#endif // FEATURE_WINDOWSPHONE
 
     if (bNeedUniqueRCW)
         flags |= RCW::CF_NeedUniqueObject;      // Returns a unique RCW
