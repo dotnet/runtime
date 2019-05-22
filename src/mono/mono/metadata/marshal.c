@@ -2910,7 +2910,7 @@ mono_marshal_get_icall_wrapper (MonoJitICallInfo *callinfo, gboolean check_excep
 		return res;
 
 	MonoMethodSignature *const sig = callinfo->sig;
-	g_assert (sig->pinvoke);
+	g_assertf (sig->pinvoke, "%s", callinfo->name);
 
 	char *const name = g_strdup_printf ("__icall_wrapper_%s", callinfo->name);
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_MANAGED_TO_NATIVE);
