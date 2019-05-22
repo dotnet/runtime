@@ -59,6 +59,15 @@ class Program
          var iface = (IMyInterface)o;
          Assert.AreEqual(iface.InterfaceMethod(" "), "Interface result");
          Assert.AreEqual(MyClass.TestInterfaceMethod(iface, "+"), "Interface+result");
+
+        // V2 adds override of ToString
+        if (typeof(MyStructWithVirtuals).GetMethod("ToString").DeclaringType == typeof(MyStructWithVirtuals))
+        {
+            // Make sure the constrained call to ToString doesn't box
+            var mystruct = new MyStructWithVirtuals();
+            mystruct.ToString();
+            Assert.AreEqual(mystruct.X, "Overriden");
+        }
     }
 
     static void TestMovedVirtualMethods()
