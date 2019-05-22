@@ -17,7 +17,6 @@
 #include "clrinternal.h"
 #include "hostimpl.h"
 #include "predeftlsslot.h"
-#include "unsafe.h"
 
 // to avoid to include clrhost.h in this file
 #ifdef FAILPOINTS_ENABLED
@@ -38,7 +37,7 @@ extern LPVOID* (*__ClrFlsGetBlock)();
 //
 LPVOID* ClrFlsGetBlockDirect()
 {
-    return (LPVOID*)UnsafeTlsGetValue(TlsIndex);
+    return (LPVOID*)TlsGetValue(TlsIndex);
 }
 
 //
@@ -52,12 +51,12 @@ static void **CheckThreadState(DWORD slot, BOOL force = TRUE)
     // Ensure we have a TLS Index
     if (TlsIndex == TLS_OUT_OF_INDEXES)
     {
-        DWORD tmp = UnsafeTlsAlloc();
+        DWORD tmp = TlsAlloc();
 
         if (InterlockedCompareExchange((LONG*)&TlsIndex, tmp, TLS_OUT_OF_INDEXES) != (LONG) TLS_OUT_OF_INDEXES)
         {
             // We lost the race with another thread.
-            UnsafeTlsFree(tmp);
+            TlsFree(tmp);
         }
 
         // Switch to faster TLS getter now that the TLS slot is initialized
@@ -90,7 +89,7 @@ static void **CheckThreadState(DWORD slot, BOOL force = TRUE)
         }
         for (int i=0; i<MAX_PREDEFINED_TLS_SLOT; i++)
             pTlsData[i] = 0;
-        UnsafeTlsSetValue(TlsIndex, pTlsData);
+        TlsSetValue(TlsIndex, pTlsData);
     }
 
     return pTlsData;
@@ -101,7 +100,7 @@ static void **CheckThreadState(DWORD slot, BOOL force = TRUE)
 VOID STDMETHODCALLTYPE TLS_FreeMasterSlotIndex()
 {
     if (TlsIndex != TLS_OUT_OF_INDEXES)
-        if (UnsafeTlsFree(TlsIndex))
+        if (TlsFree(TlsIndex))
             TlsIndex = TLS_OUT_OF_INDEXES;
 } // TLS_FreeMasterSlotIndex
 
@@ -158,7 +157,7 @@ LPVOID* STDMETHODCALLTYPE UtilExecutionEngine::TLS_GetDataBlock()
     if (TlsIndex == TLS_OUT_OF_INDEXES)
         return NULL;
 
-    return (LPVOID *)UnsafeTlsGetValue(TlsIndex);
+    return (LPVOID *)TlsGetValue(TlsIndex);
 }
 
 LPVOID STDMETHODCALLTYPE UtilExecutionEngine::TLS_GetValue(DWORD slot) 
@@ -209,39 +208,39 @@ VOID STDMETHODCALLTYPE UtilExecutionEngine::TLS_ThreadDetaching()
 CRITSEC_COOKIE STDMETHODCALLTYPE UtilExecutionEngine::CreateLock(LPCSTR szTag, LPCSTR level, CrstFlags flags) 
 {
     CRITICAL_SECTION *cs = (CRITICAL_SECTION*)malloc(sizeof(CRITICAL_SECTION));
-    UnsafeInitializeCriticalSection(cs);
+    InitializeCriticalSection(cs);
     return (CRITSEC_COOKIE)cs; 
 }
 
 void STDMETHODCALLTYPE UtilExecutionEngine::DestroyLock(CRITSEC_COOKIE lock) 
 {
     _ASSERTE(lock);
-    UnsafeDeleteCriticalSection((CRITICAL_SECTION*)lock);
+    DeleteCriticalSection((CRITICAL_SECTION*)lock);
     free(lock);
 }
 
 void STDMETHODCALLTYPE UtilExecutionEngine::AcquireLock(CRITSEC_COOKIE lock) 
 {
     _ASSERTE(lock);
-    UnsafeEnterCriticalSection((CRITICAL_SECTION*)lock);
+    EnterCriticalSection((CRITICAL_SECTION*)lock);
 }
 
 void STDMETHODCALLTYPE UtilExecutionEngine::ReleaseLock(CRITSEC_COOKIE lock) 
 {
     _ASSERTE(lock);
-    UnsafeLeaveCriticalSection((CRITICAL_SECTION*)lock);
+    LeaveCriticalSection((CRITICAL_SECTION*)lock);
 }
 
 EVENT_COOKIE STDMETHODCALLTYPE UtilExecutionEngine::CreateAutoEvent(BOOL bInitialState) 
 {
-    HANDLE handle = UnsafeCreateEvent(NULL, FALSE, bInitialState, NULL);
+    HANDLE handle = WszCreateEvent(NULL, FALSE, bInitialState, NULL);
     _ASSERTE(handle);
     return (EVENT_COOKIE)handle;
 }
 
 EVENT_COOKIE STDMETHODCALLTYPE UtilExecutionEngine::CreateManualEvent(BOOL bInitialState) 
 {
-    HANDLE handle = UnsafeCreateEvent(NULL, TRUE, bInitialState, NULL);
+    HANDLE handle = WszCreateEvent(NULL, TRUE, bInitialState, NULL);
     _ASSERTE(handle);
     return (EVENT_COOKIE)handle;
 }
@@ -255,13 +254,13 @@ void STDMETHODCALLTYPE UtilExecutionEngine::CloseEvent(EVENT_COOKIE event)
 BOOL STDMETHODCALLTYPE UtilExecutionEngine::ClrSetEvent(EVENT_COOKIE event) 
 {
     _ASSERTE(event);
-    return UnsafeSetEvent((HANDLE)event);
+    return SetEvent((HANDLE)event);
 }
 
 BOOL STDMETHODCALLTYPE UtilExecutionEngine::ClrResetEvent(EVENT_COOKIE event) 
 {
     _ASSERTE(event);
-    return UnsafeResetEvent((HANDLE)event);
+    return ResetEvent((HANDLE)event);
 }
 
 DWORD STDMETHODCALLTYPE UtilExecutionEngine::WaitForEvent(EVENT_COOKIE event, DWORD dwMilliseconds, BOOL bAlertable) 
@@ -278,7 +277,7 @@ DWORD STDMETHODCALLTYPE UtilExecutionEngine::WaitForSingleObject(HANDLE handle, 
 
 SEMAPHORE_COOKIE STDMETHODCALLTYPE UtilExecutionEngine::ClrCreateSemaphore(DWORD dwInitial, DWORD dwMax) 
 {
-    HANDLE handle = UnsafeCreateSemaphore(NULL, (LONG)dwInitial, (LONG)dwMax, NULL);
+    HANDLE handle = WszCreateSemaphore(NULL, (LONG)dwInitial, (LONG)dwMax, NULL);
     _ASSERTE(handle);
     return (SEMAPHORE_COOKIE)handle;
 }
@@ -298,7 +297,7 @@ DWORD STDMETHODCALLTYPE UtilExecutionEngine::ClrWaitForSemaphore(SEMAPHORE_COOKI
 BOOL STDMETHODCALLTYPE UtilExecutionEngine::ClrReleaseSemaphore(SEMAPHORE_COOKIE semaphore, LONG lReleaseCount, LONG *lpPreviousCount) 
 {
     _ASSERTE(semaphore);
-    return UnsafeReleaseSemaphore((HANDLE)semaphore, lReleaseCount, lpPreviousCount);
+    return ReleaseSemaphore((HANDLE)semaphore, lReleaseCount, lpPreviousCount);
 }
 
 MUTEX_COOKIE STDMETHODCALLTYPE UtilExecutionEngine::ClrCreateMutex(LPSECURITY_ATTRIBUTES lpMutexAttributes,

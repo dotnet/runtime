@@ -42,7 +42,7 @@ VOID CrstBase::InitWorker(INDEBUG_COMMA(CrstType crstType) CrstFlags flags)
     }
 
     {
-        UnsafeInitializeCriticalSection(&m_criticalsection);
+        InitializeCriticalSection(&m_criticalsection);
     }
 
     SetFlags(flags);
@@ -77,7 +77,7 @@ void CrstBase::Destroy()
     GCPreemp __gcHolder((m_dwFlags & CRST_HOST_BREAKABLE) == CRST_HOST_BREAKABLE);
 
     {
-        UnsafeDeleteCriticalSection(&m_criticalsection);
+        DeleteCriticalSection(&m_criticalsection);
     }
 
     LOG((LF_SYNC, INFO3, "Deleting 0x%x\n", this));
@@ -310,7 +310,7 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
         }
     }
 
-    UnsafeEnterCriticalSection(&m_criticalsection);
+    EnterCriticalSection(&m_criticalsection);
 
 #ifdef _DEBUG
     PostEnter();
@@ -343,7 +343,7 @@ void CrstBase::Leave()
     Thread * pThread = GetThread();
 #endif
 
-    UnsafeLeaveCriticalSection(&m_criticalsection);
+    LeaveCriticalSection(&m_criticalsection);
 
     // Check for both rare case using one if-check
     if (m_dwFlags & (CRST_TAKEN_DURING_SHUTDOWN | CRST_DEBUGGER_THREAD))

@@ -65,9 +65,6 @@
 #pragma function(memcpy,memcmp,strcmp,strcpy,strlen,strcat)
 #endif // _MSC_VER
 
-// make all the unsafe redefinitions available
-#include "unsafe.h"
-
 //-----------------------------------------------------------------------------------------------------------
 
 #include "lazycow.h"
