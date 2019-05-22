@@ -464,12 +464,25 @@ emit_jit_helpers_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSi
 			return NULL;
 
 		gboolean is_i8 = (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8);
+		gboolean is_unsigned = (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_U2 || t->type == MONO_TYPE_U4 || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_U);
+		int cmp_op, ceq_op, cgt_op, clt_op;
 
-		// FIXME: Sign/zero extend
+		if (is_i8) {
+			cmp_op = OP_LCOMPARE;
+			ceq_op = OP_LCEQ;
+			cgt_op = is_unsigned ? OP_LCGT_UN : OP_LCGT;
+			clt_op = is_unsigned ? OP_LCLT_UN : OP_LCLT;
+		} else {
+			cmp_op = OP_ICOMPARE;
+			ceq_op = OP_ICEQ;
+			cgt_op = is_unsigned ? OP_ICGT_UN : OP_ICGT;
+			clt_op = is_unsigned ? OP_ICLT_UN : OP_ICLT;
+		}
+
 		if (!strcmp (cmethod->name, "EnumEquals")) {
 			dreg = alloc_ireg (cfg);
-			EMIT_NEW_BIALU (cfg, ins, is_i8 ? OP_LCOMPARE : OP_ICOMPARE, -1, args [0]->dreg, args [1]->dreg);
-			EMIT_NEW_UNALU (cfg, ins, is_i8 ? OP_LCEQ : OP_ICEQ, dreg, -1);
+			EMIT_NEW_BIALU (cfg, ins, cmp_op, -1, args [0]->dreg, args [1]->dreg);
+			EMIT_NEW_UNALU (cfg, ins, ceq_op, dreg, -1);
 		} else {
 			// Use the branchless code (a > b) - (a < b)
 			int reg1, reg2;
@@ -478,10 +491,10 @@ emit_jit_helpers_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSi
 			reg2 = alloc_ireg (cfg);
 			dreg = alloc_ireg (cfg);
 
-			EMIT_NEW_BIALU (cfg, ins, is_i8 ? OP_LCOMPARE : OP_ICOMPARE, -1, args [0]->dreg, args [1]->dreg);
-			EMIT_NEW_UNALU (cfg, ins, is_i8 ? OP_LCGT : OP_ICGT, reg1, -1);
-			EMIT_NEW_BIALU (cfg, ins, is_i8 ? OP_LCOMPARE : OP_ICOMPARE, -1, args [0]->dreg, args [1]->dreg);
-			EMIT_NEW_UNALU (cfg, ins, is_i8 ? OP_LCLT : OP_ICLT, reg2, -1);
+			EMIT_NEW_BIALU (cfg, ins, cmp_op, -1, args [0]->dreg, args [1]->dreg);
+			EMIT_NEW_UNALU (cfg, ins, cgt_op, reg1, -1);
+			EMIT_NEW_BIALU (cfg, ins, cmp_op, -1, args [0]->dreg, args [1]->dreg);
+			EMIT_NEW_UNALU (cfg, ins, clt_op, reg2, -1);
 			EMIT_NEW_BIALU (cfg, ins, OP_ISUB, dreg, reg1, reg2);
 		}
 		return ins;
