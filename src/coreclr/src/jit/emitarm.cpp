@@ -1696,6 +1696,7 @@ void emitter::emitIns_R_I(
     {
         case INS_add:
         case INS_sub:
+            assert(reg != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
             if ((reg == REG_SP) && insDoesNotSetFlags(flags) && ((imm & 0x01fc) == imm))
             {
                 fmt = IF_T1_F;
@@ -1724,6 +1725,7 @@ void emitter::emitIns_R_I(
             break;
 
         case INS_adc:
+            assert(reg != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
             emitIns_R_R_I(ins, attr, reg, reg, imm, flags);
             return;
 
@@ -1833,6 +1835,7 @@ void emitter::emitIns_R_I(
         case INS_lsl:
         case INS_lsr:
             // use the Reg, Reg, Imm encoding
+            assert(reg != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
             emitIns_R_R_I(ins, attr, reg, reg, imm, flags);
             return;
 
@@ -1898,6 +1901,7 @@ void emitter::emitIns_R_I(
             break;
 
         case INS_cmp:
+            assert(reg != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
             assert(!EA_IS_CNS_RELOC(attr));
             assert(insSetsFlags(flags));
             sf = INS_FLAGS_SET;
@@ -1925,6 +1929,7 @@ void emitter::emitIns_R_I(
         case INS_cmn:
         case INS_tst:
         case INS_teq:
+            assert(reg != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
             assert(insSetsFlags(flags));
             sf = INS_FLAGS_SET;
             if (isModImmConst(imm))
@@ -2027,6 +2032,9 @@ void emitter::emitIns_R_R(
     switch (ins)
     {
         case INS_add:
+            // VM debugging single stepper doesn't support PC register with this instruction.
+            // (but reg2 might be PC for ADD Rn, PC instruction)
+            assert(reg1 != REG_PC);
             if (insDoesNotSetFlags(flags))
             {
                 fmt = IF_T1_D0;
@@ -2036,6 +2044,8 @@ void emitter::emitIns_R_R(
             __fallthrough;
 
         case INS_sub:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             // Use the Thumb-1 reg,reg,reg encoding
             emitIns_R_R_R(ins, attr, reg1, reg1, reg2, flags);
             return;
@@ -2062,6 +2072,8 @@ void emitter::emitIns_R_R(
             break;
 
         case INS_cmp:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert(insSetsFlags(flags));
             sf = INS_FLAGS_SET;
             if (isLowRegister(reg1) && isLowRegister(reg2))
@@ -2075,6 +2087,7 @@ void emitter::emitIns_R_R(
             break;
 
         case INS_vmov_f2i:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
             assert(isGeneralRegister(reg1));
             assert(isFloatReg(reg2));
             fmt = IF_T2_VMOVS;
@@ -2082,6 +2095,7 @@ void emitter::emitIns_R_R(
             break;
 
         case INS_vmov_i2f:
+            assert(reg2 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
             assert(isFloatReg(reg1));
             assert(isGeneralRegister(reg2));
             fmt = IF_T2_VMOVS;
@@ -2112,6 +2126,8 @@ void emitter::emitIns_R_R(
             goto VCVT_COMMON;
 
         case INS_vmov:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert(reg1 != reg2);
             __fallthrough;
 
@@ -2140,6 +2156,8 @@ void emitter::emitIns_R_R(
         case INS_vmul:
         case INS_vsub:
         case INS_vdiv:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             emitIns_R_R_R(ins, attr, reg1, reg1, reg2);
             return;
 
@@ -2163,6 +2181,8 @@ void emitter::emitIns_R_R(
         case INS_eor:
         case INS_orr:
         case INS_sbc:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             if (insSetsFlags(flags) && isLowRegister(reg1) && isLowRegister(reg2))
             {
                 fmt = IF_T1_E;
@@ -2176,6 +2196,8 @@ void emitter::emitIns_R_R(
             // the same static field load which got cse'd.
             // there's no reason why this assert would be true in general
             // assert(reg1 != reg2);
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             // Use the Thumb-2 three register encoding
             emitIns_R_R_R_I(ins, attr, reg1, reg1, reg2, 0, flags);
             return;
@@ -2188,6 +2210,8 @@ void emitter::emitIns_R_R(
             // arithmetic right shift were the same local variable
             // there's no reason why this assert would be true in general
             // assert(reg1 != reg2);
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             if (insSetsFlags(flags) && isLowRegister(reg1) && isLowRegister(reg2))
             {
                 fmt = IF_T1_E;
@@ -2204,7 +2228,8 @@ void emitter::emitIns_R_R(
         case INS_mul:
             // We will prefer the T2 encoding, unless (flags == INS_FLAGS_SET)
             // The thumb-1 instruction executes much slower as it must always set the flags
-            //
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             if (insMustSetFlags(flags) && isLowRegister(reg1) && isLowRegister(reg2))
             {
                 fmt = IF_T1_E;
@@ -2221,6 +2246,8 @@ void emitter::emitIns_R_R(
         case INS_mvn:
         case INS_cmn:
         case INS_tst:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             if (insSetsFlags(flags) && isLowRegister(reg1) && isLowRegister(reg2))
             {
                 fmt = IF_T1_E;
@@ -2243,6 +2270,8 @@ void emitter::emitIns_R_R(
         case INS_uxth:
             assert(size == EA_4BYTE);
         EXTEND_COMMON:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert(insDoesNotSetFlags(flags));
             if (isLowRegister(reg1) && isLowRegister(reg2))
             {
@@ -2272,6 +2301,8 @@ void emitter::emitIns_R_R(
             break;
 
         case INS_clz:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert(insDoesNotSetFlags(flags));
             fmt = IF_T2_C10;
             sf  = INS_FLAGS_NOT_SET;
@@ -2336,6 +2367,8 @@ void emitter::emitIns_R_I_I(
     {
         case INS_bfc:
         {
+            assert(reg != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+
             int lsb = imm1;
             int msb = lsb + imm2 - 1;
 
@@ -2396,6 +2429,8 @@ void emitter::emitIns_R_R_I(instruction ins,
     switch (ins)
     {
         case INS_add:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert(insOptsNone(opt));
 
             // Can we possibly encode the immediate 'imm' using a Thumb-1 encoding?
@@ -2417,6 +2452,8 @@ void emitter::emitIns_R_R_I(instruction ins,
             __fallthrough;
 
         case INS_sub:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert(insOptsNone(opt));
 
             // Is it just a mov?
@@ -2507,6 +2544,8 @@ void emitter::emitIns_R_R_I(instruction ins,
         case INS_bic:
         case INS_orr:
         case INS_orn:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert(insOptsNone(opt));
             if (isModImmConst(imm))
             {
@@ -2537,6 +2576,8 @@ void emitter::emitIns_R_R_I(instruction ins,
             break;
 
         case INS_rsb:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert(insOptsNone(opt));
             if (imm == 0 && isLowRegister(reg1) && isLowRegister(reg2) && insSetsFlags(flags))
             {
@@ -2549,6 +2590,8 @@ void emitter::emitIns_R_R_I(instruction ins,
         case INS_adc:
         case INS_eor:
         case INS_sbc:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert(insOptsNone(opt));
             if (isModImmConst(imm))
             {
@@ -2582,6 +2625,8 @@ void emitter::emitIns_R_R_I(instruction ins,
             break;
 
         case INS_mvn:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert((imm >= 0) && (imm <= 31)); // required for encoding
             assert(!insOptAnyInc(opt));
             if (imm == 0)
@@ -2606,6 +2651,8 @@ void emitter::emitIns_R_R_I(instruction ins,
         case INS_cmn:
         case INS_teq:
         case INS_tst:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert(insSetsFlags(flags));
             assert((imm >= 0) && (imm <= 31)); // required for encoding
             assert(!insOptAnyInc(opt));
@@ -2640,6 +2687,8 @@ void emitter::emitIns_R_R_I(instruction ins,
         case INS_asr:
         case INS_lsl:
         case INS_lsr:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert(insOptsNone(opt));
 
             // On ARM, the immediate shift count of LSL and ROR must be between 1 and 31. For LSR and ASR, it is between
@@ -2682,6 +2731,8 @@ void emitter::emitIns_R_R_I(instruction ins,
         case INS_uxth:
             assert(size == EA_4BYTE);
         EXTEND_COMMON:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert(insOptsNone(opt));
             assert(insDoesNotSetFlags(flags));
             assert((imm & 0x018) == imm); // required for encoding
@@ -2928,6 +2979,9 @@ void emitter::emitIns_R_R_R(instruction ins,
 
         case INS_sub:
             assert(reg3 != REG_SP);
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+            assert(reg3 != REG_PC || ins == INS_add); // allow ADD Rn, PC instruction in T2 encoding
 
             if (isLowRegister(reg1) && isLowRegister(reg2) && isLowRegister(reg3) && insSetsFlags(flags))
             {
@@ -2962,6 +3016,9 @@ void emitter::emitIns_R_R_R(instruction ins,
         case INS_eor:
         case INS_orr:
         case INS_sbc:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+            assert(reg3 != REG_PC);
             if (reg1 == reg2)
             {
                 // Try to encode as a Thumb-1 instruction
@@ -2971,6 +3028,9 @@ void emitter::emitIns_R_R_R(instruction ins,
             __fallthrough;
 
         case INS_orn:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+            assert(reg3 != REG_PC);
             // Use the Thumb-2 three register encoding, with imm=0
             emitIns_R_R_R_I(ins, attr, reg1, reg2, reg3, 0, flags);
             return;
@@ -2978,6 +3038,9 @@ void emitter::emitIns_R_R_R(instruction ins,
         case INS_asr:
         case INS_lsl:
         case INS_lsr:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+            assert(reg3 != REG_PC);
             if (reg1 == reg2 && insSetsFlags(flags) && isLowRegister(reg1) && isLowRegister(reg3))
             {
                 // Use the Thumb-1 regdest,reg encoding
@@ -2987,6 +3050,9 @@ void emitter::emitIns_R_R_R(instruction ins,
             __fallthrough;
 
         case INS_ror:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+            assert(reg3 != REG_PC);
             fmt = IF_T2_C4;
             sf  = insMustSetFlags(flags);
             break;
@@ -2994,6 +3060,11 @@ void emitter::emitIns_R_R_R(instruction ins,
         case INS_mul:
             if (insMustSetFlags(flags))
             {
+                assert(reg1 !=
+                       REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+                assert(reg2 != REG_PC);
+                assert(reg3 != REG_PC);
+
                 if ((reg1 == reg2) && isLowRegister(reg1))
                 {
                     // Use the Thumb-1 regdest,reg encoding
@@ -3018,6 +3089,9 @@ void emitter::emitIns_R_R_R(instruction ins,
         case INS_udiv:
 #endif // !USE_HELPERS_FOR_INT_DIV
 
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+            assert(reg3 != REG_PC);
             assert(insDoesNotSetFlags(flags));
             fmt = IF_T2_C5;
             sf  = INS_FLAGS_NOT_SET;
@@ -3076,6 +3150,8 @@ void emitter::emitIns_R_R_R(instruction ins,
             break;
 
         case INS_vmov_i2d:
+            assert(reg2 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg3 != REG_PC);
             assert(isDoubleReg(reg1));
             assert(isGeneralRegister(reg2));
             assert(isGeneralRegister(reg3));
@@ -3084,6 +3160,8 @@ void emitter::emitIns_R_R_R(instruction ins,
             break;
 
         case INS_vmov_d2i:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
             assert(isGeneralRegister(reg1));
             assert(isGeneralRegister(reg2));
             assert(isDoubleReg(reg3));
@@ -3150,6 +3228,9 @@ void emitter::emitIns_R_R_I_I(instruction ins,
     switch (ins)
     {
         case INS_bfi:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+
             assert(insDoesNotSetFlags(flags));
             imm = (lsb << 5) | msb;
 
@@ -3159,6 +3240,9 @@ void emitter::emitIns_R_R_I_I(instruction ins,
 
         case INS_sbfx:
         case INS_ubfx:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+
             assert(insDoesNotSetFlags(flags));
             imm = (lsb << 5) | (width - 1);
 
@@ -3243,6 +3327,9 @@ void emitter::emitIns_R_R_R_I(instruction ins,
         case INS_orn:
         case INS_orr:
         case INS_sbc:
+            assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+            assert(reg2 != REG_PC);
+            assert(reg3 != REG_PC);
             assert((imm >= 0) && (imm <= 31)); // required for encoding
             assert(!insOptAnyInc(opt));
             if (imm == 0)
@@ -3390,6 +3477,11 @@ void emitter::emitIns_R_R_R_R(
             unreached();
     }
     assert((fmt == IF_T2_F1) || (fmt == IF_T2_F2));
+
+    assert(reg1 != REG_PC); // VM debugging single stepper doesn't support PC register with this instruction.
+    assert(reg2 != REG_PC);
+    assert(reg3 != REG_PC);
+    assert(reg4 != REG_PC);
 
     instrDesc* id  = emitNewInstr(attr);
     insSize    isz = emitInsSize(fmt);
