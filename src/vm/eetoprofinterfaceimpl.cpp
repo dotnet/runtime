@@ -99,13 +99,9 @@ enum ClrToProfEntrypointFlags
     kEE2PNoTrigger                      = 0x00000004,
 };
 
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
 #define ASSERT_EVAC_COUNTER_NONZERO()   \
     _ASSERTE((GetThreadNULLOk() == NULL) ||                                             \
              (GetThreadNULLOk()->GetProfilerEvacuationCounter() != 0U))
-#else // FEATURE_PROFAPI_ATTACH_DETACH
-#define ASSERT_EVAC_COUNTER_NONZERO()
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
 
 #define CHECK_PROFILER_STATUS(ee2pFlags)                                                \
     /* If one of these asserts fires, perhaps you forgot to use                     */  \
