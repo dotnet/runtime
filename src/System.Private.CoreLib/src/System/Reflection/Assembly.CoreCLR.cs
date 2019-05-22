@@ -120,5 +120,8 @@ namespace System.Reflection
         // Exists to faciliate code sharing between CoreCLR and CoreRT.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool IsRuntimeImplemented() => this is RuntimeAssembly;
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern uint GetAssemblyCount();
     }
 }
