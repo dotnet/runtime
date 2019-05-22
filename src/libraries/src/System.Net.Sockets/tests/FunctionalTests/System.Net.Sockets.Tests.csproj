@@ -14,6 +14,7 @@
     <Compile Include="Connect.cs" />
     <Compile Include="Close.cs" />
     <Compile Include="CreateSocketTests.cs" />
+    <Compile Include="CreateSocketTests.netcoreapp.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
     <Compile Include="DisposedSocketTests.cs" />
     <Compile Include="DnsEndPointTest.cs" />
     <Compile Include="DualModeSocketTest.cs" />

@@ -43,5 +43,8 @@ namespace System.Net.Sockets
         Irda = 26,              // IrDA
         NetworkDesigners = 28,  // Network Designers OSI & gateway enabled protocols
         Max = 29,               // Max
+        Netlink = 30,           // Netlink protocol
+        Packet = 31,            // Linux Packet
+        ControllerAreaNetwork = 32, // Controller Area Network automotive bus protocol
     }
 }

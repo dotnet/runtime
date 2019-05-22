@@ -42,5 +42,8 @@ namespace System.Net.Internals
         Irda = AddressFamily.Irda,
         NetworkDesigners = AddressFamily.NetworkDesigners,
         Max = 29, //AddressFamily.Max
+        Netlink = AddressFamily.Netlink,
+        Packet = AddressFamily.Packet,
+        ControllerAreaNetwork = AddressFamily.ControllerAreaNetwork,
     }
 }
