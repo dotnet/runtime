@@ -235,6 +235,7 @@
 -nomethod System.Numerics.Tests.Vector4Tests.Vector4ClampTest
 -noclass System.Diagnostics.Tests.DebugTests
 -nomethod System.Text.Tests.StringBuilderTests.Equals
+-nomethod System.Text.Tests.StringBuilderTests.AppendFormat
 -nomethod System.Tests.DecimalTests.Remainder
 -nomethod System.Tests.DecimalTests.Remainder_Invalid
 -nomethod System.Tests.DecimalTests+BigIntegerMod.Test
