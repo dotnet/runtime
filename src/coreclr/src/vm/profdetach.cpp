@@ -324,7 +324,7 @@ void ProfilingAPIDetach::ExecuteEvacuationLoop()
         // Give profiler a chance to return from its procs
         SleepWhileProfilerEvacuates();
     }
-    while (!IsProfilerEvacuated());
+    while (!ProfilingAPIUtility::IsProfilerEvacuated());
 
     UnloadProfiler();
 }
@@ -442,96 +442,7 @@ void ProfilingAPIDetach::SleepWhileProfilerEvacuates()
     ClrSleepEx((DWORD) ui64SleepMilliseconds, FALSE /* alertable */);
 }
 
-//---------------------------------------------------------------------------------------
-//
-// Performs the evacuation checks by grabbing the thread store lock, iterating through
-// all EE Threads, and querying each one's evacuation counter.  If they're all 0, the
-// profiler is ready to be unloaded.
-//
-// Return Value:
-//    Nonzero iff the profiler is fully evacuated and ready to be unloaded.
-//
 
-// static
-BOOL ProfilingAPIDetach::IsProfilerEvacuated()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(g_profControlBlock.curProfStatus.Get() == kProfStatusDetaching);
-
-    // Check evacuation counters on all the threads (see
-    // code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization
-    // for details). Doing this under the thread store lock not only ensures we can
-    // iterate through the Thread objects safely, but also forces us to serialize with
-    // the GC. The latter is important, as server GC enters the profiler on non-EE
-    // Threads, and so no evacuation counters might be incremented during server GC even
-    // though control could be entering the profiler.
-    {
-        ThreadStoreLockHolder TSLockHolder;
-
-        Thread * pThread = ThreadStore::GetAllThreadList(
-            NULL,   // cursor thread; always NULL to begin with
-            0,      // mask to AND with Thread::m_State to filter returned threads 
-            0);     // bits to match the result of the above AND.  (m_State & 0 == 0,
-                    // so we won't filter out any threads)
-        
-        // Note that, by not filtering out any of the threads, we're intentionally including
-        // stuff like TS_Dead or TS_Unstarted.  But that keeps us on the safe
-        // side.  If an EE Thread object exists, we want to check its counters to be
-        // absolutely certain it isn't executing in a profiler.
-
-        while (pThread != NULL)
-        {
-            // Note that pThread is still in motion as we check its evacuation counter.
-            // This is ok, because we've already changed the profiler status to
-            // kProfStatusDetaching and flushed CPU buffers. So at this point the counter
-            // will typically only go down to 0 (and not increment anymore), with one
-            // small exception (below). So if we get a read of 0 below, the counter will
-            // typically stay there. Specifically:
-            //     * pThread is most likely not about to increment its evacuation counter
-            //         from 0 to 1 because pThread sees that the status is
-            //         kProfStatusDetaching.
-            //     * Note that there is a small race where pThread might actually
-            //         increment its evac counter from 0 to 1 (if it dirty-read the
-            //         profiler status a tad too early), but that implies that when
-            //         pThread rechecks the profiler status (clean read) then pThread
-            //         will immediately decrement the evac counter back to 0 and avoid
-            //         calling into the EEToProfInterfaceImpl pointer.
-            // 
-            // (see
-            // code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization
-            // for details)
-            DWORD dwEvacCounter = pThread->GetProfilerEvacuationCounter();
-            if (dwEvacCounter != 0)
-            {
-                LOG((
-                    LF_CORPROF, 
-                    LL_INFO100, 
-                    "**PROF: Profiler not yet evacuated because OS Thread ID 0x%x has evac counter of %d (decimal).\n",
-                    pThread->GetOSThreadId(),
-                    dwEvacCounter));
-                return FALSE;
-            }
-
-            pThread = ThreadStore::GetAllThreadList(pThread, 0, 0);
-        }
-    }
-
-    // FUTURE: When rejit feature crew complete, add code to verify all rejitted
-    // functions are fully reverted and off of all stacks.  If this is very easy to
-    // verify (e.g., checking a single value), consider putting it above the loop
-    // above so we can early-out quicker if rejitted code is still around.
-
-    // We got this far without returning, so the profiler is fully evacuated
-    return TRUE;
-}
 
 // ---------------------------------------------------------------------------------------
 // After we've verified a detaching profiler has fully evacuated, call this to unload the

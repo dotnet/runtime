@@ -54,6 +54,7 @@ public:
         UINT cbClientData,
         DWORD dwConcurrentGCWaitTimeoutInMs);
 
+    static BOOL IsProfilerEvacuated();
     static void TerminateProfiling();
     static void LogProfError(int iStringResourceID, ...);
     static void LogProfInfo(int iStringResourceID, ...);
