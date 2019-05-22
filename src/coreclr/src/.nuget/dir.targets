@@ -9,7 +9,7 @@
     <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
   </PropertyGroup>
 
-  <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingPackageVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />
+  <Import Project="$(NuGetPackageRoot)\microsoft.dotnet.build.tasks.packaging\$(MicrosoftDotNetBuildTasksPackagingVersion)\build\Microsoft.DotNet.Build.Tasks.Packaging.targets" />
 
   <!--
     Finds symbol files and injects them into the package build.
