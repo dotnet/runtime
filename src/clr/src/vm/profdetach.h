@@ -54,7 +54,6 @@ public:
     static HRESULT CreateDetachThread();
     static DWORD WINAPI ProfilingAPIDetachThreadStart(LPVOID lpParameter);
     static void ExecuteEvacuationLoop();
-    static BOOL IsProfilerEvacuated();
 
     static EEToProfInterfaceImpl * GetEEToProfPtr();
 

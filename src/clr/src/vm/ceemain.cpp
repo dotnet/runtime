@@ -1605,6 +1605,15 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // profiler can make any last calls it needs to.  Do this only if we
         // are not detaching
 
+        // NOTE: We haven't stopped other threads at this point and nothing is stopping
+        // callbacks from coming into the profiler even after Shutdown() has been called.
+        // See https://github.com/dotnet/coreclr/issues/22176 for an example of how that
+        // happens.
+        // Callbacks will be prevented when ProfilingAPIUtility::Terminate() changes the state
+        // to detached, which occurs shortly afterwards. It might be kinder to make the detaching
+        // transition before calling Shutdown(), but if we do we'd have to be very careful not
+        // to break profilers that were relying on being able to call various APIs during
+        // Shutdown(). I suspect this isn't something we'll ever do unless we get complaints.
         if (CORProfilerPresent())
         {
             // If EEShutdown is not being called due to a ProcessDetach event, so
