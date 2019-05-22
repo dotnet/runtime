@@ -1,6 +1,7 @@
 [CmdletBinding(PositionalBinding=$false)]
 Param(
   [switch][Alias('b')]$build,
+  [switch][Alias('t')]$test,
   [switch] $buildtests,
   [string][Alias('c')]$configuration = "Debug",
   [string][Alias('f')]$framework,
@@ -93,6 +94,8 @@ foreach ($argument in $PSBoundParameters.Keys)
 {
   switch($argument)
   {
+    "build"             { $arguments += " -build" }
+    "test"              { $arguments += " -test" }
     "buildtests"        { $arguments += " /p:BuildTests=true" }
     "clean"             { }
     "configuration"     { $configuration = (Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])); $arguments += " /p:ConfigurationGroup=$configuration -configuration $configuration" }
