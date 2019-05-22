@@ -7,7 +7,6 @@
 
 #include "stdafx.h"
 
-#include "unsafe.h"
 #include "clrhost.h"
 #include "utilcode.h"
 #include "ex.h"

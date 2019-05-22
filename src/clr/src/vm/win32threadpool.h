@@ -531,7 +531,7 @@ private:
                         HANDLE hEvent = refSH->GetHandle();
                         if (hEvent != INVALID_HANDLE_VALUE)
                         {
-                            UnsafeSetEvent(hEvent);
+                            SetEvent(hEvent);
                         }
                     }
                 }

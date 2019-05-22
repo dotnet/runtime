@@ -794,8 +794,6 @@ InternalSetupForComCall(-1, -1, -1, true)
 #define SetupForComCallDWORDNoCheckCanRunManagedCode()                      \
 InternalSetupForComCall(-1, -1, -1, false)
 
-#include "unsafe.h"
-
 // A holder for NATIVE_LIBRARY_HANDLE.
 FORCEINLINE void VoidFreeNativeLibrary(NATIVE_LIBRARY_HANDLE h)
 {
