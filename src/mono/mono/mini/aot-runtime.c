@@ -5134,7 +5134,7 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 		/* These should already have a function descriptor */
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		/* Our function descriptors have a 0 environment, gcc created ones don't */
-		if (ji.type != MONO_PATCH_INFO_JIT_ICALL_ID &&
+		if (ji.type != MONO_PATCH_INFO_JIT_ICALL_ID
 				&& ji.type != MONO_PATCH_INFO_JIT_ICALL_ADDR && ji.type != MONO_PATCH_INFO_ICALL_ADDR
 				&& ji.type != MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR && ji.type != MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR)
 			g_assert (((gpointer*)target) [2] == 0);
