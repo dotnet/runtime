@@ -228,7 +228,9 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
     return success;
 
 #else // !FEATURE_PAL
-    return GCToOSInterface::SetThreadAffinity(dstProcNo);
+
+    // There is no way to set a thread ideal processor on Unix, so do nothing.
+    return true;
 
 #endif // !FEATURE_PAL
 }
