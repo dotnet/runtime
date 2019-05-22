@@ -3161,35 +3161,6 @@ MethodTable* AppDomain::LoadRedirectedType(WinMDAdapter::RedirectedTypeIndex ind
 
 #ifndef DACCESS_COMPILE
 
-bool IsPlatformAssembly(LPCSTR szName, DomainAssembly *pDomainAssembly)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(CheckPointer(szName));
-        PRECONDITION(CheckPointer(pDomainAssembly));
-    }
-    CONTRACTL_END;
-
-    PEAssembly *pPEAssembly = pDomainAssembly->GetFile();
-
-    if (strcmp(szName, pPEAssembly->GetSimpleName()) != 0)
-    {
-        return false;
-    }
-    
-    DWORD cbPublicKey;
-    const BYTE *pbPublicKey = static_cast<const BYTE *>(pPEAssembly->GetPublicKey(&cbPublicKey));
-    if (pbPublicKey == nullptr)
-    {
-        return false;
-    }
-
-    return StrongNameIsSilverlightPlatformKey(pbPublicKey, cbPublicKey);
-}
-
 void AppDomain::AddAssembly(DomainAssembly * assem)
 {
     CONTRACTL
