@@ -573,8 +573,10 @@
 # Boxed pointers are not supported? https://github.com/mono/mono/blob/ced517784b2a07fb851e2227dac04e0df2262d57/mcs/class/corlib/ReferenceSources/RuntimeType.cs#L229
 -nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestByRefLikeRefReturn
 
+# throws ArgumentException
+-nomethod System.Reflection.Tests.PointerTests.PointerPropertyGetValue
+
 # TODO: ignore in CoreFX for mono runtime:
--nomethod System.Reflection.Tests.PointerTests.*
 -nomethod System.Tests.StringTests.NormalizationTest
 -nomethod System.Tests.GCTests.KeepAlive
 -nomethod System.Tests.GCTests.LargeObjectHeapCompactionModeRoundTrips
