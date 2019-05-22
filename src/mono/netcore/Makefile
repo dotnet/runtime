@@ -89,6 +89,7 @@ run-aspnet-sample: prepare
 # COREHOST_TRACE=1 
 SHAREDRUNTIME := shared/Microsoft.NETCore.App/$(NETCOREAPP_VERSION)
 
+# CORLIB_BUILD_FLAGS="-c Debug" to compile System.Private.CoreLib.dll in debug mode
 bcl:
 	$(MAKE) -C ../mcs/build/ common/Consts.cs
 	$(MAKE) -C ../mcs/class/System.Private.CoreLib
@@ -118,7 +119,7 @@ clean:
 #
 
 # e.g. `make xtest-System.Collections.Tests`
-# '-parallel none -verbose' for debug, `-parallel all` to run all tests in parallel
+# '-parallel none -verbose' and MONO_ENV_OPTIONS="--debug" for debug
 xtest-%: prepare update-corefx-tests
 	echo -n "***************** $* *********************"
 	cp corefx/restore/corefx-restore.deps.json corefx/tests/extracted/$*/xunit.console.deps.json

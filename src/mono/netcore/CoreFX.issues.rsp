@@ -37,8 +37,7 @@
 ####################################################################
 
 # Mono currently supports Array.Copy from object[] array containing boxed ints to float[] array with primitive widening
--nomethod *ICollection_NonGeneric_CopyTo_ArrayOfIncorrectValueType*
--nomethod *ICollection_NonGeneric_CopyTo_ArrayOfEnumType*
+-nomethod System.Collections.Tests.*.ICollection_NonGeneric_CopyTo_ArrayOfEnumType
 
 ####################################################################
 ##  System.Collections.Specialized.Tests
@@ -531,7 +530,7 @@
 ##  System.Runtime.Tests
 ####################################################################
 
-# Mono for some reason returns true for `(Array)(new int*[0]) is object[]` while .NET Core returns false
+# https://github.com/mono/mono/issues/14555 Array of pointers is not array of objects
 -nomethod System.Tests.ArrayTests.LastIndexOf_ArrayOfPointers_ThrowsNotSupportedException
 -nomethod System.Tests.ArrayTests.Reverse_ArrayOfPointers_ThrowsNotSupportedException
 -nomethod System.Tests.ArrayTests.IndexOf_ArrayOfPointers_ThrowsNotSupportedException
@@ -547,18 +546,8 @@
 -nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleFalse_WhenUsingAssemblyLoad
 -nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleFalse_WhenUsingAssemblyLoadContext
 
-# Mono ignores attributes defined on parameters in delegates
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_DecimalParameterWithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_ReferenceTypeParameterWithMissingValue
+# Mono ignores [Optional] attribute defined on parameters in delegates
 -nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameterUnassingableFromMissing_WithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_ValueTypeParameterWithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_MissingTypeForDefaultParameter_Succeeds
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_NullableIntWithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_StringParameterWithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_DecimalParameterWithAttributeAndMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_DateTimeParameterWithMissingValue
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_AllPrimitiveParametersWithSomeExplicitValues
--nomethod System.Tests.DelegateTests.DynamicInvoke_DefaultParameter_AllPrimitiveParametersWithMissingValues
 -nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameter_WithMissingValue
 -nomethod System.Tests.DelegateTests.DynamicInvoke_ParameterSpecification_ArrayOfMissing
 
@@ -641,6 +630,9 @@
 -nomethod System.ComponentModel.Composition.CompositionServicesTests.GetDefaultContractNameTest
 -nomethod System.ComponentModel.Composition.MetadataViewProviderTests.GetMetadataView_InterfaceWithIndexer_ShouldThrowNotSupportedException
 -nomethod Tests.Integration.ExportFactoryTests.ExportFactoryStandardImports_ShouldWorkProperly
+
+# flacky test - System.TypeLoadException : Could not load type '_proxy_System.ComponentModel.Composition.IStronglyTypedStructure_3b7f133d-79c7-449e-8f68-22aa093dbb8d' from assembly ''.
+-nomethod System.ComponentModel.Composition.MetadataAttributeTests.StronglyTypedStructureTest
 
 ####################################################################
 ##  System.Composition.TypedParts.Tests
