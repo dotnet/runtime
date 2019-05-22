@@ -540,6 +540,7 @@ FCFuncEnd()
 FCFuncStart(gAssemblyFuncs)
     QCFuncElement("GetEntryAssemblyNative", AssemblyNative::GetEntryAssembly)
     QCFuncElement("GetExecutingAssemblyNative", AssemblyNative::GetExecutingAssembly)
+    FCFuncElement("GetAssemblyCount", AssemblyNative::GetAssemblyCount)
 FCFuncEnd()
 
 FCFuncStart(gAssemblyBuilderFuncs)
