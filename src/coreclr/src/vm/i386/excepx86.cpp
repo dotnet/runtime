@@ -1659,7 +1659,7 @@ EXCEPTION_HANDLER_IMPL(COMPlusFrameHandler)
 #ifdef HAVE_GCCOVER // This is a debug only macro
     if (GCStress<cfg_instr_jit>::IsEnabled())
     {
-        // UnsafeTlsGetValue trashes last error. When Complus_GCStress=4, GC is invoked
+        // TlsGetValue trashes last error. When Complus_GCStress=4, GC is invoked
         // on every allowable JITed instruction by means of our exception handling machanism
         // it is very easy to trash the last error. For example, a p/invoke called a native method
         // which sets last error. Before we getting the last error in the IL stub, it is trashed here

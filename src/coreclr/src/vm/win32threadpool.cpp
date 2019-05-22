@@ -2981,7 +2981,7 @@ void ThreadpoolMgr::DeleteWait(WaitInfo* waitInfo)
     }
     else if (waitInfo->ExternalCompletionEvent != INVALID_HANDLE)
     {
-        UnsafeSetEvent(waitInfo->ExternalCompletionEvent);
+        SetEvent(waitInfo->ExternalCompletionEvent);
     }
     else if (waitInfo->ExternalEventSafeHandle != NULL)
     {
@@ -4871,7 +4871,7 @@ void ThreadpoolMgr::DeleteTimer(TimerInfo* timerInfo)
 
     if (timerInfo->ExternalCompletionEvent != INVALID_HANDLE)
     {
-        UnsafeSetEvent(timerInfo->ExternalCompletionEvent);
+        SetEvent(timerInfo->ExternalCompletionEvent);
         timerInfo->ExternalCompletionEvent = INVALID_HANDLE;
     }
 

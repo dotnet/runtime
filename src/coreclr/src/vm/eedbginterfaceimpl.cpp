@@ -397,12 +397,12 @@ CONTEXT *EEDbgInterfaceImpl::GetThreadFilterContext(Thread *thread)
 
 VOID * EEDbgInterfaceImpl::GetThreadDebuggerWord()
 {
-    return UnsafeTlsGetValue(g_debuggerWordTLSIndex);
+    return TlsGetValue(g_debuggerWordTLSIndex);
 }
 
 void EEDbgInterfaceImpl::SetThreadDebuggerWord(VOID *dw)
 {
-    UnsafeTlsSetValue(g_debuggerWordTLSIndex, dw);
+    TlsSetValue(g_debuggerWordTLSIndex, dw);
 }
 
 #endif
