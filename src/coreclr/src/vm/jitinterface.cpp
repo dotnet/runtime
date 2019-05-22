@@ -11179,7 +11179,7 @@ void CEEJitInfo::CompressDebugInfo()
     } CONTRACTL_END;
 
     // Don't track JIT info for DynamicMethods.
-    if (m_pMethodBeingCompiled->IsDynamicMethod())
+    if (m_pMethodBeingCompiled->IsDynamicMethod() && !g_pConfig->GetTrackDynamicMethodDebugInfo())
         return;
 
     if (m_iOffsetMapping == 0 && m_iNativeVarInfo == 0)
@@ -12713,7 +12713,7 @@ CORJIT_FLAGS GetCompileFlags(MethodDesc * ftn, CORJIT_FLAGS flags, CORINFO_METHO
 
     flags.Set(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION);
 
-    if (ftn->IsILStub())
+    if (ftn->IsILStub() && !g_pConfig->GetTrackDynamicMethodDebugInfo())
     {
         // no debug info available for IL stubs
         flags.Clear(CORJIT_FLAGS::CORJIT_FLAG_DEBUG_INFO);
