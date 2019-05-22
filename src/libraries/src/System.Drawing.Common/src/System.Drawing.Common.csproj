@@ -160,8 +160,11 @@
     <Compile Include="$(CommonPath)\System\Drawing\ColorTable.cs">
       <Link>System\Drawing\ColorTable.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Drawing\ColorUtil.netcoreapp20.cs">
+    <Compile Condition="'$(TargetGroup)' == 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\ColorUtil.netcoreapp20.cs">
       <Link>System\Drawing\ColorUtil.netcoreapp20.cs</Link>
+    </Compile>
+    <Compile Condition="'$(TargetGroup)' != 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\ColorUtil.netcoreapp21.cs">
+      <Link>System\Drawing\ColorUtil.netcoreapp21.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Drawing\KnownColorTable.cs">
       <Link>System\Drawing\KnownColorTable.cs</Link>
