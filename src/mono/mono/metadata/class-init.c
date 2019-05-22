@@ -2037,13 +2037,10 @@ print_method_signatures (MonoMethod *im, MonoMethod *cm) {
 static gboolean
 is_wcf_hack_disabled (void)
 {
-	static gboolean disabled;
-	static gboolean inited = FALSE;
-	if (!inited) {
-		disabled = g_hasenv ("MONO_DISABLE_WCF_HACK");
-		inited = TRUE;
-	}
-	return disabled;
+	static char disabled;
+	if (!disabled)
+		disabled = g_hasenv ("MONO_DISABLE_WCF_HACK") ? 1 : 2;
+	return disabled == 1;
 }
 
 static gboolean
@@ -5594,18 +5591,14 @@ MonoClass *
 mono_class_create_array_fill_type (void)
 {
 	static MonoClass klass;
-	static gboolean inited = FALSE;
 
-	if (!inited) {
-		klass.element_class = mono_defaults.int64_class;
-		klass.rank = 1;
-		klass.instance_size = MONO_SIZEOF_MONO_ARRAY;
-		klass.sizes.element_size = 8;
-		klass.size_inited = 1;
-		klass.name = "array_filler_type";
+	klass.element_class = mono_defaults.int64_class;
+	klass.rank = 1;
+	klass.instance_size = MONO_SIZEOF_MONO_ARRAY;
+	klass.sizes.element_size = 8;
+	klass.size_inited = 1;
+	klass.name = "array_filler_type";
 
-		inited = TRUE;
-	}
 	return &klass;
 }
 
