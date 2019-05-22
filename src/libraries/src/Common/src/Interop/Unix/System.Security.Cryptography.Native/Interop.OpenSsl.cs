@@ -317,17 +317,26 @@ internal static partial class Interop
             errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 
             int retVal;
-            unsafe
+            Exception innerError = null;
+
+            lock (context)
             {
-                using (MemoryHandle handle = input.Pin())
+                unsafe
                 {
-                    retVal = Ssl.SslWrite(context, (byte*)handle.Pointer, input.Length);
+                    using (MemoryHandle handle = input.Pin())
+                    {
+                        retVal = Ssl.SslWrite(context, (byte*)handle.Pointer, input.Length);
+                    }
+                }
+
+                if (retVal != input.Length)
+                {
+                    errorCode = GetSslError(context, retVal, out innerError);
                 }
             }
 
             if (retVal != input.Length)
             {
-                errorCode = GetSslError(context, retVal, out Exception innerError);
                 retVal = 0;
 
                 switch (errorCode)
@@ -351,6 +360,7 @@ internal static partial class Interop
                 }
 
                 retVal = BioRead(context.OutputBio, output, capacityNeeded);
+
                 if (retVal <= 0)
                 {
                     // Make sure we clear out the error that is stored in the queue
@@ -370,27 +380,34 @@ internal static partial class Interop
             errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 
             int retVal = BioWrite(context.InputBio, outBuffer, offset, count);
+            Exception innerError = null;
 
-            if (retVal == count)
+            lock (context)
             {
-                unsafe
+                if (retVal == count)
                 {
-                    fixed (byte* fixedBuffer = outBuffer)
+                    unsafe
                     {
-                        retVal = Ssl.SslRead(context, fixedBuffer + offset, outBuffer.Length);
+                        fixed (byte* fixedBuffer = outBuffer)
+                        {
+                            retVal = Ssl.SslRead(context, fixedBuffer + offset, outBuffer.Length);
+                        }
+                    }
+
+                    if (retVal > 0)
+                    {
+                        count = retVal;
                     }
                 }
 
-                if (retVal > 0)
+                if (retVal != count)
                 {
-                    count = retVal;
+                    errorCode = GetSslError(context, retVal, out innerError);
                 }
             }
 
             if (retVal != count)
             {
-                Exception innerError;
-                errorCode = GetSslError(context, retVal, out innerError);
                 retVal = 0;
 
                 switch (errorCode)
