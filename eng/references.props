@@ -1,0 +1,10 @@
+<Project>
+  <PropertyGroup>
+    <!--
+      The Microsoft.NET.Sdk defaults the AssemblySearchPaths earlier, so default
+      the correct search paths here. We are rather restrictive by design - only ref assemblies should
+      be resolved by default.
+    -->
+    <AssemblySearchPaths>$(AssemblySearchPaths);$(RefPath);{RawFileName}</AssemblySearchPaths>
+  </PropertyGroup>
+</Project>

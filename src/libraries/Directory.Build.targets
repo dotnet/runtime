@@ -62,10 +62,6 @@
   <Target Name="GetDocumentationFile"
           Returns="$(DocumentationFile)"/>
 
-  <Target Name="DumpTargets" BeforeTargets="ResolveProjectReferences">
-    <Message Text="DumpTargets> $(OutputPath), C=[$(Configuration)], CG=[$(ConfigurationGroup)], OG=[$(OSGroup)], TG=[$(TargetGroup)]" Importance="Low" />
-  </Target>
-
   <!-- This target will be moved into buildtools. Checked in here for now to add validationand in order not to block buildtools ingestion. -->
   <Target Name="ValidateExcludeCompileDesktop" AfterTargets="GetPackageDependencies" Inputs="%(Dependency.Identity);%(Dependency.TargetFramework)" Outputs="unused">
     <PropertyGroup>

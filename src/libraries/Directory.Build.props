@@ -12,13 +12,6 @@
     <GenerateRuntimeConfigurationFiles>false</GenerateRuntimeConfigurationFiles>
 
     <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
-
-    <!--
-      The Microsoft.NET.Sdk defaults the AssemblySearchPaths earlier than buildtools, so default
-      the correct search paths here. We are rather restrictive by design - only ref assemblies should
-      be resolved by default.
-    -->
-    <AssemblySearchPaths>$(AssemblySearchPaths);$(RefPath);{RawFileName}</AssemblySearchPaths>
   </PropertyGroup>
 
   <!-- Use msbuild path functions as that property is used in bash scripts. -->

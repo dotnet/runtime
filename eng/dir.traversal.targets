@@ -1,32 +1,6 @@
 <Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 
-  <Target Name="ProducesPackageId"
-          Returns="@(PackageIds)"
-          DependsOnTargets="FilterProjects">
-    <MSBuild Targets="ProducesPackageId"
-             Projects="@(Project)"
-             BuildInParallel="true"
-             ContinueOnError="ErrorAndContinue">
-      <Output TaskParameter="TargetOutputs"
-              ItemName="PackageIds" />
-    </MSBuild>
-    <ItemGroup>
-      <PackageIds Include="@(PackageIds)" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="ProducesTarget" DependsOnTargets="FilterProjects">
-    <MSBuild Targets="ProducesPackageId"
-             Projects="@(Project)"
-             BuildInParallel="true"
-             ContinueOnError="ErrorAndContinue">
-      <Output TaskParameter="TargetOutputs"
-              ItemName="PackageIds" />
-    </MSBuild>
-    <Message Text="%(PackageIds.Identity)" Importance="High" />
-  </Target>
-
   <Target Name="BuildAllProjects" DependsOnTargets="FilterProjects">
     <PropertyGroup>
       <DefaultBuildAllTarget Condition="'$(DefaultBuildAllTarget)'==''">$(MSBuildProjectDefaultTargets)</DefaultBuildAllTarget>
