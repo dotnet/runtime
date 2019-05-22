@@ -16,18 +16,10 @@
 #ifndef DWBUCKETMANAGER_HPP
 #define DWBUCKETMANAGER_HPP
 
-#ifdef FEATURE_WINDOWSPHONE
-#include "corhost.h"
-#endif
-
 // this will be used as an index into g_WerEventTraits
 enum WatsonBucketType
 {
     CLR20r3 = 0,
-    MoCrash,
-#ifdef FEATURE_WINDOWSPHONE
-    WinPhoneCrash,
-#endif
     // insert new types above this line
     EndOfWerBucketTypes
 };
@@ -50,11 +42,6 @@ struct WerEventTypeTraits
 const WerEventTypeTraits g_WerEventTraits[] =
 {
     WerEventTypeTraits(W("CLR20r3"), 9 DEBUG_ARG(CLR20r3)),
-    WerEventTypeTraits(W("MoAppCrash"), 9 DEBUG_ARG(MoCrash))
-#ifdef FEATURE_WINDOWSPHONE
-    // unfortunately Apollo uses the same event name
-    ,WerEventTypeTraits(W("CLR20r3"), 9 DEBUG_ARG(WinPhoneCrash))
-#endif
 };
 
 DWORD GetCountBucketParamsForEvent(LPCWSTR wzEventName)
@@ -1316,108 +1303,6 @@ void CLR20r3BucketParamsManager::PopulateBucketParameters()
     PopulateBucketParameter(Parameter9, &CLR20r3BucketParamsManager::GetExceptionName, 32);
 }
 
-class MoCrashBucketParamsManager : public BaseBucketParamsManager
-{
-public:
-    MoCrashBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE faultingPC, Thread* pFaultingThread, OBJECTREF* pThrownException);
-    ~MoCrashBucketParamsManager();
-
-    virtual void PopulateBucketParameters();
-};
-
-MoCrashBucketParamsManager::MoCrashBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE faultingPC, Thread* pFaultingThread, OBJECTREF* pThrownException)
-    : BaseBucketParamsManager(pGenericModeBlock, typeOfError, faultingPC, pFaultingThread, pThrownException)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-}
-
-MoCrashBucketParamsManager::~MoCrashBucketParamsManager()
-{
-    LIMITED_METHOD_CONTRACT;
-}
-
-void MoCrashBucketParamsManager::PopulateBucketParameters()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    PopulateEventName(g_WerEventTraits[MoCrash].EventName);
-
-    // DW_MAX_BUCKETPARAM_CWC - 1 to ensure space for NULL
-    PopulateBucketParameter(Parameter1, &MoCrashBucketParamsManager::GetPackageMoniker, DW_MAX_BUCKETPARAM_CWC - 1);
-    PopulateBucketParameter(Parameter2, &MoCrashBucketParamsManager::GetPRAID, DW_MAX_BUCKETPARAM_CWC - 1);
-    PopulateBucketParameter(Parameter3, &MoCrashBucketParamsManager::GetAppVersion, DW_MAX_BUCKETPARAM_CWC - 1);
-    PopulateBucketParameter(Parameter4, &MoCrashBucketParamsManager::GetAppTimeStamp, DW_MAX_BUCKETPARAM_CWC - 1);
-    PopulateBucketParameter(Parameter5, &MoCrashBucketParamsManager::GetModuleName, DW_MAX_BUCKETPARAM_CWC - 1);
-    PopulateBucketParameter(Parameter6, &MoCrashBucketParamsManager::GetModuleVersion, DW_MAX_BUCKETPARAM_CWC - 1);
-    PopulateBucketParameter(Parameter7, &MoCrashBucketParamsManager::GetModuleTimeStamp, DW_MAX_BUCKETPARAM_CWC - 1);
-    PopulateBucketParameter(Parameter8, &MoCrashBucketParamsManager::GetExceptionName, DW_MAX_BUCKETPARAM_CWC - 1);
-    PopulateBucketParameter(Parameter9, &MoCrashBucketParamsManager::GetIlRva, DW_MAX_BUCKETPARAM_CWC - 1);
-}
-
-#ifdef FEATURE_WINDOWSPHONE
-class WinPhoneBucketParamsManager : public BaseBucketParamsManager
-{
-public:   
-    WinPhoneBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE faultingPC, Thread* pFaultingThread, OBJECTREF* pThrownException);
-    ~WinPhoneBucketParamsManager();
-
-    virtual void PopulateBucketParameters();
-};
-
-WinPhoneBucketParamsManager::WinPhoneBucketParamsManager(GenericModeBlock* pGenericModeBlock, TypeOfReportedError typeOfError, PCODE faultingPC, Thread* pFaultingThread, OBJECTREF* pThrownException)
-    : BaseBucketParamsManager(pGenericModeBlock, typeOfError, faultingPC, pFaultingThread, pThrownException)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-}
-
-WinPhoneBucketParamsManager::~WinPhoneBucketParamsManager()
-{
-    LIMITED_METHOD_CONTRACT;
-}
-
-void WinPhoneBucketParamsManager::PopulateBucketParameters()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    PopulateEventName(g_WerEventTraits[WinPhoneCrash].EventName);
-
-    // the "+ 1" is to explicitly indicate which fields need to specify space for NULL
-    PopulateBucketParameter(Parameter1, &WinPhoneBucketParamsManager::GetAppName, DW_MAX_BUCKETPARAM_CWC - 1);
-    PopulateBucketParameter(Parameter2, &WinPhoneBucketParamsManager::GetAppVersion, 23 + 1);
-    PopulateBucketParameter(Parameter3, &WinPhoneBucketParamsManager::GetAppTimeStamp, 8 + 1);
-    PopulateBucketParameter(Parameter4, &WinPhoneBucketParamsManager::GetModuleName, DW_MAX_BUCKETPARAM_CWC - 1);
-    PopulateBucketParameter(Parameter5, &WinPhoneBucketParamsManager::GetModuleVersion, 23 + 1);
-    PopulateBucketParameter(Parameter6, &WinPhoneBucketParamsManager::GetModuleTimeStamp, 8 + 1);
-    PopulateBucketParameter(Parameter7, &WinPhoneBucketParamsManager::GetMethodDef, 6 + 1);
-    PopulateBucketParameter(Parameter8, &WinPhoneBucketParamsManager::GetIlOffset, 8 + 1);
-    PopulateBucketParameter(Parameter9, &WinPhoneBucketParamsManager::GetExceptionName, DW_MAX_BUCKETPARAM_CWC - 1);
-}
-#endif // FEATURE_WINDOWSPHONE
-
 WatsonBucketType GetWatsonBucketType()
 {
     CONTRACTL
@@ -1429,12 +1314,7 @@ WatsonBucketType GetWatsonBucketType()
     }
     CONTRACTL_END;
 
-
-#ifdef FEATURE_WINDOWSPHONE
-        return WinPhoneCrash;
-#else
-        return CLR20r3;
-#endif // FEATURE_WINDOWSPHONE
+    return CLR20r3;
 }
 
 #endif // DACCESS_COMPILE

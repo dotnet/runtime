@@ -3019,33 +3019,12 @@ HRESULT MDInternalRO::GetAssemblyProps(
     {
         *pdwAssemblyFlags = m_LiteWeightStgdb.m_MiniMd.getFlagsOfAssembly(pRecord);
 
-#ifdef FEATURE_WINDOWSPHONE
         // Turn on the afPublicKey if PublicKey blob is not empty
         DWORD cbPublicKey;
         const BYTE *pbPublicKey;
         IfFailRet(m_LiteWeightStgdb.m_MiniMd.getPublicKeyOfAssembly(pRecord, &pbPublicKey, &cbPublicKey));
         if (cbPublicKey != 0)
             *pdwAssemblyFlags |= afPublicKey;
-#else
-        if (ppbPublicKey)
-        {
-            if (pcbPublicKey && *pcbPublicKey)
-                *pdwAssemblyFlags |= afPublicKey;
-        }
-        else
-        {
-#ifdef _DEBUG
-            // Assert that afPublicKey is set if PublicKey blob is not empty
-            DWORD cbPublicKey;
-            const BYTE *pPublicKey;
-            IfFailRet(m_LiteWeightStgdb.m_MiniMd.getPublicKeyOfAssembly(pRecord, &pPublicKey, &cbPublicKey));
-            bool hasPublicKey = cbPublicKey != 0;
-            bool hasPublicKeyFlag = ( *pdwAssemblyFlags & afPublicKey ) != 0;
-            if(REGUTIL::GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_AssertOnBadImageFormat, 0))
-                _ASSERTE( hasPublicKey == hasPublicKeyFlag );
-#endif
-        }
-#endif // FEATURE_WINDOWSPHONE
     }
 
     return S_OK;
