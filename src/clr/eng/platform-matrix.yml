@@ -175,7 +175,7 @@ jobs:
         - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
           - OSX.1013.Amd64.Open
         - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
-          # TODO: add OSX.1012.Amd64.Open once Jenkins has been shutdown
+          - OSX.1012.Amd64.Open
           - OSX.1013.Amd64.Open
           - OSX.1014.Amd64.Open
         - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -242,7 +242,9 @@ jobs:
         osGroup: Windows_NT
         osIdentifier: Windows_NT
         helixQueues:
-        # TODO: add Windows.10.Arm64.Open once Jenkins has been shutdown
+        # TODO: Due to the limited capacity of the machines in Windows.10.Arm64.Open queue limit this to CI builds and only to Windows_NT/arm
+        - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
+          - Windows.10.Arm64.Open
         - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - Windows.10.Arm64
         ${{ insert }}: ${{ parameters.jobParameters }}
@@ -257,7 +259,7 @@ jobs:
         osGroup: Windows_NT
         osIdentifier: Windows_NT
         helixQueues:
-        # TODO: add Windows.10.Arm64.Open once Jenkins has been shutdown
+        # TODO: Consider adding Windows.10.Arm64.Open here if capacity is enough for handling both Windows_NT/arm and Windows_NT/arm64 testing
         - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           - Windows.10.Arm64
         ${{ insert }}: ${{ parameters.jobParameters }}
