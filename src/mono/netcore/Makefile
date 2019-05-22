@@ -4,11 +4,11 @@ include ../mcs/build/config.make
 # NETCORETESTS_VERSION and NETCOREAPP_VERSION must be updated in sync, we are using coreclr repo for that but that's fine for now
 #
 
-# Extracted MicrosoftPrivateCoreFxNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L12
-NETCORETESTS_VERSION := 4.6.0-preview6.19257.4
+# Extracted MicrosoftPrivateCoreFxNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L18
+NETCORETESTS_VERSION := 4.6.0-preview6.19271.5
 
-# Extracted MicrosoftNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L14
-NETCOREAPP_VERSION := 3.0.0-preview5-27620-01
+# Extracted MicrosoftNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L22
+NETCOREAPP_VERSION := 3.0.0-preview6-27720-09
 
 # Extracted from https://dotnetcli.blob.core.windows.net/dotnet/aspnetcore/Runtime/master/latest.version
 ASPNETCOREAPP_VERSION := 3.0.0-preview-18614-0151

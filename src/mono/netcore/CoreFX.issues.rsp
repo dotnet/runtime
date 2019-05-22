@@ -92,6 +92,7 @@
 
 # Depends on precise GC
 -nomethod System.IO.Tests.FileStream_Dispose.FinalizeFlushesWriteBuffer
+-nomethod System.IO.Tests.FileStream_Dispose.NoDispose_CallsVirtualDisposeFalseArg_ThrowsDuringFlushWriteBuffer_FinalizerWontThrow
 # TODO: Hangs
 -nomethod System.IO.Tests.Directory_SetCurrentDirectory+Directory_SetCurrentDirectory_SymLink.SetToPathContainingSymLink
 
@@ -160,6 +161,16 @@
 # https://github.com/mono/mono/blob/18f0bf055eb2bfa8981062bdad3af2fb4bbc9be4/netcore/System.Private.CoreLib/shared/System/String.cs#L790-L800
 # https://github.com/mono/mono/blob/18f0bf055eb2bfa8981062bdad3af2fb4bbc9be4/netcore/System.Private.CoreLib/shared/System/String.cs#L811-L821
 -nomethod System.Tests.StringTests.NormalizationTest
+
+# Environment.FailFast is not implemented
+-nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterDouble_C20
+-nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterSingle_C20
+-nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterSingle_N20
+-nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterSingle_P20
+-nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterDouble_N20
+-nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterDouble_F20
+-nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterDouble_P20
+-nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterSingle_F20
 
 -nomethod System.SpanTests.SpanTests.MemoryMarshal_GenericStaticReturningSpan
 -nomethod System.SpanTests.SpanTests.Span_Property
@@ -502,6 +513,7 @@
 -nomethod System.Runtime.InteropServices.Tests.StructureToPtrTests.StructureToPtr_InvalidLengthByValArrayInStruct_ThrowsArgumentException
 
 -nomethod System.Runtime.InteropServices.Tests.GetDelegateForFunctionPointerTests.GetDelegateForFunctionPointer_CantCast_ThrowsInvalidCastException
+-nomethod System.Runtime.InteropServices.Tests.GetDelegateForFunctionPointerTests.GetDelegateForFunctionPointer_CollectibleType_ReturnsExpected
 
 ####################################################################
 ##  System.Runtime.Numerics.Tests
@@ -596,6 +608,9 @@
 ##  System.Threading.Tests
 ####################################################################
 
+# Monitor.LockContentionCount is not implemented
+-nomethod System.Threading.Tests.MonitorTests.Enter_HasToWait_LockContentionCountTest
+
 -nomethod System.Threading.Tests.MutexTests.CrossProcess_NamedMutex_ProtectedFileAccessAtomic
 -nomethod System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest1_WaitAsync_NegativeCases
 -nomethod System.Threading.Tests.MutexTests.OpenExisting_InvalidNames
@@ -616,6 +631,9 @@
 # TODO: Differences in behaviour between NetFX and CoreFX
 -nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinThreadsTo0Test
 -nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest_ChangedInDotNetCore
+
+# ThreadPool.CompletedWorkItemCount is not implemented
+-nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.MetricsTest
 
 ####################################################################
 ##  System.Xml.XmlSchemaSet.Tests
@@ -792,6 +810,7 @@
 -nomethod System.Tests.AppDomainTests.ResourceResolve
 -nomethod System.Tests.AppDomainTests.AssemblyLoad
 -nomethod System.Tests.AppDomainTests.FirstChanceException_Called
+-nomethod System.Tests.AppDomainTests.AssemblyResolve_FirstChanceException
 
 # AssemblyLoadContext.SetProfileOptimizationRoot is no-op (not implemented)
 -nomethod System.Runtime.Tests.ProfileOptimizationTest.ProfileOptimization_CheckFileExists

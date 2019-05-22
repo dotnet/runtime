@@ -63,6 +63,11 @@ HANDLES(DELEGATE_1, "AllocDelegateLike_internal", ves_icall_System_Delegate_Allo
 HANDLES(DELEGATE_2, "CreateDelegate_internal", ves_icall_System_Delegate_CreateDelegate_internal, MonoObject, 4, (MonoReflectionType, MonoObject, MonoReflectionMethod, MonoBoolean))
 HANDLES(DELEGATE_3, "GetVirtualMethod_internal", ves_icall_System_Delegate_GetVirtualMethod_internal, MonoReflectionMethod, 1, (MonoDelegate))
 
+ICALL_TYPE(DEBUGR, "System.Diagnostics.Debugger", DEBUGR_1)
+HANDLES(DEBUGR_1, "IsAttached_internal", ves_icall_System_Diagnostics_Debugger_IsAttached_internal, MonoBoolean, 0, ())
+HANDLES(DEBUGR_2, "IsLogging", ves_icall_System_Diagnostics_Debugger_IsLogging, MonoBoolean, 0, ())
+HANDLES(DEBUGR_3, "Log", ves_icall_System_Diagnostics_Debugger_Log, void, 3, (int, MonoString, MonoString))
+
 ICALL_TYPE(ENUM, "System.Enum", ENUM_1)
 HANDLES(ENUM_1, "GetEnumValuesAndNames", ves_icall_System_Enum_GetEnumValuesAndNames, MonoBoolean, 3, (MonoReflectionType, MonoArrayOut, MonoArrayOut))
 HANDLES(ENUM_2, "InternalBoxEnum", ves_icall_System_Enum_ToObject, MonoObject, 2, (MonoReflectionType, guint64))
