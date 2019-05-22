@@ -192,8 +192,9 @@ namespace TestLibrary
                 string value = "InstallationType";
                 return GetRegistryValueString(key, value);
             }
-            catch (Exception e) when (e is SecurityException || e is InvalidCastException || e is PlatformNotSupportedException /* UAP */)
+            catch (Exception e)
             {
+                Console.WriteLine($"{nameof(GetInstallationTypeForWindows)} exception: {e}");
                 return string.Empty;
             }
         }
@@ -430,11 +431,11 @@ namespace TestLibrary
             if (alcWeakRef.IsAlive)
             {
                 exitCode += 100;
-                Console.WriteLine("Unload failed");
+                Console.WriteLine($"Unload failed - {assemblyPath}");
             }
             else
             {
-                Console.WriteLine("Unload succeeded");
+                Console.WriteLine($"Unload succeeded - {assemblyPath}");
             }
 
             return exitCode;
