@@ -7,6 +7,11 @@
 #ifndef __PREDEFTLSSLOT_H__
 #define __PREDEFTLSSLOT_H__
 
+// ******************************************************************************
+// WARNING!!!: These enums are used by SOS in the diagnostics repo. Values should 
+// added or removed in a backwards and forwards compatible way.
+// See: https://github.com/dotnet/diagnostics/blob/master/src/inc/predeftlsslot.h
+// ******************************************************************************
 
 // And here are the predefined slots for accessing TLS from various DLLs of the CLR.
 // Note that we want to support combinations of Debug and Retail DLLs for testing
@@ -20,6 +25,7 @@ enum PredefinedTlsSlots
     TlsIdx_JitLogEnv,
     TlsIdx_IceCap,
     TlsIdx_StressLog,
+    TlsIdx_CantStopCount, // Can't-stop counter for any thread
     TlsIdx_Check,
     TlsIdx_ForbidGCLoaderUseCount,
     TlsIdx_ClrDebugState,         // Pointer to ClrDebugState* structure
@@ -27,7 +33,6 @@ enum PredefinedTlsSlots
 
     // Add more indices here.
     TlsIdx_ThreadType, // bit flags to indicate special thread's type 
-    TlsIdx_CantStopCount, // Can't-stop counter for any thread
     TlsIdx_OwnedCrstsChain, // slot to store the Crsts owned by this thread
     TlsIdx_AppDomainAgilePendingTable,
     TlsIdx_CantAllocCount, //Can't allocate memory on heap in this thread
@@ -76,6 +81,8 @@ enum TlsThreadTypeFlag // flag used for thread type in Tls data
     ThreadType_ETWRundownThread         = 0x00010000,
     ThreadType_GenericInstantiationCompare= 0x00020000, // Used to indicate that the thread is determining if a generic instantiation in an ngen image matches a lookup. 
 };
+
+static_assert(TlsIdx_ThreadType == 11, "SOS in diagnostics repo has a dependency on this value.");
 
 #endif
 
