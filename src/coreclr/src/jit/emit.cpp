@@ -4728,7 +4728,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 }
                 else
                 {
-                    /* If emitFullGCinfo==false, the we don't use any
+                    /* If emitFullGCinfo==false, then we don't use any
                        regPtrDsc's and so explictly note the location
                        of "this" in GCEncode.cpp
                      */
@@ -4828,7 +4828,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
 
 #ifdef JIT32_GCENCODER
 #ifndef WIN64EXCEPTIONS
-                /* Remember the frame offset of the "this" argument for synchronized methods */
+                // Remember the frame offset of the "this" argument for synchronized methods.
                 if (emitComp->lvaIsOriginalThisArg(num) && emitComp->lvaKeepAliveAndReportThis())
                 {
                     emitSyncThisObjOffs = offs;
@@ -6852,6 +6852,7 @@ void emitter::emitGCvarDeadUpd(int offs, BYTE* addr)
 
         if (emitGCrFrameLiveTab[disp] != nullptr)
         {
+            assert(!emitComp->lvaKeepAliveAndReportThis() || (offs != emitSyncThisObjOffs));
             emitGCvarDeadSet(offs, addr, disp);
         }
     }

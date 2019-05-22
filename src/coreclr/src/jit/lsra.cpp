@@ -5682,7 +5682,7 @@ void LinearScan::allocateRegisters()
 #ifdef DEBUG
                 // Under stress mode, don't attempt to allocate a reg to
                 // reg optional ref position, unless it's a ParamDef.
-                if (allocateReg && regOptionalNoAlloc() && (currentRefPosition->refType != RefTypeParamDef))
+                if (allocateReg && regOptionalNoAlloc())
                 {
                     allocateReg = false;
                 }
@@ -5826,6 +5826,53 @@ void LinearScan::allocateRegisters()
             lastAllocatedRefPosition = currentRefPosition;
         }
     }
+
+#ifdef JIT32_GCENCODER
+    // For the JIT32_GCENCODER, when lvaKeepAliveAndReportThis is true, we must either keep this "this" pointer
+    // in the same register for the entire method, or keep it on the stack. Rather than imposing this constraint
+    // as we allocate, we will force all refs to the stack if it is split or spilled.
+    if (enregisterLocalVars && compiler->lvaKeepAliveAndReportThis())
+    {
+        LclVarDsc* thisVarDsc = compiler->lvaGetDesc(compiler->info.compThisArg);
+        if (!thisVarDsc->lvDoNotEnregister)
+        {
+            Interval* interval = getIntervalForLocalVar(thisVarDsc->lvVarIndex);
+            if (interval->isSplit)
+            {
+                // We'll have to spill this.
+                setIntervalAsSpilled(interval);
+            }
+            if (interval->isSpilled)
+            {
+                for (RefPosition* ref = interval->firstRefPosition; ref != nullptr; ref = ref->nextRefPosition)
+                {
+                    if (ref->RegOptional())
+                    {
+                        ref->registerAssignment = RBM_NONE;
+                    }
+                    switch (ref->refType)
+                    {
+                        case RefTypeDef:
+                            if (ref->registerAssignment != RBM_NONE)
+                            {
+                                ref->spillAfter = true;
+                            }
+                            break;
+                        case RefTypeUse:
+                            if (ref->registerAssignment != RBM_NONE)
+                            {
+                                ref->reload     = true;
+                                ref->spillAfter = true;
+                                ref->copyReg    = false;
+                                ref->moveReg    = false;
+                            }
+                            break;
+                    }
+                }
+            }
+        }
+    }
+#endif // JIT32_GCENCODER
 
     // Free registers to clear associated intervals for resolution phase
     CLANG_FORMAT_COMMENT_ANCHOR;
