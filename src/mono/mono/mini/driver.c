@@ -1549,6 +1549,7 @@ mini_usage (void)
 		"    --verbose, -v          Increases the verbosity level\n"
 		"    --help, -h             Show usage information\n"
 		"    --version, -V          Show version information\n"
+		"    --version=number       Show version number\n"
 		"    --runtime=VERSION      Use the VERSION runtime, instead of autodetecting\n"
 		"    --optimize=OPT         Turns on or off a specific optimization\n"
 		"                           Use --list-opt to get a list of optimizations\n"
@@ -2047,6 +2048,9 @@ mono_main (int argc, char* argv[])
 			g_free (full_opts);
 		} else if (strcmp (argv [i], "--verbose") == 0 || strcmp (argv [i], "-v") == 0) {
 			mini_verbose_level++;
+		} else if (strcmp (argv [i], "--version=number") == 0) {
+			g_print ("%s\n", VERSION);
+			return 0;
 		} else if (strcmp (argv [i], "--version") == 0 || strcmp (argv [i], "-V") == 0) {
 			char *build = mono_get_runtime_build_info ();
 			char *gc_descr;
