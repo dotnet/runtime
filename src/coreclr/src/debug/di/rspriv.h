@@ -2934,9 +2934,6 @@ class CordbProcess :
     public IDacDbiInterface::IAllocator,
     public IDacDbiInterface::IMetaDataLookup,
     public IProcessShimHooks
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-    , public ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly
-#endif
 {
     // Ctor is private. Use OpenVirtualProcess instead. 
     CordbProcess(ULONG64 clrInstanceId, IUnknown * pDataTarget, HMODULE hDacModule,  Cordb * pCordb, const ProcessDescriptor * pProcessDescriptor, ShimProcess * pShim);
@@ -3146,16 +3143,6 @@ public:
     // ICorDebugProcess10
     //-----------------------------------------------------------
     COM_METHOD EnableGCNotificationEvents(BOOL fEnable);
-
-#ifdef FEATURE_LEGACYNETCF_DBG_HOST_CONTROL
-    // ---------------------------------------------------------------
-    // ICorDebugLegacyNetCFHostCallbackInvoker_PrivateWindowsPhoneOnly
-    // ---------------------------------------------------------------
-
-    COM_METHOD InvokePauseCallback();
-    COM_METHOD InvokeResumeCallback();
-
-#endif
 
     //-----------------------------------------------------------
     // Methods not exposed via a COM interface.

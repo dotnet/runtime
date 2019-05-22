@@ -74,32 +74,12 @@ STDMETHODIMP RegMeta::GetAssemblyProps(       // S_OK or error.
     {
         *pdwAssemblyFlags = pMiniMd->getFlagsOfAssembly(pRecord);
 
-#ifdef FEATURE_WINDOWSPHONE
         // Turn on the afPublicKey if PublicKey blob is not empty
         DWORD cbPublicKey;
         const BYTE *pbPublicKey;
         IfFailGo(pMiniMd->getPublicKeyOfAssembly(pRecord, &pbPublicKey, &cbPublicKey));
         if (cbPublicKey != 0)
             *pdwAssemblyFlags |= afPublicKey;
-#else
-        if (ppbPublicKey)
-        {
-            if (pcbPublicKey && *pcbPublicKey)
-                *pdwAssemblyFlags |= afPublicKey;
-        }
-        else
-        {
-#ifdef _DEBUG
-            // Assert that afPublicKey is set if PublicKey blob is not empty
-            DWORD cbPublicKey;
-            const BYTE *pbPublicKey;
-            IfFailGo(pMiniMd->getPublicKeyOfAssembly(pRecord, &pbPublicKey, &cbPublicKey));
-            bool hasPublicKey = cbPublicKey != 0;
-            bool hasPublicKeyFlag = ( *pdwAssemblyFlags & afPublicKey ) != 0;
-            _ASSERTE( hasPublicKey == hasPublicKeyFlag );
-#endif
-        }
-#endif // FEATURE_WINDOWSPHONE
     }
     // This call has to be last to set 'hr', so CLDB_S_TRUNCATION is not rewritten with S_OK
     if (szName || pchName)

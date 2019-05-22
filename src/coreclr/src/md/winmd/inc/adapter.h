@@ -263,18 +263,16 @@ public:
                     else if (*pcbPublicKeyOrToken == sizeof(s_pbContractPublicKey))
                         *ppbPublicKeyOrToken = s_pbContractPublicKey;
                 }
-#ifdef FEATURE_WINDOWSPHONE
-                // System.Runtime.WindowsRuntime uses the ECMA key on Windows Phone.
-                // The WinRT adapter's policy of using mscorlib's assembly references for all the additional
-                // assembly references doesn't work here since mscorlib uses the Silverlight Platform key.
                 else 
                 {
+                    // System.Runtime.WindowsRuntime uses the ECMA key.
+                    // The WinRT adapter's policy of using mscorlib's assembly references for all the additional
+                    // assembly references doesn't work here since mscorlib uses the Silverlight Platform key.
                     if (*pcbPublicKeyOrToken == sizeof(g_rbNeutralPublicKeyToken))
                         *ppbPublicKeyOrToken = g_rbNeutralPublicKeyToken;
                     else if (*pcbPublicKeyOrToken == sizeof(g_rbNeutralPublicKey))
                         *ppbPublicKeyOrToken = g_rbNeutralPublicKey;
                 }
-#endif
             }
 
             if (pszName != nullptr)

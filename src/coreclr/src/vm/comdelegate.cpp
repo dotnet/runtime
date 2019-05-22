@@ -1189,19 +1189,6 @@ LPVOID COMDelegate::ConvertToCallback(OBJECTREF pDelegateObj)
                 objhnd,
                 pUMThunkMarshInfo, pInvokeMeth);
 
-#ifdef FEATURE_WINDOWSPHONE
-            // Perform the runtime initialization lazily for better startup time. Lazy initialization
-            // has worse diagnostic experience (the invalid marshaling directive exception is thrown 
-            // lazily on the first call instead of during delegate creation), but it should be ok 
-            // for CoreCLR on phone because of reverse p-invoke is for internal use only.
-#else
-            {
-                GCX_PREEMP();
-
-                pUMEntryThunk->RunTimeInit();
-            }
-#endif
-
             if (!pInteropInfo->SetUMEntryThunk(pUMEntryThunk)) 
             {
                 pUMEntryThunk = (UMEntryThunk*)pInteropInfo->GetUMEntryThunk();
