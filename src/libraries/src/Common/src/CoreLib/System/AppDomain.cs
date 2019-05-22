@@ -184,26 +184,28 @@ namespace System
 
         public static bool MonitoringIsEnabled
         {
-            get { return false; }
+            get { return true; }
             set
             {
                 if (!value)
                 {
                     throw new ArgumentException(SR.Arg_MustBeTrue);
                 }
-                throw new PlatformNotSupportedException(SR.PlatformNotSupported_AppDomain_ResMon);
             }
         }
 
-        public long MonitoringSurvivedMemorySize { get { throw CreateResMonNotAvailException(); } }
+        public long MonitoringSurvivedMemorySize => MonitoringSurvivedProcessMemorySize;
 
-        public static long MonitoringSurvivedProcessMemorySize { get { throw CreateResMonNotAvailException(); } }
+        public static long MonitoringSurvivedProcessMemorySize
+        {
+            get
+            {
+                GCMemoryInfo mi = GC.GetGCMemoryInfo();
+                return mi.HeapSizeBytes - mi.FragmentedBytes;
+            }
+        }
 
-        public long MonitoringTotalAllocatedMemorySize { get { throw CreateResMonNotAvailException(); } }
-
-        public TimeSpan MonitoringTotalProcessorTime { get { throw CreateResMonNotAvailException(); } }
-
-        private static Exception CreateResMonNotAvailException() => new InvalidOperationException(SR.PlatformNotSupported_AppDomain_ResMon);
+        public long MonitoringTotalAllocatedMemorySize => GC.GetTotalAllocatedBytes(precise: false);
 
         [ObsoleteAttribute("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread.  https://go.microsoft.com/fwlink/?linkid=14202", false)]
         public static int GetCurrentThreadId() => Environment.CurrentManagedThreadId;
