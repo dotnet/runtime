@@ -2152,7 +2152,16 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
         if (pResult->thisTransform == CORINFO_BOX_THIS)
         {
             // READYTORUN: FUTURE: Optionally create boxing stub at runtime
-            ThrowHR(E_NOTIMPL);
+            // We couldn't resolve the constrained call into a valuetype instance method and we're asking the JIT
+            // to box and do a virtual dispatch. If we were to allow the boxing to happen now, it could break future code
+            // when the user adds a method to the valuetype that makes it possible to avoid boxing (if there is state
+            // mutation in the method).
+            
+            // We allow this at least for primitives and enums because we control them
+            // and we know there's no state mutation.
+            CorInfoType constrainedType = getTypeForPrimitiveValueClass(pConstrainedResolvedToken->hClass);
+            if (constrainedType == CORINFO_TYPE_UNDEF)
+                ThrowHR(E_NOTIMPL);
         }
     }
 

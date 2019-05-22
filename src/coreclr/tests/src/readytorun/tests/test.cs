@@ -389,6 +389,19 @@ public struct MyChangingHFAStruct
     }
 }
 
+public struct MyStructWithVirtuals
+{
+    public string X;
+
+#if V2
+    public override string ToString()
+    {
+        X = "Overriden";
+        return base.ToString();
+    }
+#endif
+}
+
 public class ByteBaseClass : List<byte>
 {
     public byte BaseByte;
