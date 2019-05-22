@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public class CreateSocket
+    public partial class CreateSocket
     {
         public static object[][] DualModeSuccessInputs = {
             new object[] { SocketType.Stream, ProtocolType.Tcp },
