@@ -54,11 +54,6 @@
 // Undefine all of the windows wrappers so you can't use them.
 //*****************************************************************************
 
-// wincrypt.h
-#undef CryptAcquireContext
-#undef CryptSignHash
-#undef CryptVerifySignature
-
 // winbase.h
 #undef GetBinaryType
 #undef GetShortPathName
@@ -145,11 +140,6 @@
 // NT supports the wide entry points.  So we redefine the wrappers right back
 // to the *W entry points as macros.  This way no client code needs a wrapper on NT.
 //
-
-// wincrypt.h
-#define WszCryptAcquireContext CryptAcquireContextW
-#define WszCryptSignHash CryptSignHashW
-#define WszCryptVerifySignature CryptVerifySignatureW
 
 // winbase.h
 #define WszGetEnvironmentStrings   GetEnvironmentStringsW

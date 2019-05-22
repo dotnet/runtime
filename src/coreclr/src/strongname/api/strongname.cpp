@@ -101,13 +101,6 @@ void Log(__in_z const WCHAR *wszFormat, ...)
 // Size in bytes of strong name token.
 #define SN_SIZEOF_TOKEN     8
 
-enum StrongNameCachedCsp {
-    None = -1,
-    Sha1CachedCsp = 0,
-    Sha2CachedCsp = Sha1CachedCsp + 1,
-    CachedCspCount = Sha2CachedCsp + 1
-};
-
 // We cache a couple of things on a per thread basis: the last error encountered
 // and (potentially) CSP contexts. The following structure tracks these and is
 // allocated lazily as needed.
@@ -119,12 +112,6 @@ struct SN_THREAD_CTX {
 
 // Macro containing common code used at the start of most APIs.
 #define SN_COMMON_PROLOG() do {                             \
-    HRESULT __hr = InitStrongName();                        \
-    if (FAILED(__hr)) {                                     \
-        SetStrongNameErrorInfo(__hr);                       \
-        retVal = FALSE;                                     \
-        goto Exit;                                          \
-    }                                                       \
     SetStrongNameErrorInfo(S_OK);                           \
 } while (0)
 
@@ -177,23 +164,6 @@ struct SN_THREAD_CTX {
                                 memcmp((_pk), g_rbTheSilverlightKey, sizeof(g_rbTheSilverlightKey)) == 0)
 
 #define SN_THE_SILVERLIGHT_KEYTOKEN() ((PublicKeyBlob*)g_rbTheSilverlightKeyToken)
-
-#ifdef FEATURE_WINDOWSPHONE
-// Microsoft.Phone.* key
-#define SN_THE_MICROSOFT_PHONE_KEYTOKEN() ((PublicKeyBlob*)g_rbTheMicrosoftPhoneKeyToken)
-
-#define SN_IS_THE_MICROSOFT_PHONE_KEY(_pk) (SN_SIZEOF_KEY((PublicKeyBlob*)(_pk)) == sizeof(g_rbTheMicrosoftPhoneKey) && \
-                                memcmp((_pk), g_rbTheMicrosoftPhoneKey, sizeof(g_rbTheMicrosoftPhoneKey)) == 0)
-
-// Microsoft.Xna.* key
-#define SN_THE_MICROSOFT_XNA_KEYTOKEN() ((PublicKeyBlob*)g_rbTheMicrosoftXNAKeyToken)
-
-#define SN_IS_THE_MICROSOFT_XNA_KEY(_pk) (SN_SIZEOF_KEY((PublicKeyBlob*)(_pk)) == sizeof(g_rbTheMicrosoftXNAKey) && \
-                                memcmp((_pk), g_rbTheMicrosoftXNAKey, sizeof(g_rbTheMicrosoftXNAKey)) == 0)
-
-#endif // FEATURE_WINDOWSPHONE
-
-#define InitStrongName() S_OK
 
 
 // Free buffer allocated by routines below.
@@ -294,7 +264,7 @@ SNAPI StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] publ
 
     if (pbPublicKeyBlob == NULL)
         SN_ERROR(E_POINTER);
-    if (!StrongNameIsValidPublicKey(pbPublicKeyBlob, cbPublicKeyBlob, false))
+    if (!StrongNameIsValidPublicKey(pbPublicKeyBlob, cbPublicKeyBlob))
         SN_ERROR(CORSEC_E_INVALID_PUBLICKEY);
     if (ppbStrongNameToken == NULL)
         SN_ERROR(E_POINTER);
@@ -335,24 +305,6 @@ SNAPI StrongNameTokenFromPublicKey(BYTE    *pbPublicKeyBlob,        // [in] publ
         retVal = TRUE;
         goto Exit;
     }
-
-#ifdef FEATURE_WINDOWSPHONE
-
-    if (SN_IS_THE_MICROSOFT_PHONE_KEY(pbPublicKeyBlob))
-    {
-        memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, SN_THE_MICROSOFT_PHONE_KEYTOKEN(), SN_SIZEOF_TOKEN);
-        retVal = TRUE;
-        goto Exit;
-    }
-
-    if (SN_IS_THE_MICROSOFT_XNA_KEY(pbPublicKeyBlob))
-    {
-        memcpy_s(*ppbStrongNameToken, *pcbStrongNameToken, SN_THE_MICROSOFT_XNA_KEYTOKEN(), SN_SIZEOF_TOKEN);
-        retVal = TRUE;
-        goto Exit;
-    }
-
-#endif //FEATURE_WINDOWSPHONE
 
     // To compute the correct public key token, we need to make sure the public key blob
     // was not padded with extra bytes that CAPI CryptImportKey would've ignored.
