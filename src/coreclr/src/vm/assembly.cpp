@@ -80,6 +80,8 @@
 // to help your debugging.
 DWORD g_dwLoaderReasonForNotSharing = 0; // See code:DomainFile::m_dwReasonForRejectingNativeImage for a similar variable.
 
+volatile uint32_t g_cAssemblies = 0;
+
 // These will sometimes result in a crash with error code 0x80131401 SECURITY_E_INCOMPATIBLE_SHARE
 // "Loading this assembly would produce a different grant set from other instances."
 enum ReasonForNotSharing
@@ -178,6 +180,8 @@ void Assembly::Init(AllocMemTracker *pamTracker, LoaderAllocator *pLoaderAllocat
     else
 #endif
         m_pManifest = Module::Create(this, mdFileNil, GetManifestFile(), pamTracker);
+
+    FastInterlockIncrement((LONG*)&g_cAssemblies);
 
     PrepareModuleForAssembly(m_pManifest, pamTracker);
 
@@ -326,6 +330,7 @@ void Assembly::StartUnload()
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_FORBID_FAULT;
+
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackAssemblyLoads())
     {
@@ -350,6 +355,8 @@ void Assembly::Terminate( BOOL signalProfiler )
         delete m_pClassLoader;
         m_pClassLoader = NULL;
     }
+
+    FastInterlockDecrement((LONG*)&g_cAssemblies);
 
 #ifdef PROFILING_SUPPORTED
     if (CORProfilerTrackAssemblyLoads())

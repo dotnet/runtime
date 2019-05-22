@@ -778,6 +778,16 @@ BOOL QCALLTYPE AssemblyNative::GetIsCollectible(QCall::AssemblyHandle pAssembly)
     return retVal;
 }
 
+extern volatile uint32_t g_cAssemblies;
+
+FCIMPL0(uint32_t, AssemblyNative::GetAssemblyCount)
+{
+    FCALL_CONTRACT;
+
+    return g_cAssemblies;
+}
+FCIMPLEND
+
 void QCALLTYPE AssemblyNative::GetModule(QCall::AssemblyHandle pAssembly, LPCWSTR wszFileName, QCall::ObjectHandleOnStack retModule)
 {
     QCALL_CONTRACT;

@@ -24,6 +24,7 @@ namespace System.Diagnostics.Tracing
         private IncrementingPollingCounter? _monitorContentionCounter;
         private PollingCounter? _threadPoolQueueCounter;
         private IncrementingPollingCounter? _completedItemsCounter;
+        private PollingCounter? _assemblyCounter;
 
         private const int EnabledPollingIntervalMilliseconds = 1000; // 1 second
 
@@ -56,6 +57,7 @@ namespace System.Diagnostics.Tracing
                 _monitorContentionCounter = _monitorContentionCounter ?? new IncrementingPollingCounter("monitor-lock-contention-count", this, () => Monitor.LockContentionCount) { DisplayName = "Monitor Lock Contention Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) }; 
                 _threadPoolQueueCounter = _threadPoolQueueCounter ?? new PollingCounter("threadpool-queue-length", this, () => ThreadPool.PendingWorkItemCount) { DisplayName = "ThreadPool Queue Length" };
                 _completedItemsCounter = _completedItemsCounter ?? new IncrementingPollingCounter("threadpool-completed-items-count", this, () => ThreadPool.CompletedWorkItemCount) { DisplayName = "ThreadPool Completed Work Item Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
+                _assemblyCounter = _assemblyCounter ?? new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
             }
         }
     }
