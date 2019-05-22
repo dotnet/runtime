@@ -8,7 +8,6 @@
     <RestoreSources>
       https://api.nuget.org/v3/index.json;
       https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
-      https://dotnet.myget.org/F/roslyn-tools/api/v3/index.json;
       $(LocalPackagesPath)
     </RestoreSources>
   </PropertyGroup>
