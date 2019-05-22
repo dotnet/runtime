@@ -116,12 +116,6 @@
     <SourceDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src'))</SourceDir>
   </PropertyGroup>
 
-  <!-- workaround https://github.com/dotnet/sdk/issues/2288
-       remove once we have a new CLI -->
-  <PropertyGroup>
-    <LanguageTargets Condition="'$(LanguageTargets)' == '' AND '$(MSBuildProjectExtension)' != '.csproj' AND '$(MSBuildProjectExtension)' != '.vbproj' AND '$(MSBuildProjectExtension)' != '.fsproj'">$(MSBuildToolsPath)\Microsoft.Common.targets</LanguageTargets>
-  </PropertyGroup>
-
   <!-- Enable the analyzers for this repo -->
   <PropertyGroup>
     <EnableAnalyzers Condition="'$(EnableAnalyzers)' == '' AND '$(IsSourceProject)' == 'true'">true</EnableAnalyzers>
@@ -417,9 +411,6 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Don't run tests if we're building another platform's binaries on Windows -->
-    <SkipTests Condition="'$(SkipTests)' == '' and ('$(OsEnvironment)'=='Windows_NT' and '$(TargetsWindows)'!='true' and '$(OSGroup)'!='AnyOS')">true</SkipTests>
-
     <!-- F5 and debugging support for netcoreapp and netfx inside VS. -->
     <EnableLaunchSettings Condition="'$(EnableLaunchSettings)' == ''AND '$(DotNetBuildFromSource)' != 'true'">true</EnableLaunchSettings>
 
@@ -433,6 +424,7 @@
     <GenerateFullCoverageReport Condition="'$(GenerateFullCoverageReport)' == ''">true</GenerateFullCoverageReport>
   </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)references.props" />
   <Import Condition="'$(IsTestProject)' == 'true' AND '$(IsTestSupportProject)' != 'true' AND '$(EnableVSTestReferences)' == 'true'" Project="$(RuntimePath)Microsoft.NET.Test.Sdk.props" />
 
   <ItemDefinitionGroup Condition="'$(IsTestProject)' != 'true'">
