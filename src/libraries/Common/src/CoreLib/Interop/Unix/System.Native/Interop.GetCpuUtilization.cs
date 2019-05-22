@@ -13,9 +13,9 @@ internal static partial class Interop
         [StructLayout(LayoutKind.Sequential)]
         internal struct ProcessCpuInformation
         {
-            ulong lastRecordedCurrentTime;
-            ulong lastRecordedKernelTime;
-            ulong lastRecordedUserTime;
+            internal ulong lastRecordedCurrentTime;
+            internal ulong lastRecordedKernelTime;
+            internal ulong lastRecordedUserTime;
         }
 
         [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetCpuUtilization")]
