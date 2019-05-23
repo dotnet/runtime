@@ -1090,7 +1090,9 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				ref->method = mini_get_interp_in_wrapper (sig);
 				g_free (sig);
 			} else if (subtype == WRAPPER_SUBTYPE_INTERP_LMF) {
-				MonoJitICallInfo *info = mono_find_jit_icall_by_name ((char *) p);
+				char const * const name = (const char*)p;
+				MonoJitICallInfo *info = mono_find_jit_icall_by_name (name);
+				p += strlen (name) + 1; // FIXME restrict strlen to file (on previous line)
 				g_assert (info);
 				ref->method = mini_get_interp_lmf_wrapper (info->name, (gpointer) info->func);
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG) {
@@ -1144,12 +1146,11 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 		case MONO_WRAPPER_MANAGED_TO_NATIVE: {
 			MonoMethod *m;
 			int subtype = decode_value (p, &p);
-			char *name;
 
 			if (subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
-				name = (char*)p;
-
+				char const * const name = (const char*)p;
 				MonoJitICallInfo *info = mono_find_jit_icall_by_name (name);
+				p += strlen (name) + 1; // FIXME restrict strlen to file (on previous line)
 				g_assert (info);
 				ref->method = mono_icall_get_wrapper_method (info);
 			} else {
