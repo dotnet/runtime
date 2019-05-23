@@ -2266,15 +2266,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     m_args.m_pMT = m_pMT;
                     m_type = MARSHAL_TYPE_CRITICALHANDLE;
                 }
-                else if (sig.IsClassThrowing(pModule, g_ReflectionMethodInterfaceName, pTypeContext))
-                {
-                    if (nativeType != NATIVE_TYPE_DEFAULT)
-                    {
-                        IfFailGoto(E_FAIL, lFail);
-                    }
-
-                    m_type = MARSHAL_TYPE_RUNTIMEMETHODINFO;
-                }
 #ifdef FEATURE_COMINTEROP
                 else if (m_pMT->IsInterface())
                 {
@@ -2370,24 +2361,6 @@ MarshalInfo::MarshalInfo(Module* pModule,
                     }
                     m_type = MARSHAL_TYPE_LAYOUTCLASSPTR;
                     m_args.m_pMT = m_pMT;
-                }    
-                else if (sig.IsClassThrowing(pModule, g_ReflectionModuleName, pTypeContext))
-                {
-                    if (nativeType != NATIVE_TYPE_DEFAULT)
-                    {
-                        IfFailGoto(E_FAIL, lFail);
-                    }
-
-                    m_type = MARSHAL_TYPE_RUNTIMEMODULE;
-                }
-                else if (sig.IsClassThrowing(pModule, g_ReflectionAssemblyName, pTypeContext))
-                {
-                    if (nativeType != NATIVE_TYPE_DEFAULT)
-                    {
-                        IfFailGoto(E_FAIL, lFail);
-                    }
-
-                    m_type = MARSHAL_TYPE_RUNTIMEASSEMBLY;
                 }
 #ifdef FEATURE_COMINTEROP
                 else if (m_ms == MARSHAL_SCENARIO_WINRT && sig.IsClassThrowing(pModule, g_SystemUriClassName, pTypeContext))
@@ -4461,15 +4434,6 @@ VOID MarshalInfo::MarshalTypeToString(SString& strMarshalType, BOOL fSizeIsSpeci
                 break;
             case MARSHAL_TYPE_RUNTIMEMETHODHANDLE:
                 strRetVal = W("RuntimeMethodHandle");
-                break;
-            case MARSHAL_TYPE_RUNTIMEMETHODINFO:
-                strRetVal = W("RuntimeMethodInfo");
-                break;
-            case MARSHAL_TYPE_RUNTIMEMODULE:
-                strRetVal = W("RuntimeModule");
-                break;
-            case MARSHAL_TYPE_RUNTIMEASSEMBLY:
-                strRetVal = W("RuntimeAssembly");
                 break;
             default:
                 strRetVal = W("<UNKNOWN>");

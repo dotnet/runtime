@@ -557,11 +557,15 @@ namespace R2RDump
                             {
                                 gcInfo = new Amd64.GcInfo(Image, unwindOffset + unwindInfo.Size, Machine, R2RHeader.MajorVersion);
                             }
+                            catch (OverflowException)
+                            {
+                                Console.WriteLine($"Warning: Could not parse GC Info for method: {method.SignatureString}");
+                            }
                             catch (IndexOutOfRangeException)
                             {
                                 Console.WriteLine($"Warning: Could not parse GC Info for method: {method.SignatureString}");
                             }
-
+                             
                         }
                     }
                     else if (Machine == Machine.I386)

@@ -66,7 +66,7 @@ public:
     // GetMemberRefOfFieldInfo
     // This function will return a memberRef token given a FieldInfo
     static
-    mdMemberRef QCALLTYPE GetMemberRefOfFieldInfo(QCall::ModuleHandle pModule, mdTypeDef tr, EnregisteredTypeHandle th, mdFieldDef tkField);
+    mdMemberRef QCALLTYPE GetMemberRefOfFieldInfo(QCall::ModuleHandle pModule, mdTypeDef tr, QCall::TypeHandle th, mdFieldDef tkField);
 
     // GetMemberRefFromSignature
     // This function will return the MemberRef token given the signature from managed code

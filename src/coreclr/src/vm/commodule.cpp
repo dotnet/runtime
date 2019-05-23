@@ -556,7 +556,7 @@ INT32 QCALLTYPE COMModule::GetMemberRefOfMethodInfo(QCall::ModuleHandle pModule,
 // Return a MemberRef token given a RuntimeFieldInfo
 //
 //******************************************************************************
-mdMemberRef QCALLTYPE COMModule::GetMemberRefOfFieldInfo(QCall::ModuleHandle pModule, mdTypeDef tr, void * th, mdFieldDef tkField)
+mdMemberRef QCALLTYPE COMModule::GetMemberRefOfFieldInfo(QCall::ModuleHandle pModule, mdTypeDef tr, QCall::TypeHandle th, mdFieldDef tkField)
 {
     QCALL_CONTRACT;
     
@@ -571,7 +571,7 @@ mdMemberRef QCALLTYPE COMModule::GetMemberRefOfFieldInfo(QCall::ModuleHandle pMo
     }
     else
     {
-        TypeHandle typeHandle = TypeHandle::FromPtr(th);       
+        TypeHandle typeHandle = th.AsTypeHandle();
 
         RefClassWriter * pRCW = pModule->GetReflectionModule()->GetClassWriter(); 
         _ASSERTE(pRCW);

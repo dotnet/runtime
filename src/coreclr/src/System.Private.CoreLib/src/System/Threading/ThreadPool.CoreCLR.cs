@@ -298,7 +298,7 @@ namespace System.Threading
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern bool RequestWorkerThread();
+        internal static extern Interop.BOOL RequestWorkerThread();
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe bool PostQueuedCompletionStatus(NativeOverlapped* overlapped);
