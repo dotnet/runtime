@@ -11,7 +11,13 @@
     <IntermediateOutputPath>$(ArtifactsObjDir)ref/$(MSBuildProjectName)/$(Configuration)</IntermediateOutputPath>
 
     <!-- disable warnings about unused fields -->
-    <NoWarn>$(NoWarn);0169;0649</NoWarn>
+    <NoWarn>$(NoWarn);CS0169;CS0649;CS8618</NoWarn>
+
+    <!-- disable CS8597 because we throw null on reference assemblies. -->
+    <NoWarn>$(NoWarn);CS8597</NoWarn>
+
+    <!-- We base calls from constructors with null literals. -->
+    <NoWarn>$(NoWarn);CS8625</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsReferenceAssembly)'=='true'">
