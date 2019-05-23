@@ -91,6 +91,18 @@ void CallCounter::DisableCallCounting(MethodDesc* pMethodDesc)
     m_methodToCallCount.Add(CallCounterEntry::CreateWithCallCountingDisabled(pMethodDesc));
 }
 
+bool CallCounter::WasCalledAtMostOnce(MethodDesc* pMethodDesc)
+{
+    WRAPPER_NO_CONTRACT;
+
+    SpinLockHolder holder(&m_lock);
+
+    const CallCounterEntry *existingEntry = m_methodToCallCount.LookupPtr(pMethodDesc);
+    return
+        existingEntry == nullptr ||
+        existingEntry->callCountLimit >= (int)g_pConfig->TieredCompilation_CallCountThreshold() - 1;
+}
+
 // This is called by the prestub each time the method is invoked in a particular
 // AppDomain (the AppDomain for which AppDomain.GetCallCounter() == this). These
 // calls continue until we backpatch the prestub to avoid future calls. This allows

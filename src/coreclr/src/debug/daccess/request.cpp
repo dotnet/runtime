@@ -1131,32 +1131,56 @@ HRESULT ClrDataAccess::GetTieredVersions(
                     goto cleanup;
                 }
 
+                TADDR r2rImageBase = NULL;
+                TADDR r2rImageEnd = NULL;
+                {
+                    PTR_Module pModule = (PTR_Module)pMD->GetModule();
+                    if (pModule->IsReadyToRun())
+                    {
+                        PTR_PEImageLayout pImage = pModule->GetReadyToRunInfo()->GetImage();
+                        r2rImageBase = dac_cast<TADDR>(pImage->GetBase());
+                        r2rImageEnd = r2rImageBase + pImage->GetSize();
+                    }
+                }
+
                 NativeCodeVersionCollection nativeCodeVersions = ilCodeVersion.GetNativeCodeVersions(pMD);
                 int count = 0;
                 for (NativeCodeVersionIterator iter = nativeCodeVersions.Begin(); iter != nativeCodeVersions.End(); iter++)
                 {
-                    nativeCodeAddrs[count].NativeCodeAddr = (*iter).GetNativeCode();
+                    TADDR pNativeCode = PCODEToPINSTR((*iter).GetNativeCode());
+                    nativeCodeAddrs[count].NativeCodeAddr = pNativeCode;
                     PTR_NativeCodeVersionNode pNode = (*iter).AsNode();
                     nativeCodeAddrs[count].NativeCodeVersionNodePtr = TO_CDADDR(PTR_TO_TADDR(pNode));
 
-                    if (pMD->IsEligibleForTieredCompilation())
+                    if (r2rImageBase <= pNativeCode && pNativeCode < r2rImageEnd)
+                    {
+                        nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_ReadyToRun;
+                    }
+                    else if (pMD->IsEligibleForTieredCompilation())
                     {
                         switch ((*iter).GetOptimizationTier())
                         {
                         default:
-                            nativeCodeAddrs[count].TieredInfo = DacpTieredVersionData::TIERED_UNKNOWN;
+                            nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Unknown;
                             break;
                         case NativeCodeVersion::OptimizationTier0:
-                            nativeCodeAddrs[count].TieredInfo = DacpTieredVersionData::TIERED_0;
+                            nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_QuickJitted;
                             break;
                         case NativeCodeVersion::OptimizationTier1:
-                            nativeCodeAddrs[count].TieredInfo = DacpTieredVersionData::TIERED_1;
+                            nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_OptimizedTier1;
+                            break;
+                        case NativeCodeVersion::OptimizationTierOptimized:
+                            nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
                             break;
                         }
                     }
+                    else if (pMD->IsJitOptimizationDisabled())
+                    {
+                        nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_MinOptJitted;
+                    }
                     else
                     {
-                        nativeCodeAddrs[count].TieredInfo = DacpTieredVersionData::NON_TIERED;
+                        nativeCodeAddrs[count].OptimizationTier = DacpTieredVersionData::OptimizationTier_Optimized;
                     }
 
                     ++count;

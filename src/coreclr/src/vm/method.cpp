@@ -4802,12 +4802,12 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
         // Functional requirement
         CodeVersionManager::IsMethodSupported(this) &&
 
-        // Policy - If quick JIT is disabled for the startup tier and the module is not ReadyToRun, the method would effectively
-        // not be tiered currently, so make the method ineligible for tiering to avoid some unnecessary overhead
-        (g_pConfig->TieredCompilation_QuickJit() || GetModule()->IsReadyToRun()) &&
+        // Policy - If QuickJit is disabled and the module does not have any pregenerated code, the method would effectively not
+        // be tiered currently, so make the method ineligible for tiering to avoid some unnecessary overhead
+        (g_pConfig->TieredCompilation_QuickJit() || GetModule()->HasNativeOrReadyToRunImage()) &&
 
-        // Policy - Debugging works much better with unoptimized code
-        !CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits()) &&
+        // Policy - Generating optimized code is not disabled
+        !IsJitOptimizationDisabled() &&
 
         // Policy - Tiered compilation is not disabled by the profiler
         !CORProfilerDisableTieredCompilation())
@@ -4821,6 +4821,24 @@ bool MethodDesc::DetermineAndSetIsEligibleForTieredCompilation()
     return false;
 }
 
+#endif // !DACCESS_COMPILE
+
+#ifndef CROSSGEN_COMPILE
+bool MethodDesc::IsJitOptimizationDisabled()
+{
+    WRAPPER_NO_CONTRACT;
+
+    return
+        g_pConfig->JitMinOpts() ||
+#ifdef _DEBUG
+        g_pConfig->GenDebuggableCode() ||
+#endif
+        CORDisableJITOptimizations(GetModule()->GetDebuggerInfoBits()) ||
+        (!IsNoMetadata() && IsMiNoOptimization(GetImplAttrs()));
+}
+#endif
+
+#ifndef DACCESS_COMPILE
 #ifndef CROSSGEN_COMPILE
 
 void MethodDesc::RecordAndBackpatchEntryPointSlot(

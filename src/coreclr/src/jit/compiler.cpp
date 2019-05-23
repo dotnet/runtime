@@ -4050,6 +4050,13 @@ _SetMinOpts:
     // Set the MinOpts value
     opts.SetMinOpts(theMinOptsValue);
 
+    // Notify the VM if MinOpts is being used when not requested
+    if (theMinOptsValue && !compIsForInlining() && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) &&
+        !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) && !opts.compDbgCode)
+    {
+        info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_MIN_OPT);
+    }
+
 #ifdef DEBUG
     if (verbose && !compIsForInlining())
     {
@@ -5949,14 +5956,14 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE            classPtr,
     }
 
 #ifdef FEATURE_CORECLR
-    if (fgHasBackwardJump && (info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0 && fgCanSwitchToTier1())
+    if (fgHasBackwardJump && (info.compFlags & CORINFO_FLG_DISABLE_TIER0_FOR_LOOPS) != 0 && fgCanSwitchToOptimized())
 #else // !FEATURE_CORECLR
     // We may want to use JitConfig value here to support DISABLE_TIER0_FOR_LOOPS
     if (fgHasBackwardJump && fgCanSwitchToTier1())
 #endif
     {
         // Method likely has a loop, switch to the OptimizedTier to avoid spending too much time running slower code
-        fgSwitchToTier1();
+        fgSwitchToOptimized();
     }
 
     compSetOptimizationLevel();
