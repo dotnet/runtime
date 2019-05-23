@@ -297,6 +297,20 @@ nomac:CLRAuthenticodeVerification:::AuthenticodeVerificationStop_V1
 ####################
 nostack:CLRRuntimeInformation:::RuntimeInformationStart
 
+###########################
+# Tiered compilation events
+###########################
+nomac:TieredCompilation:::TieredCompilationSettings
+nostack:TieredCompilation:::TieredCompilationSettings
+nomac:TieredCompilation:::TieredCompilationPause
+nostack:TieredCompilation:::TieredCompilationPause
+nomac:TieredCompilation:::TieredCompilationResume
+nostack:TieredCompilation:::TieredCompilationResume
+nomac:TieredCompilation:::TieredCompilationBackgroundJitStart
+nostack:TieredCompilation:::TieredCompilationBackgroundJitStart
+nomac:TieredCompilation:::TieredCompilationBackgroundJitStop
+nostack:TieredCompilation:::TieredCompilationBackgroundJitStop
+
 ##################################
 # Events from the rundown provider
 ##################################
@@ -374,6 +388,12 @@ nostack:CLRPerfTrack:::ModuleRangeDCEnd
 # RuntimeInfo events
 ####################
 nomac:CLRRuntimeInformationRundown:::RuntimeInformationDCStart
+
+###########################
+# Tiered compilation events
+###########################
+nomac:TieredCompilationRundown:::TieredCompilationSettingsDCStart
+nostack:TieredCompilationRundown:::TieredCompilationSettingsDCStart
 
 ##################################
 # Events from the private provider

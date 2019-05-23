@@ -94,6 +94,7 @@ public:
     bool IsCallCountingEnabled(PTR_MethodDesc pMethodDesc);
 #ifndef DACCESS_COMPILE
     void DisableCallCounting(MethodDesc* pMethodDesc);
+    bool WasCalledAtMostOnce(MethodDesc* pMethodDesc);
 #endif
 
     void OnMethodCalled(MethodDesc* pMethodDesc, TieredCompilationManager *pTieredCompilationManager, BOOL* shouldStopCountingCallsRef, BOOL* wasPromotedToNextTierRef);

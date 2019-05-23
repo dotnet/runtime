@@ -864,7 +864,8 @@ enum CorInfoMethodRuntimeFlags
     CORINFO_FLG_BAD_INLINEE         = 0x00000001, // The method is not suitable for inlining
     CORINFO_FLG_VERIFIABLE          = 0x00000002, // The method has verifiable code
     CORINFO_FLG_UNVERIFIABLE        = 0x00000004, // The method has unverifiable code
-    CORINFO_FLG_SWITCHED_TO_TIER1   = 0x00000008, // The JIT decided to switch to tier 1 for this method, when a different tier was requested
+    CORINFO_FLG_SWITCHED_TO_MIN_OPT = 0x00000008, // The JIT decided to switch to MinOpt for this method, when it was not requested
+    CORINFO_FLG_SWITCHED_TO_OPTIMIZED = 0x00000010, // The JIT decided to switch to tier 1 for this method, when a different tier was requested
 };
 
 

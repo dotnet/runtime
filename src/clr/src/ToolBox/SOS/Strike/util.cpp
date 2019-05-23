@@ -3252,21 +3252,27 @@ void DumpTieredNativeCodeAddressInfo(struct DacpTieredVersionData * pTieredVersi
     for(int i = cTieredVersionData - 1; i >= 0; --i)
     {
         const char *descriptor = NULL;
-        switch(pTieredVersionData[i].TieredInfo)
+        switch(pTieredVersionData[i].OptimizationTier)
         {
-        case DacpTieredVersionData::TIERED_UNKNOWN:
+        case DacpTieredVersionData::OptimizationTier_Unknown:
         default:
             _ASSERTE(!"Update SOS to understand the new tier");
             descriptor = "Unknown Tier";
             break;
-        case DacpTieredVersionData::NON_TIERED:
-            descriptor = "Non-Tiered";
+        case DacpTieredVersionData::OptimizationTier_MinOptJitted:
+            descriptor = "MinOptJitted";
             break;
-        case DacpTieredVersionData::TIERED_0:
-            descriptor = "Tier 0";
+        case DacpTieredVersionData::OptimizationTier_Optimized:
+            descriptor = "Optimized";
             break;
-        case DacpTieredVersionData::TIERED_1:
-            descriptor = "Tier 1";
+        case DacpTieredVersionData::OptimizationTier_QuickJitted:
+            descriptor = "QuickJitted";
+            break;
+        case DacpTieredVersionData::OptimizationTier_OptimizedTier1:
+            descriptor = "OptimizedTier1";
+            break;
+        case DacpTieredVersionData::OptimizationTier_ReadyToRun:
+            descriptor = "ReadyToRun";
             break;
         }
 

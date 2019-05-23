@@ -5105,8 +5105,8 @@ protected:
 
     bool fgHasBackwardJump;
 
-    bool fgCanSwitchToTier1();
-    void fgSwitchToTier1();
+    bool fgCanSwitchToOptimized();
+    void fgSwitchToOptimized();
 
     bool fgMayExplicitTailCall();
 

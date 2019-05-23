@@ -4253,10 +4253,10 @@ private:
 };
 
 //------------------------------------------------------------------------
-// fgCanSwitchToTier1: Determines if conditions are met to allow switching the opt level to tier 1
+// fgCanSwitchToOptimized: Determines if conditions are met to allow switching the opt level to optimized
 //
 // Return Value:
-//    True if the opt level may be switched to tier 1, false otherwise
+//    True if the opt level may be switched from tier 0 to optimized, false otherwise
 //
 // Assumptions:
 //    - compInitOptions() has been called
@@ -4266,7 +4266,7 @@ private:
 //    This method is to be called at some point before compSetOptimizationLevel() to determine if the opt level may be
 //    changed based on information gathered in early phases.
 
-bool Compiler::fgCanSwitchToTier1()
+bool Compiler::fgCanSwitchToOptimized()
 {
     bool result = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT) &&
                   !opts.compDbgCode && !compIsForInlining();
@@ -4281,28 +4281,27 @@ bool Compiler::fgCanSwitchToTier1()
 }
 
 //------------------------------------------------------------------------
-// fgSwitchToTier1: Switch the opt level to tier 1
+// fgSwitchToOptimized: Switch the opt level from tier 0 to optimized
 //
 // Assumptions:
-//    - fgCanSwitchToTier1() is true
+//    - fgCanSwitchToOptimized() is true
 //    - compSetOptimizationLevel() has not been called
 //
 // Notes:
-//    This method is to be called at some point before compSetOptimizationLevel() to switch the opt level to tier 1
+//    This method is to be called at some point before compSetOptimizationLevel() to switch the opt level to optimized
 //    based on information gathered in early phases.
 
-void Compiler::fgSwitchToTier1()
+void Compiler::fgSwitchToOptimized()
 {
-    assert(fgCanSwitchToTier1());
+    assert(fgCanSwitchToOptimized());
 
-    // Switch to tier 1 and re-init options
+    // Switch to optimized and re-init options
     assert(opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0));
     opts.jitFlags->Clear(JitFlags::JIT_FLAG_TIER0);
-    opts.jitFlags->Set(JitFlags::JIT_FLAG_TIER1);
     compInitOptions(opts.jitFlags);
 
     // Notify the VM of the change
-    info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_TIER1);
+    info.compCompHnd->setMethodAttribs(info.compMethodHnd, CORINFO_FLG_SWITCHED_TO_OPTIMIZED);
 }
 
 //------------------------------------------------------------------------
@@ -5605,12 +5604,12 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 #endif // !FEATURE_CORECLR && _TARGET_AMD64_
                     }
 
-                    if (fgCanSwitchToTier1() && fgMayExplicitTailCall())
+                    if (fgCanSwitchToOptimized() && fgMayExplicitTailCall())
                     {
                         // Method has an explicit tail call that may run like a loop or may not be generated as a tail
-                        // call in tier 0, switch to tier 1 to avoid spending too much time running slower code and to
-                        // avoid stack overflow from recursion
-                        fgSwitchToTier1();
+                        // call in tier 0, switch to optimized to avoid spending too much time running slower code and
+                        // to avoid stack overflow from recursion
+                        fgSwitchToOptimized();
                     }
 
 #if !defined(FEATURE_CORECLR) && defined(_TARGET_AMD64_)

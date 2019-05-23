@@ -467,6 +467,7 @@ extern DummyGlobalContract ___contract;
 #include "WinRTRedirector.h"
 #include "winrtredirector.inl"
 #endif // FEATURE_COMINTEROP
+#include "eventtrace.inl"
 
 #if defined(COMMON_TURNED_FPO_ON)
 #pragma optimize("", on)        // Go back to command line default optimizations
