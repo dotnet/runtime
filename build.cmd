@@ -646,7 +646,7 @@ if %__BuildCoreLib% EQU 1 (
     if %__IbcOptimize% EQU 1 (
         echo %__MsgPrefix%Commencing IBCMerge of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
         set IbcMergeProjectFilePath=%__ProjectDir%\src\.nuget\optdata\ibcmerge.csproj
-        for /f "tokens=*" %%s in ('call "%__ProjectDir%\dotnet.cmd" msbuild "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackageVersion /p:ArcadeBuild=true /nologo') do @(
+        for /f "tokens=*" %%s in ('call "%__ProjectDir%\dotnet.cmd" msbuild "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackageVersion /p:ArcadeBuild^=true /nologo') do @(
             set __IbcMergeVersion=%%s
         )
 
