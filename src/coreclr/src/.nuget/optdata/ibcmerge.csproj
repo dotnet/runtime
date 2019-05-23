@@ -15,6 +15,7 @@
 
   <PropertyGroup>
     <RestoreSources>
+      $(RestoreSources);
       https://devdiv.pkgs.visualstudio.com/_packaging/dotnet-core-internal-tooling/nuget/v3/index.json;
     </RestoreSources>
   </PropertyGroup>

@@ -114,7 +114,6 @@ jobs:
           displayName: Restore internal tools
           inputs:
             command: restore
-            arguments: /p:ArcadeBuild=true
             feedsToUse: config
             projects: 'src/.nuget/optdata/ibcmerge.csproj'
             nugetConfigPath: 'eng/internal/NuGet.config'

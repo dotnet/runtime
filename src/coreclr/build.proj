@@ -7,7 +7,7 @@
   <Import Project="dir.traversal.targets" />
 
   <Target Name="RestoreOptData" Condition="'$(RestoreDuringBuild)'=='true' and '$(BuildType)'=='Release'">
-    <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/optdata/optdata.csproj /p:ArcadeBuild=true" StandardOutputImportance="Low" />
+    <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/optdata/optdata.csproj" StandardOutputImportance="Low" />
   </Target>
 
   <Import Project="$(ToolsDir)clean.targets" />
