@@ -3005,6 +3005,11 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			ip += 4;
 			++sp;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_LDC_I8_S)
+			sp->data.l = *(const short *)(ip + 1);
+			ip += 2;
+			++sp;
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LDC_R4) {
 			guint32 val;
 			++ip;

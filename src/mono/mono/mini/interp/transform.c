@@ -200,6 +200,7 @@ static int stack_type [] = {
 #define MINT_CLT_FP MINT_CLT_R8
 #define MINT_CLE_FP MINT_CLE_R8
 
+#define MINT_CONV_OVF_U4_P MINT_CONV_OVF_U4_I8
 #else
 
 #define MINT_NEG_P MINT_NEG_I4
@@ -245,6 +246,7 @@ static int stack_type [] = {
 #define MINT_CLT_FP MINT_CLT_R4
 #define MINT_CLE_FP MINT_CLE_R4
 
+#define MINT_CONV_OVF_U4_P MINT_CONV_OVF_U4_I4
 #endif
 
 typedef struct {
@@ -1264,6 +1266,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 				*op = MINT_BREAK;
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "ByReference`1")) {
+		g_assert (!strcmp (tm, "get_Value"));
 		*op = MINT_INTRINS_BYREFERENCE_GET_VALUE;
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "Math") && csignature->param_count == 1 && csignature->params [0]->type == MONO_TYPE_R8) {
 		if (tm [0] == 'A') {
@@ -1348,7 +1351,24 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			*op = MINT_INTRINS_UNSAFE_BYTE_OFFSET;
 		else if (!strcmp (tm, "As") || !strcmp (tm, "AsRef"))
 			*op = MINT_NOP;
-		else if (!strcmp (tm, "SizeOf")) {
+		else if (!strcmp (tm, "AsPointer")) {
+			/* NOP */
+			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_MP);
+			td->ip += 5;
+			return TRUE;
+		} else if (!strcmp (tm, "IsAddressLessThan")) {
+			MonoGenericContext *ctx = mono_method_get_context (target_method);
+			g_assert (ctx);
+			g_assert (ctx->method_inst);
+			g_assert (ctx->method_inst->type_argc == 1);
+
+			MonoClass *k = mono_defaults.boolean_class;
+			interp_add_ins (td, MINT_CLT_UN_P);
+			td->sp -= 1;
+			SET_TYPE (td->sp - 1, stack_type [mint_type (m_class_get_byval_arg (k))], k);
+			td->ip += 5;
+			return TRUE;
+		} else if (!strcmp (tm, "SizeOf")) {
 			MonoGenericContext *ctx = mono_method_get_context (target_method);
 			g_assert (ctx);
 			g_assert (ctx->method_inst);
@@ -1386,12 +1406,28 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && !strcmp (klass_name, "RuntimeMethodHandle") && !strcmp (tm, "GetFunctionPointer") && csignature->param_count == 1) {
 		// We must intrinsify this method on interp so we don't return a pointer to native code entering interpreter
 		*op = MINT_LDFTN_DYNAMIC;
-	} else if (target_method->klass == mono_defaults.object_class) {
+	} else if (in_corlib && target_method->klass == mono_defaults.object_class) {
 		if (!strcmp (tm, "InternalGetHashCode"))
 			*op = MINT_INTRINS_GET_HASHCODE;
 #ifdef DISABLE_REMOTING
 		else if (!strcmp (tm, "GetType"))
 			*op = MINT_INTRINS_GET_TYPE;
+#endif
+#ifdef ENABLE_NETCORE
+		else if (!strcmp (tm, "GetRawData")) {
+#if SIZEOF_VOID_P == 8
+			interp_add_ins (td, MINT_LDC_I8_S);
+#else
+			interp_add_ins (td, MINT_LDC_I4_S);
+#endif
+			td->last_ins->data [0] = (gint16) MONO_ABI_SIZEOF (MonoObject);
+
+			interp_add_ins (td, MINT_ADD_P);
+			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_MP);
+
+			td->ip += 5;
+			return TRUE;
+		}
 #endif
 	} else if (in_corlib && target_method->klass == mono_defaults.enum_class && !strcmp (tm, "HasFlag")) {
 		gboolean intrinsify = FALSE;
@@ -1437,6 +1473,11 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			td->ip += 5;
 			return TRUE;
 		}
+	} else if (in_corlib && !strcmp (klass_name_space, "System.Threading") && !strcmp (klass_name, "Interlocked")) {
+#if ENABLE_NETCORE
+		if (!strcmp (tm, "MemoryBarrier") && csignature->param_count == 0)
+			*op = MINT_MONO_MEMORY_BARRIER;
+#endif
 	}
 
 	return FALSE;
@@ -5007,6 +5048,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			case STACK_TYPE_I8:
 				interp_add_ins (td, MINT_CONV_OVF_U4_I8);
+				break;
+			case STACK_TYPE_MP:
+				interp_add_ins (td, MINT_CONV_OVF_U4_P);
 				break;
 			default:
 				g_assert_not_reached ();
