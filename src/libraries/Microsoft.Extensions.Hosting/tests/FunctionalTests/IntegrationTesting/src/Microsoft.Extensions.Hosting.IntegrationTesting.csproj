@@ -11,6 +11,7 @@
     <!-- This is used as a package by aspnet benchmarking infrastructure. It is meant for internal-use only. -->
     <IsShippingPackage>false</IsShippingPackage>
     <IsPackable>true</IsPackable>
+    <ExcludeFromSourceBuild>true</ExcludeFromSourceBuild>
   </PropertyGroup>
 
   <ItemGroup>
