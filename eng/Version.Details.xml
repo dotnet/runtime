@@ -5,9 +5,9 @@
       <Uri>https://github.com/dotnet/corefx</Uri>
       <Sha>11eba7947e9736109c588a1cfcb77987cb80f570</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Targets" Version="2.0.0" Pinned="true">
+    <Dependency Name="Microsoft.NETCore.Targets" Version="3.0.0-preview6.19270.15">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>8321c729934c0f8be754953439b88e6e1c120c24</Sha>
+      <Sha>11eba7947e9736109c588a1cfcb77987cb80f570</Sha>
     </Dependency>
     <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-preview6.19270.15">
       <Uri>https://github.com/dotnet/corefx</Uri>
