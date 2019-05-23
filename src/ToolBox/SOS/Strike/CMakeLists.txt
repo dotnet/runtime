@@ -132,7 +132,6 @@ else(WIN32)
     strike.cpp
     sos.cpp
     util.cpp
-    ../../../coreclr/hosts/unixcoreruncommon/coreruncommon.cpp
   )
 
   set(SOS_LIBRARY
@@ -142,6 +141,7 @@ else(WIN32)
     # share the PAL in the dac module
     mscordaccore
     palrt
+    unixcoreruncommon
   )
 
   set(DEF_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/sos_unixexports.src)
