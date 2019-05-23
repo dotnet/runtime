@@ -50,37 +50,22 @@
     <HelixCommand>$(HelixCommand) /p:LocalPackagesPath="%HELIX_CORRELATION_PAYLOAD%\packages\</HelixCommand>
   </PropertyGroup>
 
-  <!-- Define which workloads require global tools. -->
-  <PropertyGroup Condition="'$(UseGlobalTools)' == ''">
-    <UseGlobalTools Condition="'$(Coverage)' == 'true'">true</UseGlobalTools>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(TargetsWindows)' == 'true'">
+  <PropertyGroup Condition="'$(HelixCommand)' == ''">
     <!--
       For windows we need to use call, since the command is going to be called from a bat script created by Helix
       and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
       if we don't use call, then we cause the parent script to exit, and anything after will not be executed.
     -->
-    <HelixCommand>call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD% --dotnet-root %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
-    <HelixCommand Condition="'$(UseGlobalTools)' == 'true'">$(HelixCommand) --global-tools-dir "%HELIX_CORRELATION_PAYLOAD%\tools"</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD% --dotnet-root %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD" --dotnet-root "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(HelixCommand)' == '' and '$(TargetsWindows)' != 'true'">
-    <HelixCommand>./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD" --dotnet-root "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
-    <HelixCommand Condition="'$(UseGlobalTools)' == 'true'">$(HelixCommand) --global-tools-dir "$HELIX_CORRELATION_PAYLOAD/tools"</HelixCommand>
-  </PropertyGroup>
-
-  <!-- We need to include all dlls in the runtime path as inputs to make it really incremental
-  if we use the root folder, if a dll is updated, the folder's timestamp is not updated, therefore skipped. -->
+  <!--
+    We need to include all dlls in the runtime path as inputs to make it really incremental if we use the root folder,
+    if a dll is updated, the folder's timestamp is not updated, therefore skipped.
+  -->
   <ItemGroup>
     <_RuntimeInputs Include="$(TestHostRootPath)**/*.dll" />
-  </ItemGroup>
-
-  <!-- Add global tools to runtime -->
-  <ItemGroup Condition="'$(UseGlobalTools)' == 'true'">
-    <TestArchiveRuntimeDependency Include="$(DotNetRoot)shared\Microsoft.NETCore.App\**\*.*" DestinationDir="shared\Microsoft.NETCore.App" />
-    <TestArchiveRuntimeDependency Include="$(DotNetRoot)host\**\*.*" DestinationDir="host" />
-    <TestArchiveRuntimeDependency Include="$(GlobalToolsDir)**\*.*" DestinationDir="tools" />
   </ItemGroup>
 
   <Target Name="CompressRuntimeDirectory"
@@ -88,34 +73,17 @@
           Outputs="$(TestArchiveRuntimeFile)"
           Condition="'$(TargetGroup)' != 'AllConfigurations'">
 
-    <!-- Copy additional test dependencies. -->
-    <ItemGroup>
-      <_TestArchiveRuntimeDependency Include="@(TestArchiveRuntimeDependency)">
-        <DestinationDir>%(TestArchiveRuntimeDependency.DestinationDir)\%(RecursiveDir)</DestinationDir>
-      </_TestArchiveRuntimeDependency>
-    </ItemGroup>
-
-    <Copy SourceFiles="@(_TestArchiveRuntimeDependency)"
-          DestinationFiles="@(_TestArchiveRuntimeDependency -> '$([MSBuild]::NormalizePath('$(TestHostRootPath)', '%(DestinationDir)', '%(Filename)%(Extension)'))')"
-          SkipUnchangedFiles="true"
-          OverwriteReadOnlyFiles="true"
-          Retries="3"
-          RetryDelayMilliseconds="300">
-      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
-    </Copy>
-
     <MakeDir Directories="$(TestArchiveRuntimeRoot)" />
-    <ZipDirectory
-        SourceDirectory="$(TestHostRootPath)"
-        DestinationFile="$(TestArchiveRuntimeFile)"
-        Overwrite="true" />
+    <ZipDirectory SourceDirectory="$(TestHostRootPath)"
+                  DestinationFile="$(TestArchiveRuntimeFile)"
+                  Overwrite="true" />
 
   </Target>
 
   <Target Name="BuildHelixWorkItems"
           DependsOnTargets="CompressRuntimeDirectory">
-    <ItemGroup>
 
+    <ItemGroup>
       <HelixCorrelationPayload Include="$(HelixCorrelationPayload)" />
 
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
@@ -126,5 +94,6 @@
         <Timeout>$(_timeoutSpan)</Timeout>
       </HelixWorkItem>
     </ItemGroup>
+
   </Target>
 </Project>
