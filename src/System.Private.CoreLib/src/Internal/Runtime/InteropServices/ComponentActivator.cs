@@ -116,10 +116,10 @@ namespace Internal.Runtime.InteropServices
             Func<AssemblyName,Assembly> resolver = name => alc.LoadFromAssemblyName(name);
 
             // Throws
-            Type type = Type.GetType(typeName, resolver, null)!;
+            Type type = Type.GetType(typeName, resolver, null, throwOnError: true)!;
 
             // Throws
-            Type delegateType = Type.GetType(delegateTypeName, resolver, null)!;
+            Type delegateType = Type.GetType(delegateTypeName, resolver, null, throwOnError: true)!;
 
             // Throws
             return Delegate.CreateDelegate(delegateType, type, methodName)!;
