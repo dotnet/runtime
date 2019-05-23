@@ -1,0 +1,9 @@
+<Project>
+  <!-- Projects for optdata should all use Arcade  -->
+  <PropertyGroup>
+    <ArcadeBuild>true</ArcadeBuild>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+</Project>
