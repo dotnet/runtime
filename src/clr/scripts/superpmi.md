@@ -20,11 +20,11 @@ Although SuperPMI has many uses, setup and use of SuperPMI is not always trivial
 | OSX | x64 |  <ul><li>- [x] </li></ul> |  <ul><li>- [x] </li></ul> |  |
 | Windows | x64 |  <ul><li>- [x] </li></ul> |  <ul><li>- [x] </li></ul> |  |
 | Windows | x86 |  <ul><li>- [x] </li></ul> |  <ul><li>- [x] </li></ul> |  |
-| Windows | arm |  <ul><li>- [] </li></ul> |  <ul><li>- [] </li></ul> | N/A |
-| Windows | arm64 |  <ul><li>- [] </li></ul> |  <ul><li>- [] </li></ul> | N/A |
+| Windows | arm |  <ul><li>- [ ] </li></ul> |  <ul><li>- [ ] </li></ul> | N/A |
+| Windows | arm64 |  <ul><li>- [ ] </li></ul> |  <ul><li>- [ ] </li></ul> | N/A |
 | Ubuntu | x64 |  <ul><li>- [x] </li></ul> |  <ul><li>- [x] </li></ul> |  |
-| Ubuntu | arm32 |  <ul><li>- [] </li></ul> |  <ul><li>- [] </li></ul> | N/A |
-| Ubuntu | arm64 |  <ul><li>- [] </li></ul> |  <ul><li>- [] </li></ul> | N/A |
+| Ubuntu | arm32 |  <ul><li>- [ ] </li></ul> |  <ul><li>- [ ] </li></ul> | N/A |
+| Ubuntu | arm64 |  <ul><li>- [ ] </li></ul> |  <ul><li>- [ ] </li></ul> | N/A |
 
 ### Default Collections
 
