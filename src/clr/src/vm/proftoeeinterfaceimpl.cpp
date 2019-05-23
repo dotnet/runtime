@@ -1081,43 +1081,6 @@ bool SaveContainedObjectRef(Object * pBO, void * context)
     return TRUE;
 }
 
-typedef struct _ObjectRefOffsetTuple
-{
-    Object* pCurObjRef;
-    SIZE_T* pCurObjOffset;
-} ObjectRefOffsetTuple;
-
-//---------------------------------------------------------------------------------------
-//
-// Callback of type walk_fn used by IGCHeap::DiagWalkObject.  Stores each object reference
-// encountered into an array.
-//
-// Arguments:
-//      o - original object
-//      pBO - Object reference encountered in walk
-//      context - Array of locations within the walked object that point to other
-//                objects.  On entry, (*context) points to the next unfilled array
-//                entry.  On exit, that location is filled, and (*context) is incremented
-//                to point to the next entry.
-//
-// Return Value:
-//      Always returns TRUE to object walker so it walks the entire object
-//
-
-bool SaveContainedObjectRef2(Object* o, uint8_t** pBO, void* context)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    auto x = (ObjectRefOffsetTuple*)context;
-    *((Object **)(x->pCurObjRef)) = (Object *)*pBO;
-    *((SIZE_T **)(x->pCurObjOffset)) = (SIZE_T*)((uint8_t*)pBO - (uint8_t*)o);
-
-    x->pCurObjRef++;
-    x->pCurObjOffset++;
-
-    return TRUE;
-}
-
 //---------------------------------------------------------------------------------------
 //
 // Callback of type walk_fn used by the GC when walking the heap, to help profapi and ETW
@@ -6848,21 +6811,20 @@ HRESULT ProfToEEInterfaceImpl::RequestReJITWithInliners(
 }
 
 /*
- * GetObjectReferences
+ * EnumerateObjectReferences
  * 
- * Gets the object references (if any) from the ObjectID.
+ * Enumerates the object references (if any) from the ObjectID.
  * 
  * Parameters:
  *      objectId        - object id of interest
- *      cNumReferences  - count of references for which the profiler has allocated buffer space
- *      pcNumReferences - actual count of references
- *      references      - filled array of object references
+ *      callback        - callback to call for each object reference
+ *      clientData      - client data for the profiler to pass and receive for each reference
  *
  * Returns:
- *   S_OK if successful
+ *   S_OK if successful, S_FALSE if no references
  *
  */
-HRESULT ProfToEEInterfaceImpl::GetObjectReferences(ObjectID objectId, ULONG32 cNumReferences, ULONG32 *pcNumReferences, ObjectID references[], SIZE_T offsets[])
+HRESULT ProfToEEInterfaceImpl::EnumerateObjectReferences(ObjectID objectId, ObjectReferenceCallback callback, void* clientData)
 {
     CONTRACTL
     {
@@ -6878,10 +6840,10 @@ HRESULT ProfToEEInterfaceImpl::GetObjectReferences(ObjectID objectId, ULONG32 cN
         kP2EEAllowableAfterAttach,
         (LF_CORPROF,
         LL_INFO1000,
-        "**PROF: GetObjectReferences 0x%p.\n",
+        "**PROF: EnumerateObjectReferences 0x%p.\n",
         objectId));
 
-    if (cNumReferences > 0 && (pcNumReferences == nullptr || references == nullptr || offsets == nullptr))
+    if (callback == nullptr)
     {
         return E_INVALIDARG;
     }
@@ -6891,26 +6853,13 @@ HRESULT ProfToEEInterfaceImpl::GetObjectReferences(ObjectID objectId, ULONG32 cN
 
     if (pMT->ContainsPointersOrCollectible())
     {
-        if (cNumReferences == 0)
-        {
-            *pcNumReferences = 0;
-            GCHeapUtilities::GetGCHeap()->DiagWalkObject(pBO, &CountContainedObjectRef, (void*)pcNumReferences);
-        }
-        else
-        {
-            ObjectRefOffsetTuple t;
-            t.pCurObjRef = (Object*)references;
-            t.pCurObjOffset = offsets;
-
-            GCHeapUtilities::GetGCHeap()->DiagWalkObject2(pBO, &SaveContainedObjectRef2, (void*)&t);
-        }
+        GCHeapUtilities::GetGCHeap()->DiagWalkObject2(pBO, (walk_fn2)callback, clientData);
+        return S_OK;
     }
     else
     {
-        *pcNumReferences = 0;
+        return S_FALSE;
     }
-
-    return S_OK;
 }
 
 /*
