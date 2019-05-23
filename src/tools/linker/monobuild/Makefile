@@ -10,6 +10,8 @@ clean:
 	$(MSBUILD) ../monolinker.sln /t:clean
 
 prepare:
+	nuget help | head -1
+	nuget restore ../external/cecil/
 	nuget restore ../monolinker.sln
 	# The nunit runner used below seems to expect the old package layout.
 	# This could potentially be removed with an update to nunit.
