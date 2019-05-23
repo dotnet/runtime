@@ -4419,6 +4419,18 @@ void ExtOutTaskStateFlagsDescription(int stateFlags)
     ExtOut("\n");
 }
 
+void ExtOutStateMachineFields(AsyncRecord& ar)
+{
+    DacpMethodTableData mtabledata;
+    DacpMethodTableFieldData vMethodTableFields;
+    if (mtabledata.Request(g_sos, ar.StateMachineMT) == S_OK &&
+        vMethodTableFields.Request(g_sos, ar.StateMachineMT) == S_OK &&
+        vMethodTableFields.wNumInstanceFields + vMethodTableFields.wNumStaticFields > 0)
+    {
+        DisplayFields(ar.StateMachineMT, &mtabledata, &vMethodTableFields, (DWORD_PTR)ar.StateMachineAddr, TRUE, ar.IsValueType);
+    }
+}
+
 DECLARE_API(DumpAsync)
 {
     INIT_API();
@@ -4687,19 +4699,14 @@ DECLARE_API(DumpAsync)
 
             // Output the state machine's details as a single line.
             sos::Object obj = TO_TADDR(arIt->second.Address);
-            DacpMethodTableData mtabledata;
-            DacpMethodTableFieldData vMethodTableFields;
-            if (arIt->second.IsStateMachine &&
-                mtabledata.Request(g_sos, arIt->second.StateMachineMT) == S_OK &&
-                vMethodTableFields.Request(g_sos, arIt->second.StateMachineMT) == S_OK &&
-                vMethodTableFields.wNumInstanceFields + vMethodTableFields.wNumStaticFields > 0)
+            if (arIt->second.IsStateMachine)
             {
                 // This has a StateMachine.  Output its details.
                 sos::MethodTable mt = TO_TADDR(arIt->second.StateMachineMT);
                 DMLOut("%s %s %8d ", DMLAsync(obj.GetAddress()), DMLDumpHeapMT(obj.GetMT()), obj.GetSize());
                 if (includeCompleted) ExtOut("%8s ", GetAsyncRecordStatusDescription(arIt->second));
                 ExtOut("%10d %S\n", arIt->second.StateValue, mt.GetName());
-                if (dumpFields) DisplayFields(arIt->second.StateMachineMT, &mtabledata, &vMethodTableFields, (DWORD_PTR)arIt->second.StateMachineAddr, TRUE, arIt->second.IsValueType);
+                if (dumpFields) ExtOutStateMachineFields(arIt->second);
             }
             else
             {
@@ -4762,6 +4769,7 @@ DECLARE_API(DumpAsync)
                             sos::MethodTable contMT = TO_TADDR(contAsyncRecord->second.StateMachineMT);
                             if (contAsyncRecord->second.IsStateMachine) ExtOut("(%d) ", contAsyncRecord->second.StateValue);
                             ExtOut("%S\n", contMT.GetName());
+                            if (contAsyncRecord->second.IsStateMachine && dumpFields) ExtOutStateMachineFields(contAsyncRecord->second);
                         }
                         else
                         {
