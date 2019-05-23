@@ -980,15 +980,19 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 			mono_property_set_value_handle (prop, attr, pparams, error);
 			goto_if_nok (error, fail);
 		}
+		
+		g_free (name);
+		name = NULL;
 	}
 
 	goto exit;
 fail:
+	g_free (name);
+	name = NULL;
 	attr = mono_new_null ();
 exit:
 	if (field && !type_is_reference (field->type))
 		g_free (val);
-	g_free (name);
 	if (prop_type && !type_is_reference (prop_type))
 		g_free (pparams [0]);
 	if (params) {
