@@ -309,8 +309,8 @@
     <CLSCompliant Condition="'$(CLSCompliant)'==''">true</CLSCompliant>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
 
-    <!-- Warnings -->
-    <NoWarn>$(NoWarn);CS8609</NoWarn> <!-- TODO: Remove CS8609 once https://github.com/dotnet/roslyn/issues/23268 is consumed. -->
+    <!-- TODO-NULLABLE: remove CS8609, CS8610 once we consume roslyn that allows nullable covariant overrides -->
+    <NoWarn>$(NoWarn);CS8609;CS8610</NoWarn>
   </PropertyGroup>
 
   <!-- Set up some common paths -->
