@@ -175,11 +175,12 @@ namespace System.Runtime.InteropServices
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(m));
             }
 
-            InternalPrelink(rmi);
+            InternalPrelink(((IRuntimeMethodInfo)rmi).Value);
+            GC.KeepAlive(rmi);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern void InternalPrelink(IRuntimeMethodInfo m);
+        private static extern void InternalPrelink(RuntimeMethodHandleInternal m);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern /* struct _EXCEPTION_POINTERS* */ IntPtr GetExceptionPointers();
@@ -233,14 +234,14 @@ namespace System.Runtime.InteropServices
 
             if (m is RuntimeModule rtModule)
             {
-                return GetHINSTANCE(rtModule.GetNativeHandle());
+                return GetHINSTANCE(JitHelpers.GetQCallModuleOnStack(ref rtModule));
             }
 
             return (IntPtr)(-1);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr GetHINSTANCE(RuntimeModule m);
+        private static extern IntPtr GetHINSTANCE(QCallModule m);
 
 #endif // FEATURE_COMINTEROP
 

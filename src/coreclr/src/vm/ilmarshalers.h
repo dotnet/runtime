@@ -1822,27 +1822,6 @@ protected:
     virtual BinderClassID GetManagedTypeBinderID() = 0;
 };
 
-class ILIRuntimeMethodInfoMarshaler : public ILReflectionObjectMarshaler
-{
-protected:
-    virtual BinderFieldID GetObjectFieldID() { LIMITED_METHOD_CONTRACT; return FIELD__STUBMETHODINFO__HANDLE; }
-    virtual BinderClassID GetManagedTypeBinderID() { LIMITED_METHOD_CONTRACT; return CLASS__STUBMETHODINFO; }
-};
-
-class ILRuntimeModuleMarshaler : public ILReflectionObjectMarshaler
-{
-protected:
-    virtual BinderFieldID GetObjectFieldID() { LIMITED_METHOD_CONTRACT; return FIELD__MODULE__DATA; }
-    virtual BinderClassID GetManagedTypeBinderID() { LIMITED_METHOD_CONTRACT; return CLASS__MODULE; }
-};
-
-class ILRuntimeAssemblyMarshaler : public ILReflectionObjectMarshaler
-{
-protected:
-    virtual BinderFieldID GetObjectFieldID() { LIMITED_METHOD_CONTRACT; return FIELD__ASSEMBLY__HANDLE; }
-    virtual BinderClassID GetManagedTypeBinderID() { LIMITED_METHOD_CONTRACT; return CLASS__ASSEMBLY; }
-};
-
 class ILRuntimeTypeHandleMarshaler : public ILReflectionObjectMarshaler
 {
 protected:

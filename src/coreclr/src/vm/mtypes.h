@@ -105,9 +105,6 @@ DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_OLECOLOR,                        OleColorMars
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_RUNTIMETYPEHANDLE,               RuntimeTypeHandleMarshaler,    false)
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_RUNTIMEMETHODHANDLE,             RuntimeMethodHandleMarshaler,  false)
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_RUNTIMEFIELDHANDLE,              RuntimeFieldHandleMarshaler,   false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_RUNTIMEMETHODINFO,               IRuntimeMethodInfoMarshaler,   false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_RUNTIMEMODULE,                   RuntimeModuleMarshaler,        false)
-DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_RUNTIMEASSEMBLY,                 RuntimeAssemblyMarshaler,      false)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_MARSHALER_TYPE(MARSHAL_TYPE_NULLABLE,                        NullableMarshaler,             true)

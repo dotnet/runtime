@@ -132,67 +132,79 @@ namespace System.Reflection.Emit
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern int GetTypeRef(RuntimeModule module, string strFullName, RuntimeModule refedModule, string? strRefedModuleFileName, int tkResolution);
+        private static extern int GetTypeRef(QCallModule module, string strFullName, QCallModule refedModule, string? strRefedModuleFileName, int tkResolution);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern int GetMemberRef(RuntimeModule module, RuntimeModule refedModule, int tr, int defToken);
+        private static extern int GetMemberRef(QCallModule module, QCallModule refedModule, int tr, int defToken);
 
         private int GetMemberRef(Module? refedModule, int tr, int defToken)
         {
-            return GetMemberRef(GetNativeHandle(), GetRuntimeModuleFromModule(refedModule).GetNativeHandle(), tr, defToken);
+            ModuleBuilder thisModule = this;
+            RuntimeModule refedRuntimeModule = GetRuntimeModuleFromModule(refedModule);
+
+            return GetMemberRef(JitHelpers.GetQCallModuleOnStack(ref thisModule), JitHelpers.GetQCallModuleOnStack(ref refedRuntimeModule), tr, defToken);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern int GetMemberRefFromSignature(RuntimeModule module, int tr, string methodName, byte[] signature, int length);
+        private static extern int GetMemberRefFromSignature(QCallModule module, int tr, string methodName, byte[] signature, int length);
 
         private int GetMemberRefFromSignature(int tr, string methodName, byte[] signature, int length)
         {
-            return GetMemberRefFromSignature(GetNativeHandle(), tr, methodName, signature, length);
+            ModuleBuilder thisModule = this;
+            return GetMemberRefFromSignature(JitHelpers.GetQCallModuleOnStack(ref thisModule), tr, methodName, signature, length);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern int GetMemberRefOfMethodInfo(RuntimeModule module, int tr, IRuntimeMethodInfo method);
+        private static extern int GetMemberRefOfMethodInfo(QCallModule module, int tr, RuntimeMethodHandleInternal method);
 
         private int GetMemberRefOfMethodInfo(int tr, RuntimeMethodInfo method)
         {
             Debug.Assert(method != null);
 
-            return GetMemberRefOfMethodInfo(GetNativeHandle(), tr, method);
+            ModuleBuilder thisModule = this;
+            int result = GetMemberRefOfMethodInfo(JitHelpers.GetQCallModuleOnStack(ref thisModule), tr, ((IRuntimeMethodInfo)method).Value);
+            GC.KeepAlive(method);
+            return result;
         }
 
         private int GetMemberRefOfMethodInfo(int tr, RuntimeConstructorInfo method)
         {
             Debug.Assert(method != null);
 
-            return GetMemberRefOfMethodInfo(GetNativeHandle(), tr, method);
+            ModuleBuilder thisModule = this;
+            int result = GetMemberRefOfMethodInfo(JitHelpers.GetQCallModuleOnStack(ref thisModule), tr, ((IRuntimeMethodInfo)method).Value);
+            GC.KeepAlive(method);
+            return result;
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern int GetMemberRefOfFieldInfo(RuntimeModule module, int tkType, RuntimeTypeHandle declaringType, int tkField);
+        private static extern int GetMemberRefOfFieldInfo(QCallModule module, int tkType, QCallTypeHandle declaringType, int tkField);
 
         private int GetMemberRefOfFieldInfo(int tkType, RuntimeTypeHandle declaringType, RuntimeFieldInfo runtimeField)
         {
             Debug.Assert(runtimeField != null);
 
-            return GetMemberRefOfFieldInfo(GetNativeHandle(), tkType, declaringType, runtimeField.MetadataToken);
+            ModuleBuilder thisModule = this;
+            return GetMemberRefOfFieldInfo(JitHelpers.GetQCallModuleOnStack(ref thisModule), tkType, JitHelpers.GetQCallTypeHandleOnStack(ref declaringType), runtimeField.MetadataToken);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern int GetTokenFromTypeSpec(RuntimeModule pModule, byte[] signature, int length);
+        private static extern int GetTokenFromTypeSpec(QCallModule pModule, byte[] signature, int length);
 
         private int GetTokenFromTypeSpec(byte[] signature, int length)
         {
-            return GetTokenFromTypeSpec(GetNativeHandle(), signature, length);
+            ModuleBuilder thisModule = this;
+            return GetTokenFromTypeSpec(JitHelpers.GetQCallModuleOnStack(ref thisModule), signature, length);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern int GetArrayMethodToken(RuntimeModule module, int tkTypeSpec, string methodName, byte[] signature, int sigLength);
+        private static extern int GetArrayMethodToken(QCallModule module, int tkTypeSpec, string methodName, byte[] signature, int sigLength);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern int GetStringConstant(RuntimeModule module, string str, int length);
+        private static extern int GetStringConstant(QCallModule module, string str, int length);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern void SetFieldRVAContent(RuntimeModule module, int fdToken, byte[]? data, int length);
+        internal static extern void SetFieldRVAContent(QCallModule module, int fdToken, byte[]? data, int length);
 
         #endregion
 
@@ -237,7 +249,9 @@ namespace System.Reflection.Emit
             Debug.Assert(!type.IsByRef, "Must not be ByRef.");
             Debug.Assert(!type.IsGenericType || type.IsGenericTypeDefinition, "Must not have generic arguments.");
 
-            return GetTypeRef(GetNativeHandle(), typeName, GetRuntimeModuleFromModule(refedModule).GetNativeHandle(), strRefedModuleFileName, tkResolution);
+            ModuleBuilder thisModule = this;
+            RuntimeModule refedRuntimeModule = GetRuntimeModuleFromModule(refedModule);
+            return GetTypeRef(JitHelpers.GetQCallModuleOnStack(ref thisModule), typeName, JitHelpers.GetQCallModuleOnStack(ref refedRuntimeModule), strRefedModuleFileName, tkResolution);
         }
 
         internal MethodToken InternalGetConstructorToken(ConstructorInfo con, bool usingRef)
@@ -1274,7 +1288,8 @@ namespace System.Reflection.Emit
                 // Create MethodSepc M<Bar> with parent G?.M<S> 
                 byte[] sigBytes = SignatureHelper.GetMethodSpecSigHelper(
                     this, methodInfo.GetGenericArguments()).InternalGetSignature(out int sigLength);
-                tk = TypeBuilder.DefineMethodSpec(GetNativeHandle(), tk, sigBytes, sigLength);
+                ModuleBuilder thisModule = this;
+                tk = TypeBuilder.DefineMethodSpec(JitHelpers.GetQCallModuleOnStack(ref thisModule), tk, sigBytes, sigLength);
             }
             else
             {
@@ -1338,7 +1353,8 @@ namespace System.Reflection.Emit
             byte[] sigBytes = sigHelp.InternalGetSignature(out int length);
             TypeToken typeSpec = GetTypeTokenInternal(arrayClass);
 
-            return new MethodToken(GetArrayMethodToken(GetNativeHandle(),
+            ModuleBuilder thisModule = this;
+            return new MethodToken(GetArrayMethodToken(JitHelpers.GetQCallModuleOnStack(ref thisModule),
                 typeSpec.Token, methodName, sigBytes, length));
         }
 
@@ -1459,7 +1475,8 @@ namespace System.Reflection.Emit
 
             // Returns a token representing a String constant.  If the string 
             // value has already been defined, the existing token will be returned.
-            return new StringToken(GetStringConstant(GetNativeHandle(), str, str.Length));
+            ModuleBuilder thisModule = this;
+            return new StringToken(GetStringConstant(JitHelpers.GetQCallModuleOnStack(ref thisModule), str, str.Length));
         }
 
         public SignatureToken GetSignatureToken(SignatureHelper sigHelper)
@@ -1473,7 +1490,8 @@ namespace System.Reflection.Emit
 
             // get the signature in byte form
             byte[] sigBytes = sigHelper.InternalGetSignature(out int sigLength);
-            return new SignatureToken(TypeBuilder.GetTokenFromSig(GetNativeHandle(), sigBytes, sigLength));
+            ModuleBuilder thisModule = this;
+            return new SignatureToken(TypeBuilder.GetTokenFromSig(JitHelpers.GetQCallModuleOnStack(ref thisModule), sigBytes, sigLength));
         }
 
         public SignatureToken GetSignatureToken(byte[] sigBytes, int sigLength)
@@ -1486,7 +1504,8 @@ namespace System.Reflection.Emit
             byte[] localSigBytes = new byte[sigBytes.Length];
             Buffer.BlockCopy(sigBytes, 0, localSigBytes, 0, sigBytes.Length);
 
-            return new SignatureToken(TypeBuilder.GetTokenFromSig(GetNativeHandle(), localSigBytes, sigLength));
+            ModuleBuilder thisModule = this;
+            return new SignatureToken(TypeBuilder.GetTokenFromSig(JitHelpers.GetQCallModuleOnStack(ref thisModule), localSigBytes, sigLength));
         }
 
         #endregion

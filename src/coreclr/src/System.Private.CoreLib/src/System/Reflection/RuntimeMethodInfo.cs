@@ -528,7 +528,7 @@ namespace System.Reflection
         }
 #pragma warning restore CS8608
 
-        public override bool IsCollectible => RuntimeMethodHandle.GetIsCollectible(new RuntimeMethodHandleInternal(m_handle));
+        public override bool IsCollectible => (RuntimeMethodHandle.GetIsCollectible(new RuntimeMethodHandleInternal(m_handle)) != Interop.BOOL.FALSE);
 
         public override MethodInfo? GetBaseDefinition()
         {

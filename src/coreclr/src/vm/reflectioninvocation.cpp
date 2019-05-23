@@ -2709,13 +2709,13 @@ public:
     }
 };
 
-void QCALLTYPE ReflectionEnum::GetEnumValuesAndNames(EnregisteredTypeHandle pEnumType, QCall::ObjectHandleOnStack pReturnValues, QCall::ObjectHandleOnStack pReturnNames, BOOL fGetNames)
+void QCALLTYPE ReflectionEnum::GetEnumValuesAndNames(QCall::TypeHandle pEnumType, QCall::ObjectHandleOnStack pReturnValues, QCall::ObjectHandleOnStack pReturnNames, BOOL fGetNames)
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    TypeHandle th = TypeHandle::FromPtr(pEnumType);
+    TypeHandle th = pEnumType.AsTypeHandle();
 
     if (!th.IsEnum())
         COMPlusThrow(kArgumentException, W("Arg_MustBeEnum"));

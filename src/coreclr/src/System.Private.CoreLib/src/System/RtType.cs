@@ -3066,7 +3066,14 @@ namespace System
 
         internal sealed override RuntimeTypeHandle GetTypeHandleInternal() => new RuntimeTypeHandle(this);
 
-        public sealed override bool IsCollectible => RuntimeTypeHandle.IsCollectible(GetTypeHandleInternal());
+        public sealed override bool IsCollectible
+        {
+            get
+            {
+                RuntimeType thisType = this;
+                return RuntimeTypeHandle.IsCollectible(JitHelpers.GetQCallTypeHandleOnStack(ref thisType)) != Interop.BOOL.FALSE;
+            }
+        }
 
         protected override TypeCode GetTypeCodeImpl()
         {
