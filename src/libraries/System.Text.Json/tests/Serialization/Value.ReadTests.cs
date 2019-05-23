@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -101,42 +100,10 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadPrimitiveArray()
-        {
-            int[] i = JsonSerializer.Parse<int[]>(Encoding.UTF8.GetBytes(@"[1,2]"));
-            Assert.Equal(1, i[0]);
-            Assert.Equal(2, i[1]);
-
-            i = JsonSerializer.Parse<int[]>(Encoding.UTF8.GetBytes(@"[]"));
-            Assert.Equal(0, i.Length);
-        }
-
-        [Fact]
-        public static void ReadArrayWithEnums()
-        {
-            SampleEnum[] i = JsonSerializer.Parse<SampleEnum[]>(Encoding.UTF8.GetBytes(@"[1,2]"));
-            Assert.Equal(SampleEnum.One, i[0]);
-            Assert.Equal(SampleEnum.Two, i[1]);
-        }
-
-        [Fact]
         public static void EmptyStringInput()
         {
             string obj = JsonSerializer.Parse<string>(@"""""");
             Assert.Equal(string.Empty, obj);
-        }
-
-        [Fact]
-        public static void ReadPrimitiveArrayFail()
-        {
-            // Invalid data
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<int[]>(Encoding.UTF8.GetBytes(@"[1,""a""]")));
-
-            // Invalid data
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<List<int?>>(Encoding.UTF8.GetBytes(@"[1,""a""]")));
-
-            // Multidimensional arrays currently not supported
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<int[,]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]")));
         }
 
         [Fact]
@@ -300,90 +267,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<char?>("1"));
 
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<Enum>(unexpectedString));
-        }
-
-        [Fact]
-        public static void ReadObjectArray()
-        {
-            string data =
-                "[" +
-                SimpleTestClass.s_json +
-                "," +
-                SimpleTestClass.s_json +
-                "]";
-
-            SimpleTestClass[] i = JsonSerializer.Parse<SimpleTestClass[]>(Encoding.UTF8.GetBytes(data));
-
-            i[0].Verify();
-            i[1].Verify();
-        }
-
-        [Fact]
-        public static void ReadEmptyObjectArray()
-        {
-            SimpleTestClass[] data = JsonSerializer.Parse<SimpleTestClass[]>("[{}]");
-            Assert.Equal(1, data.Length);
-            Assert.NotNull(data[0]);
-        }
-
-        [Fact]
-        public static void ReadPrimitiveJaggedArray()
-        {
-            int[][] i = JsonSerializer.Parse<int[][]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
-            Assert.Equal(1, i[0][0]);
-            Assert.Equal(2, i[0][1]);
-            Assert.Equal(3, i[1][0]);
-            Assert.Equal(4, i[1][1]);
-        }
-
-        [Fact]
-        public static void ReadArrayWithInterleavedComments()
-        {
-            var options = new JsonSerializerOptions();
-            options.ReadCommentHandling = JsonCommentHandling.Skip;
-
-            int[][] i = JsonSerializer.Parse<int[][]>(Encoding.UTF8.GetBytes("[[1,2] // Inline [\n,[3, /* Multi\n]] Line*/4]]"), options);
-            Assert.Equal(1, i[0][0]);
-            Assert.Equal(2, i[0][1]);
-            Assert.Equal(3, i[1][0]);
-            Assert.Equal(4, i[1][1]);
-        }
-
-        public class TestClassWithBadData
-        {
-            public TestChildClassWithBadData[] Children { get; set; }
-        }
-
-        public class TestChildClassWithBadData
-        {
-            public int MyProperty { get; set; }
-        }
-
-        [Fact]
-        public static void ReadConversionFails()
-        {
-            byte[] data = Encoding.UTF8.GetBytes(
-                @"{" +
-                    @"""Children"":[" +
-                        @"{""MyProperty"":""StringButShouldBeInt""}" +
-                    @"]" +
-                @"}");
-
-            bool exceptionThrown = false;
-
-            try
-            {
-                JsonSerializer.Parse<TestClassWithBadData>(data);
-            }
-            catch (JsonException exception)
-            {
-                exceptionThrown = true;
-
-                // Exception should contain property path.
-                Assert.True(exception.ToString().Contains("[System.Text.Json.Serialization.Tests.ValueTests+TestClassWithBadData].Children.MyProperty"));
-            }
-
-            Assert.True(exceptionThrown);
         }
     }
 }
