@@ -120,6 +120,7 @@
   <PropertyGroup>
     <CommonPath>$(MSBuildThisFileDirectory)Common</CommonPath>
     <BclSourcesRoot>$(MSBuildThisFileDirectory)src</BclSourcesRoot>
+    <SharedBclSourcesRoot>$(MSBuildThisFileDirectory)shared</SharedBclSourcesRoot>
   </PropertyGroup>
 
   <!-- Msbuild variables needed to get CoreCLR features to be set properly. -->
@@ -374,6 +375,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Variant.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+    <Compile Include="$(SharedBclSourcesRoot)\Interop\Windows\Interop.BOOL.cs" /> <!-- The CLR internally uses a BOOL type analogous to the Windows BOOL type on Unix -->
     <Compile Include="$(BclSourcesRoot)\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DateTime.Unix.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.Unix.cs" />

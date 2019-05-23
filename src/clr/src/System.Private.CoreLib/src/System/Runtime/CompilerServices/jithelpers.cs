@@ -46,6 +46,47 @@ namespace System.Runtime.CompilerServices
         }
     }
 
+    internal struct QCallModule
+    {
+        private IntPtr m_ptr;
+        private IntPtr m_module;
+        internal QCallModule(IntPtr pObject, System.Reflection.RuntimeModule module)
+        {
+            m_ptr = pObject;
+            m_module = module.GetUnderlyingNativeHandle();
+        }
+        internal QCallModule(IntPtr pObject, System.Reflection.Emit.ModuleBuilder module)
+        {
+            m_ptr = pObject;
+            m_module = module.GetNativeHandle().GetUnderlyingNativeHandle();
+        }
+    }
+
+    internal struct QCallAssembly
+    {
+        private IntPtr m_ptr;
+        private IntPtr m_assembly;
+        internal QCallAssembly(IntPtr pObject, System.Reflection.RuntimeAssembly assembly)
+        {
+            m_ptr = pObject;
+            m_assembly = assembly.GetUnderlyingNativeHandle();
+        }
+    }
+
+    internal struct QCallTypeHandle
+    {
+        private IntPtr m_ptr;
+        private IntPtr m_handle;
+        internal QCallTypeHandle(IntPtr pObject, RuntimeType type)
+        {
+            m_ptr = pObject;
+            if (type != null)
+                m_handle = type.m_handle;
+            else
+                m_handle = IntPtr.Zero;
+        }
+    }
+
     // Helper class to assist with unsafe pinning of arbitrary objects.
     // It's used by VM code.
     internal class RawData
@@ -76,6 +117,35 @@ namespace System.Runtime.CompilerServices
         internal static ObjectHandleOnStack GetObjectHandleOnStack<T>(ref T o) where T : class?
         {
             return new ObjectHandleOnStack((IntPtr)Unsafe.AsPointer(ref o));
+        }
+
+        // Wraps RuntimeModule into a handle. Used to pass RuntimeModule to native code wihtout letting it be collected
+        internal static QCallModule GetQCallModuleOnStack(ref System.Reflection.RuntimeModule module)
+        {
+            return new QCallModule((IntPtr)Unsafe.AsPointer(ref module), module);
+        }
+
+        internal static QCallModule GetQCallModuleOnStack(ref System.Reflection.Emit.ModuleBuilder module)
+        {
+            return new QCallModule((IntPtr)Unsafe.AsPointer(ref module), module);
+        }
+
+        // Wraps RuntimeAssembly into a handle. Used to pass RuntimeAssembly to native code wihtout letting it be collected
+        internal static QCallAssembly GetQCallAssemblyOnStack(ref System.Reflection.RuntimeAssembly assembly)
+        {
+            return new QCallAssembly((IntPtr)Unsafe.AsPointer(ref assembly), assembly);
+        }
+
+        // Wraps RuntimeTypeHandle into a handle. Used to pass RuntimeAssembly to native code wihtout letting it be collected
+        internal static QCallTypeHandle GetQCallTypeHandleOnStack(ref System.RuntimeTypeHandle rth)
+        {
+            return new QCallTypeHandle((IntPtr)Unsafe.AsPointer(ref rth.m_type), rth.m_type);
+        }
+
+        // Wraps RuntimeTypeHandle into a handle. Used to pass RuntimeAssembly to native code wihtout letting it be collected
+        internal static QCallTypeHandle GetQCallTypeHandleOnStack(ref System.RuntimeType type)
+        {
+            return new QCallTypeHandle((IntPtr)Unsafe.AsPointer(ref type), type);
         }
 
         // Wraps StackCrawlMark into a handle. Used to pass StackCrawlMark to QCalls.

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
 using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System.Reflection.Emit
@@ -47,7 +48,8 @@ namespace System.Reflection.Emit
             int sigLength;
             byte[] signature = sigHelp.InternalGetSignature(out sigLength);
 
-            m_fieldTok = TypeBuilder.DefineField(m_typeBuilder.GetModuleBuilder().GetNativeHandle(),
+            ModuleBuilder module = m_typeBuilder.GetModuleBuilder();
+            m_fieldTok = TypeBuilder.DefineField(JitHelpers.GetQCallModuleOnStack(ref module),
                 typeBuilder.TypeToken.Token, fieldName, signature, sigLength, m_Attributes);
 
             m_tkField = new FieldToken(m_fieldTok, type);
@@ -58,7 +60,8 @@ namespace System.Reflection.Emit
         #region Internal Members
         internal void SetData(byte[]? data, int size)
         {
-            ModuleBuilder.SetFieldRVAContent(m_typeBuilder.GetModuleBuilder().GetNativeHandle(), m_tkField.Token, data, size);
+            ModuleBuilder module = m_typeBuilder.GetModuleBuilder();
+            ModuleBuilder.SetFieldRVAContent(JitHelpers.GetQCallModuleOnStack(ref module), m_tkField.Token, data, size);
         }
         #endregion
 
@@ -166,7 +169,8 @@ namespace System.Reflection.Emit
         {
             m_typeBuilder.ThrowIfCreated();
 
-            TypeBuilder.SetFieldLayoutOffset(m_typeBuilder.GetModuleBuilder().GetNativeHandle(), GetToken().Token, iOffset);
+            ModuleBuilder module = m_typeBuilder.GetModuleBuilder();
+            TypeBuilder.SetFieldLayoutOffset(JitHelpers.GetQCallModuleOnStack(ref module), GetToken().Token, iOffset);
         }
 
         public void SetConstant(object? defaultValue)
