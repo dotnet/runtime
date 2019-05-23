@@ -587,16 +587,18 @@ struct MSLAYOUT DacpMethodDescTransparencyData : ZeroInit<DacpMethodDescTranspar
 
 struct MSLAYOUT DacpTieredVersionData
 {
-    enum TieredState 
+    enum OptimizationTier
     {
-        NON_TIERED,
-        TIERED_0,
-        TIERED_1,
-        TIERED_UNKNOWN
+        OptimizationTier_Unknown,
+        OptimizationTier_MinOptJitted,
+        OptimizationTier_Optimized,
+        OptimizationTier_QuickJitted,
+        OptimizationTier_OptimizedTier1,
+        OptimizationTier_ReadyToRun,
     };
     
     CLRDATA_ADDRESS NativeCodeAddr;
-    TieredState     TieredInfo;
+    OptimizationTier OptimizationTier;
     CLRDATA_ADDRESS NativeCodeVersionNodePtr;
 };
 

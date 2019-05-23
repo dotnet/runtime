@@ -6916,13 +6916,27 @@ void CEEInfo::setMethodAttribs (
         }
     }
 
-#ifdef FEATURE_TIERED_COMPILATION
-    if (attribs & CORINFO_FLG_SWITCHED_TO_TIER1)
+#ifndef CROSSGEN_COMPILE
+    if (attribs & (CORINFO_FLG_SWITCHED_TO_OPTIMIZED | CORINFO_FLG_SWITCHED_TO_MIN_OPT))
     {
-        _ASSERTE(ftn->IsEligibleForTieredCompilation());
-        ftn->GetCallCounter()->DisableCallCounting(ftn);
-    }
+        PrepareCodeConfig *config = GetThread()->GetCurrentPrepareCodeConfig();
+        if (config != nullptr)
+        {
+            if (attribs & CORINFO_FLG_SWITCHED_TO_MIN_OPT)
+            {
+                _ASSERTE(!ftn->IsJitOptimizationDisabled());
+                config->SetJitSwitchedToMinOpt();
+            }
+#ifdef FEATURE_TIERED_COMPILATION
+            else if (attribs & CORINFO_FLG_SWITCHED_TO_OPTIMIZED)
+            {
+                _ASSERTE(ftn->IsEligibleForTieredCompilation());
+                config->SetJitSwitchedToOptimized();
+            }
 #endif
+        }
+    }
+#endif // !CROSSGEN_COMPILE
 
     EE_TO_JIT_TRANSITION();
 }
