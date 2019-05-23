@@ -49,6 +49,10 @@ namespace System.Text.Json.Serialization.Tests
         public DateTime[] MyDateTimeArray { get; set; }
         public DateTimeOffset[] MyDateTimeOffsetArray { get; set; }
         public SampleEnum[] MyEnumArray { get; set; }
+        public int[][] MyInt16TwoDimensionArray { get; set; }
+        public List<List<int>> MyInt16TwoDimensionList { get; set; }
+        public int[][][] MyInt16ThreeDimensionArray { get; set; }
+        public List<List<List<int>>> MyInt16ThreeDimensionList { get; set; }
         public List<string> MyStringList { get; set; }
         public IEnumerable<string> MyStringIEnumerableT { get; set; }
         public IList<string> MyStringIListT { get; set; }
@@ -119,6 +123,10 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyDateTimeArray"" : [""2019-01-30T12:01:02.0000000Z""]," +
                 @"""MyDateTimeOffsetArray"" : [""2019-01-30T12:01:02.0000000+01:00""]," +
                 @"""MyEnumArray"" : [2]," + // int by default
+                @"""MyInt16TwoDimensionArray"" : [[10, 11],[20, 21]]," +
+                @"""MyInt16TwoDimensionList"" : [[10, 11],[20, 21]]," +
+                @"""MyInt16ThreeDimensionArray"" : [[[11, 12],[13, 14]],[[21,22],[23,24]]]," +
+                @"""MyInt16ThreeDimensionList"" : [[[11, 12],[13, 14]],[[21,22],[23,24]]]," +
                 @"""MyStringList"" : [""Hello""]," +
                 @"""MyStringIEnumerableT"" : [""Hello""]," +
                 @"""MyStringIListT"" : [""Hello""]," +
@@ -182,6 +190,32 @@ namespace System.Text.Json.Serialization.Tests
             MyDateTimeArray = new DateTime[] { new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc) };
             MyDateTimeOffsetArray = new DateTimeOffset[] { new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)) };
             MyEnumArray = new SampleEnum[] { SampleEnum.Two };
+
+            MyInt16TwoDimensionArray = new int[2][];
+            MyInt16TwoDimensionArray[0] = new int[] { 10, 11 };
+            MyInt16TwoDimensionArray[1] = new int[] { 20, 21 };
+
+            MyInt16TwoDimensionList = new List<List<int>>();
+            MyInt16TwoDimensionList.Add(new List<int> { 10, 11 });
+            MyInt16TwoDimensionList.Add(new List<int> { 20, 21 });
+
+            MyInt16ThreeDimensionArray = new int[2][][];
+            MyInt16ThreeDimensionArray[0] = new int[2][];
+            MyInt16ThreeDimensionArray[1] = new int[2][];
+            MyInt16ThreeDimensionArray[0][0] = new int[] { 11, 12 };
+            MyInt16ThreeDimensionArray[0][1] = new int[] { 13, 14 };
+            MyInt16ThreeDimensionArray[1][0] = new int[] { 21, 22 };
+            MyInt16ThreeDimensionArray[1][1] = new int[] { 23, 24 };
+
+            MyInt16ThreeDimensionList = new List<List<List<int>>>();
+            var list1 = new List<List<int>>();
+            MyInt16ThreeDimensionList.Add(list1);
+            list1.Add(new List<int> { 11, 12 });
+            list1.Add(new List<int> { 13, 14 });
+            var list2 = new List<List<int>>();
+            MyInt16ThreeDimensionList.Add(list2);
+            list2.Add(new List<int> { 21, 22 });
+            list2.Add(new List<int> { 23, 24 });
 
             MyStringList = new List<string>() { "Hello" };
             MyStringIEnumerableT = new string[] { "Hello" };
@@ -252,6 +286,34 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(new DateTime(2019, 1, 30, 12, 1, 2, DateTimeKind.Utc), MyDateTimeArray[0]);
             Assert.Equal(new DateTimeOffset(2019, 1, 30, 12, 1, 2, new TimeSpan(1, 0, 0)), MyDateTimeOffsetArray[0]);
             Assert.Equal(SampleEnum.Two, MyEnumArray[0]);
+
+            Assert.Equal(10, MyInt16TwoDimensionArray[0][0]);
+            Assert.Equal(11, MyInt16TwoDimensionArray[0][1]);
+            Assert.Equal(20, MyInt16TwoDimensionArray[1][0]);
+            Assert.Equal(21, MyInt16TwoDimensionArray[1][1]);
+
+            Assert.Equal(10, MyInt16TwoDimensionList[0][0]);
+            Assert.Equal(11, MyInt16TwoDimensionList[0][1]);
+            Assert.Equal(20, MyInt16TwoDimensionList[1][0]);
+            Assert.Equal(21, MyInt16TwoDimensionList[1][1]);
+
+            Assert.Equal(11, MyInt16ThreeDimensionArray[0][0][0]);
+            Assert.Equal(12, MyInt16ThreeDimensionArray[0][0][1]);
+            Assert.Equal(13, MyInt16ThreeDimensionArray[0][1][0]);
+            Assert.Equal(14, MyInt16ThreeDimensionArray[0][1][1]);
+            Assert.Equal(21, MyInt16ThreeDimensionArray[1][0][0]);
+            Assert.Equal(22, MyInt16ThreeDimensionArray[1][0][1]);
+            Assert.Equal(23, MyInt16ThreeDimensionArray[1][1][0]);
+            Assert.Equal(24, MyInt16ThreeDimensionArray[1][1][1]);
+
+            Assert.Equal(11, MyInt16ThreeDimensionList[0][0][0]);
+            Assert.Equal(12, MyInt16ThreeDimensionList[0][0][1]);
+            Assert.Equal(13, MyInt16ThreeDimensionList[0][1][0]);
+            Assert.Equal(14, MyInt16ThreeDimensionList[0][1][1]);
+            Assert.Equal(21, MyInt16ThreeDimensionList[1][0][0]);
+            Assert.Equal(22, MyInt16ThreeDimensionList[1][0][1]);
+            Assert.Equal(23, MyInt16ThreeDimensionList[1][1][0]);
+            Assert.Equal(24, MyInt16ThreeDimensionList[1][1][1]);
 
             Assert.Equal("Hello", MyStringList[0]);
             Assert.Equal("Hello", MyStringIEnumerableT.First());

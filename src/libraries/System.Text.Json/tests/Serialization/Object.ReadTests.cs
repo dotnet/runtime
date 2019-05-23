@@ -174,5 +174,42 @@ namespace System.Text.Json.Serialization.Tests
             TestClassWithStringToPrimitiveDictionary obj = JsonSerializer.Parse<TestClassWithStringToPrimitiveDictionary>(TestClassWithStringToPrimitiveDictionary.s_data);
             obj.Verify();
         }
+
+        public class TestClassWithBadData
+        {
+            public TestChildClassWithBadData[] Children { get; set; }
+        }
+
+        public class TestChildClassWithBadData
+        {
+            public int MyProperty { get; set; }
+        }
+
+        [Fact]
+        public static void ReadConversionFails()
+        {
+            byte[] data = Encoding.UTF8.GetBytes(
+                @"{" +
+                    @"""Children"":[" +
+                        @"{""MyProperty"":""StringButShouldBeInt""}" +
+                    @"]" +
+                @"}");
+
+            bool exceptionThrown = false;
+
+            try
+            {
+                JsonSerializer.Parse<TestClassWithBadData>(data);
+            }
+            catch (JsonException exception)
+            {
+                exceptionThrown = true;
+
+                // Exception should contain property path.
+                Assert.True(exception.ToString().Contains("[System.Text.Json.Serialization.Tests.ObjectTests+TestClassWithBadData].Children.MyProperty"));
+            }
+
+            Assert.True(exceptionThrown);
+        }
     }
 }
