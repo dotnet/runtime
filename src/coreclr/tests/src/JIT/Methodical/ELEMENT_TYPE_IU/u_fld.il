@@ -25,9 +25,14 @@
     {
 		.entrypoint
 		.maxstack  8
-		.locals (class Test.AA pinned, native unsigned int[0...], native unsigned int, int32)
+		.locals (class Test.AA pinned, native unsigned int[0...], native unsigned int, int32, native unsigned int[0...] pinned)
 		newobj instance void Test.AA::.ctor()
 		stloc.0
+
+		// test bug fix: make sure to pin Test.AA::m_ai
+		ldloc.0
+		ldfld native unsigned int[0...] Test.AA::m_ai
+		stloc 4
 
 		ldc.i4 18
 		stloc.2
