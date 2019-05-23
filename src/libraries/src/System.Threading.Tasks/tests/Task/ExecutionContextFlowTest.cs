@@ -45,7 +45,15 @@ namespace System.Threading.Tasks.Tests
             await Task.Run(delegate // avoid any issues with the stack keeping the object alive
             {
                 var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult(true) };
-                var al = new AsyncLocal<object> { Value = state }; // ensure the object is stored in ExecutionContext
+                var al = new AsyncLocal<object>(args => {
+                    // Temporary logging to get more info when the test timeout to look who hold a reference to the finalizer object.
+                    string currentValue = args.CurrentValue == null ? "'null'" : "'Object'";
+                    string previousValue = args.PreviousValue == null ? "'null'" : "'Object'";
+                    Console.WriteLine($"TaskDropsExecutionContextUponCompletion: Thread Id: {Thread.CurrentThread.ManagedThreadId} Current Value: {currentValue}  Previous Value: {previousValue} ThreadContextChanged: {args.ThreadContextChanged}");
+                })
+                {
+                    Value = state
+                }; // ensure the object is stored in ExecutionContext
                 t = Task.Run(() => { }); // run a task that'll capture EC
                 al.Value = null;
             });
@@ -58,7 +66,15 @@ namespace System.Threading.Tasks.Tests
                 GC.WaitForPendingFinalizers();
             }
 
-            await tcs.Task.TimeoutAfter(60_000); // finalizable object should have been collected and finalized
+            try
+            {
+                await tcs.Task.TimeoutAfter(60_000); // finalizable object should have been collected and finalized
+            }
+            catch (Exception e)
+            {
+                Environment.FailFast("Look at the created dump", e);
+            }
+
             GC.KeepAlive(t); // ensure the object is stored in the state machine
         }
 
