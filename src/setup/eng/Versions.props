@@ -9,7 +9,7 @@
   <PropertyGroup>
     <!-- corefx -->
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview6.19270.15</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreTargetsPackageVersion>2.0.0</MicrosoftNETCoreTargetsPackageVersion>
+    <MicrosoftNETCoreTargetsPackageVersion>3.0.0-preview6.19270.15</MicrosoftNETCoreTargetsPackageVersion>
     <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview6.19270.15</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
     <MicrosoftWin32RegistryVersion>4.6.0-preview6.19270.15</MicrosoftWin32RegistryVersion>
     <MicrosoftWin32SystemEventsVersion>4.6.0-preview6.19270.15</MicrosoftWin32SystemEventsVersion>
