@@ -466,7 +466,9 @@ namespace Mono.Linker {
 		AssemblyAction ParseAssemblyAction (string s)
 		{
 			var assemblyAction = (AssemblyAction)Enum.Parse(typeof(AssemblyAction), s, true);
-			_needAddBypassNGenStep = ((assemblyAction == AssemblyAction.AddBypassNGen) || (assemblyAction == AssemblyAction.AddBypassNGenUsed));
+			if ((assemblyAction == AssemblyAction.AddBypassNGen) || (assemblyAction == AssemblyAction.AddBypassNGenUsed)) {
+				_needAddBypassNGenStep = true;
+			}
 			return assemblyAction;
 		}
 
