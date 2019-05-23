@@ -7,7 +7,7 @@
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetsAOT)' == 'true'">true</GenFacadesIgnoreMissingTypes>
     <NoWarn Condition="'$(TargetsAOT)' == 'true'">$(NoWarn);0436;3001</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <NullableContextOptions>enable</NullableContextOptions>
+    <Nullable>enable</Nullable>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
