@@ -1667,8 +1667,20 @@ pinvoke_probe_for_module_relative_directories (MonoImage *image, const char *fil
 
 							base = g_path_get_dirname (resolvedname);
 							newbase = g_path_get_dirname(base);
-							mdirname = g_strdup_printf ("%s/lib", newbase);
 
+							// On Android the executable for the application is going to be /system/bin/app_process{32,64} depending on
+							// the application's architecture. However, libraries for the different architectures live in different
+							// subdirectories of `/system`: `lib` for 32-bit apps and `lib64` for 64-bit ones. Thus appending `/lib` below
+							// will fail to load the DSO for a 64-bit app, even if it exists there, because it will have a different
+							// architecture. This is the cause of https://github.com/xamarin/xamarin-android/issues/2780 and the ifdef
+							// below is the fix.
+							mdirname = g_strdup_printf (
+#if defined(TARGET_ANDROID) && (defined(TARGET_ARM64) || defined(TARGET_AMD64))
+									"%s/lib64",
+#else
+									"%s/lib",
+#endif
+									newbase);
 							g_free (resolvedname);
 							g_free (base);
 							g_free (newbase);
