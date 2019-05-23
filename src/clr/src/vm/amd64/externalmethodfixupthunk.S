@@ -80,6 +80,7 @@ DYNAMICHELPER (DynamicHelperFrameFlags_ObjectArg | DynamicHelperFrameFlags_Objec
 
 #endif // FEATURE_READYTORUN
 
+#ifdef FEATURE_PREJIT
 //============================================================================================
 // EXTERN_C VOID __stdcall VirtualMethodFixupStub()
 
@@ -96,3 +97,4 @@ PATCH_LABEL VirtualMethodFixupPatchLabel
         TAILJMP_RAX
 
 NESTED_END VirtualMethodFixupStub, _TEXT
+#endif // FEATURE_PREJIT

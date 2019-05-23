@@ -8,6 +8,7 @@
 #include "common.h"
 #include "peimagelayout.h"
 #include "peimagelayout.inl"
+#include "dataimage.h"
 
 #if defined(PLATFORM_WINDOWS) && !defined(CROSSGEN_COMPILE)
 #include "amsi.h"
@@ -87,8 +88,6 @@ PEImageLayout* PEImageLayout::Map(HANDLE hFile, PEImage* pOwner)
             ThrowHR(COR_E_BADIMAGEFORMAT);
     RETURN pAlloc.Extract();
 }
-
-#ifdef FEATURE_PREJIT
 
 #ifdef FEATURE_PAL
 DWORD SectionCharacteristicsToPageProtection(UINT characteristics)
@@ -293,7 +292,6 @@ void PEImageLayout::ApplyBaseRelocations()
         ClrFlushInstructionCache(pFlushRegion, cbFlushRegion);
     }
 }
-#endif // FEATURE_PREJIT
 
 
 RawImageLayout::RawImageLayout(const void *flat, COUNT_T size, PEImage* pOwner)

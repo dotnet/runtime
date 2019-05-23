@@ -542,7 +542,7 @@ struct StubPrecode {
         CONTRACTL
         {
             THROWS;
-            GC_TRIGGERS;
+            GC_NOTRIGGER;
         }
         CONTRACTL_END;
 
@@ -555,7 +555,7 @@ struct StubPrecode {
         CONTRACTL
         {
             THROWS;
-            GC_TRIGGERS;
+            GC_NOTRIGGER;
         }
         CONTRACTL_END;
 

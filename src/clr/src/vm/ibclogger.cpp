@@ -523,7 +523,9 @@ void IBCLogger::LogMethodAccessHelper(const MethodDesc* pMD, ULONG flagNum)
         if (!pMT->IsRestored_NoLogging())
             goto DelayCallback;
 
+#ifdef FEATURE_PREJIT
         LogMethodTableAccessHelper(pMT);
+#endif
 
         Module *pModule = pMT->GetModule();
 
@@ -554,12 +556,14 @@ void IBCLogger::LogMethodAccessHelper(const MethodDesc* pMD, ULONG flagNum)
                         goto DelayCallback;
                 }
 
+#ifdef FEATURE_PREJIT
                 Module *pPZModule = Module::GetPreferredZapModuleForMethodDesc(pMD);
                 token = pPZModule->LogInstantiatedMethod(pMD, flagNum);
                 if (!IsNilToken(token))
                 {
                     pPZModule->LogTokenAccess(token, MethodProfilingData, flagNum);
                 }
+#endif
             }
             else
             {
@@ -579,7 +583,33 @@ void IBCLogger::LogMethodAccessWrapper(IBCLogger* pLogger, const void * pValue1,
     WRAPPER_NO_CONTRACT;
     pLogger->LogMethodAccessHelper((MethodDesc *)pValue1, (ULONG)(SIZE_T)pValue2);
 }
+// Log access to method code or method header
+void IBCLogger::LogMethodCodeAccessHelper(MethodDesc *pMD)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        PRECONDITION(g_IBCLogger.InstrEnabled());
+    }
+    CONTRACTL_END;
 
+    LogMethodAccessHelper(pMD, ReadMethodCode);
+}
+
+// Log access to method gc info
+void IBCLogger::LogMethodGCInfoAccessHelper(MethodDesc* pMD)
+{
+    WRAPPER_NO_CONTRACT;
+
+    _ASSERTE(InstrEnabled());
+
+    LogMethodAccessHelper(pMD, ReadGCInfo);
+    LogMethodAccessHelper(pMD, CommonReadGCInfo);
+}
+
+#ifdef FEATURE_PREJIT
 void IBCLogger::LogMethodDescAccessHelper(const MethodDesc *pMD)
 {
     WRAPPER_NO_CONTRACT;
@@ -610,21 +640,6 @@ void IBCLogger::LogMethodPrecodeWriteAccessHelper(MethodDesc *pMD)
     LogMethodAccessHelper(pMD, WriteMethodPrecode);
 }
 
-// Log access to method code or method header
-void IBCLogger::LogMethodCodeAccessHelper(MethodDesc *pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        PRECONDITION(g_IBCLogger.InstrEnabled());
-    }
-    CONTRACTL_END;
-
-    LogMethodAccessHelper(pMD, ReadMethodCode);
-}
-
 // Log access to the method code and method header for NDirect calls
 void IBCLogger::LogNDirectCodeAccessHelper(MethodDesc *pMD) 
 {
@@ -639,18 +654,6 @@ void IBCLogger::LogNDirectCodeAccessHelper(MethodDesc *pMD)
 
     LogMethodAccessHelper(pMD, ReadMethodDesc);
     LogMethodAccessHelper(pMD, ReadMethodCode);
-}
-
-
-// Log access to method gc info
-void IBCLogger::LogMethodGCInfoAccessHelper(MethodDesc *pMD)
-{
-    WRAPPER_NO_CONTRACT;
-
-    _ASSERTE(InstrEnabled());
-
-    LogMethodAccessHelper(pMD, ReadGCInfo);
-    LogMethodAccessHelper(pMD, CommonReadGCInfo);
 }
 
 // Log access to method table
@@ -1096,6 +1099,7 @@ DelayCallback:
     DelayedCallbackPtr(LogRVADataAccessWrapper, pFD);
 }
 
+#endif // FEATURE_PREJIT
 
 #define LOADORDER_INSTR                 0x00000001
 #define RID_ACCESSORDER_INSTR           0x00000002

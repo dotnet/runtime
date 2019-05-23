@@ -85,10 +85,8 @@ EXTERN_C void SinglecastDelegateInvokeStub();
 // Needed for PInvoke inlining in ngened images
 #define HAS_NDIRECT_IMPORT_PRECODE              1
 
-#ifdef FEATURE_PREJIT
 #define HAS_FIXUP_PRECODE                       1
 #define HAS_FIXUP_PRECODE_CHUNKS                1
-#endif
 
 // ThisPtrRetBufPrecode one is necessary for closed delegates over static methods with return buffer
 #define HAS_THISPTR_RETBUF_PRECODE              1

@@ -57,11 +57,14 @@
 
     IMPORT GetCurrentSavedRedirectContext
 
-    ;; Imports to support virtual import fixup for ngen images
-    IMPORT VirtualMethodFixupWorker
     ;; Import to support cross-moodule external method invocation in ngen images
     IMPORT ExternalMethodFixupWorker
+
+#ifdef FEATURE_PREJIT
+    ;; Imports to support virtual import fixup for ngen images
+    IMPORT VirtualMethodFixupWorker
     IMPORT StubDispatchFixupWorker
+#endif
 
 #ifdef FEATURE_READYTORUN
     IMPORT DynamicHelperWorker
@@ -1241,6 +1244,7 @@ stackProbe_loop
     EPILOG_RETURN
     NESTED_END
 
+#ifdef FEATURE_PREJIT
 ;------------------------------------------------
 ; VirtualMethodFixupStub
 ;
@@ -1295,6 +1299,7 @@ stackProbe_loop
     EPILOG_BRANCH_REG r12
 
     NESTED_END
+#endif // FEATURE_PREJIT
 
 ;------------------------------------------------
 ; ExternalMethodFixupStub
@@ -1333,6 +1338,7 @@ stackProbe_loop
 
     NESTED_END
 
+#ifdef FEATURE_PREJIT
 ;------------------------------------------------
 ; StubDispatchFixupStub
 ;
@@ -1365,6 +1371,7 @@ stackProbe_loop
     EPILOG_BRANCH_REG   r12
  
     NESTED_END
+#endif // FEATURE_PREJIT
 
 ;------------------------------------------------
 ; JIT_RareDisableHelper

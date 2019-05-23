@@ -1511,10 +1511,14 @@ BOOL RangeSectionStubManager::TraceManager(Thread *thread,
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_PREJIT
     // Both virtual and external import thunks have the same structure. We can use
     // common code to handle them.
     _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(VirtualMethodFixupPatchLabel) 
          || GetIP(pContext) == GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel));
+#else
+    _ASSERTE(GetIP(pContext) == GetEEFuncEntryPoint(ExternalMethodFixupPatchLabel));
+#endif
 
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
 
