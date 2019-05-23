@@ -2953,8 +2953,6 @@ public:
     }
 #endif
 
-#ifdef FEATURE_PREJIT
-
     private:
 
     ThreadLocalIBCInfo* m_pIBCInfo;
@@ -2985,8 +2983,6 @@ public:
     }
 
 #endif // #ifndef DACCESS_COMPILE
-
-#endif // #ifdef FEATURE_PREJIT
 
     // Indicate whether this thread should run in the background.  Background threads
     // don't interfere with the EE shutting down.  Whereas a running non-background

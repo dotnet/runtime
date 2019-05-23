@@ -324,19 +324,8 @@ void NativeImagePerfMap::LogDataForModule(Module * pModule)
 
     SIZE_T baseAddr = (SIZE_T)pLoadedLayout->GetBase();
 
-#ifdef FEATURE_READYTORUN_COMPILER
-    if (pLoadedLayout->HasReadyToRunHeader())
-    {
-        ReadyToRunInfo::MethodIterator mi(pModule->GetReadyToRunInfo());
-        while (mi.Next())
-        {
-            MethodDesc *hotDesc = mi.GetMethodDesc();
-
-            LogPreCompiledMethod(hotDesc, mi.GetMethodStartAddress(), baseAddr);
-        }
-    }
-    else
-#endif // FEATURE_READYTORUN_COMPILER
+#ifdef FEATURE_PREJIT
+    if (!pLoadedLayout->HasReadyToRunHeader())
     {
         MethodIterator mi((PTR_Module)pModule);
         while (mi.Next())
@@ -346,6 +335,16 @@ void NativeImagePerfMap::LogDataForModule(Module * pModule)
 
             LogPreCompiledMethod(hotDesc, mi.GetMethodStartAddress(), baseAddr);
         }
+        return;
+    }
+#endif
+
+    ReadyToRunInfo::MethodIterator mi(pModule->GetReadyToRunInfo());
+    while (mi.Next())
+    {
+        MethodDesc* hotDesc = mi.GetMethodDesc();
+
+        LogPreCompiledMethod(hotDesc, mi.GetMethodStartAddress(), baseAddr);
     }
 }
 

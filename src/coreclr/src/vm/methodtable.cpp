@@ -5262,8 +5262,6 @@ void MethodTableWriteableData::Fixup(DataImage *image, MethodTable *pMT, BOOL ne
 
 #endif // FEATURE_NATIVE_IMAGE_GENERATION
 
-#ifdef FEATURE_PREJIT
-
 //==========================================================================================
 void MethodTable::CheckRestore()
 {
@@ -5282,15 +5280,6 @@ void MethodTable::CheckRestore()
 
     g_IBCLogger.LogMethodTableAccess(this);
 }
-
-#else // !FEATURE_PREJIT
-//==========================================================================================
-void MethodTable::CheckRestore()
-{
-    LIMITED_METHOD_CONTRACT;
-}
-#endif // !FEATURE_PREJIT
-
 
 #ifndef DACCESS_COMPILE
 

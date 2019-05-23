@@ -1363,6 +1363,7 @@ BOOL DoesSlotCallPrestub(PCODE pCode)
     return pCode == GetPreStubEntryPoint();
 }
 
+#ifdef FEATURE_PREJIT
 //==========================================================================================
 // In NGen image, virtual slots inherited from cross-module dependencies point to jump thunks.
 // These jump thunk initially point to VirtualMethodFixupStub which transfers control here.
@@ -1430,7 +1431,7 @@ EXTERN_C PVOID STDCALL VirtualMethodFixupWorker(Object * pThisPtr,  CORCOMPILE_V
 
     return PVOID(pCode);
 }
-
+#endif // FEATURE_PREJIT
 
 #ifdef FEATURE_READYTORUN
 

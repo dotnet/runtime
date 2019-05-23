@@ -7,7 +7,10 @@ include AsmConstants.inc
 
     extern  ExternalMethodFixupWorker:proc
     extern  ProcessCLRException:proc
+
+ifdef FEATURE_PREJIT
     extern  VirtualMethodFixupWorker:proc
+endif
 
 ifdef FEATURE_READYTORUN
     extern DynamicHelperWorker:proc
@@ -87,6 +90,7 @@ DYNAMICHELPER <DynamicHelperFrameFlags_ObjectArg OR DynamicHelperFrameFlags_Obje
 
 endif ; FEATURE_READYTORUN
 
+ifdef FEATURE_PREJIT
 ;============================================================================================
 ;; EXTERN_C VOID __stdcall VirtualMethodFixupStub()
 
@@ -103,5 +107,6 @@ PATCH_LABEL VirtualMethodFixupPatchLabel
         TAILJMP_RAX
 
 NESTED_END VirtualMethodFixupStub, _TEXT
+endif ; FEATURE_PREJIT
 
         end

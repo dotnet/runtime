@@ -34,10 +34,6 @@ CHECK PEDecoder::CheckFormat() const
         {
             CHECK(CheckCorHeader());
 
-#if !defined(FEATURE_PREJIT)
-            CHECK(IsILOnly());
-#endif
-
             if (IsILOnly() && !HasReadyToRunHeader())
                 CHECK(CheckILOnly());
 

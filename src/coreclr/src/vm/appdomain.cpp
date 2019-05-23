@@ -98,9 +98,11 @@ static const WCHAR OTHER_DOMAIN_FRIENDLY_NAME_PREFIX[] = W("Domain");
 
 SPTR_IMPL(AppDomain, AppDomain, m_pTheAppDomain);
 SPTR_IMPL(SystemDomain, SystemDomain, m_pSystemDomain);
+#ifdef FEATURE_PREJIT
 SVAL_IMPL(BOOL, SystemDomain, s_fForceDebug);
 SVAL_IMPL(BOOL, SystemDomain, s_fForceProfiling);
 SVAL_IMPL(BOOL, SystemDomain, s_fForceInstrument);
+#endif
 
 #ifndef DACCESS_COMPILE
 
@@ -1587,7 +1589,7 @@ void SystemDomain::operator delete(void *pMem)
     // Do nothing - new() was in-place
 }
 
-
+#ifdef FEATURE_PREJIT
 void    SystemDomain::SetCompilationOverrides(BOOL fForceDebug,
                                               BOOL fForceProfiling,
                                               BOOL fForceInstrument)
@@ -1597,9 +1599,11 @@ void    SystemDomain::SetCompilationOverrides(BOOL fForceDebug,
     s_fForceProfiling = fForceProfiling;
     s_fForceInstrument = fForceInstrument;
 }
+#endif
 
 #endif //!DACCESS_COMPILE
 
+#ifdef FEATURE_PREJIT
 void    SystemDomain::GetCompilationOverrides(BOOL * fForceDebug,
                                               BOOL * fForceProfiling,
                                               BOOL * fForceInstrument)
@@ -1609,6 +1613,7 @@ void    SystemDomain::GetCompilationOverrides(BOOL * fForceDebug,
     *fForceProfiling = s_fForceProfiling;
     *fForceInstrument = s_fForceInstrument;
 }
+#endif
 
 #ifndef DACCESS_COMPILE
 

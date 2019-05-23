@@ -1003,14 +1003,6 @@ void DomainFile::PostLoadLibrary()
 void DomainFile::AddDependencies()
 {
     STANDARD_VM_CONTRACT;
-
-#ifdef FEATURE_PREJIT
-
-    //
-    // CoreCLR hard binds to mscorlib.dll only. No need to track hardbound dependencies.
-    //
-
-#endif // FEATURE_PREJIT
 }
 
 void DomainFile::EagerFixups()
@@ -1022,8 +1014,9 @@ void DomainFile::EagerFixups()
     {
         GetCurrentModule()->RunEagerFixups();
     }
-#ifdef FEATURE_READYTORUN
     else
+#endif // FEATURE_PREJIT
+#ifdef FEATURE_READYTORUN
     if (GetCurrentModule()->IsReadyToRun())
     {
 #ifndef CROSSGEN_COMPILE
@@ -1040,8 +1033,6 @@ void DomainFile::EagerFixups()
                                          GetCurrentModule() /* (void *)pLayout */);
     }
 #endif // FEATURE_READYTORUN
-
-#endif // FEATURE_PREJIT
 }
 
 void DomainFile::VtableFixups()

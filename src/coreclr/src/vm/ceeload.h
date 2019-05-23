@@ -79,12 +79,12 @@ class DynamicMethodTable;
 class CodeVersionManager;
 class TieredCompilationManager;
 class ProfileEmitter;
+class JITInlineTrackingMap;
 #ifdef FEATURE_PREJIT
 class TypeHandleList;
 class TrackingMap;
 struct MethodInModule;
 class PersistentInlineTrackingMapNGen;
-class JITInlineTrackingMap;
 
 extern VerboseLevel g_CorCompileVerboseLevel;
 #endif
@@ -380,8 +380,10 @@ public:
         WRAPPER_NO_CONTRACT;
 
         _ASSERTE((flag & supportedFlags) == flag);
+#ifdef FEATURE_PREJIT
         _ASSERTE(!MapIsCompressed());
         _ASSERTE(dwNumHotItems == 0);
+#endif // FEATURE_PREJIT
 
         PTR_TADDR pElement = GetElementPtr(rid);
         _ASSERTE(pElement);
@@ -740,9 +742,6 @@ struct ModuleCtorInfo
 };
 
 
-
-#ifdef FEATURE_PREJIT
-
 // For IBC Profiling we collect signature blobs for instantiated types.
 // For such instantiated types and methods we create our own ibc token
 // 
@@ -1004,7 +1003,7 @@ public:
 typedef SHash<ProfilingBlobTraits> ProfilingBlobTable;
 typedef DPTR(ProfilingBlobTable) PTR_ProfilingBlobTable;
 
-
+#ifdef FEATURE_PREJIT
 #define METHODTABLE_RESTORE_REASON() \
     RESTORE_REASON_FUNC(CanNotPreRestoreHardBindToParentMethodTable) \
     RESTORE_REASON_FUNC(CanNotPreRestoreHardBindToCanonicalMethodTable) \
