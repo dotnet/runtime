@@ -5,7 +5,6 @@ include_directories(../unixcoreruncommon)
 add_compile_options(-fPIE)
 
 set(CORERUN_SOURCES 
-    ../unixcoreruncommon/coreruncommon.cpp
     osxbundlerun.cpp 
 )
 
@@ -15,6 +14,7 @@ _add_executable(osxbundlerun
 
 target_link_libraries(osxbundlerun 
     dl
+    unixcoreruncommon
 )
 
 add_dependencies(osxbundlerun
