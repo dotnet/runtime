@@ -1089,7 +1089,6 @@ arch_emit_unwind_info_sections (MonoAotCompile *acfg, const char *function_start
 static void
 arch_init (MonoAotCompile *acfg)
 {
-	gboolean has_custom_args = !!acfg->aot_opts.llvm_llc;
 	acfg->llc_args = g_string_new ("");
 	acfg->as_args = g_string_new ("");
 	acfg->llvm_owriter_supported = TRUE;
@@ -1102,6 +1101,10 @@ arch_init (MonoAotCompile *acfg)
 	 */
 	acfg->llvm_label_prefix = "";
 	acfg->user_symbol_prefix = "";
+
+#if TARGET_X86 || TARGET_AMD64
+	const gboolean has_custom_args = !!acfg->aot_opts.llvm_llc;
+#endif
 
 #if defined(TARGET_X86)
 	g_string_append_printf (acfg->llc_args, " -march=x86 %s", has_custom_args ? "" : "-mcpu=generic");
