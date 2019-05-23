@@ -165,7 +165,7 @@ jobs:
           # "PerTest" corresponds to individual test running time (i.e. __TestTimeout).
           timeoutPerTestInMinutes: 10
         ${{ if eq(parameters.testGroup, 'outerloop') }}:
-          timeoutPerTestCollectionInMinutes: 60
+          timeoutPerTestCollectionInMinutes: 120
           timeoutPerTestInMinutes: 10
         ${{ if in(parameters.testGroup, 'outerloop-jitstress', 'outerloop-jitstress-isas-arm', 'outerloop-jitstress-isas-x86', 'outerloop-jitstressregs-x86', 'outerloop-jitstressregs', 'outerloop-jitstress2-jitstressregs') }}:
           timeoutPerTestCollectionInMinutes: 120
