@@ -4050,25 +4050,3 @@ interface ICorProfilerAssemblyReferenceProvider : IUnknown
     // assembly specified in the wszAssemblyPath argument of the GetAssemblyReferences callback.
     HRESULT AddAssemblyReference(const COR_PRF_ASSEMBLY_REFERENCE_INFO * pAssemblyRefInfo);
 };
-
-
-/***************************************************************************************
-** ICLRProfiling                                                                     **
-** Activated using mscoree!CLRCreateInstance. Export AttachProfiler API to profilers **
-***************************************************************************************/
-[
-    uuid(B349ABE3-B56F-4689-BFCD-76BF39D888EA),
-    version(1.0),
-    helpstring("CoreCLR profiling interface for profiler attach"),
-    local
-]
-interface ICLRProfiling : IUnknown
-{
-    HRESULT AttachProfiler(
-        [in] DWORD dwProfileeProcessID,
-        [in] DWORD dwMillisecondsMax,                        // optional
-        [in] const CLSID * pClsidProfiler,
-        [in] LPCWSTR wszProfilerPath,                        // optional
-        [in, size_is(cbClientData)] void * pvClientData,     // optional
-        [in] UINT cbClientData);                             // optional
-}

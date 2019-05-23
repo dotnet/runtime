@@ -31,5 +31,3 @@ EXPORTS
         GetMetaDataInternalInterface
         GetMetaDataInternalInterfaceFromPublic
         GetMetaDataPublicInterfaceFromInternal
-
-        CreateCLRProfiling

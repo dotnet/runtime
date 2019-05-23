@@ -140,7 +140,6 @@
 
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH 
-#include "profattach.h"
 #include "profdetach.h"
 #endif // FEATURE_PROFAPI_ATTACH_DETACH 
 

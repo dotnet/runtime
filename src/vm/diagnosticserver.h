@@ -25,6 +25,7 @@ enum class DiagnosticMessageType : uint32_t
 
     ///////////////////////////////////////////////////////////////////////////
     // Profiler = 2048
+    AttachProfiler = 2048,
 };
 
 //! TODO: Temp class.

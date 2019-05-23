@@ -416,6 +416,16 @@ public:
         m_pPendingTypeLoad = pPendingTypeLoad;
     }
 #endif
+    void SetProfilerCallbackFullState(DWORD dwFullState)
+    {
+        LIMITED_METHOD_CONTRACT;
+    }
+    
+    DWORD SetProfilerCallbackStateFlags(DWORD dwFlags)
+    {
+        LIMITED_METHOD_CONTRACT;
+        return dwFlags;
+    }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     enum ApartmentState { AS_Unknown };
