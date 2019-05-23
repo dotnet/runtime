@@ -418,6 +418,9 @@ typedef HRESULT __stdcall StackSnapshotCallback(
                 BYTE context[],
                 void *clientData);
 
+/* Callback for each object reference */
+typedef BOOL STDMETHODCALLTYPE ObjectReferenceCallback(ObjectID root, ObjectID* reference, void *clientData);
+
 typedef enum
 {
     // These flags represent classes of callback events
@@ -3946,8 +3949,8 @@ interface ICorProfilerInfo9 : ICorProfilerInfo8
 ]
 interface ICorProfilerInfo10 : ICorProfilerInfo9
 {
-    // Given an ObjectID, fetches all its object references and offsets (if any).
-    HRESULT GetObjectReferences(ObjectID objectId, ULONG32 cNumReferences, ULONG32 *pcNumReferences, ObjectID references[], SIZE_T offsets[]);
+    // Given an ObjectID, callback and clientData, enumerates each object reference (if any).
+    HRESULT EnumerateObjectReferences(ObjectID objectId, ObjectReferenceCallback callback, void* clientData);
 
     // Given an ObjectID, determines whether it is in a read only segment.
     HRESULT IsFrozenObject(ObjectID objectId, BOOL *pbFrozen);
