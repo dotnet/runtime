@@ -466,6 +466,9 @@ namespace Mono.Linker {
 		AssemblyAction ParseAssemblyAction (string s)
 		{
 			var assemblyAction = (AssemblyAction)Enum.Parse(typeof(AssemblyAction), s, true);
+			// The AddBypassNGenStep is necessary if any actions (default or per-assembly) are AddBypassNGen(Used).
+			// We enable this step as soon as we see such an action. Even if subsequent steps change an action we have
+			// already seen, the step will only operate on assemblies with a final action AddBypassNGen(Used).
 			if ((assemblyAction == AssemblyAction.AddBypassNGen) || (assemblyAction == AssemblyAction.AddBypassNGenUsed)) {
 				_needAddBypassNGenStep = true;
 			}
