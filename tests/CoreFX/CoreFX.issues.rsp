@@ -41,8 +41,10 @@
 -nonamespace System.ComponentModel.TypeConverterTests
 -nonamespace Tests.Integration
 
+# https://github.com/dotnet/coreclr/pull/24604
+-nomethod System.Security.Cryptography.Rsa.Tests.RSAXml.FromNonsenseXml
+
 # Temporarily disabled tests waiting for CoreCLR/CoreFX changes to propagate 
--nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateAgainstBlobs
 -nomethod System.Tests.AppDomainTests.MonitoringIsEnabled
 -nomethod System.Tests.AppDomainTests.MonitoringSurvivedMemorySize
 -nomethod System.Tests.AppDomainTests.MonitoringSurvivedProcessMemorySize
