@@ -221,22 +221,35 @@ void Module::UpdateNewlyAddedTypes()
     DWORD countExportedTypesAfterProfilerUpdate = GetMDImport()->GetCountWithTokenKind(mdtExportedType);
     DWORD countCustomAttributeCount = GetMDImport()->GetCountWithTokenKind(mdtCustomAttribute);
 
-    // typeDefs rids 0 and 1 aren't included in the count, thus X typeDefs before means rid X+1 was valid and our incremental addition should start at X+2
-    for (DWORD typeDefRid = m_dwTypeCount + 2; typeDefRid < countTypesAfterProfilerUpdate + 2; typeDefRid++)
+    // R2R pre-computes an export table and tries to avoid populating a class hash at runtime. However the profiler can
+    // still add new types on the fly by calling here. If that occurs we fallback to the slower path of creating the
+    // in memory hashtable as usual.
+    if (!IsResource() && GetAvailableClassHash() == NULL)
     {
-        GetAssembly()->AddType(this, TokenFromRid(typeDefRid, mdtTypeDef));
+        // This call will populate the hash tables with anything that is in metadata already.
+        GetClassLoader()->LazyPopulateCaseSensitiveHashTablesDontHaveLock();
     }
-
-    // exportedType rid 0 isn't included in the count, thus X exportedTypes before means rid X was valid and our incremental addition should start at X+1
-    for (DWORD exportedTypeDef = m_dwExportedTypeCount + 1; exportedTypeDef < countExportedTypesAfterProfilerUpdate + 1; exportedTypeDef++)
+    else
     {
-        GetAssembly()->AddExportedType(TokenFromRid(exportedTypeDef, mdtExportedType));
-    }
+        // If the hash tables already exist (either R2R and we've previously populated the ) we need to manually add the types.
 
-    if ((countCustomAttributeCount != m_dwCustomAttributeCount) && IsReadyToRun())
-    {
-        // Set of custom attributes has changed. Disable the cuckoo filter from ready to run, and do normal custom attribute parsing
-        GetReadyToRunInfo()->DisableCustomAttributeFilter();
+        // typeDefs rids 0 and 1 aren't included in the count, thus X typeDefs before means rid X+1 was valid and our incremental addition should start at X+2
+        for (DWORD typeDefRid = m_dwTypeCount + 2; typeDefRid < countTypesAfterProfilerUpdate + 2; typeDefRid++)
+        {
+            GetAssembly()->AddType(this, TokenFromRid(typeDefRid, mdtTypeDef));
+        }
+
+        // exportedType rid 0 isn't included in the count, thus X exportedTypes before means rid X was valid and our incremental addition should start at X+1
+        for (DWORD exportedTypeDef = m_dwExportedTypeCount + 1; exportedTypeDef < countExportedTypesAfterProfilerUpdate + 1; exportedTypeDef++)
+        {
+            GetAssembly()->AddExportedType(TokenFromRid(exportedTypeDef, mdtExportedType));
+        }
+
+        if ((countCustomAttributeCount != m_dwCustomAttributeCount) && IsReadyToRun())
+        {
+            // Set of custom attributes has changed. Disable the cuckoo filter from ready to run, and do normal custom attribute parsing
+            GetReadyToRunInfo()->DisableCustomAttributeFilter();
+        }
     }
 
     m_dwTypeCount = countTypesAfterProfilerUpdate;

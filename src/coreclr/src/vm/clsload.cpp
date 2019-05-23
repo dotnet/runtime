@@ -1016,6 +1016,23 @@ VOID ClassLoader::PopulateAvailableClassHashTable(Module* pModule,
 }
 
 
+void ClassLoader::LazyPopulateCaseSensitiveHashTablesDontHaveLock()
+{
+    CONTRACTL
+    {
+        INSTANCE_CHECK;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        INJECT_FAULT(COMPlusThrowOM());
+    }
+    CONTRACTL_END;
+
+
+    CrstHolder ch(&m_AvailableClassLock);
+    LazyPopulateCaseSensitiveHashTables();
+}
+
 void ClassLoader::LazyPopulateCaseSensitiveHashTables()
 {
     CONTRACTL
@@ -1036,7 +1053,7 @@ void ClassLoader::LazyPopulateCaseSensitiveHashTables()
     {
         Module *pModule = i.GetModule();
         PREFIX_ASSUME(pModule != NULL);
-        if (pModule->IsResource())
+        if (pModule->IsResource() || pModule->GetAvailableClassHash() != NULL)
             continue;
 
         // Lazy construction of the case-sensitive hashtable of types is *only* a scenario for ReadyToRun images
@@ -4089,14 +4106,6 @@ VOID ClassLoader::AddAvailableClassDontHaveLock(Module *pModule,
 
     CrstHolder ch(&m_AvailableClassLock);
 
-    // R2R pre-computes an export table and tries to avoid populating a class hash at runtime. However the profiler can
-    // still add new types on the fly by calling here. If that occurs we fallback to the slower path of creating the
-    // in memory hashtable as usual.
-    if (!pModule->IsResource() && pModule->GetAvailableClassHash() == NULL)
-    {
-        LazyPopulateCaseSensitiveHashTables();
-    }
-
     AddAvailableClassHaveLock(
         pModule, 
         classdef, 
@@ -4293,14 +4302,6 @@ VOID ClassLoader::AddExportedTypeDontHaveLock(Module *pManifestModule,
     CONTRACTL_END
 
     CrstHolder ch(&m_AvailableClassLock);
-        
-    // R2R pre-computes an export table and tries to avoid populating a class hash at runtime. However the profiler can
-    // still add new types on the fly by calling here. If that occurs we fallback to the slower path of creating the
-    // in memory hashtable as usual.
-    if (!pManifestModule->IsResource() && pManifestModule->GetAvailableClassHash() == NULL)
-    {
-        LazyPopulateCaseSensitiveHashTables();
-    }
 
     AddExportedTypeHaveLock(
         pManifestModule,
