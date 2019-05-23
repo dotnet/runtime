@@ -11,6 +11,7 @@
     <IsUnitTestProject>false</IsUnitTestProject>
     <IsShipping>true</IsShipping>
     <HasReferenceAssembly>false</HasReferenceAssembly>
+    <ExcludeFromSourceBuild>true</ExcludeFromSourceBuild>
   </PropertyGroup>
 
   <ItemGroup>
