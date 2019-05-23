@@ -1,28 +1,27 @@
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+<Project Sdk="Microsoft.Build.Traversal">
   <Import Project="packaging.props" />
 
   <ItemGroup Condition="'$(__SkipCoreLibBuild)'==''">
-    <Project Include="Microsoft.NETCore.Runtime.CoreCLR\Microsoft.NETCore.Runtime.CoreCLR.builds" />
+    <ProjectReference Include="Microsoft.NETCore.Runtime.CoreCLR\Microsoft.NETCore.Runtime.CoreCLR.builds" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
-    <Project Include="Microsoft.TargetingPack.Private.CoreCLR\Microsoft.TargetingPack.Private.CoreCLR.pkgproj" />
+    <ProjectReference Include="Microsoft.TargetingPack.Private.CoreCLR\Microsoft.TargetingPack.Private.CoreCLR.pkgproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetsWindows)'=='true' OR '$(DotNetBuildFromSource)'=='true'">
-    <Project Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.pkgproj" />
+    <ProjectReference Include="Microsoft.NET.Sdk.IL\Microsoft.NET.Sdk.IL.pkgproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(__SkipNativeBuild)'==''">
-    <Project Include="Microsoft.NETCore.Jit\Microsoft.NETCore.Jit.builds" />
-    <Project Include="Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.builds" />
-    <Project Include="Microsoft.NETCore.Native\Microsoft.NETCore.Native.builds" />
+    <ProjectReference Include="Microsoft.NETCore.Jit\Microsoft.NETCore.Jit.builds" />
+    <ProjectReference Include="Microsoft.NETCore.TestHost\Microsoft.NETCore.TestHost.builds" />
+    <ProjectReference Include="Microsoft.NETCore.Native\Microsoft.NETCore.Native.builds" />
   </ItemGroup>
 
   <ItemGroup>
-    <Project Include="Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.builds" />
-    <Project Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.builds" />
+    <ProjectReference Include="Microsoft.NETCore.ILAsm\Microsoft.NETCore.ILAsm.builds" />
+    <ProjectReference Include="Microsoft.NETCore.ILDAsm\Microsoft.NETCore.ILDAsm.builds" />
   </ItemGroup>
 
   <!-- Generate a version.txt file we include in our packages
@@ -50,6 +49,4 @@
           BeforeTargets="Build">
     <MSBuild Targets="Build" Projects="$(CoreclrDir)\src\createVersionFile.proj"/>
   </Target>
-
-  <Import Project="$(MSBuildThisFileDirectory)..\..\dir.traversal.targets" />
 </Project>

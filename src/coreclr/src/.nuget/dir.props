@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
+<Project>
+
+  <!-- Packaging projects (.pkgproj) are non-SDK-style, so they need to directly import Directory.Build.props -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))"
+          Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" />
   <Import Project="packaging.props" />
 
   <PropertyGroup>
