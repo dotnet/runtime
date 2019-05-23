@@ -47,72 +47,7 @@
     <PackageReference Include="System.Runtime.Analyzers" Version="1.1.0" />
     <PackageReference Include="System.Runtime.InteropServices.Analyzers" Version="1.1.0" />
     <PackageReference Include="System.Security.Cryptography.Hashing.Algorithms.Analyzers" Version="1.1.0" />
-
-    <!-- repo tools -->
-    <RepoTool Include="coverlet.console" Version="$(CoverletConsolePackageVersion)" />
-    <RepoTool Include="dotnet-reportgenerator-globaltool" Version="$(DotNetReportGeneratorGlobalToolPackageVersion)" />
   </ItemGroup>
-
-  <!-- Opt-in target to restore internal tools with interactive authentication. -->
-  <Target Name="InitOptionalTools"
-          Condition="'$(RestoreInternalTools)' == 'true'"
-          AfterTargets="Restore">
-
-    <PropertyGroup>
-      <ToolsDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', '.tools', 'CredentialsProvider'))</ToolsDir>
-      <CredentialsProviderScriptUrl Condition="'$(OS)' == 'Windows_NT'">https://raw.githubusercontent.com/Microsoft/artifacts-credprovider/master/helpers/installcredprovider.ps1</CredentialsProviderScriptUrl>
-      <CredentialsProviderScriptUrl Condition="'$(OS)' != 'Windows_NT'">https://raw.githubusercontent.com/Microsoft/artifacts-credprovider/master/helpers/installcredprovider.sh</CredentialsProviderScriptUrl>
-    </PropertyGroup>
-
-    <DownloadFile SourceUrl="$(CredentialsProviderScriptUrl)" DestinationFolder="$(ToolsDir)">
-      <Output TaskParameter="DownloadedFile" ItemName="CredentialsProviderScriptPath" />
-    </DownloadFile>
-
-    <Exec Condition="'$(OS)' == 'Windows_NT'" Command="powershell -ExecutionPolicy ByPass -NoProfile -File &quot;%(CredentialsProviderScriptPath.Identity)&quot;" />
-    <Exec Condition="'$(OS)' != 'Windows_NT'" Command="chmod +x &quot;%(CredentialsProviderScriptPath.Identity)&quot; %26%26 &quot;%(CredentialsProviderScriptPath.Identity)&quot;" />
-
-    <PropertyGroup>
-      <OptionalToolDir>$([MSBuild]::NormalizeDirectory('$(RepositoryEngineeringDir)', 'common', 'internal'))</OptionalToolDir>
-      <OptionalToolProjectPath>$(OptionalToolDir)Tools.csproj</OptionalToolProjectPath>
-    </PropertyGroup>
-
-    <Exec Command="&quot;$(DotNetTool)&quot; restore &quot;$(OptionalToolProjectPath)&quot; --interactive --ignore-failed-sources /p:TargetGroup=$(TargetGroup)"
-          WorkingDirectory="$(RepoRoot)" />
-
-  </Target>
-
-  <Target Name="InitGlobalTools" Condition="'@(RepoTool)' != ''" AfterTargets="Restore">
-
-    <PropertyGroup>
-      <!-- Keep in sync with property in RepoRoot\Directory.Build.props. -->
-      <GlobalToolsDir>$([MSBuild]::NormalizePath('$(RepoRoot)', '.tools', 'globaltools'))</GlobalToolsDir>
-    </PropertyGroup>
-
-    <!-- List all global tools and save the output. -->
-    <Exec Condition="Exists('$(GlobalToolsDir)')"
-          Command="&quot;$(DotNetTool)&quot; tool list --tool-path &quot;$(GlobalToolsDir)&quot;"
-          WorkingDirectory="$(RepoRoot)"
-          ConsoleToMsBuild="true"
-          ContinueOnError="WarnAndContinue">
-      <Output TaskParameter="ConsoleOutput" PropertyName="DotNetListToolsOutput" />
-    </Exec>
-
-    <!-- Uninstall the global tool if it exists with a different version. -->
-    <Exec Condition="Exists('$(GlobalToolsDir)') AND $(DotNetListToolsOutput.Contains('%(RepoTool.Identity)')) AND !$([System.Text.RegularExpressions.Regex]::IsMatch('$(DotNetListToolsOutput)', '$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Identity)'))\s+$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Version)'))'))"
-          Command="&quot;$(DotNetTool)&quot; tool uninstall --tool-path &quot;$(GlobalToolsDir)&quot; %(RepoTool.Identity)"
-          WorkingDirectory="$(RepoRoot)"
-          ContinueOnError="WarnAndContinue" />
-
-    <!--
-      Installs the global tool if it doesn't exist with the right version.
-      Creates the global tools folder automatically if it doesn't exist.
-    -->
-    <Exec Condition="!Exists('$(GlobalToolsDir)') OR !$([System.Text.RegularExpressions.Regex]::IsMatch('$(DotNetListToolsOutput)', '$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Identity)'))\s+$([System.Text.RegularExpressions.Regex]::Escape('%(RepoTool.Version)'))'))"
-          Command="&quot;$(DotNetTool)&quot; tool install --tool-path &quot;$(GlobalToolsDir)&quot; %(RepoTool.Identity) --version %(RepoTool.Version) --add-source https:%2F%2Fapi.nuget.org/v3/index.json"
-          WorkingDirectory="$(RepoRoot)"
-          ContinueOnError="WarnAndContinue" />
-
-  </Target>
 
   <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.SaveItems" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)" />
 
