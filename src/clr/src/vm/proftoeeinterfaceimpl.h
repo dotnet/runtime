@@ -29,6 +29,7 @@
 
 
 #include "profilinghelper.h"
+#include "profilinghelper.inl"
 
 
 class ProfilerFunctionEnum;

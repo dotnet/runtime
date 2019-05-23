@@ -64,9 +64,44 @@ public:
     static HRESULT GetCurrentProcessUserSid(PSID * ppsid);
 #endif // !FEATURE_PAL
 
-    // helper functions for profiler evacuation counter holder
-    static void IncEvacuationCounter(Thread * pThread);
-    static void DecEvacuationCounter(Thread * pThread);
+#ifdef FEATURE_PROFAPI_ATTACH_DETACH
+    // ----------------------------------------------------------------------------
+    // ProfilingAPIUtility::IncEvacuationCounter
+    //
+    // Description: 
+    //    Simple helper to increase the evacuation counter inside an EE thread by one
+    //
+    // Arguments:
+    //    * pThread - pointer to an EE Thread
+    //
+    template<typename ThreadType>
+    static FORCEINLINE void IncEvacuationCounter(ThreadType * pThread) 
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        if (pThread) 
+            pThread->IncProfilerEvacuationCounter();
+    }
+
+    // ----------------------------------------------------------------------------
+    // ProfilingAPIUtility::DecEvacuationCounter
+    //
+    // Description: 
+    //    Simple helper to decrease the evacuation counter inside an EE thread by one
+    //    
+    // Arguments:
+    //    * pThread - pointer to an EE Thread
+    //
+    template<typename ThreadType>
+    static FORCEINLINE void DecEvacuationCounter(ThreadType * pThread) 
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        if (pThread) 
+            pThread->DecProfilerEvacuationCounter();
+    }
+
+#endif // FEATURE_PROFAPI_ATTACH_DETACH
 
     // See code:ProfilingAPIUtility::InitializeProfiling#LoadUnloadCallbackSynchronization
     static CRITSEC_COOKIE GetStatusCrst();

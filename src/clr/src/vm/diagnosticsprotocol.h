@@ -11,7 +11,8 @@ template <typename T>
 bool TryParse(uint8_t *&bufferCursor, uint32_t &bufferLen, T &result)
 {
     static_assert(
-        std::is_integral<T>::value || std::is_same<T, float>::value || std::is_same<T, double>::value,
+        std::is_integral<T>::value || std::is_same<T, float>::value ||
+        std::is_same<T, double>::value || std::is_same<T, CLSID>::value,
         "Can only be instantiated with integral and floating point types.");
 
     if (bufferLen < sizeof(T))
