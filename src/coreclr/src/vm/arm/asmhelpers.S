@@ -831,6 +831,7 @@ LOCAL_LABEL(stackProbe_loop):
     bx lr
     NESTED_END stackProbe, _TEXT
 
+#ifdef FEATURE_PREJIT
 //------------------------------------------------
 // VirtualMethodFixupStub
 //
@@ -886,6 +887,7 @@ LOCAL_LABEL(stackProbe_loop):
     bx r12
 
     NESTED_END VirtualMethodFixupStub, _TEXT
+#endif // FEATURE_PREJIT
 
 //------------------------------------------------
 // ExternalMethodFixupStub
@@ -924,6 +926,7 @@ LOCAL_LABEL(stackProbe_loop):
 
     NESTED_END ExternalMethodFixupStub, _TEXT
 
+#ifdef FEATURE_PREJIT
 //------------------------------------------------
 // StubDispatchFixupStub
 //
@@ -956,6 +959,7 @@ LOCAL_LABEL(stackProbe_loop):
     bx   r12
  
     NESTED_END StubDispatchFixupStub, _TEXT
+#endif // FEATURE_PREJIT
 
 //------------------------------------------------
 // JIT_RareDisableHelper

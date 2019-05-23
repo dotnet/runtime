@@ -3218,6 +3218,7 @@ private:
     static DWORD        m_dwLowestFreeIndex;
 #endif // DACCESS_COMPILE
 
+#ifdef FEATURE_PREJIT
 protected:
 
     // These flags let the correct native image of mscorlib to be loaded.
@@ -3226,6 +3227,7 @@ protected:
     SVAL_DECL(BOOL, s_fForceDebug);
     SVAL_DECL(BOOL, s_fForceProfiling);
     SVAL_DECL(BOOL, s_fForceInstrument);
+#endif
 
 public:
     static void     SetCompilationOverrides(BOOL fForceDebug,

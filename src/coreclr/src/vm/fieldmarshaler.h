@@ -1117,7 +1117,8 @@ public:
 #ifdef FEATURE_PREJIT
         return !m_arrayType.IsTagged() && (m_arrayType.IsNull() || m_arrayType.GetValue().IsRestored());
 #else // FEATURE_PREJIT
-        return m_arrayType.IsNull() || m_arrayType.GetValue().IsFullyLoaded();
+        // putting the IsFullyLoaded check here is tempting but incorrect
+        return TRUE;
 #endif // FEATURE_PREJIT
     }
 #endif
