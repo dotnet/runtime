@@ -16,15 +16,6 @@
     <RestorePackagesPath>$(PackagesDir)</RestorePackagesPath>
   </PropertyGroup>
 
-  <!-- Version numbers for native binaries
-       [ARCADE REMOVE] These properties can be removed once native binaries use Arcade versioning
-       They are included in common for packaging, which is onboarded to Arcade, but uses the version
-       numbers for native binaries for some outputs. -->
-  <PropertyGroup>
-    <NativeMajorVersion>4</NativeMajorVersion>
-    <NativeMinorVersion>6</NativeMinorVersion>
-  </PropertyGroup>
-
   <!-- Set default Configuration and Platform -->
   <PropertyGroup>
     <BuildArch>$(__BuildArch)</BuildArch>
@@ -70,6 +61,18 @@
     -->
     <PackagesBinDir>$(__PackagesBinDir)</PackagesBinDir>
     <PackagesBinDir Condition="'$(__PackagesBinDir)'==''">$(BinDir).nuget\</PackagesBinDir>
+  </PropertyGroup>
+
+  <!-- Version numbers for native binaries and build version props file
+       [ARCADE REMOVE] These properties can be removed once native binaries use Arcade versioning
+       They are included in common for packaging, which is onboarded to Arcade, but uses the version
+       numbers for native binaries for some outputs. -->
+  <PropertyGroup>
+    <NativeMajorVersion>4</NativeMajorVersion>
+    <NativeMinorVersion>6</NativeMinorVersion>
+
+    <!-- Explicitly set BuildVersionFile. This is used by BuildVersion.targets in BuildTools. -->
+    <BuildVersionFile Condition="'$(OfficialBuildId)' != ''">$(RootBinDir)obj\BuildVersion-$(OfficialBuildId).props</BuildVersionFile>
   </PropertyGroup>
 
   <PropertyGroup>
