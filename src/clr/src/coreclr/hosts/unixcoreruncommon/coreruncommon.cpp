@@ -6,6 +6,8 @@
 // Code that is used by both the Unix corerun and coreconsole.
 //
 
+#include "config.h"
+
 #include <cstdlib>
 #include <cstring>
 #include <assert.h>
@@ -19,6 +21,9 @@
 #if defined(__FreeBSD__)
 #include <sys/types.h>
 #include <sys/param.h>
+#endif
+#if HAVE_GETAUXVAL
+#include <sys/auxv.h>
 #endif
 #if defined(HAVE_SYS_SYSCTL_H) || defined(__FreeBSD__)
 #include <sys/sysctl.h>
@@ -105,6 +110,17 @@ bool GetEntrypointExecutableAbsolutePath(std::string& entrypointExecutable)
         result = false;
     }
 #else
+
+#if HAVE_GETAUXVAL && defined(AT_EXECFN)
+    const char *execfn = (const char *)getauxval(AT_EXECFN);
+
+    if (execfn)
+    {
+        entrypointExecutable.assign(execfn);
+        result = true;
+    }
+    else
+#endif
     // On other OSs, return the symlink that will be resolved by GetAbsolutePath
     // to fetch the entrypoint EXE absolute path, inclusive of filename.
     result = GetAbsolutePath(symlinkEntrypointExecutable, entrypointExecutable);
