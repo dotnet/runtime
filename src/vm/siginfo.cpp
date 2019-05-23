@@ -1125,7 +1125,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             break;
         }
 
-#ifdef FEATURE_PREJIT
         case ELEMENT_TYPE_NATIVE_ARRAY_TEMPLATE_ZAPSIG:
         {
 #ifndef DACCESS_COMPILE
@@ -1258,7 +1257,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
 #endif
             break;
         }
-#endif // FEATURE_PREJIT
 
         case ELEMENT_TYPE_VAR:
         {

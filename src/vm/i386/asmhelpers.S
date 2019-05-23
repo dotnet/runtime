@@ -725,7 +725,6 @@ LOCAL_LABEL(GoCallCalliWorker):
 LEAF_END GenericPInvokeCalliHelper, _TEXT
 
 #ifdef FEATURE_PREJIT
-
 // =========================================================================
 NESTED_ENTRY StubDispatchFixupStub, _TEXT, NoHandler
     STUB_PROLOG
@@ -755,6 +754,7 @@ PATCH_LABEL StubDispatchFixupPatchLabel
     // which disassembles the epilog to unwind the stack.
     ret
 NESTED_END StubDispatchFixupStub, _TEXT
+#endif // FEATURE_PREJIT
 
 // ==========================================================================
 NESTED_ENTRY ExternalMethodFixupStub, _TEXT_ NoHandler
@@ -842,6 +842,7 @@ NESTED_END DelayLoad_MethodCall, _TEXT
 
 #endif // FEATURE_READYTORUN
 
+#ifdef FEATURE_PREJIT
 // =======================================================================================
 //  The call in softbound vtable slots initially points to this function.
 //  The pupose of this function is to transfer the control to right target and
@@ -891,7 +892,6 @@ PATCH_LABEL VirtualMethodFixupPatchLabel
     // which disassembles the epilog to unwind the stack.
     ret
 NESTED_END VirtualMethodFixupStub, _TEXT
-
 #endif // FEATURE_PREJIT
 
 NESTED_ENTRY ThePreStub, _TEXT, NoHandler

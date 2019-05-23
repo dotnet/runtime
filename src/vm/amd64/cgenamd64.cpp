@@ -820,6 +820,7 @@ DWORD GetOffsetAtEndOfFunction(ULONGLONG           uImageBase,
     return offsetInFunc;
 }
 
+#ifdef FEATURE_PREJIT
 //==========================================================================================
 // In NGen image, virtual slots inherited from cross-module dependencies point to jump thunks.
 // These jump thunk initially point to VirtualMethodFixupStub which transfers control here.
@@ -913,6 +914,7 @@ EXTERN_C PCODE VirtualMethodFixupWorker(TransitionBlock * pTransitionBlock, CORC
     // Ready to return
     return pCode;
 }
+#endif // FEATURE_PREJIT
 
 #ifdef FEATURE_READYTORUN
 

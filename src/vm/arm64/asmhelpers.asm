@@ -11,12 +11,14 @@
 #include "asmconstants.h"
 #include "asmmacros.h"
 
+#ifdef FEATURE_PREJIT
     IMPORT VirtualMethodFixupWorker
+    IMPORT StubDispatchFixupWorker
+#endif
     IMPORT ExternalMethodFixupWorker
     IMPORT PreStubWorker
     IMPORT NDirectImportWorker
     IMPORT VSD_ResolveWorker
-    IMPORT StubDispatchFixupWorker
     IMPORT JIT_InternalThrow
     IMPORT ComPreStubWorker
     IMPORT COMToCLRWorker
@@ -532,6 +534,7 @@ Exit
         ret      lr
     WRITE_BARRIER_END JIT_WriteBarrier
 
+#ifdef FEATURE_PREJIT
 ;------------------------------------------------
 ; VirtualMethodFixupStub
 ;
@@ -579,6 +582,8 @@ Exit
     EPILOG_BRANCH_REG x12
 
     NESTED_END
+#endif // FEATURE_PREJIT
+
 ;------------------------------------------------
 ; ExternalMethodFixupStub
 ;

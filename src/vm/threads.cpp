@@ -1464,9 +1464,7 @@ Thread::Thread()
 
     m_pPendingTypeLoad = NULL;
 
-#ifdef FEATURE_PREJIT
     m_pIBCInfo = NULL;
-#endif
 
     m_dwAVInRuntimeImplOkayCount = 0;
 
@@ -2630,11 +2628,9 @@ Thread::~Thread()
 
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());
 
-#ifdef FEATURE_PREJIT
     if (m_pIBCInfo) {
         delete m_pIBCInfo;
     }
-#endif
 
 #ifdef FEATURE_EVENT_TRACE
     // Destruct the thread local type cache for allocation sampling

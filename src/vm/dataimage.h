@@ -7,15 +7,6 @@
 #ifndef _DATAIMAGE_H_
 #define _DATAIMAGE_H_
 
-#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
-
-// All we really need is to pre-declare the PrecodeType enum, but g++ doesn't
-// support enum pre-declaration, so we need to include the declaration itself.
-/*#include "cgensys.h" // needed to include precode.h*/
-#include "precode.h"
-
-typedef BYTE ZapRelocationType; // IMAGE_REL_XXX enum
-
 // IMAGE_REL_BASED_PTR is architecture specific reloc of virtual address
 #ifdef _TARGET_64BIT_
 #define IMAGE_REL_BASED_PTR IMAGE_REL_BASED_DIR64
@@ -25,6 +16,15 @@ typedef BYTE ZapRelocationType; // IMAGE_REL_XXX enum
 
 // Special NGEN-specific relocation type for relative pointer (used to make NGen relocation section smaller)
 #define IMAGE_REL_BASED_RELPTR            0x7D
+
+#if defined(FEATURE_PREJIT) && !defined(DACCESS_COMPILE)
+
+// All we really need is to pre-declare the PrecodeType enum, but g++ doesn't
+// support enum pre-declaration, so we need to include the declaration itself.
+/*#include "cgensys.h" // needed to include precode.h*/
+#include "precode.h"
+
+typedef BYTE ZapRelocationType; // IMAGE_REL_XXX enum
 
 class CEEPreloader;
 

@@ -68,9 +68,7 @@ public:
     ULONG Release();
     const SString& GetPath();
 
-#ifdef FEATURE_PREJIT
     void ApplyBaseRelocations();
-#endif
 
 public:
 #ifdef DACCESS_COMPILE

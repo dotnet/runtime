@@ -10424,6 +10424,10 @@ ZapHeader.ImportTable        |                    |         |     non-NULL      
 
 #endif // 0
 
+#endif
+#endif
+
+#ifndef DACCESS_COMPILE
 //-----------------------------------------------------------------------------
 
 void Module::RunEagerFixups()
@@ -10507,7 +10511,11 @@ void Module::RunEagerFixups()
         }
     }
 }
+#endif // !DACCESS_COMPILE
 
+#ifdef FEATURE_PREJIT
+
+#ifndef DACCESS_COMPILE
 void Module::LoadTokenTables()
 {
     CONTRACTL
@@ -10701,7 +10709,6 @@ BOOL Module::FixupNativeEntry(CORCOMPILE_IMPORT_SECTION* pSection, SIZE_T fixupI
     return TRUE;
 }
 
-#ifdef FEATURE_PREJIT 
 //
 // Profile data management
 //
@@ -11649,7 +11656,6 @@ ExternalMethodBlobEntry::ExternalMethodBlobEntry(mdToken _nestedClass,
     return static_cast<const ExternalMethodBlobEntry *>(pEntry);
 }
 
-
 static bool GetBasename(LPCWSTR _src, __out_ecount(dstlen) __out_z LPWSTR _dst, int dstlen)
 {
     LIMITED_METHOD_CONTRACT;
@@ -12387,7 +12393,6 @@ void Module::DeleteProfilingData()
     
     // the metadataProfileData is free'ed in destructor of the corresponding MetaDataTracker
 }
-#endif //FEATURE_PREJIT
 
 void Module::SetIsIJWFixedUp()
 {
@@ -12395,7 +12400,6 @@ void Module::SetIsIJWFixedUp()
     FastInterlockOr(&m_dwTransientFlags, IS_IJW_FIXED_UP);
 }
 
-#ifdef FEATURE_PREJIT
 /* static */
 Module::TokenProfileData *Module::TokenProfileData::CreateNoThrow(void)
 {
@@ -12421,8 +12425,6 @@ Module::TokenProfileData *Module::TokenProfileData::CreateNoThrow(void)
     return tpd;
 }
 
-#endif // FEATURE_PREJIT
-
 #endif // !DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
@@ -12433,7 +12435,6 @@ void Module::SetBeingUnloaded()
 }
 #endif
 
-#ifdef FEATURE_PREJIT 
 void Module::LogTokenAccess(mdToken token, SectionFormat format, ULONG flagnum)
 {
     CONTRACTL
@@ -12545,10 +12546,8 @@ void Module::LogTokenAccess(mdToken token, ULONG flagNum)
         LogTokenAccess(token, format, flagNum);
     }
 }
-#endif // FEATURE_PREJIT
 
 #ifndef DACCESS_COMPILE
-#ifdef FEATURE_PREJIT
 
 //
 // Encoding callbacks
@@ -12808,7 +12807,6 @@ idMethodSpec Module::LogInstantiatedMethod(const MethodDesc * md, ULONG flagNum)
     RETURN result;
 }
 #endif // DACCESS_COMPILE
-#endif //FEATURE_PREJIT
 
 #ifndef DACCESS_COMPILE
 

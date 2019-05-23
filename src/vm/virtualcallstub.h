@@ -44,10 +44,12 @@ struct VTableCallHolder;
 // Forward function declarations
 extern "C" void InContextTPQuickDispatchAsmStub();
 
+#ifdef FEATURE_PREJIT
 extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBlock, 
                                                  TADDR siteAddrForRegisterIndirect,
                                                  DWORD sectionIndex, 
                                                  Module * pModule);
+#endif
 
 extern "C" PCODE STDCALL VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
                                            TADDR siteAddrForRegisterIndirect,

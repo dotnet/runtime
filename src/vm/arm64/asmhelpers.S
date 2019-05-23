@@ -474,6 +474,7 @@ LOCAL_LABEL(Exit):
     ret  lr  
 WRITE_BARRIER_END JIT_WriteBarrier
 
+#ifdef FEATURE_PREJIT
 //------------------------------------------------
 // VirtualMethodFixupStub
 //
@@ -520,7 +521,8 @@ NESTED_ENTRY VirtualMethodFixupStub, _TEXT, NoHandler
     // and tailcall to the actual method
     EPILOG_BRANCH_REG x12
 
-NESTED_END VirtualMEthodFixupStub, _TEXT
+NESTED_END VirtualMethodFixupStub, _TEXT
+#endif // FEATURE_PREJIT
 
 //------------------------------------------------
 // ExternalMethodFixupStub
