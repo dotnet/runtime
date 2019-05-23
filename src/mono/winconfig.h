@@ -35,10 +35,9 @@
 /* @ENABLE_DEFINES@ */
 /* End configure ENABLE_DEFINES picked up from cygconfig.h or other external source, if available */
 
-#if defined(ENABLE_HYBRID_SUSPEND) || defined(ENABLE_COOP_SUSPEND)
-/* Windows MSVC builds defaults to preemptive suspend. Disable ENABLE_HYBRID_SUSPEND/ENABLE_COOP_SUSPEND defines. */
+#if defined(ENABLE_HYBRID_SUSPEND)
+/* Windows MSVC builds defaults to preemptive suspend. Disable ENABLE_HYBRID_SUSPEND defines. */
 #undef ENABLE_HYBRID_SUSPEND
-#undef ENABLE_COOP_SUSPEND
 #endif
 
 /* No ENABLE_DEFINES below this point */
