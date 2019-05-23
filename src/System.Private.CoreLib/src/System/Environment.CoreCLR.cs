@@ -107,15 +107,14 @@ namespace System
         private static class WinRT
         {
             // Cache the value in readonly static that can be optimized out by the JIT
-            public readonly static bool IsSupported = WinRTSupported();
+            public readonly static bool IsSupported = WinRTSupported() != Interop.BOOL.FALSE;
         }
 
         // Does the current version of Windows have Windows Runtime suppport?
         internal static bool IsWinRTSupported => WinRT.IsSupported;
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        private static extern bool WinRTSupported();
+        private static extern Interop.BOOL WinRTSupported();
 #endif // FEATURE_COMINTEROP
     }
 }

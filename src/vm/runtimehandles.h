@@ -134,18 +134,18 @@ public:
     static FCDECL2(Object*, CreateCaInstance, ReflectClassBaseObject* refCaType, ReflectMethodObject* pCtorUNSAFE);
 
     static
-    void QCALLTYPE MakeByRef(EnregisteredTypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
+    void QCALLTYPE MakeByRef(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 
     static
-    void QCALLTYPE MakePointer(EnregisteredTypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
+    void QCALLTYPE MakePointer(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 
     static
-    void QCALLTYPE MakeSZArray(EnregisteredTypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
+    void QCALLTYPE MakeSZArray(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 
     static
-    void QCALLTYPE MakeArray(EnregisteredTypeHandle pTypeHandle, INT32 rank, QCall::ObjectHandleOnStack retType);
+    void QCALLTYPE MakeArray(QCall::TypeHandle pTypeHandle, INT32 rank, QCall::ObjectHandleOnStack retType);
 
-    static BOOL QCALLTYPE IsCollectible(EnregisteredTypeHandle pTypeHandle);
+    static BOOL QCALLTYPE IsCollectible(QCall::TypeHandle pTypeHandle);
 
     static FCDECL1(ReflectClassBaseObject*, GetRuntimeType, void *th);
 
@@ -166,10 +166,10 @@ public:
 #endif //FEATURE_COMINTEROP
 
     static
-    void QCALLTYPE PrepareMemberInfoCache(EnregisteredTypeHandle pMemberInfoCache);
+    void QCALLTYPE PrepareMemberInfoCache(QCall::TypeHandle pMemberInfoCache);
 
     static
-    void QCALLTYPE ConstructName(EnregisteredTypeHandle pTypeHandle, DWORD format, QCall::StringHandleOnStack retString);
+    void QCALLTYPE ConstructName(QCall::TypeHandle pTypeHandle, DWORD format, QCall::StringHandleOnStack retString);
 
     static
     void QCALLTYPE GetTypeByNameUsingCARules(LPCWSTR pwzClassName, QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retType);
@@ -192,7 +192,7 @@ public:
     static FCDECL1(ReflectMethodObject*, GetDeclaringMethod, ReflectClassBaseObject *pType);
 
     static
-    void QCALLTYPE GetDefaultConstructor(EnregisteredTypeHandle pTypeHandle, QCall::ObjectHandleOnStack retMethod);
+    void QCALLTYPE GetDefaultConstructor(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retMethod);
 
     static FCDECL1(ReflectClassBaseObject*, GetDeclaringType, ReflectClassBaseObject* pType);
     static FCDECL1(FC_BOOL_RET, IsValueType, ReflectClassBaseObject* pType);
@@ -200,7 +200,7 @@ public:
     static FCDECL1(FC_BOOL_RET, IsByRefLike, ReflectClassBaseObject* pType);
     
     static 
-    BOOL QCALLTYPE IsVisible(EnregisteredTypeHandle pTypeHandle);
+    BOOL QCALLTYPE IsVisible(QCall::TypeHandle pTypeHandle);
 
     static FCDECL2(FC_BOOL_RET, IsComObject, ReflectClassBaseObject *pType, CLR_BOOL isGenericCOM);
     static FCDECL2(FC_BOOL_RET, CanCastTo, ReflectClassBaseObject *pType, ReflectClassBaseObject *pTarget);
@@ -223,23 +223,23 @@ public:
     FCDECL1(FC_BOOL_RET, ContainsGenericVariables, PTR_ReflectClassBaseObject pType);
 
     static
-    void QCALLTYPE GetInstantiation(EnregisteredTypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType, BOOL fAsRuntimeTypeArray);
+    void QCALLTYPE GetInstantiation(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType, BOOL fAsRuntimeTypeArray);
 
     static
-    void QCALLTYPE Instantiate(EnregisteredTypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType);
+    void QCALLTYPE Instantiate(QCall::TypeHandle pTypeHandle, TypeHandle * pInstArray, INT32 cInstArray, QCall::ObjectHandleOnStack retType);
 
     static
-    void QCALLTYPE GetGenericTypeDefinition(EnregisteredTypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
+    void QCALLTYPE GetGenericTypeDefinition(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retType);
 
     static FCDECL2(FC_BOOL_RET, CompareCanonicalHandles, PTR_ReflectClassBaseObject pLeft, PTR_ReflectClassBaseObject pRight);
 
     static FCDECL1(PtrArray*, GetInterfaces, ReflectClassBaseObject *pType);
 
     static
-    void QCALLTYPE GetConstraints(EnregisteredTypeHandle pTypeHandle, QCall::ObjectHandleOnStack retTypes);
+    void QCALLTYPE GetConstraints(QCall::TypeHandle pTypeHandle, QCall::ObjectHandleOnStack retTypes);
 
     static
-    PVOID QCALLTYPE GetGCHandle(EnregisteredTypeHandle pTypeHandle, INT32 handleType);
+    PVOID QCALLTYPE GetGCHandle(QCall::TypeHandle pTypeHandle, INT32 handleType);
 
     static FCDECL1(INT32, GetCorElementType, PTR_ReflectClassBaseObject pType);
     static FCDECL1(ReflectClassBaseObject*, GetElementType, ReflectClassBaseObject* pType);
@@ -248,10 +248,10 @@ public:
     static FCDECL1(INT32, GetNumVirtuals, ReflectClassBaseObject *pType);
     
     static 
-    void QCALLTYPE VerifyInterfaceIsImplemented(EnregisteredTypeHandle pTypeHandle, EnregisteredTypeHandle pIFaceHandle);
+    void QCALLTYPE VerifyInterfaceIsImplemented(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pIFaceHandle);
 
     static
-    MethodDesc* QCALLTYPE GetInterfaceMethodImplementation(EnregisteredTypeHandle pTypeHandle, EnregisteredTypeHandle pOwner, MethodDesc * pMD);
+    MethodDesc* QCALLTYPE GetInterfaceMethodImplementation(QCall::TypeHandle pTypeHandle, QCall::TypeHandle pOwner, MethodDesc * pMD);
 
     static FCDECL3(FC_BOOL_RET, GetFields, ReflectClassBaseObject *pType, INT32 **result, INT32 *pCount);
 
@@ -301,9 +301,9 @@ public:
 
     static
     BOOL QCALLTYPE IsCAVisibleFromDecoratedType(
-        EnregisteredTypeHandle targetTypeHandle,
+        QCall::TypeHandle targetTypeHandle,
         MethodDesc * pTargetCtor,
-        EnregisteredTypeHandle sourceTypeHandle,
+        QCall::TypeHandle sourceTypeHandle,
         QCall::ModuleHandle sourceModuleHandle);
 
     static FCDECL4(void, SerializationInvoke, ReflectMethodObject *pMethodUNSAFE, Object* targetUNSAFE,

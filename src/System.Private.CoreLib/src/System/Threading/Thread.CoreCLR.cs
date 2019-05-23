@@ -269,9 +269,9 @@ namespace System.Threading
         public static void SpinWait(int iterations) => SpinWaitInternal(iterations);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern bool YieldInternal();
+        private static extern Interop.BOOL YieldInternal();
 
-        public static bool Yield() => YieldInternal();
+        public static bool Yield() => YieldInternal() != Interop.BOOL.FALSE;
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Thread InitializeCurrentThread() => (t_currentThread = GetCurrentThreadNative());

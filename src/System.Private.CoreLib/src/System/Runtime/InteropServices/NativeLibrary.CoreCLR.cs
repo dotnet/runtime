@@ -12,8 +12,9 @@ namespace System.Runtime.InteropServices
     {
         internal static IntPtr LoadLibraryByName(string libraryName, Assembly assembly, DllImportSearchPath? searchPath, bool throwOnError)
         {
+            RuntimeAssembly rtAsm = (RuntimeAssembly)assembly;
             return LoadByName(libraryName,
-                              ((RuntimeAssembly)assembly).GetNativeHandle(),
+                              JitHelpers.GetQCallAssemblyOnStack(ref rtAsm),
                               searchPath.HasValue,
                               (uint) searchPath.GetValueOrDefault(),
                               throwOnError);
@@ -25,7 +26,7 @@ namespace System.Runtime.InteropServices
         internal static extern IntPtr LoadFromPath(string libraryName, bool throwOnError);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern IntPtr LoadByName(string libraryName, RuntimeAssembly callingAssembly,
+        internal static extern IntPtr LoadByName(string libraryName, QCallAssembly callingAssembly,
                                                  bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag, 
                                                  bool throwOnError);
 

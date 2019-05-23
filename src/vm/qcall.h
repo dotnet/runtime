@@ -239,6 +239,7 @@ public:
 
     struct AssemblyHandle
     {
+        Object ** m_ppObject;
         DomainAssembly * m_pAssembly;
 
         operator DomainAssembly * ()
@@ -256,6 +257,7 @@ public:
 
     struct ModuleHandle
     {
+        Object ** m_ppObject;
         Module * m_pModule;
 
         operator Module * ()
@@ -268,6 +270,18 @@ public:
         {
             LIMITED_METHOD_CONTRACT;
             return m_pModule;
+        }
+    };
+
+    struct TypeHandle
+    {
+        Object ** m_ppObject;
+        PTR_VOID m_pTypeHandle;
+
+        ::TypeHandle AsTypeHandle()
+        {
+            LIMITED_METHOD_CONTRACT;
+            return ::TypeHandle::FromPtr(m_pTypeHandle);
         }
     };
 
