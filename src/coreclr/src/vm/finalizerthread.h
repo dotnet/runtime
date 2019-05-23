@@ -26,21 +26,12 @@ class FinalizerThread
     {
         kLowMemoryNotification  = 0,
         kFinalizer              = 1,
-
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH 
-        kProfilingAPIAttach     = 2,
-#endif // FEATURE_PROFAPI_ATTACH_DETACH 
-
         kHandleCount,
     };
 
     static HANDLE MHandles[kHandleCount];
 
     static void WaitForFinalizerEvent (CLREvent *event);
-
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    static void ProcessProfilerAttachIfNecessary(ULONGLONG * pui64TimestampLastCheckedEventMs);
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
 
     static void DoOneFinalization(Object* fobj, Thread* pThread);
 

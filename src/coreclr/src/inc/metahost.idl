@@ -488,7 +488,6 @@ interface ICLRRuntimeInfo : IUnknown
      ** CLSID_TypeNameFactory        IID_ITypeNameFactory                            **
      ** CLSID_CLRStrongName          IID_ICLRStrongName                              **
      ** CLSID_CLRDebuggingLegacy     IID_ICorDebug                                   **
-     ** CLSID_CLRProfiling           IID_ICLRProfiling                               **
      **                                                                              **
      ** Supersedes: CorBindTo* and others                                            **
      **********************************************************************************/

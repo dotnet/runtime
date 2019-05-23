@@ -24,10 +24,6 @@
 
 #include "clrprivhosting.h"
 
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-#include "../../vm/profattach.h"
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
-
 #include <dbgenginemetrics.h>
 
 // Locals.

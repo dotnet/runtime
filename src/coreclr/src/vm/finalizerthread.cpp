@@ -13,10 +13,6 @@
 #include "runtimecallablewrapper.h"
 #endif
 
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH 
-#include "profattach.h"
-#endif // FEATURE_PROFAPI_ATTACH_DETACH 
-
 BOOL FinalizerThread::fQuitFinalizer = FALSE;
 
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
@@ -148,20 +144,9 @@ void FinalizerThread::FinalizeAllObjects(int bitToCheck)
 
     Thread *pThread = GetThread();
 
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    ULONGLONG ui64TimestampLastCheckedProfAttachEventMs = 0;
-#endif //FEATURE_PROFAPI_ATTACH_DETACH
-
     // Finalize everyone
     while (fobj)
     {
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-        // Don't let an overloaded finalizer queue starve out
-        // an attaching profiler.  In between running finalizers,
-        // check the profiler attach event without blocking.
-        ProcessProfilerAttachIfNecessary(&ui64TimestampLastCheckedProfAttachEventMs);
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
-
         if (fobj->GetHeader()->GetBits() & bitToCheck)
         {
             fobj = GCHeapUtilities::GetGCHeap()->GetNextFinalizable();
@@ -176,98 +161,6 @@ void FinalizerThread::FinalizeAllObjects(int bitToCheck)
     FireEtwGCFinalizersEnd_V1(fcount, GetClrInstanceId());
 }
 
-
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-
-// ----------------------------------------------------------------------------
-// ProcessProfilerAttachIfNecessary
-// 
-// Description:
-//    This is called to peek at the Profiler Attach Event in between finalizers to check
-//    if it's signaled. If it is, this calls
-//    code:ProfilingAPIAttachDetach::ProcessSignaledAttachEvent to deal with it.
-//    
-//
-// Arguments:
-//     * pui64TimestampLastCheckedEventMs: [in / out]  This keeps track of how often the
-//         Profiler Attach Event is checked, so it's not checked too often during a
-//         tight loop (in particular, the loop in code:SVR::FinalizeAllObjects which
-//         executes all finalizer routines in the queue).  This argument has the
-//         following possible values:
-//         * [in] (pui64TimestampLastCheckedEventMs) == NULL: Means the arg is not used, so
-//             just check the event and ignore this argument
-//         * [in] (*pui64TimestampLastCheckedEventMs) == 0: Arg is uninitialized.  Just
-//             initialize it with the current tick count and return without checking the
-//             event (as the event was probably just checked before entering the loop
-//             that called this function).
-//         * [in] (*pui64TimestampLastCheckedEventMs) != 0: Arg is initialized to the
-//             approximate tick count of when the event was last checked.  If it's time
-//             to check the event again, do so and update this parameter on [out] with
-//             the current timestamp.  Otherwise, do nothing and return.
-//             
-// Notes:
-//    * The Profiler Attach Event is also checked in the main WaitForMultipleObjects in
-//        WaitForFinalizerEvent
-//        
-
-// static
-void FinalizerThread::ProcessProfilerAttachIfNecessary(ULONGLONG * pui64TimestampLastCheckedEventMs)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_ANY;
-
-    if (MHandles[kProfilingAPIAttach] == NULL)
-    {
-        return;
-    }
-
-    if (pui64TimestampLastCheckedEventMs != NULL)
-    {
-        if (*pui64TimestampLastCheckedEventMs == 0)
-        {
-            // Just initialize timestamp and leave
-            *pui64TimestampLastCheckedEventMs = CLRGetTickCount64();
-            return;
-        }
-
-        static DWORD dwMsBetweenCheckingProfAPIAttachEvent = 0;
-        if (dwMsBetweenCheckingProfAPIAttachEvent == 0)
-        {
-            // First time through, initialize with how long to wait between checking the
-            // event.
-            dwMsBetweenCheckingProfAPIAttachEvent = CLRConfig::GetConfigValue(
-                CLRConfig::EXTERNAL_MsBetweenAttachCheck);
-        }
-        ULONGLONG ui64TimestampNowMs = CLRGetTickCount64();
-        _ASSERTE(ui64TimestampNowMs >= (*pui64TimestampLastCheckedEventMs));
-        if (ui64TimestampNowMs - (*pui64TimestampLastCheckedEventMs) <
-            dwMsBetweenCheckingProfAPIAttachEvent)
-        {
-            // Too soon, go home
-            return;
-        }
-
-        // Otherwise, update the timestamp and wait on the finalizer event below
-        *pui64TimestampLastCheckedEventMs = ui64TimestampNowMs;
-    }
-
-    // Check the attach event without waiting; only if it's signaled right now will we
-    // process the event.
-    if (WaitForSingleObject(MHandles[kProfilingAPIAttach], 0) != WAIT_OBJECT_0)
-    {
-        // Any return value that indicates we can't verify the attach event is signaled
-        // right now means we should just forget about it and immediately return to
-        // whatever we were doing
-        return;
-    }
-
-    // Event is signaled; process it by spawning a new thread to do the work
-    ProfilingAPIAttachDetach::ProcessSignaledAttachEvent();
-}
-
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
-
 void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
 {
     // Non-host environment
@@ -279,12 +172,6 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
     //     kProfilingAPIAttach alone (0 wait)
     //     kFinalizer alone (2s wait)
     //     all events together (infinite wait)
-
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-    // NULL means check attach event now, and don't worry about how long it was since
-    // the last time the event was checked.
-    ProcessProfilerAttachIfNecessary(NULL);
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
 
     //give a chance to the finalizer event (2s)
     switch (event->Wait(2000, FALSE))
@@ -321,10 +208,7 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
         // expect.
         _ASSERTE(kLowMemoryNotification == 0);
         _ASSERTE((kFinalizer == 1) && (MHandles[1] != NULL));
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH 
-        _ASSERTE(kProfilingAPIAttach == 2);
-#endif //FEATURE_PROFAPI_ATTACH_DETACH 
-            
+
         // Exclude the low-memory notification event from the wait if the event
         // handle is NULL or the EE isn't fully started up yet.
         if ((MHandles[kLowMemoryNotification] == NULL) || !g_fEEStarted)
@@ -332,14 +216,6 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             uiEventIndexOffsetForWait = kLowMemoryNotification + 1;
             cEventsForWait--;
         }
-
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH 
-        // Exclude kProfilingAPIAttach if it's NULL
-        if (MHandles[kProfilingAPIAttach] == NULL)
-        {
-            cEventsForWait--;
-        }
-#endif //FEATURE_PROFAPI_ATTACH_DETACH 
 
         switch (WaitForMultipleObjectsEx(
             cEventsForWait,                           // # objects to wait on
@@ -374,12 +250,6 @@ void FinalizerThread::WaitForFinalizerEvent (CLREvent *event)
             break;
         case (WAIT_OBJECT_0 + kFinalizer):
             return;
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH
-        case (WAIT_OBJECT_0 + kProfilingAPIAttach):
-            // Spawn thread to perform the profiler attach, then resume our wait
-            ProfilingAPIAttachDetach::ProcessSignaledAttachEvent();
-            break;
-#endif // FEATURE_PROFAPI_ATTACH_DETACH
 #if defined(__linux__) && defined(FEATURE_EVENT_TRACE)
         case (WAIT_TIMEOUT + kLowMemoryNotification):
         case (WAIT_TIMEOUT + kFinalizer):
@@ -559,24 +429,6 @@ DWORD WINAPI FinalizerThread::FinalizerThreadStart(void *args)
             GetFinalizerThread()->SetBackground(TRUE);
 
             EnsureYieldProcessorNormalizedInitialized();
-
-#ifdef FEATURE_PROFAPI_ATTACH_DETACH 
-            // Add the Profiler Attach Event to the array of event handles that the
-            // finalizer thread waits on. If the process is not enabled for profiler
-            // attach (e.g., running memory- or sync-hosted, or there is some other error
-            // that causes the Profiler Attach Event not to be created), then this just
-            // adds NULL in the slot where the Profiler Attach Event handle would go. In
-            // this case, WaitForFinalizerEvent will know to ignore that handle when it
-            // waits.
-            // 
-            // Calling ProfilingAPIAttachDetach::GetAttachEvent induces lazy
-            // initialization of the profiling API attach/detach support objects,
-            // including the event itself and its security descriptor. So switch to
-            // preemptive mode during these OS calls
-            GetFinalizerThread()->EnablePreemptiveGC();
-            MHandles[kProfilingAPIAttach] = ::ProfilingAPIAttachDetach::GetAttachEvent();
-            GetFinalizerThread()->DisablePreemptiveGC();
-#endif // FEATURE_PROFAPI_ATTACH_DETACH 
 
             while (!fQuitFinalizer)
             {
