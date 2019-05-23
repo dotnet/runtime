@@ -72,6 +72,12 @@ static DWORD WINAPI DiagnosticsServerThread(LPVOID lpThreadParameter)
                 break;
 #endif
 
+#ifdef FEATURE_PROFAPI_ATTACH_DETACH
+            case DiagnosticMessageType::AttachProfiler:
+                DiagnosticProtocolHelper::AttachProfiler(pStream);
+                break;
+#endif // FEATURE_PROFAPI_ATTACH_DETACH
+
             default:
                 STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_WARNING, "Received unknown request type (%d)\n", header.RequestType);
                 delete pStream;

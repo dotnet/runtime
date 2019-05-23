@@ -363,9 +363,6 @@ set(VM_SOURCES_WKS
     objectlist.cpp
     olevariant.cpp
     pendingload.cpp
-    profattach.cpp
-    profattachclient.cpp
-    profattachserver.cpp
     profdetach.cpp
     profilermetadataemitvalidator.cpp
     profilingenumerators.cpp
@@ -485,13 +482,9 @@ set(VM_HEADERS_WKS
     objectlist.h
     olevariant.h
     pendingload.h
-    profattach.h
-    profattachclient.h
-    profattachserver.h
     profdetach.h
     profilermetadataemitvalidator.h
     profilingenumerators.h
-    profilinghelper.h
     profilinghelper.h
     proftoeeinterfaceimpl.h
     proftoeeinterfaceimpl.inl

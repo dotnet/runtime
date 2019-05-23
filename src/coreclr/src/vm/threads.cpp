@@ -1368,9 +1368,9 @@ Thread::Thread()
     m_debuggerCantStop = 0;
     m_fInteropDebuggingHijacked = FALSE;
     m_profilerCallbackState = 0;
-#ifdef PROFILING_SUPPORTED
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
     m_dwProfilerEvacuationCounter = 0;
-#endif // PROFILING_SUPPORTED
+#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
     m_pProfilerFilterContext = NULL;
 
