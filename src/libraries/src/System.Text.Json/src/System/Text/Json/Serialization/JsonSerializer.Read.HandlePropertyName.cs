@@ -60,6 +60,8 @@ namespace System.Text.Json.Serialization
             }
             else
             {
+                state.Current.ResetProperty();
+
                 ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
                 if (reader._stringHasEscaping)
                 {
