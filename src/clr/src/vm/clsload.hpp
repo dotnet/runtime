@@ -581,6 +581,7 @@ private:
     VOID PopulateAvailableClassHashTable(Module *pModule,
                                          AllocMemTracker *pamTracker);
 
+    void LazyPopulateCaseSensitiveHashTablesDontHaveLock();
     void LazyPopulateCaseSensitiveHashTables();
     void LazyPopulateCaseInsensitiveHashTables();
 
