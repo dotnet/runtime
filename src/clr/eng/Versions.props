@@ -24,8 +24,8 @@
     <IbcMergePackageVersion>5.0.6-beta.19203.1</IbcMergePackageVersion>
     <!-- dotnet-optimization -->
     <MicrosoftDotNetBuildTasksFeedVersion>2.2.0-beta.19229.8</MicrosoftDotNetBuildTasksFeedVersion>
-    <optimizationIBCCoreCLRVersion>99.99.99-master-20190521.1</optimizationIBCCoreCLRVersion>
-    <optimizationPGOCoreCLRVersion>99.99.99-master-20190521.1</optimizationPGOCoreCLRVersion>
+    <optimizationIBCCoreCLRVersion>99.99.99-master-20190521.3</optimizationIBCCoreCLRVersion>
+    <optimizationPGOCoreCLRVersion>99.99.99-master-20190521.3</optimizationPGOCoreCLRVersion>
   </PropertyGroup>
   <!--Package names-->
   <PropertyGroup>

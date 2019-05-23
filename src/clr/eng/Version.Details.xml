@@ -31,13 +31,13 @@
       <Uri>https://github.com/dotnet/core-setup</Uri>
       <Sha>c3145b06ba5151d5eafcf177a2e380f7acb61189</Sha>
     </Dependency>
-    <Dependency Name="optimization.IBC.CoreCLR" Version="99.99.99-master-20190521.1">
+    <Dependency Name="optimization.IBC.CoreCLR" Version="99.99.99-master-20190521.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>6576979664f443fa03773da591e0ed1fc78ed12c</Sha>
+      <Sha>680817355bb2e1326de1124c846263f8d9fb9294</Sha>
     </Dependency>
-    <Dependency Name="optimization.PGO.CoreCLR" Version="99.99.99-master-20190521.1">
+    <Dependency Name="optimization.PGO.CoreCLR" Version="99.99.99-master-20190521.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>6576979664f443fa03773da591e0ed1fc78ed12c</Sha>
+      <Sha>680817355bb2e1326de1124c846263f8d9fb9294</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="1.0.0-beta.19229.8">
       <Uri>https://github.com/dotnet/arcade</Uri>
