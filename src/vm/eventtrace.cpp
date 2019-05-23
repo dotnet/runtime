@@ -4464,6 +4464,11 @@ extern "C"
                 // Fire the runtime information event
                 ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Callback);
 
+                if (ETW::CompilationLog::TieredCompilation::Rundown::IsEnabled() && g_pConfig->TieredCompilation())
+                {
+                    ETW::CompilationLog::TieredCompilation::Rundown::SendSettings();
+                }
+
                 // Start and End Method/Module Rundowns
                 // Used to fire events that we missed since we started the controller after the process started
                 // flags for immediate start rundown
@@ -5212,7 +5217,7 @@ VOID ETW::MethodLog::GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPo
 /*******************************************************/
 /* This is called by the runtime when a method is jitted completely */
 /*******************************************************/
-VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, ReJITID ilCodeId, NativeCodeVersionId nativeCodeId, BOOL bProfilerRejectedPrecompiledCode, BOOL bReadyToRunRejectedPrecompiledCode)
+VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig)
 {
     CONTRACTL {
         NOTHROW;
@@ -5225,7 +5230,7 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
                                         TRACE_LEVEL_INFORMATION, 
                                         CLR_JIT_KEYWORD))
         {
-            ETW::MethodLog::SendMethodEvent(pMethodDesc, ETW::EnumerationLog::EnumerationStructs::JitMethodLoad, TRUE, namespaceOrClassName, methodName, methodSignature, pNativeCodeStartAddress, nativeCodeId, bProfilerRejectedPrecompiledCode, bReadyToRunRejectedPrecompiledCode);
+            ETW::MethodLog::SendMethodEvent(pMethodDesc, ETW::EnumerationLog::EnumerationStructs::JitMethodLoad, TRUE, namespaceOrClassName, methodName, methodSignature, pNativeCodeStartAddress, pConfig);
         }
 
         if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, 
@@ -5240,7 +5245,7 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
             _ASSERTE(g_pDebugInterface != NULL);
             g_pDebugInterface->InitializeLazyDataIfNecessary();
             
-            ETW::MethodLog::SendMethodILToNativeMapEvent(pMethodDesc, ETW::EnumerationLog::EnumerationStructs::JitMethodILToNativeMap, pNativeCodeStartAddress, ilCodeId);
+            ETW::MethodLog::SendMethodILToNativeMapEvent(pMethodDesc, ETW::EnumerationLog::EnumerationStructs::JitMethodILToNativeMap, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetILCodeVersionId());
         }
 
     } EX_CATCH { } EX_END_CATCH(SwallowAllExceptions);
@@ -6248,7 +6253,7 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
 /****************************************************************************/
 /* This routine is used to send a method load/unload or rundown event                              */
 /****************************************************************************/
-VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, NativeCodeVersionId nativeCodeId, BOOL bProfilerRejectedPrecompiledCode, BOOL bReadyToRunRejectedPrecompiledCode)
+VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig)
 {
     CONTRACTL {
         THROWS;
@@ -6317,13 +6322,77 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     if(pMethodDesc->GetMethodTable_NoLogging())
         bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation_NoLogging();
 
-    ulMethodFlags = ((ulMethodFlags |
+    int jitOptimizationTier = -1;
+    NativeCodeVersionId nativeCodeId = 0;
+    ulMethodFlags = ulMethodFlags |
         (bHasSharedGenericCode ? ETW::MethodLog::MethodStructs::SharedGenericCode : 0) |
         (bIsGenericMethod ? ETW::MethodLog::MethodStructs::GenericMethod : 0) |
         (bIsDynamicMethod ? ETW::MethodLog::MethodStructs::DynamicMethod : 0) |
-        (bIsJit ? ETW::MethodLog::MethodStructs::JittedMethod : 0) |
-        (bProfilerRejectedPrecompiledCode ? ETW::MethodLog::MethodStructs::ProfilerRejectedPrecompiledCode : 0) |
-        (bReadyToRunRejectedPrecompiledCode ? ETW::MethodLog::MethodStructs::ReadyToRunRejectedPrecompiledCode : 0)));
+        (bIsJit ? ETW::MethodLog::MethodStructs::JittedMethod : 0);
+    if (pConfig != nullptr)
+    {
+        if (pConfig->ProfilerRejectedPrecompiledCode())
+        {
+            ulMethodFlags |= ETW::MethodLog::MethodStructs::ProfilerRejectedPrecompiledCode;
+        }
+        if (pConfig->ReadyToRunRejectedPrecompiledCode())
+        {
+            ulMethodFlags |= ETW::MethodLog::MethodStructs::ReadyToRunRejectedPrecompiledCode;
+        }
+
+        if (pConfig->JitSwitchedToMinOpt())
+        {
+            jitOptimizationTier = (int)JitOptimizationTier::MinOptJitted;
+        }
+#ifdef FEATURE_TIERED_COMPILATION
+        else if (pConfig->JitSwitchedToOptimized())
+        {
+            _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
+            _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTierOptimized);
+            jitOptimizationTier = (int)JitOptimizationTier::Optimized;
+        }
+        else if (pMethodDesc->IsEligibleForTieredCompilation())
+        {
+            switch (pConfig->GetCodeVersion().GetOptimizationTier())
+            {
+                case NativeCodeVersion::OptimizationTier0:
+                    jitOptimizationTier = (int)JitOptimizationTier::QuickJitted;
+                    break;
+
+                case NativeCodeVersion::OptimizationTier1:
+                    jitOptimizationTier = (int)JitOptimizationTier::OptimizedTier1;
+                    break;
+
+                case NativeCodeVersion::OptimizationTierOptimized:
+                    jitOptimizationTier = (int)JitOptimizationTier::Optimized;
+                    break;
+
+                default:
+                    UNREACHABLE();
+            }
+        }
+#endif
+
+#ifdef FEATURE_CODE_VERSIONING
+        nativeCodeId = pConfig->GetCodeVersion().GetVersionId();
+#endif
+    }
+
+    if (jitOptimizationTier < 0)
+    {
+        if (pMethodDesc->IsJitOptimizationDisabled())
+        {
+            jitOptimizationTier = (int)JitOptimizationTier::MinOptJitted;
+        }
+        else
+        {
+            jitOptimizationTier = (int)JitOptimizationTier::Optimized;
+        }
+    }
+    static_assert_no_msg((unsigned int)JitOptimizationTier::Count - 1 <= MethodFlagsJitOptimizationTierLowMask);
+    _ASSERTE((unsigned int)jitOptimizationTier <= MethodFlagsJitOptimizationTierLowMask);
+    _ASSERTE(((ulMethodFlags >> MethodFlagsJitOptimizationTierShift) & MethodFlagsJitOptimizationTierLowMask) == 0);
+    ulMethodFlags |= (unsigned int)jitOptimizationTier << MethodFlagsJitOptimizationTierShift;
 
     // Intentionally set the extent flags (cold vs. hot) only after all the other common
     // flags (above) have been set.
@@ -6813,18 +6882,18 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
 
         PCODE codeStart = PINSTRToPCODE(heapIterator.GetMethodCode());
 
-        // Get the IL and native code IDs. In some cases, such as collectible loader
+        // Get info relevant to the native code version. In some cases, such as collectible loader
         // allocators, we don't support code versioning so we need to short circuit the call.
         // This also allows our caller to avoid having to pre-enter the relevant locks.
         // see code:#TableLockHolder
         ReJITID ilCodeId = 0;
-        NativeCodeVersionId nativeCodeId = 0;
+        NativeCodeVersion nativeCodeVersion;
 #ifdef FEATURE_CODE_VERSIONING
         if (fGetCodeIds)
         {
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
             _ASSERTE(pCodeVersionManager->LockOwnedByCurrentThread());
-            NativeCodeVersion nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, codeStart);
+            nativeCodeVersion = pCodeVersionManager->GetNativeCodeVersion(pMD, codeStart);
             if (nativeCodeVersion.IsNull())
             {
                 // The code version manager hasn't been updated with the jitted code
@@ -6835,7 +6904,6 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
             }
             else
             {
-                nativeCodeId = nativeCodeVersion.GetVersionId();
                 ilCodeId = nativeCodeVersion.GetILCodeVersionId();
             }
         }
@@ -6845,6 +6913,8 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
         {
             continue;
         }
+
+        PrepareCodeConfig config(!nativeCodeVersion.IsNull() ? nativeCodeVersion : NativeCodeVersion(pMD), FALSE, FALSE);
 
         // When we're called to announce loads, then the methodload event itself must
         // precede any supplemental events, so that the method load or method jitting
@@ -6862,7 +6932,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
                     NULL,           // methodName
                     NULL,           // methodSignature
                     codeStart,
-                    nativeCodeId);
+                    &config);
             }
         }
 
@@ -6885,7 +6955,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper(LoaderAllocator *pLoaderAlloc
                     NULL,           // methodName
                     NULL,           // methodSignature
                     codeStart,
-                    nativeCodeId);
+                    &config);
             }
         }
     }
@@ -7330,6 +7400,112 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, BaseDomain *do
             }
         }
     }
+}
+
+void ETW::CompilationLog::TieredCompilation::GetSettings(UINT32 *flagsRef)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+    _ASSERTE(g_pConfig->TieredCompilation());
+    _ASSERTE(flagsRef != nullptr);
+
+    enum class Flags : UINT32
+    {
+        None = 0x0,
+        QuickJit = 0x1,
+        QuickJitForLoops = 0x2,
+    };
+
+    UINT32 flags = (UINT32)Flags::None;
+    if (g_pConfig->TieredCompilation_QuickJit())
+    {
+        flags |= (UINT32)Flags::QuickJit;
+        if (g_pConfig->TieredCompilation_QuickJitForLoops())
+        {
+            flags |= (UINT32)Flags::QuickJitForLoops;
+        }
+    }
+    *flagsRef = flags;
+}
+
+void ETW::CompilationLog::TieredCompilation::Runtime::SendSettings()
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+    _ASSERTE(IsEnabled());
+    _ASSERTE(g_pConfig->TieredCompilation());
+
+    UINT32 flags;
+    GetSettings(&flags);
+
+    FireEtwTieredCompilationSettings(GetClrInstanceId(), flags);
+}
+
+void ETW::CompilationLog::TieredCompilation::Rundown::SendSettings()
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+    _ASSERTE(IsEnabled());
+    _ASSERTE(g_pConfig->TieredCompilation());
+
+    UINT32 flags;
+    GetSettings(&flags);
+
+    FireEtwTieredCompilationSettingsDCStart(GetClrInstanceId(), flags);
+}
+
+void ETW::CompilationLog::TieredCompilation::Runtime::SendPause()
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+    _ASSERTE(IsEnabled());
+    _ASSERTE(g_pConfig->TieredCompilation());
+
+    FireEtwTieredCompilationPause(GetClrInstanceId());
+}
+
+void ETW::CompilationLog::TieredCompilation::Runtime::SendResume(UINT32 newMethodCount)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+    _ASSERTE(IsEnabled());
+    _ASSERTE(g_pConfig->TieredCompilation());
+
+    FireEtwTieredCompilationResume(GetClrInstanceId(), newMethodCount);
+}
+
+void ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStart(UINT32 pendingMethodCount)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+    _ASSERTE(IsEnabled());
+    _ASSERTE(g_pConfig->TieredCompilation());
+
+    FireEtwTieredCompilationBackgroundJitStart(GetClrInstanceId(), pendingMethodCount);
+}
+
+void ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStop(UINT32 pendingMethodCount, UINT32 jittedMethodCount)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+    } CONTRACTL_END;
+    _ASSERTE(IsEnabled());
+    _ASSERTE(g_pConfig->TieredCompilation());
+
+    FireEtwTieredCompilationBackgroundJitStop(GetClrInstanceId(), pendingMethodCount, jittedMethodCount);
 }
 
 #endif // !FEATURE_REDHAWK

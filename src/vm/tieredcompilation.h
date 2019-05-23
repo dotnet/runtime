@@ -65,9 +65,9 @@ private:
 
     Crst m_lock;
     SList<SListElem<NativeCodeVersion>> m_methodsToOptimize;
+    UINT32 m_countOfMethodsToOptimize;
     BOOL m_isAppDomainShuttingDown;
     DWORD m_countOptimizationThreadsRunning;
-    DWORD m_optimizationQuantumMs;
     SArray<MethodDesc*>* m_methodsPendingCountingForTier1;
     HANDLE m_tieringDelayTimerHandle;
     bool m_tier1CallCountingCandidateMethodRecentlyRecorded;
