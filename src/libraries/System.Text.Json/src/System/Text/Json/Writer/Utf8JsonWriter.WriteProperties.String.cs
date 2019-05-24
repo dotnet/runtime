@@ -36,7 +36,7 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the property name and pre-encoded value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
         /// <param name="value">The JSON encoded value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
         /// The value should already be escaped when the instance of <see cref="JsonEncodedText"/> was created. The property name is escaped before writing.
@@ -53,8 +53,8 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the property name and string text value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
-        /// <param name="value">The UTF-16 encoded value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
+        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="value">The value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
         /// The property name and value is escaped before writing.
         /// </remarks>
@@ -68,10 +68,10 @@ namespace System.Text.Json
             => WriteString(propertyName.AsSpan(), value.AsSpan());
 
         /// <summary>
-        /// Writes the UTF-16 property name and UTF-16 text value (as a JSON string) as part of a name/value pair of a JSON object.
+        /// Writes the property name and text value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
-        /// <param name="value">The UTF-16 encoded value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
+        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="value">The value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
         /// The property name and value is escaped before writing.
         /// </remarks>
@@ -119,7 +119,7 @@ namespace System.Text.Json
         /// Writes the pre-encoded property name and string text value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
         /// <param name="propertyName">The JSON encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
-        /// <param name="value">The UTF-16 encoded value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
+        /// <param name="value">The value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
         /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created. The value is escaped before writing.
         /// </remarks>
@@ -133,10 +133,10 @@ namespace System.Text.Json
             => WriteString(propertyName, value.AsSpan());
 
         /// <summary>
-        /// Writes the pre-encoded property name and UTF-16 text value (as a JSON string) as part of a name/value pair of a JSON object.
+        /// Writes the pre-encoded property name and text value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
         /// <param name="propertyName">The JSON encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
-        /// <param name="value">The UTF-16 encoded value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
+        /// <param name="value">The value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
         /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created. The value is escaped before writing.
         /// </remarks>
@@ -173,10 +173,10 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Writes the property name and UTF-16 text value (as a JSON string) as part of a name/value pair of a JSON object.
+        /// Writes the property name and text value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
-        /// <param name="value">The UTF-16 encoded value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
+        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="value">The value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
         /// The property name and value is escaped before writing.
         /// </remarks>
@@ -190,10 +190,10 @@ namespace System.Text.Json
             => WriteString(propertyName.AsSpan(), value);
 
         /// <summary>
-        /// Writes the UTF-8 property name and UTF-16 text value (as a JSON string) as part of a name/value pair of a JSON object.
+        /// Writes the UTF-8 property name and text value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
         /// <param name="utf8PropertyName">The UTF-8 encoded property name of the JSON object to be written.</param>
-        /// <param name="value">The UTF-16 encoded value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
+        /// <param name="value">The value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
         /// The property name and value is escaped before writing.
         /// </remarks>
@@ -256,7 +256,7 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the property name and UTF-8 text value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
         /// <param name="utf8Value">The UTF-8 encoded value to be written as a JSON string as part of the name/value pair.</param>
         /// <remarks>
         /// The property name and value is escaped before writing.
@@ -271,9 +271,9 @@ namespace System.Text.Json
             => WriteString(propertyName.AsSpan(), utf8Value);
 
         /// <summary>
-        /// Writes the UTF-16 property name and UTF-8 text value (as a JSON string) as part of a name/value pair of a JSON object.
+        /// Writes the property name and UTF-8 text value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
         /// <param name="utf8Value">The UTF-8 encoded value to be written as a JSON string as part of the name/value pair.</param>
         /// <remarks>
         /// The property name and value is escaped before writing.
@@ -295,9 +295,9 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Writes the UTF-16 property name and pre-encoded value (as a JSON string) as part of a name/value pair of a JSON object.
+        /// Writes the property name and pre-encoded value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
         /// <param name="value">The JSON encoded value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
         /// The value should already be escaped when the instance of <see cref="JsonEncodedText"/> was created. The property name is escaped before writing.
@@ -335,10 +335,10 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Writes the UTF-16 property name and string text value (as a JSON string) as part of a name/value pair of a JSON object.
+        /// Writes the property name and string text value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
-        /// <param name="value">The UTF-16 encoded value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
+        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="value">The value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
         /// The property name and value is escaped before writing.
         /// </remarks>
@@ -395,7 +395,7 @@ namespace System.Text.Json
         /// Writes the UTF-8 property name and string text value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
         /// <param name="utf8PropertyName">The UTF-8 encoded property name of the JSON object to be written.</param>
-        /// <param name="value">The UTF-16 encoded value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
+        /// <param name="value">The value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
         /// The property name and value is escaped before writing.
         /// </remarks>

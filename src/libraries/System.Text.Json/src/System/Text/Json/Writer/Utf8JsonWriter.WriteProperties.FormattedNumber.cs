@@ -12,7 +12,7 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the property name and value (as a JSON number) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="propertyName">The UTF-16 encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
         /// <param name="utf8FormattedNumber">The value to be written as a JSON number as part of the name/value pair.</param>
         /// <remarks>
         /// The property name is escaped before writing.

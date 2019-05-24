@@ -20,7 +20,7 @@ namespace System.Text.Json.Serialization
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
-        /// <remarks>Using a UTF-16 <see cref="System.String"/> is not as efficient as using the
+        /// <remarks>Using a <see cref="System.String"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
         public static TValue Parse<TValue>(string json, JsonSerializerOptions options = null)
@@ -46,7 +46,7 @@ namespace System.Text.Json.Serialization
         /// the <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
-        /// <remarks>Using a UTF-16 <see cref="System.String"/> is not as efficient as using the
+        /// <remarks>Using a <see cref="System.String"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
         public static object Parse(string json, Type returnType, JsonSerializerOptions options = null)
