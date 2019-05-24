@@ -2024,7 +2024,7 @@ MonoInst* mono_constant_fold_ins            (MonoCompile *cfg, MonoInst *ins, Mo
 int       mono_eval_cond_branch             (MonoInst *branch);
 int       mono_is_power_of_two              (guint32 val) MONO_LLVM_INTERNAL;
 void      mono_cprop_local                  (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst **acp, int acp_size);
-MonoInst* mono_compile_create_var           (MonoCompile *cfg, MonoType *type, int opcode);
+MonoInst* mono_compile_create_var           (MonoCompile *cfg, MonoType *type, int opcode) MONO_LLVM_INTERNAL;
 MonoInst* mono_compile_create_var_for_vreg  (MonoCompile *cfg, MonoType *type, int opcode, int vreg);
 void      mono_compile_make_var_load        (MonoCompile *cfg, MonoInst *dest, gssize var_index);
 MonoInst* mini_get_int_to_float_spill_area  (MonoCompile *cfg);
@@ -2051,7 +2051,7 @@ void      mono_optimize_branches            (MonoCompile *cfg);
 void      mono_blockset_print               (MonoCompile *cfg, MonoBitSet *set, const char *name, guint idom);
 void      mono_print_ins_index              (int i, MonoInst *ins);
 GString  *mono_print_ins_index_strbuf       (int i, MonoInst *ins);
-void      mono_print_ins                    (MonoInst *ins);
+void      mono_print_ins                    (MonoInst *ins) MONO_LLVM_INTERNAL;
 void      mono_print_bb                     (MonoBasicBlock *bb, const char *msg);
 void      mono_print_code                   (MonoCompile *cfg, const char *msg);
 MONO_LLVM_INTERNAL const char* mono_inst_name                  (int op);
@@ -2610,7 +2610,7 @@ gpointer
 mono_method_fill_runtime_generic_context (MonoMethodRuntimeGenericContext *mrgctx, guint32 slot, MonoError *error);
 
 const char*
-mono_rgctx_info_type_to_str (MonoRgctxInfoType type);
+mono_rgctx_info_type_to_str (MonoRgctxInfoType type) MONO_LLVM_INTERNAL;
 
 MonoJumpInfoType
 mini_rgctx_info_type_to_patch_info_type (MonoRgctxInfoType info_type);
@@ -2723,7 +2723,7 @@ gboolean mini_is_gsharedvt_signature (MonoMethodSignature *sig);
 gboolean mini_is_gsharedvt_variable_type (MonoType *t) MONO_LLVM_INTERNAL;
 gboolean mini_is_gsharedvt_variable_klass (MonoClass *klass) MONO_LLVM_INTERNAL;
 gboolean mini_is_gsharedvt_sharable_method (MonoMethod *method);
-gboolean mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig);
+gboolean mini_is_gsharedvt_variable_signature (MonoMethodSignature *sig) MONO_LLVM_INTERNAL;
 gboolean mini_is_gsharedvt_sharable_inst (MonoGenericInst *inst);
 gboolean mini_method_is_default_method (MonoMethod *m) MONO_LLVM_INTERNAL;
 gboolean mini_method_needs_mrgctx (MonoMethod *m);

@@ -76,6 +76,7 @@ typedef ptrdiff_t ssize_t;
 #define MONO_RESTORE_WARNING
 #endif
 
+// If MONO_LLVM_INTERNAL changes, update mono_debug_method_lookup_location declaration.
 #if !defined(_MSC_VER) && !defined(HOST_SOLARIS) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(MONOTOUCH) && HAVE_VISIBILITY_HIDDEN
 #if MONO_LLVM_LOADED
 #define MONO_LLVM_INTERNAL MONO_API_NO_EXTERN_C

@@ -141,9 +141,6 @@ G_EXTERN_C _Unwind_Reason_Code mono_debug_personality (int a, _Unwind_Action b,
 	uint64_t c, struct _Unwind_Exception *d, struct _Unwind_Context *e);
 #endif
 
-void
-default_mono_llvm_unhandled_exception (void);
-
 void*
 mono_llvm_create_di_builder (LLVMModuleRef module);
 
