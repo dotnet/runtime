@@ -7732,7 +7732,7 @@ emit_method_inner (EmitContext *ctx)
 	}
 
 	if (!cfg->llvm_only && cfg->compile_aot && mono_threads_are_safepoints_enabled () && requires_safepoint)
-		LLVMSetGC (method, "mono");
+		LLVMSetGC (method, "coreclr");
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
 	mono_llvm_add_func_attr (method, LLVM_ATTR_UW_TABLE);
