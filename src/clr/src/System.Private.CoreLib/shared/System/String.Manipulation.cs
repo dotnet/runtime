@@ -626,7 +626,7 @@ namespace System
             }
         }
 
-        public static string Join(string? separator, IEnumerable<string> values)
+        public static string Join(string? separator, IEnumerable<string?> values)
         {
             if (values == null)
             {
