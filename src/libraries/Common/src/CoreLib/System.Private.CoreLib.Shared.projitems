@@ -8,7 +8,7 @@
     <Import_RootNamespace />
   </PropertyGroup>
   <PropertyGroup>
-    <NullableContextOptions>enable</NullableContextOptions>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
     <TargetsWindows Condition="'$(TargetsWindows)' != 'true'">false</TargetsWindows>
