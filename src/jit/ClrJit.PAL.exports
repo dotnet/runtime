@@ -1,6 +1,5 @@
 getJit
 jitStartup
-sxsJitStartup
 DllMain
 PAL_RegisterModule
 PAL_UnregisterModule

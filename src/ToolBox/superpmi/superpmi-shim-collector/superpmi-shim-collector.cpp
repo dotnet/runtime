@@ -84,10 +84,10 @@ void SetLogFilePath()
 
 extern "C"
 #ifdef FEATURE_PAL
-DLLEXPORT // For Win32 PAL LoadLibrary emulation
+    DLLEXPORT // For Win32 PAL LoadLibrary emulation
 #endif
-    BOOL
-    DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
+        BOOL
+        DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved)
 {
     switch (ul_reason_for_call)
     {
@@ -203,25 +203,23 @@ extern "C" DLLEXPORT void __stdcall sxsJitStartup(CoreClrCallbacks const& origin
 
     // get entry point
     pnsxsJitStartup = (PsxsJitStartup)::GetProcAddress(g_hRealJit, "sxsJitStartup");
-    if (pnsxsJitStartup == 0)
+
+    if (pnsxsJitStartup != nullptr)
     {
-        LogError("sxsJitStartup() - GetProcAddress 'sxsJitStartup' failed (0x%08x)", ::GetLastError());
-        return;
+        // Setup CoreClrCallbacks and call sxsJitStartup
+        original_CoreClrCallbacks                             = new CoreClrCallbacks();
+        original_CoreClrCallbacks->m_hmodCoreCLR              = original_cccallbacks.m_hmodCoreCLR;
+        original_CoreClrCallbacks->m_pfnIEE                   = original_cccallbacks.m_pfnIEE;
+        original_CoreClrCallbacks->m_pfnGetCORSystemDirectory = original_cccallbacks.m_pfnGetCORSystemDirectory;
+        original_CoreClrCallbacks->m_pfnGetCLRFunction        = original_cccallbacks.m_pfnGetCLRFunction;
+
+        CoreClrCallbacks* temp = new CoreClrCallbacks();
+
+        temp->m_hmodCoreCLR              = original_cccallbacks.m_hmodCoreCLR;
+        temp->m_pfnIEE                   = IEE_t;
+        temp->m_pfnGetCORSystemDirectory = original_cccallbacks.m_pfnGetCORSystemDirectory;
+        temp->m_pfnGetCLRFunction        = GetCLRFunction;
+
+        pnsxsJitStartup(*temp);
     }
-
-    // Setup CoreClrCallbacks and call sxsJitStartup
-    original_CoreClrCallbacks                             = new CoreClrCallbacks();
-    original_CoreClrCallbacks->m_hmodCoreCLR              = original_cccallbacks.m_hmodCoreCLR;
-    original_CoreClrCallbacks->m_pfnIEE                   = original_cccallbacks.m_pfnIEE;
-    original_CoreClrCallbacks->m_pfnGetCORSystemDirectory = original_cccallbacks.m_pfnGetCORSystemDirectory;
-    original_CoreClrCallbacks->m_pfnGetCLRFunction        = original_cccallbacks.m_pfnGetCLRFunction;
-
-    CoreClrCallbacks* temp = new CoreClrCallbacks();
-
-    temp->m_hmodCoreCLR              = original_cccallbacks.m_hmodCoreCLR;
-    temp->m_pfnIEE                   = IEE_t;
-    temp->m_pfnGetCORSystemDirectory = original_cccallbacks.m_pfnGetCORSystemDirectory;
-    temp->m_pfnGetCLRFunction        = GetCLRFunction;
-
-    pnsxsJitStartup(*temp);
 }

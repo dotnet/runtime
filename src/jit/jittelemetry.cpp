@@ -69,8 +69,6 @@
 //            This roughly translates to InitUtilcode() being called before jitDllOnProcessAttach.
 //
 //            For CLRJIT.dll, compStartup is called on jitOnDllProcessAttach().
-//            This can be called twice through sxsJitStartup -- so prevent double initialization.
-//            UtilCode is init-ed by this time. The same is true for CoreCLR.
 //
 //         2) For CLRJIT.dll and CoreCLR, compShutdown will be called during jitOnDllProcessDetach().
 //

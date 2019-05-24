@@ -1521,8 +1521,6 @@ enum JIT_LOAD_STATUS
 {
     JIT_LOAD_STATUS_STARTING = 1001,                   // The JIT load process is starting. Start at a number that is somewhat uncommon (i.e., not zero or 1) to help distinguish from garbage, in process dumps.
     JIT_LOAD_STATUS_DONE_LOAD,                         // LoadLibrary of the JIT dll succeeded.
-    JIT_LOAD_STATUS_DONE_GET_SXSJITSTARTUP,            // GetProcAddress for "sxsJitStartup" succeeded.
-    JIT_LOAD_STATUS_DONE_CALL_SXSJITSTARTUP,           // Calling sxsJitStartup() succeeded.
     JIT_LOAD_STATUS_DONE_GET_JITSTARTUP,               // GetProcAddress for "jitStartup" succeeded.
     JIT_LOAD_STATUS_DONE_CALL_JITSTARTUP,              // Calling jitStartup() succeeded.
     JIT_LOAD_STATUS_DONE_GET_GETJIT,                   // GetProcAddress for "getJit" succeeded.
@@ -1635,72 +1633,60 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
 
         EX_TRY
         {
-            bool fContinueToLoadJIT = false;
-            // For CoreCLR, we never use "sxsJitStartup" as that is Desktop utilcode initialization
-            // specific. Thus, assume we always got 
-            fContinueToLoadJIT = true;
+            typedef void (__stdcall* pjitStartup)(ICorJitHost*);
+            pjitStartup jitStartupFn = (pjitStartup) GetProcAddress(*phJit, "jitStartup");
 
-            if (fContinueToLoadJIT)
+            if (jitStartupFn)
             {
-                typedef void (__stdcall* pjitStartup)(ICorJitHost*);
-                pjitStartup jitStartupFn = (pjitStartup) GetProcAddress(*phJit, "jitStartup");
+                pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_GET_JITSTARTUP;
 
-                if (jitStartupFn)
+                (*jitStartupFn)(JitHost::getJitHost());
+
+                pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_JITSTARTUP;
+            }
+
+            typedef ICorJitCompiler* (__stdcall* pGetJitFn)();
+            pGetJitFn getJitFn = (pGetJitFn) GetProcAddress(*phJit, "getJit");
+
+            if (getJitFn)
+            {
+                pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_GET_GETJIT;
+
+                ICorJitCompiler* pICorJitCompiler = (*getJitFn)();
+                if (pICorJitCompiler != NULL)
                 {
-                    pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_GET_JITSTARTUP;
+                    pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_GETJIT;
 
-                    (*jitStartupFn)(JitHost::getJitHost());
+                    GUID versionId;
+                    memset(&versionId, 0, sizeof(GUID));
+                    pICorJitCompiler->getVersionIdentifier(&versionId);
 
-                    pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_JITSTARTUP;
-                }
+                    pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_GETVERSIONIDENTIFIER;
 
-                typedef ICorJitCompiler* (__stdcall* pGetJitFn)();
-                pGetJitFn getJitFn = (pGetJitFn) GetProcAddress(*phJit, "getJit");
-
-                if (getJitFn)
-                {
-                    pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_GET_GETJIT;
-
-                    ICorJitCompiler* pICorJitCompiler = (*getJitFn)();
-                    if (pICorJitCompiler != NULL)
+                    if (memcmp(&versionId, &JITEEVersionIdentifier, sizeof(GUID)) == 0)
                     {
-                        pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_GETJIT;
+                        pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_VERSION_CHECK;
 
-                        GUID versionId;
-                        memset(&versionId, 0, sizeof(GUID));
-                        pICorJitCompiler->getVersionIdentifier(&versionId);
+                        // The JIT has loaded and passed the version identifier test, so publish the JIT interface to the caller.
+                        *ppICorJitCompiler = pICorJitCompiler;
 
-                        pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_CALL_GETVERSIONIDENTIFIER;
-
-                        if (memcmp(&versionId, &JITEEVersionIdentifier, sizeof(GUID)) == 0)
-                        {
-                            pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE_VERSION_CHECK;
-
-                            // The JIT has loaded and passed the version identifier test, so publish the JIT interface to the caller.
-                            *ppICorJitCompiler = pICorJitCompiler;
-
-                            // The JIT is completely loaded and initialized now.
-                            pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE;
-                        }
-                        else
-                        {
-                            // Mismatched version ID. Fail the load.
-                            LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: mismatched JIT version identifier in %S\n", pwzJitName));
-                        }
+                        // The JIT is completely loaded and initialized now.
+                        pJitLoadData->jld_status = JIT_LOAD_STATUS_DONE;
                     }
                     else
                     {
-                        LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: failed to get ICorJitCompiler in %S\n", pwzJitName));
+                        // Mismatched version ID. Fail the load.
+                        LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: mismatched JIT version identifier in %S\n", pwzJitName));
                     }
                 }
                 else
                 {
-                    LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: failed to find 'getJit' entrypoint in %S\n", pwzJitName));
+                    LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: failed to get ICorJitCompiler in %S\n", pwzJitName));
                 }
             }
             else
             {
-                LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: failed to find 'sxsJitStartup' entrypoint in %S\n", pwzJitName));
+                LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: failed to find 'getJit' entrypoint in %S\n", pwzJitName));
             }
         }
         EX_CATCH
