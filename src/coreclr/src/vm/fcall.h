@@ -573,7 +573,6 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 
 #define HELPER_METHOD_FRAME_BEGIN_EX(ret, helperFrame, gcpoll, allowGC)         \
         HELPER_METHOD_FRAME_BEGIN_EX_BODY(ret, helperFrame, gcpoll, allowGC)    \
-            TESTHOOKCALL(AppDomainCanBeUnloaded(DefaultADID,!allowGC)); \
             /* <TODO>TODO TURN THIS ON!!!   </TODO> */                    \
             /* gcpoll; */                                                       \
             INSTALL_MANAGED_EXCEPTION_DISPATCHER;                               \
@@ -609,7 +608,6 @@ LPVOID __FCThrowArgument(LPVOID me, enum RuntimeExceptionKind reKind, LPCWSTR ar
 #define HELPER_METHOD_FRAME_END_EX(gcpoll,allowGC)                          \
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;                          \
             UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;                         \
-            TESTHOOKCALL(AppDomainCanBeUnloaded(DefaultADID,!allowGC)); \
         HELPER_METHOD_FRAME_END_EX_BODY(gcpoll,allowGC);
 
 #define HELPER_METHOD_FRAME_END_EX_NOTHROW(gcpoll,allowGC)                  \
