@@ -1265,6 +1265,26 @@
     <Comment> The runtime's tracking of inlined methods for ReJIT is not enabled. </Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x80131384">
+    <SymbolicName>CORDIAGIPC_E_BAD_ENCODING</SymbolicName>
+    <Comment> The runtime was unable to decode the Header or Payload. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131385">
+    <SymbolicName>CORDIAGIPC_E_UNKNOWN_COMMAND</SymbolicName>
+    <Comment> The specified CommandSet or CommandId is unknown. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131386">
+    <SymbolicName>CORDIAGIPC_E_UNKNOWN_MAGIC</SymbolicName>
+    <Comment> The magic version of Diagnostics IPC is unknown. </Comment>
+</HRESULT>
+
+<HRESULT NumericValue="0x80131387">
+    <SymbolicName>CORDIAGIPC_E_UNKNOWN_ERROR</SymbolicName>
+    <Comment> An unknown error occurred in the Diagnpostics IPC Server. </Comment>
+</HRESULT>
+
 <HRESULT NumericValue="0x80131401">
 	<SymbolicName>SECURITY_E_INCOMPATIBLE_SHARE</SymbolicName>
 	<Message>"Loading this assembly would produce a different grant set from other instances."</Message>
