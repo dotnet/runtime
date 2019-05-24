@@ -539,7 +539,8 @@ namespace System.Threading.Tasks.Tests
             var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
             Task t = null;
-            await Task.Run(delegate // avoid any issues with the stack keeping the object alive, and escape xunit sync ctx
+
+            Thread runner = new Thread(() =>
             {
                 async Task YieldOnceAsync(object s)
                 {
@@ -548,18 +549,13 @@ namespace System.Threading.Tasks.Tests
                 }
 
                 var state = new InvokeActionOnFinalization { Action = () => tcs.SetResult(true) };
-                var al = new AsyncLocal<object>(args => {
-                    // Temporary logging to get more info when the test timeout to look who hold a reference to the finalizer object.
-                    string currentValue = args.CurrentValue == null ? "'null'" : "'Object'";
-                    string previousValue = args.PreviousValue == null ? "'null'" : "'Object'";
-                    Console.WriteLine($"AsyncMethodsDropsStateMachineAndExecutionContextUponCompletion: Thread Id: {Thread.CurrentThread.ManagedThreadId} Current Value: {currentValue}  Previous Value: {previousValue} ThreadContextChanged: {args.ThreadContextChanged}");
-                })
-                {
-                    Value = state
-                }; // ensure the object is stored in ExecutionContext
+                var al = new AsyncLocal<object>() { Value = state }; // ensure the object is stored in ExecutionContext
                 t = YieldOnceAsync(state); // ensure the object is stored in the state machine
                 al.Value = null;
-            });
+            }) { IsBackground = true };
+
+            runner.Start();
+            runner.Join();
 
             await t; // wait for the async method to complete and clear out its state
             await Task.Yield(); // ensure associated state is not still on the stack as part of the antecedent's execution
