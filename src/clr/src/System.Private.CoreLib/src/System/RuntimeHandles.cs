@@ -68,11 +68,11 @@ namespace System
             return type;
         }
 
-        public static bool operator ==(RuntimeTypeHandle left, object right) { return left.Equals(right); }
+        public static bool operator ==(RuntimeTypeHandle left, object? right) { return left.Equals(right); }
 
         public static bool operator ==(object? left, RuntimeTypeHandle right) { return right.Equals(left); }
 
-        public static bool operator !=(RuntimeTypeHandle left, object right) { return !left.Equals(right); }
+        public static bool operator !=(RuntimeTypeHandle left, object? right) { return !left.Equals(right); }
 
         public static bool operator !=(object? left, RuntimeTypeHandle right) { return !right.Equals(left); }
 
