@@ -5496,7 +5496,7 @@ handle_ctor_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fs
 		CHECK_CFG_EXCEPTION;
 	} else if ((cfg->opt & MONO_OPT_INLINE) && cmethod && !context_used && !vtable_arg &&
 			   mono_method_check_inlining (cfg, cmethod) &&
-			   !mono_class_is_subclass_of (cmethod->klass, mono_defaults.exception_class, FALSE)) {
+			   !mono_class_is_subclass_of_internal (cmethod->klass, mono_defaults.exception_class, FALSE)) {
 		int costs;
 
 		if ((costs = inline_method (cfg, cmethod, fsig, sp, ip, cfg->real_offset, FALSE))) {

@@ -65,10 +65,6 @@ static gboolean can_access_type (MonoClass *access_klass, MonoClass *member_klas
 static char* mono_assembly_name_from_token (MonoImage *image, guint32 type_token);
 static guint32 mono_field_resolve_flags (MonoClassField *field);
 
-static MonoProperty* mono_class_get_property_from_name_internal (MonoClass *klass, const char *name);
-
-static gboolean mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc, gboolean check_interfaces);
-
 GENERATE_GET_CLASS_WITH_CACHE (valuetype, "System", "ValueType")
 GENERATE_TRY_GET_CLASS_WITH_CACHE (handleref, "System.Runtime.InteropServices", "HandleRef")
 
@@ -2497,25 +2493,6 @@ mono_class_get_event_token (MonoEvent *event)
 	return 0;
 }
 
-/**
- * mono_class_get_property_from_name:
- * \param klass a class
- * \param name name of the property to lookup in the specified class
- *
- * Use this method to lookup a property in a class
- * \returns the \c MonoProperty with the given name, or NULL if the property
- * does not exist on the \p klass.
- */
-MonoProperty*
-mono_class_get_property_from_name (MonoClass *klass, const char *name)
-{
-	MonoProperty *result = NULL;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_class_get_property_from_name_internal (klass, name);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
 MonoProperty*
 mono_class_get_property_from_name_internal (MonoClass *klass, const char *name)
 {
@@ -3358,37 +3335,6 @@ mono_class_try_load_from_name (MonoImage *image, const char* name_space, const c
 	return klass;
 }
 
-
-/**
- * mono_class_is_subclass_of:
- * \param klass class to probe if it is a subclass of another one
- * \param klassc the class we suspect is the base class
- * \param check_interfaces whether we should perform interface checks
- *
- * This method determines whether \p klass is a subclass of \p klassc.
- *
- * If the \p check_interfaces flag is set, then if \p klassc is an interface
- * this method return TRUE if the \p klass implements the interface or
- * if \p klass is an interface, if one of its base classes is \p klass.
- *
- * If \p check_interfaces is false, then if \p klass is not an interface,
- * it returns TRUE if the \p klass is a subclass of \p klassc.
- *
- * if \p klass is an interface and \p klassc is \c System.Object, then this function
- * returns TRUE.
- *
- */
-gboolean
-mono_class_is_subclass_of (MonoClass *klass, MonoClass *klassc, 
-			   gboolean check_interfaces)
-{
-	gboolean result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_class_is_subclass_of_internal (klass, klassc, check_interfaces);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
 static gboolean 
 mono_interface_implements_interface (MonoClass *interface_implementer, MonoClass *interface_implemented)
 {
@@ -3414,6 +3360,7 @@ gboolean
 mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc,
 				    gboolean check_interfaces)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
 	/* FIXME test for interfaces with variant generic arguments */
 	mono_class_init_internal (klass);
 	mono_class_init_internal (klassc);

@@ -10,6 +10,7 @@
 #include "config.h"
 #include <string.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/exception-internals.h>
@@ -1243,7 +1244,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		}
 
 		g_error ("TODO: interp_transform_call %s:%s", m_class_get_name (target_method->klass), tm);
-	} else if (mono_class_is_subclass_of (target_method->klass, mono_defaults.array_class, FALSE)) {
+	} else if (mono_class_is_subclass_of_internal (target_method->klass, mono_defaults.array_class, FALSE)) {
 		if (!strcmp (tm, "get_Rank")) {
 			*op = MINT_ARRAY_RANK;
 		} else if (!strcmp (tm, "get_Length")) {

@@ -20,6 +20,7 @@
 #include "mono/metadata/dynamic-image-internals.h"
 #include "mono/metadata/dynamic-stream-internals.h"
 #include "mono/metadata/mono-ptr-array.h"
+#include "mono/metadata/mono-hash-internals.h"
 #include "mono/metadata/object-internals.h"
 #include "mono/metadata/sre-internals.h"
 #include "mono/metadata/security-manager.h"
@@ -240,7 +241,7 @@ mono_image_add_cattrs (MonoDynamicImage *assembly, guint32 idx, guint32 type, Mo
 			 * fixup_cattrs () needs to fix this up. We can't use image->tokens, since it contains the old token for the
 			 * method, not the one returned by mono_image_create_token ().
 			 */
-			mono_g_hash_table_insert (assembly->remapped_tokens, GUINT_TO_POINTER (token), cattr->ctor);
+			mono_g_hash_table_insert_internal (assembly->remapped_tokens, GUINT_TO_POINTER (token), cattr->ctor);
 			break;
 		case MONO_TABLE_MEMBERREF:
 			type |= MONO_CUSTOM_ATTR_TYPE_MEMBERREF;
@@ -388,7 +389,7 @@ method_encode_code (MonoDynamicImage *assembly, ReflectionMethodBuilder *mb, Mon
 		idx = mono_image_add_stream_data (&assembly->code, &flags, 1);
 		/* add to the fixup todo list */
 		if (mb->ilgen && mb->ilgen->num_token_fixups)
-			mono_g_hash_table_insert (assembly->token_fixups, mb->ilgen, GUINT_TO_POINTER (idx + 1));
+			mono_g_hash_table_insert_internal (assembly->token_fixups, mb->ilgen, GUINT_TO_POINTER (idx + 1));
 		mono_image_add_stream_data (&assembly->code, mono_array_addr_internal (code, char, 0), code_size);
 		return assembly->text_rva + idx;
 	} 
@@ -417,7 +418,7 @@ fat_header:
 	idx = mono_image_add_stream_data (&assembly->code, fat_header, 12);
 	/* add to the fixup todo list */
 	if (mb->ilgen && mb->ilgen->num_token_fixups)
-		mono_g_hash_table_insert (assembly->token_fixups, mb->ilgen, GUINT_TO_POINTER (idx + 12));
+		mono_g_hash_table_insert_internal (assembly->token_fixups, mb->ilgen, GUINT_TO_POINTER (idx + 12));
 	
 	mono_image_add_stream_data (&assembly->code, mono_array_addr_internal (code, char, 0), code_size);
 	if (num_exception) {

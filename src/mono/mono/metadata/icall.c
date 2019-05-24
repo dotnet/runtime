@@ -882,7 +882,7 @@ ves_icall_System_Array_FastCopy (MonoArrayHandle source, int source_idx, MonoArr
 			return FALSE;
 
 		/* It's only safe to copy between arrays if we can ensure the source will always have a subtype of the destination. We bail otherwise. */
-		if (!mono_class_is_subclass_of (src_class, dest_class, FALSE))
+		if (!mono_class_is_subclass_of_internal (src_class, dest_class, FALSE))
 			return FALSE;
 
 		if (m_class_is_native_pointer (src_class) || m_class_is_native_pointer (dest_class))
@@ -1957,13 +1957,13 @@ ves_icall_RuntimeTypeHandle_is_subclass_of (MonoType *childType, MonoType *baseT
 				break;
 			}
 			if (!is_generic_parameter (m_class_get_byval_arg (c))) {
-				result = mono_class_is_subclass_of (c, baseClass, FALSE);
+				result = mono_class_is_subclass_of_internal (c, baseClass, FALSE);
 				break;
 			} else
 				c = mono_generic_param_get_base_type (c);
 		}
 	} else {
-		result = mono_class_is_subclass_of (childClass, baseClass, FALSE);
+		result = mono_class_is_subclass_of_internal (childClass, baseClass, FALSE);
 	}
 done:
 	mono_error_set_pending_exception (error);
@@ -7636,7 +7636,7 @@ ves_icall_Remoting_RemotingServices_GetVirtualMethod (
 		return ret;
 
 	if ((method->flags & METHOD_ATTRIBUTE_FINAL) || !(method->flags & METHOD_ATTRIBUTE_VIRTUAL)) {
-		if (klass == method->klass || mono_class_is_subclass_of (klass, method->klass, FALSE))
+		if (klass == method->klass || mono_class_is_subclass_of_internal (klass, method->klass, FALSE))
 			ret = rmethod;
 		return ret;
 	}
@@ -7652,7 +7652,7 @@ ves_icall_Remoting_RemotingServices_GetVirtualMethod (
 		if (offs >= 0)
 			res = vtable [offs + method->slot];
 	} else {
-		if (!(klass == method->klass || mono_class_is_subclass_of (klass, method->klass, FALSE)))
+		if (!(klass == method->klass || mono_class_is_subclass_of_internal (klass, method->klass, FALSE)))
 			return ret;
 
 		if (method->slot != -1)

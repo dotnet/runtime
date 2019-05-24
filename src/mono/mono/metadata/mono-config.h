@@ -24,7 +24,7 @@ MONO_API const char* mono_get_machine_config (void);
 
 MONO_API void mono_config_cleanup      (void);
 MONO_API void mono_config_parse        (const char *filename);
-MONO_API void mono_config_for_assembly (MonoImage *assembly);
+MONO_API MONO_RT_EXTERNAL_ONLY void mono_config_for_assembly (MonoImage *assembly);
 MONO_API void mono_config_parse_memory (const char *buffer);
 
 MONO_API const char* mono_config_string_for_assembly_file (const char *filename);

@@ -26,6 +26,7 @@
 #include <mono/metadata/exception.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/monitor.h>
+#include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/runtime.h>
@@ -875,7 +876,7 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 	domain = mono_object_domain (thread);
 
 	mono_thread_push_appdomain_ref (domain);
-	if (!mono_domain_set (domain, force_domain)) {
+	if (!mono_domain_set_fast (domain, force_domain)) {
 		mono_thread_pop_appdomain_ref ();
 		goto fail;
 	}
@@ -892,12 +893,12 @@ mono_thread_attach_internal (MonoThread *thread, gboolean force_attach, gboolean
 		mono_g_hash_table_remove (threads_starting_up, thread);
 
 	if (!threads) {
-		threads = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_THREADING, NULL, "Thread Table");
+		threads = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_THREADING, NULL, "Thread Table");
 	}
 
 	/* We don't need to duplicate thread->handle, because it is
 	 * only closed when the thread object is finalized by the GC. */
-	mono_g_hash_table_insert (threads, (gpointer)(gsize)(internal->tid), internal);
+	mono_g_hash_table_insert_internal (threads, (gpointer)(gsize)(internal->tid), internal);
 
 	/* We have to do this here because mono_thread_start_cb
 	 * requires that root_domain_thread is set up. */
@@ -1341,9 +1342,9 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoObject *sta
 		return FALSE;
 	}
 	if (threads_starting_up == NULL) {
-		threads_starting_up = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_THREADING, NULL, "Thread Starting Table");
+		threads_starting_up = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_KEY_VALUE_GC, MONO_ROOT_SOURCE_THREADING, NULL, "Thread Starting Table");
 	}
-	mono_g_hash_table_insert (threads_starting_up, thread, thread);
+	mono_g_hash_table_insert_internal (threads_starting_up, thread, thread);
 	mono_threads_unlock ();
 
 	internal->threadpool_thread = flags & MONO_THREAD_CREATE_FLAGS_THREADPOOL;
@@ -1502,7 +1503,7 @@ mono_thread_attach (MonoDomain *domain)
 
 	if (mono_thread_internal_current_is_attached ()) {
 		if (domain != mono_domain_get ())
-			mono_domain_set (domain, TRUE);
+			mono_domain_set_fast (domain, TRUE);
 		/* Already attached */
 		return mono_thread_current ();
 	}
@@ -6076,9 +6077,6 @@ mono_threads_attach_coop_internal (MonoDomain *domain, gpointer *cookie, MonoSta
 		mono_thread_set_state (mono_thread_internal_current (), ThreadState_Background);
 	}
 
-	if (orig != domain)
-		mono_domain_set (domain, TRUE);
-
 	if (mono_threads_is_blocking_transition_enabled ()) {
 		if (external) {
 			/* mono_thread_attach put the thread in RUNNING mode from STARTING, but we need to
@@ -6089,6 +6087,9 @@ mono_threads_attach_coop_internal (MonoDomain *domain, gpointer *cookie, MonoSta
 			*cookie = mono_threads_enter_gc_unsafe_region_unbalanced_internal (stackdata);
 		}
 	}
+
+	if (orig != domain)
+		mono_domain_set_fast (domain, TRUE);
 
 	return orig;
 }
@@ -6125,17 +6126,17 @@ mono_threads_detach_coop_internal (MonoDomain *orig, gpointer cookie, MonoStackD
 	MonoDomain *domain = mono_domain_get ();
 	g_assert (domain);
 
-	if (mono_threads_is_blocking_transition_enabled ()) {
-		/* it won't do anything if cookie is NULL
-		 * thread state RUNNING -> (RUNNING|BLOCKING) */
-		mono_threads_exit_gc_unsafe_region_unbalanced_internal (cookie, stackdata);
-	}
-
 	if (orig != domain) {
 		if (!orig)
 			mono_domain_unset ();
 		else
-			mono_domain_set (orig, TRUE);
+			mono_domain_set_fast (orig, TRUE);
+	}
+
+	if (mono_threads_is_blocking_transition_enabled ()) {
+		/* it won't do anything if cookie is NULL
+		 * thread state RUNNING -> (RUNNING|BLOCKING) */
+		mono_threads_exit_gc_unsafe_region_unbalanced_internal (cookie, stackdata);
 	}
 }
 

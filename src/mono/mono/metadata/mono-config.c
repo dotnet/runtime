@@ -16,6 +16,7 @@
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/loader.h"
 #include "mono/metadata/mono-config.h"
+#include "mono/metadata/mono-config-internals.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/object-internals.h"
 #include "mono/utils/mono-logger-internals.h"
@@ -98,8 +99,6 @@
 #define CONFIG_CPU "unknownCPU"
 #endif
 #endif
-
-static void mono_config_for_assembly_internal (MonoImage *assembly);
 
 /**
  * mono_config_get_os:
@@ -606,17 +605,6 @@ mono_config_string_for_assembly_file (const char *filename)
 			return bconfig->config_xml;
 	}
 	return NULL;
-}
-
-/**
- * mono_config_for_assembly:
- */
-void 
-mono_config_for_assembly (MonoImage *assembly)
-{
-	MONO_ENTER_GC_UNSAFE;
-	mono_config_for_assembly_internal (assembly);
-	MONO_EXIT_GC_UNSAFE;
 }
 
 void

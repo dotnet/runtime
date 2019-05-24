@@ -30,8 +30,11 @@
 #include <stdio.h>
 #include <math.h>
 #include <glib.h>
+
 #include "mono-hash.h"
+#include "mono-hash-internals.h"
 #include "metadata/gc-internals.h"
+
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/unlocked.h>
@@ -52,9 +55,6 @@ struct _MonoGHashTable {
 	void *key;
 	const char *msg;
 };
-
-MonoGHashTable *
-mono_g_hash_table_new_type_internal (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, void *key, const char *msg);
 
 #if UNUSED
 static gboolean
@@ -139,18 +139,6 @@ static inline int mono_g_hash_table_find_slot (MonoGHashTable *hash, const MonoO
 
 	return i;
 }
-
-
-MonoGHashTable *
-mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, void *key, const char *msg)
-{
-	MonoGHashTable *result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_g_hash_table_new_type_internal (hash_func, key_equal_func, type, source, key, msg);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
 
 MonoGHashTable *
 mono_g_hash_table_new_type_internal (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, void *key, const char *msg)
@@ -481,8 +469,15 @@ void
 mono_g_hash_table_insert (MonoGHashTable *h, gpointer k, gpointer v)
 {
 	MONO_ENTER_GC_UNSAFE;
-	mono_g_hash_table_insert_replace (h, k, v, FALSE);
+	mono_g_hash_table_insert_internal (h, k, v);
 	MONO_EXIT_GC_UNSAFE;
+}
+
+void
+mono_g_hash_table_insert_internal (MonoGHashTable *h, gpointer k, gpointer v)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	mono_g_hash_table_insert_replace (h, k, v, FALSE);
 }
 
 /**

@@ -653,4 +653,7 @@ mono_runtime_register_appctx_properties (int nprops, const char **keys,  const c
 void
 mono_runtime_install_appctx_properties (void);
 
+gboolean 
+mono_domain_set_fast (MonoDomain *domain, gboolean force);
+
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */

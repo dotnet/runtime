@@ -55,8 +55,10 @@
 
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/debug-internals.h>
+#include <mono/metadata/domain-internals.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/threadpool.h>
 #include <mono/metadata/assembly.h>
@@ -977,11 +979,11 @@ debugger_agent_init (void)
 	/* Needed by the hash_table_new_type () call below */
 	mono_gc_base_init ();
 
-	thread_to_tls = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash_internal, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger TLS Table");
+	thread_to_tls = mono_g_hash_table_new_type_internal ((GHashFunc)mono_object_hash_internal, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger TLS Table");
 
-	tid_to_thread = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Table");
+	tid_to_thread = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Table");
 
-	tid_to_thread_obj = mono_g_hash_table_new_type (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Object Table");
+	tid_to_thread_obj = mono_g_hash_table_new_type_internal (NULL, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Thread Object Table");
 
 	pending_assembly_loads = g_ptr_array_new ();
 
@@ -1920,7 +1922,7 @@ objrefs_init (void)
 {
 	objrefs = g_hash_table_new_full (NULL, NULL, NULL, mono_debugger_free_objref);
 	obj_to_objref = g_hash_table_new (NULL, NULL);
-	suspended_objs = mono_g_hash_table_new_type ((GHashFunc)mono_object_hash_internal, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Suspended Object Table");
+	suspended_objs = mono_g_hash_table_new_type_internal ((GHashFunc)mono_object_hash_internal, NULL, MONO_HASH_KEY_GC, MONO_ROOT_SOURCE_DEBUGGER, NULL, "Debugger Suspended Object Table");
 }
 
 static void
@@ -1948,7 +1950,7 @@ get_objref (MonoObject *obj)
 		 * Have to keep object refs created during suspensions alive for the duration of the suspension, so GCs during invokes don't collect them.
 		 */
 		dbg_lock ();
-		mono_g_hash_table_insert (suspended_objs, obj, NULL);
+		mono_g_hash_table_insert_internal (suspended_objs, obj, NULL);
 		dbg_unlock ();
 	}
 
@@ -3964,9 +3966,9 @@ thread_startup (MonoProfiler *prof, uintptr_t tid)
 	DEBUG_PRINTF (1, "[%p] Thread started, obj=%p, tls=%p.\n", (gpointer)tid, thread, tls);
 
 	mono_loader_lock ();
-	mono_g_hash_table_insert (thread_to_tls, thread, tls);
-	mono_g_hash_table_insert (tid_to_thread, (gpointer)tid, thread);
-	mono_g_hash_table_insert (tid_to_thread_obj, GUINT_TO_POINTER (tid), mono_thread_current ());
+	mono_g_hash_table_insert_internal (thread_to_tls, thread, tls);
+	mono_g_hash_table_insert_internal (tid_to_thread, (gpointer)tid, thread);
+	mono_g_hash_table_insert_internal (tid_to_thread_obj, GUINT_TO_POINTER (tid), mono_thread_current ());
 	mono_loader_unlock ();
 
 	process_profiler_event (EVENT_KIND_THREAD_START, thread);
@@ -4135,13 +4137,13 @@ send_types_for_domain (MonoDomain *domain, void *user_data)
 
 	old_domain = mono_domain_get ();
 
-	mono_domain_set (domain, TRUE);
+	mono_domain_set_fast (domain, TRUE);
 	
 	mono_loader_lock ();
 	g_hash_table_foreach (info->loaded_classes, emit_type_load, NULL);
 	mono_loader_unlock ();
 
-	mono_domain_set (old_domain, TRUE);
+	mono_domain_set_fast (old_domain, TRUE);
 }
 
 static void
@@ -4152,7 +4154,7 @@ send_assemblies_for_domain (MonoDomain *domain, void *user_data)
 
 	old_domain = mono_domain_get ();
 
-	mono_domain_set (domain, TRUE);
+	mono_domain_set_fast (domain, TRUE);
 
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
@@ -4161,7 +4163,7 @@ send_assemblies_for_domain (MonoDomain *domain, void *user_data)
 	}
 	mono_domain_assemblies_unlock (domain);
 
-	mono_domain_set (old_domain, TRUE);
+	mono_domain_set_fast (old_domain, TRUE);
 }
 
 static void
@@ -7311,7 +7313,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		MonoDomain *d = mono_domain_get ();
 
 		/* This is needed to be able to find referenced assemblies */
-		res = mono_domain_set (domain, FALSE);
+		res = mono_domain_set_fast (domain, FALSE);
 		g_assert (res);
 
 		if (!mono_reflection_parse_type_checked (s, &info, error)) {
@@ -7332,7 +7334,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		mono_reflection_free_type_info (&info);
 		g_free (s);
 
-		mono_domain_set (d, TRUE);
+		mono_domain_set_fast (d, TRUE);
 
 		break;
 	}
@@ -8093,11 +8095,11 @@ type_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	old_domain = mono_domain_get ();
 
-	mono_domain_set (domain, TRUE);
+	mono_domain_set_fast (domain, TRUE);
 
 	err = type_commands_internal (command, klass, domain, p, end, buf);
 
-	mono_domain_set (old_domain, TRUE);
+	mono_domain_set_fast (old_domain, TRUE);
 
 	return err;
 }
@@ -8546,11 +8548,11 @@ method_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	old_domain = mono_domain_get ();
 
-	mono_domain_set (domain, TRUE);
+	mono_domain_set_fast (domain, TRUE);
 
 	err = method_commands_internal (command, method, domain, p, end, buf);
 
-	mono_domain_set (old_domain, TRUE);
+	mono_domain_set_fast (old_domain, TRUE);
 
 	return err;
 }

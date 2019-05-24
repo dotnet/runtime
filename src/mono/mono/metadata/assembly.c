@@ -33,6 +33,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-uri.h>
 #include <mono/metadata/mono-config.h>
+#include <mono/metadata/mono-config-internals.h>
 #include <mono/metadata/mono-config-dirs.h>
 #include <mono/utils/mono-digest.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -2393,7 +2394,7 @@ mono_assembly_request_open (const char *filename, const MonoAssemblyOpenRequest 
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_ASSEMBLY,
 				"Assembly Loader loaded assembly from location: '%s'.", filename);
 		if (!refonly)
-			mono_config_for_assembly (ass->image);
+			mono_config_for_assembly_internal (ass->image);
 	}
 
 	/* Clear the reference added by mono_image_open */

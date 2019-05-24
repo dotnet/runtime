@@ -22,6 +22,7 @@
 #include "mono/metadata/tabledefs.h"
 #include "mono/metadata/exception.h"
 #include "mono/metadata/debug-helpers.h"
+#include "mono/metadata/domain-internals.h"
 #include "mono/metadata/reflection-internals.h"
 #include "mono/metadata/assembly.h"
 #include "icall-decl.h"
@@ -624,7 +625,7 @@ mono_marshal_set_domain_by_id (gint32 id, MonoBoolean push)
 	MonoDomain *current_domain = mono_domain_get ();
 	MonoDomain *domain = mono_domain_get_by_id (id);
 
-	if (!domain || !mono_domain_set (domain, FALSE)) {
+	if (!domain || !mono_domain_set_fast (domain, FALSE)) {
 		mono_set_pending_exception (mono_get_exception_appdomain_unloaded ());
 		return 0;
 	}

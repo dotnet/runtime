@@ -25,6 +25,7 @@
 #include "metadata/appdomain.h"
 #include "metadata/reflection-internals.h"
 #include "mono/metadata/class-init.h"
+#include "mono/metadata/class-internals.h"
 #include "mono/metadata/debug-helpers.h"
 #include "mono/metadata/threads.h"
 #include "mono/metadata/monitor.h"
@@ -862,14 +863,14 @@ mono_cominterop_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, 
 			static MonoProperty* iunknown = NULL;
 			
 			if (!iunknown)
-				iunknown = mono_class_get_property_from_name (mono_class_get_com_object_class (), "IUnknown");
+				iunknown = mono_class_get_property_from_name_internal (mono_class_get_com_object_class (), "IUnknown");
 			mono_mb_emit_managed_call (mb, iunknown->get, NULL);
 		}
 		else if (conv == MONO_MARSHAL_CONV_OBJECT_IDISPATCH) {
 			static MonoProperty* idispatch = NULL;
 			
 			if (!idispatch)
-				idispatch = mono_class_get_property_from_name (mono_class_get_com_object_class (), "IDispatch");
+				idispatch = mono_class_get_property_from_name_internal (mono_class_get_com_object_class (), "IDispatch");
 			mono_mb_emit_managed_call (mb, idispatch->get, NULL);
 		}
 		else {

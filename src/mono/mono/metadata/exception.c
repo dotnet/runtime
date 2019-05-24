@@ -21,6 +21,7 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/domain-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -102,14 +103,14 @@ mono_exception_new_by_name_domain (MonoDomain *domain, MonoImage *image,
 	goto_if_nok (error, return_null);
 
 	if (domain != caller_domain)
-		mono_domain_set_internal (domain);
+		mono_domain_set_internal_with_options (domain, TRUE);
 
 	mono_runtime_object_init_handle (o, error);
 	mono_error_assert_ok (error);
 
 	// Restore domain in success and error path.
 	if (domain != caller_domain)
-		mono_domain_set_internal (caller_domain);
+		mono_domain_set_internal_with_options (caller_domain, TRUE);
 
 	goto_if_ok (error, exit);
 return_null:

@@ -47,6 +47,7 @@
 #include <mono/metadata/threadpool.h>
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/mono-gc.h>
+#include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/marshal-internals.h>
 #include <mono/metadata/monitor.h>
@@ -647,7 +648,7 @@ copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetupHandle setup, MonoE
 	MonoAppDomainSetupHandle copy = MONO_HANDLE_CAST (MonoAppDomainSetup, mono_object_new_handle(domain, ads_class, error));
 	goto_if_nok (error, leave);
 
-	mono_domain_set_internal (domain);
+	mono_domain_set_internal_with_options (domain, TRUE);
 
 #define XCOPY_FIELD(type, dst, field, src, error)			\
 	do {								\
@@ -686,7 +687,7 @@ copy_app_domain_setup (MonoDomain *domain, MonoAppDomainSetupHandle setup, MonoE
 #undef XCOPY_FIELD
 #undef COPY_VAL
 	
-	mono_domain_set_internal (caller_domain);
+	mono_domain_set_internal_with_options (caller_domain, TRUE);
 
 	MONO_HANDLE_ASSIGN (result, copy);
 leave:
@@ -974,25 +975,14 @@ mono_domain_owns_vtable_slot (MonoDomain *domain, gpointer vtable_slot)
 	return res;
 }
 
-/**
- * mono_domain_set:
- * \param domain domain
- * \param force force setting.
- *
- * Set the current appdomain to \p domain. If \p force is set, set it even
- * if it is being unloaded.
- *
- * \returns TRUE on success; FALSE if the domain is unloaded
- */
 gboolean
-mono_domain_set (MonoDomain *domain, gboolean force)
+mono_domain_set_fast (MonoDomain *domain, gboolean force)
 {
+	MONO_REQ_GC_UNSAFE_MODE;
 	if (!force && domain->state == MONO_APPDOMAIN_UNLOADED)
 		return FALSE;
 
-	MONO_ENTER_GC_UNSAFE;
-	mono_domain_set_internal (domain);
-	MONO_EXIT_GC_UNSAFE;
+	mono_domain_set_internal_with_options (domain, TRUE);
 	return TRUE;
 }
 
@@ -1060,7 +1050,7 @@ ves_icall_System_AppDomain_SetData (MonoAppDomainHandle ad, MonoStringHandle nam
 
 	mono_domain_lock (add);
 
-	mono_g_hash_table_insert (add->env, MONO_HANDLE_RAW (name), MONO_HANDLE_RAW (data));
+	mono_g_hash_table_insert_internal (add->env, MONO_HANDLE_RAW (name), MONO_HANDLE_RAW (data));
 
 	mono_domain_unlock (add);
 }
@@ -2708,7 +2698,7 @@ ves_icall_System_AppDomain_InternalSetDomain (MonoAppDomainHandle ad, MonoError*
 	error_init (error);
 	MonoDomain *old_domain = mono_domain_get ();
 
-	if (!mono_domain_set (MONO_HANDLE_GETVAL (ad, data), FALSE)) {
+	if (!mono_domain_set_fast (MONO_HANDLE_GETVAL (ad, data), FALSE)) {
 		mono_error_set_appdomain_unloaded (error);
 		return MONO_HANDLE_CAST (MonoAppDomain, NULL_HANDLE);
 	}
@@ -2722,7 +2712,7 @@ ves_icall_System_AppDomain_InternalSetDomainByID (gint32 domainid, MonoError *er
 	MonoDomain *current_domain = mono_domain_get ();
 	MonoDomain *domain = mono_domain_get_by_id (domainid);
 
-	if (!domain || !mono_domain_set (domain, FALSE)) {
+	if (!domain || !mono_domain_set_fast (domain, FALSE)) {
 		mono_error_set_appdomain_unloaded (error);
 		return MONO_HANDLE_CAST (MonoAppDomain, NULL_HANDLE);
 	}
@@ -3081,7 +3071,7 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 		}
 	}
 
-	mono_domain_set (domain, FALSE);
+	mono_domain_set_fast (domain, FALSE);
 	/* Notify OnDomainUnload listeners */
 	method = mono_class_get_method_from_name_checked (domain->domain->mbr.obj.vtable->klass, "DoDomainUnload", -1, 0, error);
 	g_assert (method);
@@ -3098,10 +3088,10 @@ mono_domain_try_unload (MonoDomain *domain, MonoObject **exc)
 	if (*exc) {
 		/* Roll back the state change */
 		domain->state = MONO_APPDOMAIN_CREATED;
-		mono_domain_set (caller_domain, FALSE);
+		mono_domain_set_fast (caller_domain, FALSE);
 		goto exit;
 	}
-	mono_domain_set (caller_domain, FALSE);
+	mono_domain_set_fast (caller_domain, FALSE);
 
 	thread_data = g_new0 (unload_data, 1);
 	thread_data->domain = domain;
