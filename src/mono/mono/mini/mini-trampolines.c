@@ -431,7 +431,9 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	gpointer *orig_vtable_slot, *vtable_slot_to_patch = NULL;
 	MonoJitInfo *ji = NULL;
 	MonoDomain *domain = mono_domain_get ();
+#if LLVM_API_VERSION > 100
 	MonoMethod *orig_method = m;
+#endif
 
 	error_init (error);
 
