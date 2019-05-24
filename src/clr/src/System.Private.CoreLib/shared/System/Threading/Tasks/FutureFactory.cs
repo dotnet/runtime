@@ -660,7 +660,7 @@ namespace System.Threading.Tasks
             // RespectParentCancellation.
             Task t = new Task(new Action<object>(delegate
             {
-                FromAsyncCoreLogic(asyncResult, endFunction, endAction, promise, requiresSynchronization: true);
+                FromAsyncCoreLogic(asyncResult!, endFunction, endAction, promise, requiresSynchronization: true); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             }),
                 (object?)null, null,
                 default, TaskCreationOptions.None, InternalTaskOptions.None, null);

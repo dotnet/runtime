@@ -81,9 +81,9 @@ namespace System
 
         /// <summary>Invokes the action and event callbacks.</summary>
         /// <param name="state">The progress value.</param>
-        private void InvokeHandlers(object state)
+        private void InvokeHandlers(object? state)
         {
-            T value = (T)state;
+            T value = (T)state!;
 
             Action<T>? handler = _handler;
             EventHandler<T> changedEvent = ProgressChanged;
