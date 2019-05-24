@@ -1356,30 +1356,6 @@ BOOL CanDeduplicateCode(CORINFO_METHOD_HANDLE method, CORINFO_METHOD_HANDLE dupl
     DynamicMethodDesc * pDuplicateMethod = GetMethod(duplicateMethod)->AsDynamicMethodDesc();
 
     //
-    // Make sure that the return types match (for code:Thread::HijackThread)
-    //
-
-#ifdef _TARGET_X86_
-    MetaSig msig1(pMethod);
-    MetaSig msig2(pDuplicateMethod);
-    if (!msig1.HasFPReturn() != !msig2.HasFPReturn())
-        return FALSE;
-#endif // _TARGET_X86_
-
-    MetaSig::RETURNTYPE returnType = pMethod->ReturnsObject();
-    MetaSig::RETURNTYPE returnTypeDuplicate = pDuplicateMethod->ReturnsObject();
-
-    if (returnType != returnTypeDuplicate)
-        return FALSE;
-
-    //
-    // Do not enable deduplication of structs returned in registers
-    //
-
-    if (returnType == MetaSig::RETVALUETYPE)
-        return FALSE;
-
-    //
     // Make sure that the IL stub flags match
     //
 
