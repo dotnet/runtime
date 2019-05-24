@@ -887,9 +887,6 @@ class MetaSig
 
         BOOL IsReturnTypeVoid() const;
 
-
-        enum RETURNTYPE {RETOBJ, RETBYREF, RETNONOBJ, RETVALUETYPE};
-
         CorElementType GetReturnTypeNormalized(TypeHandle * pthValueType = NULL) const;
 
         //------------------------------------------------------------------

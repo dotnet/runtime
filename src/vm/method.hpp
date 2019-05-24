@@ -1662,18 +1662,11 @@ public:
     MethodDesc *ResolveGenericVirtualMethod(OBJECTREF *orThis);
 
 
+private:
+    ReturnKind ParseReturnKindFromSig(INDEBUG(bool supportStringConstructors = false));
+
 public:
-
-    // does this function return an object reference?
-    MetaSig::RETURNTYPE ReturnsObject(
-#ifdef _DEBUG 
-        bool supportStringConstructors = false,
-#endif
-        MethodTable** pMT = NULL
-        );
-
-
-    void Destruct();
+    ReturnKind GetReturnKind(INDEBUG(bool supportStringConstructors = false));
 
 public:
     // In general you don't want to call GetCallTarget - you want to

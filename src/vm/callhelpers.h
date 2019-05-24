@@ -362,10 +362,6 @@ public:
 #define MDCALLDEF_ARGSLOT(wrappedmethod, ext)                                       \
         FORCEINLINE void wrappedmethod##ext (const ARG_SLOT* pArguments, ARG_SLOT *pReturnValue, int cbReturnValue) \
         {                                                                           \
-            WRAPPER_NO_CONTRACT;                                                    \
-            {                                                                       \
-                GCX_FORBID();  /* arg array is not protected */                     \
-            }                                                                       \
             CallTargetWorker(pArguments, pReturnValue, cbReturnValue);              \
             /* Bigendian layout not support */                                      \
         }
@@ -373,11 +369,6 @@ public:
 #define MDCALLDEF_REFTYPE(wrappedmethod,  permitvaluetypes, ext, ptrtype, reftype)              \
         FORCEINLINE reftype wrappedmethod##ext (const ARG_SLOT* pArguments)                     \
         {                                                                                       \
-            WRAPPER_NO_CONTRACT;                                                                \
-            {                                                                                   \
-                GCX_FORBID();  /* arg array is not protected */                                 \
-                CONSISTENCY_CHECK(MetaSig::RETOBJ == m_pMD->ReturnsObject(true));               \
-            }                                                                                   \
             ARG_SLOT retval;                                                                    \
             CallTargetWorker(pArguments, &retval, sizeof(retval));                              \
             return ObjectTo##reftype(*(ptrtype *)                                               \

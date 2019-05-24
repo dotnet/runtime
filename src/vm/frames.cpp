@@ -1422,7 +1422,7 @@ ComPlusMethodFrame::ComPlusMethodFrame(TransitionBlock * pTransitionBlock, Metho
 #endif // #ifndef DACCESS_COMPILE
 
 //virtual
-void ComPlusMethodFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
+void ComPlusMethodFrame::GcScanRoots(promote_func* fn, ScanContext* sc)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1432,13 +1432,23 @@ void ComPlusMethodFrame::GcScanRoots(promote_func *fn, ScanContext* sc)
     FramedMethodFrame::GcScanRoots(fn, sc);
     PromoteCallerStack(fn, sc);
 
-    MetaSig::RETURNTYPE returnType = GetFunction()->ReturnsObject();
 
     // Promote the returned object
-    if(returnType == MetaSig::RETOBJ)
+    MethodDesc* methodDesc = GetFunction();
+    ReturnKind returnKind = methodDesc->GetReturnKind();
+    if (returnKind == RT_Object)
+    {
         (*fn)(GetReturnObjectPtr(), sc, CHECK_APP_DOMAIN);
-    else if (returnType == MetaSig::RETBYREF)
-        PromoteCarefully(fn, GetReturnObjectPtr(), sc, GC_CALL_INTERIOR|CHECK_APP_DOMAIN);
+    }
+    else if (returnKind == RT_ByRef)
+    {
+        PromoteCarefully(fn, GetReturnObjectPtr(), sc, GC_CALL_INTERIOR | CHECK_APP_DOMAIN);
+    }
+    else
+    {
+        _ASSERTE_MSG(!IsStructReturnKind(returnKind), "NYI: We can't promote multiregs struct returns");
+        _ASSERTE_MSG(IsScalarReturnKind(returnKind), "Non-scalar types must be promoted.");
+    }
 }
 #endif // FEATURE_COMINTEROP
 
