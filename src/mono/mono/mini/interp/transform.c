@@ -865,6 +865,7 @@ static void
 interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *target_method)
 {
 	MonoJitICallInfo *info = mono_find_jit_icall_by_name ("mono_throw_method_access");
+	g_assert (info);
 
 	/* Inject code throwing MethodAccessException */
 	interp_add_ins (td, MINT_MONO_LDPTR);
