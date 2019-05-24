@@ -1,11 +1,11 @@
 <Project DefaultTargets="PublishPackages">
 
-  <!-- TODO: move properties imported from here into a common props file -->
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <!-- Publishing should always use Arcade -->
+  <PropertyGroup>
+    <ArcadeBuild>true</ArcadeBuild>
+  </PropertyGroup>
 
-  <!-- Use an explicit SDK import so that arcade uses the build
-       configuration computed in dir.common.props. -->
-  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+  <Import Project="Directory.Build.props" />
 
   <Import Project="$(NuGetPackageRoot)microsoft.dotnet.build.tasks.feed\$(MicrosoftDotNetBuildTasksFeedVersion)\build\Microsoft.DotNet.Build.Tasks.Feed.targets" />
 
