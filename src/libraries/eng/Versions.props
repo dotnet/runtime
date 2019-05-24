@@ -23,18 +23,18 @@
   </PropertyGroup>
   <PropertyGroup>
     <!-- Arcade dependencies -->
-    <MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.19272.13</MicrosoftDotNetApiCompatPackageVersion>
-    <MicrosoftDotNetCodeAnalysisPackageVersion>1.0.0-beta.19272.13</MicrosoftDotNetCodeAnalysisPackageVersion>
-    <MicrosoftDotNetGenAPIPackageVersion>1.0.0-beta.19272.13</MicrosoftDotNetGenAPIPackageVersion>
-    <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.19272.13</MicrosoftDotNetGenFacadesPackageVersion>
-    <MicrosoftDotNetXUnitExtensionsPackageVersion>2.4.0-beta.19272.13</MicrosoftDotNetXUnitExtensionsPackageVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.5.1-beta.19272.13</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
-    <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.19272.13</MicrosoftDotNetBuildTasksPackagingPackageVersion>
-    <MicrosoftDotNetCoreFxTestingPackageVersion>1.0.0-beta.19272.13</MicrosoftDotNetCoreFxTestingPackageVersion>
-    <MicrosoftDotNetRemoteExecutorPackageVersion>1.0.0-beta.19272.13</MicrosoftDotNetRemoteExecutorPackageVersion>
-    <MicrosoftDotNetBuildTasksConfigurationPackageVersion>1.0.0-beta.19272.13</MicrosoftDotNetBuildTasksConfigurationPackageVersion>
-    <MicrosoftDotNetBuildTasksFeedPackageVersion>2.2.0-beta.19272.13</MicrosoftDotNetBuildTasksFeedPackageVersion>
-    <MicrosoftDotNetVersionToolsTasksPackageVersion>1.0.0-beta.19272.13</MicrosoftDotNetVersionToolsTasksPackageVersion>
+    <MicrosoftDotNetApiCompatPackageVersion>1.0.0-beta.19273.11</MicrosoftDotNetApiCompatPackageVersion>
+    <MicrosoftDotNetCodeAnalysisPackageVersion>1.0.0-beta.19273.11</MicrosoftDotNetCodeAnalysisPackageVersion>
+    <MicrosoftDotNetGenAPIPackageVersion>1.0.0-beta.19273.11</MicrosoftDotNetGenAPIPackageVersion>
+    <MicrosoftDotNetGenFacadesPackageVersion>1.0.0-beta.19273.11</MicrosoftDotNetGenFacadesPackageVersion>
+    <MicrosoftDotNetXUnitExtensionsPackageVersion>2.4.0-beta.19273.11</MicrosoftDotNetXUnitExtensionsPackageVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.5.1-beta.19273.11</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
+    <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.19273.11</MicrosoftDotNetBuildTasksPackagingPackageVersion>
+    <MicrosoftDotNetCoreFxTestingPackageVersion>1.0.0-beta.19273.11</MicrosoftDotNetCoreFxTestingPackageVersion>
+    <MicrosoftDotNetRemoteExecutorPackageVersion>1.0.0-beta.19273.11</MicrosoftDotNetRemoteExecutorPackageVersion>
+    <MicrosoftDotNetBuildTasksConfigurationPackageVersion>1.0.0-beta.19273.11</MicrosoftDotNetBuildTasksConfigurationPackageVersion>
+    <MicrosoftDotNetBuildTasksFeedPackageVersion>2.2.0-beta.19273.11</MicrosoftDotNetBuildTasksFeedPackageVersion>
+    <MicrosoftDotNetVersionToolsTasksPackageVersion>1.0.0-beta.19273.11</MicrosoftDotNetVersionToolsTasksPackageVersion>
     <!-- Core-setup dependencies -->
     <MicrosoftNETCoreAppPackageVersion>3.0.0-preview6-27722-02</MicrosoftNETCoreAppPackageVersion>
     <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview6-27722-02</MicrosoftNETCoreDotNetHostPackageVersion>
