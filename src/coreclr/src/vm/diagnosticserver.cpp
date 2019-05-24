@@ -5,7 +5,9 @@
 #include "common.h"
 #include "diagnosticserver.h"
 #include "eventpipeprotocolhelper.h"
-#include "diagnosticprotocolhelper.h"
+#include "dumpdiagnosticprotocolhelper.h"
+#include "profilerdiagnosticprotocolhelper.h"
+#include "diagnosticsprotocol.h"
 
 #ifdef FEATURE_PAL
 #include "pal.h"
@@ -46,40 +48,42 @@ static DWORD WINAPI DiagnosticsServerThread(LPVOID lpThreadParameter)
             if (pStream == nullptr)
                 continue;
 
-            // TODO: Read operation should happen in a loop.
-            uint32_t nNumberOfBytesRead = 0;
-            MessageHeader header;
-            bool fSuccess = pStream->Read(&header, sizeof(header), nNumberOfBytesRead);
-            if (!fSuccess || nNumberOfBytesRead != sizeof(header))
+            DiagnosticsIpc::IpcMessage message;
+            if (!message.Initialize(pStream))
             {
+                DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, CORDIAGIPC_E_BAD_ENCODING);
                 delete pStream;
                 continue;
             }
 
-            switch (header.RequestType)
+            if (::strcmp((char *)message.GetHeader().Magic, (char *)DiagnosticsIpc::DotnetIpcMagic_V1.Magic) != 0)
             {
-            case DiagnosticMessageType::StopEventPipeTracing:
-                EventPipeProtocolHelper::StopTracing(pStream);
-                break;
+                DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, CORDIAGIPC_E_UNKNOWN_MAGIC);
+                delete pStream;
+                continue;
+            }
 
-            case DiagnosticMessageType::CollectEventPipeTracing:
-                EventPipeProtocolHelper::CollectTracing(pStream);
+            switch ((DiagnosticsIpc::DiagnosticServerCommandSet)message.GetHeader().CommandSet)
+            {
+            case DiagnosticsIpc::DiagnosticServerCommandSet::EventPipe:
+                EventPipeProtocolHelper::HandleIpcMessage(message, pStream);
                 break;
 
 #ifdef FEATURE_PAL
-            case DiagnosticMessageType::GenerateCoreDump:
-                DiagnosticProtocolHelper::GenerateCoreDump(pStream);
+            case DiagnosticsIpc::DiagnosticServerCommandSet::Dump:
+                DumpDiagnosticProtocolHelper::HandleIpcMessage(message, pStream);
                 break;
 #endif
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
-            case DiagnosticMessageType::AttachProfiler:
-                DiagnosticProtocolHelper::AttachProfiler(pStream);
+            case DiagnosticsIpc::DiagnosticServerCommandSet::Profiler:
+                ProfilerDiagnosticProtocolHelper::AttachProfiler(message, pStream);
                 break;
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
 
             default:
-                STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_WARNING, "Received unknown request type (%d)\n", header.RequestType);
+                STRESS_LOG1(LF_DIAGNOSTICS_PORT, LL_WARNING, "Received unknown request type (%d)\n", message.GetHeader().CommandSet);
+                DiagnosticsIpc::IpcMessage::SendErrorMessage(pStream, CORDIAGIPC_E_UNKNOWN_COMMAND);
                 delete pStream;
                 break;
             }
