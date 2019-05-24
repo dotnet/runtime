@@ -304,10 +304,10 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Compares the UTF-16 encoded text to the unescaped JSON token value in the source and returns true if they match.
+        /// Compares the text to the unescaped JSON token value in the source and returns true if they match.
         /// </summary>
-        /// <param name="otherText">The UTF-16 encoded text to compare against.</param>
-        /// <returns>True if the JSON token value in the source matches the UTF-16 encoded look up text.</returns>
+        /// <param name="otherText">The text to compare against.</param>
+        /// <returns>True if the JSON token value in the source matches the look up text.</returns>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to find a text match on a JSON token that is not a string
         /// (i.e. other than <see cref="JsonTokenType.String"/> or <see cref="JsonTokenType.PropertyName"/>).

@@ -16,7 +16,7 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the string text value (as a JSON comment).
         /// </summary>
-        /// <param name="value">The UTF-16 encoded value to be written as a UTF-8 transcoded JSON comment within /*..*/.</param>
+        /// <param name="value">The value to be written as a UTF-8 transcoded JSON comment within /*..*/.</param>
         /// <remarks>
         /// The comment value is not escaped before writing.
         /// </remarks>
@@ -27,14 +27,14 @@ namespace System.Text.Json
             => WriteCommentValue(value.AsSpan());
 
         /// <summary>
-        /// Writes the UTF-16 text value (as a JSON comment).
+        /// Writes the text value (as a JSON comment).
         /// </summary>
-        /// <param name="value">The UTF-16 encoded value to be written as a UTF-8 transcoded JSON comment within /*..*/.</param>
+        /// <param name="value">The value to be written as a UTF-8 transcoded JSON comment within /*..*/.</param>
         /// <remarks>
         /// The comment value is not escaped before writing.
         /// </remarks>
         /// <exception cref="ArgumentException">
-        /// Thrown when the specified value is too large OR if the given UTF-16 text value contains a comment delimiter (i.e. */).
+        /// Thrown when the specified value is too large OR if the given text value contains a comment delimiter (i.e. */).
         /// </exception>
         public void WriteCommentValue(ReadOnlySpan<char> value)
         {
