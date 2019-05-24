@@ -196,7 +196,7 @@ namespace System
             return result._parsedGuid;
         }
 
-        public static bool TryParse(string input, out Guid result)
+        public static bool TryParse(string? input, out Guid result)
         {
             if (input == null)
             {
