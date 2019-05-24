@@ -633,14 +633,14 @@ namespace System
                 throw new ArgumentNullException(nameof(values));
             }
 
-            using (IEnumerator<string> en = values.GetEnumerator())
+            using (IEnumerator<string?> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
                 {
                     return string.Empty;
                 }
 
-                string firstValue = en.Current;
+                string? firstValue = en.Current;
 
                 if (!en.MoveNext())
                 {
