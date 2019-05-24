@@ -6,6 +6,7 @@ namespace NetClient
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Text;
     using System.Runtime.InteropServices;
@@ -54,6 +55,7 @@ namespace NetClient
             this.Marshal_LPString();
             this.Marshal_LPWString();
             this.Marshal_BStrString();
+            this.Marshal_LCID();
         }
 
         static private string Reverse(string s)
@@ -265,6 +267,33 @@ namespace NetClient
                 actual = local;
                 this.server.Reverse_BStr_OutAttr(local, actual); // No-op for strings
                 Assert.AreEqual(local, actual);
+            }
+        }
+
+        private void Marshal_LCID()
+        {
+            Console.WriteLine("Marshal LCID");
+            foreach (var s in reversableStrings)
+            {
+                string local = s;
+                string expected = Reverse(local);
+
+                string actual = this.server.Reverse_LPWStr_With_LCID(local);
+                Assert.AreEqual(expected, actual);
+            }
+
+            CultureInfo culture = new CultureInfo("es-ES", false);
+            CultureInfo englishCulture = new CultureInfo("en-US", false);
+            CultureInfo oldCulture = CultureInfo.CurrentCulture;
+            try
+            {
+                CultureInfo.CurrentCulture = culture;
+                this.server.Pass_Through_LCID(out int lcid);
+                Assert.AreEqual(englishCulture.LCID, lcid); // CLR->COM LCID marshalling is explicitly hardcoded to en-US as requested by VSTO instead of passing the current culture.
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = oldCulture;
             }
         }
     }

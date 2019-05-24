@@ -984,7 +984,6 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
     }
     CONTRACTL_END;
 
-#ifdef FEATURE_USE_LCID
     OBJECTREF CultureObj = NULL;
     GCPROTECT_BEGIN(CultureObj)
     {
@@ -1004,9 +1003,6 @@ void GetCultureInfoForLCID(LCID lcid, OBJECTREF *pCultureObj)
         *pCultureObj = CultureObj;
     }
     GCPROTECT_END();
-#else
-    COMPlusThrow(kNotSupportedException);
-#endif
 }
 
 #endif // CROSSGEN_COMPILE

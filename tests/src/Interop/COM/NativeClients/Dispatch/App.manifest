@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity
+    type="win32"
+    name="COMClientPrimitives"
+    version="1.0.0.0"/>
+
+  <dependency>
+    <dependentAssembly>
+      <!-- RegFree COM - CoreCLR Shim -->
+      <assemblyIdentity
+        type="win32"
+        name="CoreShim.X"
+        version="1.0.0.0"/>
+    </dependentAssembly>
+  </dependency>
+</assembly>
