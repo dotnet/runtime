@@ -1774,8 +1774,6 @@ static void MonitorExit(Object* obj, BYTE* pbLockTaken)
         COMPlusThrow(kSynchronizationLockException);
 
     if (pbLockTaken != 0) *pbLockTaken = 0;
-
-    TESTHOOKCALL(AppDomainCanBeUnloaded(DefaultADID, FALSE));
     
     if (GET_THREAD()->IsAbortRequested()) {
         GET_THREAD()->HandleThreadAbort();
@@ -1794,7 +1792,6 @@ static void MonitorExitStatic(AwareLock *lock, BYTE* pbLockTaken)
     if (!lock->Leave())
         COMPlusThrow(kSynchronizationLockException);
 
-    TESTHOOKCALL(AppDomainCanBeUnloaded(DefaultADID, FALSE));
     if (GET_THREAD()->IsAbortRequested()) {
         GET_THREAD()->HandleThreadAbort();
     }

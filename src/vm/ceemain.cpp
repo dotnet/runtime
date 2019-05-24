@@ -355,10 +355,6 @@ HRESULT EnsureEEStarted(COINITIEE flags)
             }
         }
 
-#ifdef FEATURE_TESTHOOKS        
-        if(bStarted)
-            TESTHOOKCALL(RuntimeStarted(RTS_INITIALIZED));
-#endif        
         END_ENTRYPOINT_NOTHROW;
     }
     else
@@ -681,10 +677,6 @@ void EEStartupHelper(COINITIEE fFlags)
         InitGSCookie();
 
         Frame::Init();
-
-#ifdef FEATURE_TESTHOOKS
-        IfFailGo(CLRTestHookManager::CheckConfig());
-#endif
 
 #endif // CROSSGEN_COMPILE
 
