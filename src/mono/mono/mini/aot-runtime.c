@@ -5310,11 +5310,8 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 
 	/* Load the code */
 
-	symbol = g_strdup_printf ("%s", name);
-	find_amodule_symbol (amodule, symbol, (gpointer *)&code);
-	g_free (symbol);
-	if (!code)
-		g_error ("Symbol '%s' not found in AOT file '%s'.\n", name, amodule->aot_name);
+	find_amodule_symbol (amodule, name, &code);
+	g_assertf (code, "Symbol '%s' not found in AOT file '%s'.\n", name, amodule->aot_name);
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_AOT, "AOT: FOUND function '%s' in AOT file '%s'.", name, amodule->aot_name);
 
