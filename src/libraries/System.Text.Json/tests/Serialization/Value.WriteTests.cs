@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                Span<byte> json = JsonSerializer.ToBytes(1);
+                Span<byte> json = JsonSerializer.ToUtf8Bytes(1);
                 Assert.Equal(Encoding.UTF8.GetBytes("1"), json.ToArray());
             }
 
@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                Span<byte> json = JsonSerializer.ToBytes(long.MaxValue);
+                Span<byte> json = JsonSerializer.ToUtf8Bytes(long.MaxValue);
                 Assert.Equal(Encoding.UTF8.GetBytes(long.MaxValue.ToString()), json.ToArray());
             }
 
@@ -49,7 +49,7 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                Span<byte> json = JsonSerializer.ToBytes("Hello");
+                Span<byte> json = JsonSerializer.ToUtf8Bytes("Hello");
                 Assert.Equal(Encoding.UTF8.GetBytes(@"""Hello"""), json.ToArray());
             }
         }

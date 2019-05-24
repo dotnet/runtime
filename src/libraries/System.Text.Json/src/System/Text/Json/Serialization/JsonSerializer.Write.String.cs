@@ -13,7 +13,7 @@ namespace System.Text.Json.Serialization
         /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <remarks>Using a <see cref="System.String"/> is not as efficient as using UTF-8
-        /// encoding since the implementation internally uses UTF-8. See also <see cref="ToBytes"/>
+        /// encoding since the implementation internally uses UTF-8. See also <see cref="ToUtf8Bytes"/>
         /// and <see cref="WriteAsync"/>.
         /// </remarks>
         public static string ToString<TValue>(TValue value, JsonSerializerOptions options = null)
@@ -29,7 +29,7 @@ namespace System.Text.Json.Serialization
         /// <param name="type">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <remarks>Using a <see cref="System.String"/> is not as efficient as using UTF-8
-        /// encoding since the implementation internally uses UTF-8. See also <see cref="ToBytes"/>
+        /// encoding since the implementation internally uses UTF-8. See also <see cref="ToUtf8Bytes"/>
         /// and <see cref="WriteAsync"/>.
         /// </remarks>
         public static string ToString(object value, Type type, JsonSerializerOptions options = null)
