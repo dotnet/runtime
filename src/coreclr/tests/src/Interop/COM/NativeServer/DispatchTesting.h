@@ -108,6 +108,10 @@ public: // IDispatch
             {
                 return DoubleHVAValues_Proxy(pDispParams, pVarResult);
             }
+            case 6:
+            {
+                return PassThroughLCID_Proxy(lcid, pVarResult);
+            }
             }
 
             return E_NOTIMPL;
@@ -410,6 +414,13 @@ private:
         return DoubleHVAValues(args[0], (HFA_4*)&pVarResult->pvRecord);
     }
 
+    HRESULT PassThroughLCID_Proxy(_In_ LCID lcid, _Inout_ VARIANT* pVarResult)
+    {
+        V_VT(pVarResult) = VT_I4;
+        V_I4(pVarResult) = lcid;
+        return S_OK;
+    }
+
 public: // IUnknown
     STDMETHOD(QueryInterface)(
         /* [in] */ REFIID riid,
@@ -428,7 +439,8 @@ const WCHAR * const DispatchTesting::Names[] =
     W("Add_Float_ReturnAndUpdateByRef"),
     W("Add_Double_ReturnAndUpdateByRef"),
     W("TriggerException"),
-    W("DoubleHVAValues")
+    W("DoubleHVAValues"),
+    W("PassThroughLCID")
 };
 
 const int DispatchTesting::NamesCount = ARRAYSIZE(DispatchTesting::Names);

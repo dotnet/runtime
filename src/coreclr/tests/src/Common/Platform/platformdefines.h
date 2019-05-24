@@ -148,7 +148,8 @@ typedef int error_t;
 typedef void* LPVOID;
 typedef unsigned char BYTE;
 typedef WCHAR OLECHAR;
-typedef double DATE;
+typedef double DATE;          
+typedef DWORD LCID;
 #endif
 
 typedef ULONG_PTR DWORD_PTR;

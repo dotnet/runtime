@@ -356,6 +356,13 @@ IStringTesting : IUnknown
       virtual HRESULT STDMETHODCALLTYPE Reverse_BStr_OutAttr (
         /*[in]*/ BSTR a,
         /*[out]*/ BSTR b ) = 0;
+      virtual HRESULT STDMETHODCALLTYPE Reverse_LPWSTR_With_LCID (
+          /*[in]*/ LPWSTR a,
+          /*[in]*/ LCID lcid,
+          /*[out]*/ LPWSTR*  b) = 0;
+      virtual HRESULT STDMETHODCALLTYPE Pass_Through_LCID(
+        /*[in]*/ LCID lcidFromCulture,
+        /*[out]*/ LCID* outLcid) = 0;
 };
 
 struct __declspec(uuid("592386a5-6837-444d-9de3-250815d18556"))

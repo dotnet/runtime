@@ -5,6 +5,7 @@
 namespace NetClient
 {
     using System;
+    using System.Globalization;
     using System.Reflection;
     using System.Runtime.InteropServices;
 
@@ -151,6 +152,24 @@ namespace NetClient
             Assert.Throws<NotSupportedException>(() => dispatchTesting.DoubleHVAValues(ref input));
         }
 
+        static void Validate_LCID_Marshaled()
+        {
+            var dispatchTesting = (DispatchTesting)new DispatchTestingClass();
+            CultureInfo oldCulture = CultureInfo.CurrentCulture;
+            CultureInfo newCulture = new CultureInfo("es-ES", false);
+            try
+            {
+                CultureInfo englishCulture = new CultureInfo("en-US", false);
+                CultureInfo.CurrentCulture = newCulture;
+                int lcid = dispatchTesting.PassThroughLCID();
+                Assert.AreEqual(englishCulture.LCID, lcid);  // CLR->Dispatch LCID marshalling is explicitly hardcoded to en-US instead of passing the current culture.
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = oldCulture;
+            }
+        }
+
         static int Main(string[] doNotUse)
         {
             // RegFree COM is not supported on Windows Nano
@@ -166,6 +185,7 @@ namespace NetClient
                 Validate_Double_In_ReturnAndUpdateByRef();
                 Validate_Exception();
                 Validate_StructNotSupported();
+                Validate_LCID_Marshaled();
             }
             catch (Exception e)
             {

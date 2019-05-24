@@ -272,10 +272,8 @@ DEFINE_CLASS(CULTURE_INFO,          Globalization,          CultureInfo)
 DEFINE_METHOD(CULTURE_INFO,         STR_CTOR,               .ctor,                      IM_Str_RetVoid)
 DEFINE_FIELD(CULTURE_INFO,          CURRENT_CULTURE,        s_userDefaultCulture)
 DEFINE_PROPERTY(CULTURE_INFO,       NAME,                   Name,                       Str)
-#ifdef FEATURE_USE_LCID
 DEFINE_METHOD(CULTURE_INFO,         INT_CTOR,               .ctor,                      IM_Int_RetVoid)
 DEFINE_PROPERTY(CULTURE_INFO,       ID,                     LCID,                       Int)
-#endif
 DEFINE_FIELD(CULTURE_INFO,          CULTURE,                s_currentThreadCulture)
 DEFINE_FIELD(CULTURE_INFO,          UI_CULTURE,             s_currentThreadUICulture)
 DEFINE_STATIC_SET_PROPERTY(CULTURE_INFO, CURRENT_CULTURE,      CurrentCulture,     CultureInfo)
