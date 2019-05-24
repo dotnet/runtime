@@ -189,7 +189,7 @@ namespace System
             this.SetValue(value, iindex1, iindex2);
         }
 
-        public void SetValue(object value, long index1, long index2, long index3)
+        public void SetValue(object? value, long index1, long index2, long index3)
         {
             int iindex1 = (int)index1;
             int iindex2 = (int)index2;
