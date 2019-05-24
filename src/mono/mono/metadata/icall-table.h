@@ -20,7 +20,7 @@ typedef struct {
 } MonoIcallTableCallbacks;
 
 void
-mono_install_icall_table_callbacks (MonoIcallTableCallbacks *cb);
+mono_install_icall_table_callbacks (const MonoIcallTableCallbacks *cb);
 
 MONO_API void
 mono_icall_table_init (void);

@@ -341,11 +341,11 @@ mono_icall_table_init (void)
 		}
 	}
 
-	MonoIcallTableCallbacks cb;
-	memset (&cb, 0, sizeof (MonoIcallTableCallbacks));
-	cb.version = MONO_ICALL_TABLE_CALLBACKS_VERSION;
-	cb.lookup = icall_table_lookup;
-	cb.lookup_icall_symbol = lookup_icall_symbol;
-
-	mono_install_icall_table_callbacks (&cb);
+	static const MonoIcallTableCallbacks mono_icall_table_callbacks =
+	{
+		MONO_ICALL_TABLE_CALLBACKS_VERSION,
+		icall_table_lookup,
+		lookup_icall_symbol,
+	};
+	mono_install_icall_table_callbacks (&mono_icall_table_callbacks);
 }

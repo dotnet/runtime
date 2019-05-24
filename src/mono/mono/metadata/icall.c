@@ -8613,7 +8613,7 @@ ves_icall_System_IO_LogcatTextWriter_Log (const char *appname, gint32 level, con
 
 #endif
 
-static MonoIcallTableCallbacks icall_table;
+static const MonoIcallTableCallbacks *icall_table;
 static mono_mutex_t icall_mutex;
 static GHashTable *icall_hash = NULL;
 static GHashTable *jit_icall_hash_name = NULL;
@@ -8625,10 +8625,10 @@ typedef struct _MonoIcallHashTableValue {
 } MonoIcallHashTableValue;
 
 void
-mono_install_icall_table_callbacks (MonoIcallTableCallbacks *cb)
+mono_install_icall_table_callbacks (const MonoIcallTableCallbacks *cb)
 {
 	g_assert (cb->version == MONO_ICALL_TABLE_CALLBACKS_VERSION);
-	memcpy (&icall_table, cb, sizeof (MonoIcallTableCallbacks));
+	icall_table = cb;
 }
 
 void
@@ -8888,14 +8888,15 @@ mono_lookup_internal_call_full_with_flags (MonoMethod *method, gboolean warn_on_
 		return res;
 	}
 
-	if (!icall_table.lookup) {
+	if (!icall_table) {
 		mono_icall_unlock ();
 		g_free (classname);
 		/* Fail only when the result is actually used */
 		return (gconstpointer)no_icall_table;
 	} else {
 		gboolean uses_handles = FALSE;
-		res = icall_table.lookup (method, classname, sigstart - mlen, sigstart, &uses_handles);
+		g_assert (icall_table->lookup);
+		res = icall_table->lookup (method, classname, sigstart - mlen, sigstart, &uses_handles);
 		if (res && flags && uses_handles)
 			*flags = *flags | MONO_ICALL_FLAGS_USES_HANDLES;
 		mono_icall_unlock ();
@@ -8963,14 +8964,15 @@ mono_lookup_internal_call (MonoMethod *method)
 const char*
 mono_lookup_icall_symbol (MonoMethod *m)
 {
-	if (!icall_table.lookup_icall_symbol)
+	if (!icall_table)
 		return NULL;
 
+	g_assert (icall_table->lookup_icall_symbol);
 	gpointer func;
 	func = (gpointer)mono_lookup_internal_call_full (m, FALSE, NULL, NULL);
 	if (!func)
 		return NULL;
-	return icall_table.lookup_icall_symbol (func);
+	return icall_table->lookup_icall_symbol (func);
 }
 
 #if defined(TARGET_WIN32) && defined(TARGET_X86)
