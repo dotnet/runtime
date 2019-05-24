@@ -247,7 +247,6 @@ CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_SuppressChecks, W("SuppressChecks"), ""
 #ifdef WIN64EXCEPTIONS
 CONFIG_DWORD_INFO(INTERNAL_SuppressLockViolationsOnReentryFromOS, W("SuppressLockViolationsOnReentryFromOS"), 0, "64 bit OOM tests re-enter the CLR via RtlVirtualUnwind.  This indicates whether to suppress resulting locking violations.")
 #endif // WIN64EXCEPTIONS
-CONFIG_STRING_INFO(INTERNAL_TestHooks, W("TestHooks"), "Used by tests to get test an insight on various CLR workings")
 
 
 ///
