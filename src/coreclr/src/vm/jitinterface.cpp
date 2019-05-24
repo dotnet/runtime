@@ -10852,21 +10852,8 @@ bool CEEInfo::runWithErrorTrap(void (*function)(void*), void* param)
 /*********************************************************************/
 IEEMemoryManager* CEEInfo::getMemoryManager()
 {
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    IEEMemoryManager* result = NULL;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    result = GetEEMemoryManager();
-
-    EE_TO_JIT_TRANSITION_LEAF();
-
-    return result;
+    UNREACHABLE(); // OBSOLETE
+    return NULL;
 }
 
 /*********************************************************************/

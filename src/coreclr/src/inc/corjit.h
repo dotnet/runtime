@@ -292,7 +292,7 @@ public:
 class ICorJitInfo : public ICorDynamicInfo
 {
 public:
-    // return memory manager that the JIT can use to allocate a regular memory
+    // OBSOLETE: return memory manager that the JIT can use to allocate a regular memory
     virtual IEEMemoryManager* getMemoryManager() = 0;
 
     // get a block of memory for the code, readonly data, and read-write data
