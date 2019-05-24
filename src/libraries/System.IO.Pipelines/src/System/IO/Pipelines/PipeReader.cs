@@ -71,7 +71,7 @@ namespace System.IO.Pipelines
         public abstract void Complete(Exception exception = null);
 
         /// <summary>
-        /// Cancel the pending <see cref="ReadAsync"/> operation. If there is none, cancels next <see cref="ReadAsync"/> operation, without completing the <see cref="PipeWriter"/>.
+        /// Registers a callback that gets executed when the <see cref="PipeWriter"/> side of the pipe is completed
         /// </summary>
         public abstract void OnWriterCompleted(Action<Exception, object> callback, object state);
 
