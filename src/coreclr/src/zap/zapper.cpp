@@ -510,19 +510,6 @@ void Zapper::LoadAndInitializeJITForNgen(LPCWSTR pwzJitName, OUT HINSTANCE* phJi
         ThrowLastError();
     }
 
-#if !defined(CROSSGEN_COMPILE)
-    typedef void (__stdcall* pSxsJitStartup) (CoreClrCallbacks const & cccallbacks);
-    pSxsJitStartup sxsJitStartupFn = (pSxsJitStartup) GetProcAddress(*phJit, "sxsJitStartup");
-    if (sxsJitStartupFn == NULL)
-    {
-        Error(W("Unable to load Jit startup function: %s\r\n"), pwzJitName);
-        ThrowLastError();
-    }
-
-    CoreClrCallbacks cccallbacks = GetClrCallbacks();
-    (*sxsJitStartupFn) (cccallbacks);
-#endif
-
     typedef void (__stdcall* pJitStartup)(ICorJitHost* host);
     pJitStartup jitStartupFn = (pJitStartup)GetProcAddress(*phJit, "jitStartup");
     if (jitStartupFn != nullptr)
