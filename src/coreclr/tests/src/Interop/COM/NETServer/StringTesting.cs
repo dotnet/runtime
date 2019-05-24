@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Globalization;
 using System.Text;
 using System.Runtime.InteropServices;
 
@@ -190,5 +191,19 @@ public class StringTesting : Server.Contract.IStringTesting
     public void Reverse_BStr_OutAttr([MarshalAs(UnmanagedType.BStr)] string a, [Out][MarshalAs(UnmanagedType.BStr)] string b)
     {
         b = Reverse(a);
+    }
+
+    
+    [LCIDConversion(1)]
+    [return:MarshalAs(UnmanagedType.LPWStr)]
+    public string Reverse_LPWStr_With_LCID([MarshalAs(UnmanagedType.LPWStr)] string a)
+    {
+        return Reverse(a);
+    }
+
+    [LCIDConversion(0)]
+    public void Pass_Through_LCID(out int lcid)
+    {
+        lcid = CultureInfo.CurrentCulture.LCID;
     }
 }

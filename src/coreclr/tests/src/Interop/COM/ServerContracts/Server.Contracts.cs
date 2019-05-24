@@ -176,6 +176,13 @@ namespace Server.Contract
         void Reverse_BStr_Out([MarshalAs(UnmanagedType.BStr)] string a, [MarshalAs(UnmanagedType.BStr)] out string b);
 
         void Reverse_BStr_OutAttr([MarshalAs(UnmanagedType.BStr)] string a, [Out][MarshalAs(UnmanagedType.BStr)] string b);
+
+        [LCIDConversion(1)]
+        [return: MarshalAs(UnmanagedType.LPWStr)]
+        string Reverse_LPWStr_With_LCID([MarshalAs(UnmanagedType.LPWStr)] string a);
+
+        [LCIDConversion(0)]
+        void Pass_Through_LCID(out int lcid);
     }
 
     public struct HResult
@@ -239,6 +246,9 @@ namespace Server.Contract
 
         // Special cases
         HFA_4 DoubleHVAValues(ref HFA_4 input);
+
+        [LCIDConversion(0)]
+        int PassThroughLCID();
     }
 
     [ComVisible(true)]
