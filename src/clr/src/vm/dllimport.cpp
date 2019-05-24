@@ -451,8 +451,7 @@ public:
         STANDARD_VM_CONTRACT;
 
         ILCodeStream* pcs = m_slIL.GetDispatchCodeStream();
-        
-#ifdef FEATURE_USE_LCID
+
         if (SF_IsReverseStub(m_dwStubFlags))
         {
             if ((m_slIL.GetStubTargetCallingConv() & IMAGE_CEE_CS_CALLCONV_HASTHIS) == IMAGE_CEE_CS_CALLCONV_HASTHIS)
@@ -504,12 +503,6 @@ public:
                 pcs->EmitCALL(METHOD__CULTURE_INFO__GET_ID, 1, 1);
             }
         }
-#else // FEATURE_USE_LCID
-        if (SF_IsForwardStub(m_dwStubFlags))
-        {
-            pcs->EmitLDC(0x0409); // LCID_ENGLISH_US
-        }
-#endif // FEATURE_USE_LCID
 
         // add the extra arg to the unmanaged signature
         LocalDesc locDescNative(ELEMENT_TYPE_I4);

@@ -406,6 +406,32 @@ namespace
             THROW_FAIL_IF_FALSE(local == actual);
         }
     }
+
+    void Marshal_LCID(_In_ IStringTesting* stringTesting)
+    {
+        ::printf("Marshal LCIDs\n");
+
+        HRESULT hr;
+
+        LCID lcid = MAKELCID(MAKELANGID(LANG_SPANISH, SUBLANG_SPANISH_CHILE), SORT_DEFAULT);
+
+        WStr r = GetReversableStrings<WStr>()[0];
+        WStr local{ r };
+
+        WStr actual;
+        WStr expected;
+        THROW_IF_FAILED(r.Reverse(expected));
+
+        LPWSTR tmp;
+        THROW_IF_FAILED(stringTesting->Reverse_LPWSTR_With_LCID(local, lcid, &tmp));
+        actual.Attach(tmp);
+        THROW_FAIL_IF_FALSE(expected == actual);
+
+        LCID actualLcid;
+
+        THROW_IF_FAILED(stringTesting->Pass_Through_LCID(lcid, &actualLcid));
+        THROW_FAIL_IF_FALSE(lcid == actualLcid);
+    }
 }
 
 void Run_StringTests()
@@ -420,4 +446,5 @@ void Run_StringTests()
     Marshal_LPString(stringTesting);
     Marshal_LPWString(stringTesting);
     Marshal_BStrString(stringTesting);
+    Marshal_LCID(stringTesting);
 }
