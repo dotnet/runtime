@@ -81,7 +81,7 @@ namespace System.Threading.Tasks
             }
         }
 
-        private static void TracingStatusChangedHandler(object sender, WFD.TracingStatusChangedEventArgs args)
+        private static void TracingStatusChangedHandler(object? sender, WFD.TracingStatusChangedEventArgs args)
         {
             if (args.Enabled)
                 f_LoggingOn |= Loggers.CausalityTracer;
