@@ -114,11 +114,6 @@ $(_XunitEpilog)
   <ItemGroup>
     <ProjectReference Include="$(SourceDir)Common\Coreclr.TestWrapper\Coreclr.TestWrapper.csproj" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <!-- Workaround for https://github.com/dotnet/core-setup/pull/5893 -->
-    <PackageReference Include="Microsoft.NETCore.App.Internal" Version="$(MicrosoftNETCoreAppVersion)" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="xunit" Version="$(XunitPackageVersion)" />

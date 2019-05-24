@@ -1,6 +1,6 @@
 {
   "tools": {
-    "dotnet": "2.1.504"
+    "dotnet": "3.0.100-preview6-011681"
   },
   "native-tools": {
     "cmake": "3.11.1",
