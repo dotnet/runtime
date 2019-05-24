@@ -70,11 +70,11 @@ namespace System
 
         public static bool operator ==(RuntimeTypeHandle left, object right) { return left.Equals(right); }
 
-        public static bool operator ==(object left, RuntimeTypeHandle right) { return right.Equals(left); }
+        public static bool operator ==(object? left, RuntimeTypeHandle right) { return right.Equals(left); }
 
         public static bool operator !=(RuntimeTypeHandle left, object right) { return !left.Equals(right); }
 
-        public static bool operator !=(object left, RuntimeTypeHandle right) { return !right.Equals(left); }
+        public static bool operator !=(object? left, RuntimeTypeHandle right) { return !right.Equals(left); }
 
 
         // This is the RuntimeType for the type
