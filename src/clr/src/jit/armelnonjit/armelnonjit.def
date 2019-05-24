@@ -4,4 +4,3 @@
 EXPORTS
     getJit
     jitStartup
-    sxsJitStartup

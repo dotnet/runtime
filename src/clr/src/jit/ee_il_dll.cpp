@@ -176,12 +176,14 @@ HINSTANCE GetModuleInst()
     return (g_hInst);
 }
 
+#ifndef FEATURE_CORECLR
 extern "C" DLLEXPORT void __stdcall sxsJitStartup(CoreClrCallbacks const& cccallbacks)
 {
 #ifndef SELF_NO_HOST
     InitUtilcode(cccallbacks);
 #endif
 }
+#endif // FEATURE_CORECLR
 
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
 

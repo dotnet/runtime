@@ -12,10 +12,10 @@
 #include "errorhandling.h"
 #include "spmiutil.h"
 
-JitInstance* JitInstance::InitJit(char*          nameOfJit,
-                                  bool           breakOnAssert,
-                                  SimpleTimer*   st1,
-                                  MethodContext* firstContext,
+JitInstance* JitInstance::InitJit(char*                         nameOfJit,
+                                  bool                          breakOnAssert,
+                                  SimpleTimer*                  st1,
+                                  MethodContext*                firstContext,
                                   LightWeightMap<DWORD, DWORD>* forceOptions,
                                   LightWeightMap<DWORD, DWORD>* options)
 {
@@ -174,16 +174,14 @@ HRESULT JitInstance::StartUp(char* PathToJit, bool copyJit, bool breakOnDebugBre
         return -1;
     }
     pnsxsJitStartup = (PsxsJitStartup)::GetProcAddress(hLib, "sxsJitStartup");
-    if (pnsxsJitStartup == 0)
-    {
-        LogError("GetProcAddress 'sxsJitStartup' failed (0x%08x)", ::GetLastError());
-        return -1;
-    }
-    pnjitStartup = (PjitStartup)::GetProcAddress(hLib, "jitStartup");
+    pnjitStartup    = (PjitStartup)::GetProcAddress(hLib, "jitStartup");
 
-    // Setup CoreClrCallbacks and call sxsJitStartup
-    CoreClrCallbacks* cccallbacks = InitCoreClrCallbacks();
-    pnsxsJitStartup(*cccallbacks);
+    if (pnsxsJitStartup != nullptr)
+    {
+        // Setup CoreClrCallbacks and call sxsJitStartup
+        CoreClrCallbacks* cccallbacks = InitCoreClrCallbacks();
+        pnsxsJitStartup(*cccallbacks);
+    }
 
     // Setup ICorJitHost and call jitStartup if necessary
     if (pnjitStartup != nullptr)
@@ -244,16 +242,14 @@ bool JitInstance::reLoad(MethodContext* firstContext)
         return false;
     }
     pnsxsJitStartup = (PsxsJitStartup)::GetProcAddress(hLib, "sxsJitStartup");
-    if (pnsxsJitStartup == 0)
-    {
-        LogError("GetProcAddress 'sxsJitStartup' failed (0x%08x)", ::GetLastError());
-        return false;
-    }
-    pnjitStartup = (PjitStartup)::GetProcAddress(hLib, "jitStartup");
+    pnjitStartup    = (PjitStartup)::GetProcAddress(hLib, "jitStartup");
 
-    // Setup CoreClrCallbacks and call sxsJitStartup
-    CoreClrCallbacks* cccallbacks = InitCoreClrCallbacks();
-    pnsxsJitStartup(*cccallbacks);
+    if (pnsxsJitStartup != nullptr)
+    {
+        // Setup CoreClrCallbacks and call sxsJitStartup
+        CoreClrCallbacks* cccallbacks = InitCoreClrCallbacks();
+        pnsxsJitStartup(*cccallbacks);
+    }
 
     // Setup ICorJitHost and call jitStartup if necessary
     if (pnjitStartup != nullptr)
