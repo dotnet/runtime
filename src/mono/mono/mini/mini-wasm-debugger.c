@@ -37,10 +37,7 @@ EMSCRIPTEN_KEEPALIVE void mono_wasm_get_array_values (int object_id);
 extern void mono_wasm_add_frame (int il_offset, int method_token, const char *assembly_name);
 extern void mono_wasm_fire_bp (void);
 extern void mono_wasm_add_bool_var (gint8);
-extern void mono_wasm_add_int_var (gint32);
-extern void mono_wasm_add_long_var (gint64);
-extern void mono_wasm_add_float_var (float);
-extern void mono_wasm_add_double_var (double);
+extern void mono_wasm_add_number_var (double);
 extern void mono_wasm_add_string_var (const char*);
 extern void mono_wasm_add_obj_var (const char*, guint64);
 extern void mono_wasm_add_array_var (const char*, guint64);
@@ -592,29 +589,37 @@ static gboolean describe_value(MonoType * type, gpointer addr)
 			mono_wasm_add_bool_var (*(gint8*)addr);
 			break;
 		case MONO_TYPE_I1:
+			mono_wasm_add_number_var (*(gint8*)addr);
+			break;
 		case MONO_TYPE_U1:
-			mono_wasm_add_int_var (*(gint8*)addr);
+			mono_wasm_add_number_var (*(guint8*)addr);
 			break;
 		case MONO_TYPE_CHAR:
-		case MONO_TYPE_I2:
 		case MONO_TYPE_U2:
-			mono_wasm_add_int_var (*(gint16*)addr);
+			mono_wasm_add_number_var (*(guint16*)addr);
+			break;
+		case MONO_TYPE_I2:
+			mono_wasm_add_number_var (*(gint16*)addr);
 			break;
 		case MONO_TYPE_I4:
-		case MONO_TYPE_U4:
 		case MONO_TYPE_I:
+			mono_wasm_add_number_var (*(gint32*)addr);
+			break;
+		case MONO_TYPE_U4:
 		case MONO_TYPE_U:
-			mono_wasm_add_int_var (*(gint32*)addr);
+			mono_wasm_add_number_var (*(guint32*)addr);
 			break;
 		case MONO_TYPE_I8:
+			mono_wasm_add_number_var (*(gint64*)addr);
+			break;
 		case MONO_TYPE_U8:
-			mono_wasm_add_long_var (*(gint32*)addr);
+			mono_wasm_add_number_var (*(guint64*)addr);
 			break;
 		case MONO_TYPE_R4:
-			mono_wasm_add_float_var (*(float*)addr);
+			mono_wasm_add_number_var (*(float*)addr);
 			break;
 		case MONO_TYPE_R8:
-			mono_wasm_add_float_var (*(double*)addr);
+			mono_wasm_add_number_var (*(double*)addr);
 			break;
 		case MONO_TYPE_STRING: {
 			MonoString *str_obj = *(MonoString **)addr;
