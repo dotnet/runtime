@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization
         /// <returns>A task that represents the asynchronous write operation.</returns>
         /// <param name="value">The value to convert.</param>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
-        /// <param name="options">Options to control the convertion behavior.</param>
+        /// <param name="options">Options to control the conversion behavior.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
         public static Task WriteAsync<TValue>(TValue value, Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
         {
@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization
         /// <param name="value">The value to convert.</param>
         /// <param name="type">The type of the <paramref name="value"/> to convert.</param>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
-        /// <param name="options">Options to control the convertion behavior.</param>
+        /// <param name="options">Options to control the conversion behavior.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
         public static Task WriteAsync(object value, Type type, Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
         {
