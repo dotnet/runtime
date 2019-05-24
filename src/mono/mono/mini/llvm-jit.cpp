@@ -18,11 +18,7 @@
 #include "mini-llvm-cpp.h"
 #include "llvm-jit.h"
 
-#if defined(MONO_ARCH_LLVM_JIT_SUPPORTED) && !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION > 100
-
-/*
- * LLVM 3.9 uses the OrcJIT APIs
- */
+#if defined(MONO_ARCH_LLVM_JIT_SUPPORTED) && !defined(MONO_CROSS_COMPILE) && LLVM_API_VERSION > 600
 
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/Host.h>
@@ -32,13 +28,9 @@
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
 #include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
-#if LLVM_API_VERSION >= 500
 #include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
 #include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
-#else
-#include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
-#endif
 
 #include <cstdlib>
 
@@ -125,46 +117,23 @@ MonoJitMemoryManager::finalizeMemory(std::string *ErrMsg)
 class MonoLLVMJIT {
 public:
 	/* We use our own trampoline infrastructure instead of the Orc one */
-#if LLVM_API_VERSION >= 500
 	typedef RTDyldObjectLinkingLayer ObjLayerT;
 	typedef IRCompileLayer<ObjLayerT, SimpleCompiler> CompileLayerT;
 	typedef CompileLayerT::ModuleHandleT ModuleHandleT;
-#else
-	typedef ObjectLinkingLayer<> ObjLayerT;
-	typedef IRCompileLayer<ObjLayerT> CompileLayerT;
-	typedef CompileLayerT::ModuleSetHandleT ModuleHandleT;
-#endif
 
 	MonoLLVMJIT (TargetMachine *TM, MonoJitMemoryManager *mm)
-#if LLVM_API_VERSION >= 500
 		: TM(TM), ObjectLayer([=] { return std::shared_ptr<RuntimeDyld::MemoryManager> (mm); }),
-#else
-		: TM(TM),
-#endif
 		  CompileLayer (ObjectLayer, SimpleCompiler (*TM)),
 		  modules() {
 	}
 
-#if LLVM_API_VERSION >= 500
 	ModuleHandleT addModule(Function *F, std::shared_ptr<Module> M) {
-#else
-	ModuleHandleT addModule(Function *F, Module *M) {
-#endif
 		auto Resolver = createLambdaResolver(
                       [&](const std::string &Name) {
 						  const char *name = Name.c_str ();
-#if LLVM_API_VERSION >= 500
 						  JITSymbolFlags flags = JITSymbolFlags ();
-#else
-						  JITSymbolFlags flags = (JITSymbolFlags)0;
-#endif
-						  if (!strcmp (name, "___bzero")) {
-#if LLVM_API_VERSION >= 500
+						  if (!strcmp (name, "___bzero"))
 							  return JITSymbol((uint64_t)(gssize)(void*)bzero, flags);
-#else
-							  return RuntimeDyld::SymbolInfo((uint64_t)(gssize)(void*)bzero, flags);
-#endif
-						  }
 
 						  MonoDl *current;
 						  char *err;
@@ -179,11 +148,7 @@ public:
 						  if (!symbol)
 							  outs () << "R: " << Name << "\n";
 						  assert (symbol);
-#if LLVM_API_VERSION >= 500
 						  return JITSymbol((uint64_t)(gssize)symbol, flags);
-#else
-						  return RuntimeDyld::SymbolInfo((uint64_t)(gssize)symbol, flags);
-#endif
                       },
                       [](const std::string &S) {
 						  outs () << "R2: " << S << "\n";
@@ -191,15 +156,9 @@ public:
 						  return nullptr;
 					  } );
 
-#if LLVM_API_VERSION >= 500
 		auto m = CompileLayer.addModule(M, std::move(Resolver));
 		g_assert (!!m);
 		return m.get ();
-#else
-		return CompileLayer.addModuleSet(singletonSet(M),
-										  make_unique<MonoJitMemoryManager>(),
-										  std::move(Resolver));
-#endif
 	}
 
 	std::string mangle(const std::string &Name) {
@@ -225,14 +184,10 @@ public:
 
 	gpointer compile (Function *F, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame) {
 		F->getParent ()->setDataLayout (TM->createDataLayout ());
-#if LLVM_API_VERSION >= 500
 		// Orc uses a shared_ptr to refer to modules so we have to save them ourselves to keep a ref
 		std::shared_ptr<Module> m (F->getParent ());
 		modules.push_back (m);
 		auto ModuleHandle = addModule (F, m);
-#else
-		auto ModuleHandle = addModule (F, F->getParent ());
-#endif
 		auto BodySym = CompileLayer.findSymbolIn(ModuleHandle, mangle (F), false);
 		auto BodyAddr = BodySym.getAddress();
 		assert (BodyAddr);
@@ -242,26 +197,15 @@ public:
 
 			auto sym = CompileLayer.findSymbolIn (ModuleHandle, mangle (var->getName ()), true);
 			auto addr = sym.getAddress ();
-#if LLVM_API_VERSION >= 500
 			g_assert ((bool)addr);
 			callee_addrs [i] = (gpointer)addr.get ();
-#else
-			g_assert (addr);
-			callee_addrs [i] = (gpointer)addr;
-#endif
 		}
 
 		auto ehsym = CompileLayer.findSymbolIn(ModuleHandle, "mono_eh_frame", false);
 		auto ehaddr = ehsym.getAddress ();
-#if LLVM_API_VERSION >= 500
 		g_assert ((bool)ehaddr);
 		*eh_frame = (gpointer)ehaddr.get ();
 		return (gpointer)BodyAddr.get ();
-#else
-		g_assert (ehaddr);
-		*eh_frame = (gpointer)ehaddr;
-		return (gpointer)BodyAddr;
-#endif
 	}
 
 private:
@@ -319,7 +263,7 @@ mono_llvm_dispose_ee (MonoEERef *eeref)
 {
 }
 
-#else /* MONO_CROSS_COMPILE or LLVM_API_VERSION <= 100 */
+#else /* MONO_CROSS_COMPILE or LLVM_API_VERSION < 600 */
 
 void
 mono_llvm_set_unhandled_exception_handler (void)
