@@ -136,6 +136,7 @@ namespace System.Runtime.InteropServices
     public partial struct ArrayWithOffset
     {
         private object _dummy;
+        private int _dummyPrimitive;
         public ArrayWithOffset(object array, int offset) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.ArrayWithOffset obj) { throw null; }
@@ -210,12 +211,16 @@ namespace System.Runtime.InteropServices
         public ComAwareEventInfo(System.Type type, string eventName) { }
         public override System.Reflection.EventAttributes Attributes { get { throw null; } }
         public override System.Type DeclaringType { get { throw null; } }
+        public override int MetadataToken { get { throw null; } }
+        public override System.Reflection.Module Module { get { throw null; } }
         public override string Name { get { throw null; } }
         public override System.Type ReflectedType { get { throw null; } }
         public override void AddEventHandler(object target, System.Delegate handler) { }
         public override System.Reflection.MethodInfo GetAddMethod(bool nonPublic) { throw null; }
         public override object[] GetCustomAttributes(bool inherit) { throw null; }
         public override object[] GetCustomAttributes(System.Type attributeType, bool inherit) { throw null; }
+        public override System.Collections.Generic.IList<System.Reflection.CustomAttributeData> GetCustomAttributesData() { throw null; }
+        public override System.Reflection.MethodInfo[] GetOtherMethods(bool nonPublic) { throw null; }
         public override System.Reflection.MethodInfo GetRaiseMethod(bool nonPublic) { throw null; }
         public override System.Reflection.MethodInfo GetRemoveMethod(bool nonPublic) { throw null; }
         public override bool IsDefined(System.Type attributeType, bool inherit) { throw null; }
