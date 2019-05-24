@@ -2458,7 +2458,6 @@ BOOL AwareLock::TryEnter(INT32 timeOut)
     CONTRACTL_END;
 
     Thread  *pCurThread = GetThread();
-    TESTHOOKCALL(AppDomainCanBeUnloaded(DefaultADID, FALSE));
 
     if (pCurThread->IsAbortRequested())
     {
