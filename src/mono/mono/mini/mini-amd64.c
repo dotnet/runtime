@@ -1095,7 +1095,8 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 static int
 arg_need_temp (ArgInfo *ainfo)
 {
-	if (ainfo->storage == ArgValuetypeInReg)
+	// Value types using one register doesn't need temp.
+	if (ainfo->storage == ArgValuetypeInReg && ainfo->nregs > 1)
 		return ainfo->nregs * sizeof (host_mgreg_t);
 	return 0;
 }
@@ -1110,11 +1111,27 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 		case ArgInDoubleSSEReg:
 			return &ccontext->fregs [ainfo->reg];
 		case ArgOnStack:
+		case ArgValuetypeAddrOnStack:
 			return ccontext->stack + ainfo->offset;
 		case ArgValuetypeInReg:
 			// Empty struct
-			g_assert (!ainfo->nregs);
-			return NULL;
+			if (ainfo->nregs == 0)
+				return NULL;
+			// Value type using one register can be stored
+			// directly in its context gregs/fregs slot.
+			g_assert (ainfo->nregs == 1);
+			switch (ainfo->pair_storage [0]) {
+				case ArgInIReg:
+					return &ccontext->gregs [ainfo->pair_regs [0]];
+				case ArgInFloatSSEReg:
+				case ArgInDoubleSSEReg:
+					return &ccontext->fregs [ainfo->pair_regs [0]];
+				default:
+					g_assert_not_reached ();
+			}
+		case ArgValuetypeAddrInIReg:
+			g_assert (ainfo->pair_storage [0] == ArgInIReg && ainfo->pair_storage [1] == ArgNone);
+			return &ccontext->gregs [ainfo->pair_regs [0]];
 		default:
 			g_error ("Arg storage type not yet supported");
 	}
@@ -1195,16 +1212,33 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 
 	for (int i = 0; i < sig->param_count; i++) {
 		ainfo = &cinfo->args [i];
-		int temp_size = arg_need_temp (ainfo);
 
-		if (temp_size)
-			storage = alloca (temp_size); // FIXME? alloca in a loop
-		else
-			storage = arg_get_storage (ccontext, ainfo);
+		switch (ainfo->storage) {
+			case ArgInIReg:
+			case ArgInFloatSSEReg:
+			case ArgInDoubleSSEReg:
+			case ArgOnStack:
+			case ArgValuetypeInReg: {
+				int temp_size = arg_need_temp (ainfo);
+				if (temp_size)
+					storage = alloca (temp_size); // FIXME? alloca in a loop
+				else
+					storage = arg_get_storage (ccontext, ainfo);
 
-		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, i, storage);
-		if (temp_size)
-			arg_set_val (ccontext, ainfo, storage);
+				interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, i, storage);
+				if (temp_size)
+					arg_set_val (ccontext, ainfo, storage);
+				break;
+			}
+			case ArgValuetypeAddrInIReg:
+			case ArgValuetypeAddrOnStack: {
+				storage = arg_get_storage (ccontext, ainfo);
+				*(gpointer *)storage = interp_cb->frame_arg_to_storage (frame, sig, i);
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+		}
 	}
 
 	g_free (cinfo);
@@ -1237,6 +1271,14 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
 	}
+#ifdef TARGET_WIN32
+	// Windows x64 ABI ainfo implementation includes info on how to return value type address.
+	// back to caller.
+	else {
+		storage = arg_get_storage (ccontext, ainfo);
+		*(gpointer *)storage = interp_cb->frame_arg_to_storage (frame, sig, -1);
+	}
+#endif
 
 	g_free (cinfo);
 }
@@ -1259,15 +1301,33 @@ mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, M
 
 	for (int i = 0; i < sig->param_count + sig->hasthis; i++) {
 		ainfo = &cinfo->args [i];
-		int temp_size = arg_need_temp (ainfo);
 
-		if (temp_size) {
-			storage = alloca (temp_size); // FIXME? alloca in a loop
-			arg_get_val (ccontext, ainfo, storage);
-		} else {
-			storage = arg_get_storage (ccontext, ainfo);
+		switch (ainfo->storage) {
+			case ArgInIReg:
+			case ArgInFloatSSEReg:
+			case ArgInDoubleSSEReg:
+			case ArgOnStack:
+			case ArgValuetypeInReg: {
+				int temp_size = arg_need_temp (ainfo);
+				if (temp_size) {
+					storage = alloca (temp_size); // FIXME? alloca in a loop
+					arg_get_val (ccontext, ainfo, storage);
+				}
+				else {
+					storage = arg_get_storage (ccontext, ainfo);
+				}
+				interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, i, storage);
+				break;
+			}
+			case ArgValuetypeAddrInIReg:
+			case ArgValuetypeAddrOnStack: {
+				storage = arg_get_storage (ccontext, ainfo);
+				interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, i, *(gpointer *)storage);
+				break;
+			}
+			default:
+				g_assert_not_reached ();
 		}
-		interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, i, storage);
 	}
 
 	g_free (cinfo);
