@@ -382,8 +382,8 @@ namespace System.Text.Json.Serialization
         public static TValue Parse<TValue>(string json, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
         public static System.Threading.Tasks.ValueTask<object> ReadAsync(System.IO.Stream utf8Json, System.Type returnType, System.Text.Json.Serialization.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.ValueTask<TValue> ReadAsync<TValue>(System.IO.Stream utf8Json, System.Text.Json.Serialization.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static byte[] ToBytes(object value, System.Type type, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
-        public static byte[] ToBytes<TValue>(TValue value, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
+        public static byte[] ToUtf8Bytes(object value, System.Type type, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
+        public static byte[] ToUtf8Bytes<TValue>(TValue value, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
         public static string ToString(object value, System.Type type, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
         public static string ToString<TValue>(TValue value, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
         public static System.Threading.Tasks.Task WriteAsync(object value, System.Type type, System.IO.Stream utf8Json, System.Text.Json.Serialization.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }

@@ -60,12 +60,12 @@ namespace System.Text.Json.Serialization.Tests
             byte[] encodedNull = Encoding.UTF8.GetBytes(@"null");
 
             {
-                byte[] output = JsonSerializer.ToBytes(null, null);
+                byte[] output = JsonSerializer.ToUtf8Bytes(null, null);
                 Assert.Equal(encodedNull, output);
             }
 
             {
-                byte[] output = JsonSerializer.ToBytes(null, typeof(NullTests));
+                byte[] output = JsonSerializer.ToUtf8Bytes(null, typeof(NullTests));
                 Assert.Equal(encodedNull, output);
             }
         }
