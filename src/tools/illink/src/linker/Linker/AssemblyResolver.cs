@@ -30,6 +30,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Mono.Cecil;
+using Mono.Collections.Generic;
 
 namespace Mono.Linker {
 
@@ -43,6 +44,8 @@ namespace Mono.Linker {
 		HashSet<string> _unresolvedAssemblies;
 		bool _ignoreUnresolved;
 		LinkContext _context;
+		readonly Collection<string> _references;
+
 
 		public IDictionary<string, AssemblyDefinition> AssemblyCache {
 			get { return _assemblies; }
@@ -56,6 +59,7 @@ namespace Mono.Linker {
 		public AssemblyResolver (Dictionary<string, AssemblyDefinition> assembly_cache)
 		{
 			_assemblies = assembly_cache;
+			_references = new Collection<string> () { };
 		}
 
 		public bool IgnoreUnresolved {
@@ -68,12 +72,51 @@ namespace Mono.Linker {
 			set { _context = value; }
 		}
 
+#if !FEATURE_ILLINK
+		// The base class's definition of GetAssembly is visible when using DirectoryAssemblyResolver.
+		AssemblyDefinition GetAssembly (string file, ReaderParameters parameters)
+		{
+			if (parameters.AssemblyResolver == null)
+				parameters.AssemblyResolver = this;
+
+			return ModuleDefinition.ReadModule (file, parameters).Assembly;
+		}
+#endif
+
+		AssemblyDefinition ResolveFromReferences (AssemblyNameReference name, Collection<string> references, ReaderParameters parameters)
+		{
+			var fileName = name.Name + ".dll";
+			foreach (var reference in references) {
+				if (Path.GetFileName (reference) != fileName)
+					continue;
+				try {
+					return GetAssembly (reference, parameters);
+				} catch (BadImageFormatException) {
+					continue;
+				}
+			}
+
+			return null;
+		}
+
 		public override AssemblyDefinition Resolve (AssemblyNameReference name, ReaderParameters parameters)
 		{
+			// Validate arguments, similarly to how the base class does it.
+			if (name == null)
+				throw new ArgumentNullException ("name");
+			if (parameters == null)
+				throw new ArgumentNullException ("parameters");
+
 			AssemblyDefinition asm = null;
 			if (!_assemblies.TryGetValue (name.Name, out asm) && (_unresolvedAssemblies == null || !_unresolvedAssemblies.Contains (name.Name))) {
 				try {
-					asm = base.Resolve (name, parameters);
+					// Any full path explicit reference takes precedence over other look up logic
+					asm = ResolveFromReferences (name, _references, parameters);
+
+					// Fall back to the base class resolution logic
+					if (asm == null)
+						asm = base.Resolve (name, parameters);
+
 					_assemblies [name.Name] = asm;
 				} catch (AssemblyResolutionException) {
 					if (!_ignoreUnresolved)
@@ -94,6 +137,11 @@ namespace Mono.Linker {
 			_assemblies [assembly.Name.Name] = assembly;
 			base.AddSearchDirectory (Path.GetDirectoryName (assembly.MainModule.FileName));
 			return assembly;
+		}
+
+		public void AddReferenceAssembly (string referencePath)
+		{
+			_references.Add (referencePath);
 		}
 
 		protected override void Dispose (bool disposing)
