@@ -3204,13 +3204,6 @@ namespace System.Diagnostics.Tracing
             if (eventSourceType.IsAbstract() && (flags & EventManifestOptions.Strict) == 0)
                 return null;
 
-#if DEBUG && ES_BUILD_STANDALONE && TEST_SUPPORT
-            TestSupport.TestHooks.MaybeThrow(eventSourceType,
-                                        TestSupport.Category.ManifestError,
-                                        "EventSource_CreateManifestAndDescriptors",
-                                        new ArgumentException("EventSource_CreateManifestAndDescriptors"));
-#endif
-
             try
             {
                 MethodInfo[] methods = eventSourceType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
