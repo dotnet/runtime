@@ -32,7 +32,7 @@ namespace Mono.Linker {
 			directories = new Collection<string> (2) { "." };
 		}
 
-		AssemblyDefinition GetAssembly (string file, ReaderParameters parameters)
+		protected AssemblyDefinition GetAssembly (string file, ReaderParameters parameters)
 		{
 			if (parameters.AssemblyResolver == null)
 				parameters.AssemblyResolver = this;
@@ -50,7 +50,7 @@ namespace Mono.Linker {
 			if (name == null)
 				throw new ArgumentNullException ("name");
 			if (parameters == null)
-				parameters = new ReaderParameters ();
+				throw new ArgumentNullException ("parameters");
 
 			var assembly = SearchDirectory (name, directories, parameters);
 			if (assembly != null)
