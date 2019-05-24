@@ -390,7 +390,7 @@ namespace System
             return oh?.Unwrap();
         }
 
-        public IPrincipal? GetThreadPrincipal()
+        internal IPrincipal? GetThreadPrincipal()
         {
             IPrincipal? principal = _defaultPrincipal;
             if (principal == null)
