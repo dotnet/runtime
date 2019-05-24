@@ -264,7 +264,7 @@ namespace System.Collections
             if (Length != value.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer);
 
-            int count = m_array.Length;
+            int count = GetInt32ArrayLengthFromBitLength(Length);
 
             switch (count)
             {
@@ -310,7 +310,7 @@ namespace System.Collections
             if (Length != value.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer);
 
-            int count = m_array.Length;
+            int count = GetInt32ArrayLengthFromBitLength(Length);
 
             switch (count)
             {
@@ -356,7 +356,7 @@ namespace System.Collections
             if (Length != value.Length)
                 throw new ArgumentException(SR.Arg_ArrayLengthsDiffer);
 
-            int count = m_array.Length;
+            int count = GetInt32ArrayLengthFromBitLength(Length);
 
             switch (count)
             {
