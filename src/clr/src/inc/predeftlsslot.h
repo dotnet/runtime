@@ -23,7 +23,7 @@ enum PredefinedTlsSlots
     TlsIdx_JitPerf,
     TlsIdx_JitX86Perf,
     TlsIdx_JitLogEnv,
-    TlsIdx_IceCap,
+    TlsIdx_AssertDlgStatus, // Whether the thread is displaying an assert dialog
     TlsIdx_StressLog,
     TlsIdx_CantStopCount, // Can't-stop counter for any thread
     TlsIdx_Check,
@@ -34,9 +34,7 @@ enum PredefinedTlsSlots
     // Add more indices here.
     TlsIdx_ThreadType, // bit flags to indicate special thread's type 
     TlsIdx_OwnedCrstsChain, // slot to store the Crsts owned by this thread
-    TlsIdx_AppDomainAgilePendingTable,
     TlsIdx_CantAllocCount, //Can't allocate memory on heap in this thread
-    TlsIdx_AssertDlgStatus, // Whether the thread is displaying an assert dialog
 
     // A transient thread value that indicates this thread is currently walking its stack
     // or the stack of another thread. This value is useful to help short-circuit
