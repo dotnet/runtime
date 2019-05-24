@@ -926,15 +926,15 @@ namespace System.Threading
             }
         }
 
-        private static void WaitOrTimerCallback_Context_t(object state) =>
+        private static void WaitOrTimerCallback_Context_t(object? state) =>
             WaitOrTimerCallback_Context(state, timedOut: true);
 
-        private static void WaitOrTimerCallback_Context_f(object state) =>
+        private static void WaitOrTimerCallback_Context_f(object? state) =>
             WaitOrTimerCallback_Context(state, timedOut: false);
 
-        private static void WaitOrTimerCallback_Context(object state, bool timedOut)
+        private static void WaitOrTimerCallback_Context(object? state, bool timedOut)
         {
-            _ThreadPoolWaitOrTimerCallback helper = (_ThreadPoolWaitOrTimerCallback)state;
+            _ThreadPoolWaitOrTimerCallback helper = (_ThreadPoolWaitOrTimerCallback)state!;
             helper._waitOrTimerCallback(helper._state, timedOut);
         }
 
