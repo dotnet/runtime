@@ -34,7 +34,7 @@ namespace System.Text.Json
         /// <summary>
         /// Encodes the string text value as a JSON string.
         /// </summary>
-        /// <param name="value">The UTF-16 encoded value to be transformed as JSON encoded text.</param>
+        /// <param name="value">The value to be transformed as JSON encoded text.</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown if value is null.
         /// </exception>
@@ -50,9 +50,9 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Encodes the UTF-16 text value as a JSON string.
+        /// Encodes the text value as a JSON string.
         /// </summary>
-        /// <param name="value">The UTF-16 encoded value to be transformed as JSON encoded text.</param>
+        /// <param name="value">The value to be transformed as JSON encoded text.</param>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified value is too large or if it contains invalid UTF-16 characters.
         /// </exception>

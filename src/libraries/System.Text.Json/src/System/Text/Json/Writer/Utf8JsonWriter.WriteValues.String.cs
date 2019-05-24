@@ -35,7 +35,7 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the string text value (as a JSON string) as an element of a JSON array.
         /// </summary>
-        /// <param name="value">The UTF-16 encoded value to be written as a UTF-8 transcoded JSON string element of a JSON array.</param>
+        /// <param name="value">The value to be written as a UTF-8 transcoded JSON string element of a JSON array.</param>
         /// <remarks>
         /// The value is escaped before writing.
         /// </remarks>
@@ -49,9 +49,9 @@ namespace System.Text.Json
            => WriteStringValue(value.AsSpan());
 
         /// <summary>
-        /// Writes the UTF-16 text value (as a JSON string) as an element of a JSON array.
+        /// Writes the text value (as a JSON string) as an element of a JSON array.
         /// </summary>
-        /// <param name="value">The UTF-16 encoded value to be written as a UTF-8 transcoded JSON string element of a JSON array.</param>
+        /// <param name="value">The value to be written as a UTF-8 transcoded JSON string element of a JSON array.</param>
         /// <remarks>
         /// The value is escaped before writing.
         /// </remarks>
