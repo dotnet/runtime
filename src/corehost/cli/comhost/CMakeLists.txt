@@ -39,9 +39,15 @@ include(../lib.cmake)
 
 add_definitions(-DFEATURE_LIBHOST=1)
 
-# Specify non-default Windows libs to be used for Arm/Arm64 builds
-if (WIN32 AND (CLI_CMAKE_PLATFORM_ARCH_ARM OR CLI_CMAKE_PLATFORM_ARCH_ARM64))
-    target_link_libraries(comhost Advapi32.lib Ole32.lib OleAut32.lib)
+if (WIN32)
+    set(WINLIBS wintrust.lib)
+
+    # Specify non-default Windows libs to be used for Arm/Arm64 builds
+    if (CLI_CMAKE_PLATFORM_ARCH_ARM OR CLI_CMAKE_PLATFORM_ARCH_ARM64)
+        list(APPEND WINLIBS Advapi32.lib Ole32.lib OleAut32.lib)
+    endif()
+
+    target_link_libraries(comhost ${WINLIBS})
 endif()
 
 install(TARGETS comhost DESTINATION corehost)
