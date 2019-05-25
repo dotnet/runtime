@@ -4,6 +4,7 @@
 
 void auto_trace_init();
 void auto_trace_launch();
+void auto_trace_launch_internal();
 void auto_trace_wait();
 void auto_trace_signal();
 
