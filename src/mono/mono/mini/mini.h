@@ -1715,6 +1715,8 @@ enum {
 #define OP_PCEQ OP_LCEQ
 #define OP_PCLT OP_LCLT
 #define OP_PCGT OP_LCGT
+#define OP_PCLT_UN OP_LCLT_UN
+#define OP_PCGT_UN OP_LCGT_UN
 #define OP_PBNE_UN OP_LBNE_UN
 #define OP_PBGE_UN OP_LBGE_UN
 #define OP_PBLT_UN OP_LBLT_UN
@@ -1743,6 +1745,8 @@ enum {
 #define OP_PCEQ OP_ICEQ
 #define OP_PCLT OP_ICLT
 #define OP_PCGT OP_ICGT
+#define OP_PCLT_UN OP_ICLT_UN
+#define OP_PCGT_UN OP_ICGT_UN
 #define OP_PBNE_UN OP_IBNE_UN
 #define OP_PBGE_UN OP_IBGE_UN
 #define OP_PBLT_UN OP_IBLT_UN

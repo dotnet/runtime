@@ -323,7 +323,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 
 		dreg = alloc_ireg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
-		EMIT_NEW_UNALU (cfg, ins, OP_PCLT, dreg, -1);
+		EMIT_NEW_UNALU (cfg, ins, OP_PCLT_UN, dreg, -1);
 		return ins;
 	} else if (!strcmp (cmethod->name, "IsAddressGreaterThan")) {
 		g_assert (ctx);
@@ -333,7 +333,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 
 		dreg = alloc_ireg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
-		EMIT_NEW_UNALU (cfg, ins, OP_PCGT, dreg, -1);
+		EMIT_NEW_UNALU (cfg, ins, OP_PCGT_UN, dreg, -1);
 		return ins;
 	} else if (!strcmp (cmethod->name, "Add")) {
 		g_assert (ctx);
@@ -1657,9 +1657,9 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			   !strcmp (cmethod_klass_name_space, "Internal.Runtime.CompilerServices") &&
 			   !strcmp (cmethod_klass_name, "Unsafe")) {
 		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
-	} else if (in_corlib &&
-			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
-			   !strcmp (cmethod_klass_name, "Unsafe")) {
+	} else if (!strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
+			   !strcmp (cmethod_klass_name, "Unsafe") &&
+			   (in_corlib || !strcmp (cmethod_klass_image->assembly->aname.name, "System.Runtime.CompilerServices.Unsafe"))) {
 		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
 	} else if (in_corlib &&
 			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
