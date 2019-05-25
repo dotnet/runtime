@@ -12,19 +12,16 @@
 
 #ifndef DACCESS_COMPILE
 
-#ifdef ENABLE_PERF_COUNTERS
-PERF_COUNTER_TIMER_PRECISION g_TotalTimeInGC = 0;
-PERF_COUNTER_TIMER_PRECISION g_TotalTimeSinceLastGCEnd = 0;
-#endif
+uint64_t g_TotalTimeInGC = 0;
+uint64_t g_TotalTimeSinceLastGCEnd = 0;
 
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+uint32_t g_percentTimeInGCSinceLastGC = 0;
+
 size_t g_GenerationSizes[NUMBERGENERATIONS];
 size_t g_GenerationPromotedSizes[NUMBERGENERATIONS];
-#endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
 
 void GCHeap::UpdatePreGCCounters()
 {
-#if defined(ENABLE_PERF_COUNTERS)
 #ifdef MULTIPLE_HEAPS
     gc_heap* hp = 0;
 #else
@@ -35,7 +32,7 @@ void GCHeap::UpdatePreGCCounters()
     size_t allocation_3 = 0; 
     
     // Publish perf stats
-    g_TotalTimeInGC = GET_CYCLE_COUNT();
+    g_TotalTimeInGC = GCToOSInterface::QueryPerformanceCounter();
 
 #ifdef MULTIPLE_HEAPS
     int hn = 0;
@@ -59,25 +56,6 @@ void GCHeap::UpdatePreGCCounters()
         dd_new_allocation (hp->dynamic_data_of (max_generation+1));
         
 #endif //MULTIPLE_HEAPS
-
-    GetPerfCounters().m_GC.cbAlloc += allocation_0;
-    GetPerfCounters().m_GC.cbAlloc += allocation_3;
-    GetPerfCounters().m_GC.cbLargeAlloc += allocation_3;
-
-#ifdef _PREFAST_
-    // prefix complains about us dereferencing hp in wks build even though we only access static members
-    // this way. not sure how to shut it up except for this ugly workaround:
-    PREFIX_ASSUME( hp != NULL);
-#endif //_PREFAST_
-    if (hp->settings.reason == reason_induced IN_STRESS_HEAP( && !hp->settings.stress_induced))
-    {
-        GetPerfCounters().m_GC.cInducedGCs++;
-    }
-
-    GetPerfCounters().m_Security.timeRTchecks = 0;
-    GetPerfCounters().m_Security.timeRTchecksBase = 1; // To avoid divide by zero
-
-#endif //ENABLE_PERF_COUNTERS
 
 #ifdef MULTIPLE_HEAPS
         //take the first heap....
@@ -118,7 +96,7 @@ void GCHeap::UpdatePostGCCounters()
     // The following is for instrumentation.
     //
     // Calculate the common ones for ETW and perf counters.
-#if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
+#if defined(FEATURE_EVENT_TRACE)
 #ifdef MULTIPLE_HEAPS
     //take the first heap....
     gc_heap* hp1 = gc_heap::g_heaps[0];
@@ -194,7 +172,7 @@ void GCHeap::UpdatePostGCCounters()
         }
 #endif //MULTIPLE_HEAPS
     }
-#endif //ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
+#endif //FEATURE_EVENT_TRACE
 
 #ifdef FEATURE_EVENT_TRACE
     g_theGCHeap->DiagDescrGenerations([](void*, int generation, uint8_t* rangeStart, uint8_t* rangeEnd, uint8_t* rangeEndReserved)
@@ -225,112 +203,39 @@ void GCHeap::UpdatePostGCCounters()
         static_cast<uint32_t>(total_num_pinned_objects),
         total_num_sync_blocks,
         static_cast<uint32_t>(total_num_gc_handles));
+
 #endif // FEATURE_EVENT_TRACE
 
-#if defined(ENABLE_PERF_COUNTERS)
-    for (int gen_index = 0; gen_index <= (max_generation+1); gen_index++)
-    {
-        _ASSERTE(FitsIn<size_t>(g_GenerationSizes[gen_index]));
-        _ASSERTE(FitsIn<size_t>(g_GenerationPromotedSizes[gen_index]));
-
-        if (gen_index == (max_generation+1))
-        {
-            GetPerfCounters().m_GC.cLrgObjSize = static_cast<size_t>(g_GenerationSizes[gen_index]);
-        }
-        else
-        {
-            GetPerfCounters().m_GC.cGenHeapSize[gen_index] = ((gen_index == 0) ? 
-                                                                youngest_budget : 
-                                                                static_cast<size_t>(g_GenerationSizes[gen_index]));
-        }
-
-        // the perf counters only count the promoted size for gen0 and gen1.
-        if (gen_index < max_generation)
-        {
-            GetPerfCounters().m_GC.cbPromotedMem[gen_index] = static_cast<size_t>(g_GenerationPromotedSizes[gen_index]);
-        }
-
-        if (gen_index <= max_generation)
-        {
-            GetPerfCounters().m_GC.cGenCollections[gen_index] =
-                dd_collection_count (hp1->dynamic_data_of (gen_index));
-        }
-    }
-
-    // Committed and reserved memory 
-    {
-        size_t committed_mem = 0;
-        size_t reserved_mem = 0;
-#ifdef MULTIPLE_HEAPS
-        int hn = 0;
-        for (hn = 0; hn < gc_heap::n_heaps; hn++)
-        {
-            gc_heap* hp = gc_heap::g_heaps [hn];
-#else
-            gc_heap* hp = pGenGCHeap;
-            {
-#endif //MULTIPLE_HEAPS
-                heap_segment* seg = generation_start_segment (hp->generation_of (max_generation));
-                while (seg)
-                {
-                    committed_mem += heap_segment_committed (seg) - heap_segment_mem (seg);
-                    reserved_mem += heap_segment_reserved (seg) - heap_segment_mem (seg);
-                    seg = heap_segment_next (seg);
-                }
-                //same for large segments
-                seg = generation_start_segment (hp->generation_of (max_generation + 1));
-                while (seg)
-                {
-                    committed_mem += heap_segment_committed (seg) - 
-                        heap_segment_mem (seg);
-                    reserved_mem += heap_segment_reserved (seg) - 
-                        heap_segment_mem (seg);
-                    seg = heap_segment_next (seg);
-                }
-#ifdef MULTIPLE_HEAPS
-            }
-#else
-        }
-#endif //MULTIPLE_HEAPS
-
-        GetPerfCounters().m_GC.cTotalCommittedBytes = committed_mem;
-        GetPerfCounters().m_GC.cTotalReservedBytes = reserved_mem;
-    }
-
-    _ASSERTE(FitsIn<size_t>(HeapInfo.HeapStats.FinalizationPromotedSize));
-    _ASSERTE(FitsIn<size_t>(HeapInfo.HeapStats.FinalizationPromotedCount));
-    GetPerfCounters().m_GC.cbPromotedFinalizationMem = static_cast<size_t>(HeapInfo.HeapStats.FinalizationPromotedSize);
-    GetPerfCounters().m_GC.cSurviveFinalize = static_cast<size_t>(HeapInfo.HeapStats.FinalizationPromotedCount);
-    
     // Compute Time in GC
-    PERF_COUNTER_TIMER_PRECISION _currentPerfCounterTimer = GET_CYCLE_COUNT();
+    uint64_t _currentPerfCounterTimer = GCToOSInterface::QueryPerformanceCounter();
 
     g_TotalTimeInGC = _currentPerfCounterTimer - g_TotalTimeInGC;
-    PERF_COUNTER_TIMER_PRECISION _timeInGCBase = (_currentPerfCounterTimer - g_TotalTimeSinceLastGCEnd);
+    uint64_t _timeInGCBase = (_currentPerfCounterTimer - g_TotalTimeSinceLastGCEnd);
 
     if (_timeInGCBase < g_TotalTimeInGC)
         g_TotalTimeInGC = 0;        // isn't likely except on some SMP machines-- perhaps make sure that
                                     //  _timeInGCBase >= g_TotalTimeInGC by setting affinity in GET_CYCLE_COUNT
-                                    
-    while (_timeInGCBase > UINT_MAX) 
+
+    while (_timeInGCBase > UINT32_MAX) 
     {
         _timeInGCBase = _timeInGCBase >> 8;
         g_TotalTimeInGC = g_TotalTimeInGC >> 8;
     }
 
-    // Update Total Time    
-    GetPerfCounters().m_GC.timeInGC = (uint32_t)g_TotalTimeInGC;
-    GetPerfCounters().m_GC.timeInGCBase = (uint32_t)_timeInGCBase;
+    // Update percent time spent in GC
+    g_percentTimeInGCSinceLastGC = (int)(g_TotalTimeInGC * 100 / _timeInGCBase);
 
-    if (!GetPerfCounters().m_GC.cProcessID)
-        GetPerfCounters().m_GC.cProcessID = (size_t)GetCurrentProcessId();
-    
     g_TotalTimeSinceLastGCEnd = _currentPerfCounterTimer;
+}
 
-    GetPerfCounters().m_GC.cPinnedObj = total_num_pinned_objects;
-    GetPerfCounters().m_GC.cHandles = total_num_gc_handles;
-    GetPerfCounters().m_GC.cSinkBlocks = total_num_sync_blocks;
-#endif //ENABLE_PERF_COUNTERS
+int GCHeap::GetLastGCPercentTimeInGC()
+{
+    return (int)(g_percentTimeInGCSinceLastGC);
+}
+
+size_t GCHeap::GetLastGCGenerationSize(int gen)
+{
+    return g_GenerationSizes[gen];
 }
 
 size_t GCHeap::GetCurrentObjSize()
