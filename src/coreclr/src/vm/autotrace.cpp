@@ -1,13 +1,43 @@
 #include "common.h" // Required for pre-compiled header
 
 #ifdef FEATURE_AUTO_TRACE
-
+#ifdef FEATURE_PAL
 #include "pal.h"
+#endif // FEATURE_PAL
 
 HANDLE auto_trace_event;
+static size_t g_n_tracers = 1;
+#ifdef __apple__
+static const WCHAR* command_format = L"%hs -p %d";
+#else
+static const WCHAR* command_format = u"%hs -p %d";
+#endif // __apple__
+static WCHAR* command = nullptr;
 
 void auto_trace_init()
 {
+    char *nAutoTracersValue = getenv("N_AUTO_TRACERS");
+    if (nAutoTracersValue != NULL)
+    {
+        g_n_tracers = strtoul(nAutoTracersValue, NULL, 10);
+    }
+
+    // Get the command to run auto-trace.  Note that the `-p <pid>` option
+    // will be automatically added for you
+    char *commandTextValue = getenv("AUTO_TRACE_CMD");
+    if (commandTextValue != NULL)
+    {
+        DWORD currentProcessId = GetCurrentProcessId();
+        command = new WCHAR[8192];
+        _snwprintf_s(command, 8192, _TRUNCATE, command_format, commandTextValue, currentProcessId);
+    }
+    else
+    {
+        // we don't have anything to run, just set
+        // n tracers to 0...
+        g_n_tracers = 0;
+    }
+
     auto_trace_event = CreateEventW(
         /* lpEventAttributes = */ NULL,
         /* bManualReset      = */ FALSE,
@@ -16,7 +46,7 @@ void auto_trace_init()
     );
 }
 
-void auto_trace_launch()
+void auto_trace_launch_internal()
 {
     DWORD currentProcessId = GetCurrentProcessId();
     STARTUPINFO si;
@@ -28,15 +58,6 @@ void auto_trace_launch()
 #endif
     
     PROCESS_INFORMATION result;
-    #ifdef FEATURE_PAL
-    const char16_t* commandFormat = u"/Users/andrewau/git/diagnostics/src/Tools/dotnet-trace/run.sh collect --providers Microsoft-Windows-DotNETRuntime:FFFFFFFFFFFFFFBF -p %d";
-    #else
-    const char16_t* commandFormat = u"C:\\Windows\\System32\\cmd.exe /c run.cmd collect --providers Microsoft-Windows-DotNETRuntime:FFFFFFFFFFFFFFBF -p %d";
-    #endif
-    size_t len = wcslen(commandFormat) + 10 + 1;
-    char16_t* command = new char16_t[len];
-    _snwprintf_s(command, len, _TRUNCATE, commandFormat, currentProcessId);
-    const char16_t* currentDirectory = u"C:\\Dev\\diagnostics\\src\\Tools\\dotnet-trace";
 
     BOOL code = CreateProcessW(
         /* lpApplicationName    = */ nullptr,
@@ -46,16 +67,25 @@ void auto_trace_launch()
         /* bInheritHandles      = */ false,
         /* dwCreationFlags      = */ CREATE_NEW_CONSOLE,
         /* lpEnvironment        = */ nullptr,
-        /* lpCurrentDirectory   = */ currentDirectory,
+        /* lpCurrentDirectory   = */ nullptr,
         /* lpStartupInfo        = */ &si,
         /* lpProcessInformation = */ &result
     );
+}
+
+void auto_trace_launch()
+{
+    for (int i = 0; i < g_n_tracers; ++i)
+    {
+        auto_trace_launch_internal();
+    }
     delete[] command;
 }
 
 void auto_trace_wait()
 {
-    WaitForSingleObject(auto_trace_event, INFINITE);
+    if (g_n_tracers > 0)
+        WaitForSingleObject(auto_trace_event, INFINITE);
 }
 
 void auto_trace_signal()
@@ -63,7 +93,10 @@ void auto_trace_signal()
     #ifdef SetEvent
     #undef SetEvent
     #endif
-    SetEvent(auto_trace_event);    
+    static size_t nCalls = 0;
+    fprintf(stdout, "%d", nCalls);
+    if (++nCalls == g_n_tracers)
+        SetEvent(auto_trace_event);
 }
 
 #endif // FEATURE_AUTO_TRACE
