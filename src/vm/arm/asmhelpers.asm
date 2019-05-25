@@ -709,7 +709,7 @@ LsetFP8
 ;
         NESTED_ENTRY GenericComPlusCallStub
 
-        PROLOG_WITH_TRANSITION_BLOCK 0x20
+        PROLOG_WITH_TRANSITION_BLOCK ASM_ENREGISTERED_RETURNTYPE_MAXSIZE
 
         add         r0, sp, #__PWTB_TransitionBlock ; pTransitionBlock
         mov         r1, r12                         ; pMethodDesc
@@ -723,7 +723,7 @@ LsetFP8
         ; r0 = fpRetSize
 
         ; return value is stored before float argument registers
-        add         r1, sp, #(__PWTB_FloatArgumentRegisters - 0x20)
+        add         r1, sp, #(__PWTB_FloatArgumentRegisters - ASM_ENREGISTERED_RETURNTYPE_MAXSIZE)
         bl          setStubReturnValue
 
         EPILOG_WITH_TRANSITION_BLOCK_RETURN
