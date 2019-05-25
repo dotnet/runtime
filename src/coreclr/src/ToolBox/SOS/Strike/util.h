@@ -1862,7 +1862,7 @@ BOOL TryGetMethodDescriptorForDelegate(CLRDATA_ADDRESS delegateAddr, CLRDATA_ADD
  *      ArrayHolder class.
  */
 DWORD_PTR *ModuleFromName(__in_opt LPSTR name, int *numModules);
-void GetInfoFromName(DWORD_PTR ModuleAddr, const char* name);
+void GetInfoFromName(DWORD_PTR ModuleAddr, const char* name, mdTypeDef* retMdTypeDef=NULL);
 void GetInfoFromModule (DWORD_PTR ModuleAddr, ULONG token, DWORD_PTR *ret=NULL);
 
     
