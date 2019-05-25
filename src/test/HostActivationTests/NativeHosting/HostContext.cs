@@ -57,23 +57,43 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
-        [InlineData(CheckProperties.None)]
-        [InlineData(CheckProperties.Get)]
-        [InlineData(CheckProperties.Set)]
-        [InlineData(CheckProperties.Remove)]
-        [InlineData(CheckProperties.GetAll)]
-        [InlineData(CheckProperties.GetActive)]
-        [InlineData(CheckProperties.GetAllActive)]
-        public void RunApp(string checkProperties)
+        [InlineData(false, CheckProperties.None)]
+        [InlineData(false, CheckProperties.Get)]
+        [InlineData(false, CheckProperties.Set)]
+        [InlineData(false, CheckProperties.Remove)]
+        [InlineData(false, CheckProperties.GetAll)]
+        [InlineData(false, CheckProperties.GetActive)]
+        [InlineData(false, CheckProperties.GetAllActive)]
+        [InlineData(true, CheckProperties.None)]
+        [InlineData(true, CheckProperties.Get)]
+        [InlineData(true, CheckProperties.Set)]
+        [InlineData(true, CheckProperties.Remove)]
+        [InlineData(true, CheckProperties.GetAll)]
+        [InlineData(true, CheckProperties.GetActive)]
+        [InlineData(true, CheckProperties.GetAllActive)]
+        public void RunApp(bool isSelfContained, string checkProperties)
         {
+            string expectedAppPath;
+            string hostFxrPath;
+            if (isSelfContained)
+            {
+                expectedAppPath = sharedState.SelfContainedAppPath;
+                hostFxrPath = sharedState.SelfContainedHostFxrPath;
+            }
+            else
+            {
+                expectedAppPath = sharedState.AppPath;
+                hostFxrPath = sharedState.HostFxrPath;
+            }
+
             string newPropertyName = "HOST_TEST_PROPERTY";
             string[] args =
             {
                 HostContextArg,
                 Scenario.App,
                 checkProperties,
-                sharedState.HostFxrPath,
-                sharedState.AppPath
+                hostFxrPath,
+                expectedAppPath
             };
             string[] appArgs =
             {
@@ -89,8 +109,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForApp(sharedState.AppPath)
-                .And.ExecuteAssemblyMock(sharedState.AppPath, appArgs);
+                .And.InitializeContextForApp(expectedAppPath)
+                .And.ExecuteAssemblyMock(expectedAppPath, appArgs)
+                .And.HaveStdErrContaining($"Executing as a {(isSelfContained ? "self-contained" : "framework-dependent")} app");
 
             CheckPropertiesValidation propertyValidation = new CheckPropertiesValidation(checkProperties, LogPrefix.App, SharedTestState.AppPropertyName, SharedTestState.AppPropertyValue);
             propertyValidation.ValidateActiveContext(result, newPropertyName);
@@ -131,6 +152,29 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
             CheckPropertiesValidation propertyValidation = new CheckPropertiesValidation(checkProperties, LogPrefix.Config, SharedTestState.ConfigPropertyName, SharedTestState.ConfigPropertyValue);
             propertyValidation.ValidateActiveContext(result, newPropertyName);
+        }
+
+        [Fact]
+        public void InitializeConfig_SelfContained_Fails()
+        {
+            string[] args =
+            {
+                HostContextArg,
+                Scenario.Config,
+                CheckProperties.None,
+                sharedState.SelfContainedHostFxrPath,
+                sharedState.SelfContainedConfigPath
+            };
+            CommandResult result = Command.Create(sharedState.NativeHostPath, args)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .EnvironmentVariable("DOTNET_ROOT", sharedState.DotNetRoot)
+                .EnvironmentVariable("DOTNET_ROOT(x86)", sharedState.DotNetRoot)
+                .Execute();
+
+            result.Should().Fail()
+                .And.HaveStdErrContaining("Initialization for self-contained components is not supported");
         }
 
         [Theory]
@@ -580,6 +624,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public string RuntimeConfigPath { get; }
             public string SecondaryRuntimeConfigPath { get; }
 
+            public string SelfContainedAppPath { get; }
+            public string SelfContainedConfigPath { get; }
+            public string SelfContainedHostFxrPath { get; }
+
             public string AppPath_MultiProperty { get; }
             public string RuntimeConfigPath_MultiProperty { get; }
 
@@ -628,6 +676,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .WithFramework(new RuntimeConfig.Framework(Constants.MicrosoftNETCoreApp, NetCoreAppVersion))
                     .WithProperty(AppPropertyName, AppPropertyValue)
                     .WithProperty(AppMultiPropertyName, AppMultiPropertyValue)
+                    .Save();
+
+                string selfContainedDir = Path.Combine(BaseDirectory, "selfContained");
+                Directory.CreateDirectory(selfContainedDir);
+                SelfContainedAppPath = Path.Combine(selfContainedDir, "SelfContained.dll");
+                File.WriteAllText(SelfContainedAppPath, string.Empty);
+                var toCopy = Directory.GetFiles(dotNet.GreatestVersionSharedFxPath)
+                    .Concat(Directory.GetFiles(dotNet.GreatestVersionHostFxrPath));
+                foreach (string file in toCopy)
+                {
+                    File.Copy(file, Path.Combine(selfContainedDir, Path.GetFileName(file)));
+                }
+
+                SelfContainedHostFxrPath = Path.Combine(selfContainedDir, Path.GetFileName(dotNet.GreatestVersionHostFxrFilePath));
+                SelfContainedConfigPath = Path.Combine(selfContainedDir, "SelfContained.runtimeconfig.json");
+                RuntimeConfig.FromFile(SelfContainedConfigPath)
+                    .WithProperty(AppPropertyName, AppPropertyValue)
                     .Save();
 
                 string configDir = Path.Combine(BaseDirectory, "config");
