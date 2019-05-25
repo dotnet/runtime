@@ -1366,9 +1366,6 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_IP:
 		target = ip;
 		break;
-	case MONO_PATCH_INFO_METHOD_REL:
-		target = code + patch_info->data.offset;
-		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ID: {
 		MonoJitICallInfo * const mi = mono_find_jit_icall_info (patch_info->data.jit_icall_id);
 		g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL_ID %d", (int)patch_info->data.jit_icall_id);

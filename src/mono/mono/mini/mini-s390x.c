@@ -5367,7 +5367,6 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain,
 				continue;
 			case MONO_PATCH_INFO_R4:
 			case MONO_PATCH_INFO_R8:
-			case MONO_PATCH_INFO_METHOD_REL:
 				g_assert_not_reached ();
 				continue;
 			default:

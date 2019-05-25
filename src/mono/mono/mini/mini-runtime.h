@@ -318,11 +318,6 @@ struct MonoJumpInfo {
 	MonoJumpInfoType type;
 	union {
 		gconstpointer   target;
-#if TARGET_SIZEOF_VOID_P == 8
-		gint64          offset;
-#else
-		int             offset;
-#endif
 		int index;
 		guint uindex;
 		MonoBasicBlock *bb;

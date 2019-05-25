@@ -3,7 +3,6 @@ PATCH_INFO(ABS, "abs")
 PATCH_INFO(LABEL, "label")
 PATCH_INFO(METHOD, "method")
 PATCH_INFO(METHOD_JUMP, "method_jump")
-PATCH_INFO(METHOD_REL, "method_rel")
 PATCH_INFO(METHODCONST, "methodconst")
 // Either the address of a C function implementing a JIT icall, or a wrapper around it
 PATCH_INFO(JIT_ICALL_ID, "jit_icall_id") // replaced MONO_PATCH_INFO_JIT_ICALL, using enum instead of string

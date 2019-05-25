@@ -3889,9 +3889,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			goto cleanup;
 		ji->data.name = m_class_get_name (ji->data.klass);
 		break;
-	case MONO_PATCH_INFO_METHOD_REL:
-		ji->data.offset = decode_value (p, &p);
-		break;
 	case MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG:
 	case MONO_PATCH_INFO_GC_CARD_TABLE_ADDR:
 	case MONO_PATCH_INFO_GC_NURSERY_START:
