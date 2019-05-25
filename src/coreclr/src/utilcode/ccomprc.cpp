@@ -49,42 +49,9 @@ int GetMUILanguageID(LocaleIDValue* pResult)
 #endif
     }
     CONTRACTL_END;
-#if FEATURE_USE_LCID
-    int langId=0;
-    static PFNGETUSERDEFAULTUILANGUAGE pfnGetUserDefaultUILanguage=NULL;
 
-    if( NULL == pfnGetUserDefaultUILanguage )
-    {
-        PFNGETUSERDEFAULTUILANGUAGE proc = NULL;
-
-        HMODULE hmod = GetModuleHandleA(WINDOWS_KERNEL32_DLLNAME_A);
-        
-        if( hmod )
-            proc = (PFNGETUSERDEFAULTUILANGUAGE)
-                GetProcAddress(hmod, "GetUserDefaultUILanguage");
-
-        if(proc == NULL)
-            proc = (PFNGETUSERDEFAULTUILANGUAGE) -1;
-        
-        PVOID value = InterlockedExchangeT(&pfnGetUserDefaultUILanguage,
-                                           proc);
-    }
-
-    // We should never get NULL here, the function is -1 or a valid address.
-    _ASSERTE(pfnGetUserDefaultUILanguage != NULL);
-
-
-    if( pfnGetUserDefaultUILanguage == (PFNGETUSERDEFAULTUILANGUAGE) -1)
-        langId = GetSystemDefaultLangID();
-    else
-        langId = pfnGetUserDefaultUILanguage();
-    
-   *pResult= langId;
-#else // FEATURE_USE_LCID
     _ASSERTE(sizeof(LocaleID)/sizeof(WCHAR) >=LOCALE_NAME_MAX_LENGTH);
     return ::GetSystemDefaultLocaleName(*pResult, LOCALE_NAME_MAX_LENGTH);
-#endif //FEATURE_USE_LCID
-   return 1;
 }
 
 static void BuildMUIDirectory(int langid, __out SString* pResult)
@@ -113,13 +80,7 @@ void GetMUILanguageName(__out SString* pResult)
     LocaleIDValue langid;
     GetMUILanguageID(&langid);
 
-    int lcid;
-#ifdef FEATURE_USE_LCID
-    lcid=langid;
-#else
-    lcid=::LocaleNameToLCID(langid,0);
-#endif
-
+    int lcid = ::LocaleNameToLCID(langid,0);
     return BuildMUIDirectory(lcid, pResult);
 }
  

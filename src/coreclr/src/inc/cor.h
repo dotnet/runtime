@@ -20,17 +20,6 @@
 
 //*****************************************************************************
 
-#if defined(_MSC_VER) && !defined(USE_DEPRECATED_CLR_API_WITHOUT_WARNING)
-#define DEPRECATED_CLR_API_MESG "This API has been deprecated. Refer to http://go.microsoft.com/fwlink/?LinkId=143720 for more details."
-#define DECLARE_DEPRECATED __declspec(deprecated(DEPRECATED_CLR_API_MESG))
-#define DEPRECATED_CLR_STDAPI EXTERN_C DECLARE_DEPRECATED HRESULT STDAPICALLTYPE
-#define DEPRECATED_CLR_STDAPI_(type) EXTERN_C DECLARE_DEPRECATED type STDAPICALLTYPE
-#else // _MSC_VER && !USE_DEPRECATED_CLR_API_WITHOUT_WARNING
-#define DECLARE_DEPRECATED
-#define DEPRECATED_CLR_STDAPI STDAPI
-#define DEPRECATED_CLR_STDAPI_(type) STDAPI_(type)
-#endif // _MSC_VER && !USE_DEPRECATED_CLR_API_WITHOUT_WARNING
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -145,32 +134,6 @@ typedef UNALIGNED void const *UVCP_CONSTANT;
 #define INVALID_TASK_ID         0x0 
 #define MAX_CONNECTION_NAME     MAX_PATH
 
-//*****************************************************************************
-//*****************************************************************************
-//
-// D L L   P U B L I C   E N T R Y    P O I N T   D E C L A R A T I O N S
-//
-//*****************************************************************************
-//*****************************************************************************
-
-BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpReserved);
-__int32 STDMETHODCALLTYPE _CorExeMain();
-__int32 STDMETHODCALLTYPE _CorExeMainInternal();
-__int32 STDMETHODCALLTYPE _CorExeMain2( // Executable exit code.
-    PBYTE   pUnmappedPE,                // -> memory mapped code
-    DWORD   cUnmappedPE,                // Size of memory mapped code
-    _In_ LPWSTR  pImageNameIn,          // -> Executable Name
-    _In_ LPWSTR  pLoadersFileName,      // -> Loaders Name
-    _In_ LPWSTR  pCmdLine);             // -> Command Line
-
-STDAPI _CorValidateImage(PVOID *ImageBase, LPCWSTR FileName);
-STDAPI_(VOID) _CorImageUnloading(PVOID ImageBase);
-
-DEPRECATED_CLR_STDAPI          CoInitializeEE(DWORD fFlags);
-DEPRECATED_CLR_STDAPI_(void)   CoUninitializeEE(BOOL fFlags);
-DEPRECATED_CLR_STDAPI_(void)   CoEEShutDownCOM(void);
-
-
 
 #define MAIN_CLR_MODULE_NAME_W        W("coreclr")
 #define MAIN_CLR_MODULE_NAME_A         "coreclr"
@@ -179,20 +142,10 @@ DEPRECATED_CLR_STDAPI_(void)   CoEEShutDownCOM(void);
 #define MAIN_CLR_DLL_NAME_A           MAKEDLLNAME_A(MAIN_CLR_MODULE_NAME_A)
 
 
-
 #define MSCOREE_SHIM_W               MAIN_CLR_DLL_NAME_W
 #define MSCOREE_SHIM_A               MAIN_CLR_DLL_NAME_A
 
 #define SWITCHOUT_HANDLE_VALUE ((HANDLE)(LONG_PTR)-2)
-
-
-//
-// CoInitializeCor flags.
-//
-typedef enum tagCOINITCOR
-{
-    COINITCOR_DEFAULT       = 0x0           // Default initialization mode. 
-} COINITICOR;
 
 //
 // CoInitializeEE flags.
@@ -203,15 +156,6 @@ typedef enum tagCOINITEE
     COINITEE_DLL            = 0x1,          // Initialization mode for loading DLL. 
     COINITEE_MAIN           = 0x2           // Initialize prior to entering the main routine 
 } COINITIEE;
-
-//
-// CoInitializeEE flags.
-//
-typedef enum tagCOUNINITEE
-{
-    COUNINITEE_DEFAULT      = 0x0,          // Default uninitialization mode.
-    COUNINITEE_DLL          = 0x1           // Uninitialization mode for unloading DLL. 
-} COUNINITIEE;
 
 //*****************************************************************************
 //*****************************************************************************
@@ -227,18 +171,6 @@ typedef enum tagCOUNINITEE
 #include <corhdr.h>
 #endif // <windows.h> updates
 
-//*****************************************************************************
-//*****************************************************************************
-//
-// D L L   P U B L I C   E N T R Y    P O I N T   D E C L A R A T I O N S
-//
-//*****************************************************************************
-//*****************************************************************************
-
-DEPRECATED_CLR_STDAPI          CoInitializeCor(DWORD fFlags);
-DEPRECATED_CLR_STDAPI_(void)   CoUninitializeCor(void);
-
-//
 //*****************************************************************************
 //*****************************************************************************
 
@@ -2493,11 +2425,6 @@ inline ULONG CorSigUncompressPointer(   // return number of bytes of that compre
 }
 
 #endif  // __cplusplus
-
-#undef DEPRECATED_CLR_STDAPI_
-#undef DEPRECATED_CLR_STDAPI
-#undef DECLARE_DEPRECATED
-#undef DEPRECATED_CLR_API_MESG
 
 #endif // _COR_H_
 // EOF =======================================================================
