@@ -4431,6 +4431,24 @@ void ExtOutStateMachineFields(AsyncRecord& ar)
     }
 }
 
+void FindStateMachineTypes(DWORD_PTR* corelibModule, mdTypeDef* stateMachineBox, mdTypeDef* debugStateMachineBox)
+{
+    int numModule;
+    ArrayHolder<DWORD_PTR> moduleList = ModuleFromName(const_cast<LPSTR>("System.Private.CoreLib.dll"), &numModule);
+    if (moduleList != NULL && numModule == 1)
+    {
+        *corelibModule = moduleList[0];
+        GetInfoFromName(*corelibModule, "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1", stateMachineBox);
+        GetInfoFromName(*corelibModule, "System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+DebugFinalizableAsyncStateMachineBox`1", debugStateMachineBox);
+    }
+    else
+    {
+        *corelibModule = 0;
+        *stateMachineBox = 0;
+        *debugStateMachineBox = 0;
+    }
+}
+
 DECLARE_API(DumpAsync)
 {
     INIT_API();
@@ -4494,6 +4512,11 @@ DECLARE_API(DumpAsync)
             DisplayInvalidStructuresMessage();
         }
 
+        // Find the state machine types
+        DWORD_PTR corelibModule;
+        mdTypeDef stateMachineBoxMd, debugStateMachineBoxMd;
+        FindStateMachineTypes(&corelibModule, &stateMachineBoxMd, &debugStateMachineBoxMd);
+
         // Walk each heap object looking for async state machine objects.  As we're targeting .NET Core 2.1+, all such objects
         // will be Task or Task-derived types.
         std::map<CLRDATA_ADDRESS, AsyncRecord> asyncRecords;
@@ -4519,8 +4542,10 @@ DECLARE_API(DumpAsync)
             {
                 // Otherwise, we only care about AsyncStateMachineBox`1 as well as the DebugFinalizableAsyncStateMachineBox`1
                 // that's used when certain ETW events are set.
-                if (_wcsncmp(itr->GetTypeName(), W("System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+AsyncStateMachineBox`1"), 79) != 0 &&
-                    _wcsncmp(itr->GetTypeName(), W("System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1+DebugFinalizableAsyncStateMachineBox`1"), 95) != 0)
+                DacpMethodTableData mtdata;
+                if (mtdata.Request(g_sos, TO_TADDR(itr->GetMT())) != S_OK ||
+                    mtdata.Module != corelibModule ||
+                    (mtdata.cl != stateMachineBoxMd && mtdata.cl != debugStateMachineBoxMd))
                 {
                     continue;
                 }
