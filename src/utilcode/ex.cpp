@@ -1160,11 +1160,7 @@ void GetHRMsg(HRESULT hr, SString &result, BOOL bNoGeekStuff/* = FALSE*/)
         DWORD dwFlags = FORMAT_MESSAGE_FROM_SYSTEM;
         dwFlags |= FORMAT_MESSAGE_MAX_WIDTH_MASK;
 
-#if FEATURE_USE_LCID        
-        fHaveDescr = strDescr.FormatMessage(dwFlags, 0, hr, LANG_USER_DEFAULT);
-#else
         fHaveDescr = strDescr.FormatMessage(dwFlags, 0, hr, 0);
-#endif
     }
 
     LPCSTR name = Exception::GetHRSymbolicName(hr);

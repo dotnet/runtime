@@ -73,11 +73,7 @@ static WCHAR MapChar(WCHAR wc, DWORD dwFlags)
 
 #ifndef FEATURE_PAL
     
-#ifdef FEATURE_USE_LCID
-    int iRet = WszLCMapString(MAKELCID(LOCALE_INVARIANT, SORT_DEFAULT), dwFlags, &wc, 1, &wTmp, 1);
-#else
     int iRet = ::LCMapStringEx(LOCALE_NAME_INVARIANT, dwFlags, &wc, 1, &wTmp, 1, NULL, NULL, 0);
-#endif
     if (!iRet) {
         // This can fail in non-exceptional cases becauseof unknown unicode characters. 
         wTmp = wc;

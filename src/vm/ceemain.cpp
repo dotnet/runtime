@@ -1162,44 +1162,6 @@ void InnerCoEEShutDownCOM()
 #endif    
 }
 
-// ---------------------------------------------------------------------------
-// %%Function: CoEEShutdownCOM()
-//
-// Parameters:
-//  none
-//
-// Returns:
-//  Nothing
-//
-// Description:
-//  COM Objects shutdown stuff should be done here
-// ---------------------------------------------------------------------------
-void STDMETHODCALLTYPE CoEEShutDownCOM()
-{
-
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        ENTRY_POINT;
-    } CONTRACTL_END;
-
-    if (g_fEEStarted != TRUE)
-        return;
-
-    HRESULT hr;
-    BEGIN_EXTERNAL_ENTRYPOINT(&hr)
-
-    InnerCoEEShutDownCOM();
-
-    END_EXTERNAL_ENTRYPOINT;
-
-    // API doesn't allow us to communicate a failure HRESULT.  MDAs can
-    // be enabled to catch failure inside CanRunManagedCode.
-    // _ASSERTE(SUCCEEDED(hr));
-}
-
 #endif // FEATURE_COMINTEROP
 
 // ---------------------------------------------------------------------------
@@ -2030,65 +1992,6 @@ BOOL CanRunManagedCode(LoaderLockCheck::kind checkKind, HINSTANCE hInst /*= 0*/)
 }
 #include <optdefault.h>
 
-
-// ---------------------------------------------------------------------------
-// %%Function: CoInitializeEE(DWORD fFlags)
-//
-// Parameters:
-//  fFlags                  - Initialization flags for the engine.  See the
-//                              COINITIEE enumerator for valid values.
-//
-// Returns:
-//  Nothing
-//
-// Description:
-//  Initializes the EE if it hasn't already been initialized. This function
-//  no longer maintains a ref count since the EE doesn't support being
-//  unloaded and re-loaded. It simply ensures the EE has been started.
-// ---------------------------------------------------------------------------
-HRESULT STDAPICALLTYPE CoInitializeEE(DWORD fFlags)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    BEGIN_ENTRYPOINT_NOTHROW;
-    hr = InitializeEE((COINITIEE)fFlags);
-    END_ENTRYPOINT_NOTHROW;
-
-    return hr;
-}
-
-// ---------------------------------------------------------------------------
-// %%Function: CoUninitializeEE
-//
-// Parameters:
-//  BOOL fIsDllUnloading :: is it safe point for full cleanup
-//
-// Returns:
-//  Nothing
-//
-// Description:
-//  Must be called by client on shut down in order to free up the system.
-// ---------------------------------------------------------------------------
-void STDAPICALLTYPE CoUninitializeEE(BOOL fIsDllUnloading)
-{
-    LIMITED_METHOD_CONTRACT;
-    //BEGIN_ENTRYPOINT_VOIDRET;
-
-    // This API is unfortunately publicly exported so we cannot get rid
-    // of it. However since the EE doesn't currently support being unloaded
-    // and re-loaded, it is useless to do any ref counting here or to pretend
-    // to unload it. The proper way to shutdown the EE is to call CorExitProcess.
-    //END_ENTRYPOINT_VOIDRET;
-
-}
-
 //*****************************************************************************
 BOOL ExecuteDLL_ReturnOrThrow(HRESULT hr, BOOL fFromThunk)
 {
@@ -2500,16 +2403,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
             int tmp; tmp = GetThreadUICultureId(&id);   // TODO: We should use the name instead
             _ASSERTE(tmp!=0 && id != UICULTUREID_DONTCARE);
             SIZE_T cchParentCultureName=LOCALE_NAME_MAX_LENGTH;
-#ifdef FEATURE_USE_LCID 
-            SIZE_T cchCultureName=LOCALE_NAME_MAX_LENGTH;
-            if (!::LCIDToLocaleName(id, sCulture.OpenUnicodeBuffer(static_cast<COUNT_T>(cchCultureName)), static_cast<int>(cchCultureName), 0))
-            {
-                hr = HRESULT_FROM_GetLastError();
-            }
-            sCulture.CloseBuffer();
-#else
             sCulture.Set(id);
-#endif
 
 #ifndef FEATURE_PAL
             if (!::GetLocaleInfoEx((LPCWSTR)sCulture, LOCALE_SPARENT, sParentCulture.OpenUnicodeBuffer(static_cast<COUNT_T>(cchParentCultureName)),static_cast<int>(cchParentCultureName)))
@@ -2567,80 +2461,6 @@ INT32 GetLatchedExitCode (void)
 // Impl for UtilLoadStringRC Callback: In VM, we let the thread decide culture
 // Return an int uniquely describing which language this thread is using for ui.
 // ---------------------------------------------------------------------------
-// TODO: Callers should use names, not LCIDs
-#ifdef FEATURE_USE_LCID
-static int GetThreadUICultureId(__out LocaleIDValue* pLocale)
-{
-    CONTRACTL{
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-
-
-    int Result = UICULTUREID_DONTCARE;
-
-    Thread * pThread = GetThread();
-
-#if 0 // Enable and test if/once the unmanaged runtime is localized
-    // When fatal errors have occured our invariants around GC modes may be broken and attempting to transition to co-op may hang
-    // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
-    // getting localized with a non-default thread-specific culture.
-    // A canonical stack trace that gets here is a fatal error in the GC that comes through:
-    // coreclr.dll!GetThreadUICultureNames
-    // coreclr.dll!CCompRC::LoadLibraryHelper
-    // coreclr.dll!CCompRC::LoadLibrary
-    // coreclr.dll!CCompRC::GetLibrary
-    // coreclr.dll!CCompRC::LoadString
-    // coreclr.dll!CCompRC::LoadString
-    // coreclr.dll!SString::LoadResourceAndReturnHR
-    // coreclr.dll!SString::LoadResourceAndReturnHR
-    // coreclr.dll!SString::LoadResource
-    // coreclr.dll!EventReporter::EventReporter
-    // coreclr.dll!EEPolicy::LogFatalError
-    // coreclr.dll!EEPolicy::HandleFatalError
-    if (pThread != NULL && !g_fFatalErrorOccuredOnGCThread)
-    {
-        // Switch to cooperative mode, since we'll be looking at managed objects
-        // and we don't want them moving on us.
-        GCX_COOP();
-
-        CULTUREINFOBASEREF pCurrentCulture = (CULTUREINFOBASEREF)Thread::GetCulture(TRUE);
-
-        if (pCurrentCulture != NULL)
-        {
-            STRINGREF cultureName = pCurrentCulture->GetName();
-            _ASSERT(cultureName != NULL);
-
-            if ((Result = ::LocaleNameToLCID(cultureName->GetBuffer(), 0)) == 0)
-                Result = (int)UICULTUREID_DONTCARE;
-        }
-    }
-#endif
-
-    if (Result == (int)UICULTUREID_DONTCARE)
-    {
-        // This thread isn't set up to use a non-default culture. Let's grab the default
-        // one and return that.
-
-        Result = COMNlsInfo::CallGetUserDefaultUILanguage();
-
-        if (Result == 0 || Result == (int)UICULTUREID_DONTCARE)
-            Result = GetUserDefaultLangID();
-
-        _ASSERTE(Result != 0);
-        if (Result == 0)
-        {
-            Result = (int)UICULTUREID_DONTCARE;
-        }
-
-    }
-    *pLocale=Result;
-    return Result;
-}
-#else
-// TODO: Callers should use names, not LCIDs
 static int GetThreadUICultureId(__out LocaleIDValue* pLocale)
 {
     CONTRACTL{
@@ -2715,9 +2535,6 @@ static int GetThreadUICultureId(__out LocaleIDValue* pLocale)
     }
     return Result;
 }
-
-#endif // FEATURE_USE_LCID
-
 
 #ifdef ENABLE_CONTRACTS_IMPL
 
