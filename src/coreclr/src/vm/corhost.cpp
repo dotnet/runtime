@@ -60,7 +60,6 @@ UINT32 _tls_index = 0;
 #ifndef DACCESS_COMPILE
 
 extern void STDMETHODCALLTYPE EEShutDown(BOOL fIsDllUnloading);
-extern HRESULT STDAPICALLTYPE CoInitializeEE(DWORD fFlags);
 extern void PrintToStdOutA(const char *pszString);
 extern void PrintToStdOutW(const WCHAR *pwzString);
 extern BOOL g_fEEHostedStartup;
