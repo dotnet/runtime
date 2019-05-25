@@ -2839,8 +2839,12 @@ Failure:
 *    Find the EE data given a name.                                    *  
 *                                                                      *
 \**********************************************************************/
-void GetInfoFromName(DWORD_PTR ModulePtr, const char* name)
+void GetInfoFromName(DWORD_PTR ModulePtr, const char* name, mdTypeDef* retMdTypeDef)
 {
+    DWORD_PTR ignoredModuleInfoRet = NULL;
+    if (retMdTypeDef)
+        *retMdTypeDef = 0;
+
     ToRelease<IMetaDataImport> pImport = MDImportForModule (ModulePtr);    
     if (pImport == 0)
         return;
@@ -2865,13 +2869,13 @@ void GetInfoFromName(DWORD_PTR ModulePtr, const char* name)
             BOOL fStatus = FALSE;
             while (ModuleDefinition->EnumMethodDefinitionByName(&h, &pMeth) == S_OK)
             {
-                if (fStatus)
+                if (fStatus && !retMdTypeDef)
                     ExtOut("-----------------------\n");
 
                 mdTypeDef token;
                 if (pMeth->GetTokenAndScope(&token, NULL) == S_OK)
                 {
-                    GetInfoFromModule(ModulePtr, token);
+                    GetInfoFromModule(ModulePtr, token, retMdTypeDef ? &ignoredModuleInfoRet : NULL);
                     fStatus = TRUE;
                 }
                 pMeth->Release();
@@ -2900,7 +2904,10 @@ void GetInfoFromName(DWORD_PTR ModulePtr, const char* name)
     // @todo:  Handle Nested classes correctly.
     if (SUCCEEDED (pImport->FindTypeDefByName (pName, tkEnclose, &cl)))
     {
-        GetInfoFromModule(ModulePtr, cl);
+        if (retMdTypeDef)
+            *retMdTypeDef = cl;
+        
+        GetInfoFromModule(ModulePtr, cl, retMdTypeDef ? &ignoredModuleInfoRet : NULL);
         return;
     }
     
@@ -2917,6 +2924,9 @@ void GetInfoFromName(DWORD_PTR ModulePtr, const char* name)
     // @todo:  Handle Nested classes correctly.
     if (SUCCEEDED(pImport->FindTypeDefByName (pName, tkEnclose, &cl)))
     {
+        if (retMdTypeDef)
+            *retMdTypeDef = cl;
+
         mdMethodDef token;
         ULONG cTokens;
         HCORENUM henum = NULL;
@@ -2927,8 +2937,8 @@ void GetInfoFromName(DWORD_PTR ModulePtr, const char* name)
                                                      &token, 1, &cTokens))
             && cTokens == 1)
         {
-            ExtOut("Member (mdToken token) of\n");
-            GetInfoFromModule(ModulePtr, cl);
+            if (!retMdTypeDef) ExtOut("Member (mdToken token) of\n");
+            GetInfoFromModule(ModulePtr, cl, retMdTypeDef ? &ignoredModuleInfoRet : NULL);
             return;
         }
 
@@ -2938,8 +2948,8 @@ void GetInfoFromName(DWORD_PTR ModulePtr, const char* name)
                                                      &token, 1, &cTokens))
             && cTokens == 1)
         {
-            ExtOut("Field (mdToken token) of\n");
-            GetInfoFromModule(ModulePtr, cl);
+            if (!retMdTypeDef) ExtOut("Field (mdToken token) of\n");
+            GetInfoFromModule(ModulePtr, cl, retMdTypeDef ? &ignoredModuleInfoRet : NULL);
             return;
         }
     }
