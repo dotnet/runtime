@@ -198,10 +198,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public void Save()
         {
-            JObject runtimeOptions = new JObject()
-                {
-                    { "frameworks", new JArray(_frameworks.Select(f => f.ToJson()).ToArray()) }
-                };
+            JObject runtimeOptions = new JObject();
+            if (_frameworks.Any())
+            {
+                runtimeOptions.Add(
+                    "frameworks",
+                    new JArray(_frameworks.Select(f => f.ToJson()).ToArray()));
+            }
 
             if (_rollForward != null)
             {
