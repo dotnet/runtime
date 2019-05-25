@@ -4,9 +4,13 @@
 
 #include "comhost.h"
 #include <cstring>
+#include <mutex>
 #include <trace.h>
 #include <utils.h>
 #include <error_codes.h>
+
+#include <wintrust.h>
+#include <Softpub.h>
 
 #include <cpprest/json.h>
 using namespace web;
@@ -119,25 +123,89 @@ namespace
         return parse_stream(stream);
     }
 
-    clsid_map get_json_map_from_file()
+    bool is_binary_unsigned(const pal::string_t &path)
     {
-        pal::string_t map_file_name;
-        if (pal::get_own_module_path(&map_file_name))
+        // Use the default verifying provider
+        GUID policy = WINTRUST_ACTION_GENERIC_VERIFY_V2;
+
+        // File from disk must be used since there is no support for blob verification of a DLL
+        // https://docs.microsoft.com/windows/desktop/api/wintrust/ns-wintrust-wintrust_file_info
+        WINTRUST_FILE_INFO fileData{};
+        fileData.cbStruct = sizeof(WINTRUST_FILE_INFO);
+        fileData.pcwszFilePath = path.c_str();
+        fileData.hFile = nullptr;
+        fileData.pgKnownSubject = nullptr;
+
+        // https://docs.microsoft.com/windows/desktop/api/wintrust/ns-wintrust-_wintrust_data
+        WINTRUST_DATA trustData{};
+        trustData.cbStruct = sizeof(trustData);
+        trustData.pPolicyCallbackData = nullptr;
+        trustData.pSIPClientData = nullptr;
+        trustData.dwUIChoice = WTD_UI_NONE;
+        trustData.fdwRevocationChecks = WTD_REVOKE_NONE;
+        trustData.dwUnionChoice = WTD_CHOICE_FILE;
+        trustData.dwStateAction = WTD_STATEACTION_VERIFY;
+        trustData.hWVTStateData = nullptr;
+        trustData.pwszURLReference = nullptr;
+        trustData.dwProvFlags = 0;
+        trustData.dwUIContext = 0;
+        trustData.pFile = &fileData;
+
+        // https://docs.microsoft.com/windows/desktop/api/wintrust/nf-wintrust-winverifytrust
+        LONG res = ::WinVerifyTrust(nullptr, &policy, &trustData);
+        const DWORD err = ::GetLastError();
+        if (trustData.hWVTStateData != nullptr)
         {
-            map_file_name += _X(".clsidmap");
-            if (pal::file_exists(map_file_name))
-            {
-                pal::ifstream_t file{ map_file_name };
-                return parse_stream(file);
-            }
+            // The verification provider did something, so it must be closed.
+            trustData.dwStateAction = WTD_STATEACTION_CLOSE;
+            (void)::WinVerifyTrust(nullptr, &policy, &trustData);
         }
 
-        return{};
+        // Success indicates the signature was verified
+        if (res == ERROR_SUCCESS)
+            return false;
+
+        // The only acceptable error code for indicating not-signed
+        // is going to be the explicit 'no signature' error code.
+        // The 'TRUST_E_NOSIGNATURE' result from the function call
+        // indicates a category of issues rather than 'no signature'.
+        // When the 'TRUST_E_NOSIGNATURE' error code is returned from
+        // 'GetLastError()' the indication is actually 'no signature'.
+        return (err == TRUST_E_NOSIGNATURE);
+    }
+
+    clsid_map get_json_map_from_file()
+    {
+        pal::string_t this_module;
+        if (!pal::get_own_module_path(&this_module))
+            return {};
+
+        if (!is_binary_unsigned(this_module))
+        {
+            trace::verbose(_X("Binary is signed, disabling loose .clsidmap file discovery"));
+            return {};
+        }
+
+        pal::string_t map_file_name = std::move(this_module);
+        map_file_name += _X(".clsidmap");
+        if (!pal::file_exists(map_file_name))
+            return {};
+
+        pal::ifstream_t file{ map_file_name };
+        return parse_stream(file);
     }
 }
 
 clsid_map comhost::get_clsid_map()
 {
+    static pal::mutex_t static_map_lock;
+    static bool static_map_set = false;
+    static clsid_map static_map{};
+
+    std::lock_guard<pal::mutex_t> lock{ static_map_lock };
+    if (static_map_set)
+        return static_map;
+
     // CLSID map format
     // {
     //      "<clsid>": {
@@ -162,5 +230,8 @@ clsid_map comhost::get_clsid_map()
             trace::verbose(_X("JSON map .clsidmap file not found"));
     }
 
+    // Make a copy to retain
+    static_map = mapping;
+    static_map_set = true;
     return mapping;
 }
