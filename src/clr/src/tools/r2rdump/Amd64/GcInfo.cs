@@ -119,7 +119,7 @@ namespace R2RDump.Amd64
             if (_hasGSCookie)
             {
                 uint normPrologSize = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset) + 1;
-                uint normEpilogSize = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.NORM_PROLOG_SIZE_ENCBASE, ref bitOffset);
+                uint normEpilogSize = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.NORM_EPILOG_SIZE_ENCBASE, ref bitOffset);
 
                 ValidRangeStart = normPrologSize;
                 ValidRangeEnd = (uint)CodeLength - normEpilogSize;
