@@ -213,72 +213,6 @@ void get_runtime_config_paths_from_app(const pal::string_t& app, pal::string_t* 
     get_runtime_config_paths(path, name, cfg, dev_cfg);
 }
 
-bool is_sdk_dir_present(const pal::string_t& dotnet_root)
-{
-    pal::string_t sdk_path = dotnet_root;
-    append_path(&sdk_path, _X("sdk"));
-    return pal::directory_exists(sdk_path);
-}
-
-void muxer_info(pal::string_t dotnet_root)
-{
-    trace::println();
-    trace::println(_X("Host (useful for support):"));
-    trace::println(_X("  Version: %s"), _STRINGIFY(HOST_FXR_PKG_VER));
-
-    pal::string_t commit = _STRINGIFY(REPO_COMMIT_HASH);
-    trace::println(_X("  Commit:  %s"), commit.substr(0, 10).c_str());
-
-    trace::println();
-    trace::println(_X(".NET Core SDKs installed:"));
-    if (!sdk_info::print_all_sdks(dotnet_root, _X("  ")))
-    {
-        trace::println(_X("  No SDKs were found."));
-    }
-
-    trace::println();
-    trace::println(_X(".NET Core runtimes installed:"));
-    if (!framework_info::print_all_frameworks(dotnet_root, _X("  ")))
-    {
-        trace::println(_X("  No runtimes were found."));
-    }
-
-    trace::println();
-    trace::println(_X("To install additional .NET Core runtimes or SDKs:"));
-    trace::println(_X("  %s"), DOTNET_CORE_DOWNLOAD_URL);
-}
-
-void fx_muxer_t::muxer_usage(bool is_sdk_present)
-{
-    std::vector<host_option> known_opts = fx_muxer_t::get_known_opts(true, host_mode_t::invalid, /*for_cli_usage*/ true);
-
-    if (!is_sdk_present)
-    {
-        trace::println();
-        trace::println(_X("Usage: dotnet [host-options] [path-to-application]"));
-        trace::println();
-        trace::println(_X("path-to-application:"));
-        trace::println(_X("  The path to an application .dll file to execute."));
-    }
-    trace::println();
-    trace::println(_X("host-options:"));
-
-    for (const auto& arg : known_opts)
-    {
-        trace::println(_X("  %-30s  %s"), (arg.option + _X(" ") + arg.argument).c_str(), arg.description.c_str());
-    }
-    trace::println(_X("  --list-runtimes                 Display the installed runtimes"));
-    trace::println(_X("  --list-sdks                     Display the installed SDKs"));
-
-    if (!is_sdk_present)
-    {
-        trace::println();
-        trace::println(_X("Common Options:"));
-        trace::println(_X("  -h|--help                           Displays this help."));
-        trace::println(_X("  --info                              Display .NET Core information."));
-    }
-}
-
 // Convert "path" to realpath (merging working dir if needed) and append to "realpaths" out param.
 void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>* realpaths, const pal::string_t& tfm)
 {
@@ -321,116 +255,6 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
             trace::verbose(_X("Ignoring additional probing path %s as it does not exist."), probe_path.c_str());
         }
     }
-}
-
-std::vector<host_option> fx_muxer_t::get_known_opts(bool exec_mode, host_mode_t mode, bool for_cli_usage)
-{
-    std::vector<host_option> known_opts = { { _X("--additionalprobingpath"), _X("<path>"), _X("Path containing probing policy and assemblies to probe for.") } };
-    if (for_cli_usage || exec_mode || mode == host_mode_t::split_fx || mode == host_mode_t::apphost)
-    {
-        known_opts.push_back({ _X("--depsfile"), _X("<path>"), _X("Path to <application>.deps.json file.")});
-        known_opts.push_back({ _X("--runtimeconfig"), _X("<path>"), _X("Path to <application>.runtimeconfig.json file.")});
-    }
-
-    if (for_cli_usage || mode == host_mode_t::muxer || mode == host_mode_t::apphost)
-    {
-        // If mode=host_mode_t::apphost, these are only used when the app is framework-dependent.
-        known_opts.push_back({ _X("--fx-version"), _X("<version>"), _X("Version of the installed Shared Framework to use to run the application.") });
-        known_opts.push_back({ _X("--roll-forward"), _X("<value>"), _X("Roll forward to framework version (LatestPatch, Minor, LatestMinor, Major, LatestMajor, Disable)") });
-        known_opts.push_back({ _X("--additional-deps"), _X("<path>"), _X("Path to additional deps.json file.") });
-
-        if (!for_cli_usage)
-        {
-            // Intentionally leave this one out of for_cli_usage since we don't want to show it in command line help (it's deprecated).
-            known_opts.push_back({ _X("--roll-forward-on-no-candidate-fx"), _X("<n>"), _X("<obsolete>") });
-        }
-    }
-
-    return known_opts;
-}
-
-// Returns '0' on success, 'AppArgNotRunnable' if should be routed to CLI, otherwise error code.
-int fx_muxer_t::parse_args(
-    const host_startup_info_t& host_info,
-    int argoff,
-    int argc,
-    const pal::char_t* argv[],
-    bool exec_mode,
-    host_mode_t mode,
-    int* new_argoff,
-    pal::string_t& app_candidate,
-    opt_map_t& opts)
-{
-    std::vector<host_option> known_opts = get_known_opts(exec_mode, mode);
-
-    // Parse the known arguments if any.
-    int num_parsed = 0;
-    if (!parse_known_args(argc - argoff, &argv[argoff], known_opts, &opts, &num_parsed))
-    {
-        trace::error(_X("Failed to parse supported options or their values:"));
-        for (const auto& arg : known_opts)
-        {
-            trace::error(_X("  %-37s  %s"), (arg.option + _X(" ") + arg.argument).c_str(), arg.description.c_str());
-        }
-        return StatusCode::InvalidArgFailure;
-    }
-
-    app_candidate = host_info.app_path;
-    *new_argoff = argoff + num_parsed;
-    bool doesAppExist = false;
-    if (mode == host_mode_t::apphost)
-    {
-        doesAppExist = pal::realpath(&app_candidate);
-    }
-    else
-    {
-        trace::verbose(_X("Using the provided arguments to determine the application to execute."));
-        if (*new_argoff >= argc)
-        {
-            muxer_usage(!is_sdk_dir_present(host_info.dotnet_root));
-            return StatusCode::InvalidArgFailure;
-        }
-
-        app_candidate = argv[*new_argoff];
-
-        bool is_app_managed = ends_with(app_candidate, _X(".dll"), false) || ends_with(app_candidate, _X(".exe"), false);
-        if (!is_app_managed)
-        {
-            trace::verbose(_X("Application '%s' is not a managed executable."), app_candidate.c_str());
-            if (!exec_mode)
-            {
-                // Route to CLI.
-                return StatusCode::AppArgNotRunnable;
-            }
-        }
-
-        doesAppExist = pal::realpath(&app_candidate);
-        if (!doesAppExist)
-        {
-            trace::verbose(_X("Application '%s' does not exist."), app_candidate.c_str());
-            if (!exec_mode)
-            {
-                // Route to CLI.
-                return StatusCode::AppArgNotRunnable;
-            }
-        }
-
-        if (!is_app_managed && doesAppExist)
-        {
-            assert(exec_mode == true);
-            trace::error(_X("dotnet exec needs a managed .dll or .exe extension. The application specified was '%s'"), app_candidate.c_str());
-            return StatusCode::InvalidArgFailure;
-        }
-    }
-
-    // App is managed executable.
-    if (!doesAppExist)
-    {
-        trace::error(_X("The application to execute does not exist: '%s'"), app_candidate.c_str());
-        return StatusCode::InvalidArgFailure;
-    }
-
-    return StatusCode::Success;
 }
 
 namespace
@@ -534,17 +358,9 @@ namespace
         /*out*/ pal::string_t &hostpolicy_dir,
         /*out*/ std::unique_ptr<corehost_init_t> &init)
     {
-        pal::string_t opts_fx_version = _X("--fx-version");
-        pal::string_t opts_roll_forward = _X("--roll-forward");
-        pal::string_t opts_roll_fwd_on_no_candidate_fx = _X("--roll-forward-on-no-candidate-fx");
-        pal::string_t opts_deps_file = _X("--depsfile");
-        pal::string_t opts_probe_path = _X("--additionalprobingpath");
-        pal::string_t opts_additional_deps = _X("--additional-deps");
-        pal::string_t opts_runtime_config = _X("--runtimeconfig");
+        pal::string_t runtime_config = command_line::get_option_value(opts, known_options::runtime_config, _X(""));
 
-        pal::string_t runtime_config = get_last_known_arg(opts, opts_runtime_config, _X(""));
-
-        pal::string_t deps_file = get_last_known_arg(opts, opts_deps_file, _X(""));
+        pal::string_t deps_file = command_line::get_option_value(opts, known_options::deps_file, _X(""));
         if (!deps_file.empty() && !pal::realpath(&deps_file))
         {
             trace::error(_X("The specified deps.json [%s] does not exist"), deps_file.c_str());
@@ -566,25 +382,27 @@ namespace
         // The conflicts will be resolved by following the priority rank described above (from 1 to 5, lower number wins over higher number).
         // The env var condition is verified in the config file processing
 
-        pal::string_t roll_forward = get_last_known_arg(opts, opts_roll_forward, _X(""));
+        pal::string_t roll_forward = command_line::get_option_value(opts, known_options::roll_forward, _X(""));
         if (roll_forward.length() > 0)
         {
             auto val = roll_forward_option_from_string(roll_forward);
             if (val == roll_forward_option::__Last)
             {
-                trace::error(_X("Invalid value for command line argument '%s'"), opts_roll_forward.c_str());
+                trace::error(_X("Invalid value for command line argument '%s'"), command_line::get_option_name(known_options::roll_forward).c_str());
                 return StatusCode::InvalidArgFailure;
             }
 
             override_settings.set_roll_forward(val);
         }
 
-        pal::string_t roll_fwd_on_no_candidate_fx = get_last_known_arg(opts, opts_roll_fwd_on_no_candidate_fx, _X(""));
+        pal::string_t roll_fwd_on_no_candidate_fx = command_line::get_option_value(opts, known_options::roll_forward_on_no_candidate_fx, _X(""));
         if (roll_fwd_on_no_candidate_fx.length() > 0)
         {
             if (override_settings.has_roll_forward)
             {
-                trace::error(_X("It's invalid to use both '%s' and '%s' command line options."), opts_roll_forward.c_str(), opts_roll_fwd_on_no_candidate_fx.c_str());
+                trace::error(_X("It's invalid to use both '%s' and '%s' command line options."),
+                    command_line::get_option_name(known_options::roll_forward).c_str(),
+                    command_line::get_option_name(known_options::roll_forward_on_no_candidate_fx).c_str());
                 return StatusCode::InvalidArgFailure;
             }
 
@@ -607,7 +425,7 @@ namespace
         if (is_framework_dependent)
         {
             // Apply the --fx-version option to the first framework
-            pal::string_t fx_version_specified = get_last_known_arg(opts, opts_fx_version, _X(""));
+            pal::string_t fx_version_specified = command_line::get_option_value(opts, known_options::fx_version, _X(""));
             if (fx_version_specified.length() > 0)
             {
                 // This will also set roll forward defaults on the ref
@@ -615,7 +433,7 @@ namespace
             }
 
             // Determine additional deps
-            pal::string_t additional_deps = get_last_known_arg(opts, opts_additional_deps, _X(""));
+            pal::string_t additional_deps = command_line::get_option_value(opts, known_options::additional_deps, _X(""));
             additional_deps_serialized = additional_deps;
             if (additional_deps_serialized.empty())
             {
@@ -639,6 +457,7 @@ namespace
             }
         }
 
+        const known_options opts_probe_path = known_options::additional_probing_path;
         std::vector<pal::string_t> spec_probe_paths = opts.count(opts_probe_path) ? opts.find(opts_probe_path)->second : std::vector<pal::string_t>();
         std::vector<pal::string_t> probe_realpaths = get_probe_realpaths(fx_definitions, spec_probe_paths);
 
@@ -654,43 +473,43 @@ namespace
 
         return StatusCode::Success;
     }
-}
 
-int fx_muxer_t::read_config_and_execute(
-    const pal::string_t& host_command,
-    const host_startup_info_t& host_info,
-    const pal::string_t& app_candidate,
-    const opt_map_t& opts,
-    int new_argc,
-    const pal::char_t** new_argv,
-    host_mode_t mode,
-    pal::char_t out_buffer[],
-    int32_t buffer_size,
-    int32_t* required_buffer_size)
-{
-    pal::string_t hostpolicy_dir;
-    std::unique_ptr<corehost_init_t> init;
-    int rc = get_init_info_for_app(
-        host_command,
-        host_info,
-        app_candidate,
-        opts,
-        mode,
-        hostpolicy_dir,
-        init);
-    if (rc != StatusCode::Success)
+    int read_config_and_execute(
+        const pal::string_t& host_command,
+        const host_startup_info_t& host_info,
+        const pal::string_t& app_candidate,
+        const opt_map_t& opts,
+        int new_argc,
+        const pal::char_t** new_argv,
+        host_mode_t mode,
+        pal::char_t out_buffer[],
+        int32_t buffer_size,
+        int32_t* required_buffer_size)
+    {
+        pal::string_t hostpolicy_dir;
+        std::unique_ptr<corehost_init_t> init;
+        int rc = get_init_info_for_app(
+            host_command,
+            host_info,
+            app_candidate,
+            opts,
+            mode,
+            hostpolicy_dir,
+            init);
+        if (rc != StatusCode::Success)
+            return rc;
+
+        if (host_command.size() == 0)
+        {
+            rc = execute_app(hostpolicy_dir, init.get(), new_argc, new_argv);
+        }
+        else
+        {
+            rc = execute_host_command(hostpolicy_dir, init.get(), new_argc, new_argv, out_buffer, buffer_size, required_buffer_size);
+        }
+
         return rc;
-
-    if (host_command.size() == 0)
-    {
-        rc = execute_app(hostpolicy_dir, init.get(), new_argc, new_argv);
     }
-    else
-    {
-        rc = execute_host_command(hostpolicy_dir, init.get(), new_argc, new_argv, out_buffer, buffer_size, required_buffer_size);
-    }
-
-    return rc;
 }
 
 /**
@@ -712,45 +531,10 @@ int fx_muxer_t::execute(
     int new_argoff;
     pal::string_t app_candidate;
     opt_map_t opts;
-    int result;
-
-    if (mode == host_mode_t::split_fx)
+    int result = command_line::parse_args_for_mode(mode, host_info, argc, argv, &new_argoff, app_candidate, opts);
+    if (static_cast<StatusCode>(result) == AppArgNotRunnable)
     {
-        // Invoked as corehost
-        trace::verbose(_X("--- Executing in split/FX mode..."));
-        result = parse_args(host_info, 1, argc, argv, false, mode, &new_argoff, app_candidate, opts);
-    }
-    else if (mode == host_mode_t::apphost)
-    {
-        // Invoked from the application base.
-        trace::verbose(_X("--- Executing in a native executable mode..."));
-        result = parse_args(host_info, 1, argc, argv, false, mode, &new_argoff, app_candidate, opts);
-    }
-    else
-    {
-        // Invoked as the dotnet.exe muxer.
-        assert(mode == host_mode_t::muxer);
-        trace::verbose(_X("--- Executing in muxer mode..."));
-
-        if (argc <= 1)
-        {
-            muxer_usage(!is_sdk_dir_present(host_info.dotnet_root));
-            return StatusCode::InvalidArgFailure;
-        }
-
-        if (pal::strcasecmp(_X("exec"), argv[1]) == 0)
-        {
-            result = parse_args(host_info, 2, argc, argv, true, mode, &new_argoff, app_candidate, opts); // arg offset 2 for dotnet, exec
-        }
-        else
-        {
-            result = parse_args(host_info, 1, argc, argv, false, mode, &new_argoff, app_candidate, opts); // arg offset 1 for dotnet
-
-            if (static_cast<StatusCode>(result) == AppArgNotRunnable)
-            {
-                return handle_cli(host_info, argc, argv);
-            }
-        }
+        return handle_cli(host_info, argc, argv);
     }
 
     if (!result)
@@ -1124,29 +908,6 @@ int fx_muxer_t::close_host_context(host_context_t *context)
     return StatusCode::Success;
 }
 
-int fx_muxer_t::handle_exec(
-    const host_startup_info_t& host_info,
-    const pal::string_t& app_candidate,
-    const opt_map_t& opts,
-    int argc,
-    const pal::char_t* argv[],
-    int argoff,
-    host_mode_t mode)
-{
-    return handle_exec_host_command(
-        pal::string_t(),
-        host_info,
-        app_candidate,
-        opts,
-        argc,
-        argv,
-        argoff,
-        mode,
-        nullptr,
-        0,
-        nullptr);
-}
-
 int fx_muxer_t::handle_exec_host_command(
     const pal::string_t& host_command,
     const host_startup_info_t& host_info,
@@ -1219,12 +980,12 @@ int fx_muxer_t::handle_cli(
             pal::strcasecmp(_X("-?"), argv[1]) == 0 ||
             pal::strcasecmp(_X("/?"), argv[1]) == 0)
         {
-            muxer_usage(false);
+            command_line::print_muxer_usage(false);
             return StatusCode::InvalidArgFailure;
         }
         else if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
         {
-            muxer_info(host_info.dotnet_root);
+            command_line::print_muxer_info(host_info.dotnet_root);
             return StatusCode::Success;
         }
 
@@ -1252,17 +1013,27 @@ int fx_muxer_t::handle_cli(
     int new_argoff;
     pal::string_t app_candidate;
     opt_map_t opts;
-
-    int result = parse_args(host_info, 1, new_argv.size(), new_argv.data(), false, host_mode_t::muxer, &new_argoff, app_candidate, opts); // arg offset 1 for dotnet
+    int result = command_line::parse_args_for_sdk_command(host_info, new_argv.size(), new_argv.data(), &new_argoff, app_candidate, opts);
     if (!result)
     {
         // Transform dotnet [exec] [--additionalprobingpath path] [--depsfile file] [dll] [args] -> dotnet [dll] [args]
-        result = handle_exec(host_info, app_candidate, opts, new_argv.size(), new_argv.data(), new_argoff, host_mode_t::muxer);
+        result = handle_exec_host_command(
+            pal::string_t{} /*host_command*/,
+            host_info,
+            app_candidate,
+            opts,
+            new_argv.size(),
+            new_argv.data(),
+            new_argoff,
+            host_mode_t::muxer,
+            nullptr /*result_buffer*/,
+            0 /*buffer_size*/,
+            nullptr/*required_buffer_size*/);
     }
 
     if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
     {
-        muxer_info(host_info.dotnet_root);
+        command_line::print_muxer_info(host_info.dotnet_root);
     }
 
     return result;
