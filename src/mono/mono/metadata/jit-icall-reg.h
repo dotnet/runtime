@@ -339,7 +339,12 @@ MONO_JIT_ICALL (ves_icall_thread_finish_async_abort) \
 	\
 MONO_JIT_ICALL (count) \
 
-typedef enum MonoJitICallId {
+#ifdef __cplusplus
+typedef enum MonoJitICallId : gsize // Widen to gsize for use in MonoJumpInfo union.
+#else
+typedef enum MonoJitICallId
+#endif
+{
 #define MONO_JIT_ICALL(x) MONO_JIT_ICALL_ ## x,
 MONO_JIT_ICALLS
 #undef MONO_JIT_ICALL

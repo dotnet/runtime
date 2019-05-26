@@ -317,9 +317,11 @@ struct MonoJumpInfo {
 
 	MonoJumpInfoType type;
 	union {
+		// In order to allow blindly using target in mono_add_patch_info,
+		// all fields must be pointer-sized. No ints, no untyped enums.
 		gconstpointer   target;
-		int index;
-		guint uindex;
+		gssize		index;	// only 32 bits used but widened per above
+		gsize		uindex;	// only 32 bits used but widened per above
 		MonoBasicBlock *bb;
 		MonoInst       *inst;
 		MonoMethod     *method;
@@ -328,7 +330,11 @@ struct MonoJumpInfo {
 		MonoImage      *image;
 		MonoVTable     *vtable;
 		const char     *name;
-		MonoJitICallId jit_icall_id; // Or just use index?
+#ifdef __cplusplus // MonoJitICallId has base type of gsize to widen per above.
+		MonoJitICallId jit_icall_id;
+#else
+		gsize jit_icall_id;	// only 9 bits used but widened per above
+#endif
 		MonoJumpInfoToken  *token;
 		MonoJumpInfoBBTable *table;
 		MonoJumpInfoRgctxEntry *rgctx_entry;
