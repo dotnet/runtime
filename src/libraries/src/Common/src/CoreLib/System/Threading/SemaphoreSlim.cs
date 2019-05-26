@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace System.Threading
@@ -47,8 +48,9 @@ namespace System.Threading
         /// </summary>
         private int m_countOfWaitersPulsedToWake;
 
-        // Dummy object used to in lock statements to protect the semaphore count, wait handle and cancelation
-        private object? m_lockObj; // initialized non-null, then set to null on Dispose // TODO-NULLABLE: Consider using a separate field to track disposal
+        // Object used to synchronize access to state on the instance.  The contained
+        // Boolean value indicates whether the instance has been disposed.
+        private readonly StrongBox<bool> m_lockObjAndDisposed;
 
         // Act as the semaphore wait handle, it's lazily initialized if needed, the first WaitHandle call initialize it
         // and wait an release sets and resets it respectively as long as it is not null
@@ -113,7 +115,7 @@ namespace System.Threading
                     return m_waitHandle;
 
                 //lock the count to avoid multiple threads initializing the handle if it is null
-                lock (m_lockObj!)
+                lock (m_lockObjAndDisposed)
                 {
                     if (m_waitHandle == null)
                     {
@@ -169,8 +171,8 @@ namespace System.Threading
             }
 
             m_maxCount = maxCount;
-            m_lockObj = new object();
             m_currentCount = initialCount;
+            m_lockObjAndDisposed = new StrongBox<bool>();
         }
 
         #endregion
@@ -319,7 +321,7 @@ namespace System.Threading
 
             //Register for cancellation outside of the main lock.
             //NOTE: Register/unregister inside the lock can deadlock as different lock acquisition orders could
-            //      occur for (1)this.m_lockObj and (2)cts.internalLock
+            //      occur for (1)this.m_lockObjAndDisposed and (2)cts.internalLock
             CancellationTokenRegistration cancellationTokenRegistration = cancellationToken.UnsafeRegister(s_cancellationTokenCanceledEventHandler, this);
             try
             {
@@ -349,7 +351,7 @@ namespace System.Threading
                 try { }
                 finally
                 {
-                    Monitor.Enter(m_lockObj!, ref lockTaken);
+                    Monitor.Enter(m_lockObjAndDisposed, ref lockTaken);
                     if (lockTaken)
                     {
                         m_waitCount++;
@@ -418,7 +420,7 @@ namespace System.Threading
                 if (lockTaken)
                 {
                     m_waitCount--;
-                    Monitor.Exit(m_lockObj!);
+                    Monitor.Exit(m_lockObjAndDisposed);
                 }
 
                 // Unregister the cancellation callback.
@@ -462,7 +464,7 @@ namespace System.Threading
                     }
                 }
                 // ** the actual wait **
-                bool waitSuccessful = Monitor.Wait(m_lockObj!, remainingWaitMilliseconds);
+                bool waitSuccessful = Monitor.Wait(m_lockObjAndDisposed, remainingWaitMilliseconds);
 
                 // This waiter has woken up and this needs to be reflected in the count of waiters pulsed to wake. Since we
                 // don't have thread-specific pulse state, there is not enough information to tell whether this thread woke up
@@ -621,7 +623,7 @@ namespace System.Threading
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<bool>(cancellationToken);
 
-            lock (m_lockObj!)
+            lock (m_lockObjAndDisposed)
             {
                 // If there are counts available, allow this waiter to succeed.
                 if (m_currentCount > 0)
@@ -653,7 +655,7 @@ namespace System.Threading
         /// <returns>The created task.</returns>
         private TaskNode CreateAndAddAsyncWaiter()
         {
-            Debug.Assert(Monitor.IsEntered(m_lockObj!), "Requires the lock be held");
+            Debug.Assert(Monitor.IsEntered(m_lockObjAndDisposed), "Requires the lock be held");
 
             // Create the task
             var task = new TaskNode();
@@ -683,7 +685,7 @@ namespace System.Threading
         private bool RemoveAsyncWaiter(TaskNode task)
         {
             Debug.Assert(task != null, "Expected non-null task");
-            Debug.Assert(Monitor.IsEntered(m_lockObj!), "Requires the lock be held");
+            Debug.Assert(Monitor.IsEntered(m_lockObjAndDisposed), "Requires the lock be held");
 
             // Is the task in the list?  To be in the list, either it's the head or it has a predecessor that's in the list.
             bool wasInList = m_asyncHead == task || task.Prev != null;
@@ -710,7 +712,7 @@ namespace System.Threading
         private async Task<bool> WaitUntilCountOrTimeoutAsync(TaskNode asyncWaiter, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             Debug.Assert(asyncWaiter != null, "Waiter should have been constructed");
-            Debug.Assert(Monitor.IsEntered(m_lockObj!), "Requires the lock be held");
+            Debug.Assert(Monitor.IsEntered(m_lockObjAndDisposed), "Requires the lock be held");
 
             if (millisecondsTimeout != Timeout.Infinite)
             {
@@ -744,7 +746,7 @@ namespace System.Threading
 
             // If the await completed synchronously, we still hold the lock.  If it didn't,
             // we no longer hold the lock.  As such, acquire it.
-            lock (m_lockObj!)
+            lock (m_lockObjAndDisposed)
             {
                 // Remove the task from the list.  If we're successful in doing so,
                 // we know that no one else has tried to complete this waiter yet,
@@ -795,7 +797,7 @@ namespace System.Threading
             }
             int returnCount;
 
-            lock (m_lockObj!)
+            lock (m_lockObjAndDisposed)
             {
                 // Read the m_currentCount into a local variable to avoid unnecessary volatile accesses inside the lock.
                 int currentCount = m_currentCount;
@@ -829,7 +831,7 @@ namespace System.Threading
                     m_countOfWaitersPulsedToWake += waitersToNotify;
                     for (int i = 0; i < waitersToNotify; i++)
                     {
-                        Monitor.Pulse(m_lockObj!);
+                        Monitor.Pulse(m_lockObjAndDisposed);
                     }
                 }
 
@@ -895,12 +897,15 @@ namespace System.Threading
         {
             if (disposing)
             {
-                if (m_waitHandle != null)
+                WaitHandle? wh = m_waitHandle;
+                if (wh != null)
                 {
-                    m_waitHandle.Dispose();
+                    wh.Dispose();
                     m_waitHandle = null;
                 }
-                m_lockObj = null!;
+
+                m_lockObjAndDisposed.Value = true;
+
                 m_asyncHead = null;
                 m_asyncTail = null;
             }
@@ -914,9 +919,9 @@ namespace System.Threading
         {
             Debug.Assert(obj is SemaphoreSlim, "Expected a SemaphoreSlim");
             SemaphoreSlim semaphore = (SemaphoreSlim)obj;
-            lock (semaphore.m_lockObj!)
+            lock (semaphore.m_lockObjAndDisposed)
             {
-                Monitor.PulseAll(semaphore.m_lockObj!); //wake up all waiters.
+                Monitor.PulseAll(semaphore.m_lockObjAndDisposed); //wake up all waiters.
             }
         }
 
@@ -926,7 +931,7 @@ namespace System.Threading
         /// </summary>
         private void CheckDispose()
         {
-            if (m_lockObj == null)
+            if (m_lockObjAndDisposed.Value)
             {
                 throw new ObjectDisposedException(null, SR.SemaphoreSlim_Disposed);
             }
