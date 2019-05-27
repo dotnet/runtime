@@ -454,7 +454,7 @@ namespace System.Linq.Tests
 
             // .NET Core fixes an oversight where we wouldn't properly dispose
             // the SelectMany iterator. See https://github.com/dotnet/corefx/pull/13942.
-            int expectedCurrent = PlatformDetection.IsFullFramework ? subLength : 0;
+            int expectedCurrent = 0;
             Assert.Equal(expectedCurrent, e.Current);
             Assert.False(e.MoveNext());
             Assert.Equal(expectedCurrent, e.Current);

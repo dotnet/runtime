@@ -1,8 +1,10 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      netstandard;
-      netstandard-Windows_NT;
+      netcoreapp;
+      netcoreapp-Windows_NT;
+      uap;
+      uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

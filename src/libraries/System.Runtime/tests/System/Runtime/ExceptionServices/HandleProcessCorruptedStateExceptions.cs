@@ -48,10 +48,7 @@ namespace System.Runtime.ExceptionServices.Tests
             {
                 Process p = handle.Process;
                 p.WaitForExit();
-                if (PlatformDetection.IsFullFramework)
-                    Assert.Equal(RemoteExecutor.SuccessExitCode, p.ExitCode);
-                else
-                    Assert.NotEqual(RemoteExecutor.SuccessExitCode, p.ExitCode);
+                Assert.NotEqual(RemoteExecutor.SuccessExitCode, p.ExitCode);
             }
         }
     }

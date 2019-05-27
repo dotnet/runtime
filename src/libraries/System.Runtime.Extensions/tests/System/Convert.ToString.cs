@@ -181,7 +181,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void FromBoxedObject_NotNetFramework()
         {
             object[] testValues =
@@ -202,36 +201,6 @@ namespace System.Tests
                 // Single
                 "-0",
                 "-12.236465",
-            };
-
-            for (int i = 0; i < testValues.Length; i++)
-            {
-                Assert.Equal(expectedValues[i], Convert.ToString(testValues[i], NumberFormatInfo.InvariantInfo));
-            }
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void FromBoxedObject_NetFramework()
-        {
-            object[] testValues =
-            {
-                // Double
-                -12.236465923406483,
-
-                // Single
-                -1.7753e-83f,
-                -12.2364659234064826243f,
-            };
-
-            string[] expectedValues =
-            {
-                // Double
-                "-12.2364659234065",
-
-                // Single
-                "0",
-                "-12.23647",
             };
 
             for (int i = 0; i < testValues.Length; i++)

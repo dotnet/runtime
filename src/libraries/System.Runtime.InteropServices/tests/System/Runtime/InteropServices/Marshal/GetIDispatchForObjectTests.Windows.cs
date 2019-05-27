@@ -27,13 +27,5 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new AutoDispatchComObjectEmpty() };
             yield return new object[] { new AutoDualComObjectEmpty() };
         }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [MemberData(nameof(GetIUnknownForObject_ComObject_TestData))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Marshal.GetIDispatchForObject is not implemented in .NET Core.")]
-        public void GetIDispatchForObject_ComObject_ReturnsExpected(object o)
-        {
-            GetIDispatchForObject_ValidObject_Roundtrips(o);
-        }
     }
 }

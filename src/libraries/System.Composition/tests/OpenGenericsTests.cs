@@ -130,7 +130,6 @@ namespace System.Composition.UnitTests
         // In future, the set of allowable generic type mappings will be expanded (see
         // ignored tests above).
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void TypesWithMismatchedGenericParameterListsAreDetectedDuringDiscovery()
         {
@@ -139,7 +138,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void TypesWithNonGenericExportsAreDetectedDuringDiscovery()
         {

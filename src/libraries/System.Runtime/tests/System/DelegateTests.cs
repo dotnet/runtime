@@ -682,7 +682,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/coreclr#15196")]
         public static void CreateDelegate2_Target_GenericTypeParameter()
         {
 

@@ -30,12 +30,9 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             
             Console.WriteLine($"### FRAMEWORK: Version={Environment.Version} Description={RuntimeInformation.FrameworkDescription.Trim()}");
 
-            if (!PlatformDetection.IsNetNative)
-            {
-                string binariesLocation = Path.GetDirectoryName(typeof(object).Assembly.Location);
-                string binariesLocationFormat = PlatformDetection.IsInAppContainer ? "Unknown" : new DriveInfo(binariesLocation).DriveFormat;
-                Console.WriteLine($"### BINARIES: {binariesLocation} (drive format {binariesLocationFormat})");
-            }
+            string binariesLocation = Path.GetDirectoryName(typeof(object).Assembly.Location);
+            string binariesLocationFormat = PlatformDetection.IsInAppContainer ? "Unknown" : new DriveInfo(binariesLocation).DriveFormat;
+            Console.WriteLine($"### BINARIES: {binariesLocation} (drive format {binariesLocationFormat})");
 
             string tempPathLocation = Path.GetTempPath();
             string tempPathLocationFormat = PlatformDetection.IsInAppContainer ? "Unknown" : new DriveInfo(tempPathLocation).DriveFormat;
@@ -147,14 +144,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.UapAot)]
-        public void VerifyRuntimeNameOnNetNative()
-        {
-            Assert.True(RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"), RuntimeInformation.FrameworkDescription);
-            Assert.Same(RuntimeInformation.FrameworkDescription, RuntimeInformation.FrameworkDescription);
-        }
-
-        [Fact]
         public void VerifyOSDescription()
         {
             Assert.NotNull(RuntimeInformation.OSDescription);
@@ -162,7 +151,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void VerifyWindowsDescriptionDoesNotContainTrailingWhitespace()
         {

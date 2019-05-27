@@ -122,7 +122,6 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Netfx handler does not support custom cookie header")]
         [Fact]
         public async Task GetAsync_AddCookieHeader_CookieHeaderSent()
         {
@@ -145,7 +144,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ActiveIssue(30051, TargetFrameworkMonikers.Uap)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Netfx handler does not support custom cookie header")]
         [Fact]
         public async Task GetAsync_AddMultipleCookieHeaders_CookiesSent()
         {
@@ -206,7 +204,6 @@ namespace System.Net.Http.Functional.Tests
             return cookieHeaderValue;
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Netfx handler does not support custom cookie header")]
         [ConditionalFact]
         public async Task GetAsync_SetCookieContainerAndCookieHeader_BothCookiesSent()
         {
@@ -242,7 +239,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ActiveIssue(30051, TargetFrameworkMonikers.Uap)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Netfx handler does not support custom cookie header")]
         [ConditionalFact]
         public async Task GetAsync_SetCookieContainerAndMultipleCookieHeaders_BothCookiesSent()
         {
@@ -628,11 +624,7 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { "ABC", "123", useCookies };
                 yield return new object[] { "Hello", "World", useCookies };
                 yield return new object[] { "foo", "bar", useCookies };
-
-                if (!PlatformDetection.IsFullFramework) {
-                    yield return new object[] { "Hello World", "value", useCookies };
-                }
-
+                yield return new object[] { "Hello World", "value", useCookies };
                 yield return new object[] { ".AspNetCore.Session", "RAExEmXpoCbueP_QYM", useCookies };
 
                 yield return new object[]

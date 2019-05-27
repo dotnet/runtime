@@ -23,7 +23,6 @@ namespace System.Net.Http.Functional.Tests
         public HttpRetryProtocolTests(ITestOutputHelper output) : base(output) { }
 
         [Fact]
-        [ActiveIssue(26770, TargetFrameworkMonikers.NetFramework)]
         public async Task GetAsync_RetryOnConnectionClosed_Success()
         {
             if (!IsRetrySupported)

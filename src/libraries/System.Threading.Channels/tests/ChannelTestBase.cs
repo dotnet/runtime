@@ -24,7 +24,6 @@ namespace System.Threading.Channels.Tests
         protected virtual bool RequiresSingleWriter => false;
         protected virtual bool BuffersItems => true;
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Requires internal reflection on framework types.")]
         [Fact]
         public void ValidateDebuggerAttributes()
         {

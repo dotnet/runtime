@@ -25,7 +25,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "CI uses old Framework version, which doesn't support using SslProtocols.None for default system behavior")]
         public async Task ClientAsyncAuthenticate_SslStreamClientServerNone_UseStrongCryptoSet()
         {
             SslProtocols protocol = SslProtocols.None;

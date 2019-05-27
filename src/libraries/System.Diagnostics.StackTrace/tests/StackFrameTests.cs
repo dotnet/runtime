@@ -9,7 +9,6 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "StackFrame is not supported in uapaot.")]
     public class StackFrameTests
     {
         [Fact]
@@ -25,7 +24,6 @@ namespace System.Diagnostics.Tests
             VerifyStackFrame(stackFrame, false, 0, typeof(StackFrameTests).GetMethod(nameof(Ctor_Default)), isCurrentFrame: true);
         }
 
-        [ActiveIssue(23796, TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -45,7 +43,6 @@ namespace System.Diagnostics.Tests
             VerifyStackFrame(stackFrame, true, skipFrames, typeof(StackFrameTests).GetMethod(nameof(Ctor_SkipFrames)), isCurrentFrame: skipFrames == 0);
         }
 
-        [ActiveIssue(23796, TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [InlineData(StackFrame.OFFSET_UNKNOWN, true)]
         [InlineData(0, true)]
@@ -83,7 +80,6 @@ namespace System.Diagnostics.Tests
         [InlineData(null, StackFrame.OFFSET_UNKNOWN)]
         [InlineData("", 0)]
         [InlineData("FileName", 1)]
-        [ActiveIssue(28853, TargetFrameworkMonikers.NetFramework)]
         public void Ctor_Filename_LineNumber(string fileName, int lineNumber)
         {
             var stackFrame = new StackFrame(fileName, lineNumber);
@@ -98,7 +94,6 @@ namespace System.Diagnostics.Tests
         [InlineData(null, StackFrame.OFFSET_UNKNOWN, 0)]
         [InlineData("", 0, StackFrame.OFFSET_UNKNOWN)]
         [InlineData("FileName", 1, 2)]
-        [ActiveIssue(28853, TargetFrameworkMonikers.NetFramework)]
         public void Ctor_Filename_LineNumber_ColNumber(string fileName, int lineNumber, int columnNumber)
         {
             var stackFrame = new StackFrame(fileName, lineNumber, columnNumber);

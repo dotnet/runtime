@@ -91,7 +91,6 @@ namespace System.Tests
             Assert.Equal(os, TypedReference.ToObject(tr));
         }
 
-#if !uapaot  // ActiveIssue UapAot TFS 430781 - __makeref causes ILC fatal error.
         [Fact]
         public static void GetTargetTypeTests()
         {
@@ -127,9 +126,7 @@ namespace System.Tests
             reference = __makeref(boolValue);
             Assert.Equal(boolValue.GetType(), TypedReference.GetTargetType(reference));
         }
-#endif // !uapaot
 
-#if !uapaot  // ActiveIssue UapAot TFS 430781 - __makeref causes ILC fatal error.
         [Fact]
         public static unsafe void PointerTypeTests()
         {
@@ -142,6 +139,5 @@ namespace System.Tests
             Assert.Equal(typeof(UIntPtr), obj.GetType());
             Assert.Equal((UIntPtr)pointerValue, (UIntPtr)obj);
         }
-#endif // !uapaot
     }
 }

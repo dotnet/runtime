@@ -112,7 +112,6 @@ namespace System.Tests
         [InlineData(double.NaN, -double.NaN, true)]
         [InlineData(789.0, 789.0f, false)]
         [InlineData(789.0, "789", false)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The fix was made in coreclr that is not in netfx. See https://github.com/dotnet/coreclr/issues/6237")]
         public static void Equals(double d1, object value, bool expected)
         {
             if (value is double d2)
@@ -435,22 +434,6 @@ namespace System.Tests
             yield return new object[] { double.NegativeInfinity, "G", invariantFormat, "-Infinity" };
         }
 
-        public static IEnumerable<object[]> ToString_TestData_NetFramework()
-        {
-            foreach (var testData in ToString_TestData())
-            {
-                yield return testData;
-            }
-
-            yield return new object[] { double.MinValue, "G", null, "-1.79769313486232E+308" };
-            yield return new object[] { double.MaxValue, "G", null, "1.79769313486232E+308" };
-
-            yield return new object[] { double.Epsilon, "G", null, "4.94065645841247E-324" };
-
-            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
-            yield return new object[] { double.Epsilon, "G", invariantFormat, "4.94065645841247E-324" };
-        }
-
         public static IEnumerable<object[]> ToString_TestData_NotNetFramework()
         {
             foreach (var testData in ToString_TestData())
@@ -468,23 +451,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Test_ToString_NetFramework()
-        {
-            RemoteExecutor.Invoke(() =>
-            {
-                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
-
-                foreach (var testdata in ToString_TestData_NetFramework())
-                {
-                    ToString((double)testdata[0], (string)testdata[1], (IFormatProvider)testdata[2], (string)testdata[3]);
-                }
-                return RemoteExecutor.SuccessExitCode;
-            }).Dispose();
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Test_ToString_NotNetFramework()
         {
             RemoteExecutor.Invoke(() =>

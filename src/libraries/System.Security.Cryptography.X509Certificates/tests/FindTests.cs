@@ -180,7 +180,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "31463 is not fixed in NetFX")]
         public static void FindByThumbprint_WithLrm()
         {
             RunTest(
@@ -683,7 +682,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "31463 is not fixed in NetFX")]
         public static void TestBySerialNumber_WithLRM()
         {
             // Hex string is also an allowed input format and case-blind
@@ -773,7 +771,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         // Should ignore Left-to-right mark \u200E
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "31463 is not fixed in NetFX")]
         [InlineData(LeftToRightMark + "59 71 A6 5A 33 4D DA 98 07 80 FF 84 1E BE 87 F9 72 32 41 F2")]
         // Compat: Lone trailing nybbles are ignored
         [InlineData(LeftToRightMark + "59 71 A6 5A 33 4D DA 98 07 80 FF 84 1E BE 87 F9 72 32 41 F2 3")]

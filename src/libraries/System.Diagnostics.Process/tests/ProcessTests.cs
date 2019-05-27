@@ -1221,7 +1221,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Behavior differs on Windows and Unix
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "Retrieving information about local processes is not supported on uap")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void TestProcessOnRemoteMachineWindows()
         {
             Process currentProccess = Process.GetCurrentProcess();
@@ -1255,9 +1255,7 @@ namespace System.Diagnostics.Tests
             Process process = CreateProcessLong();
             process.Start();
 
-            // Processes are not hosted by dotnet in the full .NET Framework.
-            string expectedFileName = (PlatformDetection.IsFullFramework || PlatformDetection.IsNetNative) ? RemoteExecutor.HostRunner : RemoteExecutor.HostRunner;
-            Assert.Equal(expectedFileName, process.StartInfo.FileName);
+            Assert.Equal(RemoteExecutor.HostRunner, process.StartInfo.FileName);
 
             process.Kill();
             Assert.True(process.WaitForExit(WaitInMS));
@@ -1273,16 +1271,7 @@ namespace System.Diagnostics.Tests
             // .NET Core fixes a bug where Process.StartInfo for a unrelated process would
             // return information about the current process, not the unrelated process.
             // See https://github.com/dotnet/corefx/issues/1100.
-            if (PlatformDetection.IsFullFramework)
-            {
-                var startInfo = new ProcessStartInfo();
-                process.StartInfo = startInfo;
-                Assert.Equal(startInfo, process.StartInfo);
-            }
-            else
-            {
-                Assert.Throws<InvalidOperationException>(() => process.StartInfo = new ProcessStartInfo());
-            }
+            Assert.Throws<InvalidOperationException>(() => process.StartInfo = new ProcessStartInfo());
 
             process.Kill();
             Assert.True(process.WaitForExit(WaitInMS));
@@ -1310,14 +1299,7 @@ namespace System.Diagnostics.Tests
             // .NET Core fixes a bug where Process.StartInfo for an unrelated process would
             // return information about the current process, not the unrelated process.
             // See https://github.com/dotnet/corefx/issues/1100.
-            if (PlatformDetection.IsFullFramework)
-            {
-                Assert.NotNull(process.StartInfo);
-            }
-            else
-            {
-                Assert.Throws<InvalidOperationException>(() => process.StartInfo);
-            }
+            Assert.Throws<InvalidOperationException>(() => process.StartInfo);
         }
 
         [Theory]
@@ -1498,7 +1480,6 @@ namespace System.Diagnostics.Tests
         [OuterLoop]
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)]  // Expected process HandleCounts differs on OSX
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Handle count change is not reliable, but seems less robust on NETFX")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void HandleCountChanges()
         {

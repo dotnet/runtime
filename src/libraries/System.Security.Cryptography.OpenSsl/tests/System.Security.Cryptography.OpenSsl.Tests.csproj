@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{E1DAF7B9-BECB-4D25-AABB-C9E0BC73C690}</ProjectGuid>
     <UnsupportedPlatforms>Windows_NT</UnsupportedPlatforms>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netstandard-Unix-Debug;netstandard-Unix-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="EcDsaOpenSslTests.cs" />
@@ -128,7 +128,7 @@
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+  <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyFileTests.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\DSA\DSAKeyFileTests.cs</Link>
     </Compile>

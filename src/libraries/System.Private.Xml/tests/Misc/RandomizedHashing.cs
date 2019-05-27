@@ -47,7 +47,6 @@ namespace System.Xml.Tests
         };
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void StringsDontHashToAnyKnownNonRandomizedSets()
         {
             var setOfHashes = new Tuple<int, int, int>(_strings[0].GetHashCode(), _strings[1].GetHashCode(), _strings[2].GetHashCode());
@@ -55,7 +54,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void StringsDoNotUseAlgorithmSimilarToCoreClrWhenRandomizedHashingIsDisabled()
         {
             // Even though GetHashCode gives different results on .NET 4.6 and CoreCLR with disabled
@@ -76,7 +74,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void XmlQualifiedNameUsesStringGetHashCode()
         {
             Assert.Equal("foo".GetHashCode(), new XmlQualifiedName("foo").GetHashCode());
@@ -85,7 +82,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void SecureStringHasherUsesStringGetHashCode()
         {
             Assert.Equal("foo".GetHashCode(), new SecureStringHasher().GetHashCode("foo"));

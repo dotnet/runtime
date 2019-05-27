@@ -76,7 +76,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug in SendPacketsAsync that dereferences null SAEA argument")]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(SocketImplementationType.APM)]
@@ -107,7 +106,6 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug in SendPacketsAsync that dereferences null m_SendPacketsElementsInternal array")]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(SocketImplementationType.APM)]
@@ -387,7 +385,6 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(SocketImplementationType.APM)]
         [InlineData(SocketImplementationType.Async)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The fix was made in corefx that is not in netfx. See https://github.com/dotnet/corefx/pull/34331")]
         public void SendPacketsElement_FileStreamIsReleasedOnError(SocketImplementationType type)
         {
             // this test checks that FileStreams opened by the implementation of SendPacketsAsync

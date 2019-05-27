@@ -38,7 +38,6 @@ namespace System.Net.Http.Functional.Tests
         public PostScenarioTest(ITestOutputHelper output) : base(output) { }
 
         [ActiveIssue(30057, TargetFrameworkMonikers.Uap)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework disposes request content after send")]
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(EchoServers))]
         public async Task PostRewindableStreamContentMultipleTimes_StreamContentFullySent(Uri serverUri)
@@ -142,7 +141,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external servers")]
         [Theory, MemberData(nameof(VerifyUploadServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx behaves differently and will buffer content and use 'Content-Length' semantics")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT behaves differently and will use 'Content-Length' semantics")]
         public async Task PostUsingNoSpecifiedSemantics_UsesChunkedSemantics(Uri serverUri)
         {

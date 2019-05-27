@@ -178,7 +178,7 @@ namespace System.Net.Tests
         {
             // [ActiveIssue(20392, TargetFrameworkMonikers.Netcoreapp)]
             string expectedStatusDescription = statusDescription;
-            if (!PlatformDetection.IsFullFramework && statusDescription == null)
+            if (statusDescription == null)
             {
                 expectedStatusDescription = string.Empty;
             }
@@ -241,7 +241,7 @@ namespace System.Net.Tests
         {
             // [ActiveIssue(20392, TargetFrameworkMonikers.Netcoreapp)]
             string expectedStatusDescription = statusDescription;
-            if (!PlatformDetection.IsFullFramework && statusDescription == null)
+            if (statusDescription == null)
             {
                 expectedStatusDescription = string.Empty;
             }

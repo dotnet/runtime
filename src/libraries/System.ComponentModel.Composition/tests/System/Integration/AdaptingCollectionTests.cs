@@ -343,7 +343,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TargetFrameworkMonikers.UapAot)]
         public void TestDyamicallyFilteringImports()
         {
             var container = ContainerFactory.CreateWithAttributedCatalog(typeof(Dynamic1), typeof(Dynamic2), typeof(NonDynamic1));

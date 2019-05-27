@@ -11,7 +11,6 @@ namespace System.IO.Tests
 {
     public class FileSystemWatcher_Multiple_Test : FileSystemWatcherTest
     {
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "#34017")]        
         [OuterLoop]
         [Fact]
         public void FileSystemWatcher_File_Create_ExecutionContextFlowed()
@@ -47,7 +46,6 @@ namespace System.IO.Tests
             });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "#34017")]
         [OuterLoop]
         [Fact]
         public void FileSystemWatcher_File_Create_SuppressedExecutionContextHandled()

@@ -12,7 +12,6 @@ namespace System.Tests
     public  class MarshalByRefObjectTest : MarshalByRefObject
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void MarshalByRefObjectTests()
         {
             var obj = new MarshalByRefObjectTest();

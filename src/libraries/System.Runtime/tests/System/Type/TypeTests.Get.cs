@@ -81,7 +81,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx doesn't have the fix in https://github.com/dotnet/coreclr/pull/21071")]
         public void GetInterface_SameNameInterfaces_FullySpecified_Succeeds()
         {
             Assert.NotNull(typeof(ClassWithTwoSameNameInterfaces).GetInterface("System.Tests.Inner.Interface1", ignoreCase: true));

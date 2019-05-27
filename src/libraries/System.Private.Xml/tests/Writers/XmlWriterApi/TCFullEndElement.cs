@@ -4291,44 +4291,6 @@ namespace System.Xml.Tests
             }
 
             [Theory]
-            [XmlWriterInlineData(1, "Double", "float", false, null)]
-            [XmlWriterInlineData(1, "Double", "Single", false, null)]
-            [XmlWriterInlineData(2, "Double", "Double", false, null)]
-
-            [XmlWriterInlineData(1, "UInt64", "float", true, 1.844674E+19F)]
-            [XmlWriterInlineData(1, "UInt32", "float", true, 4.294967E+09F)]
-            [XmlWriterInlineData(1, "Int32", "float", true, 2.147484E+09F)]
-            [XmlWriterInlineData(1, "Decimal", "float", true, 7.922816E+28F)]
-
-            [XmlWriterInlineData(1, "UInt64", "Double", true, 1.84467440737096E+19D)]
-            [XmlWriterInlineData(1, "Int64", "Double", true, 9.22337203685478E+18D)]
-            [XmlWriterInlineData(1, "Decimal", "Double", true, 7.92281625142643E+28D)]
-
-            [XmlWriterInlineData(1, "UInt64", "Single", true, 1.844674E+19F)]
-            [XmlWriterInlineData(1, "UInt32", "Single", true, 4.294967E+09F)]
-            [XmlWriterInlineData(1, "Int32", "Single", true, 2.147484E+09F)]
-            [XmlWriterInlineData(1, "Decimal", "Single", true, 7.922816E+28F)]
-
-            [XmlWriterInlineData(2, "UInt64", "float", true, 1.844674E+19F)]
-            [XmlWriterInlineData(2, "UInt32", "float", true, 4.294967E+09F)]
-            [XmlWriterInlineData(2, "Int32", "float", true, 2.147484E+09F)]
-            [XmlWriterInlineData(2, "Decimal", "float", true, 7.922816E+28F)]
-
-            [XmlWriterInlineData(2, "UInt64", "Double", true, 1.84467440737096E+19D)]
-            [XmlWriterInlineData(2, "Int64", "Double", true, 9.22337203685478E+18D)]
-            [XmlWriterInlineData(2, "Decimal", "Double", true, 7.92281625142643E+28D)]
-
-            [XmlWriterInlineData(2, "UInt64", "Single", true, 1.844674E+19F)]
-            [XmlWriterInlineData(2, "UInt32", "Single", true, 4.294967E+09F)]
-            [XmlWriterInlineData(2, "Int32", "Single", true, 2.147484E+09F)]
-            [XmlWriterInlineData(2, "Decimal", "Single", true, 7.922816E+28F)]
-            [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-            public void writeValue_27_NetFramework(XmlWriterUtils utils, int param, string sourceStr, string destStr, bool isValid, object expVal)
-            {
-                writeValue_27(utils, param, sourceStr, destStr, isValid, expVal);
-            }
-
-            [Theory]
             [XmlWriterInlineData(1, "Double", "float", true, float.PositiveInfinity)]
             [XmlWriterInlineData(1, "Double", "Single", true, float.PositiveInfinity)]
             [XmlWriterInlineData(2, "Double", "Double", true, 1.7976931348623157E+308)]
@@ -4359,7 +4321,6 @@ namespace System.Xml.Tests
             [XmlWriterInlineData(2, "UInt32", "Single", true, 4.2949673E+09F)]
             [XmlWriterInlineData(2, "Int32", "Single", true, 2.1474836E+09F)]
             [XmlWriterInlineData(2, "Decimal", "Single", true, 7.9228163E+28F)]
-            [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
             public void writeValue_27_NotNetFramework(XmlWriterUtils utils, int param, string sourceStr, string destStr, bool isValid, object expVal)
             {
                 writeValue_27(utils, param, sourceStr, destStr, isValid, expVal);

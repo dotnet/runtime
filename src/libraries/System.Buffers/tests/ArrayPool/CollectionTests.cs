@@ -13,14 +13,13 @@ using Xunit;
 
 namespace System.Buffers.ArrayPool.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     public class CollectionTests : ArrayPoolTest
     {
         [OuterLoop("This is a long running test (over 2 minutes)")]
         [Theory,
             InlineData(true),
             InlineData(false)]
-        [ActiveIssue(29866, TargetFrameworkMonikers.UapNotUapAot)]
+        [ActiveIssue(29866, TargetFrameworkMonikers.Uap)]
         public void BuffersAreCollectedWhenStale(bool trim)
         {
             RemoteInvokeWithTrimming((trimString) =>
@@ -148,7 +147,7 @@ namespace System.Buffers.ArrayPool.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         [InlineData(true)]
         [InlineData(false)]
-        [ActiveIssue(29866, TargetFrameworkMonikers.UapNotUapAot)]
+        [ActiveIssue(29866, TargetFrameworkMonikers.Uap)]
         public void PollingEventFires(bool trim)
         {
             RemoteInvokeWithTrimming((trimString) =>

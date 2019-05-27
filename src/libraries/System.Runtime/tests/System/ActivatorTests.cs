@@ -119,7 +119,7 @@ namespace System.Tests
             Assert.Throws<AmbiguousMatchException>(() => Activator.CreateInstance(typeof(Choice1), new object[] { null }));
         }
 
-#if netcoreapp || uapaot
+#if netcoreapp
         [Fact]
         public void CreateInstance_NotRuntimeType_ThrowsArgumentException()
         {
@@ -130,7 +130,7 @@ namespace System.Tests
                 AssertExtensions.Throws<ArgumentException>("type", () => Activator.CreateInstance(nonRuntimeType, new object[0]));
             }
         }
-#endif // netcoreapp || uapaot
+#endif // netcoreapp
 
         public static IEnumerable<object[]> CreateInstance_ContainsGenericParameters_TestData()
         {
@@ -227,32 +227,13 @@ namespace System.Tests
         [Fact]
         public void CreateInstance_Span_ThrowsNotSupportedException()
         {
-            // Move to test data for CreateInstance_BoxedByRefType_ThrowsNotSupportedException
-            // if .NET Framework recognizes Span<T> as an intrinsic.
-            if (PlatformDetection.IsFullFramework)
-            {
-                Assert.NotNull(Activator.CreateInstance(typeof(Span<int>)));
-            }
-            else
-            {
-                CreateInstance_BoxedByRefType_ThrowsNotSupportedException(typeof(Span<int>));
-            }
+            CreateInstance_BoxedByRefType_ThrowsNotSupportedException(typeof(Span<int>));
         }
 
         [Fact]
         public void CreateInstance_InterfaceType_ThrowsMissingMemberException()
         {
             Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance(typeof(IInterfaceType)));
-        }
-
-        [Theory]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Activation Attributes are not supported in .NET Core.")]
-        [InlineData(typeof(MarshalByRefObject))]
-        [InlineData(typeof(SubMarshalByRefObject))]
-        public void CreateInstance_MarshalByRefObjectNetFramework_ThrowsNotSupportedException(Type type)
-        {
-            Assert.Throws<NotSupportedException>(() => Activator.CreateInstance(type, null, new object[] { 1 } ));
-            Assert.Throws<NotSupportedException>(() => Activator.CreateInstance(type, null, new object[] { 1, 2 } ));
         }
 
         public class SubMarshalByRefObject : MarshalByRefObject
@@ -585,7 +566,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void TestingActivationAttributes()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Activator.CreateInstance(typeof(ClassWithIsTestedAttribute), null, new object[] { new object() }));

@@ -194,7 +194,6 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.InOut)]
         [InlineData(PipeDirection.Out)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "This scenario is not handled with System.ArgumentException on Full Framework")]
         [PlatformSpecific(TestPlatforms.Windows)] // accessing SafePipeHandle on Unix fails for a non-connected stream
         public static void Windows_CreateFromDisposedServerHandle_Throws_ObjectDisposedException(PipeDirection direction)
         {
@@ -204,22 +203,6 @@ namespace System.IO.Pipes.Tests
             pipe.Dispose();
             Assert.Throws<ObjectDisposedException>(() => new NamedPipeServerStream(direction, true, true, pipe.SafePipeHandle).Dispose());
         }
-
-        [Theory]
-        [InlineData(PipeDirection.In)]
-        [InlineData(PipeDirection.InOut)]
-        [InlineData(PipeDirection.Out)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, ".NET Core handles this scenario by throwing ArgumentException instead")]
-        [PlatformSpecific(TestPlatforms.Windows)] // accessing SafePipeHandle on Unix fails for a non-connected stream
-        public static void Windows_CreateFromAlreadyBoundHandle_Throws_ApplicationException(PipeDirection direction)
-        {
-            // The pipe is already bound
-            using (var pipe = new NamedPipeServerStream(GetUniquePipeName(), direction, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
-            {
-                SafePipeHandle handle = pipe.SafePipeHandle;
-                Assert.Throws<ApplicationException>(() => new NamedPipeServerStream(direction, true, true, handle));
-             }
-         }
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)] // accessing SafePipeHandle on Unix fails for a non-connected stream
@@ -235,7 +218,6 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.InOut)]
         [InlineData(PipeDirection.Out)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET framework handles this scenario by throwing ApplicationException instead")]
         [PlatformSpecific(TestPlatforms.Windows)] // accessing SafePipeHandle on Unix fails for a non-connected stream
         public static void Windows_CreateFromAlreadyBoundHandle_Throws_ArgumentException(PipeDirection direction)
         {

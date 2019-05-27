@@ -1184,9 +1184,6 @@ namespace CoreXml.Test.XLinq
 
                 private void CompareParamName(string actual, string expected, string message)
                 {
-                    if (PlatformDetection.IsNetNative) // ILC optimization sets ParamName always to null.
-                        return;
-
                     TestLog.Compare(actual, expected, message);
                 }
             }

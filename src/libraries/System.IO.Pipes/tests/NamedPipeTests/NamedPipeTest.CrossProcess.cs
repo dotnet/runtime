@@ -12,7 +12,7 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
-    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
+    [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
     public sealed class NamedPipeTest_CrossProcess
     {
         [Fact]

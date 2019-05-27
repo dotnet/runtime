@@ -75,7 +75,6 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Missing bug fix in https://github.com/dotnet/corefx/pull/28115")]
         public static void TestAddNullValue_IDictionary_ReferenceType_null()
         {
             // using IDictionary interface
@@ -97,7 +96,6 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Missing bug fix in https://github.com/dotnet/corefx/pull/28115")]
         public static void TestAddNullValue_IDictionary_ValueType_null_add()
         {
             Action action = () =>
@@ -610,7 +608,6 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public static void TestDebuggerAttributes()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new ConcurrentDictionary<string, int>());
@@ -624,7 +621,6 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public static void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(new ConcurrentDictionary<string, int>());
@@ -633,7 +629,6 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework hasn't received the fix for https://github.com/dotnet/corefx/issues/18432 yet.")]
         public static void TestNullComparer()
         {
             AssertDefaultComparerBehavior(new ConcurrentDictionary<EqualityApiSpy, int>((IEqualityComparer<EqualityApiSpy>)null));
@@ -675,27 +670,6 @@ namespace System.Collections.Concurrent.Tests
                 IEquatableApiUsed = true;
                 return ReferenceEquals(this, other);
             }
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, ".NET Framework hasn't received the fix for https://github.com/dotnet/corefx/issues/18432 yet.")]
-        public static void TestNullComparer_netfx()
-        {
-            Assert.Throws<ArgumentNullException>(
-               () => new ConcurrentDictionary<int, int>((IEqualityComparer<int>)null));
-            // "TestConstructor:  FAILED.  Constructor didn't throw ANE when null IEqualityComparer is passed");
-
-            Assert.Throws<ArgumentNullException>(
-               () => new ConcurrentDictionary<int, int>(new[] { new KeyValuePair<int, int>(1, 1) }, null));
-            // "TestConstructor:  FAILED.  Constructor didn't throw ANE when non null collection and null IEqualityComparer passed");
-
-            Assert.Throws<ArgumentNullException>(
-               () => new ConcurrentDictionary<int, int>(1, new[] { new KeyValuePair<int, int>(1, 1) }, null));
-            // "TestConstructor:  FAILED.  Constructor didn't throw ANE when null comparer is passed");
-
-            Assert.Throws<ArgumentNullException>(
-               () => new ConcurrentDictionary<int, int>(1, 1, null));
-            // "TestConstructor:  FAILED.  Constructor didn't throw ANE when null comparer is passed");
         }
 
         [Fact]

@@ -37,13 +37,6 @@ namespace System.Threading.Tests
             }
         }
 
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Full framework throws argument exception on long names")]
-        [Fact]
-        public void Ctor_InvalidNames_Windows()
-        {
-            AssertExtensions.Throws<ArgumentException>("name", null, () => new Mutex(false, new string('a', 1000), out bool createdNew));
-        }
-
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void Ctor_InvalidNames_Unix()
@@ -79,9 +72,6 @@ namespace System.Threading.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't create global objects in appcontainer
-        [SkipOnTargetFramework(
-            TargetFrameworkMonikers.NetFramework,
-            "The fix necessary for this test (PR https://github.com/dotnet/coreclr/pull/12381) is not in the .NET Framework.")]
         public void Ctor_ImpersonateAnonymousAndTryCreateGlobalMutexTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -281,7 +271,7 @@ namespace System.Threading.Tests
         {
             var names  =  new TheoryData<string>() { Guid.NewGuid().ToString("N") };
 
-            if (PlatformDetection.IsWindows && !PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsWindows)
                 names.Add(Guid.NewGuid().ToString("N") + new string('a', 1000));
 
             return names;

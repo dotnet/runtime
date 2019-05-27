@@ -45,7 +45,6 @@ namespace System.Text.Encodings.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework uses system ACP and not UTF8")]
         public static void DefaultEncodingBOMTest()
         {
             UTF8Encoding defaultEncoding = Encoding.Default as UTF8Encoding;

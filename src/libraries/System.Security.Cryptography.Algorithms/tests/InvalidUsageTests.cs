@@ -24,7 +24,6 @@ namespace System.Security.Cryptography.Hashing.Algorithms.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFX throws a CryptoException because it lacks boundary checking in the Stream overload. See #19092.")]
         public void InvalidHashCoreArgumentsFromStream()
         {
             using (SHA1 sha1 = SHA1.Create())

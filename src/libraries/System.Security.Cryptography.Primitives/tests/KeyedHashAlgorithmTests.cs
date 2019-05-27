@@ -49,7 +49,6 @@ namespace System.Security.Cryptography.Hashing.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Throws NRE on netfx (https://github.com/dotnet/corefx/issues/18690)")]
         public void EnsureDisposeFreesKey()
         {
             byte[] key = new[] { (byte)0x00, (byte)0x01, (byte)0x02, (byte)0x03, (byte)0x04, (byte)0x05, };
@@ -65,7 +64,6 @@ namespace System.Security.Cryptography.Hashing.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Throws NRE on netfx (https://github.com/dotnet/corefx/issues/18690)")]
         public void SetKeyNull()
         {
             using (var keyedHash = new TestKeyedHashAlgorithm())

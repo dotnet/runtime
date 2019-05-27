@@ -3332,7 +3332,6 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
         [Theory]
         [MemberData(nameof(ModObject_DivideByZeroObject_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Unfixed JIT bug in the .NET Framework")]
         public void ModObject_DivideByZeroObject_ThrowsDivideByZeroException(object left, object right)
         {
             Assert.Throws<DivideByZeroException>(() => Operators.ModObject(left, right));

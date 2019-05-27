@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage
 {
-    [ActiveIssue(18940, TargetFrameworkMonikers.UapAot)]
     public class IdentityTests : IsoStorageTest
     {
         private class TestStorage : IsolatedStorage

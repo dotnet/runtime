@@ -604,7 +604,6 @@ namespace System.Composition.Hosting.Tests
 
         [Theory]
         [MemberData(nameof(DebuggerAttributes_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public void DebuggerAttributes_GetViaReflection_Success(ContainerConfiguration configuration)
         {
             DebuggerAttributeInfo debuggerAttributeInfo = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(configuration);

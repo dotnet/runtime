@@ -2,11 +2,11 @@
   <PropertyGroup>
     <ProjectGuid>{0D1E2954-A5C7-4B8C-932A-31EB4A96A737}</ProjectGuid>
     <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATORTESTS</DefineConstants>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <CoverageSupported>false</CoverageSupported>
   </PropertyGroup>
   <PropertyGroup>
-    <SkipTestsOnPlatform Condition="'$(TargetGroup)' == 'uap' OR '$(ArchGroup)' == 'arm' OR '$(ArchGroup)' == 'arm64' OR '$(ArchGroup)' == 'armel' OR '$(TargetGroup)' == 'netfx'">true</SkipTestsOnPlatform>
+    <SkipTestsOnPlatform Condition="'$(TargetGroup)' == 'uap' OR '$(ArchGroup)' == 'arm' OR '$(ArchGroup)' == 'arm64' OR '$(ArchGroup)' == 'armel'">true</SkipTestsOnPlatform>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <!-- We're building netcoreap, run on the test CLI

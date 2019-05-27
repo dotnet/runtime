@@ -2,9 +2,9 @@
   <PropertyGroup>
     <ProjectGuid>{9E984EB2-827E-4029-9647-FB5F8B67C553}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->
     <DefaultReferenceExclusions Include="System.IO.Pipelines" />
     <ReferenceFromRuntime Include="System.IO.Pipelines" />
@@ -40,7 +40,7 @@
     <Compile Include="StreamPipeWriterTests.cs" />
     <Compile Include="Infrastructure\ThrowAfterNWritesStream.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="PipeLengthTests.cs" />
     <Compile Include="BufferSegmentPoolTest.cs" />
     <Compile Include="PipeReaderWriterFacts.nonnetstandard.cs" />

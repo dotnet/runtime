@@ -439,7 +439,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(2, stream.Position);
         }
 
-#if !netstandard
+#if !netfx
         [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -517,7 +517,7 @@ namespace System.Text.Json.Tests
             Assert.Throws<ObjectDisposedException>(() => jsonUtf8.Reset(output));
         }
 
-#if !netstandard
+#if !netfx
         [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -602,7 +602,7 @@ namespace System.Text.Json.Tests
         {
             const int SyncWriteThreshold = 25_000;
 
-#if !netstandard
+#if !netfx
             await
 #endif
                 using var jsonUtf8 = new Utf8JsonWriter(stream, options);
@@ -4422,7 +4422,7 @@ namespace System.Text.Json.Tests
                 expectedValue,
                 Encoding.UTF8.GetString(
                     buffer.WrittenSpan
-#if netstandard
+#if netfx
                         .ToArray()
 #endif
                     ));

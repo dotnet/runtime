@@ -179,12 +179,5 @@ namespace System.Net.WebSockets.Tests
             Assert.Equal(Message, wse.Message);
             Assert.Same(inner, wse.InnerException);
         }
-
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsFullFramework))]
-        public void GetObjectData_Success()
-        {
-            var wse = new WebSocketException();
-            wse.GetObjectData(new SerializationInfo(typeof(WebSocketException), new FormatterConverter()), new StreamingContext());
-        }
     }
 }

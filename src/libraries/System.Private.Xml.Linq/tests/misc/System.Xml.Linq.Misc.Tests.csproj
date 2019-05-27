@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{35FA1FA9-A504-4B9E-93F0-E5D03C21BECA}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Annotation.cs" />
@@ -12,7 +12,7 @@
     <Compile Include="XLinqErrata4.cs" />
     <Compile Include="XNameAPI.cs" />
     <Compile Include="XAttribute.cs" />
-    <Compile Include="LoadSaveAsyncTests.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
+    <Compile Include="LoadSaveAsyncTests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />

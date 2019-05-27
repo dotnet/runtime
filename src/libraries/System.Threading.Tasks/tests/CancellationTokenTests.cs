@@ -180,7 +180,6 @@ namespace System.Threading.Tasks.Tests
             tokenSource.Dispose(); //Repeat calls to Dispose should be ok.
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Relies on quirked behavior to not throw in token.Register when already disposed")]
         [Fact]
         public static void TokenSourceDispose_Negative()
         {

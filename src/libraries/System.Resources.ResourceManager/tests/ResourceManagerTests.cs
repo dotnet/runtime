@@ -207,7 +207,7 @@ namespace System.Resources.Tests
 
         [Theory]
         [MemberData(nameof(EnglishResourceData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "When getting resources from PRI file the casing doesn't matter, if it is there it will always find and return the resource")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "When getting resources from PRI file the casing doesn't matter, if it is there it will always find and return the resource")]
         public static void IgnoreCase(string key, string expectedValue)
         {
             var manager = new ResourceManager("System.Resources.Tests.Resources.TestResx", typeof(ResourceManagerTests).GetTypeInfo().Assembly);
@@ -327,7 +327,7 @@ namespace System.Resources.Tests
         public static void File_GetObject(string key, object expectedValue, bool requiresBinaryFormatter = false)
         {
             var manager = ResourceManager.CreateFileBasedResourceManager("TestResx.netstandard17", Directory.GetCurrentDirectory(), null);
-            if (requiresBinaryFormatter && !PlatformDetection.IsFullFramework)
+            if (requiresBinaryFormatter)
             {
                 Assert.Throws<NotSupportedException>(() => manager.GetObject(key));
                 Assert.Throws<NotSupportedException>(() => manager.GetObject(key, new CultureInfo("en-US")));
@@ -346,7 +346,7 @@ namespace System.Resources.Tests
             var manager = ResourceManager.CreateFileBasedResourceManager("TestResx.netstandard17", Directory.GetCurrentDirectory(), null);
             var culture = new CultureInfo("en-US");
             ResourceSet set = manager.GetResourceSet(culture, true, true);
-            if (requiresBinaryFormatter && !PlatformDetection.IsFullFramework)
+            if (requiresBinaryFormatter)
             {
                 Assert.Throws<NotSupportedException>(() => set.GetObject(key));
             }
@@ -379,7 +379,6 @@ namespace System.Resources.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "UwpAot currently allows custom assembly in ResourceManager constructor")]
         public static void ConstructorNonRuntimeAssembly()
         {
             MockAssembly assembly = new MockAssembly();

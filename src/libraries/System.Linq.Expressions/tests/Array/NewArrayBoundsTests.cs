@@ -303,9 +303,7 @@ namespace System.Linq.Expressions.Tests
                 Expression.Lambda<Func<int[]>>(Expression.NewArrayBounds(typeof(int), Expression.Constant(-2)));
             var func = lambda.Compile(useInterpreter);
             OverflowException ex = Assert.Throws<OverflowException>(() => func());
-
-            if (!PlatformDetection.IsNetNative) // Exceptions do not always have messages
-                Assert.Equal(localizedMessage, ex.Message);
+            Assert.Equal(localizedMessage, ex.Message);
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
@@ -326,9 +324,7 @@ namespace System.Linq.Expressions.Tests
                     typeof(int), Expression.Constant(0), Expression.Constant(0), Expression.Constant(-2)));
             var func = lambda.Compile(useInterpreter);
             OverflowException ex = Assert.Throws<OverflowException>(() => func());
-
-            if (!PlatformDetection.IsNetNative) // Exceptions do not always have messages
-                Assert.Equal(localizedMessage, ex.Message);
+            Assert.Equal(localizedMessage, ex.Message);
         }
     }
 }

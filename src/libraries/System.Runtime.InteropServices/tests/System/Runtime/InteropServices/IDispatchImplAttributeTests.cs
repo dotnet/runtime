@@ -16,7 +16,6 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(2)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework, "This has been removed from the ref in .NET Core and from the source in the .NET Framework.")]
         public void Ctor_ImplTypeShort(short implType)
         {
             Type type = typeof(HandleCollector).Assembly.GetType(TypeName);

@@ -37,7 +37,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // desktop framework does not check for null and crashes
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void WaitTest_ChangedInDotNetCore()
         {

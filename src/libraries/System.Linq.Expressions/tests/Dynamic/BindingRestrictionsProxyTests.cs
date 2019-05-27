@@ -204,10 +204,7 @@ namespace System.Dynamic.Tests
             }
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => BindingRestrictionsProxyCtor.Invoke(new object[] {null}));
             ArgumentNullException ane = (ArgumentNullException)tie.InnerException;
-            if (!PlatformDetection.IsNetNative) // The .NET Native toolchain optimizes away exception ParamNames
-            {
-                Assert.Equal("node", ane.ParamName);
-            }
+            Assert.Equal("node", ane.ParamName);
         }
     }
 }

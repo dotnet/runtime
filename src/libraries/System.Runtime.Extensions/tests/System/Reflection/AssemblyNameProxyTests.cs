@@ -14,7 +14,6 @@ namespace System.Reflection.Tests
     public static class AssemblyNameProxyTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/3253 - AssemblyName.GetAssemblyName(string file) not supported on UapAot", TargetFrameworkMonikers.UapAot)]
         public static void GetAssemblyName_AssemblyNameProxy()
         {
             AssemblyNameProxy anp = new AssemblyNameProxy();

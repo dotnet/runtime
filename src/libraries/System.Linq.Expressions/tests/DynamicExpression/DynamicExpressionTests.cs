@@ -20,7 +20,6 @@ namespace System.Linq.Expressions.Tests
             => Enumerable.Range(1, 6).SelectMany(i => Types, (i, t) => new object[] { i, t });
 
         [Theory, MemberData(nameof(SizesAndSuffixes))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Internal framework reflection not supported on UapAot.")]
         public void AritySpecialisedUsedWhenPossible(int size, string nameSuffix)
         {
             CallSiteBinder binder = Binder.GetMember(
@@ -43,7 +42,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, MemberData(nameof(SizesAndSuffixes))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Internal framework reflection not supported on UapAot.")]
         public void TypedAritySpecialisedUsedWhenPossible(int size, string nameSuffix)
         {
             CallSiteBinder binder = Binder.GetMember(

@@ -370,7 +370,6 @@ namespace System.Threading.Tests
 
         [Fact]
         [OuterLoop]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void ValuesGetterDoesNotThrowUnexpectedExceptionWhenDisposed()
         {
             var startTest = new ManualResetEvent(false);

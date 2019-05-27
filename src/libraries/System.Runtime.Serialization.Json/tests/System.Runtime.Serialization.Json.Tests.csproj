@@ -1,16 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{173F6978-B961-4D1C-84E4-06468772D019}</ProjectGuid>
-    <Configurations>netstandard-Debug;netstandard-Release;uapaot-Debug;uapaot-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">
+  <ItemGroup>
+    <Compile Include="$(TestSourceFolder)DataContractJsonSerializer.cs" />
     <Compile Include="$(TestSourceFolder)DataContractJsonSerializer.CoreCLR.cs" />
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.CoreCLR.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
-    <Compile Include="$(TestSourceFolder)DataContractJsonSerializer.cs" />
+    <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />
   </ItemGroup>
 </Project>

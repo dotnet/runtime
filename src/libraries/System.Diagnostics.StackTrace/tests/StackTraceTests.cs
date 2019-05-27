@@ -29,7 +29,6 @@ namespace System.Diagnostics
 
 namespace System.Diagnostics.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "StackTrace is not supported in uapaot.")]
     public class StackTraceTests
     {
         [Fact]
@@ -142,7 +141,6 @@ namespace System.Diagnostics.Tests
             Assert.Null(stackTrace.GetFrame(0));
         }
 
-        [ActiveIssue(23796, TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [InlineData(0)]
         [InlineData(1)]
@@ -157,18 +155,7 @@ namespace System.Diagnostics.Tests
 
             // Netfx has null Frames if skipping frames in Release mode.
             StackFrame[] frames = stackTrace.GetFrames();
-#if DEBUG
             Assert.Equal(expectedMethods, frames.Select(f => f.GetMethod()));
-#else
-            if (PlatformDetection.IsFullFramework && skipFrames > 0)
-            {
-                Assert.Null(frames);
-            }
-            else
-            {
-                Assert.Equal(expectedMethods, frames.Select(f => f.GetMethod()));
-            }
-#endif
             if (frames != null)
             {
                 VerifyFrames(stackTrace, false);
@@ -192,7 +179,6 @@ namespace System.Diagnostics.Tests
             Assert.Null(stackTrace.GetFrame(0));
         }
 
-        [ActiveIssue(23796, TargetFrameworkMonikers.NetFramework)]
         [Theory]
         [InlineData(0, true)]
         [InlineData(1, true)]
@@ -208,18 +194,7 @@ namespace System.Diagnostics.Tests
 
             // Netfx has null Frames if skipping frames in Release mode.
             StackFrame[] frames = stackTrace.GetFrames();
-#if DEBUG
             Assert.Equal(expectedMethods, frames.Select(f => f.GetMethod()));
-#else
-            if (PlatformDetection.IsFullFramework && skipFrames > 0)
-            {
-                Assert.Null(frames);
-            }
-            else
-            {
-                Assert.Equal(expectedMethods, frames.Select(f => f.GetMethod()));
-            }
-#endif
             if (frames != null)
             {
                 VerifyFrames(stackTrace, fNeedFileInfo);
@@ -318,7 +293,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void ToString_NullFrame_ThrowsNullReferenceException()
         {
             var stackTrace = new StackTrace((StackFrame)null);

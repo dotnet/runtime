@@ -2,11 +2,11 @@
   <PropertyGroup>
     <!-- Enabling the interpreter for RC1 in all builds, see https://github.com/dotnet/corefx/issues/4033 -->
     <FeatureInterpret>true</FeatureInterpret>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <ProjectGuid>{4B4AA59B-89F9-4A34-B3C3-C97EF531EE00}</ProjectGuid>
-    <IsInterpreting Condition="'$(TargetGroup)' == 'uapaot'">true</IsInterpreting>
+    <IsInterpreting>false</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
     <IncludeDefaultReferences>false</IncludeDefaultReferences>
@@ -35,7 +35,6 @@
     <ReferenceFromRuntime Include="System.IO.FileSystem" />
     <ReferenceFromRuntime Include="System.Runtime.InteropServices.RuntimeInformation" />
     <ReferenceFromRuntime Include="System.Runtime.InteropServices" />
-    <ReferenceFromRuntime Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'uapaot'" />
     <ReferenceFromRuntime Include="netstandard" />
   </ItemGroup>
   <ItemGroup>
@@ -267,10 +266,6 @@
     <Compile Include="ILReader\PrivateReflectionHelpers.cs" />
     <Compile Include="ILReader\LocalsSignatureParser.cs" />
     <Compile Include="ILReader\SigParser.cs" />
-  </ItemGroup>
-  <!-- DebuggerAttribute tests require internal framework Reflection and will not work on AoT platforms.
-       The proper way to test these is via the debugger expression evaluator, not Reflection. -->
-  <ItemGroup Condition="'$(TargetGroup)'!='uapaot'">
     <Compile Include="DebugViewTests.cs" />
     <Compile Include="DebuggerTypeProxy\ExpressionDebuggerTypeProxyTests.cs" />
     <Compile Include="Dynamic\BindingRestrictionsProxyTests.cs" />

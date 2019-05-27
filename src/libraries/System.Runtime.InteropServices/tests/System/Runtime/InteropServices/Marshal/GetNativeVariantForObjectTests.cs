@@ -81,11 +81,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { d, VarEnum.VT_DISPATCH, (IntPtr)(-1) };
         }
 
-        [Theory]
-        [MemberData(nameof(GetNativeVariantForObject_RoundtrippingPrimitives_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(31077, ~TargetFrameworkMonikers.NetFramework)]
-        public void GetNativeVariantForObject_RoundtrippingPrimitives_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue)
+        private void GetNativeVariantForObject_RoundtrippingPrimitives_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue)
         {
             GetNativeVariantForObject_ValidObject_Success(primitive, expectedVarType, expectedValue, primitive);
         }
@@ -188,7 +184,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [MemberData(nameof(GetNativeVariantForObject_NonRoundtrippingPrimitives_TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(31077, ~TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue(31077)]
         public void GetNativeVariantForObject_ValidObject_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue, object expectedRoundtripValue)
         {
             var v = new Variant();
@@ -340,25 +336,6 @@ namespace System.Runtime.InteropServices.Tests
 
             yield return new object[] { new Color[0] };
             yield return new object[] { new Color[] { Color.FromArgb(10) } };
-        }
-
-        [Theory]
-        [MemberData(nameof(GetNativeVariant_NotInteropCompatible_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(31077, ~TargetFrameworkMonikers.NetFramework)]
-        public void GetNativeVariant_NotInteropCompatible_ThrowsArgumentException(object obj)
-        {
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
-            try
-            {
-                AssertExtensions.Throws<ArgumentException>(null, () => Marshal.GetNativeVariantForObject(obj, pNative));
-                AssertExtensions.Throws<ArgumentException>(null, () => Marshal.GetNativeVariantForObject<object>(obj, pNative));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(pNative);
-            }
         }
 
         [Fact]

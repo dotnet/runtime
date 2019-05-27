@@ -78,19 +78,13 @@ namespace System.Net.Tests
                 WebResponse response = await getResponse;
                 HttpWebResponse httpResponse = (HttpWebResponse)response;
                 httpResponse.Close();
-                if (PlatformDetection.IsFullFramework)
+                
+                // TODO: Issue #18851. Investigate .NET Core to see if it can
+                // match .NET Framework.
+                Assert.Throws<ObjectDisposedException>(() =>
                 {
-                    Stream stream = httpResponse.GetResponseStream();
-                }
-                else
-                {
-                    // TODO: Issue #18851. Investigate .NET Core to see if it can
-                    // match .NET Framework.
-                    Assert.Throws<ObjectDisposedException>(() =>
-                    {
-                        httpResponse.GetResponseStream();
-                    });
-                }
+                    httpResponse.GetResponseStream();
+                });
             });
         }
 
@@ -147,15 +141,8 @@ namespace System.Net.Tests
                         BinaryFormatter formatter = new BinaryFormatter();
                         HttpWebResponse hwr = (HttpWebResponse)response;
 
-                        if (PlatformDetection.IsFullFramework)
-                        {
-                            formatter.Serialize(fs, hwr);
-                        }
-                        else
-                        {
-                            // HttpWebResponse is not serializable on .NET Core.
-                            Assert.Throws<SerializationException>(() => formatter.Serialize(fs, hwr));
-                        }
+                        // HttpWebResponse is not serializable on .NET Core.
+                        Assert.Throws<SerializationException>(() => formatter.Serialize(fs, hwr));
                     }
                 }
             });

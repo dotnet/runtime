@@ -165,7 +165,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [ActiveIssue(22808, TargetFrameworkMonikers.NetFramework)]
         [ActiveIssue(17209, TestPlatforms.AnyUnix)]
         [OuterLoop] // TODO: Issue #11345
         [Theory]

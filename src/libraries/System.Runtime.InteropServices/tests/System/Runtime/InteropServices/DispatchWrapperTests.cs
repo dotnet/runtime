@@ -19,7 +19,6 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [InlineData("")]
         [InlineData(0)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Marshal.GetIDispatchForObject is not supported in .NET Core.")]
         public void Ctor_NonNull_ThrowsPlatformNotSupportedException(object value)
         {
             Assert.Throws<PlatformNotSupportedException>(() => new DispatchWrapper(value));

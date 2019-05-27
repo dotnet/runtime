@@ -139,7 +139,6 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Skip due to bugs in NETFX WebSocket, dotnet/corefx #33401")]
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendAsync_MultipleOutstandingSendOperations_Throws(Uri server)

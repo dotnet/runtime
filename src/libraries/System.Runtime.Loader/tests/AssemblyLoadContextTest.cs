@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 
 namespace System.Runtime.Loader.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "AssemblyLoadContext not supported on .NET Native")]
     public partial class AssemblyLoadContextTest
     {
         private const string TestAssembly = "System.Runtime.Loader.Test.Assembly";

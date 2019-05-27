@@ -542,7 +542,6 @@ namespace System.Net.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "Does not work in Mono")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
         public void GetValues_MultipleSetCookieHeadersWithExpiresAttribute_Success()
         {
             WebHeaderCollection w = new WebHeaderCollection();
@@ -561,7 +560,6 @@ namespace System.Net.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "Does not work in Mono")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
         public void GetValues_SingleSetCookieHeaderWithMultipleCookiesWithExpiresAttribute_Success()
         {
             WebHeaderCollection w = new WebHeaderCollection();
@@ -576,7 +574,6 @@ namespace System.Net.Tests
         }
         
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
         public void GetValues_MultipleSetCookieHeadersWithNoAttribute_Success()
         {
             WebHeaderCollection w = new WebHeaderCollection();
@@ -594,7 +591,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
         public void GetValues_SingleSetCookieHeaderWithMultipleCookiesWithNoAttribute_Success()
         {
             WebHeaderCollection w = new WebHeaderCollection();
@@ -610,7 +606,6 @@ namespace System.Net.Tests
         
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "Does not work in Mono")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
         public void GetValues_InvalidSetCookieHeader_Success()
         {
             WebHeaderCollection w = new WebHeaderCollection();

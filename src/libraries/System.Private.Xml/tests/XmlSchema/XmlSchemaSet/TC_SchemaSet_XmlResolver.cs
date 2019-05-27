@@ -122,7 +122,6 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "v6 - schema(Local)->schema(Local), but resolving external URI is not allowed", Priority = 1)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop Framework doesn't have the switch AllowDefaultResolver and false is not default behavior")]
         [Fact]
         public void v6()
         {

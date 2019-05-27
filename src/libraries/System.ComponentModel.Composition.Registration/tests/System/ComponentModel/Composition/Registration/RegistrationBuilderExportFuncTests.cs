@@ -22,7 +22,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [ActiveIssue(35144, TargetFrameworkMonikers.UapAot)]
         public void RegistrationBuilder_WithExportDelegatesShouldNotThrow()
         {
             var rb = new RegistrationBuilder();

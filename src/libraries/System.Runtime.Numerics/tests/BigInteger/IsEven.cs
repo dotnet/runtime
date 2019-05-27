@@ -13,7 +13,6 @@ namespace System.Numerics.Tests
         private static int s_seed = 0;
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void RunIsEvenTests()
         {
             Random random = new Random(s_seed);

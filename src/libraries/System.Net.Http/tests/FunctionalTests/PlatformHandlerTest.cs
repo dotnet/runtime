@@ -194,7 +194,7 @@ namespace System.Net.Http.Functional.Tests
         public PlatformHandler_IdnaProtocolTests(ITestOutputHelper output) : base(output) { }
         protected override bool UseSocketsHttpHandler => false;
         // WinHttp on Win7 does not support IDNA
-        protected override bool SupportsIdna => !PlatformDetection.IsWindows7 && !PlatformDetection.IsFullFramework;
+        protected override bool SupportsIdna => !PlatformDetection.IsWindows7;
     }
 
     public sealed class PlatformHandler_HttpRetryProtocolTests : HttpRetryProtocolTests

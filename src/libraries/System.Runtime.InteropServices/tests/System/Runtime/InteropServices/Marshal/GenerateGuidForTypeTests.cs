@@ -16,11 +16,7 @@ namespace System.Runtime.InteropServices.Tests
         {
             yield return new object[] { typeof(int) };
             yield return new object[] { typeof(int).MakePointerType() };
-            // Crashes with .NET Framework.
-            if (!PlatformDetection.IsFullFramework)
-            {
-                yield return new object[] { typeof(int).MakeByRefType() };
-            }
+            yield return new object[] { typeof(int).MakeByRefType() };
             yield return new object[] { typeof(string) };
             yield return new object[] { typeof(string[]) };
 
@@ -35,21 +31,15 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(GenericInterface<string>) };
 
             yield return new object[] { typeof(GenericClass<>) };
-            // Crashes with .NET Framework.
-            if (!PlatformDetection.IsFullFramework)
-            {
-                yield return new object[] { typeof(GenericClass<>).GetTypeInfo().GenericTypeParameters[0] };
-            }
+            yield return new object[] { typeof(GenericClass<>).GetTypeInfo().GenericTypeParameters[0] };
 
             yield return new object[] { typeof(ClassWithGuidAttribute) };
 
-#if !netstandard // TODO: Enable for netstandard2.1
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
             TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
             Type collectibleType = typeBuilder.CreateType();
             yield return new object[] { collectibleType };
-#endif
         }
 
         [Theory]
@@ -58,7 +48,6 @@ namespace System.Runtime.InteropServices.Tests
         {
             if (type.HasElementType)
             {
-                // [ActiveIssue(30940, ~TargetFrameworkMonikers.NetFramework)]
                 if (PlatformDetection.IsNetCore)
                 {
                     Assert.Equal(Guid.Empty, type.GUID);

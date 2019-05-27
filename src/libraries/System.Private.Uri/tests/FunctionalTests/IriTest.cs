@@ -85,7 +85,6 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
         public void Iri_UnknownSchemeWithoutAuthority_DoesNormalize()
         {
             string[] paths = { "\u00E8", "%C3%A8" };
@@ -457,7 +456,6 @@ namespace System.PrivateUri.Tests
         /// CheckIsReserved().
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
         public void Iri_CheckIsReserved_EscapingBehavior()
         {
             for (int i = 0; i < s_checkIsReservedEscapingStrings.GetLength(0); i++)
@@ -533,7 +531,6 @@ namespace System.PrivateUri.Tests
         [InlineData("\u00E8")]
         [InlineData("_\u00E8")]
         [InlineData("_")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
         public void Iri_FileUriUncFallback_DoesSupportUnicodeHost(string authority)
         {
             Uri fileTwoSlashes = new Uri("file://" + authority);
@@ -546,7 +543,6 @@ namespace System.PrivateUri.Tests
         [Theory]
         [InlineData(@"c:/path/with/unicode/ö/test.xml")]
         [InlineData(@"file://c:/path/with/unicode/ö/test.xml")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
         public void Iri_WindowsPathWithUnicode_DoesRemoveScheme(string uriString)
         {
             var uri = new Uri(uriString);
@@ -558,7 +554,6 @@ namespace System.PrivateUri.Tests
         [InlineData("http:\u00E8")]
         [InlineData("%C3%A8")]
         [InlineData("\u00E8")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
         public void Iri_RelativeUriCreation_ShouldNotNormalize(string uriString)
         {
             Uri href;
@@ -581,7 +576,6 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [MemberData(nameof(AllForbiddenDecompositions))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Disable until the .NET FX CI machines get the latest patches.")]
         public void Iri_AllForbiddenDecompositions_IdnHostThrows(string scheme, string host)
         {
             Uri uri = new Uri(scheme + "://" + host);
@@ -590,7 +584,6 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [MemberData(nameof(AllForbiddenDecompositions))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Disable until the .NET FX CI machines get the latest patches.")]
         public void Iri_AllForbiddenDecompositions_NonIdnPropertiesOk(string scheme, string host)
         {
             Uri uri = new Uri(scheme + "://" + host);

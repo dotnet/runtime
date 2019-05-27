@@ -78,7 +78,6 @@ namespace System.Globalization.Tests
         }
         
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void AbbreviatedMonthGenitiveNames_Format_ReturnsExpected()
         {
             var format = new DateTimeFormatInfo();
