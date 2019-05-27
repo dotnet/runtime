@@ -1213,32 +1213,22 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 	for (int i = 0; i < sig->param_count; i++) {
 		ainfo = &cinfo->args [i];
 
-		switch (ainfo->storage) {
-			case ArgInIReg:
-			case ArgInFloatSSEReg:
-			case ArgInDoubleSSEReg:
-			case ArgOnStack:
-			case ArgValuetypeInReg: {
-				int temp_size = arg_need_temp (ainfo);
-				if (temp_size)
-					storage = alloca (temp_size); // FIXME? alloca in a loop
-				else
-					storage = arg_get_storage (ccontext, ainfo);
-
-				interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, i, storage);
-				if (temp_size)
-					arg_set_val (ccontext, ainfo, storage);
-				break;
-			}
-			case ArgValuetypeAddrInIReg:
-			case ArgValuetypeAddrOnStack: {
-				storage = arg_get_storage (ccontext, ainfo);
-				*(gpointer *)storage = interp_cb->frame_arg_to_storage (frame, sig, i);
-				break;
-			}
-			default:
-				g_assert_not_reached ();
+		if (ainfo->storage == ArgValuetypeAddrInIReg || ainfo->storage == ArgValuetypeAddrOnStack) {
+			storage = arg_get_storage (ccontext, ainfo);
+			*(gpointer *)storage = interp_cb->frame_arg_to_storage (frame, sig, i);
+			continue;
 		}
+
+		int temp_size = arg_need_temp (ainfo);
+
+		if (temp_size)
+			storage = alloca (temp_size); // FIXME? alloca in a loop
+		else
+			storage = arg_get_storage (ccontext, ainfo);
+
+		interp_cb->frame_arg_to_data ((MonoInterpFrameHandle)frame, sig, i, storage);
+		if (temp_size)
+			arg_set_val (ccontext, ainfo, storage);
 	}
 
 	g_free (cinfo);
@@ -1302,32 +1292,22 @@ mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, M
 	for (int i = 0; i < sig->param_count + sig->hasthis; i++) {
 		ainfo = &cinfo->args [i];
 
-		switch (ainfo->storage) {
-			case ArgInIReg:
-			case ArgInFloatSSEReg:
-			case ArgInDoubleSSEReg:
-			case ArgOnStack:
-			case ArgValuetypeInReg: {
-				int temp_size = arg_need_temp (ainfo);
-				if (temp_size) {
-					storage = alloca (temp_size); // FIXME? alloca in a loop
-					arg_get_val (ccontext, ainfo, storage);
-				}
-				else {
-					storage = arg_get_storage (ccontext, ainfo);
-				}
-				interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, i, storage);
-				break;
-			}
-			case ArgValuetypeAddrInIReg:
-			case ArgValuetypeAddrOnStack: {
-				storage = arg_get_storage (ccontext, ainfo);
-				interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, i, *(gpointer *)storage);
-				break;
-			}
-			default:
-				g_assert_not_reached ();
+		if (ainfo->storage == ArgValuetypeAddrInIReg || ainfo->storage == ArgValuetypeAddrOnStack) {
+			storage = arg_get_storage (ccontext, ainfo);
+			interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, i, *(gpointer *)storage);
+			continue;
 		}
+
+		int temp_size = arg_need_temp (ainfo);
+
+		if (temp_size) {
+			storage = alloca (temp_size); // FIXME? alloca in a loop
+			arg_get_val (ccontext, ainfo, storage);
+		} else {
+			storage = arg_get_storage (ccontext, ainfo);
+		}
+
+		interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, i, storage);
 	}
 
 	g_free (cinfo);
