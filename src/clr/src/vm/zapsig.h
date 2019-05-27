@@ -23,6 +23,8 @@ typedef DWORD (*EncodeModuleCallback)(void* pModuleContext, Module *pReferencedM
 enum {
     // return value when EncodeModule fails
     ENCODE_MODULE_FAILED         = 0xffffffff,
+    // no module index override is needed 
+    MODULE_INDEX_NONE            = 0xfffffffe
 };
 
 typedef void(*DEFINETOKEN_CALLBACK)(LPVOID pModuleContext, CORINFO_MODULE_HANDLE moduleHandle, DWORD index, mdTypeRef* token);
@@ -127,6 +129,11 @@ private:
     //
     static CorElementType TryEncodeUsingShortcut(/* in  */ MethodTable * pMT);
 
+    // Copy single type signature, adding ELEMENT_TYPE_MODULE_ZAPSIG to types that are encoded using tokens.
+    // The source signature originates from the module with index specified by the parameter moduleIndex.
+    // Passing moduleIndex set to MODULE_INDEX_NONE results in pure copy of the signature.
+    //
+    static void CopyTypeSignature(SigParser* pSigParser, SigBuilder* pSigBuilder, DWORD moduleIndex);
 
 private:
 
