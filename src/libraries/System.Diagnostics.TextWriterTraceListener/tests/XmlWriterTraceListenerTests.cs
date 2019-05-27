@@ -52,7 +52,6 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In full framework despite closing it, it still writes the traces, we're fixing that behavior in .NET Core")]
         public void Close_NoWriteSuccess()
         {
             string file = GetTestFilePath();
@@ -66,7 +65,6 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In full framework despite closing it, it still writes the traces, we're fixing that behavior in .NET Core")]
         public void Close_WriteBeforeAndAfter()
         {
             string file = GetTestFilePath();
@@ -145,15 +143,12 @@ namespace System.Diagnostics.TextWriterTraceListenerTests
             Assert.DoesNotContain("<DataItem>here</DataItem>", text);
             Assert.Contains("<DataItem>existent</DataItem><DataItem>.net</DataItem><DataItem>code</DataItem>", text);
 
-            if (!PlatformDetection.IsFullFramework)
-            {
-                // Desktop has a boolean to turn on filtering in TraceTransfer due to a bug.
-                // https://referencesource.microsoft.com/#System/compmod/system/diagnostics/XmlWriterTraceListener.cs,26
-                Assert.DoesNotContain('"' + traceTransferId.ToString(CultureInfo.InvariantCulture) + '"', text);
-                Assert.DoesNotContain("this is a transfer", text);
-                Assert.DoesNotContain("Transfer", text);
-                Assert.DoesNotContain(guid.ToString("B"), text);
-            }
+            // Desktop has a boolean to turn on filtering in TraceTransfer due to a bug.
+            // https://referencesource.microsoft.com/#System/compmod/system/diagnostics/XmlWriterTraceListener.cs,26
+            Assert.DoesNotContain('"' + traceTransferId.ToString(CultureInfo.InvariantCulture) + '"', text);
+            Assert.DoesNotContain("this is a transfer", text);
+            Assert.DoesNotContain("Transfer", text);
+            Assert.DoesNotContain(guid.ToString("B"), text);
         }
 
         [Theory]

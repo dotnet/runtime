@@ -141,7 +141,6 @@ namespace System.MemoryTests
 
         [Fact]
         [OuterLoop]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop framework doesn't support large arrays by default.")]
         public static void MemoryManagerPinLargeArray()
         {
             // Early-out: we can only run this test on 64-bit platforms.

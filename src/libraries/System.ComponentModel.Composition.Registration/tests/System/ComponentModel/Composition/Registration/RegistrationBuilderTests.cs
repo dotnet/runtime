@@ -46,7 +46,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "MakeGenericType can only accept Type objects created by the runtime.")]
         public void ShouldSucceed()
         {
             var rb = new RegistrationBuilder();
@@ -176,7 +175,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         private class ClassExportingInterface<T> : IGenericInterface<T> { }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "MakeGenericType can only accept Type objects created by the runtime.")]
         public void GenericInterfaceExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ClassExportingInterface<>));
@@ -190,7 +188,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         private class ClassExportingBaseClass<T> : GenericBaseClass<T> { }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "MakeGenericType can only accept Type objects created by the runtime.")]
         public void GenericBaseClassExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ClassExportingBaseClass<>));
@@ -202,7 +199,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         private class GenericClass<T> { }
 
         [Fact]
-        [ActiveIssue(35144, TargetFrameworkMonikers.UapAot)]
         public void GenericExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(GenericClass<>));
@@ -214,7 +210,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         private class ExplicitGenericClass<T> { }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "MakeGenericType can only accept Type objects created by the runtime.")]
         public void ExplicitGenericExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ExplicitGenericClass<>));
@@ -226,7 +221,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         private class ExplicitGenericClass<T, U> { }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "MakeGenericType can only accept Type objects created by the runtime.")]
         public void ExplicitGenericArity2ExportInRegistrationBuilder()
         {
             CompositionContainer container = CreateRegistrationBuilderContainer(typeof(ExplicitGenericClass<,>));

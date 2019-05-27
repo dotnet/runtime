@@ -57,7 +57,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does extra validation for SecurityException properties")]
         public static void Properties()
         {
             var exception = new SecurityException();

@@ -33,7 +33,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Regular method on full framework: no point invoking on a null reference")]
         public void IsNormalized_Null()
         {
             AssertExtensions.Throws<ArgumentNullException>("strInput", () => StringNormalizationExtensions.IsNormalized(null));
@@ -70,7 +69,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Regular method on full framework: no point invoking on a null reference")]
         public void Normalize_Null()
         {
             AssertExtensions.Throws<ArgumentNullException>("strInput", () => StringNormalizationExtensions.Normalize(null));

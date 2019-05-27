@@ -15,7 +15,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
+        [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
         public void GetAccessControl_DisposedStream()
         {
             using (var pair = CreateServerClientPair())
@@ -29,7 +29,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
+        [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
         public void GetAccessControl_ConnectedStream()
         {
             using (var pair = CreateServerClientPair())
@@ -46,7 +46,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
+        [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
         public void SetAccessControl_NullPipeSecurity()
         {
             using (var pair = CreateServerClientPair())
@@ -62,7 +62,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
+        [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
         public void SetAccessControl_DisposedStream()
         {
             using (var pair = CreateServerClientPair())
@@ -76,7 +76,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
+        [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
         public void SetAccessControl_ConnectedStream()
         {
             using (var pair = CreateServerClientPair())

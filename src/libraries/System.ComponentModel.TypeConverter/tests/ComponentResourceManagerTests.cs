@@ -162,7 +162,6 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        [ActiveIssue(22145, TargetFrameworkMonikers.NetFramework)]
         public void ApplyResources_IComponentWithDesignModeSite_Success()
         {
             var resourceManager = new ComponentResourceManager(typeof(global::Resources.TestResx))

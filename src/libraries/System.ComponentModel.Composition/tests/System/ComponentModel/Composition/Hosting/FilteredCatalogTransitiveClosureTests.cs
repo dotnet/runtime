@@ -222,7 +222,6 @@ namespace System.ComponentModel.Composition.Hosting
         }
 
         [Fact]
-        [ActiveIssue(25498, TargetFrameworkMonikers.UapAot)]
         public void IncludeDependenciesChainWithCycles()
         {
             var catalog = CreateCatalog(

@@ -1,9 +1,6 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      netstandard-Linux;
-      netstandard-OSX;
-      netstandard-Windows_NT;
       netcoreapp-Linux;
       netcoreapp-OSX;
       netcoreapp-Windows_NT;

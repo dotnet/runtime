@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{F6C73170-9333-4B52-B3FA-A536C5EA6A48}</ProjectGuid>
-    <Configurations>Debug;Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="SDMAttribute.cs" />

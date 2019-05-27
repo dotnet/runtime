@@ -18,7 +18,6 @@ namespace System.Xml.Tests
         private static string _invalidCharInThisEncoding = "Invalid character in the given encoding";
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The fix is not shipped to .Net Framework, so will fail")]
         public static void ReadWithSurrogateCharAndInvalidChar()
         {
             // {60, 0, 0, 0} is a normal char, {0, 34, 1, 0}  is a surrogate char {62, 100, 60, 47} is an invalid char
@@ -43,7 +42,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The fix is not shipped to .Net Framework, so will fail")]
         public static void ReadWithSurrogateCharAndInvalidChar_ValidXmlStructure()
         {
             var bytes = new byte[] { 60, 0, 0, 0, 97, 0, 0, 0, 62, 0, 0, 0, 0, 34, 1, 0, 62, 100, 60, 47, 60, 0, 0, 0, 47, 0, 0, 0, 97, 0, 0, 0, 62, 0, 0, 0 };

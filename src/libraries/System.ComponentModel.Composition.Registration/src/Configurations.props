@@ -5,7 +5,6 @@
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
-      _netfx;
       netcoreapp;
       uap;
     </BuildConfigurations>

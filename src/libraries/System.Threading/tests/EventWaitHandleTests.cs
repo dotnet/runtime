@@ -27,13 +27,6 @@ namespace System.Threading.Tests
             AssertExtensions.Throws<ArgumentException>("mode", null, () => new EventWaitHandle(true, (EventResetMode)12345));
         }
 
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Full framework throws argument exception on long names")]
-        [Fact]
-        public void Ctor_InvalidNames()
-        {
-            AssertExtensions.Throws<ArgumentException>("name", null, () => new EventWaitHandle(true, EventResetMode.AutoReset, new string('a', 1000)));
-        }
-
         [PlatformSpecific(TestPlatforms.Windows)]  // names aren't supported on Unix
         [Theory]
         [MemberData(nameof(GetValidNames))]
@@ -237,9 +230,7 @@ namespace System.Threading.Tests
         public static TheoryData<string> GetValidNames()
         {
             var names  =  new TheoryData<string>() { Guid.NewGuid().ToString("N") };
-
-            if (!PlatformDetection.IsFullFramework)
-                names.Add(Guid.NewGuid().ToString("N") + new string('a', 1000));
+            names.Add(Guid.NewGuid().ToString("N") + new string('a', 1000));
 
             return names;
         }

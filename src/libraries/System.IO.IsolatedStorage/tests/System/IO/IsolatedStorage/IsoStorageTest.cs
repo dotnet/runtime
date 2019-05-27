@@ -11,7 +11,6 @@ namespace System.IO.IsolatedStorage
     // We put the tests in the "Store collection" to get them to pick up the StoreTestsFixture. This will run the fixture
     // at the start and end of the collection, cleaning the test environment.
     [Collection("Store collection")]
-    [ActiveIssue(18940, TargetFrameworkMonikers.UapAot)]
     public class IsoStorageTest
     {
         public static IEnumerable<object[]> ValidScopes

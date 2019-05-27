@@ -2232,15 +2232,12 @@ namespace System.Collections.Immutable.Tests
 
         [Theory]
         [MemberData(nameof(Int32EnumerableData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public void DebuggerAttributesValid(IEnumerable<int> source)
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(source.ToImmutableArray());
         }
 
-
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.Create<int>());

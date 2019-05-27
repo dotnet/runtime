@@ -375,7 +375,6 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/corefx/issues/18141")]
         // Regression test for the PLINQ version of #2239 - comparer returning max/min value.
         public static void OrderByDescending_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
@@ -391,7 +390,6 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Validates .NET Core bug fix https://github.com/dotnet/corefx/pull/2305")]
         public static void OrderBy_NotPipelined_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prev = 0;
@@ -402,7 +400,6 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Validates .NET Core bug fix https://github.com/dotnet/corefx/pull/2305")]
         public static void OrderByDescending_NotPipelined_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prev = count - 1;
@@ -950,7 +947,6 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Validates .NET Core bug fix https://github.com/dotnet/corefx/pull/2305")]
         // Regression test for the PLINQ version of #2239 - comparer returning max/min value.
         public static void ThenBy_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
@@ -966,7 +962,6 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Validates .NET Core bug fix https://github.com/dotnet/corefx/pull/2305")]
         // Regression test for the PLINQ version of #2239 - comparer returning max/min value.
         public static void ThenByDescending_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
@@ -981,7 +976,6 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Validates .NET Core bug fix https://github.com/dotnet/corefx/pull/2305")]
         public static void ThenBy_NotPipelined_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prev = 0;
@@ -992,7 +986,6 @@ namespace System.Linq.Parallel.Tests
         [MemberData(nameof(Sources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(Sources))]
         [MemberData(nameof(OrderByRandomData), new[] { 0, 1, 2, 16 })]
         [MemberData(nameof(UnorderedSources.Ranges), new[] { 0, 1, 2, 16 }, MemberType = typeof(UnorderedSources))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core bug fix https://github.com/dotnet/corefx/pull/2305")]
         public static void ThenByDescending_NotPipelined_ExtremeComparer(Labeled<ParallelQuery<int>> labeled, int count)
         {
             int prev = count - 1;

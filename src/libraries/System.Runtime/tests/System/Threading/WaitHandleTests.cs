@@ -44,7 +44,6 @@ namespace System.Threading.Tests
             Assert.Equal(WaitHandle.WaitTimeout, WaitHandle.WaitAny(handles, TimeSpan.FromMilliseconds(1)));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Message is used as parameter name on netfx")]
         [Fact]
         public static void WaitAny_NullArray_Throws()
         {
@@ -57,7 +56,6 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentNullException>("waitHandles", () => WaitHandle.WaitAny(handles, TimeSpan.Zero, exitContext: false));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Message is used as parameter name on netfx")]
         [Fact]
         public static void WaitAny_NullHandle_Throws()
         {
@@ -99,7 +97,6 @@ namespace System.Threading.Tests
             Assert.False(WaitHandle.WaitAll(handles, TimeSpan.FromMilliseconds(1)));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Message is used as parameter name on netfx")]
         [Fact]
         public static void WaitAll_NullArray_Throws()
         {
@@ -112,7 +109,6 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentNullException>("waitHandles", () => WaitHandle.WaitAll(handles, TimeSpan.Zero, exitContext: false));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Message is used as parameter name on netfx")]
         [Fact]
         public static void WaitAll_NullHandle_Throws()
         {

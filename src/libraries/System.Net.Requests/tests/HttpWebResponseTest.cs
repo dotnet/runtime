@@ -123,8 +123,6 @@ namespace System.Net.Tests
 
         [Theory]
         [MemberData(nameof(Dates_ReadValue_Data))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Net Framework currently retains the custom date parsing that retains some bugs (mostly related to offset)")]
         public async Task LastModified_ReadValue(string raw, DateTime expected)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -152,8 +150,6 @@ namespace System.Net.Tests
 
         [Theory]
         [MemberData(nameof(Dates_Now_Invalid_Data))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Net Framework currently retains the custom date parsing that accepts a wider range of values")]
         public async Task LastModified_InvalidValue(string invalid)
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>

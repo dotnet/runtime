@@ -8,7 +8,6 @@ using System.Text;
 using Xunit;
 
 
-[SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Issue https://github.com/dotnet/corefx/issues/18220")]
 public class SyncTextReader
 {
     // NOTE: These tests test the underlying SyncTextReader by

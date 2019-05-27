@@ -3,7 +3,7 @@
     <ProjectGuid>{B473F77D-4168-4123-932A-E88020B768FA}</ProjectGuid>
     <NoWarn>0168,0169,0414,0219,0649</NoWarn>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Data\Common\DataColumnMappingTest.cs" />
@@ -115,10 +115,8 @@
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System\Data\Common\DbProviderFactoriesTests.netcoreapp.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <Compile Include="System\Xml\XmlDataDocumentTests.cs" />
   </ItemGroup>
   <ItemGroup>

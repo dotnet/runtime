@@ -88,7 +88,6 @@ namespace System.Runtime.InteropServices
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot,"Reflects on private member handleCount")]
         public static void Add_Overflows_ThrowsInvalidOperationException()
         {
             HandleCollector collector = new HandleCollector("CountOverflow", int.MaxValue);

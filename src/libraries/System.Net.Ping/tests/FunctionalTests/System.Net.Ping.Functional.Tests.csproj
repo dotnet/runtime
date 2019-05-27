@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{43CE20B7-389B-41BB-8390-447521DF3BD4}</ProjectGuid>
-    <Configurations>netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <!-- Test APIs introduced after 1.0 -->

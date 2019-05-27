@@ -383,7 +383,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "There is 2 bugs in Desktop in this codepath, see: dotnet/corefx #18437 and #18436")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "No simple way to perform this on uap using cmd.exe")]
         public void TestAsyncHalfCharacterAtATime()
         {
@@ -462,8 +461,6 @@ namespace System.Diagnostics.Tests
 
             // On netfx, the handler is called once with the Data as null, even if the process writes nothing to the pipe.
             // That behavior is documented here https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.datareceivedeventhandler
-            p.OutputDataReceived += (s, e) => { Assert.True(PlatformDetection.IsFullFramework && e.Data == null, "OutputDataReceived called after closing the process"); };
-            p.ErrorDataReceived += (s, e) => { Assert.True(PlatformDetection.IsFullFramework && e.Data == null, "ErrorDataReceived called after closing the process"); };
 
             p.Start();
             p.BeginOutputReadLine();

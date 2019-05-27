@@ -161,14 +161,7 @@ namespace System.Linq.Tests
             // The full .NET Framework has a bug where the input is incorrectly ordered if the comparer
             // returns int.MaxValue or int.MinValue. See https://github.com/dotnet/corefx/pull/2240.
             IEnumerable<int> ordered = outOfOrder.OrderByDescending(i => i, new ExtremeComparer()).ToArray();
-            if (PlatformDetection.IsFullFramework)
-            {
-                Assert.Equal(new[] { 3, 5, 1, 4, 9, 2, 0, 8, 7, 6 }, ordered);
-            }
-            else
-            {
-                Assert.Equal(Enumerable.Range(0, 10).Reverse(), ordered);
-            }
+            Assert.Equal(Enumerable.Range(0, 10).Reverse(), ordered);
         }
 
         [Fact]

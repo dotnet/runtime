@@ -230,7 +230,6 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "See: dotnet/corefx #15145")]
         public void Uri_Unicode_SurrogatePairs_Scheme()
         {
             var combinations = CartesianProductAll(char.IsHighSurrogate, char.IsLowSurrogate, false);

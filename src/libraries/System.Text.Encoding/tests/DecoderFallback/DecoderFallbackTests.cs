@@ -34,7 +34,6 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Issue #29898 is not fixed in the full framework yet")]
         public static void TestDecoderFallbackIndex()
         {
             // This test case ensuring when we fallback, we'll never encounter a negative index in

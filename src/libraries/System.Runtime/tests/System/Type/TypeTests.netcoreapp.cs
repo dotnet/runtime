@@ -158,7 +158,6 @@ namespace System.Tests
         //  - The .NET Native implementation of IsTypeDefinition is not the one that works by enumerating selected values off CorElementType.
         //    It has much less need of a test like this.
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)]
         public void IsTypeDefinition_AllDefinedTypesInCoreAssembly()
         {
             foreach (Type type in typeof(object).Assembly.DefinedTypes)

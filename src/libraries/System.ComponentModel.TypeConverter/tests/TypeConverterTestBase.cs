@@ -80,7 +80,6 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core fixes some NullReferenceExceptions in CanConvertTo")]
         public void CanConvertTo_NullDestinationType_ReturnsFalse()
         {
             Assert.False(Converter.CanConvertTo(null));

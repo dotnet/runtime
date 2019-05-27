@@ -53,7 +53,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void NoOperations_ShouldGenerateNoAttributes()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -67,7 +66,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void ExportSelf_ShouldGenerateSingleExportAttribute()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -85,7 +83,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void ExportOfT_ShouldGenerateSingleExportAttributeWithContractType()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -103,7 +100,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void AddMetadata_ShouldGeneratePartMetadataAttribute()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -125,7 +121,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void AddMetadataWithFunc_ShouldGeneratePartMetadataAttribute()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -147,7 +142,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void ExportProperty_ShouldGenerateExportForPropertySelected()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -173,7 +167,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void ImportProperty_ShouldGenerateImportForPropertySelected()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -200,7 +193,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void ImportProperties_ShouldGenerateImportForPropertySelected_And_ApplyImportMany()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -227,7 +219,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void ExportPropertyWithConfiguration_ShouldGenerateExportForPropertySelected()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -253,7 +244,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void ExportPropertyOfT_ShouldGenerateExportForPropertySelectedWithTAsContractType()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -279,7 +269,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void SetCreationPolicy_ShouldGeneratePartCreationPolicyAttributeForType()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -297,7 +286,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void ConventionSelectsConstructor_SelectsTheOneWithMostParameters()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -331,7 +319,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void ManuallySelectingConstructor_SelectsTheExplicitOne()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -358,7 +345,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
         public void ManuallySelectingConstructor_SelectsTheExplicitOne_IEnumerableParameterBecomesImportMany()
         {
             var builder = InternalCalls.PartBuilder(t => true);
@@ -430,7 +416,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [ActiveIssue(35144, TargetFrameworkMonikers.UapAot)]
         public void InsideTheLambdaCallGetCustomAttributesShouldSucceed()
         {
             //Same test as above only using default export builder

@@ -13,7 +13,6 @@ namespace System.Linq.Tests
     {
         [Theory]
         [MemberData(nameof(DebuggerAttributesValid_Data))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Grouping<TKey, TValue> doesn't have a Debugger proxy in the full .NET Framework. See https://github.com/dotnet/corefx/issues/14790.")]
         public void DebuggerAttributesValid<TKey, TElement>(IGrouping<TKey, TElement> grouping, string keyString)
         {
             Assert.Equal($"Key = {keyString}", DebuggerAttributes.ValidateDebuggerDisplayReferences(grouping));

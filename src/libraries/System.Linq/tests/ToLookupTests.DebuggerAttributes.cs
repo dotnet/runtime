@@ -14,7 +14,6 @@ namespace System.Linq.Tests
     {
         [Theory]
         [MemberData(nameof(DebuggerAttributesValid_Data))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Lookup<T> doesn't have a Debugger proxy in the full .NET framework. See https://github.com/dotnet/corefx/issues/14790.")]
         public void DebuggerAttributesValid<TKey, TElement>(ILookup<TKey, TElement> lookup)
         {
             Assert.Equal($"Count = {lookup.Count}", DebuggerAttributes.ValidateDebuggerDisplayReferences(lookup));

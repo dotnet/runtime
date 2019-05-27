@@ -42,7 +42,6 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The Stream CopyToAsync fails on netcoreapp because it calls Length which checks the validity of the underlying handle. On NetFX the operation no-ops for no input or delays failure to execution for input. See /dotnet/coreclr/pull/4540.")]
         public void DisposeHandleThenUseFileStream_CopyToAsync(bool useAsync)
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x100, useAsync))
@@ -56,33 +55,6 @@ namespace System.IO.Tests
                 fs.Write(TestBuffer, 0, TestBuffer.Length);
                 fs.SafeFileHandle.Dispose();
                 Assert.Throws<ObjectDisposedException>(() => { fs.CopyToAsync(new MemoryStream()).Wait(); });
-            }
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The Stream CopyToAsync fails on netcoreapp because it calls Length which checks the validity of the underlying handle. On NetFX the operation no-ops for no input or delays failure to execution for input. See /dotnet/coreclr/pull/4540.")]
-        public void DisposeHandleThenUseFileStream_CopyToAsync_netfx(bool useAsync)
-        {
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x100, useAsync))
-            {
-                fs.SafeFileHandle.Dispose();
-                fs.CopyToAsync(new MemoryStream());
-            }
-
-            using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x100, useAsync))
-            {
-                fs.Write(TestBuffer, 0, TestBuffer.Length);
-                fs.SafeFileHandle.Dispose();
-                try
-                {
-                    fs.CopyToAsync(new MemoryStream()).Wait();
-                }
-                catch (AggregateException e)
-                {
-                    Assert.Equal(typeof(ObjectDisposedException), e.InnerException.GetType());
-                }
             }
         }
 
@@ -242,7 +214,7 @@ namespace System.IO.Tests
         [Theory]
         [InlineData(false, 10, 1024)]
         [InlineData(true, 10, 1024)]
-        [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
+        [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
         public async Task NamedPipeViaFileStream_AllDataCopied(bool useAsync, int writeSize, int numWrites)
         {
             long totalLength = writeSize * numWrites;

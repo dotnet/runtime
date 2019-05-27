@@ -276,18 +276,6 @@ namespace XDocumentTests.SDMSample
         /// Validates the explicit float conversion operator on XAttribute.
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void AttributeExplicitToFloat_NetFramework()
-        {
-            XAttribute e3 = new XAttribute("x", "5e+500");
-            Assert.Throws<OverflowException>(() => (float)e3);
-        }
-
-        /// <summary>
-        /// Validates the explicit float conversion operator on XAttribute.
-        /// </summary>
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void AttributeExplicitToFloat_NotNetFramework()
         {
             XAttribute e3 = new XAttribute("x", "5e+500");
@@ -318,18 +306,6 @@ namespace XDocumentTests.SDMSample
         /// Validates the explicit double conversion operator on XAttribute.
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void AttributeExplicitToDouble_NetFramework()
-        {
-            XAttribute e3 = new XAttribute("x", "5e+5000");
-            Assert.Throws<OverflowException>(() => (double)e3);
-        }
-
-        /// <summary>
-        /// Validates the explicit double conversion operator on XAttribute.
-        /// </summary>
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void AttributeExplicitToDouble_NotNetFramework()
         {
             XAttribute e3 = new XAttribute("x", "5e+5000");

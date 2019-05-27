@@ -48,7 +48,6 @@ namespace System.Xml.Tests
             Assert.Equal(actual, expected);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does support Compiling JScript/CSharp scripts")]
         //[Variation(id = 1, Desc = "Test the script block with EnableScript, should work", Pri = 0, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, true })]
         [InlineData(1, "XsltSettings.xml", "XsltSettings1.xsl", false, true)]
         //[Variation(id = 4, Desc = "Test the script block with TrustedXslt, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", true, true })]
@@ -64,22 +63,6 @@ namespace System.Xml.Tests
             Assert.Equal("Compiling JScript/CSharp scripts is not supported", e.InnerException.Message);
         }
 
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Only full framework supports Compiling JScript/CSharp scripts")]
-        //[Variation(id = 1, Desc = "Test the script block with EnableScript, should work", Pri = 0, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, true })]
-        [InlineData(1, "XsltSettings.xml", "XsltSettings1.xsl", false, true)]
-        //[Variation(id = 4, Desc = "Test the script block with TrustedXslt, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", true, true })]
-        [InlineData(4, "XsltSettings.xml", "XsltSettings1.xsl", true, true)]
-        //[Variation(id = 9, Desc = "Test the combination of script and document function with TrustedXslt, should work", Pri = 0, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", true, true })]
-        [InlineData(9, "XsltSettings.xml", "XsltSettings3.xsl", true, true)]
-        //[Variation(id = 11, Desc = "Test the combination of script and document function with EnableScript, only script should work", Pri = 2, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", false, true })]
-        [InlineData(11, "XsltSettings.xml", "XsltSettings3.xsl", false, true)]
-        [Theory]
-        public void XsltSettings1_1_ContainsScript_FullFramework(object param0, object param1, object param2, object param3, object param4)
-        {
-            XsltSettings1_1(param0, param1, param2, param3, param4);
-        }
-
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does support Compiling JScript/CSharp scripts")]
         //[Variation(id = 15, Desc = "Test 1 with Default settings, should fail", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, true, false, false })]
         [InlineData(15, "XsltSettings.xml", "XsltSettings1.xsl", false, true, false, false)]
         //[Variation(id = 16, Desc = "Test 2 with EnableScript override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, false, false, true })]
@@ -93,21 +76,6 @@ namespace System.Xml.Tests
         {
             var e = Assert.ThrowsAny<XsltException>(() => XsltSettings1_2(param0, param1, param2, param3, param4, param5, param6));
             Assert.Equal("Compiling JScript/CSharp scripts is not supported", e.InnerException.Message);
-        }
-
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Only full framework supports Compiling JScript/CSharp scripts")]
-        //[Variation(id = 15, Desc = "Test 1 with Default settings, should fail", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, true, false, false })]
-        [InlineData(15, "XsltSettings.xml", "XsltSettings1.xsl", false, true, false, false)]
-        //[Variation(id = 16, Desc = "Test 2 with EnableScript override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings1.xsl", false, false, false, true })]
-        [InlineData(16, "XsltSettings.xml", "XsltSettings1.xsl", false, false, false, true)]
-        //[Variation(id = 19, Desc = "Test 9 with Default settings override, should fail", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", true, true, false, false })]
-        [InlineData(19, "XsltSettings.xml", "XsltSettings3.xsl", true, true, false, false)]
-        //[Variation(id = 20, Desc = "Test 10 with TrustedXslt override, should work", Pri = 1, Params = new object[] { "XsltSettings.xml", "XsltSettings3.xsl", false, false, true, true })]
-        [InlineData(20, "XsltSettings.xml", "XsltSettings3.xsl", false, false, true, true)]
-        [Theory]
-        public void XsltSettings1_2_ContainsScript_FullFramework(object param0, object param1, object param2, object param3, object param4, object param5, object param6)
-        {
-            XsltSettings1_2(param0, param1, param2, param3, param4, param5, param6);
         }
 
         //[Variation(id = 5, Desc = "Test the document function with EnableDocumentFunction, should work", Pri = 0, Params = new object[] { "XsltSettings.xml", "XsltSettings2.xsl", true, false })]

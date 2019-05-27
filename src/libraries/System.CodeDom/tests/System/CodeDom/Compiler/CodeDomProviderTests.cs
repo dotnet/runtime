@@ -419,10 +419,7 @@ namespace System.CodeDom.Compiler.Tests
 
         private static void AssertIsConfigurationErrorsException(Exception ex)
         {
-            if (!PlatformDetection.IsNetNative) // Can't do internal Reflection
-            {
-                Assert.Equal("ConfigurationErrorsException", ex.GetType().Name);
-            }
+            Assert.Equal("ConfigurationErrorsException", ex.GetType().Name);
         }
 
         protected class NullProvider : CodeDomProvider

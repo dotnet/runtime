@@ -2518,7 +2518,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void PerspectiveFarPlaneAtInfinityTest()
         {
             var nearPlaneDistance = 0.125f;
@@ -2528,7 +2527,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void PerspectiveFieldOfViewFarPlaneAtInfinityTest()
         {
             var nearPlaneDistance = 0.125f;
@@ -2538,7 +2536,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void PerspectiveOffCenterFarPlaneAtInfinityTest()
         {
             var nearPlaneDistance = 0.125f;

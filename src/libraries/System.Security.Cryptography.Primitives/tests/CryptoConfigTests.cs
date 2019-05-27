@@ -9,7 +9,6 @@ namespace System.Security.Cryptography.CryptoConfigTests
     public static class CryptoConfigTests
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void DefaultStaticCreateMethods()
         {
             // .NET Core does not allow the base classes to pick an algorithm.

@@ -73,7 +73,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Querying HasDefaultValue of optional DateTime parameter may throw exception on NETFX")]
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithDefaultDateTime", 0, true)]
         public void HasDefaultValue_broken_on_NETFX(Type type, string name, int index, bool expected)
         {
@@ -160,7 +159,6 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Querying DefaultValue of optional DateTime parameter may throw exception on NETFX")]
         [InlineData(typeof(ParameterInfoMetadata), "MethodWithDefaultDateTime", 0, null)]
         public void DefaultValue_broken_on_NETFX(Type type, string name, int index, object expected)
         {
@@ -250,10 +248,7 @@ namespace System.Reflection.Tests
                 yield return new object[] { typeof(OptionalAttribute) };
                 yield return new object[] { typeof(OutAttribute) };
                 yield return new object[] { typeof(InAttribute) };
-                if (!PlatformDetection.IsNetNative) // Native Metadata format does not expose FieldMarshal info: https://github.com/dotnet/corert/issues/3366
-                {
-                    yield return new object[] { typeof(MarshalAsAttribute) };
-                }
+                yield return new object[] { typeof(MarshalAsAttribute) };
             }
         }
 

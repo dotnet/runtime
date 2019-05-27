@@ -121,7 +121,6 @@ namespace System.Net.NetworkInformation.Tests
             Assert.Equal(addressBytes, expectedBytes);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx doesn't have fix #32724")]
         [Theory]
         [InlineData("F")]
         [InlineData("M0")]

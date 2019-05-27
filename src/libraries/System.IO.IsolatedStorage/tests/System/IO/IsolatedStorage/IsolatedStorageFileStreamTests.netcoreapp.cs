@@ -7,7 +7,6 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage
 {
-    [ActiveIssue(18940, TargetFrameworkMonikers.UapAot)]
     public partial class IsolatedStorageFileStreamTests : IsoStorageTest
     {
         [Theory, MemberData(nameof(ValidStores))]

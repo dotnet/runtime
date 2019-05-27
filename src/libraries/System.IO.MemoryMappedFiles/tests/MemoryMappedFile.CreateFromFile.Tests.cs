@@ -626,7 +626,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test to validate we can create multiple concurrent read-only maps from the same file path.
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "On netfx, the MMF.CreateFromFile default FileShare is None. We intentionally changed it in netcoreapp in #6092.")]
         public void FileInUse_CreateFromFile_SucceedsWithReadOnly()
         {
             const int Capacity = 4096;
@@ -647,7 +646,6 @@ namespace System.IO.MemoryMappedFiles.Tests
         [Theory]
         [InlineData(MemoryMappedFileAccess.ReadExecute)]
         [InlineData(MemoryMappedFileAccess.ReadWriteExecute)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "CreateFromFile in desktop uses FileStream's ctor that takes a FileSystemRights in order to specify execute privileges.")]
         public void FileNotOpenedForExecute(MemoryMappedFileAccess access)
         {
             using (TempFile file = new TempFile(GetTestFilePath(), 4096))
@@ -700,17 +698,9 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "CreateFromFile in desktop uses FileStream's ctor that takes a FileSystemRights in order to specify execute privileges.")]
         public void WriteToReadOnlyFile_CopyOnWrite()
         {
             WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && geteuid() == 0));
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "CreateFromFile in desktop uses FileStream's ctor that takes a FileSystemRights in order to specify execute privileges.")]
-        public void WriteToReadOnlyFile_CopyOnWrite_netfx()
-        {
-            WriteToReadOnlyFile(MemoryMappedFileAccess.CopyOnWrite, succeeds: true);
         }
 
         /// <summary>

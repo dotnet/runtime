@@ -63,7 +63,6 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(TestDebuggerAttributes_Inputs))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public static void TestDebuggerAttributes(object obj)
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(obj);
@@ -75,7 +74,6 @@ namespace System.Collections.Tests
 
         [Theory]
         [MemberData(nameof(TestDebuggerAttributes_Inputs))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public static void TestDebuggerAttributes_Null(object obj)
         {
             Type proxyType = DebuggerAttributes.GetProxyType(obj);

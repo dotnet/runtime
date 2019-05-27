@@ -69,11 +69,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_RequestVersion0X_ThrowsOr11(int minorVersion)
         {
             Type exceptionType = null;
-            if (PlatformDetection.IsFullFramework)
-            {
-                exceptionType = typeof(ArgumentException);
-            }
-            else if (UseSocketsHttpHandler)
+            if (UseSocketsHttpHandler)
             {
                 exceptionType = typeof(NotSupportedException);
             }
@@ -113,10 +109,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_UnknownRequestVersion_ThrowsOrDegradesTo11(int majorVersion, int minorVersion)
         {
             Type exceptionType = null;
-            if (PlatformDetection.IsFullFramework)
-            {
-                exceptionType = typeof(ArgumentException);
-            }
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -175,7 +167,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(7)]
         public async Task GetAsync_ResponseUnknownVersion1X_Success(int responseMinorVersion)
         {
-            bool reportAs11 = PlatformDetection.IsFullFramework;
+            bool reportAs11 = false;
             bool reportAs00 = !UseSocketsHttpHandler;
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -221,7 +213,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(9)]
         public async Task GetAsync_ResponseVersion0X_ThrowsOr10(int responseMinorVersion)
         {
-            bool reportAs10 = PlatformDetection.IsFullFramework;
+            bool reportAs10 = false;
 
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
@@ -262,7 +254,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsyncVersion11_BadResponseVersion_ThrowsOr00(int responseMajorVersion, int responseMinorVersion)
         {
             // Full framework reports 1.0 or 1.1, depending on minor version, instead of throwing
-            bool reportAs1X = PlatformDetection.IsFullFramework;
+            bool reportAs1X = false;
 
             // CurlHandler reports these as 0.0, except for 2.0 which is reported as 2.0, instead of throwing.
             bool reportAs00 = false;
@@ -358,7 +350,7 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_ExpectedStatusCodeAndReason_PlatformBehaviorTest(string statusLine,
             int expectedStatusCode, string reasonWithSpace, string reasonNoSpace)
         {
-            if (UseSocketsHttpHandler || PlatformDetection.IsFullFramework)
+            if (UseSocketsHttpHandler)
             {
                 // SocketsHttpHandler and .NET Framework will keep the space characters.
                 await GetAsyncSuccessHelper(statusLine, expectedStatusCode, reasonWithSpace);
@@ -371,7 +363,6 @@ namespace System.Net.Http.Functional.Tests
         }
         
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The following pass on .NET Core but fail on .NET Framework.")]
         [InlineData("HTTP/1.1 200", 200, "")] // This test data requires the fix in .NET Framework 4.7.3
         [InlineData("HTTP/1.1 200 O\tK", 200, "O\tK")]
         [InlineData("HTTP/1.1 200 O    \t\t  \t\t\t\t  \t K", 200, "O    \t\t  \t\t\t\t  \t K")]
@@ -489,7 +480,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HTTP/1.1 200\t")]
         public async Task GetAsync_InvalidStatusLine_ThrowsExceptionOnSocketsHttpHandler(string responseString)
         {
-            if (UseSocketsHttpHandler || PlatformDetection.IsFullFramework)
+            if (UseSocketsHttpHandler)
             {
                 // SocketsHttpHandler and .NET Framework will throw HttpRequestException.
                 await GetAsyncThrowsExceptionHelper(responseString);
@@ -511,7 +502,6 @@ namespace System.Net.Http.Functional.Tests
             }, new LoopbackServer.Options { StreamWrapper = GetStream });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]   // Does not support LF-only
         [Theory]
         [InlineData("\r\n")]
         [InlineData("\n")]

@@ -57,17 +57,14 @@ namespace System.Net.Tests
                 144, "Set-Cookie: name=value", null
             };
 
-            if (!PlatformDetection.IsFullFramework)
+            yield return new object[]
             {
-                yield return new object[]
+                new CookieCollection()
                 {
-                    new CookieCollection()
-                    {
-                        new Cookie("foo bar", "value")
-                    },
-                    147, "Set-Cookie: foo bar=value", null
-                };
-            }
+                    new Cookie("foo bar", "value")
+                },
+                147, "Set-Cookie: foo bar=value", null
+            };
 
             yield return new object[]
             {

@@ -18,7 +18,7 @@ namespace System.Threading.Tasks.Tests
         {
             RemoteExecutor.Invoke(() =>
             {
-                var eventSourceName = PlatformDetection.IsFullFramework ? "System.Threading.Tasks.TplEventSource" : "System.Threading.Tasks.Parallel.EventSource";
+                var eventSourceName = "System.Threading.Tasks.Parallel.EventSource";
                 using (var listener = new TestEventListener(eventSourceName, EventLevel.Verbose))
                 {
                     var events = new ConcurrentQueue<int>();

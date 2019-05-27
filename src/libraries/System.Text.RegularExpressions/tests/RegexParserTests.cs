@@ -15,12 +15,8 @@ namespace System.Text.RegularExpressions.Tests
 
         static RegexParserTests()
         {
-            // On Full Framework RegexParseException doesn't exist and on uapaot reflection is blocked.
-            if (!PlatformDetection.IsNetNative && !PlatformDetection.IsFullFramework)
-            {
-                s_parseExceptionType = typeof(Regex).Assembly.GetType("System.Text.RegularExpressions.RegexParseException", true);
-                s_parseErrorField = s_parseExceptionType.GetField("_error", BindingFlags.NonPublic | BindingFlags.Instance);
-            }
+            s_parseExceptionType = typeof(Regex).Assembly.GetType("System.Text.RegularExpressions.RegexParseException", true);
+            s_parseErrorField = s_parseExceptionType.GetField("_error", BindingFlags.NonPublic | BindingFlags.Instance);
         }
 
         [Theory]
@@ -789,7 +785,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "fixes not ported to netfx RegexParser")]
         // OutOfMemoryException
         [InlineData("a{2147483647}", RegexOptions.None, null)]
         [InlineData("a{2147483647,}", RegexOptions.None, null)]
@@ -922,14 +917,6 @@ namespace System.Text.RegularExpressions.Tests
         /// <param name="action">The action to invoke.</param>
         private static void Throws(RegexParseError error, Action action)
         {
-            // If no specific error is supplied, or we are running on full framework where RegexParseException
-            // doesn't exist or we are running on uapaot where reflection is blocked we expect an ArgumentException.
-            if (PlatformDetection.IsNetNative || PlatformDetection.IsFullFramework)
-            {
-                Assert.ThrowsAny<ArgumentException>(action);
-                return;
-            }
-
             try
             {
                 action();

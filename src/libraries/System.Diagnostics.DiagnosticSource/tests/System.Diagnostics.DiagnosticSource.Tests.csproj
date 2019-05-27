@@ -2,15 +2,13 @@
   <PropertyGroup>
     <ProjectGuid>{A7922FA3-306A-41B9-B8DC-CC4DBE685A85}</ProjectGuid>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetGroup)' != 'netfx'">
     <Compile Include="DiagnosticSourceEventSourceBridgeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DiagnosticSourceTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetGroup)' != 'netstandard1.1'">
     <Compile Include="ActivityTests.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetGroup)' == 'netfx'">

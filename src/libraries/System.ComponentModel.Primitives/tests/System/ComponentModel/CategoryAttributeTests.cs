@@ -10,7 +10,6 @@ namespace System.ComponentModel.Tests
     public class CategoryAttributeTests
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // NetFX does not have fix for #21369
         public void Ctor_Default()
         {
             var attribute = new CategoryAttribute();
@@ -28,7 +27,6 @@ namespace System.ComponentModel.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_Category_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Does not have the fix for https://github.com/dotnet/corefx/issues/21356")]
         public void Ctor_Category(string category, bool expectedIsDefaultAttribute)
         {
             var attribute = new CategoryAttribute(category);
@@ -102,7 +100,6 @@ namespace System.ComponentModel.Tests
 
         [Theory]
         [MemberData(nameof(DefaultProperties_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // NetFX does not have fix for #21369
         public void CategoryProperties_GetCategory_ReturnsExpected(Func<CategoryAttribute> attributeThunk, string expectedCategory)
         {
             CategoryAttribute attribute = attributeThunk();

@@ -20,7 +20,6 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Changed behavior
         public static void SyncRoot()
         {
             MyReadOnlyCollectionBase collection = CreateCollection();

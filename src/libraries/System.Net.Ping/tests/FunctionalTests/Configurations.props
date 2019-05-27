@@ -1,8 +1,9 @@
 ﻿<Project DefaultTargets="Build">
   <PropertyGroup>
     <BuildConfigurations>
-      netstandard-Unix;
-      netstandard-Windows_NT;
+      netcoreapp-Unix;
+      netcoreapp-Windows_NT;
+      uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

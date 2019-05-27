@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{6C36F3AC-54A1-4021-9F5D-CDEFF7347277}</ProjectGuid>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="NTAccount.cs" />

@@ -203,7 +203,6 @@ namespace System.Runtime.InteropServices.Tests
             AssertExtensions.Throws<ArgumentException>("structureType", () => Marshal.PtrToStructure((IntPtr)1, structureType));
         }
 
-#if !netstandard // TODO: Enable for netstandard2.1
         [Fact]
         public void PtrToStructure_NonRuntimeType_ThrowsArgumentException()
         {
@@ -212,7 +211,6 @@ namespace System.Runtime.InteropServices.Tests
             TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
             AssertExtensions.Throws<ArgumentException>("structureType", "type", () => Marshal.PtrToStructure((IntPtr)1, (Type)typeBuilder));
         }
-#endif
 
         public static IEnumerable<object[]> PtrToStructure_NonBlittableType_TestData()
         {

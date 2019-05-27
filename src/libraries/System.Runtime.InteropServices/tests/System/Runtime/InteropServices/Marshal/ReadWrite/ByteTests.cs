@@ -135,13 +135,11 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception is wrapped in a TargetInvocationException in the .NET Framework.")]
         public void ReadByte_NullObject_ThrowsAccessViolationException()
         {
             Assert.Throws<AccessViolationException>(() => Marshal.ReadByte(null, 2));
         }
 
-#if !netstandard // TODO: Enable for netstandard2.1
         [Fact]
         public void ReadByte_NotReadable_ThrowsArgumentException()
         {
@@ -153,7 +151,6 @@ namespace System.Runtime.InteropServices.Tests
 
             AssertExtensions.Throws<ArgumentException>(null, () => Marshal.ReadByte(collectibleObject, 0));
         }
-#endif
 
         [Fact]
         public void WriteByte_ZeroPointer_ThrowsException()
@@ -163,13 +160,11 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception is wrapped in a TargetInvocationException in the .NET Framework.")]
         public void WriteByte_NullObject_ThrowsAccessViolationException()
         {
             Assert.Throws<AccessViolationException>(() => Marshal.WriteByte(null, 2, 0));
         }
 
-#if !netstandard // TODO: Enable for netstandard2.1
         [Fact]
         public void WriteByte_NotReadable_ThrowsArgumentException()
         {
@@ -181,7 +176,6 @@ namespace System.Runtime.InteropServices.Tests
 
             AssertExtensions.Throws<ArgumentException>(null, () => Marshal.WriteByte(collectibleObject, 0, 0));
         }
-#endif
 
         public struct BlittableStruct
         {

@@ -40,7 +40,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFX defaults useAsync to false for the SafeFileHandle/FileAccess constructor which leads to an ArgumentException for an async handle. In netcoreapp this constructor was fixed to check the async status of the handle and use that for the useAsync value.")]
         public void AsyncDiscoveredFromHandle()
         {
             using (FileStream fs = new FileStream(GetTestFilePath(), FileMode.Create, FileAccess.ReadWrite, FileShare.Read, 4096, true))

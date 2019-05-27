@@ -687,19 +687,7 @@ namespace System.Tests
         [InlineData( double.NegativeInfinity, double.PositiveInfinity, -0.78539816339744831, CrossPlatformMachineEpsilon)]         // expected: -(pi / 4)
         [InlineData( double.PositiveInfinity, double.NegativeInfinity,  2.3561944901923449,  CrossPlatformMachineEpsilon * 10)]    // expected:  (3 * pi / 4)
         [InlineData( double.PositiveInfinity, double.PositiveInfinity,  0.78539816339744831, CrossPlatformMachineEpsilon)]         // expected:  (pi / 4)
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Atan2_IEEE(double y, double x, double expectedResult, double allowedVariance)
-        {
-            AssertEqual(expectedResult, Math.Atan2(y, x), allowedVariance);
-        }
-
-        [Theory]
-        [InlineData( double.NegativeInfinity, double.NegativeInfinity, double.NaN, 0.0)]
-        [InlineData( double.NegativeInfinity, double.PositiveInfinity, double.NaN, 0.0)]
-        [InlineData( double.PositiveInfinity, double.NegativeInfinity, double.NaN, 0.0)]
-        [InlineData( double.PositiveInfinity, double.PositiveInfinity, double.NaN, 0.0)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Atan2_IEEE_Legacy(double y, double x, double expectedResult, double allowedVariance)
         {
             AssertEqual(expectedResult, Math.Atan2(y, x), allowedVariance);
         }
@@ -752,7 +740,6 @@ namespace System.Tests
         [InlineData(-0.63661977236758134,    -0.0,                     0.0)]    // value: -(2 / pi)
         [InlineData(-0.43429448190325183,    -0.0,                     0.0)]    // value: -(log10(e))
         [InlineData(-0.31830988618379067,    -0.0,                     0.0)]    // value: -(1 / pi)
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Ceiling_Double_IEEE(double value, double expectedResult, double allowedVariance)
         {
             AssertEqual(expectedResult, Math.Ceiling(value), allowedVariance);
@@ -923,7 +910,6 @@ namespace System.Tests
 
         [Theory]
         [InlineData(-0.0,                    -0.0,                     0.0)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Floor_Double_IEEE(double value, double expectedResult, double allowedVariance)
         {
             AssertEqual(expectedResult, Math.Floor(value), allowedVariance);
@@ -1062,17 +1048,6 @@ namespace System.Tests
             Assert.Equal(decimal.MaxValue, Math.Max(decimal.MinValue, decimal.MaxValue));
         }
 
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Max_Double_NetFramework()
-        {
-            Assert.Equal(3.0, Math.Max(3.0, -2.0));
-            Assert.Equal(double.MaxValue, Math.Max(double.MinValue, double.MaxValue));
-            Assert.Equal(double.PositiveInfinity, Math.Max(double.NegativeInfinity, double.PositiveInfinity));
-            Assert.Equal(double.NaN, Math.Max(double.PositiveInfinity, double.NaN));
-            Assert.Equal(double.NaN, Math.Max(double.NaN, double.NaN));
-        }
-
         [Theory]
         [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.PositiveInfinity)]
         [InlineData(double.MinValue, double.MaxValue, double.MaxValue)]
@@ -1081,7 +1056,6 @@ namespace System.Tests
         [InlineData(2.0, -3.0, 2.0)]
         [InlineData(3.0, -2.0, 3.0)]
         [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Max_Double_NotNetFramework(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.Max(x, y), 0.0);
@@ -1115,17 +1089,6 @@ namespace System.Tests
             Assert.Equal(sbyte.MaxValue, Math.Max(sbyte.MinValue, sbyte.MaxValue));
         }
 
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Max_Single_NetFramework()
-        {
-            Assert.Equal(3.0f, Math.Max(3.0f, -2.0f));
-            Assert.Equal(float.MaxValue, Math.Max(float.MinValue, float.MaxValue));
-            Assert.Equal(float.PositiveInfinity, Math.Max(float.NegativeInfinity, float.PositiveInfinity));
-            Assert.Equal(float.NaN, Math.Max(float.PositiveInfinity, float.NaN));
-            Assert.Equal(float.NaN, Math.Max(float.NaN, float.NaN));
-        }
-
         [Theory]
         [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
         [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
@@ -1134,7 +1097,6 @@ namespace System.Tests
         [InlineData(2.0f, -3.0f, 2.0f)]
         [InlineData(3.0f, -2.0f, 3.0f)]
         [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Max_Single_NotNetFramework(float x, float y, float expectedResult)
         {
             AssertEqual(expectedResult, Math.Max(x, y), 0.0f);
@@ -1175,17 +1137,6 @@ namespace System.Tests
             Assert.Equal(decimal.MinValue, Math.Min(decimal.MinValue, decimal.MaxValue));
         }
 
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Min_Double_NetFramework()
-        {
-            Assert.Equal(-2.0, Math.Min(3.0, -2.0));
-            Assert.Equal(double.MinValue, Math.Min(double.MinValue, double.MaxValue));
-            Assert.Equal(double.NegativeInfinity, Math.Min(double.NegativeInfinity, double.PositiveInfinity));
-            Assert.Equal(double.NaN, Math.Min(double.NegativeInfinity, double.NaN));
-            Assert.Equal(double.NaN, Math.Min(double.NaN, double.NaN));
-        }
-
         [Theory]
         [InlineData(double.NegativeInfinity, double.PositiveInfinity, double.NegativeInfinity)]
         [InlineData(double.MinValue, double.MaxValue, double.MinValue)]
@@ -1194,7 +1145,6 @@ namespace System.Tests
         [InlineData(2.0, -3.0, -3.0)]
         [InlineData(3.0, -2.0, -2.0)]
         [InlineData(double.PositiveInfinity, double.NaN, double.NaN)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Min_Double_NotNetFramework(double x, double y, double expectedResult)
         {
             AssertEqual(expectedResult, Math.Min(x, y), 0.0);
@@ -1228,17 +1178,6 @@ namespace System.Tests
             Assert.Equal(sbyte.MinValue, Math.Min(sbyte.MinValue, sbyte.MaxValue));
         }
 
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Min_Single_NetFramework()
-        {
-            Assert.Equal(-2.0f, Math.Min(3.0f, -2.0f));
-            Assert.Equal(float.MinValue, Math.Min(float.MinValue, float.MaxValue));
-            Assert.Equal(float.NegativeInfinity, Math.Min(float.NegativeInfinity, float.PositiveInfinity));
-            Assert.Equal(float.NaN, Math.Min(float.NegativeInfinity, float.NaN));
-            Assert.Equal(float.NaN, Math.Min(float.NaN, float.NaN));
-        }
-
         [Theory]
         [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
         [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
@@ -1247,7 +1186,6 @@ namespace System.Tests
         [InlineData(2.0f, -3.0f, -3.0f)]
         [InlineData(3.0f, -2.0f, -2.0f)]
         [InlineData(float.PositiveInfinity, float.NaN, float.NaN)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Min_Single_NotNetFramework(float x, float y, float expectedResult)
         {
             AssertEqual(expectedResult, Math.Min(x, y), 0.0f);
@@ -1438,20 +1376,7 @@ namespace System.Tests
         [InlineData( double.NaN, -0.0,                     1.0, CrossPlatformMachineEpsilon * 10)]
         [InlineData( double.NaN,  0.0,                     1.0, CrossPlatformMachineEpsilon * 10)]
         [InlineData( 1.0,         double.NaN,              1.0, CrossPlatformMachineEpsilon * 10)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Pow_IEEE(float x, float y, float expectedResult, float allowedVariance)
-        {
-            AssertEqual(expectedResult, Math.Pow(x, y), allowedVariance);
-        }
-
-        [Theory]
-        [InlineData(-1.0,         double.NegativeInfinity, double.NaN, 0.0)]
-        [InlineData(-1.0,         double.PositiveInfinity, double.NaN, 0.0)]
-        [InlineData( double.NaN, -0.0,                     double.NaN, 0.0)]
-        [InlineData( double.NaN,  0.0,                     double.NaN, 0.0)]
-        [InlineData( 1.0,         double.NaN,              double.NaN, 0.0)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Pow_IEEE_Legacy(float x, float y, float expectedResult, float allowedVariance)
         {
             AssertEqual(expectedResult, Math.Pow(x, y), allowedVariance);
         }
@@ -1723,17 +1648,7 @@ namespace System.Tests
         [Theory]
         [InlineData(-1.5707963267948966,      -16331239353195370.0,     0.0)]                               // value: -(pi / 2)
         [InlineData( 1.5707963267948966,       16331239353195370.0,     0.0)]                               // value:  (pi / 2)
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Tan_PiOver2(double value, double expectedResult, double allowedVariance)
-        {
-            AssertEqual(expectedResult, Math.Tan(value), allowedVariance);
-        }
-
-        [Theory]
-        [InlineData(-1.5707963267948966,      -16331778728383844.0,     0.0)]                               // value: -(pi / 2)
-        [InlineData( 1.5707963267948966,       16331778728383844.0,     0.0)]                               // value:  (pi / 2)
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Tan_PiOver2_Legacy(double value, double expectedResult, double allowedVariance)
         {
             AssertEqual(expectedResult, Math.Tan(value), allowedVariance);
         }

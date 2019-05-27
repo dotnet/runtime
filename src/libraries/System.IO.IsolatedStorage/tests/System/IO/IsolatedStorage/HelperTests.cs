@@ -7,8 +7,6 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-        "These are unit tests for the CoreFX implementation and don't apply to NetFX.")]
     public partial class HelperTests
     {
         [Fact]

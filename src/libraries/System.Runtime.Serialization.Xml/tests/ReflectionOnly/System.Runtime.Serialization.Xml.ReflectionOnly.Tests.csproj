@@ -2,7 +2,7 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
     <ProjectGuid>{38889701-0af4-48b3-999c-e99d639c61b6}</ProjectGuid>
-    <Configurations>netstandard-Debug;netstandard-Release;uapaot-Debug;uapaot-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />
@@ -13,6 +13,8 @@
     <Compile Include="$(TestSourceFolder)..\MyResolver.cs" />
     <Compile Include="$(TestSourceFolder)..\XmlDictionaryReaderTests.cs" />
     <Compile Include="$(TestSourceFolder)..\XmlDictionaryWriterTest.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTypes.CoreCLR.cs" />
+    <Compile Include="$(TestSourceFolder)..\DataContractSerializer.CoreCLR.cs" />
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
@@ -62,11 +64,7 @@
       <Link>SerializationTestTypes\SelfRefAndCycles.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">
-    <Compile Include="$(TestSourceFolder)..\SerializationTypes.CoreCLR.cs" />
-    <Compile Include="$(TestSourceFolder)..\DataContractSerializer.CoreCLR.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
+  <ItemGroup>
     <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
 </Project>

@@ -685,7 +685,6 @@ namespace System.Net.Sockets.Tests
             });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Optimized .NET Core CopyToAsync doesn't use Begin/EndRead, skipping code that throws ObjectDisposedException on netfx")]
         [Fact]
         public async Task CopyToAsync_DisposedSourceStream_ThrowsOnWindows_NoThrowOnUnix()
         {

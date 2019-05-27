@@ -179,7 +179,6 @@ namespace System.Reflection.Tests
         }        
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "AssemblyName.CodeBase and EscapedCodeBase not supported on UapAot")]
         public static void Verify_EscapedCodeBase()
         {
             AssemblyName n = new AssemblyName("MyAssemblyName");
@@ -460,9 +459,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Constructor_String_InvalidVersionTest_MemberData))]
-        [SkipOnTargetFramework(
-            TargetFrameworkMonikers.NetFramework,
-            ".NET Core behavior differs from .NET Framework since it does not want to replicate some bugs")]
         public static void Constructor_String_InvalidVersionTest(string versionStr)
         {
             Assert.Throws<FileLoadException>(() => new AssemblyName("a, Version=" + versionStr));
@@ -503,9 +499,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Constructor_String_VersionTest_MemberData))]
-        [SkipOnTargetFramework(
-            TargetFrameworkMonikers.NetFramework,
-            ".NET Core behavior differs from .NET Framework since it does not want to replicate some bugs")]
         public static void Constructor_String_VersionTest(Version expectedVersion, string versionStr)
         {
             Assert.NotNull(expectedVersion);
@@ -546,9 +539,6 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue(33249)]
-        [SkipOnTargetFramework(
-            TargetFrameworkMonikers.NetFramework,
-            ".NET Core behavior differs from .NET Framework since it does not want to replicate some bugs")]
         public static void Constructor_String_LoadVersionTest()
         {
             string assemblyNamePrefix = "System.Reflection.Tests.Assembly_";

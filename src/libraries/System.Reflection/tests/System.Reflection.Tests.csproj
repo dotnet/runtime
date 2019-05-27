@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{B027C72E-F04E-42E0-A7F7-993AEF8400D2}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
@@ -46,7 +46,7 @@
       <LogicalName>ResourceTextFile.txt</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx' And '$(TargetGroup)' != 'netstandard'">
+  <ItemGroup>
     <Compile Include="AssemblyTests.netcoreapp.cs" />
     <Compile Include="MemberInfoTests.netcoreapp.cs" />
     <Compile Include="TypeInfoTests.netcoreapp.cs" />

@@ -14,7 +14,6 @@ namespace System.IO.Tests
         }
 
         [Theory, MemberData(nameof(StreamSpecifiers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "FileInfo.Open(string, filemode) on netfx always uses FileAccess.ReadWrite instead of choosing a FileAccess based on the FileMode. This bug was fixed in netcoreapp.")]
         public override void FileModeAppend(string streamSpecifier)
         {
             using (FileStream fs = CreateFileStream(GetTestFilePath() + streamSpecifier, FileMode.Append))
@@ -25,7 +24,6 @@ namespace System.IO.Tests
         }
 
         [Theory, MemberData(nameof(StreamSpecifiers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "FileInfo.Open(string, filemode) on netfx always uses FileAccess.ReadWrite instead of choosing a FileAccess based on the FileMode. This bug was fixed in netcoreapp.")]
         public override void FileModeAppendExisting(string streamSpecifier)
         {
             string fileName = GetTestFilePath() + streamSpecifier;

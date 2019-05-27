@@ -581,7 +581,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SAEA left in unusable state after failed BeginGetHostAddresses on netfx")]
         [Fact]
         public async Task SocketConnectAsync_IPAddressAny_SocketAsyncEventArgsReusableAfterFailure()
         {
