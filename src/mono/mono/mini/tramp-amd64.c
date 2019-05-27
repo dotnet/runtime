@@ -937,13 +937,25 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	guint8 *label_start_copy, *label_exit_copy;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	int buf_len, i, off_methodargs, off_targetaddr;
+	int buf_len, i, cfa_offset, off_methodargs, off_targetaddr;
 
-	buf_len = 512 + MONO_TRAMPOLINE_UNWINDINFO_SIZE(0);
-	start = code = (guint8 *) mono_global_codeman_reserve (buf_len);
+	buf_len = 512;
+	start = code = (guint8 *) mono_global_codeman_reserve (buf_len + MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE);
+
+	// CFA = sp + 8
+	cfa_offset = 8;
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, AMD64_RSP, cfa_offset);
+	// IP saved at CFA - 8
+	mono_add_unwind_op_offset (unwind_ops, code, start, AMD64_RIP, -cfa_offset);
 
 	amd64_push_reg (code, AMD64_RBP);
+	cfa_offset += sizeof (target_mgreg_t);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, cfa_offset);
+	mono_add_unwind_op_offset (unwind_ops, code, start, AMD64_RBP, -cfa_offset);
+
 	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (target_mgreg_t));
+	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, start, AMD64_RBP);
+	mono_add_unwind_op_fp_alloc (unwind_ops, code, start, AMD64_RBP, 0);
 
 	/* allocate space for saving the target addr and the call context */
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, 2 * sizeof (target_mgreg_t));
@@ -1002,11 +1014,20 @@ mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 	for (i = 0; i < FLOAT_RETURN_REGS; i++)
 		amd64_sse_movsd_membase_reg (code, AMD64_R11, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double), i);
 
-	amd64_mov_reg_reg (code, AMD64_RSP, AMD64_RBP, 8);
+#if TARGET_WIN32
+	amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, 0);
+#else
+	amd64_mov_reg_reg (code, AMD64_RSP, AMD64_RBP, sizeof (target_mgreg_t));
+#endif
 	amd64_pop_reg (code, AMD64_RBP);
+	mono_add_unwind_op_same_value (unwind_ops, code, start, AMD64_RBP);
+
+	cfa_offset -= sizeof (target_mgreg_t);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, AMD64_RSP, cfa_offset);
 	amd64_ret (code);
 
 	g_assert (code - start < buf_len);
+	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE));
 
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_HELPER, NULL));
@@ -1028,58 +1049,82 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 	guint8 *start = NULL, *code;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	int buf_len, i;
+	int buf_len, i, frame_size, cfa_offset, ctx_offset;
 	int framesize;
 
 	buf_len = 512;
-	start = code = (guint8 *) mono_global_codeman_reserve (buf_len);
+	start = code = (guint8 *) mono_global_codeman_reserve (buf_len + MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE);
 
-	unwind_ops = mono_arch_get_cie_program ();
+	framesize = 0;
+#ifdef TARGET_WIN32
+	/* Reserve space where the callee can save the argument registers */
+	framesize += 4 * sizeof (target_mgreg_t);
+#endif
+
+	ctx_offset = framesize;
+	framesize += MONO_ABI_SIZEOF (CallContext);
+	framesize = ALIGN_TO (framesize, MONO_ARCH_FRAME_ALIGNMENT);
+
+	// CFA = sp + 8
+	cfa_offset = 8;
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, AMD64_RSP, cfa_offset);
+	// IP saved at CFA - 8
+	mono_add_unwind_op_offset (unwind_ops, code, start, AMD64_RIP, -cfa_offset);
 
 	amd64_push_reg (code, AMD64_RBP);
-	/* CFA = SP + 8 (RIP) + 8 (RBP) */
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, 16);
-	mono_add_unwind_op_offset (unwind_ops, code, start, AMD64_RBP, -16);
+	cfa_offset += sizeof (target_mgreg_t);
+	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, start, cfa_offset);
+	mono_add_unwind_op_offset (unwind_ops, code, start, AMD64_RBP, -cfa_offset);
 
 	amd64_mov_reg_reg (code, AMD64_RBP, AMD64_RSP, sizeof (target_mgreg_t));
-	mono_add_unwind_op_def_cfa (unwind_ops, code, start, AMD64_RBP, 16);
+	mono_add_unwind_op_def_cfa_reg (unwind_ops, code, start, AMD64_RBP);
+	mono_add_unwind_op_fp_alloc (unwind_ops, code, start, AMD64_RBP, 0);
 
-	/* allocate the CallContext on the stack */
-	framesize = ALIGN_TO (MONO_ABI_SIZEOF (CallContext), MONO_ARCH_FRAME_ALIGNMENT);
 	amd64_alu_reg_imm (code, X86_SUB, AMD64_RSP, framesize);
 
 	/* save all general purpose registers into the CallContext */
 	for (i = 0; i < PARAM_REGS; i++)
-		amd64_mov_membase_reg (code, AMD64_RSP, MONO_STRUCT_OFFSET (CallContext, gregs) + param_regs [i] * sizeof (target_mgreg_t), param_regs [i], sizeof (target_mgreg_t));
+		amd64_mov_membase_reg (code, AMD64_RSP, ctx_offset + MONO_STRUCT_OFFSET (CallContext, gregs) + param_regs [i] * sizeof (target_mgreg_t), param_regs [i], sizeof (target_mgreg_t));
 
 	/* save all floating registers into the CallContext  */
 	for (i = 0; i < FLOAT_PARAM_REGS; i++)
-		amd64_sse_movsd_membase_reg (code, AMD64_RSP, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double), i);
+		amd64_sse_movsd_membase_reg (code, AMD64_RSP, ctx_offset + MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double), i);
 
 	/* set the stack pointer to the value at call site */
 	amd64_mov_reg_reg (code, AMD64_R11, AMD64_RBP, sizeof (target_mgreg_t));
 	amd64_alu_reg_imm (code, X86_ADD, AMD64_R11, 2 * sizeof (target_mgreg_t));
-	amd64_mov_membase_reg (code, AMD64_RSP, MONO_STRUCT_OFFSET (CallContext, stack), AMD64_R11, sizeof (target_mgreg_t));
+	amd64_mov_membase_reg (code, AMD64_RSP, ctx_offset + MONO_STRUCT_OFFSET (CallContext, stack), AMD64_R11, sizeof (target_mgreg_t));
 
 	/* call interp_entry with the ccontext and rmethod as arguments */
 	amd64_mov_reg_reg (code, AMD64_ARG_REG1, AMD64_RSP, sizeof (target_mgreg_t));
+	if (ctx_offset != 0)
+		amd64_alu_reg_imm (code, X86_ADD, AMD64_ARG_REG1, ctx_offset);
 	amd64_mov_reg_membase (code, AMD64_ARG_REG2, MONO_ARCH_RGCTX_REG, MONO_STRUCT_OFFSET (MonoFtnDesc, arg), sizeof (target_mgreg_t));
 	amd64_mov_reg_membase (code, AMD64_R11, MONO_ARCH_RGCTX_REG, MONO_STRUCT_OFFSET (MonoFtnDesc, addr), sizeof (target_mgreg_t));
 	amd64_call_reg (code, AMD64_R11);
 
 	/* load the return values from the context */
 	for (i = 0; i < RETURN_REGS; i++)
-		amd64_mov_reg_membase (code, return_regs [i], AMD64_RSP, MONO_STRUCT_OFFSET (CallContext, gregs) + return_regs [i] * sizeof (target_mgreg_t), sizeof (target_mgreg_t));
+		amd64_mov_reg_membase (code, return_regs [i], AMD64_RSP, ctx_offset + MONO_STRUCT_OFFSET (CallContext, gregs) + return_regs [i] * sizeof (target_mgreg_t), sizeof (target_mgreg_t));
 
 	for (i = 0; i < FLOAT_RETURN_REGS; i++)
-		amd64_sse_movsd_reg_membase (code, i, AMD64_RSP, MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
+		amd64_sse_movsd_reg_membase (code, i, AMD64_RSP, ctx_offset + MONO_STRUCT_OFFSET (CallContext, fregs) + i * sizeof (double));
 
 	/* reset stack and return */
-	amd64_mov_reg_reg (code, AMD64_RSP, AMD64_RBP, 8);
+#if TARGET_WIN32
+	amd64_lea_membase (code, AMD64_RSP, AMD64_RBP, 0);
+#else
+	amd64_mov_reg_reg (code, AMD64_RSP, AMD64_RBP, sizeof (target_mgreg_t));
+#endif
 	amd64_pop_reg (code, AMD64_RBP);
+	mono_add_unwind_op_same_value (unwind_ops, code, start, AMD64_RBP);
+
+	cfa_offset -= sizeof (target_mgreg_t);
+	mono_add_unwind_op_def_cfa (unwind_ops, code, start, AMD64_RSP, cfa_offset);
 	amd64_ret (code);
 
 	g_assert (code - start < buf_len);
+	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE));
 
 	mono_arch_flush_icache (start, code - start);
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING, NULL));

@@ -1322,8 +1322,7 @@ get_interp_to_native_trampoline (void)
 		} else {
 			MonoTrampInfo *info;
 			trampoline = (MonoPIFunc) mono_arch_get_interp_to_native_trampoline (&info);
-			// TODO:
-			// mono_tramp_info_register (info, NULL);
+			mono_tramp_info_register (info, NULL);
 		}
 		mono_memory_barrier ();
 	}
@@ -1375,6 +1374,9 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	if (!frame->ex)
 		mono_arch_get_native_call_context_ret (&ccontext, frame, sig);
+
+	if (ccontext.stack != NULL)
+		g_free (ccontext.stack);
 #else
 	if (!frame->ex && !MONO_TYPE_ISSTRUCT (sig->ret))
 		stackval_from_data (sig->ret, frame->retval, (char*)&frame->retval->data.p, sig->pinvoke);
