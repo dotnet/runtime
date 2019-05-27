@@ -14,7 +14,6 @@ namespace System.PrivateUri.Tests
         //This test tests a case where the Core implementation of UriBuilder differs from Desktop Framework UriBuilder.
         //The Query property will not longer prepend a ? character if the string being assigned is already prepended.
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Difference in behavior")]
         public static void TestQuery()
         {
             var uriBuilder = new UriBuilder(@"http://foo/bar/baz?date=today");
@@ -293,7 +292,6 @@ namespace System.PrivateUri.Tests
         [Theory]
         [InlineData("#fragment", "#fragment")]
         [InlineData("#", "#")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In NET Core if the value starts with # then no other # is prepended, in Desktop we always prepend #")]
         public void Fragment_Get_Set_StartsWithPound(string value, string expected)
         {
             var uriBuilder = new UriBuilder();

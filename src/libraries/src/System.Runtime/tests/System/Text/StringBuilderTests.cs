@@ -14,7 +14,7 @@ namespace System.Text.Tests
     public partial class StringBuilderTests
     {
         private static readonly string s_chunkSplitSource = new string('a', 30);
-        private static readonly string s_noCapacityParamName = PlatformDetection.IsFullFramework ? "requiredLength" : "valueCount";
+        private static readonly string s_noCapacityParamName = "valueCount";
 
         private static StringBuilder StringBuilderWithMultipleChunks() => new StringBuilder(20).Append(s_chunkSplitSource);
 
@@ -696,7 +696,6 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Append_CharArray_Invalid()
         {
             var builder = new StringBuilder(0, 5);
@@ -712,25 +711,6 @@ namespace System.Text.Tests
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("valueCount", () => builder.Append(new char[] { 'a' })); // New length > builder.MaxCapacity
             AssertExtensions.Throws<ArgumentOutOfRangeException>("valueCount", () => builder.Append(new char[] { 'a' }, 0, 1)); // New length > builder.MaxCapacity
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Append_CharArray_InvalidDesktop()
-        {
-            var builder = new StringBuilder(0, 5);
-            builder.Append("Hello");
-
-            AssertExtensions.Throws<ArgumentNullException>("value", () => builder.Append((char[])null, 1, 1)); // Value is null, startIndex > 0 and count > 0
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Append(new char[0], -1, 0)); // Start index < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Append(new char[0], 0, -1)); // Count < 0
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Append(new char[5], 6, 0)); // Start index + count > value.Length
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Append(new char[5], 5, 1)); // Start index + count > value.Length
-
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append(new char[] { 'a' }));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("requiredLength", () => builder.Append(new char[] { 'a' }, 0, 1));
         }
 
         public static IEnumerable<object[]> AppendFormat_TestData()
@@ -921,7 +901,6 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void AppendFormat_NoEscapedBracesInCustomFormatSpecifier()
         {
             // Tests new rule which does not allow escaped braces in the custom format specifier
@@ -1592,7 +1571,6 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Insert_CharArray_InvalidCount()
         {
             var builder = new StringBuilder(0, 5);
@@ -1601,30 +1579,11 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Insert_CharArray_InvalidCount_Desktop()
-        {
-            var builder = new StringBuilder(0, 5);
-            builder.Append("Hello");
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Insert(0, new char[0], 0, -1)); // Char count < 0
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Insert_CharArray_InvalidCharCount()
         {
             var builder = new StringBuilder(0, 5);
             builder.Append("Hello");
             AssertExtensions.Throws<ArgumentOutOfRangeException>("charCount", () => builder.Insert(0, new char[0], 0, -1)); // Char count < 0
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Insert_CharArray_InvalidCharCount_Desktop()
-        {
-            var builder = new StringBuilder(0, 5);
-            builder.Append("Hello");
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => builder.Insert(0, new char[0], 0, -1)); // Char count < 0
         }
 
         [Theory]
@@ -1654,7 +1613,6 @@ namespace System.Text.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Remove_Invalid()
         {
             var builder = new StringBuilder("Hello");
@@ -1663,18 +1621,6 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.Remove(6, 0)); // Start index + length > 0
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.Remove(5, 1)); // Start index + length > 0
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.Remove(4, 2)); // Start index + length > 0
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Remove_Invalid_Desktop()
-        {
-            var builder = new StringBuilder("Hello");
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => builder.Remove(-1, 0)); // Start index < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => builder.Remove(0, -1)); // Length < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Remove(6, 0)); // Start index + length > 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Remove(5, 1)); // Start index + length > 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.Remove(4, 2)); // Start index + length > 0
         }
 
         [Theory]

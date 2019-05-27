@@ -435,7 +435,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public async Task ReadAsStringAsync_SetQuotedCharset_ParsesContent()
         {
             string sourceString = "some string";

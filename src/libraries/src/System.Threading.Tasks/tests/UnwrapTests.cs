@@ -37,7 +37,6 @@ namespace System.Threading.Tasks.Tests
         /// Tests Unwrap when both the outer task and non-generic inner task have completed by the time Unwrap is called.
         /// </summary>
         /// <param name="inner">Will be run with a RanToCompletion, Faulted, and Canceled task.</param>
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core optimization to return the exact same object")]
         [Theory]
         [MemberData(nameof(CompletedNonGenericTasks))]
         public void NonGeneric_Completed_Completed_OptimizeToUseSameInner(Task inner)
@@ -66,7 +65,6 @@ namespace System.Threading.Tasks.Tests
         /// Tests Unwrap when both the outer task and generic inner task have completed by the time Unwrap is called.
         /// </summary>
         /// <param name="inner">The inner task.</param>
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core optimization to return the exact same object")]
         [Theory]
         [MemberData(nameof(CompletedStringTasks))]
         public void Generic_Completed_Completed_OptimizeToUseSameInner(Task<string> inner)

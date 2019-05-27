@@ -36,7 +36,6 @@ namespace System.ComponentModel.Tests
 
         [Theory]
         [MemberData(nameof(GetProperties_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Returns null in .NET Framework")]
         public void GetProperties_Invoke_ReturnsEmpty(object value)
         {
             PropertyDescriptorCollection properties = Converter.GetProperties(value);

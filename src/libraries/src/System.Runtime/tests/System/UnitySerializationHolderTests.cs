@@ -13,8 +13,8 @@ namespace System.Tests
         public void UnitySerializationHolderWithAssemblySingleton()
         {
             const string UnitySerializationHolderAssemblyBase64String = "AAEAAAD/////AQAAAAAAAAAEAQAAAB9TeXN0ZW0uVW5pdHlTZXJpYWxpemF0aW9uSG9sZGVyAwAAAAREYXRhCVVuaXR5VHlwZQxBc3NlbWJseU5hbWUBAAEIBgIAAABLbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5BgAAAAkCAAAACw==";
-            AssertExtensions.ThrowsIf<ArgumentException>(!PlatformDetection.IsFullFramework,
-                () => BinaryFormatterHelpers.FromBase64String(UnitySerializationHolderAssemblyBase64String));
+            AssertExtensions.Throws<ArgumentException>(() => 
+              BinaryFormatterHelpers.FromBase64String(UnitySerializationHolderAssemblyBase64String));
         }
     }
 }

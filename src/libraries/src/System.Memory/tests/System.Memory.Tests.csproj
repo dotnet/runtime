@@ -267,11 +267,6 @@
       <Link>Common\System\MutableDecimal.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <Compile Include="$(CommonTestPath)\Tests\System\SpanExtensions.netstandard.cs">
-      <Link>System\SpanExtensions.netstandard.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>

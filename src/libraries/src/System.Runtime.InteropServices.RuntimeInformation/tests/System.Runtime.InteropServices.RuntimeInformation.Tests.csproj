@@ -1,12 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{9B4D1DA9-AA4C-428F-9F66-D45C924025A5}</ProjectGuid>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CheckArchitectureTests.cs" />
     <Compile Include="CheckPlatformTests.cs" />
-    <Compile Include="CheckPlatformTests.netcoreapp.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
+    <Compile Include="CheckPlatformTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="DescriptionNameTests.cs" />
     <Compile Include="$(CommonPath)\Interop\Linux\cgroups\Interop.cgroups.cs">
       <Link>Common\Interop\Linux\Interop.cgroups.cs</Link>

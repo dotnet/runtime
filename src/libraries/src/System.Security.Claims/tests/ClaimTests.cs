@@ -19,7 +19,6 @@ namespace System.Security.Claims
         }
 
         [Fact]
-        [ActiveIssue(22858, framework: TargetFrameworkMonikers.NetFramework)] // Roundtripping claim fails in full framework with EndOfStream exception
         public void BinaryWriteReadTest_Success()
         {
             var claim = new Claim(ClaimTypes.Actor, "value", ClaimValueTypes.String, "issuer", "originalIssuer");

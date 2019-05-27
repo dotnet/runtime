@@ -163,7 +163,6 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(JoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void Join_Multiple(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -181,7 +180,6 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(JoinMultipleData), new[] { 512, 1024 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void Join_Multiple_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_Multiple(left, leftCount, right, rightCount);
@@ -208,7 +206,6 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(JoinMultipleData), new[] { 2, KeyFactor - 1, KeyFactor, KeyFactor + 1, KeyFactor * 2 - 1, KeyFactor * 2, KeyFactor * 2 + 1 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void Join_Multiple_LeftWithOrderingColisions(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             LeftOrderingCollisionTestWithOrderedRight validator = new LeftOrderingCollisionTestWithOrderedRight();
@@ -219,7 +216,6 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(JoinMultipleData), new[] { 512, 1024 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void Join_Multiple_LeftWithOrderingColisions_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_Multiple_LeftWithOrderingColisions(left, leftCount, right, rightCount);
@@ -245,7 +241,6 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(JoinOrderedLeftUnorderedRightData), new[] { 2, KeyFactor - 1, KeyFactor, KeyFactor + 1, KeyFactor * 2 - 1, KeyFactor * 2, KeyFactor * 2 + 1 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve grouping of order-identical left keys through repartitioning (see https://github.com/dotnet/corefx/pull/27930#issuecomment-372084741)")]
         public static void Join_Multiple_LeftWithOrderingColisions_UnorderedRight(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             LeftOrderingCollisionTestWithUnorderedRight validator = new LeftOrderingCollisionTestWithUnorderedRight();
@@ -256,7 +251,6 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(JoinOrderedLeftUnorderedRightData), new[] { 256, 512 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve grouping of order-identical left keys through repartitioning (see https://github.com/dotnet/corefx/pull/27930#issuecomment-372084741)")]
         public static void Join_Multiple_LeftWithOrderingColisions_UnorderedRight_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_Multiple_LeftWithOrderingColisions_UnorderedRight(left, leftCount, right, rightCount);
@@ -300,7 +294,6 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(JoinMultipleData), new[] { 0, 1, 2, KeyFactor * 2 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void Join_CustomComparator(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             ParallelQuery<int> leftQuery = left.Item;
@@ -333,7 +326,6 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(JoinMultipleData), new[] { 512, 1024 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void Join_CustomComparator_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_CustomComparator(left, leftCount, right, rightCount);
@@ -366,7 +358,6 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(JoinMultipleData), new[] { 2, KeyFactor - 1, KeyFactor, KeyFactor + 1, KeyFactor * 2 - 1, KeyFactor * 2, KeyFactor * 2 + 1 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void Join_CustomComparator_LeftWithOrderingColisions(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             LeftOrderingCollisionTestWithOrderedRightAndCustomComparator validator = new LeftOrderingCollisionTestWithOrderedRightAndCustomComparator();
@@ -377,7 +368,6 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(JoinMultipleData), new[] { 512, 1024 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve the right collection order (.NET core bug fix https://github.com/dotnet/corefx/pull/27930)")]
         public static void Join_CustomComparator_LeftWithOrderingColisions_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_CustomComparator_LeftWithOrderingColisions(left, leftCount, right, rightCount);
@@ -410,7 +400,6 @@ namespace System.Linq.Parallel.Tests
 
         [Theory]
         [MemberData(nameof(JoinOrderedLeftUnorderedRightData), new[] { 2, KeyFactor - 1, KeyFactor, KeyFactor + 1, KeyFactor * 2 - 1, KeyFactor * 2, KeyFactor * 2 + 1 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve grouping of order-identical left keys through repartitioning (see https://github.com/dotnet/corefx/pull/27930#issuecomment-372084741)")]
         public static void Join_CustomComparator_LeftWithOrderingColisions_UnorderedRight(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             LeftOrderingCollisionTestWithUnorderedRightAndCustomComparator validator = new LeftOrderingCollisionTestWithUnorderedRightAndCustomComparator();
@@ -421,7 +410,6 @@ namespace System.Linq.Parallel.Tests
         [Theory]
         [OuterLoop]
         [MemberData(nameof(JoinOrderedLeftUnorderedRightData), new[] { 256 })]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework doesn't preserve grouping of order-identical left keys through repartitioning (see https://github.com/dotnet/corefx/pull/27930#issuecomment-372084741)")]
         public static void Join_CustomComparator_LeftWithOrderingColisions_UnorderedRight_Longrunning(Labeled<ParallelQuery<int>> left, int leftCount, Labeled<ParallelQuery<int>> right, int rightCount)
         {
             Join_CustomComparator_LeftWithOrderingColisions_UnorderedRight(left, leftCount, right, rightCount);

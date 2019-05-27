@@ -90,7 +90,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void SubdirectoryOverlappingName_ThrowsArgumentException()
         {
             // What we're looking for here is trying to create C:\FooBar under C:\Foo by passing "..\FooBar"
@@ -172,16 +171,6 @@ namespace System.IO.Tests
         [Theory,
             MemberData(nameof(ControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void WindowsControlWhiteSpace_Desktop(string component)
-        {
-            Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(component));
-        }
-
-        [Theory,
-            MemberData(nameof(ControlWhiteSpace))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void WindowsControlWhiteSpace_Core(string component)
         {
             Assert.Throws<IOException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(component));
@@ -189,22 +178,10 @@ namespace System.IO.Tests
 
         [Theory,
             MemberData(nameof(SimpleWhiteSpace))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void WindowsSimpleWhiteSpaceThrowsException(string component)
         {
             Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(component));
-        }
-
-        [Theory,
-            MemberData(nameof(SimpleWhiteSpace))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)] // Simple whitespace is trimmed in path
-        public void WindowsSimpleWhiteSpace(string component)
-        {
-            DirectoryInfo result = new DirectoryInfo(TestDirectory).CreateSubdirectory(component);
-
-            Assert.True(Directory.Exists(result.FullName));
-            Assert.Equal(TestDirectory, IOServices.RemoveTrailingSlash(result.FullName));
         }
 
         [Theory,
@@ -251,7 +228,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void ParentDirectoryNameAsPrefixShouldThrow()
         {
             string randomName = GetTestFileName();

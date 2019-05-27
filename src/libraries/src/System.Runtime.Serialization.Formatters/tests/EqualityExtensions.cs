@@ -1162,7 +1162,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 CheckEquals(@this.InnerException, other.InnerException, isSamePlatform);
             }
 
-            if (!PlatformDetection.IsFullFramework && !PlatformDetection.IsNetNative)
+            if (!PlatformDetection.IsFullFramework)
             {
                 // Different by design for those exceptions
                 if (!((@this is NetworkInformationException || @this is SocketException) && !isSamePlatform))
@@ -1186,13 +1186,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 }
             }
 
-            if (!PlatformDetection.IsNetNative)
+            // Different by design for those exceptions
+            if (!((@this is NetworkInformationException || @this is SocketException) && !isSamePlatform))
             {
-                // Different by design for those exceptions
-                if (!((@this is NetworkInformationException || @this is SocketException) && !isSamePlatform))
-                {
-                    Assert.Equal(@this.HResult, other.HResult);
-                }
+                Assert.Equal(@this.HResult, other.HResult);
             }
         }
 

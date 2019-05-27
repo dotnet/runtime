@@ -521,7 +521,7 @@ namespace System.Linq.Tests
             Assert.Equal(new[] { 1, 2, 3 }, q.Cast<int>());
         }
 
-        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop Framework doesn't support ConditionalExpression in EnumerableQuery")]
+        [Fact]
         public void ExplicitlyTypedConditional()
         {
             Expression call = Expression.Call(
@@ -539,7 +539,7 @@ namespace System.Linq.Tests
             Assert.Equal(new long[] { 2, 3, 1 }, q);
         }
 
-        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop Framework doesn't support BlockExpression in EnumerableQuery")]
+        [Fact]
         public void Block()
         {
             Expression block = Expression.Block(
@@ -550,7 +550,7 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Range(0, 2), q);
         }
 
-        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop Framework doesn't support BlockExpression in EnumerableQuery")]
+        [Fact]
         public void ExplicitlyTypedBlock()
         {
             Expression block = Expression.Block(
@@ -562,7 +562,7 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Range(0, 2), q);
         }
 
-        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop Framework doesn't support BlockExpression in EnumerableQuery")]
+        [Fact]
         public void Return()
         {
             LabelTarget target = Expression.Label(typeof(IQueryable<int>));
@@ -574,7 +574,7 @@ namespace System.Linq.Tests
             Assert.Equal(Enumerable.Range(0, 2), q);
         }
 
-        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop Framework doesn't support BlockExpression in EnumerableQuery")]
+        [Fact]
         public void ReturnArray()
         {
             LabelTarget target = Expression.Label(typeof(IQueryable<int>));
@@ -586,7 +586,7 @@ namespace System.Linq.Tests
             Assert.Equal(new[] { 1, 1, 2, 3, 5, 8 }, q);
         }
 
-        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop Framework doesn't support BlockExpression in EnumerableQuery")]
+        [Fact]
         public void ReturnOrdered()
         {
             LabelTarget target = Expression.Label(typeof(IQueryable<int>));
@@ -598,7 +598,7 @@ namespace System.Linq.Tests
             Assert.Equal(new[] { 2, 1, 0 }, q);
         }
 
-        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop Framework doesn't support BlockExpression in EnumerableQuery")]
+        [Fact]
         public void ReturnOrderedAfterAsQueryable()
         {
             LabelTarget target = Expression.Label(typeof(IQueryable<int>));
@@ -610,7 +610,7 @@ namespace System.Linq.Tests
             Assert.Equal(new[] { 2, 1, 0 }, q);
         }
 
-        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop Framework doesn't support BlockExpression in EnumerableQuery")]
+        [Fact]
         public void ReturnNonQueryable()
         {
             LabelTarget target = Expression.Label(typeof(int));
@@ -626,7 +626,7 @@ namespace System.Linq.Tests
             Assert.Equal(3, _prov.Execute<int>(block));
         }
 
-        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop Framework doesn't support BlockExpression in EnumerableQuery")]
+        [Fact]
         public void ReturnNonQueryableUntyped()
         {
             LabelTarget target = Expression.Label(typeof(int));

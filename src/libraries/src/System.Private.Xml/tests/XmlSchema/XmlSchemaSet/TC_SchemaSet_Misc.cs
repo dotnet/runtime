@@ -1259,10 +1259,7 @@ namespace System.Xml.Tests
                 CError.Compare(exception.SourceObject != null, "SourceObject == null");
                 return;
             }
-            if (!PlatformDetection.IsNetNative) // Cannot get names of internal framework types
-            {
-                CError.Compare(exception.SourceObject.GetType().ToString(), "MS.Internal.Xml.Cache.XPathDocumentNavigator", "SourceObject.GetType");
-            }
+            CError.Compare(exception.SourceObject.GetType().ToString(), "MS.Internal.Xml.Cache.XPathDocumentNavigator", "SourceObject.GetType");
             _output.WriteLine("Exc: " + exception);
         }
 

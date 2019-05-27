@@ -117,7 +117,6 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx#7019", TargetFrameworkMonikers.NetFramework)]
         public void CantAcceptDuplicateKeysFromSourceDictionary()
         {
             Dictionary<string, int> source = new Dictionary<string, int> { { "a", 1 }, { "A", 1 } };

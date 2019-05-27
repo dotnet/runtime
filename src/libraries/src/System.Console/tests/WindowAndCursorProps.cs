@@ -223,7 +223,6 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "// NETFX does not have the fix https://github.com/dotnet/corefx/pull/28905")]
     public static void Title_GetWindows_ReturnsNonNull()
     {
         Assert.NotNull(Console.Title);
@@ -231,7 +230,6 @@ public class WindowAndCursorProps
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
     [PlatformSpecific(TestPlatforms.Windows)]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "// NETFX does not have the fix https://github.com/dotnet/corefx/pull/28905")]
     public static void Title_Get_Windows_NoNulls()
     {
         string title = Console.Title;
@@ -286,15 +284,6 @@ public class WindowAndCursorProps
     public static void Title_SetNull_ThrowsArgumentNullException()
     {
         AssertExtensions.Throws<ArgumentNullException>("value", () => Console.Title = null);
-    }
-
-    [Fact]
-    [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-    public static void Title_SetGreaterThan24500Chars_ThrowsArgumentOutOfRangeException()
-    {
-        // We don't explicitly throw on Core as this isn't technically correct
-        string newTitle = new string('a', 24501);
-        AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => Console.Title = newTitle);
     }
 
     [Fact]

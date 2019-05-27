@@ -1,9 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{7C70BB15-870B-4946-8098-625DACD645A6}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uapaot-Debug;uapaot-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+  <ItemGroup>
     <Compile Include="AppendPrependTests.cs" />
     <Compile Include="SkipLastTests.cs" />
     <Compile Include="TakeLastTests.cs" />
@@ -11,8 +11,6 @@
     <Compile Include="ToHashSetTests.cs" />
     <Compile Include="SelectManyTests.netcoreapp.cs" />
     <Compile Include="ZipTests.netcoreapp.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="AggregateTests.cs" />
     <Compile Include="AllTests.cs" />
     <Compile Include="AnyTests.cs" />
@@ -73,10 +71,6 @@
     <Compile Include="$(CommonTestPath)\System\Linq\SkipTakeData.cs">
       <Link>Common\System\Linq\SkipTakeData.cs</Link>
     </Compile>
-  </ItemGroup>
-  <!-- DebuggerAttribute tests require internal framework Reflection and will not work on AoT platforms.
-       The proper way to test these is via the debugger expression evaluator, not Reflection. -->
-  <ItemGroup Condition="'$(TargetGroup)'!='uapaot'">
     <Compile Include="$(CommonTestPath)\System\Diagnostics\DebuggerAttributes.cs">
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>

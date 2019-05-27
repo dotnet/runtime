@@ -130,7 +130,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx disposes content when method throws.")]
         [Fact]
         public void EnsureSuccessStatusCode_NonSuccessStatusCode_ContentIsNotDisposed()
         {

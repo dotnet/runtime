@@ -13,10 +13,7 @@ namespace System.Collections.Immutable.Tests
 
         internal static void ValidateDefaultThisBehavior(Action a)
         {
-            if (!PlatformDetection.IsNetNative) // ActiveIssue UapAot: TFS 428550, https://github.com/dotnet/corefx/issues/19016 - ImmutableArray's null-guard check (ThrowNullRefIfNotInitialized) can get optimized away by certain compilers.
-            {
-                Assert.Throws<NullReferenceException>(a);
-            }
+            Assert.Throws<NullReferenceException>(a);
         }
     }
 }

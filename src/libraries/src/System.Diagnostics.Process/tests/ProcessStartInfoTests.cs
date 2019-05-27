@@ -198,7 +198,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue(29865, TargetFrameworkMonikers.UapNotUapAot)]
+        [ActiveIssue(29865, TargetFrameworkMonikers.Uap)]
         public void TestSetEnvironmentOnChildProcess()
         {
             const string name = "b5a715d3-d74f-465d-abb7-2abe844750c9";
@@ -219,7 +219,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "Retrieving information about local processes is not supported on uap")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Retrieving information about local processes is not supported on uap")]
         public void TestEnvironmentOfChildProcess()
         {
             const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
@@ -283,23 +283,8 @@ namespace System.Diagnostics.Tests
             Assert.False(psi.UseShellExecute, "UseShellExecute=true is not supported on onecore.");
         }
 
-        [PlatformSpecific(TestPlatforms.Windows)]
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Desktop UseShellExecute is set to true by default")]
-        public void UseShellExecute_GetSetWindows_Success_Netfx()
-        {
-            ProcessStartInfo psi = new ProcessStartInfo();
-            Assert.True(psi.UseShellExecute);
-
-            psi.UseShellExecute = false;
-            Assert.False(psi.UseShellExecute);
-
-            psi.UseShellExecute = true;
-            Assert.True(psi.UseShellExecute);
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public void TestUseShellExecuteProperty_SetAndGet_NotUapOrNetFX()
         {
             ProcessStartInfo psi = new ProcessStartInfo();
@@ -526,13 +511,6 @@ namespace System.Diagnostics.Tests
         {
             var psi = new ProcessStartInfo { FileName = $"{Process.GetCurrentProcess().ProcessName}.exe" };
 
-            if (PlatformDetection.IsNetNative)
-            {
-                // UapAot doesn't have RegistryKey apis available so ProcessStartInfo.Verbs returns Array<string>.Empty().
-                Assert.Equal(0, psi.Verbs.Length);
-                return;
-            }
-
             Assert.Contains("open", psi.Verbs, StringComparer.OrdinalIgnoreCase);
             Assert.Contains("runas", psi.Verbs, StringComparer.OrdinalIgnoreCase);
             Assert.Contains("runasuser", psi.Verbs, StringComparer.OrdinalIgnoreCase);
@@ -603,7 +581,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET Framework throws an InvalidCastException for non-string keys. See https://github.com/dotnet/corefx/issues/18187.")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void Verbs_GetWithNonStringValue_ReturnsEmpty()
         {
@@ -1006,9 +983,8 @@ namespace System.Diagnostics.Tests
                                                     nameof(PlatformDetection.IsNotWindows8x))] // https://github.com/dotnet/corefx/issues/20388
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20388", TargetFrameworkMonikers.NetFramework)]
         // We don't have the ability yet for UseShellExecute in UAP
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20204", TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/20204", TargetFrameworkMonikers.Uap)]
         public void StartInfo_TextFile_ShellExecute()
         {
             if (Thread.CurrentThread.CurrentCulture.ToString() != "en-US")

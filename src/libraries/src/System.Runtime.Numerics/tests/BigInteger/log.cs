@@ -134,7 +134,6 @@ namespace System.Numerics.Tests
 
         [Fact]
         [OuterLoop]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void RunLargeValueLogTests()
         {
             LargeValueLogTests(0, 4, 64, 3);

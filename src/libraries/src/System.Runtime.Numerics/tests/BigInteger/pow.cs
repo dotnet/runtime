@@ -169,7 +169,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void RunOverflow()
         {
             var bytes = new byte[1000];

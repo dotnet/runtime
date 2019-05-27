@@ -147,7 +147,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // desktop framework has a bug
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void CaptureThenSuppressThenRunFlowTest()
         {

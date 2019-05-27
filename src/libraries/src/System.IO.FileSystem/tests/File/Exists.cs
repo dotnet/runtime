@@ -190,23 +190,8 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            MemberData(nameof(ControlWhiteSpace))]
-        [PlatformSpecific(TestPlatforms.Windows)] // In Windows, trailing whitespace in a path is trimmed
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)] // e.g. NetFX only
-        public void TrailingWhiteSpace_Trimmed(string component)
-        {
-            // On desktop, we trim a number of whitespace characters 
-            FileInfo testFile = new FileInfo(GetTestFilePath());
-            testFile.Create().Dispose();
-
-            // Exists calls GetFullPath() which trims trailing white space
-            Assert.True(Exists(testFile.FullName + component)); 
-        }
-
-        [Theory,
            MemberData(nameof(NonControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Not NetFX
         public void TrailingWhiteSpace_NotTrimmed(string component)
         {
             // In CoreFX we don't trim anything other than space (' ')

@@ -459,10 +459,7 @@ namespace System.Linq.Expressions.Tests
         private static void AssertArgumentException(Action action, Type exceptionType, string paramName)
         {
             ArgumentException ex = (ArgumentException)Assert.Throws(exceptionType, action);
-            if (!PlatformDetection.IsNetNative) // The .NET Native toolchain optimizes away exception ParamNames
-            {
-                Assert.Equal(paramName, ex.ParamName);
-            }
+            Assert.Equal(paramName, ex.ParamName);
         }
 
         [Theory]

@@ -583,7 +583,7 @@ namespace System.IO.Pipelines.Tests
                 return bytes;
             }
 
-#if !netstandard
+#if netcoreapp
             public override async ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default)
             {
                 if (_throwOnNextCallToRead)

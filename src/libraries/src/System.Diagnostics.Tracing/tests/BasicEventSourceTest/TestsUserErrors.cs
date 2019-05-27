@@ -50,13 +50,9 @@ namespace BasicEventSourceTests
                     Event _event = events[0];
                     Assert.Equal("EventSourceMessage", _event.EventName);
 
-                    // Check the exception text if not ProjectN.
-                    if (!PlatformDetection.IsNetNative)
-                    {
-                        string message = _event.PayloadString(0, "message");
-                        // expected message: "ERROR: Exception in Command Processing for EventSource BadEventSource_Bad_Type_ByteArray: Unsupported type Byte[] in event source. "
-                        Assert.True(Regex.IsMatch(message, "Unsupported type"));
-                    }
+                    string message = _event.PayloadString(0, "message");
+                    // expected message: "ERROR: Exception in Command Processing for EventSource BadEventSource_Bad_Type_ByteArray: Unsupported type Byte[] in event source. "
+                    Assert.True(Regex.IsMatch(message, "Unsupported type"));
                 }
             }
             finally
@@ -69,7 +65,6 @@ namespace BasicEventSourceTests
         /// Test the 
         /// </summary>
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // ActiveIssue: https://github.com/dotnet/corefx/issues/29754
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Depends on inspecting IL at runtime.")]
         public void Test_BadEventSource_MismatchedIds()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");

@@ -114,7 +114,6 @@ namespace System.Net.Sockets.Tests
             Assert.Contains(e.SocketErrorCode, new[] { SocketError.AccessDenied, SocketError.ProtocolNotSupported });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Sockets are still inheritable on netfx: https://github.com/dotnet/corefx/pull/32903")]
         [Theory]
         [InlineData(true, 0)] // Accept
         [InlineData(false, 0)]

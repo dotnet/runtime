@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{6E48765E-D6AC-4A79-9C2E-B5EE67EEDECF}</ProjectGuid>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\ComponentModel\DataAnnotations\AssociatedMetadataTypeTypeDescriptionProviderTests.cs" />
@@ -26,7 +26,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\MetadataTypeAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\MinLengthAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\PhoneAttributeTests.cs" />
-    <Compile Include="System\ComponentModel\DataAnnotations\RangeAttributeTests.cs" />
+    <Compile Include="System\ComponentModel\DataAnnotations\RangeAttributeTests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="System\ComponentModel\DataAnnotations\RegularExpressionAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\RequiredAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\ScaffoldColumnAttributeTests.cs" />

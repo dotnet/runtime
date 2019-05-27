@@ -215,7 +215,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22506", TargetFrameworkMonikers.UapAot)]
         public void NonGeneric_SetStateMachine_InvalidArgument_ThrowsException()
         {
             AsyncValueTaskMethodBuilder b = default;
@@ -223,7 +222,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22506", TargetFrameworkMonikers.UapAot)]
         public void Generic_SetStateMachine_InvalidArgument_ThrowsException()
         {
             AsyncValueTaskMethodBuilder<int> b = default;

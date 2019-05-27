@@ -176,10 +176,7 @@ namespace System.Linq.Expressions.Tests
             ConstructorInfo ctor = viewType.GetConstructors().Single();
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(new object[] { null }));
             ArgumentNullException ane = (ArgumentNullException)tie.InnerException;
-            if (!PlatformDetection.IsNetNative) // The .NET Native toolchain optimizes away exception ParamNames
-            {
-                Assert.Equal(ctor.GetParameters()[0].Name, ane.ParamName);
-            }
+            Assert.Equal(ctor.GetParameters()[0].Name, ane.ParamName);
         }
 
         public static IEnumerable<object[]> OnePerType()

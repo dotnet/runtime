@@ -544,7 +544,6 @@ namespace System.ComponentModel.Design.Tests
         [Theory]
         [InlineData(null)]
         [InlineData(typeof(int))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core fixes a NRE bug.")]
         public void GetService_NoSuchService_ReturnsNull(Type serviceType)
         {
             var container = new ServiceContainer();

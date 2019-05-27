@@ -405,18 +405,6 @@ namespace XDocumentTests.SDMSample
         /// Validates the explicit float conversion operator on XElement.
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void ElementExplicitToFloat_NetFramework()
-        {
-            XElement e3 = new XElement("x", "5e+500");
-            Assert.Throws<OverflowException>(() => (float)e3);
-        }
-
-        /// <summary>
-        /// Validates the explicit float conversion operator on XElement.
-        /// </summary>
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void ElementExplicitToFloat_NotNetFramework()
         {
             XElement e3 = new XElement("x", "5e+500");
@@ -447,18 +435,6 @@ namespace XDocumentTests.SDMSample
         /// Validates the explicit double conversion operator on XElement.
         /// </summary>
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void ElementExplicitToDouble_NetFramework()
-        {
-            XElement e3 = new XElement("x", "5e+5000");
-            Assert.Throws<OverflowException>(() => (double)e3);
-        }
-
-        /// <summary>
-        /// Validates the explicit double conversion operator on XElement.
-        /// </summary>
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void ElementExplicitToDouble_NotNetFramework()
         {
             XElement e3 = new XElement("x", "5e+5000");

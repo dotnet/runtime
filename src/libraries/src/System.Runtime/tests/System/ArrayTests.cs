@@ -1053,12 +1053,7 @@ namespace System.Tests
             yield return new object[] { new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)3 }, 1, new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)3, (Int32Enum)4, (Int32Enum)5 }, 2, 2, new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)2, (Int32Enum)3, (Int32Enum)5 } };
             yield return new object[] { new Int32Enum[] { (Int32Enum)1 }, 0, new int[1], 0, 1, new int[] { 1 } };
 
-            // The full .NET Framework disallows int -> enum conversions
-            // See https://github.com/dotnet/corefx/issues/13816.
-            if (!PlatformDetection.IsFullFramework)
-            {
-                yield return new object[] { new int[1] { 2 }, 0, new Int32Enum[1], 0, 1, new Int32Enum[] { (Int32Enum)2 } };
-            }
+            yield return new object[] { new int[1] { 2 }, 0, new Int32Enum[1], 0, 1, new Int32Enum[] { (Int32Enum)2 } };
 
             // Misc
             yield return new object[] { new int[] { 0x12345678, 0x22334455, 0x778899aa }, 0, new int[3], 0, 3, new int[] { 0x12345678, 0x22334455, 0x778899aa } };
@@ -1544,7 +1539,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET framework has a bug and incorrectly allows copying between void* and object")]
         public static void Copy_SourceAndDestinationPointers_ThrowsArrayTypeMismatchException()
         {
             unsafe
@@ -3172,14 +3166,12 @@ namespace System.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Non-zero lower-bounded arrays not supported on UapAot")]
         public static void Reverse_IndexLessThanLowerBound_ThrowsArgumentOutOfRangeException(int lowerBound)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => Array.Reverse(NonZeroLowerBoundArray(new int[0], lowerBound), lowerBound - 1, 0));
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Non-zero lower-bounded arrays not supported on UapAot")]
         public static void Reverse_IndexLessThanPositiveLowerBound_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", "length", () => Array.Reverse(NonZeroLowerBoundArray(new int[0], 1), 0, 0));

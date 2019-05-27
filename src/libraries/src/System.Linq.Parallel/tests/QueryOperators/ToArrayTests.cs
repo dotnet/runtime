@@ -46,7 +46,6 @@ namespace System.Linq.Parallel.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core bug fix https://github.com/dotnet/corefx/pull/2307")]
         public static void ToArray_OperationCanceledException_PreCanceled()
         {
             AssertThrows.AlreadyCanceled(source => source.ToArray());

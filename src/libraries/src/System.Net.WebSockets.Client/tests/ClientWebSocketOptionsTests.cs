@@ -109,9 +109,9 @@ namespace System.Net.WebSockets.Client.Tests
         {
             // Recreate the minimum WebSocket buffer size values from the .NET Framework version of WebSocket,
             // and pick the correct name of the buffer used when throwing an ArgumentOutOfRangeException.
-            int minSendBufferSize = PlatformDetection.IsFullFramework ? 16 : 1;
-            int minReceiveBufferSize = PlatformDetection.IsFullFramework ? 256 : 1;
-            string bufferName = PlatformDetection.IsFullFramework ? "internalBuffer" : "buffer";
+            int minSendBufferSize = 1;
+            int minReceiveBufferSize = 1;
+            string bufferName = "buffer";
 
             var cws = new ClientWebSocket();
 

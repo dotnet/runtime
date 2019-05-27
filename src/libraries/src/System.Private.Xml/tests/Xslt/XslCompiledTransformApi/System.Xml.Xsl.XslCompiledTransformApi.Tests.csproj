@@ -1,11 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{B01E2AE1-1B52-4518-B32E-016070356A7F}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="XslCompiledTransform.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="Errata4.cs" />
     <Compile Include="OutputSettings.cs" />
@@ -17,6 +14,7 @@
     <Compile Include="XslTransformMultith.cs" />
     <Compile Include="XsltSettings.cs" />
     <Compile Include="XunitAssemblyAttribute.cs" />
+    <Compile Include="XslCompiledTransform.cs" />
     <SupplementalTestData Include="..\TestFiles\**\*.*">
       <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <DestinationDir>TestFiles\%(RecursiveDir)</DestinationDir>

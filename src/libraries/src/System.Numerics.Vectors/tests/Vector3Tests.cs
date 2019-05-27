@@ -467,7 +467,6 @@ namespace System.Numerics.Tests
 
         // A test for Clamp (Vector3f, Vector3f, Vector3f)
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Vector3ClampTest()
         {
             Vector3 a = new Vector3(0.5f, 0.3f, 0.33f);
@@ -519,64 +518,6 @@ namespace System.Numerics.Tests
             // Case W3: specified value is smaller than min and max value.
             a = new Vector3(-2.0f, -3.0f, -4.0f);
             expected = max;
-            actual = Vector3.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Clamp did not return the expected value.");
-        }
-
-        // A test for Clamp (Vector3f, Vector3f, Vector3f) for netfx only
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void Vector3ClampTestFX()
-        {
-            Vector3 a = new Vector3(0.5f, 0.3f, 0.33f);
-            Vector3 min = new Vector3(0.0f, 0.1f, 0.13f);
-            Vector3 max = new Vector3(1.0f, 1.1f, 1.13f);
-
-            // Normal case.
-            // Case N1: specified value is in the range.
-            Vector3 expected = new Vector3(0.5f, 0.3f, 0.33f);
-            Vector3 actual = Vector3.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Clamp did not return the expected value.");
-
-            // Normal case.
-            // Case N2: specified value is bigger than max value.
-            a = new Vector3(2.0f, 3.0f, 4.0f);
-            expected = max;
-            actual = Vector3.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Clamp did not return the expected value.");
-
-            // Case N3: specified value is smaller than max value.
-            a = new Vector3(-2.0f, -3.0f, -4.0f);
-            expected = min;
-            actual = Vector3.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Clamp did not return the expected value.");
-
-            // Case N4: combination case.
-            a = new Vector3(-2.0f, 0.5f, 4.0f);
-            expected = new Vector3(min.X, a.Y, max.Z);
-            actual = Vector3.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Clamp did not return the expected value.");
-
-            // User specified min value is bigger than max value.
-            max = new Vector3(0.0f, 0.1f, 0.13f);
-            min = new Vector3(1.0f, 1.1f, 1.13f);
-
-            // Case W1: specified value is in the range.
-            a = new Vector3(0.5f, 0.3f, 0.33f);
-            expected = min;
-            actual = Vector3.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Clamp did not return the expected value.");
-
-            // Normal case.
-            // Case W2: specified value is bigger than max and min value.
-            a = new Vector3(2.0f, 3.0f, 4.0f);
-            expected = min;
-            actual = Vector3.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Clamp did not return the expected value.");
-
-            // Case W3: specified value is smaller than min and max value.
-            a = new Vector3(-2.0f, -3.0f, -4.0f);
-            expected = min;
             actual = Vector3.Clamp(a, min, max);
             Assert.True(MathHelper.Equal(expected, actual), "Vector3f.Clamp did not return the expected value.");
         }

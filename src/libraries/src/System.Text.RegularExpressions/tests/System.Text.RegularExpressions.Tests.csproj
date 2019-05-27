@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{94B106C2-D574-4392-80AB-3EE308A078DF}</ProjectGuid>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
   </PropertyGroup>
@@ -28,7 +28,7 @@
       <Link>System\Text\RegularExpressions\RegexParseError.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="GroupCollectionReadOnlyDictionaryTests.cs" />
     <Compile Include="CaptureCollectionTests2.cs" />
     <Compile Include="GroupCollectionTests2.cs" />

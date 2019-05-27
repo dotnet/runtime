@@ -39,7 +39,6 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(DirectoryContextType.DirectoryServer, "\0")]
         [InlineData(DirectoryContextType.Forest, "server:port")]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/21553", TargetFrameworkMonikers.UapAot)]
         public void GetForest_NonNullNameAndNotRootedDomain_ThrowsActiveDirectoryObjectNotFoundException(DirectoryContextType type, string name)
         {
             var context = new DirectoryContext(type, name);

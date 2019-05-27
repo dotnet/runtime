@@ -294,8 +294,7 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"[a-[a-f]]", "abcdefghijklmnopqrstuvwxyz", RegexOptions.None, 0, 26, false, string.Empty };
 
             // \c
-            if (!PlatformDetection.IsFullFramework) // missing fix for #26501
-                yield return new object[] { @"(cat)(\c[*)(dog)", "asdlkcat\u00FFdogiwod", RegexOptions.None, 0, 15, false, string.Empty };
+            yield return new object[] { @"(cat)(\c[*)(dog)", "asdlkcat\u00FFdogiwod", RegexOptions.None, 0, 15, false, string.Empty };
 
             // Surrogate pairs splitted up into UTF-16 code units.
             yield return new object[] { @"(\uD82F[\uDCA0-\uDCA3])", "\uD82F\uDCA2", RegexOptions.CultureInvariant, 0, 2, true, "\uD82F\uDCA2" };
@@ -790,7 +789,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // times out on ARM
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework needs fix for #26484")]
         public void Match_ExcessPrefix()
         {
             RemoteExecutor.Invoke(() =>

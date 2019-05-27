@@ -180,7 +180,6 @@ public partial class ThreadPoolBoundHandleTests
 
     [Fact]
     [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Active Issue dotnet/corefx#13343")]
     public unsafe void FlowsAsyncLocalsToCallback()
     {   // Makes sure that we flow async locals to callback
 

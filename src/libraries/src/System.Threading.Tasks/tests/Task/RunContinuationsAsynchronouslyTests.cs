@@ -11,7 +11,6 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix in .NET 4.7.")]
         public void Direct(bool useRunContinuationsAsynchronously)
         {
             Run(useRunContinuationsAsynchronously, t => t);
@@ -20,7 +19,6 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix in .NET 4.7.")]
         public void ViaUnwrap(bool useRunContinuationsAsynchronously)
         {
             Run(useRunContinuationsAsynchronously, t => ((Task<Task>)t).Unwrap());
@@ -29,7 +27,6 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix in .NET 4.7.")]
         public void ViaWhenAll(bool useRunContinuationsAsynchronously)
         {
             Run(useRunContinuationsAsynchronously, t => Task.WhenAll(t));
@@ -38,7 +35,6 @@ namespace System.Threading.Tasks.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix in .NET 4.7.")]
         public void ViaWhenAny(bool useRunContinuationsAsynchronously)
         {
             Run(useRunContinuationsAsynchronously, t => Task.WhenAny(t));

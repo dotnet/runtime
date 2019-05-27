@@ -35,7 +35,6 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void RunMultiply_TwoLargeBigIntegers_Threshold()
         {
             // Again, with lower threshold

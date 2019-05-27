@@ -356,7 +356,6 @@ namespace System.Net.Primitives.Unit.Tests
 
         [Theory]
         [MemberData(nameof(SetCookiesData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Requires fix shipping in .NET 4.7.2")]
         public void SetCookies_Success(Uri uri, string cookieHeader, Cookie[] expected)
         {
             CookieContainer cc = CreateCount11Container();

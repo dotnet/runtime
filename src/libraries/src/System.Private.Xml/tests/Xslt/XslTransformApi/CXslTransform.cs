@@ -1072,7 +1072,7 @@ namespace System.Xml.Tests
                 var e = Assert.Throws<XsltCompileException>(() => LoadXSL_Resolver("XmlResolver_Main.xsl", myResolver, inputType, readerType));
                 var xsltException = Assert.IsType<XsltException>(e.InnerException);
                 var absoluteUri = new Uri(Path.Combine(Environment.CurrentDirectory, FullFilePath("XmlResolver_Include.xsl"))).AbsoluteUri;
-                var exceptionSourceAssembly = PlatformDetection.IsFullFramework ? "System.Data.SqlXml" : "System.Xml";
+                var exceptionSourceAssembly = "System.Xml";
                 CheckExpectedError(xsltException, exceptionSourceAssembly, "Xslt_CantResolve", new[] { absoluteUri });
             }
 
@@ -1095,7 +1095,6 @@ namespace System.Xml.Tests
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.Writer, DocType.XPathDocument)]
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.TextWriter, DocType.XPathDocument)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Only full framework implicit resolver works")]
         [Theory]
         public void TC_No_Explicit_Resolver_Prohibits_External_Url(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
@@ -1531,21 +1530,6 @@ namespace System.Xml.Tests
 
             Assert.True(false);
         }
-
-        //[Variation("Regression case for bug 80768")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework supports <msxml:script>")]
-        [Fact]
-        public void TC_Ensure_Script_Not_Allowed()
-        {
-#pragma warning disable 0618
-            xslt = new XslTransform();
-
-            var xrLoad = new XmlValidatingReader(new XmlTextReader(FullFilePath("Bug80768.xsl")));
-#pragma warning restore 0618
-            var xd = new XPathDocument(xrLoad, XmlSpace.Preserve);
-            var e = Assert.Throws<XsltCompileException>(() => xslt.Load(xd, new XmlUrlResolver()));
-            Assert.IsType<PlatformNotSupportedException>(e.InnerException);
-        }
     }
 
     /***********************************************************/
@@ -1625,10 +1609,7 @@ namespace System.Xml.Tests
             }
             catch (System.Xml.Xsl.XsltCompileException e)
             {
-                if (PlatformDetection.IsFullFramework)
-                    CheckExpectedError(e.InnerException, "system.data.sqlxml", "Xslt_WrongStylesheetElement", new string[] { "" });
-                else
-                    CheckExpectedError(e.InnerException, "system.xml", "Xslt_WrongStylesheetElement", new string[] { "" });
+                CheckExpectedError(e.InnerException, "system.xml", "Xslt_WrongStylesheetElement", new string[] { "" });
                 return;
             }
             _output.WriteLine("No exception thrown for a loading a closed reader!");
@@ -1728,11 +1709,7 @@ namespace System.Xml.Tests
             }
             catch (System.Xml.Xsl.XsltCompileException e)
             {
-
-                if (PlatformDetection.IsFullFramework)
-                    CheckExpectedError(e.InnerException, "system.data.sqlxml", "Xslt_WrongStylesheetElement", new string[] { "" });
-                else
-                    CheckExpectedError(e.InnerException, "system.xml", "Xslt_WrongStylesheetElement", new string[] { "" });
+                CheckExpectedError(e.InnerException, "system.xml", "Xslt_WrongStylesheetElement", new string[] { "" });
             }
             finally
             {

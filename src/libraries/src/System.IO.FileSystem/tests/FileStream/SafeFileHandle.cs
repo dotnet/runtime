@@ -66,7 +66,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFX doesn't allow concurrent FileStream access when using overlapped IO.")]
         public async Task ThrowWhenHandlePositionIsChanged_async()
         {
             await ThrowWhenHandlePositionIsChanged(useAsync: true);

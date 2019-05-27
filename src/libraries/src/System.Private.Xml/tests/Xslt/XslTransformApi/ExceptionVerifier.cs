@@ -259,19 +259,16 @@ namespace System.Xml.Tests
             _expectedMessage = _expectedMessage.ToLowerInvariant();
             _actualMessage = _actualMessage.ToLowerInvariant();
 
-            if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages.
+            if (Regex.Match(_actualMessage, _expectedMessage, RegexOptions.Singleline).ToString() != _actualMessage)
             {
-                if (Regex.Match(_actualMessage, _expectedMessage, RegexOptions.Singleline).ToString() != _actualMessage)
-                {
-                    // Unescape before printing the expected message string
-                    _expectedMessage = Regex.Unescape(_expectedMessage);
-                    _output.WriteLine("Mismatch in error message");
-                    _output.WriteLine("===== Expected Message =====\n" + _expectedMessage);
-                    _output.WriteLine("===== Expected Message Length =====\n" + _expectedMessage.Length);
-                    _output.WriteLine("===== Actual Message =====\n" + _actualMessage);
-                    _output.WriteLine("===== Actual Message Length =====\n" + _actualMessage.Length);
-                    throw new VerifyException("Mismatch in error message");
-                }
+                // Unescape before printing the expected message string
+                _expectedMessage = Regex.Unescape(_expectedMessage);
+                _output.WriteLine("Mismatch in error message");
+                _output.WriteLine("===== Expected Message =====\n" + _expectedMessage);
+                _output.WriteLine("===== Expected Message Length =====\n" + _expectedMessage.Length);
+                _output.WriteLine("===== Actual Message =====\n" + _actualMessage);
+                _output.WriteLine("===== Actual Message Length =====\n" + _actualMessage.Length);
+                throw new VerifyException("Mismatch in error message");
             }
         }
 

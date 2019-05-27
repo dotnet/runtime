@@ -38,7 +38,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "reflection blocked")]
         public void Ctor_Cache_Second_drops_first()
         {
             RemoteExecutor.Invoke(() =>
@@ -52,7 +51,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "reflection blocked")]
         public void Ctor_Cache_Shrink_cache()
         {
             RemoteExecutor.Invoke(() =>
@@ -70,7 +68,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "reflection blocked")]
         public void Ctor_Cache_Promote_entries()
         {
             RemoteExecutor.Invoke(() =>
@@ -89,7 +86,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "reflection blocked")]
         public void Ctor_Cache_Uses_culture_and_options()
         {
             RemoteExecutor.Invoke(() =>
@@ -108,8 +104,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.UapAot, 
-            "different cache structure, reflection blocked")]
         public void Ctor_Cache_Uses_dictionary_linked_list_switch_does_not_throw()
         {
             // assume the limit is less than the cache size so we cross it two times:
@@ -147,17 +141,6 @@ namespace System.Text.RegularExpressions.Tests
 
         private int GetCachedItemsNum()
         {
-            // On .NET Framework we have a different cache structure.
-            if (PlatformDetection.IsFullFramework)
-            {
-                object linkedList = typeof(Regex)
-                    .GetField("livecode", BindingFlags.NonPublic | BindingFlags.Static)
-                    .GetValue(null);
-                return (int)linkedList.GetType()
-                    .GetProperty("Count", BindingFlags.Public | BindingFlags.Instance)
-                    .GetValue(linkedList);
-            }
-
             return (int)typeof(Regex)
                 .GetField("s_cacheCount", BindingFlags.NonPublic | BindingFlags.Static)
                 .GetValue(null);

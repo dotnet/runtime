@@ -877,7 +877,6 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "This test depends on a fix that has not yet made it to .NET Framework.")]
         public static void Uri_ColonInLongRelativeUri_SchemeSuccessfullyParsed()
         {
             Uri absolutePart = new Uri("http://www.contoso.com");
@@ -914,7 +913,6 @@ namespace System.PrivateUri.Tests
         [InlineData("0")]
         [InlineData("000")]
         [InlineData("65535")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Uri_PortTrailingSpaces_SpacesTrimmed(string portString)
         {
             Uri u = new Uri($"http://www.contoso.com:{portString}     ");
@@ -925,7 +923,6 @@ namespace System.PrivateUri.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void Uri_EmptyPortTrailingSpaces_UsesDefaultPortSpacesTrimmed()
         {
             Uri u = new Uri($"http://www.contoso.com:     ");

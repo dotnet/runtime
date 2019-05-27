@@ -172,16 +172,9 @@ namespace System.Threading.Threads.Tests
         public static void ApartmentState_AttributePresent(string appName, string testName)
         {
             var psi = new ProcessStartInfo();
-            if (PlatformDetection.IsFullFramework || PlatformDetection.IsNetNative)
-            {
-                psi.FileName = appName;
-                psi.Arguments = $"{testName}";
-            }
-            else
-            {
-                psi.FileName = DummyClass.HostRunnerTest;
-                psi.Arguments = $"{appName} {testName}";
-            }
+            psi.FileName = DummyClass.HostRunnerTest;
+            psi.Arguments = $"{appName} {testName}";
+
             using (Process p = Process.Start(psi))
             {
                 p.WaitForExit();
@@ -190,8 +183,7 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [ActiveIssue(20766,TargetFrameworkMonikers.UapAot)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "RemoteExecutor is STA on UAP and UAPAOT.")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "RemoteExecutor is STA on UAP.")]
         [PlatformSpecific(TestPlatforms.Windows)]
         public static void ApartmentState_NoAttributePresent_DefaultState_Windows()
         {
@@ -200,20 +192,6 @@ namespace System.Threading.Threads.Tests
                 Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
                 Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.STA));
                 Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
-            }).Dispose();
-        }
-
-        // The Thread Apartment State is set to MTA if attribute is not specified on main function
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void ApartmentState_NoAttributePresent_STA_Windows_Desktop()
-        {
-            RemoteExecutor.Invoke(() =>
-            {
-                Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.SetApartmentState(ApartmentState.STA));
-                Thread.CurrentThread.SetApartmentState(ApartmentState.MTA);
-                Assert.Equal(ApartmentState.MTA, Thread.CurrentThread.GetApartmentState());
             }).Dispose();
         }
 
@@ -252,7 +230,6 @@ namespace System.Threading.Threads.Tests
         [Theory]
         [MemberData(nameof(ApartmentStateTest_MemberData))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior differs on Unix and Windows
-        [ActiveIssue(20766,TargetFrameworkMonikers.UapAot)]
         public static void GetSetApartmentStateTest_ChangeAfterThreadStarted_Windows(
             Func<Thread, ApartmentState> getApartmentState,
             Func<Thread, ApartmentState, int> setApartmentState,
@@ -275,7 +252,6 @@ namespace System.Threading.Threads.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] 
         [MemberData(nameof(ApartmentStateTest_MemberData))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior differs on Unix and Windows
-        [ActiveIssue(20766,TargetFrameworkMonikers.UapAot)]
         public static void ApartmentStateTest_ChangeBeforeThreadStarted_Windows(
             Func<Thread, ApartmentState> getApartmentState,
             Func<Thread, ApartmentState, int> setApartmentState,
@@ -347,7 +323,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public static void CurrentCultureTest_DifferentThread()
@@ -432,7 +407,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void CurrentPrincipalTest_SkipOnDesktopFramework()
         {
@@ -489,7 +463,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void CurrentPrincipalContextFlowTest_NotFlow()
         {
@@ -557,7 +530,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void ExecutionContextTest()
         {
@@ -699,7 +671,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [ActiveIssue(20766, TargetFrameworkMonikers.UapAot)]
         public static void ThreadStateTest()
         {
             var e0 = new ManualResetEvent(false);
@@ -737,7 +708,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void AbortSuspendTest()
         {
@@ -929,7 +899,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [ActiveIssue(20766, TargetFrameworkMonikers.UapAot)]
         public static void InterruptTest()
         {
             // Interrupting a thread that is not blocked does not do anything, but once the thread starts blocking, it gets
@@ -979,8 +948,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue(20766,TargetFrameworkMonikers.UapAot)]
         public static void InterruptInFinallyBlockTest_SkipOnDesktopFramework()
         {
             // A wait in a finally block can be interrupted. The desktop framework applies the same rules as thread abort, and
@@ -1115,7 +1082,6 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [ActiveIssue(20766,TargetFrameworkMonikers.UapAot)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
         public static void MiscellaneousTest()
         {
@@ -1184,22 +1150,11 @@ namespace System.Threading.Threads.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Default principal policy on .NET Framework is Unauthenticated Principal")]
         public static void DefaultPrincipalPolicyTest()
         {
             RemoteExecutor.Invoke(() =>
             {
                 Assert.Null(Thread.CurrentPrincipal);
-            }).Dispose();
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Default principal policy on .NET Core is No Principal")]
-        public static void DefaultPrincipalPolicyTest_Desktop()
-        {
-            RemoteExecutor.Invoke(() =>
-            {
-                Assert.Equal(string.Empty, Thread.CurrentPrincipal.Identity.Name);
             }).Dispose();
         }
     }
