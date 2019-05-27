@@ -1,7 +1,4 @@
 <Project>
-  <PropertyGroup>
-    <RestoreUsingNuGetTargets>false</RestoreUsingNuGetTargets>
-  </PropertyGroup>
   <ItemGroup>
     <ProjectToBuild Condition="'$(DirectoryToBuild)' == ''" Include="$(RepoRoot)build.proj" />
     <ProjectToBuild Condition="'$(DirectoryToBuild)' != ''" Include="$(RepoRoot)src\dirs.proj" />

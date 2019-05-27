@@ -26,14 +26,6 @@
     <MSBuild Projects="@(_RestoreProjects)" Properties="$(ProjectProperties)" />
   </Target>
 
-  <Target Name="_IsProjectRestoreSupported"
-          Returns="@(_ValidProjectsForRestore)">
-
-    <ItemGroup>
-      <_ValidProjectsForRestore Include="$(MSBuildProjectFullPath)" />
-    </ItemGroup>
-  </Target>
-
   <Target Name="BuildNative">
     <ItemGroup>
       <_BuildNativeProjects Include="src\Native\build-native.proj" />
