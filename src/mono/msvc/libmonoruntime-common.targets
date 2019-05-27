@@ -79,11 +79,13 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\method-builder-ilgen.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-basic-block.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-basic-block.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-config-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-config.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-debug.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\debug-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-endian.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-endian.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-hash-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-hash.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-hash.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-conc-hash.c" />
