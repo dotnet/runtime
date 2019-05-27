@@ -326,7 +326,7 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gssize buffer_size, M
 
 	error_init (error);
 
-	g_assert (RAND_MAX >= 0xFF); // FIXME static_assert when compilers catch up.
+	g_static_assert (RAND_MAX >= 0xFF);
 	
 	while (buffer_size > 0) {
 		int const i = rand ();

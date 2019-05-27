@@ -904,6 +904,12 @@ GUnicodeBreakType   g_unichar_break_type (gunichar c);
 #define g_assert(x) (G_LIKELY((x)) ? 1 : (g_assertion_message ("* Assertion at %s:%d, condition `%s' not met\n", __FILE__, __LINE__, #x), 0))
 #endif
 
+#ifdef __cplusplus
+#define g_static_assert(x) static_assert (x, "")
+#else
+#define g_static_assert(x) g_assert (x)
+#endif
+
 #define  g_assert_not_reached() G_STMT_START { g_assertion_message ("* Assertion: should not be reached at %s:%d\n", __FILE__, __LINE__); eg_unreachable(); } G_STMT_END
 
 /* f is format -- like printf and scanf
