@@ -3202,9 +3202,9 @@ private:
     // This is a compressed read only copy of m_inlineTrackingMap, which is being saved to NGEN image.
     PTR_PersistentInlineTrackingMapNGen m_pPersistentInlineTrackingMapNGen;
 
-#if defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
     PTR_JITInlineTrackingMap m_pJitInlinerTrackingMap;
-#endif // defined(PROFILING_SUPPORTED) && !defined(DACCESS_COMPILE)
+#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
 
 
     LPCSTR               *m_AssemblyRefByNameTable;  // array that maps mdAssemblyRef tokens into their simple name
