@@ -764,7 +764,6 @@ namespace System.Text.Tests
             yield return new object[] { "Hello", null, ", Foo {0,9:D6}", new object[] { 1 }, "Hello, Foo    000001" }; // Positive minimum length and custom format
             yield return new object[] { "Hello", null, ", Foo {0,-9:D6}", new object[] { 1 }, "Hello, Foo 000001   " }; // Negative length and custom format
 
-            yield return new object[] { "Hello", null, ", Foo {0:{{X}}Y{{Z}}} {0:X{{Y}}Z}", new object[] { 1 }, "Hello, Foo {X}Y{Z} X{Y}Z" }; // Custom format (with escaped curly braces)
             yield return new object[] { "Hello", null, ", Foo {{{0}", new object[] { 1 }, "Hello, Foo {1" }; // Escaped open curly braces
             yield return new object[] { "Hello", null, ", Foo }}{0}", new object[] { 1 }, "Hello, Foo }1" }; // Escaped closed curly braces
             yield return new object[] { "Hello", null, ", Foo {0} {{0}}", new object[] { 1 }, "Hello, Foo 1 {0}" }; // Escaped placeholder
@@ -894,6 +893,7 @@ namespace System.Text.Tests
 
             Assert.Throws<FormatException>(() => builder.AppendFormat("}", "")); // Format has unescaped }
             Assert.Throws<FormatException>(() => builder.AppendFormat("}a", "")); // Format has unescaped }
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{0:}}", "")); // Format has unescaped }
 
             Assert.Throws<FormatException>(() => builder.AppendFormat("{\0", "")); // Format has invalid character after {
             Assert.Throws<FormatException>(() => builder.AppendFormat("{a", "")); // Format has invalid character after {
@@ -917,6 +917,22 @@ namespace System.Text.Tests
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0:    ", new string[10])); // Format with colon and spaces is not closed
 
             Assert.Throws<FormatException>(() => builder.AppendFormat("{0:{", new string[10])); // Format with custom format contains unescaped {
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{0:{}", new string[10])); // Format with custom format contains unescaped {
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        public static void AppendFormat_NoEscapedBracesInCustomFormatSpecifier()
+        {
+            // Tests new rule which does not allow escaped braces in the custom format specifier
+            var builder = new StringBuilder();
+            builder.AppendFormat("{0:}}}", 0);
+
+            // Previous behavior: first two closing braces would be escaped and passed in as the custom format specifier, thus result = "}"
+            // New behavior: first closing brace closes the argument hole and next two are escaped as part of the format, thus result = "0}"
+            Assert.Equal("0}", builder.ToString());
+            // Previously this would be allowed and escaped brace would be passed into the custom format, now this is unsupported
+            Assert.Throws<FormatException>(() => builder.AppendFormat("{0:{{}", 0)); // Format with custom format contains {
         }
 
         [Fact]
