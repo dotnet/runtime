@@ -190,7 +190,7 @@ namespace System.Threading
                     Math.Min(MaxWaitHandles, 2 * currentLength))];
             }
 
-            return safeWaitHandles;
+            return safeWaitHandles!;
         }
 
         private static void ReturnSafeWaitHandleArray(SafeWaitHandle?[]? safeWaitHandles)
