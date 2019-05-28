@@ -378,38 +378,19 @@ static BSTR GetExceptionDescription(OBJECTREF objException)
     GCPROTECT_BEGIN(MessageString)
     GCPROTECT_BEGIN(objException)
     {
-#ifdef FEATURE_APPX
-        if (AppX::IsAppXProcess())
-        {
-            // In AppX, call Exception.ToString(false, false) which returns a string containing the exception class
-            // name and callstack without file paths/names. This is used for unhandled exception bucketing/analysis.
-            MethodDescCallSite getMessage(METHOD__EXCEPTION__TO_STRING, &objException);
+        // read Exception.Message property
+        MethodDescCallSite getMessage(METHOD__EXCEPTION__GET_MESSAGE, &objException);
 
-            ARG_SLOT GetMessageArgs[] =
-            {
-                ObjToArgSlot(objException),
-                BoolToArgSlot(false),  // needFileLineInfo
-                BoolToArgSlot(false)   // needMessage
-            };
-            MessageString = getMessage.Call_RetSTRINGREF(GetMessageArgs);
-        }
-        else
-#endif // FEATURE_APPX
-        {
-            // read Exception.Message property
-            MethodDescCallSite getMessage(METHOD__EXCEPTION__GET_MESSAGE, &objException);
+        ARG_SLOT GetMessageArgs[] = { ObjToArgSlot(objException)};
+        MessageString = getMessage.Call_RetSTRINGREF(GetMessageArgs);
 
-            ARG_SLOT GetMessageArgs[] = { ObjToArgSlot(objException)};
-            MessageString = getMessage.Call_RetSTRINGREF(GetMessageArgs);
-
-            // if the message string is empty then use the exception classname.
-            if (MessageString == NULL || MessageString->GetStringLength() == 0) {
-                // call GetClassName
-                MethodDescCallSite getClassName(METHOD__EXCEPTION__GET_CLASS_NAME, &objException);
-                ARG_SLOT GetClassNameArgs[] = { ObjToArgSlot(objException)};
-                MessageString = getClassName.Call_RetSTRINGREF(GetClassNameArgs);
-                _ASSERTE(MessageString != NULL && MessageString->GetStringLength() != 0);
-            }
+        // if the message string is empty then use the exception classname.
+        if (MessageString == NULL || MessageString->GetStringLength() == 0) {
+            // call GetClassName
+            MethodDescCallSite getClassName(METHOD__EXCEPTION__GET_CLASS_NAME, &objException);
+            ARG_SLOT GetClassNameArgs[] = { ObjToArgSlot(objException)};
+            MessageString = getClassName.Call_RetSTRINGREF(GetClassNameArgs);
+            _ASSERTE(MessageString != NULL && MessageString->GetStringLength() != 0);
         }
 
         // Allocate the description BSTR.

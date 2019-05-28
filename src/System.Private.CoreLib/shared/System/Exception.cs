@@ -141,14 +141,9 @@ namespace System
 
         public override string ToString()
         {
-            return ToString(true, true);
-        }
-
-        private string ToString(bool needFileLineInfo, bool needMessage)
-        {
             string s = GetClassName();
 
-            string? message = (needMessage ? Message : null);
+            string? message = Message;
             if (!string.IsNullOrEmpty(message))
             {
                 s += ": " + message;
@@ -156,11 +151,11 @@ namespace System
 
             if (_innerException != null)
             {
-                s = s + " ---> " + _innerException.ToString(needFileLineInfo, needMessage) + Environment.NewLine +
+                s = s + " ---> " + _innerException.ToString() + Environment.NewLine +
                 "   " + SR.Exception_EndOfInnerExceptionStack;
             }
 
-            string? stackTrace = GetStackTrace(needFileLineInfo);
+            string? stackTrace = GetStackTrace(needFileInfo: true);
             if (stackTrace != null)
             {
                 s += Environment.NewLine + stackTrace;
