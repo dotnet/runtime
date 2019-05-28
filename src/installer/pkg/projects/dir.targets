@@ -20,6 +20,31 @@
   </PropertyGroup>
 
   <!--
+    Remove duplicate files returned by PrereleaseResolveNuGetPackageAssets. The resolve task
+    performs extra detection to pick up a PDB file for any file listed in the assets file. This
+    causes duplicates if the assets file lists PDBs. If foo.dll and foo.pdb exist in the package and
+    both are listed in the assets file, the task finds:
+
+      foo.dll
+      foo.pdb (based on foo.dll entry)
+      foo.pdb
+      foo.pdb (based on foo.pdb entry)
+
+    The duplicates cause package validation failure and must be filtered out.
+  -->
+  <Target Name="RemoveDuplicateResolvedNuGetPackageAssets"
+          AfterTargets="ResolveNuGetPackages">
+    <RemoveDuplicates Inputs="@(ReferenceCopyLocalPaths)">
+      <Output TaskParameter="Filtered" ItemName="FilteredReferenceCopyLocalPaths"/>
+    </RemoveDuplicates>
+
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" />
+      <ReferenceCopyLocalPaths Include="@(FilteredReferenceCopyLocalPaths)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
     Finds symbol files and injects them into the package build.
   -->
   <Target Name="GetSymbolPackageFiles" BeforeTargets="GetPackageFiles">
