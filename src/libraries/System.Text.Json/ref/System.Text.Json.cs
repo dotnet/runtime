@@ -374,8 +374,8 @@ namespace System.Text.Json.Serialization
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonPropertyNameAttribute : System.Text.Json.Serialization.JsonAttribute
     {
-        public JsonPropertyNameAttribute(string propertyName) { }
-        public string Name { get { throw null; } set { } }
+        public JsonPropertyNameAttribute(string name) { }
+        public string Name { get { throw null; } }
     }
     public static partial class JsonSerializer
     {
