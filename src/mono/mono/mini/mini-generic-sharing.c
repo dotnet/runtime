@@ -1338,6 +1338,58 @@ get_wrapper_shared_type (MonoType *t)
 	return get_wrapper_shared_type_full (t, FALSE);
 }
 
+
+/* Returns the intptr type for types that are passed in a single register */
+static MonoType*
+get_wrapper_shared_type_reg (MonoType *t)
+{
+	t = get_wrapper_shared_type (t);
+	if (t->byref)
+		return t;
+
+	switch (t->type) {
+	case MONO_TYPE_BOOLEAN:
+	case MONO_TYPE_CHAR:
+	case MONO_TYPE_I1:
+	case MONO_TYPE_U1:
+	case MONO_TYPE_I2:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+#if TARGET_SIZEOF_VOID_P == 8
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+		return mono_get_int_type ();
+#endif
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_PTR:
+		return mono_get_int_type ();
+	default:
+		return t;
+	}
+}
+
+static MonoMethodSignature*
+mini_get_underlying_reg_signature (MonoMethodSignature *sig)
+{
+	MonoMethodSignature *res = mono_metadata_signature_dup (sig);
+	int i;
+
+	res->ret = get_wrapper_shared_type_reg (sig->ret);
+	for (i = 0; i < sig->param_count; ++i)
+		res->params [i] = get_wrapper_shared_type_reg (sig->params [i]);
+	res->generic_param_count = 0;
+	res->is_inflated = 0;
+
+	return res;
+}
+
 static MonoMethodSignature*
 mini_get_underlying_signature (MonoMethodSignature *sig)
 {
@@ -1642,7 +1694,7 @@ mini_get_interp_in_wrapper (MonoMethodSignature *sig)
 	gboolean generic = FALSE;
 	gboolean return_native_struct;
 
-	sig = mini_get_underlying_signature (sig);
+	sig = mini_get_underlying_reg_signature (sig);
 
 	gshared_lock ();
 	if (!cache)
