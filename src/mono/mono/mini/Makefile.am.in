@@ -262,8 +262,12 @@ mono_sgen_LDADD = \
 	-lm			\
 	$(MONO_DTRACE_OBJECT)
 
-mono_sgen_LDFLAGS = $(static_flags) $(monobinldflags) $(monobin_platform_ldflags) 
 
+mono_sgen_LDFLAGS = $(static_flags) $(monobinldflags) $(monobin_platform_ldflags)
+
+if ENABLE_STATIC_GCC_LIBS
+mono_sgen_LDFLAGS += -all-static
+endif
 
 if BITCODE
 libmonoldflags += -no-undefined
