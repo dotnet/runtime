@@ -143,19 +143,11 @@ jobs:
         continueOnError: true
         condition: always()
 
-    # Upload build as pipeline artifact
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - task: PublishPipelineArtifact@0
-        displayName: Save product build as pipeline artifact
-        inputs:
-          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-          targetPath: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - task: PublishPipelineArtifact@0
-        displayName: Save product build as pipeline artifact
-        inputs:
-          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-          targetPath: $(Build.SourcesDirectory)\bin\Product\$(osGroup).$(archType).$(buildConfigUpper)
+    - task: PublishBuildArtifacts@1
+      displayName: Publish product build
+      inputs:
+        pathtoPublish: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
+        artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
     # Get key vault secrets for publishing
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
@@ -207,10 +199,10 @@ jobs:
           targetPath: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)/.nuget/pkg
 
     # Publish Logs
-    - task: PublishPipelineArtifact@0
+    - task: PublishBuildArtifacts@1
       displayName: Publish Logs
       inputs:
+        pathtoPublish: $(Build.SourcesDirectory)/bin/Logs
         artifactName: ${{ format('build_{0}_{1}_{2}_Logs', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-        targetPath: $(Build.SourcesDirectory)/bin/Logs
       continueOnError: true
       condition: always()
