@@ -1,56 +1,24 @@
 <Project>
-  <Import Project="..\dir.props"/>
-  <Import Project="..\dir.targets" />
-
-  <PropertyGroup>
-    <!-- The SignFiles target needs OutDir to be defined -->
-    <OutDir>$(BinDir)</OutDir>
-  </PropertyGroup>
-
-  <UsingTask AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" TaskName="ReadSigningRequired" />
-
+  <Import Project="..\dir.common.props"/>
+  
   <ItemGroup>
-    <WindowsNativeLocation Include="$(BinDir)*.dll" />
-    <WindowsNativeLocation Include="$(BinDir)*.exe" />
+    <ItemsToSign Include="$(BinDir)*.dll" />
+    <ItemsToSign Include="$(BinDir)*.exe" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildArch)' == 'x86'">
     <!-- Sign api-ms-win-core-xstate-l2-1-0 binary as it is only catalog signed in the current SDK. -->
-    <WindowsNativeLocation Condition="'$(BuildType)'=='Release'" Include="$(BinDir)Redist\ucrt\DLLs\$(BuildArch)\api-ms-win-core-xstate-l2-1-0.dll" />
+    <ItemsToSign Condition="'$(BuildType)'=='Release'" Include="$(BinDir)Redist\ucrt\DLLs\$(BuildArch)\api-ms-win-core-xstate-l2-1-0.dll" />
   </ItemGroup>
 
   <!-- sign the cross targeted files as well -->
   <ItemGroup Condition="'$(CrossTargetComponentFolder)' != ''">
-    <WindowsNativeLocation Include="$(BinDir)$(CrossTargetComponentFolder)/*.dll" />
-    <WindowsNativeLocation Include="$(BinDir)$(CrossTargetComponentFolder)/*.exe" />
+    <ItemsToSign Include="$(BinDir)$(CrossTargetComponentFolder)/*.dll" />
+    <ItemsToSign Include="$(BinDir)$(CrossTargetComponentFolder)/*.exe" />
   </ItemGroup>
-
-  <Target Name="GenerateSignForWindowsNative">
-    <!--
-      Managed assemblies should already have a requires_signing file dropped so only generate
-      a requires_signing file for ones that don't exist which should leave just native assembies
-    -->
-    <WriteSigningRequired AuthenticodeSig="$(AuthenticodeSig)"
-                          MarkerFile="%(WindowsNativeLocation.Identity).requires_signing"
-                          Condition="!Exists('%(WindowsNativeLocation.Identity).requires_signing')" />
-  </Target>
-
-  <!-- populates item group ItemsToSign with the list of files to sign -->
-  <Target Name="GetFilesToSignItems"
-          DependsOnTargets="GenerateSignForWindowsNative"
-          BeforeTargets="ValidateSignFileListIsNotEmpty">
-    <!-- read all of the marker files and populate the ItemsToSign item group -->
-    <ItemGroup>
-      <SignMarkerFile Include="$(OutDir)**\*.requires_signing" />
-    </ItemGroup>
-    <ReadSigningRequired MarkerFiles="@(SignMarkerFile)">
-      <Output TaskParameter="SigningMetadata" ItemName="ItemsToSign" />
-    </ReadSigningRequired>
-
-    <Message Importance="High" Text="Attempting to sign %(ItemsToSign.Identity) with authenticode='%(ItemsToSign.Authenticode)' and strongname='%(ItemsToSign.StrongName)'" />
-  </Target>
 
   <Target Name="ValidateSignFileListIsNotEmpty" BeforeTargets="Sign">
     <Error Condition="'@(ItemsToSign)' == ''" Text="List of files to sign is empty" />
+    <Message Importance="High" Text="Attempting to sign %(ItemsToSign.Identity)" />
   </Target>
 </Project>

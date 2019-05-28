@@ -21,9 +21,6 @@
     <!-- Define packaging attributes for cross target components -->
     <HasCrossTargetComponents Condition="'$(TargetsWindows)' == 'true' and ('$(PackagePlatform)' =='arm64' or '$(PackagePlatform)' =='arm')">true</HasCrossTargetComponents>
     <HasCrossTargetComponents Condition="'$(TargetsLinux)' == 'true' and ('$(PackagePlatform)' =='arm64' or '$(PackagePlatform)' =='arm') and '$(__DoCrossArchBuild)' == '1'">true</HasCrossTargetComponents>
-    <CrossTargetComponentFolder Condition="'$(PackagePlatform)' == 'arm64'">x64</CrossTargetComponentFolder>
-    <CrossTargetComponentFolder Condition="'$(PackagePlatform)' == 'arm' and '$(TargetsWindows)' == 'true'">x86</CrossTargetComponentFolder>
-    <CrossTargetComponentFolder Condition="'$(PackagePlatform)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
 
     <!-- Created package output locations must be kept in sync with eng/build-job.yml -->
     <PackageOutputPath>$(PackagesBinDir)/pkg/</PackageOutputPath>
