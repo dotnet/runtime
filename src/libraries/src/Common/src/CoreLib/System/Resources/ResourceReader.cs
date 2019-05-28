@@ -161,11 +161,11 @@ namespace System.Resources
                     // Close the stream in a thread-safe way.  This fix means
                     // that we may call Close n times, but that's safe.
                     BinaryReader copyOfStore = _store;
-                    _store = null!; // TODO-NULLABLE: dispose should not null this out
+                    _store = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
                     if (copyOfStore != null)
                         copyOfStore.Close();
                 }
-                _store = null!; // TODO-NULLABLE: dispose should not null this out
+                _store = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
                 _namePositions = null;
                 _nameHashes = null;
                 _ums = null;
@@ -960,7 +960,7 @@ namespace System.Resources
                 }
             }
             Debug.Assert(_typeTable[typeIndex] != null, "Should have found a type!");
-            return _typeTable[typeIndex]!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+            return _typeTable[typeIndex]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
         }
 
         private string TypeNameFromTypeCode(ResourceTypeCode typeCode)
@@ -1030,22 +1030,12 @@ namespace System.Resources
                 }
             }
 
-            public object? Current // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
-            {
-                get
-                {
-                    return Entry;
-                }
-            }
+#pragma warning disable CS8612 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
+            public object Current => Entry;
+#pragma warning restore CS8612
 
             // Warning: This requires that you call the Key or Entry property FIRST before calling it!
-            internal int DataPosition
-            {
-                get
-                {
-                    return _dataPosition;
-                }
-            }
+            internal int DataPosition => _dataPosition;
 
             public DictionaryEntry Entry
             {

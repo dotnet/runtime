@@ -76,7 +76,7 @@ namespace System.Threading
 
         public bool Reset()
         {
-            bool res = Interop.Kernel32.ResetEvent(SafeWaitHandle!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2384
+            bool res = Interop.Kernel32.ResetEvent(SafeWaitHandle);
             if (!res)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             return res;
@@ -84,7 +84,7 @@ namespace System.Threading
         
         public bool Set()
         {
-            bool res = Interop.Kernel32.SetEvent(SafeWaitHandle!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2384
+            bool res = Interop.Kernel32.SetEvent(SafeWaitHandle);
             if (!res)
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             return res;

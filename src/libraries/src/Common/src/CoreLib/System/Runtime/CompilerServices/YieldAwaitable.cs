@@ -130,7 +130,7 @@ namespace System.Runtime.CompilerServices
                 SynchronizationContext? syncCtx = SynchronizationContext.Current;
                 if (syncCtx != null && syncCtx.GetType() != typeof(SynchronizationContext))
                 {
-                    syncCtx.Post(s => ((IAsyncStateMachineBox)s!).MoveNext(), box); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    syncCtx.Post(s => ((IAsyncStateMachineBox)s!).MoveNext(), box);
                 }
                 else
                 {
@@ -141,7 +141,7 @@ namespace System.Runtime.CompilerServices
                     }
                     else
                     {
-                        Task.Factory.StartNew(s => ((IAsyncStateMachineBox)s!).MoveNext(), box, default, TaskCreationOptions.PreferFairness, scheduler); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                        Task.Factory.StartNew(s => ((IAsyncStateMachineBox)s!).MoveNext(), box, default, TaskCreationOptions.PreferFairness, scheduler);
                     }
                 }
             }

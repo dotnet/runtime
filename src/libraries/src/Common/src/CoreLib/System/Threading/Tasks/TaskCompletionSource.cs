@@ -150,7 +150,7 @@ namespace System.Threading.Tasks
         {
             if (exception == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
 
-            bool rval = _task.TrySetException(exception!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            bool rval = _task.TrySetException(exception!); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             if (!rval && !_task.IsCompleted) SpinUntilCompleted();
             return rval;
         }
@@ -180,11 +180,11 @@ namespace System.Threading.Tasks
             if (exceptions == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exceptions);
 
             List<Exception> defensiveCopy = new List<Exception>();
-            foreach (Exception e in exceptions!) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            foreach (Exception e in exceptions!) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             {
                 if (e == null)
                     ThrowHelper.ThrowArgumentException(ExceptionResource.TaskCompletionSourceT_TrySetException_NullException, ExceptionArgument.exceptions);
-                defensiveCopy.Add(e!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+                defensiveCopy.Add(e!); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             }
 
             if (defensiveCopy.Count == 0)
@@ -216,7 +216,7 @@ namespace System.Threading.Tasks
         {
             if (exception == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
 
-            if (!TrySetException(exception!)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            if (!TrySetException(exception!)) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             {
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.TaskT_TransitionToFinal_AlreadyCompleted);
             }

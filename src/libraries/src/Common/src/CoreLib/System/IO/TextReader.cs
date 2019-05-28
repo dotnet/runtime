@@ -209,7 +209,7 @@ namespace System.IO
         {
             return Task<string?>.Factory.StartNew(state =>
             {
-                return ((TextReader)state!).ReadLine(); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                return ((TextReader)state!).ReadLine();
             },
             this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
@@ -253,10 +253,10 @@ namespace System.IO
 
         public virtual ValueTask<int> ReadAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
             new ValueTask<int>(MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
-                ReadAsync(array.Array!, array.Offset, array.Count) : // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                ReadAsync(array.Array!, array.Offset, array.Count) :
                 Task<int>.Factory.StartNew(state =>
                 {
-                    var t = (Tuple<TextReader, Memory<char>>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    var t = (Tuple<TextReader, Memory<char>>)state!;
                     return t.Item1.Read(t.Item2.Span);
                 }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 
@@ -265,7 +265,7 @@ namespace System.IO
             var tuple = new Tuple<TextReader, Memory<char>>(this, buffer);
             return new ValueTask<int>(Task<int>.Factory.StartNew(state =>
             {
-                var t = (Tuple<TextReader, Memory<char>>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                var t = (Tuple<TextReader, Memory<char>>)state!;
                 return t.Item1.Read(t.Item2.Span);
             },
             tuple, cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
@@ -291,10 +291,10 @@ namespace System.IO
 
         public virtual ValueTask<int> ReadBlockAsync(Memory<char> buffer, CancellationToken cancellationToken = default) =>
             new ValueTask<int>(MemoryMarshal.TryGetArray(buffer, out ArraySegment<char> array) ?
-                ReadBlockAsync(array.Array!, array.Offset, array.Count) : // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                ReadBlockAsync(array.Array!, array.Offset, array.Count) :
                 Task<int>.Factory.StartNew(state =>
                 {
-                    var t = (Tuple<TextReader, Memory<char>>)state!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    var t = (Tuple<TextReader, Memory<char>>)state!;
                     return t.Item1.ReadBlock(t.Item2.Span);
                 }, Tuple.Create(this, buffer), cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
 

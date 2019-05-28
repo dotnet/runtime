@@ -27,13 +27,13 @@ internal static partial class Interop
                 {
                     if (count == found.Length)
                     {
-                        Array.Resize(ref found!, count * 2); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                        Array.Resize(ref found!, count * 2); // TODO-NULLABLE: Remove ! when nullable attributes are respected
                     }
                     found[count++] = Marshal.PtrToStringAnsi((IntPtr)name)!;
                 });
             }
 
-            Array.Resize(ref found!, count); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            Array.Resize(ref found!, count); // TODO-NULLABLE: Remove ! when nullable attributes are respected
             return found;
         }
     }

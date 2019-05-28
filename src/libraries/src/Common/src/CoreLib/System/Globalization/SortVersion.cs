@@ -44,7 +44,9 @@ namespace System.Globalization
             return obj is SortVersion otherVersion && Equals(otherVersion);
         }
 
+#pragma warning disable CS8614 // TODO-NULLABLE: Covariant interface arguments (https://github.com/dotnet/roslyn/issues/35817)
         public bool Equals(SortVersion? other)
+#pragma warning restore CS8614
         {
             if (other == null)
             {

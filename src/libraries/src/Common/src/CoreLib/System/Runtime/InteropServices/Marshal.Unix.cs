@@ -9,8 +9,6 @@ namespace System.Runtime.InteropServices
 {
     public static partial class Marshal
     {
-        // TODO-NULLABLE: This has different behavior from the other PtrToString(IntPtr, int) functions
-        //                This is due to PtrToStringUTF8 on Unix and is being resolved independently
         public static string? PtrToStringAuto(IntPtr ptr, int len)
         {
             return PtrToStringUTF8(ptr, len);

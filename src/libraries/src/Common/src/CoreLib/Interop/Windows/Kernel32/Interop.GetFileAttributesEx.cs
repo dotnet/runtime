@@ -21,9 +21,8 @@ internal partial class Interop
 
         internal static bool GetFileAttributesEx(string name, GET_FILEEX_INFO_LEVELS fileInfoLevel, ref WIN32_FILE_ATTRIBUTE_DATA lpFileInformation)
         {
-            string? nameWithExtendedPrefix = PathInternal.EnsureExtendedPrefixIfNeeded(name);
-            Debug.Assert(nameWithExtendedPrefix != null, "null not expected when non-null is passed"); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
-            return GetFileAttributesExPrivate(nameWithExtendedPrefix, fileInfoLevel, ref lpFileInformation);
+            name = PathInternal.EnsureExtendedPrefixIfNeeded(name)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            return GetFileAttributesExPrivate(name, fileInfoLevel, ref lpFileInformation);
         }
     }
 }

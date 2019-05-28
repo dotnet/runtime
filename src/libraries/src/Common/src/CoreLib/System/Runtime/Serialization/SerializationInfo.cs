@@ -539,104 +539,104 @@ namespace System.Runtime.Serialization
         public bool GetBoolean(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
-            return ReferenceEquals(foundType, typeof(bool)) ? (bool)value : _converter.ToBoolean(value); // if value is null To* method will either deal with it or throw
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(bool)) ? (bool)value! : _converter.ToBoolean(value!); // if value is null To* method will either deal with it or throw
         }
 
         public char GetChar(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!;
-            return ReferenceEquals(foundType, typeof(char)) ? (char)value : _converter.ToChar(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(char)) ? (char)value! : _converter.ToChar(value!);
         }
 
         [CLSCompliant(false)]
         public sbyte GetSByte(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!;
-            return ReferenceEquals(foundType, typeof(sbyte)) ? (sbyte)value : _converter.ToSByte(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(sbyte)) ? (sbyte)value! : _converter.ToSByte(value!);
         }
 
         public byte GetByte(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!;
-            return ReferenceEquals(foundType, typeof(byte)) ? (byte)value : _converter.ToByte(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(byte)) ? (byte)value! : _converter.ToByte(value!);
         }
 
         public short GetInt16(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!;
-            return ReferenceEquals(foundType, typeof(short)) ? (short)value : _converter.ToInt16(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(short)) ? (short)value! : _converter.ToInt16(value!);
         }
 
         [CLSCompliant(false)]
         public ushort GetUInt16(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!;
-            return ReferenceEquals(foundType, typeof(ushort)) ? (ushort)value : _converter.ToUInt16(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(ushort)) ? (ushort)value! : _converter.ToUInt16(value!);
         }
 
         public int GetInt32(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!;
-            return ReferenceEquals(foundType, typeof(int)) ? (int)value : _converter.ToInt32(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(int)) ? (int)value! : _converter.ToInt32(value!);
         }
 
         [CLSCompliant(false)]
         public uint GetUInt32(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!;
-            return ReferenceEquals(foundType, typeof(uint)) ? (uint)value : _converter.ToUInt32(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(uint)) ? (uint)value! : _converter.ToUInt32(value!);
         }
 
         public long GetInt64(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!;
-            return ReferenceEquals(foundType, typeof(long)) ? (long)value : _converter.ToInt64(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(long)) ? (long)value! : _converter.ToInt64(value!);
         }
 
         [CLSCompliant(false)]
         public ulong GetUInt64(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!;
-            return ReferenceEquals(foundType, typeof(ulong)) ? (ulong)value : _converter.ToUInt64(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(ulong)) ? (ulong)value! : _converter.ToUInt64(value!);
         }
 
         public float GetSingle(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!;
-            return ReferenceEquals(foundType, typeof(float)) ? (float)value : _converter.ToSingle(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(float)) ? (float)value! : _converter.ToSingle(value!);
         }
 
 
         public double GetDouble(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!;
-            return ReferenceEquals(foundType, typeof(double)) ? (double)value : _converter.ToDouble(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(double)) ? (double)value! : _converter.ToDouble(value!);
         }
 
         public decimal GetDecimal(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!;
-            return ReferenceEquals(foundType, typeof(decimal)) ? (decimal)value : _converter.ToDecimal(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(decimal)) ? (decimal)value! : _converter.ToDecimal(value!);
         }
 
         public DateTime GetDateTime(string name)
         {
             Type foundType;
-            object value = GetElement(name, out foundType)!;
-            return ReferenceEquals(foundType, typeof(DateTime)) ? (DateTime)value : _converter.ToDateTime(value);
+            object? value = GetElement(name, out foundType);
+            return ReferenceEquals(foundType, typeof(DateTime)) ? (DateTime)value! : _converter.ToDateTime(value!);
         }
 
         public string? GetString(string name)
