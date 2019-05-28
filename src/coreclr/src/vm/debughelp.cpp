@@ -773,40 +773,19 @@ void PrintException(OBJECTREF pObjectRef)
 
     GCPROTECT_BEGIN(pObjectRef);
 
-    if (!IsException(pObjectRef->GetMethodTable()))
+    MethodDescCallSite toString(METHOD__OBJECT__TO_STRING, &pObjectRef);
+
+    ARG_SLOT arg[1] = {
+        ObjToArgSlot(pObjectRef)
+    };
+
+    STRINGREF str = toString.Call_RetSTRINGREF(arg);
+
+    if(str->GetBuffer() != NULL)
     {
-         printf("Specified object is not an exception object.\n");
-    }
-    else
-    {
-        MethodDescCallSite toString(METHOD__EXCEPTION__TO_STRING, &pObjectRef);
-
-        ARG_SLOT arg[1] = {
-            ObjToArgSlot(pObjectRef)
-        };
-
-        STRINGREF str = toString.Call_RetSTRINGREF(arg);
-
-        if(str->GetBuffer() != NULL)
-        {
-            WszOutputDebugString(str->GetBuffer());
-        }
+        WszOutputDebugString(str->GetBuffer());
     }
 
-    GCPROTECT_END();
-}
-
-void PrintException(UINT_PTR pObject)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    OBJECTREF pObjectRef = NULL;
-    GCPROTECT_BEGIN(pObjectRef);
     GCPROTECT_END();
 }
 
