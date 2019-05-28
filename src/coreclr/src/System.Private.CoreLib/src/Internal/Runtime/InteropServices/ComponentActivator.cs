@@ -53,14 +53,14 @@ namespace Internal.Runtime.InteropServices
         /// <param name="typeNameNative">Assembly qualified type name</param>
         /// <param name="methodNameNative">Public static method name compatible with delegateType</param>
         /// <param name="delegateTypeNative">Assembly qualified delegate type name</param>
-        /// <param name="flags">Extensibility flags (currently unused)</param>
+        /// <param name="reserved">Extensibility parameter (currently unused)</param>
         /// <param name="functionHandle">Pointer where to store the function pointer result</param>
-        public static int CreateNativeDelegate(IntPtr assemblyPathNative,
-                                               IntPtr typeNameNative,
-                                               IntPtr methodNameNative,
-                                               IntPtr delegateTypeNative,
-                                               int flags,
-                                               IntPtr functionHandle)
+        public static int LoadAssemblyAndGetFunctionPointer(IntPtr assemblyPathNative,
+                                                            IntPtr typeNameNative,
+                                                            IntPtr methodNameNative,
+                                                            IntPtr delegateTypeNative,
+                                                            IntPtr reserved,
+                                                            IntPtr functionHandle)
         {
             try
             {
@@ -78,9 +78,9 @@ namespace Internal.Runtime.InteropServices
                     delegateType = MarshalToString(delegateTypeNative, nameof(delegateTypeNative));
                 }
 
-                if (flags != 0)
+                if (reserved != IntPtr.Zero)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(flags));
+                    throw new ArgumentOutOfRangeException(nameof(reserved));
                 }
 
                 if (functionHandle == IntPtr.Zero)
