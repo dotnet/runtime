@@ -132,7 +132,7 @@ namespace System.Diagnostics.Tracing
                     {
                         if(payload[i] != null)
                         {
-                            sb.Append(payload[i]!.ToString()); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                            sb.Append(payload[i]!.ToString()); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                         }
                         break;
                     }

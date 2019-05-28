@@ -13,6 +13,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Collections.ObjectModel
@@ -79,7 +80,7 @@ namespace System.Collections.ObjectModel
             }
         }
 
-        public bool TryGetValue(TKey key, out TValue value)
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             return m_dictionary.TryGetValue(key, out value);
         }
@@ -272,7 +273,7 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (array!.Rank != 1) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            if (array!.Rank != 1) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
             }
@@ -317,7 +318,7 @@ namespace System.Collections.ObjectModel
                     {
                         foreach (var item in m_dictionary)
                         {
-                            objects![index++] = new KeyValuePair<TKey, TValue>(item.Key, item.Value); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+                            objects![index++] = new KeyValuePair<TKey, TValue>(item.Key, item.Value); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                         }
                     }
                     catch (ArrayTypeMismatchException)
@@ -348,7 +349,7 @@ namespace System.Collections.ObjectModel
                         Interlocked.CompareExchange<object?>(ref m_syncRoot, new object(), null);
                     }
                 }
-                return m_syncRoot!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34901
+                return m_syncRoot!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
             }
         }
 
@@ -429,7 +430,7 @@ namespace System.Collections.ObjectModel
                 {
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
                 }
-                m_collection = collection!; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+                m_collection = collection!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             }
 
             #region ICollection<T> Members
@@ -514,10 +515,10 @@ namespace System.Collections.ObjectModel
                         }
                         else
                         {
-                            Interlocked.CompareExchange<object?>(ref m_syncRoot, new object(), null); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34901
+                            Interlocked.CompareExchange<object?>(ref m_syncRoot, new object(), null);
                         }
                     }
-                    return m_syncRoot!;
+                    return m_syncRoot!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
                 }
             }
 
@@ -537,7 +538,7 @@ namespace System.Collections.ObjectModel
                 {
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
                 }
-                m_collection = collection!; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+                m_collection = collection!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             }
 
             #region ICollection<T> Members
@@ -625,7 +626,7 @@ namespace System.Collections.ObjectModel
                             Interlocked.CompareExchange<object?>(ref m_syncRoot, new object(), null);
                         }
                     }
-                    return m_syncRoot!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34901
+                    return m_syncRoot!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
                 }
             }
 
@@ -646,7 +647,7 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (array!.Rank != 1) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            if (array!.Rank != 1) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
             }
@@ -706,7 +707,7 @@ namespace System.Collections.ObjectModel
                 {
                     foreach (var item in collection)
                     {
-                        objects![index++] = item; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+                        objects![index++] = item; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                     }
                 }
                 catch (ArrayTypeMismatchException)

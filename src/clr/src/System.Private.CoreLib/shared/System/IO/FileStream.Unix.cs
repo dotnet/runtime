@@ -290,7 +290,7 @@ namespace System.IO
             // override may already exist on a derived type.
             if (_useAsyncIO && _writePos > 0)
             {
-                return new ValueTask(Task.Factory.StartNew(s => ((FileStream)s!).Dispose(), this, // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                return new ValueTask(Task.Factory.StartNew(s => ((FileStream)s!).Dispose(), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default));
             }
 
@@ -364,7 +364,7 @@ namespace System.IO
             if (CanWrite)
             {
                 return Task.Factory.StartNew(
-                    state => ((FileStream)state!).FlushOSBuffer(), // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    state => ((FileStream)state!).FlushOSBuffer(),
                     this,
                     cancellationToken,
                     TaskCreationOptions.DenyChildAttach,
@@ -568,7 +568,7 @@ namespace System.IO
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (FileStream)s!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                var thisRef = (FileStream)s!;
                 Debug.Assert(thisRef._asyncState != null);
                 try
                 {
@@ -727,7 +727,7 @@ namespace System.IO
                 // whereas on Windows it may happen before the write has completed.
 
                 Debug.Assert(t.Status == TaskStatus.RanToCompletion);
-                var thisRef = (FileStream)s!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                var thisRef = (FileStream)s!;
                 Debug.Assert(thisRef._asyncState != null);
                 try
                 {

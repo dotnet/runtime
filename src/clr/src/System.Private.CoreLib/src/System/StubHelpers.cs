@@ -1622,7 +1622,7 @@ namespace System.StubHelpers
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.pHandle, ExceptionResource.ArgumentNull_SafeHandle);
             }
 
-            pHandle!.DangerousAddRef(ref success); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            pHandle!.DangerousAddRef(ref success); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             return pHandle.DangerousGetHandle();
         }
 
@@ -1636,7 +1636,7 @@ namespace System.StubHelpers
 
             try
             {
-                pHandle!.DangerousRelease(); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+                pHandle!.DangerousRelease(); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             }
             catch
             {

@@ -72,7 +72,7 @@ namespace System.Text
                     object o = new object();
                     Interlocked.CompareExchange<object?>(ref s_InternalSyncObject, o, null);
                 }
-                return s_InternalSyncObject!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                return s_InternalSyncObject!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
             }
         }
 

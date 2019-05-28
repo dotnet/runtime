@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Text
@@ -22,7 +23,7 @@ namespace System.Text
                 if (s_replacementFallback == null)
                     Interlocked.CompareExchange<EncoderFallback?>(ref s_replacementFallback, new EncoderReplacementFallback(), null);
 
-                return s_replacementFallback!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                return s_replacementFallback!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
             }
         }
 
@@ -34,7 +35,7 @@ namespace System.Text
                 if (s_exceptionFallback == null)
                     Interlocked.CompareExchange<EncoderFallback?>(ref s_exceptionFallback, new EncoderExceptionFallback(), null);
 
-                return s_exceptionFallback!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                return s_exceptionFallback!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
             }
         }
 
@@ -376,6 +377,7 @@ namespace System.Text
         }
 
         // private helper methods
+        [DoesNotReturn]
         internal void ThrowLastCharRecursive(int charRecursive)
         {
             // Throw it, using our complete character

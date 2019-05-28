@@ -298,7 +298,7 @@ namespace System.Threading.Tasks
                 Interlocked.CompareExchange(ref s_activeTaskSchedulers, new ConditionalWeakTable<TaskScheduler, object?>(), null);
                 activeTaskSchedulers = s_activeTaskSchedulers;
             }
-            activeTaskSchedulers!.Add(this, null); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            activeTaskSchedulers!.Add(this, null); // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
         }
 
         /// <summary>

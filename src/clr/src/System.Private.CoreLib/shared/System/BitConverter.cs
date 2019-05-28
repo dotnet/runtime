@@ -236,7 +236,7 @@ namespace System
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
-            if (unchecked((uint)startIndex) >= unchecked((uint)value!.Length)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            if (unchecked((uint)startIndex) >= unchecked((uint)value!.Length)) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
             if (startIndex > value.Length - sizeof(short))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall, ExceptionArgument.value);
@@ -257,7 +257,7 @@ namespace System
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
-            if (unchecked((uint)startIndex) >= unchecked((uint)value!.Length)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            if (unchecked((uint)startIndex) >= unchecked((uint)value!.Length)) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
             if (startIndex > value.Length - sizeof(int))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall, ExceptionArgument.value);
@@ -278,7 +278,7 @@ namespace System
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
-            if (unchecked((uint)startIndex) >= unchecked((uint)value!.Length)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            if (unchecked((uint)startIndex) >= unchecked((uint)value!.Length)) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
             if (startIndex > value.Length - sizeof(long))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall, ExceptionArgument.value);
@@ -363,11 +363,11 @@ namespace System
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
-            if (startIndex < 0 || startIndex >= value!.Length && startIndex > 0) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            if (startIndex < 0 || startIndex >= value!.Length && startIndex > 0) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_GenericPositive);
-            if (startIndex > value!.Length - length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            if (startIndex > value!.Length - length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall, ExceptionArgument.value);
 
             if (length == 0)
@@ -409,7 +409,7 @@ namespace System
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
-            return ToString(value!, 0, value!.Length); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            return ToString(value!, 0, value!.Length); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }
 
         // Converts an array of bytes into a String.  
@@ -417,7 +417,7 @@ namespace System
         {
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
-            return ToString(value!, startIndex, value!.Length - startIndex); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            return ToString(value!, startIndex, value!.Length - startIndex); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }
 
         /*==================================ToBoolean===================================
@@ -435,7 +435,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             if (startIndex < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
-            if (startIndex > value!.Length - 1) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            if (startIndex > value!.Length - 1) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index); // differs from other overloads, which throw base ArgumentException
 
             return value[startIndex] != 0;

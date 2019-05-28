@@ -3,9 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 #if !ES_BUILD_AGAINST_DOTNET_V35
 using Contract = System.Diagnostics.Contracts.Contract;
@@ -128,7 +129,7 @@ namespace System.Diagnostics.Tracing
             throw new System.NotSupportedException();
         }
        
-        public bool TryGetValue(string key, out object? value)
+        public bool TryGetValue(string key, [MaybeNullWhen(false)] out object? value)
         {
             if (key == null)
                 throw new System.ArgumentNullException(nameof(key));

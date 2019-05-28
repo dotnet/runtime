@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
@@ -62,7 +63,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool TryGetValue(TKey key, out TValue value)
-        internal bool TryGetValue<K, V>(K key, out V value) where K : object
+        internal bool TryGetValue<K, V>(K key, [MaybeNullWhen(false)] out V value) where K : object
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -73,7 +74,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // throw an exception from Lookup.
             if (!_this.HasKey(key))
             {
-                value = default!; // TODO-NULLABLE-GENERIC
+                value = default!;
                 return false;
             }
 
@@ -86,7 +87,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 if (HResults.E_BOUNDS == ex.HResult)
                 {
-                    value = default!; // TODO-NULLABLE-GENERIC
+                    value = default!;
                     return false;
                 }
                 throw;

@@ -14,6 +14,7 @@
 //This class contains only static members and doesn't require serialization.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
@@ -99,6 +100,7 @@ namespace System
             return decimal.Abs(value);
         }
 
+        [DoesNotReturn]
         [StackTraceHidden]
         private static void ThrowAbsOverflow()
         {
@@ -984,6 +986,7 @@ namespace System
             return d;
         }
 
+        [DoesNotReturn]
         private static void ThrowMinMaxException<T>(T min, T max)
         {
             throw new ArgumentException(SR.Format(SR.Argument_MinMaxValue, min, max));

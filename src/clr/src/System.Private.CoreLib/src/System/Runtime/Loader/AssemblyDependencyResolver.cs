@@ -99,13 +99,13 @@ namespace System.Runtime.Loader
             _assemblyPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (string assemblyPath in assemblyPaths)
             {
-                _assemblyPaths.Add(Path.GetFileNameWithoutExtension(assemblyPath)!, assemblyPath); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                _assemblyPaths.Add(Path.GetFileNameWithoutExtension(assemblyPath)!, assemblyPath); // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
 
             _nativeSearchPaths = SplitPathsList(nativeSearchPathsList);
             _resourceSearchPaths = SplitPathsList(resourceSearchPathsList);
 
-            _assemblyDirectorySearchPaths = new string[1] { Path.GetDirectoryName(componentAssemblyPath)! }; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            _assemblyDirectorySearchPaths = new string[1] { Path.GetDirectoryName(componentAssemblyPath)! };
         }
 
         public string? ResolveAssemblyToPath(AssemblyName assemblyName)

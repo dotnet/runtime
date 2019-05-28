@@ -1890,6 +1890,7 @@ namespace System.Numerics
         #endregion Same-Size Conversion
 
         #region Throw Helpers
+        [DoesNotReturn]
         internal static void ThrowInsufficientNumberOfElementsException(int requiredElementCount)
         {
             throw new IndexOutOfRangeException(SR.Format(SR.Arg_InsufficientNumberOfElements, requiredElementCount, "values"));

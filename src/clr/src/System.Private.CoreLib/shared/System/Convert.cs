@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -311,7 +312,8 @@ namespace System
             return ChangeType(value, conversionType, CultureInfo.CurrentCulture);
         }
 
-        public static object? ChangeType(object? value, Type conversionType, IFormatProvider? provider) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("value")]
+        public static object? ChangeType(object? value, Type conversionType, IFormatProvider? provider)
         {
             if (conversionType is null)
             {
@@ -372,22 +374,31 @@ namespace System
             return ic.ToType(conversionType, provider);
         }
 
+        [DoesNotReturn]
         private static void ThrowCharOverflowException() { throw new OverflowException(SR.Overflow_Char); }
 
+        [DoesNotReturn]
         private static void ThrowByteOverflowException() { throw new OverflowException(SR.Overflow_Byte); }
 
+        [DoesNotReturn]
         private static void ThrowSByteOverflowException() { throw new OverflowException(SR.Overflow_SByte); }
 
+        [DoesNotReturn]
         private static void ThrowInt16OverflowException() { throw new OverflowException(SR.Overflow_Int16); }
 
+        [DoesNotReturn]
         private static void ThrowUInt16OverflowException() { throw new OverflowException(SR.Overflow_UInt16); }
 
+        [DoesNotReturn]
         private static void ThrowInt32OverflowException() { throw new OverflowException(SR.Overflow_Int32); }
 
+        [DoesNotReturn]
         private static void ThrowUInt32OverflowException() { throw new OverflowException(SR.Overflow_UInt32); }
 
+        [DoesNotReturn]
         private static void ThrowInt64OverflowException() { throw new OverflowException(SR.Overflow_Int64); }
 
+        [DoesNotReturn]
         private static void ThrowUInt64OverflowException() { throw new OverflowException(SR.Overflow_UInt64); }
 
         // Conversions to Boolean
@@ -2153,14 +2164,16 @@ namespace System
             return value.ToString(provider);
         }
 
-        public static string? ToString(string? value) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("value")]
+        public static string? ToString(string? value)
         {
             return value;
         }
 
-        public static string? ToString(string? value, IFormatProvider? provider) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("value")]
+        public static string? ToString(string? value, IFormatProvider? provider)
         {
-            return value; // avoid the null check
+            return value;
         }
 
 

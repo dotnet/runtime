@@ -322,7 +322,7 @@ namespace System.Diagnostics.Tracing
                             GetDataFromController(etwSessionId, filterData, out command, out data, out keyIndex))
                         {
                             args = new Dictionary<string, string>(4);
-                            Debug.Assert(data != null); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                            Debug.Assert(data != null);
                             while (keyIndex < data.Length)
                             {
                                 int keyEnd = FindNull(data, keyIndex);
@@ -602,7 +602,7 @@ namespace System.Diagnostics.Tracing
         /// starts, and the command being issued associated with that data.  
         /// </summary>
         private unsafe bool GetDataFromController(int etwSessionId,
-                Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data, out int dataStart)
+            Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data, out int dataStart)
         {
             data = null;
             dataStart = 0;
