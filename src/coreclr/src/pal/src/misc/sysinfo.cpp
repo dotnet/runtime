@@ -80,6 +80,7 @@ Revision History:
 #endif
 
 #include "pal/dbgmsg.h"
+#include "pal/process.h"
 
 #include <algorithm>
 
@@ -139,21 +140,24 @@ DWORD
 PALAPI
 PAL_GetLogicalCpuCountFromOS()
 {
-    int nrcpus = 0;
+    static int nrcpus = -1;
 
+    if (nrcpus == -1)
+    {
 #if HAVE_SCHED_GETAFFINITY
 
-    cpu_set_t cpuSet;
-    int st = sched_getaffinity(0, sizeof(cpu_set_t), &cpuSet);
-    if (st != 0)
-    {
-        ASSERT("sched_getaffinity failed (%d)\n", errno);
-    }
+        cpu_set_t cpuSet;
+        int st = sched_getaffinity(gPID, sizeof(cpu_set_t), &cpuSet);
+        if (st != 0)
+        {
+            ASSERT("sched_getaffinity failed (%d)\n", errno);
+        }
 
-    nrcpus = CPU_COUNT(&cpuSet);
+        nrcpus = CPU_COUNT(&cpuSet);
 #else // HAVE_SCHED_GETAFFINITY
-    nrcpus = PAL_GetTotalCpuCount();
+        nrcpus = PAL_GetTotalCpuCount();
 #endif // HAVE_SCHED_GETAFFINITY
+    }
 
     return nrcpus;
 }
