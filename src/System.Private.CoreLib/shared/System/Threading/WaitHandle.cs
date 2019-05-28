@@ -183,10 +183,11 @@ namespace System.Threading
             // t_safeWaitHandlesForRent can be null when it was not initialized yet or
             // if a re-entrant wait is performed and the array is already rented. In
             // that case we just allocate a new one and reuse it as necessary.
-            if (safeWaitHandles == null || safeWaitHandles.Length < capacity)
+            int currentLength = (safeWaitHandles != null) ? safeWaitHandles.Length : 0;
+            if (currentLength < capacity)
             {
-                // Always allocate at least 4 slots to prevent unnecessary reallocations
-                safeWaitHandles = new SafeWaitHandle[Math.Max(capacity, 4)];
+                safeWaitHandles = new SafeWaitHandle[Math.Max(capacity,
+                    Math.Min(MaxWaitHandles, 2 * currentLength))];
             }
 
             return safeWaitHandles;
