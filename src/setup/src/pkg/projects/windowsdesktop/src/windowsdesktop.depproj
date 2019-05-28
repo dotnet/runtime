@@ -33,25 +33,6 @@
     <PackageReference Include="@(RuntimeOnlyPackageReference)" ExcludeAssets="Compile" />
   </ItemGroup>
 
-  <!-- Pick up unconventional WPF runtime package natives in lib\<rid>. -->
-  <Target Name="GetLibNativeFilePackagePaths"
-          BeforeTargets="GetFilesFromPackages"
-          Condition="'$(NuGetRuntimeIdentifier)' != ''">
-    <ItemGroup>
-      <_lowercasePackageId
-        Include="$([System.String]::new('runtime.$(NuGetRuntimeIdentifier).%(PackageReference.Identity)').ToLowerInvariant())"
-        NuGetPackageId="%(PackageReference.Identity)"
-        Version="%(PackageReference.Version)" />
-
-      <_packageNativeDir Include="@(_lowercasePackageId -> '$(PackagesDir)%(Identity)/%(Version)/lib/$(NuGetRuntimeIdentifier)/')" />
-
-      <ReferenceCopyLocalPaths
-        Include="%(_packageNativeDir.Identity)**/*.*"
-        IsNative="true"
-        NuGetPackageId="%(_packageNativeDir.NuGetPackageId)" />
-    </ItemGroup>
-  </Target>
-
   <!--
     Version.txt files aren't provided in some packages. However, they're not necessary anymore:
     dependency information is now in Version.Details.xml and BAR. Stub the target to ignore.
