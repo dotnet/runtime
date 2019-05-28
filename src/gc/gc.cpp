@@ -11517,9 +11517,9 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
         if (gen_number == 0)
         {
             size_t pad_size = Align (min_obj_size, align_const);
-            make_unused_array (acontext->alloc_ptr, pad_size);
             dprintf (3, ("contigous ac: making min obj gap %Ix->%Ix(%Id)", 
                 acontext->alloc_ptr, (acontext->alloc_ptr + pad_size), pad_size));
+            make_unused_array (acontext->alloc_ptr, pad_size);
             acontext->alloc_ptr += pad_size;
         }
     }
@@ -11581,6 +11581,7 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
             *(PTR_PTR)clear_start = 0;
         }
         // skip the rest of the object
+        dprintf(3, ("zeroing optional: skipping object at %Ix->%Ix(%Id)", clear_start, obj_end, obj_end - clear_start));
         clear_start = obj_end;
     }
 
@@ -11643,7 +11644,10 @@ void gc_heap::adjust_limit_clr (uint8_t* start, size_t limit_size, size_t size,
     }
 
     // verifying the memory is completely cleared.
-    //verify_mem_cleared (start - plug_skew, limit_size);
+    //if (!(flags & GC_ALLOC_ZEROING_OPTIONAL))
+    //{
+    //    verify_mem_cleared(start - plug_skew, limit_size);
+    //}
 }
 
 size_t gc_heap::new_allocation_limit (size_t size, size_t physical_limit, int gen_number)
@@ -12129,6 +12133,7 @@ void gc_heap::bgc_loh_alloc_clr (uint8_t* alloc_start,
     add_saved_spinlock_info (true, me_release, mt_clr_large_mem);
     leave_spin_lock (&more_space_lock_loh);
 
+    ((void**) alloc_start)[-1] = 0;     //clear the sync block
     if (!(flags & GC_ALLOC_ZEROING_OPTIONAL))
     {
         memclr(alloc_start + size_to_skip, size_to_clear);
@@ -12264,8 +12269,8 @@ BOOL gc_heap::a_fit_segment_end_p (int gen_number,
 #endif //BACKGROUND_GC
 
     uint8_t*& allocated = ((gen_number == 0) ?
-                        alloc_allocated : 
-                        heap_segment_allocated(seg));
+                                    alloc_allocated : 
+                                    heap_segment_allocated(seg));
 
     size_t pad = Align (min_obj_size, align_const);
 
@@ -12327,33 +12332,42 @@ found_fit:
     }
 #endif //BACKGROUND_GC
 
-    uint8_t* old_alloc;
-    old_alloc = allocated;
 #ifdef FEATURE_LOH_COMPACTION
     if (gen_number == (max_generation + 1))
     {
-        make_unused_array (old_alloc, loh_pad);
-        old_alloc += loh_pad;
+        make_unused_array (allocated, loh_pad);
         allocated += loh_pad;
         limit -= loh_pad;
     }
 #endif //FEATURE_LOH_COMPACTION
 
-#if defined (VERIFY_HEAP) && defined (_DEBUG)
-        ((void**) allocated)[-1] = 0;     //clear the sync block
-#endif //VERIFY_HEAP && _DEBUG
-    allocated += limit;
-
     dprintf (3, ("found fit at end of seg: %Ix", old_alloc));
+
+    uint8_t* old_alloc;
+    old_alloc = allocated;
 
 #ifdef BACKGROUND_GC
     if (cookie != -1)
     {
+        allocated += limit;
         bgc_loh_alloc_clr (old_alloc, limit, acontext, flags, align_const, cookie, TRUE, seg);
     }
     else
 #endif //BACKGROUND_GC
-    {
+    {      
+        // In a contiguous AC case with GC_ALLOC_ZEROING_OPTIONAL, deduct unspent space from the limit to clear only what is necessary.
+        if ((flags & GC_ALLOC_ZEROING_OPTIONAL) &&
+            ((allocated == acontext->alloc_limit) || (allocated == (acontext->alloc_limit + Align (min_obj_size, align_const)))))
+        {
+            assert(gen_number == 0);
+            assert(allocated > acontext->alloc_ptr);
+
+            limit -= (allocated - acontext->alloc_ptr);
+            // add space for an AC continuity divider
+            limit += Align(min_obj_size, align_const);
+        }
+
+        allocated += limit;
         adjust_limit_clr (old_alloc, limit, size, acontext, flags, seg, align_const, gen_number);
     }
 
