@@ -168,7 +168,7 @@ namespace System.IO.Pipes
                 return s_zeroTask;
             }
 
-            return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken);
+            return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
@@ -196,7 +196,7 @@ namespace System.IO.Pipes
                 return new ValueTask<int>(0);
             }
 
-            return new ValueTask<int>(ReadAsyncCore(buffer, cancellationToken));
+            return ReadAsyncCore(buffer, cancellationToken);
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
