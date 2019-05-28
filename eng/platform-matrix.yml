@@ -79,8 +79,8 @@ jobs:
         - ${{ if eq(variables['System.TeamProject'], 'public') }}:
           - (Alpine.38.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-45b1fa2-20190327215821
         - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-          - Alpine.36.Amd64
-          - Alpine.38.Amd64
+          - (Alpine.38.Amd64)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-09ca40b-20190508143246
+          - (Alpine.39.Amd64)ubuntu.1604.amd64@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.9-helix-09ca40b-20190508143246
         ${{ insert }}: ${{ parameters.jobParameters }}
 
   # Linux musl arm64
@@ -206,7 +206,7 @@ jobs:
           - Windows.81.Amd64
           - Windows.10.Amd64
           - Windows.10.Amd64.Core
-          - Windows.10.Nano.Amd64
+          - (Windows.Nano.1803.Amd64)windows.10.amd64.serverrs4@mcr.microsoft.com/dotnet-buildtools/prereqs:nanoserver-1803-helix-amd64-05227e1-20190509225944
         ${{ insert }}: ${{ parameters.jobParameters }}
 
   # Windows x86
