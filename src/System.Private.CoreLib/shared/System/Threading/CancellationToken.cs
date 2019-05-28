@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
@@ -348,6 +349,7 @@ namespace System.Threading
         }
 
         // Throws an OCE; separated out to enable better inlining of ThrowIfCancellationRequested
+        [DoesNotReturn]
         private void ThrowOperationCanceledException() =>
             throw new OperationCanceledException(SR.OperationCanceled, this);
     }

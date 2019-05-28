@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System
 {
     // The IComparable interface is implemented by classes that support an
@@ -32,6 +34,6 @@ namespace System
         // if this is equal to object, or a value greater than zero
         // if this is greater than object.
         // 
-        int CompareTo(T other);
+        int CompareTo([AllowNull] T other);
     }
 }

@@ -80,7 +80,7 @@ namespace System.Reflection
         {
             RuntimeAssembly? retAssembly = null;
             GetExecutingAssemblyNative(JitHelpers.GetStackCrawlMarkHandle(ref stackMark), JitHelpers.GetObjectHandleOnStack(ref retAssembly));
-            return retAssembly!; // TODO-NULLABLE: Confirm this can never be null
+            return retAssembly!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
         }
 
         // Get the assembly that the current code is running from.

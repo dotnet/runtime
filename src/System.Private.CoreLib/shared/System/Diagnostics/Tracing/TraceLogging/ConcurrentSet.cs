@@ -110,7 +110,7 @@ namespace System.Diagnostics.Tracing
                 Array.Copy(oldItems, lo, newItems, lo + 1, oldLength - lo);
             }
 
-            newItems = Interlocked.CompareExchange(ref this.items, newItems, oldItems)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34901
+            newItems = Interlocked.CompareExchange(ref this.items, newItems, oldItems)!;
             if (oldItems != newItems)
             {
                 oldItems = newItems;

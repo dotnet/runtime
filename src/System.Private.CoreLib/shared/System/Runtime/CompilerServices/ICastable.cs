@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Runtime.CompilerServices
 {
     /// <summary>
@@ -31,7 +33,7 @@ namespace System.Runtime.CompilerServices
         // because this is the only guard placed before an interface invocation at runtime. If a type decides
         // it no longer wants to implement a given interface it has no way to synchronize with callers that
         // have already cached this relationship and can invoke directly via the interface pointer.
-        bool IsInstanceOfInterface(RuntimeTypeHandle interfaceType, out Exception? castError);
+        bool IsInstanceOfInterface(RuntimeTypeHandle interfaceType, [NotNullWhen(true)] out Exception? castError);
 
         // This is called as part of the interface dispatch mechanism when the dispatcher logic cannot find
         // the given interface type in the interface map of this object.

@@ -109,7 +109,6 @@ namespace System.Text
         // Construction
         public DecoderReplacementFallbackBuffer(DecoderReplacementFallback fallback)
         {
-            // TODO-NULLABLE: NullReferenceException (fallback)
             _strDefault = fallback.DefaultString;
         }
 

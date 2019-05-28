@@ -70,7 +70,7 @@ namespace System.Runtime.Serialization
             return _current;
         }
 
-        object? IEnumerator.Current => Current; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
+        object? IEnumerator.Current => Current;
 
         public SerializationEntry Current
         {

@@ -88,7 +88,7 @@ namespace System.Threading
         // in a Mutex's ACL is MUTEX_ALL_ACCESS (0x1F0001).
         public void ReleaseMutex()
         {
-            if (!Interop.Kernel32.ReleaseMutex(SafeWaitHandle!)) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2384
+            if (!Interop.Kernel32.ReleaseMutex(SafeWaitHandle))
             {
                 throw new ApplicationException(SR.Arg_SynchronizationLockException);
             }

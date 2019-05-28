@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices
                     {
                         if (_cachedTargetTypes[i] != null)
                         {
-                            args[i] = Enum.ToObject(_cachedTargetTypes[i]!, args[i]); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                            args[i] = Enum.ToObject(_cachedTargetTypes[i]!, args[i]); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                         }
                     }
                 }
@@ -173,7 +173,7 @@ namespace System.Runtime.InteropServices
                 {
                     if (wrapper.Delegate.GetType() == d.GetType())
                     {
-                        wrapper.Delegate = Delegate.Combine(wrapper.Delegate, d)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                        wrapper.Delegate = Delegate.Combine(wrapper.Delegate, d)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
                         return;
                     }
                 }

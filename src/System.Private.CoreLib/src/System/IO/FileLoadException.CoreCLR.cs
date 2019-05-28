@@ -30,7 +30,7 @@ namespace System.IO
             else 
                 GetMessageForHR(hResult, JitHelpers.GetStringHandleOnStack(ref message));
 
-            return string.Format(format!, fileName, message!); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761 GetStringHandleOnStack needs to be attributed
+            return string.Format(format!, fileName, message!); // TODO-NULLABLE: Remove ! when nullable attributes are respected
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]

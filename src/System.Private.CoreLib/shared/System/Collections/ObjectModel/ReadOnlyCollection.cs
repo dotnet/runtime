@@ -21,7 +21,7 @@ namespace System.Collections.ObjectModel
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.list);
             }
-            this.list = list!; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            this.list = list!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }
 
         public int Count
@@ -127,7 +127,7 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (array!.Rank != 1)  // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            if (array!.Rank != 1)  // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
             }
@@ -181,7 +181,7 @@ namespace System.Collections.ObjectModel
                 {
                     for (int i = 0; i < count; i++)
                     {
-                        objects![index++] = list[i]; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+                        objects![index++] = list[i]; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                     }
                 }
                 catch (ArrayTypeMismatchException)
@@ -232,7 +232,7 @@ namespace System.Collections.ObjectModel
         {
             if (IsCompatibleObject(value))
             {
-                return Contains((T)value!); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                return Contains((T)value!);
             }
             return false;
         }
@@ -241,7 +241,7 @@ namespace System.Collections.ObjectModel
         {
             if (IsCompatibleObject(value))
             {
-                return IndexOf((T)value!); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                return IndexOf((T)value!);
             }
             return -1;
         }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
 
@@ -35,9 +36,8 @@ namespace System.Runtime.InteropServices
         {
         }
 
-        public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o)
+        public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : object
         {
-            // TODO-NULLABLE-GENERIC: T cannot be null
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
@@ -46,9 +46,8 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static TWrapper CreateWrapperOfType<T, TWrapper>(T o)
+        public static TWrapper CreateWrapperOfType<T, TWrapper>([AllowNull] T o)
         {
-            // TODO-NULLABLE-GENERIC: T can be null
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
@@ -72,9 +71,8 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static IntPtr GetComInterfaceForObject<T, TInterface>(T o)
+        public static IntPtr GetComInterfaceForObject<T, TInterface>([DisallowNull] T o)
         {
-            // TODO-NULLABLE-GENERIC: T cannot be null
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
@@ -103,9 +101,8 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        public static void GetNativeVariantForObject<T>(T obj, IntPtr pDstNativeVariant)
+        public static void GetNativeVariantForObject<T>([AllowNull] T obj, IntPtr pDstNativeVariant)
         {
-            // TODO-NULLABLE-GENERIC: T can be null
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
@@ -124,9 +121,9 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
+        [return: MaybeNull]
         public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
-            // TODO-NULLABLE-GENERIC: T can be null
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
@@ -135,7 +132,6 @@ namespace System.Runtime.InteropServices
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }
 
-        // TODO-NULLABLE-GENERIC: T[] contents can be null
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);

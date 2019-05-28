@@ -43,7 +43,7 @@ namespace System
 
             _array = array;
             _offset = 0;
-            _count = array!.Length; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            _count = array!.Length; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }
 
         public ArraySegment(T[] array, int offset, int count)
@@ -323,7 +323,7 @@ namespace System
                 Debug.Assert(arraySegment.Array != null);
                 Debug.Assert(arraySegment.Offset >= 0);
                 Debug.Assert(arraySegment.Count >= 0);
-                Debug.Assert(arraySegment.Offset + arraySegment.Count <= arraySegment.Array!.Length); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34792
+                Debug.Assert(arraySegment.Offset + arraySegment.Count <= arraySegment.Array!.Length); // TODO-NULLABLE: Manually-implemented property (https://github.com/dotnet/roslyn/issues/34792)
 
                 _array = arraySegment.Array;
                 _start = arraySegment.Offset;

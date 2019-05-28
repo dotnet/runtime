@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
@@ -349,8 +350,7 @@ namespace System.Runtime.InteropServices
             return GetComInterfaceForObjectNative(o, T, false, true);
         }
 
-        // TODO-NULLABLE-GENERIC: T cannot be null
-        public static IntPtr GetComInterfaceForObject<T, TInterface>(T o) => GetComInterfaceForObject(o!, typeof(TInterface));
+        public static IntPtr GetComInterfaceForObject<T, TInterface>([DisallowNull] T o) => GetComInterfaceForObject(o!, typeof(TInterface));
 
         /// <summary>
         /// Return the IUnknown* representing the interface for the Object.
@@ -388,10 +388,9 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern IntPtr CreateAggregatedObject(IntPtr pOuter, object o);
 
-        public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o)
+        public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : object
         {
-            // TODO-NULLABLE-GENERIC: T cannot be null
-            return CreateAggregatedObject(pOuter, (object)o!);
+            return CreateAggregatedObject(pOuter, (object)o);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -641,9 +640,8 @@ namespace System.Runtime.InteropServices
             return Wrapper;
         }
 
-        public static TWrapper CreateWrapperOfType<T, TWrapper>(T o)
+        public static TWrapper CreateWrapperOfType<T, TWrapper>([AllowNull] T o)
         {
-            // TODO-NULLABLE-GENERIC: T can be null
             return (TWrapper)CreateWrapperOfType(o, typeof(TWrapper))!;
         }
 
@@ -668,25 +666,23 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void GetNativeVariantForObject(object? obj, /* VARIANT * */ IntPtr pDstNativeVariant);
 
-        public static void GetNativeVariantForObject<T>(T obj, IntPtr pDstNativeVariant)
+        public static void GetNativeVariantForObject<T>([AllowNull] T obj, IntPtr pDstNativeVariant)
         {
-            // TODO-NULLABLE-GENERIC: T can be null
-            GetNativeVariantForObject((object)obj!, pDstNativeVariant);
+            GetNativeVariantForObject((object?)obj, pDstNativeVariant);
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern object? GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant);
 
+        [return: MaybeNull]
         public static T GetObjectForNativeVariant<T>(IntPtr pSrcNativeVariant)
         {
-            // TODO-NULLABLE-GENERIC: T can be null
             return (T)GetObjectForNativeVariant(pSrcNativeVariant)!;
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern object?[] GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars);
 
-        // TODO-NULLABLE-GENERIC: T[] contents can be null
         public static T[] GetObjectsForNativeVariants<T>(IntPtr aSrcNativeVariant, int cVars)
         {
             object?[] objects = GetObjectsForNativeVariants(aSrcNativeVariant, cVars);

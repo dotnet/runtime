@@ -159,7 +159,7 @@ namespace System.Text
                     return null;
             }
 
-            CodePageDataItem? data = s_codePageToCodePageData![index]; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            CodePageDataItem? data = s_codePageToCodePageData![index]; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
             if (data == null)
             {
                 Interlocked.CompareExchange<CodePageDataItem?>(ref s_codePageToCodePageData[index], InternalGetCodePageDataItem(codePage, index), null);

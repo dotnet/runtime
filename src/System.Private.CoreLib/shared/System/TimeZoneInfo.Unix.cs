@@ -5,11 +5,13 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading;
 using System.Security;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Internal.IO;
@@ -307,7 +309,7 @@ namespace System
         /// 3. Look for the data in GetTimeZoneDirectory()/localtime.
         /// 4. Use UTC if all else fails.
         /// </summary>
-        private static bool TryGetLocalTzFile(out byte[]? rawData, out string? id) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        private static bool TryGetLocalTzFile([NotNullWhen(true)] out byte[]? rawData, [NotNullWhen(true)] out string? id)
         {
             rawData = null;
             id = null;
@@ -357,7 +359,7 @@ namespace System
             return result;
         }
 
-        private static bool TryLoadTzFile(string tzFilePath, ref byte[]? rawData, ref string? id) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        private static bool TryLoadTzFile(string tzFilePath, [NotNullWhen(true)] ref byte[]? rawData, [NotNullWhen(true)] ref string? id)
         {
             if (File.Exists(tzFilePath))
             {
@@ -394,7 +396,7 @@ namespace System
             if (symlinkPath != null)
             {
                 // symlinkPath can be relative path, use Path to get the full absolute path.
-                symlinkPath = Path.GetFullPath(symlinkPath, Path.GetDirectoryName(tzFilePath)!); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                symlinkPath = Path.GetFullPath(symlinkPath, Path.GetDirectoryName(tzFilePath)!); // TODO-NULLABLE: Remove ! when nullable attributes are respected
 
                 string timeZoneDirectory = GetTimeZoneDirectory();
                 if (symlinkPath.StartsWith(timeZoneDirectory, StringComparison.Ordinal))
@@ -614,9 +616,9 @@ namespace System
         {
             byte[]? rawData;
             string? id;
-            if (TryGetLocalTzFile(out rawData, out id)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            if (TryGetLocalTzFile(out rawData, out id))
             {
-                TimeZoneInfo? result = GetTimeZoneFromTzData(rawData!, id!);
+                TimeZoneInfo? result = GetTimeZoneFromTzData(rawData!, id!); // TODO-NULLABLE: Remove ! when nullable attributes are respected
                 if (result != null)
                 {
                     return result;
@@ -991,7 +993,7 @@ namespace System
                     {
                         if (!IsValidAdjustmentRuleOffest(timeZoneBaseUtcOffset, r))
                         {
-                            NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r!); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                            NormalizeAdjustmentRuleOffset(timeZoneBaseUtcOffset, ref r!); // TODO-NULLABLE: Remove ! when nullable attributes are respected
                         }
 
                         rulesList.Add(r);

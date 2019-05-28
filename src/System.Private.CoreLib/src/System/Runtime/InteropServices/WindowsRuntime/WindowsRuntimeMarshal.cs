@@ -531,7 +531,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 return (object)Marshal.GetRawIUnknownForComObjectNoAddRef(target);
             }
 
-            private static object? FindEquivalentKeyUnsafe(ConditionalWeakTable<object, EventRegistrationTokenListWithCount> registrationTable, object handler, out EventRegistrationTokenListWithCount? tokens) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            private static object? FindEquivalentKeyUnsafe(ConditionalWeakTable<object, EventRegistrationTokenListWithCount> registrationTable, object handler, out EventRegistrationTokenListWithCount? tokens)
             {
                 foreach (KeyValuePair<object, EventRegistrationTokenListWithCount> item in registrationTable)
                 {
@@ -599,7 +599,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                             }
                             else
                             {
-                                tokens!.Push(token); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                                tokens!.Push(token);
                             }
 
                             tokenAdded = true;
@@ -742,7 +742,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                             // NOTE: We should not check whether registrationTokens has 0 entries and remove it from the cache
                             // (just like managed event implementation), because this might have raced with the finalizer of
                             // EventRegistrationTokenList
-                            registrationTokens.Remove(key!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2388
+                            registrationTokens.Remove(key!);
                         }
 
                         Log("[WinRT_Eventing] Event unsubscribed for managed instance = " + instanceKey + ", handler = " + handler + ", token = " + token.Value + "\n");

@@ -138,7 +138,7 @@ namespace System.Collections.Generic
             {
                 for (int i = startIndex; i < endIndex; i++)
                 {
-                    if (array[i] != null && array[i]!.Equals(value)) return i; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                    if (array[i] != null && array[i]!.Equals(value)) return i; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                 }
             }
             return -1;
@@ -158,7 +158,7 @@ namespace System.Collections.Generic
             {
                 for (int i = startIndex; i >= endIndex; i--)
                 {
-                    if (array[i] != null && array[i]!.Equals(value)) return i; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                    if (array[i] != null && array[i]!.Equals(value)) return i; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                 }
             }
             return -1;
