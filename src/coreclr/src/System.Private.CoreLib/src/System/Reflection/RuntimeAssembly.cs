@@ -50,7 +50,7 @@ namespace System.Reflection
                 {
                     Interlocked.CompareExchange<object?>(ref m_syncRoot, new object(), null);
                 }
-                return m_syncRoot!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                return m_syncRoot!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
             }
         }
 
@@ -728,7 +728,7 @@ namespace System.Reflection
                     exception = e;
                 }
 
-                Debug.Assert((type != null) != (exception != null)); // Exactly one of these must be non-null. // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2388
+                Debug.Assert((type != null) != (exception != null)); // Exactly one of these must be non-null.
 
                 if (type != null)
                 {

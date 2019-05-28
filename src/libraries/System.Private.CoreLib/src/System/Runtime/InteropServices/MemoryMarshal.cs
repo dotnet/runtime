@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 
 using Internal.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.InteropServices
 {
@@ -55,7 +56,7 @@ namespace System.Runtime.InteropServices
                     Debug.Assert(obj is MemoryManager<T>);
                     if (Unsafe.As<MemoryManager<T>>(obj).TryGetArray(out ArraySegment<T> tempArraySegment))
                     {
-                        segment = new ArraySegment<T>(tempArraySegment.Array!, tempArraySegment.Offset + index, length); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                        segment = new ArraySegment<T>(tempArraySegment.Array!, tempArraySegment.Offset + index, length);
                         return true;
                     }
                 }
@@ -86,7 +87,7 @@ namespace System.Runtime.InteropServices
         /// <param name="memory">The memory to get the manager for.</param>
         /// <param name="manager">The returned manager of the <see cref="ReadOnlyMemory{T}"/>.</param>
         /// <returns>A <see cref="bool"/> indicating if it was successful.</returns>
-        public static bool TryGetMemoryManager<T, TManager>(ReadOnlyMemory<T> memory, out TManager? manager) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        public static bool TryGetMemoryManager<T, TManager>(ReadOnlyMemory<T> memory, [NotNullWhen(true)] out TManager? manager)
             where TManager : MemoryManager<T>
         {
             TManager? localManager; // Use register for null comparison rather than byref
@@ -105,7 +106,7 @@ namespace System.Runtime.InteropServices
         /// <param name="start">The offset from the start of the <paramref name="manager" /> that the <paramref name="memory" /> represents.</param>
         /// <param name="length">The length of the <paramref name="manager" /> that the <paramref name="memory" /> represents.</param>
         /// <returns>A <see cref="bool"/> indicating if it was successful.</returns>
-        public static bool TryGetMemoryManager<T, TManager>(ReadOnlyMemory<T> memory, out TManager? manager, out int start, out int length) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        public static bool TryGetMemoryManager<T, TManager>(ReadOnlyMemory<T> memory, [NotNullWhen(true)] out TManager? manager, out int start, out int length)
            where TManager : MemoryManager<T>
         {
             TManager? localManager; // Use register for null comparison rather than byref
@@ -141,7 +142,7 @@ namespace System.Runtime.InteropServices
         /// <param name="start">The starting location in <paramref name="text"/>.</param>
         /// <param name="length">The number of items in <paramref name="text"/>.</param>
         /// <returns></returns>
-        public static bool TryGetString(ReadOnlyMemory<char> memory, out string? text, out int start, out int length)
+        public static bool TryGetString(ReadOnlyMemory<char> memory, [NotNullWhen(true)] out string? text, out int start, out int length)
         {
             if (memory.GetObjectStartLength(out int offset, out int count) is string s)
             {
@@ -306,7 +307,7 @@ namespace System.Runtime.InteropServices
                     ThrowHelper.ThrowArgumentOutOfRangeException();
                 return default;
             }
-            if (default(T)! == null && array.GetType() != typeof(T[])) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
+            if (default(T)! == null && array.GetType() != typeof(T[])) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
                 ThrowHelper.ThrowArrayTypeMismatchException();
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();

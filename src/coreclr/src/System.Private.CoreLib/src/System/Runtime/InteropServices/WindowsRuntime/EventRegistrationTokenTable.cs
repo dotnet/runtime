@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Runtime.InteropServices.WindowsRuntime
@@ -17,7 +18,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         // Cached multicast delegate which will invoke all of the currently registered delegates.  This
         // will be accessed frequently in common coding paterns, so we don't want to calculate it repeatedly.
-        private volatile T m_invokeList = null!; // TODO-NULLABLE-GENERIC
+        [AllowNull, MaybeNull] private volatile T m_invokeList = null!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
 
         public EventRegistrationTokenTable()
         {
@@ -31,20 +32,20 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         // The InvocationList property provides access to a delegate which will invoke every registered event handler
         // in this table.  If the property is set, the new value will replace any existing token registrations.
+        [MaybeNull]
         public T InvocationList
         {
             get
             {
                 return m_invokeList;
             }
-
             set
             {
                 lock (m_tokens)
                 {
                     // The value being set replaces any of the existing values
                     m_tokens.Clear();
-                    m_invokeList = null!; // TODO-NULLABLE-GENERIC
+                    m_invokeList = null!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
 
                     if (value != null)
                     {
@@ -84,7 +85,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             // Update the current invocation list to include the newly added delegate
             Delegate? invokeList = (Delegate?)(object?)m_invokeList;
             invokeList = MulticastDelegate.Combine(invokeList, (Delegate)(object)handler);
-            m_invokeList = (T)(object?)invokeList!; // TODO-NULLABLE-GENERIC
+            m_invokeList = (T)(object?)invokeList!;
 
             return token;
         }
@@ -235,7 +236,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 // Update the current invocation list to remove the delegate
                 Delegate? invokeList = (Delegate?)(object?)m_invokeList;
                 invokeList = MulticastDelegate.Remove(invokeList, (Delegate?)(object?)handler);
-                m_invokeList = (T)(object?)invokeList!; // TODO-NULLABLE-GENERIC
+                m_invokeList = (T)(object?)invokeList!;
             }
         }
 
@@ -245,7 +246,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 Interlocked.CompareExchange(ref refEventTable, new EventRegistrationTokenTable<T>(), null);
             }
-            return refEventTable!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            return refEventTable!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
         }
     }
 }

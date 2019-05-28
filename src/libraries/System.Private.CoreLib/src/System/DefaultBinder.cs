@@ -84,7 +84,7 @@ namespace System
             {
                 if (args[i] != null)
                 {
-                    argTypes[i] = args[i]!.GetType(); //TODO-NULLABLE https://github.com/dotnet/csharplang/issues/2388
+                    argTypes[i] = args[i]!.GetType();
                 }
             }
 #endregion
@@ -106,7 +106,7 @@ namespace System
                     continue;
 
                 // Validate the parameters.
-                ParameterInfo[] par = candidates[i]!.GetParametersNoCopy(); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                ParameterInfo[] par = candidates[i]!.GetParametersNoCopy(); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
 
 #region Match method by parameter count
                 if (par.Length == 0)
@@ -114,7 +114,7 @@ namespace System
 #region No formal parameters
                     if (args.Length != 0)
                     {
-                        if ((candidates[i]!.CallingConvention & CallingConventions.VarArgs) == 0) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                        if ((candidates[i]!.CallingConvention & CallingConventions.VarArgs) == 0) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                             continue;
                     }
 

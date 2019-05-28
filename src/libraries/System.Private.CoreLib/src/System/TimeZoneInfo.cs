@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Threading;
@@ -29,7 +30,7 @@ namespace System
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed partial class TimeZoneInfo : IEquatable<TimeZoneInfo?>, ISerializable, IDeserializationCallback
+    public sealed partial class TimeZoneInfo : IEquatable<TimeZoneInfo>, ISerializable, IDeserializationCallback
     {
         private enum TimeZoneInfoResult
         {
@@ -764,7 +765,9 @@ namespace System
         /// Returns value equality. Equals does not compare any localizable
         /// String objects (DisplayName, StandardName, DaylightName).
         /// </summary>
+#pragma warning disable CS8614 // TODO-NULLABLE: Covariant interface arguments (https://github.com/dotnet/roslyn/issues/35817)
         public bool Equals(TimeZoneInfo? other) =>
+#pragma warning restore CS8614
             other != null &&
             string.Equals(_id, other._id, StringComparison.OrdinalIgnoreCase) &&
             HasSameRules(other);
@@ -1902,17 +1905,17 @@ namespace System
                 // uses reference equality with the Utc object.
                 if (!id.Equals(UtcId,  StringComparison.OrdinalIgnoreCase))
                 {
-                    cachedData._systemTimeZones.Add(id, match!); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    cachedData._systemTimeZones.Add(id, match!);
                 }
 
-                if (dstDisabled && match!._supportsDaylightSavingTime) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                if (dstDisabled && match!._supportsDaylightSavingTime)
                 {
                     // we found a cache hit but we want a time zone without DST and this one has DST data
                     value = CreateCustomTimeZone(match._id, match._baseUtcOffset, match._displayName, match._standardDisplayName);
                 }
                 else
                 {
-                    value = new TimeZoneInfo(match!._id, match._baseUtcOffset, match._displayName, match._standardDisplayName, // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    value = new TimeZoneInfo(match!._id, match._baseUtcOffset, match._displayName, match._standardDisplayName,
                                           match._daylightDisplayName, match._adjustmentRules, disableDaylightSavingTime: false);
                 }
             }
@@ -2017,7 +2020,7 @@ namespace System
         /// This method should not be called at all but is here in case something changes in the future
         /// or if really old time zones are present on the OS (no combination is known at the moment)
         /// </summary>
-        private static void NormalizeAdjustmentRuleOffset(TimeSpan baseUtcOffset, ref AdjustmentRule adjustmentRule)
+        private static void NormalizeAdjustmentRuleOffset(TimeSpan baseUtcOffset, [NotNull] ref AdjustmentRule adjustmentRule)
         {
             // Certain time zones such as:
             //       Time Zone  start date  end date    offset

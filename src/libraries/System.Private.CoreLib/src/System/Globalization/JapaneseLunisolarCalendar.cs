@@ -201,7 +201,7 @@ namespace System.Globalization
             // If we didn't copy any then something was wrong, just return base
             if (newIndex == 0) return baseEras;
 
-            Array.Resize(ref newEras!, newIndex); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            Array.Resize(ref newEras!, newIndex); // TODO-NULLABLE: Remove ! when nullable attributes are respected
             return newEras;
         }
 

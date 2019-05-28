@@ -260,7 +260,7 @@ namespace System
                 if (TryGetTimeZone(dynamicTimeZoneKeyName, dynamicTimeZoneInformation.DynamicDaylightTimeDisabled != 0, out TimeZoneInfo? zone, out _, cachedData) == TimeZoneInfoResult.Success)
                 {
                     // successfully loaded the time zone from the registry
-                    return zone!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    return zone!;
                 }
             }
 
@@ -274,7 +274,7 @@ namespace System
                 if (TryGetTimeZone(id, dstDisabled, out TimeZoneInfo? zone, out _, cachedData) == TimeZoneInfoResult.Success)
                 {
                     // successfully loaded the time zone from the registry
-                    return zone!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    return zone!;
                 }
             }
 
@@ -352,7 +352,7 @@ namespace System
 
             if (result == TimeZoneInfoResult.Success)
             {
-                return value!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                return value!;
             }
             else if (result == TimeZoneInfoResult.InvalidTimeZoneException)
             {
@@ -563,8 +563,8 @@ namespace System
                     // read LastEntry   {(yearN, 1, 1) - MaxValue       }
 
                     // read the FirstEntry and LastEntry key values (ex: "1980", "2038")
-                    int first = (int)dynamicKey.GetValue(FirstEntryValue, -1)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
-                    int last = (int)dynamicKey.GetValue(LastEntryValue, -1)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34976
+                    int first = (int)dynamicKey.GetValue(FirstEntryValue, -1)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    int last = (int)dynamicKey.GetValue(LastEntryValue, -1)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
 
                     if (first == -1 || last == -1 || first > last)
                     {

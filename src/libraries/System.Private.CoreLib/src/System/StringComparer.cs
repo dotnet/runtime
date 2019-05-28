@@ -161,7 +161,9 @@ namespace System
 
         public abstract int Compare(string? x, string? y);
         public abstract bool Equals(string? x, string? y);
-        public abstract int GetHashCode(string? obj); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
+#pragma warning disable CS8614 // Remove warning disable when nullable attributes are respected
+        public abstract int GetHashCode(string obj);
+#pragma warning restore CS8614
     }
 
     [Serializable]
@@ -214,7 +216,7 @@ namespace System
             return _compareInfo.Compare(x, y, _options) == 0;
         }
 
-        public override int GetHashCode(string? obj) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
+        public override int GetHashCode(string obj)
         {
             if (obj == null)
             {
@@ -291,7 +293,7 @@ namespace System
             return x.Equals(y);
         }
 
-        public override int GetHashCode(string? obj) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
+        public override int GetHashCode(string obj)
         {
             if (obj == null)
             {
@@ -300,10 +302,10 @@ namespace System
 
             if (_ignoreCase)
             {
-                return obj!.GetHashCodeOrdinalIgnoreCase(); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+                return obj!.GetHashCodeOrdinalIgnoreCase(); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             }
 
-            return obj!.GetHashCode(); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            return obj!.GetHashCode(); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }
 
         // Equals method for the comparer itself. 
@@ -334,13 +336,13 @@ namespace System
 
         public override bool Equals(string? x, string? y) => string.Equals(x, y);
 
-        public override int GetHashCode(string? obj) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
+        public override int GetHashCode(string obj)
         {
             if (obj == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
             }
-            return obj!.GetHashCode(); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            return obj!.GetHashCode(); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -379,13 +381,13 @@ namespace System
             return CompareInfo.EqualsOrdinalIgnoreCase(ref x.GetRawStringData(), ref y.GetRawStringData(), x.Length);
         }
 
-        public override int GetHashCode(string? obj) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
+        public override int GetHashCode(string obj)
         {
             if (obj == null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
             }
-            return obj!.GetHashCodeOrdinalIgnoreCase(); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            return obj!.GetHashCodeOrdinalIgnoreCase(); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)

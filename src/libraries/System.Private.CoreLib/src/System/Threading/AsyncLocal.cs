@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
@@ -56,12 +57,13 @@ namespace System.Threading
             m_valueChangedHandler = valueChangedHandler;
         }
 
+        [MaybeNull]
         public T Value
         {
             get
             {
                 object? obj = ExecutionContext.GetLocalValue(this);
-                return (obj == null) ? default! : (T)obj; // TODO-NULLABLE-GENERIC
+                return (obj == null) ? default! : (T)obj; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
             set
             {
@@ -72,8 +74,8 @@ namespace System.Threading
         void IAsyncLocal.OnValueChanged(object? previousValueObj, object? currentValueObj, bool contextChanged)
         {
             Debug.Assert(m_valueChangedHandler != null);
-            T previousValue = previousValueObj == null ? default! : (T)previousValueObj; // TODO-NULLABLE-GENERIC
-            T currentValue = currentValueObj == null ? default! : (T)currentValueObj; // TODO-NULLABLE-GENERIC
+            T previousValue = previousValueObj == null ? default! : (T)previousValueObj;
+            T currentValue = currentValueObj == null ? default! : (T)currentValueObj;
             m_valueChangedHandler(new AsyncLocalValueChangedArgs<T>(previousValue, currentValue, contextChanged));
         }
     }
@@ -88,8 +90,8 @@ namespace System.Threading
 
     public readonly struct AsyncLocalValueChangedArgs<T>
     {
-        public T PreviousValue { get; }
-        public T CurrentValue { get; }
+        [MaybeNull] public T PreviousValue { get; }
+        [MaybeNull] public T CurrentValue { get; }
 
         //
         // If the value changed because we changed to a different ExecutionContext, this is true.  If it changed
@@ -97,7 +99,7 @@ namespace System.Threading
         //
         public bool ThreadContextChanged { get; }
 
-        internal AsyncLocalValueChangedArgs(T previousValue, T currentValue, bool contextChanged)
+        internal AsyncLocalValueChangedArgs([AllowNull] T previousValue, [AllowNull] T currentValue, bool contextChanged)
         {
             PreviousValue = previousValue;
             CurrentValue = currentValue;

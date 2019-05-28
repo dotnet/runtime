@@ -152,7 +152,11 @@ namespace System.Threading.Tasks
         private CompletionState EnsureCompletionStateInitialized()
         {
             // ValueLock not needed, but it's ok if it's held
-            return LazyInitializer.EnsureInitialized<CompletionState>(ref m_completionState!, () => new CompletionState()); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+#pragma warning disable CS8634 // TODO-NULLABLE: Remove warning disable when nullable attributes are respected
+#pragma warning disable CS8603 // TODO-NULLABLE: Remove warning disable when nullable attributes are respected
+            return LazyInitializer.EnsureInitialized(ref m_completionState!, () => new CompletionState());
+#pragma warning restore CS8603
+#pragma warning restore CS8634
         }
 
         /// <summary>Gets whether completion has been requested.</summary>
@@ -297,7 +301,7 @@ namespace System.Threading.Tasks
                     {
                         try
                         {
-                            processingTask = new Task(thisPair => ((ConcurrentExclusiveSchedulerPair)thisPair!).ProcessExclusiveTasks(), this, // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                            processingTask = new Task(thisPair => ((ConcurrentExclusiveSchedulerPair)thisPair!).ProcessExclusiveTasks(), this,
                                 default, GetCreationOptionsForTask(fairly));
                             processingTask.Start(m_underlyingTaskScheduler);
                             // When we call Start, if the underlying scheduler throws in QueueTask, TPL will fault the task and rethrow
@@ -327,7 +331,7 @@ namespace System.Threading.Tasks
                             {
                                 try
                                 {
-                                    processingTask = new Task(thisPair => ((ConcurrentExclusiveSchedulerPair)thisPair!).ProcessConcurrentTasks(), this, // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                                    processingTask = new Task(thisPair => ((ConcurrentExclusiveSchedulerPair)thisPair!).ProcessConcurrentTasks(), this,
                                         default, GetCreationOptionsForTask(fairly));
                                     processingTask.Start(m_underlyingTaskScheduler); // See above logic for why we use new + Start rather than StartNew
                                 }

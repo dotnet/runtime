@@ -10,6 +10,7 @@
 using System.Threading;
 using System.Diagnostics;
 using Internal.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.CompilerServices
 {
@@ -107,14 +108,14 @@ namespace System.Runtime.CompilerServices
 
         // Wraps object variable into a handle. Used to return managed strings from QCalls.
         // s has to be a local variable on the stack.
-        internal static StringHandleOnStack GetStringHandleOnStack(ref string? s)
+        internal static StringHandleOnStack GetStringHandleOnStack([NotNull] ref string? s)
         {
             return new StringHandleOnStack((IntPtr)Unsafe.AsPointer(ref s));
         }
 
         // Wraps object variable into a handle. Used to pass managed object references in and out of QCalls.
         // o has to be a local variable on the stack.
-        internal static ObjectHandleOnStack GetObjectHandleOnStack<T>(ref T o) where T : class?
+        internal static ObjectHandleOnStack GetObjectHandleOnStack<T>([NotNull] ref T o) where T : class?
         {
             return new ObjectHandleOnStack((IntPtr)Unsafe.AsPointer(ref o));
         }

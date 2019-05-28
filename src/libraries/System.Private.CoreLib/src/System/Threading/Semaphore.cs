@@ -5,6 +5,7 @@
 using Microsoft.Win32;
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -52,7 +53,7 @@ namespace System.Threading
             }
         }
 
-        public static bool TryOpenExisting(string name, out Semaphore? result) => // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        public static bool TryOpenExisting(string name, [NotNullWhen(true)] out Semaphore? result) =>
             OpenExistingWorker(name, out result) == OpenExistingResult.Success;
 
         public int Release() => ReleaseCore(1);

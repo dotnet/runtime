@@ -4,6 +4,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -32,6 +33,7 @@ namespace System
         // Note: The CLR's Watson bucketization code looks at the caller of the FCALL method
         // to assign blame for crashes.  Don't mess with this, such as by making it call 
         // another managed helper method, unless you consult with some CLR Watson experts.
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void FailFast(string? message);
 
@@ -48,9 +50,11 @@ namespace System
         //    if the exception object is preallocated, the runtime will use the callsite's
         //    IP for bucketing. If the exception object is not preallocated, it will use the bucket
         //    details contained in the object (if any).
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void FailFast(string? message, Exception? exception);
 
+        [DoesNotReturn]
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern void FailFast(string? message, Exception? exception, string? errorMessage);
 

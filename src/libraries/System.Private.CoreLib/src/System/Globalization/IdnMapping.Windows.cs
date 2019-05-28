@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Globalization
@@ -114,6 +115,7 @@ namespace System.Globalization
             }
         }
 
+        [DoesNotReturn]
         private static void ThrowForZeroLength(bool unicode)
         {
             int lastError = Marshal.GetLastWin32Error();

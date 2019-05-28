@@ -9,7 +9,7 @@ namespace System
     public sealed partial class TimeZoneInfo
     {
         [Serializable]
-        public sealed class AdjustmentRule : IEquatable<AdjustmentRule?>, ISerializable, IDeserializationCallback
+        public sealed class AdjustmentRule : IEquatable<AdjustmentRule>, ISerializable, IDeserializationCallback
         {
             private static readonly TimeSpan DaylightDeltaAdjustment = TimeSpan.FromHours(24.0);
             private static readonly TimeSpan MaxDaylightDelta = TimeSpan.FromHours(12.0);
@@ -44,7 +44,9 @@ namespace System
                 (DaylightTransitionStart != default && DaylightTransitionStart.TimeOfDay != DateTime.MinValue) ||
                 (DaylightTransitionEnd != default && DaylightTransitionEnd.TimeOfDay != DateTime.MinValue.AddMilliseconds(1));
 
+#pragma warning disable CS8614 // TODO-NULLABLE: Covariant interface arguments (https://github.com/dotnet/roslyn/issues/35817)
             public bool Equals(AdjustmentRule? other) =>
+#pragma warning restore CS8614
                 other != null &&
                 _dateStart == other._dateStart &&
                 _dateEnd == other._dateEnd &&

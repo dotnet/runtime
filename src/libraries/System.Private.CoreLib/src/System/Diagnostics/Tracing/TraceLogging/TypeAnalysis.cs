@@ -59,7 +59,7 @@ namespace System.Diagnostics.Tracing
 
                 var propertyType = propertyInfo.PropertyType;
                 var propertyTypeInfo = TraceLoggingTypeInfo.GetInstance(propertyType, recursionCheck);
-                var fieldAttribute = Statics.GetCustomAttribute<EventFieldAttribute?>(propertyInfo);
+                var fieldAttribute = Statics.GetCustomAttribute<EventFieldAttribute>(propertyInfo);
 
                 string propertyName =
                     fieldAttribute != null && fieldAttribute.Name != null

@@ -28,9 +28,7 @@ namespace System.Collections.Generic
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             // We are doing this to stay compatible with .NET Framework.
-#pragma warning disable CS8631 // TODO-NULLABLE-GENERIC: https://github.com/dotnet/roslyn/issues/35406
             info.SetType(typeof(GenericEqualityComparer<string>));
-#pragma warning restore
         }
     }
 } 

@@ -706,7 +706,7 @@ namespace System.Reflection.Emit
                 get { return m_owner.IsSecurityTransparent; }
             }
 
-#pragma warning disable CS8608 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
+#pragma warning disable CS8608 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
             public override Type ReturnType
             {
                 get
@@ -721,7 +721,7 @@ namespace System.Reflection.Emit
                 get { return null; }
             }
 
-#pragma warning disable CS8608 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
+#pragma warning disable CS8608 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
             public override ICustomAttributeProvider ReturnTypeCustomAttributes
             {
                 get { return GetEmptyCAHolder(); }

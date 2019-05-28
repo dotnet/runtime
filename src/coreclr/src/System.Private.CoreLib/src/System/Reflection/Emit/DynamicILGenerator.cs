@@ -1038,7 +1038,7 @@ namespace System.Reflection.Emit
         public int GetTokenFor(RuntimeMethodHandle method)
         {
             IRuntimeMethodInfo methodReal = method.GetMethodInfo();
-            if (methodReal != null) // TODO-NULLABLE: never null
+            if (methodReal != null)
             {
                 RuntimeMethodHandleInternal rmhi = methodReal.Value;
                 if (!RuntimeMethodHandle.IsDynamicMethod(rmhi))

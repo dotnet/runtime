@@ -21,6 +21,7 @@ using System.Runtime.ConstrainedExecution;
 using System.Runtime.Versioning;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Threading
 {
@@ -52,6 +53,7 @@ namespace System.Threading
             Debug.Assert(lockTaken);
         }
 
+        [DoesNotReturn]
         private static void ThrowLockTakenException()
         {
             throw new ArgumentException(SR.Argument_MustBeFalse, "lockTaken");
