@@ -128,8 +128,8 @@ namespace System.Text.Json.Serialization
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property, AllowMultiple = false)]
     public sealed class JsonPropertyNameAttribute : System.Text.Json.Serialization.JsonAttribute
     {
-        public JsonPropertyNameAttribute(string propertyName) { }
-        public string Name { get; set; }
+        public JsonPropertyNameAttribute(string name) { }
+        public string Name { get; }
     }
 
     public abstract partial class JsonNamingPolicy
