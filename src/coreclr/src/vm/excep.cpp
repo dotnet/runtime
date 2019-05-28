@@ -243,7 +243,7 @@ ULONG GetExceptionMessage(OBJECTREF throwable,
 
 //-----------------------------------------------------------------------------
 // Given an object, get the "message" from it.  If the object is an Exception
-//  call Exception.InternalToString, otherwise, call Object.ToString
+//  call Exception.ToString, otherwise, call Object.ToString
 //-----------------------------------------------------------------------------
 void GetExceptionMessage(OBJECTREF throwable, SString &result)
 {
@@ -339,8 +339,8 @@ STRINGREF GetExceptionMessage(OBJECTREF throwable)
     if (throwable == NULL)
         return NULL;
 
-    // Assume we're calling Exception.InternalToString() ...
-    BinderMethodID sigID = METHOD__EXCEPTION__INTERNAL_TO_STRING;
+    // Assume we're calling Exception.ToString() ...
+    BinderMethodID sigID = METHOD__EXCEPTION__TO_STRING;
 
     // ... but if it isn't an exception, call Object.ToString().
     _ASSERTE(IsException(throwable->GetMethodTable()));        // what is the pathway here?

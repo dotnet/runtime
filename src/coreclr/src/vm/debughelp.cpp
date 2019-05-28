@@ -779,13 +779,13 @@ void PrintException(OBJECTREF pObjectRef)
     }
     else
     {
-        MethodDescCallSite internalToString(METHOD__EXCEPTION__INTERNAL_TO_STRING, &pObjectRef);
+        MethodDescCallSite toString(METHOD__EXCEPTION__TO_STRING, &pObjectRef);
 
         ARG_SLOT arg[1] = {
             ObjToArgSlot(pObjectRef)
         };
 
-        STRINGREF str = internalToString.Call_RetSTRINGREF(arg);
+        STRINGREF str = toString.Call_RetSTRINGREF(arg);
 
         if(str->GetBuffer() != NULL)
         {
