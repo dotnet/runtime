@@ -99,6 +99,10 @@
     <!-- We are only tracking Linux Distributions for Nuget RID mapping -->
     <DistroRid Condition="'$(TargetsLinux)' == 'true'">$(__DistroRid)</DistroRid>
 
+    <!-- Folder for cross target components -->
+    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm64'">x64</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm' and '$(TargetsWindows)' == 'true'">x86</CrossTargetComponentFolder>
+    <CrossTargetComponentFolder Condition="'$(BuildArch)' == 'arm' and '$(TargetsLinux)' == 'true'">x64</CrossTargetComponentFolder>
   </PropertyGroup>
 
 </Project>
