@@ -357,7 +357,6 @@ DEFINE_METHOD(EXCEPTION,            GET_CLASS_NAME,         GetClassName,       
 DEFINE_PROPERTY(EXCEPTION,          MESSAGE,                Message,                    Str)
 DEFINE_PROPERTY(EXCEPTION,          SOURCE,                 Source,                     Str)
 DEFINE_PROPERTY(EXCEPTION,          HELP_LINK,              HelpLink,                   Str)
-DEFINE_METHOD(EXCEPTION,            TO_STRING,              ToString,                   IM_RetStr)
 DEFINE_METHOD(EXCEPTION,            INTERNAL_PRESERVE_STACK_TRACE, InternalPreserveStackTrace, IM_RetVoid)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(EXCEPTION,            ADD_EXCEPTION_DATA_FOR_RESTRICTED_ERROR_INFO, AddExceptionDataForRestrictedErrorInfo, IM_Str_Str_Str_Obj_Bool_RetVoid)
