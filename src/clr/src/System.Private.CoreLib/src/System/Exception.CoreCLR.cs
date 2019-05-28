@@ -406,13 +406,6 @@ namespace System
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
         private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
 
-        // InternalToString is called by the runtime to get the exception text.
-        internal string InternalToString()
-        {
-            // Get the current stack trace string. 
-            return ToString(true, true);
-        }
-
         internal bool IsTransient
         {
             get
