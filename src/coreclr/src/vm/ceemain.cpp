@@ -459,7 +459,6 @@ void InitializeStartupFlags()
 #endif // CROSSGEN_COMPILE
 
 
-#ifdef FEATURE_PREJIT
 // BBSweepStartFunction is the first function to execute in the BBT sweeper thread.
 // It calls WatchForSweepEvent where we wait until a sweep occurs.
 DWORD __stdcall BBSweepStartFunction(LPVOID lpArgs)
@@ -495,7 +494,6 @@ DWORD __stdcall BBSweepStartFunction(LPVOID lpArgs)
 
     return 0;
 }
-#endif // FEATURE_PREJIT
 
 
 //-----------------------------------------------------------------------------
@@ -762,7 +760,7 @@ void EEStartupHelper(COINITIEE fFlags)
 
         // Cross-process named objects are not supported in PAL
         // (see CorUnix::InternalCreateEvent - src/pal/src/synchobj/event.cpp.272)
-#if defined(FEATURE_PREJIT) && !defined(FEATURE_PAL)
+#if !defined(FEATURE_PAL)
         // Initialize the sweeper thread.
         if (g_pConfig->GetZapBBInstr() != NULL)
         {
@@ -776,7 +774,7 @@ void EEStartupHelper(COINITIEE fFlags)
             _ASSERTE(hBBSweepThread);
             g_BBSweep.SetBBSweepThreadHandle(hBBSweepThread);
         }
-#endif // FEATURE_PREJIT && FEATURE_PAL
+#endif // FEATURE_PAL
 
 #ifdef FEATURE_INTERPRETER
         Interpreter::Initialize();
@@ -1519,10 +1517,8 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         PerfMap::Destroy();
 #endif
 
-#ifdef FEATURE_PREJIT
         {
             // If we're doing basic block profiling, we need to write the log files to disk.
-
             static BOOL fIBCLoggingDone = FALSE;
             if (!fIBCLoggingDone)
             {
@@ -1544,8 +1540,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
                 fIBCLoggingDone = TRUE;
             }
         }
-
-#endif // FEATURE_PREJIT
 
         ceeInf.JitProcessShutdownWork();  // Do anything JIT-related that needs to happen at shutdown.
 

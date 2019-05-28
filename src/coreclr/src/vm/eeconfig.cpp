@@ -954,7 +954,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     DoubleArrayToLargeObjectHeapThreshold = GetConfigDWORD_DontUse_(CLRConfig::UNSUPPORTED_DoubleArrayToLargeObjectHeap, DoubleArrayToLargeObjectHeapThreshold);
 #endif
 
-#ifdef FEATURE_PREJIT
     IfFailRet(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_ZapBBInstr, (LPWSTR*)&szZapBBInstr));
     if (szZapBBInstr)
     {
@@ -975,7 +974,6 @@ fTrackDynamicMethodDebugInfo = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_
     }
     else 
         g_IBCLogger.DisableAllInstr();
-#endif
 
 
     dwDisableStackwalkCache = GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_DisableStackwalkCache, dwDisableStackwalkCache);

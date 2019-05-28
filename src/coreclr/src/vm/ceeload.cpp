@@ -3319,7 +3319,7 @@ void Module::StartUnload()
         END_PIN_PROFILER();
     }
 #endif // PROFILING_SUPPORTED
-#ifdef FEATURE_PREJIT 
+
     if (g_IBCLogger.InstrEnabled())
     {
         Thread * pThread = GetThread();
@@ -3335,7 +3335,7 @@ void Module::StartUnload()
             /*hr=*/WriteMethodProfileDataLogFile(true);
         }
     }
-#endif // FEATURE_PREJIT
+
     SetBeingUnloaded();
 }
 #endif // CROSSGEN_COMPILE
