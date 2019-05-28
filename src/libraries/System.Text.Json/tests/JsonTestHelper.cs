@@ -260,6 +260,90 @@ namespace System.Text.Json
             return builder.ToString();
         }
 
+        private static JsonTokenType MapTokenType(JsonToken token)
+        {
+            switch (token)
+            {
+                case JsonToken.None:
+                    return JsonTokenType.None;
+                case JsonToken.StartObject:
+                    return JsonTokenType.StartObject;
+                case JsonToken.StartArray:
+                    return JsonTokenType.StartArray;
+                case JsonToken.PropertyName:
+                    return JsonTokenType.PropertyName;
+                case JsonToken.Comment:
+                    return JsonTokenType.Comment;
+                case JsonToken.Integer:
+                case JsonToken.Float:
+                    return JsonTokenType.Number;
+                case JsonToken.String:
+                    return JsonTokenType.String;
+                case JsonToken.Boolean:
+                    return JsonTokenType.True;
+                case JsonToken.Null:
+                    return JsonTokenType.Null;
+                case JsonToken.EndObject:
+                    return JsonTokenType.EndObject;
+                case JsonToken.EndArray:
+                    return JsonTokenType.EndArray;
+                case JsonToken.StartConstructor:
+                case JsonToken.EndConstructor:
+                case JsonToken.Date:
+                case JsonToken.Bytes:
+                case JsonToken.Undefined:
+                case JsonToken.Raw:
+                default:
+                    throw new InvalidOperationException();
+            }
+        }
+
+        public static string InsertCommentsEverywhere(string jsonString)
+        {
+            StringBuilder sb = new StringBuilder();
+            StringWriter sw = new StringWriter(sb);
+
+            using (JsonWriter writer = new JsonTextWriter(sw))
+            {
+                writer.Formatting = Formatting.Indented;
+
+                var newtonsoft = new JsonTextReader(new StringReader(jsonString));
+                writer.WriteComment("comment");
+                while (newtonsoft.Read())
+                {
+                    writer.WriteToken(newtonsoft, writeChildren: false);
+                    writer.WriteComment("comment");
+                }
+                writer.WriteComment("comment");
+            }
+            return sb.ToString();
+        }
+
+        public static List<JsonTokenType> GetTokenTypes(string jsonString)
+        {
+            var newtonsoft = new JsonTextReader(new StringReader(jsonString));
+            int totalReads = 0;
+            while (newtonsoft.Read())
+            {
+                totalReads++;
+            }
+
+            var expectedTokenTypes = new List<JsonTokenType>();
+
+            for (int i = 0; i < totalReads; i++)
+            {
+                newtonsoft = new JsonTextReader(new StringReader(jsonString));
+                for (int j = 0; j < i; j++)
+                {
+                    Assert.True(newtonsoft.Read());
+                }
+                newtonsoft.Skip();
+                expectedTokenTypes.Add(MapTokenType(newtonsoft.TokenType));
+            }
+
+            return expectedTokenTypes;
+        }
+
         public static byte[] ReaderLoop(int inpuDataLength, out int length, ref Utf8JsonReader json)
         {
             byte[] outputArray = new byte[inpuDataLength];
