@@ -155,7 +155,7 @@ namespace System
                 "   " + SR.Exception_EndOfInnerExceptionStack;
             }
 
-            string? stackTrace = GetStackTrace(needFileInfo: true);
+            string? stackTrace = StackTrace;
             if (stackTrace != null)
             {
                 s += Environment.NewLine + stackTrace;
