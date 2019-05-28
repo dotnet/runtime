@@ -637,7 +637,7 @@ namespace System.Text
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumOpCantHappen();
                     }
 
-                    return new ReadOnlyMemory<char>(_currentChunk!.m_ChunkChars, 0, _currentChunk.m_ChunkLength); // TODO-NULLABLE: https://github.com/dotnet/csharplang#538
+                    return new ReadOnlyMemory<char>(_currentChunk!.m_ChunkChars, 0, _currentChunk.m_ChunkLength); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                 }
             }
 
@@ -1335,7 +1335,7 @@ namespace System.Text
 
             if (values[0] != null)
             {
-                Append(values[0]!.ToString()); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                Append(values[0]!.ToString()); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
 
             for (int i = 1; i < values.Length; i++)
@@ -1343,7 +1343,7 @@ namespace System.Text
                 Append(separator, separatorLength);
                 if (values[i] != null)
                 {
-                    Append(values[i]!.ToString()); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                    Append(values[i]!.ToString()); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                 }
             }
             return this;
@@ -1905,9 +1905,9 @@ namespace System.Text
                     }
                     else if (replacementsCount >= replacements.Length)
                     {
-                        Array.Resize(ref replacements!, replacements.Length * 3 / 2 + 4); // Grow by ~1.5x, but more in the begining // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                        Array.Resize(ref replacements!, replacements.Length * 3 / 2 + 4); // Grow by ~1.5x, but more in the begining // TODO-NULLABLE: Remove ! when nullable attributes are respected
                     }
-                    replacements![replacementsCount++] = indexInChunk; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    replacements![replacementsCount++] = indexInChunk; // TODO-NULLABLE: Remove ! when nullable attributes are respected
                     indexInChunk += oldValue.Length;
                     count -= oldValue.Length;
                 }

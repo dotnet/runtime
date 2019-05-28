@@ -6,7 +6,6 @@
 // https://github.com/dotnet/buildtools/blob/6736870b84e06b75e7df32bb84d442db1b2afa10/src/Microsoft.DotNet.Build.Tasks/PackageFiles/encoding.targets
 //
 
-// TODO-NULLABLE: We should edit original source instead: https://github.com/dotnet/buildtools/blob/master/src/Microsoft.DotNet.Build.Tasks/GenerateEncodingTable.cs#L235
 namespace System.Text
 {
     internal static partial class EncodingTable

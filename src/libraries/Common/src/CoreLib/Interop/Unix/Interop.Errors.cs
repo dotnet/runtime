@@ -145,9 +145,7 @@ internal static partial class Interop
             return Interop.Sys.StrError(RawErrno);
         }
 
-#pragma warning disable CS8609 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         public override string ToString()
-#pragma warning restore CS8609
         {
             return $"RawErrno: {RawErrno} Error: {Error} GetErrorMessage: {GetErrorMessage()}"; // No localization required; text is member names used for debugging purposes
         }

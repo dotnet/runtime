@@ -191,7 +191,7 @@ namespace System
             //
             for (int i = 0; i < formats.Length; i++)
             {
-                if (formats[i] == null || formats[i]!.Length == 0) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                if (formats[i] == null || formats[i]!.Length == 0) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                 {
                     result.SetBadFormatSpecifierFailure();
                     return false;

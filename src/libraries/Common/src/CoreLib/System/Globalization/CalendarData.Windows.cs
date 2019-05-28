@@ -100,10 +100,10 @@ namespace System.Globalization
             //
 
             // Clean up the escaping of the formats
-            this.saShortDates = CultureData.ReescapeWin32Strings(this.saShortDates)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
-            this.saLongDates = CultureData.ReescapeWin32Strings(this.saLongDates)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
-            this.saYearMonths = CultureData.ReescapeWin32Strings(this.saYearMonths)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
-            this.sMonthDay = CultureData.ReescapeWin32String(this.sMonthDay)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            this.saShortDates = CultureData.ReescapeWin32Strings(this.saShortDates)!;
+            this.saLongDates = CultureData.ReescapeWin32Strings(this.saLongDates)!;
+            this.saYearMonths = CultureData.ReescapeWin32Strings(this.saYearMonths)!;
+            this.sMonthDay = CultureData.ReescapeWin32String(this.sMonthDay)!;
 
             return ret;
         }

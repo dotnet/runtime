@@ -83,9 +83,7 @@ namespace System.Text
             }
         }
 
-#pragma warning disable CS8609 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         public override string ToString()
-#pragma warning restore CS8609
         {
             var s = _chars.Slice(0, _pos).ToString();
             Dispose();

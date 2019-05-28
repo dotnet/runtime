@@ -118,7 +118,7 @@ namespace System.Runtime.Loader
         private void RaiseUnloadEvent()
         {
             // Ensure that we raise the Unload event only once
-            Interlocked.Exchange(ref _unloading, null!)?.Invoke(this); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            Interlocked.Exchange(ref _unloading, null!)?.Invoke(this);
         }
 
         private void InitiateUnload()
@@ -442,7 +442,7 @@ namespace System.Runtime.Loader
             }
         }
 
-        private static AsyncLocal<AssemblyLoadContext>? s_asyncLocalCurrent;
+        private static AsyncLocal<AssemblyLoadContext?>? s_asyncLocalCurrent;
 
         /// <summary>Nullable current AssemblyLoadContext used for context sensitive reflection APIs</summary>
         /// <remarks>
@@ -477,9 +477,9 @@ namespace System.Runtime.Loader
         {
             if (s_asyncLocalCurrent == null)
             {
-                Interlocked.CompareExchange<AsyncLocal<AssemblyLoadContext>?>(ref s_asyncLocalCurrent, new AsyncLocal<AssemblyLoadContext>(), null);
+                Interlocked.CompareExchange<AsyncLocal<AssemblyLoadContext?>?>(ref s_asyncLocalCurrent, new AsyncLocal<AssemblyLoadContext?>(), null);
             }
-            s_asyncLocalCurrent!.Value = value!; // TODO-NULLABLE-GENERIC
+            s_asyncLocalCurrent!.Value = value; // Remove ! when compiler specially-recognizes CompareExchange for nullability
         }
 
         /// <summary>Enter scope using this AssemblyLoadContext for ContextualReflection</summary>

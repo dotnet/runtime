@@ -4,6 +4,7 @@
 
 #nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -127,7 +128,7 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>Tries to dequeue an element from the queue.</summary>
-        public bool TryDequeue(out T item) // TODO-NULLABLE-GENERIC
+        public bool TryDequeue([MaybeNullWhen(false)] out T item)
         {
             Slot[] slots = _slots;
             
@@ -165,7 +166,7 @@ namespace System.Collections.Concurrent
                             // If we're preserving, though, we don't zero out the slot, as we need it for
                             // enumerations, peeking, ToArray, etc.  And we don't update the sequence number,
                             // so that an enqueuer will see it as full and be forced to move to a new segment.
-                            slots[slotsIndex].Item = default!; // TODO-NULLABLE-GENERIC
+                            slots[slotsIndex].Item = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
                             Volatile.Write(ref slots[slotsIndex].SequenceNumber, currentHead + slots.Length);
                         }
                         return true;
@@ -184,7 +185,7 @@ namespace System.Collections.Concurrent
                     int currentTail = Volatile.Read(ref _headAndTail.Tail);
                     if (currentTail - currentHead <= 0 || (frozen && (currentTail - FreezeOffset - currentHead <= 0)))
                     {
-                        item = default!; // TODO-NULLABLE-GENERIC
+                        item = default!;
                         return false;
                     }
 
@@ -199,7 +200,7 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>Tries to peek at an element from the queue, without removing it.</summary>
-        public bool TryPeek(out T result, bool resultUsed) // TODO-NULLABLE-GENERIC
+        public bool TryPeek([MaybeNullWhen(false)] out T result, bool resultUsed)
         {
             if (resultUsed)
             {
@@ -229,7 +230,7 @@ namespace System.Collections.Concurrent
                 int diff = sequenceNumber - (currentHead + 1);
                 if (diff == 0)
                 {
-                    result = resultUsed ? slots[slotsIndex].Item : default!; // TODO-NULLABLE-GENERIC
+                    result = resultUsed ? slots[slotsIndex].Item : default!;
                     return true;
                 }
                 else if (diff < 0)
@@ -245,7 +246,7 @@ namespace System.Collections.Concurrent
                     int currentTail = Volatile.Read(ref _headAndTail.Tail);
                     if (currentTail - currentHead <= 0 || (frozen && (currentTail - FreezeOffset - currentHead <= 0)))
                     {
-                        result = default!; // TODO-NULLABLE-GENERIC
+                        result = default!;
                         return false;
                     }
 
@@ -322,7 +323,7 @@ namespace System.Collections.Concurrent
         internal struct Slot
         {
             /// <summary>The item.</summary>
-            public T Item; // SOS's ThreadPool command depends on this being at the beginning of the struct when T is a reference type
+            [AllowNull, MaybeNull] public T Item; // SOS's ThreadPool command depends on this being at the beginning of the struct when T is a reference type
             /// <summary>The sequence number for this slot, used to synchronize between enqueuers and dequeuers.</summary>
             public int SequenceNumber;
         }

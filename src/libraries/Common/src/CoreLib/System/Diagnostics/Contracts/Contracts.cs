@@ -18,6 +18,7 @@
 #define DEBUG // The behavior of this contract library should be consistent regardless of build type.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace System.Diagnostics.Contracts
@@ -245,7 +246,7 @@ namespace System.Diagnostics.Contracts
         [Pure]
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
-        public static void Assume(bool condition)
+        public static void Assume([DoesNotReturnIf(false)] bool condition)
         {
             if (!condition)
             {
@@ -264,7 +265,7 @@ namespace System.Diagnostics.Contracts
         [Pure]
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
-        public static void Assume(bool condition, string? userMessage)
+        public static void Assume([DoesNotReturnIf(false)] bool condition, string? userMessage)
         {
             if (!condition)
             {
@@ -283,7 +284,7 @@ namespace System.Diagnostics.Contracts
         [Pure]
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
-        public static void Assert(bool condition)
+        public static void Assert([DoesNotReturnIf(false)] bool condition)
         {
             if (!condition)
                 ReportFailure(ContractFailureKind.Assert, null, null, null);
@@ -297,7 +298,7 @@ namespace System.Diagnostics.Contracts
         [Pure]
         [Conditional("DEBUG")]
         [Conditional("CONTRACTS_FULL")]
-        public static void Assert(bool condition, string? userMessage)
+        public static void Assert([DoesNotReturnIf(false)] bool condition, string? userMessage)
         {
             if (!condition)
                 ReportFailure(ContractFailureKind.Assert, userMessage, null, null);

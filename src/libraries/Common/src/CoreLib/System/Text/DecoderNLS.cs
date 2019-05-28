@@ -398,7 +398,6 @@ namespace System.Text
             // opportunity for any code before us to make forward progress, so we must fail immediately.
 
             _encoding.ThrowCharsOverflow(this, nothingDecoded: true);
-            // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
             throw null!; // will never reach this point
         }
 

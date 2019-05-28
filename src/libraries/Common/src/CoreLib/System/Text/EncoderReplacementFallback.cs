@@ -110,7 +110,6 @@ namespace System.Text
         // Construction
         public EncoderReplacementFallbackBuffer(EncoderReplacementFallback fallback)
         {
-            // TODO-NULLABLE: NullReferenceException
             // 2X in case we're a surrogate pair
             _strDefault = fallback.DefaultString + fallback.DefaultString;
         }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Threading;
 
@@ -14,11 +15,11 @@ namespace System.Text
         private static DecoderFallback? s_exceptionFallback;
 
         public static DecoderFallback ReplacementFallback =>
-            s_replacementFallback ?? Interlocked.CompareExchange(ref s_replacementFallback, new DecoderReplacementFallback(), null) ?? s_replacementFallback!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            s_replacementFallback ?? Interlocked.CompareExchange(ref s_replacementFallback, new DecoderReplacementFallback(), null) ?? s_replacementFallback!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
 
 
         public static DecoderFallback ExceptionFallback =>
-            s_exceptionFallback ?? Interlocked.CompareExchange<DecoderFallback?>(ref s_exceptionFallback, new DecoderExceptionFallback(), null) ?? s_exceptionFallback!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            s_exceptionFallback ?? Interlocked.CompareExchange<DecoderFallback?>(ref s_exceptionFallback, new DecoderExceptionFallback(), null) ?? s_exceptionFallback!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
 
         // Fallback
         //
@@ -296,6 +297,7 @@ namespace System.Text
         }
 
         // private helper methods
+        [DoesNotReturn]
         internal void ThrowLastBytesRecursive(byte[] bytesUnknown)
         {
             bytesUnknown = bytesUnknown ?? Array.Empty<byte>();
