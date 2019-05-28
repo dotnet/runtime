@@ -11,6 +11,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Linker.Tests.Cases", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Linker.Tests.Cases.Expectations", "test\Mono.Linker.Tests.Cases.Expectations\Mono.Linker.Tests.Cases.Expectations.csproj", "{2C26601F-3E2F-45B9-A02F-58EE9296E19E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil", "external\cecil\Mono.Cecil.csproj", "{5E89AB62-1526-41F7-AAA3-D9119C9451EA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil.Mdb", "external\cecil\symbols\mdb\Mono.Cecil.Mdb.csproj", "{76602591-ACB6-42DF-A6F6-8FE64B0E929F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil.Pdb", "external\cecil\symbols\pdb\Mono.Cecil.Pdb.csproj", "{EC2FE89A-5B34-425A-BBCC-F28E5BA3EE2A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +39,18 @@ Global
 		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2C26601F-3E2F-45B9-A02F-58EE9296E19E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E89AB62-1526-41F7-AAA3-D9119C9451EA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E89AB62-1526-41F7-AAA3-D9119C9451EA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E89AB62-1526-41F7-AAA3-D9119C9451EA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E89AB62-1526-41F7-AAA3-D9119C9451EA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{76602591-ACB6-42DF-A6F6-8FE64B0E929F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{76602591-ACB6-42DF-A6F6-8FE64B0E929F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{76602591-ACB6-42DF-A6F6-8FE64B0E929F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{76602591-ACB6-42DF-A6F6-8FE64B0E929F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC2FE89A-5B34-425A-BBCC-F28E5BA3EE2A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC2FE89A-5B34-425A-BBCC-F28E5BA3EE2A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC2FE89A-5B34-425A-BBCC-F28E5BA3EE2A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC2FE89A-5B34-425A-BBCC-F28E5BA3EE2A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
