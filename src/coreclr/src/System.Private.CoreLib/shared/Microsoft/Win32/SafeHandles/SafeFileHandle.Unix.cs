@@ -52,7 +52,7 @@ namespace Microsoft.Win32.SafeHandles
 
                 bool isDirectory = (error.Error == Interop.Error.ENOENT) &&
                     ((flags & Interop.Sys.OpenFlags.O_CREAT) != 0
-                    || !DirectoryExists(Path.GetDirectoryName(PathInternal.TrimEndingDirectorySeparator(path!))!));
+                    || !DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path!))!));
 
                 Interop.CheckIo(
                     error.Error,
