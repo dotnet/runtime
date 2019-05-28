@@ -293,7 +293,7 @@ namespace System
         {
             if (indices == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
-            if (Rank != indices!.Length) // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            if (Rank != indices!.Length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
             TypedReference elemref = new TypedReference();

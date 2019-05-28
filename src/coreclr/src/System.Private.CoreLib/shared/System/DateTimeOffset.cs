@@ -658,7 +658,7 @@ namespace System
         public static DateTimeOffset Parse(string input, IFormatProvider? formatProvider)
         {
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
-            return Parse(input!, formatProvider, DateTimeStyles.None); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            return Parse(input!, formatProvider, DateTimeStyles.None); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }
 
         public static DateTimeOffset Parse(string input, IFormatProvider? formatProvider, DateTimeStyles styles)
@@ -689,7 +689,7 @@ namespace System
         {
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             if (format == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
-            return ParseExact(input!, format!, formatProvider, DateTimeStyles.None); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            return ParseExact(input!, format!, formatProvider, DateTimeStyles.None); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }
 
         // Constructs a DateTimeOffset from a string. The string must specify a

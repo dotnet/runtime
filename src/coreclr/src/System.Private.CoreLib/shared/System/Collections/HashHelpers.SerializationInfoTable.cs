@@ -22,7 +22,7 @@ namespace System.Collections
                 if (s_serializationInfoTable == null)
                     Interlocked.CompareExchange(ref s_serializationInfoTable, new ConditionalWeakTable<object, SerializationInfo>(), null);
 
-                return s_serializationInfoTable!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34901
+                return s_serializationInfoTable!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
             }
         }
     }

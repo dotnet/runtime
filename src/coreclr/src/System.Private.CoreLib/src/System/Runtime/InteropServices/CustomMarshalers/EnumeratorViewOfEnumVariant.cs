@@ -21,7 +21,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
             _current = null;
         }
 
-        public object? Current => _current; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
+        public object? Current => _current;
 
         public unsafe bool MoveNext()
         {

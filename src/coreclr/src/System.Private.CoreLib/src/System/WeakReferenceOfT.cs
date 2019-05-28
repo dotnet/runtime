@@ -15,6 +15,7 @@ using System.Security;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -51,7 +52,7 @@ namespace System
                 throw new ArgumentNullException(nameof(info));
             }
 
-            T target = (T)info.GetValue("TrackedObject", typeof(T))!; // Do not rename (binary serialization) // TODO-NULLABLE-GENERIC
+            T target = (T)info.GetValue("TrackedObject", typeof(T))!; // Do not rename (binary serialization)
             bool trackResurrection = info.GetBoolean("TrackResurrection"); // Do not rename (binary serialization)
 
             Create(target, trackResurrection);
@@ -65,7 +66,7 @@ namespace System
         //          DoSomething(ref.Target)
         //
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetTarget(out T target)
+        public bool TryGetTarget([NotNullWhen(true)] out T target)
         {
             // Call the worker method that has more performant but less user friendly signature.
             T o = this.Target;

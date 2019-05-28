@@ -270,7 +270,7 @@ namespace System.Reflection.Emit
                 // if it is in a debug module
                 //
                 SymbolToken tk = new SymbolToken(MetadataTokenInternal);
-                ISymbolWriter symWriter = dynMod.GetSymWriter()!; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/2388
+                ISymbolWriter symWriter = dynMod.GetSymWriter()!;
 
                 // call OpenMethod to make this method the current method
                 symWriter.OpenMethod(tk);

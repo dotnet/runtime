@@ -59,7 +59,7 @@ namespace System.Diagnostics.Tracing
             if (_group != null)
             {
                 _group.Remove(this);
-                _group = null!; // TODO-NULLABLE: should not be nulled out
+                _group = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
             }
         }
 

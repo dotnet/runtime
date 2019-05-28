@@ -67,6 +67,7 @@ namespace System.Resources
 
         private void InitializeBinaryFormatter()
         {
+#pragma warning disable CS8634 // TODO-NULLABLE: Remove warning disable when nullable attributes are respected
             LazyInitializer.EnsureInitialized(ref s_binaryFormatterType, () =>
                 Type.GetType("System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
                 throwOnError: true));
@@ -81,6 +82,7 @@ namespace System.Resources
                         .MakeGenericMethod(s_binaryFormatterType)!
                         .Invoke(null, new object[] { binaryFormatterDeserialize })!;
             });
+#pragma warning restore CS8634
 
             _binaryFormatter = Activator.CreateInstance(s_binaryFormatterType!)!;
         }

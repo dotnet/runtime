@@ -164,7 +164,6 @@
 // opportunity to expose this format to EventListeners in the future.   
 // 
 using System;
-using System.Runtime.CompilerServices;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -1365,14 +1364,14 @@ namespace System.Diagnostics.Tracing
                 if (m_etwProvider != null)
                 {
                     m_etwProvider.Dispose();
-                    m_etwProvider = null!; // TODO-NULLABLE: should not be nulled out on Dispose
+                    m_etwProvider = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
                 }
 #endif
 #if FEATURE_PERFTRACING
                 if (m_eventPipeProvider != null)
                 {
                     m_eventPipeProvider.Dispose();
-                    m_eventPipeProvider = null!; // TODO-NULLABLE: should not be nulled out on Dispose
+                    m_eventPipeProvider = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
                 }
 #endif
             }
@@ -1735,7 +1734,7 @@ namespace System.Diagnostics.Tracing
             hash.Start();
             hash.Append(namespaceBytes);
             hash.Append(bytes);
-            Array.Resize(ref bytes!, 16); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            Array.Resize(ref bytes!, 16); // TODO-NULLABLE: Remove ! when nullable attributes are respected
             hash.Finish(bytes);
 
             bytes[7] = unchecked((byte)((bytes[7] & 0x0F) | 0x50));    // Set high 4 bits of octet 7 to 5, as per RFC 4122
@@ -3106,7 +3105,7 @@ namespace System.Diagnostics.Tracing
 
                         foreach (CustomAttributeNamedArgument namedArgument in data.NamedArguments)
                         {
-                            PropertyInfo p = t.GetProperty(namedArgument.MemberInfo.Name, BindingFlags.Public | BindingFlags.Instance)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                            PropertyInfo p = t.GetProperty(namedArgument.MemberInfo.Name, BindingFlags.Public | BindingFlags.Instance)!;
                             object value = namedArgument.TypedValue.Value!;
 
                             if (p.PropertyType.IsEnum)
@@ -3430,7 +3429,7 @@ namespace System.Diagnostics.Tracing
                             // overwrite inline message with the localized message
                             if (msg != null) eventAttribute.Message = msg;
 
-                            AddEventDescriptor(ref eventData!, eventName, eventAttribute, args, hasRelatedActivityID); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34874
+                            AddEventDescriptor(ref eventData!, eventName, eventAttribute, args, hasRelatedActivityID); // TODO-NULLABLE: Remove ! when nullable attributes are respected
                         }
                     }
                 }
@@ -3441,7 +3440,7 @@ namespace System.Diagnostics.Tracing
                 if (source != null)
                 {
                     Debug.Assert(eventData != null);
-                    TrimEventDescriptors(ref eventData!); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34874
+                    TrimEventDescriptors(ref eventData!); // TODO-NULLABLE: Pass non-null string? to string ref (https://github.com/dotnet/roslyn/issues/34874)
                     source.m_eventData = eventData;     // officially initialize it. We do this at most once (it is racy otherwise). 
 #if FEATURE_MANAGED_ETW_CHANNELS
                     source.m_channelData = manifest.GetChannelData();
@@ -3473,12 +3472,11 @@ namespace System.Diagnostics.Tracing
                 exception = e;
             }
 
-            // TODO-NULLABLE: possible bug: if error is thrown before manifest is assigned in non-strict mode, this will NRE
-            if ((flags & EventManifestOptions.Strict) != 0 && (manifest!.Errors.Count > 0 || exception != null))
+            if ((flags & EventManifestOptions.Strict) != 0 && (manifest?.Errors.Count > 0 || exception != null))
             {
                 string msg = string.Empty;
 
-                if (manifest.Errors.Count > 0)
+                if (manifest?.Errors.Count > 0)
                 {
                     bool firstError = true;
                     foreach (string error in manifest.Errors)
@@ -3554,13 +3552,15 @@ namespace System.Diagnostics.Tracing
         // Helper used by code:CreateManifestAndDescriptors to add a code:EventData descriptor for a method
         // with the code:EventAttribute 'eventAttribute'.  resourceManger may be null in which case we populate it
         // it is populated if we need to look up message resources
-        private static void AddEventDescriptor(ref EventMetadata[] eventData, string eventName,
-                                EventAttribute eventAttribute, ParameterInfo[] eventParameters,
-                                bool hasRelatedActivityID)
+        private static void AddEventDescriptor(
+            [NotNull] ref EventMetadata[] eventData,
+            string eventName,
+            EventAttribute eventAttribute,
+            ParameterInfo[] eventParameters,
+            bool hasRelatedActivityID)
         {
-            if (eventData == null || eventData.Length <= eventAttribute.EventId)
+            if (eventData.Length <= eventAttribute.EventId)
             {
-                Debug.Assert(eventData != null); // TODO-NULLABLE: possible bug in the code: NRE when eventData == null
                 EventMetadata[] newValues = new EventMetadata[Math.Max(eventData.Length + 16, eventAttribute.EventId + 1)];
                 Array.Copy(eventData, 0, newValues, 0, eventData.Length);
                 eventData = newValues;
@@ -4509,7 +4509,7 @@ namespace System.Diagnostics.Tracing
             {
                 if (s_EventSources == null)
                     Interlocked.CompareExchange(ref s_EventSources, new List<WeakReference>(2), null);
-                return s_EventSources!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34901
+                return s_EventSources!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
             }
         }
 
@@ -6045,7 +6045,7 @@ namespace System.Diagnostics.Tracing
             if (resources != null && eventMessage == null)
                 eventMessage = resources.GetString("event_" + eventName, CultureInfo.InvariantCulture);
 
-            Debug.Assert(info.Attribs != null); // TODO-NULLABLE: Bug - Attribs is documented that it can be null in which case this code will NRE
+            Debug.Assert(info.Attribs != null);
             if (info.Attribs.EventChannelType == EventChannelType.Admin && eventMessage == null)
                 ManifestError(SR.Format(SR.EventSource_EventWithAdminChannelMustHaveMessage, eventName, info.Name));
             return info.Name;
@@ -6187,7 +6187,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private static void UpdateStringBuilder(ref StringBuilder? stringBuilder, string eventMessage, int startIndex, int count) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761 nullable in, non-nullable out
+        private static void UpdateStringBuilder([NotNull] ref StringBuilder? stringBuilder, string eventMessage, int startIndex, int count)
         {
             if (stringBuilder == null)
                 stringBuilder = new StringBuilder();
@@ -6209,14 +6209,14 @@ namespace System.Diagnostics.Tracing
                     if (stringBuilder == null)
                         return eventMessage;
                     UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, i - writtenSoFar);
-                    return stringBuilder!.ToString(); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    return stringBuilder!.ToString(); // TODO-NULLABLE: Remove ! when nullable attributes are respected
                 }
 
                 if (eventMessage[i] == '%')
                 {
                     // handle format message escaping character '%' by escaping it
                     UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, i - writtenSoFar);
-                    stringBuilder!.Append("%%"); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    stringBuilder!.Append("%%"); // TODO-NULLABLE: Remove ! when nullable attributes are respected
                     i++;
                     writtenSoFar = i;
                 }
@@ -6225,7 +6225,7 @@ namespace System.Diagnostics.Tracing
                 {
                     // handle C# escaped '{" and '}'
                     UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, i - writtenSoFar);
-                    stringBuilder!.Append(eventMessage[i]); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    stringBuilder!.Append(eventMessage[i]); // TODO-NULLABLE: Remove ! when nullable attributes are respected
                     i++; i++;
                     writtenSoFar = i;
                 }
@@ -6244,7 +6244,7 @@ namespace System.Diagnostics.Tracing
                         i++;
                         UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, leftBracket - writtenSoFar);
                         int manIndex = TranslateIndexToManifestConvention(argNum, evtName);
-                        stringBuilder!.Append('%').Append(manIndex); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                        stringBuilder!.Append('%').Append(manIndex); // TODO-NULLABLE: Remove ! when nullable attributes are respected
                         // An '!' after the insert specifier {n} will be interpreted as a literal.
                         // We'll escape it so that mc.exe does not attempt to consider it the 
                         // beginning of a format string.
@@ -6264,7 +6264,7 @@ namespace System.Diagnostics.Tracing
                 {
                     UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, i - writtenSoFar);
                     i++;
-                    stringBuilder!.Append(s_escapes[chIdx]); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    stringBuilder!.Append(s_escapes[chIdx]); // TODO-NULLABLE: Remove ! when nullable attributes are respected
                     writtenSoFar = i;
                 }
                 else

@@ -4,6 +4,7 @@
 
 #nullable enable
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -46,7 +47,8 @@ namespace System.IO
         // returns null. If path does not contain a file extension,
         // the new file extension is appended to the path. If extension
         // is null, any existing extension is removed from path.
-        public static string? ChangeExtension(string? path, string? extension) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("path")]
+        public static string? ChangeExtension(string? path, string? extension)
         {
             if (path == null)
                 return null;
@@ -99,7 +101,7 @@ namespace System.IO
         /// <remarks>
         /// Directory separators are normalized in the returned string.
         /// </remarks>
-        public static string? GetDirectoryName(string? path) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        public static string? GetDirectoryName(string? path)
         {
             if (path == null || PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 return null;
@@ -147,7 +149,8 @@ namespace System.IO
         /// The returned value is null if the given path is null or empty if the given path does not include an
         /// extension.
         /// </summary>
-        public static string? GetExtension(string? path) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("path")]
+        public static string? GetExtension(string? path)
         {
             if (path == null)
                 return null;
@@ -186,6 +189,7 @@ namespace System.IO
         /// the characters of path that follow the last separator in path. The resulting string is
         /// null if path is null.
         /// </summary>
+        [return: NotNullIfNotNull("path")]
         public static string? GetFileName(string? path)
         {
             if (path == null)
@@ -217,7 +221,8 @@ namespace System.IO
             return path;
         }
 
-        public static string? GetFileNameWithoutExtension(string? path) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("path")]
+        public static string? GetFileNameWithoutExtension(string? path)
         {
             if (path == null)
                 return null;

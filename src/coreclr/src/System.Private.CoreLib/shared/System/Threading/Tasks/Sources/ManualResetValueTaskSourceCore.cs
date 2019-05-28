@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
@@ -31,7 +32,7 @@ namespace System.Threading.Tasks.Sources
         /// <summary>Whether the current operation has completed.</summary>
         private bool _completed;
         /// <summary>The result with which the operation succeeded, or the default value if it hasn't yet completed or failed.</summary>
-        private TResult _result;
+        [AllowNull, MaybeNull] private TResult _result;
         /// <summary>The exception with which the operation failed, or null if it hasn't yet completed or completed successfully.</summary>
         private ExceptionDispatchInfo? _error;
         /// <summary>The current version of this value, used to help prevent misuse.</summary>
@@ -47,7 +48,7 @@ namespace System.Threading.Tasks.Sources
             // Reset/update state for the next use/await of this instance.
             _version++;
             _completed = false;
-            _result = default!; // TODO-NULLABLE-GENERIC
+            _result = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             _error = null;
             _executionContext = null;
             _capturedContext = null;
@@ -106,7 +107,7 @@ namespace System.Threading.Tasks.Sources
         /// <param name="state">The state object to pass to <paramref name="continuation"/> when it's invoked.</param>
         /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
         /// <param name="flags">The flags describing the behavior of the continuation.</param>
-        public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
         {
             if (continuation == null)
             {
@@ -175,7 +176,7 @@ namespace System.Threading.Tasks.Sources
                     case SynchronizationContext sc:
                         sc.Post(s =>
                         {
-                            var tuple = (Tuple<Action<object?>, object?>)s!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                            var tuple = (Tuple<Action<object?>, object?>)s!;
                             tuple.Item1(tuple.Item2);
                         }, Tuple.Create(continuation, state));
                         break;
@@ -254,7 +255,7 @@ namespace System.Threading.Tasks.Sources
                 case SynchronizationContext sc:
                     sc.Post(s =>
                     {
-                        var state = (Tuple<Action<object?>, object?>)s!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                        var state = (Tuple<Action<object?>, object?>)s!;
                         state.Item1(state.Item2);
                     }, Tuple.Create(_continuation, _continuationState));
                     break;

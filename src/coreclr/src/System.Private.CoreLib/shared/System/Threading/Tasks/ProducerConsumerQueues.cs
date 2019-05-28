@@ -25,6 +25,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace System.Threading.Tasks
@@ -42,7 +43,7 @@ namespace System.Threading.Tasks
         /// <param name="result">The dequeued item.</param>
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
         /// <remarks>This method is meant to be thread-safe subject to the particular nature of the implementation.</remarks>
-        bool TryDequeue(out T result);
+        bool TryDequeue([MaybeNullWhen(false)] out T result);
 
         /// <summary>Gets whether the collection is currently empty.</summary>
         /// <remarks>This method may or may not be thread-safe.</remarks>
@@ -67,7 +68,7 @@ namespace System.Threading.Tasks
         /// <summary>Attempts to dequeue an item from the queue.</summary>
         /// <param name="result">The dequeued item.</param>
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
-        bool IProducerConsumerQueue<T>.TryDequeue(out T result) { return base.TryDequeue(out result); }
+        bool IProducerConsumerQueue<T>.TryDequeue([MaybeNullWhen(false)] out T result) { return base.TryDequeue(out result); }
 
         /// <summary>Gets whether the collection is currently empty.</summary>
         bool IProducerConsumerQueue<T>.IsEmpty { get { return base.IsEmpty; } }
@@ -194,7 +195,7 @@ namespace System.Threading.Tasks
         /// <summary>Attempts to dequeue an item from the queue.</summary>
         /// <param name="result">The dequeued item.</param>
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
-        public bool TryDequeue(out T result)
+        public bool TryDequeue([MaybeNullWhen(false)] out T result)
         {
             Segment segment = m_head;
             var array = segment.m_array;
@@ -204,7 +205,7 @@ namespace System.Threading.Tasks
             if (first != segment.m_state.m_lastCopy)
             {
                 result = array[first];
-                array[first] = default!; // Clear the slot to release the element  // TODO-NULLABLE-GENERIC
+                array[first] = default!; // Clear the slot to release the element
                 segment.m_state.m_first = (first + 1) & (array.Length - 1);
                 return true;
             }
@@ -217,7 +218,7 @@ namespace System.Threading.Tasks
         /// <param name="segment">The segment from which the item was dequeued.</param>
         /// <param name="result">The dequeued item.</param>
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
-        private bool TryDequeueSlow(ref Segment segment, ref T[] array, out T result)
+        private bool TryDequeueSlow(ref Segment segment, ref T[] array, [MaybeNullWhen(false)] out T result)
         {
             Debug.Assert(segment != null, "Expected a non-null segment.");
             Debug.Assert(array != null, "Expected a non-null item array.");
@@ -239,12 +240,12 @@ namespace System.Threading.Tasks
 
             if (first == segment.m_state.m_last)
             {
-                result = default!; // TODO-NULLABLE-GENERIC
+                result = default!;
                 return false;
             }
 
             result = array[first];
-            array[first] = default!; // Clear the slot to release the element  // TODO-NULLABLE-GENERIC
+            array[first] = default!; // Clear the slot to release the element
             segment.m_state.m_first = (first + 1) & (segment.m_array.Length - 1);
             segment.m_state.m_lastCopy = segment.m_state.m_last; // Refresh m_lastCopy to ensure that m_first has not passed m_lastCopy
 

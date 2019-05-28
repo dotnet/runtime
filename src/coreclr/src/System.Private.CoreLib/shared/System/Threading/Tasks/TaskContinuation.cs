@@ -492,7 +492,7 @@ namespace System.Threading.Tasks
                 {
                     try
                     {
-                        ((Action)state!)(); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                        ((Action)state!)();
                     }
                     catch (Exception exception)
                     {
