@@ -284,8 +284,8 @@
     <Compile Include="$(BclSourcesRoot)\System\TypeLoadException.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TypeNameParser.cs" />
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\WeakReference.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\WeakReferenceOfT.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\WeakReference.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.CoreCLR.cs" />
     <Compile Include="shared\Interop\Windows\Kernel32\Interop.HandleTypes.cs" />
     <Compile Include="shared\Interop\Windows\Kernel32\Interop.GetStdHandle.cs" />
     <Compile Include="shared\Interop\Windows\Kernel32\Interop.LocalAlloc.cs" />

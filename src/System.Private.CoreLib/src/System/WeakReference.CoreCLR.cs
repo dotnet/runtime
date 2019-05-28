@@ -2,25 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-/*============================================================
-**
-**
-** Purpose: A wrapper for establishing a WeakReference to an Object.
-**
-===========================================================*/
-
-using System;
 using System.Runtime.Serialization;
-using System.Security;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using System.Diagnostics;
 
 namespace System
 {
-    [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
-    public class WeakReference : ISerializable
+    public partial class WeakReference : ISerializable
     {
         // If you fix bugs here, please fix them in WeakReference<T> at the same time.
 
@@ -32,34 +20,6 @@ namespace System
         {
             Debug.Fail("WeakReference's protected default ctor should never be used!");
             throw new NotImplementedException();
-        }
-
-        // Creates a new WeakReference that keeps track of target.
-        // Assumes a Short Weak Reference (ie TrackResurrection is false.)
-        //
-        public WeakReference(object? target)
-            : this(target, false)
-        {
-        }
-
-        //Creates a new WeakReference that keeps track of target.
-        //
-        public WeakReference(object? target, bool trackResurrection)
-        {
-            Create(target, trackResurrection);
-        }
-
-        protected WeakReference(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-
-            object? target = info.GetValue("TrackedObject", typeof(object)); // Do not rename (binary serialization)
-            bool trackResurrection = info.GetBoolean("TrackResurrection"); // Do not rename (binary serialization)
-
-            Create(target, trackResurrection);
         }
 
         //Determines whether or not this instance of WeakReference still refers to an object
@@ -99,16 +59,6 @@ namespace System
         // Additionally, there may be some cases during shutdown when we run this finalizer.
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         extern ~WeakReference();
-
-        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
-            info.AddValue("TrackedObject", Target, typeof(object)); // Do not rename (binary serialization)
-            info.AddValue("TrackResurrection", IsTrackResurrection()); // Do not rename (binary serialization)
-        }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern void Create(object? target, bool trackResurrection);
