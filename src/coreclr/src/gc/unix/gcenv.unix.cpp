@@ -289,7 +289,7 @@ bool GCToOSInterface::Initialize()
     g_currentProcessCpuCount = 0;
 
     cpu_set_t cpuSet;
-    int st = sched_getaffinity(0, sizeof(cpu_set_t), &cpuSet);
+    int st = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuSet);
 
     if (st == 0)
     {
