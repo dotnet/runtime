@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup Condition=" $(Configuration.StartsWith('illink')) ">
     <TargetFramework>netcoreapp3.0</TargetFramework>
@@ -155,6 +155,10 @@
     <Compile Include="BCLFeatures\ETW\BaseRemovedEventSourceEmptyBody.cs" />
     <Compile Include="BCLFeatures\ETW\LocalsOfModifiedMethodAreRemoved.cs" />
     <Compile Include="BCLFeatures\ETW\StubbedMethodWithExceptionHandlers.cs" />
+    <Compile Include="CommandLine\Mvid\DefaultMvidBehavior.cs" />
+    <Compile Include="CommandLine\Mvid\DeterministicMvidWorks.cs" />
+    <Compile Include="CommandLine\Mvid\NewMvidWorks.cs" />
+    <Compile Include="CommandLine\Mvid\RetainMvid.cs" />
     <Compile Include="CommandLine\ResponseFilesWork.cs" />
     <Compile Include="CoreLink\CanIncludeI18nAssemblies.cs" />
     <Compile Include="CoreLink\DelegateAndMulticastDelegateKeepInstantiatedReqs.cs" />
