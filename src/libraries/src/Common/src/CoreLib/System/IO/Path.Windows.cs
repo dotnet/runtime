@@ -248,29 +248,24 @@ namespace System.IO
             if (root.Length == 0)
                 return root;
 
-            int offset = GetUncRootLength(path);
-            if (offset >= 0)
+            // Cut from "\\?\UNC\Server\Share" to "Server\Share"
+            // Cut from  "\\Server\Share" to "Server\Share"
+            int startOffset = GetUncRootLength(path);
+            if (startOffset == -1)
             {
-                // Cut from "\\?\UNC\Server\Share" to "Server\Share"
-                // Cut from  "\\Server\Share" to "Server\Share"
-                return TrimEndingDirectorySeparator(root.Slice(offset));
-            }
-            else if (PathInternal.IsDevice(path))
-            {
-                return TrimEndingDirectorySeparator(root.Slice(4)); // Cut from "\\?\C:\" to "C:"
+                if (PathInternal.IsDevice(path))
+                {
+                    startOffset = 4; // Cut from "\\?\C:\" to "C:"
+                }
+                else
+                {
+                    startOffset = 0; // e.g. "C:"
+                }
             }
 
-            return TrimEndingDirectorySeparator(root); // e.g. "C:"
+            ReadOnlySpan<char> pathToTrim = root.Slice(startOffset);
+            return Path.EndsInDirectorySeparator(pathToTrim) ? pathToTrim.Slice(0, pathToTrim.Length - 1) : pathToTrim;
         }
-
-        /// <summary>
-        /// Trims the ending directory separator if present.
-        /// </summary>
-        /// <param name="path"></param>
-        internal static ReadOnlySpan<char> TrimEndingDirectorySeparator(ReadOnlySpan<char> path) =>
-            PathInternal.EndsInDirectorySeparator(path) ?
-                path.Slice(0, path.Length - 1) :
-                path;
 
         /// <summary>
         /// Returns offset as -1 if the path is not in Unc format, otherwise returns the root length.
