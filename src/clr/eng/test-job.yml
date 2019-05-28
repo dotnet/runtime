@@ -107,19 +107,23 @@ jobs:
         displayName: Install native dependencies
 
 
-    # Download product build from pipeline artifact storage
-    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - task: DownloadPipelineArtifact@0
-        displayName: Download product build pipeline artifact
-        inputs:
-          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-          targetPath: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
-    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - task: DownloadPipelineArtifact@0
-        displayName: Download product build pipeline artifact
-        inputs:
-          artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
-          targetPath: $(Build.SourcesDirectory)\bin\Product\Windows_NT.$(archType).$(buildConfigUpper)
+    # Download product build
+    - task: DownloadBuildArtifacts@0
+      displayName: Download product build
+      inputs:
+        buildType: current
+        downloadType: single
+        artifactName: ${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        downloadPath: $(System.ArtifactsDirectory)
+
+
+    # Populate Product directory
+    - task: CopyFiles@2
+      displayName: Populate Product directory
+      inputs:
+        sourceFolder: $(System.ArtifactsDirectory)/${{ format('{0}_{1}_{2}_build', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+        contents: '**'
+        targetFolder: $(Build.SourcesDirectory)/bin/Product/$(osGroup).$(archType).$(buildConfigUpper)
 
 
     # Build tests
@@ -296,13 +300,13 @@ jobs:
 
 
     # Publish Logs
-    - task: PublishPipelineArtifact@0
+    - task: PublishBuildArtifacts@1
       displayName: Publish Logs
       inputs:
+        pathtoPublish: $(Build.SourcesDirectory)/bin/Logs
         ${{ if eq(parameters.readyToRun, false) }}:
           artifactName: ${{ format('testbuild_{0}_{1}_{2}_{3}_Logs', parameters.osIdentifier, parameters.archType, parameters.buildConfig, parameters.testGroup) }}
         ${{ if  eq(parameters.readyToRun, true) }}:
           artifactName: ${{ format('testbuild_{0}_{1}_{2}_{3}_r2r_Logs', parameters.osIdentifier, parameters.archType, parameters.buildConfig, parameters.testGroup) }}
-        targetPath: $(Build.SourcesDirectory)/bin/Logs
       continueOnError: true
       condition: always()
