@@ -175,54 +175,13 @@ namespace System.IO.Pipes
             }
         }
 
-        private async Task<int> ReadAsyncCore(Memory<byte> destination, CancellationToken cancellationToken)
+        private async ValueTask<int> ReadAsyncCore(Memory<byte> destination, CancellationToken cancellationToken)
         {
             Debug.Assert(this is NamedPipeClientStream || this is NamedPipeServerStream, $"Expected a named pipe, got a {GetType()}");
 
-            Socket socket = InternalHandle.NamedPipeSocket;
-
             try
             {
-                // TODO #22608:
-                // Remove all of this cancellation workaround once Socket.ReceiveAsync
-                // that accepts a CancellationToken is available.
-
-                // If a cancelable token is used and there's no data, issue a zero-length read so that
-                // we're asynchronously notified when data is available, and concurrently monitor the
-                // supplied cancellation token.  If cancellation is requested, we will end up "leaking"
-                // the zero-length read until data becomes available, at which point it'll be satisfied.
-                // But it's very rare to reuse a stream after an operation has been canceled, so even if
-                // we do incur such a situation, it's likely to be very short lived.
-                if (cancellationToken.CanBeCanceled)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    if (socket.Available == 0)
-                    {
-                        Task<int> t = socket.ReceiveAsync(Array.Empty<byte>(), SocketFlags.None);
-                        if (!t.IsCompletedSuccessfully)
-                        {
-                            var cancelTcs = new TaskCompletionSource<bool>();
-                            using (cancellationToken.UnsafeRegister(s => ((TaskCompletionSource<bool>)s).TrySetResult(true), cancelTcs))
-                            {
-                                if (t == await Task.WhenAny(t, cancelTcs.Task).ConfigureAwait(false))
-                                {
-                                    t.GetAwaiter().GetResult(); // propagate any failure
-                                }
-                                cancellationToken.ThrowIfCancellationRequested();
-
-                                // At this point there was data available.  In the rare case where multiple concurrent
-                                // ReadAsyncs are issued against the PipeStream, worst case is the reads that lose
-                                // the race condition for the data will end up in a non-cancelable state as part of
-                                // the actual async receive operation.
-                            }
-                        }
-                    }
-                }
-
-                // Issue the asynchronous read.
-                return await (MemoryMarshal.TryGetArray(destination, out ArraySegment<byte> buffer) ?
-                    socket.ReceiveAsync(buffer, SocketFlags.None) :
-                    socket.ReceiveAsync(destination.ToArray(), SocketFlags.None)).ConfigureAwait(false);
+                return await InternalHandle.NamedPipeSocket.ReceiveAsync(destination, SocketFlags.None, cancellationToken).ConfigureAwait(false);
             }
             catch (SocketException e)
             {
@@ -233,38 +192,14 @@ namespace System.IO.Pipes
         private async Task WriteAsyncCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(this is NamedPipeClientStream || this is NamedPipeServerStream, $"Expected a named pipe, got a {GetType()}");
+
             try
             {
-                // TODO #22608: Remove this terribly inefficient special-case once Socket.SendAsync
-                // accepts a Memory<T> in the near future.
-                byte[] buffer;
-                int offset, count;
-                if (MemoryMarshal.TryGetArray(source, out ArraySegment<byte> segment))
+                while (source.Length > 0)
                 {
-                    buffer = segment.Array;
-                    offset = segment.Offset;
-                    count = segment.Count;
-                }
-                else
-                {
-                    buffer = source.ToArray();
-                    offset = 0;
-                    count = buffer.Length;
-                }
-
-                while (count > 0)
-                {
-                    // cancellationToken is (mostly) ignored.  We could institute a polling loop like we do for reads if 
-                    // cancellationToken.CanBeCanceled, but that adds costs regardless of whether the operation will be canceled, and 
-                    // most writes will complete immediately as they simply store data into the socket's buffer.  The only time we end 
-                    // up using it in a meaningful way is if a write completes partially, we'll check it on each individual write operation.
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    int bytesWritten = await _handle.NamedPipeSocket.SendAsync(new ArraySegment<byte>(buffer, offset, count), SocketFlags.None).ConfigureAwait(false);
-                    Debug.Assert(bytesWritten <= count);
-
-                    count -= bytesWritten;
-                    offset += bytesWritten;
+                    int bytesWritten = await _handle.NamedPipeSocket.SendAsync(source, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+                    Debug.Assert(bytesWritten > 0 && bytesWritten <= source.Length);
+                    source = source.Slice(bytesWritten);
                 }
             }
             catch (SocketException e)
