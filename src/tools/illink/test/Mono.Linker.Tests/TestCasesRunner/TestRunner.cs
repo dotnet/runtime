@@ -31,6 +31,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			}
 		}
 
+		public virtual LinkedTestCaseResult Relink (LinkedTestCaseResult result)
+		{
+			PrepForLink (result.Sandbox, result.CompilationResult);
+			return Link (result.TestCase, result.Sandbox, result.CompilationResult, result.MetadataProvider);
+		}
+
 		private TestCaseSandbox Sandbox (TestCase testCase, TestCaseMetadaProvider metadataProvider)
 		{
 			var sandbox = _factory.CreateSandbox (testCase);
@@ -92,7 +98,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			linker.Link (builder.ToArgs ());
 
-			return new LinkedTestCaseResult (testCase, compilationResult.InputAssemblyPath, sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileName), compilationResult.ExpectationsAssemblyPath);
+			return new LinkedTestCaseResult (testCase, compilationResult.InputAssemblyPath, sandbox.OutputDirectory.Combine (compilationResult.InputAssemblyPath.FileName), compilationResult.ExpectationsAssemblyPath, sandbox, metadataProvider, compilationResult);
 		}
 
 		protected virtual void AddLinkOptions (TestCaseSandbox sandbox, ManagedCompilationResult compilationResult, LinkerArgumentBuilder builder, TestCaseMetadaProvider metadataProvider)

@@ -1,8 +1,11 @@
 ﻿using System;
 using System.IO;
 using System.Xml;
+using Mono.Cecil;
+using Mono.Linker.Tests.Cases.CommandLine.Mvid;
 using Mono.Linker.Tests.Cases.References.Individual;
 using Mono.Linker.Tests.Cases.Tracing.Individual;
+using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
 using Mono.Linker.Tests.TestCasesRunner;
 using NUnit.Framework;
@@ -77,6 +80,87 @@ namespace Mono.Linker.Tests.TestCases
 			// Reduced tracing on System.Private.CoreLib.dll produces about 130 lines just for NullableAttribute usages.
 			const int expectedMaxLines = 200;
 			Assert.That (lineCount, Is.LessThan (expectedMaxLines), $"There were `{lineCount}` lines in the dump file.  This is more than expected max of {expectedMaxLines} and likely indicates reduced tracing was not enabled.  Dump file can be found at: {outputPath}");
+		}
+
+		[Test]
+		public void DeterministicMvidWorks()
+		{
+			var testCase = CreateIndividualCase (typeof (DeterministicMvidWorks));
+			var runner = new TestRunner (new ObjectFactory ());
+			var result = runner.Run (testCase);
+
+			var originalMvid = GetMvid (result.InputAssemblyPath);
+			var firstOutputMvid = GetMvid (result.OutputAssemblyPath);
+			Assert.That (firstOutputMvid, Is.Not.EqualTo (originalMvid));
+			
+			var result2 = runner.Relink(result);
+			
+			var secondOutputMvid = GetMvid(result2.OutputAssemblyPath);
+			Assert.That (secondOutputMvid, Is.Not.EqualTo (originalMvid));
+			// The id should match the first output since we relinked the same assembly
+			Assert.That (secondOutputMvid, Is.EqualTo (firstOutputMvid));
+		}
+
+		[Test]
+		public void NewMvidWorks ()
+		{
+			var testCase = CreateIndividualCase (typeof (NewMvidWorks));
+			var runner = new TestRunner (new ObjectFactory ());
+			var result = runner.Run (testCase);
+
+			var originalMvid = GetMvid (result.InputAssemblyPath);
+			var firstOutputMvid = GetMvid (result.OutputAssemblyPath);
+			Assert.That (firstOutputMvid, Is.Not.EqualTo (originalMvid));
+			
+			var result2 = runner.Relink (result);
+			
+			var secondOutputMvid = GetMvid (result2.OutputAssemblyPath);
+			Assert.That (secondOutputMvid, Is.Not.EqualTo (originalMvid));
+			Assert.That (secondOutputMvid, Is.Not.EqualTo (firstOutputMvid));
+		}
+
+		[Test]
+		public void RetainMvidWorks ()
+		{
+			var testCase = CreateIndividualCase (typeof (RetainMvid));
+			var runner = new TestRunner (new ObjectFactory ());
+			var result = runner.Run (testCase);
+
+			var originalMvid = GetMvid (result.InputAssemblyPath);
+			var firstOutputMvid = GetMvid (result.OutputAssemblyPath);
+			Assert.That (firstOutputMvid, Is.EqualTo (originalMvid));
+			
+			var result2 = runner.Relink (result);
+			
+			var secondOutputMvid = GetMvid (result2.OutputAssemblyPath);
+			Assert.That (secondOutputMvid, Is.EqualTo (originalMvid));
+			Assert.That (secondOutputMvid, Is.EqualTo (firstOutputMvid));
+		}
+
+		[Test]
+		public void DefaultMvidBehavior ()
+		{
+			var testCase = CreateIndividualCase (typeof (NewMvidWorks));
+			var runner = new TestRunner (new ObjectFactory ());
+			var result = runner.Run (testCase);
+
+			var originalMvid = GetMvid (result.InputAssemblyPath);
+			var firstOutputMvid = GetMvid (result.OutputAssemblyPath);
+			Assert.That (firstOutputMvid, Is.Not.EqualTo (originalMvid));
+			
+			var result2 = runner.Relink (result);
+			
+			var secondOutputMvid = GetMvid (result2.OutputAssemblyPath);
+			Assert.That (secondOutputMvid, Is.Not.EqualTo (originalMvid));
+			Assert.That (secondOutputMvid, Is.Not.EqualTo (firstOutputMvid));
+		}
+
+		protected Guid GetMvid (NPath assemblyPath)
+		{
+			using (var assembly = AssemblyDefinition.ReadAssembly (assemblyPath))
+			{
+				return assembly.MainModule.Mvid;
+			}
 		}
 
 		private TestCase CreateIndividualCase (Type testCaseType)
