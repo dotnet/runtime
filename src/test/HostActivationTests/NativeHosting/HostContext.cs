@@ -39,6 +39,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             public const string Secondary = "[SECONDARY] ";
         }
 
+        public enum CommandLine
+        {
+            AppPath,
+            Exec,
+        }
+
         private const string HostContextArg = "host_context";
         private const string PropertyValueFromHost = "VALUE_FROM_HOST";
 
@@ -57,21 +63,35 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
-        [InlineData(false, CheckProperties.None)]
-        [InlineData(false, CheckProperties.Get)]
-        [InlineData(false, CheckProperties.Set)]
-        [InlineData(false, CheckProperties.Remove)]
-        [InlineData(false, CheckProperties.GetAll)]
-        [InlineData(false, CheckProperties.GetActive)]
-        [InlineData(false, CheckProperties.GetAllActive)]
-        [InlineData(true, CheckProperties.None)]
-        [InlineData(true, CheckProperties.Get)]
-        [InlineData(true, CheckProperties.Set)]
-        [InlineData(true, CheckProperties.Remove)]
-        [InlineData(true, CheckProperties.GetAll)]
-        [InlineData(true, CheckProperties.GetActive)]
-        [InlineData(true, CheckProperties.GetAllActive)]
-        public void RunApp(bool isSelfContained, string checkProperties)
+        [InlineData(CommandLine.AppPath, false, CheckProperties.None)]
+        [InlineData(CommandLine.AppPath, false, CheckProperties.Get)]
+        [InlineData(CommandLine.AppPath, false, CheckProperties.Set)]
+        [InlineData(CommandLine.AppPath, false, CheckProperties.Remove)]
+        [InlineData(CommandLine.AppPath, false, CheckProperties.GetAll)]
+        [InlineData(CommandLine.AppPath, false, CheckProperties.GetActive)]
+        [InlineData(CommandLine.AppPath, false, CheckProperties.GetAllActive)]
+        [InlineData(CommandLine.AppPath, true, CheckProperties.None)]
+        [InlineData(CommandLine.AppPath, true, CheckProperties.Get)]
+        [InlineData(CommandLine.AppPath, true, CheckProperties.Set)]
+        [InlineData(CommandLine.AppPath, true, CheckProperties.Remove)]
+        [InlineData(CommandLine.AppPath, true, CheckProperties.GetAll)]
+        [InlineData(CommandLine.AppPath, true, CheckProperties.GetActive)]
+        [InlineData(CommandLine.AppPath, true, CheckProperties.GetAllActive)]
+        [InlineData(CommandLine.Exec, false, CheckProperties.None)]
+        [InlineData(CommandLine.Exec, false, CheckProperties.Get)]
+        [InlineData(CommandLine.Exec, false, CheckProperties.Set)]
+        [InlineData(CommandLine.Exec, false, CheckProperties.Remove)]
+        [InlineData(CommandLine.Exec, false, CheckProperties.GetAll)]
+        [InlineData(CommandLine.Exec, false, CheckProperties.GetActive)]
+        [InlineData(CommandLine.Exec, false, CheckProperties.GetAllActive)]
+        [InlineData(CommandLine.Exec, true, CheckProperties.None)]
+        [InlineData(CommandLine.Exec, true, CheckProperties.Get)]
+        [InlineData(CommandLine.Exec, true, CheckProperties.Set)]
+        [InlineData(CommandLine.Exec, true, CheckProperties.Remove)]
+        [InlineData(CommandLine.Exec, true, CheckProperties.GetAll)]
+        [InlineData(CommandLine.Exec, true, CheckProperties.GetActive)]
+        [InlineData(CommandLine.Exec, true, CheckProperties.GetAllActive)]
+        public void RunApp(CommandLine commandLine, bool isSelfContained, string checkProperties)
         {
             string expectedAppPath;
             string hostFxrPath;
@@ -92,15 +112,33 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 HostContextArg,
                 Scenario.App,
                 checkProperties,
-                hostFxrPath,
-                expectedAppPath
+                hostFxrPath
             };
+
+            string[] commandArgs = { };
+            switch (commandLine)
+            {
+                case CommandLine.AppPath:
+                    commandArgs = new string[]
+                    {
+                        expectedAppPath
+                    };
+                    break;
+                case CommandLine.Exec:
+                    commandArgs = new string[]
+                    {
+                        "exec",
+                        expectedAppPath
+                    };
+                    break;
+            }
+
             string[] appArgs =
             {
                 SharedTestState.AppPropertyName,
                 newPropertyName
             };
-            CommandResult result = Command.Create(sharedState.NativeHostPath, args.Concat(appArgs))
+            CommandResult result = Command.Create(sharedState.NativeHostPath, args.Concat(commandArgs).Concat(appArgs))
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable("COREHOST_TRACE", "1")

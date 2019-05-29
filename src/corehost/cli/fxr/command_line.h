@@ -48,7 +48,8 @@ namespace command_line
         const pal::char_t* argv[],
         /*out*/ int *new_argoff,
         /*out*/ pal::string_t &app_candidate,
-        /*out*/ opt_map_t &opts);
+        /*out*/ opt_map_t &opts,
+        bool args_include_running_executable = true);
     int parse_args_for_sdk_command(
         const host_startup_info_t& host_info,
         const int argc,

@@ -223,20 +223,22 @@ int command_line::parse_args_for_mode(
     const pal::char_t *argv[],
     /*out*/ int *new_argoff,
     /*out*/ pal::string_t &app_candidate,
-    /*out*/ opt_map_t &opts)
+    /*out*/ opt_map_t &opts,
+    bool args_include_running_executable)
 {
+    int argoff = args_include_running_executable ? 1 : 0;
     int result;
     if (mode == host_mode_t::split_fx)
     {
         // Invoked as corehost
         trace::verbose(_X("--- Executing in split/FX mode..."));
-        result = parse_args(host_info, 1, argc, argv, false, mode, new_argoff, app_candidate, opts);
+        result = parse_args(host_info, argoff, argc, argv, false, mode, new_argoff, app_candidate, opts);
     }
     else if (mode == host_mode_t::apphost)
     {
         // Invoked from the application base.
         trace::verbose(_X("--- Executing in a native executable mode..."));
-        result = parse_args(host_info, 1, argc, argv, false, mode, new_argoff, app_candidate, opts);
+        result = parse_args(host_info, argoff, argc, argv, false, mode, new_argoff, app_candidate, opts);
     }
     else
     {
@@ -244,21 +246,21 @@ int command_line::parse_args_for_mode(
         assert(mode == host_mode_t::muxer);
         trace::verbose(_X("--- Executing in muxer mode..."));
 
-        if (argc <= 1)
+        if (argc <= argoff)
         {
             command_line::print_muxer_usage(!is_sdk_dir_present(host_info.dotnet_root));
             return StatusCode::InvalidArgFailure;
         }
 
-        if (pal::strcasecmp(_X("exec"), argv[1]) == 0)
+        if (pal::strcasecmp(_X("exec"), argv[argoff]) == 0)
         {
-            // arg offset 2 for dotnet, exec
-            result = parse_args(host_info, 2, argc, argv, true, mode, new_argoff, app_candidate, opts);
+            // arg offset +1 for exec
+            argoff++;
+            result = parse_args(host_info, argoff, argc, argv, true, mode, new_argoff, app_candidate, opts);
         }
         else
         {
-            // arg offset 1 for dotnet
-            result = parse_args(host_info, 1, argc, argv, false, mode, new_argoff, app_candidate, opts);
+            result = parse_args(host_info, argoff, argc, argv, false, mode, new_argoff, app_candidate, opts);
         }
     }
 

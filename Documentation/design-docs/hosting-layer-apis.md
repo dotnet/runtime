@@ -143,17 +143,15 @@ If `hostfxr` invokes functions in `hostpolicy` as part of its operation, the err
 
 
 ``` C
-int hostfxr_initialize_for_app(
+int hostfxr_initialize_for_dotnet_command_line(
     int argc,
     const char_t *argv[],
-    const char_t *app_path,
     const hostfxr_initialize_parameters *parameters,
     hostfxr_handle * host_context_handle
 );
 ```
 Initialize the hosting components for running a managed application.
 * `argc` / `argv` - command-line arguments
-* `app_path` - path to the application to run
 * `parameters` - optional additional parameters
 * `host_context_handle` - if initialization is successful, this receives an opaque value which identifies the initialized host context.
 
@@ -221,7 +219,7 @@ See [Native hosting](native-hosting.md#runtime-properties)
 ``` C
 int hostfxr_run_app(const hostfxr_handle host_context_handle);
 ```
-Run the application specified by `hostfxr_initialize_for_app`.
+Run the application specified by `hostfxr_initialize_for_dotnet_command_line`.
 * `host_context_handle` - handle to the initialized host context.
 
 This function does not return until the application completes execution. It will shutdown CoreCLR after the application executes.

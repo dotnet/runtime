@@ -25,7 +25,6 @@ namespace host_context_test
     bool app(
         check_properties scenario,
         const pal::string_t &hostfxr_path,
-        const pal::char_t *app_path,
         int argc,
         const pal::char_t *argv[],
         pal::stringstream_t &test_output);

@@ -43,10 +43,9 @@ struct hostfxr_initialize_parameters
     const pal::char_t *dotnet_root;
 };
 
-using hostfxr_initialize_for_app_fn = int32_t(__cdecl *)(
+using hostfxr_initialize_for_dotnet_command_line_fn = int32_t(__cdecl *)(
     int argc,
     const pal::char_t *argv[],
-    const pal::char_t *app_path,
     const hostfxr_initialize_parameters *parameters,
     /*out*/ hostfxr_handle *host_context_handle);
 using hostfxr_initialize_for_runtime_config_fn = int32_t(__cdecl *)(
