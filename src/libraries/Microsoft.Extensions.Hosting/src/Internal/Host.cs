@@ -39,15 +39,18 @@ namespace Microsoft.Extensions.Hosting.Internal
         {
             _logger.Starting();
 
-            await _hostLifetime.WaitForStartAsync(cancellationToken);
+            using var combinedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _applicationLifetime.ApplicationStopping);
+            var combinedCancellationToken = combinedCancellationTokenSource.Token;
 
-            cancellationToken.ThrowIfCancellationRequested();
+            await _hostLifetime.WaitForStartAsync(combinedCancellationToken);
+
+            combinedCancellationToken.ThrowIfCancellationRequested();
             _hostedServices = Services.GetService<IEnumerable<IHostedService>>();
 
             foreach (var hostedService in _hostedServices)
             {
                 // Fire IHostedService.Start
-                await hostedService.StartAsync(cancellationToken).ConfigureAwait(false);
+                await hostedService.StartAsync(combinedCancellationToken).ConfigureAwait(false);
             }
 
             // Fire IHostApplicationLifetime.Started

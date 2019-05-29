@@ -267,6 +267,92 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         [Fact]
+        public async Task CancellableStart_CancelledByApplicationLifetime()
+        {
+            var hostedService = new AsyncFakeHostedService();
+            var builder = CreateBuilder().ConfigureServices(services =>
+            {
+                services.AddSingleton<IHostedService>(hostedService);
+            });
+
+            using (var host = builder.Build())
+            {
+                var applicationLifetime = host.Services.GetService<IHostApplicationLifetime>();
+                var startTask = host.StartAsync();
+
+                // stop application
+                applicationLifetime.StopApplication();
+
+                // complete start task
+                hostedService.ContinueStart();
+
+                await Assert.ThrowsAsync<OperationCanceledException>(() => startTask);
+                Assert.False(hostedService.IsStartCompleted);
+            }
+        }
+
+        [Fact]
+        public async Task CancellableStart_CancelledByCancellationToken()
+        {
+            var hostedService = new AsyncFakeHostedService();
+            var builder = CreateBuilder().ConfigureServices(services =>
+            {
+                services.AddSingleton<IHostedService>(hostedService);
+            });
+
+            using (var host = builder.Build())
+            {
+                var cts = new CancellationTokenSource();
+                var startTask = host.StartAsync(cts.Token);
+
+                // cancel token
+                cts.Cancel();
+
+                // complete start task
+                hostedService.ContinueStart();
+
+                await Assert.ThrowsAsync<OperationCanceledException>(() => startTask);
+                Assert.False(hostedService.IsStartCompleted);
+            }
+        }
+
+        [Fact]
+        public async Task CancellableStart_CanComplete()
+        {
+            var hostedService = new AsyncFakeHostedService();
+            var builder = CreateBuilder().ConfigureServices(services =>
+            {
+                services.AddSingleton<IHostedService>(hostedService);
+            });
+
+            using (var host = builder.Build())
+            {
+                var startTask = host.StartAsync();
+
+                // complete start task
+                hostedService.ContinueStart();
+
+                await startTask;
+                Assert.True(hostedService.IsStartCompleted);
+            }
+        }
+
+        public class AsyncFakeHostedService : IHostedService
+        {
+            private TaskCompletionSource<object> source = new TaskCompletionSource<object>();
+            public bool IsStartCompleted { get; set; }
+            public async Task StartAsync(CancellationToken cancellationToken)
+            {
+                Assert.False(cancellationToken.IsCancellationRequested);
+                await source.Task;
+                cancellationToken.ThrowIfCancellationRequested();
+                IsStartCompleted = true;
+            }
+            public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+            public void ContinueStart() => source.TrySetResult(null);
+        }
+
+        [Fact]
         public async Task HostLifetimeOnStartedDelaysStart()
         {
             var serviceStarting = new ManualResetEvent(false);
@@ -709,10 +795,10 @@ namespace Microsoft.Extensions.Hosting.Internal
                 })
                 .Build())
             {
+                await host.StartAsync();
+
                 var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
                 lifetime.StopApplication();
-
-                await host.StartAsync();
 
                 Assert.Equal(0, stoppingCalls);
                 Assert.Equal(0, disposingCalls);
@@ -731,9 +817,6 @@ namespace Microsoft.Extensions.Hosting.Internal
                    })
                    .Build())
             {
-                var lifetime = host.Services.GetRequiredService<IHostApplicationLifetime>();
-                lifetime.StopApplication();
-
                 await host.StartAsync();
                 var svc = (TestHostedService)host.Services.GetRequiredService<IHostedService>();
                 Assert.True(svc.StartCalled);
