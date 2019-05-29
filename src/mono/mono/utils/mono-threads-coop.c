@@ -648,10 +648,16 @@ mono_threads_suspend_policy (void)
 		// otherwise if there's a compiled-in default, use it.
 		// otherwise if one of the old environment variables is set, use that.
 		// otherwise use full preemptive suspend.
+
+		W32_DEFINE_LAST_ERROR_RESTORE_POINT;
+
 		   (policy = threads_suspend_policy_getenv ())
 		|| (policy = threads_suspend_policy_default ())
 		|| (policy = threads_suspend_policy_getenv_compat ())
 		|| (policy = MONO_THREADS_SUSPEND_FULL_PREEMPTIVE);
+
+		W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
+
 		g_assert (policy);
 		threads_suspend_policy = (char)policy;
 	}
