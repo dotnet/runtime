@@ -281,7 +281,7 @@ namespace System.Diagnostics
                 _traceIdSet = true;
                 _parentSpanId = spanId;
                 _parentSpanIdSet = true;
-                _w3CIdFlags = (byte) activityTraceFlags;
+                _w3CIdFlags = (byte)activityTraceFlags;
                 _w3CIdFlagsSet = true;
             }
             return this;
@@ -525,17 +525,9 @@ namespace System.Diagnostics
             {
                 if (!_w3CIdFlagsSet)
                 {
-                    if (Parent != null)
-                    {
-                        ActivityTraceFlags = Parent.ActivityTraceFlags;
-                    }
-                    else if (_parentId != null && IsW3CId(_parentId))
-                    {
-                        _w3CIdFlags = ActivityTraceId.HexByteFromChars(_parentId[53], _parentId[54]);
-                        _w3CIdFlagsSet = true;
-                    }
+                    _w3CIdFlagsSet = TrySetTraceFlagsFromParent();
                 }
-                return (ActivityTraceFlags) _w3CIdFlags;
+                return (ActivityTraceFlags)_w3CIdFlags;
             }
             set
             {
@@ -646,6 +638,12 @@ namespace System.Diagnostics
                     _traceIdSet = true;
                 }
             }
+
+            if (!_w3CIdFlagsSet)
+            {
+                _w3CIdFlagsSet = TrySetTraceFlagsFromParent();
+            }
+
             // Create a new SpanID. 
             _spanId = ActivitySpanId.CreateRandom();
             _spanIdSet = true;
@@ -792,6 +790,30 @@ namespace System.Diagnostics
 
             return _traceIdSet;
         }
+
+#if ALLOW_PARTIALLY_TRUSTED_CALLERS
+        [System.Security.SecuritySafeCriticalAttribute]
+#endif
+        private bool TrySetTraceFlagsFromParent()
+        {
+            Debug.Assert(!_w3CIdFlagsSet);
+
+            if (!_w3CIdFlagsSet)
+            {
+                if (Parent != null)
+                {
+                    ActivityTraceFlags = Parent.ActivityTraceFlags;
+                }
+                else if (_parentId != null && IsW3CId(_parentId))
+                {
+                    _w3CIdFlags = ActivityTraceId.HexByteFromChars(_parentId[53], _parentId[54]);
+                    _w3CIdFlagsSet = true;
+                }
+            }
+
+            return _w3CIdFlagsSet;
+        }
+
 
         private string _rootId;
         private int _currentChildId;  // A unique number for all children of this activity.  
