@@ -15,7 +15,7 @@
     <!-- arcade -->
     <MicrosoftDotNetBuildTasksFeedVersion>2.2.0-beta.19273.11</MicrosoftDotNetBuildTasksFeedVersion>
     <MicrosoftDotNetBuildTasksPackagingVersion>1.0.0-beta.19273.11</MicrosoftDotNetBuildTasksPackagingVersion>
-    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.19264.13</MicrosoftDotNetXUnitConsoleRunnerVersion>
+    <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.19278.1</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <!-- corefx -->
     <MicrosoftPrivateCoreFxNETCoreAppVersion>4.6.0-preview6.19273.8</MicrosoftPrivateCoreFxNETCoreAppVersion>
     <MicrosoftNETCorePlatformsVersion>3.0.0-preview6.19273.8</MicrosoftNETCorePlatformsVersion>
