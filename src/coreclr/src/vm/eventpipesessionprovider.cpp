@@ -79,7 +79,7 @@ EventPipeSessionProviderList::EventPipeSessionProviderList(
     m_pCatchAllProvider = NULL;
 
     if ((numConfigs > 0) && (pConfigs == nullptr))
-        return; // TODO: This seems the logical thing to do here.
+        return;
 
     for (uint32_t i = 0; i < numConfigs; ++i)
     {
@@ -88,7 +88,11 @@ EventPipeSessionProviderList::EventPipeSessionProviderList(
         // Enable all events if the provider name == '*', all keywords are on and the requested level == verbose.
         if ((wcscmp(W("*"), pConfig->GetProviderName()) == 0) && (pConfig->GetKeywords() == 0xFFFFFFFFFFFFFFFF) && ((EventPipeEventLevel)pConfig->GetLevel() == EventPipeEventLevel::Verbose) && (m_pCatchAllProvider == NULL))
         {
-            m_pCatchAllProvider = new EventPipeSessionProvider(NULL, 0xFFFFFFFFFFFFFFFF, EventPipeEventLevel::Verbose, NULL);
+            m_pCatchAllProvider = new EventPipeSessionProvider(
+                NULL,
+                0xFFFFFFFFFFFFFFFF,
+                EventPipeEventLevel::Verbose,
+                NULL);
         }
         else
         {
@@ -113,22 +117,8 @@ EventPipeSessionProviderList::~EventPipeSessionProviderList()
     }
     CONTRACTL_END;
 
-    if (m_pProviders != NULL)
-    {
-        SListElem<EventPipeSessionProvider *> *pElem = m_pProviders->GetHead();
-        while (pElem != NULL)
-        {
-            EventPipeSessionProvider *pProvider = pElem->GetValue();
-            delete pProvider;
-
-            SListElem<EventPipeSessionProvider *> *pCurElem = pElem;
-            pElem = m_pProviders->GetNext(pElem);
-            delete pCurElem;
-        }
-
-        delete m_pProviders;
-    }
-
+    Clear();
+    delete m_pProviders;
     delete m_pCatchAllProvider;
 }
 
@@ -147,17 +137,19 @@ void EventPipeSessionProviderList::AddSessionProvider(EventPipeSessionProvider *
         m_pProviders->InsertTail(new SListElem<EventPipeSessionProvider *>(pProvider));
 }
 
-EventPipeSessionProvider *EventPipeSessionProviderList::GetSessionProvider(
-    EventPipeProvider *pProvider)
+EventPipeSessionProvider *EventPipeSessionProviderList::GetSessionProvider(EventPipeProvider *pProvider)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(pProvider != nullptr); // TODO: This seems like a reasonable pre-condition
+        PRECONDITION(pProvider != nullptr);
     }
     CONTRACTL_END;
+
+    if (pProvider == nullptr)
+        return nullptr;
 
     // Exists when tracing was enabled at start-up and all events were requested. This is a diagnostic config.
     if (m_pCatchAllProvider != NULL)
@@ -190,6 +182,28 @@ bool EventPipeSessionProviderList::IsEmpty() const
     LIMITED_METHOD_CONTRACT;
 
     return (m_pProviders->IsEmpty() && m_pCatchAllProvider == NULL);
+}
+
+void EventPipeSessionProviderList::Clear()
+{
+    if (m_pProviders != NULL)
+    {
+        SListElem<EventPipeSessionProvider *> *pElem = m_pProviders->GetHead();
+        while (pElem != NULL)
+        {
+            EventPipeSessionProvider *pProvider = pElem->GetValue();
+            delete pProvider;
+
+            SListElem<EventPipeSessionProvider *> *pCurElem = pElem;
+            pElem = m_pProviders->GetNext(pElem);
+            delete pCurElem;
+
+            // Remove deleted node.
+            m_pProviders->RemoveHead();
+        }
+    }
+
+    _ASSERTE(m_pProviders->IsEmpty());
 }
 
 #endif // FEATURE_PERFTRACING

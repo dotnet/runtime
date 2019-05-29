@@ -30,9 +30,7 @@
 CrstStatic EventPipe::s_configCrst;
 bool EventPipe::s_tracingInitialized = false;
 EventPipeConfiguration *EventPipe::s_pConfig = NULL;
-EventPipeSession *EventPipe::s_pSession = NULL;
-EventPipeBufferManager *EventPipe::s_pBufferManager = NULL;
-EventPipeFile *EventPipe::s_pFile = NULL;
+EventPipeSessions *EventPipe::s_pSessions = NULL;
 EventPipeEventSource *EventPipe::s_pEventSource = NULL;
 HANDLE EventPipe::s_fileSwitchTimerHandle = NULL;
 ULONGLONG EventPipe::s_lastFlushTime = 0;
@@ -166,6 +164,24 @@ BYTE *EventPipeEventPayload::GetFlatData()
     return m_pData;
 }
 
+void EventPipeProviderCallbackDataQueue::Enqueue(EventPipeProviderCallbackData *pEventPipeProviderCallbackData)
+{
+    SListElem<EventPipeProviderCallbackData> *listnode = new SListElem<EventPipeProviderCallbackData>(); // throws
+    listnode->m_Value = *pEventPipeProviderCallbackData;
+    list.InsertTail(listnode);
+}
+
+bool EventPipeProviderCallbackDataQueue::TryDequeue(EventPipeProviderCallbackData *pEventPipeProviderCallbackData)
+{
+    if (list.IsEmpty())
+        return false;
+
+    SListElem<EventPipeProviderCallbackData> *listnode = list.RemoveHead();
+    *pEventPipeProviderCallbackData = listnode->m_Value;
+    delete listnode;
+    return true;
+}
+
 void EventPipe::Initialize()
 {
     STANDARD_VM_CONTRACT;
@@ -174,16 +190,19 @@ void EventPipe::Initialize()
         CrstEventPipe,
         (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN | CRST_HOST_BREAKABLE));
 
-    s_pConfig = new EventPipeConfiguration();
+    s_pSessions = new EventPipeSessions();
+    s_pConfig = new EventPipeConfiguration(s_pSessions);
     s_pConfig->Initialize();
-
-    s_pBufferManager = new EventPipeBufferManager();
 
     s_pEventSource = new EventPipeEventSource();
 
     // This calls into auto-generated code to initialize the runtime providers
     // and events so that the EventPipe configuration lock isn't taken at runtime
     InitProvidersAndEvents();
+
+    // Set the sampling rate for the sample profiler.
+    const unsigned long DefaultProfilerSamplingRateInNanoseconds = 1000000; // 1 msec.
+    SampleProfiler::SetSamplingRate(DefaultProfilerSamplingRateInNanoseconds);
 }
 
 void EventPipe::Shutdown()
@@ -193,19 +212,26 @@ void EventPipe::Shutdown()
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
+        // These 3 pointers are initialized once on EventPipe::Initialize
+        //PRECONDITION(s_pConfig != nullptr);
+        //PRECONDITION(s_pEventSource != nullptr);
+        //PRECONDITION(s_pSessions != nullptr);
     }
     CONTRACTL_END;
 
+    if (s_pConfig == nullptr || s_pEventSource == nullptr || s_pSessions == nullptr)
+        return;
+
     if (g_fProcessDetach)
     {
-        // If g_fProcessDetach is true, all threads except this got ripped because someone called ExitProcess(). 
-        // This check is an attempt recognize that case and skip all unsafe cleanup work. 
+        // If g_fProcessDetach is true, all threads except this got ripped because someone called ExitProcess().
+        // This check is an attempt recognize that case and skip all unsafe cleanup work.
 
-        // Since event reading/writing could happen while that ExitProcess happened, the stream is probably 
+        // Since event reading/writing could happen while that ExitProcess happened, the stream is probably
         // screwed anyway. Therefore we do NOT attempt to flush buffer, do rundown. Cleaning up memory at this
-        // point is rather meaningless too since the process is going to terminate soon. Therefore we simply 
+        // point is rather meaningless too since the process is going to terminate soon. Therefore we simply
         // quickly exit here
-        
+
         // TODO: Consider releasing the resources that could last longer than the process (e.g. the files)
         return;
     }
@@ -216,33 +242,42 @@ void EventPipe::Shutdown()
     // We are shutting down, so if disabling EventPipe throws, we need to move along anyway.
     EX_TRY
     {
-        Disable((EventPipeSessionID)s_pSession);
+        if (s_pSessions != nullptr)
+        {
+            //  The sessions collection is modified inside Disable.
+            CQuickArrayList<EventPipeSessionID> sessionIds;
+            {
+                CrstHolder _crst(GetLock());
+                for (auto iterator = s_pSessions->Begin(); iterator != s_pSessions->End(); ++iterator)
+                    sessionIds.Push(iterator->Key());
+            }
+
+            for (SIZE_T i = 0; i < sessionIds.Size(); ++i)
+                Disable(sessionIds[i]);
+        }
     }
     EX_CATCH {}
     EX_END_CATCH(SwallowAllExceptions);
 
-    // Save pointers to the configuration and buffer manager.
     EventPipeConfiguration *pConfig = s_pConfig;
-    EventPipeBufferManager *pBufferManager = s_pBufferManager;
+    EventPipeSessions *pSessions = s_pSessions;
 
     // Set the static pointers to NULL so that the rest of the EventPipe knows that they are no longer available.
     // Flush process write buffers to make sure other threads can see the change.
-    s_pConfig = NULL;
-    s_pBufferManager = NULL;
+    s_pConfig = nullptr;
+    s_pSessions = nullptr;
     FlushProcessWriteBuffers();
 
     // Free resources.
     delete pConfig;
-    delete pBufferManager;
+    delete pSessions;
     delete s_pEventSource;
-    s_pEventSource = NULL;
-
+    s_pEventSource = nullptr;
 }
 
 EventPipeSessionID EventPipe::Enable(
     LPCWSTR strOutputPath,
     uint32_t circularBufferSizeInMB,
-    uint64_t profilerSamplingRateInNanoseconds,
     const EventPipeProviderConfiguration *pProviders,
     uint32_t numProviders,
     EventPipeSessionType sessionType,
@@ -254,36 +289,41 @@ EventPipeSessionID EventPipe::Enable(
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
         PRECONDITION(circularBufferSizeInMB > 0);
-        PRECONDITION(profilerSamplingRateInNanoseconds > 0);
         PRECONDITION(numProviders > 0 && pProviders != nullptr);
     }
     CONTRACTL_END;
 
-    EventPipeSessionID sessionId;
-    EventPipe::RunWithCallbackPostponed(
-        [&](EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
-        {
-            // Create a new session.
-            SampleProfiler::SetSamplingRate(static_cast<unsigned long>(profilerSamplingRateInNanoseconds));
-            EventPipeSession *pSession = s_pConfig->CreateSession(
-                sessionType,
-                circularBufferSizeInMB,
-                pProviders,
-                numProviders);
+    if (!s_tracingInitialized)
+        return 0;
 
-            // Enable the session.
-            sessionId = Enable(strOutputPath, pSession, sessionType, pStream, pEventPipeProviderCallbackDataQueue);
-        }
-    );
+    // If the state or arguments are invalid, bail here.
+    if (sessionType == EventPipeSessionType::File && strOutputPath == nullptr)
+        return 0;
+    if (sessionType == EventPipeSessionType::IpcStream && pStream == nullptr)
+        return 0;
+
+    EventPipeSessionID sessionId = 0;
+    RunWithCallbackPostponed([&](EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue) {
+        EventPipeSession *pSession = s_pConfig->CreateSession(
+            strOutputPath,
+            pStream,
+            sessionType,
+            circularBufferSizeInMB,
+            pProviders,
+            numProviders);
+
+        if (pSession == nullptr)
+            return;
+        sessionId = EnableInternal(pSession, pEventPipeProviderCallbackDataQueue);
+        if (sessionId == 0)
+            delete pSession;
+    });
 
     return sessionId;
 }
 
-EventPipeSessionID EventPipe::Enable(
-    LPCWSTR strOutputPath,
+EventPipeSessionID EventPipe::EnableInternal(
     EventPipeSession *const pSession,
-    EventPipeSessionType sessionType,
-    IpcStream *const pStream,
     EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
 {
     CONTRACTL
@@ -291,58 +331,40 @@ EventPipeSessionID EventPipe::Enable(
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(pSession != nullptr);
-        PRECONDITION(GetLock()->OwnedByCurrentThread());
+        PRECONDITION(s_tracingInitialized);
+        PRECONDITION(s_pConfig != nullptr);
+        PRECONDITION(pSession != nullptr && pSession->IsValid());
+        PRECONDITION(IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
 
-    // If the state or arguments are invalid, bail here.
-    if (pSession == nullptr || !pSession->IsValid())
-        return 0;
-    if (sessionType == EventPipeSessionType::File && strOutputPath == nullptr)
-        return 0;
-    if (sessionType == EventPipeSessionType::IpcStream && pStream == nullptr)
+    // If tracing is not initialized or is already enabled, bail here.
+    if (!s_tracingInitialized || s_pConfig == nullptr)
         return 0;
 
-    // If tracing is not initialized or is already enabled, bail here.
-    if (!s_tracingInitialized || s_pConfig == nullptr || s_pConfig->Enabled())
+    if (pSession == nullptr || !pSession->IsValid())
         return 0;
+
+    // Register the SampleProfiler the very first time.
+    SampleProfiler::Initialize(pEventPipeProviderCallbackDataQueue);
 
     // Enable the EventPipe EventSource.
     s_pEventSource->Enable(pSession);
 
     // Save the session.
-    s_pSession = pSession;
-    EventPipeSessionID sessionId = reinterpret_cast<EventPipeSessionID>(s_pSession);
-
-    // Create the event pipe file.
-    // A NULL output path means that we should not write the results to a file.
-    // This is used in the EventListener streaming case.
-    switch (sessionType)
-    {
-        case EventPipeSessionType::File:
-            if (strOutputPath != nullptr)
-                s_pFile = new EventPipeFile(new FileStreamWriter(SString(strOutputPath)));
-            break;
-
-        case EventPipeSessionType::IpcStream:
-            s_pFile = new EventPipeFile(new IpcStreamWriter(sessionId, pStream));
-            CreateFlushTimerCallback();
-            break;
-
-        default:
-            s_pFile = nullptr;
-            break;
-    }
+    s_pSessions->Add(pSession->GetId(), pSession);
 
     // Enable tracing.
-    s_pConfig->Enable(s_pSession, pEventPipeProviderCallbackDataQueue);
+    s_pConfig->Enable(*pSession, pEventPipeProviderCallbackDataQueue);
 
     // Enable the sample profiler
     SampleProfiler::Enable(pEventPipeProviderCallbackDataQueue);
 
+    // Enable the session.
+    pSession->Enable();
+
     // Return the session ID.
-    return sessionId;
+    return pSession->GetId();
 }
 
 void EventPipe::Disable(EventPipeSessionID id)
@@ -357,20 +379,31 @@ void EventPipe::Disable(EventPipeSessionID id)
 
     SetupThread();
 
-    // Only perform the disable operation if the session ID
-    // matches the current active session.
-    if (id != (EventPipeSessionID)s_pSession)
+    if (id == 0)
         return;
 
     // Don't block GC during clean-up.
     GCX_PREEMP();
 
-    EventPipe::RunWithCallbackPostponed(
-        [&](EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
-        {
-            DisableInternal(reinterpret_cast<EventPipeSessionID>(s_pSession), pEventPipeProviderCallbackDataQueue);
-        }
-    );
+    RunWithCallbackPostponed([&](EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue) {
+        DisableInternal(id, pEventPipeProviderCallbackDataQueue);
+    });
+}
+
+static void LogProcessInformationEvent(EventPipeEventSource &eventSource)
+{
+    // Get the managed command line.
+    LPCWSTR pCmdLine = GetManagedCommandLine();
+
+    // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
+    if (pCmdLine == nullptr)
+    {
+        // Use the result from GetCommandLineW() instead
+        pCmdLine = GetCommandLineW();
+    }
+
+    // Log the process information event.
+    eventSource.SendProcessInfo(pCmdLine);
 }
 
 void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
@@ -380,242 +413,63 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(GetLock()->OwnedByCurrentThread());
+        PRECONDITION(s_pConfig != nullptr);
+        PRECONDITION(IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
 
-    if (s_pConfig != NULL && s_pConfig->Enabled())
-    {
-        // Disable the profiler.
-        SampleProfiler::Disable();
-        
-        // Get the managed command line.
-        LPCWSTR pCmdLine = GetManagedCommandLine();
-
-        // Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
-        if (pCmdLine == nullptr)
-        {
-            // Use the result from GetCommandLineW() instead
-            pCmdLine = GetCommandLineW();
-        }
-
-        // Log the process information event.
-        s_pEventSource->SendProcessInfo(pCmdLine);
-
-        // Log the runtime information event.
-        ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
-
-        // Disable tracing.
-        s_pConfig->Disable(s_pSession, pEventPipeProviderCallbackDataQueue);
-
-        // Delete the session.
-        s_pConfig->DeleteSession(s_pSession);
-        s_pSession = NULL;
-
-        // Delete the flush timer.
-        DeleteFlushTimerCallback();
-
-        // Force all in-progress writes to either finish or cancel
-        // This is required to ensure we can safely flush and delete the buffers
-        s_pBufferManager->SuspendWriteEvent();
-
-        // Write to the file.
-        if (s_pFile != nullptr)
-        {
-            LARGE_INTEGER disableTimeStamp;
-            QueryPerformanceCounter(&disableTimeStamp);
-            s_pBufferManager->WriteAllBuffersToFile(s_pFile, disableTimeStamp);
-
-            if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeRundown) > 0)
-            {
-                // Before closing the file, do rundown. We have to re-enable event writing for this.
-
-                s_pBufferManager->ResumeWriteEvent();
-
-                const EventPipeProviderConfiguration RundownProviders[] = {
-                    {W("Microsoft-Windows-DotNETRuntime"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose), NULL},       // Public provider.
-                    {W("Microsoft-Windows-DotNETRuntimeRundown"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose), NULL} // Rundown provider.
-                };
-
-                // The circular buffer size doesn't matter because all events are written synchronously during rundown.
-                s_pSession = s_pConfig->CreateSession(
-                    EventPipeSessionType::File,
-                    1 /* circularBufferSizeInMB */,
-                    RundownProviders,
-                    sizeof(RundownProviders) / sizeof(EventPipeProviderConfiguration));
-                s_pConfig->EnableRundown(s_pSession, pEventPipeProviderCallbackDataQueue);
-
-                // Ask the runtime to emit rundown events.
-                if (g_fEEStarted && !g_fEEShutDown)
-                    ETW::EnumerationLog::EndRundown();
-
-                // Disable the event pipe now that rundown is complete.
-                s_pConfig->Disable(s_pSession, pEventPipeProviderCallbackDataQueue);
-
-                // Delete the rundown session.
-                s_pConfig->DeleteSession(s_pSession);
-                s_pSession = NULL;
-
-                // Suspend again after rundown session
-                s_pBufferManager->SuspendWriteEvent();
-            }
-
-            delete s_pFile;
-            s_pFile = nullptr;
-        }
-
-        // De-allocate buffers.
-        s_pBufferManager->DeAllocateBuffers();
-
-        // Delete deferred providers.
-        // Providers can't be deleted during tracing because they may be needed when serializing the file.
-        s_pConfig->DeleteDeferredProviders();
-
-        // ALlow WriteEvent to begin accepting work again so that sometime in the future
-        // we can re-enable events and they will be recorded
-        s_pBufferManager->ResumeWriteEvent();
-    }
-}
-
-void EventPipe::CreateFlushTimerCallback()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(GetLock()->OwnedByCurrentThread());
-    }
-    CONTRACTL_END
-
-    if (s_pFile == nullptr)
+    if (s_pConfig == nullptr || !s_pConfig->Enabled())
         return;
 
-    NewHolder<ThreadpoolMgr::TimerInfoContext> timerContextHolder = new (nothrow) ThreadpoolMgr::TimerInfoContext();
-    if (timerContextHolder == NULL)
+    EventPipeSession *pSession = nullptr;
+    if (!s_pSessions->Lookup(id, &pSession) || (pSession == nullptr))
         return;
 
-    timerContextHolder->TimerId = 0;
+    // Disable the profiler.
+    SampleProfiler::Disable();
 
-    // Initialize the last flush time.
-    s_lastFlushTime = CLRGetTickCount64();
+    // Log the process information event.
+    LogProcessInformationEvent(*s_pEventSource);
 
-    bool success = false;
-    _ASSERTE(s_fileSwitchTimerHandle == NULL);
-    EX_TRY
-    {
-        if (ThreadpoolMgr::CreateTimerQueueTimer(
-                &s_fileSwitchTimerHandle,
-                FlushTimer,
-                timerContextHolder,
-                100, // DueTime (msec)
-                100, // Period (msec)
-                0 /* flags */))
-        {
-            _ASSERTE(s_fileSwitchTimerHandle != NULL);
-            success = true;
-        }
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(RethrowTerminalExceptions);
+    // Log the runtime information event.
+    ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
 
-    if (!success)
-    {
-        _ASSERTE(s_fileSwitchTimerHandle == NULL);
-        return;
-    }
+    // Disable pSession tracing.
+    s_pConfig->Disable(*pSession, pEventPipeProviderCallbackDataQueue);
+    pSession->Disable();
 
-    timerContextHolder.SuppressRelease(); // the timer context is automatically deleted by the timer infrastructure
-}
+    // Do rundown before fully stopping the session.
+    pSession->EnableRundown();
+    s_pConfig->Enable(*pSession, pEventPipeProviderCallbackDataQueue);
 
-void EventPipe::DeleteFlushTimerCallback()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(GetLock()->OwnedByCurrentThread());
-    }
-    CONTRACTL_END
+    pSession->ExecuteRundown();
+    s_pConfig->Disable(*pSession, pEventPipeProviderCallbackDataQueue);
 
-    if ((s_fileSwitchTimerHandle != NULL) && (ThreadpoolMgr::DeleteTimerQueueTimer(s_fileSwitchTimerHandle, NULL)))
-        s_fileSwitchTimerHandle = NULL;
-}
+    // Remove the session.
+    s_pSessions->Remove(id);
+    s_pConfig->DeleteSession(pSession);
 
-void WINAPI EventPipe::FlushTimer(PVOID parameter, BOOLEAN timerFired)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        PRECONDITION(timerFired);
-    }
-    CONTRACTL_END;
-
-    GCX_PREEMP();
-
-    EventPipe::RunWithCallbackPostponed(
-        [&](EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
-        {
-            if (s_pSession == nullptr || s_pFile == nullptr)
-                return;
-
-            // Make sure that we should actually flush.
-            if (!Enabled() || s_pSession->GetSessionType() != EventPipeSessionType::IpcStream)
-                return;
-
-            if (CLRGetTickCount64() > (s_lastFlushTime + 100))
-            {
-                // Get the current time stamp.
-                // WriteAllBuffersToFile will use this to ensure that no events after
-                // the current timestamp are written into the file.
-                LARGE_INTEGER stopTimeStamp;
-                QueryPerformanceCounter(&stopTimeStamp);
-                s_pBufferManager->WriteAllBuffersToFile(s_pFile, stopTimeStamp);
-
-                s_lastFlushTime = CLRGetTickCount64();
-            }
-
-            if (s_pFile->HasErrors())
-            {
-                EX_TRY
-                {
-                    DisableInternal(reinterpret_cast<EventPipeSessionID>(s_pSession), pEventPipeProviderCallbackDataQueue);
-                }
-                EX_CATCH {}
-                EX_END_CATCH(SwallowAllExceptions);
-            }
-        }
-    );
+    // Delete deferred providers.
+    // Providers can't be deleted during tracing because they may be needed when serializing the file.
+    s_pConfig->DeleteDeferredProviders();
 }
 
 EventPipeSession *EventPipe::GetSession(EventPipeSessionID id)
 {
     LIMITED_METHOD_CONTRACT;
+    _ASSERTE(IsLockOwnedByCurrentThread());
 
-    EventPipeSession *pSession = NULL;
-    if ((EventPipeSessionID)s_pSession == id)
-    {
-        pSession = s_pSession;
-    }
-    return pSession;
+    if (s_pSessions == nullptr)
+        return nullptr;
+
+    EventPipeSession *pSession = nullptr;
+    return s_pSessions->Lookup(id, &pSession) ? pSession : nullptr;
 }
 
 bool EventPipe::Enabled()
 {
     LIMITED_METHOD_CONTRACT;
-
-    bool enabled = false;
-    if (s_pConfig != NULL)
-    {
-        enabled = s_pConfig->Enabled();
-    }
-
-    return enabled;
+    return s_tracingInitialized && (s_pSessions != NULL) && (s_pSessions->GetCount() > 0);
 }
 
 EventPipeProvider *EventPipe::CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData)
@@ -625,17 +479,14 @@ EventPipeProvider *EventPipe::CreateProvider(const SString &providerName, EventP
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(!GetLock()->OwnedByCurrentThread());
+        PRECONDITION(!IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
 
     EventPipeProvider *pProvider = NULL;
-    EventPipe::RunWithCallbackPostponed(
-        [&](EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
-        {
-            pProvider = EventPipe::CreateProvider(providerName, pCallbackFunction, pCallbackData, pEventPipeProviderCallbackDataQueue);
-        }
-    );
+    RunWithCallbackPostponed([&](EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue) {
+        pProvider = CreateProvider(providerName, pCallbackFunction, pCallbackData, pEventPipeProviderCallbackDataQueue);
+    });
 
     return pProvider;
 }
@@ -647,16 +498,16 @@ EventPipeProvider *EventPipe::CreateProvider(const SString &providerName, EventP
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(GetLock()->OwnedByCurrentThread());
+        PRECONDITION(IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
 
-    EventPipeProvider *pProvider = NULL;
-    if (s_pConfig != NULL)
-    {
-        pProvider = s_pConfig->CreateProvider(providerName, pCallbackFunction, pCallbackData, pEventPipeProviderCallbackDataQueue);
-    }
-    return pProvider;
+    return (s_pConfig != NULL) ? s_pConfig->CreateProvider(
+                                     providerName,
+                                     pCallbackFunction,
+                                     pCallbackData,
+                                     pEventPipeProviderCallbackDataQueue)
+                               : nullptr;
 }
 
 EventPipeProvider *EventPipe::GetProvider(const SString &providerName)
@@ -669,13 +520,7 @@ EventPipeProvider *EventPipe::GetProvider(const SString &providerName)
     }
     CONTRACTL_END;
 
-    EventPipeProvider *pProvider = NULL;
-    if (s_pConfig != NULL)
-    {
-        pProvider = s_pConfig->GetProvider(providerName);
-    }
-
-    return pProvider;
+    return (s_pConfig != NULL) ? s_pConfig->GetProvider(providerName) : nullptr;
 }
 
 void EventPipe::DeleteProvider(EventPipeProvider *pProvider)
@@ -722,7 +567,7 @@ void EventPipe::WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int leng
     CONTRACTL_END;
 
     EventPipeEventPayload payload(pData, length);
-    EventPipe::WriteEventInternal(event, payload, pActivityId, pRelatedActivityId);
+    WriteEventInternal(event, payload, pActivityId, pRelatedActivityId);
 }
 
 void EventPipe::WriteEvent(EventPipeEvent &event, EventData *pEventData, unsigned int eventDataCount, LPCGUID pActivityId, LPCGUID pRelatedActivityId)
@@ -736,7 +581,7 @@ void EventPipe::WriteEvent(EventPipeEvent &event, EventData *pEventData, unsigne
     CONTRACTL_END;
 
     EventPipeEventPayload payload(pEventData, eventDataCount);
-    EventPipe::WriteEventInternal(event, payload, pActivityId, pRelatedActivityId);
+    WriteEventInternal(event, payload, pActivityId, pRelatedActivityId);
 }
 
 void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId)
@@ -746,24 +591,21 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
+        // PRECONDITION(s_pConfig != nullptr);
+        // PRECONDITION(s_pSessions != nullptr);
     }
     CONTRACTL_END;
 
+    // We can't procede without a configuration or sessions.
+    if (s_pConfig == nullptr || s_pSessions == nullptr)
+        return;
+
     // Exit early if the event is not enabled.
     if (!event.IsEnabled())
-    {
         return;
-    }
 
     // Get the current thread;
     Thread *pThread = GetThread();
-
-    if (s_pConfig == NULL)
-    {
-        // We can't procede without a configuration
-        return;
-    }
-    _ASSERTE(s_pSession != NULL);
 
     // If the activity id isn't specified AND we are in a managed thread, pull it from the current thread.
     // If pThread is NULL (we aren't in writing from a managed thread) then pActivityId can be NULL
@@ -772,40 +614,51 @@ void EventPipe::WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload 
         pActivityId = pThread->GetActivityId();
     }
 
-    if (!s_pConfig->RundownEnabled() && s_pBufferManager != NULL)
+    for (EventPipeSessions::Iterator iterator = s_pSessions->Begin();
+         iterator != s_pSessions->End();
+         ++iterator)
     {
-        s_pBufferManager->WriteEvent(pThread, *s_pSession, event, payload, pActivityId, pRelatedActivityId);
-    }
-    else if (s_pConfig->RundownEnabled())
-    {
-        _ASSERTE(pThread != nullptr);
-        BYTE *pData = payload.GetFlatData();
-        if (pData != NULL)
-        {
-            // Write synchronously to the file.
-            // We're under lock and blocking the disabling thread.
-            // This copy occurs here (rather than at file write) because
-            // A) The FastSerializer API would need to change if we waited
-            // B) It is unclear there is a benefit to multiple file write calls
-            //    as opposed a a buffer copy here
-            EventPipeEventInstance instance(
-                *s_pSession,
-                event,
-                pThread->GetOSThreadId(),
-                pData,
-                payload.GetSize(),
-                pActivityId,
-                pRelatedActivityId);
-            instance.EnsureStack(*s_pSession);
+        const EventPipeSessionID &Id = iterator->Key();
+        EventPipeSession *const pSession = iterator->Value();
 
-            if (s_pFile != NULL)
+        _ASSERTE(s_pConfig->IsSessionIdValid(Id) && (pSession != nullptr));
+        if (!s_pConfig->IsSessionIdValid(Id) || pSession == nullptr)
+            continue;
+
+        if (!pSession->RundownEnabled())
+        {
+            pSession->WriteEvent(pThread, event, payload, pActivityId, pRelatedActivityId);
+        }
+        else
+        {
+            if (!pSession->IsRundownThread())
+                return;
+
+            _ASSERTE(pThread != nullptr);
+            BYTE *pData = payload.GetFlatData();
+            if (pData != NULL)
             {
+                // Write synchronously to the file.
+                // We're under lock and blocking the disabling thread.
+                // This copy occurs here (rather than at file write) because
+                // A) The FastSerializer API would need to change if we waited
+                // B) It is unclear there is a benefit to multiple file write calls
+                //    as opposed a a buffer copy here
+                EventPipeEventInstance instance(
+                    event,
+                    pThread->GetOSThreadId(),
+                    pData,
+                    payload.GetSize(),
+                    pActivityId,
+                    pRelatedActivityId);
+                instance.EnsureStack(*pSession);
+
                 // EventPipeFile::WriteEvent needs to allocate a metadata event
                 // and can therefore throw. In this context we will silently
                 // fail rather than disrupt the caller
                 EX_TRY
                 {
-                    s_pFile->WriteEvent(instance);
+                    pSession->WriteEvent(instance);
                 }
                 EX_CATCH {}
                 EX_END_CATCH(SwallowAllExceptions);
@@ -824,14 +677,33 @@ void EventPipe::WriteSampleProfileEvent(Thread *pSamplingThread, EventPipeEvent 
     }
     CONTRACTL_END;
 
+    if (s_pSessions == nullptr || s_pConfig == nullptr)
+        return;
+
     EventPipeEventPayload payload(pData, length);
 
     // Write the event to the thread's buffer.
-    if (s_pBufferManager != NULL)
+    // Specify the sampling thread as the "current thread", so that we select the right buffer.
+    // Specify the target thread so that the event gets properly attributed.
+    for (EventPipeSessions::Iterator iterator = s_pSessions->Begin();
+         iterator != s_pSessions->End();
+         ++iterator)
     {
-        // Specify the sampling thread as the "current thread", so that we select the right buffer.
-        // Specify the target thread so that the event gets properly attributed.
-        s_pBufferManager->WriteEvent(pSamplingThread, *s_pSession, *pEvent, payload, NULL /* pActivityId */, NULL /* pRelatedActivityId */, pTargetThread, &stackContents);
+        const EventPipeSessionID &Id = iterator->Key();
+        EventPipeSession *const pSession = iterator->Value();
+
+        _ASSERTE(s_pConfig->IsSessionIdValid(Id) && (pSession != nullptr));
+        if (!s_pConfig->IsSessionIdValid(Id) || (pSession == nullptr))
+            continue;
+
+        pSession->WriteEvent(
+            pSamplingThread,
+            *pEvent,
+            payload,
+            NULL /* pActivityId */,
+            NULL /* pRelatedActivityId */,
+            pTargetThread,
+            &stackContents);
     }
 }
 
@@ -846,12 +718,7 @@ bool EventPipe::WalkManagedStackForCurrentThread(StackContents &stackContents)
     CONTRACTL_END;
 
     Thread *pThread = GetThread();
-    if (pThread != NULL)
-    {
-        return WalkManagedStackForThread(pThread, stackContents);
-    }
-
-    return false;
+    return (pThread != NULL) ? WalkManagedStackForThread(pThread, stackContents) : false;
 }
 
 bool EventPipe::WalkManagedStackForThread(Thread *pThread, StackContents &stackContents)
@@ -913,45 +780,47 @@ StackWalkAction EventPipe::StackWalkCallback(CrawlFrame *pCf, StackContents *pDa
     return SWA_CONTINUE;
 }
 
-EventPipeEventInstance *EventPipe::GetNextEvent()
+EventPipeEventInstance *EventPipe::GetNextEvent(EventPipeSessionID sessionID)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(!GetLock()->OwnedByCurrentThread());
+        PRECONDITION(!IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
 
-    EventPipeEventInstance *pInstance = NULL;
-
     // Only fetch the next event if a tracing session exists.
     // The buffer manager is not disposed until the process is shutdown.
-    if (s_pSession != NULL)
-    {
-        pInstance = s_pBufferManager->GetNextEvent();
-    }
-
-    return pInstance;
+    EventPipeSession *pSession = nullptr;
+    return s_pSessions->Lookup(sessionID, &pSession) ? pSession->GetNextEvent() : nullptr;
 }
 
-/* static */ void EventPipe::InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData)
+void EventPipe::InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData)
 {
     EventPipeProvider::InvokeCallback(eventPipeProviderCallbackData);
 }
 
+EventPipeEventInstance *EventPipe::BuildEventMetadataEvent(EventPipeEventInstance &instance, unsigned int metadataId)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    // s_pConfig Gets initialized once on EventPipe::Initialize
+    return (s_pConfig != nullptr) ? s_pConfig->BuildEventMetadataEvent(instance, metadataId) : nullptr;
+}
+
 #ifdef DEBUG
-/* static */ bool EventPipe::IsLockOwnedByCurrentThread()
+bool EventPipe::IsLockOwnedByCurrentThread()
 {
     return GetLock()->OwnedByCurrentThread();
 }
-
-/* static */ bool EventPipe::IsBufferManagerLockOwnedByCurrentThread()
-{
-    return s_pBufferManager->IsLockOwnedByCurrentThread();
-}
 #endif
-
 
 #endif // FEATURE_PERFTRACING
