@@ -716,6 +716,9 @@ public class MsbuildGenerator {
 
 		case "/sourcelink":
 			return true;
+
+		case "/shared":
+			return true;
 		}
 
 		Console.Error.WriteLine ($"// Failing with : {arg}");
