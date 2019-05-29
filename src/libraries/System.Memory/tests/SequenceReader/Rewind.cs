@@ -80,7 +80,29 @@ namespace System.Memory.Tests.SequenceReader
             Assert.Throws<ArgumentOutOfRangeException>(() => new SequenceReader<byte>(bytes).Rewind(-1));
 
             // Can't pull more than we consumed
-            Assert.Throws<ArgumentOutOfRangeException>(() => new SequenceReader<byte>(bytes).Rewind(1));
+            SequenceReader<byte> reader = new SequenceReader<byte>(bytes);
+            try
+            {
+                reader.Rewind(1);
+                Assert.True(false, "no exception thrown");
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // Expected
+            }
+            Assert.Equal(0, reader.Consumed);
+
+            reader.Advance(1);
+            try
+            {
+                reader.Rewind(2);
+                Assert.True(false, "no exception thrown");
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // Expected
+            }
+            Assert.Equal(1, reader.Consumed);
         }
 
         [Fact]
