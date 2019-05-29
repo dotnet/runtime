@@ -65,7 +65,7 @@ namespace System.IO
         {
             // Lazily-initialize _asyncActiveSemaphore.  As we're never accessing the SemaphoreSlim's
             // WaitHandle, we don't need to worry about Disposing it.
-            return LazyInitializer.EnsureInitialized(ref _asyncActiveSemaphore, () => new SemaphoreSlim(1, 1))!;
+            return LazyInitializer.EnsureInitialized<SemaphoreSlim>(ref _asyncActiveSemaphore!, () => new SemaphoreSlim(1, 1)); // TODO-NULLABLE: Remove ! when nullable attributes are respected
         }
 
         public BufferedStream(Stream stream)

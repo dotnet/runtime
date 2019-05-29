@@ -36,15 +36,15 @@
     <MicrosoftDotNetBuildTasksFeedPackageVersion>2.2.0-beta.19278.1</MicrosoftDotNetBuildTasksFeedPackageVersion>
     <MicrosoftDotNetVersionToolsTasksPackageVersion>1.0.0-beta.19278.1</MicrosoftDotNetVersionToolsTasksPackageVersion>
     <!-- Core-setup dependencies -->
-    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview6-27727-02</MicrosoftNETCoreAppPackageVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview6-27727-02</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview6-27727-02</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview6-27728-04</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview6-27728-04</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview6-27728-04</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <!-- Coreclr dependencies -->
-    <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview6.19277.72</MicrosoftNETCoreILAsmPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview6.19277.72</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview6.19278.71</MicrosoftNETCoreILAsmPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview6.19278.71</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- Corefx dependencies -->
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview6.19277.2</MicrosoftNETCorePlatformsPackageVersion>
-    <runtimenativeSystemIOPortsPackageVersion>4.6.0-preview6.19277.2</runtimenativeSystemIOPortsPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview6.19278.7</MicrosoftNETCorePlatformsPackageVersion>
+    <runtimenativeSystemIOPortsPackageVersion>4.6.0-preview6.19278.7</runtimenativeSystemIOPortsPackageVersion>
     <!-- Standard dependencies -->
     <NETStandardLibraryPackageVersion>2.1.0-prerelease.19278.1</NETStandardLibraryPackageVersion>
     <!-- dotnet-optimization dependencies -->

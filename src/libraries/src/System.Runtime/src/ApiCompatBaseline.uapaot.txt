@@ -6,4 +6,13 @@ TypeCannotChangeClassification : Type 'System.Reflection.CustomAttributeNamedArg
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Reflection.CustomAttributeTypedArgument' in the contract but not the implementation.
 TypeCannotChangeClassification : Type 'System.Reflection.CustomAttributeTypedArgument' is marked as readonly in the contract so it must also be marked readonly in the implementation.
 MembersMustExist : Member 'System.String System.Runtime.CompilerServices.RuntimeFeature.DefaultImplementationsOfInterfaces' does not exist in the implementation but it does exist in the contract.
-Total Issues: 7
+TypesMustExist : Type 'System.Diagnostics.CodeAnalysis.AllowNullAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.CodeAnalysis.DisallowNullAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.CodeAnalysis.MaybeNullAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.CodeAnalysis.NotNullAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.CodeAnalysis.NotNullWhenAttribute' does not exist in the implementation but it does exist in the contract.
+Total Issues: 16
