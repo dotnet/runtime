@@ -12,6 +12,7 @@ namespace Mono.Linker.Steps
 
 		public bool FeatureCOM { get; set; }
 		public bool FeatureETW { get; set; }
+		public bool FeatureSRE { get; set; }
 
 		//
 		// Manually overrides System.Globalization.Invariant mode
@@ -55,6 +56,17 @@ namespace Mono.Linker.Steps
 					ExcludeEventSource (type);
 				else if (BCL.EventTracingForWindows.IsEventSourceImplementation (type))
 					ExcludeEventSourceImplementation (type);
+			}
+
+			if (FeatureSRE) {
+				if (type.Namespace == "System" && type.Name == "RuntimeType") {
+					foreach (var method in type.Methods) {
+						if (method.Name == "MakeTypeBuilderInstantiation") {
+							Annotations.SetAction (method, MethodAction.ConvertToThrow);
+							break;
+						}
+					}
+				}
 			}
 
 			if (RemoveCustomAttributes (type)) {
