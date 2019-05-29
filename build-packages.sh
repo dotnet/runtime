@@ -91,7 +91,7 @@ while :; do
             __Type=$(echo $1| cut -d'=' -f 2)
             buildArgs="$buildArgs /p:__BuildType=$__Type"
             ;;
-        -OfficialBuildId=*)
+        -OfficialBuildId=*|-officialbuildid=*)
             __Id=$(echo $1| cut -d'=' -f 2)
             buildArgs="$buildArgs /p:OfficialBuildId=$__Id"
             ;;

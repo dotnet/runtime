@@ -6,15 +6,6 @@
     <IsLineupPackage Condition="'$(IsLineupPackage)' == ''">true</IsLineupPackage>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <LongNamePlatform>$(PackagePlatform)</LongNamePlatform>
-    <LongNamePlatform Condition="'$(LongNamePlatform)'=='x64'">amd64</LongNamePlatform>
-    <CrossTargetPlatform>$(CrossTargetComponentFolder)</CrossTargetPlatform>
-    <CrossTargetPlatform Condition="'$(CrossTargetPlatform)'=='x64'">amd64</CrossTargetPlatform>
-    <LongNameSuffix>_$(LongNamePlatform)_$(LongNamePlatform)_$(MajorVersion).$(MinorVersion).$(BuildNumberMajor).$(BuildNumberMinor)</LongNameSuffix>
-    <CrossTargetLongNameSuffix>_$(CrossTargetPlatform)_$(LongNamePlatform)_$(MajorVersion).$(MinorVersion).$(BuildNumberMajor).$(BuildNumberMinor)</CrossTargetLongNameSuffix>
-  </PropertyGroup>
-
   <Import Condition="'$(_packageTargetOSGroup)' != ''" Project="$(MSBuildThisFileDirectory)runtime.$(_packageTargetOSGroup).$(MSBuildProjectName).props" />
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

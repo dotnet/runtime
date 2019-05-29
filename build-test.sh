@@ -490,13 +490,14 @@ build_native_projects()
         __versionSourceFile="$intermediatesForBuild/version.c"
         if [ $__SkipGenerateVersion == 0 ]; then
             pwd
-            $__ProjectRoot/dotnet.sh msbuild /nologo /verbosity:minimal /clp:Summary \
-                                     /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true \
-                                     /p:UsePartialNGENOptimization=false /maxcpucount \
-                                     $__ProjectDir/build.proj /t:GenerateVersionHeader \
-                                     /p:GenerateVersionHeader=true /p:NativeVersionSourceFile=$__versionSourceFile \
-                                     /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll\;LogFile=binclash.log \
-                                     $__CommonMSBuildArgs $__UnprocessedBuildArgs
+            $__ProjectRoot/eng/common/msbuild.sh $__ProjectRoot/eng/empty.proj \
+                                                 /p:NativeVersionFile=$__versionSourceFile \
+                                                 /p:ArcadeBuild=true /t:GenerateNativeVersionFile /restore \
+                                                 $__CommonMSBuildArgs $__UnprocessedBuildArgs
+            if [ $? -ne 0 ]; then
+                echo "Failed to generate native version file."
+                exit $?
+            fi
         else
             # Generate the dummy version.c, but only if it didn't exist to make sure we don't trigger unnecessary rebuild
             __versionSourceLine="static char sccsid[] __attribute__((used)) = \"@(#)No version information produced\";"
