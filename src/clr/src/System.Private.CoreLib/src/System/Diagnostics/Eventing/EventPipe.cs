@@ -118,12 +118,6 @@ namespace System.Diagnostics.Tracing
             get { return m_providers.ToArray(); }
         }
 
-        internal long ProfilerSamplingRateInNanoseconds
-        {
-            // 100 nanoseconds == 1 tick.
-            get { return m_minTimeBetweenSamples.Ticks * 100; }
-        }
-
         internal void EnableProvider(string providerName, ulong keywords, uint loggingLevel)
         {
             EnableProviderWithFilter(providerName, keywords, loggingLevel, null);
@@ -183,7 +177,6 @@ namespace System.Diagnostics.Tracing
             s_sessionID = EventPipeInternal.Enable(
                 configuration.OutputFile,
                 configuration.CircularBufferSizeInMB,
-                (ulong)configuration.ProfilerSamplingRateInNanoseconds,
                 providers,
                 (uint)providers.Length);
         }
@@ -203,7 +196,6 @@ namespace System.Diagnostics.Tracing
         internal static extern UInt64 Enable(
             string? outputFile,
             uint circularBufferSizeInMB,
-            ulong profilerSamplingRateInNanoseconds,
             EventPipeProviderConfiguration[] providers,
             uint numProviders);
 
@@ -242,7 +234,7 @@ namespace System.Diagnostics.Tracing
         internal static extern unsafe bool GetSessionInfo(UInt64 sessionID, EventPipeSessionInfo* pSessionInfo);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        internal static extern unsafe bool GetNextEvent(EventPipeEventInstanceData* pInstance);
+        internal static extern unsafe bool GetNextEvent(UInt64 sessionID, EventPipeEventInstanceData* pInstance);
     }
 }
 

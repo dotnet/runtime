@@ -12,7 +12,6 @@
 #ifdef FEATURE_PERFTRACING
 
 EventPipeEventInstance::EventPipeEventInstance(
-    EventPipeSession &session,
     EventPipeEvent &event,
     DWORD threadID,
     BYTE *pData,

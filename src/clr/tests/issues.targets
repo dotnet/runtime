@@ -518,6 +518,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_19601/Github_19601/*">
             <Issue>Needs Triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventsource/**/*">
+            <Issue>Failing on alpine, being tracked by #24772</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/tracevalidation/**/*">
+            <Issue>Failing on alpine, being tracked by #24772</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Unix arm64 specific -->

@@ -17,22 +17,22 @@ class EventPipeEvent
 private:
 
     // The provider that contains the event.
-    EventPipeProvider *m_pProvider;
+    EventPipeProvider *const m_pProvider;
 
     // Bit vector containing the keywords that enable the event.
-    INT64 m_keywords;
+    const INT64 m_keywords;
 
     // The ID (within the provider) of the event.
-    unsigned int m_eventID;
+    const unsigned int m_eventID;
 
     // The version of the event.
-    unsigned int m_eventVersion;
+    const unsigned int m_eventVersion;
 
     // The verbosity of the event.
-    EventPipeEventLevel m_level;
+    const EventPipeEventLevel m_level;
 
     // True if a call stack should be captured when writing the event.
-    bool m_needStack;
+    const bool m_needStack;
 
     // True if the event is current enabled.
     Volatile<bool> m_enabled;
@@ -51,11 +51,11 @@ private:
     // The provider is responsible for allocating and freeing events.
     EventPipeEvent(EventPipeProvider &provider, INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata = NULL, unsigned int metadataLength = 0);
 
-  public:
+public:
     ~EventPipeEvent();
 
     // Get the provider associated with this event.
-    EventPipeProvider* GetProvider() const;
+    EventPipeProvider *GetProvider() const;
 
     // Get the keywords that enable the event.
     INT64 GetKeywords() const;
@@ -79,11 +79,19 @@ private:
 
     unsigned int GetMetadataLength() const;
 
-  private:
+    bool IsEnabled(uint64_t sessionId) const;
+
+private:
     // used when Metadata is not provided
     BYTE *BuildMinimumMetadata();
 
-    unsigned int GetMinimumMetadataLength();
+    static const uint32_t MinimumMetadataLength =
+        sizeof(m_eventID) +
+        sizeof(W("")) + // size of empty unicode string
+        sizeof(m_keywords) +
+        sizeof(m_eventVersion) +
+        sizeof(m_level) +
+        sizeof(uint32_t); // parameter count
 };
 
 #endif // FEATURE_PERFTRACING

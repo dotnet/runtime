@@ -92,12 +92,14 @@ void EventPipeEventSource::Enable(EventPipeSession *pSession)
     }
     CONTRACTL_END;
 
-    EventPipeSessionProvider *pSessionProvider = new EventPipeSessionProvider(
+    if (pSession == nullptr)
+        return;
+
+    pSession->AddSessionProvider(new EventPipeSessionProvider(
         s_pProviderName,
-        -1,
+        static_cast<UINT64>(-1),
         EventPipeEventLevel::LogAlways,
-        NULL);
-    pSession->AddSessionProvider(pSessionProvider);
+        NULL));
 }
 
 void EventPipeEventSource::SendProcessInfo(LPCWSTR pCommandLine)
