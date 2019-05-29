@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization
 
             byte[] result;
 
-            using (var output = new PooledBufferWriter<byte>(options.DefaultBufferSize))
+            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
             {
                 WriteCore(output, value, type, options);
                 result = output.WrittenMemory.ToArray();
@@ -81,7 +81,7 @@ namespace System.Text.Json.Serialization
 
             string result;
 
-            using (var output = new PooledBufferWriter<byte>(options.DefaultBufferSize))
+            using (var output = new PooledByteBufferWriter(options.DefaultBufferSize))
             {
                 WriteCore(output, value, type, options);
                 result = JsonReaderHelper.TranscodeHelper(output.WrittenMemory.Span);
@@ -90,7 +90,7 @@ namespace System.Text.Json.Serialization
             return result;
         }
 
-        private static void WriteCore(PooledBufferWriter<byte> output, object value, Type type, JsonSerializerOptions options)
+        private static void WriteCore(PooledByteBufferWriter output, object value, Type type, JsonSerializerOptions options)
         {
             Debug.Assert(type != null || value == null);
 

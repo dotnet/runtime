@@ -106,7 +106,7 @@
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.cs" />
     <Compile Include="System\Text\Json\Serialization\MemberAccessor.cs" />
     <Compile Include="System\Text\Json\Serialization\Policies\JsonValueConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\PooledBufferWriter.cs" />
+    <Compile Include="System\Text\Json\Serialization\PooledByteBufferWriter.cs" />
     <Compile Include="System\Text\Json\Serialization\PropertyRef.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStack.cs" />
     <Compile Include="System\Text\Json\Serialization\ReadStackFrame.cs" />
