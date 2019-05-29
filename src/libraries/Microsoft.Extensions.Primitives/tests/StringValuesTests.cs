@@ -107,7 +107,45 @@ namespace Microsoft.Extensions.Primitives
                     { "abc", new[] { "abc" } },
                     { new[] { "abc" }, new[] { "abc" } },
                     { new[] { "abc", "bcd" }, new[] { "abc", "bcd" } },
-                    { new[] { "abc", "bcd", "foo" }, new[] { "abc", "bcd", "foo" } }
+                    { new[] { "abc", "bcd", "foo" }, new[] { "abc", "bcd", "foo" } },
+                    { new[] { null, "abc", "bcd", "foo" }, new[] { null, "abc", "bcd", "foo" } },
+                    { new[] { "abc", null, "bcd", "foo" }, new[] { "abc", null, "bcd", "foo" } },
+                    { new[] { "abc", "bcd", "foo", null }, new[] { "abc", "bcd", "foo", null } },
+                    { new[] { string.Empty, "abc", "bcd", "foo" }, new[] { string.Empty, "abc", "bcd", "foo" } },
+                    { new[] { "abc", string.Empty, "bcd", "foo" }, new[] { "abc", string.Empty, "bcd", "foo" } },
+                    { new[] { "abc", "bcd", "foo", string.Empty }, new[] { "abc", "bcd", "foo", string.Empty } }
+                };
+            }
+        }
+
+        public static TheoryData<StringValues, string> FilledStringValuesToStringToExpected
+        {
+            get
+            {
+                return new TheoryData<StringValues, string>
+                {
+                    { default(StringValues), string.Empty },
+                    { StringValues.Empty, string.Empty },
+                    { new StringValues(string.Empty), string.Empty },
+                    { new StringValues("abc"), "abc" },
+                    { new StringValues(new[] { "abc" }), "abc" },
+                    { new StringValues(new[] { "abc", "bcd" }), "abc,bcd" },
+                    { new StringValues(new[] { "abc", "bcd", "foo" }), "abc,bcd,foo" },
+                    { string.Empty, string.Empty },
+                    { (string)null, string.Empty },
+                    { "abc","abc" },
+                    { new[] { "abc" }, "abc" },
+                    { new[] { "abc", "bcd" }, "abc,bcd" },
+                    { new[] { "abc", null, "bcd" }, "abc,bcd" },
+                    { new[] { "abc", string.Empty, "bcd" }, "abc,bcd" },
+                    { new[] { "abc", "bcd", "foo" }, "abc,bcd,foo" },
+                    { new[] { null, "abc", "bcd", "foo" }, "abc,bcd,foo" },
+                    { new[] { "abc", null, "bcd", "foo" }, "abc,bcd,foo" },
+                    { new[] { "abc", "bcd", "foo", null }, "abc,bcd,foo" },
+                    { new[] { string.Empty, "abc", "bcd", "foo" }, "abc,bcd,foo" },
+                    { new[] { "abc", string.Empty, "bcd", "foo" }, "abc,bcd,foo" },
+                    { new[] { "abc", "bcd", "foo", string.Empty }, "abc,bcd,foo" },
+                    { new[] { "abc", "bcd", "foo", string.Empty, null }, "abc,bcd,foo" }
                 };
             }
         }
@@ -156,6 +194,13 @@ namespace Microsoft.Extensions.Primitives
             Assert.False(((ICollection<string>)stringValues).Contains(string.Empty));
             Assert.False(((ICollection<string>)stringValues).Contains("not there"));
             Assert.Empty(stringValues);
+        }
+
+        [Theory]
+        [MemberData(nameof(FilledStringValuesToStringToExpected))]
+        public void ToString_ExpectedValues(StringValues stringValues, string expected)
+        {
+            Assert.Equal(stringValues.ToString(), expected);
         }
 
         [Fact]

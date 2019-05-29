@@ -144,8 +144,75 @@ namespace Microsoft.Extensions.Primitives
                 {
                     case 0: return null;
                     case 1: return values[0];
-                    default: return string.Join(",", values);
+                    default: return GetJoinedStringValueFromArray(values);
                 }
+            }
+
+            static string GetJoinedStringValueFromArray(string[] values)
+            {
+                // Calculate final length
+                var length = 0;
+                for (var i = 0; i < values.Length; i++)
+                {
+                    var value = values[i];
+                    // Skip null and empty values
+                    if (value != null && value.Length > 0)
+                    {
+                        if (length > 0)
+                        {
+                            // Add seperator
+                            length++;
+                        }
+
+                        length += value.Length;
+                    }
+                }
+#if NETCOREAPP
+                // Create the new string
+                return string.Create(length, values, (span, strings) => {
+                    var offset = 0;
+                    // Skip null and empty values
+                    for (var i = 0; i < strings.Length; i++)
+                    {
+                        var value = strings[i];
+                        if (value != null && value.Length > 0)
+                        {
+                            if (offset > 0)
+                            {
+                                // Add seperator
+                                span[offset] = ',';
+                                offset++;
+                            }
+
+                            value.AsSpan().CopyTo(span.Slice(offset));
+                            offset += value.Length;
+                        }
+                    }
+                });
+#else
+#pragma warning disable CS0618
+                var sb = new InplaceStringBuilder(length);
+#pragma warning enable CS0618
+                var hasAdded = false;
+                // Skip null and empty values
+                for (var i = 0; i < values.Length; i++)
+                {
+                    var value = values[i];
+                    if (value != null && value.Length > 0)
+                    {
+                        if (hasAdded)
+                        {
+                            // Add seperator
+                            sb.Append(',');
+                        }
+
+                        sb.Append(value);
+                        hasAdded = true;
+                    }
+                }
+
+                return sb.ToString();
+#endif
             }
         }
 
