@@ -5,13 +5,18 @@ if(CMAKE_VERSION VERSION_EQUAL 3.0 OR CMAKE_VERSION VERSION_GREATER 3.0)
     cmake_policy(SET CMP0042 NEW)
 endif()
 
+if (NOT WIN32)
+  set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -std=c++11"  CACHE STRING "Flags used by the compiler during all build types.")
+  set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -std=c11"  CACHE STRING "Flags used by the compiler during all build types.")
+endif()
+
 # Set the project name
 project(CoreCLR)
 
 # Include cmake functions
 include(functions.cmake)
 
-# Include global configure settings
+# Verify that LTCG/LTO is available
 include(configure.cmake)
 
 if (WIN32)

@@ -158,13 +158,13 @@ if [ "$build_arch" = "armel" ]; then
     cmake_extra_defines="$cmake_extra_defines -DARM_SOFTFP=1"
 fi
 
-overridefile=gcc-compiler-override.txt
-
 __currentScriptDir="$script_dir"
 
-cmake \
+cmake_command=$(command -v cmake3 || command -v cmake)
+
+# Include CMAKE_USER_MAKE_RULES_OVERRIDE as uninitialized since it will hold its value in the CMake cache otherwise can cause issues when branch switching
+$cmake_command \
   -G "$generator" \
-  "-DCMAKE_USER_MAKE_RULES_OVERRIDE=${__currentScriptDir}/$overridefile" \
   "-DCMAKE_AR=$gcc_ar" \
   "-DCMAKE_LINKER=$gcc_link" \
   "-DCMAKE_NM=$gcc_nm" \
@@ -172,9 +172,10 @@ cmake \
   "-DCMAKE_OBJCOPY=$gcc_objcopy" \
   "-DCMAKE_OBJDUMP=$gcc_objdump" \
   "-DCMAKE_BUILD_TYPE=$buildtype" \
-  "-DCMAKE_EXPORT_COMPILE_COMMANDS=1 " \
   "-DCLR_CMAKE_ENABLE_CODE_COVERAGE=$code_coverage" \
   "-DCLR_CMAKE_COMPILER=GNU" \
+  "-DCMAKE_USER_MAKE_RULES_OVERRIDE=" \
+  "-DCMAKE_INSTALL_PREFIX=$__CMakeBinDir" \
   $cmake_extra_defines \
   "$__UnprocessedCMakeArgs" \
   "$1"
