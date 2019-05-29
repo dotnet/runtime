@@ -432,6 +432,51 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("target", op.Virtual);
         }
 
+        [Fact]
+        public void ValidateWithDependencies()
+        {
+            var services = new ServiceCollection()
+                .AddSingleton<Counter>()
+                .AddTransient<SomeCounterConsumer>();
+            services.AddOptions<FakeOptions>().Configure(o => o.Message = "default");
+            services.AddOptions<FakeOptions>("0dep").Configure(o => o.Message = "Foo")
+                .Validate(o => o.Message == "Foo");
+            services.AddOptions<FakeOptions>("1dep").Configure(o => o.Message = "Foo 0")
+                .Validate<SomeCounterConsumer>((o, s1) => o.Message == $"Foo {s1.Current}", "Custom failure message");
+            services.AddOptions<FakeOptions>("2dep").Configure(o => o.Message = "Foo 1 2")
+                .Validate<SomeCounterConsumer, SomeCounterConsumer>((o, s1, s2) => o.Message == $"Foo {s1.Current} {s2.Current}");
+            services.AddOptions<FakeOptions>("3dep").Configure(o => o.Message = "Foo 3 4 5")
+                .Validate<SomeCounterConsumer, SomeCounterConsumer, SomeCounterConsumer>((o, s1, s2, s3) => o.Message == $"Foo {s1.Current} {s2.Current} {s3.Current}");
+            services.AddOptions<FakeOptions>("4dep").Configure(o => o.Message = "Foo 6 7 8 9")
+                .Validate<SomeCounterConsumer, SomeCounterConsumer, SomeCounterConsumer, SomeCounterConsumer>((o, s1, s2, s3, s4) => o.Message == $"Foo {s1.Current} {s2.Current} {s3.Current} {s4.Current}");
+            services.AddOptions<FakeOptions>("5dep").Configure(o => o.Message = "Foo 10 11 12 13 14")
+                .Validate<SomeCounterConsumer, SomeCounterConsumer, SomeCounterConsumer, SomeCounterConsumer, SomeCounterConsumer>((o, s1, s2, s3, s4, s5) => o.Message == $"Foo {s1.Current} {s2.Current} {s3.Current} {s4.Current} {s5.Current}");
+
+            var sp = services.BuildServiceProvider();
+            var factory = sp.GetRequiredService<IOptionsFactory<FakeOptions>>();
+
+            Assert.Equal("default", factory.Create(Options.DefaultName).Message);
+            Assert.Equal("Foo", factory.Create("0dep").Message);
+            Assert.Equal("Foo 0", factory.Create("1dep").Message);
+            Assert.Equal("Foo 1 2", factory.Create("2dep").Message);
+            Assert.Equal("Foo 3 4 5", factory.Create("3dep").Message);
+            Assert.Equal("Foo 6 7 8 9", factory.Create("4dep").Message);
+            Assert.Equal("Foo 10 11 12 13 14", factory.Create("5dep").Message);
+
+            // factory caches configures
+            Assert.Equal("Foo 1 2", factory.Create("2dep").Message);
+
+            // A new factory will recreate validators which will resolve new SomeCounterConsumer
+            // dependencies. That means that the counters will be incremented, causing validation failures.
+            factory = sp.GetRequiredService<IOptionsFactory<FakeOptions>>();
+
+            var error1 = Assert.Throws<OptionsValidationException>(() => factory.Create("1dep"));
+            ValidateFailure<FakeOptions>(error1, "1dep", 1, "Custom failure message");
+
+            var error2 = Assert.Throws<OptionsValidationException>(() => factory.Create("2dep"));
+            ValidateFailure<FakeOptions>(error2, "2dep", 1);
+        }
+
         // Prototype of startup validation
 
         public interface IStartupValidator
