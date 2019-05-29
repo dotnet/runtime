@@ -663,6 +663,7 @@ int fx_muxer_t::initialize_for_app(
     const host_startup_info_t &host_info,
     int argc,
     const pal::char_t* argv[],
+    const opt_map_t &opts,
     hostfxr_handle *host_context_handle)
 {
     {
@@ -679,7 +680,6 @@ int fx_muxer_t::initialize_for_app(
     }
 
     host_mode_t mode = host_mode_t::apphost;
-    opt_map_t opts;
     pal::string_t hostpolicy_dir;
     std::unique_ptr<corehost_init_t> init;
     int rc = get_init_info_for_app(
