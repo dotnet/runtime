@@ -106,6 +106,7 @@
     <AssemblyVersion>4.0.0.0</AssemblyVersion>
     <ExcludeAssemblyInfoPartialFile>true</ExcludeAssemblyInfoPartialFile>
     <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <Description>$(AssemblyName)</Description>
   </PropertyGroup>
 
   <!-- Signing -->
