@@ -48,6 +48,11 @@ namespace System.Net.Tests
                     _processPrefixListener = listener;
                     _processPrefix = prefix;
                     _port = port;
+
+                    _processPrefixException = null;
+                    Socket socket = GetConnectedSocket();
+                    socket.Close();
+
                     break;
                 }
                 catch (Exception e)
@@ -141,18 +146,26 @@ namespace System.Net.Tests
 
         public Socket GetConnectedSocket()
         {
+
+            if (_processPrefixException != null)
+            {
+                throw new Exception("Could not create HttpListener", _processPrefixException);
+            }
+
+            string hostname = _hostname == "*" || _hostname == "+" ? "localhost" : _hostname;
+
             // Some platforms or distributions require IPv6 sockets if the OS supports IPv6. Others (e.g. Ubuntu) don't.
             try
             {
                 AddressFamily addressFamily = Socket.OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
                 Socket socket = new Socket(addressFamily, SocketType.Stream, ProtocolType.Tcp);
-                socket.Connect(Hostname, _port);
+                socket.Connect(hostname, Port);
                 return socket;
             }
             catch
             {
                 Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                socket.Connect(Hostname, _port);
+                socket.Connect(hostname, Port);
                 return socket;
             }            
         }
