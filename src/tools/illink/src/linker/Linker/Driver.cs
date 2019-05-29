@@ -369,6 +369,7 @@ namespace Mono.Linker {
 					p.AddStepBefore (typeof (MarkStep), new RemoveFeaturesStep () {
 						FeatureCOM = excluded_features.Contains ("com"),
 						FeatureETW = excluded_features.Contains ("etw"),
+						FeatureSRE = excluded_features.Contains ("sre"),
 						FeatureGlobalization = excluded_features.Contains ("globalization")
 					});
 
