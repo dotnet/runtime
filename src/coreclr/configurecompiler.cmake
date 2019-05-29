@@ -1,3 +1,12 @@
+# Set initial flags for each configuration
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+set(CLR_DEFINES_DEBUG_INIT              DEBUG _DEBUG _DBG URTBLDENV_FRIENDLY=Checked BUILDENV_CHECKED=1)
+set(CLR_DEFINES_CHECKED_INIT            DEBUG _DEBUG _DBG URTBLDENV_FRIENDLY=Checked BUILDENV_CHECKED=1)
+set(CLR_DEFINES_RELEASE_INIT            NDEBUG URTBLDENV_FRIENDLY=Retail)
+set(CLR_DEFINES_RELWITHDEBINFO_INIT     NDEBUG URTBLDENV_FRIENDLY=Retail)
+
 #----------------------------------------
 # Detect and set platform variable names
 #     - for non-windows build platform & architecture is detected using inbuilt CMAKE variables and cross target component configure
@@ -174,12 +183,27 @@ endif()
 # Initialize Cmake compiler flags and other variables
 #-----------------------------------------------------
 
+if(WIN32)
+    add_compile_options(/Zi /FC /Zc:strictStrings)
+elseif (CLR_CMAKE_PLATFORM_UNIX)
+    add_compile_options(-g)
+    # We need to add -Wall to CMAKE_<LANG>_FLAGS since add_compile_options takes precedence
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        add_compile_options(-Wno-null-conversion)
+    else()
+        # We need to add -Werror=conversion-null to CMAKE_<LANG>_FLAGS since add_compile_options takes precedence
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror=conversion-null")
+    endif()
+endif()
+
 if (CMAKE_CONFIGURATION_TYPES) # multi-configuration generator?
     set(CMAKE_CONFIGURATION_TYPES "Debug;Checked;Release;RelWithDebInfo" CACHE STRING "" FORCE)
 endif (CMAKE_CONFIGURATION_TYPES)
 
-set(CMAKE_C_FLAGS_CHECKED ${CLR_C_FLAGS_CHECKED_INIT} CACHE STRING "Flags used by the compiler during checked builds.")
-set(CMAKE_CXX_FLAGS_CHECKED ${CLR_CXX_FLAGS_CHECKED_INIT} CACHE STRING "Flags used by the compiler during checked builds.")
+set(CMAKE_C_FLAGS_CHECKED "")
+set(CMAKE_CXX_FLAGS_CHECKED "")
 set(CMAKE_EXE_LINKER_FLAGS_CHECKED "")
 set(CMAKE_SHARED_LINKER_FLAGS_CHECKED "")
 
@@ -263,7 +287,7 @@ elseif (CLR_CMAKE_PLATFORM_UNIX)
   # set the different configuration defines.
   if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
     # First DEBUG
-    set_property(DIRECTORY  PROPERTY COMPILE_DEFINITIONS ${CLR_DEFINES_DEBUG_INIT})
+    set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS ${CLR_DEFINES_DEBUG_INIT})
   elseif (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL CHECKED)
     # Then CHECKED
     set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS ${CLR_DEFINES_CHECKED_INIT})
@@ -604,3 +628,5 @@ if(CLR_CMAKE_ENABLE_CODE_COVERAGE)
   endif(CLR_CMAKE_PLATFORM_UNIX)
 
 endif(CLR_CMAKE_ENABLE_CODE_COVERAGE)
+
+include(${CMAKE_CURRENT_LIST_DIR}/configureoptimization.cmake)
