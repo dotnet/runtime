@@ -81,7 +81,7 @@ namespace System.IO.Pipes
             return r;
         }
 
-        private Task<int> ReadAsyncCore(Memory<byte> buffer, CancellationToken cancellationToken)
+        private ValueTask<int> ReadAsyncCore(Memory<byte> buffer, CancellationToken cancellationToken)
         {
             var completionSource = new ReadWriteCompletionSource(this, buffer, isWrite: false);
 
@@ -121,7 +121,7 @@ namespace System.IO.Pipes
 
                         completionSource.ReleaseResources();
                         UpdateMessageCompletion(true);
-                        return s_zeroTask;
+                        return new ValueTask<int>(0);
 
                     case Interop.Errors.ERROR_IO_PENDING:
                         break;
@@ -132,7 +132,7 @@ namespace System.IO.Pipes
             }
 
             completionSource.RegisterForCancellation(cancellationToken);
-            return completionSource.Task;
+            return new ValueTask<int>(completionSource.Task);
         }
 
         private unsafe void WriteCore(ReadOnlySpan<byte> buffer)

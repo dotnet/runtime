@@ -26,6 +26,7 @@ namespace System.Tests
             Assert.True((end - start) < 5 * size, $"Allocated too much: start: {start} end: {end} size: {size}");
         }
 
+        [ActiveIssue(37378)]
         [Fact]
         public static void GetGCMemoryInfo()
         {
