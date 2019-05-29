@@ -362,12 +362,10 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-call %__ProjectDir%\dotnet.cmd msbuild /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
-  /l:BinClashLogger,Tools/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
-  /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
-  /p:UsePartialNGENOptimization=false /maxcpucount^
-  %__ProjectDir%\build.proj /t:GenerateVersionHeader /p:GenerateVersionHeader=true /p:NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h"^
-  %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%~dp0eng\common\msbuild.ps1"^
+    %__ProjectDir%\eng\empty.proj /p:NativeVersionFile="%__RootBinDir%\obj\_version.h"^
+    /p:ArcadeBuild=true /t:GenerateNativeVersionFile /restore^
+    %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
 if not !errorlevel! == 0 (
     echo %__MsgPrefix%Error: Failed to generate version headers.
     exit /b !errorlevel!

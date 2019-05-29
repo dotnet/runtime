@@ -14,6 +14,7 @@
   <PropertyGroup>
     <ExcludePackagingImport>true</ExcludePackagingImport>
     <ExcludePackageLibsImport>true</ExcludePackageLibsImport>
+    <ExcludeVersioningImport>true</ExcludeVersioningImport>
   </PropertyGroup>
 
   <Import Project="$(ToolsDir)/Build.Common.targets" Condition="'$(UseLiveBuildTools)' != 'true'" />

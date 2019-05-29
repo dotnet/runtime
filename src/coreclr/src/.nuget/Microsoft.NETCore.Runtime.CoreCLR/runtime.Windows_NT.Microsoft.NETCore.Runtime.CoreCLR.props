@@ -1,21 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-
-  <!-- [ARCADE REMOVE] Native binaries use BuildTools versioning, not Arcade
-       Include the generated build version properties for BuildNumberMajor/BuildNumberMinor-->
-  <PropertyGroup>
-    <RootIntermediateOutputPath>$(CoreclrDir)\bin\obj\</RootIntermediateOutputPath>
-  </PropertyGroup>
-  <Import Project="$(CoreclrDir)\Tools\BuildVersion.targets" />
-
+<Project>
   <PropertyGroup>
     <PackageTargetRuntime>$(MinOSForArch)-$(PackagePlatform)</PackageTargetRuntime>
     <LongNamePlatform>$(Platform)</LongNamePlatform>
     <LongNamePlatform Condition="'$(Platform)'=='x64'">amd64</LongNamePlatform>
     <CrossTargetPlatform>$(CrossTargetComponentFolder)</CrossTargetPlatform>
     <CrossTargetPlatform Condition="'$(CrossTargetPlatform)'=='x64'">amd64</CrossTargetPlatform>
-    <LongNameSuffix>_$(LongNamePlatform)_$(LongNamePlatform)_$(NativeMajorVersion).$(NativeMinorVersion).$(BuildNumberMajor).$(BuildNumberMinor)</LongNameSuffix>
-    <CrossTargetLongNameSuffix>_$(CrossTargetPlatform)_$(LongNamePlatform)_$(NativeMajorVersion).$(NativeMinorVersion).$(BuildNumberMajor).$(BuildNumberMinor)</CrossTargetLongNameSuffix>
+    <LongNameSuffix>_$(LongNamePlatform)_$(LongNamePlatform)_$(FileVersion)</LongNameSuffix>
+    <CrossTargetLongNameSuffix>_$(CrossTargetPlatform)_$(LongNamePlatform)_$(FileVersion)</CrossTargetLongNameSuffix>
   </PropertyGroup>
 
   <ItemGroup>
