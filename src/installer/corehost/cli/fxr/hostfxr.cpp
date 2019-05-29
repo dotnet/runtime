@@ -436,69 +436,70 @@ namespace
 }
 
 //
-// Initializes the hosting components for running an application
+// Initializes the hosting components for a dotnet command line running an application
 //
 // Parameters:
 //    argc
 //      Number of argv arguments
 //    argv
-//      Arguments for the application. If argc is 0, this is ignored.
-//    app_path
-//      Path to the managed application. If this is nullptr, the first argument in argv is assumed to be
-//      the application path.
+//      Command-line arguments for running an application (as if through the dotnet executable).
 //    parameters
 //      Optional. Additional parameters for initialization
 //    host_context_handle
-//      On success, this will be populated with an opaque value representing the initalized host context
+//      On success, this will be populated with an opaque value representing the initialized host context
 //
 // Return value:
 //    Success          - Hosting components were successfully initialized
 //    HostInvalidState - Hosting components are already initialized
 //
-// The app_path will be used to find the corresponding .runtimeconfig.json and .deps.json with which to
-// resolve frameworks and dependencies and prepare everything needed to load the runtime.
+// This function parses the specified command-line arguments to determine the application to run. It will
+// then find the corresponding .runtimeconfig.json and .deps.json with which to resolve frameworks and
+// dependencies and prepare everything needed to load the runtime.
+//
+// This function only supports arguments for running an application. It does not support SDK commands.
 //
 // This function does not load the runtime.
 //
-SHARED_API int32_t __cdecl hostfxr_initialize_for_app(
+SHARED_API int32_t __cdecl hostfxr_initialize_for_dotnet_command_line(
     int argc,
     const pal::char_t *argv[],
-    const pal::char_t *app_path,
     const hostfxr_initialize_parameters * parameters,
     /*out*/ hostfxr_handle * host_context_handle)
 {
-    trace_hostfxr_entry_point(_X("hostfxr_initialize_for_app"));
+    trace_hostfxr_entry_point(_X("hostfxr_initialize_for_dotnet_command_line"));
 
-    if (host_context_handle == nullptr || (argv == nullptr && argc != 0) || (app_path == nullptr && argc == 0))
+    if (host_context_handle == nullptr || argv == nullptr || argc == 0)
         return StatusCode::InvalidArgFailure;
 
     *host_context_handle = nullptr;
 
     host_startup_info_t startup_info{};
-    int new_argc;
-    const pal::char_t **new_argv;
-    if (app_path != nullptr)
-    {
-        startup_info.app_path = app_path;
-        new_argc = argc;
-        new_argv = argv;
-    }
-    else
-    {
-        // Take the first argument as the app path
-        startup_info.app_path = argv[0];
-        new_argc = argc-1;
-        new_argv = argc > 0 ? &argv[1] : nullptr;
-    }
-
     int rc = populate_startup_info(parameters, startup_info);
     if (rc != StatusCode::Success)
         return rc;
 
+    int new_argoff;
+    opt_map_t opts;
+    rc = command_line::parse_args_for_mode(
+        host_mode_t::muxer,
+        startup_info,
+        argc,
+        argv,
+        &new_argoff,
+        startup_info.app_path,
+        opts,
+        false /*args_include_running_executable*/);
+    if (rc != StatusCode::Success)
+        return rc;
+
+    new_argoff++; // Skip the app path to get to app args
+    int app_argc = argc - new_argoff;
+    const pal::char_t **app_argv = app_argc > 0 ? &argv[new_argoff] : nullptr;
     return fx_muxer_t::initialize_for_app(
         startup_info,
-        new_argc,
-        new_argv,
+        app_argc,
+        app_argv,
+        opts,
         host_context_handle);
 }
 
@@ -511,7 +512,7 @@ SHARED_API int32_t __cdecl hostfxr_initialize_for_app(
 //    parameters
 //      Optional. Additional parameters for initialization
 //    host_context_handle
-//      On success, this will be populated with an opaque value representing the initalized host context
+//      On success, this will be populated with an opaque value representing the initialized host context
 //
 // Return value:
 //    Success                            - Hosting components were successfully initialized
@@ -565,7 +566,7 @@ SHARED_API int32_t __cdecl hostfxr_initialize_for_runtime_config(
 // Return value:
 //     If the app was successfully run, the exit code of the application. Otherwise, the error code result.
 //
-// The host_context_handle must have been initialized using hostfxr_initialize_for_app.
+// The host_context_handle must have been initialized using hostfxr_initialize_for_dotnet_command_line.
 //
 // This function will not return until the managed application exits.
 //

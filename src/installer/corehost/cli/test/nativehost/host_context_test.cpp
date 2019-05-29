@@ -22,7 +22,7 @@ namespace
     class hostfxr_exports
     {
     public:
-        hostfxr_initialize_for_app_fn init_app;
+        hostfxr_initialize_for_dotnet_command_line_fn init_command_line;
         hostfxr_run_app_fn run_app;
 
         hostfxr_initialize_for_runtime_config_fn init_config;
@@ -45,7 +45,7 @@ namespace
                 throw StatusCode::CoreHostLibLoadFailure;
             }
 
-            init_app = (hostfxr_initialize_for_app_fn)pal::get_symbol(_dll, "hostfxr_initialize_for_app");
+            init_command_line = (hostfxr_initialize_for_dotnet_command_line_fn)pal::get_symbol(_dll, "hostfxr_initialize_for_dotnet_command_line");
             run_app = (hostfxr_run_app_fn)pal::get_symbol(_dll, "hostfxr_run_app");
 
             init_config = (hostfxr_initialize_for_runtime_config_fn)pal::get_symbol(_dll, "hostfxr_initialize_for_runtime_config");
@@ -59,7 +59,7 @@ namespace
 
             main_startupinfo = (hostfxr_main_startupinfo_fn)pal::get_symbol(_dll, "hostfxr_main_startupinfo");
 
-            if (init_app == nullptr || run_app == nullptr
+            if (init_command_line == nullptr || run_app == nullptr
                 || init_config == nullptr || get_delegate == nullptr
                 || get_prop_value == nullptr || set_prop_value == nullptr
                 || get_properties == nullptr || close == nullptr
@@ -266,7 +266,6 @@ host_context_test::check_properties host_context_test::check_properties_from_str
 bool host_context_test::app(
     check_properties check_properties,
     const pal::string_t &hostfxr_path,
-    const pal::char_t *app_path,
     int argc,
     const pal::char_t *argv[],
     pal::stringstream_t &test_output)
@@ -274,10 +273,10 @@ bool host_context_test::app(
     hostfxr_exports hostfxr { hostfxr_path };
 
     hostfxr_handle handle;
-    int rc = hostfxr.init_app(argc, argv, app_path, nullptr, &handle);
+    int rc = hostfxr.init_command_line(argc, argv, nullptr, &handle);
     if (rc != StatusCode::Success)
     {
-        test_output << _X("hostfxr_initialize_for_app failed: ") << std::hex << std::showbase << rc << std::endl;
+        test_output << _X("hostfxr_initialize_for_command_line failed: ") << std::hex << std::showbase << rc << std::endl;
         return false;
     }
 
@@ -377,11 +376,16 @@ bool host_context_test::mixed(
 {
     hostfxr_exports hostfxr { hostfxr_path };
 
+    std::vector<const pal::char_t*> argv_local;
+    argv_local.push_back(app_path);
+    for (int i = 0; i < argc; ++i)
+        argv_local.push_back(argv[i]);
+
     hostfxr_handle handle;
-    int rc = hostfxr.init_app(argc, argv, app_path, nullptr, &handle);
+    int rc = hostfxr.init_command_line(argv_local.size(), argv_local.data(), nullptr, &handle);
     if (rc != StatusCode::Success)
     {
-        test_output << _X("hostfxr_initialize_for_app failed: ") << std::hex << std::showbase << rc << std::endl;
+        test_output << _X("hostfxr_initialize_for_command_line failed: ") << std::hex << std::showbase << rc << std::endl;
         return false;
     }
 

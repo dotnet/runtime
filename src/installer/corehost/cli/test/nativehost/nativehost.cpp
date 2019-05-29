@@ -99,7 +99,8 @@ int main(const int argc, const pal::char_t *argv[])
         bool success = false;
         if (pal::strcmp(scenario, _X("app")) == 0)
         {
-            success = host_context_test::app(check_properties, hostfxr_path, app_or_config_path, remaining_argc, remaining_argv, test_output);
+            // Everything after hostfxr path is the command line to use
+            success = host_context_test::app(check_properties, hostfxr_path, remaining_argc + 1, &argv[5], test_output);
         }
         else if (pal::strcmp(scenario, _X("config")) == 0)
         {

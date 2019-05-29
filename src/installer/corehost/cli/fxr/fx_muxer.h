@@ -25,6 +25,7 @@ public:
         const host_startup_info_t& host_info,
         int argc,
         const pal::char_t* argv[],
+        const opt_map_t& opts,
         hostfxr_handle *host_context_handle);
     static int initialize_for_runtime_config(
         const host_startup_info_t& host_info,

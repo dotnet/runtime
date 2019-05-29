@@ -148,21 +148,21 @@ The `hostfxr_initialize_parameters` structure stores parameters which are common
 
 
 ``` C
-int hostfxr_initialize_for_app(
+int hostfxr_initialize_for_dotnet_command_line(
     int argc,
     const char_t * argv[],
-    const char_t * app_path,
     const hostfxr_initialize_parameters * parameters,
     hostfxr_handle * host_context_handle
 );
 ```
 
 Initializes the hosting components for running a managed application.
-When used to execute an app, the `app_path` (or CLI equivalent) will be used to locate the `.runtimeconfig.json` and the `.deps.json` which will be used to load the application and its dependent frameworks.
-* `argc` and `argv` - the command line - optional, if `argc` is `0` then `argv` is ignored.
-* `app_path` - path to the application (the managed `.dll`) to run. This can be `nullptr` if the app is specified in the command line arguments.
+The command line is parsed to determine the app path. The app path will be used to locate the `.runtimeconfig.json` and the `.deps.json` which will be used to load the application and its dependent frameworks.
+* `argc` and `argv` - the command line for running a managed application. These represent the arguments which would have been passed to the muxer if the app was being run from the command line.
 * `parameters` - additional parameters - see `hostfxr_initialize_parameters` for details. (Could be made optional potentially)
 * `host_context_handle` - output parameter. On success receives an opaque value which identifies the initialized host context. The handle should be closed by calling `hostfxr_close`.
+
+This function only supports arguments for running an application as through the muxer. It does not support SDK commands.
 
 This function can only be called once per-process. It's not supported to run multiple apps in one process (even sequentially).
 
@@ -180,7 +180,7 @@ int hostfxr_initialize_for_runtime_config(
 ```
 
 This function would load the specified `.runtimeconfig.json`, resolve all frameworks, resolve all the assets from those frameworks and then prepare runtime initialization where the TPA contains only frameworks. Note that this case does NOT consume any `.deps.json` from the app/component (only processes the framework's `.deps.json`). This entry point is intended for `comhost`/`ijwhost`/`nethost` and similar scenarios.
-* `runtime_config_path` - path to the `.runtimeconfig.json` file to process. Unlike with the `hostfxr_initialize_for_app`, any `.deps.json` from the app/component will not be processed by the hosting layers.
+* `runtime_config_path` - path to the `.runtimeconfig.json` file to process. Unlike with `hostfxr_initialize_for_dotnet_command_line`, any `.deps.json` from the app/component will not be processed by the hosting layers.
 * `parameters` - additional parameters - see `hostfxr_initialize_parameters` for details. (Could be made optional potentially)
 * `host_context_handle` - output parameter. On success receives an opaque value which identifies the initialized host context. The handle should be closed by calling `hostfxr_close`.
 
@@ -189,7 +189,7 @@ This function can be called multiple times in a process.
 * If it's called when there already is CoreCLR in the process (loaded through the `hostfxr`, direct usage of `coreclr` is not supported), then the function determines if the specified runtime configuration is compatible with the existing runtime and frameworks. If it is, it returns a valid handle, otherwise it fails.
 
 It needs to be possible to call this function simultaneously from multiple threads at the same time.
-It also needs to be possible to call this function while there is an active host context created by `hostfxr_initialize_for_app` and running inside the `hostfxr_run_app`.
+It also needs to be possible to call this function while there is an active host context created by `hostfxr_initialize_for_dotnet_command_line` and running inside the `hostfxr_run_app`.
 
 The function returns specific return code for the first initialized host context, and a different one for any subsequent one. Both return codes are considered "success". If there already was initialized host context in the process then the returned host context has these limitations:
 * It won't allow setting runtime properties.
@@ -272,7 +272,7 @@ Note that `hostfxr_set_runtime_property_value` can remove or add new properties,
 ``` C
 int hostfxr_run_app(const hostfxr_handle host_context_handle);
 ```
-Runs the application specified by the `hostfxr_initialize_for_app`. It is illegal to try to use this function when the host context was initialized through any other way.
+Runs the application specified by the `hostfxr_initialize_for_dotnet_command_line`. It is illegal to try to use this function when the host context was initialized through any other way.
 * `host_context_handle` - handle to the initialized host context.
 
 The function will return only once the managed application exits.
@@ -293,7 +293,7 @@ Starts the runtime and returns a function pointer to specified functionality of 
   * `winrt_activation` - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/WinRT-activation.md) for more details.
 * `delegate` - when successful, the native function pointer to the requested runtime functionality.
 
-Initially the function will only work if `hostfxr_initialize_for_runtime_config` was used to initialize the host context. Later on this could be relaxed to allow being used in combination with `hostfxr_initialize_for_app`.  
+Initially the function will only work if `hostfxr_initialize_for_runtime_config` was used to initialize the host context. Later on this could be relaxed to allow being used in combination with `hostfxr_initialize_for_dotnet_command_line`.  
 
 Initially there might be a limitation of calling this function only once on a given host context to simplify the implementation. Currently we don't have a scenario where it would be absolutely required to support multiple calls.
 
@@ -375,10 +375,9 @@ params.host_path = get_path_to_the_host_exe(); // Path to the current executable
 params.dotnet_root = get_directory(get_directory(get_directory(hostfxr_path))); // Three levels up from hostfxr typically
 
 hostfxr_handle host_context_handle;
-hostfxr_initialize_for_app(
+hostfxr_initialize_for_dotnet_command_line(
     _argc_,
     _argv_,
-    _app_path_,
     &params,
     &host_context_handle);
 
