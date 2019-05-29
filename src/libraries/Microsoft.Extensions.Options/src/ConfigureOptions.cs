@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Options
     /// <summary>
     /// Implementation of <see cref="IConfigureOptions{TOptions}"/>.
     /// </summary>
-    /// <typeparam name="TOptions"></typeparam>
+    /// <typeparam name="TOptions">Options type being configured.</typeparam>
     public class ConfigureOptions<TOptions> : IConfigureOptions<TOptions> where TOptions : class
     {
         /// <summary>
@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Invokes the registered configure <see cref="Action"/>.
         /// </summary>
-        /// <param name="options"></param>
+        /// <param name="options">The options instance to configure.</param>
         public virtual void Configure(TOptions options)
         {
             if (options == null)

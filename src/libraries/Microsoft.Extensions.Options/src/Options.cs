@@ -16,9 +16,9 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Creates a wrapper around an instance of <typeparamref name="TOptions"/> to return itself as an <see cref="IOptions{TOptions}"/>.
         /// </summary>
-        /// <typeparam name="TOptions"></typeparam>
-        /// <param name="options"></param>
-        /// <returns></returns>
+        /// <typeparam name="TOptions">Options type.</typeparam>
+        /// <param name="options">Options object.</param>
+        /// <returns>Wrapped options object.</returns>
         public static IOptions<TOptions> Create<TOptions>(TOptions options) where TOptions : class, new()
         {
             return new OptionsWrapper<TOptions>(options);

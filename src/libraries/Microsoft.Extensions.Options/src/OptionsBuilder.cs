@@ -213,7 +213,7 @@ namespace Microsoft.Extensions.Options
 
         /// <summary>
         /// Registers an action used to post configure a particular type of options.
-        /// Note: These are run before after <seealso cref="Configure(Action{TOptions})"/>.
+        /// Note: These are run after all <seealso cref="Configure(Action{TOptions})"/>.
         /// </summary>
         /// <typeparam name="TDep">The dependency used by the action.</typeparam>
         /// <param name="configureOptions">The action used to configure the options.</param>
@@ -233,7 +233,7 @@ namespace Microsoft.Extensions.Options
 
         /// <summary>
         /// Registers an action used to post configure a particular type of options.
-        /// Note: These are run before after <seealso cref="Configure(Action{TOptions})"/>.
+        /// Note: These are run after all <seealso cref="Configure(Action{TOptions})"/>.
         /// </summary>
         /// <typeparam name="TDep1">The first dependency used by the action.</typeparam>
         /// <typeparam name="TDep2">The second dependency used by the action.</typeparam>
@@ -255,7 +255,7 @@ namespace Microsoft.Extensions.Options
 
         /// <summary>
         /// Registers an action used to post configure a particular type of options.
-        /// Note: These are run before after <seealso cref="Configure(Action{TOptions})"/>.
+        /// Note: These are run after all <seealso cref="Configure(Action{TOptions})"/>.
         /// </summary>
         /// <typeparam name="TDep1">The first dependency used by the action.</typeparam>
         /// <typeparam name="TDep2">The second dependency used by the action.</typeparam>
@@ -284,7 +284,7 @@ namespace Microsoft.Extensions.Options
 
         /// <summary>
         /// Registers an action used to post configure a particular type of options.
-        /// Note: These are run before after <seealso cref="Configure(Action{TOptions})"/>.
+        /// Note: These are run after all <seealso cref="Configure(Action{TOptions})"/>.
         /// </summary>
         /// <typeparam name="TDep1">The first dependency used by the action.</typeparam>
         /// <typeparam name="TDep2">The second dependency used by the action.</typeparam>
@@ -316,7 +316,7 @@ namespace Microsoft.Extensions.Options
 
         /// <summary>
         /// Registers an action used to post configure a particular type of options.
-        /// Note: These are run before after <seealso cref="Configure(Action{TOptions})"/>.
+        /// Note: These are run after all <seealso cref="Configure(Action{TOptions})"/>.
         /// </summary>
         /// <typeparam name="TDep1">The first dependency used by the action.</typeparam>
         /// <typeparam name="TDep2">The second dependency used by the action.</typeparam>
@@ -350,7 +350,7 @@ namespace Microsoft.Extensions.Options
         }
 
         /// <summary>
-        /// Register a validation action for an options type using a default failure message..
+        /// Register a validation action for an options type using a default failure message.
         /// </summary>
         /// <param name="validation">The validation function.</param>
         /// <returns>The current <see cref="OptionsBuilder{TOptions}"/>.</returns>

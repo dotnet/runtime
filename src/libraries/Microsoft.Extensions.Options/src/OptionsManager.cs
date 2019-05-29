@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.Options
     /// <summary>
     /// Implementation of <see cref="IOptions{TOptions}"/> and <see cref="IOptionsSnapshot{TOptions}"/>.
     /// </summary>
-    /// <typeparam name="TOptions"></typeparam>
+    /// <typeparam name="TOptions">Options type.</typeparam>
     public class OptionsManager<TOptions> : IOptions<TOptions>, IOptionsSnapshot<TOptions> where TOptions : class, new()
     {
         private readonly IOptionsFactory<TOptions> _factory;
