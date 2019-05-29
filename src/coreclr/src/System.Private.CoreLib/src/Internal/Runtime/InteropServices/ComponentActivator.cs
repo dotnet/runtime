@@ -18,7 +18,6 @@ namespace Internal.Runtime.InteropServices
         private static readonly Dictionary<string, IsolatedComponentLoadContext> s_AssemblyLoadContexts;
         private static readonly Dictionary<IntPtr, Delegate> s_Delegates = new Dictionary<IntPtr, Delegate>();
 
-        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
 
         static ComponentActivator()
