@@ -26,6 +26,16 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void DeserializeObjectArray_36167()
+        {
+            // https://github.com/dotnet/corefx/issues/36167
+            object[] data = JsonSerializer.Parse<object[]>("[1]");
+            Assert.Equal(1, data.Length);
+            Assert.IsType<JsonElement>(data[0]);
+            Assert.Equal(1, ((JsonElement)data[0]).GetInt32());
+        }
+
+        [Fact]
         public static void ReadEmptyObjectArray()
         {
             SimpleTestClass[] data = JsonSerializer.Parse<SimpleTestClass[]>("[{}]");
