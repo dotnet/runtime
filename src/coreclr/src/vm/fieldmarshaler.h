@@ -447,7 +447,9 @@ protected:
         Module::RestoreMethodTablePointer(ppMT);
 #else // FEATURE_PREJIT
         // without NGEN we only have to make sure that the type is fully loaded
-        ClassLoader::EnsureLoaded(ppMT->GetValue());
+        MethodTable* pMT = ppMT->GetValue();
+        if (pMT != NULL)
+            ClassLoader::EnsureLoaded(pMT);
 #endif // FEATURE_PREJIT
     }
 
@@ -1094,7 +1096,9 @@ public:
         Module::RestoreTypeHandlePointer(&m_arrayType);
 #else // FEATURE_PREJIT
         // without NGEN we only have to make sure that the type is fully loaded
-        ClassLoader::EnsureLoaded(m_arrayType.GetValue());
+        TypeHandle th = m_arrayType.GetValue();
+        if (!th.IsNull())
+            ClassLoader::EnsureLoaded(th);
 #endif // FEATURE_PREJIT
         FieldMarshaler::RestoreImpl();
     }
