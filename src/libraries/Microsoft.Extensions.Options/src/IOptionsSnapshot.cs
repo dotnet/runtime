@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.Options
     /// <summary>
     /// Used to access the value of <typeparamref name="TOptions"/> for the lifetime of a request.
     /// </summary>
-    /// <typeparam name="TOptions"></typeparam>
+    /// <typeparam name="TOptions">Options type.</typeparam>
     public interface IOptionsSnapshot<out TOptions> : IOptions<TOptions> where TOptions : class, new()
     {
         /// <summary>

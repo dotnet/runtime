@@ -14,9 +14,9 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="validation"></param>
-        /// <param name="failureMessage"></param>
+        /// <param name="name">Options name.</param>
+        /// <param name="validation">Validation function.</param>
+        /// <param name="failureMessage">Validation failure message.</param>
         public ValidateOptions(string name, Func<TOptions, bool> validation, string failureMessage)
         {
             Name = name;
@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Options
         public string Name { get; }
 
         /// <summary>
-        /// The validation action.
+        /// The validation function.
         /// </summary>
         public Func<TOptions, bool> Validation { get; }
 
