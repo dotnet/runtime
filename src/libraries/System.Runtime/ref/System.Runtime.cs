@@ -4184,6 +4184,43 @@ namespace System.Diagnostics
         }
     }
 }
+namespace System.Diagnostics.CodeAnalysis
+{
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, Inherited = false)]
+    public sealed class AllowNullAttribute : System.Attribute { }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property, Inherited = false)]
+    public sealed class DisallowNullAttribute : System.Attribute { }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Method, Inherited = false)]
+    public sealed class DoesNotReturnAttribute : System.Attribute { }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
+    public sealed class DoesNotReturnIfAttribute : System.Attribute
+    {
+        public DoesNotReturnIfAttribute(bool parameterValue) { }
+        public bool ParameterValue { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited = false)]
+    public sealed class MaybeNullAttribute : System.Attribute { }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
+    public sealed class MaybeNullWhenAttribute : System.Attribute
+    {
+        public MaybeNullWhenAttribute(bool returnValue) { }
+        public bool ReturnValue { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, Inherited = false)]
+    public sealed class NotNullAttribute : System.Attribute { }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter | System.AttributeTargets.Property | System.AttributeTargets.ReturnValue, AllowMultiple = true, Inherited = false)]
+    public sealed class NotNullIfNotNullAttribute : System.Attribute
+    {
+        public NotNullIfNotNullAttribute(string parameterName) { }
+        public string ParameterName { get { throw null; } }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Parameter, Inherited = false)]
+    public sealed class NotNullWhenAttribute : System.Attribute
+    {
+        public NotNullWhenAttribute(bool returnValue) { }
+        public bool ReturnValue { get { throw null; } }
+    }
+}
 namespace System.Globalization
 {
     public abstract partial class Calendar : System.ICloneable

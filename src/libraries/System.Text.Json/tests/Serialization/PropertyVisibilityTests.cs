@@ -68,6 +68,26 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void PrivateSetterPublicGetter()
+        {
+            // https://github.com/dotnet/corefx/issues/37567
+            ClassWithPublicGetterAndPrivateSetter obj
+                = JsonSerializer.Parse<ClassWithPublicGetterAndPrivateSetter>(@"{ ""Class"": {} }");
+
+            Assert.NotNull(obj);
+            Assert.Null(obj.Class);
+        }
+
+        private class ClassWithPublicGetterAndPrivateSetter
+        {
+            public NestedClass Class { get; private set; }
+        }
+
+        private class NestedClass
+        {
+        }
+
+        [Fact]
         public static void JsonIgnoreAttribute()
         {
             // Verify default state.

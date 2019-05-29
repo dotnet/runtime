@@ -27,6 +27,7 @@
     <Compile Include="SequenceReader\Advance.cs" />
     <Compile Include="SequenceReader\BasicTests.cs" />
     <Compile Include="SequenceReader\BinaryExtensions.cs" />
+    <Compile Include="SequenceReader\CopyTo.cs" />
     <Compile Include="SequenceReader\IsNext.cs" />
     <Compile Include="SequenceReader\OwnedArray.cs" />
     <Compile Include="SequenceReader\ReadTo.cs" />
@@ -38,7 +39,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AllocationHelper.cs" />
-    <Compile Include="SequenceReader\CopyTo.cs" />
     <Compile Include="TInt.cs" />
     <Compile Include="TestException.cs" />
     <Compile Include="TestHelpers.cs" />
