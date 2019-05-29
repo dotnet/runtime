@@ -21,6 +21,8 @@ class Test
     private const string RelativePath3 = @"../DllImportPathTest/libDllImportPath_Relative";
 #endif
 
+    private const string UnicodeFileName = "DllImportPath_Unicode✔";
+
     [DllImport(@"DllImportPath_Local", CharSet = CharSet.Unicode, EntryPoint = "MarshalStringPointer_InOut")]
     private static extern bool MarshalStringPointer_InOut_Local1([In, Out]ref string strManaged);
 
@@ -45,7 +47,7 @@ class Test
     [DllImport(@".\..\DllImportPathTest\DllImportPath_Relative.dll", CharSet = CharSet.Unicode, EntryPoint = "MarshalStringPointer_InOut")]
     private static extern bool MarshalStringPointer_InOut_Relative4([In, Out]ref string strManaged);
 
-    [DllImport(@"DllImportPath_U�n�i�c�o�d�e", CharSet = CharSet.Unicode, EntryPoint = "MarshalStringPointer_InOut")]
+    [DllImport(UnicodeFileName, CharSet = CharSet.Unicode, EntryPoint = "MarshalStringPointer_InOut")]
     private static extern bool MarshalStringPointer_InOut_Unicode([In, Out]ref string strManaged);
     
     [DllImport(PathEnvFileName, CharSet = CharSet.Unicode, EntryPoint = "MarshalStringPointer_InOut")]
@@ -233,8 +235,26 @@ class Test
         return true;
     }
 
+    private static void SetupUnicodeTest()
+    {
+        var currentDirectory = Directory.GetCurrentDirectory();
+        var info = new DirectoryInfo(currentDirectory);
+
+        var file = info.EnumerateFiles("*DllImportPath_Local*", SearchOption.TopDirectoryOnly)
+                        .FirstOrDefault(localFile =>
+                            localFile.Extension == ".dll"
+                            || localFile.Extension == ".so"
+                            || localFile.Extension == ".dylib");
+        
+        var unicodeFileLocation = file.FullName.Replace("DllImportPath_Local", UnicodeFileName);
+
+        file.CopyTo(unicodeFileLocation, true);
+    }
+
     static bool DllExistsUnicode()
     {
+        SetupUnicodeTest();
+
         string managed = "Managed";
         string native = " Native";
         
