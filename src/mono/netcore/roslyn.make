@@ -1,1 +1,1 @@
-ROSLYN_VERSION := 3.2.0-beta1-final
+ROSLYN_VERSION := 3.2.0-beta3-19279-03
