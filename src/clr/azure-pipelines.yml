@@ -4,7 +4,7 @@ variables:
 resources:
   containers:
   - container: ubuntu_1404_arm_cross_build_image
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-14.04-cross-1735d26-20190521133857
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-14.04-23cacb0-20190528233931
 
   - container: ubuntu_1604_arm64_cross_build_image
     image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-cfdd435-20190520220848
