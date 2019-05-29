@@ -46,6 +46,20 @@ namespace System.Buffers.Text.Tests
         }
 
         [Fact]
+        public void DecodeGuid()
+        {
+            Span<byte> source = new byte[24];
+            Span<byte> decodedBytes = Guid.NewGuid().ToByteArray();
+            Base64.EncodeToUtf8(decodedBytes, source, out int _, out int _);
+
+            Assert.Equal(OperationStatus.Done,
+                Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
+            Assert.Equal(24, consumed);
+            Assert.Equal(16, decodedByteCount);
+            Assert.True(Base64TestHelper.VerifyDecodingCorrectness(source.Length, decodedBytes.Length, source, decodedBytes));
+        }
+
+        [Fact]
         public void BasicDecodingWithFinalBlockFalse()
         {
             var rnd = new Random(42);
