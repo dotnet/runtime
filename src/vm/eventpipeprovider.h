@@ -21,10 +21,7 @@ class EventPipeProvider
 
 private:
     // The name of the provider.
-    SString m_providerName;
-
-    // True if the provider is enabled.
-    bool m_enabled;
+    const SString m_providerName;
 
     // Bit vector containing the currently enabled keywords.
     INT64 m_keywords;
@@ -49,6 +46,9 @@ private:
     // has been deferred until tracing is stopped.
     bool m_deleteDeferred;
 
+    // Bit mask of sessions for which this provider is enabled.
+    uint64_t m_sessions;
+
     // Private constructor because all providers are created through EventPipe::CreateProvider.
     EventPipeProvider(EventPipeConfiguration *pConfig, const SString &providerName, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
 
@@ -60,7 +60,17 @@ public:
     const SString& GetProviderName() const;
 
     // Determine if the provider is enabled.
-    bool Enabled() const;
+    bool Enabled() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_sessions != 0);
+    }
+
+    bool IsEnabled(uint64_t sessionId) const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return ((m_sessions & sessionId) != 0);
+    }
 
     // Determine if the specified keywords are enabled.
     bool EventEnabled(INT64 keywords) const;
@@ -76,12 +86,23 @@ private:
     // Add an event to the provider.
     void AddEvent(EventPipeEvent &event);
 
-    // Set the provider configuration (enable and disable sets of events).
+    // Set the provider configuration (enable sets of events).
     // This is called by EventPipeConfiguration.
-    EventPipeProviderCallbackData SetConfiguration(bool providerEnabled, INT64 keywords, EventPipeEventLevel providerLevel, LPCWSTR pFilterData);
+    EventPipeProviderCallbackData SetConfiguration(
+        uint64_t sessionId,
+        INT64 keywords,
+        EventPipeEventLevel providerLevel,
+        LPCWSTR pFilterData);
+
+    // Unset the provider configuration for the specified session (disable sets of events).
+    // This is called by EventPipeConfiguration.
+    EventPipeProviderCallbackData UnsetConfiguration(uint64_t sessionId);
 
     // Refresh the runtime state of all events.
-    void RefreshAllEvents();
+    void RefreshAllEvents(
+        uint64_t sessionId,
+        INT64 keywords,
+        EventPipeEventLevel providerLevel);
 
     // Prepare the data required for invoking callback
     EventPipeProviderCallbackData PrepareCallbackData(LPCWSTR pFilterData);

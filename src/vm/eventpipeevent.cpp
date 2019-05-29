@@ -8,24 +8,33 @@
 
 #ifdef FEATURE_PERFTRACING
 
-EventPipeEvent::EventPipeEvent(EventPipeProvider &provider, INT64 keywords, unsigned int eventID, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata, unsigned int metadataLength)
+EventPipeEvent::EventPipeEvent(
+    EventPipeProvider &provider,
+    INT64 keywords,
+    unsigned int eventID,
+    unsigned int eventVersion,
+    EventPipeEventLevel level,
+    bool needStack,
+    BYTE *pMetadata,
+    unsigned int metadataLength) : m_pProvider(&provider),
+                                   m_keywords(keywords),
+                                   m_eventID(eventID),
+                                   m_eventVersion(eventVersion),
+                                   m_level(level),
+                                   m_needStack(needStack),
+                                   m_enabled(false),
+                                   m_pMetadata(nullptr)
 {
     CONTRACTL
     {
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
+        PRECONDITION(&provider != nullptr);
     }
     CONTRACTL_END;
 
-    m_pProvider = &provider;
-    m_keywords = keywords;
-    m_eventID = eventID;
-    m_eventVersion = eventVersion;
-    m_level = level;
-    m_needStack = needStack;
-    m_enabled = false;
-    if (pMetadata != NULL)
+    if (pMetadata != nullptr)
     {
         m_pMetadata = new BYTE[metadataLength];
         memcpy(m_pMetadata, pMetadata, metadataLength);
@@ -35,7 +44,7 @@ EventPipeEvent::EventPipeEvent(EventPipeProvider &provider, INT64 keywords, unsi
     {
         // if metadata is not provided, we have to build the minimum version. It's required by the serialization contract
         m_pMetadata = BuildMinimumMetadata();
-        m_metadataLength = GetMinimumMetadataLength();
+        m_metadataLength = MinimumMetadataLength;
     }
 }
 
@@ -49,26 +58,7 @@ EventPipeEvent::~EventPipeEvent()
     }
     CONTRACTL_END;
 
-    if (m_pMetadata != NULL)
-    {
-        delete[] m_pMetadata;
-        m_pMetadata = NULL;
-    }
-}
-
-unsigned int EventPipeEvent::GetMinimumMetadataLength()
-{
-    LIMITED_METHOD_CONTRACT;
-    
-    unsigned int minimumMetadataLength =
-        sizeof(m_eventID) +
-        (SString::Empty().GetCount() + 1) * sizeof(WCHAR) + // size of empty unicode string
-        sizeof(m_keywords) +
-        sizeof(m_eventVersion) +
-        sizeof(m_level) +
-        sizeof(unsigned int); // parameter count
-
-    return minimumMetadataLength;
+    delete[] m_pMetadata;
 }
 
 BYTE *EventPipeEvent::BuildMinimumMetadata()
@@ -81,9 +71,7 @@ BYTE *EventPipeEvent::BuildMinimumMetadata()
     }
     CONTRACTL_END;
 
-    unsigned int minmumMetadataLength = GetMinimumMetadataLength();
-
-    BYTE *minmumMetadata = new BYTE[minmumMetadataLength];
+    BYTE *minmumMetadata = new BYTE[MinimumMetadataLength];
     BYTE *currentPtr = minmumMetadata;
 
     // the order of fields is defined in coreclr\src\mscorlib\shared\System\Diagnostics\Tracing\EventSource.cs DefineEventPipeEvents method
@@ -92,7 +80,7 @@ BYTE *EventPipeEvent::BuildMinimumMetadata()
 
     SString eventName = SString::Empty();
     unsigned int eventNameSize = (eventName.GetCount() + 1) * sizeof(WCHAR);
-    memcpy(currentPtr, (BYTE*)eventName.GetUnicode(), eventNameSize);
+    memcpy(currentPtr, (BYTE *)eventName.GetUnicode(), eventNameSize);
     currentPtr += eventNameSize;
 
     memcpy(currentPtr, &m_keywords, sizeof(m_keywords));
@@ -111,74 +99,73 @@ BYTE *EventPipeEvent::BuildMinimumMetadata()
     return minmumMetadata;
 }
 
-EventPipeProvider* EventPipeEvent::GetProvider() const
+EventPipeProvider *EventPipeEvent::GetProvider() const
 {
     LIMITED_METHOD_CONTRACT;
-
     return m_pProvider;
 }
 
 INT64 EventPipeEvent::GetKeywords() const
 {
     LIMITED_METHOD_CONTRACT;
-
     return m_keywords;
 }
 
 unsigned int EventPipeEvent::GetEventID() const
 {
     LIMITED_METHOD_CONTRACT;
-
     return m_eventID;
 }
 
 unsigned int EventPipeEvent::GetEventVersion() const
 {
     LIMITED_METHOD_CONTRACT;
-
     return m_eventVersion;
 }
 
 EventPipeEventLevel EventPipeEvent::GetLevel() const
 {
     LIMITED_METHOD_CONTRACT;
-
     return m_level;
 }
 
 bool EventPipeEvent::NeedStack() const
 {
     LIMITED_METHOD_CONTRACT;
-
     return m_needStack;
 }
 
 bool EventPipeEvent::IsEnabled() const
 {
     LIMITED_METHOD_CONTRACT;
-
     return m_enabled;
 }
 
 BYTE *EventPipeEvent::GetMetadata() const
 {
     LIMITED_METHOD_CONTRACT;
-
     return m_pMetadata;
 }
 
 unsigned int EventPipeEvent::GetMetadataLength() const
 {
     LIMITED_METHOD_CONTRACT;
-
     return m_metadataLength;
 }
 
 void EventPipeEvent::RefreshState()
 {
     LIMITED_METHOD_CONTRACT;
-
     m_enabled = m_pProvider->EventEnabled(m_keywords, m_level);
+}
+
+bool EventPipeEvent::IsEnabled(uint64_t sessionId) const
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERT(m_pProvider != nullptr);
+    const bool IsProviderEnabled = m_pProvider->IsEnabled(sessionId);
+    const bool IsEventEnabled = m_pProvider->EventEnabled(m_keywords, m_level);
+    return (IsProviderEnabled && IsEventEnabled);
 }
 
 #endif // FEATURE_PERFTRACING

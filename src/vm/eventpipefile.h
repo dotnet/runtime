@@ -9,9 +9,10 @@
 
 #include "eventpipe.h"
 #include "eventpipeblock.h"
-#include "eventpipeeventinstance.h"
 #include "fastserializableobject.h"
 
+class EventPipeConfiguration;
+class EventPipeEventInstance;
 class FastSerializer;
 
 class EventPipeFile final : public FastSerializableObject
