@@ -241,10 +241,6 @@ namespace Mono.Linker {
 
 							continue;
 
-						case "-reference":
-							context.Resolver.AddReferenceAssembly (GetParam ());
-							continue;
-
 						case "--new-mvid":
 							if (!bool.Parse (GetParam()))
 								p.RemoveStep (typeof (RegenerateGuidStep));
@@ -267,6 +263,12 @@ namespace Mono.Linker {
 							Usage (null);
 							break;
 						}
+					}
+
+					// Ensure this does not conflict with '-r' below.
+					if (token == "-reference") {
+						context.Resolver.AddReferenceAssembly (GetParam ());
+						continue;
 					}
 
 					switch (token [1]) {
