@@ -76,6 +76,7 @@ static FILE *mini_stats_fd;
 
 static void mini_usage (void);
 static void mono_runtime_set_execution_mode (MonoEEMode mode);
+static void mono_runtime_set_execution_mode_full (MonoEEMode mode, gboolean override);
 static int mono_jit_exec_internal (MonoDomain *domain, MonoAssembly *assembly, int argc, char *argv[]);
 
 #ifdef HOST_WIN32
@@ -1884,12 +1885,8 @@ apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_do
 }
 
 static void
-mono_enable_interp (const char *opts)
+mono_check_interp_supported (void)
 {
-	mono_runtime_set_execution_mode (MONO_EE_MODE_INTERP);
-	if (opts)
-		mono_interp_opts_string = opts;
-
 #ifdef DISABLE_INTERPRETER
 	g_error ("Mono IL interpreter support is missing\n");
 #endif
@@ -1901,7 +1898,6 @@ mono_enable_interp (const char *opts)
 #ifndef MONO_ARCH_INTERPRETER_SUPPORTED
 	g_error ("--interpreter not supported on this architecture.\n");
 #endif
-
 }
 
 static int
@@ -2345,9 +2341,10 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--nollvm") == 0){
 			mono_use_llvm = FALSE;
 		} else if ((strcmp (argv [i], "--interpreter") == 0) || !strcmp (argv [i], "--interp")) {
-			mono_enable_interp (NULL);
+			mono_runtime_set_execution_mode (MONO_EE_MODE_INTERP);
 		} else if (strncmp (argv [i], "--interp=", 9) == 0) {
-			mono_enable_interp (argv [i] + 9);
+			mono_runtime_set_execution_mode_full (MONO_EE_MODE_INTERP, FALSE);
+			mono_interp_opts_string = argv [i] + 9;
 		} else if (strcmp (argv [i], "--print-icall-table") == 0) {
 #ifdef ENABLE_ICALL_SYMBOL_MAP
 			print_icall_table ();
@@ -2798,8 +2795,13 @@ mono_jit_set_aot_only (gboolean val)
 }
 
 static void
-mono_runtime_set_execution_mode (MonoEEMode mode)
+mono_runtime_set_execution_mode_full (MonoEEMode mode, gboolean override)
 {
+	static gboolean mode_initialized = FALSE;
+	if (mode_initialized && !override)
+		return;
+
+	mode_initialized = TRUE;
 	memset (&mono_ee_features, 0, sizeof (mono_ee_features));
 
 	switch (mode) {
@@ -2843,6 +2845,7 @@ mono_runtime_set_execution_mode (MonoEEMode mode)
 		break;
 
 	case MONO_EE_MODE_INTERP:
+		mono_check_interp_supported ();
 		mono_use_interpreter = TRUE;
 
 		mono_ee_features.force_use_interpreter = TRUE;
@@ -2855,6 +2858,13 @@ mono_runtime_set_execution_mode (MonoEEMode mode)
 	default:
 		g_error ("Unknown execution-mode %d", mode);
 	}
+
+}
+
+static void
+mono_runtime_set_execution_mode (MonoEEMode mode)
+{
+	mono_runtime_set_execution_mode_full (mode, TRUE);
 }
 
 /**
