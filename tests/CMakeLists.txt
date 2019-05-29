@@ -1,15 +1,20 @@
 # Require at least version 2.8.12 of CMake
 cmake_minimum_required(VERSION 2.8.12)
 
-# Include global configure settings
-include(${CMAKE_CURRENT_SOURCE_DIR}/../configure.cmake)
-include(${CMAKE_CURRENT_SOURCE_DIR}/../configurecompiler.cmake)
+if (NOT WIN32)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
+endif()
 
 set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Platform)
 if (WIN32)
     add_definitions(-DWINDOWS=1)
 endif()
 
+# Verify that LTCG/LTO is available
+include(${CMAKE_CURRENT_SOURCE_DIR}/../configure.cmake)
+# Include global configure settings
+include(${CMAKE_CURRENT_SOURCE_DIR}/../configurecompiler.cmake)
 # Compile options
 
 if (WIN32)
