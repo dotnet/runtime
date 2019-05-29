@@ -158,8 +158,6 @@ namespace System.Net.Http
         {
             SslStream sslStream = new SslStream(stream);
 
-            // TODO #25206 and #24430: Register/IsCancellationRequested should be removable once SslStream auth and sockets respect cancellation.
-            CancellationTokenRegistration ctr = cancellationToken.Register(s => ((Stream)s).Dispose(), stream);
             try
             {
                 await sslStream.AuthenticateAsClientAsync(sslOptions, cancellationToken).ConfigureAwait(false);
@@ -174,10 +172,6 @@ namespace System.Net.Http
                 }
 
                 throw new HttpRequestException(SR.net_http_ssl_connection_failed, e);
-            }
-            finally
-            {
-                ctr.Dispose();
             }
 
             // Handle race condition if cancellation happens after SSL auth completes but before the registration is disposed
