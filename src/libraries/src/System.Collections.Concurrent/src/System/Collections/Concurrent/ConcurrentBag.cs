@@ -1052,8 +1052,10 @@ namespace System.Collections.Concurrent
                 get
                 {
                     Debug.Assert(Monitor.IsEntered(this));
-                    int count = _addTakeCount - _stealCount;
-                    Debug.Assert(count >= 0);
+                    int stealCount = _stealCount;
+                    int addTakeCount = _addTakeCount;
+                    int count = addTakeCount - stealCount;
+                    Debug.Assert(count >= 0, $"Expected _addTakeCount ({addTakeCount}) >= _stealCount ({stealCount}).");
                     return count;
                 }
             }

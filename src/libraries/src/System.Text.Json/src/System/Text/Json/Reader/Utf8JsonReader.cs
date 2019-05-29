@@ -132,6 +132,13 @@ namespace System.Text.Json
         public bool HasValueSequence { get; private set; }
 
         /// <summary>
+        /// Returns the mode of this instance of the <see cref="Utf8JsonReader"/>.
+        /// True when the reader was constructed with the input span containing the entire data to process.
+        /// False when the reader was constructed knowing that the input span may contain partial data with more data to follow.
+        /// </summary>
+        public bool IsFinalBlock => _isFinalBlock;
+
+        /// <summary>
         /// Gets the value of the last processed token as a ReadOnlySpan&lt;byte&gt; slice
         /// of the input payload. If the JSON is provided within a ReadOnlySequence&lt;byte&gt;
         /// and the slice that represents the token value fits in a single segment, then
@@ -258,6 +265,102 @@ namespace System.Text.Json
                 }
             }
             return retVal;
+        }
+
+        /// <summary>
+        /// Skips the children of the current JSON token.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown when the reader was given partial data with more data to follow (i.e. _isFinalBlock is false).
+        /// </exception>
+        public void Skip()
+        {
+            if (!_isFinalBlock)
+            {
+                throw ThrowHelper.GetInvalidOperationException_CannotSkipOnPartial();
+            }
+
+            SkipHelper();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void SkipHelper()
+        {
+            Debug.Assert(_isFinalBlock);
+
+            if (TokenType == JsonTokenType.PropertyName)
+            {
+                bool result = Read();
+                // Since _isFinalBlock == true here, and the JSON token is not a primitive value or comment.
+                // Read() is guaranteed to return true OR throw for invalid/incomplete data.
+                Debug.Assert(result);
+            }
+
+            if (TokenType == JsonTokenType.StartObject || TokenType == JsonTokenType.StartArray)
+            {
+                int depth = CurrentDepth;
+                do
+                {
+                    bool result = Read();
+                    // Since _isFinalBlock == true here, and the JSON token is not a primitive value or comment.
+                    // Read() is guaranteed to return true OR throw for invalid/incomplete data.
+                    Debug.Assert(result);
+                }
+                while (depth < CurrentDepth);
+            }
+        }
+
+        /// <summary>
+        /// Tries to skip the children of the current JSON token.
+        /// </summary>
+        /// <returns>True if there was enough data for the children to be skipped successfully, else false.</returns>
+        /// <remarks>
+        /// If the reader did not have enough data to completely skip the children of the current token,
+        /// it will be reset to the state it was in before the method was called.
+        /// </remarks>
+        public bool TrySkip()
+        {
+            if (_isFinalBlock)
+            {
+                SkipHelper();
+                return true;
+            }
+
+            return TrySkipHelper();
+        }
+
+        private bool TrySkipHelper()
+        {
+            Debug.Assert(!_isFinalBlock);
+
+            Utf8JsonReader restore = this;
+
+            if (TokenType == JsonTokenType.PropertyName)
+            {
+                if (!Read())
+                {
+                    goto Restore;
+                }
+            }
+
+            if (TokenType == JsonTokenType.StartObject || TokenType == JsonTokenType.StartArray)
+            {
+                int depth = CurrentDepth;
+                do
+                {
+                    if (!Read())
+                    {
+                        goto Restore;
+                    }
+                }
+                while (depth < CurrentDepth);
+            }
+
+            return true;
+
+        Restore:
+            this = restore;
+            return false;
         }
 
         /// <summary>

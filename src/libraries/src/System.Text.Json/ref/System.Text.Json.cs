@@ -189,6 +189,7 @@ namespace System.Text.Json
         public int CurrentDepth { get { throw null; } }
         public System.Text.Json.JsonReaderState CurrentState { get { throw null; } }
         public bool HasValueSequence { get { throw null; } }
+        public bool IsFinalBlock { get { throw null; } }
         public System.SequencePosition Position { get { throw null; } }
         public long TokenStartIndex { get { throw null; } }
         public System.Text.Json.JsonTokenType TokenType { get { throw null; } }
@@ -210,6 +211,7 @@ namespace System.Text.Json
         [System.CLSCompliantAttribute(false)]
         public ulong GetUInt64() { throw null; }
         public bool Read() { throw null; }
+        public void Skip() { }
         public bool TextEquals(System.ReadOnlySpan<byte> otherUtf8Text) { throw null; }
         public bool TextEquals(System.ReadOnlySpan<char> otherText) { throw null; }
         public bool TryGetDateTime(out System.DateTime value) { throw null; }
@@ -224,6 +226,7 @@ namespace System.Text.Json
         public bool TryGetUInt32(out uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public bool TryGetUInt64(out ulong value) { throw null; }
+        public bool TrySkip() { throw null; }
     }
     public sealed partial class Utf8JsonWriter : System.IDisposable
     {
@@ -371,8 +374,8 @@ namespace System.Text.Json.Serialization
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonPropertyNameAttribute : System.Text.Json.Serialization.JsonAttribute
     {
-        public JsonPropertyNameAttribute(string propertyName) { }
-        public string Name { get { throw null; } set { } }
+        public JsonPropertyNameAttribute(string name) { }
+        public string Name { get { throw null; } }
     }
     public static partial class JsonSerializer
     {
