@@ -12,12 +12,6 @@
     <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
   </PropertyGroup>
 
-  <!-- Version numbers for native binaries -->
-  <PropertyGroup>
-    <MajorVersion>$(NativeMajorVersion)</MajorVersion>
-    <MinorVersion>$(NativeMinorVersion)</MinorVersion>
-  </PropertyGroup>
-
   <!--
      Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer
      as well as running the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.

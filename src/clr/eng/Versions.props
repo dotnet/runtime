@@ -3,6 +3,9 @@
   <PropertyGroup>
     <!-- The .NET Core product branding version -->
     <ProductVersion>3.0.0</ProductVersion>
+    <!-- File version numbers -->
+    <MajorVersion>4</MajorVersion>
+    <MinorVersion>7</MinorVersion>
     <!-- Always use shipping version instead of dummy versions -->
     <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
     <PreReleaseVersionLabel>preview6</PreReleaseVersionLabel>

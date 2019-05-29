@@ -159,10 +159,10 @@ jobs:
 
     # Build packages
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: ./build-packages.sh -BuildArch=$(archType) -BuildType=$(buildConfigUpper) $(crossPackagesArg) -OfficialBuildId=$(Build.BuildNumber) $(portableBuildArg) -ci
+      - script: ./build-packages.sh -BuildArch=$(archType) -BuildType=$(buildConfigUpper) $(crossPackagesArg) $(officialBuildIdArg) $(portableBuildArg) -ci
         displayName: Build packages
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: build-packages.cmd -BuildArch=$(archType) -BuildType=$(buildConfigUpper) -OfficialBuildId=$(Build.BuildNumber) -ci
+      - script: build-packages.cmd -BuildArch=$(archType) -BuildType=$(buildConfigUpper) $(officialBuildIdArg) -ci
         displayName: Build packages
 
     # Publish official build
