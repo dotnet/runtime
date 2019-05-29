@@ -190,7 +190,6 @@ void EventPipeProtocolHelper::CollectTracing(DiagnosticsIpc::IpcMessage& message
     auto sessionId = EventPipe::Enable(
         nullptr,                                        // strOutputPath (ignored in this scenario)
         payload->circularBufferSizeInMB,                         // circularBufferSizeInMB
-        DefaultProfilerSamplingRateInNanoseconds,       // ProfilerSamplingRateInNanoseconds
         payload->providerConfigs.Ptr(),                          // pConfigs
         static_cast<uint32_t>(payload->providerConfigs.Size()),  // numConfigs
         EventPipeSessionType::IpcStream,                // EventPipeSessionType

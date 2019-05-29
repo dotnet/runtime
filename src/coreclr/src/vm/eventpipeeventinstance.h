@@ -23,7 +23,7 @@ class EventPipeEventInstance
 
 public:
 
-    EventPipeEventInstance(EventPipeSession &session, EventPipeEvent &event, DWORD threadID, BYTE *pData, unsigned int length, LPCGUID pActivityId, LPCGUID pRelatedActivityId);
+    EventPipeEventInstance(EventPipeEvent &event, DWORD threadID, BYTE *pData, unsigned int length, LPCGUID pActivityId, LPCGUID pRelatedActivityId);
 
     void EnsureStack(const EventPipeSession &session);
 

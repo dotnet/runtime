@@ -42,13 +42,7 @@ EventPipeBlock::~EventPipeBlock()
     }
     CONTRACTL_END;
 
-    if(m_pBlock != NULL)
-    {
-        m_pEndOfTheBuffer = NULL;
-        m_pWritePointer = NULL;
-        delete[] m_pBlock;
-        m_pBlock = NULL;
-    }
+    delete[] m_pBlock;
 }
 
 bool EventPipeBlock::WriteEvent(EventPipeEventInstance &instance)

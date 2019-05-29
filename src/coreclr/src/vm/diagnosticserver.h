@@ -7,10 +7,8 @@
 
 #ifdef FEATURE_PERFTRACING // This macro should change to something more generic than performance.
 
-#include <stdint.h>
 #include "diagnosticsipc.h"
 
-//! TODO: Temp class.
 enum class DiagnosticMessageType : uint32_t
 {
     ///////////////////////////////////////////////////////////////////////////
@@ -28,7 +26,6 @@ enum class DiagnosticMessageType : uint32_t
     AttachProfiler = 2048,
 };
 
-//! TODO: Temp class.
 struct MessageHeader
 {
     DiagnosticMessageType RequestType;

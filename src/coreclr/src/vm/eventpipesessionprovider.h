@@ -46,7 +46,6 @@ private:
 class EventPipeSessionProviderList
 {
 public:
-
     // Create a new list based on the input.
     EventPipeSessionProviderList(
         const EventPipeProviderConfiguration *pConfigs,
@@ -62,6 +61,9 @@ public:
 
     // Returns true if the list is empty.
     bool IsEmpty() const;
+
+    // Clear the list of providers.
+    void Clear();
 
     EventPipeSessionProviderList() = delete;
     EventPipeSessionProviderList(const EventPipeSessionProviderList &other) = delete;

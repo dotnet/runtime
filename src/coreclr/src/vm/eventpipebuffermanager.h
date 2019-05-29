@@ -14,20 +14,25 @@
 #include "spinlock.h"
 
 class EventPipeBufferList;
+class EventPipeBufferManager;
 class EventPipeThread;
 
 void ReleaseEventPipeThreadRef(EventPipeThread* pThread);
 void AcquireEventPipeThreadRef(EventPipeThread* pThread);
 typedef Wrapper<EventPipeThread*, AcquireEventPipeThreadRef, ReleaseEventPipeThreadRef> EventPipeThreadHolder;
 
+typedef MapSHashWithRemove<EventPipeBufferManager *, EventPipeBuffer *> EventPipeWriteBuffers;
+typedef MapSHashWithRemove<EventPipeBufferManager *, EventPipeBufferList *> EventPipeBufferLists;
+
 class EventPipeThread
 {
 #ifndef __GNUC__
-    __declspec(thread) static EventPipeThreadHolder gCurrentEventPipeThreadHolder;
-#else // !__GNUC__
-    thread_local static EventPipeThreadHolder gCurrentEventPipeThreadHolder;
+    __declspec(thread) static
+#else  // !__GNUC__
+    thread_local static
 #endif // !__GNUC__
-    EventPipeBufferList * m_pThreadEventBufferList = NULL;
+        EventPipeThreadHolder gCurrentEventPipeThreadHolder;
+
     ~EventPipeThread();
 
     // The EventPipeThreadHolder maintains one count while the thread is alive
@@ -35,32 +40,48 @@ class EventPipeThread
     // exists
     LONG m_refCount;
 
-    // this is the one and only buffer this thread is allowed to write to
-    // if non-null, it must match the tail of the m_bufferList
+    // this is a dictionary of { buffer-manager, buffer } this thread is
+    // allowed to write to if exists or non-null, it must match the tail of the
+    // m_bufferList
     // this pointer is protected by m_lock
-    EventPipeBuffer *m_pWriteBuffer = NULL;
+    EventPipeWriteBuffers *m_pWriteBuffers = nullptr;
 
-    // this is a list of buffers that were written to by this thread
+    // this is a dictionary of { buffer-manager, list of buffers } that were
+    // written to by this thread
     // it is protected by EventPipeBufferManager::m_lock
-    EventPipeBufferList *m_pBufferList = NULL;
+    EventPipeBufferLists *m_pBufferLists = nullptr;
 
     // This lock is designed to have low contention. Normally it is only taken by this thread,
     // but occasionally it may also be taken by another thread which is trying to collect and drain
     // buffers from all threads.
     SpinLock m_lock;
 
+#ifdef DEBUG
+    template <typename T>
+    static bool AllValuesAreNull(T &map)
+    {
+        LIMITED_METHOD_CONTRACT;
+        for (typename T::Iterator iter = map.Begin(); iter != map.End(); ++iter)
+            if (iter->Value() != nullptr)
+                return false;
+        return true;
+    }
+#endif // DEBUG
+
 public:
-    static EventPipeThread* Get();
-    static void Set(EventPipeThread* pThread);
+    static EventPipeThread *Get();
+    static void Set(EventPipeThread *pThread);
 
     EventPipeThread();
     void AddRef();
     void Release();
-    SpinLock * GetLock();
-    EventPipeBuffer* GetWriteBuffer();
-    void SetWriteBuffer(EventPipeBuffer* pNewBuffer);
-    EventPipeBufferList * GetBufferList();
-    void SetBufferList(EventPipeBufferList * pBufferList); 
+    SpinLock *GetLock();
+
+    EventPipeBuffer *GetWriteBuffer(EventPipeBufferManager *pBufferManager);
+    void SetWriteBuffer(EventPipeBufferManager *pBufferManager, EventPipeBuffer *pNewBuffer);
+    EventPipeBufferList *GetBufferList(EventPipeBufferManager *pBufferManager);
+    void SetBufferList(EventPipeBufferManager *pBufferManager, EventPipeBufferList *pBufferList);
+    void Remove(EventPipeBufferManager *pBufferManager);
 };
 
 class EventPipeBufferManager
@@ -127,15 +148,15 @@ public:
     // The caller is required to synchronize all calls to SuspendWriteEvent() and ResumeWriteEvent()
     void ResumeWriteEvent();
 
-    // From the time this function returns until ResumeWriteEvent() is called a suspended state will 
-    // be in effect that blocks all WriteEvent activity. All existing buffers will be in the 
-    // READ_ONLY state and no new EventPipeBuffers or EventPipeBufferLists can be created. Calls to 
-    // WriteEvent that start during the suspension period or were in progress but hadn't yet recorded 
-    // their event into a buffer before the start of the suspension period will return false and the 
-    // event will not be recorded. Any events that not recorded as a result of this suspension will be 
+    // From the time this function returns until ResumeWriteEvent() is called a suspended state will
+    // be in effect that blocks all WriteEvent activity. All existing buffers will be in the
+    // READ_ONLY state and no new EventPipeBuffers or EventPipeBufferLists can be created. Calls to
+    // WriteEvent that start during the suspension period or were in progress but hadn't yet recorded
+    // their event into a buffer before the start of the suspension period will return false and the
+    // event will not be recorded. Any events that not recorded as a result of this suspension will be
     // treated the same as events that were not recorded due to configuration.
-    // EXPECTED USAGE: First the caller will disable all events via configuration, then call 
-    // SuspendWriteEvents() to force any WriteEvent calls that may still be in progress to either
+    // EXPECTED USAGE: First the caller will disable all events via configuration, then call
+    // SuspendWriteEvent() to force any WriteEvent calls that may still be in progress to either
     // finish or cancel. After that all BufferLists and Buffers can be safely drained and/or deleted.
     // The caller is required to synchronize all calls to SuspendWriteEvent() and ResumeWriteEvent()
     void SuspendWriteEvent();
@@ -143,7 +164,7 @@ public:
     // Write the contents of the managed buffers to the specified file.
     // The stopTimeStamp is used to determine when tracing was stopped to ensure that we
     // skip any events that might be partially written due to races when tracing is stopped.
-    void WriteAllBuffersToFile(EventPipeFile *pFastSerializableObject, LARGE_INTEGER stopTimeStamp);
+    void WriteAllBuffersToFile(EventPipeFile *pFile, LARGE_INTEGER stopTimeStamp);
 
     // Attempt to de-allocate resources as best we can.  It is possible for some buffers to leak because
     // threads can be in the middle of a write operation and get blocked, and we may not get an opportunity
@@ -215,6 +236,10 @@ public:
     // This function will assert if the list is in an inconsistent state.
     bool EnsureConsistency();
 #endif // _DEBUG
+
+#ifdef DEBUG
+    bool IsBufferManagerLockOwnedByCurrentThread();
+#endif // DEBUG
 };
 
 
