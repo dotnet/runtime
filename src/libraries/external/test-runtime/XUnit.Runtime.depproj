@@ -187,7 +187,7 @@
            Text="Error: looks the package $(NuGetPackageRoot)$(TestPlatformHostPackageId)\$(MicrosoftNETTestSdkPackageVersion) not restored or missing $(TestPlatformHost).dll." />
 
     <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(NuGetPackageRoot)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)\tools\netcoreapp2.1\*.*">
+      <ReferenceCopyLocalPaths Include="$(NuGetPackageRoot)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)\tools\netcoreapp2.1\*.*" Exclude="$(NuGetPackageRoot)$(MicrosoftDotNetXUnitConsoleRunnerPackage)\$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)\tools\netcoreapp2.1\xunit.core.dll">
         <Private>false</Private>
         <NuGetPackageId>$(MicrosoftDotNetXUnitConsoleRunnerPackage)</NuGetPackageId>
         <NuGetPackageVersion>$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)</NuGetPackageVersion>
