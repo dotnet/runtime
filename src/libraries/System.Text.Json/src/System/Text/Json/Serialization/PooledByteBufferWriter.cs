@@ -4,28 +4,31 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Text.Json.Serialization
 {
     /// <summary>
     ///   This is an implementation detail and MUST NOT be called by source-package consumers.
     /// </summary>
-    internal sealed class PooledBufferWriter<T> : IBufferWriter<T>, IDisposable
+    internal sealed class PooledByteBufferWriter : IBufferWriter<byte>, IDisposable
     {
-        private T[] _rentedBuffer;
+        private byte[] _rentedBuffer;
         private int _index;
 
         private const int MinimumBufferSize = 256;
 
-        public PooledBufferWriter(int initialCapacity)
+        public PooledByteBufferWriter(int initialCapacity)
         {
             Debug.Assert(initialCapacity > 0);
 
-            _rentedBuffer = ArrayPool<T>.Shared.Rent(initialCapacity);
+            _rentedBuffer = ArrayPool<byte>.Shared.Rent(initialCapacity);
             _index = 0;
         }
 
-        public ReadOnlyMemory<T> WrittenMemory
+        public ReadOnlyMemory<byte> WrittenMemory
         {
             get
             {
@@ -85,7 +88,7 @@ namespace System.Text.Json.Serialization
             }
 
             ClearHelper();
-            ArrayPool<T>.Shared.Return(_rentedBuffer);
+            ArrayPool<byte>.Shared.Return(_rentedBuffer);
             _rentedBuffer = null;
         }
 
@@ -98,17 +101,29 @@ namespace System.Text.Json.Serialization
             _index += count;
         }
 
-        public Memory<T> GetMemory(int sizeHint = 0)
+        public Memory<byte> GetMemory(int sizeHint = 0)
         {
             CheckAndResizeBuffer(sizeHint);
             return _rentedBuffer.AsMemory(_index);
         }
 
-        public Span<T> GetSpan(int sizeHint = 0)
+        public Span<byte> GetSpan(int sizeHint = 0)
         {
             CheckAndResizeBuffer(sizeHint);
             return _rentedBuffer.AsSpan(_index);
         }
+
+#if BUILDING_INBOX_LIBRARY
+        internal ValueTask WriteToStreamAsync(Stream destination, CancellationToken cancellationToken)
+        {
+            return destination.WriteAsync(WrittenMemory, cancellationToken);
+        }
+#else
+        internal Task WriteToStreamAsync(Stream destination, CancellationToken cancellationToken)
+        {
+            return destination.WriteAsync(_rentedBuffer, 0, _index, cancellationToken);
+        }
+#endif
 
         private void CheckAndResizeBuffer(int sizeHint)
         {
@@ -128,17 +143,17 @@ namespace System.Text.Json.Serialization
 
                 int newSize = checked(_rentedBuffer.Length + growBy);
 
-                T[] oldBuffer = _rentedBuffer;
+                byte[] oldBuffer = _rentedBuffer;
 
-                _rentedBuffer = ArrayPool<T>.Shared.Rent(newSize);
+                _rentedBuffer = ArrayPool<byte>.Shared.Rent(newSize);
 
                 Debug.Assert(oldBuffer.Length >= _index);
                 Debug.Assert(_rentedBuffer.Length >= _index);
 
-                Span<T> previousBuffer = oldBuffer.AsSpan(0, _index);
+                Span<byte> previousBuffer = oldBuffer.AsSpan(0, _index);
                 previousBuffer.CopyTo(_rentedBuffer);
                 previousBuffer.Clear();
-                ArrayPool<T>.Shared.Return(oldBuffer);
+                ArrayPool<byte>.Shared.Return(oldBuffer);
             }
 
             Debug.Assert(_rentedBuffer.Length - _index > 0);
