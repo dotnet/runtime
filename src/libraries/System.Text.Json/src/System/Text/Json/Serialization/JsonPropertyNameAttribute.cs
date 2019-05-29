@@ -14,15 +14,15 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// Initializes a new instance of <see cref="JsonPropertyNameAttribute"/> with the specified property name.
         /// </summary>
-        /// <param name="propertyName">The name of the property.</param>
-        public JsonPropertyNameAttribute(string propertyName)
+        /// <param name="name">The name of the property.</param>
+        public JsonPropertyNameAttribute(string name)
         {
-            Name = propertyName;
+            Name = name;
         }
 
         /// <summary>
         /// The name of the property.
         /// </summary>
-        public string Name { get; set; }
+        public string Name { get; }
     }
 }

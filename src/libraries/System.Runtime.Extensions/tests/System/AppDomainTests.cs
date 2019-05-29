@@ -410,52 +410,26 @@ namespace System.Tests
             Assert.Equal(0, AppDomain.CurrentDomain.ReflectionOnlyGetAssemblies().Length);
         }
 
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
         public void MonitoringIsEnabled()
         {
-            RemoteExecutor.Invoke(() => {
-                Assert.False(AppDomain.MonitoringIsEnabled);
-                Assert.Throws<ArgumentException>(() => { AppDomain.MonitoringIsEnabled = false; });
+            Assert.True(AppDomain.MonitoringIsEnabled);
+            Assert.Throws<ArgumentException>(() => { AppDomain.MonitoringIsEnabled = false; });
+            AppDomain.MonitoringIsEnabled = true;
 
-                if (PlatformDetection.IsFullFramework)
-                {
-                    AppDomain.MonitoringIsEnabled = true;
-                    Assert.True(AppDomain.MonitoringIsEnabled);
-                }
-                else
-                {
-                    Assert.Throws<PlatformNotSupportedException>(() => { AppDomain.MonitoringIsEnabled = true; });
-                }
-                return RemoteExecutor.SuccessExitCode;
-            }).Dispose();
-        }
+            object o = new object();
+            Assert.InRange(AppDomain.MonitoringSurvivedProcessMemorySize, 1, long.MaxValue);
+            Assert.InRange(AppDomain.CurrentDomain.MonitoringSurvivedMemorySize, 1, long.MaxValue);
+            Assert.InRange(AppDomain.CurrentDomain.MonitoringTotalAllocatedMemorySize, 1, long.MaxValue);
+            GC.KeepAlive(o);
 
-        [Fact]
-        public void MonitoringSurvivedMemorySize()
-        {
-            Assert.Throws<InvalidOperationException>(() => { var t = AppDomain.CurrentDomain.MonitoringSurvivedMemorySize; });
-        }
-
-        [Fact]
-        public void MonitoringSurvivedProcessMemorySize()
-        {
-            Assert.Throws<InvalidOperationException>(() => { var t = AppDomain.MonitoringSurvivedProcessMemorySize; });
-        }
-
-        [Fact]
-        public void MonitoringTotalAllocatedMemorySize()
-        {
-            Assert.Throws<InvalidOperationException>(() => {
-                var t = AppDomain.CurrentDomain.MonitoringTotalAllocatedMemorySize;
-            });
-        }
-
-        [Fact]
-        public void MonitoringTotalProcessorTime()
-        {
-            Assert.Throws<InvalidOperationException>(() => {
-                var t = AppDomain.CurrentDomain.MonitoringTotalProcessorTime;
-            });
+            using (Process p = Process.GetCurrentProcess())
+            {
+                TimeSpan processTime = p.UserProcessorTime;
+                TimeSpan monitoringTime = AppDomain.CurrentDomain.MonitoringTotalProcessorTime;
+                Assert.InRange(monitoringTime, processTime, TimeSpan.MaxValue);
+            }
         }
 
 #pragma warning disable 618
