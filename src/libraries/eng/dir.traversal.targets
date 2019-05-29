@@ -1,4 +1,4 @@
-<Project>
+<Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 
   <Target Name="BuildAllProjects" DependsOnTargets="FilterProjects">

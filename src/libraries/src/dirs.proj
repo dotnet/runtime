@@ -12,8 +12,8 @@
     <Project Include="Native\native-binplace.proj" />
     <Project Include="src.builds" />
     <Project Include="shims\manual\*.csproj" />
-    <Project Include="shims\ApiCompat.proj" />
-    <Project Include="pretest.builds" />
+    <Project Include="shims\ApiCompat.proj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <Project Include="pretest.builds" Condition="'$(DotNetBuildFromSource)' != 'true'" />
   </ItemGroup>
 
   <!-- Don't build System.Text.Encodings.Web tools as part of build; they're intended to be run manually. -->
