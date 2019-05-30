@@ -180,6 +180,15 @@ namespace System.Drawing
         public System.Drawing.KnownColor ToKnownColor() { throw null; }
         public override string ToString() { throw null; }
     }
+    public static partial class ColorTranslator
+    {
+        public static System.Drawing.Color FromHtml(string htmlColor) { throw null; }
+        public static System.Drawing.Color FromOle(int oleColor) { throw null; }
+        public static System.Drawing.Color FromWin32(int win32Color) { throw null; }
+        public static string ToHtml(System.Drawing.Color c) { throw null; }
+        public static int ToOle(System.Drawing.Color c) { throw null; }
+        public static int ToWin32(System.Drawing.Color c) { throw null; }
+    }
     public enum KnownColor
     {
         ActiveBorder = 1,

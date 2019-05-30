@@ -3,7 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 namespace System.Drawing
-{    
+{
+    public static partial class ColorTranslator
+    {
+        public static System.Drawing.Color FromHtml(string htmlColor) { throw null; }
+        public static System.Drawing.Color FromOle(int oleColor) { throw null; }
+        public static System.Drawing.Color FromWin32(int win32Color) { throw null; }
+        public static string ToHtml(System.Drawing.Color c) { throw null; }
+        public static int ToOle(System.Drawing.Color c) { throw null; }
+        public static int ToWin32(System.Drawing.Color c) { throw null; }
+    }
     public static partial class SystemColors
     {
         public static System.Drawing.Color ActiveBorder { get { throw null; } }
