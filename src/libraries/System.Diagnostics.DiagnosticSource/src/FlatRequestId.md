@@ -1,3 +1,10 @@
+# Note
+Starting with System.Diagnostics.DiagnosticSource 4.6.0 (that ships with .Net Core 3.0), we are moving towards [W3C Trace-Context](https://www.w3.org/TR/trace-context/) standard. We still support Request-Id ([hierarchical](HierarchicalRequestId.md) version) and it is still the default format for `System.Diagnostics.Activity`.
+
+This specification for `Flat Request-Id` is **deprecated**. 
+
+There is no corresponding implementation in .NET and if you are looking into 'flat' correlation protocol - we recommend following [W3C Trace-Context](https://www.w3.org/TR/trace-context/).
+
 # Flat Request-Ids
 This document provide guidance for implementations of [HTTP Correlation Protocol](HttpCorrelationProtocol.md) without [Hierarchical Request-Id](HierarchicalRequestId.md) support or interoperability with services that do not support it. 
 
