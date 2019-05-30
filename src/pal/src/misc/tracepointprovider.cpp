@@ -59,6 +59,16 @@ __attribute__((constructor (200)))
 static void
 PAL_InitializeTracing(void)
 {
+    int fShouldLoad = 1;
+    // Check if loading the LTTng providers should be disabled.
+    // Note: this env var is formally declared in clrconfigvalues.h, but
+    // this code is executed too early to use the mechanics that come with that definition.
+    char *disableValue = getenv("COMPlus_LTTng");
+    if (disableValue != NULL)
+    {
+        fShouldLoad = strtol(disableValue, NULL, 10);
+    }
+
     // Get the path to the currently executing shared object (libcoreclr.so).
     Dl_info info;
     int succeeded = dladdr((void *)PAL_InitializeTracing, &info);
@@ -99,11 +109,13 @@ PAL_InitializeTracing(void)
         return;
     }
     
-
-
-    // Load the tracepoint provider.
-    // It's OK if this fails - that just means that tracing dependencies aren't available.
-    dlopen(tpProvPath, RTLD_NOW | RTLD_GLOBAL);
+    
+    if (fShouldLoad)
+    {
+        // Load the tracepoint provider.
+        // It's OK if this fails - that just means that tracing dependencies aren't available.
+        dlopen(tpProvPath, RTLD_NOW | RTLD_GLOBAL);
+    }
 }
 
 #endif
