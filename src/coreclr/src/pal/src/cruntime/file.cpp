@@ -453,6 +453,18 @@ PAL_FILE * __cdecl PAL_get_stderr(int caller)
     return &PAL_Stderr;
 }
 
+/*++
+
+Function:
+
+    PAL_pread
+
+See msdn for more details.
+--*/
+size_t __cdecl PAL__pread(int fd, void *buf, size_t nbytes, ULONG64 offset)
+{
+    return pread(fd, buf, nbytes, offset);
+}
 
 /*++
 

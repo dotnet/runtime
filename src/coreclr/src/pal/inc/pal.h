@@ -4138,6 +4138,7 @@ PAL_GetCurrentThreadAffinitySet(SIZE_T size, UINT_PTR* data);
 #define _strdup       PAL__strdup
 #define _getcwd       PAL__getcwd
 #define _open         PAL__open
+#define _pread        PAL__pread
 #define _close        PAL__close
 #define _wcstoui64    PAL__wcstoui64
 #define _flushall     PAL__flushall
@@ -4507,7 +4508,9 @@ PALIMPORT char * __cdecl ctime(const time_t *);
 #endif // !PAL_STDCPP_COMPAT
 
 PALIMPORT int __cdecl _open_osfhandle(INT_PTR, int);
-PALIMPORT int __cdecl _close(int);
+PALIMPORT DLLEXPORT int __cdecl _open(const char *szPath, int nFlags, ...);
+PALIMPORT DLLEXPORT size_t __cdecl _pread(int fd, void *buf, size_t nbytes, ULONG64 offset);
+PALIMPORT DLLEXPORT int __cdecl _close(int);
 PALIMPORT DLLEXPORT int __cdecl _flushall();
 
 #ifdef PAL_STDCPP_COMPAT
