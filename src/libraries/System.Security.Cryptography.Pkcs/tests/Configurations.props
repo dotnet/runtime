@@ -4,7 +4,7 @@
       netcoreapp-Windows_NT;
       netcoreapp;
       netfx-Windows_NT;
-      netstandard;
+      <!-- uap; -->
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

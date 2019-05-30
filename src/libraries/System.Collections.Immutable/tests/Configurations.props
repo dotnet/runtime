@@ -1,9 +1,9 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      netstandard;
-      uap;
       netcoreapp;
+      netfx;
+      uap;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

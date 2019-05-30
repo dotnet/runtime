@@ -117,15 +117,7 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
                 try
                 {
                     byte[] hugeKey = new byte[536870917]; // value chosen so that when multiplied by 8 (bits) it overflows to the value 40
-                    if (PlatformDetection.IsFullFramework)
-                    {
-                        // This change should be ported to netfx
-                        s.Key = hugeKey;
-                    }
-                    else
-                    {
-                        Assert.Throws<CryptographicException>(() => s.Key = hugeKey);
-                    }
+                    Assert.Throws<CryptographicException>(() => s.Key = hugeKey);
                 }
                 catch (OutOfMemoryException) { } // in case there isn't enough memory at test-time to allocate the large array
             }
@@ -289,7 +281,6 @@ namespace System.Security.Cryptography.Encryption.Tests.Symmetric
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Throws NRE on netfx (https://github.com/dotnet/corefx/issues/18690)")]
         public static void SetBlockSize_Uses_LegalBlockSizesProperty()
         {
             using (SymmetricAlgorithm s = new DoesNotSetKeySizesFields())

@@ -150,7 +150,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "Getting handle of child process running on UAP is not possible")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Getting handle of child process running on UAP is not possible")]
         public void WaitForPeerProcess()
         {
             Process child1 = CreateProcessLong();
@@ -222,7 +222,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "Not applicable on uap - RemoteInvoke does not give back process handle")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not applicable on uap - RemoteInvoke does not give back process handle")]
         [ActiveIssue(15844, TestPlatforms.AnyUnix)]
         public void WaitChain()
         {

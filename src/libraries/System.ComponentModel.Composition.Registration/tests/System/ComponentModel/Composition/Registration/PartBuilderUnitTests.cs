@@ -126,7 +126,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
     public class PartBuilderUnitTests
     {
         [Fact]
-        [ActiveIssue(35144, TargetFrameworkMonikers.UapAot)]
         public void ManyConstructorsControllerFindLongestConstructor_ShouldSucceed()
         {
             var ctx = new RegistrationBuilder();
@@ -155,7 +154,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [ActiveIssue(35144, TargetFrameworkMonikers.UapAot)]
         public void ManyConstructorsControllerFindLongestConstructorAndImportByName_ShouldSucceed()
         {
             var ctx = new RegistrationBuilder();
@@ -193,7 +191,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [ActiveIssue(35144, TargetFrameworkMonikers.UapAot)]
         public void LongestConstructorWithAttribute_ShouldSucceed()
         {
             var ctx = new RegistrationBuilder();
@@ -213,7 +210,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [ActiveIssue(35144, TargetFrameworkMonikers.UapAot)]
         public void LongestConstructorShortestWithAttribute_ShouldSucceed()
         {
             var ctx = new RegistrationBuilder();
@@ -233,7 +229,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
         }
 
         [Fact]
-        [ActiveIssue(35144, TargetFrameworkMonikers.UapAot)]
         public void AmbiguousConstructorWithAttributeAppliedToOne_ShouldSucceed()
         {
             var ctx = new RegistrationBuilder();
@@ -255,7 +250,6 @@ namespace System.ComponentModel.Composition.Registration.Tests
 
 
         [Fact]
-        [ActiveIssue(35144, TargetFrameworkMonikers.UapAot)]
         public void AmbiguousConstructor_ShouldFail()
         {
             var ctx = new RegistrationBuilder();

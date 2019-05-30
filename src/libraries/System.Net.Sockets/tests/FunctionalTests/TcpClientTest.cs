@@ -233,7 +233,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug in Connected that dereferences null Client socket")]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void ConnectedAvailable_NullClient()
@@ -247,7 +246,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug in ExclusiveAddressUse that dereferences null Client socket")]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void ExclusiveAddressUse_NullClient()
@@ -406,7 +404,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Bug in TcpClient.Dispose/EndConnect: the former nulls out Client, which the latter tries to use")]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(false)]

@@ -103,15 +103,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void FromString_NetFramework()
-        {
-            string[] overflowValues = { Double.MinValue.ToString(), Double.MaxValue.ToString() };
-            VerifyFromStringThrows<OverflowException>(Convert.ToSingle, Convert.ToSingle, overflowValues);
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void FromString_NotNetFramework()
         {
             string[] overflowValues = { Double.MinValue.ToString(), Double.MaxValue.ToString() };

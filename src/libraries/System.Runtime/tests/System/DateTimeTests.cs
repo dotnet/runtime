@@ -1130,7 +1130,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET framework has a bug and incorrectly parses this date")]
         public static void TryParse_TimeDesignators_NetCore()
         {
             DateTime result;
@@ -1143,26 +1142,6 @@ namespace System.Tests
             Assert.Equal(4, result.Month);
             Assert.Equal(21, result.Day);
             Assert.Equal(17, result.Hour);
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The coreclr fixed a bug where the .NET framework incorrectly parses this date")]
-        public static void TryParse_TimeDesignators_Netfx()
-        {
-            DateTime result;
-            Assert.True(DateTime.TryParse("4/21 5am", new CultureInfo("en-US"), DateTimeStyles.None, out result));
-            Assert.Equal(DateTime.Now.Month, result.Month);
-            Assert.Equal(DateTime.Now.Day, result.Day);
-            Assert.Equal(4, result.Hour);
-            Assert.Equal(0, result.Minute);
-            Assert.Equal(0, result.Second);
-
-            Assert.True(DateTime.TryParse("4/21 5pm", new CultureInfo("en-US"), DateTimeStyles.None, out result));
-            Assert.Equal(DateTime.Now.Month, result.Month);
-            Assert.Equal(DateTime.Now.Day, result.Day);
-            Assert.Equal(16, result.Hour);
-            Assert.Equal(0, result.Minute);
-            Assert.Equal(0, result.Second);
         }
 
         public static IEnumerable<object[]> StandardFormatSpecifiers()
@@ -1551,7 +1530,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Needs desktop port: https://github.com/dotnet/coreclr/issues/15896")]
         // Regression test for https://github.com/dotnet/coreclr/issues/15896
         public static void TryParseExact_EmptyAMPMDesignator()
         {
@@ -1720,15 +1698,8 @@ namespace System.Tests
                         "DateTime parsing expected to succeed at the boundary DateTime.MaxValue");
             Assert.Equal(DateTime.MaxValue, maxDateTime);
 
-            if (PlatformDetection.IsFullFramework)
-            {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => DateTime.TryParse("9999-12-31T23:59:59.999999999Z", out var dateTime)); // exceeded DateTime.MaxValue
-            }
-            else
-            {
-                Assert.False(DateTime.TryParse("9999-12-31T23:59:59.999999999Z", out var dateTime),
-                         "DateTime parsing expected to throw with any dates greater than DateTime.MaxValue");
-            }
+            Assert.False(DateTime.TryParse("9999-12-31T23:59:59.999999999Z", out var dateTime),
+              "DateTime parsing expected to throw with any dates greater than DateTime.MaxValue");
         }
 
         public static IEnumerable<object[]> Parse_ValidInput_Succeeds_MemberData()

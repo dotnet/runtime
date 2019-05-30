@@ -28,7 +28,6 @@ namespace System.Runtime.InteropServices.Tests
             VerifyDelegate(functionDelegate, targetMethod);
         }
 
-#if !netstandard // TODO: Enable for netstandard2.1
         [Fact]
         public void GetDelegateForFunctionPointer_CollectibleType_ReturnsExpected()
         {
@@ -51,7 +50,6 @@ namespace System.Runtime.InteropServices.Tests
             GC.KeepAlive(d);
             VerifyDelegate(functionDelegate, targetMethod);
         }
-#endif
 
         [Fact]
         public void GetDelegateForFunctionPointer_Generic_ReturnsExpected()

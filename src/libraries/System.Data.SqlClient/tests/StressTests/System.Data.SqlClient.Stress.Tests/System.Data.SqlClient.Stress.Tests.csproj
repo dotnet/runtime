@@ -4,8 +4,8 @@
     <RootNamespace>Stress.Data.SqlClient</RootNamespace>
     <AssemblyName>System.Data.SqlClient.Stress.Tests</AssemblyName>
     <!-- These should not run in Helix: they produce no outputs and are only run manually -->
-    <ArchiveTests>false</ArchiveTests>
-    <Configurations>netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <ArchiveTest>false</ArchiveTest>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\System.Data.StressRunner\System.Data.StressRunner.csproj" />

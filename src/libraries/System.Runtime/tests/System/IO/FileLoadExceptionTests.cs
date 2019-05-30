@@ -58,7 +58,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Exception strings not guaranteed on UapAot.")]
         public static void ToStringTest()
         {
             string message = "this is not the file you're looking for";

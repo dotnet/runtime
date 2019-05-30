@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{FF53459F-66F7-4F00-8D36-DF440CE18419}</ProjectGuid>
     <DefineConstants>$(DefineConstants);TESTING_CNG_IMPLEMENTATION</DefineConstants>
-    <Configurations>net462-Windows_NT-Debug;net462-Windows_NT-Release;net47-Windows_NT-Debug;net47-Windows_NT-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CreateTests.cs" />
@@ -160,8 +160,6 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RSA\SignVerify.netcoreapp.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\SignVerify.netcoreapp.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net47' OR '$(TargetGroup)' == 'netcoreapp'">
     <Compile Condition="'$(TargetsWindows)' == 'true'" Include="AesCngTests.cs" />
     <Compile Condition="'$(TargetsWindows)' == 'true'" Include="TripleDESCngTests.cs" />
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs">

@@ -206,33 +206,6 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void InvalidPath_Desktop()
-        {
-            foreach (char invalid in Path.GetInvalidFileNameChars())
-            {
-                string badPath = string.Format($"{TestDirectory}{Path.DirectorySeparatorChar}te{invalid}st");
-                switch (invalid)
-                {
-                    case '/':
-                    case '\\':
-                        Assert.Throws<DirectoryNotFoundException>(() => GetEntries(badPath));
-                        break;
-                    case ':':
-                        Assert.Throws<NotSupportedException>(() => GetEntries(badPath));
-                        break;
-                    case '\0':
-                        Assert.Throws<ArgumentException>(() => GetEntries(badPath));
-                        break;
-                    default:
-                        Assert.Throws<ArgumentException>(() => GetEntries(badPath));
-                        break;
-                }
-            }
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void InvalidPath_Core()
         {
             foreach (char invalid in Path.GetInvalidFileNameChars())
@@ -270,19 +243,6 @@ namespace System.IO.Tests
             InlineData("<"),
             InlineData("\t")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void WindowsInvalidCharsPath_Desktop(string invalid)
-        {
-            Assert.Throws<ArgumentException>(() => GetEntries(invalid));
-        }
-
-        [Theory,
-            InlineData("\n"),
-            InlineData(">"),
-            InlineData("<"),
-            InlineData("\t")]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void WindowsInvalidCharsPath_Core(string invalid)
         {
             Assert.Throws<IOException>(() => GetEntries(invalid));

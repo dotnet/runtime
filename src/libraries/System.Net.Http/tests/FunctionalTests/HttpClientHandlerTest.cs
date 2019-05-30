@@ -65,13 +65,6 @@ namespace System.Net.Http.Functional.Tests
 
         public HttpClientHandlerTest(ITestOutputHelper output) : base(output)
         {
-            if (PlatformDetection.IsFullFramework)
-            {
-                // On .NET Framework, the default limit for connections/server is very low (2).
-                // On .NET Core, the default limit is higher. Since these tests run in parallel,
-                // the limit needs to be increased to avoid timeouts when running the tests.
-                System.Net.ServicePointManager.DefaultConnectionLimit = int.MaxValue;
-            }
         }
 
         [Fact]
@@ -119,12 +112,9 @@ namespace System.Net.Http.Functional.Tests
                 Assert.True(handler.SupportsRedirectConfiguration);
 
                 // Changes from .NET Framework (Desktop).
-                if (!PlatformDetection.IsFullFramework)
-                {
-                    Assert.False(handler.CheckCertificateRevocationList);
-                    Assert.Equal(0, handler.MaxRequestContentBufferSize);
-                    Assert.Equal(SslProtocols.None, handler.SslProtocols);
-                }
+                Assert.False(handler.CheckCertificateRevocationList);
+                Assert.Equal(0, handler.MaxRequestContentBufferSize);
+                Assert.Equal(SslProtocols.None, handler.SslProtocols);
             }
         }
 
@@ -1208,7 +1198,6 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "No exception thrown")]
         [Fact]
         public async Task SendAsync_TransferEncodingSetButNoRequestContent_Throws()
         {
@@ -1266,7 +1255,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx's ConnectStream.ReadAsync tries to read beyond data already buffered, causing hangs #18864")]
         [OuterLoop("Slow response")]
         [Fact]
         public async Task SendAsync_ReadFromSlowStreamingServer_PartialDataReturned()
@@ -1542,18 +1530,6 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (PlatformDetection.IsFullFramework)
-            {
-                // Skip test on .NET Framework. It will sometimes not throw TaskCanceledException.
-                // Instead it might throw the following top-level and inner exceptions depending
-                // on race conditions.
-                //
-                // System.Net.Http.HttpRequestException : Error while copying content to a stream.
-                // ---- System.IO.IOException : The read operation failed, see inner exception.
-                //-------- System.Net.WebException : The request was aborted: The request was canceled.
-                return;
-            }
-
             await LoopbackServer.CreateServerAsync(async (server1, url1) =>
             {
                 await LoopbackServer.CreateServerAsync(async (server2, url2) =>
@@ -1638,7 +1614,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ActiveIssue(37352)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework currently does not allow unicode in DNS names")]
         [OuterLoop("Uses external server")]
         [Fact]
         public async Task GetAsync_UnicodeHostName_SuccessStatusCodeInResponse()
@@ -1921,7 +1896,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't send content for get requests")]
         [ActiveIssue(29802, TargetFrameworkMonikers.Uap)]
         [Fact]
         public async Task GetAsync_ExpectContinueTrue_NoContent_StillSendsHeader()
@@ -1965,9 +1939,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(Interim1xxStatusCode))]
         public async Task SendAsync_1xxResponsesWithHeaders_InterimResponsesHeadersIgnored(HttpStatusCode responseStatusCode)
         {
-            // Skip test on .NET Framework since it doesn't have the fix.
-            if (PlatformDetection.IsFullFramework && (int)responseStatusCode >= 102) return;
-
             var clientFinished = new TaskCompletionSource<bool>();
             const string TestString = "test";
             const string CookieHeaderExpected = "yummy_cookie=choco";
@@ -2030,9 +2001,6 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(Interim1xxStatusCode))]
         public async Task SendAsync_Unexpected1xxResponses_DropAllInterimResponses(HttpStatusCode responseStatusCode)
         {
-            // Skip test on .NET Framework since it doesn't have the fix.
-            if (PlatformDetection.IsFullFramework && (int)responseStatusCode >= 102) return;
-
             var clientFinished = new TaskCompletionSource<bool>();
             const string TestString = "test";
 
@@ -2309,7 +2277,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(EchoServers))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework disposes request content after send")]
         [ActiveIssue(31104, TestPlatforms.AnyUnix)]
         public async Task PostAsync_ReuseRequestContent_Success(Uri remoteServer)
         {
@@ -2383,13 +2350,6 @@ namespace System.Net.Http.Functional.Tests
             string method,
             bool secureServer)
         {
-            if (PlatformDetection.IsFullFramework && method == "GET")
-            {
-                // .NET Framework doesn't allow a content body with this HTTP verb.
-                // It will throw a System.Net.ProtocolViolation exception.
-                return;
-            }
-
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(
@@ -2454,13 +2414,6 @@ namespace System.Net.Http.Functional.Tests
             string method,
             bool secureServer)
         {
-            if (PlatformDetection.IsFullFramework && method == "HEAD")
-            {
-                // .NET Framework doesn't allow a content body with this HTTP verb.
-                // It will throw a System.Net.ProtocolViolation exception.
-                return;
-            }
-
             if (PlatformDetection.IsUap && method == "TRACE")
             {
                 // UAP platform doesn't allow a content body with this HTTP verb.
@@ -2518,7 +2471,6 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Throws exception sending request using Version(0,0)")]
         [OuterLoop("Uses external server")]
         [Fact]
         public async Task SendAsync_RequestVersionNotSpecified_ServerReceivesVersion11Request()
@@ -2535,7 +2487,6 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Specifying Version(2,0) throws exception on netfx")]
         [OuterLoop("Uses external server")]
         [ConditionalTheory]
         [MemberData(nameof(Http2Servers))]
@@ -2567,7 +2518,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Specifying Version(2,0) throws exception on netfx")]
         [Fact]
         public async Task SendAsync_RequestVersion20_HttpNotHttps_NoUpgradeRequest()
         {
@@ -2584,7 +2534,6 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Specifying Version(2,0) throws exception on netfx")]
         [OuterLoop("Uses external server")]
         [ConditionalTheory(nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushServers))]
         public async Task SendAsync_RequestVersion20_ResponseVersion20(Uri server)

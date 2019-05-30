@@ -378,7 +378,6 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public void DebuggerAttribute()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(new Hashtable());
@@ -1195,7 +1194,6 @@ namespace System.Collections.Tests
         }
     }
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Changed behavior
     public class Hashtable_SyncRootTests
     {
         private Hashtable _hashDaughter;

@@ -45,17 +45,6 @@ namespace System.IO.Tests
         }
 
         [Theory, MemberData(nameof(PathsWithInvalidCharacters))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void PathWithIllegalCharacters_Desktop(string invalidPath)
-        {
-            FileInfo testFile = new FileInfo(GetTestFilePath());
-            testFile.Create().Dispose();
-
-            Assert.Throws<ArgumentException>(() => Move(testFile.FullName, invalidPath));
-        }
-
-        [Theory, MemberData(nameof(PathsWithInvalidCharacters))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void PathWithIllegalCharacters_Core(string invalidPath)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
@@ -197,7 +186,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [ActiveIssue(32167, TargetFrameworkMonikers.NetFramework)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Path longer than max path limit
         public void OverMaxPathWorks_Windows()
         {
@@ -247,27 +235,6 @@ namespace System.IO.Tests
 
         [Theory, MemberData(nameof(PathsWithInvalidColons))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void WindowsPathWithIllegalColons_Desktop(string invalidPath)
-        {
-            FileInfo testFile = new FileInfo(GetTestFilePath());
-            testFile.Create().Dispose();
-            if (PathFeatures.IsUsingLegacyPathNormalization())
-            {
-                Assert.Throws<ArgumentException>(() => Move(testFile.FullName, invalidPath));
-            }
-            else
-            {
-                if (invalidPath.Contains('|'))
-                    Assert.Throws<ArgumentException>(() => Move(testFile.FullName, invalidPath));
-                else
-                    Assert.Throws<NotSupportedException>(() => Move(testFile.FullName, invalidPath));
-            }
-        }
-
-        [Theory, MemberData(nameof(PathsWithInvalidColons))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void WindowsPathWithIllegalColons_Core(string invalidPath)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
@@ -277,18 +244,6 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void WindowsWildCharacterPath_Desktop()
-        {
-            Assert.Throws<ArgumentException>(() => Move("*", GetTestFilePath()));
-            Assert.Throws<ArgumentException>(() => Move(GetTestFilePath(), "*"));
-            Assert.Throws<ArgumentException>(() => Move(GetTestFilePath(), "Test*t"));
-            Assert.Throws<ArgumentException>(() => Move(GetTestFilePath(), "*Test"));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void WindowsWildCharacterPath_Core()
         {
             Assert.Throws<FileNotFoundException>(() => Move(Path.Combine(TestDirectory, "*"), GetTestFilePath()));
@@ -325,17 +280,6 @@ namespace System.IO.Tests
         [Theory,
             MemberData(nameof(ControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void WindowsControlPath_Desktop(string whitespace)
-        {
-            FileInfo testFile = new FileInfo(GetTestFilePath());
-            Assert.Throws<ArgumentException>(() => Move(testFile.FullName, whitespace));
-        }
-
-        [Theory,
-            MemberData(nameof(ControlWhiteSpace))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void WindowsControlPath_Core(string whitespace)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
@@ -370,7 +314,6 @@ namespace System.IO.Tests
             InlineData("::$DATA", ":bar"),
             InlineData("::$DATA", ":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void WindowsAlternateDataStreamMove(string defaultStream, string alternateStream)
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetTestFilePath());

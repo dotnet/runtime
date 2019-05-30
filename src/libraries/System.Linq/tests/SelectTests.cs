@@ -741,14 +741,7 @@ namespace System.Linq.Tests
 
             // The.NET full framework throws a NotImplementedException.
             // See https://github.com/dotnet/corefx/pull/2959.
-            if (PlatformDetection.IsFullFramework)
-            {
-                Assert.Throws<NotImplementedException>(() => enumerator.Reset());
-            }
-            else
-            {
-                Assert.Throws<NotSupportedException>(() => enumerator.Reset());
-            }
+            Assert.Throws<NotSupportedException>(() => enumerator.Reset());
         }
 
         [Fact]

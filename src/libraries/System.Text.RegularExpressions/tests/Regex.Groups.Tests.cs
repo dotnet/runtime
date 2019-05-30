@@ -396,11 +396,8 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"(cat)(\cZ*)(dog)", "asdlkcat\u001adogiwod", RegexOptions.None, new string[] { "cat\u001adog", "cat", "\u001a", "dog" } };
             yield return new object[] { @"(cat)(\cz*)(dog)", "asdlkcat\u001adogiwod", RegexOptions.None, new string[] { "cat\u001adog", "cat", "\u001a", "dog" } };
 
-            if (!PlatformDetection.IsFullFramework) // missing fix for #26501
-            {
-                yield return new object[] { @"(cat)(\c[*)(dog)", "asdlkcat\u001bdogiwod", RegexOptions.None, new string[] { "cat\u001bdog", "cat", "\u001b", "dog" } };
-                yield return new object[] { @"(cat)(\c[*)(dog)", "asdlkcat\u001Bdogiwod", RegexOptions.None, new string[] { "cat\u001Bdog", "cat", "\u001B", "dog" } };
-            }
+            yield return new object[] { @"(cat)(\c[*)(dog)", "asdlkcat\u001bdogiwod", RegexOptions.None, new string[] { "cat\u001bdog", "cat", "\u001b", "dog" } };
+            yield return new object[] { @"(cat)(\c[*)(dog)", "asdlkcat\u001Bdogiwod", RegexOptions.None, new string[] { "cat\u001Bdog", "cat", "\u001B", "dog" } };
 
             // Atomic Zero-Width Assertions \A \Z \z \G \b \B
             //\A

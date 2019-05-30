@@ -260,7 +260,6 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(ClientCertificateOption.Manual)]
         [InlineData(ClientCertificateOption.Automatic)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fails with \"Authentication failed\" error.")]
         public async Task AutomaticOrManual_DoesntFailRegardlessOfWhetherClientCertsAreAvailable(ClientCertificateOption mode)
         {
             if (!BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for SocketsHttpHandler

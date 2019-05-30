@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{55F26FB1-D4AF-48CA-A470-83113AE7BFDB}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>

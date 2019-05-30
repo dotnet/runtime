@@ -33,7 +33,7 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(WebSocketState.Closed, cws.State);
 
                 // .NET Framework and UAP implmentations have different exception message from .NET Core.
-                if (!PlatformDetection.IsFullFramework && !PlatformDetection.IsUap)
+                if (!PlatformDetection.IsUap)
                 {
                     Assert.Equal(exceptionMessage, ex.Message);
                 }
@@ -91,7 +91,6 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [ActiveIssue(18784, TargetFrameworkMonikers.NetFramework)]
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported))]
         public async Task ConnectAsync_AddHostHeader_Success()

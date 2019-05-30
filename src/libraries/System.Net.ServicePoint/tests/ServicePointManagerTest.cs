@@ -140,7 +140,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop default SecurityProtocol to Ssl3; explicitly changed to SystemDefault for core.")]
         public static void SecurityProtocol_Roundtrips()
         {
             RemoteExecutor.Invoke(() =>
@@ -218,7 +217,6 @@ namespace System.Net.Tests
             }).Dispose();
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Ssl3 is supported by desktop but explicitly not by core")]
         [Fact]
         public static void SecurityProtocol_Ssl3_NotSupported()
         {
@@ -272,7 +270,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop ServicePoint lifetime is slightly longer due to implementation details of real implementation")]
         public static void FindServicePoint_Collectible()
         {
             RemoteExecutor.Invoke(() =>

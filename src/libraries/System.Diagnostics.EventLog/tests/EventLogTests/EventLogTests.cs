@@ -33,7 +33,7 @@ namespace System.Diagnostics.Tests
                 using (EventLog eventLog = new EventLog())
                 {
                     eventLog.Source = source;
-                    eventLog.Clear();
+                    Helpers.RetryOnWin7(() => eventLog.Clear());
                     Assert.Equal(0, Helpers.RetryOnWin7((() => eventLog.Entries.Count)));
                     Helpers.RetryOnWin7(() => eventLog.WriteEntry("Writing to event log."));
                     Helpers.WaitForEventLog(eventLog, 1);

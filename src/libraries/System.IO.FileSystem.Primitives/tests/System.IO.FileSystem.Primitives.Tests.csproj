@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{2EF7EFA5-F171-4CAB-8A29-32833949FD87}</ProjectGuid>
-    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>

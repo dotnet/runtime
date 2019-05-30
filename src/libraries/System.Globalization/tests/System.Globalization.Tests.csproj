@@ -4,7 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CompareInfo\CompareInfoTests.cs" />
@@ -112,9 +112,6 @@
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs">
       <Link>Common\System\RandomDataGenerator.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx' And '$(TargetGroup)' != 'netstandard'">
-    <Compile Include="CompareInfo\CompareInfoTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.11.0.txt">

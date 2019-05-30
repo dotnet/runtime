@@ -79,21 +79,11 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core fixes a bug where HttpListenerPrefixCollection.CopyTo(null) throws an NRE.")]
         public void CopyTo_NullArray_ThrowsArgumentNullExceptionOnNetCore()
         {
             var listener = new HttpListener();
             Assert.Throws<ArgumentNullException>(() => listener.Prefixes.CopyTo((Array)null, 0));
             Assert.Throws<ArgumentNullException>(() => listener.Prefixes.CopyTo(null, 0));
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, ".NET Core fixes a bug where HttpListenerPrefixCollection.CopyTo(null) throws an NRE.")]
-        public void CopyTo_NullArray_ThrowsNullReferenceExceptionOnNetFx()
-        {
-            var listener = new HttpListener();
-            Assert.Throws<NullReferenceException>(() => listener.Prefixes.CopyTo((Array)null, 0));
-            Assert.Throws<NullReferenceException>(() => listener.Prefixes.CopyTo(null, 0));
         }
 
         [Fact]
@@ -368,7 +358,6 @@ namespace System.Net.Tests
             yield return new object[] { "http://\\/" };
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Issue #19619
         [Theory]
         [MemberData(nameof(InvalidPrefix_TestData))]
         public void Add_InvalidPrefixNotStarted_ThrowsHttpListenerExceptionOnStart(string uriPrefix)
@@ -381,7 +370,6 @@ namespace System.Net.Tests
             Assert.Throws<HttpListenerException>(() => listener.Start());
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Issue #19619
         [Theory]
         [MemberData(nameof(InvalidPrefix_TestData))]
         public void Add_InvalidPrefixAlreadyStarted_ThrowsHttpListenerExceptionOnAdd(string uriPrefix)

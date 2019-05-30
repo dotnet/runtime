@@ -5,7 +5,7 @@
     <NoWarn>1718</NoWarn>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release;uapaot-Debug;uapaot-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\EnumTypes.cs">
@@ -233,7 +233,7 @@
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true'">
     <Compile Include="System\ExitCodeTests.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx' And '$(TargetGroup)' != 'netstandard'">
+  <ItemGroup>
     <Compile Include="System\Collections\ObjectModel\CollectionTests.netcoreapp.cs" />
     <Compile Include="System\HashCodeTests.netcoreapp.cs" />
     <Compile Include="Helpers.netcoreapp.cs" />
@@ -272,7 +272,7 @@
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\BindingFlagsDoNotWrap.netcoreapp.cs" />
     <Compile Include="System\Reflection\InvokeRefReturn.netcoreapp.cs" />
-    <Compile Include="System\Reflection\IsCollectibleTests.cs" Condition="'$(TargetGroup)' != 'uapaot'" />
+    <Compile Include="System\Reflection\IsCollectibleTests.cs" />
     <!-- missing method 'AssemblyLoadContext..ctor(bool) -->
     <Compile Include="System\Reflection\MethodBaseTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\SignatureTypes.netcoreapp.cs" />
@@ -307,11 +307,6 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
     <Compile Include="System\StringSplitExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx' Or '$(TargetGroup)' == 'netstandard'">
-    <Compile Include="$(CommonTestPath)\Tests\System\SpanExtensions.netstandard.cs">
-      <Link>System\SpanExtensions.netstandard.cs</Link>
-    </Compile>
-  </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.Generic.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.Generic.Serialization.Tests.cs</Link>
@@ -338,8 +333,5 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
 </Project>

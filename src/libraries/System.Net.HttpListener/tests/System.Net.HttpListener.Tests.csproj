@@ -3,7 +3,7 @@
     <ProjectGuid>{851A40FE-7F07-415D-8592-5FE2096E84D3}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
-    <Configurations>netstandard-OSX-Debug;netstandard-OSX-Release;netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetContextHelper.cs" />

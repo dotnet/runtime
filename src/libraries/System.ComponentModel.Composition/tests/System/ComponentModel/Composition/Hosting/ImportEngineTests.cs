@@ -125,7 +125,6 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        [ActiveIssue(25498, TargetFrameworkMonikers.UapAot)]
         public void PreviewImports_ReleaseImports_ShouldNotBlockChanges()
         {
             var exportProvider = ExportProviderFactory.CreateRecomposable();

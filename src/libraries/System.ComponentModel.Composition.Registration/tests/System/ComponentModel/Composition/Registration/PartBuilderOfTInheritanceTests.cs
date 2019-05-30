@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.ComponentModel.Composition.Registration.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection based tests")]
     public class PartBuilderOfTInheritanceTests
     {
         private abstract class BaseClass

@@ -635,7 +635,6 @@ namespace System.Collections.Specialized.Tests
         [Theory]
         [MemberData(nameof(StringCollection_Data))]
         [MemberData(nameof(StringCollection_Duplicates_Data))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Changed behavior
         public static void SyncRootTest(StringCollection collection, string[] data)
         {
             object syncRoot = collection.SyncRoot;

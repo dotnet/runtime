@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{4FE5ECEE-ACC5-4558-A946-573426599B73}</ProjectGuid>
-    <Configurations>netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetHostByAddressTest.cs" />

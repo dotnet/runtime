@@ -14,10 +14,7 @@ namespace System.Diagnostics.Contracts.Tests
         internal static void AssertThrowsContractException(Action action)
         {
             Exception exc = Assert.ThrowsAny<Exception>(action);
-            if (!PlatformDetection.IsNetNative) // Cannot do internal framework Reflection on .NET Native
-            {
-                Assert.Equal("ContractException", exc.GetType().Name);
-            }
+            Assert.Equal("ContractException", exc.GetType().Name);
         }
 
         internal static IDisposable WithContractFailed(EventHandler<ContractFailedEventArgs> handler)

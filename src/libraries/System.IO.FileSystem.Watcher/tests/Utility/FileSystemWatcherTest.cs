@@ -470,5 +470,23 @@ namespace System.IO.Tests
                                                         NotifyFilters.LastAccess |
                                                         NotifyFilters.LastWrite |
                                                         NotifyFilters.Size;
+
+        private static FileSystemWatcher RecreateWatcher(FileSystemWatcher watcher)
+        {
+            FileSystemWatcher newWatcher = new FileSystemWatcher()
+            {
+                IncludeSubdirectories = watcher.IncludeSubdirectories,
+                NotifyFilter = watcher.NotifyFilter,
+                Path = watcher.Path,
+                InternalBufferSize = watcher.InternalBufferSize
+            };
+
+            foreach (string filter in watcher.Filters)
+            {
+                newWatcher.Filters.Add(filter);
+            }
+
+            return newWatcher;
+        }
     }
 }

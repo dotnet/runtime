@@ -31,7 +31,6 @@ namespace System.Threading.Channels.Tests
 
         [Theory]
         [MemberData(nameof(TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public void TestDebuggerDisplaysAndTypeProxies(object obj)
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(obj);
@@ -39,7 +38,6 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public void TestDequeueClass()
         {
             var c = Channel.CreateBounded<int>(10);

@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage
 {
-    [ActiveIssue(18940, TargetFrameworkMonikers.UapAot)]
     public class GetCreationTimeTests : IsoStorageTest
     {
         [Fact]
@@ -80,7 +79,6 @@ namespace System.IO.IsolatedStorage
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]  // Filesystem timestamps vary in granularity
-        [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void GetCreationTime_GetsTime_Windows_OSX()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())

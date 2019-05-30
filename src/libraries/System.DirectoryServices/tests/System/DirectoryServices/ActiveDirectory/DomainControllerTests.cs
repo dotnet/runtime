@@ -129,7 +129,6 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         [Fact]
         [OuterLoop]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Getting information about domain is denied inside App")]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/21553", TargetFrameworkMonikers.UapAot)]
         public void FindAll_NullName_ThrowsActiveDirectoryOperationException()
         {
             var context = new DirectoryContext(DirectoryContextType.Domain);

@@ -339,7 +339,6 @@ namespace System.Composition.UnitTests
         /// Needs to be fixed so that specifying boundary would automatically create the shared
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void BoundarySharingTest()
         {
@@ -362,7 +361,6 @@ namespace System.Composition.UnitTests
         /// CirA root of the composition has to be shared explicitly.
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void CircularBoundarySharingTest()
         {
@@ -380,7 +378,6 @@ namespace System.Composition.UnitTests
         /// Something is badly busted here.. I am getting a null ref exception
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void MultipleBoundarySpecified()
         {

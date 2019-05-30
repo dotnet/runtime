@@ -7,7 +7,6 @@ using Xunit;
 namespace System.IO.IsolatedStorage
 {
     // Test default IsolatedStorage base class behaviors
-    [ActiveIssue(18940, TargetFrameworkMonikers.UapAot)]
     public class IsolatedStorageBaseClassTests : IsoStorageTest
     {
         private class TestStorage : IsolatedStorage

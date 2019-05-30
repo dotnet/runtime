@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{749ED7AD-E3C1-4611-99BD-C5D4B3934B3A}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="ProtectedDataTests.cs" />

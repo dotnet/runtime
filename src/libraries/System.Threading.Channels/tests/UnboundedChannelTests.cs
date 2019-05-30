@@ -137,7 +137,6 @@ namespace System.Threading.Channels.Tests
     {
         protected override bool RequiresSingleReader => true;
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Requires internal reflection on framework types.")]
         [Fact]
         public void ValidateInternalDebuggerAttributes()
         {

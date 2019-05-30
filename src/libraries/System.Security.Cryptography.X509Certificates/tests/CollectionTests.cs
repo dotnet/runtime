@@ -365,14 +365,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // has been deliberately changed to no longer throw to match the behavior of
                 // X509CertificateCollection.Contains and the IList.Contains implementation, which do not
                 // throw.
-                if (PlatformDetection.IsFullFramework)
-                {
-                    Assert.Throws<ArgumentNullException>(() => collection.Contains(null));
-                }
-                else
-                {
-                    Assert.False(collection.Contains(null));
-                }
+                Assert.False(collection.Contains(null));
 
                 IList ilist = (IList)collection;
                 Assert.True(ilist.Contains(c1));
@@ -466,7 +459,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Fact]
         // On Desktop, list is untyped so it allows arbitrary types in it
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void X509CertificateCollectionAsIListBogusEntry()
         {
             using (X509Certificate2 c = new X509Certificate2())

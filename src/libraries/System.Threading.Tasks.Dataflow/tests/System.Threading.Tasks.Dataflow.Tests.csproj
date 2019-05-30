@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{A7AA2FC3-855F-44BA-8735-AB2F43D118A5}</ProjectGuid>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Dataflow\ActionBlockTests.cs" />

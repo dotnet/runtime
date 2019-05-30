@@ -3,12 +3,9 @@
     <ProjectGuid>{9574CEEC-5554-411B-B44C-6CA9EC1CEB08}</ProjectGuid>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs" Condition="'$(TargetGroup)'!='netcoreapp'">
-      <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs">
       <Link>Common\CoreLib\System\Collections\Concurrent\IProducerConsumerCollectionDebugView.cs</Link>
     </Compile>
@@ -87,19 +84,14 @@
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
     <Compile Include="ConcurrentDictionary\ConcurrentDictionaryExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="ConcurrentBagTests.netcoreapp.cs" />
     <Compile Include="ConcurrentQueueTests.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='netstandard' And '$(TargetGroup)'!='netcoreapp'">
-    <Compile Include="$(CommonPath)\System\SerializableAttribute.cs">
-      <Link>Common\System\SerializableAttribute.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard' Or '$(TargetGroup)'=='netcoreapp'">
+  <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs">
       <Link>Common\System\Collections\IEnumerable.NonGeneric.Serialization.Tests.cs</Link>
     </Compile>

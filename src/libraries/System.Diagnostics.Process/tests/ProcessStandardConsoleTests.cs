@@ -14,7 +14,7 @@ namespace System.Diagnostics.Tests
         private const int s_ConsoleEncoding = 437;
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "Get/SetConsoleOutputCP not supported yet https://github.com/dotnet/corefx/issues/21483")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Get/SetConsoleOutputCP not supported yet https://github.com/dotnet/corefx/issues/21483")]
         public void TestChangesInConsoleEncoding()
         {
             Action<int> run = expectedCodePage =>

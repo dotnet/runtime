@@ -1,10 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{A7074928-82C3-4739-88FE-9B528977950C}</ProjectGuid>
-    <!-- Avoid extreme slowness when running NETFX tests (ie with xunit.console.exe) -->
-    <XUnitNoAppdomain>true</XUnitNoAppdomain>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Diagnostics\Tracing\TestEventListener.cs">

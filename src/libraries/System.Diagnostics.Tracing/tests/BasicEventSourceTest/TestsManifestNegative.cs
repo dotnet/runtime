@@ -24,11 +24,8 @@ namespace BasicEventSourceTests
     {
         private static void AsserExceptionStringsEqual(Func<string> expectedStrFunc, Exception ex)
         {
-            if (!PlatformDetection.IsNetNative)
-            {
-                string expectedStr = expectedStrFunc();
-                Assert.Equal(ex.Message, expectedStr);
-            }
+            string expectedStr = expectedStrFunc();
+            Assert.Equal(ex.Message, expectedStr);
         }
 
         #region Message string building
@@ -61,8 +58,8 @@ namespace BasicEventSourceTests
         /// These tests use the NuGet EventSource to validate *both* NuGet and BCL user-defined EventSources
         /// For NuGet EventSources we validate both "runtime" and "validation" behavior
         /// </summary>
-        [ActiveIssue("dotnet/corefx #19091", TargetFrameworkMonikers.NetFramework)]
         [Fact]
+        [ActiveIssue("dotnet/corefx #19091", TargetFrameworkMonikers.NetFramework)]
         public void Test_GenerateManifest_InvalidEventSources()
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
@@ -137,14 +134,11 @@ namespace BasicEventSourceTests
             Assert.NotNull(EventSource.GenerateManifest(typeof(Sdt.MismatchIdEventSource), string.Empty));
 
             // These tests require the IL to be present for inspection.
-            if (!PlatformDetection.IsNetNative)
-            {
-                e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.MismatchIdEventSource), string.Empty, strictOptions));
-                AsserExceptionStringsEqual(() => GetResourceString("EventSource_MismatchIdToWriteEvent", "WriteInteger", 10, 1), e);
+            e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.MismatchIdEventSource), string.Empty, strictOptions));
+            AsserExceptionStringsEqual(() => GetResourceString("EventSource_MismatchIdToWriteEvent", "WriteInteger", 10, 1), e);
 
-                e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.MismatchIdEventSource), string.Empty, strictOptions));
-                AsserExceptionStringsEqual(() => GetResourceString("EventSource_MismatchIdToWriteEvent", "WriteInteger", 10, 1), e);
-            }
+            e = AssertExtensions.Throws<ArgumentException>(null, () => EventSource.GenerateManifest(typeof(Sdt.MismatchIdEventSource), string.Empty, strictOptions));
+            AsserExceptionStringsEqual(() => GetResourceString("EventSource_MismatchIdToWriteEvent", "WriteInteger", 10, 1), e);
 
             Assert.NotNull(EventSource.GenerateManifest(typeof(Sdt.EventIdReusedEventSource), string.Empty));
 

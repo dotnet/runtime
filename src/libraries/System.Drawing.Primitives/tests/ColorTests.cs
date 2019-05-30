@@ -463,7 +463,6 @@ namespace System.Drawing.Primitives.Tests
             yield return new object[] {Color.FromName("SomeName"), Color.FromName(someNameConstructed), true};
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // desktop incorrectly does "name.Equals(name)" in Equals
         [Theory]
         [MemberData(nameof(Equality_MemberData))]
         public void Equality(Color left, Color right, bool expected)
@@ -488,7 +487,6 @@ namespace System.Drawing.Primitives.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public void DebuggerAttributesAreValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(Color.Aquamarine);

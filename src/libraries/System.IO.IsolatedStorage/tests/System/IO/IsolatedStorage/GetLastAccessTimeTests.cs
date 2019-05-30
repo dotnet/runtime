@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage
 {
-    [ActiveIssue(18940, TargetFrameworkMonikers.UapAot)]
     public class GetLastAccessTimeTests : IsoStorageTest
     {
         [Fact]
@@ -59,7 +58,6 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #18265", TargetFrameworkMonikers.NetFramework)]
         public void GetLastAccessTime_GetsTime()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())

@@ -22,28 +22,24 @@ namespace System.Runtime.InteropServices
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SystemConfigurationFile is not supported on .NET Core.")]
         public void SystemConfigurationFile_Get_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => RuntimeEnvironment.SystemConfigurationFile);
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "GetRuntimeInterfaceAsObject is not supported on .NET Core.")]
         public void GetRuntimeInterfaceAsObject_Invoke_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => RuntimeEnvironment.GetRuntimeInterfaceAsObject(Guid.Empty, Guid.Empty));
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "GetRuntimeInterfaceAsIntPtr is not supported on .NET Core.")]
         public void GetRuntimeInterfaceAsIntPtr_Invoke_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => RuntimeEnvironment.GetRuntimeInterfaceAsIntPtr(Guid.Empty, Guid.Empty));
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "FromGlobalAccessCache always returns true on .NET Core.")]
         public void FromGlobalAccessCache_nNvoke_ReturnsFalse()
         {
             Assert.False(RuntimeEnvironment.FromGlobalAccessCache(typeof(RuntimeEnvironmentTests).Assembly));
