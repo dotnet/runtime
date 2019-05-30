@@ -4,9 +4,6 @@
 // RuntimeExceptionKind.h
 //
 
-// 
-
-
 #ifndef __runtimeexceptionkind_h__
 #define __runtimeexceptionkind_h__
 
@@ -20,12 +17,5 @@ enum RuntimeExceptionKind {
 #include "rexcep.h"
 kLastException
 };
-
-
-// I would have preferred to define a unique HRESULT in our own facility, but we
-// weren't supposed to create new HRESULTs so close to ship.  And now it's set
-// in stone.
-#define E_PROCESS_SHUTDOWN_REENTRY    HRESULT_FROM_WIN32(ERROR_PROCESS_ABORTED)
-
 
 #endif  // __runtimeexceptionkind_h__
