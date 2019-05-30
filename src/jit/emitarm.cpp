@@ -188,18 +188,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_T1_C: // T1_C    .....iiiiinnnddd                       R1  R2              imm5
             assert(isLowRegister(id->idReg1()));
             assert(isLowRegister(id->idReg2()));
-            if (emitInsIsLoadOrStore(id->idIns()))
-            {
-                emitAttr size = id->idOpSize();
-                int      imm  = emitGetInsSC(id);
-
-                imm = insUnscaleImm(imm, size);
-                assert(imm < 0x20);
-            }
-            else
-            {
-                assert(id->idSmallCns() < 0x20);
-            }
+            assert(insUnscaleImm(id->idIns(), emitGetInsSC(id)) < 0x20);
             break;
 
         case IF_T1_D0: // T1_D0   ........Dmmmmddd                       R1* R2*
@@ -2287,14 +2276,14 @@ void emitter::emitIns_R_R(
             break;
 
         case INS_tbb:
-            assert(size == EA_1BYTE);
+            assert(size == EA_4BYTE);
             assert(insDoesNotSetFlags(flags));
             fmt = IF_T2_C9;
             sf  = INS_FLAGS_NOT_SET;
             break;
 
         case INS_tbh:
-            assert(size == EA_2BYTE);
+            assert(size == EA_4BYTE);
             assert(insDoesNotSetFlags(flags));
             fmt = IF_T2_C9;
             sf  = INS_FLAGS_NOT_SET;
@@ -2310,7 +2299,7 @@ void emitter::emitIns_R_R(
 
         case INS_ldrexb:
         case INS_strexb:
-            assert(size == EA_1BYTE);
+            assert(size == EA_4BYTE);
             assert(insDoesNotSetFlags(flags));
             fmt = IF_T2_E1;
             sf  = INS_FLAGS_NOT_SET;
@@ -2318,7 +2307,7 @@ void emitter::emitIns_R_R(
 
         case INS_ldrexh:
         case INS_strexh:
-            assert(size == EA_2BYTE);
+            assert(size == EA_4BYTE);
             assert(insDoesNotSetFlags(flags));
             fmt = IF_T2_E1;
             sf  = INS_FLAGS_NOT_SET;
@@ -2763,7 +2752,7 @@ void emitter::emitIns_R_R_I(instruction ins,
 
         case INS_ldrb:
         case INS_strb:
-            assert(size == EA_1BYTE);
+            assert(size == EA_4BYTE);
             assert(insDoesNotSetFlags(flags));
 
             if (isLowRegister(reg1) && isLowRegister(reg2) && insOptsNone(opt) && ((imm & 0x001f) == imm))
@@ -2775,12 +2764,12 @@ void emitter::emitIns_R_R_I(instruction ins,
             goto COMMON_THUMB2_LDST;
 
         case INS_ldrsb:
-            assert(size == EA_1BYTE);
+            assert(size == EA_4BYTE);
             goto COMMON_THUMB2_LDST;
 
         case INS_ldrh:
         case INS_strh:
-            assert(size == EA_2BYTE);
+            assert(size == EA_4BYTE);
             assert(insDoesNotSetFlags(flags));
 
             if (isLowRegister(reg1) && isLowRegister(reg2) && insOptsNone(opt) && ((imm & 0x003e) == imm))
@@ -2792,7 +2781,7 @@ void emitter::emitIns_R_R_I(instruction ins,
             goto COMMON_THUMB2_LDST;
 
         case INS_ldrsh:
-            assert(size == EA_2BYTE);
+            assert(size == EA_4BYTE);
             goto COMMON_THUMB2_LDST;
 
         case INS_vldr:
@@ -3100,13 +3089,13 @@ void emitter::emitIns_R_R_R(instruction ins,
         case INS_ldrb:
         case INS_strb:
         case INS_ldrsb:
-            assert(size == EA_1BYTE);
+            assert(size == EA_4BYTE);
             goto COMMON_THUMB1_LDST;
 
         case INS_ldrsh:
         case INS_ldrh:
         case INS_strh:
-            assert(size == EA_2BYTE);
+            assert(size == EA_4BYTE);
             goto COMMON_THUMB1_LDST;
 
         case INS_ldr:
@@ -3367,13 +3356,13 @@ void emitter::emitIns_R_R_R_I(instruction ins,
         case INS_ldrb:
         case INS_ldrsb:
         case INS_strb:
-            assert(size == EA_1BYTE);
+            assert(size == EA_4BYTE);
             goto COMMON_THUMB2_LDST;
 
         case INS_ldrh:
         case INS_ldrsh:
         case INS_strh:
-            assert(size == EA_2BYTE);
+            assert(size == EA_4BYTE);
             goto COMMON_THUMB2_LDST;
 
         case INS_ldr:
@@ -5018,31 +5007,39 @@ inline unsigned insEncodeImmT2_Mov(int imm)
     return result;
 }
 
-/*****************************************************************************
- *
- *  Unscales the immediate based on the operand size in 'size'
- */
-/*static*/ int emitter::insUnscaleImm(int imm, emitAttr size)
+//------------------------------------------------------------------------
+// insUnscaleImm: Unscales the immediate operand of a given IF_T1_C instruction.
+//
+// Arguments:
+//    ins - the instruction
+//    imm - the immediate value to unscale
+//
+// Return Value:
+//    The unscaled immediate value
+//
+/*static*/ int emitter::insUnscaleImm(instruction ins, int imm)
 {
-    switch (size)
+    switch (ins)
     {
-        case EA_8BYTE:
-        case EA_4BYTE:
+        case INS_ldr:
+        case INS_str:
             assert((imm & 0x0003) == 0);
             imm >>= 2;
             break;
-
-        case EA_2BYTE:
+        case INS_ldrh:
+        case INS_strh:
             assert((imm & 0x0001) == 0);
             imm >>= 1;
             break;
-
-        case EA_1BYTE:
+        case INS_ldrb:
+        case INS_strb:
+        case INS_lsl:
+        case INS_lsr:
+        case INS_asr:
             // Do nothing
             break;
-
         default:
-            assert(!"Invalid value in size");
+            assert(!"Invalid IF_T1_C instruction");
             break;
     }
     return imm;
@@ -5628,10 +5625,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code = emitInsCode(ins, fmt);
             code |= insEncodeRegT1_D3(id->idReg1());
             code |= insEncodeRegT1_N3(id->idReg2());
-            if (emitInsIsLoadOrStore(ins))
-            {
-                imm = insUnscaleImm(imm, size);
-            }
+            imm = insUnscaleImm(ins, imm);
             assert((imm & 0x001f) == imm);
             code |= (imm << 6);
             dst += emitOutput_Thumb1Instr(dst, code);
@@ -5657,7 +5651,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             sz   = emitGetInstrDescSize(id);
             imm  = emitGetInsSC(id);
             code = emitInsCode(ins, fmt);
-            imm  = insUnscaleImm(imm, size);
+            assert((ins == INS_add) || (ins == INS_sub));
+            assert((imm & 0x0003) == 0);
+            imm >>= 2;
             assert((imm & 0x007F) == imm);
             code |= imm;
             dst += emitOutput_Thumb1Instr(dst, code);
@@ -5699,7 +5695,9 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             code |= insEncodeRegT1_DI(id->idReg1());
             if (fmt == IF_T1_J2)
             {
-                imm = insUnscaleImm(imm, size);
+                assert((ins == INS_add) || (ins == INS_ldr) || (ins == INS_str));
+                assert((imm & 0x0003) == 0);
+                imm >>= 2;
             }
             assert((imm & 0x00ff) == imm);
             code |= imm;

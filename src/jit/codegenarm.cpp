@@ -1287,12 +1287,11 @@ void CodeGen::genCodeForReturnTrap(GenTreeOp* tree)
 //
 void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 {
-    GenTree*  data       = tree->Data();
-    GenTree*  addr       = tree->Addr();
-    var_types targetType = tree->TypeGet();
-    emitter*  emit       = getEmitter();
+    GenTree*  data = tree->Data();
+    GenTree*  addr = tree->Addr();
+    var_types type = tree->TypeGet();
 
-    assert(!varTypeIsFloating(targetType) || (targetType == data->TypeGet()));
+    assert(!varTypeIsFloating(type) || (type == data->TypeGet()));
 
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
@@ -1323,8 +1322,6 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     }
     else // A normal store, not a WriteBarrier store
     {
-        bool dataIsUnary = false;
-
         // We must consume the operands in the proper execution order,
         // so that liveness is updated appropriately.
         genConsumeAddress(addr);
@@ -1334,13 +1331,13 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
             genConsumeRegs(data);
         }
 
-        if (tree->gtFlags & GTF_IND_VOLATILE)
+        if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
         {
             // issue a full memory barrier a before volatile StInd
             instGen_MemoryBarrier();
         }
 
-        emit->emitInsLoadStoreOp(ins_Store(targetType), emitTypeSize(tree), data->gtRegNum, tree);
+        getEmitter()->emitInsLoadStoreOp(ins_Store(type), emitActualTypeSize(type), data->gtRegNum, tree);
     }
 }
 

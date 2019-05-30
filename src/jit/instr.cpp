@@ -1713,16 +1713,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
 #elif defined(_TARGET_ARMARCH_)
     if (!varTypeIsSmall(srcType))
     {
-#if defined(_TARGET_ARM64_)
-        if (!varTypeIsI(srcType) && !varTypeIsUnsigned(srcType))
-        {
-            ins = INS_ldrsw;
-        }
-        else
-#endif // defined(_TARGET_ARM64_)
-        {
-            ins = INS_ldr;
-        }
+        ins = INS_ldr;
     }
     else if (varTypeIsByte(srcType))
     {
