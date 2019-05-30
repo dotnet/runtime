@@ -487,24 +487,6 @@ extern BOOL g_fEnableETW;
 BOOL IsRuntimeActive(); 
 
 //
-// Can we run managed code?
-//
-struct LoaderLockCheck
-{
-    enum kind
-    {
-        ForMDA,
-        ForCorrectness,
-        None,
-    };
-};
-BOOL CanRunManagedCode(LoaderLockCheck::kind checkKind, HINSTANCE hInst = 0);
-inline BOOL CanRunManagedCode(HINSTANCE hInst = 0)
-{
-    return CanRunManagedCode(LoaderLockCheck::ForMDA, hInst);
-}
-
-//
 // Global state variable indicating if the EE is in its init phase.
 //
 EXTERN bool g_fEEInit;

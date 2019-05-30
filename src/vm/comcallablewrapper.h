@@ -1717,7 +1717,7 @@ public:
         }
         CONTRACTL_END;
 
-        SetupForComCallHRNoHostNotifNoCheckCanRunManagedCode();
+        SetupForComCallHR();
 
         // we can safely assume that the CCW is still alive since this is an AddRef
         StackSString ssMessage;
@@ -1781,9 +1781,6 @@ private:
             MODE_ANY;
         }
         CONTRACTL_END;
-
-        if (!CanRunManagedCode())
-            return;
 
         m_pWrap->Cleanup();
     }
