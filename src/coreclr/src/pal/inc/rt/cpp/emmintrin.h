@@ -40,7 +40,7 @@ typedef char __v16qi __attribute__((__vector_size__(16)));
 
 
 /* Define the default attribute for the functions in this file. */
-#define __DEFAULT_FN_ATTRS __attribute__((__always_inline__, __nodebug__, __target__("sse2")))
+#define __DEFAULT_FN_ATTRS __attribute__((__always_inline__, NODEBUG_ATTRIBUTE, __target__("sse2")))
 
 /// \brief Performs a bitwise OR of two 128-bit integer vectors.
 ///
