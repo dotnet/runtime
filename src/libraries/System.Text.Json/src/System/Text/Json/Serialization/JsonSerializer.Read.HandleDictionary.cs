@@ -24,8 +24,7 @@ namespace System.Text.Json.Serialization
             // A nested object or dictionary so push new frame.
             if (state.Current.PropertyInitialized)
             {
-                Debug.Assert(state.Current.IsDictionary);
-
+                JsonClassInfo classInfoTemp = jsonPropertyInfo.RuntimeClassInfo;
                 state.Push();
                 state.Current.JsonClassInfo = jsonPropertyInfo.ElementClassInfo;
                 state.Current.InitializeJsonPropertyInfo();
@@ -36,7 +35,7 @@ namespace System.Text.Json.Serialization
                     jsonPropertyInfo.ElementClassInfo.Type != typeof(object) &&
                     jsonPropertyInfo.ElementClassInfo.Type != typeof(JsonElement))
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonClassInfo.Type, reader, state.PropertyPath);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(state.Current.JsonClassInfo.Type, reader, state.JsonPath);
                 }
 
                 JsonClassInfo classInfo = state.Current.JsonClassInfo;
