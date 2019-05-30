@@ -120,7 +120,8 @@
     <Error Condition="'@(FailedTests)' != ''" Text="One or more test runs failed." />
   </Target>
 
-  <Target Name="PrepareTestFolders">
+  <Target Name="PrepareTestFolders"
+          DependsOnTargets="DetermineTestOutputDirectory">
     <ItemGroup>
       <SharedFrameworkPublishFiles Include="$(IntermediateOutputRootPath)sharedFrameworkPublish/**" />
     </ItemGroup>

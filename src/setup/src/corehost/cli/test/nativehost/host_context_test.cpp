@@ -7,6 +7,7 @@
 #include <error_codes.h>
 #include <future>
 #include <hostfxr.h>
+#include <corehost_context_contract.h>
 #include "host_context_test.h"
 #include <utils.h>
 
@@ -231,6 +232,77 @@ namespace
 
         return rc == StatusCode::Success && rcClose == StatusCode::Success;
     }
+
+    bool load_assembly_and_get_function_pointer(
+        const hostfxr_exports &hostfxr,
+        const pal::char_t *config_path,
+        int argc,
+        const pal::char_t *argv[],
+        const pal::char_t *log_prefix,
+        pal::stringstream_t &test_output)
+    {
+        hostfxr_handle handle;
+        int rc = hostfxr.init_config(config_path, nullptr, &handle);
+        if (!STATUS_CODE_SUCCEEDED(rc))
+        {
+            test_output << log_prefix << _X("hostfxr_initialize_for_runtime_config failed: ") << std::hex << std::showbase << rc << std::endl;
+            return false;
+        }
+
+        test_output << log_prefix << _X("hostfxr_initialize_for_runtime_config succeeded: ") << std::hex << std::showbase << rc << std::endl;
+
+        for (int i = 0; i <= argc - 3; i += 3)
+        {
+            const pal::char_t *assembly_path = argv[i];
+            const pal::char_t *type_name = argv[i + 1];
+            const pal::char_t *method_name = argv[i + 2];
+
+            LoadAssemblyAndGetFunctionPointer delegate = nullptr;
+            rc = hostfxr.get_delegate(handle, hostfxr_delegate_type::load_assembly_and_get_function_pointer, (void **)&delegate);
+            if (rc != StatusCode::Success)
+            {
+                test_output << log_prefix << _X("hostfxr_get_runtime_delegate failed: ") << std::hex << std::showbase << rc << std::endl;
+            }
+            else
+            {
+                test_output << log_prefix << _X("hostfxr_get_runtime_delegate succeeded: ") << std::hex << std::showbase << rc << std::endl;
+
+                test_output << log_prefix << _X("calling LoadAssemblyAndGetFunctionPointer(\"")
+                    << assembly_path << _X("\", \"")
+                    << type_name << _X("\", \"")
+                    << method_name << _X("\", \"")
+                    << _X("nullptr, nullptr, &componentEntryPointDelegate)")
+                    << std::endl;
+
+                ComponentEntryPointDelegate componentEntryPointDelegate = nullptr;
+                rc = delegate(assembly_path,
+                              type_name,
+                              method_name,
+                              nullptr /* delegateTypeNative */,
+                              nullptr /* reserved */,
+                              (void **)&componentEntryPointDelegate);
+
+                if (rc != StatusCode::Success)
+                {
+                    test_output << log_prefix << _X("LoadAssemblyAndGetFunctionPointer failed: ") << std::hex << std::showbase << rc << std::endl;
+                }
+                else
+                {
+                    test_output << log_prefix << _X("LoadAssemblyAndGetFunctionPointer succeeded: ") << std::hex << std::showbase << rc << std::endl;
+
+                    int result = componentEntryPointDelegate((void*)(static_cast<size_t>(0xdeadbeef)), 42);
+
+                    test_output << log_prefix << method_name << _X(" delegate result: ") << std::hex << std::showbase << result << std::endl;
+                }
+            }
+        }
+
+        int rcClose = hostfxr.close(handle);
+        if (rcClose != StatusCode::Success)
+            test_output << log_prefix << _X("hostfxr_close failed: ") << std::hex << std::showbase << rc << std::endl;
+
+        return rc == StatusCode::Success && rcClose == StatusCode::Success;
+    }
 }
 
 host_context_test::check_properties host_context_test::check_properties_from_string(const pal::char_t *str)
@@ -452,4 +524,16 @@ bool host_context_test::non_context_mixed(
     app_start.join();
     test_output << run_app_output.str();
     return success;
+}
+
+bool host_context_test::load_assembly_and_get_function_pointer(
+    const pal::string_t &hostfxr_path,
+    const pal::char_t *config_path,
+    int argc,
+    const pal::char_t *argv[],
+    pal::stringstream_t &test_output)
+{
+    hostfxr_exports hostfxr{ hostfxr_path };
+
+    return load_assembly_and_get_function_pointer(hostfxr, config_path, argc, argv, config_log_prefix, test_output);
 }

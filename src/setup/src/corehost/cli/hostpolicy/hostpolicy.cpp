@@ -473,6 +473,12 @@ namespace
                 "Internal.Runtime.InteropServices.ComActivator",
                 "UnregisterClassForTypeInternal",
                 delegate);
+        case coreclr_delegate_type::load_assembly_and_get_function_pointer:
+            return coreclr->create_delegate(
+                "System.Private.CoreLib",
+                "Internal.Runtime.InteropServices.ComponentActivator",
+                "LoadAssemblyAndGetFunctionPointer",
+                delegate);
         default:
             return StatusCode::LibHostInvalidArgs;
         }
