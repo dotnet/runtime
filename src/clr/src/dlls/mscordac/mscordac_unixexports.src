@@ -65,6 +65,9 @@ nativeStringResourceTable_mscorrc_debug
 #PAL_wcscspn
 #PAL_wcscat
 #PAL_wcsstr
+#PAL__open
+#PAL__pread
+#PAL__close
 
 #_wcsicmp
 #_stricmp
