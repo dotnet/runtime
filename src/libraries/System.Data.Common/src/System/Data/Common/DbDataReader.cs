@@ -32,6 +32,24 @@ namespace System.Data.Common
 
         public virtual void Close() { }
 
+        public virtual Task CloseAsync(CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            try
+            {
+                Close();
+                return Task.CompletedTask;
+            }
+            catch (Exception e)
+            {
+                return Task.FromException(e);
+            }
+        }
+
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void Dispose() => Dispose(true);
 
@@ -41,6 +59,12 @@ namespace System.Data.Common
             {
                 Close();
             }
+        }
+
+        public virtual ValueTask DisposeAsync()
+        {
+            Dispose();
+            return default;
         }
 
         public abstract string GetDataTypeName(int ordinal);
