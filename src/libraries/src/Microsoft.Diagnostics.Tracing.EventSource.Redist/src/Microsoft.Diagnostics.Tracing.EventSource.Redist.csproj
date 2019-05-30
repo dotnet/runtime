@@ -3,7 +3,7 @@
     <AssemblyName>Microsoft.Diagnostics.Tracing.EventSource</AssemblyName>
     <ProjectGuid>{0CAF38F5-C7E7-46F2-8F39-C5D57492FF7F}</ProjectGuid>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <DefineConstants>$(DefineConstants);NO_EVENTCOMMANDEXECUTED_SUPPORT;ES_BUILD_STANDALONE;FEATURE_MANAGED_ETW;PLATFORM_WINDOWS</DefineConstants>
+    <DefineConstants>$(DefineConstants);NO_EVENTCOMMANDEXECUTED_SUPPORT;ES_BUILD_STANDALONE;FEATURE_MANAGED_ETW;PLATFORM_WINDOWS;INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
     <Configurations>net461-Windows_NT-Debug;net461-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -25,6 +25,7 @@
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.EventUnregister.cs" />
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.EventWriteString.cs" />
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Advapi32\Interop.EventWriteTransfer.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\Tracing\*.cs" />
     <Compile Remove="$(CommonPath)\CoreLib\System\Diagnostics\Tracing\FrameworkEventSource.cs" />
     <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\Tracing\TraceLogging\*.cs" />

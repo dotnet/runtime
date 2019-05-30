@@ -3,7 +3,7 @@
     <AssemblyName>Microsoft.IO.Redist</AssemblyName>
     <ProjectGuid>{FEF5811F-ED50-4407-A6B9-885EBD3206FB}</ProjectGuid>
     <Configurations>netfx-Debug;netfx-Release</Configurations>
-    <DefineConstants>$(DefineConstants);MS_IO_REDIST</DefineConstants>
+    <DefineConstants>$(DefineConstants);MS_IO_REDIST;INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <ClsCompliant>false</ClsCompliant>
@@ -34,6 +34,9 @@
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\ReadLinesIterator.cs" Link="Microsoft\IO\ReadLinesIterator.cs" />
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\SearchOption.cs" Link="Microsoft\IO\SearchOption.cs" />
     <Compile Include="..\..\System.IO.FileSystem\src\System\IO\SearchTarget.cs" Link="Microsoft\IO\SearchTarget.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Diagnostics\CodeAnalysis\NullableAttributes.cs">
+      <Link>Common\System\Diagnostics\CodeAnalysis\NullableAttributes.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\IO\DriveInfoInternal.Windows.cs">
       <Link>Common\System\IO\DriveInfoInternal.Windows.cs</Link>
     </Compile>
