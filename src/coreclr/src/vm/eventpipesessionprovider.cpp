@@ -191,15 +191,11 @@ void EventPipeSessionProviderList::Clear()
         SListElem<EventPipeSessionProvider *> *pElem = m_pProviders->GetHead();
         while (pElem != NULL)
         {
+            SListElem<EventPipeSessionProvider *> *pCurElem = pElem;
+            pElem = m_pProviders->RemoveHead();
             EventPipeSessionProvider *pProvider = pElem->GetValue();
             delete pProvider;
-
-            SListElem<EventPipeSessionProvider *> *pCurElem = pElem;
-            pElem = m_pProviders->GetNext(pElem);
             delete pCurElem;
-
-            // Remove deleted node.
-            m_pProviders->RemoveHead();
         }
     }
 
