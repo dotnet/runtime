@@ -597,6 +597,8 @@ namespace
             return coreclr_delegate_type::com_register;
         case hostfxr_delegate_type::com_unregister:
             return coreclr_delegate_type::com_unregister;
+        case hostfxr_delegate_type::load_assembly_and_get_function_pointer:
+            return coreclr_delegate_type::load_assembly_and_get_function_pointer;
         }
         return coreclr_delegate_type::invalid;
     }

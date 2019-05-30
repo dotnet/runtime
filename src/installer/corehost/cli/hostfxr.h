@@ -22,7 +22,8 @@ enum class hostfxr_delegate_type
     load_in_memory_assembly,
     winrt_activation,
     com_register,
-    com_unregister
+    com_unregister,
+    load_assembly_and_get_function_pointer
 };
 
 using hostfxr_main_fn = int32_t(*)(const int argc, const pal::char_t* argv[]);
