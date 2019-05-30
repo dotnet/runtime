@@ -744,55 +744,8 @@ void GetProcessMemoryLoad(LPMEMORYSTATUSEX pMSEX);
             return OOMRetVal;                       \
     }                                               \
 
-
-#define InternalSetupForComCall(CannotEnterRetVal, OOMRetVal, SORetVal, CheckCanRunManagedCode) \
-SetupThreadForComCall(OOMRetVal);                       \
-if (CheckCanRunManagedCode && !CanRunManagedCode())     \
-    return CannotEnterRetVal;
-
-#define SetupForComCallHRNoHostNotif() InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, true)
-#define SetupForComCallHRNoHostNotifNoCheckCanRunManagedCode() InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, false)
-#define SetupForComCallDWORDNoHostNotif() InternalSetupForComCall(-1, -1, -1, true)
-
-#define SetupForComCallHR()                                                                \
-InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, true)
-
-#define SetupForComCallHRNoCheckCanRunManagedCode()                                        \
-InternalSetupForComCall(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, false)
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-
-// Since Corrupting exceptions can escape COM interop boundaries,
-// these macros will be used to setup the initial SO-Intolerant transition.
-#define InternalSetupForComCallWithEscapingCorruptingExceptions(CannotEnterRetVal, OOMRetVal, SORetVal, CheckCanRunManagedCode) \
-if (CheckCanRunManagedCode && !CanRunManagedCode())                         \
-    return CannotEnterRetVal;                                               \
-SetupThreadForComCall(OOMRetVal);                                           \
-
-#define BeginSetupForComCallHRWithEscapingCorruptingExceptions()            \
-HRESULT __hr = S_OK;                                                        \
-InternalSetupForComCallWithEscapingCorruptingExceptions(HOST_E_CLRNOTAVAILABLE, E_OUTOFMEMORY, COR_E_STACKOVERFLOW, true)              \
-                                                                            \
-if (SUCCEEDED(__hr))                                                        \
-{                                                                           \
-
-#define EndSetupForComCallHRWithEscapingCorruptingExceptions()              \
-}                                                                           \
-                                                                            \
-if (FAILED(__hr))                                                           \
-{                                                                           \
-    return __hr;                                                            \
-}                                                                           \
-
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-
-#define SetupForComCallDWORD()                                              \
-InternalSetupForComCall(-1, -1, -1, true)
-
-// Special version of SetupForComCallDWORD that doesn't call
-// CanRunManagedCode() to avoid firing LoaderLock MDA
-#define SetupForComCallDWORDNoCheckCanRunManagedCode()                      \
-InternalSetupForComCall(-1, -1, -1, false)
+#define SetupForComCallHR() SetupThreadForComCall(E_OUTOFMEMORY)
+#define SetupForComCallDWORD() SetupThreadForComCall(ERROR_OUTOFMEMORY)
 
 // A holder for NATIVE_LIBRARY_HANDLE.
 FORCEINLINE void VoidFreeNativeLibrary(NATIVE_LIBRARY_HANDLE h)

@@ -616,23 +616,9 @@ ULONG __stdcall Unknown_ReleaseSpecial(IUnknown* pUnk)
 
 HRESULT __stdcall Unknown_QueryInterface_IErrorInfo(IUnknown* pUnk, REFIID riid, void** ppv)
 {
-    // Special version of SetupForComCallHR that doesn't call
-    // CanRunManagedCode() to avoid firing LoaderLock MDA
-    SetupForComCallHRNoCheckCanRunManagedCode();
+    SetupForComCallHR();
 
     WRAPPER_NO_CONTRACT;
-
-    HRESULT hr = S_OK;
-    if (!CanRunManagedCode(LoaderLockCheck::ForCorrectness))
-    {
-        // if we cannot run managed code, do a very simple QI which responds only to IUnknown and IErrorInfo
-        hr = Unknown_QueryInterface_IErrorInfo_Simple(pUnk, riid, ppv);
-
-        if (hr == E_NOINTERFACE)
-        {
-            hr = HOST_E_CLRNOTAVAILABLE;
-        }
-    }
 
     // otherwise do a regular QI
     return Unknown_QueryInterface(pUnk, riid, ppv);
@@ -644,29 +630,16 @@ HRESULT __stdcall Unknown_QueryInterface_IErrorInfo(IUnknown* pUnk, REFIID riid,
 // ---------------------------------------------------------------------------
 ULONG __stdcall Unknown_ReleaseSpecial_IErrorInfo(IUnknown* pUnk)
 {
-    // Special version of SetupForComCallDWORD that doesn't call
-    // CanRunManagedCode() to avoid firing LoaderLock MDA
-    // No managed code will be executed in this function
-    SetupForComCallDWORDNoCheckCanRunManagedCode();
+    SetupForComCallDWORD();
 
     WRAPPER_NO_CONTRACT;    
 
-    // <TODO>Address this violation in context of bug 27409</TODO>
     CONTRACT_VIOLATION(GCViolation);
 
-    if (!CanRunManagedCode(LoaderLockCheck::None))
-    {
-        // CCW cleanup doesn't run managed code but may trigger operations such as
-        // switching the thread to cooperative mode which is not safe during shutdown.
-        return 0;
-    }
-    else
-    {
-        // Don't switch domains since we need to allow release calls to go through
-        // even after the AD has been unlaoded. Furthermore release doesn't require
-        // us to transition into the domain to work properly.
-        return Unknown_ReleaseSpecial_IErrorInfo_Internal(pUnk);
-    }
+    // Don't switch domains since we need to allow release calls to go through
+    // even after the AD has been unlaoded. Furthermore release doesn't require
+    // us to transition into the domain to work properly.
+    return Unknown_ReleaseSpecial_IErrorInfo_Internal(pUnk);
 }
 
 
@@ -1288,12 +1261,7 @@ HRESULT __stdcall Dispatch_Invoke_Wrapper(IDispatch* pDisp, DISPID dispidMember,
 {
     HRESULT hrRetVal = S_OK;
 
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    BeginSetupForComCallHRWithEscapingCorruptingExceptions();
-#else // !FEATURE_CORRUPTING_EXCEPTIONS
     SetupForComCallHR();
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
-    
 
     CONTRACTL
     {
@@ -1310,11 +1278,7 @@ HRESULT __stdcall Dispatch_Invoke_Wrapper(IDispatch* pDisp, DISPID dispidMember,
 
     InvokeArgs args = {pDisp, dispidMember, &riid, lcid, wFlags, pdispparams, 
                        pvarResult, pexcepinfo, puArgErr, &hrRetVal};
-    Dispatch_Invoke_CallBack(&args);   
-
-#ifdef FEATURE_CORRUPTING_EXCEPTIONS
-    EndSetupForComCallHRWithEscapingCorruptingExceptions();
-#endif // FEATURE_CORRUPTING_EXCEPTIONS
+    Dispatch_Invoke_CallBack(&args);
 
     return hrRetVal;
 }
@@ -3001,8 +2965,7 @@ HRESULT __stdcall  IStringable_ToString_Wrapper(IUnknown *pStringable,
 
 ULONG __stdcall ICCW_AddRefFromJupiter_Wrapper(IUnknown *pUnk)
 {
-    // We do not need to hook with host here
-    SetupForComCallDWORDNoHostNotif();
+    SetupForComCallDWORD();
 
     WRAPPER_NO_CONTRACT;
 
@@ -3011,8 +2974,7 @@ ULONG __stdcall ICCW_AddRefFromJupiter_Wrapper(IUnknown *pUnk)
 
 ULONG __stdcall ICCW_ReleaseFromJupiter_Wrapper(IUnknown *pUnk)
 {
-    // We do not need to hook with host here
-    SetupForComCallDWORDNoHostNotif();
+    SetupForComCallDWORD();
 
     WRAPPER_NO_CONTRACT;
 
@@ -3021,10 +2983,7 @@ ULONG __stdcall ICCW_ReleaseFromJupiter_Wrapper(IUnknown *pUnk)
 
 HRESULT __stdcall ICCW_Peg_Wrapper(IUnknown *pUnk)
 {
-    // We do not need to hook with host here and we cannot do CanRunManagedCode check
-    // as we are most likely in the middle of a GC
-    SetupForComCallHRNoHostNotifNoCheckCanRunManagedCode();
-
+    SetupForComCallHR();
     WRAPPER_NO_CONTRACT;
 
     return ICCW_Peg(pUnk);
@@ -3032,10 +2991,7 @@ HRESULT __stdcall ICCW_Peg_Wrapper(IUnknown *pUnk)
 
 HRESULT __stdcall ICCW_Unpeg_Wrapper(IUnknown *pUnk)
 {
-    // We do not need to hook with host here and we cannot do CanRunManagedCode check
-    // as we are most likely in the middle of a GC
-    SetupForComCallHRNoHostNotifNoCheckCanRunManagedCode();
-
+    SetupForComCallHR();
     WRAPPER_NO_CONTRACT;
 
     return ICCW_Unpeg(pUnk);
