@@ -362,7 +362,7 @@ REM ============================================================================
 
 @if defined _echo @echo on
 
-powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%~dp0eng\common\msbuild.ps1"^
+powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1"^
     %__ProjectDir%\eng\empty.proj /p:NativeVersionFile="%__RootBinDir%\obj\_version.h"^
     /p:ArcadeBuild=true /t:GenerateNativeVersionFile /restore^
     %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
@@ -832,7 +832,7 @@ if %__BuildPackages% EQU 1 (
 
     REM The conditions as to what to build are captured in the builds file.
     REM Package build uses the Arcade system and scripts, relying on it to restore required toolsets as part of build
-    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%~dp0eng\common\build.ps1"^
+    powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\build.ps1"^
         -r -b -projects %__SourceDir%\.nuget\packages.builds^
         -verbosity minimal /nodeReuse:false /bl:!__BuildLog!^
         /p:RestoreDefaultOptimizationDataPackage=false /p:PortableBuild=true^
