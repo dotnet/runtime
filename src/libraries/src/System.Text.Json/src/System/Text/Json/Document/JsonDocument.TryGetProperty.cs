@@ -9,9 +9,6 @@ namespace System.Text.Json
 {
     public sealed partial class JsonDocument
     {
-        /// <summary>
-        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
-        /// </summary>
         internal bool TryGetNamedPropertyValue(int index, ReadOnlySpan<char> propertyName, out JsonElement value)
         {
             CheckNotDisposed();
@@ -112,9 +109,6 @@ namespace System.Text.Json
             return false;
         }
 
-        /// <summary>
-        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
-        /// </summary>
         internal bool TryGetNamedPropertyValue(int index, ReadOnlySpan<byte> propertyName, out JsonElement value)
         {
             CheckNotDisposed();

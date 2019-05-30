@@ -14,9 +14,6 @@ namespace System.Text.Json
         /// </summary>
         public JsonElement Value { get; }
 
-        /// <summary>
-        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
-        /// </summary>
         internal JsonProperty(JsonElement value)
         {
             Value = value;
