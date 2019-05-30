@@ -6543,7 +6543,6 @@ emit_vtfixup_ftnptr_ilgen (MonoMethodBuilder *mb, MonoMethod *method, int param_
 static void
 emit_icall_wrapper_ilgen (MonoMethodBuilder *mb, MonoJitICallInfo *callinfo, MonoMethodSignature *csig2, gboolean check_exceptions)
 {
-	gconstpointer const func = callinfo->func;
 	MonoMethodSignature *const sig = callinfo->sig;
 
 	if (sig->hasthis)

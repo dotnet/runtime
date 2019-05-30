@@ -1049,8 +1049,7 @@ mono_arch_get_native_to_interp_trampoline (MonoTrampInfo **info)
 	guint8 *start = NULL, *code;
 	MonoJumpInfo *ji = NULL;
 	GSList *unwind_ops = NULL;
-	int buf_len, i, frame_size, cfa_offset, ctx_offset;
-	int framesize;
+	int buf_len, i, framesize, cfa_offset, ctx_offset;
 
 	buf_len = 512;
 	start = code = (guint8 *) mono_global_codeman_reserve (buf_len + MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE);

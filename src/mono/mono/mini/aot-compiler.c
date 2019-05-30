@@ -7196,10 +7196,10 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 		break;
 	}
 	case MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR:
-		debug_sym = g_strdup_printf ("%s_jit_icall_native_trampoline_func_%d", prefix, ji->data.index);
+		debug_sym = g_strdup_printf ("%s_jit_icall_native_trampoline_func_%li", prefix, ji->data.index);
 		break;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
-		debug_sym = g_strdup_printf ("%s_jit_icall_native_specific_trampoline_lazy_fetch_%u", prefix, ji->data.uindex);
+		debug_sym = g_strdup_printf ("%s_jit_icall_native_specific_trampoline_lazy_fetch_%lu", prefix, ji->data.uindex);
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 		debug_sym = g_strdup_printf ("%s_jit_icall_native_%s", prefix, mono_find_jit_icall_info (ji->data.jit_icall_id)->name);

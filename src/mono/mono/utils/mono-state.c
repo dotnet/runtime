@@ -262,7 +262,7 @@ mono_state_alloc_mem (MonoStateMem *mem, long tag, size_t size)
 	memset (mem, 0, sizeof (*mem));
 	mem->tag = tag;
 	mem->size = size;
-	mem->handle = NULL;
+	mem->handle = 0;
 
 	if (!g_hasenv ("MONO_CRASH_NOFILE"))
 		mem->handle = g_open (name, O_RDWR | O_CREAT | O_EXCL, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
