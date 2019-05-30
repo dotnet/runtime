@@ -1,4 +1,11 @@
+
+# Note
+Starting with System.Diagnostics.DiagnosticSource 4.6.0 (that ships with .Net Core 3.0), we are moving towards [W3C Trace-Context](https://www.w3.org/TR/trace-context/) standard. We still support Request-Id ([hierarchical](HierarchicalRequestId.md) version) and it is still the default format for `System.Diagnostics.Activity`.
+
+[Flat Request-Id](FlatRequestId.md) is **deprecated**.
+
 # Overview
+    
 One of the common problems in microservices development is ability to trace request flow from client (application, browser) through all the services involved in processing.
 
 Typical scenarios include:
