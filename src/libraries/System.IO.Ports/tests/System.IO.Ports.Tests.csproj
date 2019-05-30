@@ -110,7 +110,7 @@
     <Compile Include="Support\PortsTest.cs" />
     <Compile Include="Support\TestEventHandler.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' != 'true' AND '$(TargetsOSX)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="SerialPort\DosDevices.cs" />
     <Compile Include="SerialPort\PortName.cs" />
     <Compile Include="SerialPort\OpenDevices.cs" />
