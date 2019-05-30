@@ -310,22 +310,32 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         {
             pParam->pThis->lt.Start();
         }
-        CorJitResult temp = pParam->pThis->pJitInstance->compileMethod(pParam->pThis->icji, &pParam->info,
+        CorJitResult jitResult = pParam->pThis->pJitInstance->compileMethod(pParam->pThis->icji, &pParam->info,
                                                                        pParam->flags, &NEntryBlock, &NCodeSizeBlock);
         if (pParam->collectThroughput)
         {
             pParam->pThis->lt.Stop();
             pParam->pThis->times[0] = pParam->pThis->lt.GetCycles();
         }
-        if ((SpmiTargetArchitecture == SPMI_TARGET_ARCHITECTURE_ARM64) && (temp == CORJIT_SKIPPED))
+        if (jitResult == CORJIT_SKIPPED)
         {
             // For altjit, treat SKIPPED as OK
-            temp = CORJIT_OK;
+#ifdef _TARGET_AMD64_
+            if (SpmiTargetArchitecture == SPMI_TARGET_ARCHITECTURE_ARM64)
+            {
+                jitResult = CORJIT_OK;
+            }
+#elif defined(_TARGET_X86_)
+            if (SpmiTargetArchitecture == SPMI_TARGET_ARCHITECTURE_ARM)
+            {
+                jitResult = CORJIT_OK;
+            }
+#endif
         }
-        if (temp == CORJIT_OK)
+        if (jitResult == CORJIT_OK)
         {
             // capture the results of compilation
-            pParam->pThis->mc->cr->recCompileMethod(&NEntryBlock, &NCodeSizeBlock, temp);
+            pParam->pThis->mc->cr->recCompileMethod(&NEntryBlock, &NCodeSizeBlock, jitResult);
             pParam->pThis->mc->cr->recAllocMemCapture();
             pParam->pThis->mc->cr->recAllocGCInfoCapture();
 
@@ -333,7 +343,7 @@ JitInstance::Result JitInstance::CompileMethod(MethodContext* MethodToCompile, i
         }
         else
         {
-            LogDebug("compileMethod failed with result %d", temp);
+            LogDebug("compileMethod failed with result %d", jitResult);
             pParam->result = RESULT_ERROR;
         }
     }
