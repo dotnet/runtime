@@ -87,13 +87,16 @@ namespace System.Tests
             yield return new object[] { "Value1", false, Enum.ToObject(s_boolEnumType, true) };
             yield return new object[] { "vaLue2", true, Enum.ToObject(s_boolEnumType, false) };
 
-            // Single - parses successfully, but doesn't properly represent the underlying value
-            yield return new object[] { "Value1", false, Enum.GetValues(s_floatEnumType).GetValue(0) };
-            yield return new object[] { "vaLue2", true, Enum.GetValues(s_floatEnumType).GetValue(0) };
+            if (!PlatformDetection.IsMonoRuntime) // tracked in issue #36887
+            {
+                // Single - parses successfully, but doesn't properly represent the underlying value
+                yield return new object[] { "Value1", false, Enum.GetValues(s_floatEnumType).GetValue(0) };
+                yield return new object[] { "vaLue2", true, Enum.GetValues(s_floatEnumType).GetValue(0) };
 
-            // Double - parses successfully, but doesn't properly represent the underlying value
-            yield return new object[] { "Value1", false, Enum.GetValues(s_doubleEnumType).GetValue(0) };
-            yield return new object[] { "vaLue2", true, Enum.GetValues(s_doubleEnumType).GetValue(0) };
+                // Double - parses successfully, but doesn't properly represent the underlying value
+                yield return new object[] { "Value1", false, Enum.GetValues(s_doubleEnumType).GetValue(0) };
+                yield return new object[] { "vaLue2", true, Enum.GetValues(s_doubleEnumType).GetValue(0) };
+            }
 #endif // netcoreapp
 
             // SimpleEnum
