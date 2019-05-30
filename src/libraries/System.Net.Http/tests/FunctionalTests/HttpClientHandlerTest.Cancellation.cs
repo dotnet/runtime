@@ -9,6 +9,9 @@ using System.IO;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.DotNet.XUnitExtensions;
+
 using Xunit;
 using Xunit.Abstractions;
 
@@ -292,16 +295,16 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(32000)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "WinRT stack can't set MaxConnectionsPerServer < 2")]
-        [Fact]
+        [ConditionalFact]
         public async Task MaxConnectionsPerServer_WaitingConnectionsAreCancelable()
         {
-            if (IsNetfxHandler)
+            if (IsNetfxHandler || IsCurlHandler)
             {
                 // Throws HttpRequestException wrapping a WebException for the canceled request
                 // instead of throwing an OperationCanceledException or a canceled WebException directly.
-                return;
+                // With CurlHandler, this test sometimes hangs.
+                throw new SkipTestException("Skipping on unstable platform handler");
             }
 
             using (HttpClientHandler handler = CreateHttpClientHandler())
