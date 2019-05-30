@@ -85,7 +85,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework does not recover well from underlying stream failures")]
         [Fact]
         public async Task Read_CorrectlyUnlocksAfterFailure()
         {
@@ -519,7 +518,6 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Relies on FlushAsync override not available in desktop")]
         public void SslStream_StreamToStream_FlushAsync_Propagated()
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -719,7 +717,6 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "ReadAsyncs on netfx aren't cancelable after they start.")]
         [Fact]
         public async Task ReadAsync_CanceledAfterStart_ThrowsOperationCanceledException()
         {

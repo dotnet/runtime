@@ -115,7 +115,6 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void PrepareMethod()
         {
             foreach (MethodInfo m in typeof(RuntimeHelpersTests).GetMethods())

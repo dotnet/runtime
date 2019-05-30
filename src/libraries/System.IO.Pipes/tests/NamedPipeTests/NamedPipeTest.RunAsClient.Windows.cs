@@ -20,7 +20,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(TokenImpersonationLevel.Impersonation)]
         [InlineData(TokenImpersonationLevel.Delegation)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
-        [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
+        [ActiveIssue(22271, TargetFrameworkMonikers.Uap)]
         public async Task RunAsClient_Windows(TokenImpersonationLevel tokenImpersonationLevel)
         {
             string pipeName = GetUniquePipeName();

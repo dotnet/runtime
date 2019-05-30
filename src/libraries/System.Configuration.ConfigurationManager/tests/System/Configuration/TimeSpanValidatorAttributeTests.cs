@@ -114,7 +114,6 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Exception messages are different")]
         public void MinValueString_TooSmall()
         {
             RemoteExecutor.Invoke(() =>
@@ -133,7 +132,6 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Exception messages are different")]
         public void MaxValueString_TooBig()
         {
             RemoteExecutor.Invoke(() =>

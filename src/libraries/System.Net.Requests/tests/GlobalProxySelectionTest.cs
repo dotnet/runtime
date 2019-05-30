@@ -47,13 +47,10 @@ namespace System.Net.Tests
 
 #pragma warning disable 0618 //GlobalProxySelection is Deprecated.
                 Assert.NotNull(GlobalProxySelection.Select);
-                if (!PlatformDetection.IsFullFramework)
-                {
-                    // On .NET Framework, the default value for Select property
-                    // is an internal WebRequest.WebProxyWrapper object which
-                    // works similarly to DefaultWebProxy but is not the same object.
-                    Assert.Equal(GlobalProxySelection.Select, WebRequest.DefaultWebProxy);
-                }
+                // On .NET Framework, the default value for Select property
+                // is an internal WebRequest.WebProxyWrapper object which
+                // works similarly to DefaultWebProxy but is not the same object.
+                Assert.Equal(GlobalProxySelection.Select, WebRequest.DefaultWebProxy);
 #pragma warning restore 0618
 
                 WebRequest.DefaultWebProxy = myProxy;

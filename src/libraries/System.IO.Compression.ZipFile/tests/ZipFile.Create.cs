@@ -402,7 +402,7 @@ namespace System.IO.Compression.Tests
         [PlatformSpecific(TestPlatforms.Windows)]  // Checks Windows-specific invalid file path
         public void Windows_ZipWithInvalidFileNames_ThrowsException(string zipName, string paramName)
         {
-            if (paramName == null && !PlatformDetection.IsFullFramework)
+            if (paramName == null)
                 Assert.Throws<IOException>(() => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));
             else
                 AssertExtensions.Throws<ArgumentException>(paramName, null, () => ZipFile.ExtractToDirectory(compat(zipName) + ".zip", GetTestFilePath()));

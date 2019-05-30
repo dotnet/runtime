@@ -96,13 +96,10 @@ namespace System.ComponentModel.Tests
                 // a CultureInfo object on this computer
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
-                if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages and paramnames.
-                {
-                    Assert.NotNull(ex.Message);
-                    Assert.True(ex.Message.IndexOf(typeof(CultureInfo).Name) != -1);
-                    Assert.True(ex.Message.IndexOf("(default)") != -1);
-                    Assert.Null(ex.ParamName);
-                }
+                Assert.NotNull(ex.Message);
+                Assert.True(ex.Message.IndexOf(typeof(CultureInfo).Name) != -1);
+                Assert.True(ex.Message.IndexOf("(default)") != -1);
+                Assert.Null(ex.ParamName);
             }
 
             try
@@ -117,13 +114,10 @@ namespace System.ComponentModel.Tests
                 // a CultureInfo object on this computer
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
-                if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages and paramnames.
-                {
-                    Assert.NotNull(ex.Message);
-                    Assert.True(ex.Message.IndexOf(typeof(CultureInfo).Name) != -1);
-                    Assert.True(ex.Message.IndexOf("   ") != -1);
-                    Assert.Null(ex.ParamName);
-                }
+                Assert.NotNull(ex.Message);
+                Assert.True(ex.Message.IndexOf(typeof(CultureInfo).Name) != -1);
+                Assert.True(ex.Message.IndexOf("   ") != -1);
+                Assert.Null(ex.ParamName);
             }
 
             try
@@ -138,13 +132,10 @@ namespace System.ComponentModel.Tests
                 // a CultureInfo object on this computer
                 Assert.Equal(typeof(ArgumentException), ex.GetType());
                 Assert.Null(ex.InnerException);
-                if (!PlatformDetection.IsNetNative) // .NET Native toolchain optimizes away exception messages and paramnames.
-                {
-                    Assert.NotNull(ex.Message);
-                    Assert.True(ex.Message.IndexOf(typeof(CultureInfo).Name) != -1);
-                    Assert.True(ex.Message.IndexOf("\r\n") != -1);
-                    Assert.Null(ex.ParamName);
-                }
+                Assert.NotNull(ex.Message);
+                Assert.True(ex.Message.IndexOf(typeof(CultureInfo).Name) != -1);
+                Assert.True(ex.Message.IndexOf("\r\n") != -1);
+                Assert.Null(ex.ParamName);
             }
         }
 

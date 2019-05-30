@@ -30,7 +30,6 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, reason: "netfx doesn't have https://github.com/dotnet/coreclr/pull/20294")]
         [Fact]
         public static async Task TaskDropsExecutionContextUponCompletion()
         {

@@ -211,14 +211,12 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Not yet fixed in the .NET framework")]
         public static void WebProxy_BypassOnLocal_ConfiguredToNotBypassLocal()
         {
             Assert.False(new WebProxy("microsoft", BypassOnLocal: false).IsBypassed(new Uri($"http://{IPAddress.Loopback}")));
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void WebProxy_GetDefaultProxy_NotSupported()
         {
 #pragma warning disable 0618 // obsolete method

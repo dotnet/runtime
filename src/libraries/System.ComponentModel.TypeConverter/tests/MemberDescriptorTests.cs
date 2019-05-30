@@ -10,7 +10,6 @@ namespace System.ComponentModel.Tests
     public class MemberDescriptorTests
     {
         [Fact]
-        [ActiveIssue("dotnet/corefx #18201", TargetFrameworkMonikers.NetFramework)]
         public void CopiedMemberDescriptorEqualsItsSource()
         {
             string description = "MockCategory";

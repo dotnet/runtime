@@ -262,21 +262,8 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            MemberData(nameof(ControlWhiteSpace))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)] // e.g. NetFX only
-        public void ControlWhiteSpaceExists(string component)
-        {
-            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-
-            string path = testDir.FullName + component;
-            Assert.True(Exists(path), "directory with control whitespace should exist");
-        }
-
-        [Theory,
             MemberData(nameof(NonControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // not NetFX
         public void NonControlWhiteSpaceExists(string component)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath() + component);

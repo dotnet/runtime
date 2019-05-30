@@ -56,7 +56,6 @@ namespace System.Tests
             Assert.True(left != right);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // .NET Framework's hashing algorithm doesn't factor in CKI.Key
         [Theory]
         [MemberData(nameof(NotEqualConsoleKeyInfos))]
         public void HashCodeNotEquals_DifferentData(ConsoleKeyInfo left, ConsoleKeyInfo right)

@@ -10,7 +10,6 @@ namespace System.Threading.Tasks.Dataflow.Tests
     public class DebugAttributeTests
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public void TestDebuggerDisplaysAndTypeProxies()
         {
             // Test both canceled and non-canceled

@@ -291,16 +291,7 @@ namespace System.Tests
                 Assert.Equal(expected, result);
                 if (result.Length == 0)
                 {
-                    // We return string.Empty by reference as an optimization
-                    // in .NET core if there is no work to do.
-                    if (PlatformDetection.IsFullFramework || PlatformDetection.IsNetNative)
-                    {
-                        Assert.Equal(string.Empty, result);
-                    }
-                    else
-                    {
-                        Assert.Same(string.Empty, result);
-                    }
+                    Assert.Same(string.Empty, result);
                 }
             };
 
@@ -398,11 +389,7 @@ namespace System.Tests
 
             // Concat should ignore objects that have a null ToString() value
             yield return new object[] { new object[] { new ObjectWithNullToString(), "Foo", new ObjectWithNullToString(), "Bar", new ObjectWithNullToString() }, "FooBar" };
-
-            if (!PlatformDetection.IsFullFramework)
-            {
-                yield return new object[] { new object[] { new ObjectWithNullToString() }, "" };
-            }
+            yield return new object[] { new object[] { new ObjectWithNullToString() }, "" };
         }
 
         [Theory]
@@ -2419,7 +2406,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(27098, TargetFrameworkMonikers.NetFramework)]
         public static void GetHashCode_EmbeddedNull_ReturnsDifferentHashCodes()
         {
             Assert.NotEqual("\0AAAAAAAAA".GetHashCode(), "\0BBBBBBBBBBBB".GetHashCode());
@@ -3834,23 +3820,11 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Join_ObjectArray_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         public static void Join_ObjectArray(string separator, object[] values, string expected)
         {
             Assert.Equal(expected, string.Join(separator, values));
             Assert.Equal(expected, string.Join(separator, (IEnumerable<object>)values));
-        }
-
-        [Theory]
-        [MemberData(nameof(Join_ObjectArray_TestData))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void Join_ObjectArray_WithNullIssue(string separator, object[] values, string expected)
-        {
-            string enumerableExpected = expected;
-            if (values.Length > 0 && values[0] == null) // Join return nothing when first value is null
-                expected = "";
-            Assert.Equal(expected, string.Join(separator, values));
-            Assert.Equal(enumerableExpected, string.Join(separator, (IEnumerable<object>)values));
         }
 
         [Fact]
@@ -7267,7 +7241,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static unsafe void Ctor_SByte_InvalidArguments()
         {
             AssertExtensions.Throws<ArgumentNullException>("value", () => new string ((sbyte*) null, 0, 1, Encoding.Default));
@@ -7285,7 +7258,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static unsafe void Ctor_SByte_NullPointer_ReturnsEmptyString()
         {
             Assert.Equal(string.Empty, new string((sbyte*) null));
@@ -7336,7 +7308,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, ".NetNative limits interning of literals to the empty string.")]
         public static unsafe void InternTest()
         {
             AssertExtensions.Throws<ArgumentNullException>("str", () => string.Intern(null));

@@ -71,7 +71,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "#23810 not fixed on .NET Framework")]
         public void ReadZeroCharacters()
         {
             using (CharArrayTextReader tr = GetCharArray().textReader)

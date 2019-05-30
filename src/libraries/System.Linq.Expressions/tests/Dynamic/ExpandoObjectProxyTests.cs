@@ -133,10 +133,7 @@ namespace System.Dynamic.Tests
             ConstructorInfo constructor = debugViewType.GetConstructors().Single();
             TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(new object[] {null}));
             var ane = (ArgumentNullException)tie.InnerException;
-            if (!PlatformDetection.IsNetNative) // The .NET Native toolchain optimizes away exception ParamNames
-            {
-                Assert.Equal("collection", ane.ParamName);
-            }
+            Assert.Equal("collection", ane.ParamName);
         }
     }
 }

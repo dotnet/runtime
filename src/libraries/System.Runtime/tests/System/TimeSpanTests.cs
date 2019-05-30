@@ -438,7 +438,6 @@ namespace System.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [MemberData(nameof(FromMilliseconds_TestData_NetCore))]
         public static void FromMilliseconds_Netcore(double value, TimeSpan expected)
         {
@@ -454,14 +453,6 @@ namespace System.Tests
             yield return new object[] { -1.0, new TimeSpan(-10000) };
             yield return new object[] { -2.5, new TimeSpan(-30000) };
             yield return new object[] { -1500.5, new TimeSpan(-15010000) };
-        }
-
-        [Theory]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        [MemberData(nameof(FromMilliseconds_TestData_Desktop))]
-        public static void FromMilliseconds_Desktop(double value, TimeSpan expected)
-        {
-            Assert.Equal(expected, TimeSpan.FromMilliseconds(value));
         }
 
         [Fact]
@@ -559,14 +550,6 @@ namespace System.Tests
             yield return new object[] { "1:1:1.000001", CultureInfo.InvariantCulture, new TimeSpan(36610000010) };
             yield return new object[] { "1:1:1.0000001", CultureInfo.InvariantCulture, new TimeSpan(36610000001) };
 
-            if (PlatformDetection.IsFullFramework)
-            {
-                // Full framework can produce some incorrect results in some cases involving leading zeros when
-                // parsing fraction more than 7 digits. we test the expected full framework results here and we have
-                // have more net core tests to validate the correct the results.
-                yield return new object[] { "1:1:1.00000001", CultureInfo.InvariantCulture, new TimeSpan(36610000001) };
-            }
-
             // DD.HH:MM:SS
             yield return new object[] { "1.12:24:02", null, new TimeSpan(1, 12, 24, 2, 0) };
 
@@ -587,14 +570,6 @@ namespace System.Tests
             yield return new object[] { "1:1:.00001", CultureInfo.InvariantCulture, new TimeSpan(36600000100) };
             yield return new object[] { "1:1:.000001", CultureInfo.InvariantCulture, new TimeSpan(36600000010) };
             yield return new object[] { "1:1:.0000001", CultureInfo.InvariantCulture, new TimeSpan(36600000001) };
-
-            if (PlatformDetection.IsFullFramework)
-            {
-                // Full framework can produce some incorrect results in some cases involving leading zeros when
-                // parsing fraction more than 7 digits. we test the expected full framework results here and we have
-                // have more net core tests to validate the correct the results.
-                yield return new object[] { "1:1:.00000001", CultureInfo.InvariantCulture, new TimeSpan(36600000001) };
-            }
 
             // Just below overflow on various components
             yield return new object[] { "10675199", null, new TimeSpan(9223371936000000000) };
@@ -659,15 +634,6 @@ namespace System.Tests
 
             // OverflowExceptions
             yield return new object[] { "1:1:1.99999999", null, typeof(OverflowException) }; // overflowing fraction
-
-            if (PlatformDetection.IsFullFramework)
-            {
-                // on non full framework we now succeed parsing the fraction .000000001
-                // Full framework can produce some incorrect results in some cases involving leading zeros when
-                // parsing fraction more than 7 digits. we test the expected full framework results here and we have
-                // have more net core tests to validate the correct the results.
-                yield return new object[] { "1:1:1.000000001", null, typeof(OverflowException) }; // too many leading zeroes in fraction
-            }
 
             yield return new object[] { "2147483647", null, typeof(OverflowException) }; // overflowing value == int.MaxValue
             yield return new object[] { "2147483648", null, typeof(OverflowException) }; // overflowing value == int.MaxValue + 1

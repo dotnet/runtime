@@ -8,7 +8,6 @@ using Xunit;
 
 namespace System.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "varargs calling convention not supported on .NET Native")]
     public static class ArgIteratorTests
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsArgIteratorSupported))]

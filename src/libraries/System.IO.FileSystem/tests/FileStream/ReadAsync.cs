@@ -192,7 +192,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "In netcoreapp we modified ReadAsync/WriteAsync to complete synchronously here, but that change was not backported to netfx.")]
         public async Task ReadAsyncBufferedCompletesSynchronously()
         {
             string fileName = GetTestFilePath();

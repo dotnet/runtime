@@ -139,7 +139,6 @@ namespace System.Tests
         }
 
         [ActiveIssue("https://github.com/dotnet/coreclr/pull/23898")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "https://github.com/dotnet/coreclr/pull/23898")]
         [Theory]
         [MemberData(nameof(Comparison_TestData))]
         public void ComparisonOperators_ReturnExpected(Version version1, Version version2, int expectedSign)

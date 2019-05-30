@@ -33,8 +33,7 @@ namespace System.Linq.Tests
 
             // .NET Core returns the instance as an optimization.
             // see https://github.com/dotnet/corefx/pull/2401.
-            Action<object, object> assertSame = (objA, objB) =>
-                Assert.Equal(!PlatformDetection.IsFullFramework, ReferenceEquals(objA, objB));
+            Action<object, object> assertSame = (objA, objB) => Assert.Equal(true, ReferenceEquals(objA, objB));
 
 
             assertSame(emptySourceArray.ToArray(), emptySourceArray.ToArray());
@@ -220,7 +219,7 @@ namespace System.Linq.Tests
         {
             // .NET Core returns the instance as an optimization.
             // see https://github.com/dotnet/corefx/pull/2401.
-            Assert.Equal(!PlatformDetection.IsFullFramework, ReferenceEquals(Enumerable.Empty<int>().ToArray(), Enumerable.Empty<int>().ToArray()));
+            Assert.Equal(true, ReferenceEquals(Enumerable.Empty<int>().ToArray(), Enumerable.Empty<int>().ToArray()));
             
             var array = new int[0];
             Assert.NotSame(array, array.ToArray());
@@ -366,7 +365,7 @@ namespace System.Linq.Tests
             Third
         }
 
-        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET framework disallows copying assignable value types. See corefx#13816")]
+        [Fact]
         public void ToArray_Cast()
         {
             Enum0[] source = { Enum0.First, Enum0.Second, Enum0.Third };

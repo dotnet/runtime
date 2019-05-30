@@ -12,8 +12,7 @@ namespace System.Diagnostics.TraceSourceTests
 
     public class TraceClassTests : IDisposable
     {
-        private readonly string TestRunnerAssemblyName = PlatformDetection.IsFullFramework ? 
-            Path.GetFileName(Environment.GetCommandLineArgs()[0]) : Assembly.GetEntryAssembly().GetName().Name;
+        private readonly string TestRunnerAssemblyName = Assembly.GetEntryAssembly().GetName().Name;
 
         void IDisposable.Dispose()
         {

@@ -269,7 +269,6 @@ namespace System.Numerics.Tests
 
         // A test for Clamp (Vector4f, Vector4f, Vector4f)
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Vector4ClampTest()
         {
             Vector4 a = new Vector4(0.5f, 0.3f, 0.33f, 0.44f);
@@ -321,64 +320,6 @@ namespace System.Numerics.Tests
             // Case W3: specified value is smaller than min and max value.
             a = new Vector4(-2.0f, -3.0f, -4.0f, -5.0f);
             expected = max;
-            actual = Vector4.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Clamp did not return the expected value.");
-        }
-
-        // A test for Clamp (Vector4f, Vector4f, Vector4f) for netfx only
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void Vector4ClampTestFX()
-        {
-            Vector4 a = new Vector4(0.5f, 0.3f, 0.33f, 0.44f);
-            Vector4 min = new Vector4(0.0f, 0.1f, 0.13f, 0.14f);
-            Vector4 max = new Vector4(1.0f, 1.1f, 1.13f, 1.14f);
-
-            // Normal case.
-            // Case N1: specified value is in the range.
-            Vector4 expected = new Vector4(0.5f, 0.3f, 0.33f, 0.44f);
-            Vector4 actual = Vector4.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Clamp did not return the expected value.");
-
-            // Normal case.
-            // Case N2: specified value is bigger than max value.
-            a = new Vector4(2.0f, 3.0f, 4.0f, 5.0f);
-            expected = max;
-            actual = Vector4.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Clamp did not return the expected value.");
-
-            // Case N3: specified value is smaller than max value.
-            a = new Vector4(-2.0f, -3.0f, -4.0f, -5.0f);
-            expected = min;
-            actual = Vector4.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Clamp did not return the expected value.");
-
-            // Case N4: combination case.
-            a = new Vector4(-2.0f, 0.5f, 4.0f, -5.0f);
-            expected = new Vector4(min.X, a.Y, max.Z, min.W);
-            actual = Vector4.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Clamp did not return the expected value.");
-
-            // User specified min value is bigger than max value.
-            max = new Vector4(0.0f, 0.1f, 0.13f, 0.14f);
-            min = new Vector4(1.0f, 1.1f, 1.13f, 1.14f);
-
-            // Case W1: specified value is in the range.
-            a = new Vector4(0.5f, 0.3f, 0.33f, 0.44f);
-            expected = min;
-            actual = Vector4.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Clamp did not return the expected value.");
-
-            // Normal case.
-            // Case W2: specified value is bigger than max and min value.
-            a = new Vector4(2.0f, 3.0f, 4.0f, 5.0f);
-            expected = min;
-            actual = Vector4.Clamp(a, min, max);
-            Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Clamp did not return the expected value.");
-
-            // Case W3: specified value is smaller than min and max value.
-            a = new Vector4(-2.0f, -3.0f, -4.0f, -5.0f);
-            expected = min;
             actual = Vector4.Clamp(a, min, max);
             Assert.True(MathHelper.Equal(expected, actual), "Vector4f.Clamp did not return the expected value.");
         }

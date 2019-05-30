@@ -11,7 +11,6 @@ namespace System.Collections.Specialized.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(5)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Different implementation
         public void SyncRoot(int count)
         {
             StringDictionary stringDictionary1 = Helpers.CreateStringDictionary(count);

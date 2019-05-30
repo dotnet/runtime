@@ -10,7 +10,6 @@ namespace System.Tests
     public static class LazyOfTMetadataTests
     {
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public static void Ctor_TMetadata()
         {
             var lazy = new Lazy<int, string>("metadata1");
@@ -21,7 +20,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public static void Ctor_TMetadata_Bool()
         {
             var lazy = new Lazy<int, string>("metadata2", false);
@@ -29,7 +27,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public static void Ctor_TMetadata_LazyThreadSaftetyMode()
         {
             var lazy = new Lazy<int, string>("metadata3", LazyThreadSafetyMode.PublicationOnly);
@@ -37,7 +34,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public static void Ctor_TMetadata_LazyThreadSaftetyMode_InvalidMode_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", () => new Lazy<int, string>("test", LazyThreadSafetyMode.None - 1)); // Invalid mode
@@ -45,7 +41,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public static void Ctor_ValueFactory_TMetadata()
         {
             var lazy = new Lazy<string, int>(() => "foo", 4);
@@ -53,14 +48,12 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public static void Ctor_ValueFactory_TMetadata_NullValueFactory_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("valueFactory", () => new Lazy<int, string>(null, "test")); // Value factory is null
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public static void Ctor_ValueFactory_TMetadata_Bool()
         {
             var lazy = new Lazy<string, int>(() => "foo", 5, false);
@@ -68,14 +61,12 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public static void Ctor_ValueFactory_TMetadata_Bool_NullValueFactory_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("valueFactory", () => new Lazy<int, string>(null, "test", false)); // Value factory is null
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public static void Ctor_ValueFactory_TMetadata_LazyThreadSaftetyMode()
         {
             var lazy = new Lazy<string, int>(() => "foo", 6, LazyThreadSafetyMode.None);
@@ -83,7 +74,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public static void Ctor_ValueFactory_TMetadata_LazyThreadSaftetyMode_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("valueFactory", () => new Lazy<int, string>(null, "test", LazyThreadSafetyMode.PublicationOnly)); // Value factory is null

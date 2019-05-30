@@ -68,7 +68,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         public void FormattingTheContractPrintsConstraintKeysAndValues()
         {
             var mcd = new CompositionContract(typeof(AType), null, new Dictionary<string, object> { { "A", 1 }, { "B", "C" } });
@@ -77,7 +76,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         public void FormattingTheContractPrintsNameAndDiscriminator()
         {
             var mcd = new CompositionContract(typeof(AType), "inner", new Dictionary<string, object> { { "A", 1 } });

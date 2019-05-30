@@ -44,7 +44,6 @@ namespace System.Runtime.Loader.Tests
         }
     }
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "AssemblyLoadContext not supported on .NET Native")]
     public class DefaultLoadContextTests
     {
         private const string TestAssemblyName = "System.Runtime.Loader.Noop.Assembly";

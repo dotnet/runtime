@@ -1,8 +1,8 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-        netcoreapp-Windows_NT;
-        netfx;
+      netcoreapp-Windows_NT;
+      netfx;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

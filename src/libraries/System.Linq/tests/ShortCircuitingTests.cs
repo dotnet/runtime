@@ -60,7 +60,7 @@ namespace System.Linq.Tests
 
             // .NET Core shortcircuits as an optimization.
             // See https://github.com/dotnet/corefx/pull/2350.
-            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 4, pred.Calls);
+            Assert.Equal(4, pred.Calls);
         }
 
         [Fact]
@@ -72,7 +72,7 @@ namespace System.Linq.Tests
 
             // .NET Core shortcircuits as an optimization.
             // See https://github.com/dotnet/corefx/pull/2350.
-            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 5, tracker.Moves);
+            Assert.Equal(5, tracker.Moves);
         }
 
         [Fact]
@@ -84,7 +84,7 @@ namespace System.Linq.Tests
 
             // .NET Core shortcircuits as an optimization.
             // See https://github.com/dotnet/corefx/pull/2350.
-            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 5, tracker.Moves);
+            Assert.Equal(5, tracker.Moves);
         }
 
         [Fact]
@@ -96,7 +96,7 @@ namespace System.Linq.Tests
 
             // .NET Core shortcircuits as an optimization.
             // See https://github.com/dotnet/corefx/pull/2350.
-            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 5, tracker.Moves);
+            Assert.Equal(5, tracker.Moves);
         }
 
         [Fact]
@@ -108,7 +108,7 @@ namespace System.Linq.Tests
 
             // .NET Core shortcircuits as an optimization.
             // See https://github.com/dotnet/corefx/pull/2350.
-            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 5, tracker.Moves);
+            Assert.Equal(5, tracker.Moves);
         }
 
         [Fact]
@@ -120,8 +120,8 @@ namespace System.Linq.Tests
 
             // .NET Core shortcircuits as an optimization.
             // See https://github.com/dotnet/corefx/pull/2350.
-            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 4, tracker.Moves);
-            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 4, pred.Calls);
+            Assert.Equal(4, tracker.Moves);
+            Assert.Equal(4, pred.Calls);
         }
 
         [Fact]
@@ -133,8 +133,8 @@ namespace System.Linq.Tests
 
             // .NET Core shortcircuits as an optimization.
             // See https://github.com/dotnet/corefx/pull/2350.
-            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 4, tracker.Moves);
-            Assert.Equal(PlatformDetection.IsFullFramework ? 10 : 4, pred.Calls);
+            Assert.Equal(4, tracker.Moves);
+            Assert.Equal(4, pred.Calls);
         }
 
         [Fact]
@@ -149,8 +149,8 @@ namespace System.Linq.Tests
 
             // .NET Core shortcircuits as an optimization.
             // See https://github.com/dotnet/corefx/pull/2350.
-            Assert.Equal(PlatformDetection.IsFullFramework ? 4 : tracker0.Moves, tracker1.Moves);
-            Assert.Equal(PlatformDetection.IsFullFramework ? 4 : pred0.Calls, pred1.Calls);
+            Assert.Equal(tracker0.Moves, tracker1.Moves);
+            Assert.Equal(pred0.Calls, pred1.Calls);
         }
 
         [Fact]
@@ -165,8 +165,8 @@ namespace System.Linq.Tests
 
             // .NET Core shortcircuits as an optimization.
             // See https://github.com/dotnet/corefx/pull/2350.
-            Assert.Equal(PlatformDetection.IsFullFramework ? 4 : tracker0.Moves, tracker1.Moves);
-            Assert.Equal(PlatformDetection.IsFullFramework ? 4 : pred0.Calls, pred1.Calls);
+            Assert.Equal(tracker0.Moves, tracker1.Moves);
+            Assert.Equal(pred0.Calls, pred1.Calls);
         }
     }
 }

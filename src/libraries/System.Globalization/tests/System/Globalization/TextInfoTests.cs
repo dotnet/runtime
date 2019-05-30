@@ -74,7 +74,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(DutchTitleCaseInfo_TestData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop Framework hasn't received the fix for dotnet/corefx#16770 yet.")]
         public void ToTitleCaseDutchTest(string cultureName, string expected, string actual)
         {
             TextInfo ti = CultureInfo.GetCultureInfo(cultureName).TextInfo;
@@ -265,7 +264,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(ToLower_TestData_netcore))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void ToLower_Netcore(string name, string str, string expected)
         {
             TestToLower(name, str, expected);
@@ -389,7 +387,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(ToUpper_TestData_netcore))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void ToUpper_netcore(string name, string str, string expected)
         {
             TestToUpper(name, str, expected);

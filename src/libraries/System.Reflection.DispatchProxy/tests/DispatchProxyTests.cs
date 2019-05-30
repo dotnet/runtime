@@ -99,28 +99,24 @@ namespace DispatchProxyTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/3637 - wrong exception thrown from DispatchProxy.Create()", TargetFrameworkMonikers.UapAot)]
         public static void Create_Using_Concrete_Proxy_Type_Throws_ArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("T", () => DispatchProxy.Create<TestType_ConcreteClass, TestDispatchProxy>());
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/3637 - wrong exception thrown from DispatchProxy.Create()", TargetFrameworkMonikers.UapAot)]
         public static void Create_Using_Sealed_BaseType_Throws_ArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, Sealed_TestDispatchProxy>());
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/3637 - wrong exception thrown from DispatchProxy.Create()", TargetFrameworkMonikers.UapAot)]
         public static void Create_Using_Abstract_BaseType_Throws_ArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, Abstract_TestDispatchProxy>());
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/3637 - wrong exception thrown from DispatchProxy.Create()", TargetFrameworkMonikers.UapAot)]
         public static void Create_Using_BaseType_Without_Default_Ctor_Throws_ArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("TProxy", () => DispatchProxy.Create<TestType_IHelloService, NoDefaultCtor_TestDispatchProxy>());
@@ -394,7 +390,6 @@ namespace DispatchProxyTests
 
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection on generated dispatch proxy types not allowed.")]
         public static void Proxy_Declares_Interface_Properties()
         {
             TestType_IPropertyService proxy = DispatchProxy.Create<TestType_IPropertyService, TestDispatchProxy>();
@@ -453,7 +448,6 @@ namespace DispatchProxyTests
 #endif // netcoreapp
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection on generated dispatch proxy types not allowed.")]
         public static void Proxy_Declares_Interface_Events()
         {
             TestType_IEventService proxy = DispatchProxy.Create<TestType_IEventService, TestDispatchProxy>();
@@ -495,7 +489,6 @@ namespace DispatchProxyTests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Reflection on generated dispatch proxy types not allowed.")]
         public static void Proxy_Declares_Interface_Indexers()
         {
             TestType_IIndexerService proxy = DispatchProxy.Create<TestType_IIndexerService, TestDispatchProxy>();

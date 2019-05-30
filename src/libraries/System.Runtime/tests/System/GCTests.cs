@@ -714,7 +714,6 @@ namespace System.Tests
         [OuterLoop]
         [InlineData(0)]
         [InlineData(-1)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Difference in behavior, full framework doesn't throw, fixed in .NET Core")]
         public static void TryStartNoGCRegion_TotalSizeOutOfRange(long size)
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();
@@ -731,7 +730,6 @@ namespace System.Tests
         [InlineData(0)]                   // invalid because lohSize ==
         [InlineData(-1)]                  // invalid because lohSize < 0
         [InlineData(1152921504606846976)] // invalid because lohSize > totalSize
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Difference in behavior, full framework doesn't throw, fixed in .NET Core")]
         public static void TryStartNoGCRegion_LOHSizeInvalid(long size)
         {
             RemoteInvokeOptions options = new RemoteInvokeOptions();

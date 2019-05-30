@@ -158,7 +158,7 @@ namespace System.Net.Tests
             Assert.Equal(HttpWebRequest.DefaultMaximumResponseHeadersLength, 64);
             Assert.NotNull(HttpWebRequest.DefaultCachePolicy);
             Assert.Equal(HttpWebRequest.DefaultCachePolicy.Level, RequestCacheLevel.BypassCache);
-            Assert.Equal(PlatformDetection.IsFullFramework ? 64 : 0, HttpWebRequest.DefaultMaximumErrorResponseLength);
+            Assert.Equal(0, HttpWebRequest.DefaultMaximumErrorResponseLength);
             Assert.NotNull(request.Proxy);
             Assert.Equal(remoteServer, request.RequestUri);
             Assert.True(request.SupportsCookieContainer);
@@ -214,7 +214,6 @@ namespace System.Net.Tests
             Assert.False(request.AllowReadStreamBuffering);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "not supported on .NET Framework")]
         [Theory, MemberData(nameof(EchoServers))]
         public void AllowReadStreamBuffering_SetTrueThenGet_ExpectTrue(Uri remoteServer)
         {
@@ -639,7 +638,6 @@ namespace System.Net.Tests
             Assert.False(request.PreAuthenticate);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19225")]
         [Theory, MemberData(nameof(EchoServers))]
         public void PreAuthenticate_SetAndGetBooleanResponse_ValuesMatch(Uri remoteServer)
         {
@@ -770,8 +768,6 @@ namespace System.Net.Tests
 
         [Theory]
         [MemberData(nameof(Dates_ReadValue_Data))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Net Framework currently retains the custom date parsing that retains some bugs (mostly related to offset), and also prevents setting the raw header value")]
         public void IfModifiedSince_ReadValue(string raw, DateTime expected)
         {
             HttpWebRequest request = WebRequest.CreateHttp("http://localhost");
@@ -782,8 +778,6 @@ namespace System.Net.Tests
 
         [Theory]
         [MemberData(nameof(Dates_Invalid_Data))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Net Framework currently retains the custom date parsing that accepts a wider range of values, and also prevents setting the raw header value")]
         public void IfModifiedSince_InvalidValue(string invalid)
         {
             HttpWebRequest request = WebRequest.CreateHttp("http://localhost");
@@ -816,8 +810,6 @@ namespace System.Net.Tests
 
         [Theory]
         [MemberData(nameof(Dates_ReadValue_Data))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Net Framework currently retains the custom date parsing that retains some bugs (mostly related to offset), and also prevents setting the raw header value")]
         public void Date_ReadValue(string raw, DateTime expected)
         {
             HttpWebRequest request = WebRequest.CreateHttp("http://localhost");
@@ -828,8 +820,6 @@ namespace System.Net.Tests
 
         [Theory]
         [MemberData(nameof(Dates_Invalid_Data))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,
-            "Net Framework currently retains the custom date parsing that accepts a wider range of values, and also prevents setting the raw header value")]
         public void Date_InvalidValue(string invalid)
         {
             HttpWebRequest request = WebRequest.CreateHttp("http://localhost");
@@ -1085,7 +1075,6 @@ namespace System.Net.Tests
 
         [Theory, MemberData(nameof(EchoServers))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "no exception thrown on mono")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "no exception thrown on netfx")]
         public void BeginGetRequestStream_CreatePostRequestThenCallTwice_ThrowsInvalidOperationException(Uri remoteServer)
         {
             HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
@@ -1448,14 +1437,7 @@ namespace System.Net.Tests
 
                 using (request.EndGetRequestStream(request.BeginGetRequestStream(null, null), out context))
                 {
-                    if (PlatformDetection.IsFullFramework)
-                    {
-                        Assert.NotNull(context);
-                    }
-                    else
-                    {
-                        Assert.Null(context);
-                    }
+                    Assert.Null(context);
                 }
 
                 return Task.FromResult<object>(null);
@@ -1464,7 +1446,6 @@ namespace System.Net.Tests
 
         [ActiveIssue(19083)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "dotnet/corefx #19083")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19083")]
         [Fact]
         public async Task Abort_BeginGetRequestStreamThenAbort_EndGetRequestStreamThrowsWebException()
         {
@@ -1487,7 +1468,6 @@ namespace System.Net.Tests
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono, "ResponseCallback not called after Abort on mono")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "ResponseCallback not called after Abort on netfx")]
         [Fact]
         public async Task Abort_BeginGetResponseThenAbort_ResponseCallbackCalledBeforeAbortReturns()
         {

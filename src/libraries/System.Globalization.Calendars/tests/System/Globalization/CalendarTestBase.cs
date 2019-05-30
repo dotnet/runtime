@@ -142,16 +142,7 @@ namespace System.Globalization.Tests
         {
             int month = 1;
             int day = 1;
-            if (calendar is JapaneseLunisolarCalendar && PlatformDetection.IsFullFramework)
-            {
-                // desktop has a bug in JapaneseLunisolarCalendar which is fixed in .NET Core.
-                // in case of a new era starts in the middle of a month which means part of the month will belong to one
-                // era and the rest will belong to the new era. When calculating the calendar year number for dates which
-                // in the rest of the month and exist in the new started era, we should still use the old era info instead
-                // of the new era info because the rest of the month still belong to the year of last era.
-                // https://github.com/dotnet/coreclr/pull/3662
-                yield break;
-            }
+
             foreach (int era in calendar.Eras)
             {
                 int year = MaxCalendarYearInEra(calendar, era) - 2;
@@ -346,10 +337,6 @@ namespace System.Globalization.Tests
         public void ToDateTime_Invalid_ThrowsArgumentOutOfRangeException()
         {
             Calendar calendar = Calendar;
-            if (PlatformDetection.IsFullFramework && calendar is JapaneseLunisolarCalendar)
-            {
-                return;
-            }
 
             int month = 1;
             int day = 1;
@@ -509,7 +496,6 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void TestJapaneseCalendarDateParsing()
         {
             CultureInfo ciJapanese = new CultureInfo("ja-JP") { DateTimeFormat = { Calendar = new JapaneseCalendar() } };

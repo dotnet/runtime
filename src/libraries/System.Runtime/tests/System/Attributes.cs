@@ -211,7 +211,6 @@ namespace System.Tests
     {
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "CustomAttributes on Modules not supported in UapAot")]
         public static void customAttributeCount()
         {
             List<CustomAttributeData> customAttributes =  typeof(GetCustomAttribute).Module.CustomAttributes.ToList();
@@ -381,7 +380,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "CustomAttributes on Modules not supported in UapAot")]
         public static void PositiveTest5()
         {
             Type clsType = typeof(GetCustomAttribute);
@@ -414,7 +412,6 @@ namespace System.Tests
 
         }
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "CustomAttributes on Modules not supported in UapAot")]
         public static void PositiveTest6()
         {
             Type clsType = typeof(GetCustomAttribute);

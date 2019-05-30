@@ -43,7 +43,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [ActiveIssue(32167, TargetFrameworkMonikers.NetFramework)]
         public void EnumerateFilesOverLegacyMaxPath()
         {
             // We want to test that directories under the legacy MAX_PATH (260 characters, including the null) can iterate files
@@ -64,7 +63,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [ActiveIssue(32167, TargetFrameworkMonikers.NetFramework)]
         public void EnumerateFilesDirectoryOverLegacyMaxPath()
         {
             // Check enumerating when the entire path is over MAX_PATH

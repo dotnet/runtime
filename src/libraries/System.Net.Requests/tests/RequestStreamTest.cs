@@ -206,7 +206,6 @@ namespace System.Net.Tests
             });
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "cancellation token ignored on netfx")]
         [Fact]
         public async Task FlushAsync_TokenIsCanceled_TaskIsCanceled()
         {

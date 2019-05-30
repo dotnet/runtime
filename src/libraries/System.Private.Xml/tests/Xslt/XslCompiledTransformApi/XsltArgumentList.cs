@@ -4645,7 +4645,6 @@ namespace System.Xml.Tests
             _output = output;
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does support Compiling JScript/CSharp scripts")]
         //[Variation(id = 1, Desc = "Call Current without MoveNext")]
         [InlineData()]
         [Theory]
@@ -4666,31 +4665,6 @@ namespace System.Xml.Tests
             Assert.Equal("Compiling JScript/CSharp scripts is not supported", e.InnerException.Message);
         }
 
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Only full framework supports Compiling JScript/CSharp scripts")]
-        //[Variation(id = 1, Desc = "Call Current without MoveNext")]
-        [Fact]
-        public void NodeIter1_FullFramework()
-        {
-            XslCompiledTransform xslt = new XslCompiledTransform();
-
-            XsltArgumentList xslArg = new XsltArgumentList();
-            XmlUrlResolver ur = new XmlUrlResolver();
-            Uri uriSource = ur.ResolveUri(null, FullFilePath("sample.xsd"));
-            xslArg.AddParam("sourceUri", string.Empty, uriSource.ToString());
-
-            xslt.Load(FullFilePath("xsd2cs1.xsl"), new XsltSettings(true, true), new XmlUrlResolver());
-
-            Assert.Throws<System.InvalidOperationException>(() =>
-            {
-                XPathDocument doc = new XPathDocument(FullFilePath("sample.xsd"));
-                using (StringWriter sw = new StringWriter())
-                {
-                    xslt.Transform(doc, xslArg, sw);
-                }
-            });
-        }
-
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework does support Compiling JScript/CSharp scripts")]
         //[Variation(id = 2, Desc = "Call Current after MoveNext")]
         [InlineData()]
         [Theory]
@@ -4709,27 +4683,6 @@ namespace System.Xml.Tests
             });
 
             Assert.Equal("Compiling JScript/CSharp scripts is not supported", e.InnerException.Message);
-        }
-
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Only full framework supports Compiling JScript/CSharp scripts")]
-        //[Variation(id = 2, Desc = "Call Current after MoveNext")]
-        [Fact]
-        public void NodeIter2_FullFramework()
-        {
-            XslCompiledTransform xslt = new XslCompiledTransform();
-
-            XsltArgumentList xslArg = new XsltArgumentList();
-            XmlUrlResolver ur = new XmlUrlResolver();
-            Uri uriSource = ur.ResolveUri(null, FullFilePath("sample.xsd"));
-            xslArg.AddParam("sourceUri", string.Empty, uriSource.ToString());
-
-            xslt.Load(FullFilePath("xsd2cs2.xsl"), new XsltSettings(true, true), new XmlUrlResolver());
-
-            XPathDocument doc = new XPathDocument(FullFilePath("sample.xsd"));
-            using (StringWriter sw = new StringWriter())
-            {
-                xslt.Transform(doc, xslArg, sw);
-            }
         }
     }
 }

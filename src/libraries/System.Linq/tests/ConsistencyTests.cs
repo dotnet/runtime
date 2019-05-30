@@ -47,15 +47,6 @@ namespace System.Linq.Tests
                 "ToHashSet"
             };
 
-            if (PlatformDetection.IsFullFramework)
-            {
-                result = result.Concat(new[]
-                {
-                    nameof(Enumerable.Append),
-                    nameof(Enumerable.Prepend)
-                });
-            }
-
             return result;
         }
 

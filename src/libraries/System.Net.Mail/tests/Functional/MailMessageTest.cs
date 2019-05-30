@@ -146,7 +146,6 @@ namespace System.Net.Mail.Tests
         }
         
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "MailWriter is reflection blocked.")]
         public void SentSpecialLengthMailAttachment_Base64Decode_Success()
         {
             // The special length follows pattern: (3N - 1) * 0x4400 + 1

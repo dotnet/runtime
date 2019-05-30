@@ -5,23 +5,9 @@
     <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);Unix</DefineConstants>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="System\ApplicationIdTests.cs" />
-    <Compile Include="System\Convert.cs" />
-    <Compile Include="System\EnvironmentTests.cs" />
-    <Compile Include="System\IO\PathTests.cs" />
-    <Compile Include="System\IO\PathTests_Windows_NetFX.cs" />
-    <Compile Include="System\IO\PathTests_Windows.cs" />
-    <Compile Include="System\OperatingSystemTests.cs" />
-    <Compile Include="System\Runtime\Versioning\VersioningHelperTests.cs" />
-    <Compile Include="System\AppDomainTests.cs" />
-    <Compile Include="System\Reflection\AssemblyNameProxyTests.cs" />
-    <Compile Include="System\MarshalByRefObjectTest.cs" />
-    <Compile Include="TestHelpers.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System\AppDomainTests.netcoreapp.cs" />
     <Compile Include="System\Random.netcoreapp.cs" />
     <Compile Include="System\IO\Path.IsPathFullyQualified.netcoreapp.cs" />
@@ -33,7 +19,18 @@
     <Compile Include="System\Runtime\ProfileOptimization.netcoreapp.cs" />
     <Compile Include="System\Runtime\CompilerServices\SwitchExpressionExceptionTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'!='netstandard'">
+  <ItemGroup>
+    <Compile Include="System\ApplicationIdTests.cs" />
+    <Compile Include="System\Convert.cs" />
+    <Compile Include="System\EnvironmentTests.cs" />
+    <Compile Include="System\IO\PathTests.cs" />
+    <Compile Include="System\IO\PathTests_Windows.cs" />
+    <Compile Include="System\OperatingSystemTests.cs" />
+    <Compile Include="System\Runtime\Versioning\VersioningHelperTests.cs" />
+    <Compile Include="System\AppDomainTests.cs" />
+    <Compile Include="System\Reflection\AssemblyNameProxyTests.cs" />
+    <Compile Include="System\MarshalByRefObjectTest.cs" />
+    <Compile Include="TestHelpers.cs" />
     <Compile Include="System\BitConverterSpan.cs" />
     <Compile Include="System\BitConverter.netcoreapp.cs" />
     <Compile Include="System\Convert.netcoreapp.cs" />
@@ -44,8 +41,6 @@
     <Compile Include="System\StringComparer.netcoreapp.cs" />
     <Compile Include="System\UnloadingAndProcessExitTests.netcoreapp.cs" />
     <Compile Include="System\IO\Path.IsPathFullyQualified.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="System\BitConverterArray.cs" />
     <Compile Include="System\BitConverterBase.cs" />
     <Compile Include="System\Environment.UserDomainName.cs" />
@@ -123,8 +118,5 @@
       <Project>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</Project>
       <Name>TestApp</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
 </Project>

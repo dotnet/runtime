@@ -276,29 +276,5 @@ namespace System.Tests
             Assert.Throws<ArgumentException>("type", () => Activator.CreateInstance(typeBuilder));
             Assert.Throws<NotSupportedException>(() => Activator.CreateInstance(typeBuilder, new object[0]));
         }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "AssemblyBuilderAccess.ReflectionOnly is not supported in .NET Core")]
-        public void CreateInstance_ReflectionOnlyType_ThrowsInvalidOperationException()
-        {
-            AssemblyName assemblyName = new AssemblyName("Assembly");
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, (AssemblyBuilderAccess)6);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type", TypeAttributes.Public);
-
-            Assert.Throws<InvalidOperationException>(() => Activator.CreateInstance(typeBuilder.CreateType()));
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "AssemblyBuilderAccess.Save is not supported in .NET Core")]
-        public void CreateInstance_DynamicTypeWithoutRunAccess_ThrowsNotSupportedException()
-        {
-            AssemblyName assemblyName = new AssemblyName("Assembly");
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(assemblyName, (AssemblyBuilderAccess)2);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type", TypeAttributes.Public);
-
-            Assert.Throws<NotSupportedException>(() => Activator.CreateInstance(typeBuilder.CreateType()));
-        }
     }
 }

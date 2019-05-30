@@ -1,10 +1,8 @@
 ﻿<Project>
   <PropertyGroup>
-    <!-- uap build currently failing: https://github.com/dotnet/corefx/issues/31962 -->
     <BuildConfigurations>
       netcoreapp;
       netfx;
-      <!-- netstandard; -->
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

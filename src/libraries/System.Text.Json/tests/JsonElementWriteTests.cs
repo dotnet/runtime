@@ -1162,7 +1162,7 @@ null,
                 expectedValue,
                 Encoding.UTF8.GetString(
                     buffer.WrittenSpan
-#if netstandard
+#if netfx
                         .ToArray()
 #endif
                     ));

@@ -26,17 +26,9 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and throws NRE because it uses the typeName in a Debug.Assert")]
         public void Ctor_NullStringNetCore_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("typeName", () => new TypeConverterAttribute((string)null));
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and throws NRE because it uses the typeName in a Debug.Assert")]
-        public void Ctor_NullStringNetFramework_ThrowsNullReferenceException()
-        {
-            Assert.Throws<NullReferenceException>(() => new TypeConverterAttribute((string)null));
         }
 
         [Theory]
@@ -48,17 +40,9 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and throws NRE")]
         public void Ctor_NullTypeNetCore_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("type", () => new TypeConverterAttribute((Type)null));
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, ".NET Framework has a bug and throws NRE")]
-        public void Ctor_NullTypeNetFramework_ThrowsNullReferenceException()
-        {
-            Assert.Throws<NullReferenceException>(() => new TypeConverterAttribute((Type)null));
         }
 
         [Fact]

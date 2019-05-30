@@ -463,7 +463,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Uses reflection to access internal fields of the Task class.")]
         public static void RunFromResult_FaultedTask()
         {
             // Make sure faulted tasks are actually faulted.  We have little choice for this test but to use reflection,
