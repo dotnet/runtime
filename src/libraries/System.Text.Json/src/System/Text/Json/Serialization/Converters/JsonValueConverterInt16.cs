@@ -27,9 +27,9 @@ namespace System.Text.Json.Serialization.Converters
             writer.WriteNumberValue(value);
         }
 
-        public override void Write(Span<byte> escapedPropertyName, short value, Utf8JsonWriter writer)
+        public override void Write(JsonEncodedText propertyName, short value, Utf8JsonWriter writer)
         {
-            writer.WriteNumber(escapedPropertyName, value);
+            writer.WriteNumber(propertyName, value);
         }
     }
 }

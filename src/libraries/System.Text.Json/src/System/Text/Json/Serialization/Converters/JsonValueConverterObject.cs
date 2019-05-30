@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Converters
             throw new InvalidOperationException();
         }
 
-        public override void Write(Span<byte> escapedPropertyName, object value, Utf8JsonWriter writer)
+        public override void Write(JsonEncodedText propertyName, object value, Utf8JsonWriter writer)
         {
             throw new InvalidOperationException();
         }

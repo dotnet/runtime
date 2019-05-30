@@ -77,18 +77,18 @@ namespace System.Text.Json.Serialization
 
                 if (value == null)
                 {
-                    Debug.Assert(EscapedName != null);
+                    Debug.Assert(EscapedName.HasValue);
 
                     if (!IgnoreNullValues)
                     {
-                        writer.WriteNull(EscapedName);
+                        writer.WriteNull(EscapedName.Value);
                     }
                 }
                 else if (ValueConverter != null)
                 {
-                    if (EscapedName != null)
+                    if (EscapedName.HasValue)
                     {
-                        ValueConverter.Write(EscapedName, value.GetValueOrDefault(), writer);
+                        ValueConverter.Write(EscapedName.Value, value.GetValueOrDefault(), writer);
                     }
                     else
                     {
