@@ -14,10 +14,10 @@ set DOTNET_MULTILEVEL_LOOKUP=0
 :: Disable first run since we do not need all ASP.NET packages restored.
 set DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 
-:: Restore the Tools directory
-call %~dp0init-tools.cmd
+:: Install dotnet
+call %~dp0\init-dotnet.cmd
 if NOT [%ERRORLEVEL%]==[0] (
-  exit /b 1
+  exit /b %ERRORLEVEL%
 )
 
 pushd %~dp0
