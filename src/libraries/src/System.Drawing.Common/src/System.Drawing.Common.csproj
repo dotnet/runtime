@@ -20,7 +20,6 @@
     <Compile Include="System\Drawing\BufferedGraphicsContext.cs" />
     <Compile Include="System\Drawing\Brushes.cs" />
     <Compile Include="System\Drawing\CharacterRange.cs" />
-    <Compile Include="System\Drawing\ColorTranslator.cs" />
     <Compile Include="System\Drawing\ContentAlignment.cs" />
     <Compile Include="System\Drawing\IDeviceContext.cs" />
     <Compile Include="System\Drawing\GdiplusNative.cs" />
@@ -154,11 +153,14 @@
     <Compile Include="System\Drawing\Imaging\ImageCodecInfo.cs" />
     <Compile Include="System\Drawing\Imaging\ImageCodecInfoPrivate.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileFrameUnit.cs" />
-    <Compile Include="$(CommonPath)\System\Drawing\ColorConverterCommon.cs">
+    <Compile Condition="'$(TargetGroup)' == 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\ColorConverterCommon.cs">
       <Link>System\Drawing\ColorConverterCommon.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Drawing\ColorTable.cs">
+    <Compile Condition="'$(TargetGroup)' == 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\ColorTable.cs">
       <Link>System\Drawing\ColorTable.cs</Link>
+    </Compile>
+    <Compile Condition="'$(TargetGroup)' == 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\ColorTranslator.cs">
+      <Link>System\Drawing\ColorTranslator.cs</Link>
     </Compile>
     <Compile Condition="'$(TargetGroup)' == 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\ColorUtil.netcoreapp20.cs">
       <Link>System\Drawing\ColorUtil.netcoreapp20.cs</Link>
@@ -166,7 +168,7 @@
     <Compile Condition="'$(TargetGroup)' != 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\ColorUtil.netcoreapp21.cs">
       <Link>System\Drawing\ColorUtil.netcoreapp21.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Drawing\KnownColorTable.cs">
+    <Compile Condition="'$(TargetGroup)' == 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\KnownColorTable.cs">
       <Link>System\Drawing\KnownColorTable.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\InteropServices\FunctionWrapper.cs">

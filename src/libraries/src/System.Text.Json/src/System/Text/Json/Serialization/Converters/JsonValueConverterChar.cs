@@ -32,9 +32,9 @@ namespace System.Text.Json.Serialization.Converters
                 );
         }
 
-        public override void Write(Span<byte> escapedPropertyName, char value, Utf8JsonWriter writer)
+        public override void Write(JsonEncodedText propertyName, char value, Utf8JsonWriter writer)
         {
-            writer.WriteString(escapedPropertyName,
+            writer.WriteString(propertyName,
 #if BUILDING_INBOX_LIBRARY
                 MemoryMarshal.CreateSpan(ref value, 1)
 #else

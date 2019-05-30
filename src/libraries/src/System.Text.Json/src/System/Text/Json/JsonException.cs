@@ -19,7 +19,7 @@ namespace System.Text.Json
         /// <param name="message">The context specific error message.</param>
         /// <param name="lineNumber">The line number at which the invalid JSON was encountered (starting at 0) when deserializing.</param>
         /// <param name="bytePositionInLine">The byte count within the current line where the invalid JSON was encountered (starting at 0).</param>
-        /// <param name="path">The object's property path where the invalid JSON was encountered.</param>
+        /// <param name="path">The path where the invalid JSON was encountered.</param>
         /// <param name="innerException">The exception that caused the current exception.</param>
         /// <remarks>
         /// Note that the <paramref name="bytePositionInLine"/> counts the number of bytes (i.e. UTF-8 code units) and not characters or scalars.
@@ -35,7 +35,7 @@ namespace System.Text.Json
         /// Creates a new exception object to relay error information to the user.
         /// </summary>
         /// <param name="message">The context specific error message.</param>
-        /// <param name="path">The object's property path where the invalid JSON was encountered.</param>
+        /// <param name="path">The path where the invalid JSON was encountered.</param>
         /// <param name="lineNumber">The line number at which the invalid JSON was encountered (starting at 0) when deserializing.</param>
         /// <param name="bytePositionInLine">The byte count within the current line where the invalid JSON was encountered (starting at 0).</param>
         /// <remarks>
@@ -87,7 +87,7 @@ namespace System.Text.Json
         public long? BytePositionInLine { get; private set; }
 
         /// <summary>
-        /// The property path within the JSON where the exception was encountered.
+        /// The path within the JSON where the exception was encountered.
         /// </summary>
         public string Path { get; private set; }
     }
