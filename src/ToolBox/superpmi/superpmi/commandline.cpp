@@ -107,7 +107,7 @@ void CommandLine::DumpHelp(const char* program)
     printf("\n");
     printf(" -target <target>\n");
     printf("     Used by the assembly differences calculator. This specifies the target\n");
-    printf("     architecture for cross-compilation. Currently allowed <target> value: arm64\n");
+    printf("     architecture for cross-compilation. Currently allowed <target> values: arm, arm64\n");
     printf("\n");
     printf(" -coredistools\n");
     printf("     Use disassembly tools from the CoreDisTools library\n");
@@ -593,11 +593,28 @@ bool CommandLine::Parse(int argc, char* argv[], /* OUT */ Options* o)
         DumpHelp(argv[0]);
         return false;
     }
-    if (o->targetArchitecture != nullptr && (0 != _stricmp(o->targetArchitecture, "arm64")))
+    if (o->targetArchitecture != nullptr)
     {
-        LogError("Illegal target architecture specified with -target (only arm64 is supported).");
-        DumpHelp(argv[0]);
-        return false;
+        const char* errorMessage = nullptr;
+#ifdef _TARGET_AMD64_
+        if (0 != _stricmp(o->targetArchitecture, "arm64"))
+        {
+            errorMessage = "Illegal target architecture specified with -target (only arm64 is supported on x64 host).";
+        }
+#elif defined(_TARGET_X86_)
+        if (0 != _stricmp(o->targetArchitecture, "arm"))
+        {
+            errorMessage = "Illegal target architecture specified with -target (only arm is supported on x86 host).";
+        }
+#else
+        errorMessage = "-target is unsupported on this platform.";
+#endif
+        if (errorMessage != nullptr)
+        {
+            LogError(errorMessage);
+            DumpHelp(argv[0]);
+            return false;
+        }
     }
     if (o->skipCleanup && !o->parallel)
     {
