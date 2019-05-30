@@ -25,8 +25,14 @@
     <Compile Include="System\Drawing\Size.cs" />
     <Compile Include="System\Drawing\SizeF.cs" />
     <Compile Include="System\Drawing\Color.cs" />
+    <Compile Include="$(CommonPath)\System\Drawing\ColorConverterCommon.cs">
+      <Link>System\Drawing\ColorConverterCommon.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Drawing\ColorTable.cs">
       <Link>System\Drawing\ColorTable.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Drawing\ColorTranslator.cs">
+      <Link>System\Drawing\ColorTranslator.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Drawing\ColorUtil.netcoreapp21.cs">
       <Link>System\Drawing\ColorUtil.netcoreapp21.cs</Link>
