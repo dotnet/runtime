@@ -96,7 +96,7 @@ void emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataReg, GenTr
 static bool isModImmConst(int imm);
 static int encodeModImmConst(int imm);
 
-static int insUnscaleImm(int imm, emitAttr size);
+static int insUnscaleImm(instruction ins, int imm);
 
 /************************************************************************/
 /*           Public inline informational methods                        */
