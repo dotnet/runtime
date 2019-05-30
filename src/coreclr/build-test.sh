@@ -994,7 +994,8 @@ fi
 # init the target distro name
 initTargetDistroRid
 
-# Override tool directory
+# Restore Build Tools
+source $__ProjectRoot/init-tools.sh
 
 if [[ (-z "$__GenerateLayoutOnly") && (-z "$__GenerateTestHostOnly") && (-z "$__BuildTestWrappersOnly") ]]; then
     build_Tests

@@ -8,8 +8,8 @@ export DOTNET_MULTILEVEL_LOOKUP=0
 # Disable first run since we want to control all package sources
 export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 
-echo "Running init-tools.sh"
-source $working_tree_root/init-tools.sh
+echo "Running init-dotnet.sh"
+source $working_tree_root/init-dotnet.sh
 
 dotnet=$working_tree_root/.dotnet/dotnet
 
