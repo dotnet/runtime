@@ -10,9 +10,6 @@ using System.Threading.Tasks;
 
 namespace System.Text.Json.Serialization
 {
-    /// <summary>
-    ///   This is an implementation detail and MUST NOT be called by source-package consumers.
-    /// </summary>
     internal sealed class PooledByteBufferWriter : IBufferWriter<byte>, IDisposable
     {
         private byte[] _rentedBuffer;
