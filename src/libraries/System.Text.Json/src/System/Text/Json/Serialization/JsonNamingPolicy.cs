@@ -9,6 +9,9 @@ namespace System.Text.Json.Serialization
     /// </summary>
     public abstract class JsonNamingPolicy
     {
+        /// <summary>
+        /// Initializes a new instance of <see cref="JsonNamingPolicy"/>.
+        /// </summary>
         protected JsonNamingPolicy() { }
 
         /// <summary>

@@ -9,6 +9,10 @@
     <!-- BUILDING_INBOX_LIBRARY is only false when building for netstandard to validate that the sources are netstandard compatible. -->
     <!-- This is meant to help with producing a source package and not to ship a netstandard compatible binary. -->
     <DefineConstants Condition="'$(TargetsNETStandard)' != 'true'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
+    <!-- Workaround for overriding the XML comments related warnings that are being supressed repo wide (within arcade): -->
+    <!-- https://github.com/dotnet/arcade/blob/ea6addfdc65e5df1b2c036f11614a5f922e36267/src/Microsoft.DotNet.Arcade.Sdk/tools/ProjectDefaults.props#L90 -->
+    <!-- For this project, we want warnings if there are public APIs/types without properly formatted XML comments (particularly CS1591). -->
+    <NoWarn/>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Text\Json\BitStack.cs" />
