@@ -1402,6 +1402,8 @@ namespace System.IO
         public static string Combine(string path1, string path2, string path3) { throw null; }
         public static string Combine(string path1, string path2, string path3, string path4) { throw null; }
         public static string Combine(params string[] paths) { throw null; }
+        public static bool EndsInDirectorySeparator(System.ReadOnlySpan<char> path) { throw null; }
+        public static bool EndsInDirectorySeparator(string path) { throw null; }
         public static System.ReadOnlySpan<char> GetDirectoryName(System.ReadOnlySpan<char> path) { throw null; }
         public static string GetDirectoryName(string path) { throw null; }
         public static System.ReadOnlySpan<char> GetExtension(System.ReadOnlySpan<char> path) { throw null; }
@@ -1435,6 +1437,8 @@ namespace System.IO
         public static string Join(params string[] paths) { throw null; }
         public static bool TryJoin(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2, System.ReadOnlySpan<char> path3, System.Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryJoin(System.ReadOnlySpan<char> path1, System.ReadOnlySpan<char> path2, System.Span<char> destination, out int charsWritten) { throw null; }
+        public static System.ReadOnlySpan<char> TrimEndingDirectorySeparator(System.ReadOnlySpan<char> path) { throw null; }
+        public static string TrimEndingDirectorySeparator(string path) { throw null; }
     }
     public partial class StreamReader : System.IO.TextReader
     {

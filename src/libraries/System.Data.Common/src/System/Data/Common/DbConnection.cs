@@ -63,9 +63,74 @@ namespace System.Data.Common
         IDbTransaction IDbConnection.BeginTransaction(IsolationLevel isolationLevel) =>
             BeginDbTransaction(isolationLevel);
 
+        protected virtual ValueTask<DbTransaction> BeginDbTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<DbTransaction>(Task.FromCanceled<DbTransaction>(cancellationToken));
+            }
+
+            try
+            {
+                return new ValueTask<DbTransaction>(BeginDbTransaction(isolationLevel));
+            }
+            catch (Exception e)
+            {
+                return new ValueTask<DbTransaction>(Task.FromException<DbTransaction>(e));
+            }
+        }
+
+        public ValueTask<DbTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default)
+            => BeginDbTransactionAsync(IsolationLevel.Unspecified, cancellationToken);
+
+        public ValueTask<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel, CancellationToken cancellationToken = default)
+            => BeginDbTransactionAsync(isolationLevel, cancellationToken);
+
         public abstract void Close();
 
+        public virtual Task CloseAsync(CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            try
+            {
+                Close();
+                return Task.CompletedTask;
+            }
+            catch (Exception e)
+            {
+                return Task.FromException(e);
+            }
+        }
+
+        public virtual ValueTask DisposeAsync()
+        {
+            Dispose();
+            return default;
+        }
+
         public abstract void ChangeDatabase(string databaseName);
+
+        public virtual Task ChangeDatabaseAsync(string databaseName, CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            try
+            {
+                ChangeDatabase(databaseName);
+                return Task.CompletedTask;
+            }
+            catch (Exception e)
+            {
+                return Task.FromException(e);
+            }
+        }
 
         public DbCommand CreateCommand() => CreateDbCommand();
 

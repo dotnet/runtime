@@ -271,8 +271,21 @@ namespace System.Text.Json
         /// Skips the children of the current JSON token.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// Thrown when the reader was given partial data with more data to follow (i.e. _isFinalBlock is false).
+        /// Thrown when the reader was given partial data with more data to follow (i.e. <see cref="IsFinalBlock"/> is false).
         /// </exception>
+        /// <exception cref="JsonException">
+        /// Thrown when an invalid JSON token is encountered while skipping, according to the JSON RFC,
+        /// or if the current depth exceeds the recursive limit set by the max depth.
+        /// </exception>
+        /// <remarks>
+        /// When <see cref="TokenType"/> is <see cref="JsonTokenType.PropertyName" />, the reader first moves to the property value.
+        /// When <see cref="TokenType"/> (originally, or after advancing) is <see cref="JsonTokenType.StartObject" /> or 
+        /// <see cref="JsonTokenType.StartArray" />, the reader advances to the matching
+        /// <see cref="JsonTokenType.EndObject" /> or <see cref="JsonTokenType.EndArray" />.
+        /// 
+        /// For all other token types, the reader does not move. After the next call to <see cref="Read"/>, the reader will be at
+        /// the next value (when in an array), the next property name (when in an object), or the end array/object token.
+        /// </remarks>
         public void Skip()
         {
             if (!_isFinalBlock)
@@ -314,9 +327,22 @@ namespace System.Text.Json
         /// Tries to skip the children of the current JSON token.
         /// </summary>
         /// <returns>True if there was enough data for the children to be skipped successfully, else false.</returns>
+        /// <exception cref="JsonException">
+        /// Thrown when an invalid JSON token is encountered while skipping, according to the JSON RFC,
+        /// or if the current depth exceeds the recursive limit set by the max depth.
+        /// </exception>
         /// <remarks>
         /// If the reader did not have enough data to completely skip the children of the current token,
         /// it will be reset to the state it was in before the method was called.
+        /// </remarks>
+        /// <remarks>
+        /// When <see cref="TokenType"/> is <see cref="JsonTokenType.PropertyName" />, the reader first moves to the property value.
+        /// When <see cref="TokenType"/> (originally, or after advancing) is <see cref="JsonTokenType.StartObject" /> or 
+        /// <see cref="JsonTokenType.StartArray" />, the reader advances to the matching
+        /// <see cref="JsonTokenType.EndObject" /> or <see cref="JsonTokenType.EndArray" />.
+        /// 
+        /// For all other token types, the reader does not move. After the next call to <see cref="Read"/>, the reader will be at
+        /// the next value (when in an array), the next property name (when in an object), or the end array/object token.
         /// </remarks>
         public bool TrySkip()
         {

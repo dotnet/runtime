@@ -8,6 +8,6 @@ namespace System.Text.Json.Serialization.Policies
     {
         public abstract bool TryRead(Type valueType, ref Utf8JsonReader reader, out TValue value);
         public abstract void Write(TValue value, Utf8JsonWriter writer);
-        public abstract void Write(Span<byte> escapedPropertyName, TValue value, Utf8JsonWriter writer);
+        public abstract void Write(JsonEncodedText propertyName, TValue value, Utf8JsonWriter writer);
     }
 }

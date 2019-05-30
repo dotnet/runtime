@@ -363,7 +363,7 @@
     <value>Unexpected end of data while reading a comment.</value>
   </data>
   <data name="CannotSkip" xml:space="preserve">
-    <value>Cannot skip tokens on partial JSON. Either get the whole payload and set _isFinalBlock to true or call TrySkip.</value>
+    <value>Cannot skip tokens on partial JSON. Either get the whole payload and create a Utf8JsonReader instance where isFinalBlock is true or call TrySkip.</value>
   </data>
   <data name="JsonSerializerDoesNotSupportComments" xml:space="preserve">
     <value>Comments cannot be stored when deserializing objects, only the Skip and Disallow comment handling modes are supported.</value>
