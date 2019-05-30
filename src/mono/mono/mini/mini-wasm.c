@@ -745,3 +745,9 @@ getpwuid_r (uid_t uid, struct passwd *pwd, char *buffer, size_t bufsize,
 G_END_DECLS
 
 #endif // HOST_WASM
+
+gpointer
+mono_arch_load_function (MonoJitICallId jit_icall_id)
+{
+	return NULL;
+}

@@ -3537,16 +3537,6 @@ encode_signature (MonoAotCompile *acfg, MonoMethodSignature *sig, guint8 *buf, g
 	*endbuf = p;
 }
 
-static void
-encode_icall (gpointer func, guint8 *p, guint8 **end)
-{
-	MonoJitICallInfo *callinfo = mono_find_jit_icall_by_addr (func);
-	g_assert (callinfo);
-	strcpy ((char *) p, callinfo->name);
-	p += strlen (callinfo->name) + 1;
-	*end = p;
-}
-
 #define MAX_IMAGE_INDEX 250
 
 static void
@@ -3632,7 +3622,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			else if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT_SIG)
 				encode_signature (acfg, info->d.gsharedvt.sig, p, &p);
 			else if (info->subtype == WRAPPER_SUBTYPE_INTERP_LMF)
-				encode_icall (info->d.icall.func, p, &p);
+				encode_value (info->d.icall.jit_icall_id, p, &p);
 			else if (info->subtype == WRAPPER_SUBTYPE_AOT_INIT)
 				encode_value (info->d.aot_init.subtype, p, &p);
 			break;
@@ -3641,7 +3631,7 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 			g_assert (info);
 			encode_value (info->subtype, p, &p);
 			if (info->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
-				encode_icall (info->d.icall.func, p, &p);
+				encode_value (info->d.icall.jit_icall_id, p, &p);
 			} else if (info->subtype == WRAPPER_SUBTYPE_NATIVE_FUNC_AOT) {
 				encode_method_ref (acfg, info->d.managed_to_native.method, p, &p);
 			} else {
@@ -6163,7 +6153,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						}
 					}
 				} else if (patch_info->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-					const char *sym = mono_lookup_jit_icall_symbol (patch_info->data.name);
+					const char *sym = mono_find_jit_icall_info (patch_info->data.jit_icall_id)->c_symbol;
 					if (!got_only && sym && acfg->aot_opts.direct_icalls) {
 						/* Call to a C function implementing a jit icall */
 						direct_call = TRUE;
@@ -6495,18 +6485,16 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_value (patch_info->data.index, p, &p);
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 		encode_value (patch_info->data.jit_icall_id, p, &p);
 		break;
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		encode_value (patch_info->data.uindex, p, &p);
 		break;
-	case MONO_PATCH_INFO_LDSTR_LIT:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL: {
+	case MONO_PATCH_INFO_LDSTR_LIT: {
 		guint32 len = strlen (patch_info->data.name);
-
 		encode_value (len, p, &p);
-
 		memcpy (p, patch_info->data.name, len + 1);
 		p += len + 1;
 		break;
@@ -7214,7 +7202,7 @@ get_plt_entry_debug_sym (MonoAotCompile *acfg, MonoJumpInfo *ji, GHashTable *cac
 		debug_sym = g_strdup_printf ("%s_jit_icall_native_specific_trampoline_lazy_fetch_%u", prefix, ji->data.uindex);
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-		debug_sym = g_strdup_printf ("%s_jit_icall_native_%s", prefix, ji->data.name);
+		debug_sym = g_strdup_printf ("%s_jit_icall_native_%s", prefix, mono_find_jit_icall_info (ji->data.jit_icall_id)->name);
 		break;
 	default:
 		break;
@@ -9515,7 +9503,7 @@ mono_aot_get_direct_call_symbol (MonoJumpInfoType type, gconstpointer data)
 	if (llvm_acfg->aot_opts.direct_icalls) {
 		if (type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
 			/* Call to a C function implementing a jit icall */
-			sym = mono_lookup_jit_icall_symbol ((const char *)data);
+			sym = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data)->c_symbol;
 		} else if (type == MONO_PATCH_INFO_ICALL_ADDR_CALL) {
 			MonoMethod *method = (MonoMethod *)data;
 			if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
@@ -9550,7 +9538,7 @@ mono_aot_get_plt_symbol (MonoJumpInfoType type, gconstpointer data)
 	if (llvm_acfg->aot_opts.direct_icalls) {
 		if (type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
 			/* Call to a C function implementing a jit icall */
-			sym = mono_lookup_jit_icall_symbol ((const char *)data);
+			sym = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data)->c_symbol;
 		} else if (type == MONO_PATCH_INFO_ICALL_ADDR_CALL) {
 			MonoMethod *method = (MonoMethod *)data;
 			if (!(method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
@@ -12919,7 +12907,7 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 	/* Called by native-to-managed wrappers on possibly unattached threads */
 	ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
 	ji->type = MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL;
-	ji->data.name = "mono_threads_attach_coop";
+	ji->data.jit_icall_id = MONO_JIT_ICALL_mono_threads_attach_coop;
 	add_preinit_slot (acfg, ji);
 
 	for (i = 0; i < G_N_ELEMENTS (preinited_jit_icalls); ++i) {

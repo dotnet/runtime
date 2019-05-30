@@ -213,7 +213,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 * This is a synthetized call to mono_get_lmf_addr ()
 	 */
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_get_lmf_addr");
+		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_get_lmf_addr));
 		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		*(gpointer*)code = NULL;
@@ -327,7 +327,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Check for thread interruption */
 	/* This is not perf critical code so no need to check the interrupt flag */
 	if (aot) {
-		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint_noraise");
+		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_thread_force_interruption_checkpoint_noraise));
 	} else {
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
@@ -415,7 +415,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 */
 	if (aot) {
 		/* Not really a jit icall */
-		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP, MONO_PATCH_INFO_JIT_ICALL_ADDR, "rethrow_preserve_exception_addr");
+		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_rethrow_preserve_exception));
 	} else {
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
@@ -800,9 +800,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	/* call */
 	if (aot) {
 		if (single_step)
-			ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "debugger_agent_single_step_from_context");
+			ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_debugger_agent_single_step_from_context));
 		else
-			ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "debugger_agent_breakpoint_from_context");
+			ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_debugger_agent_breakpoint_from_context));
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		*(gpointer*)code = NULL;

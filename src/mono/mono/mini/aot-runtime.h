@@ -11,7 +11,7 @@
 #include "mini.h"
 
 /* Version number of the AOT file format */
-#define MONO_AOT_FILE_VERSION 161
+#define MONO_AOT_FILE_VERSION 162
 
 #define MONO_AOT_TRAMP_PAGE_SIZE 16384
 
@@ -262,16 +262,6 @@ MonoMethod* mono_aot_get_array_helper_from_wrapper (MonoMethod *method);
 void     mono_aot_set_make_unreadable       (gboolean unreadable);
 gboolean mono_aot_is_pagefault              (void *ptr);
 void     mono_aot_handle_pagefault          (void *ptr);
-void     mono_aot_register_jit_icall        (const char *name, gpointer addr);
-
-#ifdef __cplusplus
-template <typename T>
-inline void
-mono_aot_register_jit_icall (const char *name, T addr)
-{
-	mono_aot_register_jit_icall (name, (gpointer)addr);
-}
-#endif // __cplusplus
 
 guint32  mono_aot_find_method_index         (MonoMethod *method);
 gboolean mono_aot_init_llvmonly_method      (gpointer amodule, guint32 method_index, MonoClass *init_class, MonoError *error);

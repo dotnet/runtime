@@ -1094,13 +1094,7 @@ void
 mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper);
 
 MonoJitICallInfo *
-mono_find_jit_icall_by_name (const char *name) MONO_LLVM_INTERNAL;
-
-MonoJitICallInfo *
 mono_find_jit_icall_by_addr (gconstpointer addr) MONO_LLVM_INTERNAL;
-
-const char*
-mono_lookup_jit_icall_symbol (const char *name);
 
 gboolean
 mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);

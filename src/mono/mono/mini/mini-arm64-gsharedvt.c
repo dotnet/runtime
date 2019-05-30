@@ -21,7 +21,6 @@
 void
 mono_arm_gsharedvt_init (void)
 {
-	mono_aot_register_jit_icall ("mono_arm_start_gsharedvt_call", mono_arm_start_gsharedvt_call);
 }
 
 gboolean

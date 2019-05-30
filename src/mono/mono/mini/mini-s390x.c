@@ -6812,4 +6812,10 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 
 #endif
 
+gpointer
+mono_arch_load_function (MonoJitICallId jit_icall_id)
+{
+	return NULL;
+}
+
 /*========================= End of Function ========================*/

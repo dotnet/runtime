@@ -337,7 +337,7 @@ alloc_dreg (MonoCompile *cfg, MonoStackType stack_type)
 		} \
 	} while (0)
 
-#define NEW_JIT_ICALL_ADDRCONST(cfg,dest,name) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_JIT_ICALL_ADDR, (name))
+#define NEW_JIT_ICALL_ADDRCONST(cfg, dest, jit_icall_id) NEW_AOTCONST ((cfg), (dest), MONO_PATCH_INFO_JIT_ICALL_ADDR, (jit_icall_id))
 
 #define NEW_VARLOAD(cfg,dest,var,vartype) do { \
         MONO_INST_NEW ((cfg), (dest), OP_MOVE); \
@@ -494,7 +494,7 @@ handle_gsharedvt_ldaddr (MonoCompile *cfg)
 
 #define EMIT_NEW_METHOD_RGCTX_CONST(cfg,dest,method) do { NEW_METHOD_RGCTX_CONST ((cfg), (dest), (method)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
-#define EMIT_NEW_JIT_ICALL_ADDRCONST(cfg,dest,name) do { NEW_JIT_ICALL_ADDRCONST ((cfg), (dest), (name)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
+#define EMIT_NEW_JIT_ICALL_ADDRCONST(cfg, dest, jit_icall_id) do { NEW_JIT_ICALL_ADDRCONST ((cfg), (dest), (jit_icall_id)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 
 #define EMIT_NEW_VARLOAD(cfg,dest,var,vartype) do { NEW_VARLOAD ((cfg), (dest), (var), (vartype)); MONO_ADD_INS ((cfg)->cbb, (dest)); } while (0)
 

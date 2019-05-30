@@ -1885,7 +1885,6 @@ get_callee_llvmonly (EmitContext *ctx, LLVMTypeRef llvm_sig, MonoJumpInfoType ty
 	 */
 	if (ctx->module->assembly->image == mono_get_corlib () && type == MONO_PATCH_INFO_JIT_ICALL_ID) {
 		MonoJitICallInfo * const info = mono_find_jit_icall_info ((MonoJitICallId)(gsize)data);
-		g_assert (info);
 
 		if (info->func != info->wrapper) {
 			type = MONO_PATCH_INFO_METHOD;
@@ -2409,14 +2408,14 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 			if (!sig)
 				sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
 			/* Can't cache this */
-			callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mini_llvmonly_throw_nullref_exception");
+			callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_llvmonly_throw_nullref_exception));
 			emit_call (ctx, bb, &builder, callee, NULL, 0);
 		} else {
 			static LLVMTypeRef sig;
 
 			if (!sig)
 				sig = LLVMFunctionType1 (LLVMVoidType (), LLVMInt32Type (), FALSE);
-			callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_llvm_throw_corlib_exception");
+			callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_llvm_throw_corlib_exception));
 			args [0] = LLVMConstInt (LLVMInt32Type (), m_class_get_type_token (exc_class) - MONO_TOKEN_TYPE_DEF, FALSE);
 			emit_call (ctx, bb, &builder, callee, args, 1);
 		}
@@ -2435,13 +2434,12 @@ emit_cond_system_exception (EmitContext *ctx, MonoBasicBlock *bb, const char *ex
 	callee = ctx->module->throw_corlib_exception;
 	if (!callee) {
 		LLVMTypeRef sig;
-		const char *icall_name;
 
 		if (no_pc)
 			sig = LLVMFunctionType1 (LLVMVoidType (), LLVMInt32Type (), FALSE);
 		else
 			sig = LLVMFunctionType2 (LLVMVoidType (), LLVMInt32Type (), LLVMPointerType (LLVMInt8Type (), 0), FALSE);
-		icall_name = "llvm_throw_corlib_exception_abs_trampoline";
+
 		const MonoJitICallId icall_id = MONO_JIT_ICALL_mono_llvm_throw_corlib_exception_abs_trampoline;
 
 		if (ctx->cfg->compile_aot) {
@@ -4185,7 +4183,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 static void
 emit_llvmonly_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef exc)
 {
-	const char *icall_name = rethrow ? "mono_llvm_rethrow_exception" : "mono_llvm_throw_exception";
+	MonoJitICallId icall_id = rethrow ? MONO_JIT_ICALL_mono_llvm_rethrow_exception : MONO_JIT_ICALL_mono_llvm_throw_exception;
 	LLVMValueRef callee = rethrow ? ctx->module->rethrow : ctx->module->throw_icall;
 
 	LLVMTypeRef exc_type = type_to_llvm_type (ctx, m_class_get_byval_arg (mono_get_exception_class ()));
@@ -4194,7 +4192,7 @@ emit_llvmonly_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLV
 		LLVMTypeRef fun_sig = LLVMFunctionType1 (LLVMVoidType (), exc_type, FALSE);
 
 		g_assert (ctx->cfg->compile_aot);
-		callee = get_callee (ctx, fun_sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, icall_name);
+		callee = get_callee (ctx, fun_sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (icall_id));
 	}
 
 	LLVMValueRef args [2];
@@ -4211,11 +4209,10 @@ static void
 emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef exc)
 {
 	MonoMethodSignature *throw_sig;
-	LLVMValueRef callee, arg;
-	const char *icall_name;
-				
-	callee = rethrow ? ctx->module->rethrow : ctx->module->throw_icall;
-	icall_name = rethrow ? "mono_arch_rethrow_exception" : "mono_arch_throw_exception";
+
+	LLVMValueRef * const pcallee = rethrow ? &ctx->module->rethrow : &ctx->module->throw_icall;
+	LLVMValueRef callee = *pcallee;
+	char const * const icall_name = rethrow ? "mono_arch_rethrow_exception" : "mono_arch_throw_exception";
 #ifndef TARGET_X86
 	const
 #endif
@@ -4240,12 +4237,10 @@ emit_throw (EmitContext *ctx, MonoBasicBlock *bb, gboolean rethrow, LLVMValueRef
 
 		mono_memory_barrier ();
 #if LLVM_API_VERSION < 100
-		if (rethrow)
-			ctx->module->rethrow = callee;
-		else
-			ctx->module->throw_icall = callee;
+		*pcallee = callee;
 #endif
 	}
+	LLVMValueRef arg;
 	arg = convert (ctx, exc, type_to_llvm_type (ctx, m_class_get_byval_arg (mono_get_object_class ())));
 	emit_call (ctx, bb, &ctx->builder, callee, &arg, 1);
 }
@@ -7599,7 +7594,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 				ctx->builder = builder;
 
 				LLVMTypeRef sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
-				LLVMValueRef callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mini_llvmonly_throw_nullref_exception");
+				LLVMValueRef callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_llvmonly_throw_nullref_exception));
 				emit_call (ctx, cfg->bb_entry, &builder, callee, NULL, 0);
 				LLVMBuildUnreachable (builder);
 			} else {

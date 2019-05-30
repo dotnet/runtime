@@ -5608,3 +5608,9 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 {
 	return FALSE;
 }
+
+gpointer
+mono_arch_load_function (MonoJitICallId jit_icall_id)
+{
+	return NULL;
+}

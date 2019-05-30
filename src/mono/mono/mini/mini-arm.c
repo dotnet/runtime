@@ -815,13 +815,6 @@ mono_arch_init (void)
 		mono_mprotect (bp_trigger_page, mono_pagesize (), 0);
 	}
 
-	mono_aot_register_jit_icall ("mono_arm_throw_exception", mono_arm_throw_exception);
-	mono_aot_register_jit_icall ("mono_arm_throw_exception_by_token", mono_arm_throw_exception_by_token);
-	mono_aot_register_jit_icall ("mono_arm_resume_unwind", mono_arm_resume_unwind);
-#if defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
-	mono_aot_register_jit_icall ("mono_arm_start_gsharedvt_call", mono_arm_start_gsharedvt_call);
-#endif
-	mono_aot_register_jit_icall ("mono_arm_unaligned_stack", mono_arm_unaligned_stack);
 #if defined(__ARM_EABI__)
 	eabi_supported = TRUE;
 #endif
@@ -7525,4 +7518,20 @@ mono_arm_emit_aotconst (gpointer ji_list, guint8 *code, guint8 *buf, int dreg, i
 	code += 4;
 	ARM_LDR_REG_REG (code, dreg, ARMREG_PC, dreg);
 	return code;
+}
+
+gpointer
+mono_arch_load_function (MonoJitICallId jit_icall_id)
+{
+	gpointer target = NULL;
+	switch (jit_icall_id) {
+#undef MONO_AOT_ICALL
+#define MONO_AOT_ICALL(x) case MONO_JIT_ICALL_ ## x: target = (gpointer)x; break;
+	MONO_AOT_ICALL (mono_arm_resume_unwind)
+	MONO_AOT_ICALL (mono_arm_start_gsharedvt_call)
+	MONO_AOT_ICALL (mono_arm_throw_exception)
+	MONO_AOT_ICALL (mono_arm_throw_exception_by_token)
+	MONO_AOT_ICALL (mono_arm_unaligned_stack)
+	}
+	return target;
 }

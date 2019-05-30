@@ -615,11 +615,8 @@ mono_debug_count (void)
 MonoMethod*
 mono_icall_get_wrapper_method (MonoJitICallInfo* callinfo)
 {
-	gboolean check_exc = TRUE;
-
-	if (!strcmp (callinfo->name, "mono_thread_interruption_checkpoint"))
-		/* This icall is used to check for exceptions, so don't check in the wrapper */
-		check_exc = FALSE;
+	/* This icall is used to check for exceptions, so don't check in the wrapper */
+	gboolean check_exc = (callinfo != &mono_get_jit_icall_info ()->mono_thread_interruption_checkpoint);
 
 	return mono_marshal_get_icall_wrapper (callinfo, check_exc);
 }
@@ -1197,9 +1194,6 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_OBJC_SELECTOR_REF: // Hash on the selector name
 	case MONO_PATCH_INFO_LDSTR_LIT:
 		return g_str_hash (ji->data.name);
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
-		return hash | g_str_hash (ji->data.name);
 	case MONO_PATCH_INFO_VTABLE:
 	case MONO_PATCH_INFO_CLASS:
 	case MONO_PATCH_INFO_IID:
@@ -1246,6 +1240,8 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		return hash | ji->data.uindex;
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 	case MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		return hash | ji->data.index;
@@ -1302,8 +1298,6 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 		       ji1->data.token->context.method_inst == ji2->data.token->context.method_inst;
 	case MONO_PATCH_INFO_OBJC_SELECTOR_REF:
 	case MONO_PATCH_INFO_LDSTR_LIT:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 		return g_str_equal (ji1->data.name, ji2->data.name);
 	case MONO_PATCH_INFO_RGCTX_FETCH:
 	case MONO_PATCH_INFO_RGCTX_SLOT_INDEX: {
@@ -1328,6 +1322,8 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		return ji1->data.index == ji2->data.index;
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 		return ji1->data.jit_icall_id == ji2->data.jit_icall_id;
 	case MONO_PATCH_INFO_VIRT_METHOD:
 		return ji1->data.virt_method->klass == ji2->data.virt_method->klass && ji1->data.virt_method->method == ji2->data.virt_method->method;
@@ -1368,14 +1364,12 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ID: {
 		MonoJitICallInfo * const mi = mono_find_jit_icall_info (patch_info->data.jit_icall_id);
-		g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL_ID %d", (int)patch_info->data.jit_icall_id);
 		target = mono_icall_get_wrapper (mi);
 		break;
 	}
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL: {
-		MonoJitICallInfo *mi = mono_find_jit_icall_by_name (patch_info->data.name);
-		g_assertf (mi, "unknown MONO_PATCH_INFO_JIT_ICALL_ADDR %s", patch_info->data.name);
+		MonoJitICallInfo * const mi = mono_find_jit_icall_info (patch_info->data.jit_icall_id);
 		target = mi->func;
 		break;
 	}
@@ -1646,10 +1640,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		target = mini_get_gsharedvt_wrapper (TRUE, NULL, patch_info->data.sig, NULL, -1, FALSE);
 		break;
-	case MONO_PATCH_INFO_GET_TLS_TRAMP:
+	case MONO_PATCH_INFO_GET_TLS_TRAMP: // FIXME replace with MONO_PATCH_INFO_JIT_ICALL?
 		target = (gpointer)mono_tls_get_tls_getter ((MonoTlsKey)patch_info->data.index);
 		break;
-	case MONO_PATCH_INFO_SET_TLS_TRAMP:
+	case MONO_PATCH_INFO_SET_TLS_TRAMP: // FIXME replace with MONO_PATCH_INFO_JIT_ICALL?
 		target = (gpointer)mono_tls_get_tls_setter ((MonoTlsKey)patch_info->data.index);
 		break;
 	case MONO_PATCH_INFO_PROFILER_ALLOCATION_COUNT: {
@@ -2192,8 +2186,7 @@ compile_special (MonoMethod *method, MonoDomain *target_domain, MonoError *error
 
 		if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) {
 			if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
-				MonoJitICallInfo *mi = mono_find_jit_icall_by_name ("ves_icall_mono_delegate_ctor");
-				g_assert (mi);
+				MonoJitICallInfo *mi = &mono_get_jit_icall_info ()->ves_icall_mono_delegate_ctor;
 				/*
 				 * We need to make sure this wrapper
 				 * is compiled because it might end up
@@ -2311,8 +2304,7 @@ mono_jit_compile_method_with_opt (MonoMethod *method, guint32 opt, gboolean jit_
 	if (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE)
 		winfo = mono_marshal_get_wrapper_info (method);
 	if (winfo && winfo->subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
-		callinfo = mono_find_jit_icall_by_addr (winfo->d.icall.func);
-		g_assert (callinfo);
+		callinfo = mono_find_jit_icall_info (winfo->d.icall.jit_icall_id);
 
 		/* Must be domain neutral since there is only one copy */
 		opt |= MONO_OPT_SHARED;

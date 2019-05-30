@@ -1398,8 +1398,6 @@ disasm_ins (MonoMethod *method, const guchar *ip, const guint8 **endip)
 		switch (ip [1]) {
 		case CEE_MONO_ICALL: {
 			MonoJitICallInfo const * const info = mono_find_jit_icall_info ((MonoJitICallId)read32 (ip + 2));
-			g_assert (info);
-
 			dis = g_strdup_printf ("IL_%04x: mono_icall <%s>", (int)(ip - header->code), info->name);
 			ip += 6;
 			break;

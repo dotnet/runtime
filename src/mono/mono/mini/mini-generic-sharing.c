@@ -1889,6 +1889,7 @@ mini_get_interp_lmf_wrapper (const char *name, gpointer target)
 	static MonoMethod *cache [2];
 	g_assert (target == (gpointer)mono_interp_to_native_trampoline || target == (gpointer)mono_interp_entry_from_trampoline);
 	const int index = target == (gpointer)mono_interp_to_native_trampoline;
+	const MonoJitICallId jit_icall_id = index ? MONO_JIT_ICALL_mono_interp_to_native_trampoline : MONO_JIT_ICALL_mono_interp_entry_from_trampoline;
 
 	MonoMethod *res, *cached;
 	MonoMethodSignature *sig;
@@ -1923,12 +1924,12 @@ mini_get_interp_lmf_wrapper (const char *name, gpointer target)
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_ICALL);
-	mono_mb_emit_i4 (mb, index ? MONO_JIT_ICALL_mono_interp_to_native_trampoline : MONO_JIT_ICALL_mono_interp_entry_from_trampoline);
+	mono_mb_emit_i4 (mb, jit_icall_id);
 
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_INTERP_LMF);
-	info->d.icall.func = (gpointer) target;
+	info->d.icall.jit_icall_id = jit_icall_id;
 	res = mono_mb_create (mb, sig, 4, info);
 
 	gshared_lock ();

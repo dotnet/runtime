@@ -236,9 +236,6 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
-	mono_aot_register_jit_icall ("mono_arm_throw_exception", mono_arm_throw_exception);
-	mono_aot_register_jit_icall ("mono_arm_resume_unwind", mono_arm_resume_unwind);
-
 	if (!mono_aot_only)
 		bp_trampoline = mini_get_breakpoint_trampoline ();
 
@@ -5559,4 +5556,18 @@ CallInfo*
 mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 {
 	return get_call_info (mp, sig);
+}
+
+gpointer
+mono_arch_load_function (MonoJitICallId jit_icall_id)
+{
+	gpointer target = NULL;
+	switch (jit_icall_id) {
+#undef MONO_AOT_ICALL
+#define MONO_AOT_ICALL(x) case MONO_JIT_ICALL_ ## x: target = (gpointer)x; break;
+	MONO_AOT_ICALL (mono_arm_resume_unwind)
+	MONO_AOT_ICALL (mono_arm_start_gsharedvt_call)
+	MONO_AOT_ICALL (mono_arm_throw_exception)
+	}
+	return target;
 }

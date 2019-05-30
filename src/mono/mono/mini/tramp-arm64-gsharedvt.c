@@ -300,7 +300,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	arm_ldrx (code, ARMREG_R3, ARMREG_FP, rgctx_arg_reg_offset);
 
 	if (aot)
-		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_arm_start_gsharedvt_call");
+		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arm_start_gsharedvt_call));
 	else
 		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)mono_arm_start_gsharedvt_call);
 	arm_blrx (code, ARMREG_IP0);

@@ -547,8 +547,6 @@ void
 mono_mb_emit_icall_id (MonoMethodBuilder *mb, MonoJitICallId jit_icall_id)
 {
 	MonoJitICallInfo const * const jit_icall_info = mono_find_jit_icall_info (jit_icall_id);
-	g_assertf (jit_icall_info->name, "%d", (int)jit_icall_id);
-	g_assertf (jit_icall_info->func, "%d", (int)jit_icall_id);
 
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_ICALL);

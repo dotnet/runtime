@@ -746,12 +746,6 @@ mono_arch_init (void)
 
 	if (!mono_aot_only)
 		bp_trampoline = mini_get_breakpoint_trampoline ();
-
-	mono_aot_register_jit_icall ("mono_x86_throw_exception", mono_x86_throw_exception);
-	mono_aot_register_jit_icall ("mono_x86_throw_corlib_exception", mono_x86_throw_corlib_exception);
-#if defined (MONO_ARCH_GSHAREDVT_SUPPORTED)
-	mono_aot_register_jit_icall ("mono_x86_start_gsharedvt_call", mono_x86_start_gsharedvt_call);
-#endif
 }
 
 /*
@@ -6393,4 +6387,18 @@ CallInfo*
 mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 {
 	return get_call_info (mp, sig);
+}
+
+gpointer
+mono_arch_load_function (MonoJitICallId jit_icall_id)
+{
+	gpointer target = NULL;
+	switch (jit_icall_id) {
+#undef MONO_AOT_ICALL
+#define MONO_AOT_ICALL(x) case MONO_JIT_ICALL_ ## x: target = (gpointer)x; break;
+	MONO_AOT_ICALL (mono_x86_start_gsharedvt_call)
+	MONO_AOT_ICALL (mono_x86_throw_corlib_exception)
+	MONO_AOT_ICALL (mono_x86_throw_exception)
+	}
+	return target;
 }

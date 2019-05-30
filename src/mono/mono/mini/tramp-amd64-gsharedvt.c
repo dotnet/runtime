@@ -283,7 +283,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	amd64_mov_reg_reg (code, MONO_AMD64_ARG_REG4, MONO_ARCH_RGCTX_REG, sizeof (target_mgreg_t));
 
 	if (aot) {
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_amd64_start_gsharedvt_call");
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_amd64_start_gsharedvt_call));
 		#ifdef TARGET_WIN32
 			/* Since we are doing a call as part of setting up stackframe, the reserved shadow stack used by Windows platform is allocated up in
 			the callee stack area but currently the callee reg area is in between. Windows calling convention dictates that room is made on stack where

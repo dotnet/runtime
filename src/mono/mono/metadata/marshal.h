@@ -113,7 +113,7 @@ typedef enum {
 	WRAPPER_SUBTYPE_RUNTIME_INVOKE_DIRECT,
 	WRAPPER_SUBTYPE_RUNTIME_INVOKE_VIRTUAL,
 	/* Subtypes of MONO_WRAPPER_MANAGED_TO_NATIVE */
-	WRAPPER_SUBTYPE_ICALL_WRAPPER,
+	WRAPPER_SUBTYPE_ICALL_WRAPPER, // specifically JIT icalls
 	WRAPPER_SUBTYPE_NATIVE_FUNC_AOT,
 	WRAPPER_SUBTYPE_PINVOKE,
 	/* Subtypes of MONO_WRAPPER_OTHER */
@@ -174,7 +174,7 @@ typedef struct {
 } GenericArrayHelperWrapperInfo;
 
 typedef struct {
-	gpointer func;
+	MonoJitICallId jit_icall_id;
 } ICallWrapperInfo;
 
 typedef struct {

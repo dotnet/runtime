@@ -194,7 +194,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Save LMF */
 	/* Similar to emit_save_lmf () */
 	if (aot) {
-		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_get_lmf_addr");
+		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_get_lmf_addr));
 	} else {
 		tramp = (guint8*)mono_get_lmf_addr;
 		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)tramp);
@@ -254,7 +254,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* Check for thread interruption */
 	/* This is not perf critical code so no need to check the interrupt flag */
 	if (aot) {
-		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_thread_force_interruption_checkpoint_noraise");
+		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_thread_force_interruption_checkpoint_noraise));
 	} else {
 		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)mono_thread_force_interruption_checkpoint_noraise);
 	}
@@ -302,7 +302,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	 */
 	if (aot) {
 		/* Not really a jit icall */
-		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "rethrow_preserve_exception_addr");
+		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_rethrow_preserve_exception));
 	} else {
 		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)mono_get_rethrow_preserve_exception_addr ());
 	}
@@ -590,9 +590,9 @@ mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gbo
 	arm_addx_imm (code, ARMREG_R0, ARMREG_FP, ctx_offset);
 	if (aot) {
 		if (single_step)
-			code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "debugger_agent_single_step_from_context");
+			code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_debugger_agent_single_step_from_context));
 		else
-			code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "debugger_agent_breakpoint_from_context");
+			code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_debugger_agent_breakpoint_from_context));
 	} else {
 		void (*addr) (MonoContext *ctx) = single_step ? mini_get_dbg_callbacks ()->single_step_from_context : mini_get_dbg_callbacks ()->breakpoint_from_context;
 

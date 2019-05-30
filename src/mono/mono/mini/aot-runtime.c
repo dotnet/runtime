@@ -220,8 +220,6 @@ static gsize aot_code_high_addr = 0;
 /* Stats */
 static gint32 async_jit_info_size;
 
-static GHashTable *aot_jit_icall_hash;
-
 #ifdef MONOTOUCH
 #define USE_PAGE_TRAMPOLINES (mono_defaults.corlib->aot_module->use_page_trampolines)
 #else
@@ -1090,10 +1088,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				ref->method = mini_get_interp_in_wrapper (sig);
 				g_free (sig);
 			} else if (subtype == WRAPPER_SUBTYPE_INTERP_LMF) {
-				char const * const name = (const char*)p;
-				MonoJitICallInfo *info = mono_find_jit_icall_by_name (name);
-				p += strlen (name) + 1; // FIXME restrict strlen to file (on previous line)
-				g_assert (info);
+				MonoJitICallInfo *info = mono_find_jit_icall_info ((MonoJitICallId)decode_value (p, &p));
 				ref->method = mini_get_interp_lmf_wrapper (info->name, (gpointer) info->func);
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG) {
 				MonoMethodSignature *sig = decode_signature (module, p, &p);
@@ -1148,10 +1143,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 			int subtype = decode_value (p, &p);
 
 			if (subtype == WRAPPER_SUBTYPE_ICALL_WRAPPER) {
-				char const * const name = (const char*)p;
-				MonoJitICallInfo *info = mono_find_jit_icall_by_name (name);
-				p += strlen (name) + 1; // FIXME restrict strlen to file (on previous line)
-				g_assert (info);
+				MonoJitICallInfo *info = mono_find_jit_icall_info ((MonoJitICallId)decode_value (p, &p));
 				ref->method = mono_icall_get_wrapper_method (info);
 			} else {
 				m = decode_resolve_method_ref (module, p, &p, error);
@@ -2538,7 +2530,6 @@ mono_aot_init (void)
 void
 mono_aot_cleanup (void)
 {
-	g_hash_table_destroy (aot_jit_icall_hash);
 	g_hash_table_destroy (aot_modules);
 }
 
@@ -3775,8 +3766,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		break;
 	}
 	case MONO_PATCH_INFO_LDSTR_LIT:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 	{
 		guint32 len = decode_value (p, &p);
 
@@ -3904,6 +3893,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 		ji->data.index = decode_value (p, &p);
 		break;
 	case MONO_PATCH_INFO_JIT_ICALL_ID:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
+	case MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL:
 		ji->data.jit_icall_id = (MonoJitICallId)decode_value (p, &p);
 		break;
 	case MONO_PATCH_INFO_RGCTX_FETCH:
@@ -5276,21 +5267,6 @@ mono_create_ftnptr_malloc (guint8 *code)
 }
 
 /*
- * mono_aot_register_jit_icall:
- *
- *   Register a JIT icall which is called by trampolines in full-aot mode. This should
- * be called from mono_arch_init () during startup.
- */
-void
-mono_aot_register_jit_icall (const char *name, gpointer addr)
-{
-	/* No need for locking */
-	if (!aot_jit_icall_hash)
-		aot_jit_icall_hash = g_hash_table_new (g_str_hash, g_str_equal);
-	g_hash_table_insert (aot_jit_icall_hash, (char*)name, addr);
-}
-
-/*
  * load_function_full:
  *
  *   Load the function named NAME from the aot image. 
@@ -5378,29 +5354,45 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				target = mono_create_specific_trampoline (GUINT_TO_POINTER (ji->data.uindex), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
 				target = mono_create_ftnptr_malloc ((guint8 *)target);
 			} else if (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-				if (!strcmp (ji->data.name, "mono_get_lmf_addr")) {
-					target = (gpointer)mono_get_lmf_addr;
-				} else if (!strcmp (ji->data.name, "mono_thread_force_interruption_checkpoint_noraise")) {
-					target = (gpointer)mono_thread_force_interruption_checkpoint_noraise;
-				} else if (!strcmp (ji->data.name, "mono_exception_from_token")) {
-					target = (gpointer)mono_exception_from_token;
-				} else if (!strcmp (ji->data.name, "debugger_agent_single_step_from_context")) {
+
+				const MonoJitICallId jit_icall_id = ji->data.jit_icall_id;
+				switch (jit_icall_id) {
+
+#undef MONO_AOT_ICALL
+#define MONO_AOT_ICALL(x) case MONO_JIT_ICALL_ ## x: target = (gpointer)x; break;
+
+				MONO_AOT_ICALL (mono_get_lmf_addr)
+				MONO_AOT_ICALL (mono_thread_force_interruption_checkpoint_noraise)
+				MONO_AOT_ICALL (mono_exception_from_token)
+
+				case MONO_JIT_ICALL_mono_debugger_agent_single_step_from_context:
 					target = (gpointer)mini_get_dbg_callbacks ()->single_step_from_context;
-				} else if (!strcmp (ji->data.name, "debugger_agent_breakpoint_from_context")) {
+					break;
+				case MONO_JIT_ICALL_mono_debugger_agent_breakpoint_from_context:
 					target = (gpointer)mini_get_dbg_callbacks ()->breakpoint_from_context;
-				} else if (!strcmp (ji->data.name, "throw_exception_addr")) {
+					break;
+				case MONO_JIT_ICALL_mono_throw_exception:
 					target = mono_get_throw_exception_addr ();
-				} else if (!strcmp (ji->data.name, "rethrow_preserve_exception_addr")) {
+					break;
+				case MONO_JIT_ICALL_mono_rethrow_preserve_exception:
 					target = mono_get_rethrow_preserve_exception_addr ();
-				} else if (strstr (ji->data.name, "generic_trampoline_")) {
-					target = mono_aot_get_trampoline (ji->data.name);
-				} else if (aot_jit_icall_hash && g_hash_table_lookup (aot_jit_icall_hash, ji->data.name)) {
-					/* Registered by mono_arch_init () */
-					target = g_hash_table_lookup (aot_jit_icall_hash, ji->data.name);
-				} else {
-					fprintf (stderr, "Unknown relocation '%s'\n", ji->data.name);
-					g_assert_not_reached ();
-					target = NULL;
+					break;
+
+				case MONO_JIT_ICALL_generic_trampoline_jit:
+				case MONO_JIT_ICALL_generic_trampoline_jump:
+				case MONO_JIT_ICALL_generic_trampoline_rgctx_lazy_fetch:
+				case MONO_JIT_ICALL_generic_trampoline_aot:
+				case MONO_JIT_ICALL_generic_trampoline_aot_plt:
+				case MONO_JIT_ICALL_generic_trampoline_delegate:
+				case MONO_JIT_ICALL_generic_trampoline_generic_virtual_remoting:
+				case MONO_JIT_ICALL_generic_trampoline_vcall:
+					g_assert (0); // FIXME replace MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR with MONO_PATCH_INFO_JIT_ICALL_ADDR.
+					g_static_assert (MONO_TRAMPOLINE_JIT == 0);
+					target = (gpointer)mono_get_trampoline_func ((MonoTrampolineType)(jit_icall_id - MONO_JIT_ICALL_generic_trampoline_jit));
+					break;
+				default:
+					target = mono_arch_load_function (jit_icall_id);
+					g_assertf (target, "Unknown relocation '%p'\n", ji->data.target);
 				}
 			} else {
 				/* Hopefully the code doesn't have patches which need method or 
@@ -5443,8 +5435,11 @@ get_mscorlib_aot_module (void)
 	return amodule;
 }
 
-void
-mono_no_trampolines (void);
+static void
+mono_no_trampolines (void)
+{
+	g_assert_not_reached ();
+}
 
 /*
  * Return the trampoline identified by NAME from the mscorlib AOT file.
@@ -6454,11 +6449,6 @@ mono_aot_get_unwind_info (MonoJitInfo *ji, guint32 *unwind_info_len)
 {
 	g_assert_not_reached ();
 	return NULL;
-}
-
-void
-mono_aot_register_jit_icall (const char *name, gpointer addr)
-{
 }
 
 GHashTable *

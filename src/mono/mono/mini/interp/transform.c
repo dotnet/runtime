@@ -865,8 +865,7 @@ static int mono_class_get_magic_index (MonoClass *k)
 static void
 interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *target_method)
 {
-	MonoJitICallInfo *info = mono_find_jit_icall_by_name ("mono_throw_method_access");
-	g_assert (info);
+	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_method_access;
 
 	/* Inject code throwing MethodAccessException */
 	interp_add_ins (td, MINT_MONO_LDPTR);
@@ -5229,15 +5228,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 						goto exit;
 					break;
 				case CEE_MONO_JIT_ICALL_ADDR: {
-					guint32 token;
-					gpointer func;
-
-					token = read32 (td->ip + 1);
+					const guint32 token = read32 (td->ip + 1);
 					td->ip += 5;
-					func = mono_method_get_wrapper_data (method, token);
+					const gconstpointer func = mono_find_jit_icall_info ((MonoJitICallId)token)->func;
 
 					interp_add_ins (td, MINT_LDFTN);
-					td->last_ins->data [0] = get_data_item_index (td, func);
+					td->last_ins->data [0] = get_data_item_index (td, (gpointer)func);
 					PUSH_SIMPLE_TYPE (td, STACK_TYPE_I);
 					break;
 				}
@@ -5245,7 +5241,6 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					MonoJitICallId const jit_icall_id = (MonoJitICallId)read32 (td->ip + 1);
 					MonoJitICallInfo const * const info = mono_find_jit_icall_info (jit_icall_id);
 					td->ip += 5;
-					g_assert (info);
 
 					CHECK_STACK (td, info->sig->param_count);
 					if (!strcmp (info->name, "mono_threads_attach_coop")) {
@@ -6084,8 +6079,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 			const char *name = method->name;
 			if (m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) {
 				if (*name == '.' && (strcmp (name, ".ctor") == 0)) {
-					MonoJitICallInfo *mi = mono_find_jit_icall_by_name ("ves_icall_mono_delegate_ctor_interp");
-					g_assert (mi);
+					MonoJitICallInfo *mi = &mono_get_jit_icall_info ()->ves_icall_mono_delegate_ctor_interp;
 					nm = mono_marshal_get_icall_wrapper (mi, TRUE);
 				} else if (*name == 'I' && (strcmp (name, "Invoke") == 0)) {
 					/*

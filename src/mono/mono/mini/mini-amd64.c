@@ -1437,14 +1437,6 @@ mono_arch_init (void)
 {
 	mono_os_mutex_init_recursive (&mini_arch_mutex);
 
-	mono_aot_register_jit_icall ("mono_amd64_throw_exception", mono_amd64_throw_exception);
-	mono_aot_register_jit_icall ("mono_amd64_throw_corlib_exception", mono_amd64_throw_corlib_exception);
-	mono_aot_register_jit_icall ("mono_amd64_resume_unwind", mono_amd64_resume_unwind);
-
-#if defined(MONO_ARCH_GSHAREDVT_SUPPORTED)
-	mono_aot_register_jit_icall ("mono_amd64_start_gsharedvt_call", mono_amd64_start_gsharedvt_call);
-#endif
-
 	if (!mono_aot_only)
 		bp_trampoline = mini_get_breakpoint_trampoline ();
 }
@@ -3107,7 +3099,7 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 				jinfo = (MonoJumpInfo *)g_hash_table_lookup (cfg->abs_patches, data);
 			if (jinfo) {
 				if (jinfo->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
-					MonoJitICallInfo *mi = mono_find_jit_icall_by_name (jinfo->data.name);
+					MonoJitICallInfo *mi = mono_find_jit_icall_info (jinfo->data.jit_icall_id);
 					if (mi && (((guint64)mi->func) >> 32) == 0)
 						near_call = TRUE;
 					no_patch = TRUE;
@@ -8569,4 +8561,19 @@ CallInfo*
 mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 {
 	return get_call_info (mp, sig);
+}
+
+gpointer
+mono_arch_load_function (MonoJitICallId jit_icall_id)
+{
+	gpointer target = NULL;
+	switch (jit_icall_id) {
+#undef MONO_AOT_ICALL
+#define MONO_AOT_ICALL(x) case MONO_JIT_ICALL_ ## x: target = (gpointer)x; break;
+	MONO_AOT_ICALL (mono_amd64_resume_unwind)
+	MONO_AOT_ICALL (mono_amd64_start_gsharedvt_call)
+	MONO_AOT_ICALL (mono_amd64_throw_corlib_exception)
+	MONO_AOT_ICALL (mono_amd64_throw_exception)
+	}
+	return target;
 }

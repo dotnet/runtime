@@ -299,16 +299,16 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	}
 
 	if (aot) {
-		const char *icall_name;
+		MonoJitICallId icall_id;
 
 		if (resume_unwind)
-			icall_name = "mono_arm_resume_unwind";
+			icall_id = MONO_JIT_ICALL_mono_arm_resume_unwind;
 		else if (corlib)
-			icall_name = "mono_arm_throw_exception_by_token";
+			icall_id = MONO_JIT_ICALL_mono_arm_throw_exception_by_token;
 		else
-			icall_name = "mono_arm_throw_exception";
+			icall_id = MONO_JIT_ICALL_mono_arm_throw_exception;
 
-		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, icall_name);
+		ji = mono_patch_info_list_prepend (ji, code - start, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (icall_id));
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		*(gpointer*)(gpointer)code = NULL;

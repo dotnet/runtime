@@ -2821,4 +2821,7 @@ mini_safepoints_enabled (void)
 #endif
 }
 
+gpointer
+mono_arch_load_function (MonoJitICallId jit_icall_id);
+
 #endif /* __MONO_MINI_H__ */

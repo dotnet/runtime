@@ -8616,7 +8616,6 @@ ves_icall_System_IO_LogcatTextWriter_Log (const char *appname, gint32 level, con
 static const MonoIcallTableCallbacks *icall_table;
 static mono_mutex_t icall_mutex;
 static GHashTable *icall_hash = NULL;
-static GHashTable *jit_icall_hash_name = NULL;
 static GHashTable *jit_icall_hash_addr = NULL;
 
 typedef struct _MonoIcallHashTableValue {
@@ -8657,7 +8656,6 @@ void
 mono_icall_cleanup (void)
 {
 	g_hash_table_destroy (icall_hash);
-	g_hash_table_destroy (jit_icall_hash_name);
 	g_hash_table_destroy (jit_icall_hash_addr);
 	mono_os_mutex_destroy (&icall_mutex);
 }
@@ -9104,18 +9102,6 @@ mono_create_icall_signatures (void)
 }
 
 MonoJitICallInfo *
-mono_find_jit_icall_by_name (const char *name)
-{
-	MonoJitICallInfo *info;
-	g_assert (jit_icall_hash_name);
-
-	mono_icall_lock ();
-	info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_name, name);
-	mono_icall_unlock ();
-	return info;
-}
-
-MonoJitICallInfo *
 mono_find_jit_icall_by_addr (gconstpointer addr)
 {
 	MonoJitICallInfo *info;
@@ -9128,25 +9114,6 @@ mono_find_jit_icall_by_addr (gconstpointer addr)
 	return info;
 }
 
-/*
- * mono_lookup_jit_icall_symbol:
- *
- *   Given the jit icall NAME, returns its C symbol if possible, or NULL.
- */
-const char*
-mono_lookup_jit_icall_symbol (const char *name)
-{
-	MonoJitICallInfo *info;
-	const char *res = NULL;
-
-	mono_icall_lock ();
-	info = (MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_name, name);
-	if (info)
-		res = info->c_symbol;
-	mono_icall_unlock ();
-	return res;
-}
-
 void
 mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper)
 {
@@ -9155,47 +9122,23 @@ mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper)
 	mono_icall_unlock ();
 }
 
-// Function that is registered multiple times needs to be known here.
-
-void
-mono_no_trampolines (void); // prototype to avoid warning
-
-void
-mono_no_trampolines (void)
-{
-	g_assert_not_reached ();
-}
-
 void
 mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean avoid_wrapper, const char *c_symbol)
 {
-	g_assert (func);
-	g_assert (name);
-	mono_check_jit_icall_info (info);
-
 	mono_icall_lock ();
 
-	if (!jit_icall_hash_name) {
-		jit_icall_hash_name = g_hash_table_new_full (g_str_hash, g_str_equal, NULL, NULL);
+	if (!jit_icall_hash_addr) {
 		jit_icall_hash_addr = g_hash_table_new (NULL, NULL);
 	}
 
-	// Do not allow duplicate registration, either name or function or info,
-	// except the function mono_no_trampolines is reused.
+	// Duplicate initialization is allowed, assuming it is equivalent.
 
-	MonoJitICallInfo const * const existing_infos [ ] = {
-		(MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_name, name),
-		(MonoJitICallInfo *)g_hash_table_lookup (jit_icall_hash_addr, (gpointer)func),
-	};
-	for (int i = 0; i < 2; ++i) {
-		MonoJitICallInfo const * const existing_info = existing_infos [i];
+	g_hash_table_insert (jit_icall_hash_addr, (gpointer)func, info);
 
-		g_assertf (!existing_info || func == (gpointer)mono_no_trampolines,
-			"jit icall info already hashed name:%s existing_name:%s func:%p existing_func:%p i:%d\n",
-			name, existing_info->name, func, existing_info->func, i);
-	}
+	mono_icall_unlock ();
 
-	g_assertf (!info->name && !info->func, "%s", name);
+	// Duplicate initialization is allowed and racy, assuming it is equivalent.
+
 	info->name = name;
 	info->func = func;
 	info->sig = sig;
@@ -9203,12 +9146,11 @@ mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const 
 
 	// Fill in wrapper ahead of time, to just be func, to avoid
 	// later initializing it to anything else. So therefore, no wrapper.
-	info->wrapper = avoid_wrapper ? func : NULL;
-
-	g_hash_table_insert (jit_icall_hash_name, (gpointer)info->name, info);
-	g_hash_table_insert (jit_icall_hash_addr, (gpointer)func, info);
-
-	mono_icall_unlock ();
+	if (avoid_wrapper) {
+		info->wrapper = func;
+	} else {
+		// Leave it alone in case of a race.
+	}
 }
 
 int
