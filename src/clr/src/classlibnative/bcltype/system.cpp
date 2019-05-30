@@ -192,6 +192,14 @@ FCIMPL0(UINT32, SystemNative::GetTickCount)
 }
 FCIMPLEND;
 
+FCIMPL0(UINT64, SystemNative::GetTickCount64)
+{
+    FCALL_CONTRACT;
+
+    return ::GetTickCount64();
+}
+FCIMPLEND;
+
 
 
 
