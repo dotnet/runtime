@@ -9,7 +9,8 @@
     <!-- Always use shipping version instead of dummy versions -->
     <DotNetUseShippingVersions>true</DotNetUseShippingVersions>
     <PreReleaseVersionLabel>preview6</PreReleaseVersionLabel>
-    <!-- Opt-out repo features -->
+    <!-- Opt-in/out repo features -->
+    <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
     <UsingToolXliff>false</UsingToolXliff>
     <!-- Package versions -->
     <!-- arcade -->

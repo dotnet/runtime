@@ -2,6 +2,9 @@
 <Project>
   <Import Project="dir.common.props" />
 
+  <!-- [ARCADE REMOVE] This entire file can be removed. Properties set by this file should be moved into
+       dir.common.props and Directory.Build.props as appropriate and projects should stop importing this. -->
+
   <PropertyGroup>
     <LangVersion>8.0</LangVersion>
     <UseSharedCompilation>true</UseSharedCompilation>
@@ -12,31 +15,11 @@
     <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
   </PropertyGroup>
 
-  <!--
-     Switching to the .NET Core version of the BuildTools tasks seems to break numerous scenarios, such as VS intellisense and resource designer
-     as well as running the build on mono. Until we can get these sorted out we will continue using the .NET 4.5 version of the tasks.
-     -->
-  <PropertyGroup>
-    <RunningOnCore>false</RunningOnCore>
-    <RunningOnCore Condition="'$(MSBuildRuntimeType)' == 'core'">true</RunningOnCore>
-    <BuildToolsTargetsDesktop>false</BuildToolsTargetsDesktop>
-    <BuildToolsTargetsDesktop Condition="'$(RunningOnCore)' != 'true'">true</BuildToolsTargetsDesktop>
-    <BuildToolsTargets45>$(BuildToolsTargetsDesktop)</BuildToolsTargets45>
-  </PropertyGroup>
-
   <!-- Common properties -->
   <PropertyGroup>
 
     <!-- This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used to find source code for debugging -->
     <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">coreclr</GitHubRepositoryName>
-
-    <ToolsDir Condition="'$(ToolsDir)'==''">$(ProjectDir)Tools\</ToolsDir>
-    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ProjectDir).dotnet\</DotnetCliPath>
-    <OverrideToolHost>$(DotnetCliPath)dotnet</OverrideToolHost>
-    <BuildToolsSemaphore Condition="'$(BuildToolsSemaphore)' == ''">$(ToolsDir)Microsoft.DotNet.Build.Tasks.dll</BuildToolsSemaphore>
-
-    <TestWorkingDir>$(__TestWorkingDir)\</TestWorkingDir>
-    <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(PlatformConfigPathPart)\</TestWorkingDir>
 
     <Platform Condition="'$(Platform)' == ''">$(BuildArch)</Platform>
     <Platform Condition="'$(Platform)' == 'amd64'">x64</Platform>
@@ -63,12 +46,6 @@
     <OutputPath Condition="'$(OutputPath)' == ''">$(BinDir)</OutputPath>
   </PropertyGroup>
 
-  <!-- Import Build tools common props file where repo-independent properties are found -->
-  <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
-
   <!-- Provides properties for dependency versions and configures dependency verification/auto-upgrade. -->
   <Import Project="$(ProjectDir)dependencies.props" />
-
-  <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="Exists('$(RoslynPropsFile)')" />
 </Project>
