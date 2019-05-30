@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{5F553243-042C-45C0-8E49-C739131E11C3}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <DefineConstants Condition="'$(TargetsNETStandard)' != 'true'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\IO\WrappedMemoryStream.cs">
