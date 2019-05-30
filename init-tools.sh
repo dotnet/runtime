@@ -131,11 +131,7 @@ esac
 __PKG_RID=$__PKG_RID-$__PKG_ARCH
 
 if [ ! -e "$__DOTNET_CMD" ]; then
-    source $__scriptpath/eng/configure-toolset.sh
-    source $__scriptpath/eng/common/tools.sh
-
-    InitializeBuildTool
-
+    source $__scriptpath/init-dotnet.sh
     if [ ! -e "$__DOTNET_CMD" ]; then
         echo "ERROR: Ensure arcade dotnet install did not install dotnet at $__DOTNET_CMD"
         exit 1
