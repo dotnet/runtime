@@ -291,7 +291,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Uses reflection to access an internal method of the TaskScheduler class.")]
         public static void GetTaskSchedulersForDebugger_ReturnsDefaultScheduler()
         {
             MethodInfo getTaskSchedulersForDebuggerMethod = typeof(TaskScheduler).GetTypeInfo().GetDeclaredMethod("GetTaskSchedulersForDebugger");
@@ -301,7 +300,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(nameof(DebuggerIsAttached))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Uses reflection to access an internal method of the TaskScheduler class.")]
         public static void GetTaskSchedulersForDebugger_DebuggerAttached_ReturnsAllSchedulers()
         {
             MethodInfo getTaskSchedulersForDebuggerMethod = typeof(TaskScheduler).GetTypeInfo().GetDeclaredMethod("GetTaskSchedulersForDebugger");
@@ -317,7 +315,6 @@ namespace System.Threading.Tasks.Tests
         }
 
         [ConditionalFact(nameof(DebuggerIsAttached))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Uses reflection to access an internal method of the TaskScheduler class.")]
         public static void GetScheduledTasksForDebugger_DebuggerAttached_ReturnsTasksFromCustomSchedulers()
         {
             var nonExecutingScheduler = new BuggyTaskScheduler(faultQueues: false);

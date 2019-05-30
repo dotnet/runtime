@@ -9,7 +9,6 @@ namespace System.Net.Sockets.Tests
 {
     public class SocketInformationTest
     {
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
         public void Socket_Ctor_DuplicateAndClose_Throw()
         {

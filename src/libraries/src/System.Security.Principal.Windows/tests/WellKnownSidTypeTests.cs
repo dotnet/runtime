@@ -86,7 +86,7 @@ public class WellKnownSidTypeTests
         }
     }
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "This SidTypes are only available in .NET Core")]
+#if netcoreapp
     [ConditionalTheory(nameof(AccountIsDomainJoined))]
     [InlineData(WellKnownSidType.WinBuiltinDCOMUsersSid)]
     [InlineData(WellKnownSidType.WinBuiltinIUsersSid)]
@@ -145,6 +145,7 @@ public class WellKnownSidTypeTests
         var currentDomainSid = WindowsIdentity.GetCurrent().Owner.AccountDomainSid;
         AssertExtensions.Throws<ArgumentException>("sidType", () => new SecurityIdentifier(sidType, currentDomainSid));
     }
+    #endif
 
     [Fact]
     public void MaxDefinedHasLegacyValue()

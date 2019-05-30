@@ -375,11 +375,9 @@ namespace System.Net.Http.Functional.Tests
 
                         Assert.True(cts.Token.IsCancellationRequested, "cts token IsCancellationRequested");
 
-                        if (!PlatformDetection.IsFullFramework)
-                        {
-                            // .NET Framework has bug where it doesn't propagate token information.
-                            Assert.True(ex.CancellationToken.IsCancellationRequested, "exception token IsCancellationRequested");
-                        }
+                        // .NET Framework has bug where it doesn't propagate token information.
+                        Assert.True(ex.CancellationToken.IsCancellationRequested, "exception token IsCancellationRequested");
+
                         clientCanceled.SetResult(true);
                     }
                 },

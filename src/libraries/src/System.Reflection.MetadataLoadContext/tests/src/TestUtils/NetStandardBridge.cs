@@ -9,7 +9,7 @@ namespace System.Reflection.Tests
 {
     internal static class NetCoreApiEmulators
     {
-#if !netstandard
+#if netcoreapp
         public static bool IsSZArray(this Type t) => t.IsSZArray;
         public static bool IsVariableBoundArray(this Type t) => t.IsVariableBoundArray;
         public static bool IsTypeDefinition(this Type t) => t.IsTypeDefinition;

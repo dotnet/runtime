@@ -13,7 +13,6 @@ namespace System.Collections.Generic.Tests
 {
     public abstract partial class ComparersGenericTests<T>
     {
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Missing https://github.com/dotnet/coreclr/pull/4340")]
         [Fact]
         public void Comparer_ComparerDefault()
         {

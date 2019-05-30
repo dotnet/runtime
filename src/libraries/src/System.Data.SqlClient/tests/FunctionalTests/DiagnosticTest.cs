@@ -27,7 +27,7 @@ namespace System.Data.SqlClient.Tests
         public static bool IsConnectionStringConfigured() => s_tcpConnStr != string.Empty;
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteScalarTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -49,7 +49,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteScalarErrorTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -73,7 +73,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteNonQueryTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -95,7 +95,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteNonQueryErrorTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -133,7 +133,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteReaderTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -156,7 +156,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteReaderErrorTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -182,7 +182,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteReaderWithCommandBehaviorTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -205,7 +205,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [ConditionalFact(nameof(IsConnectionStringConfigured))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteXmlReaderTest()
         {
             RemoteExecutor.Invoke(cs =>
@@ -228,7 +228,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteXmlReaderErrorTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -254,7 +254,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteScalarAsyncTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -276,7 +276,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteScalarAsyncErrorTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -300,7 +300,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteNonQueryAsyncTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -322,7 +322,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteNonQueryAsyncErrorTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -345,7 +345,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteReaderAsyncTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -368,7 +368,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteReaderAsyncErrorTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -394,7 +394,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [ConditionalFact(nameof(IsConnectionStringConfigured))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteXmlReaderAsyncTest()
         {
             RemoteExecutor.Invoke(cs =>
@@ -417,7 +417,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [ConditionalFact(nameof(IsConnectionStringConfigured))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ExecuteXmlReaderAsyncErrorTest()
         {
             RemoteExecutor.Invoke(cs =>
@@ -443,7 +443,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ConnectionOpenTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -464,7 +464,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ConnectionOpenErrorTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -481,7 +481,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ConnectionOpenAsyncTest()
         {
             RemoteExecutor.Invoke(() =>
@@ -498,7 +498,7 @@ namespace System.Data.SqlClient.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework,  "Internals reflection not supported on UapAot | Feature not available on Framework")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework,  "Feature not available on Framework")]
         public void ConnectionOpenAsyncErrorTest()
         {
             RemoteExecutor.Invoke(() =>

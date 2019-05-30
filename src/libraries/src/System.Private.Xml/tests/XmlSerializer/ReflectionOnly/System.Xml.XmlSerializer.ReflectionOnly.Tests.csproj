@@ -2,7 +2,7 @@
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);ReflectionOnly</DefineConstants>
     <ProjectGuid>{4050F1D1-1DD2-4B48-A17B-E3F955518C4B}</ProjectGuid>
-    <Configurations>netstandard-Debug;netstandard-Release;uapaot-Debug;uapaot-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />

@@ -13,7 +13,6 @@ namespace System.ComponentModel.Design.Tests
     {
         public static IEnumerable<object[]> Ctor_TestData()
         {
-            // [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core fixed a NRE bug.")]
             if (!PlatformDetection.IsFullFramework)
             {
                 yield return new object[] { null };
@@ -72,7 +71,6 @@ namespace System.ComponentModel.Design.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core fixed a NRE bug.")]
         public void CopyTo_NullIList_Nop()
         {
             ICollection collection = new DesignerCollection((IList)null);

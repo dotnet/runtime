@@ -22,7 +22,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // desktop framework throws ArgumentException
         public static void RunTest_SkipOnDesktopFramework()
         {
             Assert.Throws<ArgumentNullException>(() => CompressedStack.Run(null, state => { }, null));

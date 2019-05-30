@@ -4,15 +4,13 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CompressedStackTests.cs" />
     <Compile Include="ExceptionTests.cs" />
     <Compile Include="ThreadExceptionEventArgsTests.cs" />
     <Compile Include="ThreadTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <Compile Include="ThreadTests.netcoreapp.cs" />
   </ItemGroup>
   <ItemGroup>

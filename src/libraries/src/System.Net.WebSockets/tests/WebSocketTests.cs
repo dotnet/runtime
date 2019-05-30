@@ -85,7 +85,6 @@ namespace System.Net.WebSockets.Tests
                 new MemoryStream(), "subProtocol", 16480, 9856, TimeSpan.FromSeconds(-2), false, WebSocket.CreateClientBuffer(16480, 9856)));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
         public static void RegisterPrefixes_Unsupported()
         {

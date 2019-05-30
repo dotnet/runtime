@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{ac20a28f-fda8-45e8-8728-058ead16e44c}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
@@ -9,8 +9,6 @@
     <Compile Include="TimerConstructorTests.cs" />
     <Compile Include="TimerChangeTests.cs" />
     <Compile Include="TimerFiringTests.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
     <Compile Include="TimerDisposeTests.cs" />
   </ItemGroup>
 </Project>

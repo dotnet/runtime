@@ -462,8 +462,6 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [MemberData(nameof(TestIsWellFormedUriStringData))]
-        // Bug hasn't been fixed yet on NetFramework
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void TestIsWellFormedUriString(string uriString, bool expected)
         {
             Assert.Equal(expected, Uri.IsWellFormedUriString(uriString, UriKind.RelativeOrAbsolute));
@@ -504,7 +502,6 @@ namespace System.PrivateUri.Tests
 
         [Theory]
         [MemberData(nameof(UriIsWellFormedUnwiseStringData))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void UriIsWellFormed_AbsoluteUnicodeWithUnwise_Success(string uriString, bool expected)
         {
             Assert.Equal(expected, Uri.IsWellFormedUriString(uriString, UriKind.Absolute));

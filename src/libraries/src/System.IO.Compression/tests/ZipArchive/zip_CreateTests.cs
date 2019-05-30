@@ -77,7 +77,6 @@ namespace System.IO.Compression.Tests
         [InlineData("normal")]
         [InlineData("empty")]
         [InlineData("emptydir")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework does not allow unseekable streams.")]
         public static async Task CreateNormal_Unseekable(string folder)
         {
             using (var s = new MemoryStream())
@@ -104,7 +103,6 @@ namespace System.IO.Compression.Tests
 
         [Fact]
         [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // Jenkins fails with unicode characters [JENKINS-12610]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework does not allow unseekable streams.")]
         public static async Task CreateNormal_Unicode_Unseekable()
         {
             using (var s = new MemoryStream())

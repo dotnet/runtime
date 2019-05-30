@@ -24,21 +24,18 @@ public static partial class XmlSerializerTests
 
     static XmlSerializerTests()
     {
-        if (!PlatformDetection.IsFullFramework)
-        {
-            MethodInfo method = typeof(XmlSerializer).GetMethod(SerializationModeSetterName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            Assert.True(method != null, $"No method named {SerializationModeSetterName}");
+        MethodInfo method = typeof(XmlSerializer).GetMethod(SerializationModeSetterName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.True(method != null, $"No method named {SerializationModeSetterName}");
 #if ReflectionOnly
-            method.Invoke(null, new object[] { 1 });
+        method.Invoke(null, new object[] { 1 });
 #endif
 #if XMLSERIALIZERGENERATORTESTS
-            method.Invoke(null, new object[] { 3 });
+        method.Invoke(null, new object[] { 3 });
 #endif
-        }
     }
 #endif
 
-    private static bool IsTimeSpanSerializationAvailable => !PlatformDetection.IsFullFramework || (AppContext.TryGetSwitch("Switch.System.Xml.EnableTimeSpanSerialization", out bool result) && result);
+    private static bool IsTimeSpanSerializationAvailable => true;
 
     [Fact]
     public static void Xml_TypeWithDateTimePropertyAsXmlTime()
@@ -939,7 +936,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18964")]
     public static void Xml_Soap_TypeWithEnumFlagPropertyHavingDefaultValue()
     {
         var mapping = new SoapReflectionImporter().ImportTypeMapping(typeof(TypeWithEnumFlagPropertyHavingDefaultValue));
@@ -980,7 +976,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18964")]
     public static void Xml_Soap_TypeWithXmlQualifiedName()
     {
         var mapping = new SoapReflectionImporter().ImportTypeMapping(typeof(TypeWithXmlQualifiedName));
@@ -1618,7 +1613,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18964")]
     public static void Xml_Soap_TypeWithMyCollectionField()
     {
         XmlTypeMapping myTypeMapping = new SoapReflectionImporter().ImportTypeMapping(typeof(TypeWithMyCollectionField));

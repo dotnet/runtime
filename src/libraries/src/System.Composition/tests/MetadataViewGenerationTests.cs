@@ -81,7 +81,6 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void AConcreteTypeWithUnsupportedConstructorsCannotBeUsedAsAMetadataView()
         {
@@ -107,7 +106,6 @@ namespace System.Composition.Lightweight.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20656", TargetFrameworkMonikers.UapAot)]
         [ActiveIssue(24903, TargetFrameworkMonikers.NetFramework)]
         public void UnsupportedMetadataViewMessageIsInformative()
         {

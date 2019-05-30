@@ -13,9 +13,9 @@ namespace System.Collections.Tests
     /// </summary>
     public abstract partial class Dictionary_Generic_Tests<TKey, TValue> : IDictionary_Generic_Tests<TKey, TValue>
     {
-        protected override ModifyOperation ModifyEnumeratorThrows => PlatformDetection.IsFullFramework ? base.ModifyEnumeratorThrows : ModifyOperation.Add | ModifyOperation.Insert;
+        protected override ModifyOperation ModifyEnumeratorThrows => ModifyOperation.Add | ModifyOperation.Insert;
 
-        protected override ModifyOperation ModifyEnumeratorAllowed => PlatformDetection.IsFullFramework ? base.ModifyEnumeratorAllowed : ModifyOperation.Remove | ModifyOperation.Clear;
+        protected override ModifyOperation ModifyEnumeratorAllowed => ModifyOperation.Remove | ModifyOperation.Clear;
 
         #region IDictionary<TKey, TValue Helper Methods
 

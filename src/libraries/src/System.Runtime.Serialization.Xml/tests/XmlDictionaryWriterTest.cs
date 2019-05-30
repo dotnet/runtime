@@ -63,7 +63,6 @@ public static class XmlDictionaryWriterTest
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async APIs are available on NetCore only")]
     public static void XmlBaseWriter_FlushAsync()
     {
         string actual = null;
@@ -117,7 +116,6 @@ public static class XmlDictionaryWriterTest
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async APIs are available on NetCore only")]
     public static void XmlBaseWriter_WriteStartEndElementAsync()
     {
         string actual;
@@ -145,7 +143,6 @@ public static class XmlDictionaryWriterTest
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async APIs are available on NetCore only")]
     public static void XmlBaseWriter_CheckAsync_ThrowInvalidOperationException()
     {
         int byteSize = 1024;
@@ -191,7 +188,6 @@ public static class XmlDictionaryWriterTest
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "is implemented on full framework")]
     public static void CreateMtomReaderWriter_Throw_PNSE()
     {
         using (var stream = new MemoryStream())
@@ -314,7 +310,6 @@ public static class XmlDictionaryWriterTest
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "is implemented on full framework")]
     public static void FragmentTest()
     {
         string rwTypeStr = "Text";

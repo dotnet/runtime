@@ -22,7 +22,6 @@ public partial class ConsoleEncoding
     }
 
     [Theory]
-    [ActiveIssue("https://github.com/dotnet/corefx/issues/18220", TargetFrameworkMonikers.UapAot)]
     [MemberData(nameof(InputData))]
     public void TestEncoding(string inputString)
     {
@@ -117,7 +116,6 @@ public partial class ConsoleEncoding
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/corefx/issues/18220", TargetFrameworkMonikers.UapAot)]
     public void InputEncoding_SetWithInInitialized_ResetsIn()
     {
         RemoteExecutor.Invoke(() =>
@@ -160,7 +158,6 @@ public partial class ConsoleEncoding
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/corefx/issues/18220", TargetFrameworkMonikers.UapAot)]
     public void OutputEncoding_SetWithErrorAndOutputInitialized_ResetsErrorAndOutput()
     {
         RemoteExecutor.Invoke(() =>
@@ -193,7 +190,6 @@ public partial class ConsoleEncoding
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/corefx/issues/18220", TargetFrameworkMonikers.UapAot)]
     [PlatformSpecific(TestPlatforms.Windows)]
     public void OutputEncoding_SetEncodingWithInvalidCodePage_ThrowsIOException()
     {

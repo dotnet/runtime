@@ -9,7 +9,6 @@ namespace System.Net.Mail.Tests
     public class NTAuthenticationStubTests
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Requires internal Reflection (NTAuthentication)")]
         public void TestReflectedTypes()
         {
             Assert.NotNull(NTAuthentication.s_type);

@@ -957,7 +957,6 @@ namespace System.Collections.Concurrent.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(10)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public void DebuggerAttributes_Success(int count)
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection(count);
@@ -969,7 +968,6 @@ namespace System.Collections.Concurrent.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public void DebuggerTypeProxy_Ctor_NullArgument_Throws()
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection();

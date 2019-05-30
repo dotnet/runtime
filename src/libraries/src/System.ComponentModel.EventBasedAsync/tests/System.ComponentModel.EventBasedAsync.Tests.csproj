@@ -1,11 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- this tests run in multiple AppDomains in full framework, so if an Assert fails we would get a Serialization exception instead of the real failure.
-    adding this xunit so it runs in one AppDomain -->
-    <XUnitNoAppdomain>true</XUnitNoAppdomain>
     <ProjectGuid>{59E9B218-81D0-4A80-A4B7-66C716136D82}</ProjectGuid>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncOperationManagerTests.cs" />

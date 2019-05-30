@@ -247,18 +247,8 @@ namespace System.Net.Primitives.Functional.Tests
             c.Value = null;
             Assert.Equal(string.Empty, c.Value);
         }
-        
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)] // Cookie.Value returns null on full framework, empty string on .NETCore
-        public static void Value_PassNullToCtor_GetReturnsEmptyString_net46()
-        {
-            var cookie = new Cookie("SomeName", null);
-            // Cookie.Value returns null on full framework.
-            Assert.Null(cookie.Value);
-        }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Cookie.Value returns null on full framework, empty string on .NETCore
         public static void Value_PassNullToCtor_GetReturnsEmptyString()
         {
             var cookie = new Cookie("SomeName", null);

@@ -1,9 +1,10 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      netstandard-Windows_NT;
-      netstandard-OSX;
-      netstandard-Unix;
+      netcoreapp-Windows_NT;
+      netcoreapp-OSX;
+      netcoreapp-Unix;
+      uap-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

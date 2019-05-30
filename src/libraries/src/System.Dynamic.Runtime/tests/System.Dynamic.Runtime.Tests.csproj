@@ -3,7 +3,7 @@
     <ProjectGuid>{0BFD6D9F-DF9E-4B17-8ED4-29437AE5B04A}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>67,168,219,414,162,184,458,464,78,169,114,693,108,1981,649,109,1066,3021,3026,3002,3014,3022,660,661,429</NoWarn>
-    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <AssembliesBeingTested Include="Microsoft.CSharp" />

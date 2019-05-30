@@ -31,17 +31,6 @@ namespace System.IO.Tests
             Assert.Equal("HelloWorld", str2);
         }
 
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public static void NullEncodingThrows()
-        {
-            // [] Check for ArgumentNullException on null encoding
-            //-----------------------------------------------------------------
-
-            Assert.Throws<ArgumentNullException>(() => new StreamWriter(new MemoryStream(), null));
-        }
-
         [Fact]
         public static void UTF8Encoding()
         {

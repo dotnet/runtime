@@ -12,7 +12,6 @@ namespace System.Runtime.InteropServices.Tests
         private const string TypeName = "System.Runtime.InteropServices.SetWin32ContextInIDispatchAttribute";
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot | TargetFrameworkMonikers.NetFramework, "This has been removed from the ref in .NET Core and from the source in the .NET Framework.")]
         public void Ctor_Default_ExistsInSrc()
         {
             Type type = typeof(HandleCollector).Assembly.GetType(TypeName);

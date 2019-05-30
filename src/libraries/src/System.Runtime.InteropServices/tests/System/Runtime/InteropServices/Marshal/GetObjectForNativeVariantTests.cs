@@ -355,7 +355,6 @@ namespace System.Runtime.InteropServices.Tests
             };
 
             var obj = new object();
-#if !netstandard // Marshal.GetIDispatchForObject is not in netstandard2.0
             if (!PlatformDetection.IsNetCore)
             {
                 IntPtr dispatch = Marshal.GetIDispatchForObject(obj);
@@ -369,7 +368,6 @@ namespace System.Runtime.InteropServices.Tests
             {
                 Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetIDispatchForObject(obj));
             }
-#endif
 
             // VT_ERROR => int.
             yield return new object[]

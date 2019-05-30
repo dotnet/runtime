@@ -27,7 +27,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(27098, TargetFrameworkMonikers.NetFramework)]
         public static void TestOrdinal_EmbeddedNull_ReturnsDifferentHashCodes()
         {
             StringComparer sc = StringComparer.Ordinal;

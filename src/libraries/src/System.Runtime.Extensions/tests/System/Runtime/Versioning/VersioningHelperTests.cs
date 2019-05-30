@@ -10,15 +10,10 @@ namespace System.Runtime.Versioning.Tests
     public static class VersioningHelperTests
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "r3 suffix is hardcoded in .NET Core and return code is not documented")]
         public static void MakeVersionSafeNameTest()
         {
             string str1 = VersioningHelper.MakeVersionSafeName("TestFile", ResourceScope.Process, ResourceScope.AppDomain);
-#if uapaot
-            Assert.NotNull(str1);
-#else
             Assert.Equal($"TestFile_r3_ad{AppDomain.CurrentDomain.Id}", str1);
-#endif
         }      
     }
 }

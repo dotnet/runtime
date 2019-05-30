@@ -243,18 +243,6 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void WindowsWildCharacterPath_Desktop()
-        {
-            Assert.Throws<ArgumentException>(() => Move("*", GetTestFilePath()));
-            Assert.Throws<ArgumentException>(() => Move(TestDirectory, "*"));
-            Assert.Throws<ArgumentException>(() => Move(TestDirectory, "Test*t"));
-            Assert.Throws<ArgumentException>(() => Move(TestDirectory, "*Test"));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void WindowsWildCharacterPath_Core()
         {
             Assert.ThrowsAny<IOException>(() => Move(Path.Combine(TestDirectory, "*"), GetTestFilePath()));

@@ -312,7 +312,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "No reliable way to check if a type is WinRT in AOT")]
         public void GetActivationFactory_NotExportedType_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>("type", () => WindowsRuntimeMarshal.GetActivationFactory(typeof(int)));

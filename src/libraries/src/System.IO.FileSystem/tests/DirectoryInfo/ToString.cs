@@ -38,7 +38,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInAppContainer))] // Can't read root in appcontainer
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Different behavior on Desktop
         [PlatformSpecific(TestPlatforms.Windows)]  // Drive letter only
         public void DriveOnlyReturnsDrive_Windows()
         {

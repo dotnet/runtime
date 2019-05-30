@@ -88,20 +88,5 @@ namespace System.SpanTests
             Assert.NotSame(subString1, subString3);
             Assert.NotSame(subString2, subString3);
         }
-
-        // This test is only relevant for portable span
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "Optimization only applies to portable span.")]
-        [Fact]
-        public static void ToStringSpanOverFullStringReturnsOriginal()
-        {
-            string original = TestHelpers.BuildString(10, 42);
-            ReadOnlySpan<char> span = original.AsSpan();
-
-            string returnedString = span.ToString();
-            string returnedStringUsingSlice = span.Slice(0, original.Length).ToString();
-
-            Assert.Same(original, returnedString);
-            Assert.Same(original, returnedStringUsingSlice);
-        }
     }
 }

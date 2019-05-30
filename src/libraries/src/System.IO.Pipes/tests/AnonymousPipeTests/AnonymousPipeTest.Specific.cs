@@ -159,7 +159,6 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(PipeDirection.Out, PipeDirection.In)]
         [InlineData(PipeDirection.In, PipeDirection.Out)]
-        [ActiveIssue("dotnet/corefx #18546", TargetFrameworkMonikers.NetFramework)]
         public void ReadModeToByte_Accepted(PipeDirection serverDirection, PipeDirection clientDirection)
         {
             using (AnonymousPipeServerStream server = new AnonymousPipeServerStream(serverDirection))

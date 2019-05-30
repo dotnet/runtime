@@ -16,7 +16,6 @@ namespace System.Xml.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework does not check for null argument in XmlAttributeCollection.SetNamedItem")]
         public void SetNamedItemWithNullReturnsNull()
         {
             XmlDocument doc = CreateDocumentWithElement();

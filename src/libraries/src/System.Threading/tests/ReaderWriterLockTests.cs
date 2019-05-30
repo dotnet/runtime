@@ -16,7 +16,6 @@ namespace System.Threading.Tests
         private const int InvalidLockCookieExceptionHResult = unchecked((int)0x80070057); // E_INVALIDARG
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // desktop framework treats the timeout as an unsigned value
         public static void InvalidTimeoutTest_ChangedInDotNetCore()
         {
             var rwl = new ReaderWriterLock();
@@ -436,7 +435,6 @@ namespace System.Threading.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void DowngradeQuirks_ChangedInDotNetCore()
         {
             var trwl = new TestReaderWriterLock();

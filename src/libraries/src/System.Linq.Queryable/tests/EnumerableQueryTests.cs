@@ -20,7 +20,6 @@ namespace System.Linq.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #16916", TargetFrameworkMonikers.NetFramework)] //This test hangs forever in query.GetEnumerator()
         public void NullEnumerableConstantNullExpression()
         {
             IQueryable<int> query = new EnumerableQuery<int>((IEnumerable<int>)null);

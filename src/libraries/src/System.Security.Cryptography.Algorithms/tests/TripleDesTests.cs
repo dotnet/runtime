@@ -77,7 +77,6 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Causing other tests to intermittently fail on netfx (https://github.com/dotnet/corefx/issues/18690)")]
         public static void EnsureLegalSizesValuesIsolated()
         {
             new TripleDESLegalSizesBreaker().Dispose();

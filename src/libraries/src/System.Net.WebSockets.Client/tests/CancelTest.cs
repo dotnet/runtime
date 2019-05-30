@@ -76,7 +76,6 @@ namespace System.Net.WebSockets.Client.Tests
             }, server);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Cancellation sometimes throw wrong exceptions, dotnet/corefx #28777")]
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task CloseAsync_Cancel_Success(Uri server)
@@ -138,7 +137,6 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Cancellation sometimes throw wrong exceptions, dotnet/corefx #26635")]
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_ReceiveThenCancel_ThrowsOperationCanceledException(Uri server)

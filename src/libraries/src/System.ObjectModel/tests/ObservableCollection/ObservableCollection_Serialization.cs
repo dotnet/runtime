@@ -28,7 +28,6 @@ namespace System.Collections.ObjectModel.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void OnDeserialized_MonitorNotInitialized_ExpectSuccess()
         {
             var observableCollection = new ObservableCollection<int>();

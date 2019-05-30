@@ -55,13 +55,6 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (PlatformDetection.IsFullFramework &&
-                (proxyAuthScheme == AuthenticationSchemes.Negotiate || proxyAuthScheme == AuthenticationSchemes.Ntlm))
-            {
-                // Skip due to bug in .NET Framework with Windows auth and proxy tunneling.
-                return;
-            }
-
             if (!PlatformDetection.IsWindows &&
                 (proxyAuthScheme == AuthenticationSchemes.Negotiate || proxyAuthScheme == AuthenticationSchemes.Ntlm))
             {
@@ -266,7 +259,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(23702, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public async Task ProxyAuth_Digest_Succeeds()
         {

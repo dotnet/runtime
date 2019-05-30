@@ -66,7 +66,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RedirectStatusCodes))]
         public async Task GetAsync_AllowAutoRedirectFalse_RedirectFromHttpToHttp_StatusCodeRedirect(int statusCode)
         {
-            if (statusCode == 308 && (PlatformDetection.IsFullFramework || IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
             {
                 // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
                 return;
@@ -101,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
                 newMethod = "POST";
             }
 
-            if (statusCode == 308 && (PlatformDetection.IsFullFramework || IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
             {
                 // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
                 return;
@@ -226,7 +226,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RedirectStatusCodes))]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK(int statusCode)
         {
-            if (statusCode == 308 && (PlatformDetection.IsFullFramework || IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
             {
                 // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
                 return;
@@ -272,7 +272,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework allows HTTPS to HTTP redirection")]
         [OuterLoop("Uses external server")]
         [Fact]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpsToHttp_StatusCodeRedirect()
@@ -359,13 +358,6 @@ namespace System.Net.Http.Functional.Tests
             {
                 // Skip this test if using WinHttpHandler but on a release prior to Windows 10 Creators Update.
                 _output.WriteLine("Skipping test due to Windows 10 version prior to Version 1703.");
-                return;
-            }
-            else if (PlatformDetection.IsFullFramework)
-            {
-                // Skip this test if running on .NET Framework. Exceeding max redirections will not throw
-                // exception. Instead, it simply returns the 3xx response.
-                _output.WriteLine("Skipping test on .NET Framework due to behavior difference.");
                 return;
             }
 
@@ -461,7 +453,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't handle fragments according to https://tools.ietf.org/html/rfc7231#section-7.1.2")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Doesn't handle fragments according to https://tools.ietf.org/html/rfc7231#section-7.1.2")]
         [Theory]
         [InlineData("#origFragment", "", "#origFragment", false)]
@@ -585,7 +576,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RedirectStatusCodes))]
         public async Task GetAsync_CredentialIsCredentialCacheUriRedirect_StatusCodeOK(int statusCode)
         {
-            if (statusCode == 308 && (PlatformDetection.IsFullFramework || IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
             {
                 // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
                 return;
@@ -627,7 +618,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RedirectStatusCodes))]
         public async Task DefaultHeaders_SetCredentials_ClearedOnRedirect(int statusCode)
         {
-            if (statusCode == 308 && (PlatformDetection.IsFullFramework || IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
+            if (statusCode == 308 && (IsWinHttpHandler && PlatformDetection.WindowsVersion < 10))
             {
                 // 308 redirects are not supported on old versions of WinHttp, or on .NET Framework.
                 return;

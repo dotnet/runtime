@@ -190,7 +190,6 @@ namespace System.IO.Tests
             InlineData(":bar"),
             InlineData(":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void WindowsDeleteAlternateDataStream(string streamName)
         {
             FileInfo testFile = Create(GetTestFilePath());

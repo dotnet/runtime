@@ -11,21 +11,7 @@ using Xunit;
 namespace System.Runtime.InteropServices.Tests
 {
     public partial class GetEndComSlotTests
-    {
-        [Theory]
-        [InlineData(typeof(int), -1)]
-        [InlineData(typeof(string), -1)]
-        [InlineData(typeof(NonGenericClass), -1)]
-        [InlineData(typeof(NonGenericStruct), -1)]
-        [InlineData(typeof(NonGenericInterface), 6)]
-        [InlineData(typeof(int*), -1)]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(31068, ~TargetFrameworkMonikers.NetFramework)]
-        public void GetEndComSlot_ValidType_ReturnsExpected(Type type, int expected)
-        {
-            Assert.Equal(expected, Marshal.GetEndComSlot(type));
-        }
-        
+    {        
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void GetEndComSlot_Unix_ThrowsPlatformNotSupportedException()
@@ -78,13 +64,11 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(int[][]) };
             yield return new object[] { typeof(int[,]) };
 
-#if !netstandard // TODO: Enable for netstandard2.1
-             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
             TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
             Type collectibleType = typeBuilder.CreateType();
             yield return new object[] { collectibleType };
-#endif
         }
         
         [Theory]

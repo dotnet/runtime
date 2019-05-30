@@ -30,7 +30,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "Process.Modules is not supported on uap")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Process.Modules is not supported on uap")]
         public void Modules_Get_ContainsHostFileName()
         {
             ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;

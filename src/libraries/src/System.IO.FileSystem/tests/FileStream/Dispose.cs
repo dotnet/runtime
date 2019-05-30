@@ -113,7 +113,6 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Missing fix for https://github.com/dotnet/coreclr/pull/16250")]
         public void NoDispose_CallsVirtualDisposeFalseArg_ThrowsDuringFlushWriteBuffer_FinalizerWontThrow()
         {
             RemoteExecutor.Invoke(() =>

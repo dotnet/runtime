@@ -27,7 +27,7 @@ namespace System.Linq.Tests
         {
             // .NET Core returns the instance as an optimization.
             // see https://github.com/dotnet/corefx/pull/2401.
-            Assert.Equal(!PlatformDetection.IsFullFramework, ReferenceEquals(GetEmptyPartition<int>(), GetEmptyPartition<int>()));
+            Assert.Equal(true, ReferenceEquals(GetEmptyPartition<int>(), GetEmptyPartition<int>()));
         }
 
         [Fact]
@@ -97,7 +97,6 @@ namespace System.Linq.Tests
             Assert.Empty(GetEmptyPartition<int>().ToList());
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "netfx's Take returns a compiler-generated iterator whose Reset throws.")]
         [Fact]
         public void ResetIsNop()
         {

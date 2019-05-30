@@ -691,7 +691,6 @@ namespace System.Net.Sockets.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void BeginSend_IPv6Socket_IPv4Dns_Success()
         {
             using (var receiver = new UdpClient("127.0.0.1", DiscardPort))

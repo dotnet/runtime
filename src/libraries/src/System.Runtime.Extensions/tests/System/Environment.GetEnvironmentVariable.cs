@@ -169,7 +169,6 @@ namespace System.Tests
         [Theory]
         [InlineData(null)]
         [MemberData(nameof(EnvironmentTests.EnvironmentVariableTargets), MemberType = typeof(EnvironmentTests))]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/23003", TargetFrameworkMonikers.NetFramework)]
         public void GetEnumerator_LinqOverDictionaryEntries_Success(EnvironmentVariableTarget? target)
         {
             IDictionary envVars = target != null ?
@@ -219,12 +218,7 @@ namespace System.Tests
         [MemberData(nameof(EnvironmentTests.EnvironmentVariableTargets), MemberType = typeof(EnvironmentTests))]
         public void EnumerateEnvironmentVariables(EnvironmentVariableTarget target)
         {
-            bool lookForSetValue = (target == EnvironmentVariableTarget.Process) ||
-                                    // On the Project N corelib, it doesn't attempt to set machine/user environment variables;
-                                    // it just returns silently. So don't try.
-                                    (PlatformDetection.IsWindowsAndElevated && !PlatformDetection.IsNetNative);
-
-
+            bool lookForSetValue = (target == EnvironmentVariableTarget.Process) || PlatformDetection.IsWindowsAndElevated;
             string key = $"EnumerateEnvironmentVariables ({target})";
             string value = Path.GetRandomFileName();
 

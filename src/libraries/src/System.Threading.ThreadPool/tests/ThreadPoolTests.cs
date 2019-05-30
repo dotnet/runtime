@@ -17,15 +17,11 @@ namespace System.Threading.ThreadPools.Tests
         static ThreadPoolTests()
         {
             // Run the following tests before any others
-            if (!PlatformDetection.IsNetNative)
-            {
-                ConcurrentInitializeTest();
-            }
+            ConcurrentInitializeTest();
         }
 
         // Tests concurrent calls to ThreadPool.SetMinThreads
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "ThreadPool.SetMinThreads is not supported on UapAot.")]
         public static void ConcurrentInitializeTest()
         {
             int processorCount = Environment.ProcessorCount;
@@ -81,7 +77,6 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "ThreadPool.SetMinThreads and SetMaxThreads are not supported on UapAot.")]
         public static void SetMinMaxThreadsTest()
         {
             int minw, minc, maxw, maxc;
@@ -143,9 +138,7 @@ namespace System.Threading.ThreadPools.Tests
 
         [Fact]
         // Desktop framework doesn't check for this and instead, hits an assertion failure
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Mono)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "ThreadPool.SetMinThreads and SetMaxThreads are not supported on UapAot.")]
         public static void SetMinMaxThreadsTest_ChangedInDotNetCore()
         {
             int minw, minc, maxw, maxc;
@@ -186,8 +179,6 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Triggers an assertion failure.")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "ThreadPool.SetMinThreads and SetMaxThreads are not supported on UapAot.")]
         public static void SetMinThreadsTo0Test()
         {
             int minw, minc, maxw, maxc;

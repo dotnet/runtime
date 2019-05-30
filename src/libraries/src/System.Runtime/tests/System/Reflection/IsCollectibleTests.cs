@@ -18,7 +18,6 @@ namespace System.Reflection.Tests
         protected override Assembly Load(AssemblyName assemblyName) => null;
     }
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "AssemblyLoadContext not available in NetFx")]
     public class IsCollectibleTests
     {
         static public string asmNameString = "TestCollectibleAssembly";

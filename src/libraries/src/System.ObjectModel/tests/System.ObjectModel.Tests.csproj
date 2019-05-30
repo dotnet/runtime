@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{43841228-2A2B-4215-B97F-33006995E486}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release;uapaot-Debug;uapaot-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Releaseuap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Collections\IEnumerableTest.cs">

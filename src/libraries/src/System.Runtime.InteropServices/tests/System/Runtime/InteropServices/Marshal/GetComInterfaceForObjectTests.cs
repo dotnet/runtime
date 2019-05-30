@@ -172,13 +172,11 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(NonComVisibleStruct) };
             yield return new object[] { typeof(NonComVisibleInterface) };
 
-#if !netstandard // TODO: Enable for netstandard2.1
             AssemblyBuilder collectibleAssemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
             ModuleBuilder collectibleModuleBuilder = collectibleAssemblyBuilder.DefineDynamicModule("Module");
             TypeBuilder collectibleTypeBuilder = collectibleModuleBuilder.DefineType("Type", TypeAttributes.Interface | TypeAttributes.Abstract);
             Type collectibleType = collectibleTypeBuilder.CreateType();
             yield return new object[] { collectibleType };
-#endif
         }
 
         [Theory]

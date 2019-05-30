@@ -36,7 +36,6 @@ namespace System.SpanTests
         }
         
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "This unit test relies on internal implementation details of Memory<T> on netcoreapp.")]
         public static void CreateFromPinnedArrayIntSliceRemainsPinned()
         {
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98 };
@@ -65,7 +64,6 @@ namespace System.SpanTests
         }
         
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "This unit test relies on internal implementation details of Memory<T> on netcoreapp.")]
         public static void CreateFromPinnedArrayIntReadOnlyMemorySliceRemainsPinned()
         {
             int[] a = { 90, 91, 92, 93, 94, 95, 96, 97, 98 };

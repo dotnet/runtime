@@ -3,7 +3,7 @@
     <ProjectGuid>{18EF66B3-51EE-46D8-B283-1CB6A1197813}</ProjectGuid>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AsyncLocalTests.cs" />
@@ -15,14 +15,14 @@
     <Compile Include="EtwTests.cs" />
     <Compile Include="EventWaitHandleTests.cs" />
     <Compile Include="InterlockedTests.cs" />
-    <Compile Include="InterlockedTests.netcoreapp.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
+    <Compile Include="InterlockedTests.netcoreapp.cs" />
     <Compile Include="HostExecutionContextTests.cs" />
     <Compile Include="HostExecutionContextManagerTests.cs" />
     <Compile Include="ManualResetEventTests.cs" />
     <Compile Include="ManualResetEventSlimCancellationTests.cs" />
     <Compile Include="ManualResetEventSlimTests.cs" />
     <Compile Include="MonitorTests.cs" />
-    <Compile Include="MonitorTests.netcoreapp.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
+    <Compile Include="MonitorTests.netcoreapp.cs" />
     <Compile Include="MutexTests.cs" />
     <Compile Include="SemaphoreSlimCancellationTests.cs" />
     <Compile Include="SemaphoreSlimTests.cs" />
@@ -31,7 +31,7 @@
     <Compile Include="ReaderWriterLockTests.cs" />
     <Compile Include="ReaderWriterLockSlimTests.cs" />
     <Compile Include="SpinWaitTests.cs" />
-    <Compile Include="SpinWaitTests.netcoreapp.cs" Condition="'$(TargetGroup)' != 'netstandard'" />
+    <Compile Include="SpinWaitTests.netcoreapp.cs" />
     <Compile Include="ThreadLocalTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="ExecutionContextTests.cs" />

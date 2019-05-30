@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- Needs netfx configuration per bug (dotnet/corefx #17575) so tests are actively running in desktop -->
     <BuildConfigurations>
-      netstandard;
+      uap;
       netfx;
       netcoreapp;
     </BuildConfigurations>
