@@ -29,7 +29,7 @@
     <!-- runtime dependency: System.Data.SqlClient uap10.0.16299 -->
     <!-- runtime dependency: System.Diagnostics.PerformanceCounters netcoreapp2.0,net461 -->
     <PackageReference Include="System.Memory" Condition="'$(TargetGroup)' == 'netcoreapp2.0' OR '$(TargetGroup)' == 'uap10.0.16299' OR '$(TargetsNetfx)' == 'true' OR ('$(TargetsNetStandard)' == 'true' AND '$(NETStandardVersion)' &gt;= 1.1)">
-      <Version>4.5.1</Version>
+      <Version>4.5.3</Version>
     </PackageReference>
 
     <PackageReference Include="System.Numerics.Vectors" Condition="'$(DotNetBuildFromSource)' != 'true' AND '$(TargetsNetStandard)' == 'true' AND '$(NETStandardVersion)' &lt; 2.1">
@@ -37,7 +37,7 @@
     </PackageReference>
 
     <PackageReference Include="System.Threading.Tasks.Extensions" Condition="'$(TargetGroup)' == 'netcoreapp2.0' OR '$(TargetsNetfx)' == 'true' OR '$(TargetsNetStandard)' == 'true'">
-      <Version>4.5.1</Version>
+      <Version>4.5.2</Version>
     </PackageReference>
 
     <!-- Only include the assets from the direct packages we reference in the output -->
