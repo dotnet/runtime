@@ -63,6 +63,7 @@ namespace System
         public static bool IsInvokingStaticConstructorsSupported { get { throw null; } }
         public static bool IsMacOsHighSierraOrHigher { get { throw null; } }
         public static bool IsMacOsMojaveOrHigher { get { throw null; } }
+        public static bool IsMonoRuntime { get { throw null; } }
         public static bool IsNetBSD { get { throw null; } }
         public static bool IsNetCore { get { throw null; } }
         public static bool IsNetfx462OrNewer { get { throw null; } }
@@ -93,6 +94,7 @@ namespace System
         public static bool IsNotWinRTSupported { get { throw null; } }
         public static bool IsOpenSUSE { get { throw null; } }
         public static bool IsOSX { get { throw null; } }
+        public static bool IsPreciseGcSupported { get { throw null; } }
         public static bool IsRedHatFamily { get { throw null; } }
         public static bool IsRedHatFamily6 { get { throw null; } }
         public static bool IsRedHatFamily7 { get { throw null; } }
