@@ -100,7 +100,19 @@ bool NearDiffer::InitAsmDiff()
             return false;
         }
 
-        corAsmDiff = (*g_PtrNewDiffer)(Target_Host, &CorPrinter, NearDiffer::CoreDisCompareOffsetsCallback);
+        TargetArch coreDisTargetArchitecture = Target_Host;
+#ifdef _TARGET_AMD64_
+        if ((TargetArchitecture != nullptr) && (0 == _stricmp(TargetArchitecture, "arm64")))
+        {
+            coreDisTargetArchitecture = Target_Arm64;
+        }
+#elif defined(_TARGET_X86_)
+        if ((TargetArchitecture != nullptr) && (0 == _stricmp(TargetArchitecture, "arm")))
+        {
+            coreDisTargetArchitecture = Target_Thumb;
+        }
+#endif
+        corAsmDiff = (*g_PtrNewDiffer)(coreDisTargetArchitecture, &CorPrinter, NearDiffer::CoreDisCompareOffsetsCallback);
     }
 #endif // USE_COREDISTOOLS
 
