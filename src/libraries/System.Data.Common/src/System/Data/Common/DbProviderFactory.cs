@@ -6,9 +6,56 @@ namespace System.Data.Common
 {
     public abstract partial class DbProviderFactory
     {
+        private bool? _canCreateDataAdapter;
+        private bool? _canCreateCommandBuilder;
+
         protected DbProviderFactory() { }
 
         public virtual bool CanCreateDataSourceEnumerator => false;
+
+        public virtual bool CanCreateDataAdapter
+        {
+            get
+            {
+                if (!_canCreateDataAdapter.HasValue)
+                {
+                    var adapter = CreateDataAdapter();
+                    if (adapter == null)
+                    {
+                        _canCreateDataAdapter = false;
+                    }
+                    else
+                    {
+                        _canCreateDataAdapter = true;
+                        adapter.Dispose();
+                    }
+                }
+
+                return _canCreateDataAdapter.Value;
+            }
+        }
+
+        public virtual bool CanCreateCommandBuilder
+        {
+            get
+            {
+                if (!_canCreateCommandBuilder.HasValue)
+                {
+                    var builder = CreateCommandBuilder();
+                    if (builder == null)
+                    {
+                        _canCreateCommandBuilder = false;
+                    }
+                    else
+                    {
+                        _canCreateCommandBuilder = true;
+                        builder.Dispose();
+                    }
+                }
+
+                return _canCreateCommandBuilder.Value;
+            }
+        }
 
         public virtual DbCommand CreateCommand() => null;
 

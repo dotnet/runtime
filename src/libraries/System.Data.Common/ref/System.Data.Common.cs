@@ -2337,6 +2337,8 @@ namespace System.Data.Common
     {
         protected DbProviderFactory() { }
         public virtual bool CanCreateDataSourceEnumerator { get { throw null; } }
+        public virtual bool CanCreateDataAdapter { get { throw null; } }
+        public virtual bool CanCreateCommandBuilder { get { throw null; } }
         public virtual System.Data.Common.DbCommand CreateCommand() { throw null; }
         public virtual System.Data.Common.DbCommandBuilder CreateCommandBuilder() { throw null; }
         public virtual System.Data.Common.DbConnection CreateConnection() { throw null; }
