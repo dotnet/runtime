@@ -22,6 +22,7 @@
 #include "ecmakey.h"
 #include "customattribute.h"
 #include "typestring.h"
+#include "compile.h"
 
 //*******************************************************************************
 // Helper functions to sort GCdescs by offset (decending order)
@@ -1517,12 +1518,20 @@ MethodTableBuilder::BuildMethodTableThrowing(
         if (hr == S_OK && (strcmp(nameSpace, "System.Runtime.Intrinsics.X86") == 0))
 #endif
         {
-            if (IsCompilationProcess())
+#if defined(CROSSGEN_COMPILE)
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+            if ((!IsNgenPDBCompilationProcess()
+                && GetAppDomain()->ToCompilationDomain()->GetTargetModule() != g_pObjectClass->GetModule())
+                || (strcmp(className, "Sse") != 0 && strcmp(className, "Sse2") != 0))
+#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
             {
-                // Disable AOT compiling for managed implementation of hardware intrinsics in mscorlib.
+                // Disable AOT compiling for managed implementation of hardware intrinsics.
                 // We specially treat them here to ensure correct ISA features are set during compilation
+                // The only exception to this rule are SSE and SSE2 intrinsics in CoreLib - we can
+                // safely expand those because we require them to be always available.
                 COMPlusThrow(kTypeLoadException, IDS_EE_HWINTRINSIC_NGEN_DISALLOWED);
             }
+#endif // defined(CROSSGEN_COMPILE)
             bmtProp->fIsHardwareIntrinsic = true;
         }
     }
@@ -9546,16 +9555,21 @@ void MethodTableBuilder::CheckForSystemTypes()
                 // These __m128 and __m256 types, among other requirements, are special in that they must always
                 // be aligned properly.
 
-                if (IsCompilationProcess())
+#ifdef CROSSGEN_COMPILE
+                // Disable AOT compiling for the SIMD hardware intrinsic types. These types require special
+                // ABI handling as they represent fundamental data types (__m64, __m128, and __m256) and not
+                // aggregate or union types. See https://github.com/dotnet/coreclr/issues/15943
+                //
+                // Once they are properly handled according to the ABI requirements, we can remove this check
+                // and allow them to be used in crossgen/AOT scenarios.
+                //
+                // We can allow these to AOT compile in CoreLib since CoreLib versions with the runtime.
+                if (!IsNgenPDBCompilationProcess() &&
+                    GetAppDomain()->ToCompilationDomain()->GetTargetModule() != g_pObjectClass->GetModule())
                 {
-                    // Disable AOT compiling for the SIMD hardware intrinsic types. These types require special
-                    // ABI handling as they represent fundamental data types (__m64, __m128, and __m256) and not
-                    // aggregate or union types. See https://github.com/dotnet/coreclr/issues/15943
-                    //
-                    // Once they are properly handled according to the ABI requirements, we can remove this check
-                    // and allow them to be used in crossgen/AOT scenarios.
                     COMPlusThrow(kTypeLoadException, IDS_EE_HWINTRINSIC_NGEN_DISALLOWED);
                 }
+#endif
 
                 if (strcmp(name, g_Vector64Name) == 0)
                 {
