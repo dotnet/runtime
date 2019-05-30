@@ -3,3 +3,4 @@
 // See the LICENSE file in the project root for more information.
 
 [assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Drawing.SystemColors))]
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(System.Drawing.ColorTranslator))]

@@ -3,16 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Reflection;
 
 namespace System.Drawing
 {
-#if FEATURE_SYSTEM_EVENTS
-    using Microsoft.Win32;
-    using System.Drawing.Internal;
-#endif
-
     static internal class KnownColorTable
     {
+        private static Func<EventArgs, int> s_categoryGetter;
         private static int[] s_colorTable;
         private static string[] s_colorNameTable;
 
@@ -59,9 +56,48 @@ namespace System.Drawing
         {
             int[] values = new int[(unchecked((int)KnownColor.MenuHighlight)) + 1];
 
-#if FEATURE_SYSTEM_EVENTS
-            SystemEvents.UserPreferenceChanging += new UserPreferenceChangingEventHandler(OnUserPreferenceChanging);
-#endif
+            // When Microsoft.Win32.SystemEvents is available, we can react to the UserPreferenceChanging events by updating
+            // SystemColors. In order to avoid a static dependency on SystemEvents since it is not available on all platforms 
+            // and as such we don't want to bring it into the shared framework. We use the desktop identity for SystemEvents
+            // since it is stable and will remain stable for compatibility whereas the core identity could change.
+            Type systemEventsType = Type.GetType("Microsoft.Win32.SystemEvents, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", throwOnError: false);
+            EventInfo upEventInfo = systemEventsType?.GetEvent("UserPreferenceChanging", BindingFlags.Public | BindingFlags.Static);
+
+            if (upEventInfo != null)
+            {
+                // Delegate TargetType
+                Type userPrefChangingDelegateType = Type.GetType("Microsoft.Win32.UserPreferenceChangingEventHandler, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089", throwOnError: false);
+                Debug.Assert(userPrefChangingDelegateType != null);
+
+                if (userPrefChangingDelegateType != null)
+                {
+                    // we are using MethodInfo overload because it allows relaxed signature binding i.e. the types dont need to be exact match. It allows base classes as well.
+                    MethodInfo mi = typeof(KnownColorTable).GetMethod(nameof(OnUserPreferenceChanging), BindingFlags.NonPublic | BindingFlags.Static);
+                    Debug.Assert(mi != null);
+
+                    if (mi != null)
+                    {
+                        // Creating a delegate to use it as event handler.
+                        Delegate handler = Delegate.CreateDelegate(userPrefChangingDelegateType, mi);
+                        upEventInfo.AddEventHandler(null, handler);
+                    }
+
+                    // Retrieving getter of the category property of the UserPreferenceChangingEventArgs.
+                    Type argsType = Type.GetType("Microsoft.Win32.UserPreferenceChangingEventArgs, System, Version = 4.0.0.0, Culture = neutral, PublicKeyToken = b77a5c561934e089", throwOnError: false);
+                    PropertyInfo categoryProperty = argsType?.GetProperty("Category", BindingFlags.Instance | BindingFlags.Public);
+                    MethodInfo categoryGetter = categoryProperty?.GetGetMethod();
+
+                    Debug.Assert(categoryGetter != null);
+                    if (categoryGetter != null)
+                    {
+                        // Creating a Delegate pointing to the getter method. 
+                        s_categoryGetter = (Func<EventArgs, int>)typeof(KnownColorTable).GetMethod(nameof(CreateGetter), BindingFlags.NonPublic | BindingFlags.Static)
+                            .MakeGenericMethod(argsType, categoryGetter.ReturnType)
+                            .Invoke(null, new object[] { categoryGetter });
+                    }
+                }
+            }
+
             UpdateSystemColors(values);
 
             // just consts...
@@ -208,6 +244,15 @@ namespace System.Drawing
             values[(int)KnownColor.Yellow] = unchecked((int)0xFFFFFF00);
             values[(int)KnownColor.YellowGreen] = unchecked((int)0xFF9ACD32);
             s_colorTable = values;
+        }
+
+        // Generic method that we specialize at runtime once we've loaded the UserPreferenceChangingEventArgs type.
+        // It permits creating an unbound delegate so that we can avoid reflection after the initial
+        // lightup code completes.
+        private static Func<EventArgs, int> CreateGetter<TInstance, TProperty>(MethodInfo method) where TInstance : EventArgs where TProperty : Enum
+        {
+            Func<TInstance, TProperty> typedDelegate = (Func<TInstance, TProperty>)Delegate.CreateDelegate(typeof(Func<TInstance, TProperty>), null, method);
+            return (EventArgs instance) => (int)(object)typedDelegate((TInstance)instance);
         }
 
         private static void EnsureColorNameTable()
@@ -438,15 +483,15 @@ namespace System.Drawing
         }
 #endif
 
-#if FEATURE_SYSTEM_EVENTS
-        private static void OnUserPreferenceChanging(object sender, UserPreferenceChangingEventArgs e)
+        private static void OnUserPreferenceChanging(object sender, EventArgs args)
         {
-            if (e.Category == UserPreferenceCategory.Color && s_colorTable != null)
+            Debug.Assert(s_categoryGetter != null);
+            // Access UserPreferenceChangingEventArgs.Category value through cached delegate.
+            if (s_colorTable != null && s_categoryGetter != null && s_categoryGetter(args) == 2) // UserPreferenceCategory.Color = 2
             {
                 UpdateSystemColors(s_colorTable);
             }
         }
-#endif
 
         private static void UpdateSystemColors(int[] colorTable)
         {
