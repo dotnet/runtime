@@ -14,4 +14,4 @@
 # 3. - n. Additional arguments that were passed to the test .sh
 
 export CORE_LIBRARIES=$1
-$_DebuggerFullPath "$CORE_ROOT/corerun" "$CORE_ROOT/../../runincontext/runincontext/runincontext.exe" $RunInContextExtraArgs /referencespath:$CORE_ROOT/ $1$2 $3 $4 $5 $6 $7 $8 $9
+$_DebuggerFullPath "$CORE_ROOT/corerun" "$CORE_ROOT/runincontext.dll" $RunInContextExtraArgs /referencespath:$CORE_ROOT/ $1$2 $3 $4 $5 $6 $7 $8 $9

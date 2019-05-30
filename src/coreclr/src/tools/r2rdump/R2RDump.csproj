@@ -15,6 +15,7 @@
     <CLSCompliant>false</CLSCompliant>
     <NoWarn>8002,NU1701</NoWarn>
     <RuntimeIdentifiers>win-x64;win-x86</RuntimeIdentifiers>
+    <OutputPath>$(BinDir)</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>
