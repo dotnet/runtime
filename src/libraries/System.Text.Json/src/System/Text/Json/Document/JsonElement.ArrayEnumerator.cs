@@ -19,9 +19,6 @@ namespace System.Text.Json
             private int _curIdx;
             private readonly int _endIdx;
 
-            /// <summary>
-            ///   This is an implementation detail and MUST NOT be called by source-package consumers.
-            /// </summary>
             internal ArrayEnumerator(JsonElement target)
             {
                 Debug.Assert(target.TokenType == JsonTokenType.StartArray);

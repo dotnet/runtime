@@ -9,9 +9,6 @@ namespace System.Text.Json
 {
     public sealed partial class JsonDocument
     {
-        /// <summary>
-        ///   This is an implementation detail and MUST NOT be used by source-package consumers.
-        /// </summary>
         [StructLayout(LayoutKind.Sequential)]
         internal struct DbRow
         {

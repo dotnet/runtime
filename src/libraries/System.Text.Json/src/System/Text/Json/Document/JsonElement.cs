@@ -15,9 +15,6 @@ namespace System.Text.Json
         private readonly JsonDocument _parent;
         private readonly int _idx;
 
-        /// <summary>
-        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
-        /// </summary>
         internal JsonElement(JsonDocument parent, int idx)
         {
             // parent is usually not null, but the Current property
@@ -893,9 +890,6 @@ namespace System.Text.Json
             throw new FormatException();
         }
 
-        /// <summary>
-        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
-        /// </summary>
         internal string GetPropertyName()
         {
             CheckValidInstance();
@@ -919,9 +913,6 @@ namespace System.Text.Json
             return _parent.GetRawValueAsString(_idx);
         }
 
-        /// <summary>
-        ///   This is an implementation detail and MUST NOT be called by source-package consumers.
-        /// </summary>
         internal string GetPropertyRawText()
         {
             CheckValidInstance();
