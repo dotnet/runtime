@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,10 +7,6 @@
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
     <UseAppHost>false</UseAppHost>
     <CLRTestKind>BuildOnly</CLRTestKind>
+    <OutputPath>$(BinDir)</OutputPath>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Include="runincontext.cs" />
-  </ItemGroup>
-
 </Project>
