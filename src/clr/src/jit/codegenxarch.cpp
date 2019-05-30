@@ -13,6 +13,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "jitpch.h"
 #ifdef _MSC_VER
 #pragma hdrstop
+#pragma warning(disable : 4310) // cast truncates constant value - happens for (int8_t)0xb1
 #endif
 
 #ifdef _TARGET_XARCH_
