@@ -8,6 +8,7 @@
   <!-- List the projects that need to be built -->
   <ItemGroup>
     <ProjectReference Condition="'$(SkipSOS)' != 'true'" Include="ToolBox\SOS\NETCore\SOS.NETCore.csproj" />
+    <ProjectReference Condition="'$(BuildManagedTools)' == 'true'" Include="tools/runincontext/runincontext.csproj" />
     <ProjectReference Condition="'$(BuildManagedTools)' == 'true'" Include="tools/r2rdump/R2RDump.csproj" />
     <ProjectReference Include="System.Private.CoreLib\System.Private.CoreLib.csproj" />
   </ItemGroup>
