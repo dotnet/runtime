@@ -965,11 +965,8 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
                 targetType = genActualType(varDsc->lvType);
             }
             instruction ins  = ins_Load(targetType, compiler->isSIMDTypeLocalAligned(lcl->gtLclNum));
-            emitAttr    attr = emitTypeSize(targetType);
+            emitAttr    attr = emitActualTypeSize(targetType);
             emitter*    emit = getEmitter();
-
-            // Fixes Issue #3326
-            attr = varTypeIsFloating(targetType) ? attr : emit->emitInsAdjustLoadStoreAttr(ins, attr);
 
             // Load local variable from its home location.
             inst_RV_TT(ins, dstReg, unspillTree, 0, attr);
