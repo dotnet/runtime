@@ -40,8 +40,8 @@
     <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview6-27729-07</MicrosoftNETCoreDotNetHostPackageVersion>
     <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview6-27729-07</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <!-- Coreclr dependencies -->
-    <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview6.19278.71</MicrosoftNETCoreILAsmPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview6.19278.71</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview6.19279.4</MicrosoftNETCoreILAsmPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview6.19279.4</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- Corefx dependencies -->
     <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview6.19279.8</MicrosoftNETCorePlatformsPackageVersion>
     <runtimenativeSystemIOPortsPackageVersion>4.6.0-preview6.19279.8</runtimenativeSystemIOPortsPackageVersion>
