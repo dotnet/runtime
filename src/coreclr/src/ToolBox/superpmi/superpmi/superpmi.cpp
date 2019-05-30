@@ -45,9 +45,20 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
         SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_AMD64;
     }
 #elif defined(_TARGET_X86_)
-    SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_X86;
+    if ((targetArchitecture != nullptr) && (0 == _stricmp(targetArchitecture, "arm")))
+    {
+        SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
+    }
+    else
+    {
+        SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_X86;
+    }
 #elif defined(_TARGET_ARM_)
     SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM;
+#elif defined(_TARGET_ARM64_)
+    SpmiTargetArchitecture = SPMI_TARGET_ARCHITECTURE_ARM64;
+#else
+#error Unsupported architecture
 #endif
 }
 
