@@ -69,6 +69,9 @@ namespace Mono.Linker.Steps
 				}
 			}
 
+			if (FeatureGlobalization)
+				ExcludeGlobalization (type);
+
 			if (RemoveCustomAttributes (type)) {
 				if (FeatureCOM && type.IsImport) {
 					type.IsImport = false;
@@ -86,6 +89,66 @@ namespace Mono.Linker.Steps
 
 			foreach (var nested in type.NestedTypes)
 				ProcessType (nested);
+		}
+
+		void ExcludeGlobalization (TypeDefinition type)
+		{
+			switch (type.Namespace) {
+			case "System.Globalization":
+				switch (type.Name) {
+				case "CalendarData":
+					foreach (var method in type.Methods) {
+						switch (method.Name) {
+						case "GetJapaneseEraNames":
+						case "GetJapaneseEnglishEraNames":
+							Annotations.SetAction (method, MethodAction.ConvertToThrow);
+							break;
+						}
+					}
+					break;
+				case "DateTimeFormatInfo":
+					foreach (var method in type.Methods) {
+						switch (method.Name) {
+						case "PopulateSpecialTokenHashTable":
+						case "GetJapaneseCalendarDTFI":
+						case "GetTaiwanCalendarDTFI":
+						case "IsJapaneseCalendar":
+						case "TryParseHebrewNumber":
+							Annotations.SetAction (method, MethodAction.ConvertToThrow);
+							break;
+						}
+					}
+					break;
+				}
+				break;
+			case "System":
+				switch (type.Name) {
+				case "DateTimeFormat":
+					foreach (var method in type.Methods) {
+						switch (method.Name) {
+						case "HebrewFormatDigits":
+						case "FormatHebrewMonthName":
+							Annotations.SetAction (method, MethodAction.ConvertToThrow);
+							break;
+						}
+					}
+					break;
+				case "DateTimeParse":
+					foreach (var method in type.Methods) {
+						switch (method.Name) {
+						case "GetJapaneseCalendarDefaultInstance":
+						case "GetTaiwanCalendarDefaultInstance":
+						case "ProcessHebrewTerminalState":
+						case "GetHebrewDayOfNM":
+						case "MatchHebrewDigits":
+							Annotations.SetAction (method, MethodAction.ConvertToThrow);
+							break;
+						}
+					}
+					break;
+				}
+				break;
+			}
 		}
 
 		void ExcludeEventSource (TypeDefinition type)
