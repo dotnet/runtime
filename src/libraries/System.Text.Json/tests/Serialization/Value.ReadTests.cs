@@ -287,5 +287,5 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<Enum>(unexpectedString));
         }
-    }
+   }
 }

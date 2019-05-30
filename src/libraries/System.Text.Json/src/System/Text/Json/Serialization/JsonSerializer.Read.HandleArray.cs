@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization
             Type arrayType = jsonPropertyInfo.RuntimePropertyType;
             if (!typeof(IEnumerable).IsAssignableFrom(arrayType) || (arrayType.IsArray && arrayType.GetArrayRank() > 1))
             {
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(arrayType, reader, state.PropertyPath);
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(arrayType, reader, state.JsonPath);
             }
 
             Debug.Assert(state.Current.IsProcessingEnumerableOrDictionary);
@@ -199,7 +199,7 @@ namespace System.Text.Json.Serialization
                 }
                 else
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeDuplicateKey(key, reader, state.PropertyPath);
+                    ThrowHelper.ThrowJsonException_DeserializeDuplicateKey(key, reader, state.JsonPath);
                 }
             }
             else
@@ -262,7 +262,7 @@ namespace System.Text.Json.Serialization
                 }
                 else
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeDuplicateKey(key, reader, state.PropertyPath);
+                    ThrowHelper.ThrowJsonException_DeserializeDuplicateKey(key, reader, state.JsonPath);
                 }
             }
             else

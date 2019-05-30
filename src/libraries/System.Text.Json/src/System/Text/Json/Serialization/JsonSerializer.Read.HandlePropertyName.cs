@@ -84,6 +84,28 @@ namespace System.Text.Json.Serialization
                 }
                 else
                 {
+                    // Support JsonException.Path.
+                    Debug.Assert(
+                        state.Current.JsonPropertyInfo.JsonPropertyName == null ||
+                        options.PropertyNameCaseInsensitive ||
+                        propertyName.SequenceEqual(state.Current.JsonPropertyInfo.JsonPropertyName));
+
+                    if (state.Current.JsonPropertyInfo.JsonPropertyName == null)
+                    {
+                        byte[] propertyNameArray = propertyName.ToArray();
+                        if (options.PropertyNameCaseInsensitive)
+                        {
+                            // Each payload can have a different name here; remember the value on the temporary stack.
+                            state.Current.JsonPropertyName = propertyNameArray;
+                        }
+                        else
+                        {
+                            // Prevent future allocs by caching globally on the JsonPropertyInfo which is specific to a Type+PropertyName
+                            // so it will match the incoming payload except when case insensitivity is enabled (which is handled above).
+                            state.Current.JsonPropertyInfo.JsonPropertyName = propertyNameArray;
+                        }
+                    }
+
                     state.Current.PropertyIndex++;
                 }
             }
@@ -95,6 +117,9 @@ namespace System.Text.Json.Serialization
             ref Utf8JsonReader reader,
             ref ReadStack state)
         {
+            // Remember the property name to support Path.
+            state.Current.JsonPropertyName = unescapedPropertyName.ToArray();
+
             JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.DataExtensionProperty;
 
             Debug.Assert(jsonPropertyInfo != null);

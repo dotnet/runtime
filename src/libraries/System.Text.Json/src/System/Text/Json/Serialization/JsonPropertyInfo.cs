@@ -33,6 +33,9 @@ namespace System.Text.Json.Serialization
         public byte[] Name { get; private set; }
         public string NameAsString { get; private set; }
 
+        // The name from a Json value. This is cached for performance on first deserialize.
+        public byte[] JsonPropertyName { get; set; }
+
         // Used to support case-insensitive comparison
         public byte[] NameUsedToCompare { get; private set; }
         public string NameUsedToCompareAsString { get; private set; }
