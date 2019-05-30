@@ -237,10 +237,46 @@ namespace System.IO.Tests
         };
 
         [Theory,
-    MemberData(nameof(GetFullPathBasePath_ArgumentException))]
+            MemberData(nameof(GetFullPathBasePath_ArgumentException))]
         public static void GetFullPath_BasePath_Input(string path, string basePath, string paramName)
         {
             Assert.Throws<ArgumentException>(paramName, () => Path.GetFullPath(path, basePath));
+        }
+        
+        [ActiveIssue(38066, TestPlatforms.AnyUnix)]
+        [Theory,
+            MemberData(nameof(TestData_TrimEndingDirectorySeparator))]
+        public void TrimEndingDirectorySeparator_String_CoreTests(string path, string expected)
+        {
+            string trimmed = Path.TrimEndingDirectorySeparator(path);
+            Assert.Equal(expected, trimmed);
+            Assert.Same(trimmed, Path.TrimEndingDirectorySeparator(trimmed));
+        }
+
+        [ActiveIssue(38066, TestPlatforms.AnyUnix)]
+        [Theory,
+            MemberData(nameof(TestData_TrimEndingDirectorySeparator))]
+        public void TrimEndingDirectorySeparator_ReadOnlySpan_CoreTests(string path, string expected)
+        {
+            ReadOnlySpan<char> trimmed = Path.TrimEndingDirectorySeparator(path.AsSpan());
+            PathAssert.Equal(expected, trimmed);
+            PathAssert.Equal(trimmed, Path.TrimEndingDirectorySeparator(trimmed));
+        }
+
+        [ActiveIssue(38066, TestPlatforms.AnyUnix)]
+        [Theory,
+            MemberData(nameof(TestData_EndsInDirectorySeparator))]
+        public void EndsInDirectorySeparator_String_CoreTests(string path, bool expected)
+        {
+            Assert.Equal(expected, Path.EndsInDirectorySeparator(path));
+        }
+
+        [ActiveIssue(38066, TestPlatforms.AnyUnix)]
+        [Theory,
+            MemberData(nameof(TestData_EndsInDirectorySeparator))]
+        public void EndsInDirectorySeparator_ReadOnlySpan_CoreTests(string path, bool expected)
+        {
+            Assert.Equal(expected, Path.EndsInDirectorySeparator(path.AsSpan()));
         }
     }
 }
