@@ -38,6 +38,7 @@
     <PackageReference Condition="'$(TargetsNetCoreApp)' == 'true'" Include="$(MicrosoftDotNetXUnitConsoleRunnerPackage)" Version="$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)" />
     <PackageReference Condition="'$(TargetsNetFx)' == 'true'" Include="$(XUnitRunnerConsolePackageName)" Version="$(XUnitPackageVersion)" />
     <PackageReference Condition="'$(TargetsUap)' == 'true'" Include="$(MicrosoftDotNetUapTestToolsPackageName)" Version="$(MicrosoftDotNetUapTestToolsPackageVersion)" />
+    <PackageReference Include="Microsoft.Diagnostics.Runtime" Version="1.0.5" />
 
     <!-- for callstack line numbers -->
     <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.5.0" />
@@ -58,6 +59,7 @@
     <PackageToInclude Include="xunit.extensibility.core" />
     <PackageToInclude Include="xunit.extensibility.execution" />
     <PackageToInclude Include="xunit.runner.utility" />
+    <PackageToInclude Include="Microsoft.Diagnostics.Runtime" />
     <PackageToInclude Include="$(MicrosoftDotNetXUnitExtensionsPackage)" />
     <PackageToInclude Include="$(MicrosoftDotNetRemoteExecutorPackage)" />
     <PackageToInclude Condition="'$(TargetsNetCoreApp)' == 'true'" Include="$(MicrosoftDotNetXUnitConsoleRunnerPackage)" />
