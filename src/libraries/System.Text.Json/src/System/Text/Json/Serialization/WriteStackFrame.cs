@@ -46,29 +46,14 @@ namespace System.Text.Json.Serialization
 
         public void WriteObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, bool writeNull = false)
         {
-            if (JsonPropertyInfo?.EscapedName != null)
+            if (JsonPropertyInfo?.EscapedName.HasValue == true)
             {
-                WriteObjectOrArrayStart(classType, JsonPropertyInfo?.EscapedName, writer, writeNull);
+                WriteObjectOrArrayStart(classType, JsonPropertyInfo.EscapedName.Value, writer, writeNull);
             }
             else if (KeyName != null)
             {
-                byte[] pooledKey = null;
-                byte[] utf8Key = Encoding.UTF8.GetBytes(KeyName);
-                int length = JsonWriterHelper.GetMaxEscapedLength(utf8Key.Length, 0);
-
-                Span<byte> escapedKey = length <= JsonConstants.StackallocThreshold ?
-                    stackalloc byte[length] :
-                    (pooledKey = ArrayPool<byte>.Shared.Rent(length));
-
-                JsonWriterHelper.EscapeString(utf8Key, escapedKey, 0, out int written);
-                Span<byte> propertyName = escapedKey.Slice(0, written);
-
+                JsonEncodedText propertyName = JsonEncodedText.Encode(KeyName);
                 WriteObjectOrArrayStart(classType, propertyName, writer, writeNull);
-
-                if (pooledKey != null)
-                {
-                    ArrayPool<byte>.Shared.Return(pooledKey);
-                }
             }
             else
             {
@@ -88,7 +73,7 @@ namespace System.Text.Json.Serialization
             }
         }
 
-        private void WriteObjectOrArrayStart(ClassType classType, ReadOnlySpan<byte> propertyName, Utf8JsonWriter writer, bool writeNull)
+        private void WriteObjectOrArrayStart(ClassType classType, JsonEncodedText propertyName, Utf8JsonWriter writer, bool writeNull)
         {
             if (writeNull)
             {

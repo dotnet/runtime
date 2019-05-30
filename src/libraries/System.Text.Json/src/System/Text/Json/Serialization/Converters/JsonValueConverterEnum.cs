@@ -77,23 +77,23 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        public override void Write(Span<byte> escapedPropertyName, TValue value, Utf8JsonWriter writer)
+        public override void Write(JsonEncodedText propertyName, TValue value, Utf8JsonWriter writer)
         {
             if (TreatAsString)
             {
-                writer.WriteString(escapedPropertyName, value.ToString());
+                writer.WriteString(propertyName, value.ToString());
             }
             else if (s_isUint64)
             {
                 // Use the ulong converter to prevent conversion into a signed\long value.
                 ulong ulongValue = Convert.ToUInt64(value);
-                writer.WriteNumber(escapedPropertyName, ulongValue);
+                writer.WriteNumber(propertyName, ulongValue);
             }
             else
             {
                 // long can hold the signed\unsigned values of other integer types.
                 long longValue = Convert.ToInt64(value);
-                writer.WriteNumber(escapedPropertyName, longValue);
+                writer.WriteNumber(propertyName, longValue);
             }
         }
     }

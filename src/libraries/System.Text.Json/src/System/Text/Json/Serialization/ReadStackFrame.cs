@@ -19,6 +19,9 @@ namespace System.Text.Json.Serialization
         // Support Dictionary keys.
         public string KeyName;
 
+        // Support JSON Path on exceptions.
+        public byte[] JsonPropertyName;
+
         // Current property values.
         public JsonPropertyInfo JsonPropertyInfo;
 
@@ -102,6 +105,7 @@ namespace System.Text.Json.Serialization
             PropertyInitialized = false;
             JsonPropertyInfo = null;
             TempEnumerableValues = null;
+            JsonPropertyName = null;
             KeyName = null;
         }
 
@@ -143,7 +147,7 @@ namespace System.Text.Json.Serialization
             }
             else
             {
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(propType, reader, state.PropertyPath);
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(propType, reader, state.JsonPath);
                 return null;
             }
         }

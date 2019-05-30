@@ -106,7 +106,7 @@ namespace System.Text.Json.Serialization
             catch (JsonReaderException e)
             {
                 // Re-throw with Path information.
-                ThrowHelper.ReThrowWithPath(e, state.PropertyPath);
+                ThrowHelper.ReThrowWithPath(e, state.JsonPath);
             }
 
             return;

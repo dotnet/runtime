@@ -222,5 +222,29 @@ namespace System.Data.Common
         public abstract object ExecuteScalar();
 
         public abstract void Prepare();
+
+        public virtual Task PrepareAsync(CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            try
+            {
+                Prepare();
+                return Task.CompletedTask;
+            }
+            catch (Exception e)
+            {
+                return Task.FromException(e);
+            }
+        }
+
+        public virtual ValueTask DisposeAsync()
+        {
+            Dispose();
+            return default;
+        }
     }
 }

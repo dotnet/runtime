@@ -57,6 +57,12 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ConvertInvalidPrimitive" xml:space="preserve">
+    <value>{0} is not a valid value for {1}.</value>
+  </data>
+  <data name="InvalidColor" xml:space="preserve">
+    <value>Color '{0}' is not valid.</value>
+  </data>
   <data name="InvalidEx2BoundArgument" xml:space="preserve">
     <value>Value of '{1}' is not valid for '{0}'. '{0}' should be greater than or equal to {2} and less than or equal to {3}.</value>
   </data>

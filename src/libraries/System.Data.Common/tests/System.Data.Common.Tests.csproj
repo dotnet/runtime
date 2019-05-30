@@ -21,6 +21,7 @@
     <Compile Include="System\Data\Common\DbDataAdapterTest.cs" />
     <Compile Include="System\Data\Common\DbDataReaderMock.cs" />
     <Compile Include="System\Data\Common\DbDataReaderTest.cs" />
+    <Compile Include="System\Data\Common\DbProviderFactoryTest.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="System\Data\Common\DbTransactionTest.cs" />
     <Compile Include="System\Data\Common\RowUpdatedEventArgsTest.cs" />
     <Compile Include="System\Data\Common\RowUpdatingEventArgsTest.cs" />

@@ -1848,9 +1848,11 @@ namespace System.Data.Common
         public System.Threading.Tasks.Task<object> ExecuteScalarAsync() { throw null; }
         public virtual System.Threading.Tasks.Task<object> ExecuteScalarAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public abstract void Prepare();
+        public virtual System.Threading.Tasks.Task PrepareAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         System.Data.IDbDataParameter System.Data.IDbCommand.CreateParameter() { throw null; }
         System.Data.IDataReader System.Data.IDbCommand.ExecuteReader() { throw null; }
         System.Data.IDataReader System.Data.IDbCommand.ExecuteReader(System.Data.CommandBehavior behavior) { throw null; }
+        public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
     }
     public abstract partial class DbCommandBuilder : System.ComponentModel.Component
     {
@@ -1912,7 +1914,9 @@ namespace System.Data.Common
         public System.Data.Common.DbTransaction BeginTransaction() { throw null; }
         public System.Data.Common.DbTransaction BeginTransaction(System.Data.IsolationLevel isolationLevel) { throw null; }
         public abstract void ChangeDatabase(string databaseName);
+        public virtual System.Threading.Tasks.Task ChangeDatabaseAsync(string databaseName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public abstract void Close();
+        public virtual System.Threading.Tasks.Task CloseAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public System.Data.Common.DbCommand CreateCommand() { throw null; }
         protected abstract System.Data.Common.DbCommand CreateDbCommand();
         public virtual void EnlistTransaction(System.Transactions.Transaction transaction) { }
@@ -1925,7 +1929,11 @@ namespace System.Data.Common
         public virtual System.Threading.Tasks.Task OpenAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         System.Data.IDbTransaction System.Data.IDbConnection.BeginTransaction() { throw null; }
         System.Data.IDbTransaction System.Data.IDbConnection.BeginTransaction(System.Data.IsolationLevel isolationLevel) { throw null; }
+        protected virtual System.Threading.Tasks.ValueTask<DbTransaction> BeginDbTransactionAsync(IsolationLevel isolationLevel, System.Threading.CancellationToken cancellationToken) { throw null; }
+        public System.Threading.Tasks.ValueTask<DbTransaction> BeginTransactionAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public System.Threading.Tasks.ValueTask<DbTransaction> BeginTransactionAsync(IsolationLevel isolationLevel, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         System.Data.IDbCommand System.Data.IDbConnection.CreateCommand() { throw null; }
+        public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
     }
     public partial class DbConnectionStringBuilder : System.Collections.ICollection, System.Collections.IDictionary, System.Collections.IEnumerable, System.ComponentModel.ICustomTypeDescriptor
     {
@@ -2054,8 +2062,10 @@ namespace System.Data.Common
         public abstract int RecordsAffected { get; }
         public virtual int VisibleFieldCount { get { throw null; } }
         public virtual void Close() { }
+        public virtual System.Threading.Tasks.Task CloseAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void Dispose() { }
+        public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual void Dispose(bool disposing) { }
         public abstract bool GetBoolean(int ordinal);
         public abstract byte GetByte(int ordinal);
@@ -2327,6 +2337,8 @@ namespace System.Data.Common
     {
         protected DbProviderFactory() { }
         public virtual bool CanCreateDataSourceEnumerator { get { throw null; } }
+        public virtual bool CanCreateDataAdapter { get { throw null; } }
+        public virtual bool CanCreateCommandBuilder { get { throw null; } }
         public virtual System.Data.Common.DbCommand CreateCommand() { throw null; }
         public virtual System.Data.Common.DbCommandBuilder CreateCommandBuilder() { throw null; }
         public virtual System.Data.Common.DbConnection CreateConnection() { throw null; }
@@ -2349,9 +2361,12 @@ namespace System.Data.Common
         public abstract System.Data.IsolationLevel IsolationLevel { get; }
         System.Data.IDbConnection System.Data.IDbTransaction.Connection { get { throw null; } }
         public abstract void Commit();
+        public virtual System.Threading.Tasks.Task CommitAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public void Dispose() { }
+        public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         protected virtual void Dispose(bool disposing) { }
         public abstract void Rollback();
+        public virtual System.Threading.Tasks.Task RollbackAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
     }
     public enum GroupByBehavior
     {

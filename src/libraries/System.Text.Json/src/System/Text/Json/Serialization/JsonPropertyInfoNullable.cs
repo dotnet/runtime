@@ -36,7 +36,7 @@ namespace System.Text.Json.Serialization
                 return;
             }
 
-            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state.PropertyPath);
+            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state.JsonPath);
         }
 
         public override void ReadEnumerable(JsonTokenType tokenType, ref ReadStack state, ref Utf8JsonReader reader)
@@ -45,7 +45,7 @@ namespace System.Text.Json.Serialization
 
             if (ValueConverter == null || !ValueConverter.TryRead(typeof(TProperty), ref reader, out TProperty value))
             {
-                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state.PropertyPath);
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state.JsonPath);
                 return;
             }
 
@@ -77,18 +77,18 @@ namespace System.Text.Json.Serialization
 
                 if (value == null)
                 {
-                    Debug.Assert(EscapedName != null);
+                    Debug.Assert(EscapedName.HasValue);
 
                     if (!IgnoreNullValues)
                     {
-                        writer.WriteNull(EscapedName);
+                        writer.WriteNull(EscapedName.Value);
                     }
                 }
                 else if (ValueConverter != null)
                 {
-                    if (EscapedName != null)
+                    if (EscapedName.HasValue)
                     {
-                        ValueConverter.Write(EscapedName, value.GetValueOrDefault(), writer);
+                        ValueConverter.Write(EscapedName.Value, value.GetValueOrDefault(), writer);
                     }
                     else
                     {
