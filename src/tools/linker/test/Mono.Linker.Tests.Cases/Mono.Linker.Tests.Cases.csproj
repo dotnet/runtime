@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup Condition=" $(Configuration.StartsWith('illink')) ">
     <TargetFramework>netcoreapp3.0</TargetFramework>
@@ -333,6 +333,14 @@
     <Compile Include="Inheritance.VirtualMethods\UsedTypeWithOverrideOfVirtualMethodHasOverrideKept.cs" />
     <Compile Include="Inheritance.VirtualMethods\VirtualMethodGetsPerservedIfBaseMethodGetsInvoked.cs" />
     <Compile Include="Inheritance.VirtualMethods\VirtualMethodGetsStrippedIfImplementingMethodGetsInvokedDirectly.cs" />
+    <Compile Include="Symbols\ReferenceWithEmbeddedPdbAndSymbolLinkingEnabledAndDeterministicMvid.cs" />
+    <Compile Include="Symbols\ReferenceWithEmbeddedPdbAndSymbolLinkingEnabledAndNewMvid.cs" />
+    <Compile Include="Symbols\ReferenceWithMdbAndSymbolLinkingEnabledAndDeterministicMvid.cs" />
+    <Compile Include="Symbols\ReferenceWithMdbAndSymbolLinkingEnabledAndNewMvid.cs" />
+    <Compile Include="Symbols\ReferenceWithPdbAndSymbolLinkingEnabledAndDeterministicMvid.cs" />
+    <Compile Include="Symbols\ReferenceWithPdbAndSymbolLinkingEnabledAndNewMvid.cs" />
+    <Compile Include="Symbols\ReferenceWithPortablePdbAndSymbolLinkingEnabledAndDeterministicMvid.cs" />
+    <Compile Include="Symbols\ReferenceWithPortablePdbAndSymbolLinkingEnabledAndNewMvid.cs" />
     <Compile Include="UnreachableBody\BodyWithManyVariables.cs" />
     <Compile Include="UnreachableBody\BodyWithManyVariablesWithSymbols.cs" />
     <Compile Include="UnreachableBody\CanDisableLazyBodyMarking.cs" />
