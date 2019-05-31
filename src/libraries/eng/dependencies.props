@@ -9,12 +9,12 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <ProjectNTfsCurrentRef>b8dbc7ec61eb189d3da9dbb643b59572dd501604</ProjectNTfsCurrentRef>
+    <ProjectNTfsCurrentRef>9fc9c2df2bf2681e69651664461887c759d0e1e5</ProjectNTfsCurrentRef>
   </PropertyGroup>
 
   <!-- Tests/infrastructure dependency versions. -->
   <PropertyGroup>
-    <ProjectNTfsExpectedPrerelease>beta-27730-00</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsExpectedPrerelease>beta-27731-00</ProjectNTfsExpectedPrerelease>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
