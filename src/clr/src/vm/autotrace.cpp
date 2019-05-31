@@ -94,7 +94,6 @@ void auto_trace_signal()
     #undef SetEvent
     #endif
     static size_t nCalls = 0;
-    fprintf(stdout, "%d", nCalls);
     if (++nCalls == g_n_tracers)
         SetEvent(auto_trace_event);
 }
