@@ -7,12 +7,12 @@
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
 
     <PreReleaseLabel Condition="'$(PackageVersionStamp)' != ''">$(PackageVersionStamp)</PreReleaseLabel>
-    <PreReleaseLabel Condition="'$(PreReleaseLabel)' == ''">preview6</PreReleaseLabel>
+    <PreReleaseLabel Condition="'$(PreReleaseLabel)' == ''">preview7</PreReleaseLabel>
     <IncludePreReleaseLabelInPackageVersion Condition="'$(StabilizePackageVersion)' != 'true' or '$(PackageVersionStamp)' != ''">true</IncludePreReleaseLabelInPackageVersion>
     <IncludeBuildNumberInPackageVersion Condition="'$(StabilizePackageVersion)' != 'true'">true</IncludeBuildNumberInPackageVersion>
 
     <ReleaseSuffix>$(PreReleaseLabel)</ReleaseSuffix>
-    <ReleaseBrandSuffix>Preview 6</ReleaseBrandSuffix>
+    <ReleaseBrandSuffix>Preview 7</ReleaseBrandSuffix>
     <Channel>master</Channel>
     <ContainerName>dotnet</ContainerName>
     <ChecksumContainerName>$(ContainerName)</ChecksumContainerName>
