@@ -58,7 +58,7 @@ namespace System.Text.Json
 
         /// <summary>
         /// Parses the current JSON token value from the source as a <see cref="bool"/>.
-        /// Returns true if the TokenType is JsonTokenType.True and false if the TokenType is JsonTokenType.False.
+        /// Returns <see langword="true"/> if the TokenType is JsonTokenType.True and <see langword="false"/> if the TokenType is JsonTokenType.False.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of a JSON token that is not a boolean (i.e. <see cref="JsonTokenType.True"/> or <see cref="JsonTokenType.False"/>).
@@ -82,6 +82,27 @@ namespace System.Text.Json
             {
                 throw ThrowHelper.GetInvalidOperationException_ExpectedBoolean(TokenType);
             }
+        }
+
+        /// <summary>
+        /// Parses the current JSON token value from the source and decodes the base 64 encoded JSON string as bytes.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.String"/>.
+        /// <seealso cref="TokenType" />
+        /// </exception>
+        /// <exception cref="FormatException">
+        /// Thrown when the JSON string contains data outside of the expected base 64 range, or if it contains invalid/more than two padding characters,
+        /// or is incomplete (i.e. the JSON string length is not a multiple of 4).
+        /// </exception>
+        public byte[] GetBytesFromBase64()
+        {
+            if (!TryGetBytesFromBase64(out byte[] value))
+            {
+                throw ThrowHelper.GetFormatException(DateType.Base64String);
+            }
+
+            return value;
         }
 
         /// <summary>
@@ -321,10 +342,40 @@ namespace System.Text.Json
         }
 
         /// <summary>
+        /// Parses the current JSON token value from the source and decodes the base 64 encoded JSON string as bytes.
+        /// Returns <see langword="true"/> if the entire token value is encoded as valid base 64 text and can be successfully
+        /// decoded to bytes.
+        /// Returns <see langword="false"/> otherwise.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.String"/>.
+        /// <seealso cref="TokenType" />
+        /// </exception>
+        public bool TryGetBytesFromBase64(out byte[] value)
+        {
+            if (TokenType != JsonTokenType.String)
+            {
+                throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);
+            }
+
+            ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
+
+            if (_stringHasEscaping)
+            {
+                int idx = span.IndexOf(JsonConstants.BackSlash);
+                Debug.Assert(idx != -1);
+                return JsonReaderHelper.TryGetUnescapedBase64Bytes(span, idx, out value);
+            }
+
+            Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
+            return JsonReaderHelper.TryDecodeBase64(span, out value);
+        }
+
+        /// <summary>
         /// Parses the current JSON token value from the source as an <see cref="int"/>.
-        /// Returns true if the entire UTF-8 encoded token value can be successfully 
+        /// Returns <see langword="true"/> if the entire UTF-8 encoded token value can be successfully 
         /// parsed to an <see cref="int"/> value.
-        /// Returns false otherwise.
+        /// Returns <see langword="false"/> otherwise.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
@@ -343,9 +394,9 @@ namespace System.Text.Json
 
         /// <summary>
         /// Parses the current JSON token value from the source as a <see cref="long"/>.
-        /// Returns true if the entire UTF-8 encoded token value can be successfully 
+        /// Returns <see langword="true"/> if the entire UTF-8 encoded token value can be successfully 
         /// parsed to a <see cref="long"/> value.
-        /// Returns false otherwise.
+        /// Returns <see langword="false"/> otherwise.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
@@ -364,9 +415,9 @@ namespace System.Text.Json
 
         /// <summary>
         /// Parses the current JSON token value from the source as a <see cref="uint"/>.
-        /// Returns true if the entire UTF-8 encoded token value can be successfully 
+        /// Returns <see langword="true"/> if the entire UTF-8 encoded token value can be successfully 
         /// parsed to a <see cref="uint"/> value.
-        /// Returns false otherwise.
+        /// Returns <see langword="false"/> otherwise.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
@@ -386,9 +437,9 @@ namespace System.Text.Json
 
         /// <summary>
         /// Parses the current JSON token value from the source as a <see cref="ulong"/>.
-        /// Returns true if the entire UTF-8 encoded token value can be successfully 
+        /// Returns <see langword="true"/> if the entire UTF-8 encoded token value can be successfully 
         /// parsed to a <see cref="ulong"/> value.
-        /// Returns false otherwise.
+        /// Returns <see langword="false"/> otherwise.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
@@ -408,9 +459,9 @@ namespace System.Text.Json
 
         /// <summary>
         /// Parses the current JSON token value from the source as a <see cref="float"/>.
-        /// Returns true if the entire UTF-8 encoded token value can be successfully 
+        /// Returns <see langword="true"/> if the entire UTF-8 encoded token value can be successfully 
         /// parsed to a <see cref="float"/> value.
-        /// Returns false otherwise.
+        /// Returns <see langword="false"/> otherwise.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
@@ -429,9 +480,9 @@ namespace System.Text.Json
 
         /// <summary>
         /// Parses the current JSON token value from the source as a <see cref="double"/>.
-        /// Returns true if the entire UTF-8 encoded token value can be successfully 
+        /// Returns <see langword="true"/> if the entire UTF-8 encoded token value can be successfully 
         /// parsed to a <see cref="double"/> value.
-        /// Returns false otherwise.
+        /// Returns <see langword="false"/> otherwise.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
@@ -450,9 +501,9 @@ namespace System.Text.Json
 
         /// <summary>
         /// Parses the current JSON token value from the source as a <see cref="decimal"/>.
-        /// Returns true if the entire UTF-8 encoded token value can be successfully 
+        /// Returns <see langword="true"/> if the entire UTF-8 encoded token value can be successfully 
         /// parsed to a <see cref="decimal"/> value.
-        /// Returns false otherwise.
+        /// Returns <see langword="false"/> otherwise.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.Number"/>.
@@ -471,9 +522,9 @@ namespace System.Text.Json
 
         /// <summary>
         /// Parses the current JSON token value from the source as a <see cref="DateTime"/>.
-        /// Returns true if the entire UTF-8 encoded token value can be successfully
+        /// Returns <see langword="true"/> if the entire UTF-8 encoded token value can be successfully
         /// parsed to a <see cref="DateTime"/> value.
-        /// Returns false otherwise.
+        /// Returns <see langword="false"/> otherwise.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.String"/>.
@@ -530,9 +581,9 @@ namespace System.Text.Json
 
         /// <summary>
         /// Parses the current JSON token value from the source as a <see cref="DateTimeOffset"/>.
-        /// Returns true if the entire UTF-8 encoded token value can be successfully
+        /// Returns <see langword="true"/> if the entire UTF-8 encoded token value can be successfully
         /// parsed to a <see cref="DateTimeOffset"/> value.
-        /// Returns false otherwise.
+        /// Returns <see langword="false"/> otherwise.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of a JSON token that is not a <see cref="JsonTokenType.String"/>.

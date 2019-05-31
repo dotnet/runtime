@@ -46,6 +46,13 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateBytes(ReadOnlySpan<byte> bytes)
+        {
+            if (bytes.Length > JsonConstants.MaxBase46ValueTokenSize)
+                ThrowHelper.ThrowArgumentException_ValueTooLarge(bytes.Length);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateDouble(double value)
         {
 #if BUILDING_INBOX_LIBRARY
@@ -111,6 +118,20 @@ namespace System.Text.Json
         {
             if (propertyName.Length > JsonConstants.MaxCharacterTokenSize || value.Length > JsonConstants.MaxCharacterTokenSize)
                 ThrowHelper.ThrowArgumentException(propertyName, value);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidatePropertyAndBytes(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> bytes)
+        {
+            if (propertyName.Length > JsonConstants.MaxCharacterTokenSize || bytes.Length > JsonConstants.MaxBase46ValueTokenSize)
+                ThrowHelper.ThrowArgumentException(propertyName, bytes);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidatePropertyAndBytes(ReadOnlySpan<byte> propertyName, ReadOnlySpan<byte> bytes)
+        {
+            if (propertyName.Length > JsonConstants.MaxTokenSize || bytes.Length > JsonConstants.MaxBase46ValueTokenSize)
+                ThrowHelper.ThrowArgumentException(propertyName, bytes);
         }
 
         internal static void ValidateNumber(ReadOnlySpan<byte> utf8FormattedNumber)

@@ -10,6 +10,31 @@ namespace System.Text.Json
 {
     internal static partial class JsonReaderHelper
     {
+        public static bool TryGetUnescapedBase64Bytes(ReadOnlySpan<byte> utf8Source, int idx, out byte[] bytes)
+        {
+            byte[] unescapedArray = null;
+
+            Span<byte> utf8Unescaped = utf8Source.Length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[utf8Source.Length] :
+                (unescapedArray = ArrayPool<byte>.Shared.Rent(utf8Source.Length));
+
+            Unescape(utf8Source, utf8Unescaped, idx, out int written);
+            Debug.Assert(written > 0);
+
+            utf8Unescaped = utf8Unescaped.Slice(0, written);
+            Debug.Assert(!utf8Unescaped.IsEmpty);
+
+            bool result = TryDecodeBase64InPlace(utf8Unescaped, out bytes);
+
+            if (unescapedArray != null)
+            {
+                utf8Unescaped.Clear();
+                ArrayPool<byte>.Shared.Return(unescapedArray);
+            }
+
+            return result;
+        }
+
         // Reject any invalid UTF-8 data rather than silently replacing.
         public static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
 
@@ -105,6 +130,53 @@ namespace System.Text.Json
             }
 
             return result;
+        }
+
+        public static bool TryDecodeBase64InPlace(Span<byte> utf8Unescaped, out byte[] bytes)
+        {
+            OperationStatus status = Base64.DecodeFromUtf8InPlace(utf8Unescaped, out int bytesWritten);
+            if (status != OperationStatus.Done)
+            {
+                bytes = null;
+                return false;
+            }
+            bytes = utf8Unescaped.Slice(0, bytesWritten).ToArray();
+            return true;
+        }
+
+        public static bool TryDecodeBase64(ReadOnlySpan<byte> utf8Unescaped, out byte[] bytes)
+        {
+            byte[] pooledArray = null;
+
+            Span<byte> byteSpan = utf8Unescaped.Length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[utf8Unescaped.Length] :
+                (pooledArray = ArrayPool<byte>.Shared.Rent(utf8Unescaped.Length));
+
+            OperationStatus status = Base64.DecodeFromUtf8(utf8Unescaped, byteSpan, out int bytesConsumed, out int bytesWritten);
+
+            if (status != OperationStatus.Done)
+            {
+                bytes = null;
+
+                if (pooledArray != null)
+                {
+                    byteSpan.Clear();
+                    ArrayPool<byte>.Shared.Return(pooledArray);
+                }
+
+                return false;
+            }
+            Debug.Assert(bytesConsumed == utf8Unescaped.Length);
+
+            bytes = byteSpan.Slice(0, bytesWritten).ToArray();
+
+            if (pooledArray != null)
+            {
+                byteSpan.Clear();
+                ArrayPool<byte>.Shared.Return(pooledArray);
+            }
+
+            return true;
         }
 
         public static string TranscodeHelper(ReadOnlySpan<byte> utf8Unescaped)

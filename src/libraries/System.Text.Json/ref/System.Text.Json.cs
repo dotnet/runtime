@@ -38,6 +38,7 @@ namespace System.Text.Json
         public System.Text.Json.JsonElement.ObjectEnumerator EnumerateObject() { throw null; }
         public int GetArrayLength() { throw null; }
         public bool GetBoolean() { throw null; }
+        public byte[] GetBytesFromBase64() { throw null; }
         public System.DateTime GetDateTime() { throw null; }
         public System.DateTimeOffset GetDateTimeOffset() { throw null; }
         public decimal GetDecimal() { throw null; }
@@ -56,6 +57,7 @@ namespace System.Text.Json
         [System.CLSCompliantAttribute(false)]
         public ulong GetUInt64() { throw null; }
         public override string ToString() { throw null; }
+        public bool TryGetBytesFromBase64(out byte[] value) { throw null; }
         public bool TryGetDateTime(out System.DateTime value) { throw null; }
         public bool TryGetDateTimeOffset(out System.DateTimeOffset value) { throw null; }
         public bool TryGetDecimal(out decimal value) { throw null; }
@@ -196,9 +198,10 @@ namespace System.Text.Json
         public System.Buffers.ReadOnlySequence<byte> ValueSequence { get { throw null; } }
         public System.ReadOnlySpan<byte> ValueSpan { get { throw null; } }
         public bool GetBoolean() { throw null; }
+        public byte[] GetBytesFromBase64() { throw null; }
+        public string GetComment() { throw null; }
         public System.DateTime GetDateTime() { throw null; }
         public System.DateTimeOffset GetDateTimeOffset() { throw null; }
-        public string GetComment() { throw null; }
         public decimal GetDecimal() { throw null; }
         public double GetDouble() { throw null; }
         public System.Guid GetGuid() { throw null; }
@@ -214,6 +217,7 @@ namespace System.Text.Json
         public void Skip() { }
         public bool TextEquals(System.ReadOnlySpan<byte> otherUtf8Text) { throw null; }
         public bool TextEquals(System.ReadOnlySpan<char> otherText) { throw null; }
+        public bool TryGetBytesFromBase64(out byte[] value) { throw null; }
         public bool TryGetDateTime(out System.DateTime value) { throw null; }
         public bool TryGetDateTimeOffset(out System.DateTimeOffset value) { throw null; }
         public bool TryGetDecimal(out decimal value) { throw null; }
@@ -242,6 +246,11 @@ namespace System.Text.Json
         public void Reset() { }
         public void Reset(System.Buffers.IBufferWriter<byte> bufferWriter) { }
         public void Reset(System.IO.Stream utf8Json) { }
+        public void WriteBase64String(System.ReadOnlySpan<byte> utf8PropertyName, System.ReadOnlySpan<byte> bytes) { }
+        public void WriteBase64String(System.ReadOnlySpan<char> propertyName, System.ReadOnlySpan<byte> bytes) { }
+        public void WriteBase64String(string propertyName, System.ReadOnlySpan<byte> bytes) { }
+        public void WriteBase64String(System.Text.Json.JsonEncodedText propertyName, System.ReadOnlySpan<byte> bytes) { }
+        public void WriteBase64StringValue(System.ReadOnlySpan<byte> bytes) { }
         public void WriteBoolean(System.ReadOnlySpan<byte> utf8PropertyName, bool value) { }
         public void WriteBoolean(System.ReadOnlySpan<char> propertyName, bool value) { }
         public void WriteBoolean(string propertyName, bool value) { }
@@ -385,10 +394,10 @@ namespace System.Text.Json.Serialization
         public static TValue Parse<TValue>(string json, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
         public static System.Threading.Tasks.ValueTask<object> ReadAsync(System.IO.Stream utf8Json, System.Type returnType, System.Text.Json.Serialization.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.ValueTask<TValue> ReadAsync<TValue>(System.IO.Stream utf8Json, System.Text.Json.Serialization.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static byte[] ToUtf8Bytes(object value, System.Type type, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
-        public static byte[] ToUtf8Bytes<TValue>(TValue value, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
         public static string ToString(object value, System.Type type, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
         public static string ToString<TValue>(TValue value, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
+        public static byte[] ToUtf8Bytes(object value, System.Type type, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
+        public static byte[] ToUtf8Bytes<TValue>(TValue value, System.Text.Json.Serialization.JsonSerializerOptions options = null) { throw null; }
         public static System.Threading.Tasks.Task WriteAsync(object value, System.Type type, System.IO.Stream utf8Json, System.Text.Json.Serialization.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Threading.Tasks.Task WriteAsync<TValue>(TValue value, System.IO.Stream utf8Json, System.Text.Json.Serialization.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }

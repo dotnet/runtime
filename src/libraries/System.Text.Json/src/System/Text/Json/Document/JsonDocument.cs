@@ -263,6 +263,29 @@ namespace System.Text.Json
             return GetString(index - DbRow.Size, JsonTokenType.PropertyName);
         }
 
+        internal bool TryGetValue(int index, out byte[] value)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.String, row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            // Segment needs to be unescaped
+            if (row.HasComplexChildren)
+            {
+                int idx = segment.IndexOf(JsonConstants.BackSlash);
+                Debug.Assert(idx != -1);
+                return JsonReaderHelper.TryGetUnescapedBase64Bytes(segment, idx, out value);
+            }
+
+            Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
+            return JsonReaderHelper.TryDecodeBase64(segment, out value);
+        }
+
         internal bool TryGetValue(int index, out int value)
         {
             CheckNotDisposed();
