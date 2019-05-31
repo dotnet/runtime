@@ -3,6 +3,7 @@
     <ProjectGuid>{AC1A1515-70D8-42E4-9B19-A72F739E974C}</ProjectGuid>
     <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
     <SystemComponentmodelTypeconverterTestdataVersion>1.0.1</SystemComponentmodelTypeconverterTestdataVersion>
+    <SystemDrawingCommonTestdataVersion>1.0.9</SystemDrawingCommonTestdataVersion>
     <SystemWindowsExtensionsTestdataVersion>1.0.2</SystemWindowsExtensionsTestdataVersion>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
@@ -26,6 +27,9 @@
   </ItemGroup>
   <ItemGroup>
     <SupplementalTestData Include="$(NuGetPackageRoot)system.componentmodel.typeconverter.testdata\$(SystemComponentmodelTypeconverterTestdataVersion)\content\**\*.*">
+      <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </SupplementalTestData>
+    <SupplementalTestData Include="$(NuGetPackageRoot)system.drawing.common.testdata\$(SystemDrawingCommonTestdataVersion)\content\**\*.*">
       <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
     </SupplementalTestData>
     <SupplementalTestData Include="$(NuGetPackageRoot)system.windows.extensions.testdata\$(SystemWindowsExtensionsTestdataVersion)\content\**\*.*">
