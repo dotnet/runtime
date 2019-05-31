@@ -15,12 +15,9 @@ namespace System
 
         internal static unsafe string ParseCanonicalName(string str, int start, ref bool isLoopback, ref string scopeId)
         {
-            ushort* numbersPtr = stackalloc ushort[NumberOfLabels];
-            // optimized zeroing of 8 shorts = 2 longs
-            ((long*)numbersPtr)[0] = 0L;
-            ((long*)numbersPtr)[1] = 0L;
-            Span<ushort> numbers = new Span<ushort>(numbersPtr, NumberOfLabels);
-            Parse(str, numbersPtr, start, ref scopeId);
+            Span<ushort> numbers = stackalloc ushort[NumberOfLabels];
+            numbers.Clear();
+            Parse(str, numbers, start, ref scopeId);
             isLoopback = IsLoopback(numbers);
 
             // RFC 5952 Sections 4 & 5 - Compressed, lower case, with possible embedded IPv4 addresses.
@@ -118,33 +115,6 @@ namespace System
                                        || (numbers[5] == 0xFFFF))));
         }
 
-        // Returns true if the IPv6 address should be formated with an embedded IPv4 address:
-        // ::192.168.1.1
-        private static unsafe bool ShouldHaveIpv4Embedded(ushort* numbers)
-        {
-            // 0:0 : 0:0 : x:x : x.x.x.x
-            if (numbers[0] == 0 && numbers[1] == 0 && numbers[2] == 0 && numbers[3] == 0 && numbers[6] != 0)
-            {
-                // RFC 5952 Section 5 - 0:0 : 0:0 : 0:[0 | FFFF] : x.x.x.x
-                if (numbers[4] == 0 && (numbers[5] == 0 || numbers[5] == 0xFFFF))
-                {
-                    return true;
-                }
-                // SIIT - 0:0 : 0:0 : FFFF:0 : x.x.x.x
-                else if (numbers[4] == 0xFFFF && numbers[5] == 0)
-                {
-                    return true;
-                }
-            }
-            // ISATAP
-            if (numbers[4] == 0 && numbers[5] == 0x5EFE)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         //
         // InternalIsValid
         //
@@ -187,6 +157,12 @@ namespace System
             bool havePrefix = false;
             bool expectingNumber = true;
             int lastSequence = 1;
+
+            // Starting with a colon character is only valid if another colon follows.
+            if (name[start] == ':' && (start + 1 >= end || name[start + 1] != ':'))
+            {
+                return false;
+            }
 
             int i;
             for (i = start; i < end; ++i)
