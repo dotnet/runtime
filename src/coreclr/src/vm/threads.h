@@ -376,9 +376,6 @@ public:
     {
         TSNC_OwnsSpinLock               = 0x00000400, // The thread owns a spinlock.
 
-        TSNC_DisableOleaut32Check       = 0x00040000, // Disable oleaut32 delay load check.  Oleaut32 has  
-                                                      // been loaded
-
         TSNC_LoadsTypeViolation         = 0x40000000, // Use by type loader to break deadlocks caused by type load level ordering violations
     };
 
@@ -1209,8 +1206,7 @@ public:
         TSNC_InRestoringSyncBlock       = 0x00020000, // The thread is restoring its SyncBlock for Object.Wait.
                                                       // After the thread is interrupted once, we turn off interruption
                                                       // at the beginning of wait.
-        TSNC_DisableOleaut32Check       = 0x00040000, // Disable oleaut32 delay load check.  Oleaut32 has  
-                                                      // been loaded
+        // unused                       = 0x00040000,
         TSNC_CannotRecycle              = 0x00080000, // A host can not recycle this Thread object.  When a thread
                                                       // has orphaned lock, we will apply this.
         TSNC_RaiseUnloadEvent           = 0x00100000, // Finalize thread is raising managed unload event which 
