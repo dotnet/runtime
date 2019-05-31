@@ -12,16 +12,16 @@ namespace System.Net.Http
         public abstract Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken);
         internal abstract void Trace(string message, string memberName = null);
 
-        private int CreationTickCount { get; } = Environment.TickCount;
+        private long CreationTickCount { get; } = Environment.TickCount64;
 
         // Check if lifetime expired on connection.
-        public bool LifetimeExpired(int nowTicks, TimeSpan lifetime)
+        public bool LifetimeExpired(long nowTicks, TimeSpan lifetime)
         {
             bool expired =
                 lifetime != Timeout.InfiniteTimeSpan &&
-                (lifetime == TimeSpan.Zero || (uint)(nowTicks - CreationTickCount) > lifetime.TotalMilliseconds);
+                (lifetime == TimeSpan.Zero || (nowTicks - CreationTickCount) > lifetime.TotalMilliseconds);
 
-            if (expired && NetEventSource.IsEnabled) Trace($"Connection no longer usable. Alive {TimeSpan.FromMilliseconds((uint)(nowTicks - CreationTickCount))} > {lifetime}.");
+            if (expired && NetEventSource.IsEnabled) Trace($"Connection no longer usable. Alive {TimeSpan.FromMilliseconds((nowTicks - CreationTickCount))} > {lifetime}.");
             return expired;
         }
     }

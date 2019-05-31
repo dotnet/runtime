@@ -670,6 +670,7 @@ namespace System
         public static string SystemDirectory { get { throw null; } }
         public static int SystemPageSize { get { throw null; } }
         public static int TickCount { get { throw null; } }
+        public static long TickCount64 { get { throw null; } }
         public static string UserDomainName { get { throw null; } }
         public static bool UserInteractive { get { throw null; } }
         public static string UserName { get { throw null; } }
