@@ -11,9 +11,10 @@ namespace System.Text.Json.Serialization.Converters
     {
         private static readonly Dictionary<Type, object> s_valueConverters = new Dictionary<Type, object>()
         {
+            { typeof(byte[]), new JsonValueConverterByteArray() },
             { typeof(DateTimeOffset), new JsonValueConverterDateTimeOffset() },
             { typeof(Guid), new JsonValueConverterGuid() },
-            { typeof(JsonElement), new JsonValueConverterJsonElement() }
+            { typeof(JsonElement), new JsonValueConverterJsonElement() },
         };
 
         internal static bool IsValueConvertable(Type type)
@@ -32,6 +33,7 @@ namespace System.Text.Json.Serialization.Converters
                     new object[] { false },
                     culture: null);
             }
+
             TypeCode typeCode = Type.GetTypeCode(type);
             switch (typeCode)
             {

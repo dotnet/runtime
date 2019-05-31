@@ -26,6 +26,39 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void WriteNullByteArray()
+        {
+            byte[] input = null;
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal($"null", json);
+        }
+
+        [Fact]
+        public static void WriteEmptyByteArray()
+        {
+            var input = new byte[] {};
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal(@"""""", json);
+        }
+
+        [Fact]
+        public static void WriteByteArray()
+        {
+            var input = new byte[] { 1, 2 };
+            string json = JsonSerializer.ToString(input);
+            Assert.Equal($"\"{Convert.ToBase64String(input)}\"", json);
+        }
+
+        [Fact]
+        public static void WriteTwo2dByteArray()
+        {
+            var inner = new byte[] { 1, 2 };
+            var outer = new byte[2][] { inner, inner };
+            string json = JsonSerializer.ToString(outer);
+            Assert.Equal($"[\"{Convert.ToBase64String(inner)}\",\"{Convert.ToBase64String(inner)}\"]", json);
+        }
+
+        [Fact]
         public static void WriteObjectArray()
         {
             string json;

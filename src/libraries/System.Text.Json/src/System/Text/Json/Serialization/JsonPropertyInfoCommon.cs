@@ -50,7 +50,6 @@ namespace System.Text.Json.Serialization
                 IsPropertyPolicy = true;
                 HasGetter = true;
                 HasSetter = true;
-                ValueConverter = DefaultConverters<TRuntimeProperty>.s_converter;
             }
 
             GetPolicies();
