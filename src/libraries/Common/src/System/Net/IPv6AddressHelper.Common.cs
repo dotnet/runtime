@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace System
 {
     internal static partial class IPv6AddressHelper
@@ -107,6 +109,17 @@ namespace System
             {
                 start++;
                 needsClosingBracket = true;
+
+                // IsValidStrict() is only called if there is a ':' in the name string, i.e. 
+                // it is a possible IPv6 address. So, if the string starts with a '[' and
+                // the pointer is advanced here there are still more characters to parse.
+                Debug.Assert(start < end);
+            }
+
+            // Starting with a colon character is only valid if another colon follows.
+            if (name[start] == ':' && (start + 1 >= end || name[start + 1] != ':'))
+            {
+                return false;
             }
 
             int i;
@@ -278,7 +291,7 @@ namespace System
         //  Nothing
         //
 
-        internal static unsafe void Parse(ReadOnlySpan<char> address, ushort* numbers, int start, ref string scopeId)
+        internal static void Parse(ReadOnlySpan<char> address, Span<ushort> numbers, int start, ref string scopeId)
         {
             int number = 0;
             int index = 0;

@@ -146,10 +146,10 @@ namespace System.Net
             PrivateScopeId = (uint)scopeid;
         }
 
-        internal unsafe IPAddress(ushort* numbers, int numbersLength, uint scopeid)
+        internal IPAddress(ReadOnlySpan<ushort> numbers, uint scopeid)
         {
             Debug.Assert(numbers != null);
-            Debug.Assert(numbersLength == NumberOfLabels);
+            Debug.Assert(numbers.Length == NumberOfLabels);
 
             var arr = new ushort[NumberOfLabels];
             for (int i = 0; i < arr.Length; i++)
