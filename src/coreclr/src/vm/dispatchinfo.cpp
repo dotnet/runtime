@@ -2096,6 +2096,11 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         if (wFlags & DISPATCH_CONSTRUCT)
             return E_INVALIDARG;
 
+        if ((!(wFlags & (DISPATCH_METHOD | DISPATCH_PROPERTYGET))) && pDispMemberInfo->GetMemberType() == EnumMemberTypes::Method)
+        {
+            return DISP_E_MEMBERNOTFOUND;
+        }
+
         // We have the member so retrieve the number of formal parameters.
         NumParams = pDispMemberInfo->GetNumParameters();
 
