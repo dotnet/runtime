@@ -56,6 +56,12 @@
     </ItemGroup>
 
     <ItemGroup>
+      <!-- Normalize file paths up front (preserving metadata) for easier duplicate detection. -->
+      <File NormalizedIdentity="$([MSBuild]::NormalizePath('%(Identity)'))" />
+      <FileNormalized Include="@(File -> '%(NormalizedIdentity)')" RemoveMetadata="NormalizedIdentity" />
+      <File Remove="@(File)" />
+      <File Include="@(FileNormalized)" />
+
       <WindowsNativeFile Include="@(File)"
                          Condition="'%(File.Extension)' == '.dll' OR '%(File.Extension)' == '.exe'" />
       <!-- Don't include *.pdb for export libraries or headers -->
@@ -70,17 +76,21 @@
       <NonWindowsSymbolFile Include="@(NonWindowsNativeFile -> '%(Identity)$(SymbolFileExtension)')" />
       <ExistingNonWindowsSymbolFile Include="@(NonWindowsSymbolFile)" Condition="Exists('%(Identity)')" />
 
-      <!--
-        These files might be directly redisted, and already in File. Duplicates cause validation
-        errors, so don't add files that are already known.
-      -->
-      <DiscoveredSymbolFile
-        Include="@(ExistingWindowsSymbolFile);@(ExistingNonWindowsSymbolFile)"
-        IsSymbolFile="true" />
-      
-      <NormalizedFile Include="$([MSBuild]::NormalizePath('%(File.Identity)'))" />
+      <DiscoveredSymbolFile Include="@(ExistingWindowsSymbolFile);@(ExistingNonWindowsSymbolFile)" />
+    </ItemGroup>
 
-      <File Include="@(DiscoveredSymbolFile)" Exclude="@(NormalizedFile)" />
+    <!-- Remove any duplicates in symbol files found by the above searches. -->
+    <RemoveDuplicates Inputs="@(DiscoveredSymbolFile)">
+      <Output TaskParameter="Filtered" ItemName="FilteredDiscoveredSymbolFile"/>
+    </RemoveDuplicates>
+
+    <ItemGroup>
+      <!--
+        Discovered symbol files might already be in File, without IsSymbolFile set. Make sure we
+        keep the discovered one and apply IsSymbolFile=true.
+      -->
+      <File Remove="@(FilteredDiscoveredSymbolFile)" />
+      <File Include="@(FilteredDiscoveredSymbolFile)" IsSymbolFile="true" />
     </ItemGroup>
 
     <PropertyGroup>
@@ -232,7 +242,13 @@
 
   <Target Name="IncludeFrameworkListFile"
           BeforeTargets="GetFiles"
-          Condition="'$(PackageTargetRuntime)' == '' AND '$(FrameworkListTargetPath)' != ''">
+          DependsOnTargets="GetSymbolPackageFiles"
+          Condition="
+            '$(FrameworkListTargetPath)' != '' AND
+            (
+              '$(PackageTargetRuntime)' == '' OR
+              '$(PackageTargetRuntime)' == '$(PackageRID)'
+            )">
     <PropertyGroup>
       <FrameworkListFile>$(IntermediateOutputPath)FrameworkList.xml</FrameworkListFile>
     </PropertyGroup>
@@ -250,6 +266,7 @@
 
     <CreateFrameworkListFile
       Files="@(File)"
+      FileProfiles="@(FrameworkListFileProfile)"
       TargetFile="$(FrameworkListFile)"
       TargetFilePrefixes="ref/;runtimes/"
       RootAttributes="@(FrameworkListRootAttributes)" />
