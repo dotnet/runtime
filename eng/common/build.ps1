@@ -133,8 +133,9 @@ try {
   Build
 }
 catch {
+  Write-Host $_
+  Write-Host $_.Exception
   Write-Host $_.ScriptStackTrace
-  Write-PipelineTaskError -Message $_
   ExitWithExitCode 1
 }
 
