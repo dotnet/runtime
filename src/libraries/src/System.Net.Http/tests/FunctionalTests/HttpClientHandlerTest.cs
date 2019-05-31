@@ -178,6 +178,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [OuterLoop("Uses external servers")]
         public async Task UseDefaultCredentials_SetToFalseAndServerNeedsAuth_StatusCodeUnauthorized(bool useProxy)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
@@ -1866,11 +1867,14 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, "1.1")]
         [InlineData(true, "1.1")]
         [InlineData(null, "1.1")]
+        [InlineData(false, "2.0")]
+        [InlineData(true, "2.0")]
+        [InlineData(null, "2.0")]
         public async Task PostAsync_ExpectContinue_Success(bool? expectContinue, string version)
         {
             using (HttpClient client = CreateHttpClient())
             {
-                var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteEchoServer)
+                var req = new HttpRequestMessage(HttpMethod.Post, version == "2.0" ? Configuration.Http.Http2RemoteEchoServer : Configuration.Http.RemoteEchoServer)
                 {
                     Content = new StringContent("Test String", Encoding.UTF8),
                     Version = new Version(version)
@@ -1883,7 +1887,7 @@ namespace System.Net.Http.Functional.Tests
                     if (UseSocketsHttpHandler)
                     {
                         const string ExpectedReqHeader = "\"Expect\": \"100-continue\"";
-                        if (expectContinue == true && version == "1.1")
+                        if (expectContinue == true && (version == "1.1" || version == "2.0"))
                         {
                             Assert.Contains(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
                         }

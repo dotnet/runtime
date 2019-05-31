@@ -964,7 +964,7 @@ namespace System.Net.Http
             }
         }
 
-        private async ValueTask<Http2Stream> SendHeadersAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        private async ValueTask<Http2Stream> SendHeadersAsync(HttpRequestMessage request, CancellationToken cancellationToken, bool mustFlush = false)
         {
             // Ensure we don't exceed the max concurrent streams setting.
             await _concurrentStreams.RequestCreditAsync(1, cancellationToken).ConfigureAwait(false);
@@ -1018,7 +1018,7 @@ namespace System.Net.Http
 
                 // If this is not the end of the stream, we can put off flushing the buffer
                 // since we know that there are going to be data frames following.
-                FinishWrite(mustFlush: (flags & FrameFlags.EndStream) != 0);
+                FinishWrite(mustFlush: mustFlush || (flags & FrameFlags.EndStream) != 0);
             }
             catch
             {
@@ -1027,6 +1027,7 @@ namespace System.Net.Http
                     RemoveStream(http2Stream);
                     http2Stream.Dispose();
                 }
+
                 throw;
             }
             finally
@@ -1174,12 +1175,12 @@ namespace System.Net.Http
 
         private void AbortStreams(int lastValidStream, Exception abortException)
         {
+            bool shouldInvalidate = false;
             lock (SyncObject)
             {
                 if (!_disposed)
                 {
-                    _pool.InvalidateHttp2Connection(this);
-
+                    shouldInvalidate = true;
                     _disposed = true;
                 }
 
@@ -1197,6 +1198,14 @@ namespace System.Net.Http
                 }
 
                 CheckForShutdown();
+            }
+
+            if (shouldInvalidate)
+            {
+                // Invalidate outside of lock to avoid race with HttpPool Dispose()
+                // We should not try to grab pool lock while holding connection lock as on disposing pool,
+                // we could hold pool lock while trying to grab connection lock in Dispose().
+                _pool.InvalidateHttp2Connection(this);
             }
         }
 
@@ -1354,13 +1363,52 @@ namespace System.Net.Http
             try
             {
                 // Send headers
-                http2Stream = await SendHeadersAsync(request, cancellationToken).ConfigureAwait(false);
+                bool shouldExpectContinue = request.Content != null && request.HasHeaders && request.Headers.ExpectContinue == true;
 
-                // Send request body, if any
-                await http2Stream.SendRequestBodyAsync(cancellationToken).ConfigureAwait(false);
+                http2Stream = await SendHeadersAsync(request, cancellationToken, mustFlush: shouldExpectContinue).ConfigureAwait(false);
+                if (shouldExpectContinue)
+                {
+                    // Send header and wait a little bit to see if server sends 100, reject code or nothing.
+                    if (NetEventSource.IsEnabled) Trace($"Request content is not null, start processing 100-Continue.");
+                    await http2Stream.SendRequestBodyWithExpect100ContinueAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    // Send request body, if any
+                    Task bodyTask = http2Stream.SendRequestBodyAsync(cancellationToken);
+                    // read response headers.
+                    Task responseHeadersTask = http2Stream.ReadResponseHeadersAsync();
 
-                // Wait for response headers to be read.
-                await http2Stream.ReadResponseHeadersAsync().ConfigureAwait(false);
+                    if (bodyTask == await Task.WhenAny(bodyTask, responseHeadersTask).ConfigureAwait(false) ||
+                        bodyTask.IsCompleted)
+                    {
+                        // The sending of the request body completed before receiving all of the request headers.
+                        Task t = bodyTask;
+                        bodyTask = null;
+                        try
+                        {
+                            await t.ConfigureAwait(false);
+                        }
+                        catch (Exception e)
+                        {
+                            if (NetEventSource.IsEnabled) Trace($"SendRequestBody Task failed. {e}");
+                            throw;
+                        }
+
+                        await responseHeadersTask.ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        // We received the response headers but the request body hasn't yet finished.
+                        // If the connection is aborted or if we get RST or GOAWAY from server, exception will be
+                        // stored in stream._abortException and propagated to up to caller if possible while processing response.
+                        _ = bodyTask.ContinueWith((t, state) => {
+                                Http2Connection c = (Http2Connection)state;
+                                if (NetEventSource.IsEnabled) c.Trace($"SendRequestBody Task failed. {t.Exception}");
+                             }, this, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+                        bodyTask = null;
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -1386,7 +1434,11 @@ namespace System.Net.Http
                     }
                 }
 
-                http2Stream?.Dispose();
+                if (http2Stream != null)
+                {
+                    RemoveStream(http2Stream);
+                    http2Stream.Dispose();
+                }
 
                 if (replacementException != null)
                 {
