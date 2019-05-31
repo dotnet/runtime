@@ -76,28 +76,28 @@ namespace System.Tests
         }
 
         [Fact]
-        public void CreateInstance_NonPublicClassWithPrivateDefaultConstructor_Success()
+        public void CreateInstance_NonPublicTypeWithPrivateDefaultConstructor_Success()
         {
             // Activator holds a cache of constructors and the types to which they belong.
             // Test caching behaviour by activating multiple times.
-            ClassWithPrivateDefaultConstructor c1 = (ClassWithPrivateDefaultConstructor)Activator.CreateInstance(typeof(ClassWithPrivateDefaultConstructor), nonPublic: true);
+            TypeWithPrivateDefaultConstructor c1 = (TypeWithPrivateDefaultConstructor)Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor), nonPublic: true);
             Assert.Equal(-1, c1.Property);
 
-            ClassWithPrivateDefaultConstructor c2 = (ClassWithPrivateDefaultConstructor)Activator.CreateInstance(typeof(ClassWithPrivateDefaultConstructor), nonPublic: true);
+            TypeWithPrivateDefaultConstructor c2 = (TypeWithPrivateDefaultConstructor)Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor), nonPublic: true);
             Assert.Equal(-1, c2.Property);
         }
 
         [Fact]
-        public void CreateInstance_PublicOnlyClassWithPrivateDefaultConstructor_ThrowsMissingMethodException()
+        public void CreateInstance_PublicOnlyTypeWithPrivateDefaultConstructor_ThrowsMissingMethodException()
         {
-            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(ClassWithPrivateDefaultConstructor)));
-            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(ClassWithPrivateDefaultConstructor), nonPublic: false));
+            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor)));
+            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor), nonPublic: false));
 
             // Put the private default constructor into the cache and make sure we still throw if public only.
-            Assert.NotNull(Activator.CreateInstance(typeof(ClassWithPrivateDefaultConstructor), nonPublic: true));
+            Assert.NotNull(Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor), nonPublic: true));
 
-            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(ClassWithPrivateDefaultConstructor)));
-            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(ClassWithPrivateDefaultConstructor), nonPublic: false));
+            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor)));
+            Assert.Throws<MissingMethodException>(() => Activator.CreateInstance(typeof(TypeWithPrivateDefaultConstructor), nonPublic: false));
         }
 
         [Fact]
@@ -267,27 +267,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void CreateInstance_Generic()
-        {
-            Choice1 c = Activator.CreateInstance<Choice1>();
-            Assert.Equal(1, c.I);
-
-            Activator.CreateInstance<DateTime>();
-            Activator.CreateInstance<StructTypeWithoutReflectionMetadata>();
-        }
-
-        [Fact]
-        public static void CreateInstance_Generic_Invalid()
-        {
-            Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<int[]>()); // Cannot create array type
-
-            Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<TypeWithoutDefaultCtor>()); // Type has no default constructor
-            Assert.Throws<TargetInvocationException>(() => Activator.CreateInstance<TypeWithDefaultCtorThatThrows>()); // Type has a default constructor that throws
-            Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<AbstractTypeWithDefaultCtor>()); // Type is abstract
-            Assert.ThrowsAny<MissingMemberException>(() => Activator.CreateInstance<IInterfaceType>()); // Type is an interface
-        }
-
-        [Fact]
         public static void TestActivatorOnNonActivatableFinalizableTypes()
         {
             // On runtimes where the generic Activator is implemented with special codegen intrinsics, we might allocate
@@ -388,11 +367,11 @@ namespace System.Tests
         {
         }
 
-        public class ClassWithPrivateDefaultConstructor
+        public class TypeWithPrivateDefaultConstructor
         {
             public int Property { get; }
 
-            private ClassWithPrivateDefaultConstructor()
+            private TypeWithPrivateDefaultConstructor()
             {
                 Property = -1;
             }
