@@ -19,15 +19,9 @@ namespace System.Data.Common
             {
                 if (!_canCreateDataAdapter.HasValue)
                 {
-                    var adapter = CreateDataAdapter();
-                    if (adapter == null)
+                    using (DbDataAdapter adapter = CreateDataAdapter())
                     {
-                        _canCreateDataAdapter = false;
-                    }
-                    else
-                    {
-                        _canCreateDataAdapter = true;
-                        adapter.Dispose();
+                        _canCreateDataAdapter = adapter != null;
                     }
                 }
 
@@ -41,15 +35,9 @@ namespace System.Data.Common
             {
                 if (!_canCreateCommandBuilder.HasValue)
                 {
-                    var builder = CreateCommandBuilder();
-                    if (builder == null)
+                    using (DbCommandBuilder builder = CreateCommandBuilder())
                     {
-                        _canCreateCommandBuilder = false;
-                    }
-                    else
-                    {
-                        _canCreateCommandBuilder = true;
-                        builder.Dispose();
+                        _canCreateCommandBuilder = builder != null;
                     }
                 }
 
