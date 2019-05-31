@@ -15456,9 +15456,8 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
         GenTree* destAddr = blkNode->Addr();
         unsigned width    = blkNode->gtBlkSize;
         // Do we care about whether this assigns the entire variable?
-        if (pIsEntire != nullptr && width == 0)
+        if (pIsEntire != nullptr && blkNode->OperIs(GT_DYN_BLK))
         {
-            assert(blkNode->gtOper == GT_DYN_BLK);
             GenTree* blockWidth = blkNode->AsDynBlk()->gtDynamicSize;
             if (blockWidth->IsCnsIntOrI())
             {
