@@ -27,9 +27,6 @@ namespace System.Collections.ObjectModel
         [NonSerialized]
         private int _blockReentrancyCount;
 
-        [NonSerialized]
-        private bool _skipRaisingEvents;
-
         /// <summary>
         /// Initializes a new instance of ObservableCollection that is empty and has default initial capacity.
         /// </summary>
@@ -124,95 +121,9 @@ namespace System.Collections.ObjectModel
 
             base.RemoveItem(index);
 
-            if (!_skipRaisingEvents)
-            {
-                OnCountPropertyChanged();
-                OnIndexerPropertyChanged();
-                OnCollectionChanged(NotifyCollectionChangedAction.Remove, removedItem, index);
-            }
-        }
-
-        /// <summary>
-        /// Called by base class Collection&lt;T&gt; when a count of items is removed from the list;
-        /// raises a CollectionChanged event to any listeners.
-        /// </summary>
-        protected override void RemoveItemsRange(int index, int count)
-        {
-            CheckReentrancy();
-
-            T[] removedItems = null;
-
-            bool ignore = _skipRaisingEvents;
-            if (!ignore)
-            {
-                _skipRaisingEvents = true;
-
-                if (count > 0)
-                {
-                    removedItems = new T[count];
-                    for (int i = 0; i < count; i++)
-                    {
-                        removedItems[i] = this[index + i];
-                    }
-                }
-            }
-
-            try
-            {
-                base.RemoveItemsRange(index, count);
-            }
-            finally
-            {
-                if (!ignore)
-                {
-                    _skipRaisingEvents = false;
-                }
-            }
-
-            if (count > 0 && !_skipRaisingEvents)
-            {
-                OnCountPropertyChanged();
-                OnIndexerPropertyChanged();
-                OnCollectionChanged(NotifyCollectionChangedAction.Remove, removedItems, index);
-            }
-        }
-
-        /// <summary>
-        /// Called by base class Collection&lt;T&gt; when a collection of items is added to list;
-        /// raises a CollectionChanged event to any listeners.
-        /// </summary>
-        protected override void ReplaceItemsRange(int index, int count, IEnumerable<T> collection)
-        {
-            CheckReentrancy();
-
-            _skipRaisingEvents = true;
-
-            T[] itemsToReplace = new T[count - index];
-            for (int i = index; i < count; i++)
-            {
-                itemsToReplace[i] = this[i];
-            }
-
-            try
-            {
-                base.ReplaceItemsRange(index, count, collection);
-            }
-            finally
-            {
-                _skipRaisingEvents = false;
-            }
-
-            if (!_skipRaisingEvents)
-            {
-                IList newItems = collection is IList list ? list : new List<T>(collection);
-
-                if (newItems.Count > 0)
-                {
-                    OnCountPropertyChanged();
-                    OnIndexerPropertyChanged();
-                    OnCollectionChanged(NotifyCollectionChangedAction.Replace, itemsToReplace, newItems, index);
-                }
-            }
+            OnCountPropertyChanged();
+            OnIndexerPropertyChanged();
+            OnCollectionChanged(NotifyCollectionChangedAction.Remove, removedItem, index);
         }
 
         /// <summary>
@@ -224,51 +135,9 @@ namespace System.Collections.ObjectModel
             CheckReentrancy();
             base.InsertItem(index, item);
 
-            if (!_skipRaisingEvents)
-            {
-                OnCountPropertyChanged();
-                OnIndexerPropertyChanged();
-                OnCollectionChanged(NotifyCollectionChangedAction.Add, item, index);
-            }
-        }
-
-        /// <summary>
-        /// Called by base class Collection&lt;T&gt; when a collection of items is added to list;
-        /// raises a CollectionChanged event to any listeners.
-        /// </summary>
-        protected override void InsertItemsRange(int index, IEnumerable<T> collection)
-        {
-            CheckReentrancy();
-
-            bool ignore = _skipRaisingEvents;
-            if (!ignore)
-            {
-                _skipRaisingEvents = true;
-            }
-
-            try
-            {
-                base.InsertItemsRange(index, collection);
-            }
-            finally
-            {
-                if (!ignore)
-                {
-                    _skipRaisingEvents = false;
-                }
-            }
-
-            if (!_skipRaisingEvents)
-            {
-                IList newItems = collection is IList list ? list : new List<T>(collection);
-
-                if (newItems.Count > 0)
-                {
-                    OnCountPropertyChanged();
-                    OnIndexerPropertyChanged();
-                    OnCollectionChanged(NotifyCollectionChangedAction.Add, newItems, index);
-                }
-            }
+            OnCountPropertyChanged();
+            OnIndexerPropertyChanged();
+            OnCollectionChanged(NotifyCollectionChangedAction.Add, item, index);
         }
 
         /// <summary>
@@ -399,14 +268,6 @@ namespace System.Collections.ObjectModel
         /// <summary>
         /// Helper to raise CollectionChanged event to any listeners
         /// </summary>
-        private void OnCollectionChanged(NotifyCollectionChangedAction action, IList items, int index)
-        {
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(action, items, index));
-        }
-
-        /// <summary>
-        /// Helper to raise CollectionChanged event to any listeners
-        /// </summary>
         private void OnCollectionChanged(NotifyCollectionChangedAction action, object item, int index, int oldIndex)
         {
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(action, item, index, oldIndex));
@@ -418,14 +279,6 @@ namespace System.Collections.ObjectModel
         private void OnCollectionChanged(NotifyCollectionChangedAction action, object oldItem, object newItem, int index)
         {
             OnCollectionChanged(new NotifyCollectionChangedEventArgs(action, newItem, oldItem, index));
-        }
-
-        /// <summary>
-        /// Helper to raise CollectionChanged event to any listeners
-        /// </summary>
-        private void OnCollectionChanged(NotifyCollectionChangedAction action, IList oldItems, IList newItems, int index)
-        {
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(action, newItems, oldItems, index));
         }
 
         /// <summary>

@@ -1,9 +1,14 @@
 Compat issues with assembly netstandard:
+MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.AddRange(System.Collections.Generic.IEnumerable<T>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.InsertItemsRange(System.Int32, System.Collections.Generic.IEnumerable<T>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.InsertRange(System.Int32, System.Collections.Generic.IEnumerable<T>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.RemoveItemsRange(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.RemoveRange(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.ReplaceItemsRange(System.Int32, System.Int32, System.Collections.Generic.IEnumerable<T>)' does not exist in the implementation but it does exist in the contract.
+MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.ReplaceRange(System.Int32, System.Int32, System.Collections.Generic.IEnumerable<T>)' does not exist in the implementation but it does exist in the contract.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.ComponentModel.BackgroundWorker' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.Diagnostics.SwitchLevelAttribute' exists on 'System.Diagnostics.BooleanSwitch' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultPropertyAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
-CannotRemoveAttribute : Attribute 'System.Diagnostics.SwitchLevelAttribute' exists on 'System.Diagnostics.TraceSwitch' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.IO.FileSystemWatcher' in the contract but not the implementation.
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.SetEntryPoint(System.Reflection.MethodInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.GetModule()' does not exist in the implementation but it does exist in the contract.
@@ -19,9 +24,6 @@ TypesMustExist : Type 'System.Reflection.Emit.ExceptionHandler' does not exist i
 MembersMustExist : Member 'System.Reflection.Emit.FieldBuilder.GetToken()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.Emit.FieldToken' does not exist in the implementation but it does exist in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.GenericTypeParameterBuilder' does not inherit from base type 'System.Reflection.TypeInfo' in the implementation but it does in the contract.
-CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Reflection.Emit.Label' in the contract but not the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.Label' does not implement interface 'System.IEquatable<System.Reflection.Emit.Label>' in the implementation but it does in the contract.
-TypeCannotChangeClassification : Type 'System.Reflection.Emit.Label' is marked as readonly in the contract so it must also be marked readonly in the implementation.
 MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.CreateMethodBody(System.Byte[], System.Int32)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.GetModule()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.MethodBuilder.GetToken()' does not exist in the implementation but it does exist in the contract.
@@ -41,9 +43,6 @@ MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetTypeToken(Sys
 MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.GetTypeToken(System.Type)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.IsTransient()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.ModuleBuilder.SetUserEntryPoint(System.Reflection.MethodInfo)' does not exist in the implementation but it does exist in the contract.
-CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Reflection.Emit.OpCode' in the contract but not the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Reflection.Emit.OpCode' does not implement interface 'System.IEquatable<System.Reflection.Emit.OpCode>' in the implementation but it does in the contract.
-TypeCannotChangeClassification : Type 'System.Reflection.Emit.OpCode' is marked as readonly in the contract so it must also be marked readonly in the implementation.
 MembersMustExist : Member 'System.Reflection.Emit.ParameterBuilder.GetToken()' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Reflection.Emit.ParameterToken' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.PropertyBuilder.PropertyToken.get()' does not exist in the implementation but it does exist in the contract.
@@ -58,66 +57,4 @@ TypesMustExist : Type 'System.Reflection.Emit.TypeToken' does not exist in the i
 CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Runtime.InteropServices.ManagedToNativeComInteropStubAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Method, Inherited=false)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Method, Inherited=false, AllowMultiple=false)]' in the implementation.
 CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Xml.Serialization.XmlAnyAttributeAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, AllowMultiple=false)]' in the implementation.
 CannotChangeAttribute : Attribute 'System.AttributeUsageAttribute' on 'System.Xml.Serialization.XmlNamespaceDeclarationsAttribute' changed from '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue)]' in the contract to '[AttributeUsageAttribute(AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.Property | AttributeTargets.ReturnValue, AllowMultiple=false)]' in the implementation.
-MembersMustExist : Member 'System.Range.GetOffsetAndLength(System.Int32)' does not exist in the implementation but it does exist in the contract.
-TypesMustExist : Type 'System.Range.OffsetAndLength' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Memory<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Memory<T>.Slice(System.Index)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Memory<T>.Slice(System.Range)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ReadOnlyMemory<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ReadOnlyMemory<T>.Slice(System.Index)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ReadOnlyMemory<T>.Slice(System.Range)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ReadOnlySpan<T>.Item.get(System.Index)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ReadOnlySpan<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ReadOnlySpan<T>.Slice(System.Index)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.ReadOnlySpan<T>.Slice(System.Range)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Span<T>.Item.get(System.Index)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Span<T>.Item.get(System.Range)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Span<T>.Slice(System.Index)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Span<T>.Slice(System.Range)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.Chars.get(System.Index)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.Chars.get(System.Range)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.Substring(System.Index)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.String.Substring(System.Range)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Utf8String.Slice(System.Int32, System.Int32)' does not exist in the implementation but it does exist in the contract.
-CannotSealType : Type 'System.ComponentModel.BaseNumberConverter' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.ComponentModel.BaseNumberConverter..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.CanConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.CanConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Type)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.ConvertFrom(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.ComponentModel.BaseNumberConverter.ConvertTo(System.ComponentModel.ITypeDescriptorContext, System.Globalization.CultureInfo, System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
-MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.ConfigureAwait(System.IAsyncDisposable, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.ConfigureAwait<T>(System.Collections.Generic.IAsyncEnumerable<T>, System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Threading.Tasks.TaskExtensions.WithCancellation<T>(System.Collections.Generic.IAsyncEnumerable<T>, System.Threading.CancellationToken)' does not exist in the implementation but it does exist in the contract.
-CannotSealType : Type 'System.Xml.Schema.XmlSchemaDatatype' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Xml.Schema.XmlSchemaDatatype..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.TokenizedType' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.TypeCode' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ValueType' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.Variety' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ChangeType(System.Object, System.Type, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.IsDerivedFrom(System.Xml.Schema.XmlSchemaDatatype)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ParseValue(System.String, System.Xml.XmlNameTable, System.Xml.IXmlNamespaceResolver)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.TokenizedType.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.TypeCode.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.ValueType.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaDatatype.Variety.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotSealType : Type 'System.Xml.Schema.XmlSchemaGroupBase' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Xml.Schema.XmlSchemaGroupBase..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaGroupBase.Items' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Xml.Schema.XmlSchemaGroupBase.Items.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotSealType : Type 'System.Data.Constraint' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Data.Constraint..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.ConstraintName' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.Table' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint._DataSet' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.ConstraintName.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.ConstraintName.set(System.String)' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.Table.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint.ToString()' is non-virtual in the implementation but is virtual in the contract.
-CannotMakeMemberNonVirtual : Member 'System.Data.Constraint._DataSet.get()' is non-virtual in the implementation but is virtual in the contract.
-CannotSealType : Type 'System.Linq.EnumerableExecutor' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
-CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
-MembersMustExist : Member 'System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
-Total Issues: 121
+Total Issues: 58

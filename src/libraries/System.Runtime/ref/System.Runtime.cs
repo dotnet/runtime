@@ -4034,7 +4034,6 @@ namespace System.Collections.ObjectModel
         bool System.Collections.IList.IsReadOnly { get { throw null; } }
         object System.Collections.IList.this[int index] { get { throw null; } set { } }
         public void Add(T item) { }
-        public void AddRange(System.Collections.Generic.IEnumerable<T> collection) { }
         public void Clear() { }
         protected virtual void ClearItems() { }
         public bool Contains(T item) { throw null; }
@@ -4043,15 +4042,9 @@ namespace System.Collections.ObjectModel
         public int IndexOf(T item) { throw null; }
         public void Insert(int index, T item) { }
         protected virtual void InsertItem(int index, T item) { }
-        protected virtual void InsertItemsRange(int index, System.Collections.Generic.IEnumerable<T> collection) { }
-        public void InsertRange(int index, System.Collections.Generic.IEnumerable<T> collection) { }
         public bool Remove(T item) { throw null; }
         public void RemoveAt(int index) { }
         protected virtual void RemoveItem(int index) { }
-        protected virtual void RemoveItemsRange(int index, int count) { }
-        public void RemoveRange(int index, int count) { }
-        protected virtual void ReplaceItemsRange(int index, int count, System.Collections.Generic.IEnumerable<T> collection) { }
-        public void ReplaceRange(int index, int count, System.Collections.Generic.IEnumerable<T> collection) { }
         protected virtual void SetItem(int index, T item) { }
         void System.Collections.ICollection.CopyTo(System.Array array, int index) { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }

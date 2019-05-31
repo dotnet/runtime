@@ -72,7 +72,6 @@
     <Compile Include="System\ByteTests.cs" />
     <Compile Include="System\CharTests.cs" />
     <Compile Include="System\CLSCompliantAttributeTests.cs" />
-    <Compile Include="System\Collections\ObjectModel\CollectionTests.cs" />
     <Compile Include="System\DateTimeTests.cs" />
     <Compile Include="System\DateTimeOffsetTests.cs" />
     <Compile Include="System\DBNullTests.cs" />
@@ -156,6 +155,7 @@
     <Compile Include="System\AppContext\AppContext.Switch.Validation.cs" />
     <Compile Include="System\Collections\Generic\KeyNotFoundExceptionTests.cs" />
     <Compile Include="System\Collections\Generic\KeyValuePairTests.cs" />
+    <Compile Include="System\Collections\ObjectModel\CollectionTests.cs" />
     <Compile Include="System\Collections\ObjectModel\CollectionTestBase.cs" />
     <Compile Include="System\Collections\ObjectModel\ReadOnlyCollectionTests.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.cs" />
@@ -234,7 +234,6 @@
     <Compile Include="System\ExitCodeTests.Unix.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="System\Collections\ObjectModel\CollectionTests.netcoreapp.cs" />
     <Compile Include="System\HashCodeTests.netcoreapp.cs" />
     <Compile Include="Helpers.netcoreapp.cs" />
     <Compile Include="System\ActivatorTests.netcoreapp.cs" />

@@ -1,13 +1,22 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Xunit;
 
 namespace System.Collections.ObjectModel.Tests
 {
-    public partial class CollectionTests : CollectionTestBase
+    /// <summary>
+    /// Since <see cref="Collection{T}"/> is just a wrapper base class around an <see cref="IList{T}"/>,
+    /// we just verify that the underlying list is what we expect, validate that the calls which
+    /// we expect are forwarded to the underlying list, and verify that the exceptions we expect
+    /// are thrown.
+    /// </summary>
+    public class CollectionTests : CollectionTestBase
     {
         private static readonly Collection<int> s_empty = new Collection<int>();
 
