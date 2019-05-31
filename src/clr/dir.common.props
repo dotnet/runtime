@@ -71,7 +71,7 @@
     <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
     <StableVersion Condition="'$(StabilizePackageVersion)' == 'true' and '$(StableVersion)' == ''">$(PackageVersion)</StableVersion>
 
-    <PreReleaseLabel>preview6</PreReleaseLabel>
+    <PreReleaseLabel>preview7</PreReleaseLabel>
   </PropertyGroup>
 
   <!-- Set up common target properties that we use to conditionally include sources -->
