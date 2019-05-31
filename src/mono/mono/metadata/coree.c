@@ -928,6 +928,7 @@ mono_load_coree (const char* exe_file_name)
 	if (coree_module_handle)
 		return;
 
+	// No GC safe transition because this is called early in driver.c
 	if (!init_from_coree && exe_file_name)
 		mono_coree_set_act_ctx (exe_file_name);
 

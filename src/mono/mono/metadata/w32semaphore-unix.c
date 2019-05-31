@@ -233,6 +233,9 @@ exit:
 	return handle;
 }
 
+// These functions appear to be using coop-aware locking functions, and so this file does not include explicit
+// GC-safe transitions like its corresponding Windows version
+
 gpointer
 ves_icall_System_Threading_Semaphore_CreateSemaphore_icall (gint32 initialCount, gint32 maximumCount,
 	const gunichar2 *name, gint32 name_length, gint32 *win32error, MonoError *error)

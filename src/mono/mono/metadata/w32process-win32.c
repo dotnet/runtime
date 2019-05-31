@@ -81,7 +81,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 	gboolean ret;
 
 	shellex.cbSize = sizeof(SHELLEXECUTEINFO);
-	shellex.fMask = (gulong)(SEE_MASK_FLAG_DDEWAIT | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_UNICODE);
+	shellex.fMask = (gulong)(SEE_MASK_NOASYNC | SEE_MASK_NOCLOSEPROCESS | SEE_MASK_UNICODE);
 	shellex.nShow = (gulong)MONO_HANDLE_GETVAL (proc_start_info, window_style);
 	shellex.nShow = (gulong)((shellex.nShow == 0) ? 1 : (shellex.nShow == 1 ? 0 : shellex.nShow));
 
@@ -99,7 +99,10 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 	else
 		shellex.fMask = (gulong)(shellex.fMask | SEE_MASK_FLAG_NO_UI);
 
+	MONO_ENTER_GC_SAFE;
 	ret = ShellExecuteEx (&shellex);
+	MONO_EXIT_GC_SAFE;
+	
 	if (ret == FALSE) {
 		process_info->pid = -GetLastError ();
 	} else {
@@ -138,6 +141,7 @@ mono_process_create_process (MonoCreateProcessCoop *coop, MonoW32ProcessInfo *mo
 	gchandle_t cmd_gchandle = 0;
 	gunichar2 *cmd_chars = MONO_HANDLE_IS_NULL (cmd) ? NULL : mono_string_handle_pin_chars (cmd, &cmd_gchandle);
 
+	MONO_ENTER_GC_SAFE;
 	if (coop->username) {
 		guint32 logon_flags = mono_process_info->load_user_profile ? LOGON_WITH_PROFILE : 0;
 
@@ -161,6 +165,7 @@ mono_process_create_process (MonoCreateProcessCoop *coop, MonoW32ProcessInfo *mo
 					start_info,
 					process_info);
 	}
+	MONO_EXIT_GC_SAFE;
 
 	mono_gchandle_free_internal (cmd_gchandle);
 
@@ -204,7 +209,7 @@ process_complete_path (const gunichar2 *appname, gchar **completed)
 	char *utf8app;
 	char *utf8appmemory = NULL;
 	char *found = NULL;
-	gboolean result;
+	gboolean result, file_test_result;
 
 	utf8appmemory = g_utf16_to_utf8 (appname, -1, NULL, NULL, NULL);
 	utf8app = process_unquote_application_name (utf8appmemory);
@@ -215,13 +220,18 @@ process_complete_path (const gunichar2 *appname, gchar **completed)
 		goto exit;
 	}
 
-	if (g_file_test (utf8app, G_FILE_TEST_IS_EXECUTABLE) && !g_file_test (utf8app, G_FILE_TEST_IS_DIR)) {
+	MONO_ENTER_GC_SAFE;
+	file_test_result = g_file_test (utf8app, G_FILE_TEST_IS_EXECUTABLE) && !g_file_test (utf8app, G_FILE_TEST_IS_DIR);
+	MONO_EXIT_GC_SAFE;
+	if (file_test_result) {
 		*completed = process_quote_path (utf8app);
 		result = TRUE;
 		goto exit;
 	}
 	
+	MONO_ENTER_GC_SAFE;
 	found = g_find_program_in_path (utf8app);
+	MONO_EXIT_GC_SAFE;
 	if (found == NULL) {
 		*completed = NULL;
 		result = FALSE;
@@ -358,7 +368,11 @@ exit:
 static gboolean
 mono_process_win_enum_processes (DWORD *pids, DWORD count, DWORD *needed)
 {
-	return !!EnumProcesses (pids, count, needed);
+	gboolean success;
+	MONO_ENTER_GC_SAFE;
+	success = EnumProcesses (pids, count, needed);
+	MONO_EXIT_GC_SAFE;
+	return success;
 }
 #endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT) */
 

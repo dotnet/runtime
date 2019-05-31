@@ -150,6 +150,7 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 	}
 	module->main_module = name == NULL? TRUE: FALSE;
 
+	// No GC safe transition because this is called early in main.c
 	lib = mono_dl_open_file (name, lflags);
 
 	if (!lib) {

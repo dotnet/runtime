@@ -383,6 +383,7 @@ mono_file_map (size_t length, int flags, int fd, guint64 offset, void **ret_hand
 		return NULL;
 #endif
 
+	// No GC safe transition because this is called early in main.c
 	BEGIN_CRITICAL_SECTION;
 	ptr = mmap (0, length, prot, mflags, fd, offset);
 	END_CRITICAL_SECTION;
@@ -412,6 +413,7 @@ mono_file_unmap (void *addr, void *handle)
 {
 	int res;
 
+	// No GC safe transition because this is called early in driver.c via mono_debug_init (with a few layers of indirection)
 	BEGIN_CRITICAL_SECTION;
 	res = munmap (addr, (size_t)handle);
 	END_CRITICAL_SECTION;
@@ -453,6 +455,7 @@ mono_mprotect (void *addr, size_t length, int flags)
 #endif
 #endif
 	}
+	// No GC safe transition because this is called early in mini_init via mono_arch_init (with a few layers of indirection)
 	return mprotect (addr, length, prot);
 }
 
