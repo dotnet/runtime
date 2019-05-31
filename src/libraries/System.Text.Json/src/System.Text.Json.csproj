@@ -100,6 +100,7 @@
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.HandleNull.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Span.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Read.Utf8JsonReader.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.ByteArray.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.HandleDictionary.cs" />
