@@ -4,6 +4,7 @@
     <BinPlaceRuntime>true</BinPlaceRuntime>
     <NETStandardVersion Condition="$(TargetFramework.StartsWith('netstandard'))">$(TargetFramework.SubString(11))</NETStandardVersion>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
+    <TargetsNetStandardLowerThan21 Condition="'$(TargetsNetStandard)' == 'true' AND '$(NETStandardVersion)' &lt; 2.1">true</TargetsNetStandardLowerThan21>
   </PropertyGroup>
 
     <!-- Ref binplacing for all configurations -->
@@ -32,7 +33,7 @@
       <Version>4.5.3</Version>
     </PackageReference>
 
-    <PackageReference Include="System.Numerics.Vectors" Condition="'$(DotNetBuildFromSource)' != 'true' AND '$(TargetsNetStandard)' == 'true' AND '$(NETStandardVersion)' &lt; 2.1">
+    <PackageReference Include="System.Numerics.Vectors" Condition="'$(TargetsNetStandardLowerThan21)' == 'true' OR '$(TargetsNetfx)' == 'true'">
       <Version>4.5.0</Version>
     </PackageReference>
 
