@@ -117,18 +117,33 @@ namespace System.Text.Json.Serialization
 
                     DetermineExtensionDataProperty();
                     break;
-
                 case ClassType.Enumerable:
                 case ClassType.Dictionary:
-                    // Add a single property that maps to the class type so we can have policies applied.
-                    JsonPropertyInfo policyProperty = AddPolicyProperty(type, options);
+                    {
+                        // Add a single property that maps to the class type so we can have policies applied.
+                        JsonPropertyInfo policyProperty = AddPolicyProperty(type, options);
 
-                    // Use the type from the property policy to get any late-bound concrete types (from an interface like IDictionary).
-                    CreateObject = options.ClassMaterializerStrategy.CreateConstructor(policyProperty.RuntimePropertyType);
+                        // Use the type from the property policy to get any late-bound concrete types (from an interface like IDictionary).
+                        CreateObject = options.ClassMaterializerStrategy.CreateConstructor(policyProperty.RuntimePropertyType);
 
-                    // Create a ClassInfo that maps to the element type which is used for (de)serialization and policies.
-                    Type elementType = GetElementType(type, parentType : null, memberInfo: null);
-                    ElementClassInfo = options.GetOrAddClass(elementType);
+                        // Create a ClassInfo that maps to the element type which is used for (de)serialization and policies.
+                        Type elementType = GetElementType(type, parentType: null, memberInfo: null);
+                        ElementClassInfo = options.GetOrAddClass(elementType);
+                    }
+                    break;
+                case ClassType.ImmutableDictionary:
+                    {
+                        // Add a single property that maps to the class type so we can have policies applied.
+                        AddPolicyProperty(type, options);
+
+                        Type elementType = GetElementType(type, parentType: null, memberInfo: null);
+
+                        CreateObject = options.ClassMaterializerStrategy.CreateConstructor(
+                            typeof(Dictionary<,>).MakeGenericType(typeof(string), elementType));
+
+                        // Create a ClassInfo that maps to the element type which is used for (de)serialization and policies.
+                        ElementClassInfo = options.GetOrAddClass(elementType);
+                    }
                     break;
                 case ClassType.Value:
                 case ClassType.Unknown:
@@ -373,7 +388,7 @@ namespace System.Text.Json.Serialization
                 Type[] args = propertyType.GetGenericArguments();
                 ClassType classType = GetClassType(propertyType);
 
-                if (classType == ClassType.Dictionary &&
+                if ((classType == ClassType.Dictionary || classType == ClassType.ImmutableDictionary) &&
                     args.Length >= 2 && // It is >= 2 in case there is a IDictionary<TKey, TValue, TSomeExtension>.
                     args[0].UnderlyingSystemType == typeof(string))
                 {
@@ -403,9 +418,14 @@ namespace System.Text.Json.Serialization
                 return ClassType.Value;
             }
 
+            if (DefaultImmutableConverter.TypeIsImmutableDictionary(type))
+            {
+                return ClassType.ImmutableDictionary;
+            }
+
             if (typeof(IDictionary).IsAssignableFrom(type) || 
-                (type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IDictionary<,>) 
-                || type.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))))
+                (type.IsGenericType && (type.GetGenericTypeDefinition() == typeof(IDictionary<,>) ||
+                type.GetGenericTypeDefinition() == typeof(IReadOnlyDictionary<,>))))
             {
                 return ClassType.Dictionary;
             }

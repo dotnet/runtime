@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
+using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization
 {
@@ -16,6 +17,10 @@ namespace System.Text.Json.Serialization
 
         // Support Dictionary keys.
         public string KeyName;
+
+        // Whether the current object is an immutable dictionary.
+        public bool IsImmutableDictionary;
+        public bool IsImmutableDictionaryProperty;
 
         // The current enumerator for the IEnumerable or IDictionary.
         public IEnumerator Enumerator;
@@ -42,6 +47,11 @@ namespace System.Text.Json.Serialization
             {
                 JsonPropertyInfo = JsonClassInfo.GetPolicyProperty();
             }
+            else if (JsonClassInfo.ClassType == ClassType.ImmutableDictionary)
+            {
+                JsonPropertyInfo = JsonClassInfo.GetPolicyProperty();
+                IsImmutableDictionary = true;
+            }
         }
 
         public void WriteObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, bool writeNull = false)
@@ -60,7 +70,7 @@ namespace System.Text.Json.Serialization
                 Debug.Assert(writeNull == false);
 
                 // Write start without a property name.
-                if (classType == ClassType.Object || classType == ClassType.Dictionary)
+                if (classType == ClassType.Object || classType == ClassType.Dictionary || classType == ClassType.ImmutableDictionary)
                 {
                     writer.WriteStartObject();
                     StartObjectWritten = true;
@@ -79,7 +89,9 @@ namespace System.Text.Json.Serialization
             {
                 writer.WriteNull(propertyName);
             }
-            else if (classType == ClassType.Object || classType == ClassType.Dictionary)
+            else if (classType == ClassType.Object ||
+                classType == ClassType.Dictionary ||
+                classType == ClassType.ImmutableDictionary)
             {
                 writer.WriteStartObject(propertyName);
                 StartObjectWritten = true;
@@ -99,6 +111,7 @@ namespace System.Text.Json.Serialization
             JsonClassInfo = null;
             JsonPropertyInfo = null;
             PropertyIndex = 0;
+            IsImmutableDictionary = false;
             PopStackOnEndObject = false;
             PopStackOnEnd = false;
             StartObjectWritten = false;
@@ -108,6 +121,7 @@ namespace System.Text.Json.Serialization
         {
             PropertyIndex = 0;
             PopStackOnEndObject = false;
+            IsImmutableDictionaryProperty = false;
             JsonPropertyInfo = null;
         }
 

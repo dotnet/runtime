@@ -544,5 +544,11 @@ namespace System.Text.Json.Serialization.Tests
             result = JsonSerializer.Parse<ImmutableSortedSet<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
         }
+
+        [Fact]
+        public static void ReadPrimitiveImmutableArrayThrows()
+        {
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Parse<ImmutableArray<int>>(Encoding.UTF8.GetBytes(@"[1,2]")));
+        }
     }
 }

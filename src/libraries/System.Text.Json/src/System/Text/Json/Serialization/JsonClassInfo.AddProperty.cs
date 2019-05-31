@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization
 {
@@ -25,7 +25,7 @@ namespace System.Text.Json.Serialization
         {
             JsonPropertyInfo jsonInfo = CreateProperty(propertyType, propertyType, propertyInfo, classType, options);
 
-            // Convert interfaces to concrete types.
+            // Convert non-immutable dictionary interfaces to concrete types.
             if (propertyType.IsInterface && jsonInfo.ClassType == ClassType.Dictionary)
             {
                 // If a polymorphic case, we have to wait until run-time values are processed.
@@ -65,6 +65,7 @@ namespace System.Text.Json.Serialization
             {
                 case ClassType.Enumerable:
                 case ClassType.Dictionary:
+                case ClassType.ImmutableDictionary:
                 case ClassType.Unknown:
                     collectionElementType = GetElementType(runtimePropertyType, parentClassType, propertyInfo);
                     break;
