@@ -148,6 +148,7 @@
     <Compile Include="SocketsHttpHandlerTest.cs" />
     <Compile Include="HttpClientHandlerTest.Http1.cs" />
     <Compile Include="HttpClientHandlerTest.Http2.cs" />
+    <Compile Include="CustomContent.netcore.cs" />
     <Compile Include="$(CommonTestPath)\System\Net\Http\Http2Frames.cs">
       <Link>Common\System\Net\Http\Http2Frames.cs</Link>
     </Compile>
