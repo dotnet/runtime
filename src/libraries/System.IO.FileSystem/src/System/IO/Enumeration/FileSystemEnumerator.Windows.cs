@@ -49,7 +49,7 @@ namespace System.IO.Enumeration
         public FileSystemEnumerator(string directory, EnumerationOptions options = null)
         {
             _originalRootDirectory = directory ?? throw new ArgumentNullException(nameof(directory));
-            _rootDirectory = PathInternal.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
+            _rootDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
             _options = options ?? EnumerationOptions.Default;
 
             // We'll only suppress the media insertion prompt on the topmost directory as that is the

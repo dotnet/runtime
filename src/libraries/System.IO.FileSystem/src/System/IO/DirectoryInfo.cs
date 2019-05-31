@@ -42,7 +42,7 @@ namespace System.IO
 
             _name = fileName ?? (PathInternal.IsRoot(fullPath.AsSpan()) ?
                     fullPath.AsSpan() :
-                    Path.GetFileName(PathInternal.TrimEndingDirectorySeparator(fullPath.AsSpan()))).ToString();
+                    Path.GetFileName(Path.TrimEndingDirectorySeparator(fullPath.AsSpan()))).ToString();
 
             FullPath = fullPath;
         }
@@ -54,7 +54,7 @@ namespace System.IO
                 // FullPath might end in either "parent\child" or "parent\child\", and in either case we want 
                 // the parent of child, not the child. Trim off an ending directory separator if there is one,
                 // but don't mangle the root.
-                string parentName = Path.GetDirectoryName(PathInternal.IsRoot(FullPath.AsSpan()) ? FullPath : PathInternal.TrimEndingDirectorySeparator(FullPath));
+                string parentName = Path.GetDirectoryName(PathInternal.IsRoot(FullPath.AsSpan()) ? FullPath : Path.TrimEndingDirectorySeparator(FullPath));
                 return parentName != null ? 
                     new DirectoryInfo(parentName, isNormalized: true) :
                     null;
@@ -72,8 +72,8 @@ namespace System.IO
 
             string newPath = Path.GetFullPath(Path.Combine(FullPath, path));
 
-            ReadOnlySpan<char> trimmedNewPath = PathInternal.TrimEndingDirectorySeparator(newPath.AsSpan());
-            ReadOnlySpan<char> trimmedCurrentPath = PathInternal.TrimEndingDirectorySeparator(FullPath.AsSpan());
+            ReadOnlySpan<char> trimmedNewPath = Path.TrimEndingDirectorySeparator(newPath.AsSpan());
+            ReadOnlySpan<char> trimmedCurrentPath = Path.TrimEndingDirectorySeparator(FullPath.AsSpan());
 
             // We want to make sure the requested directory is actually under the subdirectory.
             if (trimmedNewPath.StartsWith(trimmedCurrentPath, PathInternal.StringComparison)

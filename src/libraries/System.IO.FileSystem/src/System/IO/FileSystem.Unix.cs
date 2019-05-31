@@ -218,7 +218,7 @@ namespace System.IO
 
                         // Input allows trailing separators in order to match Windows behavior
                         // Unix does not accept trailing separators, so must be trimmed
-                        if (!FileExists(PathInternal.TrimEndingDirectorySeparator(fullPath),
+                        if (!FileExists(Path.TrimEndingDirectorySeparator(fullPath),
                             Interop.Sys.FileTypes.S_IFREG, out fileExistsError) &&
                             fileExistsError.Error == Interop.Error.ENOENT)
                         {
@@ -241,7 +241,7 @@ namespace System.IO
             int length = fullPath.Length;
 
             // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
-            if (length >= 2 && PathInternal.EndsInDirectorySeparator(fullPath))
+            if (length >= 2 && Path.EndsInDirectorySeparator(fullPath))
             {
                 length--;
             }
@@ -348,11 +348,11 @@ namespace System.IO
                 // This surfaces as a IOException, if we let it go beyond here it would
                 // give DirectoryNotFound.
 
-                if (PathInternal.EndsInDirectorySeparator(sourceFullPath))
+                if (Path.EndsInDirectorySeparator(sourceFullPath))
                     throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
 
                 // ... but it doesn't care if the destination has a trailing separator.
-                destFullPath = PathInternal.TrimEndingDirectorySeparator(destFullPath);
+                destFullPath = Path.TrimEndingDirectorySeparator(destFullPath);
             }
 
             if (FileExists(destFullPath))

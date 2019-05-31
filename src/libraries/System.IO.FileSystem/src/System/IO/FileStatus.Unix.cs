@@ -271,7 +271,7 @@ namespace System.IO
             // storing those results separately.  We only report failure if the initial
             // lstat fails, as a broken symlink should still report info on exists, attributes, etc.
             _isDirectory = false;
-            path = PathInternal.TrimEndingDirectorySeparator(path);
+            path = Path.TrimEndingDirectorySeparator(path);
             int result = Interop.Sys.LStat(path, out _fileStatus);
             if (result < 0)
             {
