@@ -18,6 +18,7 @@ namespace System.Text.RegularExpressions
         private int _codepos;
         private bool _rightToLeft;
         private bool _caseInsensitive;
+        private const int LoopTimeoutCheckCount = 2048; // A conservative value to guarantee the correct timeout handling.
 
         public RegexInterpreter(RegexCode code, CultureInfo culture)
         {
@@ -964,8 +965,18 @@ namespace System.Text.RegularExpressions
                             string set = _code.Strings[Operand(0)];
 
                             while (c-- > 0)
+                            {
+                                // Check the timeout every 2000th iteration. The additional if check
+                                // in every iteration can be neglected as the cost of the CharInClass
+                                // check is many times higher.
+                                if ((uint)c % LoopTimeoutCheckCount == 0)
+                                {
+                                    CheckTimeout();
+                                }
+
                                 if (!RegexCharClass.CharInClass(Forwardcharnext(), set))
                                     goto BreakBackward;
+                            }
 
                             advance = 2;
                             continue;
@@ -1035,6 +1046,14 @@ namespace System.Text.RegularExpressions
 
                             for (i = c; i > 0; i--)
                             {
+                                // Check the timeout every 2000th iteration. The additional if check
+                                // in every iteration can be neglected as the cost of the CharInClass
+                                // check is many times higher.
+                                if ((uint)i % LoopTimeoutCheckCount == 0)
+                                {
+                                    CheckTimeout();
+                                }
+
                                 if (!RegexCharClass.CharInClass(Forwardcharnext(), set))
                                 {
                                     Backwardnext();
