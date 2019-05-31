@@ -409,46 +409,6 @@ Thread* GCToEEInterface::GetThread()
     return ::GetThread();
 }
 
-struct BackgroundThreadStubArgs
-{
-    Thread* thread;
-    GCBackgroundThreadFunction threadStart;
-    void* arg;
-    CLREvent threadStartedEvent;
-    bool hasStarted;
-};
-
-DWORD WINAPI BackgroundThreadStub(void* arg)
-{
-    BackgroundThreadStubArgs* stubArgs = (BackgroundThreadStubArgs*)arg;
-    assert (stubArgs->thread != NULL);
-
-    ClrFlsSetThreadType (ThreadType_GC);
-    stubArgs->thread->SetGCSpecial(true);
-    STRESS_LOG_RESERVE_MEM (GC_STRESSLOG_MULTIPLY);
-
-    stubArgs->hasStarted = !!stubArgs->thread->HasStarted(FALSE);
-
-    Thread* thread = stubArgs->thread;
-    GCBackgroundThreadFunction realThreadStart = stubArgs->threadStart;
-    void* realThreadArg = stubArgs->arg;
-    bool hasStarted = stubArgs->hasStarted;
-
-    stubArgs->threadStartedEvent.Set();
-    // The stubArgs cannot be used once the event is set, since that releases wait on the
-    // event in the function that created this thread and the stubArgs go out of scope.
-
-    DWORD result = 0;
-
-    if (hasStarted)
-    {
-        result = realThreadStart(realThreadArg);
-        DestroyThread(thread);
-    }
-
-    return result;
-}
-
 //
 // Diagnostics code
 //
