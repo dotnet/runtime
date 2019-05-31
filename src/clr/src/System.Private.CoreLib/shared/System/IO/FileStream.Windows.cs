@@ -1555,10 +1555,6 @@ namespace System.IO
             }
         }
 
-        // Unlike Flush(), FlushAsync() always flushes to disk. This is intentional.
-        // Legend is that we chose not to flush the OS file buffers in Flush() in fear of 
-        // perf problems with frequent, long running FlushFileBuffers() calls. But we don't 
-        // have that problem with FlushAsync() because we will call FlushFileBuffers() in the background.
         private Task FlushAsyncInternal(CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -1567,7 +1563,7 @@ namespace System.IO
             if (_fileHandle.IsClosed)
                 throw Error.GetFileNotOpen();
 
-            // TODO: https://github.com/dotnet/corefx/issues/32837 (stop doing this synchronous work).
+            // TODO: https://github.com/dotnet/corefx/issues/32837 (stop doing this synchronous work!!).
             // The always synchronous data transfer between the OS and the internal buffer is intentional 
             // because this is needed to allow concurrent async IO requests. Concurrent data transfer
             // between the OS and the internal buffer will result in race conditions. Since FlushWrite and
@@ -1584,19 +1580,7 @@ namespace System.IO
                 return Task.FromException(e);
             }
 
-            if (CanWrite)
-            {
-                return Task.Factory.StartNew(
-                    state => ((FileStream)state!).FlushOSBuffer(),
-                    this,
-                    cancellationToken,
-                    TaskCreationOptions.DenyChildAttach,
-                    TaskScheduler.Default);
-            }
-            else
-            {
-                return Task.CompletedTask;
-            }
+            return Task.CompletedTask;
         }
 
         private void LockInternal(long position, long length)
