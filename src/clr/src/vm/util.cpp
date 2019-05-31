@@ -545,70 +545,6 @@ void NPrintToStdErrW(const WCHAR *pwzString, size_t nchars)
 }
 //----------------------------------------------------------------------------
 
-
-
-
-
-//+--------------------------------------------------------------------------
-//
-//  Function:   VMDebugOutputA( . . . . )
-//              VMDebugOutputW( . . . . )
-//  
-//  Synopsis:   Output a message formatted in printf fashion to the debugger.
-//              ANSI and wide character versions are both provided.  Only 
-//              present in debug builds (i.e. when _DEBUG is defined).
-//
-//  Arguments:  [format]     ---   ANSI or Wide character format string
-//                                 in printf/OutputDebugString-style format.
-// 
-//              [ ... ]      ---   Variable length argument list compatible
-//                                 with the format string.
-//
-//  Returns:    Nothing.
-// 
-//  Notes:      Has internal static sized character buffer of 
-//              width specified by the preprocessor constant DEBUGOUT_BUFSIZE.
-//
-//---------------------------------------------------------------------------
-#ifdef _DEBUG
-
-#define DEBUGOUT_BUFSIZE 1024
-
-void __cdecl VMDebugOutputA(__in LPSTR format, ...)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-    va_list     argPtr;
-    va_start(argPtr, format);
-
-    char szBuffer[DEBUGOUT_BUFSIZE];
-
-    if(vsprintf_s(szBuffer, DEBUGOUT_BUFSIZE-1, format, argPtr) > 0)
-        OutputDebugStringA(szBuffer);
-    va_end(argPtr);
-}
-
-void __cdecl VMDebugOutputW(__in LPWSTR format, ...)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-    STATIC_CONTRACT_DEBUG_ONLY;
-
-    va_list     argPtr;
-    va_start(argPtr, format);
-    
-    WCHAR wszBuffer[DEBUGOUT_BUFSIZE];
-
-    if(vswprintf_s(wszBuffer, DEBUGOUT_BUFSIZE-2, format, argPtr) > 0)
-        WszOutputDebugString(wszBuffer);
-    va_end(argPtr);
-}
-
-#endif   // #ifdef DACCESS_COMPILE
-
 //*****************************************************************************
 // Compare VarLoc's
 //*****************************************************************************
@@ -1254,152 +1190,9 @@ HRESULT VMPostError(                    // Returned error.
 }
 
 #ifndef CROSSGEN_COMPILE
-void VMDumpCOMErrors(HRESULT hrErr)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(FAILED(hrErr));
-    }
-    CONTRACTL_END;
-
-    SafeComHolderPreemp<IErrorInfo> pIErr(NULL);// Error interface.
-    BSTRHolder bstrDesc(NULL);                  // Description text.
-
-    // Try to get an error info object and display the message.
-    if (SafeGetErrorInfo(&pIErr) == S_OK && pIErr->GetDescription(&bstrDesc) == S_OK)
-    {
-        EEMessageBoxCatastrophic(IDS_EE_GENERIC, IDS_FATAL_ERROR, (BSTR)bstrDesc);
-    }
-    else
-    {
-        // Just give out the failed hr return code.
-        EEMessageBoxCatastrophic(IDS_COMPLUS_ERROR, IDS_FATAL_ERROR, hrErr);
-    }
-}
 
 //-----------------------------------------------------------------------------
 #ifndef FEATURE_PAL
-
-// Wrap registry functions to use CQuickWSTR to allocate space. This does it
-// in a stack friendly manner.
-//-----------------------------------------------------------------------------
-LONG UtilRegEnumKey(HKEY hKey,            // handle to key to query
-                    DWORD dwIndex,        // index of subkey to query
-                    CQuickWSTR* lpName) // buffer for subkey name
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        INJECT_FAULT(return ERROR_NOT_ENOUGH_MEMORY;);
-    }
-    CONTRACTL_END;
-
-    DWORD size = (DWORD)lpName->MaxSize();
-    LONG result = WszRegEnumKeyEx(hKey,
-                                  dwIndex,
-                                  lpName->Ptr(),
-                                  &size,
-                                  NULL,
-                                  NULL,
-                                  NULL,
-                                  NULL);
-
-    if (result == ERROR_SUCCESS || result == ERROR_MORE_DATA) {
-
-        // Grow or shrink buffer to correct size
-        if (lpName->ReSizeNoThrow(size+1) != NOERROR)
-            result = ERROR_NOT_ENOUGH_MEMORY;
-
-        if (result == ERROR_MORE_DATA) {
-            size = (DWORD)lpName->MaxSize();
-            result = WszRegEnumKeyEx(hKey,
-                                     dwIndex,
-                                     lpName->Ptr(),
-                                     &size,
-                                     NULL,
-                                     NULL,
-                                     NULL,
-                                     NULL);
-        }
-    }
-
-    return result;
-}
-
-LONG UtilRegQueryStringValueEx(HKEY hKey,           // handle to key to query
-                               LPCWSTR lpValueName, // address of name of value to query
-                               LPDWORD lpReserved,  // reserved
-                               LPDWORD lpType,      // address of buffer for value type
-                               CQuickWSTR* lpData)// data buffer
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        INJECT_FAULT(return ERROR_NOT_ENOUGH_MEMORY;);
-    }
-    CONTRACTL_END;
-
-    DWORD size = (DWORD)lpData->MaxSize();
-    LONG result = WszRegQueryValueEx(hKey,
-                                     lpValueName,
-                                     lpReserved,
-                                     lpType,
-                                     (LPBYTE) lpData->Ptr(),
-                                     &size);
-
-    if (result == ERROR_SUCCESS || result == ERROR_MORE_DATA) {
-
-        // Grow or shrink buffer to correct size
-        if (lpData->ReSizeNoThrow(size+1) != NOERROR)
-            result = ERROR_NOT_ENOUGH_MEMORY;
-
-        if (result == ERROR_MORE_DATA) {
-            size = (DWORD)lpData->MaxSize();
-            result = WszRegQueryValueEx(hKey,
-                                        lpValueName,
-                                        lpReserved,
-                                        lpType,
-                                        (LPBYTE) lpData->Ptr(),
-                                        &size);
-        }
-    }
-    
-    return result;
-}
-
-BOOL ReportEventCLR(
-     WORD       wType,
-     WORD       wCategory,
-     DWORD      dwEventID,
-     PSID       lpUserSid,
-     SString  * message)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    } CONTRACTL_END;
-
-    GCX_PREEMP();
-
-    SString buff;
-    buff.Printf(W(".NET Runtime version %s - %s"), VER_FILEVERSION_STR_L, message->GetUnicode());
-
-    DWORD dwRetVal = ClrReportEvent(W(".NET Runtime"),
-                        wType,          // event type 
-                        wCategory,      // category
-                        dwEventID,      // event identifier 
-                        lpUserSid,      // user security identifier
-                        buff.GetUnicode()); // one substitution string 
-
-    // Return BOOLEAN based upon return code
-    return (dwRetVal == ERROR_SUCCESS)?TRUE:FALSE;
-}
 
 // This function checks to see if GetLogicalProcessorInformation API is supported. 
 // On success, this function allocates a SLPI array, sets nEntries to number 
@@ -2091,7 +1884,7 @@ void *GetCLRFunction(LPCSTR FunctionName)
 #endif // CROSSGEN_COMPILE
 
 LPVOID
-CLRMapViewOfFileEx(
+CLRMapViewOfFile(
     IN HANDLE hFileMappingObject,
     IN DWORD dwDesiredAccess,
     IN DWORD dwFileOffsetHigh,
@@ -2150,20 +1943,6 @@ CLRMapViewOfFileEx(
 
     return pv;
 }
-
-LPVOID
-CLRMapViewOfFile(
-    IN HANDLE hFileMappingObject,
-    IN DWORD dwDesiredAccess,
-    IN DWORD dwFileOffsetHigh,
-    IN DWORD dwFileOffsetLow,
-    IN SIZE_T dwNumberOfBytesToMap
-    )
-{
-    WRAPPER_NO_CONTRACT;
-    return CLRMapViewOfFileEx(hFileMappingObject,dwDesiredAccess,dwFileOffsetHigh,dwFileOffsetLow,dwNumberOfBytesToMap,NULL);
-}
-
 
 BOOL
 CLRUnmapViewOfFile(
@@ -2276,17 +2055,6 @@ BOOL CLRFreeLibrary(HMODULE hModule)
     STATIC_CONTRACT_FORBID_FAULT;
 
     return FreeLibrary(hModule);
-}
-
-VOID CLRFreeLibraryAndExitThread(HMODULE hModule,DWORD dwExitCode)
-{
-    // Don't use dynamic contract: will override GetLastError value
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-    // This is no-return
-    FreeLibraryAndExitThread(hModule,dwExitCode);
 }
 
 #endif // CROSSGEN_COMPILE
@@ -3069,83 +2837,6 @@ BOOL DACNotify::ParseExceptionCatcherEnterNotification(TADDR Args[], TADDR& Meth
     return TRUE;
 }
 
-
-#if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
-
-
-#if defined(_DEBUG) && !defined(FEATURE_PAL)
-
-typedef USHORT
-(__stdcall *PFNRtlCaptureStackBackTrace)(
-    IN ULONG FramesToSkip,
-    IN ULONG FramesToCapture,
-    OUT PVOID * BackTrace,
-    OUT PULONG BackTraceHash);
-
-static PFNRtlCaptureStackBackTrace s_RtlCaptureStackBackTrace = NULL;
-
-WORD UtilCaptureStackBackTrace(
-    ULONG FramesToSkip,
-    ULONG FramesToCapture,
-    PVOID * BackTrace,
-    OUT PULONG BackTraceHash)
-{
-    WRAPPER_NO_CONTRACT;
-
-#ifdef _DEBUG
-    Thread* t = GetThread();
-    if (t != NULL) {
-        // the thread should not have a hijack set up or we can't walk the stack. 
-        _ASSERTE(!(t->m_State & Thread::TS_Hijacked));    
-    }
-#endif
-
-    if(!s_RtlCaptureStackBackTrace)
-    {
-        // Don't need to worry about race conditions here since it will be the same value
-        HMODULE hModNtdll = GetModuleHandleA("ntdll.dll");
-        s_RtlCaptureStackBackTrace = reinterpret_cast<PFNRtlCaptureStackBackTrace>(
-            GetProcAddress(hModNtdll, "RtlCaptureStackBackTrace"));
-    }
-    if (!s_RtlCaptureStackBackTrace) {
-        return 0;
-    }
-    ULONG hash;
-    if (BackTraceHash == NULL) {
-        BackTraceHash = &hash;
-    }
-    return s_RtlCaptureStackBackTrace(FramesToSkip, FramesToCapture, BackTrace, BackTraceHash);
-}
-
-#endif // #if _DEBUG && !FEATURE_PAL
-
-
-#ifdef _DEBUG
-DisableDelayLoadCheckForOleaut32::DisableDelayLoadCheckForOleaut32()
-{
-    GetThread()->SetThreadStateNC(Thread::TSNC_DisableOleaut32Check);
-}
-
-DisableDelayLoadCheckForOleaut32::~DisableDelayLoadCheckForOleaut32()
-{
-    GetThread()->ResetThreadStateNC(Thread::TSNC_DisableOleaut32Check);
-}
-
-BOOL DelayLoadOleaut32CheckDisabled()
-{
-    Thread *pThread = GetThread();
-    if (pThread && pThread->HasThreadStateNC(Thread::TSNC_DisableOleaut32Check))
-    {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-#endif
-
-#endif // !DACCESS_COMPILE && !CROSSGEN_COMPILE
-
-
 static BOOL TrustMeIAmSafe(void *pLock) 
 {
     LIMITED_METHOD_CONTRACT;
@@ -3154,10 +2845,8 @@ static BOOL TrustMeIAmSafe(void *pLock)
 
 LockOwner g_lockTrustMeIAmThreadSafe = { NULL, TrustMeIAmSafe };
 
-
-DangerousNonHostedSpinLock g_randomLock;
-CLRRandom g_random;
-
+static DangerousNonHostedSpinLock g_randomLock;
+static CLRRandom g_random;
 
 int GetRandomInt(int maxVal)
 {
