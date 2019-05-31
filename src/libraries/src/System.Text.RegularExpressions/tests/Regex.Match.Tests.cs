@@ -380,6 +380,31 @@ namespace System.Text.RegularExpressions.Tests
             }).Dispose();
         }
 
+        // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [InlineData(RegexOptions.Compiled)]
+        [InlineData(RegexOptions.None)]
+        public void Match_Timeout_Loop_Throws(RegexOptions options)
+        {
+            var regex = new Regex(@"a\s+", options, TimeSpan.FromSeconds(1));
+            string input = @"a" + new string(' ', 800_000_000) + @"b";
+
+            Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
+        }
+
+        // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
+        [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
+        [InlineData(RegexOptions.Compiled)]
+        [InlineData(RegexOptions.None)]
+        public void Match_Timeout_Repetition_Throws(RegexOptions options)
+        {
+            int repetitionCount = 800_000_000;
+            var regex = new Regex(@"a\s{" + repetitionCount+ "}", options, TimeSpan.FromSeconds(1));
+            string input = @"a" + new string(' ', repetitionCount) + @"b";
+
+            Assert.Throws<RegexMatchTimeoutException>(() => regex.Match(input));
+        }
+
         public static IEnumerable<object[]> Match_Advanced_TestData()
         {
             // \B special character escape: ".*\\B(SUCCESS)\\B.*"
