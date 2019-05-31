@@ -169,7 +169,7 @@ int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
     uint64_t resolution = SystemNative_GetTimestampResolution();
     uint64_t timestamp = SystemNative_GetTimestamp();
 
-    uint64_t currentTime = timestamp * SecondsToNanoSeconds / resolution;
+    uint64_t currentTime = (uint64_t)(timestamp * ((double)SecondsToNanoSeconds / resolution));
 
     uint64_t lastRecordedCurrentTime = previousCpuInfo->lastRecordedCurrentTime;
     uint64_t lastRecordedKernelTime = previousCpuInfo->lastRecordedKernelTime;
