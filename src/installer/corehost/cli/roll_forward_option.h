@@ -26,7 +26,6 @@ enum class roll_forward_option
     __Last           // Sentinel value
 };
 
-pal::string_t roll_forward_option_to_string(roll_forward_option roll_forward);
 roll_forward_option roll_forward_option_from_string(const pal::string_t& value);
 
 #endif // __ROLL_FORWARD_OPTION_H_

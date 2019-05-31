@@ -24,7 +24,19 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             if (Directory.Exists(_backupPath))
             {
-                throw new Exception($"The backup directory already exists. Please make sure that all customizers are correctly disposed.");
+                string existingBackupStack = "";
+                try
+                {
+                    existingBackupStack = File.ReadAllText(Path.Combine(_backupPath, "_stackTrace.txt"));
+                }
+                catch (Exception)
+                {
+
+                }
+
+                throw new Exception(
+                    $"The backup directory `{_backupPath}` already exists. Please make sure that all customizers are correctly disposed.\r\n" +
+                    $"The existing backup directory was created with this stack {existingBackupStack}");
             }
         }
 
@@ -39,6 +51,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             if (!Directory.Exists(_backupPath))
             {
                 Directory.CreateDirectory(_backupPath);
+                File.WriteAllText(Path.Combine(_backupPath, "_stackTrace.txt"), Environment.StackTrace);
             }
 
             string backupFile = Path.Combine(_backupPath, path.Substring(_basePath.Length + 1));
@@ -60,7 +73,32 @@ namespace Microsoft.DotNet.CoreSetup.Test
             {
                 CopyOverDirectory(_backupPath, _basePath);
 
-                Directory.Delete(_backupPath, recursive: true);
+                // Directory.Delete sometimes fails with error that the directory is not empty.
+                // This is a known problem where the actual Delete call is not 100% synchronous
+                // the OS reports a success but the file/folder is not fully removed yet.
+                // So implement a simple retry with a short timeout.
+                IOException exception = null;
+                for (int retryCount = 5; retryCount > 0; retryCount--)
+                {
+                    try
+                    {
+                        Directory.Delete(_backupPath, recursive: true);
+                        if (!Directory.Exists(_backupPath))
+                        {
+                            return;
+                        }
+                    }
+                    catch (IOException ex)
+                    {
+                        exception = ex;
+                    }
+
+                    System.Threading.Thread.Sleep(200);
+                }
+                
+                throw new Exception(
+                    $"Failed to delete the backup folder {_backupPath} even after retries.\r\n"
+                    + (exception == null ? "" : exception.ToString()));
             }
         }
 
