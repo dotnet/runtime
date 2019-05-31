@@ -5,10 +5,12 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public sealed class CustomContent : StreamContent
+    internal partial class CustomContent : StreamContent
     {
         private long _length;
 
@@ -33,7 +35,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private class CustomStream : Stream
+        internal class CustomStream : Stream
         {
             private byte[] _buffer;
             private long _position;
