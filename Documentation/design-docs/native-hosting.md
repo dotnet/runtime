@@ -392,6 +392,41 @@ hostfxr_run_app(host_context_handle);
 hostfxr_close(host_context_handle);
 ```
 
+#### Getting a function pointer to call a managed method
+```C++
+using load_assembly_and_get_function_pointer_fn = int (STDMETHODCALLTYPE *)(
+    const char_t *assembly_path,
+    const char_t *type_name,
+    const char_t *method_name,
+    const char_t *delegate_type_name,
+    void *reserved,
+    void **delegate);
+
+hostfxr_handle host_context_handle;
+hostfxr_initialize_for_runtime_config(config_path, nullptr, &host_context_handle);
+
+load_assembly_and_get_function_pointer_fn runtime_delegate = nullptr;
+hostfxr_get_runtime_delegate(
+    host_context_handle,
+    hostfxr_delegate_type::load_assembly_and_get_function_pointer,
+    (void **)&runtime_delegate);
+
+using managed_entry_point_fn = int (STDMETHODCALLTYPE *)(void *arg, int argSize);
+
+managed_entry_point_fn entry_point = nullptr;
+runtime_delegate(assembly_path,
+                 type_name,
+                 method_name,
+                 nullptr,
+                 nullptr,
+                 (void **)&entry_point);
+
+ArgStruct arg;
+entry_point(&arg, sizeof(ArgStruct));
+
+hostfxr_close(host_context_handle);
+```
+
 ## Impact on hosting components
 
 The exact impact on the `hostfxr`/`hostpolicy` interface needs to be investigated. The assumption is that new APIs will have to be added to `hostpolicy` to implement the proposed functionality.
