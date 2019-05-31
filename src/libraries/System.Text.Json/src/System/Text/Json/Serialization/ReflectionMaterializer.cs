@@ -12,6 +12,14 @@ namespace System.Text.Json.Serialization
     {
         public override JsonClassInfo.ConstructorDelegate CreateConstructor(Type type)
         {
+            Debug.Assert(type != null);
+            ConstructorInfo realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
+
+            if (realMethod == null && !type.IsValueType)
+            {
+                return null;
+            }
+
             return () => Activator.CreateInstance(type);
         }
 

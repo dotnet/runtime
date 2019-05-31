@@ -122,5 +122,17 @@ namespace System.Text.Json
         {
             throw new InvalidOperationException(SR.Format(SR.SerializationDataExtensionPropertyInvalidElement, jsonClassInfo.Type, jsonClassInfo.DataExtensionProperty.PropertyInfo.Name, invalidType));
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_DeserializeMissingParameterlessConstructor(Type invalidType)
+        {
+            throw new NotSupportedException(SR.Format(SR.DeserializeMissingParameterlessConstructor, invalidType));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_DeserializePolymorphicInterface(Type invalidType)
+        {
+            throw new NotSupportedException(SR.Format(SR.DeserializePolymorphicInterface, invalidType));
+        }
     }
 }

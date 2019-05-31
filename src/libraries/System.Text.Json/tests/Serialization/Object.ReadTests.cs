@@ -161,6 +161,25 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadObjectFail_ReferenceTypeMissingParameterlessConstructor()
+        {
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Parse<PublicParameterizedConstructorTestClass>(@"{""Name"":""Name!""}"));
+        }
+
+        class PublicParameterizedConstructorTestClass
+        {
+            private readonly string _name;
+            public PublicParameterizedConstructorTestClass(string name)
+            {
+                _name = name;
+            }
+            public string Name
+            {
+                get { return _name; }
+            }
+        }
+
+        [Fact]
         public static void ParseUntyped()
         {
             // Not supported until we are able to deserialize into JsonElement.
