@@ -56,13 +56,6 @@ manifest_footer_t* manifest_footer_t::read(FILE* stream)
 
     bundle_runner_t::read(footer, num_bytes_read(), stream);
 
-    if (!footer->is_valid())
-    {
-        trace::info(_X("This executable is not recognized as a bundle."));
-
-        throw StatusCode::AppHostExeNotBundle;
-    }
-
     return footer;
 }
 
