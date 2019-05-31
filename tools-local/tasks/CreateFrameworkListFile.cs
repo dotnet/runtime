@@ -4,6 +4,7 @@
 
 using Microsoft.Build.Framework;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -17,6 +18,15 @@ namespace Microsoft.DotNet.Build.Tasks
         /// </summary>
         [Required]
         public ITaskItem[] Files { get; set; }
+
+        /// <summary>
+        /// A list of assembly names to add Profile="%(Profile)" attributes to, if the assembly
+        /// names exist in Files.
+        /// 
+        /// %(Identity): Assembly name (including ".dll").
+        /// %(Profile): List of profiles that apply, semicolon-delimited.
+        /// </summary>
+        public ITaskItem[] FileProfiles { get; set; }
 
         [Required]
         public string TargetFile { get; set; }
@@ -39,40 +49,73 @@ namespace Microsoft.DotNet.Build.Tasks
 
             var frameworkManifest = new XElement("FileList", rootAttributes);
 
+            Dictionary<string, string> fileProfileLookup = (FileProfiles ?? Array.Empty<ITaskItem>())
+                .ToDictionary(
+                    item => item.ItemSpec,
+                    item => item.GetMetadata("Profile"),
+                    StringComparer.OrdinalIgnoreCase);
+
             foreach (var f in Files
-                .Where(item =>
-                    IsTargetPathIncluded(item) &&
-                    item.ItemSpec.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                .Where(IsTargetPathIncluded)
                 .Select(item => new
                 {
                     Item = item,
+                    Filename = Path.GetFileName(item.ItemSpec),
+                    TargetPath = item.GetMetadata("TargetPath"),
                     AssemblyName = FileUtilities.GetAssemblyName(item.ItemSpec),
-                    FileVersion = FileUtilities.GetFileVersion(item.ItemSpec)
+                    FileVersion = FileUtilities.GetFileVersion(item.ItemSpec),
+                    IsNative = item.GetMetadata("IsNative") == "true",
+                    IsSymbolFile = item.GetMetadata("IsSymbolFile") == "true"
                 })
-                .Where(f => f.AssemblyName != null)
-                .OrderBy(f => f.Item.ItemSpec, StringComparer.OrdinalIgnoreCase))
+                .Where(f =>
+                    !f.IsSymbolFile &&
+                    (f.Filename.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) || f.IsNative))
+                .OrderBy(f => f.TargetPath, StringComparer.Ordinal)
+                .ThenBy(f => f.Filename, StringComparer.Ordinal))
             {
-                byte[] publicKeyToken = f.AssemblyName.GetPublicKeyToken();
-                string publicKeyTokenHex;
-
-                if (publicKeyToken != null)
-                {
-                    publicKeyTokenHex = BitConverter.ToString(publicKeyToken)
-                        .ToLowerInvariant()
-                        .Replace("-", "");
-                }
-                else
-                {
-                    Log.LogError($"No public key token found for assembly {f.Item.ItemSpec}");
-                    publicKeyTokenHex = "";
-                }
-
-                frameworkManifest.Add(new XElement(
+                var element = new XElement(
                     "File",
-                    new XAttribute("AssemblyName", f.AssemblyName.Name),
-                    new XAttribute("PublicKeyToken", publicKeyTokenHex),
-                    new XAttribute("AssemblyVersion", f.AssemblyName.Version),
-                    new XAttribute("FileVersion", f.FileVersion)));
+                    new XAttribute("Type", f.IsNative ? "Native" : "Managed"),
+                    new XAttribute(
+                        "Path",
+                        Path.Combine(f.TargetPath, f.Filename).Replace('\\', '/')));
+
+                if (f.AssemblyName != null)
+                {
+                    byte[] publicKeyToken = f.AssemblyName.GetPublicKeyToken();
+                    string publicKeyTokenHex;
+
+                    if (publicKeyToken != null)
+                    {
+                        publicKeyTokenHex = BitConverter.ToString(publicKeyToken)
+                            .ToLowerInvariant()
+                            .Replace("-", "");
+                    }
+                    else
+                    {
+                        Log.LogError($"No public key token found for assembly {f.Item.ItemSpec}");
+                        publicKeyTokenHex = "";
+                    }
+
+                    element.Add(
+                        new XAttribute("AssemblyName", f.AssemblyName.Name),
+                        new XAttribute("PublicKeyToken", publicKeyTokenHex),
+                        new XAttribute("AssemblyVersion", f.AssemblyName.Version));
+                }
+                else if (!f.IsNative)
+                {
+                    // This file isn't managed and isn't native. Leave it off the list.
+                    continue;
+                }
+
+                element.Add(new XAttribute("FileVersion", f.FileVersion));
+
+                if (fileProfileLookup.TryGetValue(f.Filename, out string profile))
+                {
+                    element.Add(new XAttribute("Profile", profile));
+                }
+
+                frameworkManifest.Add(element);
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(TargetFile));

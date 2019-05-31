@@ -8,6 +8,8 @@
       Microsoft.NETCore.App.Internal.
     -->
     <BuildLineupPackage>false</BuildLineupPackage>
+
+    <FrameworkListTargetPath>data/</FrameworkListTargetPath>
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

@@ -8,6 +8,8 @@
     <PlatformManifestTargetPath>$(BuildTargetPath)</PlatformManifestTargetPath>
     <FileVersionPropsTargetPath>$(BuildTargetPath)</FileVersionPropsTargetPath>
 
+    <FrameworkListTargetPath>data/</FrameworkListTargetPath>
+
     <GenerateSharedFramework>true</GenerateSharedFramework>
     <GenerateNetCoreAppRuntimeConfig>true</GenerateNetCoreAppRuntimeConfig>
 
