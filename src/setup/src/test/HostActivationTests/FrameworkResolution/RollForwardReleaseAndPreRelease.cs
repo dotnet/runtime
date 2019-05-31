@@ -150,17 +150,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // Also verifying behavior when DOTNET_ROLL_FORWARD_TO_PRERELEASE is set.
         [Theory] // rollForward                               applyPatches rollForwardToPreRelease resolvedFramework
         [InlineData(Constants.RollForwardSetting.Minor,       null,        false,                  "4.1.2")]
-        [InlineData(Constants.RollForwardSetting.Minor,       null,        true,                   "4.1.3-preview.1")]
+        [InlineData(Constants.RollForwardSetting.Minor,       null,        true,                   "4.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.Minor,       false,       false,                  "4.1.1")]
-        [InlineData(Constants.RollForwardSetting.Minor,       false,       true,                   "4.1.0-preview.1")] // Pre-release is also considered and it's the closest higher (and no patch roll to latest)
+        [InlineData(Constants.RollForwardSetting.Minor,       false,       true,                   "4.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.LatestMinor, null,        false,                  "4.1.2")]
         [InlineData(Constants.RollForwardSetting.LatestMinor, null,        true,                   "4.5.2-preview.1")]
         [InlineData(Constants.RollForwardSetting.LatestMinor, false,       false,                  "4.1.2")]
         [InlineData(Constants.RollForwardSetting.LatestMinor, false,       true,                   "4.5.2-preview.1")]
         [InlineData(Constants.RollForwardSetting.Major,       null,        false,                  "4.1.2")]
-        [InlineData(Constants.RollForwardSetting.Major,       null,        true,                   "4.1.3-preview.1")]
+        [InlineData(Constants.RollForwardSetting.Major,       null,        true,                   "4.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.Major,       false,       false,                  "4.1.1")]
-        [InlineData(Constants.RollForwardSetting.Major,       false,       true,                   "4.1.0-preview.1")] // Pre-release is also considered and it's the closest higher (and no patch roll to latest)
+        [InlineData(Constants.RollForwardSetting.Major,       false,       true,                   "4.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.LatestMajor, null,        false,                  "6.0.1")]
         [InlineData(Constants.RollForwardSetting.LatestMajor, null,        true,                   "6.0.2-preview.1")]
         public void RollForwardOnMinor_FromReleaseIgnoresPreReleaseIfReleaseAvailable(
@@ -183,7 +183,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // Also verifying behavior when DOTNET_ROLL_FORWARD_TO_PRERELEASE is set.
         [Theory] // rollForward                               applyPatches rollForwardToPreRelease resolvedFramework
         [InlineData(Constants.RollForwardSetting.Major,       null,        false,                  "4.1.2")]
-        [InlineData(Constants.RollForwardSetting.Major,       null,        true,                   "4.1.3-preview.1")]
+        [InlineData(Constants.RollForwardSetting.Major,       null,        true,                   "4.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.Major,       false,       false,                  "4.1.1")]
         [InlineData(Constants.RollForwardSetting.Major,       false,       true,                   "4.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.LatestMajor, null,        false,                  "6.0.1")]
@@ -213,17 +213,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // 5.1.2
 
         // Verifies that rollForward settings behave as expected when starting from 5.1.0-preview.1 which does exist
-        // to other available 5.1.* versions (both release and pre-release). So roll forward on patch version.
-        // Starting from pre-release means that all versions are always considered (both release and pre-release).
+        // to other available 5.1.* versions (both release and pre-release).
+        // Starting from pre-release means that exact match is always taken unless LatestMinor/LatestMajor is used.
         [Theory] // rollForward                               applyPatches resolvedFramework
         [InlineData(Constants.RollForwardSetting.Disable,     null,        "5.1.0-preview.1")]
-        [InlineData(Constants.RollForwardSetting.LatestPatch, null,        "5.1.2")]
+        [InlineData(Constants.RollForwardSetting.LatestPatch, null,        "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.LatestPatch, false,       "5.1.0-preview.1")]
-        [InlineData(Constants.RollForwardSetting.Minor,       null,        "5.1.2")]
+        [InlineData(Constants.RollForwardSetting.Minor,       null,        "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.Minor,       false,       "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.LatestMinor, null,        "5.5.2")]
         [InlineData(Constants.RollForwardSetting.LatestMinor, false,       "5.5.2")]
-        [InlineData(Constants.RollForwardSetting.Major,       null,        "5.1.2")]
+        [InlineData(Constants.RollForwardSetting.Major,       null,        "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.Major,       false,       "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.LatestMajor, null,        "6.0.2-preview.1")]
         public void RollFromExisting_FromPreReleaseToRelease(string rollForward, bool? applyPatches, string resolvedFramework)
@@ -240,13 +240,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // Starting from pre-release means that all versions are always considered (both release and pre-release).
         [Theory] // rollForward                               applyPatches resolvedFramework
         [InlineData(Constants.RollForwardSetting.Disable,     null,        ResolvedFramework.NotFound)]
-        [InlineData(Constants.RollForwardSetting.LatestPatch, null,        "5.1.2")]
+        [InlineData(Constants.RollForwardSetting.LatestPatch, null,        "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.LatestPatch, false,       "5.1.0-preview.1")]
-        [InlineData(Constants.RollForwardSetting.Minor,       null,        "5.1.2")]
+        [InlineData(Constants.RollForwardSetting.Minor,       null,        "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.Minor,       false,       "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.LatestMinor, null,        "5.5.2")]
         [InlineData(Constants.RollForwardSetting.LatestMinor, false,       "5.5.2")]
-        [InlineData(Constants.RollForwardSetting.Major,       null,        "5.1.2")]
+        [InlineData(Constants.RollForwardSetting.Major,       null,        "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.Major,       false,       "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.LatestMajor, null,        "6.0.2-preview.1")]
         public void RollForwardOnPatch_FromPreReleaseToRelease(string rollForward, bool? applyPatches, string resolvedFramework)
@@ -262,11 +262,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // to other available 5.*.* versions (both release and pre-release). So roll forward on minor version.
         // Starting from pre-release means that all versions are always considered (both release and pre-release).
         [Theory] // rollForward                               applyPatches resolvedFramework
-        [InlineData(Constants.RollForwardSetting.Minor,       null,        "5.1.2")]
+        [InlineData(Constants.RollForwardSetting.Minor,       null,        "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.Minor,       false,       "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.LatestMinor, null,        "5.5.2")]
         [InlineData(Constants.RollForwardSetting.LatestMinor, false,       "5.5.2")]
-        [InlineData(Constants.RollForwardSetting.Major,       null,        "5.1.2")]
+        [InlineData(Constants.RollForwardSetting.Major,       null,        "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.Major,       false,       "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.LatestMajor, null,        "6.0.2-preview.1")]
         public void RollForwardOnMinor_FromPreReleaseToRelease(string rollForward, bool? applyPatches, string resolvedFramework)
@@ -282,7 +282,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // to other available 5.*.* versions (both release and pre-release). So roll forward on major version.
         // Starting from pre-release means that all versions are always considered (both release and pre-release).
         [Theory] // rollForward                               applyPatches resolvedFramework
-        [InlineData(Constants.RollForwardSetting.Major,       null,        "5.1.2")]
+        [InlineData(Constants.RollForwardSetting.Major,       null,        "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.Major,       false,       "5.1.0-preview.1")]
         [InlineData(Constants.RollForwardSetting.LatestMajor, null,        "6.0.2-preview.1")]
         public void RollForwardOnMajor_FromPreReleaseToRelease(string rollForward, bool? applyPatches, string resolvedFramework)
@@ -306,7 +306,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                 rollForward: null,
                 applyPatches: null,
                 rollForwardToPreRelease: rollForwardToPreRelease)
-                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.2");
+                .ShouldHaveResolvedFramework(MicrosoftNETCoreApp, "5.1.0-preview.1");
 
             // Minor, applyPatches=false
             RunTest(

@@ -38,14 +38,6 @@ namespace
     static_assert((sizeof(OptionNameMapping) / sizeof(*OptionNameMapping)) == static_cast<size_t>(roll_forward_option::__Last), "Invalid option count");
 }
 
-pal::string_t roll_forward_option_to_string(roll_forward_option roll_forward)
-{
-    int idx = static_cast<int>(roll_forward);
-    assert(0 <= idx && idx < static_cast<int>(roll_forward_option::__Last));
-
-    return OptionNameMapping[idx];
-}
-
 roll_forward_option roll_forward_option_from_string(const pal::string_t& value)
 {
     for (int idx = 0; idx < static_cast<int>(roll_forward_option::__Last); idx++)

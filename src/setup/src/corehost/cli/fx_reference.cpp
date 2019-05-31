@@ -9,30 +9,30 @@
 
 bool fx_reference_t::is_compatible_with_higher_version(const fx_ver_t& higher_version) const
 {
-    assert(get_fx_version_number() <= higher_version);
+    assert(fx_version_number <= higher_version);
 
-    if (get_fx_version_number() == higher_version)
+    if (fx_version_number == higher_version)
     {
         return true;
     }
 
     // Verify major roll forward
-    if (get_fx_version_number().get_major() != higher_version.get_major()
-        && roll_forward < roll_forward_option::Major)
+    if (fx_version_number.get_major() != higher_version.get_major()
+        && version_compatibility_range < version_compatibility_range_t::major)
     {
         return false;
     }
 
     // Verify minor roll forward
-    if (get_fx_version_number().get_minor() != higher_version.get_minor()
-        && roll_forward < roll_forward_option::Minor)
+    if (fx_version_number.get_minor() != higher_version.get_minor()
+        && version_compatibility_range < version_compatibility_range_t::minor)
     {
         return false;
     }
 
     // Verify patch roll forward
     if (get_fx_version_number().get_patch() != higher_version.get_patch()
-        && roll_forward == roll_forward_option::LatestPatch
+        && version_compatibility_range == version_compatibility_range_t::patch
         && apply_patches == false)
     {
         return false;
@@ -44,7 +44,7 @@ bool fx_reference_t::is_compatible_with_higher_version(const fx_ver_t& higher_ve
     //  - rollForward is LatestPatch and applyPatches=false - which would normally mean exactly the same as Disable, but
     //    for backward compat reasons this is a special case. In this case applyPatches is ignored for pre-release versions.
     //    So even if pre-release are different, the versions are compatible.
-    if (roll_forward == roll_forward_option::Disable)
+    if (version_compatibility_range == version_compatibility_range_t::exact)
     {
         // We know the versions are different since we compared 100% equality above, so they're not compatible.
         // In here the versions could differ in patch or pre-release, in both cases they're not compatible.
@@ -62,37 +62,23 @@ bool fx_reference_t::is_compatible_with_higher_version(const fx_ver_t& higher_ve
 
 void fx_reference_t::merge_roll_forward_settings_from(const fx_reference_t& from)
 {
-    // In general lower value roll_forward should win, with one exception
-    // If Major and LatestMinor is merged, the result should be Minor for now.
-    //   - this is the conservative approach where the most strict behavior is taken
-    //       Major means "closest available version and allow roll over major"
-    //       LatestMinor means "latest available version and allow roll over minor"
-    //       So the most restrictive merge would be "closest available version and allow roll over minor"
-    //       which is exactly what Minor does.
-    // All other combinations are already following the same logic.
-
-    if (from.get_roll_forward() < get_roll_forward())
+    if (from.version_compatibility_range < version_compatibility_range)
     {
-        roll_forward_option effective_roll_forward = from.get_roll_forward();
-        if (from.get_roll_forward() == roll_forward_option::LatestMinor && get_roll_forward() == roll_forward_option::Major)
-        {
-            effective_roll_forward = roll_forward_option::Minor;
-        }
-
-        set_roll_forward(effective_roll_forward);
-    }
-    else if (from.get_roll_forward() == roll_forward_option::Major && get_roll_forward() == roll_forward_option::LatestMinor)
-    {
-        set_roll_forward(roll_forward_option::Minor);
+        version_compatibility_range = from.version_compatibility_range;
     }
 
-    if (get_apply_patches() == true && from.get_apply_patches() == false)
+    if (from.roll_to_highest_version)
     {
-        set_apply_patches(false);
+        roll_to_highest_version = from.roll_to_highest_version;
     }
 
-    if (from.get_prefer_release() && !get_prefer_release())
+    if (from.apply_patches == false)
     {
-        set_prefer_release(true);
+        apply_patches = false;
+    }
+
+    if (from.prefer_release)
+    {
+        prefer_release = true;
     }
 }

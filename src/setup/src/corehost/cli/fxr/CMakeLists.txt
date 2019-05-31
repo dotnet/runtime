@@ -24,6 +24,7 @@ set(SOURCES
     ../fx_definition.cpp
     ../fx_reference.cpp
     ../version.cpp
+    ../version_compatibility_range.cpp
     ./command_line.cpp
     ./corehost_init.cpp
     ./hostfxr.cpp
@@ -50,6 +51,7 @@ set(HEADERS
     ../roll_forward_option.h
     ../roll_fwd_on_no_candidate_fx_option.h
     ../version.h
+    ../version_compatibility_range.h
     ./command_line.h
     ./corehost_init.h
     ./fx_ver.h
