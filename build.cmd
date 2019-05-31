@@ -362,7 +362,7 @@ REM ============================================================================
 @if defined _echo @echo on
 
 powershell -NoProfile -ExecutionPolicy ByPass -NoLogo -File "%__ProjectDir%\eng\common\msbuild.ps1"^
-    %__ProjectDir%\eng\empty.proj /p:NativeVersionFile="%__RootBinDir%\obj\_version.h"^
+    %__ProjectDir%\eng\empty.csproj /p:NativeVersionFile="%__RootBinDir%\obj\_version.h"^
     /p:ArcadeBuild=true /t:GenerateNativeVersionFile /restore^
     %__CommonMSBuildArgs% %__UnprocessedBuildArgs%
 if not !errorlevel! == 0 (
