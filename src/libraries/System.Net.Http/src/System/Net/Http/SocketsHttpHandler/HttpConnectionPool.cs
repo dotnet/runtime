@@ -229,7 +229,7 @@ namespace System.Net.Http
 
             TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
             TimeSpan pooledConnectionIdleTimeout = _poolManager.Settings._pooledConnectionIdleTimeout;
-            int nowTicks = Environment.TickCount;
+            long nowTicks = Environment.TickCount64;
             List<CachedConnection> list = _idleConnections;
 
             // Try to find a usable cached connection.
@@ -340,7 +340,7 @@ namespace System.Net.Http
             if (http2Connection != null)
             {
                 TimeSpan pooledConnectionLifetime = _poolManager.Settings._pooledConnectionLifetime;
-                if (http2Connection.LifetimeExpired(Environment.TickCount, pooledConnectionLifetime))
+                if (http2Connection.LifetimeExpired(Environment.TickCount64, pooledConnectionLifetime))
                 {
                     // Connection expired.
                     http2Connection.Dispose();
@@ -797,7 +797,7 @@ namespace System.Net.Http
         /// <param name="connection">The connection to return.</param>
         public void ReturnConnection(HttpConnection connection)
         {
-            bool lifetimeExpired = connection.LifetimeExpired(Environment.TickCount, _poolManager.Settings._pooledConnectionLifetime);
+            bool lifetimeExpired = connection.LifetimeExpired(Environment.TickCount64, _poolManager.Settings._pooledConnectionLifetime);
 
             if (!lifetimeExpired)
             {
@@ -915,7 +915,7 @@ namespace System.Net.Http
 
                 // Get the current time.  This is compared against each connection's last returned
                 // time to determine whether a connection is too old and should be closed.
-                int nowTicks = Environment.TickCount;
+                long nowTicks = Environment.TickCount64;
                 Http2Connection http2Connection = _http2Connection;
 
                 if (http2Connection != null)
@@ -1039,7 +1039,7 @@ namespace System.Net.Http
             /// <summary>The cached connection.</summary>
             internal readonly HttpConnection _connection;
             /// <summary>The last tick count at which the connection was used.</summary>
-            internal readonly int _returnedTickCount;
+            internal readonly long _returnedTickCount;
 
             /// <summary>Initializes the cached connection and its associated metadata.</summary>
             /// <param name="connection">The connection.</param>
@@ -1047,7 +1047,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(connection != null);
                 _connection = connection;
-                _returnedTickCount = Environment.TickCount;
+                _returnedTickCount = Environment.TickCount64;
             }
 
             /// <summary>Gets whether the connection is currently usable.</summary>
@@ -1062,16 +1062,16 @@ namespace System.Net.Http
             /// the nature of connection pooling.
             /// </returns>
             public bool IsUsable(
-                int nowTicks,
+                long nowTicks,
                 TimeSpan pooledConnectionLifetime,
                 TimeSpan pooledConnectionIdleTimeout,
                 bool poll = false)
             {
                 // Validate that the connection hasn't been idle in the pool for longer than is allowed.
                 if ((pooledConnectionIdleTimeout != Timeout.InfiniteTimeSpan) &&
-                    ((uint)(nowTicks - _returnedTickCount) > pooledConnectionIdleTimeout.TotalMilliseconds))
+                    ((nowTicks - _returnedTickCount) > pooledConnectionIdleTimeout.TotalMilliseconds))
                 {
-                    if (NetEventSource.IsEnabled) _connection.Trace($"Connection no longer usable. Idle {TimeSpan.FromMilliseconds((uint)(nowTicks - _returnedTickCount))} > {pooledConnectionIdleTimeout}.");
+                    if (NetEventSource.IsEnabled) _connection.Trace($"Connection no longer usable. Idle {TimeSpan.FromMilliseconds((nowTicks - _returnedTickCount))} > {pooledConnectionIdleTimeout}.");
                     return false;
                 }
 
