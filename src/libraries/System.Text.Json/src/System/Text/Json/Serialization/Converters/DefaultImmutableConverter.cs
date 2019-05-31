@@ -34,11 +34,19 @@ namespace System.Text.Json.Serialization.Converters
         private const string ImmutableHashSetGenericTypeName = "System.Collections.Immutable.ImmutableHashSet`1";
         private const string ImmutableSetGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableSet`1";
 
+        private const string ImmutableDictionaryTypeName = "System.Collections.Immutable.ImmutableDictionary";
+        private const string ImmutableDictionaryGenericTypeName = "System.Collections.Immutable.ImmutableDictionary`2";
+        private const string ImmutableDictionaryGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableDictionary`2";
+
+        private const string ImmutableSortedDictionaryTypeName = "System.Collections.Immutable.ImmutableSortedDictionary";
+        private const string ImmutableSortedDictionaryGenericTypeName = "System.Collections.Immutable.ImmutableSortedDictionary`2";
+
         internal delegate object ImmutableCreateRangeDelegate<T>(IEnumerable<T> items);
+        internal delegate object ImmutableDictCreateRangeDelegate<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> items);
 
-        public static ConcurrentDictionary<string, object> CreateRangeDelegates = new ConcurrentDictionary<string, object>();
+        private static ConcurrentDictionary<string, object> s_createRangeDelegates = new ConcurrentDictionary<string, object>();
 
-        private string GetConstructingTypeName(string immutableCollectionTypeName)
+        private static string GetConstructingTypeName(string immutableCollectionTypeName)
         {
             switch (immutableCollectionTypeName)
             {
@@ -47,22 +55,27 @@ namespace System.Text.Json.Serialization.Converters
                     return ImmutableListTypeName;
                 case ImmutableStackGenericTypeName:
                 case ImmutableStackGenericInterfaceTypeName:
-                    return  ImmutableStackTypeName;
+                    return ImmutableStackTypeName;
                 case ImmutableQueueGenericTypeName:
                 case ImmutableQueueGenericInterfaceTypeName:
-                    return  ImmutableQueueTypeName;
+                    return ImmutableQueueTypeName;
                 case ImmutableSortedSetGenericTypeName:
-                    return  ImmutableSortedSetTypeName;
+                    return ImmutableSortedSetTypeName;
                 case ImmutableHashSetGenericTypeName:
                 case ImmutableSetGenericInterfaceTypeName:
-                    return  ImmutableHashSetTypeName;
+                    return ImmutableHashSetTypeName;
+                case ImmutableDictionaryGenericTypeName:
+                case ImmutableDictionaryGenericInterfaceTypeName:
+                    return ImmutableDictionaryTypeName;
+                case ImmutableSortedDictionaryGenericTypeName:
+                    return ImmutableSortedDictionaryTypeName;
                 default:
-                    // TODO: Refactor exception throw following serialization exception changes. 
+                    // TODO: Refactor exception throw following serialization exception changes.
                     throw new NotSupportedException(SR.Format(SR.DeserializeTypeNotSupported, immutableCollectionTypeName));
             }
         }
 
-        private string GetDelegateKey(
+        private static string GetDelegateKey(
             Type immutableCollectionType,
             Type elementType,
             out Type underlyingType,
@@ -76,13 +89,36 @@ namespace System.Text.Json.Serialization.Converters
             return $"{constructingTypeName}:{elementType.FullName}";
         }
 
-        public void RegisterImmutableCollectionType(Type immutableCollectionType, Type elementType, JsonSerializerOptions options)
+        internal static bool TypeIsImmutableDictionary(Type type)
+        {
+            if (!type.IsGenericType)
+            {
+                return false;
+            }
+
+            switch (type.GetGenericTypeDefinition().FullName)
+            {
+                case ImmutableDictionaryGenericTypeName:
+                case ImmutableDictionaryGenericInterfaceTypeName:
+                case ImmutableSortedDictionaryGenericTypeName:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        internal static bool TryGetCreateRangeDelegate(string delegateKey, out object createRangeDelegate)
+        {
+            return s_createRangeDelegates.TryGetValue(delegateKey, out createRangeDelegate) && createRangeDelegate != null;
+        }
+
+        internal static void RegisterImmutableCollection(Type immutableCollectionType, Type elementType, JsonSerializerOptions options)
         {
             // Get a unique identifier for a delegate which will point to the appropiate CreateRange method.
             string delegateKey = GetDelegateKey(immutableCollectionType, elementType, out Type underlyingType, out string constructingTypeName);
 
             // Exit if we have registered this immutable collection type.
-            if (CreateRangeDelegates.ContainsKey(delegateKey))
+            if (s_createRangeDelegates.ContainsKey(delegateKey))
             {
                 return;
             }
@@ -91,11 +127,33 @@ namespace System.Text.Json.Serialization.Converters
             Type constructingType = underlyingType.Assembly.GetType(constructingTypeName);
 
             // Create a delegate which will point to the CreateRange method.
-            object createRangeDelegate = options.ClassMaterializerStrategy.ImmutableCreateRange(constructingType, elementType);
-            Debug.Assert(createRangeDelegate != null);
+            object createRangeDelegate;
+            createRangeDelegate = options.ClassMaterializerStrategy.ImmutableCollectionCreateRange(constructingType, elementType);
 
             // Cache the delegate
-            CreateRangeDelegates.TryAdd(delegateKey, createRangeDelegate);
+            s_createRangeDelegates.TryAdd(delegateKey, createRangeDelegate);
+        }
+
+        internal static void RegisterImmutableDictionary(Type immutableCollectionType, Type elementType, JsonSerializerOptions options)
+        {
+            // Get a unique identifier for a delegate which will point to the appropiate CreateRange method.
+            string delegateKey = GetDelegateKey(immutableCollectionType, elementType, out Type underlyingType, out string constructingTypeName);
+
+            // Exit if we have registered this immutable collection type.
+            if (s_createRangeDelegates.ContainsKey(delegateKey))
+            {
+                return;
+            }
+
+            // Get the constructing type.
+            Type constructingType = underlyingType.Assembly.GetType(constructingTypeName);
+
+            // Create a delegate which will point to the CreateRange method.
+            object createRangeDelegate;
+            createRangeDelegate = options.ClassMaterializerStrategy.ImmutableDictionaryCreateRange(constructingType, elementType);
+
+            // Cache the delegate
+            s_createRangeDelegates.TryAdd(delegateKey, createRangeDelegate);
         }
 
         public override IEnumerable CreateFromList(ref ReadStack state, IList sourceList, JsonSerializerOptions options)
@@ -104,31 +162,24 @@ namespace System.Text.Json.Serialization.Converters
             Type elementType = state.Current.GetElementType();
 
             string delegateKey = GetDelegateKey(immutableCollectionType, elementType, out _, out _);
-            Debug.Assert(CreateRangeDelegates.ContainsKey(delegateKey));
+            Debug.Assert(s_createRangeDelegates.ContainsKey(delegateKey));
 
             JsonClassInfo elementClassInfo = state.Current.JsonPropertyInfo.ElementClassInfo;
+            JsonPropertyInfo propertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementClassInfo, options);
+            return propertyInfo.CreateImmutableCollectionFromList(immutableCollectionType, delegateKey, sourceList, state.JsonPath);
+        }
 
-            JsonPropertyInfo propertyInfo;
-            if (elementClassInfo.ClassType == ClassType.Object)
-            {
-                Type objectType = elementClassInfo.Type;
+        internal IDictionary CreateFromDictionary(ref ReadStack state, IDictionary sourceDictionary, JsonSerializerOptions options)
+        {
+            Type immutableCollectionType = state.Current.JsonPropertyInfo.RuntimePropertyType;
+            Type elementType = state.Current.GetElementType();
 
-                if (DefaultIEnumerableConstructibleConverter.s_objectJsonProperties.ContainsKey(objectType))
-                {
-                    propertyInfo = DefaultIEnumerableConstructibleConverter.s_objectJsonProperties[objectType];
-                }
-                else
-                {
-                    propertyInfo = JsonClassInfo.CreateProperty(objectType, objectType, null, typeof(object), options);
-                    DefaultIEnumerableConstructibleConverter.s_objectJsonProperties[objectType] = propertyInfo;
-                }
-            }
-            else
-            {
-                propertyInfo = elementClassInfo.GetPolicyProperty();
-            }
+            string delegateKey = GetDelegateKey(immutableCollectionType, elementType, out _, out _);
+            Debug.Assert(s_createRangeDelegates.ContainsKey(delegateKey));
 
-            return propertyInfo.CreateImmutableCollectionFromList(delegateKey, sourceList);
+            JsonClassInfo elementClassInfo = state.Current.JsonPropertyInfo.ElementClassInfo;
+            JsonPropertyInfo propertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementClassInfo, options);
+            return propertyInfo.CreateImmutableCollectionFromDictionary(immutableCollectionType, delegateKey, sourceDictionary, state.JsonPath);
         }
     }
 }

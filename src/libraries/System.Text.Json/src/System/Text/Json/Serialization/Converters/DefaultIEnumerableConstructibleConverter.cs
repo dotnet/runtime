@@ -10,33 +10,11 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class DefaultIEnumerableConstructibleConverter : JsonEnumerableConverter
     {
-        public static ConcurrentDictionary<Type, JsonPropertyInfo> s_objectJsonProperties = new ConcurrentDictionary<Type, JsonPropertyInfo>();
-
         public override IEnumerable CreateFromList(ref ReadStack state, IList sourceList, JsonSerializerOptions options)
         {
             Type enumerableType = state.Current.JsonPropertyInfo.RuntimePropertyType;
             JsonClassInfo elementClassInfo = state.Current.JsonPropertyInfo.ElementClassInfo;
-
-            JsonPropertyInfo propertyInfo;
-            if (elementClassInfo.ClassType == ClassType.Object)
-            {
-                Type objectType = elementClassInfo.Type;
-
-                if (s_objectJsonProperties.ContainsKey(objectType))
-                {
-                    propertyInfo = s_objectJsonProperties[objectType];
-                }
-                else
-                {
-                    propertyInfo = JsonClassInfo.CreateProperty(objectType, objectType, null, typeof(object), options);
-                    s_objectJsonProperties[objectType] = propertyInfo;
-                }
-            }
-            else
-            {
-                propertyInfo = elementClassInfo.GetPolicyProperty();
-            }
-
+            JsonPropertyInfo propertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementClassInfo, options);
             return propertyInfo.CreateIEnumerableConstructibleType(enumerableType, sourceList);
         }
     }

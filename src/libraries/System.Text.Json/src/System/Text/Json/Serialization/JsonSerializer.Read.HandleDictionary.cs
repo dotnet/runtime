@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json.Serialization
 {
@@ -24,7 +25,6 @@ namespace System.Text.Json.Serialization
             // A nested object or dictionary so push new frame.
             if (state.Current.PropertyInitialized)
             {
-                JsonClassInfo classInfoTemp = jsonPropertyInfo.RuntimeClassInfo;
                 state.Push();
                 state.Current.JsonClassInfo = jsonPropertyInfo.ElementClassInfo;
                 state.Current.InitializeJsonPropertyInfo();
@@ -39,18 +39,32 @@ namespace System.Text.Json.Serialization
                 }
 
                 JsonClassInfo classInfo = state.Current.JsonClassInfo;
-                state.Current.ReturnValue = classInfo.CreateObject();
+
+                if (state.Current.IsProcessingImmutableDictionary)
+                {
+                    state.Current.TempDictionaryValues = (IDictionary)classInfo.CreateObject();
+                }
+                else
+                {
+                    state.Current.ReturnValue = classInfo.CreateObject();
+                }
                 return;
             }
 
             state.Current.PropertyInitialized = true;
 
-            // If current property is already set (from a constructor, for example) leave as-is.
-            if (jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue) == null)
+            if (state.Current.IsProcessingImmutableDictionary)
+            {
+                JsonClassInfo dictionaryClassInfo = options.GetOrAddClass(jsonPropertyInfo.RuntimePropertyType);
+                state.Current.TempDictionaryValues = (IDictionary)dictionaryClassInfo.CreateObject();
+            }
+            // Else if current property is already set (from a constructor, for example), leave as-is.
+            else if (jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue) == null)
             {
                 // Create the dictionary.
                 JsonClassInfo dictionaryClassInfo = jsonPropertyInfo.RuntimeClassInfo;
                 IDictionary value = (IDictionary)dictionaryClassInfo.CreateObject();
+
                 if (value != null)
                 {
                     if (state.Current.ReturnValue != null)
@@ -73,9 +87,23 @@ namespace System.Text.Json.Serialization
                 // We added the items to the dictionary already.
                 state.Current.ResetProperty();
             }
+            else if (state.Current.IsImmutableDictionaryProperty)
+            {
+                Debug.Assert(state.Current.TempDictionaryValues != null);
+                state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, CreateImmutableDictionaryFromTempValues(ref state, options));
+                state.Current.ResetProperty();
+            }
             else
             {
-                object value = state.Current.ReturnValue;
+                object value;
+                if (state.Current.TempDictionaryValues != null)
+                {
+                    value = CreateImmutableDictionaryFromTempValues(ref state, options);
+                }
+                else
+                {
+                    value = state.Current.ReturnValue;
+                }
 
                 if (state.IsLastFrame)
                 {
@@ -89,6 +117,16 @@ namespace System.Text.Json.Serialization
                     ApplyObjectToEnumerable(value, ref state, ref reader);
                 }
             }
+        }
+
+        private static IDictionary CreateImmutableDictionaryFromTempValues(ref ReadStack state, JsonSerializerOptions options)
+        {
+            Debug.Assert(state.Current.IsProcessingImmutableDictionary);
+
+            DefaultImmutableConverter converter = (DefaultImmutableConverter)state.Current.JsonPropertyInfo.EnumerableConverter;
+            Debug.Assert(converter != null);
+
+            return converter.CreateFromDictionary(ref state, state.Current.TempDictionaryValues, options);
         }
     }
 }

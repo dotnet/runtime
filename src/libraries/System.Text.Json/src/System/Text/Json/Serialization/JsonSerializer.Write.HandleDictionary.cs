@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization
                     return true;
                 }
 
-                state.Current.Enumerator = enumerable.GetEnumerator();
+                state.Current.Enumerator = ((IDictionary)enumerable).GetEnumerator();
                 state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer);
             }
 
@@ -112,6 +112,11 @@ namespace System.Text.Json.Serialization
             {
                 value = (TProperty)polymorphicEnumerator.Current.Value;
                 key = polymorphicEnumerator.Current.Key;
+            }
+            else if (current.IsImmutableDictionary || current.IsImmutableDictionaryProperty)
+            {
+                value = (TProperty)((DictionaryEntry)current.Enumerator.Current).Value;
+                key = (string)((DictionaryEntry)current.Enumerator.Current).Key;
             }
             else
             {
