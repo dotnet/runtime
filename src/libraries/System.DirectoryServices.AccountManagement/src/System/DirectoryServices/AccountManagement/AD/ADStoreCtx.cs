@@ -2534,10 +2534,29 @@ namespace System.DirectoryServices.AccountManagement
 
             // DS_IS_DNS_NAME | DS_RETURN_FLAT_NAME | DS_DIRECTORY_SERVICE_REQUIRED | DS_BACKGROUND_ONLY
             int flags = unchecked((int)(0x00020000 | 0x80000000 | 0x00000010 | 0x00000100));
-            UnsafeNativeMethods.DomainControllerInfo info = Utils.GetDcName(null, dnsDomainName, null, flags);
+            try
+            {
+                UnsafeNativeMethods.DomainControllerInfo info = Utils.GetDcName(null, dnsDomainName, null, flags);
 
-            this.domainFlatName = info.DomainName;
-            this.forestDnsName = info.DnsForestName;
+                this.domainFlatName = info.DomainName;
+                this.forestDnsName = info.DnsForestName;
+            }
+            catch (PrincipalOperationException ex) when (ex.ErrorCode == 1355) // ERROR_NO_SUCH_DOMAIN
+            {
+                // We couldn't get the NetBios name using DsGetDcName. This could be because we are running on
+                // a computer which is not connected to the forest of the domain at all. In such a case, we fall back
+                // to using the caller-specified DNS domain name. It may not work in 100% of cases, but it's better than
+                // simply failing outright, and if it's not good enough, we'll run into an appropriate error down the line
+                // when other calls fail.
+
+                GlobalDebug.WriteLineIf(GlobalDebug.Warn,
+                                        "ADStoreCtx",
+                                        "GetDcName failed, so falling back to the DNS domain name ({0}) for the Flat/DNS names",
+                                        dnsDomainName);
+
+                this.domainFlatName = dnsDomainName;
+                this.forestDnsName = dnsDomainName;
+            }
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                     "ADStoreCtx",
