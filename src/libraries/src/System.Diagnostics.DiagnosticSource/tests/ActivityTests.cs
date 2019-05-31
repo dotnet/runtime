@@ -687,6 +687,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
             Assert.Equal("0123456789abcdef", activity.ParentSpanId.ToHexString());
             Assert.True(IdIsW3CFormat(activity.Id));
+            Assert.Equal($"00-0123456789abcdef0123456789abcdef-{activity.SpanId.ToHexString()}-01", activity.Id);
             Assert.Equal(ActivityTraceFlags.Recorded, activity.ActivityTraceFlags);
             Assert.True(activity.Recorded);
             activity.Stop();
@@ -699,6 +700,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal(ActivityIdFormat.W3C, activity.IdFormat);
             Assert.Equal(activityTraceId.ToHexString(), activity.TraceId.ToHexString());
             Assert.True(IdIsW3CFormat(activity.Id));
+            Assert.Equal($"00-{activity.TraceId.ToHexString()}-{activity.SpanId.ToHexString()}-01", activity.Id);
             Assert.Equal(ActivityTraceFlags.Recorded, activity.ActivityTraceFlags);
             Assert.True(activity.Recorded);
             activity.Stop();
@@ -712,6 +714,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
             Assert.Equal("0123456789abcdef", activity.ParentSpanId.ToHexString());
             Assert.True(IdIsW3CFormat(activity.Id));
+            Assert.Equal($"00-{activity.TraceId.ToHexString()}-{activity.SpanId.ToHexString()}-00", activity.Id);
             Assert.Equal(ActivityTraceFlags.None, activity.ActivityTraceFlags);
             Assert.False(activity.Recorded);
 
@@ -730,6 +733,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("0123456789abcdef0123456789abcdef", activity.TraceId.ToHexString());
             Assert.Equal("0123456789abcdef", activity.ParentSpanId.ToHexString());
             Assert.True(IdIsW3CFormat(activity.Id));
+            Assert.Equal($"00-{activity.TraceId.ToHexString()}-{activity.SpanId.ToHexString()}-01", activity.Id);
             Assert.Equal(ActivityTraceFlags.Recorded, activity.ActivityTraceFlags);
             Assert.True(activity.Recorded);
 
@@ -741,6 +745,7 @@ namespace System.Diagnostics.Tests
             Assert.Equal("0123456789abcdef0123456789abcdef", childActivity.TraceId.ToHexString());
             Assert.NotEqual(activity.SpanId.ToHexString(), childActivity.SpanId.ToHexString());
             Assert.True(IdIsW3CFormat(childActivity.Id));
+            Assert.Equal($"00-{childActivity.TraceId.ToHexString()}-{childActivity.SpanId.ToHexString()}-01", childActivity.Id);
             Assert.Equal(ActivityTraceFlags.Recorded, childActivity.ActivityTraceFlags);
             Assert.True(childActivity.Recorded);
 
