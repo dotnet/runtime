@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Linq;
 using Xunit;
 
@@ -144,6 +145,33 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(JsonValueType.String, Array[3].Type);
                 Assert.Equal("Hello", Array[3].ToString());
             }
+        }
+
+        [Theory,
+            InlineData(5),
+            InlineData(10),
+            InlineData(20),
+            InlineData(1024)]
+        public void ReadJsonElementFromStream(int defaultBufferSize)
+        {
+            // Streams need to read ahead when they hit objects or arrays that are assigned to JsonElement or object.
+
+            byte[] data = Encoding.UTF8.GetBytes(@"{""Data"":[1,true,{""City"":""MyCity""},null,""foo""]}");
+            MemoryStream stream = new MemoryStream(data);
+            JsonElement obj = JsonSerializer.ReadAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result;
+
+            data = Encoding.UTF8.GetBytes(@"[1,true,{""City"":""MyCity""},null,""foo""]");
+            stream = new MemoryStream(data);
+            obj = JsonSerializer.ReadAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result;
+
+            // Ensure we fail with incomplete data
+            data = Encoding.UTF8.GetBytes(@"{""Data"":[1,true,{""City"":""MyCity""},null,""foo""]");
+            stream = new MemoryStream(data);
+            Assert.Throws<JsonException>(() => JsonSerializer.ReadAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result);
+
+            data = Encoding.UTF8.GetBytes(@"[1,true,{""City"":""MyCity""},null,""foo""");
+            stream = new MemoryStream(data);
+            Assert.Throws<JsonException>(() => JsonSerializer.ReadAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result);
         }
     }
 }
