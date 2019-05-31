@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
   </PropertyGroup>
 
 </Project>
