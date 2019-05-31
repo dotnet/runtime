@@ -592,5 +592,91 @@ namespace System.PrivateUri.Tests
             Assert.Equal(host, uri.Authority);
             Assert.Equal(scheme + "://" + host + "/", uri.AbsoluteUri);
         }
+
+        // The behavior here is slightly complicated in order to preserve compat in as many
+        // cases as possible. There are two limits imposed on the length of URI strings.
+        // The first, 65519, is specified in the documentation and is one of the first checks
+        // enforced on a URI. This limit is not enforced after expansion.
+        private static int InitialLengthLimit = 65519;
+
+        // The second, 65535 (ushort.MaxValue) is only reachable via expansion as a result of
+        // percent encoding. Exceeding this value used to result in a hang, but now results in
+        // an exception.
+        private static int ExpandedLengthLimit = 65535;
+
+        // In order to maximize compat, we have to allow a gap between the two maximum
+        // values. A URI that starts below 65519 but expands to be in the range [65519,65535)
+        // would have worked before this change, and so should continue to work despite
+        // exceeding limit (1).
+        public static IEnumerable<Object[]> Iri_ExpandingContents_TooLong
+        {
+            get
+            {
+                // Validate a URI with an initial length less than InitialLengthLimit, and an expanded
+                // length that is greater than ExpandedLengthLimit.
+                // The total of len + const parts (15) + expanded unicode (2 * 9) after expansion should be
+                // just larger than ExpandedLengthLimit.
+                int len = ExpandedLengthLimit - 15 - (2 * 9) + 1;
+                yield return new object[] { @"test://" + new string('a', len) + new string('\uD800', 2) + "@8.8.8.8" }; // Userinfo
+                yield return new object[] { @"test://8.8.8.8?" + new string('a', len) + new string('\uD800', 2) }; // Query
+                yield return new object[] { @"test://8.8.8.8#" + new string('a', len) + new string('\uD800', 2) }; // Fragment
+                yield return new object[] { @"test://8.8.8.8/" + new string('a', len) + new string('\uD800', 2) }; // Path
+
+                // Generate a string whose total length is just less than InitialLengthLimit
+                // but whose content expands to be dramatically larger than ExpandedLengthLimit.
+                len = InitialLengthLimit - 15;
+                yield return new object[] { @"test://" + new string('\uD800', len) + "@8.8.8.8" }; // Userinfo
+                yield return new object[] { @"test://8.8.8.8?" + new string('\uD800', len) }; // Fragment
+                yield return new object[] { @"test://8.8.8.8#" + new string('\uD800', len) }; // Query
+                yield return new object[] { @"test://8.8.8.8/" + new string('\uD800', len) }; // Path
+
+                // Test the minimum length URI that will cause an expansion beyond ExpandedLengthLimit.
+                len = (ExpandedLengthLimit - 15) / 9 + 1;
+                yield return new object[] { @"test://" + new string('\uD800', len) + "@8.8.8.8" }; // Userinfo
+                yield return new object[] { @"test://8.8.8.8?" + new string('\uD800', len) }; // Fragment
+                yield return new object[] { @"test://8.8.8.8#" + new string('\uD800', len) }; // Query
+                yield return new object[] { @"test://8.8.8.8/" + new string('\uD800', len) }; // Path
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Iri_ExpandingContents_TooLong))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Disable until the .NET FX CI machines get the latest patches.")]
+        public static void Iri_ExpandingContents_ThrowsIfTooLong(string input)
+        {
+            Assert.Throws<System.UriFormatException>(() => { Uri itemUri = new Uri(input); });
+            Assert.False(Uri.TryCreate(input, UriKind.Absolute, out Uri itemUri2));
+        }
+
+        public static IEnumerable<Object[]> Iri_ExpandingContents_AllowedSize
+        {
+            get
+            {
+                // Validate a URI with an initial length less than InitialLengthLimit, and an expanded
+                // length that is greater than InitialLengthLimit but less than ExpandedLengthLimit.
+                // The total of len + const parts (15) + expanded unicode (2 * 9) after expansion should be
+                // exactly the ExpandedLengthLimit.
+                int len = ExpandedLengthLimit - 15 - (2 * 9);
+                yield return new object[] { @"test://" + new string('a', len) + new string('\uD800', 2) + "@8.8.8.8" }; // Userinfo
+                yield return new object[] { @"test://8.8.8.8?" + new string('a', len) + new string('\uD800', 2) }; // Query
+                yield return new object[] { @"test://8.8.8.8#" + new string('a', len) + new string('\uD800', 2) }; // Fragment
+                yield return new object[] { @"test://8.8.8.8/" + new string('a', len) + new string('\uD800', 2) }; // Path
+
+                // Validate the same behavior, but maximize the amount of expansion.
+                len = (ExpandedLengthLimit - 15) / 9;
+                yield return new object[] { @"test://" + new string('\uD800', len) + "@8.8.8.8" }; // Userinfo
+                yield return new object[] { @"test://8.8.8.8?" + new string('\uD800', len) }; // Fragment
+                yield return new object[] { @"test://8.8.8.8#" + new string('\uD800', len) }; // Query
+                yield return new object[] { @"test://8.8.8.8/" + new string('\uD800', len) }; // Path
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Iri_ExpandingContents_AllowedSize))]
+        public static void Iri_ExpandingContents_DoesNotThrowIfSizeAllowed(string input)
+        {
+            Uri itemUri = new Uri(input);
+            Assert.True(Uri.TryCreate(input, UriKind.Absolute, out Uri itemUri2));
+        }
     }
 }

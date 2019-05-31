@@ -120,8 +120,16 @@ namespace System
 
                     if (_iriParsing && hasUnicode)
                     {
-                        // In this scenario we need to parse the whole string 
-                        EnsureParseRemaining();
+                        // In this scenario we need to parse the whole string
+                        try
+                        {
+                            EnsureParseRemaining();
+                        }
+                        catch (UriFormatException ex)
+                        {
+                            e = ex;
+                            return;
+                        }
                     }
                 }
                 else
@@ -163,7 +171,15 @@ namespace System
                         if (_iriParsing && hasUnicode)
                         {
                             // In this scenario we need to parse the whole string 
-                            EnsureParseRemaining();
+                            try
+                            {
+                                EnsureParseRemaining();
+                            }
+                            catch (UriFormatException ex)
+                            {
+                                e = ex;
+                                return;
+                            }
                         }
                     }
                     // will return from here
@@ -181,6 +197,11 @@ namespace System
                     // Iri'ze and then normalize relative uris
                     _string = EscapeUnescapeIri(_originalUnicodeString, 0, _originalUnicodeString.Length,
                                                 (UriComponents)0);
+                    if (_string.Length > ushort.MaxValue)
+                    {
+                        err = ParsingError.SizeLimit;
+                        return;
+                    }
                 }
             }
             else
