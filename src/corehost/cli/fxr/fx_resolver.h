@@ -34,6 +34,7 @@ private:
         const host_startup_info_t& host_info,
         const runtime_config_t::settings_t& override_settings,
         const runtime_config_t& config,
+        const fx_reference_t * effective_parent_fx_ref,
         fx_definition_vector_t& fx_definitions);
 
     static StatusCode reconcile_fx_references_helper(

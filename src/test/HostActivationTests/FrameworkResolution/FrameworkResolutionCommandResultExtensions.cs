@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             string newVersion,
             string previousVersion)
         {
-            return assertion.HaveStdErrMatching($".*The specified framework '{frameworkName}', version '{newVersion}', apply_patches=[0-1], roll_forward=[^ ]* cannot roll-forward to the previously referenced version '{previousVersion}'.*");
+            return assertion.HaveStdErrMatching($".*The specified framework '{frameworkName}', version '{newVersion}', apply_patches=[0-1], version_compatibility_range=[^ ]* cannot roll-forward to the previously referenced version '{previousVersion}'.*");
         }
 
         public static AndConstraint<CommandResultAssertions> ShouldHaveResolvedFrameworkOrFailedToReconcileFrameworkReference(

@@ -172,6 +172,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             return WithFramework(new Framework(name, version));
         }
 
+        public RuntimeConfig RemoveFramework(string name)
+        {
+            Framework framework = GetFramework(name);
+            if (framework != null)
+            {
+                _frameworks.Remove(framework);
+            }
+
+            return this;
+        }
+
         public RuntimeConfig WithRollForward(string value)
         {
             _rollForward = value;

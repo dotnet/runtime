@@ -13,11 +13,11 @@ void fx_resolver_t::display_incompatible_framework_error(
     const pal::string_t& higher,
     const fx_reference_t& lower)
 {
-    trace::error(_X("The specified framework '%s', version '%s', apply_patches=%d, roll_forward=%s cannot roll-forward to the previously referenced version '%s'."),
+    trace::error(_X("The specified framework '%s', version '%s', apply_patches=%d, version_compatibility_range=%s cannot roll-forward to the previously referenced version '%s'."),
         lower.get_fx_name().c_str(),
         lower.get_fx_version().c_str(),
         lower.get_apply_patches(),
-        roll_forward_option_to_string(lower.get_roll_forward()).c_str(),
+        version_compatibility_range_to_string(lower.get_version_compatibility_range()).c_str(),
         higher.c_str());
 }
 
@@ -27,11 +27,11 @@ void fx_resolver_t::display_compatible_framework_trace(
 {
     if (trace::is_enabled())
     {
-        trace::verbose(_X("--- The specified framework '%s', version '%s', apply_patches=%d, roll_forward=%s is compatible with the previously referenced version '%s'."),
+        trace::verbose(_X("--- The specified framework '%s', version '%s', apply_patches=%d, version_compatibility_range=%s is compatible with the previously referenced version '%s'."),
             lower.get_fx_name().c_str(),
             lower.get_fx_version().c_str(),
             lower.get_apply_patches(),
-            roll_forward_option_to_string(lower.get_roll_forward()).c_str(),
+            version_compatibility_range_to_string(lower.get_version_compatibility_range()).c_str(),
             higher.c_str());
     }
 }
@@ -42,12 +42,13 @@ void fx_resolver_t::display_retry_framework_trace(
 {
     if (trace::is_enabled())
     {
-        trace::verbose(_X("--- Restarting all framework resolution because the previously resolved framework '%s', version '%s' must be re-resolved with the new version '%s', apply_patches=%d, roll_forward=%s ."),
+        trace::verbose(_X("--- Restarting all framework resolution because the previously resolved framework '%s', version '%s' must be re-resolved with the new version '%s', apply_patches=%d, version_compatibility_range=%s, roll_to_highest_version=%d ."),
             fx_existing.get_fx_name().c_str(),
             fx_existing.get_fx_version().c_str(),
             fx_new.get_fx_version().c_str(),
             fx_new.get_apply_patches(),
-            roll_forward_option_to_string(fx_new.get_roll_forward()).c_str());
+            version_compatibility_range_to_string(fx_new.get_version_compatibility_range()).c_str(),
+            fx_new.get_roll_to_highest_version());
     }
 }
 
@@ -71,13 +72,14 @@ void fx_resolver_t::display_summary_of_frameworks(
                 auto newest_ref = newest_references.find(fx->get_name());
                 assert(newest_ref != newest_references.end());
 
-                trace::verbose(_X("     framework:'%s', lowest requested version='%s', found version='%s', effective reference version='%s' apply_patches=%d, roll_forward=%s, folder=%s"),
+                trace::verbose(_X("     framework:'%s', lowest requested version='%s', found version='%s', effective reference version='%s' apply_patches=%d, version_compatibility_range=%s, roll_to_highest_version=%d, folder=%s"),
                     fx->get_name().c_str(),
                     fx->get_requested_version().c_str(),
                     fx->get_found_version().c_str(),
                     newest_ref->second.get_fx_version().c_str(),
                     newest_ref->second.get_apply_patches(),
-                    roll_forward_option_to_string(newest_ref->second.get_roll_forward()).c_str(),
+                    version_compatibility_range_to_string(newest_ref->second.get_version_compatibility_range()).c_str(),
+                    newest_ref->second.get_roll_to_highest_version(),
                     fx->get_dir().c_str());
             }
         }
@@ -142,11 +144,11 @@ void fx_resolver_t::display_incompatible_loaded_framework_error(
     const pal::string_t& loaded_version,
     const fx_reference_t& fx_ref)
 {
-    trace::error(_X("The specified framework '%s', version '%s', apply_patches=%d, roll_forward=%s is incompatible with the previously loaded version '%s'."),
+    trace::error(_X("The specified framework '%s', version '%s', apply_patches=%d, version_compatibility_range=%s is incompatible with the previously loaded version '%s'."),
         fx_ref.get_fx_name().c_str(),
         fx_ref.get_fx_version().c_str(),
         fx_ref.get_apply_patches(),
-        roll_forward_option_to_string(fx_ref.get_roll_forward()).c_str(),
+        version_compatibility_range_to_string(fx_ref.get_version_compatibility_range()).c_str(),
         loaded_version.c_str());
 }
 
