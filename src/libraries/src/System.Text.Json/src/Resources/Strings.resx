@@ -137,6 +137,9 @@
   <data name="CannotTranscodeInvalidUtf8" xml:space="preserve">
     <value>Cannot transcode invalid UTF-8 JSON text to UTF-16 string.</value>
   </data>
+  <data name="CannotDecodeInvalidBase64" xml:space="preserve">
+    <value>Cannot decode JSON text that is not encoded as valid Base64 to bytes.</value>
+  </data>
   <data name="CannotTranscodeInvalidUtf16" xml:space="preserve">
     <value>Cannot transcode invalid UTF-16 string to UTF-8 JSON text.</value>
   </data>

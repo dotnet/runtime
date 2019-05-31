@@ -495,6 +495,22 @@ namespace System.Text.Json.Tests
 
                     try
                     {
+                        byte[] value = json.GetBytesFromBase64();
+                        Assert.True(false, "Expected GetBytesFromBase64 to throw InvalidOperationException due to mismatch token type.");
+                    }
+                    catch (InvalidOperationException)
+                    { }
+
+                    try
+                    {
+                        json.TryGetBytesFromBase64(out byte[] value);
+                        Assert.True(false, "Expected TryGetBytesFromBase64 to throw InvalidOperationException due to mismatch token type.");
+                    }
+                    catch (InvalidOperationException)
+                    { }
+
+                    try
+                    {
                         DateTime value = json.GetDateTime();
                         Assert.True(false, "Expected GetDateTime to throw InvalidOperationException due to mismatched token type.");
                     }
@@ -808,6 +824,170 @@ namespace System.Text.Json.Tests
                         {
                             Assert.Equal(ex.InnerException.GetType(), typeof(DecoderFallbackException));
                         }
+                    }
+                }
+            }
+        }
+
+        [Fact]
+        public static void GetBase64Unescapes()
+        {
+            string jsonString = "\"\\u0031234\""; // equivalent to "\"1234\""
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+            Assert.True(json.Read());
+
+            byte[] expected = Convert.FromBase64String("1234"); // new byte[3] { 215, 109, 248 }
+
+            byte[] value = json.GetBytesFromBase64();
+            Assert.Equal(expected, value);
+            Assert.True(json.TryGetBytesFromBase64(out value));
+            Assert.Equal(expected, value);
+        }
+
+        [Theory]
+        [InlineData("\"ABC=\"")]
+        [InlineData("\"AB+D\"")]
+        [InlineData("\"ABCD\"")]
+        [InlineData("\"ABC/\"")]
+        [InlineData("\"++++\"")]
+        [InlineData(null)]  // Large randomly generated string
+        public static void ValidBase64(string jsonString)
+        {
+            if (jsonString == null)
+            {
+                var random = new Random(42);
+                var charArray = new char[502];
+                charArray[0] = '"';
+                for (int i = 1; i < charArray.Length; i++)
+                {
+                    charArray[i] = (char)random.Next('A', 'Z'); // ASCII values (between 65 and 90) that constitute valid base 64 string.
+                }
+                charArray[charArray.Length - 1] = '"';
+                jsonString = new string(charArray);
+            }
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+            Assert.True(json.Read());
+
+            byte[] expected = Convert.FromBase64String(jsonString.AsSpan(1, jsonString.Length - 2).ToString());
+
+            byte[] value = json.GetBytesFromBase64();
+            Assert.Equal(expected, value);
+            Assert.True(json.TryGetBytesFromBase64(out value));
+            Assert.Equal(expected, value);
+        }
+
+        [Theory]
+        [InlineData("\"ABC===\"")]
+        [InlineData("\"ABC\"")]
+        [InlineData("\"ABC!\"")]
+        [InlineData(null)]  // Large randomly generated string
+        public static void InvalidBase64(string jsonString)
+        {
+            if (jsonString == null)
+            {
+                var random = new Random(42);
+                var charArray = new char[500];
+                charArray[0] = '"';
+                for (int i = 1; i < charArray.Length; i++)
+                {
+                    charArray[i] = (char)random.Next('?', '\\'); // ASCII values (between 63 and 91) that don't need to be escaped.
+                }
+
+                charArray[256] = '\\';
+                charArray[257] = '"';
+                charArray[charArray.Length - 1] = '"';
+                jsonString = new string(charArray);
+            }
+
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state: default);
+            Assert.True(json.Read());
+            Assert.False(json.TryGetBytesFromBase64(out byte[] value));
+            Assert.Null(value);
+
+            try
+            {
+                byte[] val = json.GetBytesFromBase64();
+                Assert.True(false, "Expected InvalidOperationException when trying to decode base 64 string for invalid UTF-16 JSON text.");
+            }
+            catch (FormatException) { }
+        }
+
+        [Theory]
+        [InlineData("\"a\\uDD1E\"")]
+        [InlineData("\"a\\uDD1Eb\"")]
+        [InlineData("\"a\\uD834\"")]
+        [InlineData("\"a\\uD834\\u0030\"")]
+        [InlineData("\"a\\uD834\\uD834\"")]
+        [InlineData("\"a\\uD834b\"")]
+        [InlineData("\"a\\uDD1E\\uD834b\"")]
+        [InlineData("\"a\\\\uD834\\uDD1Eb\"")]
+        [InlineData("\"a\\uDD1E\\\\uD834b\"")]
+        public static void TestingGetBase64InvalidUTF16(string jsonString)
+        {
+            byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
+
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+                var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state);
+
+                Assert.True(json.Read());
+                Assert.Equal(JsonTokenType.String, json.TokenType);
+                try
+                {
+                    byte[] val = json.GetBytesFromBase64();
+                    Assert.True(false, "Expected InvalidOperationException when trying to decode base 64 string for invalid UTF-16 JSON text.");
+                }
+                catch (InvalidOperationException) { }
+
+                try
+                {
+                    json.TryGetBytesFromBase64(out byte[] val);
+                    Assert.True(false, "Expected InvalidOperationException when trying to decode base 64 string for invalid UTF-16 JSON text.");
+                }
+                catch (InvalidOperationException) { }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidUTF8Strings))]
+        public static void TestingGetBase64InvalidUTF8(byte[] dataUtf8)
+        {
+            foreach (JsonCommentHandling commentHandling in Enum.GetValues(typeof(JsonCommentHandling)))
+            {
+                var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = commentHandling });
+                var json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state);
+
+                // It is expected that the Utf8JsonReader won't throw an exception here
+                Assert.True(json.Read());
+                Assert.Equal(JsonTokenType.String, json.TokenType);
+
+                while (json.Read())
+                    ;
+
+                json = new Utf8JsonReader(dataUtf8, isFinalBlock: true, state);
+
+                while (json.Read())
+                {
+                    if (json.TokenType == JsonTokenType.String)
+                    {
+                        try
+                        {
+                            byte[] val = json.GetBytesFromBase64();
+                            Assert.True(false, "Expected InvalidOperationException when trying to decode base 64 string for invalid UTF-8 JSON text.");
+                        }
+                        catch (FormatException) { }
+
+                        Assert.False(json.TryGetBytesFromBase64(out byte[] value));
+                        Assert.Null(value);
                     }
                 }
             }
