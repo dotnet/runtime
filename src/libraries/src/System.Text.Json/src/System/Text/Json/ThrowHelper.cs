@@ -349,6 +349,12 @@ namespace System.Text.Json
                 case ExceptionResource.ExpectedJsonTokens:
                     message = SR.ExpectedJsonTokens;
                     break;
+                case ExceptionResource.NotEnoughData:
+                    message = SR.NotEnoughData;
+                    break;
+                case ExceptionResource.ExpectedOneCompleteToken:
+                    message = SR.ExpectedOneCompleteToken;
+                    break;
                 case ExceptionResource.InvalidCharacterAtStartOfComment:
                     message = SR.Format(SR.InvalidCharacterAtStartOfComment, character);
                     break;
@@ -566,7 +572,9 @@ namespace System.Text.Json
         TrailingCommaNotAllowedBeforeArrayEnd,
         TrailingCommaNotAllowedBeforeObjectEnd,
         InvalidCharacterAtStartOfComment,
-        UnexpectedEndOfDataWhileReadingComment
+        UnexpectedEndOfDataWhileReadingComment,
+        ExpectedOneCompleteToken,
+        NotEnoughData
     }
 
     internal enum NumericType
