@@ -2,6 +2,12 @@
 <Project DefaultTargets = "GetListOfTestCmds" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <!-- All OS/Arch common excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventsource/**/*">	
+            <Issue>24839</Issue>	
+        </ExcludeList>	
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/tracevalidation/**/*">	
+            <Issue>24839</Issue>	
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/generics/threadstart/GThread23/*">
             <Issue>19339</Issue>
         </ExcludeList>
