@@ -333,10 +333,5 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowInvalidOperationException_SerializerOptionsImmutable();
             }
         }
-
-        /// <summary>
-        /// Internal flag to let us know that we need to read ahead in the inner read loop.
-        /// </summary>
-        internal bool ReadAhead { get; set; }
     }
 }

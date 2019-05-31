@@ -15,7 +15,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<ArgumentException>(() => JsonSerializer.ToString(1, typeof(string)));
         }
 
-        [ActiveIssue(38092)]
         [Theory]
         [MemberData(nameof(WriteSuccessCases))]
         public static void Write(ITestClass testObj)

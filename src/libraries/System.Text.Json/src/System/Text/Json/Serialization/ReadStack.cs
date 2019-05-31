@@ -150,5 +150,10 @@ namespace System.Text.Json.Serialization
         /// Bytes consumed in the current loop
         /// </summary>
         public long BytesConsumed;
+
+        /// <summary>
+        /// Internal flag to let us know that we need to read ahead in the inner read loop.
+        /// </summary>
+        internal bool ReadAhead;
     }
 }
