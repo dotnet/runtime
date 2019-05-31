@@ -44,8 +44,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
-    <Compile Include="ObservableCollection\ObservableCollection_MethodTests.netcoreapp.cs" />
-    <Compile Include="ObservableCollection\ObservableCollection_SkipCollectionChangedTests.netcoreapp.cs" />
     <Compile Include="KeyedCollection\TestMethods.netcoreapp.cs" />
     <Compile Include="System\Collections\ObjectModel\KeyedCollectionTests.netcoreapp.cs" />
     <Compile Include="System\Windows\Markup\ValueSerializerAttributeTests.cs" />
