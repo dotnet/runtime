@@ -145,5 +145,10 @@ namespace System.Text.Json.Serialization
 
             return propertyName;
         }
+
+        /// <summary>
+        /// Bytes consumed in the current loop
+        /// </summary>
+        public long BytesConsumed;
     }
 }

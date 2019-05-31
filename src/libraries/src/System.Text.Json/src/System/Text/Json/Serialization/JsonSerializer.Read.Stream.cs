@@ -83,8 +83,8 @@ namespace System.Text.Json.Serialization
                 options = JsonSerializerOptions.s_defaultOptions;
             }
 
-            ReadStack state = default;
-            state.Current.Initialize(returnType, options);
+            ReadStack readStack = default;
+            readStack.Current.Initialize(returnType, options);
 
             var readerState = new JsonReaderState(options.GetReaderOptions());
 
@@ -138,10 +138,11 @@ namespace System.Text.Json.Serialization
                         isFinalBlock,
                         new Span<byte>(buffer, 0, bytesInBuffer),
                         options,
-                        ref state);
+                        ref readStack);
 
-                    Debug.Assert(readerState.BytesConsumed <= bytesInBuffer);
-                    int bytesConsumed = (int)readerState.BytesConsumed;
+                    Debug.Assert(readStack.BytesConsumed <= bytesInBuffer);
+                    int bytesConsumed = checked((int)readStack.BytesConsumed);
+
                     bytesInBuffer -= bytesConsumed;
 
                     if (isFinalBlock)
@@ -183,7 +184,7 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowJsonException_DeserializeDataRemaining(totalBytesRead, bytesInBuffer);
             }
 
-            return (TValue)state.Current.ReturnValue;
+            return (TValue)readStack.Current.ReturnValue;
         }
 
         private static void ReadCore(
@@ -191,14 +192,21 @@ namespace System.Text.Json.Serialization
             bool isFinalBlock,
             Span<byte> buffer,
             JsonSerializerOptions options,
-            ref ReadStack state)
+            ref ReadStack readStack)
         {
             var reader = new Utf8JsonReader(buffer, isFinalBlock, readerState);
+
+            // If we haven't read in the entire stream's payload we'll need to signify that we want
+            // to enable read ahead behaviors to ensure we have complete json objects and arrays
+            // ({}, []) when needed. (Notably to successfully parse JsonElement via JsonDocument
+            // to assign to object and JsonElement properties in the constructed .NET object.)
+            options.ReadAhead = !isFinalBlock;
+            readStack.BytesConsumed = 0;
 
             ReadCore(
                 options,
                 ref reader,
-                ref state);
+                ref readStack);
 
             readerState = reader.CurrentState;
         }
