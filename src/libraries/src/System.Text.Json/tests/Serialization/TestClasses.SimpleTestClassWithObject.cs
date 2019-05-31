@@ -37,6 +37,9 @@ namespace System.Text.Json.Serialization.Tests
         public object MyStringToStringDict { get; set; }
         public object MyStringToStringIDict { get; set; }
         public object MyStringToStringIReadOnlyDict { get; set; }
+        public object MyStringToStringImmutableDict { get; set; }
+        public object MyStringToStringIImmutableDict { get; set; }
+        public object MyStringToStringImmutableSortedDict { get; set; }
         public object MyStringStackT { get; set; }
         public object MyStringQueueT { get; set; }
         public object MyStringHashSetT { get; set; }
@@ -96,7 +99,10 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyStringIReadOnlyListT"" : [""Hello""]," +
                 @"""MyStringToStringDict"" : {""key"" : ""value""}," +
                 @"""MyStringToStringIDict"" : {""key"" : ""value""}," +
-                @"""MyStringToStringIReadOnlyDict"" : {""key"" : ""value""}" +
+                @"""MyStringToStringIReadOnlyDict"" : {""key"" : ""value""}," +
+                @"""MyStringToStringImmutableDict"" : {""key"" : ""value""}," +
+                @"""MyStringToStringIImmutableDict"" : {""key"" : ""value""}," +
+                @"""MyStringToStringImmutableSortedDict"" : {""key"" : ""value""}," +
                 @"""MyStringStackT"" : [""Hello"", ""World""]," +
                 @"""MyStringQueueT"" : [""Hello"", ""World""]," +
                 @"""MyStringHashSetT"" : [""Hello""]," +
@@ -148,6 +154,10 @@ namespace System.Text.Json.Serialization.Tests
             MyStringToStringIDict = new Dictionary<string, string> { { "key", "value" } };
             MyStringToStringIReadOnlyDict = new Dictionary<string, string> { { "key", "value" } };
 
+            MyStringToStringImmutableDict = ImmutableDictionary.CreateRange((Dictionary<string, string>)MyStringToStringDict);
+            MyStringToStringIImmutableDict = ImmutableDictionary.CreateRange((Dictionary<string, string>)MyStringToStringDict);
+            MyStringToStringImmutableSortedDict = ImmutableSortedDictionary.CreateRange((Dictionary<string, string>)MyStringToStringDict);
+
             MyStringStackT = new Stack<string>(new List<string>() { "Hello", "World" });
             MyStringQueueT = new Queue<string>(new List<string>() { "Hello", "World" });
             MyStringHashSetT = new HashSet<string>(new List<string>() { "Hello" });
@@ -197,6 +207,10 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("value", ((Dictionary<string, string>)MyStringToStringDict)["key"]);
             Assert.Equal("value", ((IDictionary<string, string>)MyStringToStringIDict)["key"]);
             Assert.Equal("value", ((IReadOnlyDictionary<string, string>)MyStringToStringIReadOnlyDict)["key"]);
+
+            Assert.Equal("value", ((ImmutableDictionary<string, string>)MyStringToStringImmutableDict)["key"]);
+            Assert.Equal("value", ((IImmutableDictionary<string, string>)MyStringToStringIImmutableDict)["key"]);
+            Assert.Equal("value", ((ImmutableSortedDictionary<string, string>)MyStringToStringImmutableSortedDict)["key"]);
 
             Assert.Equal(2, ((Stack<string>)MyStringStackT).Count);
             Assert.True(((Stack<string>)MyStringStackT).Contains("Hello"));

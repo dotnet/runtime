@@ -20,10 +20,10 @@ namespace System.Text.Json.Serialization
                 return;
             }
 
-            Debug.Assert(state.Current.ReturnValue != default);
+            Debug.Assert(state.Current.ReturnValue != default || state.Current.TempDictionaryValues != default);
             Debug.Assert(state.Current.JsonClassInfo != default);
 
-            if (state.Current.IsProcessingDictionary)
+            if (state.Current.IsProcessingDictionary || state.Current.IsProcessingImmutableDictionary)
             {
                 if (ReferenceEquals(state.Current.JsonClassInfo.DataExtensionProperty, state.Current.JsonPropertyInfo))
                 {
@@ -47,13 +47,16 @@ namespace System.Text.Json.Serialization
                         keyName = options.DictionaryKeyPolicy.ConvertName(keyName);
                     }
 
-                    if (state.Current.IsDictionary)
+                    if (state.Current.IsDictionary || state.Current.IsImmutableDictionary)
                     {
                         state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetPolicyProperty();
                     }
 
-                    Debug.Assert(state.Current.IsDictionary ||
-                        (state.Current.IsDictionaryProperty && state.Current.JsonPropertyInfo != null));
+                    Debug.Assert(
+                        state.Current.IsDictionary ||
+                        (state.Current.IsDictionaryProperty && state.Current.JsonPropertyInfo != null) ||
+                        state.Current.IsImmutableDictionary ||
+                        (state.Current.IsImmutableDictionaryProperty && state.Current.JsonPropertyInfo != null));
 
                     state.Current.KeyName = keyName;
                 }

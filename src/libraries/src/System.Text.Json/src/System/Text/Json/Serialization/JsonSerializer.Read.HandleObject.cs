@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Diagnostics;
 
 namespace System.Text.Json.Serialization
@@ -10,7 +11,7 @@ namespace System.Text.Json.Serialization
     {
         private static void HandleStartObject(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
         {
-            Debug.Assert(!state.Current.IsProcessingDictionary);
+            Debug.Assert(!state.Current.IsProcessingDictionary && !state.Current.IsProcessingImmutableDictionary);
 
             if (state.Current.IsProcessingEnumerable)
             {
@@ -41,12 +42,19 @@ namespace System.Text.Json.Serialization
                 }
             }
 
-            state.Current.ReturnValue = classInfo.CreateObject();
+            if (state.Current.IsProcessingImmutableDictionary)
+            {
+                state.Current.TempDictionaryValues = (IDictionary)classInfo.CreateObject();
+            }
+            else
+            {
+                state.Current.ReturnValue = classInfo.CreateObject();
+            }
         }
 
         private static void HandleEndObject(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
         {
-            Debug.Assert(!state.Current.IsProcessingDictionary);
+            Debug.Assert(!state.Current.IsProcessingDictionary && !state.Current.IsProcessingImmutableDictionary);
 
             state.Current.JsonClassInfo.UpdateSortedPropertyCache(ref state.Current);
 

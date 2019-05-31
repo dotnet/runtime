@@ -66,7 +66,7 @@ namespace System.Text.Json.Serialization
                                 break;
                             }
                         }
-                        else if (readStack.Current.IsProcessingDictionary)
+                        else if (readStack.Current.IsProcessingDictionary || readStack.Current.IsProcessingImmutableDictionary)
                         {
                             HandleStartDictionary(options, ref reader, ref readStack);
                         }
@@ -81,7 +81,7 @@ namespace System.Text.Json.Serialization
                         {
                             readStack.Pop();
                         }
-                        else if (readStack.Current.IsProcessingDictionary)
+                        else if (readStack.Current.IsProcessingDictionary || readStack.Current.IsProcessingImmutableDictionary)
                         {
                             HandleEndDictionary(options, ref reader, ref readStack);
                         }
