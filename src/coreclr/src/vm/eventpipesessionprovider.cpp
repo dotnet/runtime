@@ -188,14 +188,12 @@ void EventPipeSessionProviderList::Clear()
 {
     if (m_pProviders != NULL)
     {
-        SListElem<EventPipeSessionProvider *> *pElem = m_pProviders->GetHead();
-        while (pElem != NULL)
+        while (!m_pProviders->IsEmpty())
         {
-            SListElem<EventPipeSessionProvider *> *pCurElem = pElem;
-            pElem = m_pProviders->RemoveHead();
+            SListElem<EventPipeSessionProvider*> *pElem = m_pProviders->RemoveHead();
             EventPipeSessionProvider *pProvider = pElem->GetValue();
             delete pProvider;
-            delete pCurElem;
+            delete pElem;
         }
     }
 
