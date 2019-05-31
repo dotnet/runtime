@@ -11,7 +11,7 @@
     <!-- Workaround for overriding the XML comments related warnings that are being supressed repo wide (within arcade): -->
     <!-- https://github.com/dotnet/arcade/blob/ea6addfdc65e5df1b2c036f11614a5f922e36267/src/Microsoft.DotNet.Arcade.Sdk/tools/ProjectDefaults.props#L90 -->
     <!-- For this project, we want warnings if there are public APIs/types without properly formatted XML comments (particularly CS1591). -->
-    <NoWarn/>
+    <NoWarn />
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Text\Json\BitStack.cs" />
@@ -124,6 +124,7 @@
     <Compile Include="System\Text\Json\Writer\JsonWriterOptions.cs" />
     <Compile Include="System\Text\Json\Writer\SequenceValidity.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Bytes.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.DateTime.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.DateTimeOffset.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.Decimal.cs" />
@@ -136,6 +137,7 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.SignedNumber.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.String.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteProperties.UnsignedNumber.cs" />
+    <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Bytes.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.Comment.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.DateTime.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.DateTimeOffset.cs" />

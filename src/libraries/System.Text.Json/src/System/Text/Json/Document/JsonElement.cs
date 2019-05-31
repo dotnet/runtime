@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -348,6 +349,57 @@ namespace System.Text.Json
             CheckValidInstance();
 
             return _parent.GetString(_idx, JsonTokenType.String);
+        }
+
+        /// <summary>
+        ///   Attempts to represent the current JSON string as bytes assuming it is base 64 encoded.
+        /// </summary>
+        /// <param name="value">Receives the value.</param>
+        /// <remarks>
+        ///  This method does not create a byte[] representation of values other than bsae 64 encoded JSON strings.
+        /// </remarks>
+        /// <returns>
+        ///   <see langword="true"/> if the entire token value is encoded as valid base 64 text and can be successfully decoded to bytes.
+        ///   <see langword="false"/> otherwise.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="Type"/> is not <see cref="JsonValueType.String"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        public bool TryGetBytesFromBase64(out byte[] value)
+        {
+            CheckValidInstance();
+
+            return _parent.TryGetValue(_idx, out value);
+        }
+
+        /// <summary>
+        ///   Gets the value of the element as bytes.
+        /// </summary>
+        /// <remarks>
+        ///   This method does not create a byte[] representation of values other than base 64 encoded JSON strings.
+        /// </remarks>
+        /// <returns>The value decode to bytes.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="Type"/> is not <see cref="JsonValueType.String"/>.
+        /// </exception>
+        /// <exception cref="FormatException">
+        ///   The value is not encoded as base 64 text and hence cannot be decoded to bytes.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        /// <seealso cref="ToString"/>
+        public byte[] GetBytesFromBase64()
+        {
+            if (TryGetBytesFromBase64(out byte[] value))
+            {
+                return value;
+            }
+
+            throw new FormatException();
         }
 
         /// <summary>
