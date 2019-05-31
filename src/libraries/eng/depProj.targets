@@ -111,6 +111,13 @@ See the LICENSE file in the project root for more information.
   <!-- Required by Common.Targets but not used for depproj -->
   <Target Name="CreateManifestResourceNames" />
   
+  <Target Name="RemoveFrameworkReferences"
+          AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <ResolvedFrameworkAssemblies Remove="@(ResolvedFrameworkAssemblies)" Condition="'%(ResolvedFrameworkAssemblies.NuGetIsFrameworkReference)' == 'true'" />
+    </ItemGroup>
+  </Target>
+
   <!-- Support filtering to a subset of packages or files -->
   <Target Name="FilterNugetPackages" 
           BeforeTargets="ResolveAssemblyReferences"

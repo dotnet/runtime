@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current">
   <PropertyGroup>
     <ProjectGuid>{96A7CE75-B5E8-421B-BDF0-C4651D97D8CA}</ProjectGuid>
-    <Configurations>netstandard-Debug;netstandard-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
-    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netstandard'">true</IsPartialFacadeAssembly>
+    <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
+    <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netstandard' AND '$(TargetsNetFx)' != 'true'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Compile Include="System\Threading\Tasks\Sources\ManualResetValueTaskSourceCore.cs" />
@@ -32,7 +32,9 @@
       <Link>ProductionCode\System.Runtime\src\System\Runtime\CompilerServices\EnumeratorCancellationAttribute.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' OR '$(TargetsNetFx)' == 'true'">
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Tasks.Extensions" />

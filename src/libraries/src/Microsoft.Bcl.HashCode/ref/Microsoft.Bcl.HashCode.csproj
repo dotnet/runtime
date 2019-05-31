@@ -1,12 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="Current">
   <PropertyGroup>
     <ProjectGuid>{96AA2060-C846-4E56-9509-E8CB9C114C8F}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netstandard-Debug;netstandard-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;netcoreapp-Debug;netcoreapp-Release;netcoreapp2.1-Debug;netcoreapp2.1-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetsNetFx)' == 'true'">
     <Compile Include="Microsoft.Bcl.HashCode.cs" />
+    <Reference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0' AND '$(TargetsNetFx)' != 'true'">
     <Compile Include="Microsoft.Bcl.HashCode.Forwards.cs" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Reference Include="System.Runtime" Condition="'$(TargetGroup)' != 'netcoreapp'" />

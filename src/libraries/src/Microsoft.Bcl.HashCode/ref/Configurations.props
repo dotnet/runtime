@@ -4,10 +4,12 @@
       netstandard;
       netstandard2.1;
       netcoreapp2.1;
+      net461;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);
       netcoreapp;
+      netfx;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

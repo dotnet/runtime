@@ -1,18 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{6371299B-8F39-4A0A-A9CD-70F80FF205F6}</ProjectGuid>
-    <Configurations>netstandard-Debug;netstandard-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard2.1-Debug;netstandard2.1-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' OR '$(TargetsNetFx)' == 'true'">
     <Compile Include="Microsoft.Bcl.AsyncInterfaces.cs" />
-    <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard' AND '$(TargetsNetFx)' != 'true'">
     <Compile Include="Microsoft.Bcl.AsyncInterfaces.Forwards.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Tasks.Extensions" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
+    <Reference Include="mscorlib" />
+    <Reference Include="netstandard" />
     <Reference Include="System.Threading.Tasks.Extensions" />
   </ItemGroup>
 </Project>

@@ -4,10 +4,11 @@
     <AssemblyName>System.Text.Json</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
     <!-- For the inbox library (that is shipping with the product), this should always be true. -->
     <!-- BUILDING_INBOX_LIBRARY is only false when building the netstandard compatible NuGet package. -->
-    <DefineConstants Condition="'$(TargetsNETStandard)' != 'true'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
+    <DefineConstants Condition="'$(TargetsNETStandard)' != 'true' AND '$(TargetsNetFx)' != 'true'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
+    <DefineConstants Condition="'$(TargetsNetFx)' == 'true'">$(DefineConstants);netstandard</DefineConstants>
     <!-- Workaround for overriding the XML comments related warnings that are being supressed repo wide (within arcade): -->
     <!-- https://github.com/dotnet/arcade/blob/ea6addfdc65e5df1b2c036f11614a5f922e36267/src/Microsoft.DotNet.Arcade.Sdk/tools/ProjectDefaults.props#L90 -->
     <!-- For this project, we want warnings if there are public APIs/types without properly formatted XML comments (particularly CS1591). -->
@@ -152,13 +153,18 @@
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.String.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNETStandard)' == 'true'">
+  <ItemGroup Condition="'$(TargetsNETStandard)' == 'true' OR '$(TargetsNetFx)' == 'true'">
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)\System\Buffers\ArrayBufferWriter.cs">
       <Link>Common\System\Buffers\ArrayBufferWriter.cs</Link>
     </Compile>
+    <Reference Include="mscorlib" />
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.ValueTuple" />
+    <Reference Include="System.Numerics.Vectors" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNETStandard)' != 'true'">
+  <ItemGroup Condition="'$(TargetsNETStandard)' != 'true' AND '$(TargetsNetFx)' != 'true'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Reflection.Primitives" />
