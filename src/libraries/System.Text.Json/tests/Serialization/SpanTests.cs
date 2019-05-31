@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -20,6 +21,29 @@ namespace System.Text.Json.Serialization.Tests
         public static void Read(Type classType, byte[] data)
         {
             object obj = JsonSerializer.Parse(data, classType);
+            Assert.IsAssignableFrom(typeof(ITestClass), obj);
+            ((ITestClass)obj).Verify();
+        }
+
+        [Theory]
+        [MemberData(nameof(ReadSuccessCases))]
+        public static void ReadFromStream(Type classType, byte[] data)
+        {
+            MemoryStream stream = new MemoryStream(data);
+            object obj = JsonSerializer.ReadAsync(
+                stream,
+                classType).Result;
+
+            Assert.IsAssignableFrom(typeof(ITestClass), obj);
+            ((ITestClass)obj).Verify();
+
+            // Try again with a smaller initial buffer size to ensure we handle incomplete data
+            stream = new MemoryStream(data);
+            obj = JsonSerializer.ReadAsync(
+                stream,
+                classType,
+                new JsonSerializerOptions { DefaultBufferSize = 5 }).Result;
+
             Assert.IsAssignableFrom(typeof(ITestClass), obj);
             ((ITestClass)obj).Verify();
         }

@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
-using System.Collections;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Text.Json.Serialization
 {
@@ -17,99 +17,148 @@ namespace System.Text.Json.Serialization
         private static void ReadCore(
             JsonSerializerOptions options,
             ref Utf8JsonReader reader,
-            ref ReadStack state)
+            ref ReadStack readStack)
         {
             try
             {
-                while (reader.Read())
+                JsonReaderState initialState = default;
+
+                while (true)
                 {
+                    if (options.ReadAhead)
+                    {
+                        // When we're reading ahead we always have to save the state
+                        // as we don't know if the next token is an opening object or
+                        // array brace.
+                        initialState = reader.CurrentState;
+                    }
+
+                    if (!reader.Read())
+                    {
+                        // Need more data
+                        break;
+                    }
+
                     JsonTokenType tokenType = reader.TokenType;
 
                     if (JsonHelpers.IsInRangeInclusive(tokenType, JsonTokenType.String, JsonTokenType.False))
                     {
                         Debug.Assert(tokenType == JsonTokenType.String || tokenType == JsonTokenType.Number || tokenType == JsonTokenType.True || tokenType == JsonTokenType.False);
 
-                        if (HandleValue(tokenType, options, ref reader, ref state))
-                        {
-                            continue;
-                        }
+                        HandleValue(tokenType, options, ref reader, ref readStack);
                     }
                     else if (tokenType == JsonTokenType.PropertyName)
                     {
-                        HandlePropertyName(options, ref reader, ref state);
+                        HandlePropertyName(options, ref reader, ref readStack);
                     }
                     else if (tokenType == JsonTokenType.StartObject)
                     {
-                        if (state.Current.SkipProperty)
+                        if (readStack.Current.SkipProperty)
                         {
-                            state.Push();
-                            state.Current.Drain = true;
+                            readStack.Push();
+                            readStack.Current.Drain = true;
                         }
-                        else if (state.Current.IsProcessingValue)
+                        else if (readStack.Current.IsProcessingValue)
                         {
-                            if (HandleValue(tokenType, options, ref reader, ref state))
+                            if (!HandleObjectAsValue(tokenType, options, ref reader, ref readStack, ref initialState))
                             {
-                                continue;
+                                // Need more data
+                                break;
                             }
                         }
-                        else if (state.Current.IsProcessingDictionary)
+                        else if (readStack.Current.IsProcessingDictionary)
                         {
-                            HandleStartDictionary(options, ref reader, ref state);
+                            HandleStartDictionary(options, ref reader, ref readStack);
                         }
                         else
                         {
-                            HandleStartObject(options, ref reader, ref state);
+                            HandleStartObject(options, ref reader, ref readStack);
                         }
                     }
                     else if (tokenType == JsonTokenType.EndObject)
                     {
-                        if (state.Current.Drain)
+                        if (readStack.Current.Drain)
                         {
-                            state.Pop();
+                            readStack.Pop();
                         }
-                        else if (state.Current.IsProcessingDictionary)
+                        else if (readStack.Current.IsProcessingDictionary)
                         {
-                            HandleEndDictionary(options, ref reader, ref state);
+                            HandleEndDictionary(options, ref reader, ref readStack);
                         }
                         else
                         {
-                            HandleEndObject(options, ref reader, ref state);
+                            HandleEndObject(options, ref reader, ref readStack);
                         }
                     }
                     else if (tokenType == JsonTokenType.StartArray)
                     {
-                        if (!state.Current.IsProcessingValue)
+                        if (!readStack.Current.IsProcessingValue)
                         {
-                            HandleStartArray(options, ref reader, ref state);
+                            HandleStartArray(options, ref reader, ref readStack);
                         }
-                        else if (HandleValue(tokenType, options, ref reader, ref state))
+                        else if (!HandleObjectAsValue(tokenType, options, ref reader, ref readStack, ref initialState))
                         {
-                            continue;
+                            // Need more data
+                            break;
                         }
                     }
                     else if (tokenType == JsonTokenType.EndArray)
                     {
-                        if (HandleEndArray(options, ref reader, ref state))
-                        {
-                            continue;
-                        }
+                        HandleEndArray(options, ref reader, ref readStack);
                     }
                     else if (tokenType == JsonTokenType.Null)
                     {
-                        if (HandleNull(ref reader, ref state, options))
-                        {
-                            continue;
-                        }
+                        HandleNull(ref reader, ref readStack, options);
                     }
                 }
             }
             catch (JsonReaderException e)
             {
                 // Re-throw with Path information.
-                ThrowHelper.ReThrowWithPath(e, state.JsonPath);
+                ThrowHelper.ReThrowWithPath(e, readStack.JsonPath);
             }
 
+            readStack.BytesConsumed += reader.BytesConsumed;
             return;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool HandleObjectAsValue(
+            JsonTokenType tokenType,
+            JsonSerializerOptions options,
+            ref Utf8JsonReader reader,
+            ref ReadStack readStack,
+            ref JsonReaderState initialState)
+        {
+            if (options.ReadAhead)
+            {
+                // Attempt to skip to make sure we have all the data we need.
+                bool complete = reader.TrySkip();
+
+                // We need to restore the state in all cases as we need to be positioned back before
+                // the current token to either attempt to skip again or to actually read the value in
+                // HandleValue below.
+
+                reader = new Utf8JsonReader(
+                    reader.OriginalSpan.Slice(checked((int)initialState.BytesConsumed)),
+                    isFinalBlock: reader.IsFinalBlock,
+                    state: initialState);
+                Debug.Assert(reader.BytesConsumed == 0);
+                readStack.BytesConsumed += initialState.BytesConsumed;
+
+                if (!complete)
+                {
+                    // Couldn't read to the end of the object, exit out to get more data in the buffer.
+                    return false;
+                }
+
+                // Success, requeue the reader to the token for HandleValue.
+                reader.Read();
+                Debug.Assert(tokenType == reader.TokenType);
+            }
+
+            HandleValue(tokenType, options, ref reader, ref readStack);
+            return true;
         }
 
         private static ReadOnlySpan<byte> GetUnescapedString(ReadOnlySpan<byte> utf8Source, int idx)
