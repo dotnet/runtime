@@ -3270,25 +3270,19 @@ void CodeGen::genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode)
     GenTree* source  = cpBlkNode->Data();
     GenTree* srcAddr = nullptr;
 
-#ifdef DEBUG
     assert(dstAddr->isUsedFromReg());
     assert(source->isContained());
 
 #ifdef _TARGET_X86_
-    if (size == 0)
+    if (!cpBlkNode->OperIs(GT_STORE_DYN_BLK))
     {
-        noway_assert(cpBlkNode->OperGet() == GT_STORE_DYN_BLK);
+        assert((size == 0) || (size > CPBLK_UNROLL_LIMIT));
     }
-    else
+#else // _TARGET_AMD64_
+    // On x64 we use the helper call for GT_STORE_DYN_BLK.
+    assert(!cpBlkNode->OperIs(GT_STORE_DYN_BLK));
+    assert((size == 0) || ((size > CPBLK_UNROLL_LIMIT) && (size < CPBLK_MOVS_LIMIT)));
 #endif
-    {
-#ifdef _TARGET_AMD64_
-        assert(size > CPBLK_UNROLL_LIMIT && size < CPBLK_MOVS_LIMIT);
-#else
-        assert(size > CPBLK_UNROLL_LIMIT);
-#endif
-    }
-#endif // DEBUG
 
     genConsumeBlockOp(cpBlkNode, REG_RDI, REG_RSI, REG_RCX);
     instGen(INS_r_movsb);
@@ -3791,14 +3785,10 @@ void CodeGen::genCodeForCpBlk(GenTreeBlk* cpBlkNode)
     GenTree* srcAddr   = nullptr;
 
     // Size goes in arg2
-    if (blockSize != 0)
+    if (cpBlkNode->gtOper != GT_STORE_DYN_BLK)
     {
         assert(blockSize >= CPBLK_MOVS_LIMIT);
         assert((cpBlkNode->gtRsvdRegs & RBM_ARG_2) != 0);
-    }
-    else
-    {
-        noway_assert(cpBlkNode->gtOper == GT_STORE_DYN_BLK);
     }
 
     // Source address goes in arg1

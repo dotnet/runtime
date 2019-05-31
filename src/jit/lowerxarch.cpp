@@ -329,7 +329,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else
         {
-            assert((blkNode->OperGet() == GT_STORE_BLK) || (blkNode->OperGet() == GT_STORE_DYN_BLK));
+            assert(blkNode->OperIs(GT_STORE_BLK, GT_STORE_DYN_BLK));
             // CopyBlk
             // In case of a CpBlk with a constant size and less than CPBLK_MOVS_LIMIT size
             // we can use rep movs to generate code instead of the helper call.
@@ -339,12 +339,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             unsigned helperThreshold = max(CPBLK_MOVS_LIMIT, CPBLK_UNROLL_LIMIT);
 
             // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
-            if ((size != 0) && (size <= helperThreshold))
+            if ((!blkNode->OperIs(GT_STORE_DYN_BLK)) && (size <= helperThreshold))
             {
                 // If we have a buffer between XMM_REGSIZE_BYTES and CPBLK_UNROLL_LIMIT bytes, we'll use SSE2.
                 // Structs and buffer with sizes <= CPBLK_UNROLL_LIMIT bytes are occurring in more than 95% of
                 // our framework assemblies, so this is the main code generation scheme we'll use.
-                if (size <= CPBLK_UNROLL_LIMIT)
+                if ((size != 0) && (size <= CPBLK_UNROLL_LIMIT))
                 {
                     blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
 

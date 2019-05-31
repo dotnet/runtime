@@ -9099,7 +9099,10 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
             size = genTypeSize(asgType);
         }
     }
-    noway_assert((size != 0) || dest->OperIs(GT_DYN_BLK));
+    if (size == 0)
+    {
+        return nullptr;
+    }
 
     //
     //  See if we can do a simple transformation:
