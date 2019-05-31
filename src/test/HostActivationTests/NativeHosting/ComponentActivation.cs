@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
     public partial class ComponentActivation : IClassFixture<ComponentActivation.SharedTestState>
     {
         private const string ComponentActivationArg = "load_assembly_and_get_function_pointer";
-        
+
         private readonly SharedTestState sharedState;
 
         public ComponentActivation(SharedTestState sharedTestState)
@@ -21,11 +21,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             sharedState = sharedTestState;
         }
 
-        //[Theory]
-        //[InlineData(true, true, true)]
-        //[InlineData(false, true, true)]
-        //[InlineData(true, false, true)]
-        //[InlineData(true, true, false)]
+        [Theory]
+        [InlineData(true, true, true)]
+        [InlineData(false, true, true)]
+        [InlineData(true, false, true)]
+        [InlineData(true, true, false)]
         public void CallDelegate(bool validPath, bool validType, bool validMethod)
         {
             var componentProject = sharedState.ComponentWithNoDependenciesFixture.TestProject;
@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             {
                 ComponentActivationArg,
                 sharedState.HostFxrPath,
-                sharedState.RuntimeConfigPath,
+                componentProject.RuntimeConfigJson,
                 validPath ? componentProject.AppDll : "BadPath...",
                 validType ? sharedState.ComponentTypeName : $"Component.BadType, {componentProject.AssemblyName}",
                 validMethod ? sharedState.ComponentEntryPoint1 : "BadMethod",
@@ -47,7 +47,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should()
-                .InitializeContextForConfig(sharedState.RuntimeConfigPath);
+                .InitializeContextForConfig(componentProject.RuntimeConfigJson);
 
             if (validPath && validType && validMethod)
             {
@@ -60,9 +60,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
         }
 
-        //[Theory]
-        //[InlineData(1)]
-        //[InlineData(10)]
+        [Theory]
+        [InlineData(1)]
+        [InlineData(10)]
         public void CallDelegate_MultipleEntryPoints(int callCount)
         {
             var componentProject = sharedState.ComponentWithNoDependenciesFixture.TestProject;
@@ -70,10 +70,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             {
                 ComponentActivationArg,
                 sharedState.HostFxrPath,
-                sharedState.RuntimeConfigPath,
+                componentProject.RuntimeConfigJson,
             };
             string[] componentInfo =
-            { 
+            {
                 // ComponentEntryPoint1
                 componentProject.AppDll,
                 sharedState.ComponentTypeName,
@@ -99,7 +99,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForConfig(sharedState.RuntimeConfigPath);
+                .And.InitializeContextForConfig(componentProject.RuntimeConfigJson);
 
             for (int i = 1; i <= callCount; ++i)
             {
@@ -109,9 +109,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
         }
 
-        //[Theory]
-        //[InlineData(1)]
-        //[InlineData(10)]
+        [Theory]
+        [InlineData(1)]
+        [InlineData(10)]
         public void CallDelegate_MultipleComponents(int callCount)
         {
             var componentProject = sharedState.ComponentWithNoDependenciesFixture.TestProject;
@@ -120,10 +120,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             {
                 ComponentActivationArg,
                 sharedState.HostFxrPath,
-                sharedState.RuntimeConfigPath,
+                componentProject.RuntimeConfigJson,
             };
             string[] componentInfo =
-            { 
+            {
                 // Component
                 componentProject.AppDll,
                 sharedState.ComponentTypeName,
@@ -148,7 +148,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 .Execute();
 
             result.Should().Pass()
-                .And.InitializeContextForConfig(sharedState.RuntimeConfigPath);
+                .And.InitializeContextForConfig(componentProject.RuntimeConfigJson);
 
             for (int i = 1; i <= callCount; ++i)
             {
@@ -162,8 +162,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         {
             public string HostFxrPath { get; }
             public string DotNetRoot { get; }
-
-            public string RuntimeConfigPath { get; }
 
             public TestProjectFixture ComponentWithNoDependenciesFixture { get; }
             public string ComponentTypeName { get; }
@@ -180,13 +178,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .PublishProject();
                 ComponentTypeName = $"Component.Component, {ComponentWithNoDependenciesFixture.TestProject.AssemblyName}";
-
-                string configDir = Path.Combine(BaseDirectory, "config");
-                Directory.CreateDirectory(configDir);
-                RuntimeConfigPath = Path.Combine(configDir, "Component.runtimeconfig.json");
-                RuntimeConfig.FromFile(RuntimeConfigPath)
-                    .WithFramework(new RuntimeConfig.Framework(Constants.MicrosoftNETCoreApp, RepoDirectories.MicrosoftNETCoreAppVersion))
-                    .Save();
             }
 
             protected override void Dispose(bool disposing)
