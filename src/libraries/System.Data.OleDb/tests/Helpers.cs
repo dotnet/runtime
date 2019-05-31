@@ -34,7 +34,7 @@ namespace System.Data.OleDb.Tests
                 string providerName = PlatformDetection.Is32BitProcess ? 
                     @"Microsoft.Jet.OLEDB.4.0" : 
                     @"Microsoft.ACE.OLEDB.12.0";
-                IsAvailable = providerNames.Contains(providerName);
+                IsAvailable = false; // ActiveIssue #37823 // providerNames.Contains(providerName);
                 ProviderName = IsAvailable ? providerName : null;
             }
         }
