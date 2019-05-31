@@ -26,6 +26,78 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadNullByteArray()
+        {
+            string json = @"null";
+            byte[] arr = JsonSerializer.Parse<byte[]>(json);
+            Assert.Null(arr);
+        }
+
+        [Fact]
+        public static void ReadEmptyByteArray()
+        {
+            string json = @"""""";
+            byte[] arr = JsonSerializer.Parse<byte[]>(json);
+            Assert.Equal(0, arr.Length);
+        }
+
+        [Fact]
+        public static void ReadByteArray()
+        {
+            string json = $"\"{Convert.ToBase64String(new byte[] { 1, 2 })}\"";
+            byte[] arr = JsonSerializer.Parse<byte[]>(json);
+
+            Assert.Equal(2, arr.Length);
+            Assert.Equal(1, arr[0]);
+            Assert.Equal(2, arr[1]);
+        }
+
+        [Fact]
+        public static void Read2dByteArray()
+        {
+            // Baseline for comparison.
+            Assert.Equal("AQI=", Convert.ToBase64String(new byte[] { 1, 2 }));
+
+            string json = "[\"AQI=\",\"AQI=\"]";
+            byte[][] arr = JsonSerializer.Parse<byte[][]>(json);
+            Assert.Equal(2, arr.Length);
+
+            Assert.Equal(2, arr[0].Length);
+            Assert.Equal(1, arr[0][0]);
+            Assert.Equal(2, arr[0][1]);
+
+            Assert.Equal(2, arr[1].Length);
+            Assert.Equal(1, arr[1][0]);
+            Assert.Equal(2, arr[1][1]);
+        }
+
+        [Fact]
+        public static void ReadByteArrayFail()
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<byte[]>(@"""1"""));
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<byte[]>(@"""A==="""));
+        }
+
+        [Fact]
+        public static void ReadByteArrayAsJsonArrayFail()
+        {
+            string json = $"[1, 2]";
+            // Currently no support deserializing JSON arrays as byte[] - only Base64 string.
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<byte[]>(json));
+        }
+
+        [Fact]
+        public static void ReadByteListAsJsonArray()
+        {
+            string json = $"[1, 2]";
+            List<byte> list = JsonSerializer.Parse<List<byte>>(json);
+
+            Assert.Equal(2, list.Count);
+            Assert.Equal(1, list[0]);
+            Assert.Equal(2, list[1]);
+        }
+
+        [Fact]
         public static void DeserializeObjectArray_36167()
         {
             // https://github.com/dotnet/corefx/issues/36167
