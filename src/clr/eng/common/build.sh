@@ -209,8 +209,9 @@ if [[ -n "${useInstalledDotNetCli:-}" ]]; then
   use_installed_dotnet_cli="$useInstalledDotNetCli"
 fi
 
-if [[ "$restore" == true && -z ${DisableNativeToolsetInstalls:-} ]]; then
-  InitializeNativeTools
-fi
+# Workaround for https://github.com/dotnet/arcade/issues/2673
+# if [[ "$restore" == true && -z ${DisableNativeToolsetInstalls:-} ]]; then
+#  InitializeNativeTools
+# fi
 
 Build
