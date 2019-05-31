@@ -54,6 +54,7 @@
     <Compile Include="Microsoft\Win32\SafeHandles\SafeHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="System\AccessViolationExceptionTests.cs" />
     <Compile Include="System\ActivatorTests.cs" />
+    <Compile Include="System\ActivatorTests.Generic.cs" />
     <Compile Include="System\ArgumentExceptionTests.cs" />
     <Compile Include="System\ArgumentNullExceptionTests.cs" />
     <Compile Include="System\ArgumentOutOfRangeExceptionTests.cs" />
@@ -329,6 +330,7 @@
       <Name>TestCollectibleAssembly</Name>
     </ProjectReference>
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
+    <ProjectReference Include="TestStructs\System.TestStructs.ilproj" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
