@@ -390,7 +390,7 @@ ConvertedImageLayout::ConvertedImageLayout(PEImageLayout* source)
         ThrowLastError();
 
 
-    m_FileView.Assign(CLRMapViewOfFileEx(m_FileMap, FILE_MAP_ALL_ACCESS, 0, 0, 0,
+    m_FileView.Assign(CLRMapViewOfFile(m_FileMap, FILE_MAP_ALL_ACCESS, 0, 0, 0,
                                 (void *) source->GetPreferredBase()));
     if (m_FileView == NULL)
         m_FileView.Assign(CLRMapViewOfFile(m_FileMap, FILE_MAP_ALL_ACCESS, 0, 0, 0));
