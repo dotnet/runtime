@@ -182,6 +182,9 @@
   <data name="ExpectedJsonTokens" xml:space="preserve">
     <value>The input does not contain any JSON tokens. Expected the input to start with a valid JSON token, when isFinalBlock is true.</value>
   </data>
+  <data name="ExpectedOneCompleteToken" xml:space="preserve">
+    <value>The input does not contain any complete JSON tokens. Expected the input to have at least one valid, complete, JSON token.</value>
+  </data>
   <data name="ExpectedNextDigitEValueNotFound" xml:space="preserve">
     <value>'{0}' is an invalid end of a number. Expected 'E' or 'e'.</value>
   </data>
@@ -367,6 +370,9 @@
   </data>
   <data name="CannotSkip" xml:space="preserve">
     <value>Cannot skip tokens on partial JSON. Either get the whole payload and create a Utf8JsonReader instance where isFinalBlock is true or call TrySkip.</value>
+  </data>
+  <data name="NotEnoughData" xml:space="preserve">
+    <value>There is not enough data to read through the entire JSON array or object.</value>
   </data>
   <data name="JsonSerializerDoesNotSupportComments" xml:space="preserve">
     <value>Comments cannot be stored when deserializing objects, only the Skip and Disallow comment handling modes are supported.</value>

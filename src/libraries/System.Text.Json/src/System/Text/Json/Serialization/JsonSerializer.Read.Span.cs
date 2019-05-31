@@ -37,7 +37,6 @@ namespace System.Text.Json.Serialization
         /// <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
-
         public static object Parse(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions options = null)
         {
             if (returnType == null)
