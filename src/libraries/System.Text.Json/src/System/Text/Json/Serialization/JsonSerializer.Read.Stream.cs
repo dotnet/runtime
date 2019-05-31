@@ -200,7 +200,7 @@ namespace System.Text.Json.Serialization
             // to enable read ahead behaviors to ensure we have complete json objects and arrays
             // ({}, []) when needed. (Notably to successfully parse JsonElement via JsonDocument
             // to assign to object and JsonElement properties in the constructed .NET object.)
-            options.ReadAhead = !isFinalBlock;
+            readStack.ReadAhead = !isFinalBlock;
             readStack.BytesConsumed = 0;
 
             ReadCore(
