@@ -15,8 +15,16 @@ namespace System.IO
         /// </summary>
         internal static bool StartsWithDirectorySeparator(ReadOnlySpan<char> path) => path.Length > 0 && IsDirectorySeparator(path[0]);
 
+#if MS_IO_REDIST
         internal static string EnsureTrailingSeparator(string path)
-            => Path.EndsInDirectorySeparator(path.AsSpan()) ? path : path + DirectorySeparatorCharAsString;        
+            => EndsInDirectorySeparator(path) ? path : path + DirectorySeparatorCharAsString;
+
+        internal static bool EndsInDirectorySeparator(string path)
+            => !string.IsNullOrEmpty(path) && IsDirectorySeparator(path[path.Length - 1]);
+#else
+        internal static string EnsureTrailingSeparator(string path)
+            => Path.EndsInDirectorySeparator(path.AsSpan()) ? path : path + DirectorySeparatorCharAsString;
+#endif
 
         internal static bool IsRoot(ReadOnlySpan<char> path)
             => path.Length == GetRootLength(path);
