@@ -386,6 +386,28 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(typeof(UsaCustomer), deserializedCustomer.GetType());
             Assert.Equal(typeof(Address), deserializedCustomer.Address.GetType());
             ((Customer)deserializedCustomer).VerifyNonVirtual();
-       }
+        }
+
+        [Fact]
+        public static void PolymorphicInterface_NotSupported()
+        {
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Parse<MyClass>(@"{ ""Value"": ""A value"", ""Thing"": { ""Number"": 123 } }"));
+        }
+
+        class MyClass
+        {
+            public string Value { get; set; }
+            public IThing Thing { get; set; }
+        }
+
+        interface IThing
+        {
+            int Number { get; set; }
+        }
+
+        class MyThing : IThing
+        {
+            public int Number { get; set; }
+        }
     }
 }
