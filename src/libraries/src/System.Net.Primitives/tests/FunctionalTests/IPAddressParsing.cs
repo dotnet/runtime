@@ -346,6 +346,7 @@ namespace System.Net.Primitives.Functional.Tests
 
         public static IEnumerable<object[]> InvalidIpv6Addresses()
         {
+            yield return new object[] { "[:]" }; // malformed
             yield return new object[] { ":::4df" };
             yield return new object[] { "4df:::" };
             yield return new object[] { "0:::4df" };
@@ -368,6 +369,24 @@ namespace System.Net.Primitives.Functional.Tests
             yield return new object[] { "Fe08::1]]" }; // two trailing brackets
             yield return new object[] { "[Fe08::1]]" }; // one leading and two trailing brackets
             yield return new object[] { ":1" }; // leading single colon
+            yield return new object[] { ":1:2" }; // leading single colon
+            yield return new object[] { ":1:2:3" }; // leading single colon
+            yield return new object[] { ":1:2:3:4" }; // leading single colon
+            yield return new object[] { ":1:2:3:4:5" }; // leading single colon
+            yield return new object[] { ":1:2:3:4:5:6" }; // leading single colon
+            yield return new object[] { ":1:2:3:4:5:6:7" }; // leading single colon
+            yield return new object[] { ":1:2:3:4:5:6:7:8" }; // leading single colon
+            yield return new object[] { ":1:2:3:4:5:6:7:8:9" }; // leading single colon
+            yield return new object[] { "::1:2:3:4:5:6:7:8" }; // compressor with too many number groups
+            yield return new object[] { "1::2:3:4:5:6:7:8" }; // compressor with too many number groups
+            yield return new object[] { "1:2::3:4:5:6:7:8" }; // compressor with too many number groups
+            yield return new object[] { "1:2:3::4:5:6:7:8" }; // compressor with too many number groups
+            yield return new object[] { "1:2:3:4::5:6:7:8" }; // compressor with too many number groups
+            yield return new object[] { "1:2:3:4:5::6:7:8" }; // compressor with too many number groups
+            yield return new object[] { "1:2:3:4:5:6::7:8" }; // compressor with too many number groups
+            yield return new object[] { "1:2:3:4:5:6:7::8" }; // compressor with too many number groups
+            yield return new object[] { "1:2:3:4:5:6:7:8::" }; // compressor with too many number groups
+            yield return new object[] { "::1:2:3:4:5:6:7:8:9" }; // compressor with too many number groups
             yield return new object[] { "1:" }; // trailing single colon
             yield return new object[] { " ::1" }; // leading whitespace
             yield return new object[] { "::1 " }; // trailing whitespace
@@ -420,6 +439,9 @@ namespace System.Net.Primitives.Functional.Tests
             new object[] { "%12" }, // just scope
             new object[] { "[192.168.0.1]" }, // raw v4
             new object[] { "[1]" }, // incomplete
+            new object[] { "" }, // malformed
+            new object[] { "[" }, // malformed
+            new object[] { "[]" }, // malformed
         };
 
         [Theory]
