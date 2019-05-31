@@ -49,19 +49,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			try
 			{
 				var original = ResolveOriginalsAssembly (linkResult.ExpectationsAssemblyPath.FileNameWithoutExtension);
+				var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
+
+				InitialChecking (linkResult, original, linked);
+
 				PerformOutputAssemblyChecks (original, linkResult.OutputAssemblyPath.Parent);
 				PerformOutputSymbolChecks (original, linkResult.OutputAssemblyPath.Parent);
-
-				var linked = ResolveLinkedAssembly (linkResult.OutputAssemblyPath.FileNameWithoutExtension);
 
 				CreateAssemblyChecker (original, linked).Verify ();
 
 				VerifyLinkingOfOtherAssemblies (original);
-
-#if !NETCOREAPP
-				// the PE Verifier does not know how to resolve .NET Core assemblies.
-				_peVerifier.Check (linkResult, original);
-#endif
 
 				AdditionalChecking (linkResult, original, linked);
 			}
@@ -168,6 +165,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		protected virtual void AdditionalChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
 		{
+		}
+
+		protected virtual void InitialChecking (LinkedTestCaseResult linkResult, AssemblyDefinition original, AssemblyDefinition linked)
+		{
+#if !NETCOREAPP
+			// the PE Verifier does not know how to resolve .NET Core assemblies.
+			_peVerifier.Check (linkResult, original);
+#endif
 		}
 
 		void VerifyLinkingOfOtherAssemblies (AssemblyDefinition original)
