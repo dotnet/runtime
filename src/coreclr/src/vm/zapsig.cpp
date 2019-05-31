@@ -1530,7 +1530,7 @@ BOOL ZapSig::EncodeMethod(
         {
             _ASSERTE(pConstrainedResolvedToken->cbTypeSpec > 0);
 
-            DWORD moduleIndex = (DWORD)-1;
+            DWORD moduleIndex = MODULE_INDEX_NONE;
             if (IsReadyToRunCompilation() && pMethod->GetModule()->IsInCurrentVersionBubble() && pInfoModule != (Module *) pConstrainedResolvedToken->tokenScope)
             {
                 moduleIndex = (*((EncodeModuleCallback)pfnEncodeModule))(pEncodeModuleContext, (Module *) pConstrainedResolvedToken->tokenScope);
