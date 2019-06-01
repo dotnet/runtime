@@ -17,6 +17,9 @@
     <Compile Include="System\Net\WebSockets\ManagedWebSocketExtensions.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketProtocol.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'!='netcoreapp'">
+    <Compile Include="System\Numerics\BitOperations.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netstandard'">
     <Compile Include="System\Net\WebSockets\ManagedWebSocketExtensions.netstandard.cs" />
     <Reference Include="System.Runtime.CompilerServices.Unsafe" />
