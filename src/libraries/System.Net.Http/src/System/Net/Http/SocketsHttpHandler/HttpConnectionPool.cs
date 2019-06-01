@@ -155,7 +155,20 @@ namespace System.Net.Http
                 {
                     _sslOptionsHttp2 = ConstructSslOptions(poolManager, sslHostName);
                     _sslOptionsHttp2.ApplicationProtocols = Http2ApplicationProtocols;
-                    _sslOptionsHttp2.AllowRenegotiation = false;
+                    
+                    // Note:
+                    // The HTTP/2 specification states:
+                    //   "A deployment of HTTP/2 over TLS 1.2 MUST disable renegotiation.
+                    //    An endpoint MUST treat a TLS renegotiation as a connection error (Section 5.4.1)
+                    //    of type PROTOCOL_ERROR."
+                    // which suggests we should do:
+                    //   _sslOptionsHttp2.AllowRenegotiation = false;
+                    // However, if AllowRenegotiation is set to false, that will also prevent
+                    // renegotation if the server denies the HTTP/2 request and causes a
+                    // downgrade to HTTP/1.1, and the current APIs don't provide a mechanism
+                    // by which AllowRenegotiation could be set back to true in that case.
+                    // For now, if an HTTP/2 server erroneously issues a renegotiation, we'll
+                    // allow it.
 
                     Debug.Assert(hostHeader != null);
                     _encodedAuthorityHostHeader = HPackEncoder.EncodeLiteralHeaderFieldWithoutIndexingToAllocatedArray(StaticTable.Authority, hostHeader);
