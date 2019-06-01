@@ -444,15 +444,15 @@ The new behavior will be to treat all settings of `rollForwardOnNoCandidateFx` t
 ### Pre-release will roll forward
 The existing behavior is that pre-release only rolls forward to the closest higher pre-release of the same `major.minor.patch`. This also means that if there's an exact match available, pre-release doesn't roll forward. Pre-release also never rolls forward to release.
 
-With the proposed behavior pre-release will be treated the same way as release: roll forward on patches, minor or major based on the settings. The only difference is that it will always consider both release and pre-release versions (unlike release which prefers to roll forward to release).  
+With the proposed behavior pre-release will be allowed to roll forward to release. If the algorithm looking for closest match finds a pre-release version, it will not apply automatic roll to latest patch.
 For backward compatibility reasons `applyPatches=false` will still allow roll forward over pre-release.
 
 | Reference                                     | Available versions                                | Existing behavior | New behavior      | Notes   |
 | --------------------------------------------- | ------------------------------------------------- | ----------------- | ----------------- | ------- |
-| 2.1.0-preview.2                               | 2.1.0-preview.2, 2.1.0-preview.3, 2.1.1-preview.1 | 2.1.0-preview.2   | 2.1.1-preview.1   | Pre-release will roll forward to latest patch |
-| 2.1.0-preview.1                               | 2.1.0-preview.2, 2.1.0-preview.3                  | 2.1.0-preview.2   | 2.1.0-preview.3   | Pre-release will roll forward to latest pre-release (just like latest patch) |
-| 2.1.0-preview.1 `rollForwardOnNoCandidateFx=0, applyPatches=false` | 2.1.0-preview.2, 2.1.0-preview.3 | 2.1.0-preview.2   | 2.1.0-preview.3 | Pre-release ignores `applyPatches=false` when rolling forward over pre-release and rolls to the latest pre-release. |
+| 2.1.0-preview.2                               | 2.1.0-preview.2, 2.1.0-preview.3, 2.1.1-preview.1 | 2.1.0-preview.2   | 2.1.0-preview.2   | Exact match available, don't roll to latest patch if it's a pre-release |
+| 2.1.0-preview.1                               | 2.1.0-preview.2, 2.1.0-preview.3                  | 2.1.0-preview.2   | 2.1.0-preview.2   | Only roll to closest pre-release |
+| 2.1.0-preview.1 `rollForwardOnNoCandidateFx=0, applyPatches=false` | 2.1.0-preview.2, 2.1.0-preview.3 | 2.1.0-preview.2   | 2.1.0-preview.2 | Pre-release can still roll on pre-release even if `applyPatches=false` but only to the closest. |
 | 2.1.0-preview.1                               | 2.1.0                                             | failure           | 2.1.0             | Pre-release will roll forward to release |
 | 2.1.0-preview.1                               | 2.1.1-preview.1                                   | failure           | 2.1.1-preview.1   | Pre-release will roll forward on patches |
 | 2.1.0-preview.1                               | 2.2.0-preview.1                                   | failure           | 2.2.0-preview.1   | Pre-release will roll forward on minor by default |
-| 2.1.0-preview.1 `rollForwardOnNoCandidateFx=2`  | 3.0.0                                             | failure           | 3.0.0             | Pre-release will roll forward on major if enabled |
+| 2.1.0-preview.1 `rollForwardOnNoCandidateFx=2` | 3.0.0                                            | failure           | 3.0.0             | Pre-release will roll forward on major if enabled |
