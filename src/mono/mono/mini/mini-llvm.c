@@ -8898,6 +8898,8 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 
 #ifdef MONO_ARCH_LLVM_TARGET_LAYOUT
 	LLVMSetDataLayout (module->lmodule, MONO_ARCH_LLVM_TARGET_LAYOUT);
+#else
+	g_assert_not_reached ();
 #endif
 
 #ifdef MONO_ARCH_LLVM_TARGET_TRIPLE
