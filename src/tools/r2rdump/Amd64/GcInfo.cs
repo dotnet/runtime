@@ -181,8 +181,6 @@ namespace R2RDump.Amd64
 
             // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED (this macro is always defined in _gcInfoTypes.h)
             SafePointOffsets = EnumerateSafePoints(image, ref bitOffset);
-            uint numBitsPerOffset = GcInfoTypes.CeilOfLog2(CodeLength);
-            bitOffset += (int)(NumSafePoints * numBitsPerOffset);
 
             InterruptibleRanges = EnumerateInterruptibleRanges(image, _gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA1_ENCBASE, _gcInfoTypes.INTERRUPTIBLE_RANGE_DELTA2_ENCBASE, ref bitOffset);
 
