@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Cache;
 using System.Net.Http;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
@@ -222,18 +223,27 @@ namespace System.Net.Tests
             Assert.True(request.AllowReadStreamBuffering);
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task ContentLength_Get_ExpectSameAsGetResponseStream(Uri remoteServer)
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ContentLength_Get_ExpectSameAsGetResponseStream(bool useSsl)
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            using (WebResponse response = await request.GetResponseAsync())
-            using (Stream myStream = response.GetResponseStream())
-            using (StreamReader sr = new StreamReader(myStream))
+            var options = new LoopbackServer.Options { UseSsl = useSsl };
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                string strContent = sr.ReadToEnd();
-                long length = response.ContentLength;
-                Assert.Equal(strContent.Length, length);
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.ServerCertificateValidationCallback = delegate { return true; };
+                using (WebResponse response = await request.GetResponseAsync())
+                using (Stream myStream = response.GetResponseStream())
+                using (var sr = new StreamReader(myStream))
+                {
+                    string strContent = sr.ReadToEnd();
+                    long length = response.ContentLength;
+                    Assert.Equal(strContent.Length, length);
+                }
+            }, server => server.HandleRequestAsync(), options);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -1087,18 +1097,24 @@ namespace System.Net.Tests
             });
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public void BeginGetRequestStream_CreateRequestThenBeginGetResponsePrior_ThrowsProtocolViolationException(Uri remoteServer)
+        [Fact]
+        public async Task BeginGetRequestStream_CreateRequestThenBeginGetResponsePrior_ThrowsProtocolViolationException()
         {
-            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
-
-            IAsyncResult asyncResult = request.BeginGetResponse(null, null);
-            Assert.Throws<ProtocolViolationException>(() =>
+            await LoopbackServer.CreateServerAsync((server, url) =>
             {
-                request.BeginGetRequestStream(null, null);
+                HttpWebRequest request = HttpWebRequest.CreateHttp(url);
+
+                IAsyncResult asyncResult = request.BeginGetResponse(null, null);
+                Assert.Throws<ProtocolViolationException>(() =>
+                {
+                    request.BeginGetRequestStream(null, null);
+                });
+
+                return Task.CompletedTask;
             });
         }
 
+        [Fact]
         public async Task BeginGetResponse_CreateRequestThenCallTwice_ThrowsInvalidOperationException()
         {
             await LoopbackServer.CreateServerAsync((server, url) =>
@@ -1120,6 +1136,7 @@ namespace System.Net.Tests
             Assert.Equal(WebExceptionStatus.RequestCanceled, ex.Status);
         }
 
+        [Fact]
         public async Task GetRequestStreamAsync_WriteAndDisposeRequestStreamThenOpenRequestStream_ThrowsArgumentException()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -1134,6 +1151,7 @@ namespace System.Net.Tests
             });
         }
 
+        [Fact]
         public async Task GetRequestStreamAsync_SetPOSTThenGet_ExpectNotNull()
         {
             await LoopbackServer.CreateServerAsync(async (server, url) =>
@@ -1147,34 +1165,45 @@ namespace System.Net.Tests
             });
         }
 
+        [Fact]
         public async Task GetResponseAsync_GetResponseStream_ExpectNotNull()
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                HttpWebRequest request = WebRequest.CreateHttp(url);
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
                 using (WebResponse response = await request.GetResponseAsync())
+                using (Stream myStream = response.GetResponseStream())
                 {
-                    Assert.NotNull(response.GetResponseStream());
+                    Assert.NotNull(myStream);
                 }
-            });
+            }, server => server.HandleRequestAsync());
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task GetResponseAsync_GetResponseStream_ContainsHost(Uri remoteServer)
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task GetResponseAsync_GetResponseStream_ContainsHost(bool useSsl)
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            request.Method = HttpMethod.Get.Method;
+            var options = new LoopbackServer.Options { UseSsl = useSsl }; 
 
-            using (WebResponse response = await request.GetResponseAsync())
-            using (Stream myStream = response.GetResponseStream())
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                Assert.NotNull(myStream);
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.ServerCertificateValidationCallback = delegate { return true; };
+                using (WebResponse response = await request.GetResponseAsync())
+                using (Stream myStream = response.GetResponseStream())
                 using (var sr = new StreamReader(myStream))
                 {
-                    string strContent = sr.ReadToEnd();
-                    Assert.True(strContent.Contains("\"Host\": \"" + remoteServer.Host + "\""));
+                    Assert.Equal(uri.Host + ":" + uri.Port, response.Headers["Host"]);
                 }
-            }
+            }, async server => 
+            {
+                string host = server.Uri.Host + ":" + server.Uri.Port;
+                HttpRequestData requestData = await server.HandleRequestAsync(headers: new HttpHeaderData[] { new HttpHeaderData("Host", host) });
+                string serverReceivedHost = requestData.GetSingleHeaderValue("Host");
+                Assert.Equal(host, serverReceivedHost);
+            }, options);
         }
 
         [OuterLoop]
@@ -1198,34 +1227,68 @@ namespace System.Net.Tests
             Assert.Equal(request.Headers["Range"], "bytes=1-5");
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task GetResponseAsync_PostRequestStream_ContainsData(Uri remoteServer)
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task GetResponseAsync_PostRequestStream_ContainsData(bool useSsl)
         {
-            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
-            request.Method = HttpMethod.Post.Method;
+            var options = new LoopbackServer.Options { UseSsl = useSsl };
 
-            using (Stream requestStream = await request.GetRequestStreamAsync())
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                requestStream.Write(_requestBodyBytes, 0, _requestBodyBytes.Length);
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.ServerCertificateValidationCallback = delegate { return true; };
+                request.Method = HttpMethod.Post.Method;
+                using (Stream requestStream = await request.GetRequestStreamAsync())
+                {
+                    requestStream.Write(_requestBodyBytes, 0, _requestBodyBytes.Length);
+                }
 
-            using (WebResponse response = await request.GetResponseAsync())
-            using (Stream myStream = response.GetResponseStream())
-            using (var sr = new StreamReader(myStream))
+                using (WebResponse response = await request.GetResponseAsync())
+                using (Stream myStream = response.GetResponseStream())
+                using (var sr = new StreamReader(myStream))
+                {
+                    string strContent = sr.ReadToEnd();
+                    //Assert.Equal(RequestBody, strContent);
+                }
+            }, server => server.AcceptConnectionAsync(async (con) =>
             {
-                string strContent = sr.ReadToEnd();
-                Assert.True(strContent.Contains(RequestBody));
-            }
+                await con.SendResponseAsync(content: RequestBody);
+
+                StringBuilder sb = new StringBuilder();
+                byte[] buf = new byte[1024];
+                int count = 0;
+
+                do
+                {
+                    count = con.Stream.Read(buf, 0, buf.Length);
+                    if (count != 0)
+                    {
+                        sb.Append(Encoding.UTF8.GetString(buf, 0, count));
+                    }
+                } while (count > 0);
+
+                Assert.Contains(RequestBody, sb.ToString());
+            }), options);
         }
 
         [Theory]
-        [MemberData(nameof(EchoServers))]
-        public async Task GetResponseAsync_UseDefaultCredentials_ExpectSuccess(Uri remoteServer)
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task GetResponseAsync_UseDefaultCredentials_ExpectSuccess(bool useSsl)
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            request.UseDefaultCredentials = true;
-            var response = await request.GetResponseAsync();
-            response.Dispose();
+            var options = new LoopbackServer.Options { UseSsl = useSsl };
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.ServerCertificateValidationCallback = delegate { return true; };
+                request.UseDefaultCredentials = true;
+
+                (await request.GetResponseAsync()).Dispose();
+            }, server => server.HandleRequestAsync(), options);
         }
 
         [OuterLoop] // fails on networks with DNS servers that provide a dummy page for invalid addresses
@@ -1250,27 +1313,49 @@ namespace System.Net.Tests
                 $"HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\n\r\n"));
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task HaveResponse_GetResponseAsync_ExpectTrue(Uri remoteServer)
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task HaveResponse_GetResponseAsync_ExpectTrue(bool useSsl)
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            using (WebResponse response = await request.GetResponseAsync())
+            var options = new LoopbackServer.Options { UseSsl = useSsl };
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.ServerCertificateValidationCallback = delegate { return true; };
+                request.UseDefaultCredentials = true;
+
+                using WebResponse response = await request.GetResponseAsync();
                 Assert.True(request.HaveResponse);
-            }
+            }, server => server.HandleRequestAsync(), options);
         }
 
         [Theory]
-        [MemberData(nameof(EchoServers))]
-        public async Task Headers_GetResponseHeaders_ContainsExpectedValue(Uri remoteServer)
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Headers_GetResponseHeaders_ContainsExpectedValue(bool useSsl)
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            using (HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync())
+            var options = new LoopbackServer.Options { UseSsl = useSsl };
+
+            const string HeadersPartialContent = "application/json";
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.ServerCertificateValidationCallback = delegate { return true; };
+                request.ContentType = HeadersPartialContent;
+
+                using WebResponse response = await request.GetResponseAsync();
                 string headersString = response.Headers.ToString();
-                string headersPartialContent = "Content-Type: application/json";
-                Assert.True(headersString.Contains(headersPartialContent));
-            }
+                Assert.Equal(HeadersPartialContent, response.Headers[HttpResponseHeader.ContentType]);
+            }, async server =>
+            {
+                HttpRequestData requestData = await server.HandleRequestAsync(headers: new[] { new HttpHeaderData("Content-Type", HeadersPartialContent) });
+                string contentType = requestData.GetSingleHeaderValue("Content-Type");
+                Assert.Equal(HeadersPartialContent, contentType);
+            }, options);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -1349,14 +1434,21 @@ namespace System.Net.Tests
             Assert.Equal(remoteServer, request.RequestUri);
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task ResponseUri_GetResponseAsync_ExpectSameUri(Uri remoteServer)
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ResponseUri_GetResponseAsync_ExpectSameUri(bool useSsl)
         {
-            HttpWebRequest request = WebRequest.CreateHttp(remoteServer);
-            using (WebResponse response = await request.GetResponseAsync())
+            var options = new LoopbackServer.Options { UseSsl = useSsl };
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                Assert.Equal(remoteServer, response.ResponseUri);
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.ServerCertificateValidationCallback = delegate { return true; };
+                using WebResponse response = await request.GetResponseAsync();
+                Assert.Equal(uri, response.ResponseUri);
+            }, server => server.HandleRequestAsync(), options);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
@@ -1366,56 +1458,68 @@ namespace System.Net.Tests
             Assert.True(request.SupportsCookieContainer);
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task SimpleScenario_UseGETVerb_Success(Uri remoteServer)
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SimpleScenario_UseGETVerb_Success(bool useSsl)
         {
-            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
-            using (HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync())
-            using (Stream responseStream = response.GetResponseStream())
-            using (var sr = new StreamReader(responseStream))
+            var options = new LoopbackServer.Options { UseSsl = useSsl };
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                string responseBody = sr.ReadToEnd();
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.ServerCertificateValidationCallback = delegate { return true; };
+                using HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            }
+            }, server => server.HandleRequestAsync(), options);
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task SimpleScenario_UsePOSTVerb_Success(Uri remoteServer)
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task SimpleScenario_UsePOSTVerb_Success(bool useSsl)
         {
-            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
-            request.Method = HttpMethod.Post.Method;
+            var options = new LoopbackServer.Options { UseSsl = useSsl };
 
-            using (Stream requestStream = await request.GetRequestStreamAsync())
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                requestStream.Write(_requestBodyBytes, 0, _requestBodyBytes.Length);
-            }
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.ServerCertificateValidationCallback = delegate { return true; };
+                request.Method = HttpMethod.Post.Method;
+                using (Stream requestStream = await request.GetRequestStreamAsync())
+                {
+                    requestStream.Write(_requestBodyBytes, 0, _requestBodyBytes.Length);
+                }
 
-            using (HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync())
-            using (Stream responseStream = response.GetResponseStream())
-            using (var sr = new StreamReader(responseStream))
-            {
-                string responseBody = sr.ReadToEnd();
+                using HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            }
+            }, server => server.HandleRequestAsync(), options);
         }
 
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task ContentType_AddHeaderWithNoContent_SendRequest_HeaderGetsSent(Uri remoteServer)
+        [Theory]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Loopback server with TLS has problems on UWP")]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ContentType_AddHeaderWithNoContent_SendRequest_HeaderGetsSent(bool useSsl)
         {
             const string ContentType = "text/plain; charset=utf-8";
-            HttpWebRequest request = HttpWebRequest.CreateHttp(remoteServer);
-            request.ContentType = ContentType;
+            var options = new LoopbackServer.Options { UseSsl = useSsl };
 
-            using (HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync())
-            using (Stream responseStream = response.GetResponseStream())
-            using (var sr = new StreamReader(responseStream))
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
-                string responseBody = sr.ReadToEnd();
-                _output.WriteLine(responseBody);
+                HttpWebRequest request = WebRequest.CreateHttp(uri);
+                request.ServerCertificateValidationCallback = delegate { return true; };
+                request.ContentType = ContentType;
 
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                Assert.True(responseBody.Contains($"\"Content-Type\": \"{ContentType}\""));
-            }
+                using HttpWebResponse response = (HttpWebResponse)await request.GetResponseAsync();
+                Assert.Equal(ContentType, response.Headers[HttpResponseHeader.ContentType]);
+            }, async server =>
+            {
+                HttpRequestData requestData = await server.HandleRequestAsync(headers: new HttpHeaderData[] { new HttpHeaderData("Content-Type", ContentType) });
+                Assert.Equal(ContentType, requestData.GetSingleHeaderValue("Content-Type"));
+            }, options);
         }
 
         [Theory, MemberData(nameof(EchoServers))]
