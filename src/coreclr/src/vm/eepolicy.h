@@ -181,7 +181,4 @@ inline EEPolicy* GetEEPolicy()
 // FailFast with specific error code and exception details
 #define EEPOLICY_HANDLE_FATAL_ERROR_USING_EXCEPTION_INFO(_exitcode, _pExceptionInfo) EEPolicy::HandleFatalError(_exitcode, GetCurrentIP(), NULL, _pExceptionInfo);
 
-// Failfast with specific error code, exception details, and debug info
-#define EEPOLICY_HANDLE_FATAL_ERROR_USING_EXCEPTION_AND_DEBUG_INFO(_exitcode, _pExceptionInfo, _isDebug) EEPolicy::HandleFatalError(_exitcode, GetCurrentIP(), NULL, _pExceptionInfo, _isDebug);
-
 #endif  // EEPOLICY_H_

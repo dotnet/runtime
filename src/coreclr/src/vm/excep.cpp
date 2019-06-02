@@ -105,7 +105,7 @@ BOOL IsExceptionFromManagedCode(const EXCEPTION_RECORD * pExceptionRecord)
 
 #ifndef DACCESS_COMPILE
 
-#define SZ_UNHANDLED_EXCEPTION W("Unhandled Exception:")
+#define SZ_UNHANDLED_EXCEPTION W("Unhandled exception.")
 #define SZ_UNHANDLED_EXCEPTION_CHARLEN ((sizeof(SZ_UNHANDLED_EXCEPTION) / sizeof(WCHAR)))
 
 
@@ -5243,8 +5243,6 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
     GCPROTECT_BEGIN(throwable);
     if (throwable != NULL)
     {
-        PrintToStdErrA("\n");
-
         if (FAILED(UtilLoadResourceString(CCompRC::Error, IDS_EE_UNHANDLED_EXCEPTION, buf, buf_size)))
         {
             wcsncpy_s(buf, buf_size, SZ_UNHANDLED_EXCEPTION, SZ_UNHANDLED_EXCEPTION_CHARLEN);
@@ -5440,22 +5438,14 @@ DefaultCatchHandler(PEXCEPTION_POINTERS pExceptionPointers,
                     // die. e.g. IsAsyncThreadException() and Exception.ToString both consume too much stack -- and can't
                     // be called here.
                     dump = FALSE;
-                    PrintToStdErrA("\n");
-
-                    if (FAILED(UtilLoadStringRC(IDS_EE_UNHANDLED_EXCEPTION, buf, buf_size)))
-                    {
-                        wcsncpy_s(buf, COUNTOF(buf), SZ_UNHANDLED_EXCEPTION, SZ_UNHANDLED_EXCEPTION_CHARLEN);
-                    }
-
-                    PrintToStdErrW(buf);
 
                     if (IsOutOfMemory)
                     {
-                        PrintToStdErrA(" OutOfMemoryException.\n");
+                        PrintToStdErrA("Out of memory.\n");
                     }
                     else
                     {
-                        PrintToStdErrA(" StackOverflowException.\n");
+                        PrintToStdErrA("Stack overflow.\n");
                     }
                 }
                 else if (SentEvent || IsAsyncThreadException(&throwable))
