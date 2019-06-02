@@ -837,7 +837,7 @@ BEGIN
     IDS_EE_STRUCTARRAYTOOLARGE              "Array size exceeds addressing limitations."
     IDS_EE_TOOMANYFIELDS                    "Internal limitation: too many fields."
 
-    IDS_EE_UNHANDLED_EXCEPTION              "Unhandled Exception:"
+    IDS_EE_UNHANDLED_EXCEPTION              "Unhandled exception."
     IDS_EE_EXCEPTION_TOSTRING_FAILED        "Cannot print exception string because Exception.ToString() failed."
 
     IDS_EE_THREAD_ABORT                     "Thread was being aborted."

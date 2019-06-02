@@ -43,8 +43,6 @@
 
 #include "arraynative.inl"
 
-#define STACK_OVERFLOW_MESSAGE   W("StackOverflowException")
-
 /*===================================IsDigit====================================
 **Returns a bool indicating whether the character passed in represents a   **
 **digit.
@@ -535,14 +533,6 @@ void ExceptionNative::GetExceptionData(OBJECTREF objException, ExceptionData *pE
     CONTRACTL_END;
 
     ZeroMemory(pED, sizeof(ExceptionData));
-
-    if (objException->GetMethodTable() == g_pStackOverflowExceptionClass) {
-        // In a low stack situation, most everything else in here will fail.
-        // <TODO>@TODO: We're not turning the guard page back on here, yet.</TODO>
-        pED->hr = COR_E_STACKOVERFLOW;
-        pED->bstrDescription = SysAllocString(STACK_OVERFLOW_MESSAGE);
-        return;
-    }
 
     GCPROTECT_BEGIN(objException);
     pED->hr = GetExceptionHResult(objException);

@@ -24,7 +24,7 @@ namespace System.Diagnostics
                 stackTrace = "";
             }
             WriteAssert(stackTrace, message, detailMessage);
-            FailCore(stackTrace, message, detailMessage, "Assertion Failed");
+            FailCore(stackTrace, message, detailMessage, "Assertion failed.");
         }
 
         internal void WriteAssert(string stackTrace, string? message, string? detailMessage)
@@ -72,19 +72,21 @@ namespace System.Diagnostics
 
         private sealed class DebugAssertException : Exception
         {
-            internal DebugAssertException(string? stackTrace) :
-                base(Environment.NewLine + stackTrace)
-            {
-            }
-
-            internal DebugAssertException(string? message, string? stackTrace) :
-                base(message + Environment.NewLine + Environment.NewLine + stackTrace)
-            {
-            }
-
             internal DebugAssertException(string? message, string? detailMessage, string? stackTrace) :
-                base(message + Environment.NewLine + detailMessage + Environment.NewLine + Environment.NewLine + stackTrace)
+                base(Terminate(message) + Terminate(detailMessage) + stackTrace)
             {
+            }
+
+            private static string? Terminate(string? s)
+            {
+                if (s == null)
+                    return s;
+
+                s = s.Trim();
+                if (s.Length > 0)
+                    s += Environment.NewLine;
+
+                return s;
             }
         }
 
