@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{E520B5FD-C6FF-46CF-8079-6C8098013EA3}</ProjectGuid>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
@@ -42,5 +42,8 @@
     <Compile Include="LoggingTest.cs" />
     <Compile Include="HttpRequestCachePolicyTest.cs" />
     <Compile Include="HttpWebResponseHeaderTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <SupplementalTestData Include="$(NuGetPackageRoot)system.net.testdata\1.0.2\content\**\*.*" DestinationDir="TestData" />
   </ItemGroup>
 </Project>
