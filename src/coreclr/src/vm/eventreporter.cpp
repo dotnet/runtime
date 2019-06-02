@@ -135,7 +135,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     case ERT_ManagedFailFast:
         if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_MANAGEDFAILFAST))
-            m_Description.Append(W("Description: The application requested process termination through System.Environment.FailFast(string message)."));
+            m_Description.Append(W("Description: The application requested process termination through Environment.FailFast."));
         else
         {
             m_Description.Append(ssMessage);
@@ -145,7 +145,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     case ERT_UnmanagedFailFast:
         if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_UNMANAGEDFAILFAST))
-            m_Description.Append(W("Description: The process was terminated due to an internal error in the .NET Runtime "));
+            m_Description.Append(W("Description: The process was terminated due to an internal error in the .NET Runtime."));
         else
         {
             m_Description.Append(ssMessage);
@@ -155,7 +155,7 @@ EventReporter::EventReporter(EventReporterType type)
     case ERT_StackOverflow:
         // Fetch the localized Stack Overflow Error text or fall back on a hardcoded variant if things get dire.
         if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_STACK_OVERFLOW))
-            m_Description.Append(W("Description: The process was terminated due to stack overflow."));
+            m_Description.Append(W("Description: The process was terminated due to a stack overflow."));
         else
         {
             m_Description.Append(ssMessage);

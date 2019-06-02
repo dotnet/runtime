@@ -51,3 +51,8 @@
 -nomethod System.Tests.AppDomainTests.MonitoringTotalAllocatedMemorySize
 -nomethod System.Tests.AppDomainTests.MonitoringTotalProcessorTime
 -nomethod System.Text.Tests.StringBuilderTests.AppendFormat
+
+# requires corefx test updates
+-nomethod System.Tests.EnvironmentTests.FailFast_ExceptionStackTrace_StackOverflowException
+-nomethod System.Tests.EnvironmentTests.FailFast_ExceptionStackTrace_InnerException
+-nomethod System.Tests.EnvironmentTests.FailFast_ExceptionStackTrace_ArgumentException
