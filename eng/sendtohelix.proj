@@ -56,8 +56,8 @@
       and we exit /b at the end of RunTests.cmd, Helix runs some other commands after ours within the bat script,
       if we don't use call, then we cause the parent script to exit, and anything after will not be executed.
     -->
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD% --dotnet-root %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD" --dotnet-root "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd --runtime-path %HELIX_CORRELATION_PAYLOAD%</HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh --runtime-path "$HELIX_CORRELATION_PAYLOAD"</HelixCommand>
   </PropertyGroup>
 
   <!--
