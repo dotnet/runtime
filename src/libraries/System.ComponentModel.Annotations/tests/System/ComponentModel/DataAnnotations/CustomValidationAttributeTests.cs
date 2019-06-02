@@ -304,5 +304,21 @@ namespace System.ComponentModel.DataAnnotations.Tests
 
             public string AdditionalData { get; set; }
         }
+
+        [Fact]
+        public static void AllowMultiple()
+        {
+            Assert.Equal(3, TypeDescriptor.GetAttributes(typeof(AllowMultipleClass)).Count);
+        }
+
+        [CustomValidation(typeof(AllowMultipleClass), nameof(AllowMultipleClass.Method1))]
+        [CustomValidation(typeof(AllowMultipleClass), nameof(AllowMultipleClass.Method2))]
+        [CustomValidation(typeof(AllowMultipleClass), nameof(AllowMultipleClass.Method3))]
+        public class AllowMultipleClass 
+        {
+            public void Method1() { }
+            public void Method2() { }
+            public void Method3() { }
+        }
     }
 }
