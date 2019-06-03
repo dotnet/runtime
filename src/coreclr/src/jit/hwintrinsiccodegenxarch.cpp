@@ -1784,19 +1784,6 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE41_TestAllOnes:
-        {
-            op1Reg           = op1->gtRegNum;
-            regNumber tmpReg = node->GetSingleTempReg();
-            assert(HWIntrinsicInfo::lookupIns(intrinsicId, node->gtSIMDBaseType) == INS_ptest);
-            emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, emitTypeSize(TYP_SIMD16), tmpReg, tmpReg, tmpReg);
-            emit->emitIns_R_R(INS_ptest, emitTypeSize(TYP_SIMD16), op1Reg, tmpReg);
-            emit->emitIns_R(INS_setb, EA_1BYTE, targetReg);
-            emit->emitIns_R_R(INS_movzx, EA_1BYTE, targetReg, targetReg);
-            break;
-        }
-
-        case NI_SSE41_TestAllZeros:
         case NI_SSE41_TestZ:
         {
             assert(HWIntrinsicInfo::lookupIns(intrinsicId, node->gtSIMDBaseType) == INS_ptest);
@@ -1815,7 +1802,6 @@ void CodeGen::genSSE41Intrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
-        case NI_SSE41_TestMixOnesZeros:
         case NI_SSE41_TestNotZAndNotC:
         {
             assert(HWIntrinsicInfo::lookupIns(intrinsicId, node->gtSIMDBaseType) == INS_ptest);

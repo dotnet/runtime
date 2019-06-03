@@ -672,33 +672,6 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector128<ulong> LoadAlignedVector128NonTemporal(ulong* address) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
-        /// int _mm_test_all_ones (__m128i a)
-        ///   PCMPEQD xmm, xmm/m128
-        ///   PTEST xmm, xmm/m128
-        /// </summary>
-        public static bool TestAllOnes(Vector128<sbyte> value) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllOnes(Vector128<byte> value) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllOnes(Vector128<short> value) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllOnes(Vector128<ushort> value) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllOnes(Vector128<int> value) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllOnes(Vector128<uint> value) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllOnes(Vector128<long> value) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllOnes(Vector128<ulong> value) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int _mm_test_all_zeros (__m128i a, __m128i mask)
-        ///   PTEST xmm, xmm/m128
-        /// </summary>
-        public static bool TestAllZeros(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllZeros(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllZeros(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllZeros(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllZeros(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllZeros(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllZeros(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestAllZeros(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
         /// int _mm_testc_si128 (__m128i a, __m128i b)
         ///   PTEST xmm, xmm/m128
         /// </summary>
@@ -710,19 +683,6 @@ namespace System.Runtime.Intrinsics.X86
         public static bool TestC(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
         public static bool TestC(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
         public static bool TestC(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
-
-        /// <summary>
-        /// int _mm_test_mix_ones_zeros (__m128i a, __m128i mask)
-        ///   PTEST xmm, xmm/m128
-        /// </summary>
-        public static bool TestMixOnesZeros(Vector128<sbyte> left, Vector128<sbyte> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestMixOnesZeros(Vector128<byte> left, Vector128<byte> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestMixOnesZeros(Vector128<short> left, Vector128<short> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestMixOnesZeros(Vector128<ushort> left, Vector128<ushort> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestMixOnesZeros(Vector128<int> left, Vector128<int> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestMixOnesZeros(Vector128<uint> left, Vector128<uint> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestMixOnesZeros(Vector128<long> left, Vector128<long> right) { throw new PlatformNotSupportedException(); }
-        public static bool TestMixOnesZeros(Vector128<ulong> left, Vector128<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int _mm_testnzc_si128 (__m128i a, __m128i b)

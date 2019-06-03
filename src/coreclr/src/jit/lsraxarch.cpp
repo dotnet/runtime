@@ -2502,12 +2502,6 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
                 break;
             }
 
-            case NI_SSE41_TestAllOnes:
-            {
-                buildInternalFloatRegisterDefForNode(intrinsicTree);
-                break;
-            }
-
             case NI_SSE41_Extract:
             {
                 if (baseType == TYP_FLOAT)
