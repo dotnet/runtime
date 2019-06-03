@@ -201,6 +201,20 @@ namespace Microsoft.Extensions.Hosting.Internal
         }
 
         [Fact]
+        public void HostedServiceRegisteredWithFactory()
+        {
+            using (var host = CreateBuilder()
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddSingleton<IFakeService, FakeService>();
+                    services.AddHostedService(s => new FakeHostedServiceWithDependency(s.GetRequiredService<IFakeService>()));
+                })
+                .Start())
+            {
+            }
+        }
+
+        [Fact]
         public async Task AppCrashesOnStartWhenFirstHostedServiceThrows()
         {
             bool[] events1 = null;
