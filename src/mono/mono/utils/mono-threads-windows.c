@@ -350,13 +350,19 @@ mono_threads_suspend_get_abort_signal (void)
 
 #if defined (HOST_WIN32)
 
+#define MONO_WIN32_DEFAULT_NATIVE_STACK_SIZE (1024 * 1024)
+
 gboolean
 mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *tid)
 {
 	HANDLE result;
 	DWORD thread_id;
+	gsize set_stack_size = MONO_WIN32_DEFAULT_NATIVE_STACK_SIZE;
 
-	result = CreateThread (NULL, stack_size ? *stack_size : 0, (LPTHREAD_START_ROUTINE) thread_fn, thread_data, 0, &thread_id);
+	if (stack_size && *stack_size)
+		set_stack_size = *stack_size;
+
+	result = CreateThread (NULL, set_stack_size, (LPTHREAD_START_ROUTINE) thread_fn, thread_data, 0, &thread_id);
 	if (!result)
 		return FALSE;
 
@@ -370,7 +376,7 @@ mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_d
 	if (stack_size) {
 		// TOOD: Use VirtualQuery to get correct value 
 		// http://stackoverflow.com/questions/2480095/thread-stack-size-on-windows-visual-c
-		*stack_size = 2 * 1024 * 1024;
+		*stack_size = set_stack_size;
 	}
 
 	return TRUE;
@@ -392,7 +398,7 @@ mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 gboolean
 mono_native_thread_create (MonoNativeThreadId *tid, gpointer func, gpointer arg)
 {
-	return CreateThread (NULL, 0, (LPTHREAD_START_ROUTINE)func, arg, 0, tid) != NULL;
+	return CreateThread (NULL, MONO_WIN32_DEFAULT_NATIVE_STACK_SIZE, (LPTHREAD_START_ROUTINE)func, arg, 0, tid) != NULL;
 }
 
 gboolean
