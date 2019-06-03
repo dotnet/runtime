@@ -674,33 +674,6 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe Vector128<ulong> LoadAlignedVector128NonTemporal(ulong* address) => LoadAlignedVector128NonTemporal(address);
 
         /// <summary>
-        /// int _mm_test_all_ones (__m128i a)
-        ///   PCMPEQD xmm, xmm/m128
-        ///   PTEST xmm, xmm/m128
-        /// </summary>
-        public static bool TestAllOnes(Vector128<sbyte> value) => TestAllOnes(value);
-        public static bool TestAllOnes(Vector128<byte> value) => TestAllOnes(value);
-        public static bool TestAllOnes(Vector128<short> value) => TestAllOnes(value);
-        public static bool TestAllOnes(Vector128<ushort> value) => TestAllOnes(value);
-        public static bool TestAllOnes(Vector128<int> value) => TestAllOnes(value);
-        public static bool TestAllOnes(Vector128<uint> value) => TestAllOnes(value);
-        public static bool TestAllOnes(Vector128<long> value) => TestAllOnes(value);
-        public static bool TestAllOnes(Vector128<ulong> value) => TestAllOnes(value);
-
-        /// <summary>
-        /// int _mm_test_all_zeros (__m128i a, __m128i mask)
-        ///   PTEST xmm, xmm/m128
-        /// </summary>
-        public static bool TestAllZeros(Vector128<sbyte> left, Vector128<sbyte> right) => TestAllZeros(left, right);
-        public static bool TestAllZeros(Vector128<byte> left, Vector128<byte> right) => TestAllZeros(left, right);
-        public static bool TestAllZeros(Vector128<short> left, Vector128<short> right) => TestAllZeros(left, right);
-        public static bool TestAllZeros(Vector128<ushort> left, Vector128<ushort> right) => TestAllZeros(left, right);
-        public static bool TestAllZeros(Vector128<int> left, Vector128<int> right) => TestAllZeros(left, right);
-        public static bool TestAllZeros(Vector128<uint> left, Vector128<uint> right) => TestAllZeros(left, right);
-        public static bool TestAllZeros(Vector128<long> left, Vector128<long> right) => TestAllZeros(left, right);
-        public static bool TestAllZeros(Vector128<ulong> left, Vector128<ulong> right) => TestAllZeros(left, right);
-
-        /// <summary>
         /// int _mm_testc_si128 (__m128i a, __m128i b)
         ///   PTEST xmm, xmm/m128
         /// </summary>
@@ -712,19 +685,6 @@ namespace System.Runtime.Intrinsics.X86
         public static bool TestC(Vector128<uint> left, Vector128<uint> right) => TestC(left, right);
         public static bool TestC(Vector128<long> left, Vector128<long> right) => TestC(left, right);
         public static bool TestC(Vector128<ulong> left, Vector128<ulong> right) => TestC(left, right);
-
-        /// <summary>
-        /// int _mm_test_mix_ones_zeros (__m128i a, __m128i mask)
-        ///   PTEST xmm, xmm/m128
-        /// </summary>
-        public static bool TestMixOnesZeros(Vector128<sbyte> left, Vector128<sbyte> right) => TestMixOnesZeros(left, right);
-        public static bool TestMixOnesZeros(Vector128<byte> left, Vector128<byte> right) => TestMixOnesZeros(left, right);
-        public static bool TestMixOnesZeros(Vector128<short> left, Vector128<short> right) => TestMixOnesZeros(left, right);
-        public static bool TestMixOnesZeros(Vector128<ushort> left, Vector128<ushort> right) => TestMixOnesZeros(left, right);
-        public static bool TestMixOnesZeros(Vector128<int> left, Vector128<int> right) => TestMixOnesZeros(left, right);
-        public static bool TestMixOnesZeros(Vector128<uint> left, Vector128<uint> right) => TestMixOnesZeros(left, right);
-        public static bool TestMixOnesZeros(Vector128<long> left, Vector128<long> right) => TestMixOnesZeros(left, right);
-        public static bool TestMixOnesZeros(Vector128<ulong> left, Vector128<ulong> right) => TestMixOnesZeros(left, right);
 
         /// <summary>
         /// int _mm_testnzc_si128 (__m128i a, __m128i b)
