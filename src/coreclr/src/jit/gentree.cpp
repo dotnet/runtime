@@ -18036,9 +18036,9 @@ bool GenTreeHWIntrinsic::OperIsMemoryLoadOrStore()
 {
 #ifdef _TARGET_XARCH_
     return OperIsMemoryLoad() || OperIsMemoryStore();
-#else  // _TARGET_XARCH_
+#else
     return false;
-#endif // _TARGET_XARCH_
+#endif
 }
 
 #endif // FEATURE_HW_INTRINSICS
