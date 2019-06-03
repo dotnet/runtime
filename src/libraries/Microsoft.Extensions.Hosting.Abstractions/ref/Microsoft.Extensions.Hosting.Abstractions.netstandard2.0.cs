@@ -6,6 +6,7 @@ namespace Microsoft.Extensions.DependencyInjection
     public static partial class ServiceCollectionHostedServiceExtensions
     {
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddHostedService<THostedService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) where THostedService : class, Microsoft.Extensions.Hosting.IHostedService { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddHostedService<THostedService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Func<System.IServiceProvider, THostedService> implementationFactory) where THostedService : class, Microsoft.Extensions.Hosting.IHostedService { throw null; }
     }
 }
 namespace Microsoft.Extensions.Hosting
