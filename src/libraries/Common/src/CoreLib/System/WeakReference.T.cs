@@ -52,7 +52,7 @@ namespace System
         //          DoSomething(ref.Target)
         //
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetTarget([NotNullWhen(true)] out T target)
+        public bool TryGetTarget([MaybeNull, NotNullWhen(true)] out T target)
         {
             // Call the worker method that has more performant but less user friendly signature.
             T o = this.Target;
