@@ -34,6 +34,7 @@
     <PointerSize Condition="'$(Platform)'=='arm64'">64</PointerSize>
     <PointerSize Condition="'$(Platform)'=='x86'">32</PointerSize>
     <PointerSize Condition="'$(Platform)'=='arm'">32</PointerSize>
+    <PointerSize Condition="'$(Platform)'=='armel'">32</PointerSize>
   </PropertyGroup>
 
   <!-- Setup the default output and intermediate paths -->
