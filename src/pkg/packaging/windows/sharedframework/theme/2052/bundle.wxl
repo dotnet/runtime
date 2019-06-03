@@ -58,7 +58,7 @@
   <String Id="FilesInUseDontCloseRadioButton">不关闭应用程序(&amp;D)。需要重启。</String>
   <String Id="FilesInUseOkButton">确定(&amp;O)</String>
   <String Id="FilesInUseCancelButton">取消(&amp;C)</String>
-  <String Id="WelcomeHeaderMessage">.NET Core 运行时</String>
+  <String Id="WelcomeHeaderMessage">.NET Core Runtime</String>
   <String Id="WelcomeDescription">.NET Core 是一种开发平台，可用于生成命令行应用程序、微服务和新式网站。它是开源、跨平台的，且受 Microsoft 支持。希望你喜欢!</String>
   <String Id="LearnMoreTitle">了解有关 .NET Core 的详细信息</String>
   <String Id="SuccessInstallLocation">以下项已安装到 [DOTNETHOME]</String>
