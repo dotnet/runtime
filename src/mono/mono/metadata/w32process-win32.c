@@ -239,6 +239,7 @@ process_complete_path (const gunichar2 *appname, gchar **completed)
 	}
 
 	*completed = process_quote_path (found);
+	result = TRUE;
 exit:
 	g_free (found);
 	g_free (utf8appmemory);
