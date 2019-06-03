@@ -205,49 +205,6 @@ namespace System.IO.Tests
             { @"C:\\foo2", @"C:\" },
         };
 
-        public static TheoryData<string,string> TestData_TrimEndingDirectorySeparator => new TheoryData<string, string>
-        {
-            { @"C:\folder\", @"C:\folder" },
-            { @"C:/folder/", @"C:/folder" },
-            { @"/folder/", @"/folder" },
-            { @"\folder\", @"\folder" },
-            { @"folder\", @"folder" },
-            { @"folder/", @"folder" },
-            { @"C:\", @"C:\" },
-            { @"C:/", @"C:/" },
-            { @"", @"" },
-            { @"/", @"/" },
-            { @"\", @"\" },
-            { @"\\server\share\", @"\\server\share" },
-            { @"\\server\share\folder\", @"\\server\share\folder" },
-            { @"\\?\C:\", @"\\?\C:\" },
-            { @"\\?\C:\folder\", @"\\?\C:\folder" },
-            { @"\\?\UNC\", @"\\?\UNC\" },
-            { @"\\?\UNC\a\", @"\\?\UNC\a\" },
-            { @"\\?\UNC\a\folder\", @"\\?\UNC\a\folder" },
-            { null, null }
-        };
-
-        public static TheoryData<string, bool> TestData_EndsInDirectorySeparator => new TheoryData<string, bool>
-        {
-            { @"\", true },
-            { @"/", true },
-            { @"C:\folder\", true },
-            { @"C:/folder/", true },
-            { @"C:\", true },
-            { @"C:/", true },
-            { @"\\", true },
-            { @"//", true },
-            { @"\\server\share\", true },
-            { @"\\?\UNC\a\", true },
-            { @"\\?\C:\", true },
-            { @"\\?\UNC\", true },
-            { @"folder\", true },
-            { @"folder", false },
-            { @"", false },
-            { null, false }
-        };
-
         protected static void GetTempPath_SetEnvVar(string envVar, string expected, string newTempPath)
         {
             string original = Path.GetTempPath();
