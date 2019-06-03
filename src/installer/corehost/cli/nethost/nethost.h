@@ -5,7 +5,7 @@
 #ifndef __NETHOST_H__
 #define __NETHOST_H__
 
-#include <cstddef>
+#include <stddef.h>
 
 #if defined(_WIN32)
     #ifdef NETHOST_EXPORT
@@ -16,9 +16,9 @@
 
     #define NETHOST_CALLTYPE __stdcall
     #ifdef _WCHAR_T_DEFINED
-        using char_t = wchar_t;
+        typedef wchar_t char_t;
     #else
-        using char_t = unsigned short;
+        typedef unsigned short char_t;
     #endif
 #else
     #ifdef NETHOST_EXPORT
@@ -28,7 +28,11 @@
     #endif
 
     #define NETHOST_CALLTYPE
-    using char_t = char;
+    typedef char char_t;
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 //
@@ -58,9 +62,13 @@
 //   The full search for the hostfxr library is done on every call. To minimize the need
 //   to call this function multiple times, pass a large buffer (e.g. PATH_MAX).
 //
-extern "C" NETHOST_API int NETHOST_CALLTYPE get_hostfxr_path(
+NETHOST_API int NETHOST_CALLTYPE get_hostfxr_path(
     char_t * buffer,
     size_t * buffer_size,
     const char_t * assembly_path);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif // __NETHOST_H__
