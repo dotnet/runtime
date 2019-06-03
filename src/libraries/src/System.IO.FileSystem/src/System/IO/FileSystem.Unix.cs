@@ -38,6 +38,64 @@ namespace System.IO
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_FileEncryption);
         }
 
+        private static void LinkOrCopyFile (string sourceFullPath, string destFullPath)
+        {
+            if (Interop.Sys.Link(sourceFullPath, destFullPath) >= 0)
+                return;
+
+            // If link fails, we can fall back to doing a full copy, but we'll only do so for
+            // cases where we expect link could fail but such a copy could succeed.  We don't
+            // want to do so for all errors, because the copy could incur a lot of cost
+            // even if we know it'll eventually fail, e.g. EROFS means that the source file
+            // system is read-only and couldn't support the link being added, but if it's
+            // read-only, then the move should fail any way due to an inability to delete
+            // the source file.
+            Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+            if (errorInfo.Error == Interop.Error.EXDEV ||      // rename fails across devices / mount points
+                errorInfo.Error == Interop.Error.EACCES ||
+                errorInfo.Error == Interop.Error.EPERM ||      // permissions might not allow creating hard links even if a copy would work
+                errorInfo.Error == Interop.Error.EOPNOTSUPP || // links aren't supported by the source file system
+                errorInfo.Error == Interop.Error.EMLINK ||     // too many hard links to the source file
+                errorInfo.Error == Interop.Error.ENOSYS)       // the file system doesn't support link
+            {
+                CopyFile(sourceFullPath, destFullPath, overwrite: false);
+            }
+            else
+            {
+                // The operation failed.  Within reason, try to determine which path caused the problem
+                // so we can throw a detailed exception.
+                string path = null;
+                bool isDirectory = false;
+                if (errorInfo.Error == Interop.Error.ENOENT)
+                {
+                    if (!Directory.Exists(Path.GetDirectoryName(destFullPath)))
+                    {
+                        // The parent directory of destFile can't be found.
+                        // Windows distinguishes between whether the directory or the file isn't found,
+                        // and throws a different exception in these cases.  We attempt to approximate that
+                        // here; there is a race condition here, where something could change between
+                        // when the error occurs and our checks, but it's the best we can do, and the
+                        // worst case in such a race condition (which could occur if the file system is
+                        // being manipulated concurrently with these checks) is that we throw a
+                        // FileNotFoundException instead of DirectoryNotFoundexception.
+                        path = destFullPath;
+                        isDirectory = true;
+                    }
+                    else
+                    {
+                        path = sourceFullPath;
+                    }
+                }
+                else if (errorInfo.Error == Interop.Error.EEXIST)
+                {
+                    path = destFullPath;
+                }
+
+                throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory);
+            }
+        }
+
+
         public static void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
         {
             if (destBackupFullPath != null)
@@ -55,7 +113,7 @@ namespace System.IO
 
                 // Now that the backup is gone, link the backup to point to the same file as destination.
                 // This way, we don't lose any data in the destination file, no copy is necessary, etc.
-                Interop.CheckIo(Interop.Sys.Link(destFullPath, destBackupFullPath), destFullPath);
+                LinkOrCopyFile(destFullPath, destBackupFullPath);
             }
             else
             {
@@ -132,59 +190,8 @@ namespace System.IO
                 // Rename or CopyFile complete
                 return;
             }
-            
-            if (Interop.Sys.Link(sourceFullPath, destFullPath) < 0)
-            {
-                // If link fails, we can fall back to doing a full copy, but we'll only do so for
-                // cases where we expect link could fail but such a copy could succeed.  We don't
-                // want to do so for all errors, because the copy could incur a lot of cost
-                // even if we know it'll eventually fail, e.g. EROFS means that the source file
-                // system is read-only and couldn't support the link being added, but if it's
-                // read-only, then the move should fail any way due to an inability to delete
-                // the source file.
-                Interop.ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
-                if (errorInfo.Error == Interop.Error.EXDEV ||      // rename fails across devices / mount points
-                    errorInfo.Error == Interop.Error.EPERM ||      // permissions might not allow creating hard links even if a copy would work
-                    errorInfo.Error == Interop.Error.EOPNOTSUPP || // links aren't supported by the source file system
-                    errorInfo.Error == Interop.Error.EMLINK ||     // too many hard links to the source file
-                    errorInfo.Error == Interop.Error.ENOSYS)       // the file system doesn't support link
-                {
-                    CopyFile(sourceFullPath, destFullPath, overwrite: false);
-                }
-                else
-                {
-                    // The operation failed.  Within reason, try to determine which path caused the problem 
-                    // so we can throw a detailed exception.
-                    string path = null;
-                    bool isDirectory = false;
-                    if (errorInfo.Error == Interop.Error.ENOENT)
-                    {
-                        if (!Directory.Exists(Path.GetDirectoryName(destFullPath)))
-                        {
-                            // The parent directory of destFile can't be found.
-                            // Windows distinguishes between whether the directory or the file isn't found,
-                            // and throws a different exception in these cases.  We attempt to approximate that
-                            // here; there is a race condition here, where something could change between
-                            // when the error occurs and our checks, but it's the best we can do, and the
-                            // worst case in such a race condition (which could occur if the file system is
-                            // being manipulated concurrently with these checks) is that we throw a
-                            // FileNotFoundException instead of DirectoryNotFoundexception.
-                            path = destFullPath;
-                            isDirectory = true;
-                        }
-                        else
-                        {
-                            path = sourceFullPath;
-                        }
-                    }
-                    else if (errorInfo.Error == Interop.Error.EEXIST)
-                    {
-                        path = destFullPath;
-                    }
 
-                    throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory);
-                }
-            }
+            LinkOrCopyFile(sourceFullPath, destFullPath);
             DeleteFile(sourceFullPath);
         }
 
