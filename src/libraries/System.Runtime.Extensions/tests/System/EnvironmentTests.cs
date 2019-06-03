@@ -232,7 +232,6 @@ namespace System.Tests
                 handle.Process = null;
                 p.WaitForExit();
                 string consoleOutput = p.StandardError.ReadToEnd();
-                Assert.Contains("Exception details:", consoleOutput);
                 Assert.Contains("ArgumentException:", consoleOutput);
                 Assert.Contains("bad arg", consoleOutput);
             }
@@ -256,7 +255,6 @@ namespace System.Tests
                 handle.Process = null;
                 p.WaitForExit();
                 string consoleOutput = p.StandardError.ReadToEnd();
-                Assert.Contains("Exception details:", consoleOutput);
                 Assert.Contains("StackOverflowException", consoleOutput);
                 Assert.Contains("SO exception", consoleOutput);
             }
@@ -280,7 +278,6 @@ namespace System.Tests
                 handle.Process = null;
                 p.WaitForExit();
                 string consoleOutput = p.StandardError.ReadToEnd();
-                Assert.Contains("Exception details:", consoleOutput);
                 Assert.Contains("first exception", consoleOutput);
                 Assert.Contains("inner exception", consoleOutput);
                 Assert.Contains("ArgumentException", consoleOutput);
