@@ -30,6 +30,7 @@
     <Compile Condition="'$(BuildArch)' == 'arm64'" Include="i_array_merge-ia64.il" />
     <Compile Condition="'$(BuildArch)' ==   'x86'" Include="i_array_merge-i386.il" />
     <Compile Condition="'$(BuildArch)' ==   'arm'" Include="i_array_merge-i386.il" />
+    <Compile Condition="'$(BuildArch)' ==   'armel'" Include="i_array_merge-i386.il" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />

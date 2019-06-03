@@ -994,6 +994,10 @@ fi
 # init the target distro name
 initTargetDistroRid
 
+if [ $__PortableBuild == 0 ]; then
+    __CommonMSBuildArgs="$__CommonMSBuildArgs /p:PortableBuild=false"
+fi
+
 # Restore Build Tools
 source $__ProjectRoot/init-tools.sh
 
