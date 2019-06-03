@@ -12,7 +12,7 @@ using Internal.Runtime.CompilerServices;
 namespace System.Runtime.CompilerServices
 {
     public sealed class ConditionalWeakTable<TKey, TValue> : IEnumerable<KeyValuePair<TKey, TValue>>
-        where TKey : class?
+        where TKey : class
         where TValue : class?
     {
         // Lifetimes of keys and values:
@@ -59,7 +59,7 @@ namespace System.Runtime.CompilerServices
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            return _container.TryGetValueWorker(key, out value);
+            return _container.TryGetValueWorker(key!, out value); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }
 
         /// <summary>Adds a key to the table.</summary>
@@ -80,13 +80,13 @@ namespace System.Runtime.CompilerServices
 
             lock (_lock)
             {
-                int entryIndex = _container.FindEntry(key, out _);
+                int entryIndex = _container.FindEntry(key!, out _); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                 if (entryIndex != -1)
                 {
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AddingDuplicate);
                 }
 
-                CreateEntry(key, value);
+                CreateEntry(key!, value); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             }
         }
 
@@ -102,7 +102,7 @@ namespace System.Runtime.CompilerServices
 
             lock (_lock)
             {
-                int entryIndex = _container.FindEntry(key, out _);
+                int entryIndex = _container.FindEntry(key!, out _); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
 
                 // if we found a key we should just update, if no we should create a new entry.
                 if (entryIndex != -1)
@@ -111,7 +111,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    CreateEntry(key, value);
+                    CreateEntry(key!, value); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                 }
             }
         }
@@ -133,7 +133,7 @@ namespace System.Runtime.CompilerServices
 
             lock (_lock)
             {
-                return _container.Remove(key);
+                return _container.Remove(key!); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             }
         }
 
@@ -337,9 +337,9 @@ namespace System.Runtime.CompilerServices
                             while (_currentIndex < _maxIndexInclusive)
                             {
                                 _currentIndex++;
-                                if (c.TryGetEntry(_currentIndex, out TKey key, out TValue value))
+                                if (c.TryGetEntry(_currentIndex, out TKey? key, out TValue value))
                                 {
-                                    _current = new KeyValuePair<TKey, TValue>(key, value);
+                                    _current = new KeyValuePair<TKey, TValue>(key!, value); // TODO-NULLABLE: Remove ! when nullable attributes are respected
                                     return true;
                                 }
                             }
@@ -537,7 +537,7 @@ namespace System.Runtime.CompilerServices
             }
 
             /// <summary>Gets the entry at the specified entry index.</summary>
-            internal bool TryGetEntry(int index, [MaybeNullWhen(false)] out TKey key, [MaybeNullWhen(false)] out TValue value)
+            internal bool TryGetEntry(int index, [NotNullWhen(true)] out TKey? key, [MaybeNullWhen(false)] out TValue value)
             {
                 if (index < _entries.Length)
                 {
@@ -552,7 +552,7 @@ namespace System.Runtime.CompilerServices
                     }
                 }
 
-                key = default!;
+                key = default;
                 value = default!;
                 return false;
             }
