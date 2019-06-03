@@ -128,5 +128,57 @@ namespace System.IO.Tests
         {
             Assert.Throws<ArgumentException>(null, () => Path.GetFullPath("/gi\0t", "/foo/bar"));
         }
+
+        public static TheoryData<string, string> TestData_TrimEndingDirectorySeparator => new TheoryData<string, string>
+        {
+            { @"/folder/", @"/folder" },
+            { @"folder/", @"folder" },
+            { @"", @"" },
+            { @"/", @"/" },
+            { null, null }
+        };
+
+        public static TheoryData<string, bool> TestData_EndsInDirectorySeparator => new TheoryData<string, bool>
+        {
+            { @"/", true },
+            { @"/folder/", true },
+            { @"//", true },
+            { @"folder", false },
+            { @"folder/", true },
+            { @"", false },
+            { null, false }
+        };
+
+        [Theory,
+            MemberData(nameof(TestData_TrimEndingDirectorySeparator))]
+        public void TrimEndingDirectorySeparator_String(string path, string expected)
+        {
+            string trimmed = Path.TrimEndingDirectorySeparator(path);
+            Assert.Equal(expected, trimmed);
+            Assert.Same(trimmed, Path.TrimEndingDirectorySeparator(trimmed));
+        }
+
+        [Theory,
+            MemberData(nameof(TestData_TrimEndingDirectorySeparator))]
+        public void TrimEndingDirectorySeparator_ReadOnlySpan(string path, string expected)
+        {
+            ReadOnlySpan<char> trimmed = Path.TrimEndingDirectorySeparator(path.AsSpan());
+            PathAssert.Equal(expected, trimmed);
+            PathAssert.Equal(trimmed, Path.TrimEndingDirectorySeparator(trimmed));
+        }
+
+        [Theory,
+            MemberData(nameof(TestData_EndsInDirectorySeparator))]
+        public void EndsInDirectorySeparator_String(string path, bool expected)
+        {
+            Assert.Equal(expected, Path.EndsInDirectorySeparator(path));
+        }
+
+        [Theory,
+            MemberData(nameof(TestData_EndsInDirectorySeparator))]
+        public void EndsInDirectorySeparator_ReadOnlySpan(string path, bool expected)
+        {
+            Assert.Equal(expected, Path.EndsInDirectorySeparator(path.AsSpan()));
+        }
     }
 }
