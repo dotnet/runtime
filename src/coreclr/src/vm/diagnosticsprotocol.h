@@ -203,6 +203,8 @@ namespace DiagnosticsIpc
             }
             CONTRACTL_END;
 
+            m_Header = header;
+
             return FlattenImpl<T>(payload);
         };
 
@@ -217,6 +219,8 @@ namespace DiagnosticsIpc
                 MODE_PREEMPTIVE;
             }
             CONTRACTL_END;
+
+            m_Header = header;
 
             return FlattenImpl<T>(payload);
         };
@@ -371,6 +375,11 @@ namespace DiagnosticsIpc
             uint32_t nBytesRead;
             bool success = pStream->Read(&m_Header, sizeof(IpcHeader), nBytesRead);
             if (!success || nBytesRead < sizeof(IpcHeader))
+            {
+                return false;
+            }
+
+            if (m_Header.Size < sizeof(IpcHeader))
             {
                 return false;
             }
