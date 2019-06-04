@@ -12,6 +12,17 @@ using System.Threading.Tasks;
 
 public class Test 
 {
+    struct Counts
+    {
+        public Counts(long precise, long imprecise)
+        {
+            this.precise = precise;
+            this.imprecise = imprecise;
+        }
+        public readonly long precise;
+        public readonly long imprecise;
+    }
+
     static Random Rand = new Random();
     static volatile object s_stash; // static volatile variable to keep the jit from eliding allocations or anything.
 
@@ -31,7 +42,7 @@ public class Test
         return del;
     }
 
-    private static long CallGetTotalAllocatedBytes(long previous, out long differenceBetweenPreciseAndImprecise)
+    private static Counts CallGetTotalAllocatedBytes(Counts previous, out long differenceBetweenPreciseAndImprecise)
     {
         long precise = GetTotalAllocatedBytes(true);
         long imprecise = GetTotalAllocatedBytes(false);
@@ -46,16 +57,21 @@ public class Test
             throw new Exception($"Imprecise total bytes allocated less than precise, imprecise is required to be a conservative estimate (that estimates high). imprecise = {imprecise}, precise = {precise}");
         }
 
-        if (previous > precise)
+        if (previous.precise > precise)
         {
-            throw new Exception($"Expected more memory to be allocated. previous = {previous}, precise = {precise}, difference = {previous - precise}");
+            throw new Exception($"Expected more memory to be allocated. previous.precise = {previous.precise}, precise = {precise}, difference = {previous.precise - precise}");
+        }
+
+        if (previous.imprecise > imprecise)
+        {
+            throw new Exception($"Expected more memory to be allocated. previous.imprecise = {previous.imprecise}, imprecise = {imprecise}, difference = {previous.imprecise - imprecise}");
         }
 
         differenceBetweenPreciseAndImprecise = imprecise - precise;
-        return precise;
+        return new Counts(precise, imprecise);
     }
 
-    private static long CallGetTotalAllocatedBytes(long previous)
+    private static Counts CallGetTotalAllocatedBytes(Counts previous)
     {
         long differenceBetweenPreciseAndImprecise;
         previous = CallGetTotalAllocatedBytes(previous, out differenceBetweenPreciseAndImprecise);
@@ -66,7 +82,7 @@ public class Test
 
     public static void TestSingleThreaded()
     {
-        long previous = 0;
+        Counts previous = default(Counts);
         for (int i = 0; i < 1000; ++i)
         {
             s_stash = new byte[1234];
@@ -76,7 +92,7 @@ public class Test
 
     public static void TestSingleThreadedLOH()
     {
-        long previous = 0;
+        Counts previous = default(Counts);
         for (int i = 0; i < 1000; ++i)
         {
             s_stash = new byte[123456];
@@ -108,7 +124,7 @@ public class Test
                 }
             });
 
-            long previous = 0;
+            Counts previous = default(Counts);
             for (int i = 0; i < 1000; ++i)
             {
                 lock (lck)
@@ -136,7 +152,7 @@ public class Test
             Thread thr = new Thread(() =>
             {
                 me.Wait();
-                long previous = 0;
+                Counts previous = default(Counts);
                 for (int i = 0; i < 2; ++i)
                 {
                     s_stash = new byte[123456];
