@@ -104,13 +104,10 @@ namespace System.Reflection
                     null); // strong name key pair
 
             Module manifestModule = ManifestModule;
-            if (manifestModule != null)
+            if (manifestModule.MDStreamVersion > 0x10000)
             {
-                if (manifestModule.MDStreamVersion > 0x10000)
-                {
-                    manifestModule.GetPEKind(out PortableExecutableKinds pek, out ImageFileMachine ifm);
-                    an.SetProcArchIndex(pek, ifm);
-                }
+                manifestModule.GetPEKind(out PortableExecutableKinds pek, out ImageFileMachine ifm);
+                an.SetProcArchIndex(pek, ifm);
             }
             return an;
         }

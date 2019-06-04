@@ -492,7 +492,7 @@ namespace System.Reflection.Emit
 
         public override Type ReturnType { get { return m_dynMethod.ReturnType; } }
 
-        public override ParameterInfo? ReturnParameter { get { return m_dynMethod.ReturnParameter; } }
+        public override ParameterInfo ReturnParameter { get { return m_dynMethod.ReturnParameter; } }
 
         public override ICustomAttributeProvider ReturnTypeCustomAttributes { get { return m_dynMethod.ReturnTypeCustomAttributes; } }
 
@@ -714,9 +714,9 @@ namespace System.Reflection.Emit
                 }
             }
 
-            public override ParameterInfo? ReturnParameter
+            public override ParameterInfo ReturnParameter
             {
-                get { return null; }
+                get { return new RuntimeParameterInfo(this, null, m_owner.m_returnType, -1); }
             }
 
             public override ICustomAttributeProvider ReturnTypeCustomAttributes

@@ -2754,9 +2754,6 @@ FCIMPL1(ReflectModuleBaseObject*, AssemblyHandle::GetManifestModule, AssemblyBas
     DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
     Assembly* currentAssembly = pAssembly->GetCurrentAssembly();
 
-    if (currentAssembly == NULL)
-        return NULL;
-
     Module *pModule = currentAssembly->GetManifestModule();
     DomainFile * pDomainFile = pModule->GetDomainFile();
 
