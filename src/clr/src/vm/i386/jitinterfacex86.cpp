@@ -1168,6 +1168,7 @@ static const void * const c_rgDebugWriteBarriers[NUM_WRITE_BARRIERS] = {
 // Initialize the part of the JIT helpers that require very little of
 // EE infrastructure to be in place.
 /*********************************************************************/
+#pragma warning (disable : 4731)
 void InitJITHelpers1()
 {
     STANDARD_VM_CONTRACT;
@@ -1332,6 +1333,7 @@ void InitJITHelpers1()
     // Initialize g_TailCallFrameVptr for JIT_TailCall helper
     g_TailCallFrameVptr = (void*)TailCallFrame::GetMethodFrameVPtr();
 }
+#pragma warning (default : 4731)
 
 // these constans are offsets into our write barrier helpers for values that get updated as the bounds of the managed heap change.
 // ephemeral region
