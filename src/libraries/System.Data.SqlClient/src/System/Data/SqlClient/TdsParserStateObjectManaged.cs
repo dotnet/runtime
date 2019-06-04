@@ -11,17 +11,11 @@ namespace System.Data.SqlClient.SNI
 {
     internal class TdsParserStateObjectManaged : TdsParserStateObject
     {
-        private SNIMarsConnection _marsConnection = null;
-        private SNIHandle _sessionHandle = null;              // the SNI handle we're to work on
-        private SNIPacket _sniPacket = null;                // Will have to re-vamp this for MARS
-        internal SNIPacket _sniAsyncAttnPacket = null;                // Packet to use to send Attn
-        private readonly Dictionary<SNIPacket, SNIPacket> _pendingWritePackets = new Dictionary<SNIPacket, SNIPacket>(); // Stores write packets that have been sent to SNI, but have not yet finished writing (i.e. we are waiting for SNI's callback)
-
-        private readonly WritePacketCache _writePacketCache = new WritePacketCache(); // Store write packets that are ready to be re-used
+        private SNIMarsConnection _marsConnection;
+        private SNIHandle _sessionHandle;
+        private SspiClientContextStatus _sspiClientContextStatus;
 
         public TdsParserStateObjectManaged(TdsParser parser) : base(parser) { }
-
-        internal SspiClientContextStatus sspiClientContextStatus = new SspiClientContextStatus();
 
         internal TdsParserStateObjectManaged(TdsParser parser, TdsParserStateObject physicalConnection, bool async) :
             base(parser, physicalConnection, async)
@@ -81,27 +75,17 @@ namespace System.Data.SqlClient.SNI
 
         internal override void Dispose()
         {
-            SNIPacket packetHandle = _sniPacket;
             SNIHandle sessionHandle = _sessionHandle;
-            SNIPacket asyncAttnPacket = _sniAsyncAttnPacket;
 
-            _sniPacket = null;
             _sessionHandle = null;
-            _sniAsyncAttnPacket = null;
             _marsConnection = null;
 
             DisposeCounters();
 
-            if (null != sessionHandle || null != packetHandle)
+            if (sessionHandle != null)
             {
-                packetHandle?.Dispose();
-                asyncAttnPacket?.Dispose();
-                
-                if (sessionHandle != null)
-                {
-                    sessionHandle.Dispose();
-                    DecrementPendingCallbacks(true); // Will dispose of GC handle.
-                }
+                sessionHandle.Dispose();
+                DecrementPendingCallbacks(true); // Will dispose of GC handle.
             }
 
             DisposePacketCache();
@@ -109,11 +93,7 @@ namespace System.Data.SqlClient.SNI
 
         internal override void DisposePacketCache()
         {
-            lock (_writePacketLockObject)
-            {
-                _writePacketCache.Dispose();
-                // Do not set _writePacketCache to null, just in case a WriteAsyncCallback completes after this point
-            }
+
         }
 
         protected override void FreeGcHandle(int remaining, bool release)
@@ -144,7 +124,7 @@ namespace System.Data.SqlClient.SNI
 
         internal override void ReleasePacket(PacketHandle syncReadPacket)
         {
-            syncReadPacket.ManagedPacket?.Dispose();
+            syncReadPacket.ManagedPacket?.Release();
         }
 
         internal override uint CheckConnection()
@@ -162,13 +142,9 @@ namespace System.Data.SqlClient.SNI
 
         internal override PacketHandle CreateAndSetAttentionPacket()
         {
-            if (_sniAsyncAttnPacket == null)
-            {
-                SNIPacket attnPacket = new SNIPacket();
-                SetPacketData(PacketHandle.FromManagedPacket(attnPacket), SQL.AttentionHeader, TdsEnums.HEADER_LEN);
-                _sniAsyncAttnPacket = attnPacket;
-            }
-            return PacketHandle.FromManagedPacket(_sniAsyncAttnPacket);
+            PacketHandle packetHandle = GetResetWritePacket(TdsEnums.HEADER_LEN);
+            SetPacketData(packetHandle, SQL.AttentionHeader, TdsEnums.HEADER_LEN);
+            return packetHandle;
         }
 
         internal override uint WritePacket(PacketHandle packet, bool sync)
@@ -192,34 +168,16 @@ namespace System.Data.SqlClient.SNI
             );
         }
 
-        internal override PacketHandle GetResetWritePacket()
+        internal override PacketHandle GetResetWritePacket(int dataSize)
         {
-            if (_sniPacket != null)
-            {
-                _sniPacket.Reset();
-            }
-            else
-            {
-                lock (_writePacketLockObject)
-                {
-                    _sniPacket = _writePacketCache.Take(Handle);
-                }
-            }
-            return PacketHandle.FromManagedPacket(_sniPacket);
+            var packet = new SNIPacket(headerSize: _sessionHandle.ReserveHeaderSize, dataSize: dataSize);
+            Debug.Assert(packet.ReservedHeaderSize == _sessionHandle.ReserveHeaderSize, "failed to reserve header");
+            return PacketHandle.FromManagedPacket(packet);
         }
 
         internal override void ClearAllWritePackets()
         {
-            if (_sniPacket != null)
-            {
-                _sniPacket.Dispose();
-                _sniPacket = null;
-            }
-            lock (_writePacketLockObject)
-            {
-                Debug.Assert(_pendingWritePackets.Count == 0 && _asyncWriteCount == 0, "Should not clear all write packets if there are packets pending");
-                _writePacketCache.Clear();
-            }
+            Debug.Assert(_asyncWriteCount == 0, "Should not clear all write packets if there are packets pending");
         }
 
         internal override void SetPacketData(PacketHandle packet, byte[] buffer, int bytesUsed) => SNIProxy.Singleton.PacketSetData(packet.ManagedPacket, buffer, bytesUsed);
@@ -239,76 +197,21 @@ namespace System.Data.SqlClient.SNI
             return TdsEnums.SNI_ERROR;
         }
 
-        internal override uint EnableSsl(ref uint info)=>  SNIProxy.Singleton.EnableSsl(Handle, info);
+        internal override uint EnableSsl(ref uint info) => SNIProxy.Singleton.EnableSsl(Handle, info);
 
         internal override uint SetConnectionBufferSize(ref uint unsignedPacketSize) => SNIProxy.Singleton.SetConnectionBufferSize(Handle, unsignedPacketSize);
 
         internal override uint GenerateSspiClientContext(byte[] receivedBuff, uint receivedLength, ref byte[] sendBuff, ref uint sendLength, byte[] _sniSpnBuffer)
         {
-            SNIProxy.Singleton.GenSspiClientContext(sspiClientContextStatus, receivedBuff, ref sendBuff, _sniSpnBuffer);
+            if (_sspiClientContextStatus == null)
+            {
+                _sspiClientContextStatus = new SspiClientContextStatus();
+            }
+            SNIProxy.Singleton.GenSspiClientContext(_sspiClientContextStatus, receivedBuff, ref sendBuff, _sniSpnBuffer);
             sendLength = (uint)(sendBuff != null ? sendBuff.Length : 0);
             return 0;
         }
 
         internal override uint WaitForSSLHandShakeToComplete() => 0;
-
-        internal sealed class WritePacketCache : IDisposable
-        {
-            private bool _disposed;
-            private Stack<SNIPacket> _packets;
-
-            public WritePacketCache()
-            {
-                _disposed = false;
-                _packets = new Stack<SNIPacket>();
-            }
-
-            public SNIPacket Take(SNIHandle sniHandle)
-            {
-                SNIPacket packet;
-                if (_packets.Count > 0)
-                {
-                    // Success - reset the packet
-                    packet = _packets.Pop();
-                    packet.Reset();
-                }
-                else
-                {
-                    // Failed to take a packet - create a new one
-                    packet = new SNIPacket();
-                }
-                return packet;
-            }
-
-            public void Add(SNIPacket packet)
-            {
-                if (!_disposed)
-                {
-                    _packets.Push(packet);
-                }
-                else
-                {
-                    // If we're disposed, then get rid of any packets added to us
-                    packet.Dispose();
-                }
-            }
-
-            public void Clear()
-            {
-                while (_packets.Count > 0)
-                {
-                    _packets.Pop().Dispose();
-                }
-            }
-
-            public void Dispose()
-            {
-                if (!_disposed)
-                {
-                    _disposed = true;
-                    Clear();
-                }
-            }
-        }
     }
 }

@@ -11,7 +11,7 @@ namespace System.Data.SqlClient.SNI
     /// <summary>
     /// MARS handle
     /// </summary>
-    internal class SNIMarsHandle : SNIHandle
+    internal sealed class SNIMarsHandle : SNIHandle
     {
         private const uint ACK_THRESHOLD = 2;
 
@@ -33,27 +33,11 @@ namespace System.Data.SqlClient.SNI
         private uint _sequenceNumber;
         private SNIError _connectionError;
 
-        /// <summary>
-        /// Connection ID
-        /// </summary>
-        public override Guid ConnectionId
-        {
-            get
-            {
-                return _connectionId;
-            }
-        }
+        public override Guid ConnectionId => _connectionId;
 
-        /// <summary>
-        /// Handle status
-        /// </summary>
-        public override uint Status
-        {
-            get
-            {
-                return _status;
-            }
-        }
+        public override uint Status => _status;
+
+        public override int ReserveHeaderSize => SNISMUXHeader.HEADER_LENGTH;
 
         /// <summary>
         /// Dispose object
@@ -93,20 +77,19 @@ namespace System.Data.SqlClient.SNI
         /// <param name="flags">SMUX header flags</param>
         private void SendControlPacket(SNISMUXFlags flags)
         {
-            Span<byte> headerBytes = stackalloc byte[SNISMUXHeader.HEADER_LENGTH];
+            SNIPacket packet = new SNIPacket(headerSize: SNISMUXHeader.HEADER_LENGTH, dataSize: 0);
             lock (this)
             {
-                GetSMUXHeaderBytes(0, flags, headerBytes);
+                SetupSMUXHeader(0, flags);
+                _currentHeader.Write(packet.GetHeaderBuffer(SNISMUXHeader.HEADER_LENGTH));
+                packet.SetHeaderActive();
             }
-
-            SNIPacket packet = new SNIPacket(SNISMUXHeader.HEADER_LENGTH);
-            packet.AppendData(headerBytes);
-            
             _connection.Send(packet);
         }
 
-        private void GetSMUXHeaderBytes(int length, SNISMUXFlags flags, Span<byte> bytes)
+        private void SetupSMUXHeader(int length, SNISMUXFlags flags)
         {
+            Debug.Assert(Monitor.IsEntered(this), "must take lock on self before updating mux header");
             _currentHeader.SMID = 83;
             _currentHeader.flags = (byte)flags;
             _currentHeader.sessionId = _sessionId;
@@ -114,27 +97,21 @@ namespace System.Data.SqlClient.SNI
             _currentHeader.sequenceNumber = ((flags == SNISMUXFlags.SMUX_FIN) || (flags == SNISMUXFlags.SMUX_ACK)) ? _sequenceNumber - 1 : _sequenceNumber++;
             _currentHeader.highwater = _receiveHighwater;
             _receiveHighwaterLastAck = _currentHeader.highwater;
-
-            _currentHeader.Write(bytes);
         }
 
         /// <summary>
         /// Generate a packet with SMUX header
         /// </summary>
         /// <param name="packet">SNI packet</param>
-        /// <returns>Encapsulated SNI packet</returns>
-        private SNIPacket GetSMUXEncapsulatedPacket(SNIPacket packet)
+        /// <returns>The packet with the SMUx header set.</returns>
+        private SNIPacket SetPacketSMUXHeader(SNIPacket packet)
         {
-            uint xSequenceNumber = _sequenceNumber;
-            Span<byte> header = stackalloc byte[SNISMUXHeader.HEADER_LENGTH];
-            GetSMUXHeaderBytes(packet.Length, SNISMUXFlags.SMUX_DATA, header);
+            Debug.Assert(packet.ReservedHeaderSize == SNISMUXHeader.HEADER_LENGTH, "mars handle attempting to mux packet without mux reservation");
 
-
-            SNIPacket smuxPacket = new SNIPacket(SNISMUXHeader.HEADER_LENGTH + packet.Length);
-            smuxPacket.AppendData(header);
-            smuxPacket.AppendPacket(packet);
-            packet.Dispose();
-            return smuxPacket;
+            SetupSMUXHeader(packet.Length, SNISMUXFlags.SMUX_DATA);
+            _currentHeader.Write(packet.GetHeaderBuffer(SNISMUXHeader.HEADER_LENGTH));
+            packet.SetHeaderActive();
+            return packet;
         }
 
         /// <summary>
@@ -144,6 +121,8 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNI error code</returns>
         public override uint Send(SNIPacket packet)
         {
+            Debug.Assert(packet.ReservedHeaderSize == SNISMUXHeader.HEADER_LENGTH, "mars handle attempting to send muxed packet without mux reservation in Send");
+
             while (true)
             {
                 lock (this)
@@ -161,9 +140,13 @@ namespace System.Data.SqlClient.SNI
                     _ackEvent.Reset();
                 }
             }
-            SNIPacket encapsulatedPacket = GetSMUXEncapsulatedPacket(packet);
 
-            return _connection.Send(encapsulatedPacket);
+            SNIPacket muxedPacket = null;
+            lock (this)
+            {
+                muxedPacket = SetPacketSMUXHeader(packet);
+            }
+            return _connection.Send(muxedPacket);
         }
 
         /// <summary>
@@ -174,6 +157,7 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNI error code</returns>
         private uint InternalSendAsync(SNIPacket packet, SNIAsyncCallback callback)
         {
+            Debug.Assert(packet.ReservedHeaderSize == SNISMUXHeader.HEADER_LENGTH, "mars handle attempting to send muxed packet without mux reservation in InternalSendAsync");
             lock (this)
             {
                 if (_sequenceNumber >= _sendHighwater)
@@ -181,18 +165,9 @@ namespace System.Data.SqlClient.SNI
                     return TdsEnums.SNI_QUEUE_FULL;
                 }
 
-                SNIPacket encapsulatedPacket = GetSMUXEncapsulatedPacket(packet);
-
-                if (callback != null)
-                {
-                    encapsulatedPacket.SetCompletionCallback(callback);
-                }
-                else
-                {
-                    encapsulatedPacket.SetCompletionCallback(HandleSendComplete);
-                }
-
-                return _connection.SendAsync(encapsulatedPacket, callback);
+                SNIPacket muxedPacket = SetPacketSMUXHeader(packet);
+                muxedPacket.SetCompletionCallback(callback ?? HandleSendComplete);
+                return _connection.SendAsync(muxedPacket, callback);
             }
         }
 
