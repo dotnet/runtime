@@ -4,8 +4,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${ARCH_SOURCES_DIR})
 
-# EventPipe stress testing support
-# add_definitions(-DFEATURE_AUTO_TRACE)
 add_definitions(-DUNICODE)
 add_definitions(-D_UNICODE)
 
