@@ -1,11 +1,9 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      netcoreapp;
       netstandard;
       netstandard1.1;
-      uap;
-      _netfx;
+      netstandard2.1;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

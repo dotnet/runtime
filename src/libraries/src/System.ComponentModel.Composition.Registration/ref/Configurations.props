@@ -1,8 +1,7 @@
 <Project>
   <PropertyGroup>
     <BuildConfigurations>
-      netstandard;
-      _netfx;
+      netstandard2.1;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

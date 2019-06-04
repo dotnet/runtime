@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <!-- TODO: Add netfx configuration after OOB package bug is fixed: https://github.com/dotnet/corefx/issues/23889 -->
   <PropertyGroup>
     <ProjectGuid>{0F8CFFA3-6E16-4642-82C1-289D95338D7C}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InternalCalls.cs" />
