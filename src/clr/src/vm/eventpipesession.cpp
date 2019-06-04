@@ -182,7 +182,9 @@ DWORD WINAPI EventPipeSession::ThreadProc(void *args)
             pEventPipeSession->SetThreadShutdownEvent();
 
             if (!fSuccess)
-                pEventPipeSession->Disable();
+            {
+                EventPipe::RunWithCallbackPostponed([pEventPipeSession](EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue){pEventPipeSession->Disable();});
+            }
         }
         EX_CATCH
         {
