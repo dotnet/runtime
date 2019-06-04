@@ -1696,10 +1696,7 @@ namespace System
         }
 
         // Creates a copy of this string in lower case.  The culture is set by culture.
-        public string ToLower()
-        {
-            return CultureInfo.CurrentCulture.TextInfo.ToLower(this);
-        }
+        public string ToLower() => ToLower(null);
 
         // Creates a copy of this string in lower case.  The culture is set by culture.
         public string ToLower(CultureInfo? culture)
@@ -1714,10 +1711,7 @@ namespace System
             return CultureInfo.InvariantCulture.TextInfo.ToLower(this);
         }
 
-        public string ToUpper()
-        {
-            return CultureInfo.CurrentCulture.TextInfo.ToUpper(this);
-        }
+        public string ToUpper() => ToUpper(null);
 
         // Creates a copy of this string in upper case.  The culture is set by culture.
         public string ToUpper(CultureInfo? culture)

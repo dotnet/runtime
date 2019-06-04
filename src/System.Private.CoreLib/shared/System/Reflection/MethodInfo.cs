@@ -12,7 +12,7 @@ namespace System.Reflection
 
         public override MemberTypes MemberType => MemberTypes.Method;
 
-        public virtual ParameterInfo? ReturnParameter { get { throw NotImplemented.ByDesign; } }
+        public virtual ParameterInfo ReturnParameter { get { throw NotImplemented.ByDesign; } }
         public virtual Type ReturnType { get { throw NotImplemented.ByDesign; } }
 
         public override Type[] GetGenericArguments() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
