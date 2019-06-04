@@ -673,7 +673,7 @@ namespace System.Reflection.Emit
             CanSkipCSEvaluation = 0x8,
         }
 
-        internal override RuntimeType? GetJitContext(ref int securityControlFlags)
+        internal override RuntimeType? GetJitContext(out int securityControlFlags)
         {
             RuntimeType? typeOwner;
 
@@ -703,7 +703,7 @@ namespace System.Reflection.Emit
         }
 
         internal override byte[] GetCodeInfo(
-            ref int stackSize, ref int initLocals, ref int EHCount)
+            out int stackSize, out int initLocals, out int EHCount)
         {
             stackSize = m_stackSize;
             if (m_exceptionHeader != null && m_exceptionHeader.Length != 0)

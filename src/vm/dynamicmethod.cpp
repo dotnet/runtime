@@ -1044,20 +1044,6 @@ void LCGMethodResolver::GetJitContext(SecurityControlFlags * securityControlFlag
     } CONTRACTL_END;
     
     GCX_COOP();
-    GetJitContextCoop(securityControlFlags, typeOwner);
-}
-
-void LCGMethodResolver::GetJitContextCoop(SecurityControlFlags * securityControlFlags,
-                                      TypeHandle *typeOwner)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM(););
-        PRECONDITION(CheckPointer(securityControlFlags));
-        PRECONDITION(CheckPointer(typeOwner));
-    } CONTRACTL_END;
 
     MethodDescCallSite getJitContext(METHOD__RESOLVER__GET_JIT_CONTEXT, m_managedResolver);
 
@@ -1098,8 +1084,7 @@ BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, 
         OBJECTREF resolver = ObjectFromHandle(m_managedResolver);
         VALIDATEOBJECTREF(resolver); // gc root must be up the stack
 
-        DWORD initLocals = 0, EHSize = 0;
-        unsigned short stackSize = 0;
+        int32_t stackSize = 0, initLocals = 0, EHSize = 0;
         ARG_SLOT args[] =
         {
             ObjToArgSlot(resolver),
