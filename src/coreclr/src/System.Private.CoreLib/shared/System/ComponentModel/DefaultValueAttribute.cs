@@ -30,7 +30,7 @@ namespace System.ComponentModel
         /// class, converting the specified value to the specified type, and using the U.S. English
         /// culture as the translation context.
         /// </summary>
-        public DefaultValueAttribute(Type? type, string? value)
+        public DefaultValueAttribute(Type type, string? value)
         {
             // The null check and try/catch here are because attributes should never throw exceptions.
             // We would fail to load an otherwise normal class.

@@ -444,7 +444,7 @@ namespace System.Resources
                 satAssemName += ", Version=" + _mediator.SatelliteContractVersion.ToString();
             }
 
-            byte[] token = _mediator.MainAssembly.GetName().GetPublicKeyToken();
+            byte[] token = _mediator.MainAssembly.GetName().GetPublicKeyToken()!;
 
             int iLen = token.Length;
             StringBuilder publicKeyTok = new StringBuilder(iLen * 2);

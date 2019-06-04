@@ -738,10 +738,12 @@ namespace System.Reflection.Emit
             return m_localSignature;
         }
 
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         internal override byte[]? GetRawEHInfo()
         {
             return m_exceptionHeader;
         }
+#pragma warning restore CS8609
 
         internal override unsafe void GetEHInfo(int excNumber, void* exc)
         {
@@ -768,7 +770,9 @@ namespace System.Reflection.Emit
             }
         }
 
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         internal override string? GetStringLiteral(int token) { return m_scope.GetString(token); }
+#pragma warning restore CS8609
 
 
         internal override void ResolveToken(int token, out IntPtr typeHandle, out IntPtr methodHandle, out IntPtr fieldHandle)
@@ -835,10 +839,12 @@ namespace System.Reflection.Emit
             }
         }
 
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         internal override byte[]? ResolveSignature(int token, int fromMethod)
         {
             return m_scope.ResolveSignature(token, fromMethod);
         }
+#pragma warning restore CS8609
 
         internal override MethodInfo GetDynamicMethod()
         {
