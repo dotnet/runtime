@@ -775,7 +775,7 @@ namespace System.Data.SqlClient
 
         protected abstract uint SNIPacketGetData(PacketHandle packet, byte[] _inBuff, ref uint dataSize);
 
-        internal abstract PacketHandle GetResetWritePacket();
+        internal abstract PacketHandle GetResetWritePacket(int dataSize);
 
         internal abstract void ClearAllWritePackets();
 
@@ -3418,7 +3418,7 @@ namespace System.Data.SqlClient
         private Task WriteSni(bool canAccumulate)
         {
             // Prepare packet, and write to packet.
-            PacketHandle packet = GetResetWritePacket();
+            PacketHandle packet = GetResetWritePacket(_outBytesUsed);
 
             SetBufferSecureStrings();
             SetPacketData(packet, _outBuff, _outBytesUsed);

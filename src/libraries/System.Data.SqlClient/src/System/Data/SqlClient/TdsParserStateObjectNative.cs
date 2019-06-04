@@ -254,7 +254,7 @@ namespace System.Data.SqlClient
             );
         }
 
-        internal override PacketHandle GetResetWritePacket()
+        internal override PacketHandle GetResetWritePacket(int dataSize)
         {
             if (_sniPacket != null)
             {

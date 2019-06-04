@@ -19,13 +19,13 @@ namespace System.Data.SqlClient.SNI
     /// <summary>
     /// TCP connection handle
     /// </summary>
-    internal class SNITCPHandle : SNIHandle
+    internal sealed class SNITCPHandle : SNIHandle
     {
         private readonly string _targetServer;
         private readonly object _callbackObject;
         private readonly Socket _socket;
         private NetworkStream _tcpStream;
-        
+
         private Stream _stream;
         private SslStream _sslStream;
         private SslOverTdsStream _sslOverTdsStream;
@@ -144,7 +144,7 @@ namespace System.Data.SqlClient.SNI
                 {
                     _socket = Connect(serverName, port, ts);
                 }
-                
+
                 if (_socket == null || !_socket.Connected)
                 {
                     if (_socket != null)
@@ -224,7 +224,7 @@ namespace System.Data.SqlClient.SNI
                     {
                         sockets[i] = new Socket(ipAddresses[i].AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                         // enable keep-alive on socket
-                        SNITcpHandle.SetKeepAliveValues(ref sockets[i]);                      
+                        SNITcpHandle.SetKeepAliveValues(ref sockets[i]);
                         sockets[i].Connect(ipAddresses[i], port);
                         if (sockets[i] != null) // sockets[i] can be null if cancel callback is executed during connect()
                         {
@@ -470,7 +470,7 @@ namespace System.Data.SqlClient.SNI
                         return TdsEnums.SNI_WAIT_TIMEOUT;
                     }
 
-                    packet = new SNIPacket(_bufferSize);
+                    packet = new SNIPacket(headerSize: 0, dataSize: _bufferSize);
                     packet.ReadFromStream(_stream);
 
                     if (packet.Length == 0)
@@ -540,7 +540,7 @@ namespace System.Data.SqlClient.SNI
         /// <returns>SNI error code</returns>
         public override uint ReceiveAsync(ref SNIPacket packet)
         {
-            packet = new SNIPacket(_bufferSize);
+            packet = new SNIPacket(headerSize: 0, dataSize: _bufferSize);
 
             try
             {

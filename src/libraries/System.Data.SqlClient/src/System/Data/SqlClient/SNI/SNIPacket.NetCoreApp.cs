@@ -24,8 +24,8 @@ namespace System.Data.SqlClient.SNI
                 bool error = false;
                 try
                 {
-                    packet._length = await valueTask.ConfigureAwait(false);
-                    if (packet._length == 0)
+                    packet._dataLength = await valueTask.ConfigureAwait(false);
+                    if (packet._dataLength == 0)
                     {
                         SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, SNICommon.ConnTerminatedError, string.Empty);
                         error = true;
@@ -45,13 +45,13 @@ namespace System.Data.SqlClient.SNI
                 cb(packet, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS);
             }
 
-            ValueTask<int> vt = stream.ReadAsync(new Memory<byte>(_data, 0, _capacity), CancellationToken.None);
+            ValueTask<int> vt = stream.ReadAsync(new Memory<byte>(_data, _headerLength, _dataCapacity), CancellationToken.None);
 
             if (vt.IsCompletedSuccessfully)
             {
-                _length = vt.Result;
+                _dataLength = vt.Result;
                 // Zero length to go via async local function as is error condition
-                if (_length > 0)
+                if (_dataLength > 0)
                 {
                     callback(this, TdsEnums.SNI_SUCCESS);
 
@@ -88,11 +88,11 @@ namespace System.Data.SqlClient.SNI
 
                 if (disposeAfter)
                 {
-                    packet.Dispose();
+                    packet.Release();
                 }
             }
 
-            ValueTask vt = stream.WriteAsync(new Memory<byte>(_data, 0, _length), CancellationToken.None);
+            ValueTask vt = stream.WriteAsync(new Memory<byte>(_data, _headerLength, _dataLength), CancellationToken.None);
 
             if (vt.IsCompletedSuccessfully)
             {
@@ -103,7 +103,7 @@ namespace System.Data.SqlClient.SNI
 
                 if (disposeAfterWriteAsync)
                 {
-                    Dispose();
+                    Release();
                 }
 
                 // Completed
