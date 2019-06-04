@@ -74,9 +74,9 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Abstract\Virtual Members
-        public override Type? ReturnType { get { return m_method.ReturnType; } }
-        public override ParameterInfo? ReturnParameter { get { throw new NotSupportedException(); } }
-        public override ICustomAttributeProvider? ReturnTypeCustomAttributes { get { throw new NotSupportedException(); } }
+        public override Type ReturnType { get { return m_method.ReturnType; } }
+        public override ParameterInfo ReturnParameter { get { throw new NotSupportedException(); } }
+        public override ICustomAttributeProvider ReturnTypeCustomAttributes { get { throw new NotSupportedException(); } }
         public override MethodInfo GetBaseDefinition() { throw new NotSupportedException(); }
         #endregion    
     }
@@ -110,10 +110,12 @@ namespace System.Reflection.Emit
             return m_ctor.GetParameterTypes();
         }
 
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         internal override Type? GetReturnType()
         {
             return DeclaringType;
         }
+#pragma warning restore CS8609
 
         #region MemberInfo Overrides
         public override MemberTypes MemberType { get { return m_ctor.MemberType; } }

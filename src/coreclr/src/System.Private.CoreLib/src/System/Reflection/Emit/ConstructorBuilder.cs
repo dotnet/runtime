@@ -190,11 +190,13 @@ namespace System.Reflection.Emit
             return m_methodBuilder.GetModule();
         }
 
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         // This always returns null. Is that what we want?
         internal override Type? GetReturnType()
         {
             return m_methodBuilder.ReturnType;
         }
+#pragma warning restore CS8609
 
         public string Signature
         {

@@ -44,7 +44,7 @@ namespace System.Reflection.Emit
         // Parameters
         private SignatureHelper? m_signature;
         internal Type[]? m_parameterTypes;
-        private Type? m_returnType;
+        private Type m_returnType;
         private Type[]? m_returnTypeRequiredCustomModifiers;
         private Type[]? m_returnTypeOptionalCustomModifiers;
         private Type[][]? m_parameterTypeRequiredCustomModifiers;
@@ -87,12 +87,12 @@ namespace System.Reflection.Emit
             m_module = mod;
             m_containingType = type;
 
-            // 
-            //if (returnType == null)
-            //{
-            //    m_returnType = typeof(void);
-            //}
-            //else
+
+            if (returnType == null)
+            {
+                m_returnType = typeof(void);
+            }
+            else
             {
                 m_returnType = returnType;
             }
@@ -362,7 +362,7 @@ namespace System.Reflection.Emit
                 m_parameterTypes = Array.Empty<Type>();
 
             m_signature = SignatureHelper.GetMethodSigHelper(m_module, m_callingConvention, m_inst != null ? m_inst.Length : 0,
-                m_returnType == null ? typeof(void) : m_returnType, m_returnTypeRequiredCustomModifiers, m_returnTypeOptionalCustomModifiers,
+                m_returnType, m_returnTypeRequiredCustomModifiers, m_returnTypeOptionalCustomModifiers,
                 m_parameterTypes, m_parameterTypeRequiredCustomModifiers, m_parameterTypeOptionalCustomModifiers);
 
             return m_signature;
@@ -522,6 +522,7 @@ namespace System.Reflection.Emit
             }
         }
 
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         public override ICustomAttributeProvider? ReturnTypeCustomAttributes
         {
             get
@@ -529,6 +530,7 @@ namespace System.Reflection.Emit
                 return null;
             }
         }
+#pragma warning restore CS8609
 
         public override Type? ReflectedType
         {
@@ -588,7 +590,7 @@ namespace System.Reflection.Emit
             return this;
         }
 
-        public override Type? ReturnType
+        public override Type ReturnType
         {
             get
             {
@@ -647,7 +649,9 @@ namespace System.Reflection.Emit
 
         public override bool IsGenericMethod { get { return m_inst != null; } }
 
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         public override Type[]? GetGenericArguments() { return m_inst; }
+#pragma warning restore CS8609
 
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
