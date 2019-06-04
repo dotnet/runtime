@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
@@ -255,6 +256,88 @@ namespace System.Text.Json
 
             _lastIndexAndString = (index, lastString);
             return lastString;
+        }
+
+        internal bool TextEquals(int index, ReadOnlySpan<char> otherText, bool isPropertyName)
+        {
+            CheckNotDisposed();
+
+            int matchIndex = isPropertyName ? index - DbRow.Size : index;
+
+            (int lastIdx, string lastString) = _lastIndexAndString;
+        
+            if (lastIdx == matchIndex)
+            {
+                return otherText.SequenceEqual(lastString.AsSpan());
+            }
+
+            byte[] otherUtf8TextArray = null;
+
+            int length = checked(otherText.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
+            Span<byte> otherUtf8Text = length <= JsonConstants.StackallocThreshold ?
+                stackalloc byte[length] :
+                (otherUtf8TextArray = ArrayPool<byte>.Shared.Rent(length));
+
+            ReadOnlySpan<byte> utf16Text = MemoryMarshal.AsBytes(otherText);
+            OperationStatus status = JsonWriterHelper.ToUtf8(utf16Text, otherUtf8Text, out int consumed, out int written);
+            Debug.Assert(status != OperationStatus.DestinationTooSmall);
+            if (status > OperationStatus.DestinationTooSmall)   // Equivalent to: (status == NeedMoreData || status == InvalidData)
+            {
+                return false;
+            }
+            Debug.Assert(status == OperationStatus.Done);
+            Debug.Assert(consumed == utf16Text.Length);
+
+            bool result = TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName);
+
+            if (otherUtf8TextArray != null)
+            {
+                otherUtf8Text.Slice(0, written).Clear();
+                ArrayPool<byte>.Shared.Return(otherUtf8TextArray);
+            }
+
+            return result;
+        }
+
+        internal bool TextEquals(int index, ReadOnlySpan<byte> otherUtf8Text, bool isPropertyName)
+        {
+            CheckNotDisposed();
+
+            int matchIndex = isPropertyName ? index - DbRow.Size : index;
+
+            DbRow row = _parsedData.Get(matchIndex);
+
+            CheckExpectedType(
+                isPropertyName? JsonTokenType.PropertyName : JsonTokenType.String,
+                row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            if (otherUtf8Text.Length > segment.Length)
+            {
+                return false;
+            }
+
+            if (row.HasComplexChildren)
+            {
+                if (otherUtf8Text.Length < segment.Length / JsonConstants.MaxExpansionFactorWhileEscaping)
+                {
+                    return false;
+                }
+
+                int idx = segment.IndexOf(JsonConstants.BackSlash);
+                Debug.Assert(idx != -1);
+
+                if (!otherUtf8Text.StartsWith(segment.Slice(0, idx)))
+                {
+                    return false;
+                }
+
+                return JsonReaderHelper.UnescapeAndCompare(segment.Slice(idx), otherUtf8Text.Slice(idx));
+            }
+
+            return segment.SequenceEqual(otherUtf8Text);
         }
 
         internal string GetNameOfPropertyValue(int index)

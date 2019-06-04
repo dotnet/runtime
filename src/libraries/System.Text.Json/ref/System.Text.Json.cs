@@ -73,6 +73,9 @@ namespace System.Text.Json
         public bool TryGetUInt32(out uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public bool TryGetUInt64(out ulong value) { throw null; }
+        public bool ValueEquals(System.ReadOnlySpan<byte> utf8Text) { throw null; }
+        public bool ValueEquals(System.ReadOnlySpan<char> text) { throw null; }
+        public bool ValueEquals(string text) { throw null; }
         public void WriteAsProperty(System.ReadOnlySpan<byte> utf8PropertyName, System.Text.Json.Utf8JsonWriter writer) { }
         public void WriteAsProperty(System.ReadOnlySpan<char> propertyName, System.Text.Json.Utf8JsonWriter writer) { }
         public void WriteAsProperty(string propertyName, System.Text.Json.Utf8JsonWriter writer) { }
@@ -131,6 +134,9 @@ namespace System.Text.Json
         private readonly object _dummy;
         public string Name { get { throw null; } }
         public System.Text.Json.JsonElement Value { get { throw null; } }
+        public bool NameEquals(System.ReadOnlySpan<byte> utf8Text) { throw null; }
+        public bool NameEquals(System.ReadOnlySpan<char> text) { throw null; }
+        public bool NameEquals(string text) { throw null; }
         public override string ToString() { throw null; }
     }
     public partial struct JsonReaderOptions
@@ -215,8 +221,6 @@ namespace System.Text.Json
         public ulong GetUInt64() { throw null; }
         public bool Read() { throw null; }
         public void Skip() { }
-        public bool TextEquals(System.ReadOnlySpan<byte> otherUtf8Text) { throw null; }
-        public bool TextEquals(System.ReadOnlySpan<char> otherText) { throw null; }
         public bool TryGetBytesFromBase64(out byte[] value) { throw null; }
         public bool TryGetDateTime(out System.DateTime value) { throw null; }
         public bool TryGetDateTimeOffset(out System.DateTimeOffset value) { throw null; }
@@ -231,6 +235,9 @@ namespace System.Text.Json
         [System.CLSCompliantAttribute(false)]
         public bool TryGetUInt64(out ulong value) { throw null; }
         public bool TrySkip() { throw null; }
+        public bool ValueTextEquals(System.ReadOnlySpan<byte> utf8Text) { throw null; }
+        public bool ValueTextEquals(System.ReadOnlySpan<char> text) { throw null; }
+        public bool ValueTextEquals(string text) { throw null; }
     }
     public sealed partial class Utf8JsonWriter : System.IDisposable
     {
