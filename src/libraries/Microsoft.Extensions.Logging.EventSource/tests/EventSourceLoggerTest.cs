@@ -658,13 +658,13 @@ namespace Microsoft.Extensions.Logging.Test
                         @"{""Key"":""intParam"",""Value"":""1""}") },
 
             { "E2FM", (e) => VerifySingleEvent(e, "Logger2", EventTypes.FormattedMessage, 2, null, LogLevel.Trace,
-                @"""FormattedMessage"":""Logger2 Event2 Trace " + DoubleParam1.ToString() + " " + TimeParam.ToString("O") + " " + DoubleParam2.ToString()) },
+                @"""FormattedMessage"":""Logger2 Event2 Trace " + DoubleParam1.ToString() + " " + GetEscapedForwardSlash(TimeParam.ToString("O")) + " " + DoubleParam2.ToString()) },
             { "E2JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 2, null, LogLevel.Trace,
                         @"""ArgumentsJson"":{""doubleParam"":""" + DoubleParam1.ToString() + @""",""timeParam"":"""
-                        + TimeParam.ToString("O") +@""",""doubleParam2"":""" + DoubleParam2.ToString()) },
+                        + GetEscapedForwardSlash(TimeParam.ToString("O")) +@""",""doubleParam2"":""" + DoubleParam2.ToString()) },
             { "E2MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 2, null, LogLevel.Trace,
                 @"{""Key"":""doubleParam"",""Value"":""" + DoubleParam1.ToString() +@"""}",
-                @"{""Key"":""timeParam"",""Value"":""" + TimeParam.ToString("O") +@"""}",
+                @"{""Key"":""timeParam"",""Value"":""" + GetEscapedForwardSlash(TimeParam.ToString("O")) +@"""}",
                 @"{""Key"":""doubleParam2"",""Value"":""" + DoubleParam2.ToString() +@"""}") },
 
             { "E3FM", (e) => VerifySingleEvent(e, "Logger3", EventTypes.FormattedMessage, 3, null, LogLevel.Information,
@@ -715,13 +715,13 @@ namespace Microsoft.Extensions.Logging.Test
                 @"{""Key"":""intParam"",""Value"":""37""}") },
 
             { "E8FM", (e) => VerifySingleEvent(e, "Logger2", EventTypes.FormattedMessage, 8, null, LogLevel.Warning,
-                @"""FormattedMessage"":""Logger2 Event8 Warning Outer scope closed " + TimeParam.ToString("O")) },
+                @"""FormattedMessage"":""Logger2 Event8 Warning Outer scope closed " + GetEscapedForwardSlash(TimeParam.ToString("O"))) },
             { "E8JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 8, null, LogLevel.Warning,
-                        @"""ArgumentsJson"":{""stringParam"":""Outer scope closed"",""timeParam"":""" + TimeParam.ToString("O")) },
+                        @"""ArgumentsJson"":{""stringParam"":""Outer scope closed"",""timeParam"":""" + GetEscapedForwardSlash(TimeParam.ToString("O"))) },
 
             { "E8MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 8, null, LogLevel.Warning,
                 @"{""Key"":""stringParam"",""Value"":""Outer scope closed""}",
-                @"{""Key"":""timeParam"",""Value"":""" + TimeParam.ToString("O") +@"""}") },
+                @"{""Key"":""timeParam"",""Value"":""" + GetEscapedForwardSlash(TimeParam.ToString("O")) +@"""}") },
 
 
             { "OuterScopeJsonStart", (e) => VerifySingleEvent(e, "Logger1", EventTypes.ActivityJsonStart, null, null, null,
@@ -732,11 +732,30 @@ namespace Microsoft.Extensions.Logging.Test
             { "OuterScopeStop", (e) => VerifySingleEvent(e, "Logger1", EventTypes.ActivityStop, null, null, null) },
 
             { "InnerScopeJsonStart", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityJsonStart, null, null, null,
-                        @"""ArgumentsJson"":{""timeParam"":""" + TimeParam.ToString() + @""",""guidParam"":""" + GuidParam.ToString("D")) },
+                        @"""ArgumentsJson"":{""timeParam"":""" + GetEscapedForwardSlash(TimeParam.ToString()) + @""",""guidParam"":""" + GuidParam.ToString("D")) },
             { "InnerScopeJsonStop", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityJsonStop, null, null, null) },
 
             { "InnerScopeStart", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityStart, null, null, null) },
             { "InnerScopeStop", (e) => VerifySingleEvent(e, "Logger3", EventTypes.ActivityStop, null, null, null) },
         };
+
+        // Temporary until: https://github.com/dotnet/corefx/issues/37192
+        static string GetEscapedForwardSlash(string input)
+        {
+            var output = "";
+            foreach (var c in input)
+            {
+                if (c == '/')
+                {
+                    output += "\\u" + ((int)c).ToString("x4");
+                }
+                else
+                {
+                    output += c;
+                }
+            }
+
+            return output;
+        }
     }
 }
