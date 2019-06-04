@@ -8,6 +8,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization.Formatters.Binary;
 
@@ -22,16 +23,22 @@ namespace System.Resources.Extensions.Tests
                 ["bool"] = true,
                 ["char"] = 'b',
                 ["int"] = 42,
+                ["uint"] = 4000000,
                 ["byte"] = (byte)7,
                 ["sbyte"] = (sbyte)-3,
-                ["short"] = (short) 31000,
-                ["ushort"] = (ushort) 61000,
+                ["short"] = (short)31000,
+                ["ushort"] = (ushort)61000,
                 ["long"] = 10000000000,
                 ["ulong"] = ulong.MaxValue,
                 ["float"] = 3.14f,
                 ["double"] = 3.14159,
-                ["decimal"] = 3.141596536897931m
+                ["decimal"] = 3.141596536897931m,
+                ["DateTime"] = new DateTime(2000, 1, 1, 0, 0, 1, DateTimeKind.Unspecified),
+                ["TimeSpan"] = TimeSpan.FromDays(1)
             };
+
+        public static IReadOnlyDictionary<string, object> PrimitiveAsString { get; } =
+            Primitive.ToDictionary(p => p.Key + "_AsString", p => p.Value);
 
         public static IReadOnlyDictionary<string, object> BinaryFormatted
         {
@@ -44,6 +51,9 @@ namespace System.Resources.Extensions.Tests
                 ["enum_bin"] = DayOfWeek.Friday,
                 ["point_bin"] = new Point(4, 8)
             };
+
+        public static Dictionary<string, object> BinaryFormattedWithoutDrawingNoType { get; } =
+            BinaryFormattedWithoutDrawing.ToDictionary(p => p.Key + "_NoType", p => p.Value);
 
         public static IReadOnlyDictionary<string, object> BinaryFormattedDrawing
         {
@@ -125,6 +135,13 @@ namespace System.Resources.Extensions.Tests
             };
         }
 
+        public static string GetStringValue(object value)
+        {
+            Type resourceType = value.GetType();
+            TypeConverter converter = TypeDescriptor.GetConverter(resourceType);
+            return converter.ConvertToInvariantString(value);
+        }
+
         public static string GetSerializationTypeName(Type runtimeType)
         {
             object[] typeAttributes = runtimeType.GetCustomAttributes(typeof(TypeForwardedFromAttribute), false);
@@ -151,18 +168,32 @@ namespace System.Resources.Extensions.Tests
         {
             using (var writer = new PreserializedResourceWriter(stream))
             {
-                foreach(var pair in Primitive)
+                foreach (var pair in Primitive)
                 {
                     writer.AddResource(pair.Key, pair.Value);
                 }
 
+                foreach (var pair in PrimitiveAsString)
+                {
+                    writer.AddResource(pair.Key, GetSerializationTypeName(pair.Value.GetType()), GetStringValue(pair.Value));
+                }
+
                 var formatter = new BinaryFormatter();
-                foreach(var pair in BinaryFormattedWithoutDrawing)
+                foreach (var pair in BinaryFormattedWithoutDrawing)
                 {
                     using (MemoryStream memoryStream = new MemoryStream())
                     {
                         formatter.Serialize(memoryStream, pair.Value);
                         writer.AddBinaryFormattedResource(pair.Key, GetSerializationTypeName(pair.Value.GetType()), memoryStream.ToArray());
+                    }
+                }
+
+                foreach (var pair in BinaryFormattedWithoutDrawingNoType)
+                {
+                    using (MemoryStream memoryStream = new MemoryStream())
+                    {
+                        formatter.Serialize(memoryStream, pair.Value);
+                        writer.AddBinaryFormattedResource(pair.Key, memoryStream.ToArray());
                     }
                 }
 
@@ -175,12 +206,10 @@ namespace System.Resources.Extensions.Tests
 
                 foreach (var pair in StringConverterWithoutDrawing)
                 {
-                    TypeConverter converter = TypeDescriptor.GetConverter(pair.Value.GetType());
-                    string value = converter.ConvertToInvariantString(pair.Value);
-                    writer.AddTypeConverterResource(pair.Key, GetSerializationTypeName(pair.Value.GetType()), value);
+                    writer.AddResource(pair.Key, GetSerializationTypeName(pair.Value.GetType()), GetStringValue(pair.Value));
                 }
 
-                foreach(var pair in ActivatorWithoutDrawing)
+                foreach (var pair in ActivatorWithoutDrawing)
                 {
                     writer.AddActivatorResource(pair.Key, GetSerializationTypeName(pair.Value.type), pair.Value.stream, false);
                 }
