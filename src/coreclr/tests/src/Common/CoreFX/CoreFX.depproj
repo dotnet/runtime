@@ -13,6 +13,7 @@
       <SystemCompositionVersions>1.3.0-preview3-26501-04</SystemCompositionVersions>
       <MicrosoftDiagnosticsTracingTraceVentVersion>2.0.19</MicrosoftDiagnosticsTracingTraceVentVersion>
       <MicrosoftDotnetPlatformAbstractionsVersion>2.1.0</MicrosoftDotnetPlatformAbstractionsVersion>
+      <MicrosoftDiagnosticsRuntimePackageVersion>1.0.5</MicrosoftDiagnosticsRuntimePackageVersion>
   </PropertyGroup>
 
   <!-- Switch RuntimeIdentifier according to currently running OSGroup -->
@@ -162,6 +163,12 @@
   <ItemGroup Condition="'$(OSGroup)' != 'Windows_NT'">
     <PackageReference Include="Microsoft.DotNet.PlatformAbstractions">
       <Version>$(MicrosoftDotnetPlatformAbstractionsVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Diagnostics.Runtime">
+      <Version>$(MicrosoftDiagnosticsRuntimePackageVersion)</Version>
     </PackageReference>
   </ItemGroup>
   
