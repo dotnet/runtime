@@ -1,3 +1,24 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+/**
+ *
+ * AutoTrace: This infrastructure is used to run automated testing of Diagnostic Server based tracing via
+ * EventPipe.  The feature itself is enabled via the feature flag FEATURE_AUTO_TRACE.
+ * 
+ * Two environment variables dictate behavior:
+ * - COMPlus_AutoTrace_N_Tracers: a number in [0,64] where 0 will disable the feature
+ * - COMPlus_AutoTrace_Command: The path to an executable to be invoked.  Typically this will be a "run.sh|cmd".
+ *  > (NB: you should `cd` into the directory you intend to execute `COMPlus_AutoTrace_Command` from as the first line of the script.)
+ * 
+ * Once turned on, AutoTrace will run the specified command `COMPlus_AutoTrace_N_Tracers` times.  There is an event that will pause execution
+ * of the runtime until all the tracers have attached.  Once all the tracers are attached, execution will continue normally.
+ * 
+ * This logic is easily modified to accommodate testing other mechanisms related to the Diagnostic Server.
+ * 
+ */
+
 #include "common.h" // Required for pre-compiled header
 
 #ifdef FEATURE_AUTO_TRACE
@@ -7,16 +28,12 @@
 
 HANDLE auto_trace_event;
 static size_t g_n_tracers = 1;
-#ifdef __apple__
-static const WCHAR* command_format = L"%hs -p %d";
-#else
-static const WCHAR* command_format = u"%hs -p %d";
-#endif // __apple__
+static const WCHAR* command_format = W("%hs -p %d");
 static WCHAR* command = nullptr;
 
 void auto_trace_init()
 {
-    char *nAutoTracersValue = getenv("N_AUTO_TRACERS");
+    char *nAutoTracersValue = getenv("COMPlus_AutoTrace_N_Tracers");
     if (nAutoTracersValue != NULL)
     {
         g_n_tracers = strtoul(nAutoTracersValue, NULL, 10);
@@ -24,7 +41,7 @@ void auto_trace_init()
 
     // Get the command to run auto-trace.  Note that the `-p <pid>` option
     // will be automatically added for you
-    char *commandTextValue = getenv("AUTO_TRACE_CMD");
+    char *commandTextValue = getenv("COMPlus_AutoTrace_Command");
     if (commandTextValue != NULL)
     {
         DWORD currentProcessId = GetCurrentProcessId();
