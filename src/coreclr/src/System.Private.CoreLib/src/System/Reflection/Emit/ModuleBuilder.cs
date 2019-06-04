@@ -1232,7 +1232,7 @@ namespace System.Reflection.Emit
                     {
                         sigHelp = SignatureHelper.GetMethodSigHelper(
                         this, method.CallingConvention, method.ReturnType,
-                        method.ReturnParameter!.GetRequiredCustomModifiers(), method.ReturnParameter.GetOptionalCustomModifiers(),
+                        method.ReturnParameter.GetRequiredCustomModifiers(), method.ReturnParameter.GetOptionalCustomModifiers(),
                         parameterTypes, requiredCustomModifiers, optionalCustomModifiers);
                     }
                     catch (NotImplementedException)

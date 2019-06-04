@@ -599,7 +599,7 @@ namespace System.Reflection.Emit
             return rmi.GetParameters();
         }
 
-        public override ParameterInfo? ReturnParameter
+        public override ParameterInfo ReturnParameter
         {
             get
             {
