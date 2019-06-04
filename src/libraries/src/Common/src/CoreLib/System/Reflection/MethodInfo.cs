@@ -13,15 +13,15 @@ namespace System.Reflection
         public override MemberTypes MemberType => MemberTypes.Method;
 
         public virtual ParameterInfo? ReturnParameter { get { throw NotImplemented.ByDesign; } }
-        public virtual Type? ReturnType { get { throw NotImplemented.ByDesign; } }
+        public virtual Type ReturnType { get { throw NotImplemented.ByDesign; } }
 
         public override Type[] GetGenericArguments() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
-        public virtual MethodInfo? GetGenericMethodDefinition() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
-        public virtual MethodInfo? MakeGenericMethod(params Type[] typeArguments) { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
+        public virtual MethodInfo GetGenericMethodDefinition() { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
+        public virtual MethodInfo MakeGenericMethod(params Type[] typeArguments) { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
 
-        public abstract MethodInfo? GetBaseDefinition();
+        public abstract MethodInfo GetBaseDefinition();
 
-        public abstract ICustomAttributeProvider? ReturnTypeCustomAttributes { get; }
+        public abstract ICustomAttributeProvider ReturnTypeCustomAttributes { get; }
 
         public virtual Delegate CreateDelegate(Type delegateType) { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
         public virtual Delegate CreateDelegate(Type delegateType, object? target) { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }

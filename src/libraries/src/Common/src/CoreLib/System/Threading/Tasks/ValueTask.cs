@@ -776,6 +776,7 @@ namespace System.Threading.Tasks
         public ConfiguredValueTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext) =>
             new ConfiguredValueTaskAwaitable<TResult>(new ValueTask<TResult>(_obj, _result, _token, continueOnCapturedContext));
 
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         /// <summary>Gets a string-representation of this <see cref="ValueTask{TResult}"/>.</summary>
         public override string? ToString()
         {
@@ -790,5 +791,6 @@ namespace System.Threading.Tasks
 
             return string.Empty;
         }
+#pragma warning restore CS8609
     }
 }

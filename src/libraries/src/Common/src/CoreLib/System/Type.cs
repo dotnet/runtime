@@ -221,12 +221,10 @@ namespace System
             return GetPropertyImpl(name, bindingAttr, null, null, null, null);
         }
 
-        public PropertyInfo? GetProperty(string name, Type returnType)
+        public PropertyInfo? GetProperty(string name, Type? returnType)
         {
             if (name == null)
                 throw new ArgumentNullException(nameof(name));
-            if (returnType == null)
-                throw new ArgumentNullException(nameof(returnType));
             return GetPropertyImpl(name, Type.DefaultLookup, null, returnType, null, null);
         }
 
@@ -290,24 +288,24 @@ namespace System
 
         public abstract Guid GUID { get; }
 
-        public static Type GetTypeFromCLSID(Guid clsid) => GetTypeFromCLSID(clsid, null, throwOnError: false);
-        public static Type GetTypeFromCLSID(Guid clsid, bool throwOnError) => GetTypeFromCLSID(clsid, null, throwOnError: throwOnError);
-        public static Type GetTypeFromCLSID(Guid clsid, string? server) => GetTypeFromCLSID(clsid, server, throwOnError: false);
+        public static Type? GetTypeFromCLSID(Guid clsid) => GetTypeFromCLSID(clsid, null, throwOnError: false);
+        public static Type? GetTypeFromCLSID(Guid clsid, bool throwOnError) => GetTypeFromCLSID(clsid, null, throwOnError: throwOnError);
+        public static Type? GetTypeFromCLSID(Guid clsid, string? server) => GetTypeFromCLSID(clsid, server, throwOnError: false);
 
-        public static Type GetTypeFromProgID(string progID) => GetTypeFromProgID(progID, null, throwOnError: false);
-        public static Type GetTypeFromProgID(string progID, bool throwOnError) => GetTypeFromProgID(progID, null, throwOnError: throwOnError);
-        public static Type GetTypeFromProgID(string progID, string? server) => GetTypeFromProgID(progID, server, throwOnError: false);
+        public static Type? GetTypeFromProgID(string progID) => GetTypeFromProgID(progID, null, throwOnError: false);
+        public static Type? GetTypeFromProgID(string progID, bool throwOnError) => GetTypeFromProgID(progID, null, throwOnError: throwOnError);
+        public static Type? GetTypeFromProgID(string progID, string? server) => GetTypeFromProgID(progID, server, throwOnError: false);
 
         public abstract Type? BaseType { get; }
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object[]? args) => InvokeMember(name, invokeAttr, binder, target, args, null, null, null);
+        public object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args) => InvokeMember(name, invokeAttr, binder, target, args, null, null, null);
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object[]? args, CultureInfo? culture) => InvokeMember(name, invokeAttr, binder, target, args, null, culture, null);
-        public abstract object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters);
+        public object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, CultureInfo? culture) => InvokeMember(name, invokeAttr, binder, target, args, null, culture, null);
+        public abstract object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters);
 
         public Type? GetInterface(string name) => GetInterface(name, ignoreCase: false);
         public abstract Type? GetInterface(string name, bool ignoreCase);
@@ -366,7 +364,7 @@ namespace System
         }
         public virtual bool Equals(Type? o) => o == null ? false : object.ReferenceEquals(this.UnderlyingSystemType, o.UnderlyingSystemType);
 
-        public static Type ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
+        public static Type? ReflectionOnlyGetType(string typeName, bool throwIfNotFound, bool ignoreCase) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_ReflectionOnly); }
 
         public static Binder DefaultBinder
         {
@@ -387,9 +385,9 @@ namespace System
         public static readonly Type[] EmptyTypes = Array.Empty<Type>();
         public static readonly object Missing = System.Reflection.Missing.Value;
 
-        public static readonly MemberFilter FilterAttribute = FilterAttributeImpl;
-        public static readonly MemberFilter FilterName = (m, c) => FilterNameImpl(m, c, StringComparison.Ordinal);
-        public static readonly MemberFilter FilterNameIgnoreCase = (m, c) => FilterNameImpl(m, c, StringComparison.OrdinalIgnoreCase);
+        public static readonly MemberFilter FilterAttribute = FilterAttributeImpl!;
+        public static readonly MemberFilter FilterName = (m, c) => FilterNameImpl(m, c!, StringComparison.Ordinal);
+        public static readonly MemberFilter FilterNameIgnoreCase = (m, c) => FilterNameImpl(m, c!, StringComparison.OrdinalIgnoreCase);
 
         private const BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
     }

@@ -45,16 +45,16 @@ namespace System.Reflection
         public virtual object? GetValue(object? obj, object?[]? index) => GetValue(obj, BindingFlags.Default, binder: null, index: index, culture: null);
         public abstract object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture);
 
-        public virtual object GetConstantValue() { throw NotImplemented.ByDesign; }
-        public virtual object GetRawConstantValue() { throw NotImplemented.ByDesign; }
+        public virtual object? GetConstantValue() { throw NotImplemented.ByDesign; }
+        public virtual object? GetRawConstantValue() { throw NotImplemented.ByDesign; }
 
         [DebuggerHidden]
         [DebuggerStepThrough]
         public void SetValue(object? obj, object? value) => SetValue(obj, value, index: null);
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public virtual void SetValue(object? obj, object? value, object[]? index) => SetValue(obj, value, BindingFlags.Default, binder: null, index: index, culture: null);
-        public abstract void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object[]? index, CultureInfo? culture);
+        public virtual void SetValue(object? obj, object? value, object?[]? index) => SetValue(obj, value, BindingFlags.Default, binder: null, index: index, culture: null);
+        public abstract void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture);
 
         public override bool Equals(object? obj) => base.Equals(obj);
         public override int GetHashCode() => base.GetHashCode();

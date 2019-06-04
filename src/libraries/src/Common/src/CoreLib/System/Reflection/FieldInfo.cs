@@ -66,7 +66,7 @@ namespace System.Reflection
 
         [DebuggerHidden]
         [DebuggerStepThrough]
-        public void SetValue(object? obj, object value) => SetValue(obj, value, BindingFlags.Default, Type.DefaultBinder, null);
+        public void SetValue(object? obj, object? value) => SetValue(obj, value, BindingFlags.Default, Type.DefaultBinder, null);
         public abstract void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, CultureInfo? culture);
 
         [CLSCompliant(false)]
