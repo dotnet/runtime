@@ -57,7 +57,7 @@ mono_os_mutex_init_type (mono_mutex_t *mutex, int type)
 	if (G_UNLIKELY (res != 0))
 		g_error ("%s: pthread_mutexattr_settype failed with \"%s\" (%d)", __func__, g_strerror (res), res);
 
-#ifdef PTHREAD_PRIO_INHERIT
+#if defined (PTHREAD_PRIO_INHERIT) && HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL
 	/* use PTHREAD_PRIO_INHERIT if possible */
 	res = pthread_mutexattr_setprotocol (&attr, PTHREAD_PRIO_INHERIT);
 	if (G_UNLIKELY (res != 0 && res != ENOTSUP))

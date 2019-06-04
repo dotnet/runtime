@@ -2646,6 +2646,8 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNCS(pthread_attr_setstacksize)
 	AC_CHECK_FUNCS(pthread_attr_getstack pthread_attr_getstacksize)
 	AC_CHECK_FUNCS(pthread_get_stacksize_np pthread_get_stackaddr_np)
+	dnl check that pthread_mutexattr_setprotocol is declared
+	AC_CHECK_DECLS([pthread_mutexattr_setprotocol], [], [], [[#include <pthread.h>]])
 	AC_CHECK_FUNCS(mincore mlock munlock)
 
 	dnl ***********************************
