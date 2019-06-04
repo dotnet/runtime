@@ -21,19 +21,6 @@ using Internal.Runtime.CompilerServices;
 namespace System.Threading.Tasks
 {
     /// <summary>
-    /// Utility class for allocating structs as heap variables
-    /// </summary>
-    internal class Shared<T>
-    {
-        internal T Value;
-
-        internal Shared(T value)
-        {
-            this.Value = value;
-        }
-    }
-
-    /// <summary>
     /// Represents the current stage in the lifecycle of a <see cref="Task"/>.
     /// </summary>
     public enum TaskStatus
@@ -250,7 +237,7 @@ namespace System.Threading.Tasks
             // Cancellation fields (token, registration, and internally requested)
 
             internal CancellationToken m_cancellationToken; // Task's cancellation token, if it has one
-            internal Shared<CancellationTokenRegistration>? m_cancellationRegistration; // Task's registration with the cancellation token
+            internal StrongBox<CancellationTokenRegistration>? m_cancellationRegistration; // Task's registration with the cancellation token
             internal volatile int m_internalCancellationRequested; // Its own field because multiple threads legally try to set it.
 
             // Parenting fields
@@ -658,7 +645,7 @@ namespace System.Threading.Tasks
                             new Tuple<Task, Task, TaskContinuation>(this, antecedent, continuation));
                         }
 
-                        props.m_cancellationRegistration = new Shared<CancellationTokenRegistration>(ctr);
+                        props.m_cancellationRegistration = new StrongBox<CancellationTokenRegistration>(ctr);
                     }
                 }
             }
