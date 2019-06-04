@@ -20,6 +20,7 @@
 #include "nativeoverlapped.h"
 #include "clrvarargs.h"
 #include "sigbuilder.h"
+#include "olevariant.h"
 
 #ifdef FEATURE_PREJIT
 #include "compile.h"
