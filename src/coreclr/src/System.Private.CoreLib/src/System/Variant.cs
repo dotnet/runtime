@@ -22,15 +22,13 @@ using System.Diagnostics;
 
 namespace System
 {
-    [StructLayout(LayoutKind.Sequential)]
     internal struct Variant
     {
         //Do Not change the order of these fields.
         //They are mapped to the native VariantData * data structure.
-        private object? m_objref;
-        private int m_data1;
-        private int m_data2;
-        private int m_flags;
+        private object? _objref;
+        private long _data;
+        private int _flags;
 
         // The following bits have been taken up as follows
         // bits 0-15    - Type code
@@ -112,180 +110,143 @@ namespace System
         };
 
         internal static readonly Variant Empty = new Variant();
-        internal static readonly Variant Missing = new Variant(Variant.CV_MISSING, Type.Missing, 0, 0);
-        internal static readonly Variant DBNull = new Variant(Variant.CV_NULL, System.DBNull.Value, 0, 0);
+        internal static readonly Variant Missing = new Variant(Variant.CV_MISSING, Type.Missing, 0);
+        internal static readonly Variant DBNull = new Variant(Variant.CV_NULL, System.DBNull.Value, 0);
 
         //
         // Native Methods
         //
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern double GetR8FromVar();
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern float GetR4FromVar();
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern void SetFieldsR4(float val);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal extern void SetFieldsR8(double val);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern void SetFieldsObject(object val);
-
-        // Use this function instead of an ECALL - saves about 150 clock cycles
-        // by avoiding the ecall transition and because the JIT inlines this.
-        // Ends up only taking about 1/8 the time of the ECALL version.
-        internal long GetI8FromVar()
-        {
-            return ((long)m_data2 << 32 | ((long)m_data1 & 0xFFFFFFFFL));
-        }
 
         //
         // Constructors
         //
 
-        internal Variant(int flags, object or, int data1, int data2)
+        internal Variant(int flags, object or, long data)
         {
-            m_flags = flags;
-            m_objref = or;
-            m_data1 = data1;
-            m_data2 = data2;
+            _flags = flags;
+            _objref = or;
+            _data = data;
         }
 
         public Variant(bool val)
         {
-            m_objref = null;
-            m_flags = CV_BOOLEAN;
-            m_data1 = (val) ? bool.True : bool.False;
-            m_data2 = 0;
+            _objref = null;
+            _flags = CV_BOOLEAN;
+            _data = (val) ? bool.True : bool.False;
         }
 
         public Variant(sbyte val)
         {
-            m_objref = null;
-            m_flags = CV_I1;
-            m_data1 = (int)val;
-            m_data2 = (int)(((long)val) >> 32);
+            _objref = null;
+            _flags = CV_I1;
+            _data = val;
         }
 
 
         public Variant(byte val)
         {
-            m_objref = null;
-            m_flags = CV_U1;
-            m_data1 = (int)val;
-            m_data2 = 0;
+            _objref = null;
+            _flags = CV_U1;
+            _data = val;
         }
 
         public Variant(short val)
         {
-            m_objref = null;
-            m_flags = CV_I2;
-            m_data1 = (int)val;
-            m_data2 = (int)(((long)val) >> 32);
+            _objref = null;
+            _flags = CV_I2;
+            _data = val;
         }
 
         public Variant(ushort val)
         {
-            m_objref = null;
-            m_flags = CV_U2;
-            m_data1 = (int)val;
-            m_data2 = 0;
+            _objref = null;
+            _flags = CV_U2;
+            _data = val;
         }
 
         public Variant(char val)
         {
-            m_objref = null;
-            m_flags = CV_CHAR;
-            m_data1 = (int)val;
-            m_data2 = 0;
+            _objref = null;
+            _flags = CV_CHAR;
+            _data = val;
         }
 
         public Variant(int val)
         {
-            m_objref = null;
-            m_flags = CV_I4;
-            m_data1 = val;
-            m_data2 = val >> 31;
+            _objref = null;
+            _flags = CV_I4;
+            _data = val;
         }
 
         public Variant(uint val)
         {
-            m_objref = null;
-            m_flags = CV_U4;
-            m_data1 = (int)val;
-            m_data2 = 0;
+            _objref = null;
+            _flags = CV_U4;
+            _data = val;
         }
 
         public Variant(long val)
         {
-            m_objref = null;
-            m_flags = CV_I8;
-            m_data1 = (int)val;
-            m_data2 = (int)(val >> 32);
+            _objref = null;
+            _flags = CV_I8;
+            _data = val;
         }
 
         public Variant(ulong val)
         {
-            m_objref = null;
-            m_flags = CV_U8;
-            m_data1 = (int)val;
-            m_data2 = (int)(val >> 32);
+            _objref = null;
+            _flags = CV_U8;
+            _data = (long)val;
         }
 
         public Variant(float val)
         {
-            m_objref = null;
-            m_flags = CV_R4;
-            m_data1 = 0;
-            m_data2 = 0;
-            SetFieldsR4(val);
+            _objref = null;
+            _flags = CV_R4;
+            _data = (uint)BitConverter.SingleToInt32Bits(val);
         }
 
         public Variant(double val)
         {
-            m_objref = null;
-            m_flags = CV_R8;
-            m_data1 = 0;
-            m_data2 = 0;
-            SetFieldsR8(val);
+            _objref = null;
+            _flags = CV_R8;
+            _data = BitConverter.DoubleToInt64Bits(val);
         }
 
         public Variant(DateTime val)
         {
-            m_objref = null;
-            m_flags = CV_DATETIME;
-            ulong ticks = (ulong)val.Ticks;
-            m_data1 = (int)ticks;
-            m_data2 = (int)(ticks >> 32);
+            _objref = null;
+            _flags = CV_DATETIME;
+            _data = val.Ticks;
         }
 
         public Variant(decimal val)
         {
-            m_objref = (object)val;
-            m_flags = CV_DECIMAL;
-            m_data1 = 0;
-            m_data2 = 0;
+            _objref = (object)val;
+            _flags = CV_DECIMAL;
+            _data = 0;
         }
 
         public Variant(object? obj)
         {
-            m_data1 = 0;
-            m_data2 = 0;
+            _data = 0;
 
             VarEnum vt = VarEnum.VT_EMPTY;
 
             if (obj is DateTime)
             {
-                m_objref = null;
-                m_flags = CV_DATETIME;
-                ulong ticks = (ulong)((DateTime)obj).Ticks;
-                m_data1 = (int)ticks;
-                m_data2 = (int)(ticks >> 32);
+                _objref = null;
+                _flags = CV_DATETIME;
+                _data = ((DateTime)obj).Ticks;
                 return;
             }
 
             if (obj is string)
             {
-                m_flags = CV_STRING;
-                m_objref = obj;
+                _flags = CV_STRING;
+                _objref = obj;
                 return;
             }
 
@@ -307,14 +268,14 @@ namespace System
 
             if (obj is Array)
             {
-                m_flags = CV_OBJECT | ArrayBitMask;
-                m_objref = obj;
+                _flags = CV_OBJECT | ArrayBitMask;
+                _objref = obj;
                 return;
             }
 
             // Compiler appeasement
-            m_flags = CV_EMPTY;
-            m_objref = null;
+            _flags = CV_EMPTY;
+            _objref = null;
 
             // Check to see if the object passed in is a wrapper object.
             if (obj is UnknownWrapper)
@@ -352,7 +313,7 @@ namespace System
 
             // If the object passed in is one of the wrappers then set the VARIANT type.
             if (vt != VarEnum.VT_EMPTY)
-                m_flags |= ((int)vt << VTBitShift);
+                _flags |= ((int)vt << VTBitShift);
         }
 
         //This is a family-only accessor for the CVType.
@@ -361,7 +322,7 @@ namespace System
         {
             get
             {
-                return (m_flags & TypeCodeBitMask);
+                return (_flags & TypeCodeBitMask);
             }
         }
 
@@ -372,33 +333,33 @@ namespace System
                 case CV_EMPTY:
                     return null;
                 case CV_BOOLEAN:
-                    return (object)(m_data1 != 0);
+                    return (object)((int)_data != 0);
                 case CV_I1:
-                    return (object)((sbyte)m_data1);
+                    return (object)((sbyte)_data);
                 case CV_U1:
-                    return (object)((byte)m_data1);
+                    return (object)((byte)_data);
                 case CV_CHAR:
-                    return (object)((char)m_data1);
+                    return (object)((char)_data);
                 case CV_I2:
-                    return (object)((short)m_data1);
+                    return (object)((short)_data);
                 case CV_U2:
-                    return (object)((ushort)m_data1);
+                    return (object)((ushort)_data);
                 case CV_I4:
-                    return (object)(m_data1);
+                    return (object)((int)_data);
                 case CV_U4:
-                    return (object)((uint)m_data1);
+                    return (object)((uint)_data);
                 case CV_I8:
-                    return (object)(GetI8FromVar());
+                    return (object)((long)_data);
                 case CV_U8:
-                    return (object)((ulong)GetI8FromVar());
+                    return (object)((ulong)_data);
                 case CV_R4:
-                    return (object)(GetR4FromVar());
+                    return (object)(BitConverter.Int32BitsToSingle((int)_data));
                 case CV_R8:
-                    return (object)(GetR8FromVar());
+                    return (object)(BitConverter.Int64BitsToDouble(_data));
                 case CV_DATETIME:
-                    return new DateTime(GetI8FromVar());
+                    return new DateTime(_data);
                 case CV_TIMESPAN:
-                    return new TimeSpan(GetI8FromVar());
+                    return new TimeSpan(_data);
                 case CV_ENUM:
                     return BoxEnum();
                 case CV_MISSING:
@@ -409,7 +370,7 @@ namespace System
                 case CV_STRING:
                 case CV_OBJECT:
                 default:
-                    return m_objref;
+                    return _objref;
             }
         }
 
@@ -554,7 +515,7 @@ namespace System
                         if (pValue == null)
                         {
                             v = new Variant(null);
-                            v.m_flags = CV_STRING;
+                            v._flags = CV_STRING;
                         }
                         else
                         {

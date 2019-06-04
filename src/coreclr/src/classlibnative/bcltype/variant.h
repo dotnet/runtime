@@ -31,17 +31,7 @@ public:
     // Helper Routines
     //
 
-    //
-    // Initialization Methods
-
-    static FCDECL2_IV(void, SetFieldsR4, VariantData* vThisRef, float val);
-    static FCDECL2_IV(void, SetFieldsR8, VariantData* vThisRef, double val);
     static FCDECL2(void, SetFieldsObject, VariantData* vThisRef, Object* vVal);
-    static FCDECL1(float, GetR4FromVar, VariantData* var);
-    static FCDECL1(double, GetR8FromVar, VariantData* var);
-
-    static FCDECL0(void, InitVariant);
-
     static FCDECL1(Object*, BoxEnum, VariantData* var);
 
 private:
