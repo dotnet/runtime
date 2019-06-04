@@ -15,14 +15,14 @@ namespace System.Data.SqlClient.SNI
     /// <summary>
     /// Named Pipe connection handle
     /// </summary>
-    internal class SNINpHandle : SNIHandle
+    internal sealed class SNINpHandle : SNIHandle
     {
         internal const string DefaultPipePath = @"sql\query"; // e.g. \\HOSTNAME\pipe\sql\query
         private const int MAX_PIPE_INSTANCES = 255;
 
         private readonly string _targetServer;
         private readonly object _callbackObject;
-        
+
         private Stream _stream;
         private NamedPipeClientStream _pipeStream;
         private SslOverTdsStream _sslOverTdsStream;
@@ -61,13 +61,13 @@ namespace System.Data.SqlClient.SNI
                     _pipeStream.Connect((int)ts.TotalMilliseconds);
                 }
             }
-            catch(TimeoutException te)
+            catch (TimeoutException te)
             {
                 SNICommon.ReportSNIError(SNIProviders.NP_PROV, SNICommon.ConnOpenFailedError, te);
                 _status = TdsEnums.SNI_ERROR;
                 return;
             }
-            catch(IOException ioe)
+            catch (IOException ioe)
             {
                 SNICommon.ReportSNIError(SNIProviders.NP_PROV, SNICommon.ConnOpenFailedError, ioe);
                 _status = TdsEnums.SNI_ERROR;
@@ -150,7 +150,7 @@ namespace System.Data.SqlClient.SNI
                 packet = null;
                 try
                 {
-                    packet = new SNIPacket(_bufferSize);
+                    packet = new SNIPacket(headerSize: 0, dataSize: _bufferSize);
                     packet.ReadFromStream(_stream);
 
                     if (packet.Length == 0)
@@ -174,8 +174,8 @@ namespace System.Data.SqlClient.SNI
 
         public override uint ReceiveAsync(ref SNIPacket packet)
         {
-            packet = new SNIPacket(_bufferSize);
-            
+            packet = new SNIPacket(headerSize: 0, dataSize: _bufferSize);
+
             try
             {
                 packet.ReadFromStreamAsync(_stream, _receiveCallback);

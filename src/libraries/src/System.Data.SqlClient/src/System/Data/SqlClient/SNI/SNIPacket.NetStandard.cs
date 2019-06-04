@@ -24,8 +24,8 @@ namespace System.Data.SqlClient.SNI
                 bool error = false;
                 try
                 {
-                    packet._length = await task.ConfigureAwait(false);
-                    if (packet._length == 0)
+                    packet._dataLength = await task.ConfigureAwait(false);
+                    if (packet._dataLength == 0)
                     {
                         SNILoadHandle.SingletonInstance.LastError = new SNIError(SNIProviders.TCP_PROV, 0, SNICommon.ConnTerminatedError, string.Empty);
                         error = true;
@@ -45,13 +45,13 @@ namespace System.Data.SqlClient.SNI
                 cb(packet, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS);
             }
 
-            Task<int> t = stream.ReadAsync(_data, 0, _capacity, CancellationToken.None);
+            Task<int> t = stream.ReadAsync(_data, _headerLength, _dataCapacity, CancellationToken.None);
 
             if ((t.Status & TaskStatus.RanToCompletion) != 0)
             {
-                _length = t.Result;
+                _dataLength = t.Result;
                 // Zero length to go via async local function as is error condition
-                if (_length > 0)
+                if (_dataLength > 0)
                 {
                     callback(this, TdsEnums.SNI_SUCCESS);
 
@@ -88,11 +88,11 @@ namespace System.Data.SqlClient.SNI
 
                 if (disposeAfter)
                 {
-                    packet.Dispose();
+                    packet.Release();
                 }
             }
 
-            Task t = stream.WriteAsync(_data, 0, _length, CancellationToken.None);
+            Task t = stream.WriteAsync(_data, _headerLength, _dataLength, CancellationToken.None);
 
             if ((t.Status & TaskStatus.RanToCompletion) != 0)
             {
@@ -103,7 +103,7 @@ namespace System.Data.SqlClient.SNI
 
                 if (disposeAfterWriteAsync)
                 {
-                    Dispose();
+					Release();
                 }
 
                 // Completed

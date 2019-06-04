@@ -3,70 +3,44 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Data.SqlClient.SNI
 {
-    /// <summary>
-    /// SNI Packet
-    /// </summary>
-    internal partial class SNIPacket : IDisposable, IEquatable<SNIPacket>
+    internal sealed partial class SNIPacket
     {
+        private int _dataLength; // the length of the data in the data segment, advanced by Append-ing data, does not include smux header length
+        private int _dataCapacity; // the total capacity requested, if the array is rented this may be less than the _data.Length, does not include smux header length
+        private int _dataOffset; // the start point of the data in the data segment, advanced by Take-ing data
+        private int _headerLength; // the amount of space at the start of the array reserved for the smux header, this is zeroed in SetHeader
+                                    // _headerOffset is not needed because it is always 0
         private byte[] _data;
-        private int _length;
-        private int _capacity;
-        private int _offset;
-        private string _description;
         private SNIAsyncCallback _completionCallback;
-        private bool _isBufferFromArrayPool;
 
-        public SNIPacket() { }
-
-        public SNIPacket(int capacity)
+        public SNIPacket(int headerSize, int dataSize)
         {
-            Allocate(capacity);
-        }
-
-        /// <summary>
-        /// Packet description (used for debugging)
-        /// </summary>
-        public string Description
-        {
-            get
-            {
-                return _description;
-            }
-
-            set
-            {
-                _description = value;
-            }
+            Allocate(headerSize, dataSize);
         }
 
         /// <summary>
         /// Length of data left to process
         /// </summary>
-        public int DataLeft => (_length - _offset);
+        public int DataLeft => (_dataLength - _dataOffset);
 
         /// <summary>
         /// Length of data
         /// </summary>
-        public int Length => _length;
+        public int Length => _dataLength;
 
         /// <summary>
         /// Packet validity
         /// </summary>
-        public bool IsInvalid => (_data == null);
+        public bool IsInvalid => _data is null;
 
-        /// <summary>
-        /// Packet data
-        /// </summary>
-        public void Dispose()
-        {
-            Release();
-        }
+        public int ReservedHeaderSize => _headerLength;
 
         /// <summary>
         /// Set async completion callback
@@ -89,67 +63,25 @@ namespace System.Data.SqlClient.SNI
         /// <summary>
         /// Allocate space for data
         /// </summary>
-        /// <param name="capacity">Length of byte array to be allocated</param>
-        public void Allocate(int capacity)
+        /// <param name="dataLength">Length of byte array to be allocated</param>
+        private void Allocate(int headerLength, int dataLength)
         {
-            if (_data != null && _data.Length < capacity)
-            {
-                if (_isBufferFromArrayPool)
-                {
-                    ArrayPool<byte>.Shared.Return(_data);
-                }
-                _data = null;
-            }
-
-            if (_data == null)
-            {
-                _data = ArrayPool<byte>.Shared.Rent(capacity);
-                _isBufferFromArrayPool = true;
-            }
-
-            _capacity = capacity;
-            _length = 0;
-            _offset = 0;
+            _data = ArrayPool<byte>.Shared.Rent(headerLength + dataLength);
+            _dataCapacity = dataLength;
+            _dataLength = 0;
+            _dataOffset = 0;
+            _headerLength = headerLength;
         }
 
         /// <summary>
-        /// Clone packet
-        /// </summary>
-        /// <returns>Cloned packet</returns>
-        public SNIPacket Clone()
-        {
-            SNIPacket packet = new SNIPacket(_capacity);
-            Buffer.BlockCopy(_data, 0, packet._data, 0, _capacity);
-            packet._length = _length;
-            packet._description = _description;
-            packet._completionCallback = _completionCallback;
-
-            return packet;
-        }
-
-        /// <summary>
-        /// Get packet data
+        /// Read packet data into a buffer without removing it from the packet
         /// </summary>
         /// <param name="buffer">Buffer</param>
-        /// <param name="dataSize">Data in packet</param>
+        /// <param name="dataSize">Number of bytes read from the packet into the buffer</param>
         public void GetData(byte[] buffer, ref int dataSize)
         {
-            Buffer.BlockCopy(_data, 0, buffer, 0, _length);
-            dataSize = _length;
-        }
-
-        /// <summary>
-        /// Set packet data
-        /// </summary>
-        /// <param name="data">Data</param>
-        /// <param name="length">Length</param>
-        public void SetData(byte[] data, int length)
-        {
-            _data = data;
-            _length = length;
-            _capacity = data.Length;
-            _offset = 0;
-            _isBufferFromArrayPool = false;
+            Buffer.BlockCopy(_data, _headerLength, buffer, 0, _dataLength); // read from 
+            dataSize = _dataLength;
         }
 
         /// <summary>
@@ -160,8 +92,8 @@ namespace System.Data.SqlClient.SNI
         /// <returns>Amount of data taken</returns>
         public int TakeData(SNIPacket packet, int size)
         {
-            int dataSize = TakeData(packet._data, packet._length, size);
-            packet._length += dataSize;
+            int dataSize = TakeData(packet._data, packet._headerLength + packet._dataLength, size);
+            packet._dataLength += dataSize;
             return dataSize;
         }
 
@@ -172,48 +104,48 @@ namespace System.Data.SqlClient.SNI
         /// <param name="size">Size</param>
         public void AppendData(byte[] data, int size)
         {
-            Buffer.BlockCopy(data, 0, _data, _length, size);
-            _length += size;
-        }
-
-        public void AppendData(ReadOnlySpan<byte> data)
-        {
-            data.CopyTo(_data.AsSpan(_length));
-            _length += data.Length;
+            Buffer.BlockCopy(data, 0, _data, _headerLength + _dataLength, size);
+            _dataLength += size;
         }
 
         /// <summary>
-        /// Append another packet
-        /// </summary>
-        /// <param name="packet">Packet</param>
-        public void AppendPacket(SNIPacket packet)
-        {
-            Buffer.BlockCopy(packet._data, 0, _data, _length, packet._length);
-            _length += packet._length;
-        }
-
-        /// <summary>
-        /// Take data from packet and advance offset
+        /// Read data from the packet into the buffer at dataOffset for zize and then remove that data from the packet
         /// </summary>
         /// <param name="buffer">Buffer</param>
-        /// <param name="dataOffset">Data offset</param>
-        /// <param name="size">Size</param>
+        /// <param name="dataOffset">Data offset to write data at</param>
+        /// <param name="size">Number of bytes to read from the packet into the buffer</param>
         /// <returns></returns>
         public int TakeData(byte[] buffer, int dataOffset, int size)
         {
-            if (_offset >= _length)
+            if (_dataOffset >= _dataLength)
             {
                 return 0;
             }
 
-            if (_offset + size > _length)
+            if (_dataOffset + size > _dataLength)
             {
-                size = _length - _offset;
+                size = _dataLength - _dataOffset;
             }
 
-            Buffer.BlockCopy(_data, _offset, buffer, dataOffset, size);
-            _offset += size;
+            Buffer.BlockCopy(_data, _headerLength + _dataOffset, buffer, dataOffset, size);
+            _dataOffset += size;
             return size;
+        }
+
+        public Span<byte> GetHeaderBuffer(int headerSize)
+        {
+            Debug.Assert(_dataOffset == 0, "requested packet header buffer from partially consumed packet");
+            Debug.Assert(headerSize > 0, "requested packet header buffer of 0 length");
+            Debug.Assert(_headerLength == headerSize, "requested packet header of headerSize which is not equal to the _headerSize reservation");
+            return _data.AsSpan(0, headerSize);
+        }
+
+        public void SetHeaderActive()
+        {
+            Debug.Assert(_headerLength > 0, "requested to set header active when it is not reserved or is already active");
+            _dataCapacity += _headerLength;
+            _dataLength += _headerLength;
+            _headerLength = 0;
         }
 
         /// <summary>
@@ -223,24 +155,14 @@ namespace System.Data.SqlClient.SNI
         {
             if (_data != null)
             {
-                if(_isBufferFromArrayPool)
-                {
-                    ArrayPool<byte>.Shared.Return(_data);
-                }
+                Array.Clear(_data, 0, _headerLength + _dataLength);
+                ArrayPool<byte>.Shared.Return(_data, clearArray: false);
                 _data = null;
-                _capacity = 0;
+                _dataCapacity = 0;
             }
-            Reset();
-        }
-
-        /// <summary>
-        /// Reset packet 
-        /// </summary>
-        public void Reset()
-        {
-            _length = 0;
-            _offset = 0;
-            _description = null;
+            _dataLength = 0;
+            _dataOffset = 0;
+            _headerLength = 0;
             _completionCallback = null;
         }
 
@@ -250,7 +172,7 @@ namespace System.Data.SqlClient.SNI
         /// <param name="stream">Stream to read from</param>
         public void ReadFromStream(Stream stream)
         {
-            _length = stream.Read(_data, 0, _capacity);
+            _dataLength = stream.Read(_data, _headerLength, _dataCapacity);
         }
 
         /// <summary>
@@ -259,48 +181,10 @@ namespace System.Data.SqlClient.SNI
         /// <param name="stream">Stream to write to</param>
         public void WriteToStream(Stream stream)
         {
-            stream.Write(_data, 0, _length);
+            stream.Write(_data, _headerLength, _dataLength);
         }
 
-        /// <summary>
-        /// Get hash code
-        /// </summary>
-        /// <returns>Hash code</returns>
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
-
-        /// <summary>
-        /// Check packet equality
-        /// </summary>
-        /// <param name="obj"></param>
-        /// <returns>true if equal</returns>
-        public override bool Equals(object obj)
-        {
-            SNIPacket packet = obj as SNIPacket;
-
-            if (packet != null)
-            {
-                return Equals(packet);
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Check packet equality
-        /// </summary>
-        /// <param name="packet"></param>
-        /// <returns>true if equal</returns>
-        public bool Equals(SNIPacket packet)
-        {
-            if (packet != null)
-            {
-                return ReferenceEquals(packet, this);
-            }
-
-            return false;
-        }
     }
+
+
 }
