@@ -1258,6 +1258,7 @@ namespace System.Runtime.InteropServices.ComTypes
         void EnumConnectionPoints(out System.Runtime.InteropServices.ComTypes.IEnumConnectionPoints ppEnum);
         void FindConnectionPoint(ref System.Guid riid, out System.Runtime.InteropServices.ComTypes.IConnectionPoint ppCP);
     }
+    [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
     public partial interface IDataObject
     {
         int DAdvise(ref System.Runtime.InteropServices.ComTypes.FORMATETC pFormatetc, System.Runtime.InteropServices.ComTypes.ADVF advf, System.Runtime.InteropServices.ComTypes.IAdviseSink adviseSink, out int connection);
@@ -1323,6 +1324,7 @@ namespace System.Runtime.InteropServices.ComTypes
         void Reset();
         int Skip(int celt);
     }
+    [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
     public partial interface IEnumSTATDATA
     {
         void Clone(out System.Runtime.InteropServices.ComTypes.IEnumSTATDATA newEnum);
