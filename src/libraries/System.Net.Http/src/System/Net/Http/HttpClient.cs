@@ -481,7 +481,7 @@ namespace System.Net.Http
                 throw;
             }
 
-            return completionOption == HttpCompletionOption.ResponseContentRead ?
+            return completionOption == HttpCompletionOption.ResponseContentRead && !string.Equals(request.Method.Method, "HEAD", StringComparison.OrdinalIgnoreCase) ?
                 FinishSendAsyncBuffered(sendTask, request, cts, disposeCts) :
                 FinishSendAsyncUnbuffered(sendTask, request, cts, disposeCts);
         }
