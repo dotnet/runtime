@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Hosting
         ///     <item><description>load app <see cref="IConfiguration"/> from User Secrets when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development' using the entry assembly</description></item>
         ///     <item><description>load app <see cref="IConfiguration"/> from environment variables</description></item>
         ///     <item><description>configure the <see cref="ILoggerFactory"/> to log to the console, debug, and event source output</description></item>
-        ///     <item><description>enables scope validation on the dependency injecton container when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
+        ///     <item><description>enables scope validation on the dependency injection container when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
         ///   </list>
         /// </remarks>
         /// <returns>The initialized <see cref="IHostBuilder"/>.</returns>
@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Hosting
         ///     <item><description>load app <see cref="IConfiguration"/> from environment variables</description></item>
         ///     <item><description>load app <see cref="IConfiguration"/> from supplied command line args</description></item>
         ///     <item><description>configure the <see cref="ILoggerFactory"/> to log to the console, debug, and event source output</description></item>
-        ///     <item><description>enables scope validation on the dependency injecton container when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
+        ///     <item><description>enables scope validation on the dependency injection container when <see cref="IHostEnvironment.EnvironmentName"/> is 'Development'</description></item>
         ///   </list>
         /// </remarks>
         /// <param name="args">The command line args.</param>
