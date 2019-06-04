@@ -28,7 +28,6 @@ T:System.Runtime.InteropServices.ClassInterfaceAttribute
 T:System.Runtime.InteropServices.ComDefaultInterfaceAttribute
 T:System.Runtime.InteropServices.ComVisibleAttribute
 T:System.Runtime.InteropServices.GuidAttribute
-T:System.Runtime.InteropServices.InterfaceTypeAttribute
 T:System.Runtime.InteropServices.LCIDConversionAttribute
 T:System.Runtime.InteropServices.StructLayoutAttribute
 T:System.Security.Permissions.EnvironmentPermissionAttribute

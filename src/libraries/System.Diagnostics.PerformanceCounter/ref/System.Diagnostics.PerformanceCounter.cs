@@ -58,6 +58,7 @@ namespace System.Diagnostics
         public static float ComputeCounterValue(System.Diagnostics.CounterSample newSample) { throw null; }
         public static float ComputeCounterValue(System.Diagnostics.CounterSample oldSample, System.Diagnostics.CounterSample newSample) { throw null; }
     }
+    [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
     public partial interface ICollectData
     {
         void CloseData();
