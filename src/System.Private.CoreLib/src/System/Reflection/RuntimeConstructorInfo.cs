@@ -376,6 +376,7 @@ namespace System.Reflection
             return RuntimeMethodHandle.InvokeMethod(obj, null, sig, false, wrapExceptions);
         }
 
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         public override MethodBody? GetMethodBody()
         {
             RuntimeMethodBody? mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
@@ -383,6 +384,7 @@ namespace System.Reflection
                 mb._methodBase = this;
             return mb;
         }
+#pragma warning restore CS8609
 
         public override bool IsSecurityCritical
         {

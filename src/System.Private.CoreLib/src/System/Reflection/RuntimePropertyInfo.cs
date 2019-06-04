@@ -248,9 +248,9 @@ namespace System.Reflection
             return defaultValue!;
         }
 
-        public override object GetConstantValue() { return GetConstantValue(false); }
+        public override object? GetConstantValue() { return GetConstantValue(false); }
 
-        public override object GetRawConstantValue() { return GetConstantValue(true); }
+        public override object? GetRawConstantValue() { return GetConstantValue(true); }
 
         public override MethodInfo[] GetAccessors(bool nonPublic)
         {
@@ -400,7 +400,7 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override void SetValue(object? obj, object? value, object[]? index)
+        public override void SetValue(object? obj, object? value, object?[]? index)
         {
             SetValue(obj,
                     value,
@@ -412,7 +412,7 @@ namespace System.Reflection
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object[]? index, CultureInfo? culture)
+        public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             MethodInfo? m = GetSetMethod(true);
 

@@ -172,7 +172,7 @@ namespace System.Reflection
 
         // The compressed version of the public key formed from a truncated hash.
         // Will throw a SecurityException if _publicKey is invalid
-        public byte[] GetPublicKeyToken()
+        public byte[]? GetPublicKeyToken()
         {
             if (_publicKeyToken == null)
                 _publicKeyToken = ComputePublicKeyToken();

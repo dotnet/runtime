@@ -118,6 +118,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MethodInfo Overrides
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         public override Type? ReturnType
         {
             get
@@ -130,6 +131,7 @@ namespace System.Reflection.Emit
         {
             get { return null; }
         }
+#pragma warning restore CS8608
 
         public override object Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
