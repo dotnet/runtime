@@ -852,33 +852,52 @@ namespace System.Globalization
                 return 0;
             }
 
-            fixed (char* pSource = source)
+            // according to ICU User Guide the performance of ucol_getSortKey is worse when it is called with null output buffer
+            // the solution is to try to fill the sort key in a temporary buffer of size equal 4 x string length
+            // 1MB is the biggest array that can be rented from ArrayPool.Shared without memory allocation
+            int sortKeyLength = (source.Length > 1024 * 1024 / 4) ? 0 : 4 * source.Length;
+
+            byte[]? borrowedArray = null;
+            Span<byte> sortKey = sortKeyLength <= 1024
+                ? stackalloc byte[1024]
+                : (borrowedArray = ArrayPool<byte>.Shared.Rent(sortKeyLength));
+
+            fixed (char* pSource = &MemoryMarshal.GetReference(source))
             {
-                int sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, null, 0, options);
-
-                byte[]? borrowedArr = null;
-                Span<byte> span = sortKeyLength <= 512 ?
-                    stackalloc byte[512] :
-                    (borrowedArr = ArrayPool<byte>.Shared.Rent(sortKeyLength));
-
-                fixed (byte* pSortKey = &MemoryMarshal.GetReference(span))
+                fixed (byte* pSortKey = &MemoryMarshal.GetReference(sortKey))
                 {
-                    if (Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKeyLength, options) != sortKeyLength)
+                    sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKey.Length, options);
+                }
+
+                if (sortKeyLength > sortKey.Length) // slow path for big strings
+                {
+                    if (borrowedArray != null)
                     {
-                        throw new ArgumentException(SR.Arg_ExternalException);
+                        ArrayPool<byte>.Shared.Return(borrowedArray);
+                    }
+
+                    sortKey = (borrowedArray = ArrayPool<byte>.Shared.Rent(sortKeyLength));
+
+                    fixed (byte* pSortKey = &MemoryMarshal.GetReference(sortKey))
+                    {
+                        sortKeyLength = Interop.Globalization.GetSortKey(_sortHandle, pSource, source.Length, pSortKey, sortKey.Length, options);
                     }
                 }
-
-                int hash = Marvin.ComputeHash32(span.Slice(0, sortKeyLength), Marvin.DefaultSeed);
-
-                // Return the borrowed array if necessary.
-                if (borrowedArr != null)
-                {
-                    ArrayPool<byte>.Shared.Return(borrowedArr);
-                }
-
-                return hash;
             }
+
+            if (sortKeyLength == 0 || sortKeyLength > sortKey.Length) // internal error (0) or a bug (2nd call failed) in ucol_getSortKey
+            {
+                throw new ArgumentException(SR.Arg_ExternalException);
+            }
+
+            int hash = Marvin.ComputeHash32(sortKey.Slice(0, sortKeyLength), Marvin.DefaultSeed);
+
+            if (borrowedArray != null)
+            {
+                ArrayPool<byte>.Shared.Return(borrowedArray);
+            }
+
+            return hash;
         }
 
         private static CompareOptions GetOrdinalCompareOptions(CompareOptions options)
