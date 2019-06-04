@@ -301,6 +301,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
         public void ProcessStart_OnLinux_UsesSpecifiedProgram()
         {
             const string Program = "sleep";
