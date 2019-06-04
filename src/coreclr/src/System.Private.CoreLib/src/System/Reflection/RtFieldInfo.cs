@@ -188,7 +188,6 @@ namespace System.Reflection
 
         public override object GetRawConstantValue() { throw new InvalidOperationException(); }
 
-#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         public override object? GetValueDirect(TypedReference obj)
@@ -202,7 +201,6 @@ namespace System.Reflection
                 return RuntimeFieldHandle.GetValueDirect(this, (RuntimeType)FieldType, &obj, (RuntimeType?)DeclaringType);
             }
         }
-#pragma warning restore CS8609
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]

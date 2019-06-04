@@ -41,7 +41,7 @@ namespace System.Reflection
         internal string ToString(bool typed)
         {
             if (m_argumentType == null)
-                return base.ToString();
+                return base.ToString()!;
 
             if (ArgumentType.IsEnum)
                 return string.Format(typed ? "{0}" : "({1}){0}", Value, ArgumentType.FullName);

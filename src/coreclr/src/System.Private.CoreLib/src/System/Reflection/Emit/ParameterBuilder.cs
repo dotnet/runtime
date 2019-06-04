@@ -14,7 +14,7 @@ namespace System.Reflection.Emit
             TypeBuilder.SetConstantValue(
                 _methodBuilder.GetModuleBuilder(),
                 _token.Token,
-                _position == 0 ? _methodBuilder.ReturnType! : _methodBuilder.m_parameterTypes![_position - 1],
+                _position == 0 ? _methodBuilder.ReturnType : _methodBuilder.m_parameterTypes![_position - 1],
                 defaultValue);
         }
 
