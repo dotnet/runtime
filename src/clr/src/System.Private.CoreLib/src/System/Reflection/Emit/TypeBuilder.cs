@@ -771,7 +771,7 @@ namespace System.Reflection.Emit
         }
 
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
-            object[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
+            object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
@@ -1250,7 +1250,10 @@ namespace System.Reflection.Emit
             return TypeBuilderInstantiation.MakeGenericType(this, typeArguments);
         }
 
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         public override Type[]? GetGenericArguments() { return m_inst; }
+#pragma warning restore CS8609
+
         // If a TypeBuilder is generic, it must be a generic type definition
         // All instantiated generic types are TypeBuilderInstantiation.
         public override bool IsGenericTypeDefinition { get { return IsGenericType; } }

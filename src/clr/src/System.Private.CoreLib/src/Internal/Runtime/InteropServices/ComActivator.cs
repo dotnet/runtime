@@ -350,7 +350,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 AssemblyLoadContext alc = GetALC(assemblyPath);
                 var assemblyNameLocal = new AssemblyName(assemblyName);
                 Assembly assem = alc.LoadFromAssemblyName(assemblyNameLocal);
-                Type t = assem.GetType(typeName);
+                Type? t = assem.GetType(typeName);
                 if (t != null)
                 {
                     return t;

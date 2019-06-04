@@ -66,12 +66,14 @@ namespace System.Reflection
         public override bool IsSecuritySafeCritical { get { return DeclaringType!.IsSecuritySafeCritical; } }
         public override bool IsSecurityTransparent { get { return DeclaringType!.IsSecurityTransparent; } }
 
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         public override object? GetValueDirect(TypedReference obj)
         {
             return GetValue(null);
         }
+#pragma warning restore CS8609
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
@@ -87,7 +89,9 @@ namespace System.Reflection
             return GetValue(false);
         }
 
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         public override object? GetRawConstantValue() { return GetValue(true); }
+#pragma warning restore CS8609
 
         private object? GetValue(bool raw)
         {

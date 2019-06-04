@@ -111,11 +111,11 @@ namespace System.Reflection
         public sealed override Type GetNestedType(string name, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Type[] GetNestedTypes(BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override PropertyInfo[] GetProperties(BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public sealed override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override MethodInfo GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override PropertyInfo GetPropertyImpl(string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers) => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter? filter, object filterCriteria) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public sealed override MemberInfo[] FindMembers(MemberTypes memberType, BindingFlags bindingAttr, MemberFilter? filter, object? filterCriteria) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override MemberInfo[] GetMember(string name, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override MemberInfo[] GetDefaultMembers() => throw new NotSupportedException(SR.NotSupported_SignatureType);
@@ -129,7 +129,7 @@ namespace System.Reflection
         protected sealed override bool IsCOMObjectImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsPrimitiveImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        public sealed override Type[] FindInterfaces(TypeFilter filter, object filterCriteria) => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        public sealed override Type[] FindInterfaces(TypeFilter filter, object? filterCriteria) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override InterfaceMapping GetInterfaceMap(Type interfaceType) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsContextfulImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsEnum => throw new NotSupportedException(SR.NotSupported_SignatureType);

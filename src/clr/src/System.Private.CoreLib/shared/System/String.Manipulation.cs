@@ -1702,13 +1702,10 @@ namespace System
         }
 
         // Creates a copy of this string in lower case.  The culture is set by culture.
-        public string ToLower(CultureInfo culture)
+        public string ToLower(CultureInfo? culture)
         {
-            if (culture == null)
-            {
-                throw new ArgumentNullException(nameof(culture));
-            }
-            return culture.TextInfo.ToLower(this);
+            CultureInfo cult = culture ?? CultureInfo.CurrentCulture;
+            return cult.TextInfo.ToLower(this);
         }
 
         // Creates a copy of this string in lower case based on invariant culture.
@@ -1723,13 +1720,10 @@ namespace System
         }
 
         // Creates a copy of this string in upper case.  The culture is set by culture.
-        public string ToUpper(CultureInfo culture)
+        public string ToUpper(CultureInfo? culture)
         {
-            if (culture == null)
-            {
-                throw new ArgumentNullException(nameof(culture));
-            }
-            return culture.TextInfo.ToUpper(this);
+            CultureInfo cult = culture ?? CultureInfo.CurrentCulture;
+            return cult.TextInfo.ToUpper(this);
         }
 
         //Creates a copy of this string in upper case based on invariant culture.
