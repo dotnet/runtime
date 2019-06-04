@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection.Fakes;
 using Microsoft.Extensions.DependencyInjection.Specification;
@@ -208,6 +209,23 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             }
 
             var service = CreateServiceProvider(serviceCollection).GetService<IEnumerable<IFakeOuterService>>();
+        }
+
+        [Fact]
+        public void GenericIEnumerableItemCachedInTheRightSlot()
+        {
+            var services = new ServiceCollection();
+            // It's important that this service is generic, it hits a different codepath when resolved inside IEnumerable
+            services.AddSingleton<IFakeOpenGenericService<PocoClass>, FakeService>();
+            // Doesn't matter what this services is, we just want something in the collection after generic registration
+            services.AddSingleton<FakeService>();
+
+            var serviceProvider = services.BuildServiceProvider();
+
+            var serviceRef1 = serviceProvider.GetRequiredService<IFakeOpenGenericService<PocoClass>>();
+            var servicesRef1 = serviceProvider.GetServices<IFakeOpenGenericService<PocoClass>>().Single();
+
+            Assert.Same(serviceRef1, servicesRef1);
         }
 
         private class FakeMultipleServiceWithIEnumerableDependency: IFakeMultipleService
