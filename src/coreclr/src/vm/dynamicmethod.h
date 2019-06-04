@@ -115,8 +115,6 @@ public:
     void FreeCompileTimeState();
     void GetJitContext(SecurityControlFlags * securityControlFlags,
                        TypeHandle * typeOwner);
-    void GetJitContextCoop(SecurityControlFlags * securityControlFlags,
-                           TypeHandle * typeOwner);
     ChunkAllocator* GetJitMetaHeap();
 
     BYTE* GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, CorInfoOptions *pOptions, unsigned* pEHSize);
