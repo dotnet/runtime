@@ -497,7 +497,7 @@ namespace System.Reflection.Emit
             return InternalAssembly.GetType(name, throwOnError, ignoreCase);
         }
 
-        public override Module? ManifestModule => _manifestModuleBuilder.InternalModule;
+        public override Module ManifestModule => _manifestModuleBuilder.InternalModule;
 
         public override bool ReflectionOnly => InternalAssembly.ReflectionOnly;
 
