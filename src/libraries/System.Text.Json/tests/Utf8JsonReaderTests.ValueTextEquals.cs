@@ -629,6 +629,7 @@ namespace System.Text.Json.Tests
             Assert.False(json.ValueTextEquals(lookup));
         }
 
+        [ActiveIssue(38221)]
         [ConditionalFact(nameof(IsX64))]
         [OuterLoop]
         public static void LookupOverflow()
