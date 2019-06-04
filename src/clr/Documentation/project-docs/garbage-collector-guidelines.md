@@ -26,8 +26,7 @@ Required Testing: Validation of the behavior of the affected APIs.
 ## Stress Testing ##
 Stress testing must run for at least **48 hours** against a debug build.
 
-Stress testing for checked and release builds can be done on pull requests with The .NET CI infrastructure.
-A stress run can be requested using the trigger phrase:
+Stress testing for checked and release builds can be run locally. Please following the instructions described in tests\src\GC\Stress\stress_run_readme.txt. You can also request it on pull requests with The .NET CI infrastructure with the trigger phrase:
 
 ```
 @dotnet_bot test <platform> <flavor> gc_reliability_framework
@@ -37,8 +36,6 @@ This will run the stress framework for the default amount of time (15 hours) on 
 
 ## Functional Testing ##
 A functional test run executes the same code as a stress run, but only runs for 30 minutes.
-
-Instructions for running stress are located in the repo at tests\src\GC\Stress\stress_run_readme.txt.
 
 It is recommended that you run at least some of the below PR-triggered CI jobs:
 
