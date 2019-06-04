@@ -53,6 +53,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonValueType.Object, jsonObject.Type);
             JsonProperty property = jsonObject.EnumerateObject().First();
             Assert.Equal("NestedArray", property.Name);
+            Assert.True(property.NameEquals("NestedArray"));
             ValidateArray(property.Value);
 
             void ValidateArray(JsonElement element)
