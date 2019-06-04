@@ -394,7 +394,6 @@ namespace System.Reflection
             }
         }
 
-#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         public override MethodBody? GetMethodBody()
         {
             RuntimeMethodBody? mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
@@ -402,7 +401,6 @@ namespace System.Reflection
                 mb._methodBase = this;
             return mb;
         }
-#pragma warning restore CS8609
 
         #endregion
 
@@ -522,16 +520,9 @@ namespace System.Reflection
             get { return ReturnParameter; }
         }
 
-#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
-        public override ParameterInfo ReturnParameter
-        {
-            get
-            {
-                FetchReturnParameter();
-                return (m_returnParameter as ParameterInfo)!;
-            }
-        }
-#pragma warning restore CS8609
+#pragma warning disable CS6809 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
+        public override ParameterInfo ReturnParameter => FetchReturnParameter();
+#pragma warning restore CS6809
 
         public override bool IsCollectible => (RuntimeMethodHandle.GetIsCollectible(new RuntimeMethodHandleInternal(m_handle)) != Interop.BOOL.FALSE);
 

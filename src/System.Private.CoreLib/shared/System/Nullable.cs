@@ -71,12 +71,10 @@ namespace System
             return hasValue ? value.GetHashCode() : 0;
         }
 
-#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         public override string? ToString()
         {
             return hasValue ? value.ToString() : "";
         }
-#pragma warning restore CS8609
 
         [NonVersionable]
         public static implicit operator Nullable<T>(T value)

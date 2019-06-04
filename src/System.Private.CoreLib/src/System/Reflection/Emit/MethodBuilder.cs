@@ -86,16 +86,7 @@ namespace System.Reflection.Emit
             m_strName = name;
             m_module = mod;
             m_containingType = type;
-
-
-            if (returnType == null)
-            {
-                m_returnType = typeof(void);
-            }
-            else
-            {
-                m_returnType = returnType;
-            }
+            m_returnType = returnType ?? typeof(void);
 
             if ((attributes & MethodAttributes.Static) == 0)
             {
@@ -649,9 +640,7 @@ namespace System.Reflection.Emit
 
         public override bool IsGenericMethod { get { return m_inst != null; } }
 
-#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
-        public override Type[]? GetGenericArguments() { return m_inst; }
-#pragma warning restore CS8609
+        public override Type[] GetGenericArguments() => m_inst ?? Array.Empty<Type>();
 
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {

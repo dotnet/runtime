@@ -1545,15 +1545,15 @@ namespace System
         }
 
         // ILHeader info
-        internal abstract RuntimeType GetJitContext(out int securityControlFlags);
+        internal abstract RuntimeType? GetJitContext(out int securityControlFlags);
         internal abstract byte[] GetCodeInfo(out int stackSize, out int initLocals, out int EHCount);
         internal abstract byte[] GetLocalsSignature();
         internal abstract unsafe void GetEHInfo(int EHNumber, void* exception);
-        internal abstract byte[] GetRawEHInfo();
+        internal abstract byte[]? GetRawEHInfo();
         // token resolution
-        internal abstract string GetStringLiteral(int token);
+        internal abstract string? GetStringLiteral(int token);
         internal abstract void ResolveToken(int token, out IntPtr typeHandle, out IntPtr methodHandle, out IntPtr fieldHandle);
-        internal abstract byte[] ResolveSignature(int token, int fromMethod);
+        internal abstract byte[]? ResolveSignature(int token, int fromMethod);
         //
         internal abstract MethodInfo GetDynamicMethod();
     }

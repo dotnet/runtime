@@ -256,7 +256,7 @@ namespace System.Threading.Tasks
 #if PROJECTN
         [DependencyReductionRoot]
 #endif
-        internal abstract Delegate[] GetDelegateContinuationsForDebugger();
+        internal abstract Delegate[]? GetDelegateContinuationsForDebugger();
     }
 
     /// <summary>Provides the standard implementation of a task continuation.</summary>
@@ -341,7 +341,6 @@ namespace System.Threading.Tasks
             else continuationTask.InternalCancel(false);
         }
 
-#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         internal override Delegate[]? GetDelegateContinuationsForDebugger()
         {
             if (m_task.m_action == null)
@@ -351,7 +350,6 @@ namespace System.Threading.Tasks
 
             return new Delegate[] { m_task.m_action };
         }
-#pragma warning restore CS8609
 
     }
 

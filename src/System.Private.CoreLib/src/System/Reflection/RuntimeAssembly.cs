@@ -103,7 +103,7 @@ namespace System.Reflection
                     GetFlags() | AssemblyNameFlags.PublicKey,
                     null); // strong name key pair
 
-            Module? manifestModule = ManifestModule;
+            Module manifestModule = ManifestModule;
             if (manifestModule != null)
             {
                 if (manifestModule.MDStreamVersion > 0x10000)
@@ -271,7 +271,7 @@ namespace System.Reflection
             throw new PlatformNotSupportedException();
         }
 
-        public override Module? ManifestModule
+        public override Module ManifestModule
         {
             get
             {

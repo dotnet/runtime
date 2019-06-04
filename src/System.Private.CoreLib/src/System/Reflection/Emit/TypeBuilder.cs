@@ -1250,9 +1250,7 @@ namespace System.Reflection.Emit
             return TypeBuilderInstantiation.MakeGenericType(this, typeArguments);
         }
 
-#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
-        public override Type[]? GetGenericArguments() { return m_inst; }
-#pragma warning restore CS8609
+        public override Type[] GetGenericArguments() => m_inst ?? Array.Empty<Type>();
 
         // If a TypeBuilder is generic, it must be a generic type definition
         // All instantiated generic types are TypeBuilderInstantiation.
