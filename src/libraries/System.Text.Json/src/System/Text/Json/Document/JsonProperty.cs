@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 namespace System.Text.Json
 {
     /// <summary>
@@ -23,6 +25,66 @@ namespace System.Text.Json
         ///   The name of this property.
         /// </summary>
         public string Name => Value.GetPropertyName();
+
+        /// <summary>
+        ///   Compares <paramref name="text" /> to the name of this property.
+        /// </summary>
+        /// <param name="text">The text to compare against.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the name of this property matches <paramref name="text"/>,
+        ///   <see langword="false" /> otherwise.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="Type"/> is not <see cref="JsonTokenType.PropertyName"/>.
+        /// </exception>
+        /// <remarks>
+        ///   This method is functionally equal to doing an ordinal comparison of <paramref name="text" /> and
+        ///   <see cref="Name" />, but can avoid creating the string instance.
+        /// </remarks>
+        public bool NameEquals(string text)
+        {
+            return NameEquals(text.AsSpan());
+        }
+
+        /// <summary>
+        ///   Compares the text represented by <paramref name="utf8Text" /> to the name of this property.
+        /// </summary>
+        /// <param name="utf8Text">The UTF-8 encoded text to compare against.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the name of this property has the same UTF-8 encoding as
+        ///   <paramref name="utf8Text" />, <see langword="false" /> otherwise.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="Type"/> is not <see cref="JsonTokenType.PropertyName"/>.
+        /// </exception>
+        /// <remarks>
+        ///   This method is functionally equal to doing an ordinal comparison of <paramref name="utf8Text" /> and
+        ///   <see cref="Name" />, but can avoid creating the string instance.
+        /// </remarks>
+        public bool NameEquals(ReadOnlySpan<byte> utf8Text)
+        {
+            return Value.TextEqualsHelper(utf8Text, isPropertyName: true);
+        }
+
+        /// <summary>
+        ///   Compares <paramref name="text" /> to the name of this property.
+        /// </summary>
+        /// <param name="text">The text to compare against.</param>
+        /// <returns>
+        ///   <see langword="true" /> if the name of this property matches <paramref name="text"/>,
+        ///   <see langword="false" /> otherwise.
+        /// </returns>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="Type"/> is not <see cref="JsonTokenType.PropertyName"/>.
+        /// </exception>
+        /// <remarks>
+        ///   This method is functionally equal to doing an ordinal comparison of <paramref name="text" /> and
+        ///   <see cref="Name" />, but can avoid creating the string instance.
+        /// </remarks>
+        public bool NameEquals(ReadOnlySpan<char> text)
+        {
+            return Value.TextEqualsHelper(text, isPropertyName: true);
+        }
 
         /// <summary>
         ///   Provides a <see cref="string"/> representation of the property for
