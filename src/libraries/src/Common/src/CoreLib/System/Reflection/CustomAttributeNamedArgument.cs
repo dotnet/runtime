@@ -47,7 +47,7 @@ namespace System.Reflection
         public override string ToString()
         {
             if (m_memberInfo == null)
-                return base.ToString();
+                return base.ToString()!;
 
             return string.Format("{0} = {1}", MemberInfo.Name, TypedValue.ToString(ArgumentType != typeof(object)));
         }
