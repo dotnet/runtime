@@ -19,9 +19,10 @@ namespace System.IO.Tests
             {
                 Assert.True(File.Exists(fileName));
                 File.Delete(fileName);
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // file sharing restriction limitations on Unix
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    Assert.True(File.Exists(fileName));
+                    // Prior to 1903 Windows would not delete the filename until the last file handle is closed.
+                    Assert.Equal(PlatformDetection.IsWindows10Version1903OrGreater, !File.Exists(fileName));
                 }
             }
 
@@ -56,9 +57,10 @@ namespace System.IO.Tests
             using (FileStream fs = CreateFileStream(fileName, FileMode.Open, FileAccess.ReadWrite, FileShare.Delete))
             {
                 File.Delete(fileName);
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // file sharing restriction limitations on Unix
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 {
-                    Assert.True(File.Exists(fileName));
+                    // Prior to 1903 Windows would not delete the filename until the last file handle is closed.
+                    Assert.Equal(PlatformDetection.IsWindows10Version1903OrGreater, !File.Exists(fileName));
                 }
             }
 
@@ -104,16 +106,25 @@ namespace System.IO.Tests
                 {
                     File.Delete(fileName);
                     Assert.Equal(0, fs2.ReadByte());
-                    Assert.True(File.Exists(fileName), $"'{fileName}' should still exist after calling delete with two handles open.");
+
+                    // Prior to 1903 Windows would not delete the filename until the last file handle is closed.
+                    Assert.Equal(PlatformDetection.IsWindows10Version1903OrGreater, !File.Exists(fileName));
                 }
 
                 Assert.Equal(0, fs1.ReadByte());
                 fs1.WriteByte(0xFF);
 
-                // Any attempt to reopen a file in pending-delete state will return Access-denied
-                Assert.Throws<UnauthorizedAccessException>(() => CreateFileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.ReadWrite));
-
-                Assert.True(File.Exists(fileName), $"'{fileName}' should still exist after calling delete with inner filestream closed.");
+                if (PlatformDetection.IsWindows10Version1903OrGreater)
+                {
+                    // On 1903 the filename is immediately released after delete is called
+                    Assert.Throws<FileNotFoundException>(() => CreateFileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.ReadWrite));
+                }
+                else
+                {
+                    // Any attempt to reopen a file in pending-delete state will return Access-denied
+                    Assert.Throws<UnauthorizedAccessException>(() => CreateFileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.Delete | FileShare.ReadWrite));
+                    Assert.True(File.Exists(fileName), $"'{fileName}' should still exist after calling delete with inner filestream closed.");
+                }
             }
 
             Assert.False(File.Exists(fileName));
