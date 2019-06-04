@@ -96,7 +96,7 @@ extern CVTypes CorElementTypeToCVTypes(CorElementType type);
       2)  Variant must contain an OBJECTREF field for Objects, etc.  Since we
           have no way of expressing a union between an OBJECTREF and an int, we
           always box Decimals in a Variant.
-      3)  The m_type field is not a CVType and will contain extra bits.  People
+      3)  The m_flags field is not a CVType and will contain extra bits.  People
           should use VariantData::GetType() to get the CVType.
       4)  You should use SetObjRef and GetObjRef to manipulate the OBJECTREF field.
           These will handle write barriers correctly, as well as CV_EMPTY.
@@ -118,6 +118,8 @@ extern CVTypes CorElementTypeToCVTypes(CorElementType type);
 
 struct VariantData
 {
+    friend class MscorlibBinder;
+
 public:        
     static void NewVariant(VariantData * const& dest, const CVTypes type, INT64 data
                                             DEBUG_ARG(BOOL bDestIsInterior = FALSE));
@@ -126,20 +128,20 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
 
-        return (CVTypes)(m_type & VARIANT_TYPE_MASK);
+        return (CVTypes)(m_flags & VARIANT_TYPE_MASK);
     }
 
     FORCEINLINE void SetType(INT32 in)
     {
         LIMITED_METHOD_CONTRACT;
-        m_type = in;
+        m_flags = in;
     }
 
     FORCEINLINE VARTYPE GetVT() const
     {
         LIMITED_METHOD_CONTRACT;
 
-        VARTYPE vt = (m_type & VT_MASK) >> VT_BITSHIFT;
+        VARTYPE vt = (m_flags & VT_MASK) >> VT_BITSHIFT;
         if (vt & 0x80)
         {
             vt &= ~0x80;
@@ -165,7 +167,7 @@ public:
             vt &= ~VT_ARRAY;
             vt |= 0x80;
         }
-        m_type = (m_type & ~((INT32)VT_MASK)) | (vt << VT_BITSHIFT);
+        m_flags = (m_flags & ~((INT32)VT_MASK)) | (vt << VT_BITSHIFT);
     }
 
 
@@ -173,7 +175,7 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         
-        return (OBJECTREF)m_or;
+        return (OBJECTREF)m_objref;
     }
 
     OBJECTREF* GetObjRefPtr()
@@ -187,7 +189,7 @@ public:
         }
         CONTRACT_END;
 
-        RETURN (OBJECTREF*)&m_or;
+        RETURN (OBJECTREF*)&m_objref;
     }
 
     void SetObjRef(OBJECTREF objRef)
@@ -202,13 +204,13 @@ public:
         
         if (objRef!=NULL)
         {
-            SetObjectReference((OBJECTREF*)&m_or, objRef);
+            SetObjectReference((OBJECTREF*)&m_objref, objRef);
         }
         else
         {
             // Casting trick to avoid going thru overloaded operator= (which
             // in this case would trigger a false write barrier violation assert.)
-            *(LPVOID*)(OBJECTREF*)&m_or=NULL;
+            *(LPVOID*)(OBJECTREF*)&m_objref=NULL;
         }
     }
 
@@ -324,9 +326,17 @@ public:
     }
 
 private:
-    Object*     m_or;
+    // Typeloader reorders fields of non-blitable types. This reordering differs between 32-bit and 64-bit platforms.
+#ifdef _TARGET_64BIT_
+    Object*     m_objref;
     INT64       m_data;
-    INT32       m_type;
+    INT32       m_flags;
+    INT32       m_padding;
+#else
+    INT64       m_data;
+    Object*     m_objref;
+    INT32       m_flags;
+#endif
 };
 
 #include <poppack.h>
