@@ -24,7 +24,7 @@ namespace System
                 // The value of APP_CONTEXT_BASE_DIRECTORY key has to be a string and it is not allowed to be any other type. 
                 // Otherwise the caller will get invalid cast exception
                 return (string?)GetData("APP_CONTEXT_BASE_DIRECTORY") ??
-                    (s_defaultBaseDirectory ?? (s_defaultBaseDirectory = GetBaseDirectoryCore())) ?? string.Empty;
+                    s_defaultBaseDirectory ?? (s_defaultBaseDirectory = GetBaseDirectoryCore());
             }
         }
 
