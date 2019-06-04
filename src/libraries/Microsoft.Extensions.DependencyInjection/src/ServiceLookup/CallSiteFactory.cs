@@ -169,9 +169,11 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                             var descriptor = _descriptors[i];
                             var callSite = TryCreateExact(descriptor, itemType, callSiteChain, slot) ??
                                            TryCreateOpenGeneric(descriptor, itemType, callSiteChain, slot);
-                            slot++;
+
                             if (callSite != null)
                             {
+                                slot++;
+
                                 cacheLocation = GetCommonCacheLocation(cacheLocation, callSite.Cache.Location);
                                 callSites.Add(callSite);
                             }
