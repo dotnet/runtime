@@ -119,7 +119,7 @@ namespace System.Reflection
 
         public virtual event ModuleResolveEventHandler ModuleResolve { add { throw NotImplemented.ByDesign; } remove { throw NotImplemented.ByDesign; } }
 
-        public virtual Module? ManifestModule { get { throw NotImplemented.ByDesign; } }
+        public virtual Module ManifestModule { get { throw NotImplemented.ByDesign; } }
         public virtual Module? GetModule(string name) { throw NotImplemented.ByDesign; }
 
         public Module[] GetModules() => GetModules(getResourceModules: false);

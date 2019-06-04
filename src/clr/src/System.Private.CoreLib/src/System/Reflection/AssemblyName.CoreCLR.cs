@@ -62,7 +62,7 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private extern byte[] ComputePublicKeyToken();
+        private extern byte[]? ComputePublicKeyToken();
 
         internal void SetProcArchIndex(PortableExecutableKinds pek, ImageFileMachine ifm)
         {
