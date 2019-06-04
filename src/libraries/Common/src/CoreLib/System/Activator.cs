@@ -45,7 +45,7 @@ namespace System
         public static ObjectHandle? CreateInstanceFrom(string assemblyFile, string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object?[]? args, CultureInfo? culture, object?[]? activationAttributes)
         {
             Assembly assembly = Assembly.LoadFrom(assemblyFile);
-            Type t = assembly.GetType(typeName, true, ignoreCase);
+            Type t = assembly.GetType(typeName, throwOnError: true, ignoreCase)!;
 
             object? o = CreateInstance(t, bindingAttr, binder, args, culture, activationAttributes);
 

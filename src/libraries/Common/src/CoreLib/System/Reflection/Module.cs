@@ -70,7 +70,7 @@ namespace System.Reflection
         public virtual Type? GetType(string className, bool ignoreCase) => GetType(className, throwOnError: false, ignoreCase: ignoreCase);
         public virtual Type? GetType(string className, bool throwOnError, bool ignoreCase) { throw NotImplemented.ByDesign; }
 
-        public virtual Type[] FindTypes(TypeFilter? filter, object filterCriteria)
+        public virtual Type[] FindTypes(TypeFilter? filter, object? filterCriteria)
         {
             Type[] c = GetTypes();
             int cnt = 0;
@@ -140,8 +140,8 @@ namespace System.Reflection
 
         public override string ToString() => ScopeName;
 
-        public static readonly TypeFilter FilterTypeName = (m, c) => FilterTypeNameImpl(m, c, StringComparison.Ordinal);
-        public static readonly TypeFilter FilterTypeNameIgnoreCase = (m, c) => FilterTypeNameImpl(m, c, StringComparison.OrdinalIgnoreCase);
+        public static readonly TypeFilter FilterTypeName = (m, c) => FilterTypeNameImpl(m, c!, StringComparison.Ordinal);
+        public static readonly TypeFilter FilterTypeNameIgnoreCase = (m, c) => FilterTypeNameImpl(m, c!, StringComparison.OrdinalIgnoreCase);
 
         private const BindingFlags DefaultLookup = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public;
 

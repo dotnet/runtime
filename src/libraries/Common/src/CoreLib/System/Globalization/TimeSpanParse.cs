@@ -655,7 +655,7 @@ namespace System.Globalization
             return false;
         }
 
-        internal static TimeSpan ParseExactMultiple(ReadOnlySpan<char> input, string?[] formats, IFormatProvider? formatProvider, TimeSpanStyles styles)
+        internal static TimeSpan ParseExactMultiple(ReadOnlySpan<char> input, string[] formats, IFormatProvider? formatProvider, TimeSpanStyles styles)
         {
             var parseResult = new TimeSpanResult(throwOnFailure: true, originalTimeSpanString: input);
             bool success = TryParseExactMultipleTimeSpan(input, formats, formatProvider, styles, ref parseResult);
@@ -663,7 +663,7 @@ namespace System.Globalization
             return parseResult.parsedTimeSpan;
         }
 
-        internal static bool TryParseExactMultiple(ReadOnlySpan<char> input, string?[]? formats, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
+        internal static bool TryParseExactMultiple(ReadOnlySpan<char> input, string[] formats, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             var parseResult = new TimeSpanResult(throwOnFailure: false, originalTimeSpanString: input);
 
@@ -1669,7 +1669,7 @@ namespace System.Globalization
         }
 
         /// <summary>Common private ParseExactMultiple method called by both ParseExactMultiple and TryParseExactMultiple.</summary>
-        private static bool TryParseExactMultipleTimeSpan(ReadOnlySpan<char> input, string?[]? formats, IFormatProvider? formatProvider, TimeSpanStyles styles, ref TimeSpanResult result)
+        private static bool TryParseExactMultipleTimeSpan(ReadOnlySpan<char> input, string[] formats, IFormatProvider? formatProvider, TimeSpanStyles styles, ref TimeSpanResult result)
         {
             if (formats == null)
             {
@@ -1690,8 +1690,7 @@ namespace System.Globalization
             // one of the formats.
             for (int i = 0; i < formats.Length; i++)
             {
-                // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
-                if (formats[i] == null || formats[i]!.Length == 0)
+                if (formats[i] == null || formats[i].Length == 0)
                 {
                     return result.SetBadFormatSpecifierFailure();
                 }

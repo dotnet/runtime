@@ -183,9 +183,11 @@ namespace System.Reflection.Emit
             return Value;
         }
 
+#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         public override string? ToString()
         {
             return Name;
         }
+#pragma warning restore CS8609
     }
 }

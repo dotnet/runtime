@@ -116,7 +116,7 @@ namespace System
                 if (assemblyName.ContentType == AssemblyContentType.WindowsRuntime)
                 {
                     // WinRT type - we have to use Type.GetType
-                    type = Type.GetType(typeName + ", " + assemblyString, true /*throwOnError*/, ignoreCase);
+                    type = Type.GetType(typeName + ", " + assemblyString, throwOnError: true, ignoreCase);
                 }
                 else
                 {
@@ -131,7 +131,7 @@ namespace System
                 type = assembly!.GetType(typeName, throwOnError: true, ignoreCase);
             }
 
-            object? o = CreateInstance(type, bindingAttr, binder, args, culture, activationAttributes);
+            object? o = CreateInstance(type!, bindingAttr, binder, args, culture, activationAttributes);
 
             return o != null ? new ObjectHandle(o) : null;          
         }
