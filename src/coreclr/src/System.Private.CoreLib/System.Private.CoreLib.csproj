@@ -200,6 +200,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\CustomAttributeBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicILGenerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\DynamicMethod.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EmptyCAHolder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EnumBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\EventBuilder.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Emit\FieldBuilder.cs" />
