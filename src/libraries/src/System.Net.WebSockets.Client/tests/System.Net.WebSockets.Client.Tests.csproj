@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{7C395A91-D955-444C-98BF-D3F809A56CE1}</ProjectGuid>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
@@ -27,6 +27,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Configuration.WebSockets.cs">
       <Link>Common\System\Net\Configuration.WebSockets.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\EventSourceTestLogging.cs">
+      <Link>Common\System\Net\EventSourceTestLogging.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Http\LoopbackProxyServer.cs">
       <Link>Common\System\Net\Http\LoopbackProxyServer.cs</Link>
