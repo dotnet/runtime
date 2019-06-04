@@ -513,15 +513,7 @@ namespace System.Reflection.Emit
             }
         }
 
-#pragma warning disable CS8609 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
-        public override ICustomAttributeProvider? ReturnTypeCustomAttributes
-        {
-            get
-            {
-                return null;
-            }
-        }
-#pragma warning restore CS8609
+        public override ICustomAttributeProvider ReturnTypeCustomAttributes => new EmptyCAHolder();
 
         public override Type? ReflectedType
         {

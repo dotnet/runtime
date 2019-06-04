@@ -719,14 +719,7 @@ namespace System.Reflection.Emit
                 get { return new RuntimeParameterInfo(this, null, m_owner.m_returnType, -1); }
             }
 
-            public override ICustomAttributeProvider ReturnTypeCustomAttributes
-            {
-                get { return GetEmptyCAHolder(); }
-            }
-
-            //
-            // private implementation
-            //
+            public override ICustomAttributeProvider ReturnTypeCustomAttributes => new EmptyCAHolder();
 
             internal RuntimeParameterInfo[] LoadParameters()
             {
@@ -741,34 +734,6 @@ namespace System.Reflection.Emit
                         m_parameters = parameters;
                 }
                 return m_parameters;
-            }
-
-            // private implementation of CA for the return type
-            private ICustomAttributeProvider GetEmptyCAHolder()
-            {
-                return new EmptyCAHolder();
-            }
-
-            ///////////////////////////////////////////////////
-            // EmptyCAHolder
-            private class EmptyCAHolder : ICustomAttributeProvider
-            {
-                internal EmptyCAHolder() { }
-
-                object[] ICustomAttributeProvider.GetCustomAttributes(Type attributeType, bool inherit)
-                {
-                    return Array.Empty<object>();
-                }
-
-                object[] ICustomAttributeProvider.GetCustomAttributes(bool inherit)
-                {
-                    return Array.Empty<object>();
-                }
-
-                bool ICustomAttributeProvider.IsDefined(Type attributeType, bool inherit)
-                {
-                    return false;
-                }
             }
         }
     }
