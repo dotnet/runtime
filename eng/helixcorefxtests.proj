@@ -49,8 +49,8 @@
       The arguments passed in to the run script in order are the runtime directory, the dotnet root directory (for
       helix submissions same as the runtime directory) and the global tools directory.
     -->
-    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd -r %HELIX_CORRELATION_PAYLOAD% -d %HELIX_CORRELATION_PAYLOAD% -g %HELIX_CORRELATION_PAYLOAD%\tools --rsp-file %HELIX_CORRELATION_PAYLOAD%\CoreFX.issues.rsp </HelixCommand>
-    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh -r $HELIX_CORRELATION_PAYLOAD -d $HELIX_CORRELATION_PAYLOAD -g $HELIX_CORRELATION_PAYLOAD/tools --rsp-file $HELIX_CORRELATION_PAYLOAD/CoreFX.issues.rsp </HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' == 'true'">call RunTests.cmd -r %HELIX_CORRELATION_PAYLOAD% --rsp-file %HELIX_CORRELATION_PAYLOAD%\CoreFX.issues.rsp </HelixCommand>
+    <HelixCommand Condition="'$(TargetsWindows)' != 'true'">./RunTests.sh -r $HELIX_CORRELATION_PAYLOAD --rsp-file $HELIX_CORRELATION_PAYLOAD/CoreFX.issues.rsp </HelixCommand>
   </PropertyGroup>
 
   <ItemGroup>
