@@ -19,6 +19,10 @@
     <Compile Include="System\Resources\Extensions\DeserializingResourceReader.cs" />
     <Compile Include="System\Resources\Extensions\PreserializedResourceWriter.cs" />
     <Compile Include="System\Resources\Extensions\SerializationFormat.cs" />
+    <Compile Include="System\Resources\Extensions\TypeNameComparer.cs" />
+    <Compile Include="$(CommonPath)\CoreLib\System\Numerics\Hashing\HashHelpers.cs">
+      <Link>System\Numerics\Hashing\HashHelpers.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Memory" />
