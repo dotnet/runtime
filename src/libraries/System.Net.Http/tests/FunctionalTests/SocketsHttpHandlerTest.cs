@@ -1045,7 +1045,6 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop]
         [Fact]
-        [ActiveIssue(30032)]
         public async Task ConnectTimeout_TimesOutSSLAuth_Throws()
         {
             var releaseServer = new TaskCompletionSource<bool>();
@@ -1057,7 +1056,7 @@ namespace System.Net.Http.Functional.Tests
                     handler.ConnectTimeout = TimeSpan.FromSeconds(1);
 
                     var sw = Stopwatch.StartNew();
-                    await Assert.ThrowsAsync<TaskCanceledException>(() =>
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
                         invoker.SendAsync(new HttpRequestMessage(HttpMethod.Get,
                             new UriBuilder(uri) { Scheme = "https" }.ToString()) { Version = VersionFromUseHttp2 }, default));
                     sw.Stop();

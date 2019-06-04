@@ -79,7 +79,7 @@ namespace System.Net.Http
                 socket.NoDelay = true;
                 return new ExposedSocketNetworkStream(socket, ownsSocket: true);
             }
-            catch (Exception error)
+            catch (Exception error) when (!(error is OperationCanceledException))
             {
                 throw CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
                     CancellationHelper.CreateOperationCanceledException(error, cancellationToken) :
@@ -165,6 +165,11 @@ namespace System.Net.Http
             catch (Exception e)
             {
                 sslStream.Dispose();
+
+                if (e is OperationCanceledException)
+                {
+                    throw;
+                }
 
                 if (CancellationHelper.ShouldWrapInOperationCanceledException(e, cancellationToken))
                 {
