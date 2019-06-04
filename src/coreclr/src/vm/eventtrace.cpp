@@ -7436,7 +7436,6 @@ void ETW::CompilationLog::TieredCompilation::Runtime::SendSettings()
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-    _ASSERTE(IsEnabled());
     _ASSERTE(g_pConfig->TieredCompilation());
 
     UINT32 flags;
@@ -7451,7 +7450,6 @@ void ETW::CompilationLog::TieredCompilation::Rundown::SendSettings()
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-    _ASSERTE(IsEnabled());
     _ASSERTE(g_pConfig->TieredCompilation());
 
     UINT32 flags;
@@ -7466,7 +7464,6 @@ void ETW::CompilationLog::TieredCompilation::Runtime::SendPause()
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-    _ASSERTE(IsEnabled());
     _ASSERTE(g_pConfig->TieredCompilation());
 
     FireEtwTieredCompilationPause(GetClrInstanceId());
@@ -7478,7 +7475,6 @@ void ETW::CompilationLog::TieredCompilation::Runtime::SendResume(UINT32 newMetho
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-    _ASSERTE(IsEnabled());
     _ASSERTE(g_pConfig->TieredCompilation());
 
     FireEtwTieredCompilationResume(GetClrInstanceId(), newMethodCount);
@@ -7490,7 +7486,6 @@ void ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStart(UIN
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-    _ASSERTE(IsEnabled());
     _ASSERTE(g_pConfig->TieredCompilation());
 
     FireEtwTieredCompilationBackgroundJitStart(GetClrInstanceId(), pendingMethodCount);
@@ -7502,7 +7497,6 @@ void ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStop(UINT
         NOTHROW;
         GC_NOTRIGGER;
     } CONTRACTL_END;
-    _ASSERTE(IsEnabled());
     _ASSERTE(g_pConfig->TieredCompilation());
 
     FireEtwTieredCompilationBackgroundJitStop(GetClrInstanceId(), pendingMethodCount, jittedMethodCount);
