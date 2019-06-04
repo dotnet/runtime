@@ -93,7 +93,8 @@
     "tfm": "$(TargetFramework)",
     "framework": {
       "name": "Microsoft.NETCore.App",
-      "version": "$(SharedFrameworkNugetVersion)"
+      "version": "$(SharedFrameworkNugetVersion)",
+      "rollForward": "LatestPatch"
     }
   }
 }
