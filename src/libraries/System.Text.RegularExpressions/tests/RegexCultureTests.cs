@@ -13,6 +13,7 @@ namespace System.Text.RegularExpressions.Tests
         /// <summary>
         /// See https://en.wikipedia.org/wiki/Dotted_and_dotless_I 
         /// </summary>
+        [ActiveIssue(38195, TargetFrameworkMonikers.Uap)]
         [Fact]
         public void TurkishI_Is_Differently_LowerUpperCased_In_Turkish_Culture()
         {
