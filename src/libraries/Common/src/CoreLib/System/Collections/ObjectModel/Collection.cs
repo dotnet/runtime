@@ -69,8 +69,6 @@ namespace System.Collections.ObjectModel
             InsertItem(index, item);
         }
 
-        public void AddRange(IEnumerable<T> collection) => InsertItemsRange(items.Count, collection);
-
         public void Clear()
         {
             if (items.IsReadOnly)
@@ -116,26 +114,6 @@ namespace System.Collections.ObjectModel
             InsertItem(index, item);
         }
 
-        public void InsertRange(int index, IEnumerable<T> collection)
-        {
-            if (items.IsReadOnly)
-            {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-            }
-
-            if (collection == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
-            }
-
-            if ((uint)index > (uint)items.Count)
-            {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
-            }
-
-            InsertItemsRange(index, collection!); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
-        }
-
         public bool Remove(T item)
         {
             if (items.IsReadOnly)
@@ -147,61 +125,6 @@ namespace System.Collections.ObjectModel
             if (index < 0) return false;
             RemoveItem(index);
             return true;
-        }
-
-        public void RemoveRange(int index, int count)
-        {
-            if (items.IsReadOnly)
-            {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-            }
-
-            if ((uint)index > (uint)items.Count)
-            {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
-            }
-
-            if (count < 0)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            }
-
-            if (index > items.Count - count)
-            {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
-            }
-
-            RemoveItemsRange(index, count);
-        }
-
-        public void ReplaceRange(int index, int count, IEnumerable<T> collection)
-        {
-            if (items.IsReadOnly)
-            {
-                ThrowHelper.ThrowNotSupportedException(ExceptionResource.NotSupported_ReadOnlyCollection);
-            }
-
-            if ((uint)index > (uint)items.Count)
-            {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
-            }
-
-            if (count < 0)
-            {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
-            }
-
-            if (index > items.Count - count)
-            {
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
-            }
-
-            if (collection == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
-            }
-
-            ReplaceItemsRange(index, count, collection!);  // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }
 
         public void RemoveAt(int index)
@@ -237,42 +160,6 @@ namespace System.Collections.ObjectModel
         protected virtual void SetItem(int index, T item)
         {
             items[index] = item;
-        }
-
-        protected virtual void InsertItemsRange(int index, IEnumerable<T> collection)
-        {
-            if (GetType() == typeof(Collection<T>) && items is List<T> list)
-            {
-                list.InsertRange(index, collection);
-            }
-            else
-            {
-                foreach (T item in collection)
-                {
-                    InsertItem(index++, item);
-                }
-            }
-        }
-
-        protected virtual void RemoveItemsRange(int index, int count)
-        {
-            if (GetType() == typeof(Collection<T>) && items is List<T> list)
-            {
-                list.RemoveRange(index, count);
-            }
-            else
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    RemoveItem(index);
-                }
-            }
-        }
-
-        protected virtual void ReplaceItemsRange(int index, int count, IEnumerable<T> collection)
-        {
-            RemoveItemsRange(index, count);
-            InsertItemsRange(index, collection);
         }
 
         bool ICollection<T>.IsReadOnly
