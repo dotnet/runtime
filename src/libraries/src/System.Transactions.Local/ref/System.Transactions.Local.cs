@@ -48,6 +48,7 @@ namespace System.Transactions
         Full = 2,
     }
     public delegate System.Transactions.Transaction HostCurrentTransactionCallback();
+    [System.Runtime.InteropServices.InterfaceTypeAttribute(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
     public partial interface IDtcTransaction
     {
         void Abort(System.IntPtr reason, int retaining, int async);
