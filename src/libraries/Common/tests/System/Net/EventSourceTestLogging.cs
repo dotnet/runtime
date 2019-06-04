@@ -32,6 +32,12 @@ namespace System.Net.Test.Common
             WriteEvent(2, message);
         }
 
+        [Event(3, Keywords = Keywords.Debug, Level = EventLevel.Error)]
+        public void TestAncillaryError(Exception ex)
+        {
+            WriteEvent(3, ex.ToString());
+        }
+
         public static class Keywords
         {
             public const EventKeywords Default = (EventKeywords)0x0001;
