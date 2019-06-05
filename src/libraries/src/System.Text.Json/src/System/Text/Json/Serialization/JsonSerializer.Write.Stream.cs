@@ -14,35 +14,35 @@ namespace System.Text.Json
         /// Convert the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        /// <param name="value">The value to convert.</param>
         /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
+        /// <param name="value">The value to convert.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
-        public static Task WriteAsync<TValue>(TValue value, Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+        public static Task WriteAsync<TValue>(Stream utf8Json, TValue value, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
         {
-            return WriteAsyncCore(value, typeof(TValue), utf8Json, options, cancellationToken);
+            return WriteAsyncCore(utf8Json, value, typeof(TValue), options, cancellationToken);
         }
 
         /// <summary>
         /// Convert the provided value to UTF-8 encoded JSON text and write it to the <see cref="System.IO.Stream"/>.
         /// </summary>
         /// <returns>A task that represents the asynchronous write operation.</returns>
+        /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="value">The value to convert.</param>
         /// <param name="type">The type of the <paramref name="value"/> to convert.</param>
-        /// <param name="utf8Json">The UTF-8 <see cref="System.IO.Stream"/> to write to.</param>
         /// <param name="options">Options to control the conversion behavior.</param>
         /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> which may be used to cancel the write operation.</param>
-        public static Task WriteAsync(object value, Type type, Stream utf8Json, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
+        public static Task WriteAsync(Stream utf8Json, object value, Type type, JsonSerializerOptions options = null, CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
                 throw new ArgumentNullException(nameof(utf8Json));
 
             VerifyValueAndType(value, type);
 
-            return WriteAsyncCore(value, type, utf8Json, options, cancellationToken);
+            return WriteAsyncCore(utf8Json, value, type, options, cancellationToken);
         }
 
-        private static async Task WriteAsyncCore(object value, Type type, Stream utf8Json, JsonSerializerOptions options, CancellationToken cancellationToken)
+        private static async Task WriteAsyncCore(Stream utf8Json, object value, Type type, JsonSerializerOptions options, CancellationToken cancellationToken)
         {
             if (options == null)
             {
