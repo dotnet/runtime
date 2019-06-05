@@ -4,7 +4,7 @@ include_directories("./jitstd")
 include_directories("../inc")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
+  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fpermissive>)
   add_compile_options(-Wno-error)
 endif()
 
