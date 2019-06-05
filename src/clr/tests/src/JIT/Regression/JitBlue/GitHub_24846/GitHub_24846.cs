@@ -5,11 +5,16 @@
 using System;
 using System.Runtime.CompilerServices;
 
-public class GitHub_24846
+unsafe public class GitHub_24846
 {
-    public static void Test(byte[] destination, byte[] source)
+    public static void TestCopy(byte* destination, byte* source)
     {
-        Unsafe.CopyBlockUnaligned(ref destination[0], ref source[0], 0);
+        Unsafe.CopyBlockUnaligned(destination, source, 0);
+    }
+
+    public static void TestInit(byte* destination)
+    {
+        Unsafe.InitBlockUnaligned(destination, 0xff, 0);
     }
 
     public static int Main(string[] args)
@@ -17,52 +22,37 @@ public class GitHub_24846
         int returnVal = 100;
         var destination = new byte[1];
         var source = new byte[1];
-        try
+        fixed (byte* destPtr = &destination[0], srcPtr = &source[0])
         {
-            Test(destination, source);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("FAILED: " + e.Message);
-            returnVal = -1;
-        }
-        bool caught = false;
-        try
-        {
-            Test(destination, null);
-        }
-        catch (NullReferenceException e)
-        {
-            caught = true;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("FAILED: Wrong Exception " + e.Message);
-            returnVal = -1;
-        }
-        if (!caught)
-        {
-            Console.WriteLine("FAILED: null destination didn't throw");
-            returnVal = -1;
-        }
-        caught = false;
-        try
-        {
-            Test(null, source);
-        }
-        catch (NullReferenceException e)
-        {
-            caught = true;
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("FAILED: Wrong Exception " + e.Message);
-            returnVal = -1;
-        }
-        if (!caught)
-        {
-            Console.WriteLine("FAILED: null source didn't throw");
-            returnVal = -1;
+            try
+            {
+                TestCopy(destPtr, srcPtr);
+                TestInit(destPtr);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("FAILED: " + e.Message);
+                returnVal = -1;
+            }
+            try
+            {
+                TestCopy(destPtr, null);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("FAILED: " + e.Message);
+                returnVal = -1;
+            }
+            try
+            {
+                TestCopy(null, srcPtr);
+                TestInit(null);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("FAILED: " + e.Message);
+                returnVal = -1;
+            }
         }
         return returnVal;
     }

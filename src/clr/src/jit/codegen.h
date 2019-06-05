@@ -1097,9 +1097,11 @@ protected:
     void genCodeForStoreInd(GenTreeStoreInd* tree);
     void genCodeForSwap(GenTreeOp* tree);
     void genCodeForCpObj(GenTreeObj* cpObjNode);
-    void genCodeForCpBlk(GenTreeBlk* cpBlkNode);
     void genCodeForCpBlkRepMovs(GenTreeBlk* cpBlkNode);
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
+#ifndef _TARGET_X86_
+    void genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode);
+#endif
     void genCodeForPhysReg(GenTreePhysReg* tree);
     void genCodeForNullCheck(GenTreeOp* tree);
     void genCodeForCmpXchg(GenTreeCmpXchg* tree);
@@ -1173,7 +1175,9 @@ protected:
 #endif // _TARGET_ARM64_
 
     void genCodeForStoreBlk(GenTreeBlk* storeBlkNode);
-    void genCodeForInitBlk(GenTreeBlk* initBlkNode);
+#ifndef _TARGET_X86_
+    void genCodeForInitBlkHelper(GenTreeBlk* initBlkNode);
+#endif
     void genCodeForInitBlkRepStos(GenTreeBlk* initBlkNode);
     void genCodeForInitBlkUnroll(GenTreeBlk* initBlkNode);
     void genJumpTable(GenTree* tree);
