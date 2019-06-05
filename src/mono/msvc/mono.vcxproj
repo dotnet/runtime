@@ -107,6 +107,7 @@
       <SubSystem>Console</SubSystem>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
+      <StackReserveSize>0x800000</StackReserveSize>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
@@ -141,6 +142,7 @@ xcopy "$(SolutionDir)setup-vs-msvcbuild-env.bat" "$(OutDir)" /q /y &gt;nul 2&gt;
       <SubSystem>Console</SubSystem>
       <ShowProgress>
       </ShowProgress>
+      <StackReserveSize>0x800000</StackReserveSize>
     </Link>
     <PostBuildEvent>
       <Command>xcopy "$(SolutionDir)mono-sgen-msvc.sh" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
@@ -168,6 +170,7 @@ xcopy "$(SolutionDir)setup-vs-msvcbuild-env.bat" "$(OutDir)" /q /y &gt;nul 2&gt;
       <SubSystem>Console</SubSystem>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
+      <StackReserveSize>0x180000</StackReserveSize>
     </Link>
     <PostBuildEvent>
       <Command>xcopy "$(SolutionDir)mono-sgen-msvc.sh" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
@@ -196,6 +199,7 @@ xcopy "$(SolutionDir)setup-vs-msvcbuild-env.bat" "$(OutDir)" /q /y &gt;nul 2&gt;
     <Link>
       <AdditionalDependencies>$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
+      <StackReserveSize>0x180000</StackReserveSize>
     </Link>
     <PostBuildEvent>
       <Command>xcopy "$(SolutionDir)mono-sgen-msvc.sh" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
