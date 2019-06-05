@@ -826,6 +826,10 @@ evaluate_ins (MonoCompile *cfg, MonoInst *ins, MonoInst **res, MonoInst **carray
 		return 2;
 
 	num_sregs = mono_inst_get_src_registers (ins, sregs);
+
+	if (num_sregs > 2)
+		return 2;
+
 	for (i = 0; i < MONO_MAX_SRC_REGS; ++i)
 		args [i] = NULL;
 	for (i = 0; i < num_sregs; ++i) {
