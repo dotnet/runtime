@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27213.1
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28803.202
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.StackTrace.Tests", "tests\System.Diagnostics.StackTrace.Tests.csproj", "{297A9116-1005-499D-A895-2063D03E4C94}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -26,10 +26,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{297A9116-1005-499D-A895-2063D03E4C94}.Debug|Any CPU.ActiveCfg = netstandard-Debug|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.Debug|Any CPU.Build.0 = netstandard-Debug|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.Release|Any CPU.ActiveCfg = netstandard-Release|Any CPU
-		{297A9116-1005-499D-A895-2063D03E4C94}.Release|Any CPU.Build.0 = netstandard-Release|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.Debug|Any CPU.ActiveCfg = uap-Debug|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.Debug|Any CPU.Build.0 = uap-Debug|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.Release|Any CPU.ActiveCfg = uap-Release|Any CPU
+		{297A9116-1005-499D-A895-2063D03E4C94}.Release|Any CPU.Build.0 = uap-Release|Any CPU
 		{02304469-722E-4723-92A1-820B9A37D275}.Debug|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Debug|Any CPU
 		{02304469-722E-4723-92A1-820B9A37D275}.Debug|Any CPU.Build.0 = netcoreapp-Windows_NT-Debug|Any CPU
 		{02304469-722E-4723-92A1-820B9A37D275}.Release|Any CPU.ActiveCfg = netcoreapp-Windows_NT-Release|Any CPU
