@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json.Serialization.Converters;
 
-namespace System.Text.Json.Serialization
+namespace System.Text.Json
 {
     internal sealed class ReflectionMaterializer : ClassMaterializer
     {

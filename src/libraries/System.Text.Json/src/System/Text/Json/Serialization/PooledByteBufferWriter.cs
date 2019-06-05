@@ -8,7 +8,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace System.Text.Json.Serialization
+namespace System.Text.Json
 {
     internal sealed class PooledByteBufferWriter : IBufferWriter<byte>, IDisposable
     {

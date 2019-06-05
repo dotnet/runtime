@@ -4,8 +4,9 @@
 
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
-namespace System.Text.Json.Serialization
+namespace System.Text.Json
 {
     /// <summary>
     /// Provides options to be used with <see cref="JsonSerializer"/>.
