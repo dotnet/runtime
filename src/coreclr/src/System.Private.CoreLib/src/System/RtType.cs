@@ -3841,7 +3841,7 @@ namespace System
         [DebuggerHidden]
         public override object? InvokeMember(
             string name, BindingFlags bindingFlags, Binder? binder, object? target,
-            object[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
+            object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
         {
             if (IsGenericParameter)
                 throw new InvalidOperationException(SR.Arg_GenericParameter);
@@ -3986,7 +3986,7 @@ namespace System
                 }
                 else if (flds.Length > 0)
                 {
-                    selFld = binder.BindToField(bindingFlags, flds, IsGetField ? Empty.Value : providedArgs![0], culture);
+                    selFld = binder.BindToField(bindingFlags, flds, IsGetField ? Empty.Value : providedArgs![0]!, culture);
                 }
 
                 if (selFld != null)
@@ -4013,7 +4013,7 @@ namespace System
                             {
                                 try
                                 {
-                                    idx[i] = ((IConvertible)providedArgs![i]).ToInt32(null);
+                                    idx[i] = ((IConvertible)providedArgs![i]!).ToInt32(null);
                                 }
                                 catch (InvalidCastException)
                                 {
@@ -4614,7 +4614,7 @@ namespace System
 #if FEATURE_COMINTEROP       
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern object InvokeDispMethod(
-            string name, BindingFlags invokeAttr, object target, object[]? args,
+            string name, BindingFlags invokeAttr, object target, object?[]? args,
             bool[]? byrefModifiers, int culture, string[]? namedParameters);
 #endif // FEATURE_COMINTEROP        
 

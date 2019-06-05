@@ -771,7 +771,7 @@ namespace System.Reflection.Emit
         }
 
         public override object? InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target,
-            object[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
+            object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters)
         {
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
@@ -1250,7 +1250,8 @@ namespace System.Reflection.Emit
             return TypeBuilderInstantiation.MakeGenericType(this, typeArguments);
         }
 
-        public override Type[]? GetGenericArguments() { return m_inst; }
+        public override Type[] GetGenericArguments() => m_inst ?? Array.Empty<Type>();
+
         // If a TypeBuilder is generic, it must be a generic type definition
         // All instantiated generic types are TypeBuilderInstantiation.
         public override bool IsGenericTypeDefinition { get { return IsGenericType; } }

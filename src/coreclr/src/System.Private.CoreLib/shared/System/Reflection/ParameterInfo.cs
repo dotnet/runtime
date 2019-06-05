@@ -69,7 +69,7 @@ namespace System.Reflection
                     if (PositionImpl == -1)
                     {
                         if (MemberImpl.MemberType == MemberTypes.Method)
-                            return ((MethodInfo)MemberImpl).ReturnParameter!;
+                            return ((MethodInfo)MemberImpl).ReturnParameter;
                         else
                             throw new SerializationException(SR.Serialization_BadParameterInfo);
                     }

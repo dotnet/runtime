@@ -79,7 +79,7 @@ namespace System.Resources
                 // create an unbound delegate that can accept a BinaryFormatter instance as object
                 return (Func<object?, Stream, object>)typeof(ResourceReader)
                         .GetMethod(nameof(CreateUntypedDelegate), BindingFlags.NonPublic | BindingFlags.Static)!
-                        .MakeGenericMethod(s_binaryFormatterType)!
+                        .MakeGenericMethod(s_binaryFormatterType)
                         .Invoke(null, new object[] { binaryFormatterDeserialize })!;
             });
 #pragma warning restore CS8634

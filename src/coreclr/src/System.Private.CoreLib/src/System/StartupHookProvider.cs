@@ -126,7 +126,7 @@ namespace System
             }
 
             Debug.Assert(assembly != null);
-            Type type = assembly.GetType(StartupHookTypeName, throwOnError: true);
+            Type type = assembly.GetType(StartupHookTypeName, throwOnError: true)!;
 
             // Look for a static method without any parameters
             MethodInfo? initializeMethod = type.GetMethod(InitializeMethodName,

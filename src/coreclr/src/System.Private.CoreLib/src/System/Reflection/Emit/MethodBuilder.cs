@@ -44,7 +44,7 @@ namespace System.Reflection.Emit
         // Parameters
         private SignatureHelper? m_signature;
         internal Type[]? m_parameterTypes;
-        private Type? m_returnType;
+        private Type m_returnType;
         private Type[]? m_returnTypeRequiredCustomModifiers;
         private Type[]? m_returnTypeOptionalCustomModifiers;
         private Type[][]? m_parameterTypeRequiredCustomModifiers;
@@ -86,16 +86,7 @@ namespace System.Reflection.Emit
             m_strName = name;
             m_module = mod;
             m_containingType = type;
-
-            // 
-            //if (returnType == null)
-            //{
-            //    m_returnType = typeof(void);
-            //}
-            //else
-            {
-                m_returnType = returnType;
-            }
+            m_returnType = returnType ?? typeof(void);
 
             if ((attributes & MethodAttributes.Static) == 0)
             {
@@ -362,7 +353,7 @@ namespace System.Reflection.Emit
                 m_parameterTypes = Array.Empty<Type>();
 
             m_signature = SignatureHelper.GetMethodSigHelper(m_module, m_callingConvention, m_inst != null ? m_inst.Length : 0,
-                m_returnType == null ? typeof(void) : m_returnType, m_returnTypeRequiredCustomModifiers, m_returnTypeOptionalCustomModifiers,
+                m_returnType, m_returnTypeRequiredCustomModifiers, m_returnTypeOptionalCustomModifiers,
                 m_parameterTypes, m_parameterTypeRequiredCustomModifiers, m_parameterTypeOptionalCustomModifiers);
 
             return m_signature;
@@ -522,13 +513,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override ICustomAttributeProvider? ReturnTypeCustomAttributes
-        {
-            get
-            {
-                return null;
-            }
-        }
+        public override ICustomAttributeProvider ReturnTypeCustomAttributes => new EmptyCAHolder();
 
         public override Type? ReflectedType
         {
@@ -588,7 +573,7 @@ namespace System.Reflection.Emit
             return this;
         }
 
-        public override Type? ReturnType
+        public override Type ReturnType
         {
             get
             {
@@ -606,7 +591,7 @@ namespace System.Reflection.Emit
             return rmi.GetParameters();
         }
 
-        public override ParameterInfo? ReturnParameter
+        public override ParameterInfo ReturnParameter
         {
             get
             {
@@ -647,7 +632,7 @@ namespace System.Reflection.Emit
 
         public override bool IsGenericMethod { get { return m_inst != null; } }
 
-        public override Type[]? GetGenericArguments() { return m_inst; }
+        public override Type[] GetGenericArguments() => m_inst ?? Array.Empty<Type>();
 
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
