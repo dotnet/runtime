@@ -47,7 +47,8 @@ namespace System.Net.Http
             // It is mandatory for servers to implement sha-256 per RFC 7616
             // Keep MD5 for backward compatibility.
             string algorithm;
-            if (digestResponse.Parameters.TryGetValue(Algorithm, out algorithm))
+            bool isAlgorithmSpecified = digestResponse.Parameters.TryGetValue(Algorithm, out algorithm);
+            if (isAlgorithmSpecified)
             {
                 if (!algorithm.Equals(Sha256, StringComparison.OrdinalIgnoreCase) &&
                     !algorithm.Equals(Md5, StringComparison.OrdinalIgnoreCase) &&
@@ -114,7 +115,8 @@ namespace System.Net.Http
 
             // Set qop, default is auth
             string qop = Auth;
-            if (digestResponse.Parameters.ContainsKey(Qop))
+            bool isQopSpecified = digestResponse.Parameters.ContainsKey(Qop);
+            if (isQopSpecified)
             {
                 // Check if auth-int present in qop string
                 int index1 = digestResponse.Parameters[Qop].IndexOf(AuthInt, StringComparison.Ordinal);
@@ -153,33 +155,49 @@ namespace System.Net.Http
                 a2 = a2 + ":" + ComputeHash(content, algorithm);
             }
 
-            string response = ComputeHash(ComputeHash(a1, algorithm) + ":" +
-                                        nonce + ":" +
-                                        DigestResponse.NonceCount + ":" +
-                                        cnonce + ":" +
-                                        qop + ":" +
-                                        ComputeHash(a2, algorithm), algorithm);
+            string response;
+            if (isQopSpecified)
+            { 
+                response = ComputeHash(ComputeHash(a1, algorithm) + ":" +
+                                            nonce + ":" +
+                                            DigestResponse.NonceCount + ":" +
+                                            cnonce + ":" +
+                                            qop + ":" +
+                                            ComputeHash(a2, algorithm), algorithm);
+            }
+            else
+            {
+                response = ComputeHash(ComputeHash(a1, algorithm) + ":" +
+                            nonce + ":" +
+                            ComputeHash(a2, algorithm), algorithm);
+            }
 
             // Add response
-            sb.AppendKeyValue(Response, response);
-
-            // Add algorithm
-            sb.AppendKeyValue(Algorithm, algorithm, includeQuotes: false);
+            sb.AppendKeyValue(Response, response, includeComma: opaque != null || isAlgorithmSpecified || isQopSpecified);
 
             // Add opaque
             if (opaque != null)
             {
-                sb.AppendKeyValue(Opaque, opaque);
+                sb.AppendKeyValue(Opaque, opaque, includeComma: isAlgorithmSpecified || isQopSpecified);
             }
 
-            // Add qop
-            sb.AppendKeyValue(Qop, qop, includeQuotes: false);
+            if (isAlgorithmSpecified)
+            {
+                // Add algorithm
+                sb.AppendKeyValue(Algorithm, algorithm, includeQuotes: false, includeComma: isQopSpecified);
+            }
 
-            // Add nc
-            sb.AppendKeyValue(NC, DigestResponse.NonceCount, includeQuotes: false);
+            if (isQopSpecified)
+            {
+                // Add qop
+                sb.AppendKeyValue(Qop, qop, includeQuotes: false);
 
-            // Add cnonce
-            sb.AppendKeyValue(CNonce, cnonce, includeComma: false);
+                // Add nc
+                sb.AppendKeyValue(NC, DigestResponse.NonceCount, includeQuotes: false);
+
+                // Add cnonce
+                sb.AppendKeyValue(CNonce, cnonce, includeComma: false);
+            }
 
             return StringBuilderCache.GetStringAndRelease(sb);
         }

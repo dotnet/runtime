@@ -33,7 +33,7 @@ namespace System.Net.Http.Tests
             yield return new object[] { "    key1 = value1, key2 =    value2,", s_keyListWithCountTwo, s_valueListWithCountTwo };
             yield return new object[] { "item1 === item1,key2=, value2", s_listWithCountOne, s_listWithCountOne };
             yield return new object[] { "item1,==item1,,,    key2=\"value2\", key3 m", new List<string> { "item1," }, s_listWithCountOne };
-            yield return new object[] { "key1= \"value1   \",key2  =  \"v alu#e2\"   ,", s_keyListWithCountTwo, new List<string> { "value1   ", "v alu#e2"} };
+            yield return new object[] { "key1= \"value1   \",key2  =  \"v alu#e2\"   ,", s_keyListWithCountTwo, new List<string> { "value1   ", "v alu#e2" } };
             yield return new object[] { "key1   ", s_emptyStringList, s_emptyStringList };
             yield return new object[] { "=====", s_emptyStringList, s_emptyStringList };
             yield return new object[] { ",,", s_emptyStringList, s_emptyStringList };
@@ -49,7 +49,7 @@ namespace System.Net.Http.Tests
         [InlineData("realm=\"NetCore\", qop=\"auth\", stale=false", false)]
         public async void DigestResponse_AuthToken_Handling(string response, bool expectedResult)
         {
-            NetworkCredential credential = new NetworkCredential("foo","bar");
+            NetworkCredential credential = new NetworkCredential("foo", "bar");
             AuthenticationHelper.DigestResponse digestResponse = new AuthenticationHelper.DigestResponse(response);
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com/");
             string parameter = await AuthenticationHelper.GetDigestTokenForCredential(credential, request, digestResponse).ConfigureAwait(false);
@@ -70,6 +70,36 @@ namespace System.Net.Http.Tests
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com/");
             string parameter = await AuthenticationHelper.GetDigestTokenForCredential(credential, request, digestResponse).ConfigureAwait(false);
             Assert.StartsWith(encodedUserName, parameter);
+        }
+
+        public static IEnumerable<object[]> DigestResponse_ShouldSendQop_TestData()
+        {
+            yield return new object[] { "realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", qop=\"auth\", stale=false", "(?=.*username=)(?=.*realm=)(?=.*nonce=)(?=.*uri=)(?=.*response=)(?=.*qop=)(?=.*nc=)(?=.*cnonce=)", "(opaque=|algorithm=)", 8 };
+            yield return new object[] { "realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", stale=false", "(?=.*username=)(?=.*realm=)(?=.*nonce=)(?=.*uri=)(?=.*response=)", "(qop=|cnonce=|opaque=|algorithm=)", 5 };
+            yield return new object[] { "realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", stale=false, algorithm=MD5", "(?=.*username=)(?=.*realm=)(?=.*nonce=)(?=.*uri=)(?=.*response=)(?=.*algorithm=)", null, 6 };
+            yield return new object[] { "realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", qop=\"auth\", stale=false, opaque=\"qMRqWgAAAAAA\"", "(?=.*username=)(?=.*realm=)(?=.*nonce=)(?=.*uri=)(?=.*response=)(?=.*qop=)(?=.*nc=)(?=.*cnonce=)(?=.*opaque=)", "(algorithm=)", 9 };
+            yield return new object[] { "realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", stale=false, opaque=\"qMRqWgAAAAAA\"", "(?=.*username=)(?=.*realm=)(?=.*nonce=)(?=.*uri=)(?=.*response=)(?=.*opaque=)", "(algorithm=)", 6 };
+            yield return new object[] { "realm=\"NetCore\", nonce=\"qMRqWgAAAAAQMjIABgAAAFwEiEwAAAAA\", stale=false, algorithm=MD5-sess, qop=\"auth\"", "(?=.*username=)(?=.*realm=)(?=.*nonce=)(?=.*uri=)(?=.*response=)(?=.*qop=)(?=.*nc=)(?=.*cnonce=)(?=.*algorithm=)", null, 9 };
+        }
+
+        [Theory]
+        [MemberData(nameof(DigestResponse_ShouldSendQop_TestData))]
+        public async void DigestResponse_ShouldSendQop(string response, string match, string doesNotMatch, int fieldCount)
+        {
+            NetworkCredential credential = new NetworkCredential("foo", "bar");
+            AuthenticationHelper.DigestResponse digestResponse = new AuthenticationHelper.DigestResponse(response);
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://microsoft.com/");
+            string parameter = await AuthenticationHelper.GetDigestTokenForCredential(credential, request, digestResponse).ConfigureAwait(false);
+            if (match != null)
+            { 
+                Assert.Matches(match, parameter);
+            }
+            if (doesNotMatch != null)
+            { 
+                Assert.DoesNotMatch(doesNotMatch, parameter);
+            }
+            Assert.Equal(fieldCount, parameter.Split(',').Length);
+            Assert.False(parameter.Trim().EndsWith(","));
         }
     }
 }
