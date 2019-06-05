@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{297A9116-1005-499D-A895-2063D03E4C94}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
@@ -12,5 +12,8 @@
     <Compile Include="SymbolTokenTests.cs" />
     <Compile Include="StackFrameTests.cs" />
     <Compile Include="StackFrameExtensionsTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="StackTraceSymbolsTests.cs" />
   </ItemGroup>
 </Project>

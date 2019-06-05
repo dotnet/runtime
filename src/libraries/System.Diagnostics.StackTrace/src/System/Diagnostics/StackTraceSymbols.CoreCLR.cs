@@ -52,8 +52,8 @@ namespace System.Diagnostics
         /// <param name="sourceFile">source file return</param>
         /// <param name="sourceLine">line number return</param>
         /// <param name="sourceColumn">column return</param>
-        internal void GetSourceLineInfo(Assembly assembly, string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize, 
-            IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset, 
+        internal void GetSourceLineInfo(Assembly assembly, string assemblyPath, IntPtr loadedPeAddress, int loadedPeSize,
+            IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
             out string? sourceFile, out int sourceLine, out int sourceColumn)
         {
             sourceFile = null;
@@ -212,7 +212,8 @@ namespace System.Diagnostics
 
             try
             {
-                return File.OpenRead(path);
+                // Open the file with read and delete FileShare flags. This matches what dll loading does
+                return new FileStream(path!, FileMode.Open, FileAccess.Read, FileShare.Read | FileShare.Delete);
             }
             catch
             {
