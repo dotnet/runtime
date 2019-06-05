@@ -77,6 +77,7 @@ int main(int argc, char **argv) {
 set(CMAKE_REQUIRED_LIBRARIES)
 
 check_include_files(sys/sysctl.h HAVE_SYS_SYSCTL_H)
+check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
 check_include_files(gnu/lib-names.h HAVE_GNU_LIBNAMES_H)
 
 check_function_exists(kqueue HAVE_KQUEUE)
