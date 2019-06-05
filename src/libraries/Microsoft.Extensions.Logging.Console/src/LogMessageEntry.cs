@@ -7,7 +7,7 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal readonly struct LogMessageEntry
     {
-        public LogMessageEntry(string timeStamp, string levelString, ConsoleColor? levelBackground, ConsoleColor? levelForeground, ConsoleColor? messageColor, string message, bool logAsError)
+        public LogMessageEntry(string message, string timeStamp = null, string levelString = null, ConsoleColor? levelBackground = null, ConsoleColor? levelForeground = null, ConsoleColor? messageColor = null, bool logAsError = false)
         {
             TimeStamp = timeStamp;
             LevelString = levelString;
