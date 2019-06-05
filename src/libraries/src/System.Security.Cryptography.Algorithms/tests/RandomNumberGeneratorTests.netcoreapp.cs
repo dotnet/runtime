@@ -164,7 +164,7 @@ namespace System.Security.Cryptography.RNG.Tests
         {
             // This test should work since we are selecting random numbers that are a
             // Power of two minus one so no bit should favored.
-            int numberToGenerate = 256;
+            int numberToGenerate = 512;
             byte[] bytes = new byte[numberToGenerate * 4];
             Span<byte> bytesSpan = bytes.AsSpan();
             for (int i = 0, j = 0; i < numberToGenerate; i++, j += 4)
@@ -179,7 +179,7 @@ namespace System.Security.Cryptography.RNG.Tests
         [Fact]
         public static void GetInt32_CoinFlipLowByte()
         {
-            int numberToGenerate = 1024;
+            int numberToGenerate = 2048;
             Span<int> generated = stackalloc int[numberToGenerate];
 
             for (int i = 0; i < numberToGenerate; i++)
@@ -194,7 +194,7 @@ namespace System.Security.Cryptography.RNG.Tests
         [Fact]
         public static void GetInt32_CoinFlipOverByteBoundary()
         {
-            int numberToGenerate = 1024;
+            int numberToGenerate = 2048;
             Span<int> generated = stackalloc int[numberToGenerate];
 
             for (int i = 0; i < numberToGenerate; i++)
@@ -279,7 +279,8 @@ namespace System.Security.Cryptography.RNG.Tests
             foreach ((_, int occurences) in observedNumbers)
             {
                 double percentage = occurences / (double)numbers.Length;
-                Assert.True(Math.Abs(expected - percentage) < tolerance, "Occurred number of times within threshold.");
+                double actual = Math.Abs(expected - percentage);
+                Assert.True(actual < tolerance, $"Occurred number of times within threshold. Actual: {actual}");
             }
         }
     }
