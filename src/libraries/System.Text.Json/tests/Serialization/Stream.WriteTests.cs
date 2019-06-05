@@ -15,21 +15,21 @@ namespace System.Text.Json.Serialization.Tests
         public async static Task VerifyValueFail()
         {
             MemoryStream stream = new MemoryStream();
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.WriteAsync("", null, stream));
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await JsonSerializer.WriteAsync(stream, "", (Type)null));
         }
 
         [Fact]
         public async static Task VerifyTypeFail()
         {
             MemoryStream stream = new MemoryStream();
-            await Assert.ThrowsAsync<ArgumentException>(async () => await JsonSerializer.WriteAsync(1, typeof(string), stream));
+            await Assert.ThrowsAsync<ArgumentException>(async () => await JsonSerializer.WriteAsync(stream, 1, typeof(string)));
         }
 
         [Fact]
         public static async Task NullObjectValue()
         {
             MemoryStream stream = new MemoryStream();
-            await JsonSerializer.WriteAsync((object)null, stream);
+            await JsonSerializer.WriteAsync(stream, (object)null);
 
             stream.Seek(0, SeekOrigin.Begin);
 
@@ -73,7 +73,7 @@ namespace System.Text.Json.Serialization.Tests
                 obj.Initialize();
                 obj.Verify();
 
-                await JsonSerializer.WriteAsync(obj, stream, options: options);
+                await JsonSerializer.WriteAsync(stream, obj, options: options);
             }
 
             // Must be changed if the test classes change:

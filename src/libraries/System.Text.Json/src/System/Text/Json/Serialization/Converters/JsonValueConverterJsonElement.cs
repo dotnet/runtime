@@ -25,12 +25,12 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(JsonElement value, Utf8JsonWriter writer)
         {
-            value.WriteAsValue(writer);
+            value.WriteValue(writer);
         }
 
         public override void Write(JsonEncodedText propertyName, JsonElement value, Utf8JsonWriter writer)
         {
-            value.WriteAsProperty(propertyName.ToString(), writer);
+            value.WriteProperty(propertyName.ToString(), writer);
         }
     }
 }

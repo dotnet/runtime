@@ -846,7 +846,7 @@ null,
             using (JsonDocument doc = JsonDocument.Parse(jsonIn, optionsCopy))
             {
                 var writer = new Utf8JsonWriter(buffer);
-                doc.RootElement.WriteAsValue(writer);
+                doc.RootElement.WriteValue(writer);
                 writer.Flush();
 
                 ReadOnlySpan<byte> formatted = buffer.WrittenSpan;
@@ -879,9 +879,9 @@ null,
                 {
                     foreach (JsonElement val in root.EnumerateArray())
                     {
-                        val.WriteAsProperty(CharLabel, writer);
-                        val.WriteAsProperty(CharLabel.AsSpan(), writer);
-                        val.WriteAsProperty(byteUtf8, writer);
+                        val.WriteProperty(CharLabel, writer);
+                        val.WriteProperty(CharLabel.AsSpan(), writer);
+                        val.WriteProperty(byteUtf8, writer);
                     }
 
                     writer.Flush();
@@ -902,15 +902,15 @@ null,
                     {
                         JsonTestHelper.AssertThrows<InvalidOperationException>(
                             ref writer,
-                            (ref Utf8JsonWriter w) => val.WriteAsProperty(CharLabel, w));
+                            (ref Utf8JsonWriter w) => val.WriteProperty(CharLabel, w));
 
                         JsonTestHelper.AssertThrows<InvalidOperationException>(
                             ref writer,
-                            (ref Utf8JsonWriter w) => val.WriteAsProperty(CharLabel.AsSpan(), w));
+                            (ref Utf8JsonWriter w) => val.WriteProperty(CharLabel.AsSpan(), w));
 
                         JsonTestHelper.AssertThrows<InvalidOperationException>(
                             ref writer,
-                            (ref Utf8JsonWriter w) => val.WriteAsProperty(byteUtf8, w));
+                            (ref Utf8JsonWriter w) => val.WriteProperty(byteUtf8, w));
                     }
 
                     writer.Flush();
@@ -941,7 +941,7 @@ null,
                 {
                     foreach (JsonElement val in root.EnumerateArray())
                     {
-                        val.WriteAsValue(writer);
+                        val.WriteValue(writer);
                     }
 
                     writer.WriteEndObject();
@@ -957,7 +957,7 @@ null,
                     {
                         JsonTestHelper.AssertThrows<InvalidOperationException>(
                             ref writer,
-                            (ref Utf8JsonWriter w) => val.WriteAsValue(w));
+                            (ref Utf8JsonWriter w) => val.WriteValue(w));
                     }
 
                     writer.WriteEndObject();
@@ -982,7 +982,7 @@ null,
 
                 var writer = new Utf8JsonWriter(buffer, options);
 
-                target.WriteAsValue(writer);
+                target.WriteValue(writer);
                 writer.Flush();
 
                 AssertContents(jsonOut ?? jsonIn, buffer);
@@ -1007,7 +1007,7 @@ null,
 
                 var writer = new Utf8JsonWriter(buffer, options);
 
-                target.WriteAsValue(writer);
+                target.WriteValue(writer);
                 writer.Flush();
 
                 if (indented && s_replaceNewlines)
@@ -1071,7 +1071,7 @@ null,
                 var writer = new Utf8JsonWriter(buffer, options);
 
                 writer.WriteStartObject();
-                target.WriteAsProperty(propertyName, writer);
+                target.WriteProperty(propertyName, writer);
                 writer.WriteEndObject();
                 writer.Flush();
 
@@ -1106,7 +1106,7 @@ null,
                 var writer = new Utf8JsonWriter(buffer, options);
 
                 writer.WriteStartObject();
-                target.WriteAsProperty(propertyName, writer);
+                target.WriteProperty(propertyName, writer);
                 writer.WriteEndObject();
                 writer.Flush();
 
@@ -1141,7 +1141,7 @@ null,
                 var writer = new Utf8JsonWriter(buffer, options);
 
                 writer.WriteStartObject();
-                target.WriteAsProperty(propertyName, writer);
+                target.WriteProperty(propertyName, writer);
                 writer.WriteEndObject();
                 writer.Flush();
 
