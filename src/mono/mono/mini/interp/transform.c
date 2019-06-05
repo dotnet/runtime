@@ -1306,7 +1306,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 			}
 		}
 	} else if (in_corlib && !strcmp (klass_name_space, "System") && (!strcmp (klass_name, "Span`1") || !strcmp (klass_name, "ReadOnlySpan`1"))) {
-		if (!strcmp (tm, "get_Item") && csignature->params [0]->type != MONO_TYPE_VALUETYPE) {
+		if (!strcmp (tm, "get_Item")) {
 			MonoGenericClass *gclass = mono_class_get_generic_class (target_method->klass);
 			MonoClass *param_class = mono_class_from_mono_type_internal (gclass->context.class_inst->type_argv [0]);
 

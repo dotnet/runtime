@@ -199,7 +199,7 @@ emit_span_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature
 		/* Portable Span<T> */
 		return NULL;
 
-	if (!strcmp (cmethod->name, "get_Item") && fsig->params [0]->type != MONO_TYPE_VALUETYPE) {
+	if (!strcmp (cmethod->name, "get_Item")) {
 		MonoClassField *length_field = mono_class_get_field_from_name_full (cmethod->klass, "_length", NULL);
 
 		g_assert (length_field);
