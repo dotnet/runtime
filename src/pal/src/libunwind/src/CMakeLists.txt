@@ -22,7 +22,7 @@ add_definitions("-Ddwarf_search_unwind_table_int=UNW_OBJ(dwarf_search_unwind_tab
 # Disable warning due to incorrect format specifier in debugging printf via the Debug macro
 add_compile_options(-Wno-format)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wno-header-guard)
 elseif()
   add_compile_options(-Wno-unused-value)
@@ -33,7 +33,7 @@ if(CLR_CMAKE_PLATFORM_ARCH_ARM)
     add_definitions("-Darm_search_unwind_table=UNW_OBJ(arm_search_unwind_table)")
     # Disable warning in asm: use of SP or PC in the list is deprecated
     add_compile_options(-Wno-inline-asm)
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         # Disable warning due to labs function called on unsigned argument
         add_compile_options(-Wno-absolute-value)
     endif()
@@ -48,7 +48,7 @@ if(CLR_CMAKE_PLATFORM_ARCH_ARM)
     # the include/tdep-arm to include directories
     include_directories(../include/tdep-arm)
 elseif(CLR_CMAKE_PLATFORM_ARCH_ARM64)
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         # Disable warning due to labs function called on unsigned argument
         add_compile_options(-Wno-absolute-value)
     endif()
