@@ -19,17 +19,17 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>d2599acd9703ef747dfb4329ec3e3beff182e755</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-preview7.19303.11">
+    <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-preview7.19305.1">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>6d5959cbc7d489406f8f85dba0a42f06d4a0ea9b</Sha>
+      <Sha>656ccfbbef3a0d75c02e17b7477122a658b92557</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview7.19303.11">
+    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview7.19305.1">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>6d5959cbc7d489406f8f85dba0a42f06d4a0ea9b</Sha>
+      <Sha>656ccfbbef3a0d75c02e17b7477122a658b92557</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0-preview7.19303.11">
+    <Dependency Name="Microsoft.Bcl.AsyncInterfaces" Version="1.0.0-preview7.19305.1">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>6d5959cbc7d489406f8f85dba0a42f06d4a0ea9b</Sha>
+      <Sha>656ccfbbef3a0d75c02e17b7477122a658b92557</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.App" Version="3.0.0-preview7-27803-11">
       <Uri>https://github.com/dotnet/core-setup</Uri>
