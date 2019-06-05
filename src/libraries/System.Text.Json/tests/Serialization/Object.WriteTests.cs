@@ -53,5 +53,27 @@ namespace System.Text.Json.Serialization.Tests
         {
             public object Object { get; set; }
         }
+
+        [Fact]
+        public static void WriteObject_PublicIndexer()
+        {
+            var indexer = new Indexer();
+            indexer[42] = 42;
+            indexer.NonIndexerProp = "Value";
+            Assert.Equal(@"{""NonIndexerProp"":""Value""}", JsonSerializer.ToString(indexer));
+        }
+
+        private class Indexer
+        {
+            private int _index = -1;
+
+            public int this[int index]
+            {
+                get => _index;
+                set => _index = value;
+            }
+
+            public string NonIndexerProp { get; set; }
+        }
     }
 }
