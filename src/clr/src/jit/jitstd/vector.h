@@ -255,7 +255,7 @@ private:
     friend class vector;
 };
 
-}// namespace jit_std
+}// namespace jitstd
 
 
 

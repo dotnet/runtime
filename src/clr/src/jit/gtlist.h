@@ -155,8 +155,8 @@ GTNODE(QMARK            , GenTreeQmark       ,0,(GTK_BINOP|GTK_EXOP|GTK_NOTLIR))
 GTNODE(COLON            , GenTreeColon       ,0,(GTK_BINOP|GTK_NOTLIR))
 
 GTNODE(INDEX            , GenTreeIndex       ,0,(GTK_BINOP|GTK_EXOP|GTK_NOTLIR))   // SZ-array-element
-GTNODE(INDEX_ADDR       , GenTreeIndex       ,0,(GTK_BINOP|GTK_EXOP))              // addr of SZ-array-element; used when
-                                                                                 // aiming to minimize compile times.
+GTNODE(INDEX_ADDR       , GenTreeIndexAddr   ,0,(GTK_BINOP|GTK_EXOP)) // addr of SZ-array-element; 
+                                                                      // used when aiming to minimize compile times.
 
 GTNODE(MKREFANY         , GenTreeOp          ,0,GTK_BINOP)
 
@@ -273,7 +273,7 @@ GTNODE(PHI_ARG          , GenTreePhiArg      ,0,(GTK_LEAF|GTK_LOCAL))     // phi
 //  Nodes used by Lower to generate a closer CPU representation of other nodes
 //-----------------------------------------------------------------------------
 
-GTNODE(JMPTABLE         , GenTreeJumpTable   ,0, (GTK_LEAF|GTK_NOCONTAIN)) // Generates the jump table for switches
+GTNODE(JMPTABLE         , GenTree            ,0, (GTK_LEAF|GTK_NOCONTAIN)) // Generates the jump table for switches
 GTNODE(SWITCH_TABLE     , GenTreeOp          ,0, (GTK_BINOP|GTK_NOVALUE))  // Jump Table based switch construct
 
 //-----------------------------------------------------------------------------
