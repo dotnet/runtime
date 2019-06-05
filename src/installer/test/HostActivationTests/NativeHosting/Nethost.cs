@@ -23,14 +23,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        public void GetHostFxrPath_DotNetRootEnvironment(bool useAssemblyPath, bool isValid)
+        [InlineData(true, false, true)]
+        [InlineData(true, false, false)]
+        [InlineData(true, true, true)]
+        [InlineData(true, true, false)]
+        [InlineData(false, false, true)]
+        [InlineData(false, false, false)]
+        [InlineData(false, true, true)]
+        [InlineData(false, true, false)]
+        public void GetHostFxrPath_DotNetRootEnvironment(bool explicitLoad, bool useAssemblyPath, bool isValid)
         {
             string dotNetRoot = isValid ? Path.Combine(sharedState.ValidInstallRoot, "dotnet") : sharedState.InvalidInstallRoot;
-            CommandResult result = Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} {(useAssemblyPath ? sharedState.TestAssemblyPath : string.Empty)}")
+            CommandResult result = Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} {explicitLoad} {(useAssemblyPath ? sharedState.TestAssemblyPath : string.Empty)}")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable("COREHOST_TRACE", "1")
@@ -55,15 +59,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         }
 
         [Theory]
-        [InlineData(false, true, false)]
-        [InlineData(false, true, true)]
-        [InlineData(false, false, false)]
-        [InlineData(false, false, true)]
-        [InlineData(true, true, false)]
-        [InlineData(true, true, true)]
-        [InlineData(true, false, false)]
-        [InlineData(true, false, true)]
-        public void GetHostFxrPath_GlobalInstallation(bool useAssemblyPath, bool useRegisteredLocation, bool isValid)
+        [InlineData(true, false, true, false)]
+        [InlineData(true, false, true, true)]
+        [InlineData(true, false, false, false)]
+        [InlineData(true, false, false, true)]
+        [InlineData(true, true, true, false)]
+        [InlineData(true, true, true, true)]
+        [InlineData(true, true, false, false)]
+        [InlineData(true, true, false, true)]
+        [InlineData(false, false, true, false)]
+        [InlineData(false, false, true, true)]
+        [InlineData(false, false, false, false)]
+        [InlineData(false, false, false, true)]
+        [InlineData(false, true, true, false)]
+        [InlineData(false, true, true, true)]
+        [InlineData(false, true, false, false)]
+        [InlineData(false, true, false, true)]
+        public void GetHostFxrPath_GlobalInstallation(bool explicitLoad, bool useAssemblyPath, bool useRegisteredLocation, bool isValid)
         {
             // Overide the registry key for self-registered global installs.
             // If using the registered location, set the install location value to the valid/invalid root.
@@ -78,7 +90,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     registeredInstallLocationOverride.SetInstallLocation(installLocation, sharedState.RepoDirectories.BuildArchitecture);
                 }
 
-                result = Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} {(useAssemblyPath ? sharedState.TestAssemblyPath : string.Empty)}")
+                result = Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} {explicitLoad} {(useAssemblyPath ? sharedState.TestAssemblyPath : string.Empty)}")
                     .CaptureStdErr()
                     .CaptureStdOut()
                     .EnvironmentVariable("COREHOST_TRACE", "1")
@@ -105,8 +117,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             }
         }
 
-        [Fact]
-        public void GetHostFxrPath_WithAssemblyPath_AppLocalFxr()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void GetHostFxrPath_WithAssemblyPath_AppLocalFxr(bool explicitLoad)
         {
             string appLocalFxrDir = Path.Combine(sharedState.BaseDirectory, "appLocalFxr");
             Directory.CreateDirectory(appLocalFxrDir);
@@ -115,7 +129,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             File.WriteAllText(assemblyPath, string.Empty);
             File.WriteAllText(hostFxrPath, string.Empty);
 
-            Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} {assemblyPath}")
+            Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} {explicitLoad} {assemblyPath}")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable("COREHOST_TRACE", "1")
@@ -127,7 +141,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
         [Fact]
         public void GetHostFxrPath_HostFxrAlreadyLoaded()
         {
-            Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} {sharedState.TestAssemblyPath} {sharedState.ProductHostFxrPath}")
+            Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} false {sharedState.TestAssemblyPath} {sharedState.ProductHostFxrPath}")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .EnvironmentVariable("COREHOST_TRACE", "1")
