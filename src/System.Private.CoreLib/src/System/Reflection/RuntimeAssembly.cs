@@ -103,14 +103,11 @@ namespace System.Reflection
                     GetFlags() | AssemblyNameFlags.PublicKey,
                     null); // strong name key pair
 
-            Module? manifestModule = ManifestModule;
-            if (manifestModule != null)
+            Module manifestModule = ManifestModule;
+            if (manifestModule.MDStreamVersion > 0x10000)
             {
-                if (manifestModule.MDStreamVersion > 0x10000)
-                {
-                    manifestModule.GetPEKind(out PortableExecutableKinds pek, out ImageFileMachine ifm);
-                    an.SetProcArchIndex(pek, ifm);
-                }
+                manifestModule.GetPEKind(out PortableExecutableKinds pek, out ImageFileMachine ifm);
+                an.SetProcArchIndex(pek, ifm);
             }
             return an;
         }
@@ -271,7 +268,7 @@ namespace System.Reflection
             throw new PlatformNotSupportedException();
         }
 
-        public override Module? ManifestModule
+        public override Module ManifestModule
         {
             get
             {

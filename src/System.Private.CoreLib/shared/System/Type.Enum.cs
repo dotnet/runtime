@@ -121,7 +121,7 @@ namespace System
             for (int i = 0; i < flds.Length; i++)
             {
                 names[i] = flds[i].Name;
-                values[i] = flds[i].GetRawConstantValue();
+                values[i] = flds[i].GetRawConstantValue()!;
             }
 
             // Insertion Sort these values in ascending order.
