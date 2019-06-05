@@ -1,10 +1,7 @@
-# Require at least version 2.8.12 of CMake
-cmake_minimum_required(VERSION 2.8.12)
+# Require at least version 3.5.1 of CMake
+cmake_minimum_required(VERSION 3.5.1)
 
-if (NOT WIN32)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11")
-endif()
+cmake_policy(SET CMP0042 NEW)
 
 set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Platform)
 if (WIN32)
