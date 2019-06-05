@@ -529,5 +529,21 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
     }
 #endif
 
+#if HAVE_SYSCTLBYNAME
+    if (cacheSize == 0)
+    {
+        int64_t cacheSizeFromSysctl = 0;
+        size_t sz = sizeof(cacheSizeFromSysctl);
+        const bool success = sysctlbyname("hw.l3cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+            || sysctlbyname("hw.l2cachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0
+            || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;
+        if (success)
+        {
+            assert(cacheSizeFromSysctl > 0);
+            cacheSize = (size_t) cacheSizeFromSysctl;
+        }
+    }
+#endif
+
     return cacheSize;
 }

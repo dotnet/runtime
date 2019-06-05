@@ -45,6 +45,7 @@
 #cmakedefine01 HAVE_FUTIMES
 #cmakedefine01 HAVE_UTIMES
 #cmakedefine01 HAVE_SYSCTL
+#cmakedefine01 HAVE_SYSCTLBYNAME
 #cmakedefine01 HAVE_SYSCONF
 #cmakedefine01 HAVE_SYSINFO
 #cmakedefine01 HAVE_LOCALTIME_R
