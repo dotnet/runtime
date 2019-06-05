@@ -5,7 +5,7 @@
 using System.Diagnostics;
 using System.Reflection;
 
-namespace System.Text.Json.Serialization
+namespace System.Text.Json
 {
     internal abstract class ClassMaterializer
     {

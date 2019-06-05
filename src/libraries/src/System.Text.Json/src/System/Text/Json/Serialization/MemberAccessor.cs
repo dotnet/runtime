@@ -5,7 +5,7 @@
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace System.Text.Json.Serialization
+namespace System.Text.Json
 {
     internal static class MemberAccessor
     {

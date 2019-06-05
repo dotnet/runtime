@@ -6,7 +6,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Text.Json.Serialization.Converters;
 
-namespace System.Text.Json.Serialization
+namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {

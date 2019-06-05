@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Policies;
 
-namespace System.Text.Json.Serialization
+namespace System.Text.Json
 {
     /// <summary>
     /// Represents a strongly-typed property to prevent boxing and to create a direct delegate to the getter\setter.
