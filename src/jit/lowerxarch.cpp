@@ -188,7 +188,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         unsigned helperThreshold = max(INITBLK_STOS_LIMIT, INITBLK_UNROLL_LIMIT);
 
         // TODO-X86-CQ: Investigate whether a helper call would be beneficial on x86
-        if (size != 0 && size <= helperThreshold)
+        if (!blkNode->OperIs(GT_STORE_DYN_BLK) && size <= helperThreshold)
         {
             // Always favor unrolling vs rep stos.
             if (size <= INITBLK_UNROLL_LIMIT && initVal->IsCnsIntOrI())

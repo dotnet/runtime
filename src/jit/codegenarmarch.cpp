@@ -1870,25 +1870,21 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     genProduceReg(tree);
 }
 
-// Generate code for a CpBlk node by the means of the VM memcpy helper call
+//----------------------------------------------------------------------------------
+// genCodeForCpBlkHelper - Generate code for a CpBlk node by the means of the VM memcpy helper call
+//
+// Arguments:
+//    cpBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
+//
 // Preconditions:
-// a) The size argument of the CpBlk is not an integer constant
-// b) The size argument is a constant but is larger than CPBLK_MOVS_LIMIT bytes.
-void CodeGen::genCodeForCpBlk(GenTreeBlk* cpBlkNode)
+//   The register assignments have been set appropriately.
+//   This is validated by genConsumeBlockOp().
+//
+void CodeGen::genCodeForCpBlkHelper(GenTreeBlk* cpBlkNode)
 {
-    // Make sure we got the arguments of the cpblk operation in the right registers
-    unsigned blockSize = cpBlkNode->Size();
-    GenTree* dstAddr   = cpBlkNode->Addr();
-    assert(!dstAddr->isContained());
-
+    // Destination address goes in arg0, source address goes in arg1, and size goes in arg2.
+    // genConsumeBlockOp takes care of this for us.
     genConsumeBlockOp(cpBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
-
-#ifdef _TARGET_ARM64_
-    if (blockSize != 0)
-    {
-        assert(blockSize > CPBLK_UNROLL_LIMIT);
-    }
-#endif // _TARGET_ARM64_
 
     if (cpBlkNode->gtFlags & GTF_BLK_VOLATILE)
     {
@@ -2057,30 +2053,20 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode)
     }
 }
 
-// Generates code for InitBlk by calling the VM memset helper function.
+//------------------------------------------------------------------------
+// genCodeForInitBlkHelper - Generate code for an InitBlk node by the means of the VM memcpy helper call
+//
+// Arguments:
+//    initBlkNode - the GT_STORE_[BLK|OBJ|DYN_BLK]
+//
 // Preconditions:
-// a) The size argument of the InitBlk is not an integer constant.
-// b) The size argument of the InitBlk is >= INITBLK_STOS_LIMIT bytes.
-void CodeGen::genCodeForInitBlk(GenTreeBlk* initBlkNode)
+//   The register assignments have been set appropriately.
+//   This is validated by genConsumeBlockOp().
+//
+void CodeGen::genCodeForInitBlkHelper(GenTreeBlk* initBlkNode)
 {
-    unsigned size    = initBlkNode->Size();
-    GenTree* dstAddr = initBlkNode->Addr();
-    GenTree* initVal = initBlkNode->Data();
-    if (initVal->OperIsInitVal())
-    {
-        initVal = initVal->gtGetOp1();
-    }
-
-    assert(!dstAddr->isContained());
-    assert(!initVal->isContained());
-
-#ifdef _TARGET_ARM64_
-    if (size != 0)
-    {
-        assert((size > INITBLK_UNROLL_LIMIT) || !initVal->IsCnsIntOrI());
-    }
-#endif // _TARGET_ARM64_
-
+    // Size goes in arg2, source address goes in arg1, and size goes in arg2.
+    // genConsumeBlockOp takes care of this for us.
     genConsumeBlockOp(initBlkNode, REG_ARG_0, REG_ARG_1, REG_ARG_2);
 
     if (initBlkNode->gtFlags & GTF_BLK_VOLATILE)
@@ -3380,11 +3366,11 @@ void CodeGen::genCodeForStoreBlk(GenTreeBlk* blkOp)
         case GenTreeBlk::BlkOpKindHelper:
             if (isCopyBlk)
             {
-                genCodeForCpBlk(blkOp);
+                genCodeForCpBlkHelper(blkOp);
             }
             else
             {
-                genCodeForInitBlk(blkOp);
+                genCodeForInitBlkHelper(blkOp);
             }
             break;
 
