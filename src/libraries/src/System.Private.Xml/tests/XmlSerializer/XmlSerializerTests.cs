@@ -1828,6 +1828,19 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         }
     }
 
+    [Fact]
+    public static void Xml_TypeWithSpecialCharacterInStringMember()
+    {
+        TypeA x = new TypeA() { Name = "Lily&Lucy" };
+        TypeA y = SerializeAndDeserialize<TypeA>(x,
+@"<?xml version=""1.0""?>
+<TypeA xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"">
+  <Name>Lily&amp;Lucy</Name>
+</TypeA>");
+        Assert.NotNull(y);
+        Assert.StrictEqual(x.Name, y.Name);
+    }
+
     private static readonly string s_defaultNs = "http://tempuri.org/";
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false, string wrapperName = null)
     {

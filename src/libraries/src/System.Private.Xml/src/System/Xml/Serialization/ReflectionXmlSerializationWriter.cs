@@ -1001,11 +1001,11 @@ namespace System.Xml.Serialization
                 {
                     if (hasRequirement(method, WritePrimitiveMethodRequirement.Raw))
                     {
-                        WriteElementString(name, ns, stringValue, xmlQualifiedName);
+                        WriteElementStringRaw(name, ns, stringValue, xmlQualifiedName);
                     }
                     else
                     {
-                        WriteElementStringRaw(name, ns, stringValue, xmlQualifiedName);
+                        WriteElementString(name, ns, stringValue, xmlQualifiedName);
                     }
                 }
 
@@ -1015,22 +1015,22 @@ namespace System.Xml.Serialization
                     {
                         if (hasRequirement(method, WritePrimitiveMethodRequirement.Raw))
                         {
-                            WriteNullableStringEncoded(name, ns, stringValue, xmlQualifiedName);
+                            WriteNullableStringEncodedRaw(name, ns, stringValue, xmlQualifiedName);
                         }
                         else
                         {
-                            WriteNullableStringEncodedRaw(name, ns, stringValue, xmlQualifiedName);
+                            WriteNullableStringEncoded(name, ns, stringValue, xmlQualifiedName);
                         }
                     }
                     else
                     {
                         if (hasRequirement(method, WritePrimitiveMethodRequirement.Raw))
                         {
-                            WriteNullableStringLiteral(name, ns, stringValue);
+                            WriteNullableStringLiteralRaw(name, ns, stringValue);
                         }
                         else
                         {
-                            WriteNullableStringLiteralRaw(name, ns, stringValue);
+                            WriteNullableStringLiteral(name, ns, stringValue);
                         }
                     }
                 }
