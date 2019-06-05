@@ -76,10 +76,10 @@ namespace System.Text.Json
         public bool ValueEquals(System.ReadOnlySpan<byte> utf8Text) { throw null; }
         public bool ValueEquals(System.ReadOnlySpan<char> text) { throw null; }
         public bool ValueEquals(string text) { throw null; }
-        public void WriteAsProperty(System.ReadOnlySpan<byte> utf8PropertyName, System.Text.Json.Utf8JsonWriter writer) { }
-        public void WriteAsProperty(System.ReadOnlySpan<char> propertyName, System.Text.Json.Utf8JsonWriter writer) { }
-        public void WriteAsProperty(string propertyName, System.Text.Json.Utf8JsonWriter writer) { }
-        public void WriteAsValue(System.Text.Json.Utf8JsonWriter writer) { }
+        public void WriteProperty(System.ReadOnlySpan<byte> utf8PropertyName, System.Text.Json.Utf8JsonWriter writer) { }
+        public void WriteProperty(System.ReadOnlySpan<char> propertyName, System.Text.Json.Utf8JsonWriter writer) { }
+        public void WriteProperty(string propertyName, System.Text.Json.Utf8JsonWriter writer) { }
+        public void WriteValue(System.Text.Json.Utf8JsonWriter writer) { }
         public partial struct ArrayEnumerator : System.Collections.Generic.IEnumerable<System.Text.Json.JsonElement>, System.Collections.Generic.IEnumerator<System.Text.Json.JsonElement>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
@@ -175,8 +175,8 @@ namespace System.Text.Json
         public static string ToString<TValue>(TValue value, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
         public static byte[] ToUtf8Bytes(object value, System.Type type, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
         public static byte[] ToUtf8Bytes<TValue>(TValue value, System.Text.Json.JsonSerializerOptions options = null) { throw null; }
-        public static System.Threading.Tasks.Task WriteAsync(object value, System.Type type, System.IO.Stream utf8Json, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
-        public static System.Threading.Tasks.Task WriteAsync<TValue>(TValue value, System.IO.Stream utf8Json, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAsync(System.IO.Stream utf8Json, object value, System.Type type, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Threading.Tasks.Task WriteAsync<TValue>(System.IO.Stream utf8Json, TValue value, System.Text.Json.JsonSerializerOptions options = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class JsonSerializerOptions
     {

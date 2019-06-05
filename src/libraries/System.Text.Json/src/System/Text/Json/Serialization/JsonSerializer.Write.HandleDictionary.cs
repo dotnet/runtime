@@ -143,7 +143,7 @@ namespace System.Text.Json
                 Debug.Assert(entry.Key is string);
 
                 string propertyName = (string)entry.Key;
-                element.WriteAsProperty(propertyName, writer);
+                element.WriteProperty(propertyName, writer);
             }
             else
             {
