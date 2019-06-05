@@ -17,9 +17,9 @@ namespace System.Data.OleDb.Tests
             OleDbParameterCollection opc = command.Parameters;
 
             Assert.True(opc.Count == 0);
-            Assert.False(((Collections.IList)opc).IsReadOnly);
-            Assert.False(((Collections.IList)opc).IsFixedSize);
-            Assert.False(((Collections.IList)opc).IsSynchronized);
+            Assert.False(opc.IsReadOnly);
+            Assert.False(opc.IsFixedSize);
+            Assert.False(opc.IsSynchronized);
             Assert.Throws<IndexOutOfRangeException>(() => opc[0].ParameterName);
             Assert.Throws<IndexOutOfRangeException>(() => opc["@p1"].ParameterName);
             Assert.Throws<ArgumentNullException>(() => opc.Add(null));
