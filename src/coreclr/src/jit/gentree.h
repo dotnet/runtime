@@ -6519,8 +6519,7 @@ inline bool GenTree::isUsedFromSpillTemp() const
 
 /*****************************************************************************/
 
-// In debug, on some platforms (e.g., when LATE_DISASM is defined), GenTreeIntCon is bigger than GenTreeLclFld.
-const size_t TREE_NODE_SZ_SMALL = max(sizeof(GenTreeIntCon), sizeof(GenTreeLclFld));
+const size_t TREE_NODE_SZ_SMALL = sizeof(GenTreeLclFld);
 const size_t TREE_NODE_SZ_LARGE = sizeof(GenTreeCall);
 
 enum varRefKinds

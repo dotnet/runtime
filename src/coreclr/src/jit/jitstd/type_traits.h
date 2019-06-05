@@ -227,4 +227,4 @@ struct make_signed<unsigned __int64>
     typedef signed __int64 type;
 };
 
-} // namespace jit_std
+} // namespace jitstd
