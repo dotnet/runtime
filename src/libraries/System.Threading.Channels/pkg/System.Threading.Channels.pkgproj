@@ -5,5 +5,11 @@
       <SupportedFramework>net46;netcore50;netcoreapp1.0;$(UAPvNextTFM);$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <!-- Allow the package to carry an OOB implementation for .NETCore. -->
+    <ValidatePackageSuppression Include="TreatAsOutOfBox">
+      <Value>.NETCoreApp</Value>
+    </ValidatePackageSuppression>
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 </Project>
