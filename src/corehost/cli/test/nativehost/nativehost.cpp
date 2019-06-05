@@ -9,6 +9,7 @@
 #include "comhost_test.h"
 #include <hostfxr.h>
 #include "host_context_test.h"
+#include <utils.h>
 
 namespace
 {
@@ -35,14 +36,18 @@ int main(const int argc, const pal::char_t *argv[])
     const pal::char_t *command = argv[1];
     if (pal::strcmp(command, _X("get_hostfxr_path")) == 0)
     {
-        // args: ... [<assembly_path>] [<hostfxr_to_load>]
-        const pal::char_t *assembly_path = nullptr;
+        // args: ... [<explicit_load>] [<assembly_path>] [<hostfxr_to_load>]
+        bool explicit_load = false;
         if (argc >= 3)
-            assembly_path = argv[2];
+            explicit_load = pal::strcmp(pal::to_lower(pal::string_t{argv[2]}).c_str(), _X("true")) == 0;
 
+        const pal::char_t *assembly_path = nullptr;
         if (argc >= 4)
+            assembly_path = argv[3];
+
+        if (argc >= 5)
         {
-            pal::string_t to_load = argv[3];
+            pal::string_t to_load = argv[4];
             pal::dll_t fxr;
             if (!pal::load_library(&to_load, &fxr))
             {
@@ -51,13 +56,45 @@ int main(const int argc, const pal::char_t *argv[])
             }
         }
 
+        decltype(&get_hostfxr_path) get_hostfxr_path_fn;
+        if (explicit_load)
+        {
+            pal::string_t nethost_path;
+            if (!pal::get_own_executable_path(&nethost_path) || !pal::realpath(&nethost_path))
+            {
+                std::cout << "Failed to get path to current executable" << std::endl;
+                return EXIT_FAILURE;
+            }
+
+            nethost_path = get_directory(nethost_path);
+            nethost_path.append(MAKE_LIBNAME("nethost"));
+
+            pal::dll_t nethost;
+            if (!pal::load_library(&nethost_path, &nethost))
+            {
+                std::cout << "Failed to load library: " << tostr(nethost_path).data() << std::endl;
+                return EXIT_FAILURE;
+            }
+
+            get_hostfxr_path_fn = (decltype(get_hostfxr_path_fn))pal::get_symbol(nethost, "get_hostfxr_path");
+            if (get_hostfxr_path_fn == nullptr)
+            {
+                std::cout << "Failed to get get_hostfxr_path export from nethost" << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
+        else
+        {
+            get_hostfxr_path_fn = get_hostfxr_path;
+        }
+
         pal::string_t fxr_path;
         size_t len = fxr_path.size();
-        int res = get_hostfxr_path(nullptr, &len, assembly_path);
+        int res = get_hostfxr_path_fn(nullptr, &len, assembly_path);
         if (static_cast<StatusCode>(res) == StatusCode::HostApiBufferTooSmall)
         {
             fxr_path.resize(len);
-            res = get_hostfxr_path(&fxr_path[0], &len, assembly_path);
+            res = get_hostfxr_path_fn(&fxr_path[0], &len, assembly_path);
         }
 
         if (static_cast<StatusCode>(res) == StatusCode::Success)
