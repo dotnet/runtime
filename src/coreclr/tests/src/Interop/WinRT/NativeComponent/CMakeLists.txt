@@ -28,11 +28,8 @@ else()
   message("Using Windows SDK version ${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION} for WinRT interop tests.")
 endif()
 
-set (PROGRAM_FILES_X86 "ProgramFiles(x86)")
-set (WINDOWS_KITS_DIR "$ENV{${PROGRAM_FILES_X86}}/Windows Kits/10")
-if (NOT EXISTS ${WINDOWS_KITS_DIR})
-  set (WINDOWS_KITS_DIR "$ENV{ProgramFiles}/Windows Kits/10")
-endif()
+file(TO_CMAKE_PATH "$ENV{WindowsSdkDir}" WINDOWS_KITS_DIR)
+
 set (METADATA_DIR "${WINDOWS_KITS_DIR}/References/${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}/windows.foundation.foundationcontract/*" )
 set (REFERENCE_WINMDS
   "${WINDOWS_KITS_DIR}/References/${CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION}/Windows.Foundation.FoundationContract/*/Windows.Foundation.FoundationContract.winmd"
