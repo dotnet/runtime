@@ -25,10 +25,17 @@ namespace
 
         if (fx_ref.get_version_compatibility_range() >= version_compatibility_range_t::patch)
         {
+            // Roll to highest version should have no effect on patch compatibility range as that has special rules
+            // For release versions we will always roll to latest (that is done in automatic_roll_to_latest_patch)
+            // For pre-release we will only roll to closest available.
+            bool roll_to_highest_version =
+                fx_ref.get_version_compatibility_range() != version_compatibility_range_t::patch
+                && fx_ref.get_roll_to_highest_version();
+
             trace::verbose(
                 _X("'Roll forward' enabled with version_compatibility_range [%s]. Looking for the %s %s greater than or equal version to [%s]"),
                 version_compatibility_range_to_string(fx_ref.get_version_compatibility_range()).c_str(),
-                fx_ref.get_roll_to_highest_version() ? _X("highest") : _X("lowest"),
+                roll_to_highest_version ? _X("highest") : _X("lowest"),
                 release_only ? _X("release") : _X("release/pre-release"),
                 fx_ref.get_fx_version().c_str());
 
@@ -44,7 +51,7 @@ namespace
 
                     best_match_version = (best_match_version == fx_ver_t())
                         ? ver
-                        : (fx_ref.get_roll_to_highest_version() ? std::max(best_match_version, ver) : std::min(best_match_version, ver));
+                        : (roll_to_highest_version ? std::max(best_match_version, ver) : std::min(best_match_version, ver));
                 }
             }
 
