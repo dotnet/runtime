@@ -9478,16 +9478,7 @@ GenTree* Compiler::fgMorphInitBlock(GenTree* tree)
         }
         else
         {
-            if (dest->OperIs(GT_DYN_BLK))
-            {
-                blockSize = 0;
-            }
-            else
-            {
-                assert(dest->OperIs(GT_BLK, GT_OBJ));
-                blockSize = dest->AsBlk()->Size();
-                assert(blockSize != 0);
-            }
+            blockSize = dest->AsBlk()->Size();
 
             FieldSeqNode* destFldSeq = nullptr;
             if (dest->AsIndir()->Addr()->IsLocalAddrExpr(this, &destLclNode, &destFldSeq))
@@ -9604,7 +9595,7 @@ GenTree* Compiler::fgMorphPromoteLocalInitBlock(GenTreeLclVar* destLclNode, GenT
 
     if (blockSize == 0)
     {
-        JITDUMP(" size is not known.\n");
+        JITDUMP(" size is zero or unknown.\n");
         return nullptr;
     }
 
