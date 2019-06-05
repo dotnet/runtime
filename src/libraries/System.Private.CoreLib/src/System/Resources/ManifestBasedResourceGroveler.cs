@@ -444,15 +444,17 @@ namespace System.Resources
                 satAssemName += ", Version=" + _mediator.SatelliteContractVersion.ToString();
             }
 
-            byte[] token = _mediator.MainAssembly.GetName().GetPublicKeyToken();
-
-            int iLen = token.Length;
-            StringBuilder publicKeyTok = new StringBuilder(iLen * 2);
-            for (int i = 0; i < iLen; i++)
+            byte[]? token = _mediator.MainAssembly.GetName().GetPublicKeyToken();
+            if (token != null)
             {
-                publicKeyTok.Append(token[i].ToString("x", CultureInfo.InvariantCulture));
+                int iLen = token.Length;
+                StringBuilder publicKeyTok = new StringBuilder(iLen * 2);
+                for (int i = 0; i < iLen; i++)
+                {
+                    publicKeyTok.Append(token[i].ToString("x", CultureInfo.InvariantCulture));
+                }
+                satAssemName += ", PublicKeyToken=" + publicKeyTok;
             }
-            satAssemName += ", PublicKeyToken=" + publicKeyTok;
 
             Debug.Assert(_mediator.NeutralResourcesCulture != null);
             string missingCultureName = _mediator.NeutralResourcesCulture.Name;

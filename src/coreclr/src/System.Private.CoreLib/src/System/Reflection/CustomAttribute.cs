@@ -112,7 +112,7 @@ namespace System.Reflection
 
             // No pseudo attributes for RuntimeAssembly
 
-            return GetCustomAttributes((RuntimeModule)target.ManifestModule!, RuntimeAssembly.GetToken(target.GetNativeHandle()));
+            return GetCustomAttributes((RuntimeModule)target.ManifestModule, RuntimeAssembly.GetToken(target.GetNativeHandle()));
         }
 
         internal static IList<CustomAttributeData> GetCustomAttributesInternal(RuntimeParameterInfo target)
@@ -440,7 +440,7 @@ namespace System.Reflection
         #endregion
 
         #region Public Members
-        public virtual Type? AttributeType { get { return Constructor.DeclaringType; } }
+        public virtual Type AttributeType { get { return Constructor.DeclaringType!; } }
 
         public virtual ConstructorInfo Constructor { get { return m_ctor; } }
 

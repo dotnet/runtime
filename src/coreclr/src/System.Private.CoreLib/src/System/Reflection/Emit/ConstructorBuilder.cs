@@ -190,8 +190,7 @@ namespace System.Reflection.Emit
             return m_methodBuilder.GetModule();
         }
 
-        // This always returns null. Is that what we want?
-        internal override Type? GetReturnType()
+        internal override Type GetReturnType()
         {
             return m_methodBuilder.ReturnType;
         }

@@ -1121,7 +1121,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
             parameterTypes[0] = (Type)cls;
-            MethodInfo? mi = prop.ReturnType!.GetMethod("WriteLine", parameterTypes);
+            MethodInfo? mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
             if (mi == null)
             {
                 throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(localBuilder));
@@ -1161,7 +1161,7 @@ namespace System.Reflection.Emit
                 throw new NotSupportedException(SR.NotSupported_OutputStreamUsingTypeBuilder);
             }
             parameterTypes[0] = (Type)cls;
-            MethodInfo? mi = prop.ReturnType!.GetMethod("WriteLine", parameterTypes);
+            MethodInfo? mi = prop.ReturnType.GetMethod("WriteLine", parameterTypes);
             if (mi == null)
             {
                 throw new ArgumentException(SR.Argument_EmitWriteLineType, nameof(fld));

@@ -98,7 +98,7 @@ namespace System.Reflection.Emit
             return SymbolType.FormCompoundType(s, this, 0)!;
         }
         public override Guid GUID { get { throw new NotSupportedException(); } }
-        public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) { throw new NotSupportedException(); }
+        public override object InvokeMember(string name, BindingFlags invokeAttr, Binder? binder, object? target, object?[]? args, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParameters) { throw new NotSupportedException(); }
         public override Assembly Assembly { get { return m_type.Assembly; } }
         public override RuntimeTypeHandle TypeHandle { get { throw new NotSupportedException(); } }
         public override string? FullName
