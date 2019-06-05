@@ -30,6 +30,12 @@
 
 #if HAVE_COMMONCRYPTO_COMMONDIGEST_H
 
+// CC_MD5_* API is deprecated on macOS 10.15
+#if defined(__APPLE__) && defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 /**
  * mono_md5_init:
  */
@@ -56,6 +62,10 @@ mono_md5_final (MonoMD5Context *ctx, guchar digest[16])
 {
 	CC_MD5_Final (digest, ctx);
 }
+
+#if defined(__APPLE__) && defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #else
 

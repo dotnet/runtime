@@ -9,6 +9,9 @@
  */
 
 #if defined(__MACH__)
+
+#define OBJC_OLD_DISPATCH_PROTOTYPES 1  // TODO remove once https://github.com/mono/mono/issues/14792 is fixed
+
 #include "config.h"
 #include <glib.h>
 #include <stdio.h>
