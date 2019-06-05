@@ -2365,39 +2365,6 @@ void CodeGen::instGen_Store_Reg_Into_Lcl(var_types dstType, regNumber srcReg, in
     getEmitter()->emitIns_S_R(ins_Store(dstType), size, srcReg, varNum, offs);
 }
 
-/*****************************************************************************
- *
- *  Machine independent way to move an immediate into a stack based local variable
- */
-void CodeGen::instGen_Store_Imm_Into_Lcl(
-    var_types dstType, emitAttr sizeAttr, ssize_t imm, int varNum, int offs, regNumber regToUse)
-{
-#ifdef _TARGET_XARCH_
-#ifdef _TARGET_AMD64_
-    if ((EA_SIZE(sizeAttr) == EA_8BYTE) && (((int)imm != (ssize_t)imm) || EA_IS_CNS_RELOC(sizeAttr)))
-    {
-        assert(!"Invalid immediate for instGen_Store_Imm_Into_Lcl");
-    }
-    else
-#endif // _TARGET_AMD64_
-    {
-        getEmitter()->emitIns_S_I(ins_Store(dstType), sizeAttr, varNum, offs, (int)imm);
-    }
-#elif defined(_TARGET_ARMARCH_)
-    // Load imm into a register
-    regNumber immReg = regToUse;
-    assert(regToUse != REG_NA);
-    instGen_Set_Reg_To_Imm(sizeAttr, immReg, (ssize_t)imm);
-    instGen_Store_Reg_Into_Lcl(dstType, immReg, varNum, offs);
-    if (EA_IS_RELOC(sizeAttr))
-    {
-        regSet.verifyRegUsed(immReg);
-    }
-#else // _TARGET_*
-#error "Unknown _TARGET_"
-#endif // _TARGET_*
-}
-
 /*****************************************************************************/
 /*****************************************************************************/
 /*****************************************************************************/

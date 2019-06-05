@@ -49,6 +49,61 @@ void CodeGen::genSetRegToIcon(regNumber reg, ssize_t val, var_types type, insFla
     }
 }
 
+//---------------------------------------------------------------------
+// genSetGSSecurityCookie: Set the "GS" security cookie in the prolog.
+//
+// Arguments:
+//     initReg        - register to use as a scratch register
+//     pInitRegZeroed - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
+//                      this call sets 'initReg' to a non-zero value.
+//
+// Return Value:
+//     None
+//
+void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
+{
+    assert(compiler->compGeneratingProlog);
+
+    if (!compiler->getNeedsGSSecurityCookie())
+    {
+        return;
+    }
+
+    if (compiler->gsGlobalSecurityCookieAddr == nullptr)
+    {
+        noway_assert(compiler->gsGlobalSecurityCookieVal != 0);
+#ifdef _TARGET_AMD64_
+        if ((int)compiler->gsGlobalSecurityCookieVal != compiler->gsGlobalSecurityCookieVal)
+        {
+            // initReg = #GlobalSecurityCookieVal64; [frame.GSSecurityCookie] = initReg
+            genSetRegToIcon(initReg, compiler->gsGlobalSecurityCookieVal, TYP_I_IMPL);
+            getEmitter()->emitIns_S_R(INS_mov, EA_PTRSIZE, initReg, compiler->lvaGSSecurityCookie, 0);
+            *pInitRegZeroed = false;
+        }
+        else
+#endif
+        {
+            // mov   dword ptr [frame.GSSecurityCookie], #GlobalSecurityCookieVal
+            getEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaGSSecurityCookie, 0,
+                                      (int)compiler->gsGlobalSecurityCookieVal);
+        }
+    }
+    else
+    {
+        // Always use EAX on x86 and x64
+        // On x64, if we're not moving into RAX, and the address isn't RIP relative, we can't encode it.
+        //  mov   eax, dword ptr [compiler->gsGlobalSecurityCookieAddr]
+        //  mov   dword ptr [frame.GSSecurityCookie], eax
+        getEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_EAX, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
+        regSet.verifyRegUsed(REG_EAX);
+        getEmitter()->emitIns_S_R(INS_mov, EA_PTRSIZE, REG_EAX, compiler->lvaGSSecurityCookie, 0);
+        if (initReg == REG_EAX)
+        {
+            *pInitRegZeroed = false;
+        }
+    }
+}
+
 /*****************************************************************************
  *
  *   Generate code to check that the GS cookie wasn't thrashed by a buffer
@@ -325,10 +380,9 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     curNestingSlotOffs = (unsigned)(filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE));
 
     // Zero out the slot for the next nesting level
-    instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_PTRSIZE, 0, compiler->lvaShadowSPslotsVar,
-                               curNestingSlotOffs - TARGET_POINTER_SIZE);
-    instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_PTRSIZE, LCL_FINALLY_MARK, compiler->lvaShadowSPslotsVar,
-                               curNestingSlotOffs);
+    getEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar,
+                              curNestingSlotOffs - TARGET_POINTER_SIZE, 0);
+    getEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, curNestingSlotOffs, LCL_FINALLY_MARK);
 
     // Now push the address where the finally funclet should return to directly.
     if (!(block->bbFlags & BBF_RETLESS_CALL))
@@ -1914,7 +1968,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
             unsigned curNestingSlotOffs;
             curNestingSlotOffs = filterEndOffsetSlotOffs - ((finallyNesting + 1) * TARGET_POINTER_SIZE);
-            instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_PTRSIZE, 0, compiler->lvaShadowSPslotsVar, curNestingSlotOffs);
+            getEmitter()->emitIns_S_I(INS_mov, EA_PTRSIZE, compiler->lvaShadowSPslotsVar, curNestingSlotOffs, 0);
             break;
 #endif // !FEATURE_EH_FUNCLETS
 

@@ -6483,62 +6483,6 @@ void CodeGen::genReportGenericContextArg(regNumber initReg, bool* pInitRegZeroed
 #endif // !ARM64 !ARM
 }
 
-/*-----------------------------------------------------------------------------
- *
- *  Set the "GS" security cookie in the prolog.
- */
-
-void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
-{
-    assert(compiler->compGeneratingProlog);
-
-    if (!compiler->getNeedsGSSecurityCookie())
-    {
-        return;
-    }
-
-    noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
-
-    if (compiler->gsGlobalSecurityCookieAddr == nullptr)
-    {
-#ifdef _TARGET_AMD64_
-        // eax = #GlobalSecurityCookieVal64; [frame.GSSecurityCookie] = eax
-        getEmitter()->emitIns_R_I(INS_mov, EA_PTRSIZE, REG_RAX, compiler->gsGlobalSecurityCookieVal);
-        getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_RAX, compiler->lvaGSSecurityCookie, 0);
-#else
-        //  mov   dword ptr [frame.GSSecurityCookie], #GlobalSecurityCookieVal
-        instGen_Store_Imm_Into_Lcl(TYP_I_IMPL, EA_PTRSIZE, compiler->gsGlobalSecurityCookieVal,
-                                   compiler->lvaGSSecurityCookie, 0, initReg);
-#endif
-    }
-    else
-    {
-        regNumber reg;
-#ifdef _TARGET_XARCH_
-        // Always use EAX on x86 and x64
-        // On x64, if we're not moving into RAX, and the address isn't RIP relative, we can't encode it.
-        reg = REG_EAX;
-#else
-        // We will just use the initReg since it is an available register
-        reg = initReg;
-#endif
-
-        *pInitRegZeroed = false;
-
-#if CPU_LOAD_STORE_ARCH
-        instGen_Set_Reg_To_Imm(EA_PTR_DSP_RELOC, reg, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-        getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, reg, reg, 0);
-        regSet.verifyRegUsed(reg);
-#else
-        //  mov   reg, dword ptr [compiler->gsGlobalSecurityCookieAddr]
-        //  mov   dword ptr [frame.GSSecurityCookie], reg
-        getEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, reg, (ssize_t)compiler->gsGlobalSecurityCookieAddr);
-        regSet.verifyRegUsed(reg);
-#endif
-        getEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, reg, compiler->lvaGSSecurityCookie, 0);
-    }
-}
-
 #ifdef PROFILING_SUPPORTED
 
 //-----------------------------------------------------------------------------------
