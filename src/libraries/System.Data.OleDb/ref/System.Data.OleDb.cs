@@ -363,6 +363,9 @@ namespace System.Data.OleDb
         [System.ComponentModel.BrowsableAttribute(false)]
         [System.ComponentModel.DesignerSerializationVisibilityAttribute(System.ComponentModel.DesignerSerializationVisibility.Hidden)]
         public new System.Data.OleDb.OleDbParameter this[string parameterName] { get { throw null; } set { } }
+        public override bool IsFixedSize { get { throw null; } }
+        public override bool IsReadOnly { get { throw null; } }
+        public override bool IsSynchronized { get { throw null; } }
         public override object SyncRoot { get { throw null; } }
         public System.Data.OleDb.OleDbParameter Add(System.Data.OleDb.OleDbParameter value) { throw null; }
         public override int Add(object value) { throw null; }
