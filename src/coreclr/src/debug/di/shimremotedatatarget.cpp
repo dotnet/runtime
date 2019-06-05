@@ -266,7 +266,7 @@ ShimRemoteDataTarget::ReadVirtual(
     if (m_fd != -1)
     {
         read = _pread(m_fd, pBuffer, cbRequestSize, (ULONG64)address);
-        if (read == -1)
+        if (read == (size_t)-1)
         {
             hr = E_FAIL;
         }
