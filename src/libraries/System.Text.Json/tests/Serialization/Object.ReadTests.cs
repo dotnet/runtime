@@ -230,5 +230,13 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.True(exceptionThrown);
         }
+
+        [Fact]
+        public static void ReadObject_PublicIndexer()
+        {
+            Indexer indexer = JsonSerializer.Parse<Indexer>(@"{""NonIndexerProp"":""Value""}");
+            Assert.Equal("Value", indexer.NonIndexerProp);
+            Assert.Equal(-1, indexer[0]);
+        }
     }
 }
