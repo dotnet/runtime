@@ -6,10 +6,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Policies;
 
-namespace System.Text.Json.Serialization
+namespace System.Text.Json
 {
     [DebuggerDisplay("PropertyInfo={PropertyInfo}, Element={ElementClassInfo}")]
     internal abstract class JsonPropertyInfo

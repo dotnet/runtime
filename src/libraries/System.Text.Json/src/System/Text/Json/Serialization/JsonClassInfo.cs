@@ -7,9 +7,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Converters;
 
-namespace System.Text.Json.Serialization
+namespace System.Text.Json
 {
     [DebuggerDisplay("ClassType.{ClassType}, {Type.Name}")]
     internal sealed partial class JsonClassInfo

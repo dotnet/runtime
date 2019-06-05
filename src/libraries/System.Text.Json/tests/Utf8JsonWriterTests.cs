@@ -3818,7 +3818,7 @@ namespace System.Text.Json.Tests
         public void WriteDateTime_TrimsFractionCorrectly_SerializerRoundtrip()
         {
             DateTime utcNow = DateTime.UtcNow;
-            Assert.Equal(utcNow, Serialization.JsonSerializer.Parse(Serialization.JsonSerializer.ToUtf8Bytes(utcNow), typeof(DateTime)));
+            Assert.Equal(utcNow, JsonSerializer.Parse(JsonSerializer.ToUtf8Bytes(utcNow), typeof(DateTime)));
         }
 
         private static void WriteTooLargeHelper(JsonWriterOptions options, ReadOnlySpan<byte> key, ReadOnlySpan<byte> value, bool noThrow = false)
