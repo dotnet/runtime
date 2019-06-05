@@ -40,6 +40,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
                     .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("6.0.0")
                     .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("6.1.0")
                     .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("6.1.1-preview.2")
+                    .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("6.1.1-preview.3")
                     .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("6.2.1")
                     .AddFramework(MiddleWare, "2.1.2", runtimeConfig =>
                         runtimeConfig.WithFramework(MicrosoftNETCoreApp, "5.1.3"))
@@ -269,13 +270,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // Also validates the effect of DOTNET_ROLL_FORWARD_TO_PRERELEASE on the result.
         [Theory] // fxRefVersion       rollForward                               rollForwadToPreRelease resolvedFramework
         [InlineData("6.0.0",           null,                                     false,                 "6.1.0")]
-        [InlineData("6.0.0",           null,                                     true,                  "6.1.1-preview.2")]
+        [InlineData("6.0.0",           null,                                     true,                  "6.1.1-preview.3")]
         [InlineData("6.0.0",           Constants.RollForwardSetting.LatestPatch, false,                 ResolvedFramework.FailedToReconcile)]
         [InlineData("6.0.0",           Constants.RollForwardSetting.Minor,       false,                 "6.1.0")]
-        [InlineData("6.0.0",           Constants.RollForwardSetting.Minor,       true,                  "6.1.1-preview.2")]
+        [InlineData("6.0.0",           Constants.RollForwardSetting.Minor,       true,                  "6.1.1-preview.3")]
         [InlineData("6.0.1-preview.0", Constants.RollForwardSetting.LatestPatch, false,                 ResolvedFramework.FailedToReconcile)]
         [InlineData("6.1.0",           null,                                     false,                 "6.1.0")]
-        [InlineData("6.1.0",           null,                                     true,                  "6.1.1-preview.2")]
+        [InlineData("6.1.0",           null,                                     true,                  "6.1.1-preview.3")]
         [InlineData("6.1.1-preview.0", null,                                     false,                 "6.2.1")]
         [InlineData("6.1.1-preview.0", null,                                     true,                  "6.1.1-preview.2")]
         [InlineData("6.1.1-preview.0", Constants.RollForwardSetting.Disable,     false,                 ResolvedFramework.NotFound)]
@@ -691,31 +692,47 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
         // Verify that the "roll to highest version" flag is propagated into inner framework reference.
         // The app references MiddleWare framework with the specified appRollForward setting
         // then the MiddleWare framework references Microsoft.NETCore.App with the specified fxRefVersion and fxRollForward.
-        [Theory] // appRollForward                            fxRefVersion fxRollForward                             resolvedFramework
+        [Theory] // appRollForward                            fxRefVersion       fxRollForward                             resolvedFramework
         // LatestPatch does not imply roll_to_highest
-        [InlineData(Constants.RollForwardSetting.LatestPatch, "5.1.1",     Constants.RollForwardSetting.Disable,     "5.1.1")]
-        [InlineData(Constants.RollForwardSetting.LatestPatch, "5.1.0",     Constants.RollForwardSetting.LatestPatch, "5.1.3")]
-        [InlineData(Constants.RollForwardSetting.LatestPatch, "5.1.0",     null,                                     "5.1.3")]
-        [InlineData(Constants.RollForwardSetting.LatestPatch, "5.1.0",     Constants.RollForwardSetting.Minor,       "5.1.3")]
-        [InlineData(Constants.RollForwardSetting.LatestPatch, "5.1.0",     Constants.RollForwardSetting.Major,       "5.1.3")]
-        [InlineData(Constants.RollForwardSetting.LatestPatch, "5.1.0",     Constants.RollForwardSetting.LatestMajor, "6.2.1")]
+        [InlineData(Constants.RollForwardSetting.LatestPatch, "5.1.1",           Constants.RollForwardSetting.Disable,     "5.1.1")]
+        [InlineData(Constants.RollForwardSetting.LatestPatch, "5.1.0",           Constants.RollForwardSetting.LatestPatch, "5.1.3")]
+        [InlineData(Constants.RollForwardSetting.LatestPatch, "5.1.0",           null,                                     "5.1.3")]
+        [InlineData(Constants.RollForwardSetting.LatestPatch, "5.1.0",           Constants.RollForwardSetting.Minor,       "5.1.3")]
+        [InlineData(Constants.RollForwardSetting.LatestPatch, "5.1.0",           Constants.RollForwardSetting.Major,       "5.1.3")]
+        [InlineData(Constants.RollForwardSetting.LatestPatch, "5.1.0",           Constants.RollForwardSetting.LatestMajor, "6.2.1")]
+        [InlineData(Constants.RollForwardSetting.LatestPatch, "6.1.1-preview.1", Constants.RollForwardSetting.LatestPatch, "6.1.1-preview.2")]
+        [InlineData(Constants.RollForwardSetting.LatestPatch, "6.1.1-preview.2", Constants.RollForwardSetting.LatestPatch, "6.1.1-preview.2")]
         // Minor/Major do not imply roll_to_highest
-        [InlineData(Constants.RollForwardSetting.Minor,       "5.1.0",     Constants.RollForwardSetting.Minor,       "5.1.3")]
-        [InlineData(Constants.RollForwardSetting.Major,       "5.1.0",     Constants.RollForwardSetting.Minor,       "5.1.3")]
+        [InlineData(Constants.RollForwardSetting.Minor,       "5.1.0",           Constants.RollForwardSetting.Minor,       "5.1.3")]
+        [InlineData(Constants.RollForwardSetting.Major,       "5.1.0",           Constants.RollForwardSetting.Minor,       "5.1.3")]
+        [InlineData(Constants.RollForwardSetting.Minor,       "6.1.1-preview.2", Constants.RollForwardSetting.Minor,       "6.1.1-preview.2")]
+        [InlineData(Constants.RollForwardSetting.Minor,       "6.1.1-preview.2", Constants.RollForwardSetting.LatestPatch, "6.1.1-preview.2")]
+        [InlineData(Constants.RollForwardSetting.Minor,       "6.1.1-preview.1", Constants.RollForwardSetting.LatestPatch, "6.1.1-preview.2")]
+        [InlineData(Constants.RollForwardSetting.Major,       "6.1.1-preview.2", Constants.RollForwardSetting.Major,       "6.1.1-preview.2")]
+        [InlineData(Constants.RollForwardSetting.Major,       "6.1.1-preview.2", Constants.RollForwardSetting.LatestPatch, "6.1.1-preview.2")]
+        [InlineData(Constants.RollForwardSetting.Major,       "6.1.1-preview.1", Constants.RollForwardSetting.LatestPatch, "6.1.1-preview.2")]
         // LatestMinor does imply roll_to_highest
-        [InlineData(Constants.RollForwardSetting.LatestMinor, "5.1.1",     Constants.RollForwardSetting.Disable,     "5.1.1")]
-        [InlineData(Constants.RollForwardSetting.LatestMinor, "5.1.0",     Constants.RollForwardSetting.LatestPatch, "5.1.3")]
-        [InlineData(Constants.RollForwardSetting.LatestMinor, "5.1.0",     null,                                     "5.6.0")]
-        [InlineData(Constants.RollForwardSetting.LatestMinor, "5.1.0",     Constants.RollForwardSetting.Minor,       "5.6.0")]
-        [InlineData(Constants.RollForwardSetting.LatestMinor, "5.1.0",     Constants.RollForwardSetting.Major,       "6.2.1")]
-        [InlineData(Constants.RollForwardSetting.LatestMinor, "5.1.0",     Constants.RollForwardSetting.LatestMajor, "6.2.1")]
+        [InlineData(Constants.RollForwardSetting.LatestMinor, "5.1.1",           Constants.RollForwardSetting.Disable,     "5.1.1")]
+        [InlineData(Constants.RollForwardSetting.LatestMinor, "5.1.0",           Constants.RollForwardSetting.LatestPatch, "5.1.3")]
+        [InlineData(Constants.RollForwardSetting.LatestMinor, "5.1.0",           null,                                     "5.6.0")]
+        [InlineData(Constants.RollForwardSetting.LatestMinor, "5.1.0",           Constants.RollForwardSetting.Minor,       "5.6.0")]
+        [InlineData(Constants.RollForwardSetting.LatestMinor, "5.1.0",           Constants.RollForwardSetting.Major,       "6.2.1")]
+        [InlineData(Constants.RollForwardSetting.LatestMinor, "5.1.0",           Constants.RollForwardSetting.LatestMajor, "6.2.1")]
+        // In this case the "roll to highest" should not impact the pre-release search since it should not have any influence on LatestPatch behavior
+        // which for pre-release versions is to pick the closest match - in this case the exact match exists, so it should pick that one.
+        [InlineData(Constants.RollForwardSetting.LatestMinor, "6.1.1-preview.2", Constants.RollForwardSetting.LatestPatch, "6.1.1-preview.2")]
+        [InlineData(Constants.RollForwardSetting.LatestMinor, "6.1.1-preview.1", Constants.RollForwardSetting.LatestPatch, "6.1.1-preview.2")]
         // LatestMajor does imply roll_to_highest
-        [InlineData(Constants.RollForwardSetting.LatestMajor, "5.1.1",     Constants.RollForwardSetting.Disable,     "5.1.1")]
-        [InlineData(Constants.RollForwardSetting.LatestMajor, "5.1.0",     Constants.RollForwardSetting.LatestPatch, "5.1.3")]
-        [InlineData(Constants.RollForwardSetting.LatestMajor, "5.1.0",     null,                                     "5.6.0")]
-        [InlineData(Constants.RollForwardSetting.LatestMajor, "5.1.0",     Constants.RollForwardSetting.Minor,       "5.6.0")]
-        [InlineData(Constants.RollForwardSetting.LatestMajor, "5.1.0",     Constants.RollForwardSetting.Major,       "6.2.1")]
-        [InlineData(Constants.RollForwardSetting.LatestMajor, "5.1.0",     Constants.RollForwardSetting.LatestMajor, "6.2.1")]
+        [InlineData(Constants.RollForwardSetting.LatestMajor, "5.1.1",           Constants.RollForwardSetting.Disable,     "5.1.1")]
+        [InlineData(Constants.RollForwardSetting.LatestMajor, "5.1.0",           Constants.RollForwardSetting.LatestPatch, "5.1.3")]
+        [InlineData(Constants.RollForwardSetting.LatestMajor, "5.1.0",           null,                                     "5.6.0")]
+        [InlineData(Constants.RollForwardSetting.LatestMajor, "5.1.0",           Constants.RollForwardSetting.Minor,       "5.6.0")]
+        [InlineData(Constants.RollForwardSetting.LatestMajor, "5.1.0",           Constants.RollForwardSetting.Major,       "6.2.1")]
+        [InlineData(Constants.RollForwardSetting.LatestMajor, "5.1.0",           Constants.RollForwardSetting.LatestMajor, "6.2.1")]
+        // In this case the "roll to highest" should not impact the pre-release search since it should not have any influence on LatestPatch behavior
+        // which for pre-release versions is to pick the closest match - in this case the exact match exists, so it should pick that one.
+        [InlineData(Constants.RollForwardSetting.LatestMajor, "6.1.1-preview.2", Constants.RollForwardSetting.LatestPatch, "6.1.1-preview.2")]
+        [InlineData(Constants.RollForwardSetting.LatestMajor, "6.1.1-preview.1", Constants.RollForwardSetting.LatestPatch, "6.1.1-preview.2")]
         public void PropagateRollToHighestVersion(string appRollForward, string fxRefVersion, string fxRollForward, string resolvedFramework)
         {
             RunTest(
