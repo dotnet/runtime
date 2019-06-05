@@ -1,6 +1,9 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
+using System.Collections.Generic;
+
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
@@ -39,11 +42,24 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get; protected set; }
 
         /// <summary>
+        /// Full list of failures (can be multiple).
+        /// </summary>
+        public IEnumerable<string> Failures { get; protected set; }
+
+        /// <summary>
         /// Returns a failure result.
         /// </summary>
         /// <param name="failureMessage">The reason for the failure.</param>
         /// <returns>The failure result.</returns>
         public static ValidateOptionsResult Fail(string failureMessage)
-            => new ValidateOptionsResult { Failed = true, FailureMessage = failureMessage };
+            => new ValidateOptionsResult { Failed = true, FailureMessage = failureMessage, Failures = new string[] { failureMessage } };
+
+        /// <summary>
+        /// Returns a failure result.
+        /// </summary>
+        /// <param name="failures">The reasons for the failure.</param>
+        /// <returns>The failure result.</returns>
+        public static ValidateOptionsResult Fail(IEnumerable<string> failures)
+            => new ValidateOptionsResult { Failed = true, FailureMessage = String.Join("; ", failures), Failures = failures };
     }
 }
