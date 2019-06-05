@@ -2,78 +2,83 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#ifndef _COREHOST_CLI_HOSTFXR_H_
-#define _COREHOST_CLI_HOSTFXR_H_
+#ifndef __HOSTFXR_H__
+#define __HOSTFXR_H__
 
-#include <pal.h>
+#include <stddef.h>
+#include <stdint.h>
 
-// Forward declaration of required custom feature APIs
-using hostfxr_main_fn = int32_t(*)(const int argc, const pal::char_t* argv[]);
-using hostfxr_main_startupinfo_fn = int32_t(*)(
-    const int argc,
-    const pal::char_t* argv[],
-    const pal::char_t* host_path,
-    const pal::char_t* dotnet_root,
-    const pal::char_t* app_path);
+#if defined(_WIN32)
+    #define HOSTFXR_CALLTYPE __cdecl
+    #ifdef _WCHAR_T_DEFINED
+        typedef wchar_t char_t;
+    #else
+        typedef unsigned short char_t;
+    #endif
+#else
+    #define HOSTFXR_CALLTYPE
+    typedef char char_t;
+#endif
 
-enum class hostfxr_delegate_type
+enum hostfxr_delegate_type
 {
-    com_activation,
-    load_in_memory_assembly,
-    winrt_activation,
-    com_register,
-    com_unregister,
-    load_assembly_and_get_function_pointer
+    hdt_com_activation,
+    hdt_load_in_memory_assembly,
+    hdt_winrt_activation,
+    hdt_com_register,
+    hdt_com_unregister,
+    hdt_load_assembly_and_get_function_pointer
 };
 
-using hostfxr_main_fn = int32_t(*)(const int argc, const pal::char_t* argv[]);
-using hostfxr_main_startupinfo_fn = int32_t(*)(
+typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_main_fn)(const int argc, const char_t **argv);
+typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_main_startupinfo_fn)(
     const int argc,
-    const pal::char_t* argv[],
-    const pal::char_t* host_path,
-    const pal::char_t* dotnet_root,
-    const pal::char_t* app_path);
-using hostfxr_error_writer_fn = void(*)(const pal::char_t* message);
-using hostfxr_set_error_writer_fn = hostfxr_error_writer_fn(*)(hostfxr_error_writer_fn error_writer);
+    const char_t **argv,
+    const char_t *host_path,
+    const char_t *dotnet_root,
+    const char_t *app_path);
 
-using hostfxr_handle = void*;
+typedef void(HOSTFXR_CALLTYPE *hostfxr_error_writer_fn)(const char_t *message);
+typedef hostfxr_error_writer_fn(HOSTFXR_CALLTYPE *hostfxr_set_error_writer_fn)(hostfxr_error_writer_fn error_writer);
+
+typedef void* hostfxr_handle;
 struct hostfxr_initialize_parameters
 {
     size_t size;
-    const pal::char_t *host_path;
-    const pal::char_t *dotnet_root;
+    const char_t *host_path;
+    const char_t *dotnet_root;
 };
 
-using hostfxr_initialize_for_dotnet_command_line_fn = int32_t(__cdecl *)(
+typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_initialize_for_dotnet_command_line_fn)(
     int argc,
-    const pal::char_t *argv[],
-    const hostfxr_initialize_parameters *parameters,
+    const char_t **argv,
+    const struct hostfxr_initialize_parameters *parameters,
     /*out*/ hostfxr_handle *host_context_handle);
-using hostfxr_initialize_for_runtime_config_fn = int32_t(__cdecl *)(
-    const pal::char_t *runtime_config_path,
-    const hostfxr_initialize_parameters*parameters,
+typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_initialize_for_runtime_config_fn)(
+    const char_t *runtime_config_path,
+    const struct hostfxr_initialize_parameters *parameters,
     /*out*/ hostfxr_handle *host_context_handle);
 
-using hostfxr_get_runtime_property_value_fn = int32_t(__cdecl *)(
+typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_get_runtime_property_value_fn)(
     const hostfxr_handle host_context_handle,
-    const pal::char_t *name,
-    /*out*/ const pal::char_t **value);
-using hostfxr_set_runtime_property_value_fn = int32_t(__cdecl *)(
+    const char_t *name,
+    /*out*/ const char_t **value);
+typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_set_runtime_property_value_fn)(
     const hostfxr_handle host_context_handle,
-    const pal::char_t *name,
-    const pal::char_t *value);
-using hostfxr_get_runtime_properties_fn = int32_t(__cdecl *)(
+    const char_t *name,
+    const char_t *value);
+typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_get_runtime_properties_fn)(
     const hostfxr_handle host_context_handle,
     /*inout*/ size_t * count,
-    /*out*/ const pal::char_t **keys,
-    /*out*/ const pal::char_t **values);
+    /*out*/ const char_t **keys,
+    /*out*/ const char_t **values);
 
-using hostfxr_run_app_fn = int32_t(__cdecl *)(const hostfxr_handle host_context_handle);
-using hostfxr_get_runtime_delegate_fn = int32_t(__cdecl *)(
+typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_run_app_fn)(const hostfxr_handle host_context_handle);
+typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_get_runtime_delegate_fn)(
     const hostfxr_handle host_context_handle,
-    hostfxr_delegate_type type,
+    enum hostfxr_delegate_type type,
     /*out*/ void **delegate);
 
-using hostfxr_close_fn = int32_t(__cdecl *)(const hostfxr_handle host_context_handle);
+typedef int32_t(HOSTFXR_CALLTYPE *hostfxr_close_fn)(const hostfxr_handle host_context_handle);
 
-#endif //_COREHOST_CLI_HOSTFXR_H_
+#endif //__HOSTFXR_H__

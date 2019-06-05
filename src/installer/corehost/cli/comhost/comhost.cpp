@@ -69,7 +69,7 @@ namespace
             delegate
         );
     }
-    
+
     void report_com_error_info(const GUID& guid, pal::string_t errs)
     {
         ICreateErrorInfo *cei;
@@ -112,10 +112,10 @@ COM_API HRESULT STDMETHODCALLTYPE DllGetClassObject(
     {
         trace::setup();
         reset_redirected_error_writer();
-        
+
         error_writer_scope_t writer_scope(redirected_error_writer);
 
-        int ec = get_com_delegate(hostfxr_delegate_type::com_activation, &app_path, &act);
+        int ec = get_com_delegate(hostfxr_delegate_type::hdt_com_activation, &app_path, &act);
         if (ec != StatusCode::Success)
         {
             report_com_error_info(rclsid, std::move(get_redirected_error_string()));
@@ -329,7 +329,7 @@ COM_API HRESULT STDMETHODCALLTYPE DllRegisterServer(void)
     HRESULT hr;
     pal::string_t app_path;
     com_delegate_fn reg;
-    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::com_register, &app_path, &reg));
+    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_register, &app_path, &reg));
 
     com_activation_context cxt
     {
@@ -373,7 +373,7 @@ COM_API HRESULT STDMETHODCALLTYPE DllUnregisterServer(void)
     HRESULT hr;
     pal::string_t app_path;
     com_delegate_fn unreg;
-    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::com_unregister, &app_path, &unreg));
+    RETURN_IF_FAILED(get_com_delegate(hostfxr_delegate_type::hdt_com_unregister, &app_path, &unreg));
 
     com_activation_context cxt
     {

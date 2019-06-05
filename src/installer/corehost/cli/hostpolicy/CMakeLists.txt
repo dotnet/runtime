@@ -44,6 +44,7 @@ set(HEADERS
     ./hostpolicy_context.h
     ./hostpolicy_init.h
     ../corehost_context_contract.h
+    ../hostpolicy.h
     ../runtime_config.h
     ../json/casablanca/include/cpprest/json.h
     ../fxr/fx_ver.h

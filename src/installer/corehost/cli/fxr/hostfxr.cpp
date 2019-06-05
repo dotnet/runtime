@@ -24,7 +24,7 @@ namespace
     }
 }
 
-SHARED_API int hostfxr_main_startupinfo(const int argc, const pal::char_t* argv[], const pal::char_t* host_path, const pal::char_t* dotnet_root, const pal::char_t* app_path)
+SHARED_API int HOSTFXR_CALLTYPE hostfxr_main_startupinfo(const int argc, const pal::char_t* argv[], const pal::char_t* host_path, const pal::char_t* dotnet_root, const pal::char_t* app_path)
 {
     trace_hostfxr_entry_point(_X("hostfxr_main_startupinfo"));
 
@@ -33,7 +33,7 @@ SHARED_API int hostfxr_main_startupinfo(const int argc, const pal::char_t* argv[
     return fx_muxer_t::execute(pal::string_t(), argc, argv, startup_info, nullptr, 0, nullptr);
 }
 
-SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])
+SHARED_API int HOSTFXR_CALLTYPE hostfxr_main(const int argc, const pal::char_t* argv[])
 {
     trace_hostfxr_entry_point(_X("hostfxr_main"));
 
@@ -86,7 +86,7 @@ SHARED_API int hostfxr_main(const int argc, const pal::char_t* argv[])
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
 //   Unix        - UTF-8  (pal::char_t is 1 byte char)
 //
-SHARED_API int32_t hostfxr_resolve_sdk(
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk(
     const pal::char_t* exe_dir,
     const pal::char_t* working_dir,
     pal::char_t buffer[],
@@ -144,7 +144,7 @@ enum class hostfxr_resolve_sdk2_result_key_t : int32_t
     global_json_path = 1,
 };
 
-typedef void (*hostfxr_resolve_sdk2_result_fn)(
+typedef void (HOSTFXR_CALLTYPE *hostfxr_resolve_sdk2_result_fn)(
     hostfxr_resolve_sdk2_result_key_t key,
     const pal::char_t* value);
 
@@ -200,7 +200,7 @@ typedef void (*hostfxr_resolve_sdk2_result_fn)(
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
 //   Unix        - UTF-8  (pal::char_t is 1 byte char)
 //
-SHARED_API int32_t hostfxr_resolve_sdk2(
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
     const pal::char_t* exe_dir,
     const pal::char_t* working_dir,
     int32_t flags,
@@ -248,7 +248,7 @@ SHARED_API int32_t hostfxr_resolve_sdk2(
 }
 
 
-typedef void (*hostfxr_get_available_sdks_result_fn)(
+typedef void (HOSTFXR_CALLTYPE *hostfxr_get_available_sdks_result_fn)(
     int32_t sdk_count,
     const pal::char_t *sdk_dirs[]);
 
@@ -274,7 +274,7 @@ typedef void (*hostfxr_get_available_sdks_result_fn)(
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
 //   Unix        - UTF-8  (pal::char_t is 1 byte char)
 //
-SHARED_API int32_t hostfxr_get_available_sdks(
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_available_sdks(
     const pal::char_t* exe_dir,
     hostfxr_get_available_sdks_result_fn result)
 {
@@ -348,7 +348,7 @@ SHARED_API int32_t hostfxr_get_available_sdks(
 //   Windows     - UTF-16 (pal::char_t is 2 byte wchar_t)
 //   Unix        - UTF-8  (pal::char_t is 1 byte char)
 //
-SHARED_API int32_t hostfxr_get_native_search_directories(const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size)
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_native_search_directories(const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size)
 {
     trace_hostfxr_entry_point(_X("hostfxr_get_native_search_directories"));
 
@@ -364,8 +364,6 @@ SHARED_API int32_t hostfxr_get_native_search_directories(const int argc, const p
     int rc = fx_muxer_t::execute(_X("get-native-search-directories"), argc, argv, startup_info, buffer, buffer_size, required_buffer_size);
     return rc;
 }
-
-typedef void(*hostfxr_error_writer_fn)(const pal::char_t* message);
 
 //
 // Sets a callback which is to be used to write errors to.
@@ -390,7 +388,7 @@ typedef void(*hostfxr_error_writer_fn)(const pal::char_t* message);
 // will be propagated to hostpolicy for the duration of the call. This means that errors from
 // both hostfxr and hostpolicy will be reporter through the same error writer.
 //
-SHARED_API hostfxr_error_writer_fn hostfxr_set_error_writer(hostfxr_error_writer_fn error_writer)
+SHARED_API hostfxr_error_writer_fn HOSTFXR_CALLTYPE hostfxr_set_error_writer(hostfxr_error_writer_fn error_writer)
 {
     return trace::set_error_writer(error_writer);
 }
@@ -460,7 +458,7 @@ namespace
 //
 // This function does not load the runtime.
 //
-SHARED_API int32_t __cdecl hostfxr_initialize_for_dotnet_command_line(
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_initialize_for_dotnet_command_line(
     int argc,
     const pal::char_t *argv[],
     const hostfxr_initialize_parameters * parameters,
@@ -533,7 +531,7 @@ SHARED_API int32_t __cdecl hostfxr_initialize_for_dotnet_command_line(
 // initializations. In the case of Success_DifferentRuntimeProperties, it is left to the consumer to verify that
 // the difference in properties is acceptable.
 //
-SHARED_API int32_t __cdecl hostfxr_initialize_for_runtime_config(
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_initialize_for_runtime_config(
     const pal::char_t *runtime_config_path,
     const hostfxr_initialize_parameters *parameters,
     /*out*/ hostfxr_handle *host_context_handle)
@@ -570,7 +568,7 @@ SHARED_API int32_t __cdecl hostfxr_initialize_for_runtime_config(
 //
 // This function will not return until the managed application exits.
 //
-SHARED_API int32_t __cdecl hostfxr_run_app(const hostfxr_handle host_context_handle)
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_run_app(const hostfxr_handle host_context_handle)
 {
     trace_hostfxr_entry_point(_X("hostfxr_run_app"));
 
@@ -587,17 +585,17 @@ namespace
     {
         switch (type)
         {
-        case hostfxr_delegate_type::com_activation:
+        case hostfxr_delegate_type::hdt_com_activation:
             return coreclr_delegate_type::com_activation;
-        case hostfxr_delegate_type::load_in_memory_assembly:
+        case hostfxr_delegate_type::hdt_load_in_memory_assembly:
             return coreclr_delegate_type::load_in_memory_assembly;
-        case hostfxr_delegate_type::winrt_activation:
+        case hostfxr_delegate_type::hdt_winrt_activation:
             return coreclr_delegate_type::winrt_activation;
-        case hostfxr_delegate_type::com_register:
+        case hostfxr_delegate_type::hdt_com_register:
             return coreclr_delegate_type::com_register;
-        case hostfxr_delegate_type::com_unregister:
+        case hostfxr_delegate_type::hdt_com_unregister:
             return coreclr_delegate_type::com_unregister;
-        case hostfxr_delegate_type::load_assembly_and_get_function_pointer:
+        case hostfxr_delegate_type::hdt_load_assembly_and_get_function_pointer:
             return coreclr_delegate_type::load_assembly_and_get_function_pointer;
         }
         return coreclr_delegate_type::invalid;
@@ -620,7 +618,7 @@ namespace
 //
 // The host_context_handle must have been initialized using hostfxr_initialize_for_runtime_config.
 //
-SHARED_API int32_t __cdecl hostfxr_get_runtime_delegate(
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_delegate(
     const hostfxr_handle host_context_handle,
     hostfxr_delegate_type type,
     /*out*/ void **delegate)
@@ -662,7 +660,7 @@ SHARED_API int32_t __cdecl hostfxr_get_runtime_delegate(
 // If host_context_handle is nullptr and an active host context exists, this function will get the
 // property value for the active host context.
 //
-SHARED_API int32_t __cdecl hostfxr_get_runtime_property_value(
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_property_value(
     const hostfxr_handle host_context_handle,
     const pal::char_t *name,
     /*out*/ const pal::char_t **value)
@@ -727,7 +725,7 @@ SHARED_API int32_t __cdecl hostfxr_get_runtime_property_value(
 // If the property already exists in the host context, it will be overwritten. If value is nullptr, the
 // property will be removed.
 //
-SHARED_API int32_t __cdecl hostfxr_set_runtime_property_value(
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_set_runtime_property_value(
     const hostfxr_handle host_context_handle,
     const pal::char_t *name,
     const pal::char_t *value)
@@ -778,7 +776,7 @@ SHARED_API int32_t __cdecl hostfxr_set_runtime_property_value(
 // If host_context_handle is nullptr and an active host context exists, this function will get the
 // properties for the active host context.
 //
-SHARED_API int32_t __cdecl hostfxr_get_runtime_properties(
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_get_runtime_properties(
     const hostfxr_handle host_context_handle,
     /*inout*/ size_t * count,
     /*out*/ const pal::char_t **keys,
@@ -843,7 +841,7 @@ SHARED_API int32_t __cdecl hostfxr_get_runtime_properties(
 // Return value:
 //     The error code result.
 //
-SHARED_API int32_t __cdecl hostfxr_close(const hostfxr_handle host_context_handle)
+SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_close(const hostfxr_handle host_context_handle)
 {
     trace_hostfxr_entry_point(_X("hostfxr_close"));
 
