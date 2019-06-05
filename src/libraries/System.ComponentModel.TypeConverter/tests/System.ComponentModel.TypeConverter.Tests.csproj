@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{3F0326A1-9E19-4A6C-95CE-63E65C9D2030}</ProjectGuid>
     <DefineConstants>$(DefineConstants);FUNCTIONAL_TESTS</DefineConstants>
@@ -17,6 +17,8 @@
   <ItemGroup>
     <Compile Include="Design\Serialization\ComponentSerializationServiceTests.cs" />
     <Compile Include="Design\StandardCommandsTests.cs" />
+    <Compile Include="Mocks\MockDesigner.cs" />
+    <Compile Include="Mocks\MockDesignerHost.cs" />
     <Compile Include="NestedContainerTests.cs" />
     <Compile Include="PasswordPropertyTextAttributeTests.cs" />
     <Compile Include="MarshalByValueComponentTests.cs" />

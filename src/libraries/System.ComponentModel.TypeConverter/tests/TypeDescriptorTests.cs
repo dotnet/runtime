@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.ComponentModel.Design;
 using System.Globalization;
 using Xunit;
 
@@ -64,6 +65,22 @@ namespace System.ComponentModel.Tests
 
             Assert.IsType(secondaryObject.GetType(), associatedObject);
             Assert.Equal(secondaryObject, associatedObject);
+        }
+
+        [Fact]
+        public void GetAssociationReturnsDesigner()
+        {
+            var designer = new MockDesigner();
+            var designerHost = new MockDesignerHost();
+            var component = new DescriptorTestComponent();
+
+            designerHost.AddDesigner(component, designer);
+            component.AddService(typeof(IDesignerHost), designerHost);
+
+            object associatedObject = TypeDescriptor.GetAssociation(designer.GetType(), component);
+
+            Assert.IsType<MockDesigner>(associatedObject);
+            Assert.Same(designer, associatedObject);
         }
 
         [Theory]

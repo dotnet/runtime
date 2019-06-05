@@ -599,10 +599,8 @@ namespace System.ComponentModel
                     }
                 }
 
-#if FEATURE_IDESIGNERHOST
                 // Not in our table. We have a default association with a designer 
                 // if that designer is a component.
-                //
                 if (associatedObject == primary)
                 {
                     IComponent component = primary as IComponent;
@@ -621,7 +619,6 @@ namespace System.ComponentModel
                                 // got here, we're probably hosed because the user just passed in
                                 // an object that this PropertyDescriptor can't munch on, but it's
                                 // clearer to use that object instance instead of it's designer.
-                                //
                                 if (designer != null && type.IsInstanceOfType(designer))
                                 {
                                     associatedObject = designer;
@@ -630,7 +627,6 @@ namespace System.ComponentModel
                         }
                     }
                 }
-#endif
             }
 
             return associatedObject;
