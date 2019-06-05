@@ -1635,8 +1635,7 @@ interp_method_check_inlining (TransformData *td, MonoMethod *method)
 	if ((method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) ||
 	    (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED) ||
 	    (mono_class_is_marshalbyref (method->klass)) ||
-	    header.has_clauses ||
-            header.has_locals)
+	    header.has_clauses)
 		return FALSE;
 
 	if (header.code_size >= INLINE_LENGTH_LIMIT)
@@ -2833,6 +2832,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	gboolean ret = TRUE;
 	gboolean emitted_funccall_seq_point = FALSE;
 	guint32 *arg_offsets = NULL;
+	guint32 *local_offsets = NULL;
 	InterpInst *last_seq_point = NULL;
 
 	original_bb = bb = mono_basic_block_split (method, error, header);
@@ -2968,6 +2968,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			arg_offsets [0] = offset;
 			store_local_general (td, offset, type);
 		}
+
+		local_offsets = (guint32*) g_malloc (header->num_locals * sizeof (guint32));
+		/* Allocate locals to store inlined method args from stack */
+		for (i = 0; i < header->num_locals; i++)
+			local_offsets [i] = create_interp_local (td, header->locals [i]);
 	}
 
 	while (td->ip < end) {
@@ -3060,17 +3065,27 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		case CEE_LDLOC_0:
 		case CEE_LDLOC_1:
 		case CEE_LDLOC_2:
-		case CEE_LDLOC_3:
-			load_local (td, *td->ip - CEE_LDLOC_0);
+		case CEE_LDLOC_3: {
+			int loc_n = *td->ip - CEE_LDLOC_0;
+			if (td->method == method)
+				load_local (td, loc_n);
+			else
+				load_local_general (td, local_offsets [loc_n], header->locals [loc_n]);
 			++td->ip;
 			break;
+		}
 		case CEE_STLOC_0:
 		case CEE_STLOC_1:
 		case CEE_STLOC_2:
-		case CEE_STLOC_3:
-			store_local (td, *td->ip - CEE_STLOC_0);
+		case CEE_STLOC_3: {
+			int loc_n = *td->ip - CEE_STLOC_0;
+			if (td->method == method)
+				store_local (td, loc_n);
+			else
+				store_local_general (td, local_offsets [loc_n], header->locals [loc_n]);
 			++td->ip;
 			break;
+		}
 		case CEE_LDARG_S: {
 			int arg_n = ((guint8 *)td->ip)[1];
 			if (td->method == method)
@@ -3082,12 +3097,16 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 		}
 		case CEE_LDARGA_S: {
 			/* NOTE: n includes this */
-			INLINE_FAILURE; // probably uncommon
 			int n = ((guint8 *) td->ip) [1];
 
-			get_arg_type_exact (td, n, &mt);
-			interp_add_ins (td, mt == MINT_TYPE_VT ? MINT_LDARGA_VT : MINT_LDARGA);
-			td->last_ins->data [0] = n;
+			if (td->method == method) {
+				get_arg_type_exact (td, n, &mt);
+				interp_add_ins (td, mt == MINT_TYPE_VT ? MINT_LDARGA_VT : MINT_LDARGA);
+				td->last_ins->data [0] = n;
+			} else {
+				interp_add_ins (td, MINT_LDLOCA_S);
+				td->last_ins->data [0] = arg_offsets [n];
+			}
 			PUSH_SIMPLE_TYPE(td, STACK_TYPE_MP);
 			td->ip += 2;
 			break;
@@ -3101,20 +3120,35 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			td->ip += 2;
 			break;
 		}
-		case CEE_LDLOC_S:
-			load_local (td, ((guint8 *)td->ip)[1]);
+		case CEE_LDLOC_S: {
+			int loc_n = ((guint8 *)td->ip)[1];
+			if (td->method == method)
+				load_local (td, loc_n);
+			else
+				load_local_general (td, local_offsets [loc_n], header->locals [loc_n]);
 			td->ip += 2;
 			break;
-		case CEE_LDLOCA_S:
+		}
+		case CEE_LDLOCA_S: {
+			int loc_n = ((guint8 *)td->ip)[1];
 			interp_add_ins (td, MINT_LDLOCA_S);
-			td->last_ins->data [0] = td->rtm->local_offsets [((guint8 *)td->ip)[1]];
+			if (td->method == method)
+				td->last_ins->data [0] = td->rtm->local_offsets [loc_n];
+			else
+				td->last_ins->data [0] = local_offsets [loc_n];
 			PUSH_SIMPLE_TYPE(td, STACK_TYPE_MP);
 			td->ip += 2;
 			break;
-		case CEE_STLOC_S:
-			store_local (td, ((guint8 *)td->ip)[1]);
+		}
+		case CEE_STLOC_S: {
+			int loc_n = ((guint8 *)td->ip)[1];
+			if (td->method == method)
+				store_local (td, loc_n);
+			else
+				store_local_general (td, local_offsets [loc_n], header->locals [loc_n]);
 			td->ip += 2;
 			break;
+		}
 		case CEE_LDNULL: 
 			SIMPLE_OP(td, MINT_LDNULL);
 			PUSH_TYPE(td, STACK_TYPE_O, NULL);
@@ -5489,12 +5523,16 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				break;
 			}
 			case CEE_LDARGA: {
-				INLINE_FAILURE;
 				int n = read16 (td->ip + 1);
 
-				get_arg_type_exact (td, n, &mt);
-				interp_add_ins (td, mt == MINT_TYPE_VT ? MINT_LDARGA_VT : MINT_LDARGA);
-				td->last_ins->data [0] = n;
+				if (td->method == method) {
+					get_arg_type_exact (td, n, &mt);
+					interp_add_ins (td, mt == MINT_TYPE_VT ? MINT_LDARGA_VT : MINT_LDARGA);
+					td->last_ins->data [0] = n;
+				} else {
+					interp_add_ins (td, MINT_LDLOCA_S);
+					td->last_ins->data [0] = arg_offsets [n];
+				}
 				PUSH_SIMPLE_TYPE(td, STACK_TYPE_MP);
 				td->ip += 3;
 				break;
@@ -5508,21 +5546,37 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				td->ip += 3;
 				break;
 			}
-			case CEE_LDLOC:
-				load_local (td, read16 (td->ip + 1));
+			case CEE_LDLOC: {
+				int loc_n = read16 (td->ip + 1);
+				if (td->method == method)
+					load_local (td, loc_n);
+				else
+					load_local_general (td, local_offsets [loc_n], header->locals [loc_n]);
 				td->ip += 3;
 				break;
-			case CEE_LDLOCA:
+			}
+			case CEE_LDLOCA: {
+				int loc_n = read16 (td->ip + 1);
 				interp_add_ins (td, MINT_LDLOCA_S);
-				td->last_ins->data [0] = td->rtm->local_offsets [read16 (td->ip + 1)];
+				if (td->method == method)
+					td->last_ins->data [0] = td->rtm->local_offsets [loc_n];
+				else
+					td->last_ins->data [0] = local_offsets [loc_n];
 				PUSH_SIMPLE_TYPE(td, STACK_TYPE_MP);
 				td->ip += 3;
 				break;
-			case CEE_STLOC:
-				store_local (td, read16 (td->ip + 1));
+			}
+			case CEE_STLOC: {
+				int loc_n = read16 (td->ip + 1);
+				if (td->method == method)
+					store_local (td, loc_n);
+				else
+					store_local_general (td, local_offsets [loc_n], header->locals [loc_n]);
 				td->ip += 3;
 				break;
+			}
 			case CEE_LOCALLOC:
+				INLINE_FAILURE;
 				CHECK_STACK (td, 1);
 #if SIZEOF_VOID_P == 8
 				if (td->sp [-1].type == STACK_TYPE_I8)
@@ -5656,6 +5710,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 
 exit_ret:
 	g_free (arg_offsets);
+	g_free (local_offsets);
 	mono_basic_block_free (original_bb);
 	for (i = 0; i < header->code_size; ++i)
 		g_free (td->stack_state [i]);
