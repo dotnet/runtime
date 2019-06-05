@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Options
                     var result = validate.Validate(name, options);
                     if (result.Failed)
                     {
-                        failures.Add(result.FailureMessage);
+                        failures.AddRange(result.Failures);
                     }
                 }
                 if (failures.Count > 0)

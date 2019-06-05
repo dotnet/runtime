@@ -38,5 +38,10 @@ namespace Microsoft.Extensions.Options
         /// The validation failures.
         /// </summary>
         public IEnumerable<string> Failures { get; }
+
+        /// <summary>
+        /// The message is a semicolon separated list of the <see cref="Failures"/>.
+        /// </summary>
+        public override string Message => String.Join("; ", Failures);
     }
 }
