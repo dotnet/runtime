@@ -44,6 +44,7 @@ set(HEADERS
     ../deps_format.h
     ../deps_entry.h
     ../host_startup_info.h
+    ../hostpolicy.h
     ../runtime_config.h
     ../json/casablanca/include/cpprest/json.h
     ../fx_definition.h

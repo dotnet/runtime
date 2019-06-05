@@ -34,7 +34,7 @@ namespace
     int get_winrt_activation_delegate(pal::string_t* app_path, winrt_activation_fn *delegate)
     {
         return load_fxr_and_get_delegate(
-            hostfxr_delegate_type::winrt_activation,
+            hostfxr_delegate_type::hdt_winrt_activation,
             [app_path](const pal::string_t& host_path, pal::string_t* config_path_out)
             {
                 // Change the extension to get the 'app' and config
@@ -66,7 +66,7 @@ WINRT_API HRESULT STDMETHODCALLTYPE DllGetActivationFactory(_In_ HSTRING activat
         trace::setup();
         reset_redirected_error_writer();
         error_writer_scope_t writer_scope(redirected_error_writer);
-        
+
         int ec = get_winrt_activation_delegate(&app_path, &activator);
         if (ec != StatusCode::Success)
         {

@@ -24,7 +24,7 @@
 pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_memory_assembly_fn* delegate)
 {
     return load_fxr_and_get_delegate(
-        hostfxr_delegate_type::load_in_memory_assembly,
+        hostfxr_delegate_type::hdt_load_in_memory_assembly,
         [handle](const pal::string_t& host_path, pal::string_t* config_path_out)
         {
             pal::string_t mod_path;
