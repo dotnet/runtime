@@ -124,7 +124,7 @@ endif()
 
 message(STATUS "LLDB_H: ${LLDB_H}")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-delete-non-virtual-dtor")
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-delete-non-virtual-dtor>)
 
 include_directories(inc)
 include_directories("${LLDB_H}")
