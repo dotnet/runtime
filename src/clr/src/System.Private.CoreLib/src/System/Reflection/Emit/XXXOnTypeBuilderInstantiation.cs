@@ -74,9 +74,9 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Abstract\Virtual Members
-        public override Type? ReturnType { get { return m_method.ReturnType; } }
-        public override ParameterInfo? ReturnParameter { get { throw new NotSupportedException(); } }
-        public override ICustomAttributeProvider? ReturnTypeCustomAttributes { get { throw new NotSupportedException(); } }
+        public override Type ReturnType { get { return m_method.ReturnType; } }
+        public override ParameterInfo ReturnParameter { get { throw new NotSupportedException(); } }
+        public override ICustomAttributeProvider ReturnTypeCustomAttributes { get { throw new NotSupportedException(); } }
         public override MethodInfo GetBaseDefinition() { throw new NotSupportedException(); }
         #endregion    
     }
@@ -110,9 +110,9 @@ namespace System.Reflection.Emit
             return m_ctor.GetParameterTypes();
         }
 
-        internal override Type? GetReturnType()
+        internal override Type GetReturnType()
         {
-            return DeclaringType;
+            return m_type;
         }
 
         #region MemberInfo Overrides

@@ -88,7 +88,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region Public Abstract\Virtual Members
-        public override Type? ReturnType
+        public override Type ReturnType
         {
             get
             {
@@ -96,8 +96,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override ParameterInfo? ReturnParameter { get { throw new NotSupportedException(); } }
-        public override ICustomAttributeProvider? ReturnTypeCustomAttributes { get { throw new NotSupportedException(); } }
+        public override ParameterInfo ReturnParameter { get { throw new NotSupportedException(); } }
+        public override ICustomAttributeProvider ReturnTypeCustomAttributes { get { throw new NotSupportedException(); } }
         public override MethodInfo GetBaseDefinition() { throw new NotSupportedException(); }
         #endregion
     }
