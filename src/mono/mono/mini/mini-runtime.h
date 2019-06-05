@@ -155,6 +155,9 @@ typedef struct {
 	int kind;
 	MonoContext ctx; /* valid if kind == DEBUGGER_INVOKE || kind == INTERP_EXIT_WITH_CTX */
 	gpointer interp_exit_data; /* valid if kind == INTERP_EXIT || kind == INTERP_EXIT_WITH_CTX */
+#if defined (_MSC_VER)
+	gboolean interp_exit_label_set;
+#endif
 } MonoLMFExt;
 
 typedef void (*MonoFtnPtrEHCallback) (guint32 gchandle);

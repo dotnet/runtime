@@ -18,7 +18,6 @@ mono_context_get_current PROC
 	mov [rcx + 08h], rcx
 	mov [rcx + 10h], rdx
 	mov [rcx + 18h], rbx
-	mov [rcx + 20h], rsp
 	mov [rcx + 28h], rbp
 	mov [rcx + 30h], rsi
 	mov [rcx + 38h], rdi
@@ -31,9 +30,12 @@ mono_context_get_current PROC
 	mov [rcx + 70h], r14
 	mov [rcx + 78h], r15
 
-	lea rax, __mono_current_ip
-__mono_current_ip:
+	lea rax, [rsp+8]
+	mov [rcx + 20h], rax
+
+	mov rax, qword ptr [rsp]
 	mov [rcx + 80h], rax
+
 	ret
 
 mono_context_get_current endP
