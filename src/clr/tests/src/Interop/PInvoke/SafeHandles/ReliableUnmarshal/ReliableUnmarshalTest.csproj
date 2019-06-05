@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <AssemblyName>ReleaseHandleTest</AssemblyName>
+    <AssemblyName>ReliableUnmarshalTest</AssemblyName>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{F1E66554-8C8E-4141-85CF-D0CD6A0CD0B0}</ProjectGuid>
     <OutputType>Exe</OutputType>
@@ -24,8 +24,7 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ReleaseHandleTest.cs" />
-    <Compile Include="..\*.cs" />
+    <Compile Include="ReliableUnmarshalTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
