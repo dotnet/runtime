@@ -17,6 +17,11 @@ set(SOURCES
     ../fxr/fx_ver.cpp
 )
 
+if(WIN32)
+    list(APPEND SOURCES
+        Exports.def)
+endif()
+
 include(../lib.cmake)
 
 add_definitions(-DFEATURE_LIBHOST=1)
