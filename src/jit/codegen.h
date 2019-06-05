@@ -1413,9 +1413,6 @@ public:
 
     void instGen_Store_Reg_Into_Lcl(var_types dstType, regNumber srcReg, int varNum, int offs);
 
-    void instGen_Store_Imm_Into_Lcl(
-        var_types dstType, emitAttr sizeAttr, ssize_t imm, int varNum, int offs, regNumber regToUse = REG_NA);
-
 #ifdef DEBUG
     void __cdecl instDisp(instruction ins, bool noNL, const char* fmt, ...);
 #endif
