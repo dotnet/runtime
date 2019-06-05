@@ -15,13 +15,12 @@ namespace Microsoft.Extensions.Logging.Test
 {
     public class ConsoleLoggerTest
     {
-        private const int WritesPerMsg = 2;
         private const string _paddingString = "      ";
         private const string _loggerName = "test";
         private const string _state = "This is a test, and {curly braces} are just fine!";
         private readonly Func<object, Exception, string> _defaultFormatter = (state, exception) => state.ToString();
 
-        private static (ConsoleLogger Logger, ConsoleSink Sink, ConsoleSink ErrorSink) SetUp(ConsoleLoggerOptions options = null)
+        private static (ConsoleLogger Logger, ConsoleSink Sink, ConsoleSink ErrorSink, Func<LogLevel, string> GetLevelPrefix, int WritesPerMsg) SetUp(ConsoleLoggerOptions options = null)
         {
             // Arrange
             var sink = new ConsoleSink();
@@ -35,7 +34,63 @@ namespace Microsoft.Extensions.Logging.Test
             var logger = new ConsoleLogger(_loggerName, consoleLoggerProcessor);
             logger.ScopeProvider = new LoggerExternalScopeProvider();
             logger.Options = options ?? new ConsoleLoggerOptions();
-            return (logger, sink, errorSink);
+            Func<LogLevel, string> levelAsString;
+            int writesPerMsg;
+            switch (logger.Options.Format)
+            {
+                case ConsoleLoggerFormat.Default:
+                    levelAsString = LogLevelAsStringDefault;
+                    writesPerMsg = 2;
+                    break;
+                case ConsoleLoggerFormat.Systemd:
+                    levelAsString = GetSyslogSeverityString;
+                    writesPerMsg = 1;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(logger.Options.Format));
+            }
+            return (logger, sink, errorSink, levelAsString, writesPerMsg);
+        }
+
+        private static string LogLevelAsStringDefault(LogLevel level)
+        {
+            switch (level)
+            {
+                case LogLevel.Trace:
+                    return "trce";
+                case LogLevel.Debug:
+                    return "dbug";
+                case LogLevel.Information:
+                    return "info";
+                case LogLevel.Warning:
+                    return "warn";
+                case LogLevel.Error:
+                    return "fail";
+                case LogLevel.Critical:
+                    return "crit";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(level));
+            }
+        }
+
+        private static string GetSyslogSeverityString(LogLevel level)
+        {
+            switch (level)
+            {
+                case LogLevel.Trace:
+                case LogLevel.Debug:
+                    return "<7>";
+                case LogLevel.Information:
+                    return "<6>";
+                case LogLevel.Warning:
+                    return "<4>";
+                case LogLevel.Error:
+                    return "<3>";
+                case LogLevel.Critical:
+                    return "<2>";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(level));
+            }
         }
 
         [Fact]
@@ -57,17 +112,17 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(
                 "crit: test[0]" + Environment.NewLine +
                 "      [null]" + Environment.NewLine,
-                GetMessage(sink.Writes.GetRange(0 * WritesPerMsg, WritesPerMsg)));
+                GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
             Assert.Equal(
                 "crit: test[0]" + Environment.NewLine +
                 "      [null]" + Environment.NewLine,
-                GetMessage(sink.Writes.GetRange(1 * WritesPerMsg, WritesPerMsg)));
+                GetMessage(sink.Writes.GetRange(1 * t.WritesPerMsg, t.WritesPerMsg)));
 
             Assert.Equal(
                 "crit: test[0]" + Environment.NewLine +
                 "      [null]" + Environment.NewLine +
                 "System.InvalidOperationException: Invalid value" + Environment.NewLine,
-                GetMessage(sink.Writes.GetRange(2 * WritesPerMsg, WritesPerMsg)));
+                GetMessage(sink.Writes.GetRange(2 * t.WritesPerMsg, t.WritesPerMsg)));
         }
 
         [Fact]
@@ -92,10 +147,10 @@ namespace Microsoft.Extensions.Logging.Test
 
             // Assert
             Assert.Equal(8, sink.Writes.Count);
-            Assert.Equal(expected1, GetMessage(sink.Writes.GetRange(0 * WritesPerMsg, WritesPerMsg)));
-            Assert.Equal(expected2, GetMessage(sink.Writes.GetRange(1 * WritesPerMsg, WritesPerMsg)));
-            Assert.Equal(expected2, GetMessage(sink.Writes.GetRange(2 * WritesPerMsg, WritesPerMsg)));
-            Assert.Equal(expected2, GetMessage(sink.Writes.GetRange(3 * WritesPerMsg, WritesPerMsg)));
+            Assert.Equal(expected1, GetMessage(sink.Writes.GetRange(0 * t.WritesPerMsg, t.WritesPerMsg)));
+            Assert.Equal(expected2, GetMessage(sink.Writes.GetRange(1 * t.WritesPerMsg, t.WritesPerMsg)));
+            Assert.Equal(expected2, GetMessage(sink.Writes.GetRange(2 * t.WritesPerMsg, t.WritesPerMsg)));
+            Assert.Equal(expected2, GetMessage(sink.Writes.GetRange(3 * t.WritesPerMsg, t.WritesPerMsg)));
         }
 
         [Theory]
@@ -108,7 +163,7 @@ namespace Microsoft.Extensions.Logging.Test
             var sink = t.Sink;
             var eventId = 10;
             var exception = new InvalidOperationException("Invalid value");
-            var expectedHeader = CreateHeader(eventId);
+            var expectedHeader = CreateHeader(ConsoleLoggerFormat.Default, eventId) + Environment.NewLine;
             var expectedMessage =
                 _paddingString + message + Environment.NewLine;
             var expectedExceptionMessage =
@@ -140,7 +195,7 @@ namespace Microsoft.Extensions.Logging.Test
             var t = SetUp();
             var logger = t.Logger;
             var sink = t.Sink;
-            var expectedHeader = CreateHeader();
+            var expectedHeader = CreateHeader(ConsoleLoggerFormat.Default) + Environment.NewLine;
             var expectedMessage =
                     _paddingString
                     + _state
@@ -305,11 +360,12 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Theory]
-        [MemberData(nameof(LevelsWithPrefixes))]
-        public void WriteCore_LogsCorrectTimestamp(LogLevel level, string prefix)
+        [MemberData(nameof(FormatsAndLevels))]
+        public void WriteCore_LogsCorrectTimestamp(ConsoleLoggerFormat format, LogLevel level)
         {
             // Arrange
-            var t = SetUp(new ConsoleLoggerOptions { TimestampFormat = "yyyyMMddHHmmss "});
+            var t = SetUp(new ConsoleLoggerOptions { TimestampFormat = "yyyyMMddHHmmss ", Format = format});
+            var levelPrefix = t.GetLevelPrefix(level);
             var logger = t.Logger;
             var sink = t.Sink;
             var ex = new Exception("Exception message" + Environment.NewLine + "with a second line");
@@ -318,18 +374,34 @@ namespace Microsoft.Extensions.Logging.Test
             logger.Log(level, 0, _state, ex, _defaultFormatter);
 
             // Assert
-            Assert.Equal(3, sink.Writes.Count);
-            Assert.Matches("^\\d{14}\\s$", sink.Writes[0].Message);
-            Assert.StartsWith(prefix, sink.Writes[1].Message);
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    Assert.Equal(3, sink.Writes.Count);
+                    Assert.Matches("^\\d{14}\\s$", sink.Writes[0].Message);
+                    Assert.StartsWith(levelPrefix, sink.Writes[1].Message);
+                }
+                break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.Matches("^<\\d>\\d{14}\\s[^\\s]", sink.Writes[0].Message);
+                    Assert.StartsWith(levelPrefix, sink.Writes[0].Message);
+                }
+                break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
 
-
         [Theory]
-        [MemberData(nameof(LevelsWithPrefixes))]
-        public void WriteCore_LogsCorrectMessages(LogLevel level, string prefix)
+        [MemberData(nameof(FormatsAndLevels))]
+        public void WriteCore_LogsCorrectMessages(ConsoleLoggerFormat format, LogLevel level)
         {
             // Arrange
-            var t = SetUp();
+            var t = SetUp(new ConsoleLoggerOptions { Format = format });
+            var levelPrefix = t.GetLevelPrefix(level);
             var logger = t.Logger;
             var sink = t.Sink;
             var ex = new Exception("Exception message" + Environment.NewLine + "with a second line");
@@ -338,13 +410,33 @@ namespace Microsoft.Extensions.Logging.Test
             logger.Log(level, 0, _state, ex, _defaultFormatter);
 
             // Assert
-            Assert.Equal(2, sink.Writes.Count);
-            Assert.Equal(
-                prefix + ": test[0]" + Environment.NewLine +
-                "      This is a test, and {curly braces} are just fine!" + Environment.NewLine +
-                "System.Exception: Exception message" + Environment.NewLine +
-                "with a second line" + Environment.NewLine,
-                GetMessage(sink.Writes));
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    Assert.Equal(
+                        levelPrefix + ": test[0]" + Environment.NewLine +
+                        "      This is a test, and {curly braces} are just fine!" + Environment.NewLine +
+                        "System.Exception: Exception message" + Environment.NewLine +
+                        "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.Equal(
+                        levelPrefix + "test[0]" + " " +
+                        "This is a test, and {curly braces} are just fine!" + " " +
+                        "System.Exception: Exception message" + " " +
+                        "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
 
         [Fact]
@@ -394,140 +486,227 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
         }
 
-        [Fact]
-        public void WritingScopes_LogsExpectedMessage()
+        [Theory]
+        [MemberData(nameof(Formats))]
+        public void WritingScopes_LogsExpectedMessage(ConsoleLoggerFormat format)
         {
             // Arrange
-            var t = SetUp(new ConsoleLoggerOptions { IncludeScopes = true });
+            var t = SetUp(new ConsoleLoggerOptions { IncludeScopes = true, Format = format });
             var logger = t.Logger;
             var sink = t.Sink;
-            var expectedHeader = CreateHeader();
-            var expectedScope =
-                _paddingString
-                + "=> RequestId: 100"
-                + Environment.NewLine;
-            var expectedMessage = _paddingString + _state + Environment.NewLine;
+            var level = LogLevel.Information;
+            var levelPrefix = t.GetLevelPrefix(level);
+            var header = CreateHeader(format);
+            var scope = "=> RequestId: 100";
+            var message = _state;
 
             // Act
             using (logger.BeginScope("RequestId: {RequestId}", 100))
             {
-                logger.Log(LogLevel.Information, 0, _state, null, _defaultFormatter);
+                logger.Log(level, 0, _state, null, _defaultFormatter);
             }
 
             // Assert
-            Assert.Equal(2, sink.Writes.Count);
-            // scope
-            var write = sink.Writes[1];
-            Assert.Equal(expectedHeader + expectedScope + expectedMessage, write.Message);
-            Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
-            Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    // Assert
+                    Assert.Equal(2, sink.Writes.Count);
+                    // scope
+                    var write = sink.Writes[1];
+                    Assert.Equal(header + Environment.NewLine
+                                 + _paddingString + scope + Environment.NewLine
+                                 + _paddingString + message + Environment.NewLine, write.Message);
+                    Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
+                    Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
+                }
+                break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    Assert.Single(sink.Writes);
+                    // scope
+                    var write = sink.Writes[0];
+                    Assert.Equal(levelPrefix + header + " " + scope + " " + message + Environment.NewLine, write.Message);
+                    Assert.Null(write.BackgroundColor);
+                    Assert.Null(write.ForegroundColor);
+                }
+                break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
 
-        [Fact]
-        public void WritingNestedScope_LogsNullScopeName()
+        [Theory]
+        [MemberData(nameof(Formats))]
+        public void WritingNestedScope_LogsNullScopeName(ConsoleLoggerFormat format)
         {
             // Arrange
-            var t = SetUp(new ConsoleLoggerOptions { IncludeScopes = true });
+            var t = SetUp(new ConsoleLoggerOptions { IncludeScopes = true, Format = format });
             var logger = t.Logger;
             var sink = t.Sink;
-            var expectedHeader = CreateHeader();
-            var expectedScope =
-                _paddingString
-                + "=> [null] => Request matched action: (null)"
-                + Environment.NewLine;
-            var expectedMessage = _paddingString + _state + Environment.NewLine;
+            var level = LogLevel.Information;
+            var levelPrefix = t.GetLevelPrefix(level);
+            var header = CreateHeader(format);
+            var scope = "=> [null] => Request matched action: (null)";
+            var message = _state;
 
             // Act
             using (logger.BeginScope(null))
             {
                 using (logger.BeginScope("Request matched action: {ActionName}", new object[] { null }))
                 {
-                    logger.Log(LogLevel.Information, 0, _state, null, _defaultFormatter);
+                    logger.Log(level, 0, _state, null, _defaultFormatter);
                 }
             }
 
             // Assert
-            Assert.Equal(2, sink.Writes.Count);
-            // scope
-            var write = sink.Writes[1];
-            Assert.Equal(expectedHeader + expectedScope + expectedMessage, write.Message);
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    // scope
+                    var write = sink.Writes[1];
+                    Assert.Equal(header + Environment.NewLine
+                                + _paddingString + scope + Environment.NewLine
+                                + _paddingString + message + Environment.NewLine, write.Message);
+                }
+                break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    Assert.Single(sink.Writes);
+                    // scope
+                    var write = sink.Writes[0];
+                    Assert.Equal(levelPrefix + header + " " + scope + " " + message + Environment.NewLine, write.Message);
+                }
+                break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
 
-        [Fact]
-        public void WritingNestedScopes_LogsExpectedMessage()
+        [Theory]
+        [MemberData(nameof(Formats))]
+        public void WritingNestedScopes_LogsExpectedMessage(ConsoleLoggerFormat format)
         {
             // Arrange
-            var t = SetUp(new ConsoleLoggerOptions { IncludeScopes = true });
+            var t = SetUp(new ConsoleLoggerOptions { IncludeScopes = true, Format = format });
             var logger = t.Logger;
             var sink = t.Sink;
-            var expectedHeader = CreateHeader();
-            var expectedScope =
-                _paddingString
-                + "=> RequestId: 100 => Request matched action: Index"
-                + Environment.NewLine;
-            var expectedMessage = _paddingString + _state + Environment.NewLine;
+            var level = LogLevel.Information;
+            var levelPrefix = t.GetLevelPrefix(level);
+            var header = CreateHeader(format);
+            var scope = "=> RequestId: 100 => Request matched action: Index";
+            var message = _state;
 
             // Act
             using (logger.BeginScope("RequestId: {RequestId}", 100))
             {
                 using (logger.BeginScope("Request matched action: {ActionName}", "Index"))
                 {
-                    logger.Log(LogLevel.Information, 0, _state, null, _defaultFormatter);
+                    logger.Log(level, 0, _state, null, _defaultFormatter);
                 }
             }
 
-            // Assert
-            Assert.Equal(2, sink.Writes.Count);
-            // scope
-            var write = sink.Writes[1];
-            Assert.Equal(expectedHeader + expectedScope + expectedMessage, write.Message);
-            Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
-            Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    // Assert
+                    Assert.Equal(2, sink.Writes.Count);
+                    // scope
+                    var write = sink.Writes[1];
+                    Assert.Equal(header + Environment.NewLine
+                                + _paddingString + scope + Environment.NewLine
+                                + _paddingString + message + Environment.NewLine, write.Message);
+                    Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
+                    Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
+                }
+                    break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    // Assert
+                    Assert.Single(sink.Writes);
+                    // scope
+                    var write = sink.Writes[0];
+                    Assert.Equal(levelPrefix + header + " " + scope + " " + message + Environment.NewLine, write.Message);
+                    Assert.Null(write.BackgroundColor);
+                    Assert.Null(write.ForegroundColor);
+                }
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
 
-        [Fact]
-        public void WritingMultipleScopes_LogsExpectedMessage()
+        [Theory]
+        [MemberData(nameof(Formats))]
+        public void WritingMultipleScopes_LogsExpectedMessage(ConsoleLoggerFormat format)
         {
             // Arrange
-            var t = SetUp(new ConsoleLoggerOptions { IncludeScopes = true });
+            var t = SetUp(new ConsoleLoggerOptions { IncludeScopes = true, Format = format });
             var logger = t.Logger;
             var sink = t.Sink;
-            var expectedHeader = CreateHeader();
-            var expectedMessage = _paddingString + _state + Environment.NewLine;
-            var expectedScope1 =
-                _paddingString
-                + "=> RequestId: 100 => Request matched action: Index"
-                + Environment.NewLine;
-            var expectedScope2 =
-                _paddingString
-                + "=> RequestId: 100 => Created product: Car"
-                + Environment.NewLine;
+            var level = LogLevel.Information;
+            var levelPrefix = t.GetLevelPrefix(level);
+            var header = CreateHeader(format);
+            var message = _state;
+            var scope1 = "=> RequestId: 100 => Request matched action: Index";
+            var scope2 = "=> RequestId: 100 => Created product: Car";
 
             // Act
             using (logger.BeginScope("RequestId: {RequestId}", 100))
             {
                 using (logger.BeginScope("Request matched action: {ActionName}", "Index"))
                 {
-                    logger.Log(LogLevel.Information, 0, _state, null, _defaultFormatter);
+                    logger.Log(level, 0, _state, null, _defaultFormatter);
                 }
 
                 using (logger.BeginScope("Created product: {ProductName}", "Car"))
                 {
-                    logger.Log(LogLevel.Information, 0, _state, null, _defaultFormatter);
+                    logger.Log(level, 0, _state, null, _defaultFormatter);
                 }
             }
 
             // Assert
-            Assert.Equal(4, sink.Writes.Count);
-            // scope
-            var write = sink.Writes[1];
-            Assert.Equal(expectedHeader + expectedScope1 + expectedMessage, write.Message);
-            Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
-            Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
-            write = sink.Writes[3];
-            Assert.Equal(expectedHeader + expectedScope2 + expectedMessage, write.Message);
-            Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
-            Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    Assert.Equal(4, sink.Writes.Count);
+                    // scope
+                    var write = sink.Writes[1];
+                    Assert.Equal(header + Environment.NewLine
+                                + _paddingString + scope1 + Environment.NewLine
+                                + _paddingString + message + Environment.NewLine, write.Message);
+                    Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
+                    Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
+                    write = sink.Writes[3];
+                    Assert.Equal(header + Environment.NewLine
+                                + _paddingString + scope2 + Environment.NewLine
+                                + _paddingString + message + Environment.NewLine, write.Message);
+                    Assert.Equal(TestConsole.DefaultBackgroundColor, write.BackgroundColor);
+                    Assert.Equal(TestConsole.DefaultForegroundColor, write.ForegroundColor);
+                }
+                break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    // scope
+                    var write = sink.Writes[0];
+                    Assert.Equal(levelPrefix + header + " " + scope1 + " " + message + Environment.NewLine, write.Message);
+                    Assert.Null(write.BackgroundColor);
+                    Assert.Null(write.ForegroundColor);
+                    write = sink.Writes[1];
+                    Assert.Equal(levelPrefix + header + " " + scope2 + " " + message + Environment.NewLine, write.Message);
+                    Assert.Null(write.BackgroundColor);
+                    Assert.Null(write.ForegroundColor);
+                }
+                break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
 
         [Fact]
@@ -563,36 +742,63 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.NotNull(disposable);
         }
 
-        [Fact]
-        public void ConsoleLoggerLogsToError_WhenOverErrorLevel()
+        [Theory]
+        [MemberData(nameof(Formats))]
+        public void ConsoleLoggerLogsToError_WhenOverErrorLevel(ConsoleLoggerFormat format)
         {
             // Arrange
-            var (logger, sink, errorSink) = SetUp(new ConsoleLoggerOptions { LogToStandardErrorThreshold = LogLevel.Warning });
+            var t = SetUp(new ConsoleLoggerOptions { LogToStandardErrorThreshold = LogLevel.Warning, Format = format });
+            var logger = t.Logger;
+            var sink = t.Sink;
+            var errorSink = t.ErrorSink;
 
             // Act
             logger.LogInformation("Info");
             logger.LogWarning("Warn");
 
             // Assert
-            Assert.Equal(2, sink.Writes.Count);
-            Assert.Equal(
-                "info: test[0]" + Environment.NewLine +
-                "      Info" + Environment.NewLine,
-                GetMessage(sink.Writes));
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    Assert.Equal(
+                        "info: test[0]" + Environment.NewLine +
+                        "      Info" + Environment.NewLine,
+                        GetMessage(sink.Writes));
 
-            Assert.Equal(2, errorSink.Writes.Count);
-            Assert.Equal(
-                "warn: test[0]" + Environment.NewLine +
-                "      Warn" + Environment.NewLine,
-                GetMessage(errorSink.Writes));
+                    Assert.Equal(2, errorSink.Writes.Count);
+                    Assert.Equal(
+                        "warn: test[0]" + Environment.NewLine +
+                        "      Warn" + Environment.NewLine,
+                        GetMessage(errorSink.Writes));
+                }
+                break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.Equal(
+                        "<6>test[0] Info" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+
+                    Assert.Single(errorSink.Writes);
+                    Assert.Equal(
+                        "<4>test[0] Warn" + Environment.NewLine,
+                        GetMessage(errorSink.Writes));
+                }
+                break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
 
         [Theory]
-        [MemberData(nameof(LevelsWithPrefixes))]
-        public void WriteCore_NullMessageWithException(LogLevel level, string prefix)
+        [MemberData(nameof(FormatsAndLevels))]
+        public void WriteCore_NullMessageWithException(ConsoleLoggerFormat format, LogLevel level)
         {
             // Arrange
-            var t = SetUp();
+            var t = SetUp(new ConsoleLoggerOptions { Format = format });
+            var levelPrefix = t.GetLevelPrefix(level);
             var logger = t.Logger;
             var sink = t.Sink;
 
@@ -603,20 +809,40 @@ namespace Microsoft.Extensions.Logging.Test
             logger.Log(level, 0, message, ex, (s, e) => s);
 
             // Assert
-            Assert.Equal(2, sink.Writes.Count);
-            Assert.Equal(
-                prefix + ": test[0]" + Environment.NewLine +
-                "System.Exception: Exception message" + Environment.NewLine +
-                "with a second line" + Environment.NewLine,
-                GetMessage(sink.Writes));
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    Assert.Equal(
+                        levelPrefix + ": test[0]" + Environment.NewLine +
+                        "System.Exception: Exception message" + Environment.NewLine +
+                        "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.Equal(
+                        levelPrefix + "test[0]" + " " +
+                        "System.Exception: Exception message" + " " +
+                        "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
 
         [Theory]
-        [MemberData(nameof(LevelsWithPrefixes))]
-        public void WriteCore_EmptyMessageWithException(LogLevel level, string prefix)
+        [MemberData(nameof(FormatsAndLevels))]
+        public void WriteCore_EmptyMessageWithException(ConsoleLoggerFormat format, LogLevel level)
         {
             // Arrange
-            var t = SetUp();
+            var t = SetUp(new ConsoleLoggerOptions { Format = format });
+            var levelPrefix = t.GetLevelPrefix(level);
             var logger = t.Logger;
             var sink = t.Sink;
             var ex = new Exception("Exception message" + Environment.NewLine + "with a second line");
@@ -626,20 +852,40 @@ namespace Microsoft.Extensions.Logging.Test
             logger.Log(level, 0, message, ex, (s, e) => s);
 
             // Assert
-            Assert.Equal(2, sink.Writes.Count);
-            Assert.Equal(
-                prefix + ": test[0]" + Environment.NewLine +
-                "System.Exception: Exception message" + Environment.NewLine +
-                "with a second line" + Environment.NewLine,
-                GetMessage(sink.Writes));
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    Assert.Equal(
+                        levelPrefix + ": test[0]" + Environment.NewLine +
+                        "System.Exception: Exception message" + Environment.NewLine +
+                        "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.Equal(
+                        levelPrefix + "test[0]" + " " +
+                        "System.Exception: Exception message" + " " +
+                        "with a second line" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
 
         [Theory]
-        [MemberData(nameof(LevelsWithPrefixes))]
-        public void WriteCore_MessageWithNullException(LogLevel level, string prefix)
+        [MemberData(nameof(FormatsAndLevels))]
+        public void WriteCore_MessageWithNullException(ConsoleLoggerFormat format, LogLevel level)
         {
             // Arrange
-            var t = SetUp();
+            var t = SetUp(new ConsoleLoggerOptions { Format = format });
+            var levelPrefix = t.GetLevelPrefix(level);
             var logger = t.Logger;
             var sink = t.Sink;
             Exception ex = null;
@@ -648,12 +894,29 @@ namespace Microsoft.Extensions.Logging.Test
             logger.Log(level, 0, _state, ex, (s, e) => s);
 
             // Assert
-
-            Assert.Equal(2, sink.Writes.Count);
-            Assert.Equal(
-                prefix + ": test[0]" + Environment.NewLine +
-                "      This is a test, and {curly braces} are just fine!" + Environment.NewLine,
-                GetMessage(sink.Writes));
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                {
+                    Assert.Equal(2, sink.Writes.Count);
+                    Assert.Equal(
+                        levelPrefix + ": test[0]" + Environment.NewLine +
+                        "      This is a test, and {curly braces} are just fine!" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
+                case ConsoleLoggerFormat.Systemd:
+                {
+                    Assert.Single(sink.Writes);
+                    Assert.Equal(
+                        levelPrefix + "test[0]" + " " +
+                        "This is a test, and {curly braces} are just fine!" + Environment.NewLine,
+                        GetMessage(sink.Writes));
+                }
+                break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
 
         [Theory]
@@ -696,7 +959,7 @@ namespace Microsoft.Extensions.Logging.Test
         [Fact]
         public static void IsEnabledReturnsCorrectValue()
         {
-            var (logger, _, _) = SetUp();
+            var logger = SetUp().Logger;
 
             Assert.False(logger.IsEnabled(LogLevel.None));
             Assert.True(logger.IsEnabled(LogLevel.Critical));
@@ -831,15 +1094,39 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.NotNull(logger.ScopeProvider);
         }
 
-        public static TheoryData<LogLevel, string> LevelsWithPrefixes => new TheoryData<LogLevel, string>()
+        public static TheoryData<ConsoleLoggerFormat, LogLevel> FormatsAndLevels
         {
-            {LogLevel.Critical, "crit"},
-            {LogLevel.Error, "fail"},
-            {LogLevel.Warning, "warn"},
-            {LogLevel.Information, "info"},
-            {LogLevel.Debug, "dbug"},
-            {LogLevel.Trace, "trce"},
-        };
+            get
+            {
+                var data = new TheoryData<ConsoleLoggerFormat, LogLevel>();
+                foreach (ConsoleLoggerFormat format in Enum.GetValues(typeof(ConsoleLoggerFormat)))
+                {    
+                    foreach (LogLevel level in Enum.GetValues(typeof(LogLevel)))
+                    {
+                        if (level == LogLevel.None)
+                        {
+                            continue;
+                        }
+
+                        data.Add(format, level);
+                    }
+                }
+                return data;
+            }
+        }
+
+        public static TheoryData<ConsoleLoggerFormat> Formats
+        {
+            get
+            {
+                var data = new TheoryData<ConsoleLoggerFormat>();
+                foreach (ConsoleLoggerFormat value in Enum.GetValues(typeof(ConsoleLoggerFormat)))
+                {
+                    data.Add(value);
+                }
+                return data;
+            }
+        }
 
         public static TheoryData<LogLevel> Levels
         {
@@ -859,9 +1146,17 @@ namespace Microsoft.Extensions.Logging.Test
             return string.Join("", contexts.Select(c => c.Message));
         }
 
-        private string CreateHeader(int eventId = 0)
+        private string CreateHeader(ConsoleLoggerFormat format, int eventId = 0)
         {
-            return $": {_loggerName}[{eventId}]{Environment.NewLine}";
+            switch (format)
+            {
+                case ConsoleLoggerFormat.Default:
+                    return $": {_loggerName}[{eventId}]";
+                case ConsoleLoggerFormat.Systemd:
+                    return $"{_loggerName}[{eventId}]";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(format));
+            }
         }
 
 
