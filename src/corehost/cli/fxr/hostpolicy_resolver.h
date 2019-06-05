@@ -9,12 +9,7 @@
 #include <host_interface.h>
 #include <error_codes.h>
 #include <corehost_context_contract.h>
-
-using corehost_load_fn = int(*) (const host_interface_t* init);
-using corehost_unload_fn = int(*) ();
-using corehost_error_writer_fn = void(*) (const pal::char_t* message);
-using corehost_set_error_writer_fn = corehost_error_writer_fn(*) (corehost_error_writer_fn error_writer);
-using corehost_initialize_fn = int(*)(const corehost_initialize_request_t* init_request, int32_t options, corehost_context_contract* handle);
+#include <hostpolicy.h>
 
 struct hostpolicy_contract_t
 {

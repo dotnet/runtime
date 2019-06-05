@@ -13,6 +13,7 @@
 
 #include <cpprest/json.h>
 #include <corehost_context_contract.h>
+#include <hostpolicy.h>
 #include "corehost_init.h"
 #include "deps_format.h"
 #include "framework_info.h"
@@ -27,9 +28,6 @@
 #include "sdk_info.h"
 #include "sdk_resolver.h"
 #include "roll_fwd_on_no_candidate_fx_option.h"
-
-using corehost_main_fn = int(*) (const int argc, const pal::char_t* argv[]);
-using corehost_main_with_output_buffer_fn = int(*) (const int argc, const pal::char_t* argv[], pal::char_t buffer[], int32_t buffer_size, int32_t* required_buffer_size);
 
 namespace
 {
