@@ -183,10 +183,11 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Forms a slice out of the given <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/>, with <paramref name="length"/> items
+        /// Forms a slice out of the current <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/>, with <paramref name="length"/> items.
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
-        /// <param name="length">The length of the slice</param>
+        /// <param name="length">The length of the slice.</param>
+        /// <returns>A slice that consists of <paramref name="length" /> elements from the current instance starting at index <paramref name="start" />.</returns>
         public ReadOnlySequence<T> Slice(long start, long length)
         {
             if (start < 0 || length < 0)
@@ -258,10 +259,11 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Forms a slice out of the given <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/>, ending at <paramref name="end"/> (inclusive).
+        /// Forms a slice out of the current <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/> and ending at <paramref name="end"/> (exclusive).
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
-        /// <param name="end">The end (inclusive) of the slice</param>
+        /// <param name="end">The ending (exclusive) <see cref="SequencePosition"/> of the slice.</param>
+        /// <returns>A slice that consists of items from the <paramref name="start" /> index to, but not including, the <paramref name="end" /> sequence position in the current read-only sequence.</returns>
         public ReadOnlySequence<T> Slice(long start, SequencePosition end)
         {
             if (start < 0)
@@ -330,10 +332,11 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Forms a slice out of the given <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/>, with <paramref name="length"/> items
+        /// Forms a slice out of the current <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/>, with <paramref name="length"/> items.
         /// </summary>
         /// <param name="start">The starting (inclusive) <see cref="SequencePosition"/> at which to begin this slice.</param>
-        /// <param name="length">The length of the slice</param>
+        /// <param name="length">The length of the slice.</param>
+        /// <returns>A slice that consists of <paramref name="length" /> elements from the current instance starting at sequence position <paramref name="start" />.</returns>
         public ReadOnlySequence<T> Slice(SequencePosition start, long length)
         {
             // Check start before length
@@ -406,31 +409,35 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Forms a slice out of the given <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/>, with <paramref name="length"/> items
+        /// Forms a slice out of the current <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/>, with <paramref name="length"/> items.
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
-        /// <param name="length">The length of the slice</param>
+        /// <param name="length">The length of the slice.</param>
+        /// <returns>A slice that consists of <paramref name="length" /> elements from the current instance starting at index <paramref name="start" />.</returns>
         public ReadOnlySequence<T> Slice(int start, int length) => Slice((long)start, length);
 
         /// <summary>
-        /// Forms a slice out of the given <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/>, ending at <paramref name="end"/> (inclusive).
+        /// Forms a slice out of the current <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/> and ending at <paramref name="end"/> (exclusive).
         /// </summary>
         /// <param name="start">The index at which to begin this slice.</param>
-        /// <param name="end">The end (inclusive) of the slice</param>
+        /// <param name="end">The ending (exclusive) <see cref="SequencePosition"/> of the slice.</param>
+        /// <returns>A slice that consists of items from the <paramref name="start" /> index to, but not including, the <paramref name="end" /> sequence position in the current read-only sequence.</returns>
         public ReadOnlySequence<T> Slice(int start, SequencePosition end) => Slice((long)start, end);
 
         /// <summary>
-        /// Forms a slice out of the given <see cref="ReadOnlySequence{T}"/>, beginning at '<paramref name="start"/>, with <paramref name="length"/> items
+        /// Forms a slice out of the current <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/>, with <paramref name="length"/> items.
         /// </summary>
         /// <param name="start">The starting (inclusive) <see cref="SequencePosition"/> at which to begin this slice.</param>
-        /// <param name="length">The length of the slice</param>
+        /// <param name="length">The length of the slice.</param>
+        /// <returns>A slice that consists of <paramref name="length" /> elements from the current instance starting at sequence position <paramref name="start" />.</returns>
         public ReadOnlySequence<T> Slice(SequencePosition start, int length) => Slice(start, (long)length);
 
         /// <summary>
-        /// Forms a slice out of the given <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/>, ending at <paramref name="end"/> (inclusive).
+        /// Forms a slice out of the given <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/>, ending at <paramref name="end"/> (exclusive).
         /// </summary>
         /// <param name="start">The starting (inclusive) <see cref="SequencePosition"/> at which to begin this slice.</param>
-        /// <param name="end">The ending (inclusive) <see cref="SequencePosition"/> of the slice</param>
+        /// <param name="end">The ending (exclusive) <see cref="SequencePosition"/> of the slice.</param>
+        /// <returns>A slice that consists of items from the <paramref name="start" /> sequence position to, but not including, the <paramref name="end" /> sequence position in the current read-only sequence.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySequence<T> Slice(SequencePosition start, SequencePosition end)
         {
@@ -439,9 +446,10 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Forms a slice out of the given <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/>, ending at the existing <see cref="ReadOnlySequence{T}"/>'s end.
+        /// Forms a slice out of the current <see cref="ReadOnlySequence{T}" />, beginning at a specified sequence position and continuing to the end of the read-only sequence.
         /// </summary>
         /// <param name="start">The starting (inclusive) <see cref="SequencePosition"/> at which to begin this slice.</param>
+        /// <returns>A slice starting at sequence position <paramref name="start" /> and continuing to the end of the current read-only sequence.</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySequence<T> Slice(SequencePosition start)
         {
@@ -450,9 +458,10 @@ namespace System.Buffers
         }
 
         /// <summary>
-        /// Forms a slice out of the given <see cref="ReadOnlySequence{T}"/>, beginning at <paramref name="start"/>, ending at the existing <see cref="ReadOnlySequence{T}"/>'s end.
+        /// Forms a slice out of the current <see cref="ReadOnlySequence{T}" /> , beginning at a specified index and continuing to the end of the read-only sequence.
         /// </summary>
         /// <param name="start">The start index at which to begin this slice.</param>
+        /// <returns>A slice starting at index <paramref name="start" /> and continuing to the end of the current read-only sequence.</returns>
         public ReadOnlySequence<T> Slice(long start)
         {
             if (start < 0)
