@@ -7595,7 +7595,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 
 				LLVMTypeRef sig = LLVMFunctionType0 (LLVMVoidType (), FALSE);
 				LLVMValueRef callee = get_callee (ctx, sig, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_llvmonly_throw_nullref_exception));
-				emit_call (ctx, cfg->bb_entry, &builder, callee, NULL, 0);
+				LLVMBuildCall (builder, callee, NULL, 0, "");
 				LLVMBuildUnreachable (builder);
 			} else {
 				LLVMDeleteFunction (ctx->lmethod);
