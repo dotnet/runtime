@@ -121,8 +121,8 @@ static MonoFreeDomainFunc free_domain_hook;
 /* AOT cache configuration */
 static MonoAotCacheConfig aot_cache_config;
 
-static void
-get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image, const MonoRuntimeInfo** runtimes);
+static GSList*
+get_runtimes_from_exe (const char *exe_file, MonoImage **exe_image);
 
 static const MonoRuntimeInfo*
 get_runtime_by_version (const char *version);
@@ -495,8 +495,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 	static MonoDomain *domain = NULL;
 	MonoAssembly *ass = NULL;
 	MonoImageOpenStatus status = MONO_IMAGE_OK;
-	const MonoRuntimeInfo* runtimes [G_N_ELEMENTS (supported_runtimes) + 1] = { NULL };
-	int n;
+	GSList *runtimes = NULL;
 
 #ifdef DEBUG_DOMAIN_UNLOAD
 	debug_domain_unload = TRUE;
@@ -563,7 +562,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		 * that would mean it would be reloaded later. So instead, we save it to
 		 * exe_image, and close it during shutdown.
 		 */
-		get_runtimes_from_exe (exe_filename, &exe_image, runtimes);
+		runtimes = get_runtimes_from_exe (exe_filename, &exe_image);
 #ifdef HOST_WIN32
 		if (!exe_image) {
 			exe_image = mono_assembly_open_from_bundle (exe_filename, NULL, FALSE);
@@ -573,26 +572,27 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		mono_fixup_exe_image (exe_image);
 #endif
 	} else if (runtime_version != NULL) {
-		runtimes [0] = get_runtime_by_version (runtime_version);
-		runtimes [1] = NULL;
+		runtimes = g_slist_prepend (runtimes, (gpointer)get_runtime_by_version (DEFAULT_RUNTIME_VERSION));
 	}
 
-	if (runtimes [0] == NULL) {
+	if (runtimes == NULL) {
 		const MonoRuntimeInfo *default_runtime = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
-		runtimes [0] = default_runtime;
-		runtimes [1] = NULL;
+		runtimes = g_slist_prepend (runtimes, (gpointer)default_runtime);
 		g_print ("WARNING: The runtime version supported by this application is unavailable.\n");
 		g_print ("Using default runtime: %s\n", default_runtime->runtime_version); 
 	}
 
 	/* The selected runtime will be the first one for which there is a mscrolib.dll */
-	for (n = 0; runtimes [n] != NULL && ass == NULL; n++) {
-		current_runtime = runtimes [n];
+	GSList *tmp = runtimes;
+	while (tmp != NULL) {
+		current_runtime = (MonoRuntimeInfo*)runtimes->data;
 		ass = mono_assembly_load_corlib (current_runtime, &status);
 		if (status != MONO_IMAGE_OK && status != MONO_IMAGE_ERROR_ERRNO)
 			break;
-
+		tmp = tmp->next;
 	}
+
+	g_slist_free (runtimes);
 	
 	if ((status != MONO_IMAGE_OK) || (ass == NULL)) {
 		switch (status){
@@ -1873,13 +1873,14 @@ get_runtime_by_version (const char *version)
 	return NULL;
 }
 
-static void
-get_runtimes_from_exe (const char *file, MonoImage **out_image, const MonoRuntimeInfo** runtimes)
+static GSList*
+get_runtimes_from_exe (const char *file, MonoImage **out_image)
 {
 	AppConfigInfo* app_config;
 	char *version;
 	const MonoRuntimeInfo* runtime = NULL;
 	MonoImage *image = NULL;
+	GSList *runtimes = NULL;
 	
 	app_config = app_config_parse (file);
 	
@@ -1888,26 +1889,26 @@ get_runtimes_from_exe (const char *file, MonoImage **out_image, const MonoRuntim
 		 * If there are no such elements, look for a requiredRuntime element.
 		 */
 		if (app_config->supported_runtimes != NULL) {
-			int n = 0;
 			GSList *list = app_config->supported_runtimes;
 			while (list != NULL) {
 				version = (char*) list->data;
 				runtime = get_runtime_by_version (version);
 				if (runtime != NULL)
-					runtimes [n++] = runtime;
+					runtimes = g_slist_prepend (runtimes, (gpointer)runtime);
 				list = g_slist_next (list);
 			}
-			runtimes [n] = NULL;
+			runtimes = g_slist_reverse (runtimes);
 			app_config_free (app_config);
-			return;
+			return runtimes;
 		}
 		
 		/* Check the requiredRuntime element. This is for 1.0 apps only. */
 		if (app_config->required_runtime != NULL) {
-			runtimes [0] = get_runtime_by_version (app_config->required_runtime);
-			runtimes [1] = NULL;
+			const MonoRuntimeInfo* runtime = get_runtime_by_version (app_config->required_runtime);
+			if (runtime != NULL)
+				runtimes = g_slist_prepend (runtimes, (gpointer)runtime);
 			app_config_free (app_config);
-			return;
+			return runtimes;
 		}
 		app_config_free (app_config);
 	}
@@ -1923,15 +1924,17 @@ get_runtimes_from_exe (const char *file, MonoImage **out_image, const MonoRuntim
 		 * a default runtime and leave to the initialization method the work of
 		 * reporting the error.
 		 */
-		runtimes [0] = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
-		runtimes [1] = NULL;
-		return;
+		runtime = get_runtime_by_version (DEFAULT_RUNTIME_VERSION);
+		runtimes = g_slist_prepend (runtimes, (gpointer)runtime);
+		return runtimes;
 	}
 
 	*out_image = image;
 
-	runtimes [0] = get_runtime_by_version (image->version);
-	runtimes [1] = NULL;
+	runtime = get_runtime_by_version (image->version);
+	if (runtime != NULL)
+		runtimes = g_slist_prepend (runtimes, (gpointer)runtime);
+	return runtimes;
 }
 
 
