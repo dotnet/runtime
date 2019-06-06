@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -113,6 +113,33 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.ToString(obj);
             Assert.Equal(@"{""Key1"":1}", json);
+        }
+
+        [Theory]
+        [InlineData(typeof(ImmutableDictionary<string, string>), "\"headers\"")]
+        [InlineData(typeof(Dictionary<string, string>), "\"headers\"")]
+        [InlineData(typeof(PocoDictionary), "\"headers\"")]
+        public static void InvalidJsonForValueShouldFail(Type type, string json)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse(json, type));
+        }
+
+        [Fact]
+        public static void InvalidEmptyDictionaryInput()
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<string>("{}"));
+        }
+
+        public static void PocoWithDictionaryObject()
+        {
+            PocoDictionary dict = JsonSerializer.Parse<PocoDictionary>("{\n\t\"key\" : {\"a\" : \"b\", \"c\" : \"d\"}}");
+            Assert.Equal(dict.key["a"], "b");
+            Assert.Equal(dict.key["c"], "d");
+        }
+
+        class PocoDictionary
+        {
+            public Dictionary<string, string> key { get; set; }
         }
 
         [Fact]
