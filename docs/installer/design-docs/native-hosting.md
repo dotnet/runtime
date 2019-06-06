@@ -63,10 +63,7 @@ Add new library `nethost` which will provide a way to locate the right `hostfxr`
 The library would be a dynamically loaded library (`.dll`, `.so`, `.dylib`). For ease of use there would be a header file for C/C++ apps as well as `.lib`/`.a` for easy linking.
 Native host would ship this library as part of the app. Unlike the `apphost`, `comhost` and `ijwhost`, the `nethost` will not be directly supported by the .NET Core SDK since it's target usage is not from .NET Core apps.
 
-The exact delivery mechanism is TBD (pending investigation):
-* `.zip` which would contain the `.dll`, `.h` and `.lib` on Windows, `.so` and `.h` on Linux and `.dylib` and `.h` on macOS.
-* Possibly a NuGet package for easy consumption from VS C++ projects
-* Possibly include it in some form in .NET Core SDK as well (similar to `ijwhost`)
+The `nethost` is part of the `Microsoft.NETCore.DotNetAppHost` package. Users are expected to either download the package directly or rely on .NET SDK to pull it down.
 
 The binary itself should be signed by Microsoft as there will be no support for modifying the binary as part of custom application build (unlike `apphost`).
 
@@ -109,6 +106,10 @@ The API should allow these scenarios:
   * Specify additional runtime properties from the native host
   * Implement conflict resolution for runtime properties
   * Inspect calculated runtime properties (the ones calculated by `hostfxr`/`hostpolicy`)
+* Loading managed components
+  * From native app start the runtime and load an assembly
+  * The assembly is loaded in isolation and with all its dependencies as directed by `.deps.json`
+  * The native app can get back a native function pointer which calls specified managed method
 
 It should be possible to ship with only some of these supported, then enable more scenarios later on.
 
@@ -287,10 +288,10 @@ int hostfxr_get_runtime_delegate(const hostfxr_handle host_context_handle, hostf
 Starts the runtime and returns a function pointer to specified functionality of the runtime.
 * `host_context_handle` - handle to the initialized host context.
 * `type` - the type of runtime functionality requested
-  * `load_assembly_and_get_function_pointer` - entry point which loads an assembly (with dependencies) and returns function pointer for a specified static method. This is the new way to load managed components by the native host. The intent is that the native app will call `hostfxr_get_runtime_delegate(handle, load_assembly_and_get_function_pointer, &helper)` and then use the `helper` to load assembly and get a function pointer to a method. So something like `helper(assembly_path, type_name, method_name, &function_ptr)`. The exact signature and behavior of this runtime helper is TBD.
-  * `com_activation` - COM activation entry-point - see [COM activation](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/COM-activation.md) for more details.
-  * `load_in_memory_assembly` - IJW entry-point - see [IJW activation](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/IJW-activation.md) for more details.
-  * `winrt_activation` - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/WinRT-activation.md) for more details.
+  * `hdt_load_assembly_and_get_function_pointer` - entry point which loads an assembly (with dependencies) and returns function pointer for a specified static method. See below for details (Loading managed components)
+  * `hdt_com_activation`, `hdt_com_register`, `hdt_com_unregister` - COM activation entry-points - see [COM activation](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/COM-activation.md) for more details.
+  * `hdt_load_in_memory_assembly` - IJW entry-point - see [IJW activation](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/IJW-activation.md) for more details.
+  * `hdt_winrt_activation` - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/WinRT-activation.md) for more details.
 * `delegate` - when successful, the native function pointer to the requested runtime functionality.
 
 Initially the function will only work if `hostfxr_initialize_for_runtime_config` was used to initialize the host context. Later on this could be relaxed to allow being used in combination with `hostfxr_initialize_for_dotnet_command_line`.  
@@ -304,6 +305,38 @@ int hostfxr_close(const hostfxr_handle host_context_handle);
 ```
 Closes a host context.
 * `host_context_handle` - handle to the initialized host context to close.
+
+
+### Loading managed components
+To load managed components from native app directly (not using COM or WinRT) the hosting layer exposes a new runtime helper/delegate `hdt_load_assembly_and_get_function_pointer`. Calling the `hostfxr_get_runtime_delegate(handle, hdt_load_assembly_and_get_function_pointer, &helper)` returns a function pointer to the runtime helper with this signature:
+```C
+int load_assembly_and_get_function_pointer_fn(
+    const char_t *assembly_path,
+    const char_t *type_name,
+    const char_t *method_name,
+    const char_t *delegate_type_name,
+    void         *reserved,
+    /*out*/ void **delegate)
+```
+
+Calling this function will load the specified assembly in isolation (into its own `AssemblyLoadContext`) and it will use `AssemblyDependencyResolver` on it to provide dependency resolution. Once loaded it will find the specified type and method and return a native function pointer to that method. The method's signature can be specified via the delegate type name.
+* `assembly_path` - Path to the assembly to load. In case of complex component, this should be the main assembly of the component (the one with the `.deps.json` next to it). Note that this does not have to be the assembly from which the `type_name` and `method_name` are.
+* `type_name` - Assembly qualified type name to find
+* `method_name` - Name of the method on the `type_name` to find. The method must be `public static` and must match the signature of `delegate_type_name`.
+* `delegate_type_name` - Assembly qualified delegate type name for the method signature, or null. If this is null, the method signature is assumed to be:
+```C#
+public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
+```
+This maps to native signature:
+```C
+int component_entry_point_fn(void *arg, int32_t arg_size_in_bytes);
+```
+* `reserved` - parameter reserved for future extensibility, currently unused and must be `0`.
+* `delegate` - out parameter which receives the native function pointer to the requested managed method.
+
+It is allowed to call the returned runtime helper many times for different assemblies or different methods from the same assembly. It is not required to get the helper every time. The implementation of the helper will cache loaded assemblies, so requests to load the same assembly twice will load it only once and reuse it from that point onward. Ideally components should not take a dependency on this behavior, which means components should not have global state. Global state in components is typically just cause for problems. For example it may create ordering issues or unintended side effects and so on.
+
+The returned native function pointer to managed method has the lifetime of the process and can be used to call the method many times over. Currently there's no way to unload the managed component or otherwise free the native function pointer. Such support may come in future releases.
 
 
 ### Multiple host contexts interactions
@@ -332,6 +365,12 @@ The above behaviors should make sure that some important scenarios are possible 
 One such scenario is a COM host on multiple threads. The app is not running any .NET Core yet (no CoreCLR loaded). On two threads in parallel COM activation is invoked which leads to two invocations into the `comhost` to active .NET Core objects. The `comhost` will use the `hostfxr_initialize...` and `hostfxr_get_runtime_delegate` APIs on two threads in parallel then. Only one of them can load and initialize the runtime (and also perform full framework resolution and determine the framework versions and assemblies to load). The other has to become a `secondary host context` and try to conform to the first one. The above behavior of `hostfxr_initialize...` blocking until the `first host context` is done initializing the runtime will make sure of the correct behavior in this case.
 
 At the same time it gives the native app (`comhost` in this case) the ability to query and modify runtime properties in between the `hostfxr_initialize...` and `hostfxr_get_runtime_delegate` calls on the `first host context`.
+
+### API usage
+The `hostfxr` exports are defined in the [hostfxr.h](https://github.com/dotnet/core-setup/blob/master/src/corehost/cli/hostfxr.h) header file.
+The runtime helper and method signatures for loading managed components are defined in [coreclr_delegates.h](https://github.com/dotnet/core-setup/blob/master/src/corehost/cli/coreclr_delegates.h) header file.
+
+Currently we don't plan to ship these files, but it's possible to take them from the repo and use it.
 
 
 ### Support for older versions
