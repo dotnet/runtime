@@ -20,9 +20,19 @@ namespace Microsoft.DotNet.Build.Tasks
         public ITaskItem[] Files { get; set; }
 
         /// <summary>
-        /// A list of assembly names to add Profile="%(Profile)" attributes to, if the assembly
-        /// names exist in Files.
-        /// 
+        /// A list of assembly names with Profile classifications. A Profile="%(Profile)" attribute
+        /// is set in the framework list for the matching Files item if %(Profile) contains text.
+        ///
+        /// If *any* FileProfiles are passed:
+        ///
+        ///   *Every* file that ends up listed in the framework list must have a matching
+        ///   FileProfile, even if %(Profile) is not set.
+        ///
+        ///   Additionally, every FileProfile must find exactly one File.
+        ///
+        /// This task fails if the conditions aren't met. This ensures the classification doesn't
+        /// become out of date when the list of files changes.
+        ///
         /// %(Identity): Assembly name (including ".dll").
         /// %(Profile): List of profiles that apply, semicolon-delimited.
         /// </summary>
@@ -49,11 +59,13 @@ namespace Microsoft.DotNet.Build.Tasks
 
             var frameworkManifest = new XElement("FileList", rootAttributes);
 
-            Dictionary<string, string> fileProfileLookup = (FileProfiles ?? Array.Empty<ITaskItem>())
-                .ToDictionary(
+            Dictionary<string, string> fileProfileLookup = FileProfiles
+                ?.ToDictionary(
                     item => item.ItemSpec,
                     item => item.GetMetadata("Profile"),
                     StringComparer.OrdinalIgnoreCase);
+
+            var usedFileProfiles = new HashSet<string>();
 
             foreach (var f in Files
                 .Where(IsTargetPathIncluded)
@@ -110,12 +122,31 @@ namespace Microsoft.DotNet.Build.Tasks
 
                 element.Add(new XAttribute("FileVersion", f.FileVersion));
 
-                if (fileProfileLookup.TryGetValue(f.Filename, out string profile))
+                if (fileProfileLookup != null)
                 {
-                    element.Add(new XAttribute("Profile", profile));
+                    if (fileProfileLookup.TryGetValue(f.Filename, out string profile))
+                    {
+                        if (!string.IsNullOrEmpty(profile))
+                        {
+                            element.Add(new XAttribute("Profile", profile));
+                        }
+
+                        usedFileProfiles.Add(f.Filename);
+                    }
+                    else
+                    {
+                        Log.LogError($"File matches no profile classification: {f.Filename}");
+                    }
                 }
 
                 frameworkManifest.Add(element);
+            }
+
+            foreach (var unused in fileProfileLookup
+                ?.Keys.Except(usedFileProfiles).OrderBy(p => p)
+                ?? Enumerable.Empty<string>())
+            {
+                Log.LogError($"Profile classification matches no files: {unused}");
             }
 
             Directory.CreateDirectory(Path.GetDirectoryName(TargetFile));
