@@ -72,6 +72,8 @@ inline void ProfControlBlock::Init()
     ResetPerSessionStatus();
 
     fProfControlBlockInitialized = TRUE;
+
+    fProfilerRequestedRuntimeSuspend = FALSE;
 }
 
 // Reset those variables that is only for the current attach session

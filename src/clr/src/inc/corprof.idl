@@ -3974,6 +3974,12 @@ interface ICorProfilerInfo10 : ICorProfilerInfo9
                 [in]                       ULONG       cFunctions,
                 [in, size_is(cFunctions)]  ModuleID    moduleIds[],
                 [in, size_is(cFunctions)]  mdMethodDef methodIds[]);
+
+    // Suspend the runtime without performing a GC.
+    HRESULT SuspendRuntime();
+
+    // Restart the runtime from a previous suspension.
+    HRESULT ResumeRuntime();
 }
 
 /*

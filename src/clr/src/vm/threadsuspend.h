@@ -183,7 +183,8 @@ public:
         SUSPEND_FOR_SHUTDOWN            = 4,
         SUSPEND_FOR_DEBUGGER            = 5,
         SUSPEND_FOR_GC_PREP             = 6,
-        SUSPEND_FOR_DEBUGGER_SWEEP      = 7     // This must only be used in Thread::SysSweepThreadsForDebug
+        SUSPEND_FOR_DEBUGGER_SWEEP      = 7,     // This must only be used in Thread::SysSweepThreadsForDebug
+        SUSPEND_FOR_PROFILER            = 8
     } SUSPEND_REASON;
 
 private:

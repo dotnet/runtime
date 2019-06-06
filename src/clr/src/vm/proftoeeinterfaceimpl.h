@@ -615,6 +615,10 @@ public:
         ModuleID    moduleIds[],
         mdMethodDef methodIds[]);
 
+    COM_METHOD SuspendRuntime();
+
+    COM_METHOD ResumeRuntime();
+
     // end ICorProfilerInfo10    
 
 protected:

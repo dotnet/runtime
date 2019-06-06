@@ -117,6 +117,8 @@ struct ProfControlBlock
     BOOL fConcurrentGCDisabledForAttach;
 
     Volatile<BOOL> fProfControlBlockInitialized;
+
+    Volatile<BOOL> fProfilerRequestedRuntimeSuspend;
     
     void Init();
     void ResetPerSessionStatus();    
