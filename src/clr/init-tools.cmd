@@ -1,6 +1,10 @@
 @if not defined _echo @echo off
 setlocal
 
+:: Clear the 'Platform' environment variable for this session
+:: This avoids overriding the default value from BuildTools projects used for initialization
+set Platform=
+
 set INIT_TOOLS_LOG=%~dp0init-tools.log
 if [%PACKAGES_DIR%]==[] set PACKAGES_DIR=%~dp0.packages
 if [%TOOLRUNTIME_DIR%]==[] set TOOLRUNTIME_DIR=%~dp0Tools
