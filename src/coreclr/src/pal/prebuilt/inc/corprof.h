@@ -15208,6 +15208,10 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]) = 0;
         
+        virtual HRESULT STDMETHODCALLTYPE SuspendRuntime( void) = 0;
+        
+        virtual HRESULT STDMETHODCALLTYPE ResumeRuntime( void) = 0;
+        
     };
     
     
@@ -15815,6 +15819,12 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
             /* [size_is][in] */ ModuleID moduleIds[  ],
             /* [size_is][in] */ mdMethodDef methodIds[  ]);
         
+        HRESULT ( STDMETHODCALLTYPE *SuspendRuntime )( 
+            ICorProfilerInfo10 * This);
+        
+        HRESULT ( STDMETHODCALLTYPE *ResumeRuntime )( 
+            ICorProfilerInfo10 * This);
+        
         END_INTERFACE
     } ICorProfilerInfo10Vtbl;
 
@@ -16128,6 +16138,12 @@ EXTERN_C const IID IID_ICorProfilerInfo10;
 
 #define ICorProfilerInfo10_RequestReJITWithInliners(This,dwRejitFlags,cFunctions,moduleIds,methodIds)   \
     ( (This)->lpVtbl -> RequestReJITWithInliners(This,dwRejitFlags,cFunctions,moduleIds,methodIds) ) 
+
+#define ICorProfilerInfo10_SuspendRuntime(This) \
+    ( (This)->lpVtbl -> SuspendRuntime(This) ) 
+
+#define ICorProfilerInfo10_ResumeRuntime(This)  \
+    ( (This)->lpVtbl -> ResumeRuntime(This) ) 
 
 #endif /* COBJMACROS */
 

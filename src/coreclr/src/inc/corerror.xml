@@ -1285,6 +1285,11 @@
     <Comment> An unknown error occurred in the Diagnpostics IPC Server. </Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x80131388">
+    <SymbolicName>CORPROF_E_SUSPENSION_IN_PROGRESS</SymbolicName>
+    <Comment> The runtime cannot be suspened since a suspension is already in progress. </Comment>
+</HRESULT>
+
 <HRESULT NumericValue="0x80131401">
 	<SymbolicName>SECURITY_E_INCOMPATIBLE_SHARE</SymbolicName>
 	<Message>"Loading this assembly would produce a different grant set from other instances."</Message>
