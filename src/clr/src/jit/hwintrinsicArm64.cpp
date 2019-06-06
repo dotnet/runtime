@@ -321,6 +321,7 @@ int HWIntrinsicInfo::lookupNumArgs(const GenTreeHWIntrinsic* node)
 //    the expanded intrinsic.
 //
 GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
+                                  CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
