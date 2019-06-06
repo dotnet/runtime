@@ -118,7 +118,7 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(name, method.Name);
             Assert.Equal(attributes, method.Attributes);
             Assert.Equal(expectedCallingConvention, method.CallingConvention);
-            Assert.Equal(returnType, method.ReturnType);
+            Assert.Equal(returnType ?? typeof(void), method.ReturnType);
         }
     }
 }

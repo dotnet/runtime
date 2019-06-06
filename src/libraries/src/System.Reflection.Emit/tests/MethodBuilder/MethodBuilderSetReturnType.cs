@@ -140,7 +140,7 @@ namespace System.Reflection.Emit.Tests
 
             method.SetReturnType(null);
             type.CreateTypeInfo().AsType();
-            VerifyReturnType(method, null);
+            VerifyReturnType(method, typeof(void));
         }
 
         private void VerifyReturnType(MethodBuilder method, Type expected)

@@ -198,7 +198,7 @@ namespace System.Reflection.Emit.Tests
             MethodBuilder method = type.DefineMethod("TestMethod", MethodAttributes.Public | MethodAttributes.Abstract | MethodAttributes.Virtual);
 
             method.SetSignature(null, null, null, null, null, null);
-            VerifyMethodSignature(type, method, null);
+            VerifyMethodSignature(type, method, typeof(void));
         }
 
         [Fact]
@@ -211,7 +211,7 @@ namespace System.Reflection.Emit.Tests
             GenericTypeParameterBuilder desiredReturnType = typeParameters[0];
 
             method.SetSignature(null, null, null, null, null, null);
-            VerifyMethodSignature(type, method, null);
+            VerifyMethodSignature(type, method, typeof(void));
         }
 
         [Fact]
@@ -260,17 +260,10 @@ namespace System.Reflection.Emit.Tests
             Type ret = type.CreateTypeInfo().AsType();
             MethodInfo methodInfo = method.GetBaseDefinition();
             Type actualReturnType = methodInfo.ReturnType;
-
-            if (desiredReturnType == null)
-            {
-                Assert.Null(actualReturnType);
-            }
-            else
-            {
-                Assert.NotNull(actualReturnType);
-                Assert.Equal(desiredReturnType.Name, actualReturnType.Name);
-                Assert.True(actualReturnType.Equals(desiredReturnType));
-            }
+            
+            Assert.NotNull(actualReturnType);
+            Assert.Equal(desiredReturnType.Name, actualReturnType.Name);
+            Assert.Equal(desiredReturnType, actualReturnType);
         }
     }
 }
