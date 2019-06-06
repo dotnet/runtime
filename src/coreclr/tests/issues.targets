@@ -47,9 +47,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_11408/GitHub_11408/*">
             <Issue>11408</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/baseservices/exceptions/StackTracePreserve/StackTracePreserveTests/*">
-            <Issue>20322</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/threading/waithandle/waitany/waitanyex2/*">
             <Issue>19515</Issue>
         </ExcludeList>
