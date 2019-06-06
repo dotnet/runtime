@@ -5,7 +5,7 @@ cmake_policy(SET CMP0042 NEW)
 
 set(INC_PLATFORM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/Common/Platform)
 if (WIN32)
-    add_definitions(-DWINDOWS=1)
+    add_definitions(-DWINDOWS)
 endif()
 
 # Verify that LTCG/LTO is available

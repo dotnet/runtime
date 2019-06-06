@@ -1,4 +1,6 @@
 if(WIN32)
+  if (CMAKE_GENERATOR MATCHES "Visual Studio .*")
     add_subdirectory(DacTableGen)
-    add_subdirectory(Strike)
+  endif()    
+  add_subdirectory(Strike)
 endif(WIN32)

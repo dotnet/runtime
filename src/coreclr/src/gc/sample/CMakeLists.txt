@@ -35,7 +35,7 @@ endif(WIN32)
 if(WIN32)
     list(APPEND SOURCES
         ../windows/gcenv.windows.cpp)
-    add_definitions(-DUNICODE=1)
+    add_definitions(-DUNICODE)
 else()
     list(APPEND SOURCES
         ../gcenv.unix.cpp)
