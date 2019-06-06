@@ -147,28 +147,6 @@ IF ERRORLEVEL 1 (
 )
 
 echo Done building Native components
-
-:BuildNativeAOT
-set "__CMakeBinDir=%__artifactsDir%\bin\native\%__outConfig%-aot"
-set "__IntermediatesDir=%__IntermediatesDir%-aot"
-set "__CMakeBinDir=%__CMakeBinDir:\=/%"
-set "__IntermediatesDir=%__IntermediatesDir:\=/%"
-if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
-if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
-set "__LinkArgs=%__LinkArgs% /APPCONTAINER"
-set "__appContainer=true"
-
-pushd "%__IntermediatesDir%"
-call "%__nativeWindowsDir%\gen-buildsys-win.bat" "%__nativeWindowsDir%" %__VSVersion% %__BuildArch%
-popd
-
-if not exist "%__IntermediatesDir%\install.vcxproj" goto :Failure
-
-call msbuild "%__IntermediatesDir%\install.vcxproj" /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
-IF ERRORLEVEL 1 (
-    goto :Failure
-)
-echo Done building Native AOT components
 exit /B 0
 
 :BuildNativeEmscripten

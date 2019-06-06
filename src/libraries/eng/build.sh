@@ -15,7 +15,7 @@ scriptroot="$( cd -P "$( dirname "$source" )" && pwd )"
 usage()
 {
   echo "Common settings:"
-  echo "  --framework                Build framework: netcoreapp, netfx, uap or uapaot (short: -f)"
+  echo "  --framework                Build framework: netcoreapp, netfx, uap (short: -f)"
   echo "  --configuration <value>    Build configuration: Debug or Release (short: -c)"
   echo "  --verbosity <value>        MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
   echo "  --binaryLog                Output binary log (short: -bl)"

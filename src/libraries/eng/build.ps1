@@ -16,7 +16,7 @@ Param(
 
 function Get-Help() {
   Write-Host "Common settings:"
-  Write-Host "  -framework              Build framework: netcoreapp, netfx, uap or uapaot (short: -f)"
+  Write-Host "  -framework              Build framework: netcoreapp, netfx, uap (short: -f)"
   Write-Host "  -configuration <value>  Build configuration: Debug or Release (short: -c)"
   Write-Host "  -verbosity <value>      MSBuild verbosity: q[uiet], m[inimal], n[ormal], d[etailed], and diag[nostic] (short: -v)"
   Write-Host "  -binaryLog              Output binary log (short: -bl)"

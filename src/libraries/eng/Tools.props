@@ -13,8 +13,6 @@
     <AnalyzerPropsFile>$(ArtifactsToolsetDir)Common\Tools.Analyzers.props</AnalyzerPropsFile>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)dependencies.props" />
-
   <!-- source-built packages -->
   <ItemGroup>
     <!-- arcade -->

@@ -1,9 +1,11 @@
 ﻿<Project>
   <PropertyGroup>
-    <BuildConfigurations>
-      netcoreapp;
+    <PackageConfigurations>
       netstandard;
-      uap10.0.16299;
+    </PackageConfigurations>
+    <BuildConfigurations>
+      $(PackageConfigurations)
+      netcoreapp;
       uap;
     </BuildConfigurations>
   </PropertyGroup>

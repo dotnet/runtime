@@ -86,9 +86,6 @@
     <IsPrerelease>true</IsPrerelease>
   </PropertyGroup>
 
-  <!-- Provides package dependency version properties and verification/auto-upgrade configuration -->
-  <Import Project="$(RepositoryEngineeringDir)dependencies.props" />
-
   <PropertyGroup>
     <!-- Need to set ProjectAssetsFile to something so it doesn't get set to the Tools.proj assets file when we import the generated props -->
     <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == ''">unused</ProjectAssetsFile>
@@ -193,7 +190,6 @@
   <PropertyGroup>
     <TargetsNetCoreApp Condition="$(TargetGroup.StartsWith('netcoreapp'))">true</TargetsNetCoreApp>
     <TargetsUap Condition="$(TargetGroup.StartsWith('uap'))">true</TargetsUap>
-    <TargetsAot Condition="$(TargetGroup.EndsWith('aot'))">true</TargetsAot>
     <TargetsNetStandard Condition="$(TargetGroup.StartsWith('netstandard'))">true</TargetsNetStandard>
     <TargetsNetFx Condition="$(TargetGroup.StartsWith('net4')) OR '$(TargetGroup)' == 'netfx'">true</TargetsNetFx>
   </PropertyGroup>
@@ -203,7 +199,6 @@
     <BuildingNETCoreAppVertical Condition="'$(BuildingNETCoreAppVertical)' == '' AND ('$(_bc_TargetGroup)'=='netcoreapp' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETCoreAppVertical>
     <BuildingNETFxVertical Condition="'$(BuildingNETFxVertical)' == '' AND ('$(_bc_TargetGroup)'=='netfx' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingNETFxVertical>
     <BuildingUAPVertical Condition="'$(BuildingUAPVertical)' == '' AND ('$(_bc_TargetGroup)'=='uap' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingUAPVertical>
-    <BuildingUAPAOTVertical Condition="'$(BuildingUAPAOTVertical)' == '' AND ('$(_bc_TargetGroup)'=='uapaot' OR '$(BuildAllConfigurations)' == 'true')">true</BuildingUAPAOTVertical>
   </PropertyGroup>
 
   <!--
@@ -361,7 +356,6 @@
     <NETCoreAppPackageRuntimePath>$(ArtifactsBinDir)pkg\netcoreapp\lib</NETCoreAppPackageRuntimePath>
     <UAPPackageRefPath>$(ArtifactsBinDir)pkg\uap\ref</UAPPackageRefPath>
     <UAPPackageRuntimePath>$(ArtifactsBinDir)pkg\uap\lib</UAPPackageRuntimePath>
-    <UAPAOTPackageRuntimePath>$(ArtifactsBinDir)pkg\uapaot\lib</UAPAOTPackageRuntimePath>
     <NetFxPackageRefPath>$(ArtifactsBinDir)pkg\netfx\ref</NetFxPackageRefPath>
     <NetFxPackageRuntimePath>$(ArtifactsBinDir)pkg\netfx\lib</NetFxPackageRuntimePath>
 
@@ -378,11 +372,6 @@
     <!-- For UAP, we'll produce the layout and hard-link this into each test's directory -->
     <UAPTestSharedFrameworkPath>$(TestHostRootPath)UAPLayout</UAPTestSharedFrameworkPath>
 
-    <!-- Constructed shared fx path for testing -->
-    <UseDotNetNativeToolchain Condition="$(_bc_TargetGroup.EndsWith('aot'))">true</UseDotNetNativeToolchain>
-    <!-- System.Private.* comes from test ilc, so the symbol packages for those versions will no exist, this is to avoid warnings -->
-    <DownloadCoreCLRSymbols Condition="'$(UseDotNetNativeToolchain)' == 'true' OR '$(BuildAllConfigurations)' == 'true' OR '$(DotNetBuildFromSource)' == 'true'">false</DownloadCoreCLRSymbols>
-
     <!-- interop is not available on NETStandard1.0 -->
     <IncludeDllSafeSearchPathAttribute Condition="'$(TargetGroup)' == 'netstandard1.0'">false</IncludeDllSafeSearchPathAttribute>
 
@@ -396,11 +385,14 @@
   <ItemGroup Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildTests)' != 'true'">
     <ProjectExclusions Include="$(SourceDir)CoreFx.Private.TestUtilities/**/*.csproj" />
   </ItemGroup>
+  <!-- AOT only asset that we currently don't support. -->
+  <ItemGroup>
+    <ProjectExclusions Include="$(SourceDir)System.Private.Reflection.Metadata.Ecma335/**/*.csproj" />
+  </ItemGroup>
 
   <!-- Specify the default constants for each target group -->
   <PropertyGroup>
     <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants),uap</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)' == 'uapaot'">$(DefineConstants),uapaot</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netfx'">$(DefineConstants),netfx</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netstandard'">$(DefineConstants),netstandard</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.0'">$(DefineConstants),NETSTANDARD10</DefineConstants>
@@ -411,9 +403,6 @@
   <PropertyGroup>
     <!-- F5 and debugging support for netcoreapp and netfx inside VS. -->
     <EnableLaunchSettings Condition="'$(EnableLaunchSettings)' == ''AND '$(DotNetBuildFromSource)' != 'true'">true</EnableLaunchSettings>
-
-    <!-- Disable VS Test SDK references if the .NET Native toolchain is used. -->
-    <EnableVSTestReferences Condition="'$(UseDotNetNativeToolchain)' == 'true'">false</EnableVSTestReferences>
     <EnableVSTestReferences Condition="'$(EnableVSTestReferences)' == ''">true</EnableVSTestReferences>
   </PropertyGroup>
 

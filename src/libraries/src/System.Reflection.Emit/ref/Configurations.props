@@ -2,7 +2,6 @@
   <PropertyGroup>
     <PackageConfigurations>
       netstandard;
-      uap10.0.16299;
     </PackageConfigurations>
     <BuildConfigurations>
       $(PackageConfigurations);

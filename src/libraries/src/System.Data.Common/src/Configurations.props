@@ -3,7 +3,6 @@
     <BuildConfigurations>
       uap-Windows_NT;
       netcoreapp;
-      uapaot-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

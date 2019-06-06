@@ -166,26 +166,20 @@ jobs:
             displayName: Build Packages and Tests
 
       # Legs without HELIX testing
+    - ${{ if eq(parameters.fullMatrix, 'true') }}:
       - job: WindowsNoTest
         displayName: Windows
         strategy:
           matrix:
-            ${{ if eq(parameters.fullMatrix, 'false') }}:
-              UWP_NETNative_x86_Release:
-                _BuildConfig: Release
-                _architecture: x86
-                _framework: uapaot
+            arm_Release:
+              _BuildConfig: Release
+              _architecture: arm
+              _framework: netcoreapp
 
-            ${{ if eq(parameters.fullMatrix, 'true') }}:
-              arm_Release:
-                _BuildConfig: Release
-                _architecture: arm
-                _framework: netcoreapp
-
-              UAP_arm_Release:
-                _BuildConfig: Release
-                _architecture: arm
-                _framework: uap
+            UAP_arm_Release:
+              _BuildConfig: Release
+              _architecture: arm
+              _framework: uap
 
         pool:
           name: Hosted VS2017

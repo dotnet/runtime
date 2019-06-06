@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'">
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uap'">
     <TargetFramework>netstandard2.0</TargetFramework>
     <!-- reset parts so that they can be re-inferred -->
     <TargetFrameworkIdentifier />
@@ -16,7 +16,7 @@
     <XUnitRunner>xunit.console</XUnitRunner>
     <XUnitTestAdapterPackageId>xunit.runner.visualstudio</XUnitTestAdapterPackageId>
     <XUnitAdapter Condition="'$(TargetGroup)' == 'netcoreapp'">xunit.runner.visualstudio.dotnetcore.testadapter</XUnitAdapter>
-    <XUnitAdapter Condition="'$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'">xunit.runner.visualstudio.uwp.testadapter</XUnitAdapter>
+    <XUnitAdapter Condition="'$(TargetGroup)' == 'uap'">xunit.runner.visualstudio.uwp.testadapter</XUnitAdapter>
     <XUnitAdapter Condition="'$(TargetGroup)' == 'netfx'">xunit.runner.visualstudio.testadapter</XUnitAdapter>
     <MicrosoftDotNetUapTestToolsPackageName>microsoft.dotnet.uap.testtools</MicrosoftDotNetUapTestToolsPackageName>
     <MicrosoftNetTestSdkPackageName>microsoft.net.test.sdk</MicrosoftNetTestSdkPackageName>
@@ -32,7 +32,6 @@
   <ItemGroup>
     <!-- xunit packages -->
     <PackageReference Include="xunit" Version="$(XUnitPackageVersion)" />
-    <PackageReference Condition="'$(TargetsAot)' == 'true'" Include="xunit.runner.utility" Version="$(XUnitPackageVersion)" />
     <PackageReference Include="$(MicrosoftDotNetXUnitExtensionsPackage)" Version="$(MicrosoftDotNetXUnitExtensionsPackageVersion)" />
     <PackageReference Include="$(MicrosoftDotNetRemoteExecutorPackage)" Version="$(MicrosoftDotNetRemoteExecutorPackageVersion)" IncludeAssets="build" ExcludeAssets="none" />
     <PackageReference Condition="'$(TargetsNetCoreApp)' == 'true'" Include="$(MicrosoftDotNetXUnitConsoleRunnerPackage)" Version="$(MicrosoftDotNetXUnitConsoleRunnerPackageVersion)" />
@@ -69,7 +68,7 @@
   </ItemGroup>
 
   <!-- Microsoft.Diagnostics.Tracing testing -->
-  <ItemGroup Condition="'$(TargetGroup)' != 'uap' AND '$(TargetGroup)' != 'uapaot'">
+  <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
     <PackageReference Include="$(MicrosoftDiagnosticsTracingTraceEventPackageName)" Version="$(TraceEventPackageVersion)" />
     
     <PackageToInclude Include="$(MicrosoftDiagnosticsTracingTraceEventPackageName)"/>
@@ -113,15 +112,6 @@
           SkipUnchangedFiles="true" />
 
   </Target>
-
-  <!-- System.Data.SqlClient tests require sni.dll in the test folder -->
-  <ItemGroup Condition="'$(TargetsAot)' == 'true'">
-    <PackageReference Include="runtime.native.System.Data.SqlClient.sni" Version="$(RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion)" />
-
-    <PackageToInclude Include="runtime.win-arm64.runtime.native.System.Data.SqlClient.sni"/>
-    <PackageToInclude Include="runtime.win-x64.runtime.native.System.Data.SqlClient.sni"/>
-    <PackageToInclude Include="runtime.win-x86.runtime.native.System.Data.SqlClient.sni"/>
-  </ItemGroup>
 
   <!-- Retrieve the UAP Tools to the TestHost folder -->
   <Target Name="CopyUAPToolsToTestHost"
@@ -227,30 +217,6 @@
         <Private>false</Private>
         <NuGetPackageId>$(TestPlatformHostPackageId)</NuGetPackageId>
         <NuGetPackageVersion>$(MicrosoftNETTestSdkPackageVersion)</NuGetPackageVersion>
-      </ReferenceCopyLocalPaths>
-    </ItemGroup>
-
-  </Target>
-
-  <Target Name="AddTestPlatformDependenciesAot"
-          Condition="'$(TargetsAot)' == 'true'"
-          BeforeTargets="ResolveReferences">
-
-    <Error Condition="!Exists('$(NuGetPackageRoot)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion)\lib\netcoreapp2.0\$(XUnitRunner).dll')"
-           Text="Error: looks the package $(NuGetPackageRoot)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion) not restored or missing $(XUnitRunner).dll." />
-    <Error Condition="!Exists('$(NuGetPackageRoot)xunit.runner.utility\$(XUnitPackageVersion)\lib\netcoreapp1.0\xunit.runner.utility.netcoreapp10.dll')"
-           Text="Error: looks the package $(NuGetPackageRoot)xunit.runner.utility\$(XUnitPackageVersion) not restored or missing xunit.runner.utility.netcoreapp10.dll." />
-
-    <ItemGroup>
-      <ReferenceCopyLocalPaths Include="$(NuGetPackageRoot)$(MicrosoftDotNetUapTestToolsPackageName)\$(MicrosoftDotNetUapTestToolsPackageVersion)\lib\netcoreapp2.0\*.dll">
-        <Private>false</Private>
-        <NuGetPackageId>$(MicrosoftDotNetUapTestToolsPackageName)</NuGetPackageId>
-        <NuGetPackageVersion>$(MicrosoftDotNetUapTestToolsPackageVersion)</NuGetPackageVersion>
-      </ReferenceCopyLocalPaths>
-      <ReferenceCopyLocalPaths Include="$(NuGetPackageRoot)xunit.runner.utility\$(XUnitPackageVersion)\lib\netcoreapp1.0\*.dll">
-        <Private>false</Private>
-        <NuGetPackageId>xunit.runner.utility</NuGetPackageId>
-        <NuGetPackageVersion>$(XUnitPackageVersion)</NuGetPackageVersion>
       </ReferenceCopyLocalPaths>
     </ItemGroup>
 

@@ -3,14 +3,11 @@
     <PackageConfigurations>
       netstandard;
       netstandard1.0;
-      uap10.0.16299;
-      uap10.0.16299aot;
     </PackageConfigurations>
     <BuildConfigurations>
       netcoreapp-Windows_NT;
       netcoreapp-Unix;
       uap-Windows_NT;
-      uapaot-Windows_NT;
       $(PackageConfigurations);
     </BuildConfigurations>
   </PropertyGroup>
