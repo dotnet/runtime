@@ -298,12 +298,8 @@ namespace System.ComponentModel
                     {
                         if (_propInfo == null)
                         {
-#if VERIFY_REFLECTION_CHANGE
                             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetProperty;
-                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
-#else
-                            _propInfo = _componentClass.GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
-#endif
+                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, binder: null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
                         }
                         if (_propInfo != null)
                         {
@@ -386,11 +382,8 @@ namespace System.ComponentModel
                     {
                         for (Type t = ComponentType.BaseType; t != null && t != typeof(object); t = t.BaseType)
                         {
-#if VERIFY_REFLECTION_CHANGE
                             BindingFlags bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
-                            PropertyInfo p = t.GetProperty(name, bindingFlags, null, PropertyType, Array.Empty<Type>(), null);
-#endif
-                            PropertyInfo p = t.GetProperty(name, PropertyType, Array.Empty<Type>(), null);
+                            PropertyInfo p = t.GetProperty(name, bindingFlags, binder: null, PropertyType, Array.Empty<Type>(), null);
                             if (p != null)
                             {
                                 _setMethod = p.GetSetMethod(nonPublic: false);
@@ -410,12 +403,8 @@ namespace System.ComponentModel
                     {
                         if (_propInfo == null)
                         {
-#if VERIFY_REFLECTION_CHANGE
                             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetProperty;
-                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
-#else
-                            _propInfo = _componentClass.GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
-#endif
+                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, binder: null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
                         }
                         if (_propInfo != null)
                         {
@@ -772,30 +761,18 @@ namespace System.ComponentModel
                 {
                     MemberInfo memberInfo = null;
 
-#if VERIFY_REFLECTION_CHANGE
                     BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly;
                     // Fill in our member info so we can get at the custom attributes.
                     if (IsExtender)
                     {
                         //receiverType is used to avoid ambitiousness when there are overloads for the get method.
-                        memberInfo = currentReflectType.GetMethod("Get" + Name, bindingFlags, null, new Type[] { _receiverType }, null);
+                        memberInfo = currentReflectType.GetMethod("Get" + Name, bindingFlags, binder: null, new Type[] { _receiverType }, modifiers: null);
                     }
                     else
                     {
-                        memberInfo = currentReflectType.GetProperty(Name, bindingFlags, null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
+                        memberInfo = currentReflectType.GetProperty(Name, bindingFlags, binder: null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
                     }
-#else
-                    // Fill in our member info so we can get at the custom attributes.
-                    if (IsExtender)
-                    {
-                        //receiverType is used to avoid ambitiousness when there are overloads for the get method.
-                        memberInfo = currentReflectType.GetMethod("Get" + Name, new Type[] { _receiverType }, null);
-                    }
-                    else
-                    {
-                        memberInfo = currentReflectType.GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
-                    }
-#endif
+
                     // Get custom attributes for the member info.
                     if (memberInfo != null)
                     {
