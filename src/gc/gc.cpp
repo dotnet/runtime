@@ -12341,6 +12341,17 @@ found_fit:
     }
 #endif //FEATURE_LOH_COMPACTION
 
+#if defined (VERIFY_HEAP) && defined (_DEBUG)
+    // we are responsible for cleaning the syncblock and we will do it later 
+    // as a part of cleanup routine and when not holding the heap lock.
+    // However, once we move "allocated" forward and if another thread initiate verification of 
+    // the previous object, it may consider the syncblock in the "next" eligible for validation.
+    // (see also: object.cpp/Object::ValidateInner)
+    // Make sure it will see cleaned up state to prevent triggering occasional verification failures.
+    // And make sure the write happens before updating "allocated"
+    VolatileStore(((void**)allocated - 1), (void*)0);     //clear the sync block	
+#endif //VERIFY_HEAP && _DEBUG
+
     dprintf (3, ("found fit at end of seg: %Ix", old_alloc));
 
     uint8_t* old_alloc;
