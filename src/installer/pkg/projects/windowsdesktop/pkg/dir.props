@@ -23,12 +23,8 @@
 
   <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
     <FrameworkListFileProfile Include="Accessibility.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="D3DCompiler_47_cor3.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="DirectWriteForwarder.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="Microsoft.Win32.Registry.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileProfile Include="Microsoft.Win32.SystemEvents.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="PenImc_cor3.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationCore-CommonResources.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="PresentationCore.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="PresentationFramework-SystemCore.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="PresentationFramework-SystemData.dll" Profile="WPF" />
@@ -42,21 +38,15 @@
     <FrameworkListFileProfile Include="PresentationFramework.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="PresentationFramework.Luna.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="PresentationFramework.Royale.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationNative_cor3.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="PresentationUI.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="ReachFramework.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="System.CodeDom.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileProfile Include="System.Configuration.ConfigurationManager.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileProfile Include="System.Design.dll" Profile="WindowsForms" />
-    <FrameworkListFileProfile Include="System.Diagnostics.EventLog.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.DirectoryServices.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileProfile Include="System.Drawing.Common.dll" Profile="WindowsForms" />
     <FrameworkListFileProfile Include="System.Drawing.Design.dll" Profile="WindowsForms" />
-    <FrameworkListFileProfile Include="System.Drawing.Design.Primitives.dll" Profile="WindowsForms" />
     <FrameworkListFileProfile Include="System.Drawing.dll" Profile="WindowsForms" />
-    <FrameworkListFileProfile Include="System.IO.FileSystem.AccessControl.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileProfile Include="System.IO.Packaging.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Media.SoundPlayer.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileProfile Include="System.Printing.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="System.Resources.Extensions.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileProfile Include="System.Security.AccessControl.dll" Profile="WindowsForms;WPF" />
@@ -66,7 +56,6 @@
     <FrameworkListFileProfile Include="System.Security.Cryptography.Xml.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileProfile Include="System.Security.Permissions.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileProfile Include="System.Security.Principal.Windows.dll" Profile="WindowsForms;WPF" />
-    <FrameworkListFileProfile Include="System.Threading.AccessControl.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileProfile Include="System.Windows.Controls.Ribbon.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="System.Windows.Extensions.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileProfile Include="System.Windows.Forms.Design.dll" Profile="WindowsForms" />
@@ -79,12 +68,8 @@
     <FrameworkListFileProfile Include="UIAutomationClientSideProviders.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="UIAutomationProvider.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="UIAutomationTypes.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="vcruntime140_cor3.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="WindowsBase.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="WPFgfx_cor3.dll" Profile="WPF" />
-
-    <!-- If any of these files has resource dlls, use the file's profile. -->
-    <FrameworkListFileProfile Include="@(FrameworkListFileProfile -> '%(Filename).resources%(Extension)')" />
+    <FrameworkListFileProfile Include="WindowsFormsIntegration.dll" />
   </ItemGroup>
 
   <!-- Redistribute package content from other nuget packages. -->
