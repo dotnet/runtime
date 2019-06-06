@@ -115,7 +115,12 @@ void PrintUsageHelper()
        W("    /in <file>           - Specifies input filename (optional)\n")
        W("    /out <file>          - Specifies output filename (optional)\n")
        W("    /r <file>            - Specifies a trusted platform assembly reference\n")
-       W("                         - Cannot be used with Platform_Assemblies_Paths\n")
+       W("                         - Cannot be used with /p\n")
+       W("    /p <path[") PATH_SEPARATOR_STR_W W("path]>     - List of paths containing target platform assemblies\n")
+       // If /p, we will use it to build the TPA list and thus,
+       // TPA list cannot be explicitly specified.
+       W("                         - Cannot be used with /r\n")
+
        W("    /Platform_Resource_Roots <path[") PATH_SEPARATOR_STR_W W("path]>\n")
        W("                         - List of paths containing localized assembly directories\n")
        W("    /App_Paths <path[") PATH_SEPARATOR_STR_W W("path]>\n")
@@ -125,12 +130,6 @@ void PrintUsageHelper()
        W("                         - List of paths containing user-application native images\n")
        W("                         - Must be used with /CreatePDB switch\n")
 #endif // NO_NGENPDB
-
-       W("    /Platform_Assemblies_Paths <path[") PATH_SEPARATOR_STR_W W("path]>\n")
-       W("                         - List of paths containing target platform assemblies\n")
-       // If Platform_Assemblies_Paths, we will use it to build the TPA list and thus,
-       // TPA list cannot be explicitly specified.
-       W("                         - Cannot be used with Trusted_Platform_Assemblies\n")
        
 #ifdef FEATURE_COMINTEROP
        W("    /Platform_Winmd_Paths <path[") PATH_SEPARATOR_STR_W W("path]>\n")
@@ -594,7 +593,8 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
             argc--;
         }
 #endif // NO_NGENPDB
-        else if (MatchParameter(*argv, W("Platform_Assemblies_Paths")) && (argc > 1))
+        // Note: Leaving "Platform_Assemblies_Paths" for backwards compatibility reasons.
+        else if ((MatchParameter(*argv, W("Platform_Assemblies_Paths")) || MatchParameter(*argv, W("p"))) && (argc > 1))
         {
             pwzPlatformAssembliesPaths = argv[1];
             
@@ -796,7 +796,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
     if ((pwzTrustedPlatformAssemblies != nullptr) && (pwzPlatformAssembliesPaths != nullptr))
     {
-        OutputErr(W("The /r and /Platform_Assemblies_Paths switches cannot be both specified.\n"));
+        OutputErr(W("The /r and /p switches cannot be both specified.\n"));
         exit(FAILURE_RESULT);
     }
 
@@ -852,10 +852,10 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
 
     if(pwzPlatformAssembliesPaths != nullptr)
     {
-        // Platform_Assemblies_Paths command line switch has been specified.
+        // /p command line switch has been specified.
         _ASSERTE(pwzTrustedPlatformAssemblies == nullptr);
         
-        // Formulate the TPAList from Platform_Assemblies_Paths
+        // Formulate the TPAList from /p
         ComputeTPAListFromPlatformAssembliesPath(pwzPlatformAssembliesPaths, ssTPAList, fCreatePDB);
         pwzTrustedPlatformAssemblies = (WCHAR *)ssTPAList.GetUnicode();
         pwzPlatformAssembliesPaths = NULL;
