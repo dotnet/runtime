@@ -207,10 +207,7 @@ CORJIT_FLAGS ZapInfo::ComputeJitFlags(CORINFO_METHOD_HANDLE handle)
     if (IsReadyToRunCompilation())
     {
         jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN);
-#ifndef PLATFORM_UNIX
-        // PInvoke Helpers are not yet implemented on non-Windows platforms
         jitFlags.Set(CORJIT_FLAGS::CORJIT_FLAG_USE_PINVOKE_HELPERS);
-#endif
     }
 #endif  // FEATURE_READYTORUN_COMPILER
 
@@ -3867,8 +3864,8 @@ CorInfoUnmanagedCallConv ZapInfo::getUnmanagedCallConv(CORINFO_METHOD_HANDLE met
 BOOL ZapInfo::pInvokeMarshalingRequired(CORINFO_METHOD_HANDLE method,
                                                        CORINFO_SIG_INFO* sig)
 {
-#ifdef PLATFORM_UNIX
-    // TODO: Support for pinvoke helpers on non-Windows platforms
+#if defined(_TARGET_X86_) && defined(PLATFORM_UNIX)
+    // FUTURE ReadyToRun: x86 pinvoke stubs on Unix platforms
     if (IsReadyToRunCompilation())
         return TRUE; 
 #endif

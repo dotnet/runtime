@@ -3019,6 +3019,11 @@ public:
     // registers across an NDirect call.
     TADDR                m_pCalleeSavedFP;
 
+    // This field is used to cache the current thread object where this frame is
+    // executing. This is especially helpful on Unix platforms for the PInvoke assembly
+    // stubs, since there is no easy way to inline an implementation of GetThread.
+    PTR_VOID             m_pThread;
+
 public:
     //---------------------------------------------------------------
     // Expose key offsets and values for stub generation.

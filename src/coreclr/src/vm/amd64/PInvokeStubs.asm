@@ -19,9 +19,6 @@ extern s_gsCookie:QWORD
 extern ??_7InlinedCallFrame@@6B@:QWORD
 extern g_TrapReturningThreads:DWORD
 
-; Min amount of stack space that a nested function should allocate.
-MIN_SIZE equ 28h
-
 ;
 ; in:
 ; PINVOKE_CALLI_TARGET_REGISTER (r10) = unmanaged target
