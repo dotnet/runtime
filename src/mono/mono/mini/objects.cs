@@ -841,6 +841,25 @@ class Tests {
 		return 0;
 	}
 
+	public static unsafe int test_0_pointer_array() {
+		int*[] ipa = new int* [0];
+		Array a = ipa;
+
+		
+		if (a is object[])
+			return 1;
+		if (!(a is int*[]))
+			return 2;
+		if (a is ValueType[])
+			return 3;
+		if (a is Enum[])
+			return 4;
+		if (a is char*[])
+			return 5;
+
+		return 0;
+	}
+
 	private static int[] daysmonthleap = { 0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
 	private static int AbsoluteDays (int year, int month, int day)

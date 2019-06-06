@@ -248,7 +248,7 @@ typedef enum {
 	MONO_CLASS_GINST, /* generic instantiation */
 	MONO_CLASS_GPARAM, /* generic parameter */
 	MONO_CLASS_ARRAY, /* vector or array, bounded or not */
-	MONO_CLASS_POINTER, /* pointer of function pointer*/
+	MONO_CLASS_POINTER, /* pointer or function pointer*/
 } MonoTypeKind;
 
 typedef struct _MonoClassDef MonoClassDef;

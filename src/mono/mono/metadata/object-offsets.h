@@ -67,6 +67,7 @@ DECL_OFFSET(MonoClass, parent)
 DECL_OFFSET(MonoClass, rank)
 DECL_OFFSET(MonoClass, sizes)
 DECL_OFFSET(MonoClass, supertypes)
+DECL_OFFSET(MonoClass, class_kind)
 
 DECL_OFFSET(MonoVTable, klass)
 DECL_OFFSET(MonoVTable, max_interface_id)

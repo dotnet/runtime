@@ -3835,7 +3835,10 @@ mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboo
 			mono_class_is_assignable_from_checked (m_class_get_cast_class (klass), oklass, result, error);
 		return;
 	} else if (klass == mono_defaults.object_class) {
-		*result = TRUE;
+		if (m_class_get_class_kind (oklass) == MONO_CLASS_POINTER)
+			*result = FALSE;
+		else
+			*result = TRUE;
 		return;
 	}
 

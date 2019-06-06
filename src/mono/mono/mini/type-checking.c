@@ -682,11 +682,28 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 				EMIT_NEW_UNALU (cfg, move, OP_MOVE, res_reg, res_inst->dreg);
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 			} else if (m_class_get_cast_class (klass) == mono_defaults.object_class) {
-				int parent_reg = alloc_preg (cfg);
+				int parent_reg, class_kind_reg;
+				MonoBasicBlock *pointer_check_bb;
+
+				NEW_BBLOCK (cfg, pointer_check_bb);
+
+				parent_reg = alloc_preg (cfg);
+				class_kind_reg = alloc_preg (cfg);
 				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, parent_reg, eclass_reg, m_class_offsetof_parent ());
-				mini_emit_class_check_branch (cfg, parent_reg, m_class_get_parent (mono_defaults.enum_class), OP_PBNE_UN, is_null_bb);
+				MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, class_kind_reg, eclass_reg, m_class_offsetof_class_kind ());
+
+				// Check if the parent class of the element is not System.ValueType
+				mini_emit_class_check_branch (cfg, parent_reg, m_class_get_parent (mono_defaults.enum_class), OP_PBNE_UN, pointer_check_bb);
 				mini_emit_class_check_branch (cfg, eclass_reg, mono_defaults.enum_class, OP_PBEQ, is_null_bb);
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, false_bb);
+
+				MONO_START_BB (cfg, pointer_check_bb);
+				// Check if the parent class of the element is non-null, else manually check the type
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, parent_reg, NULL);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, is_null_bb);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, class_kind_reg, MONO_CLASS_POINTER);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, false_bb);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
 			} else if (m_class_get_cast_class (klass) == m_class_get_parent (mono_defaults.enum_class)) {
 				mini_emit_class_check_branch (cfg, eclass_reg, m_class_get_parent (mono_defaults.enum_class), OP_PBEQ, is_null_bb);
 				mini_emit_class_check_branch (cfg, eclass_reg, mono_defaults.enum_class, OP_PBEQ, is_null_bb);				

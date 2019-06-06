@@ -22,7 +22,10 @@ struct _MonoClass {
 	guint16     idepth;
 
 	/* array dimension */
-	guint8     rank;          
+	guint8     rank;
+
+	/* One of the values from MonoTypeKind */
+	guint8     class_kind;
 
 	int        instance_size; /* object instance size */
 
@@ -74,7 +77,6 @@ struct _MonoClass {
 	guint nested_classes_inited : 1; /* Whenever nested_class is initialized */
 
 	/* next byte*/
-	guint class_kind : 3; /* One of the values from MonoTypeKind */
 	guint interfaces_inited : 1; /* interfaces is initialized */
 	guint simd_type : 1; /* class is a simd intrinsic type */
 	guint has_finalize_inited    : 1; /* has_finalize is initialized */
