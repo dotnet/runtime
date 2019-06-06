@@ -129,7 +129,7 @@ jobs:
         - Windows_NT_arm64
         - Windows_NT_x64
         - Windows_NT_x86
-      ${{ if in(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc', 'coreclr-outerloop-gcstress-extra', 'coreclr-outerloop-r2r-extra') }}:
+      ${{ if in(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc', 'coreclr-outerloop-gcstress-extra', 'coreclr-outerloop-r2r', 'coreclr-outerloop-r2r-extra') }}:
         platforms:
         - Linux_arm
         - Linux_arm64
@@ -210,7 +210,7 @@ jobs:
         - Windows_NT_arm64
         - Windows_NT_x64
         - Windows_NT_x86
-      ${{ if in(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc', 'coreclr-outerloop-gcstress-extra', 'coreclr-outerloop-r2r-extra') }}:
+      ${{ if in(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc', 'coreclr-outerloop-gcstress-extra', 'coreclr-outerloop-r2r', 'coreclr-outerloop-r2r-extra') }}:
         platforms:
         - Linux_arm
         - Linux_arm64
@@ -253,6 +253,10 @@ jobs:
           testGroup: outerloop-gcstress0x3-gcstress0xc
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress-extra') }}:
           testGroup: outerloop-gcstress-extra
+        ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-r2r') }}:
+          testGroup: outerloop
+          readyToRun: true
+          displayNameArgs: R2R
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-r2r-extra') }}:
           testGroup: outerloop-r2r-extra
           readyToRun: true
