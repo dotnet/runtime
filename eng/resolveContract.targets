@@ -19,14 +19,4 @@
 
   <!-- intentionally empty since we no longer need a target -->
   <Target Name="ResolveMatchingContract" />
-
-  <!-- Disable matching ref API compat for aot runtime refencing libs, these have a lot of public API
-         only by implementation and we don't intend to start new API development on AOT -->
-  <Target Name="DisableRunMatchingRefApiCompat" 
-          BeforeTargets="CoreCompile"
-          Condition="'$(TargetsAot)' == 'true' AND '@(ReferenceFromRuntime)' != ''">
-    <PropertyGroup>
-      <RunMatchingRefApiCompat>False</RunMatchingRefApiCompat>
-    </PropertyGroup>
-  </Target>
 </Project>

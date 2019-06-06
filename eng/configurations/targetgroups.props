@@ -4,28 +4,8 @@
       <TargetFramework>netcore50</TargetFramework>
       <TargetFrameworkIdentifier>.NETCore</TargetFrameworkIdentifier>
       <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
-      <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.NetNative</TargetingPackNugetPackageId>
       <UWPCompatible>true</UWPCompatible>
       <CompatibleWith>netstandard1.4</CompatibleWith>
-    </TargetGroups>
-    <TargetGroups Include="netcore50aot">
-      <TargetFramework>netcore50</TargetFramework>
-      <TargetFrameworkIdentifier>.NETCore</TargetFrameworkIdentifier>
-      <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
-      <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
-      <TargetingPackNugetPackageId>Microsoft.TargetingPack.Private.NetNative</TargetingPackNugetPackageId>
-      <UWPCompatible>true</UWPCompatible>
-      <Imports>netcore50</Imports>
-      <CompatibleWith>netstandard1.4</CompatibleWith>
-    </TargetGroups>
-    <TargetGroups Include="uap10.0.16299aot">
-      <TargetFramework>uap10.0.16299</TargetFramework>
-      <TargetFrameworkIdentifier>UAP</TargetFrameworkIdentifier>
-      <TargetFrameworkVersion>10.0.16299</TargetFrameworkVersion>
-      <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
-      <UWPCompatible>true</UWPCompatible>
-      <Imports>netcore50aot</Imports>
-      <CompatibleWith>uap10.0.16299;netstandard</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="uap10.0.16299">
       <TargetFramework>uap10.0.16299</TargetFramework>
@@ -34,15 +14,6 @@
       <UWPCompatible>true</UWPCompatible>
       <Imports>netcore50</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
-    </TargetGroups>
-    <TargetGroups Include="uapvnextaot">
-      <TargetFramework>$(UAPvNextTFM)</TargetFramework>
-      <TargetFrameworkIdentifier>$(UAPvNextTFI)</TargetFrameworkIdentifier>
-      <TargetFrameworkVersion>$(UAPvNextVersion)</TargetFrameworkVersion>
-      <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
-      <UWPCompatible>true</UWPCompatible>
-      <Imports>uap10.0.16299aot</Imports>
-      <CompatibleWith>uapvnext;netstandard2.1</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="uapvnext">
       <TargetFramework>$(UAPvNextTFM)</TargetFramework>
@@ -60,16 +31,6 @@
       <UWPCompatible>true</UWPCompatible>
       <Imports>uapvnext</Imports>
       <CompatibleWith>netstandard2.1</CompatibleWith>
-    </TargetGroups>
-    <!-- uapaot is an alias for uapvNext, aot runtime -->
-    <TargetGroups Include="uapaot">
-      <TargetFramework>$(UAPvNextTFM)</TargetFramework>
-      <TargetFrameworkIdentifier>$(UAPvNextTFI)</TargetFrameworkIdentifier>
-      <TargetFrameworkVersion>$(UAPvNextVersion)</TargetFrameworkVersion>
-      <PackageTargetRuntimeSuffix>aot</PackageTargetRuntimeSuffix>
-      <UWPCompatible>true</UWPCompatible>
-      <Imports>uapvnextaot</Imports>
-      <CompatibleWith>uap;netstandard2.1</CompatibleWith>
     </TargetGroups>
     <TargetGroups Include="netstandard1.0">
       <TargetFramework>netstandard1.0</TargetFramework>

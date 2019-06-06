@@ -10,7 +10,6 @@ As part of our Pull Requests we have some validation builds where we build the p
 | Windows x64_Debug | netcoreapp | X | X |
 | Windows NETFX_x86_Release | netfx | X | X |
 | Windows UWP_CoreCLR_x64_Debug | uap | X | X |
-| Windows UWP_NETNative_x86_Release | uapaot | X |   |
 | Linux x64_Release | netcoreapp | X | X |
 | Linux arm64_Release | netcoreapp | X | X |
 | Linux arm_Release | netcoreapp | X |   |

@@ -433,24 +433,14 @@ If coverage succeeds, the individual report can be found at `$(TestPath)\report\
 
 Code coverage reports from the continuous integration system are available from the links on the front page of the corefx repo.
 
-### Building tests with .NET Native (Windows only)
+### Building tests with UWP (Windows only)
 
-.NET Native is a technology that allows compiling IL applications down into a native executable and minimal set of native DLLs, containing all needed functionality from the .NET Framework in native format.
-
+This will allow you to build and run against `uap`, the managed version of the UWP Framework subset, used when debugging UWP applications in Visual Studio:
 ```cmd
-:: To run a single project with the .NET Native toolchain, set the appropriate build flags:
-cd src\Microsoft.CSharp\tests
-dotnet msbuild /t:BuildAndTest /p:TargetGroup=uapaot
-```
-If native compilation succeeds, the test will build and run as a native executable named "xunit.console.exe" in a folder named "uapaot" in the test execution folder. The .NET Native toolchain, required to build with TargetGroup `uapaot` is currently not available for external contributors.
-
-A slight variation on these arguments will allow you to build and run against `uap`, the managed version of the UWP Framework subset, used when debugging UWP applications in Visual Studio:
-```cmd
-:: To run a single project with the .NET Native toolchain, set the appropriate build flags:
 cd src\Microsoft.CSharp\tests
 dotnet msbuild /t:BuildAndTest /p:TargetGroup=uap
 ```
-In this case, your test will get executed within the context of a wrapper UWP application, targeting the Managed uap as opposed to the .NET Native version.
+In this case, your test will get executed within the context of a wrapper UWP application, targeting the Managed uap.
 
 The CoreFX build and test suite is a work in progress, as are the [building and testing instructions](../README.md). The .NET Core team and the community are improving Linux and OS X support on a daily basis and are adding more tests for all platforms. See [CoreFX Issues](https://github.com/dotnet/corefx/issues) to find out about specific work items or report issues.
 

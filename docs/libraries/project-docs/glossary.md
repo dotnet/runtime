@@ -54,16 +54,6 @@ The Universal Windows Platform (UWP) is the platform that is used for building m
 
 UWP provides many services, such as a centralized app store, an execution environment (AppContainer), and a set of Windows APIs to use instead of Win32 (WinRT). UWP has no dependency on .NET; apps can be written in C++, C#, VB.NET, and JavaScript. When using C# and VB.NET the .NET APIs are provided by .NET Core.
 
-### .NET Native
-
-**Also referred to as**: ahead-of-time (AOT), IL compiler (ILC)
-
-.NET Native is a compiler tool chain that will produce native code ahead-of-time (AOT), as opposed to just-in-time (JIT). The compilation can happen on the developer machine as well as on the store side, which allows blending AOT with the benefits of servicing.
-
-You can think of .NET Native as an evolution of NGEN (Native Image Generator): NGEN basically simply runs the JIT up front, the code quality and behavior is identical to the JITed version. Another downside of NGEN is that it happens on the user's machine, rather than the developer's machine. NGEN is also at the module level, i.e. for each MSIL assembly there is a corresponding NGEN'ed assembly that contains the native code. .NET Native on the other hand is a C++ like compiler and linker. It will remove unused code, spend more time optimizing it, and produce a single, merged module that represents the closure of the application.
-
-UWP was the first application model that was supported by .NET Native. We now also support building native console applications for Windows, OS X and Linux.
-
 ### Rotor
 
 **Also referred to as**: Shared Source Common Language Infrastructure (SSCLI)

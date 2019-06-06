@@ -12,7 +12,6 @@
       netcoreapp-Windows_NT;
       netcoreapp-Unix;
       uap-Windows_NT;
-      uapaot-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

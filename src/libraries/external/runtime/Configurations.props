@@ -4,9 +4,7 @@
       netcoreapp-Windows_NT;
       netcoreapp-Unix;
       uap10.0.16299;
-      uap10.0.16299aot;
       uap;
-      uapaot;
       mono;
     </BuildConfigurations>
   </PropertyGroup>

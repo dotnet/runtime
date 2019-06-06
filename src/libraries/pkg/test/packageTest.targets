@@ -13,7 +13,6 @@
   </PropertyGroup>
 
   <Import Project="tools\build\Packaging.common.targets" />
-  <Import Project="tools\dependencies.props" />
   <Import Project="tools\eng\Versions.props" />
   <Import Project="frameworkSettings\$(_targetFrameworkIdentifier)\*.targets" />
   <Import Project="frameworkSettings\$(TargetFramework)\*.targets" />

@@ -25,8 +25,7 @@
     <_TestProjectFilter Condition="'$(TestProjectFilter)' == '' or '$(BuildAllTests)' == 'true'">Tests</_TestProjectFilter>
   </PropertyGroup>
 
-  <!-- Disable building tests on uapaot. -->
-  <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true' and '$(BuildingUAPAOTVertical)' != 'true'">
+  <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
     <!-- Keep in sync with pattern for test projects in build.proj -->
     <Project Include="$(SourceDir)*\tests\**\*$(_TestProjectFilter).csproj" Exclude="@(TestProjectExclusions)" />
     <Project Include="$(SourceDir)*\tests\**\*$(_TestProjectFilter).vbproj" Exclude="@(TestProjectExclusions)" />

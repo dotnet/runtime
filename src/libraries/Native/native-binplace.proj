@@ -3,7 +3,6 @@
     <BuildConfigurations>
       netcoreapp;
       uap;
-      uapaot;
       netstandard;
       netfx;
     </BuildConfigurations>

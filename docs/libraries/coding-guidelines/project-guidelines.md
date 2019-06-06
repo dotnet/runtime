@@ -40,7 +40,7 @@ Below is a list of all the various options we pivot the project builds on:
 ## Individual build properties
 The following are the properties associated with each build pivot
 
-- `$(TargetGroup) -> netstandard | netcoreapp | netcoreappcorert | netfx | uap | uapaot`
+- `$(TargetGroup) -> netstandard | netcoreapp | netfx | uap`
 //**CONSIDER**: naming netcoreappcorert something shorter maybe just corert.
 - `$(OSGroup) -> Windows | Linux | OSX | FreeBSD | [defaults to running OS when empty]`
 - `$(ConfigurationGroup) -> Release | [defaults to Debug when empty]`
@@ -125,9 +125,7 @@ Temporary versions are at https://github.com/dotnet/corefx/blob/dev/eng/src/Tool
 
 ## Supported full build configurations
 - .NET Core latest on current OS (default) -> `netcoreapp-[RunningOS]`
-- .NET Core CoreRT -> `netcoreappcorert-[RunningOS]`
 - .NET Framework latest -> `netfx-Windows_NT`
-- UWP -> `uapaot-Windows_NT`
 - UAP F5 -> `uap-Windows_NT`
 
 ## Project configurations for VS
@@ -136,7 +134,7 @@ For each unique configuration needed for a given library project a configuration
 `$(TargetGroup)-$(OSGroup)-$(ConfigurationGroup)|$(Platform`
 - Note that the majority of managed projects, currently all in corefx, $(Platform) is overridden to be AnyCPU.
 
-`<Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>`
+`<Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>`
 
 ####*Examples*
 Project configurations with a unique implementation on Unix and Windows
@@ -145,7 +143,7 @@ Project configurations with a unique implementation on Unix and Windows
 ```
 Project configurations that are unique for a few different target frameworks and runtimes
 ```xml
-<Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+<Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
 ```
 
 ## Updating Configurations
