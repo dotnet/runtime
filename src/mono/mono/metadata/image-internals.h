@@ -26,4 +26,7 @@ mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean 
 gboolean
 mono_is_problematic_image (MonoImage *image);
 
+gboolean
+mono_is_problematic_file (const char *fname);
+
 #endif /* __MONO_METADATA_IMAGE_INTERNALS_H__ */

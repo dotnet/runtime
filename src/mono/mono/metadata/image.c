@@ -1920,8 +1920,8 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 	return mono_image_open_a_lot (fname, status, refonly, FALSE);
 }
 
-MonoImage *
-mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context)
+static MonoImage *
+mono_image_open_a_lot_parameterized (const char *fname, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context, gboolean *problematic)
 {
 	MonoImage *image;
 	GHashTable *loaded_images = get_loaded_images_hash (refonly);
@@ -2038,6 +2038,8 @@ mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean 
 			//  to load.
 			mono_images_unlock ();
 			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Not returning problematic image '%s' refcount=%d", image->name, image->ref_count);
+			if (problematic)
+				*problematic = TRUE;
 			return NULL;
 		}
 		mono_image_addref (image);
@@ -2048,11 +2050,33 @@ mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean 
 
 	// Image not loaded, load it now
 	image = do_mono_image_open (fname, status, TRUE, TRUE, refonly, FALSE, load_from_context);
+	if (problematic)
+		*problematic = TRUE;
 	if (image == NULL)
 		return NULL;
 
 	return register_image (image);
 }
+
+MonoImage *
+mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean refonly, gboolean load_from_context)
+{
+	return mono_image_open_a_lot_parameterized (fname, status, refonly, load_from_context, NULL);
+}
+
+gboolean
+mono_is_problematic_file (const char *fname)
+{
+	MonoImageOpenStatus status;
+	gboolean problematic = FALSE;
+
+	MonoImage *opened = mono_image_open_a_lot_parameterized (fname, &status, FALSE, FALSE, &problematic);
+	if (opened)
+		mono_image_close (opened);
+
+	return problematic;
+}
+
 
 /**
  * mono_image_open:
