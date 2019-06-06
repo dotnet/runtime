@@ -5323,41 +5323,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void ToLowerNullCulture()
-        {
-            string s1 = "aBc";
-
-            try
-            {               
-                s1.ToLower(null);
-                Assert.False(true, "Expected exception: " + typeof(ArgumentNullException).GetType());
-            }
-            catch (ArgumentNullException)
-            {
-            }
-            catch (Exception wrongException)
-            {
-                Assert.False(true, "Wrong exception thrown: Expected " + typeof(ArgumentNullException).GetType() + ": Actual: " + wrongException.GetType());
-            }
-
-            ReadOnlySpan<char> source = s1.AsSpan();
-            Span<char> destination = new char[3] { 'a', 'B', 'c' };
-
-            try
-            {               
-                source.ToLower(destination, null);
-                Assert.False(true, "Expected exception: " + typeof(ArgumentNullException).GetType());
-            }
-            catch (ArgumentNullException)
-            {
-            }
-            catch (Exception wrongException)
-            {
-                Assert.False(true, "Wrong exception thrown: Expected " + typeof(ArgumentNullException).GetType() + ": Actual: " + wrongException.GetType());
-            }
-        }
-
-        [Fact]
         public static void ZeroLengthToUpper()
         {
             char[] expectedSource = { 'a', 'B', 'c' };
@@ -5560,41 +5525,6 @@ namespace System.Tests
                 Assert.Equal('Z', first[length + 1]);
                 Assert.Equal('Y', second[0]);
                 Assert.Equal('Y', second[length + 1]);
-            }
-        }
-
-        [Fact]
-        public static void ToUpperNullCulture()
-        {
-            string s1 = "aBc";
-
-            try
-            {               
-                s1.ToUpper(null);
-                Assert.False(true, "Expected exception: " + typeof(ArgumentNullException).GetType());
-            }
-            catch (ArgumentNullException)
-            {
-            }
-            catch (Exception wrongException)
-            {
-                Assert.False(true, "Wrong exception thrown: Expected " + typeof(ArgumentNullException).GetType() + ": Actual: " + wrongException.GetType());
-            }
-
-            ReadOnlySpan<char> source = s1.AsSpan();
-            Span<char> destination = new char[3] { 'a', 'B', 'c' };
-
-            try
-            {               
-                source.ToUpper(destination, null);
-                Assert.False(true, "Expected exception: " + typeof(ArgumentNullException).GetType());
-            }
-            catch (ArgumentNullException)
-            {
-            }
-            catch (Exception wrongException)
-            {
-                Assert.False(true, "Wrong exception thrown: Expected " + typeof(ArgumentNullException).GetType() + ": Actual: " + wrongException.GetType());
             }
         }
 
@@ -6764,15 +6694,21 @@ namespace System.Tests
         {
             //                           str1               str2          culture  ignorecase   expected
             yield return new object[] { "abcd",             "ABcd",       "en-US",    false,       -1  };
+            yield return new object[] { "abcd",             "ABcd",       null,       false,       -1  };
             yield return new object[] { "ABcd",             "abcd",       "en-US",    false,        1  };
+            yield return new object[] { "ABcd",             "abcd",       null,       false,        1  };
             yield return new object[] { "abcd",             "ABcd",       "en-US",    true,         0  };
+            yield return new object[] { "abcd",             "ABcd",       null,       true,         0  };
             yield return new object[] { "latin i",         "Latin I",     "tr-TR",    false,        1  };
             yield return new object[] { "latin i",         "Latin I",     "tr-TR",    true,         1  };
             yield return new object[] { "turkish \u0130",   "Turkish i",  "tr-TR",    true,         0  };
             yield return new object[] { "turkish \u0131",   "Turkish I",  "tr-TR",    true,         0  };
             yield return new object[] { null,               null,         "en-us",    true,         0  };
+            yield return new object[] { null,               null,         null,       true,         0  };
             yield return new object[] { null,               "",           "en-us",    true,        -1  };
+            yield return new object[] { null,               "",           null,       true,        -1  };
             yield return new object[] { "",                 null,         "en-us",    true,         1  };
+            yield return new object[] { "",                 null,         null,       true,         1  };
         }
 
         public static IEnumerable<object[]> UpperLowerCasing_TestData()
@@ -6783,6 +6719,14 @@ namespace System.Tests
             yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
             yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
             yield return new object[] { "\ud801\udc29",     PlatformDetection.IsWindows7 ? "\ud801\udc29" : "\ud801\udc01", "en-US" };
+        }
+
+        public static IEnumerable<object[]> UpperLowerCasing_NullCulture_TestData()
+        {
+            //                          lower       upper
+            yield return new object[] { "abcd",     "ABCD" };
+            yield return new object[] { "latin i",  "LATIN I" };
+            yield return new object[] { "",         "" };
         }
 
         public static IEnumerable<object[]> StartEndWith_TestData()
@@ -6812,10 +6756,13 @@ namespace System.Tests
                 if (s2 == nullPlaceholder)
                     s2 = null;
 
+                if (cultureName == nullPlaceholder)
+                    cultureName = null;
+
                 bool ignoreCase = bool.Parse(bIgnoreCase);
                 int expected = int.Parse(iExpected);
 
-                CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
+                CultureInfo ci = cultureName != null ? CultureInfo.GetCultureInfo(cultureName) : null;
                 CompareOptions ignoreCaseOption = ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None;
 
                 Assert.Equal(expected, String.Compare(s1, s2, ignoreCase, ci));
@@ -6826,26 +6773,14 @@ namespace System.Tests
                 Assert.Equal(String.Compare(s1, s2, StringComparison.Ordinal), String.Compare(s1, s2, ci, CompareOptions.Ordinal));
                 Assert.Equal(String.Compare(s1, s2, StringComparison.OrdinalIgnoreCase), String.Compare(s1, s2, ci, CompareOptions.OrdinalIgnoreCase));
 
-                CultureInfo.CurrentCulture = ci;
-                Assert.Equal(expected, String.Compare(s1, 0, s2, 0, s1 == null ? 0 : s1.Length, ignoreCase));
+                if (ci != null)
+                {
+                    CultureInfo.CurrentCulture = ci;
+                    Assert.Equal(expected, String.Compare(s1, 0, s2, 0, s1 == null ? 0 : s1.Length, ignoreCase));
+                }
 
                 return RemoteExecutor.SuccessExitCode;
-            }, aS1 ?? nullPlaceholder, aS2 ?? nullPlaceholder, aCultureName, aIgnoreCase.ToString(), aExpected.ToString()).Dispose();
-        }
-
-        [Fact]
-        public static void CompareNegativeTest()
-        {
-            AssertExtensions.Throws<ArgumentNullException>("culture", () => string.Compare("a", "b", false, null));
-
-            AssertExtensions.Throws<ArgumentException>("options", () => string.Compare("a", "b", CultureInfo.InvariantCulture, (CompareOptions) 7891));
-            AssertExtensions.Throws<ArgumentNullException>("culture", () => string.Compare("a", "b", null, CompareOptions.None));
-
-            AssertExtensions.Throws<ArgumentNullException>("culture", () => string.Compare("a", 0, "b", 0, 1, false, null));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length1", () => string.Compare("a", 10,"b", 0, 1, false, CultureInfo.InvariantCulture));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("length2", () => string.Compare("a", 1, "b", 10,1, false, CultureInfo.InvariantCulture));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset1", () => string.Compare("a",-1, "b", 1 ,1, false, CultureInfo.InvariantCulture));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("offset2", () => string.Compare("a", 1, "b",-1 ,1, false, CultureInfo.InvariantCulture));
+            }, aS1 ?? nullPlaceholder, aS2 ?? nullPlaceholder, aCultureName ?? nullPlaceholder, aIgnoreCase.ToString(), aExpected.ToString()).Dispose();
         }
 
         [Theory]
@@ -6869,11 +6804,19 @@ namespace System.Tests
             Assert.Equal(upperForm, upperForm.AsSpan().ToString());
         }
 
-        [Fact]
-        public static void CasingNegativeTest()
+        [Theory]
+        [MemberData(nameof(UpperLowerCasing_NullCulture_TestData))]
+        public static void CasingTestNullCulture(string lowerForm, string upperForm)
         {
-            AssertExtensions.Throws<ArgumentNullException>("culture", () => "".ToLower(null));
-            AssertExtensions.Throws<ArgumentNullException>("culture", () => "".ToUpper(null));
+            Assert.Equal(lowerForm, upperForm.ToLower(null));
+            Assert.Equal(upperForm, lowerForm.ToUpper(null));
+        }
+
+        [Fact]
+        public static void CasingAsSpan_NullCulture_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("culture", () => "".AsSpan().ToLower(new Span<char>(), null));
+            Assert.Throws<ArgumentNullException>("culture", () => "".AsSpan().ToUpper(new Span<char>(), null));
         }
 
         [Theory]
