@@ -542,11 +542,6 @@
 ##  System.Runtime.Tests
 ####################################################################
 
-# https://github.com/mono/mono/issues/14555 Array of pointers is not array of objects
--nomethod System.Tests.ArrayTests.LastIndexOf_ArrayOfPointers_ThrowsNotSupportedException
--nomethod System.Tests.ArrayTests.Reverse_ArrayOfPointers_ThrowsNotSupportedException
--nomethod System.Tests.ArrayTests.IndexOf_ArrayOfPointers_ThrowsNotSupportedException
-
 # https://github.com/mono/mono/issues/14291 incorrect line numbers
 -nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineSameMethod
 -nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineOtherMethod
