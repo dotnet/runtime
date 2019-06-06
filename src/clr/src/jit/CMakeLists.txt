@@ -14,7 +14,7 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR (CLR_CMAKE_TAR
 endif ()
 
 # JIT_BUILD disables certain PAL_TRY debugging features
-add_definitions(-DJIT_BUILD=1)
+add_definitions(-DJIT_BUILD)
 
 if(WIN32)
   set(JIT_RESOURCES Native.rc)
