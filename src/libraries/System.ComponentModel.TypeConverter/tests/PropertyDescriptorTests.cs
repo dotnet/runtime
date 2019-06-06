@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel.Design;
 using System.Reflection;
 using Xunit;
 
@@ -177,6 +178,63 @@ namespace System.ComponentModel.Tests
             public bool BarReadOnly { get; private set; }
             public bool BarNotReadOnly { get; set; }
             public override bool BarReadOnlyBaseClass { get; }
+        }
+
+        [Fact]
+        public void PropertyDescriptorCanBeCreatedThatAccessesNonPublicProperty()
+        {
+            var component = new DescriptorTestComponent();
+
+            // Create a new property that "exposes" a protected property on our component.
+            PropertyDescriptor property = TypeDescriptor.CreateProperty(
+                componentType: typeof(DescriptorTestComponent),
+                name: DescriptorTestComponent.ProtectedStringPropertyName,
+                type: typeof(string));
+
+            const string PropertyValue = "Test";
+
+            property.SetValue(component, PropertyValue);
+            Assert.Equal(PropertyValue, property.GetValue(component));
+            Assert.Equal(PropertyValue, component.ProtectedStringPropertyValue);
+        }
+
+        [Fact]
+        public void PropertyDescriptorCanBeCreatedThatAccessesNonPublicPropertyOnAssociatedDesigner()
+        {
+            var designer = new MockDesigner();
+            var designerHost = new MockDesignerHost();
+            var component = new DescriptorTestComponent();
+
+            designerHost.AddDesigner(component, designer);
+            component.AddService(typeof(IDesignerHost), designerHost);
+
+            PropertyDescriptorCollection properties = TypeDescriptor.GetProperties(component);
+            PropertyDescriptor stringProperty = properties[nameof(DescriptorTestComponent.StringProperty)];
+            Assert.NotNull(stringProperty);
+
+            // Create new property that "wraps" stringProperty and redirects to the designer.
+            // Note that a ReadOnlyAttribute is added to ensure that we can set it
+            PropertyDescriptor newStringProperty = TypeDescriptor.CreateProperty(
+                componentType: typeof(MockDesigner),
+                oldPropertyDescriptor: stringProperty,
+                attributes: new[] { ReadOnlyAttribute.No });
+
+            // The property descriptor should be redirected to reflect over the designer.
+            const string PropertyValue = "Test";
+
+            Assert.False(designer.StringPropertyHasBeenSet);
+            newStringProperty.SetValue(component, PropertyValue);
+            Assert.Empty(component.StringProperty);
+            Assert.Equal(PropertyValue, newStringProperty.GetValue(component));
+            Assert.True(designer.StringPropertyHasBeenSet);
+
+            Assert.False(designer.ShouldSerializeStringPropertyCalled);
+            Assert.True(newStringProperty.ShouldSerializeValue(component));
+            Assert.True(designer.ShouldSerializeStringPropertyCalled);
+
+            Assert.False(designer.ResetStringPropertyCalled);
+            newStringProperty.ResetValue(component);
+            Assert.True(designer.ResetStringPropertyCalled);
         }
     }
 }
