@@ -5,6 +5,9 @@
 namespace NetClient
 {
     using System;
+    using System.Threading;
+    using System.Runtime.InteropServices;
+    using TestLibrary;
 
     class Program
     {
@@ -18,11 +21,12 @@ namespace NetClient
 
             try
             {
-                new NumericTests().Run();
-                new ArrayTests().Run();
-                new StringTests().Run();
-                new ErrorTests().Run();
-                new ColorTests().Run();
+                RunTests();
+                Console.WriteLine("Testing COM object lifetime control methods.");
+                Thread.CurrentThread.DisableComObjectEagerCleanup();
+                RunTests();
+                Marshal.CleanupUnusedObjectsInCurrentContext();
+                Assert.IsFalse(Marshal.AreComObjectsAvailableForCleanup());
             }
             catch (Exception e)
             {
@@ -31,6 +35,15 @@ namespace NetClient
             }
 
             return 100;
+        }
+
+        private static void RunTests()
+        {
+            new NumericTests().Run();
+            new ArrayTests().Run();
+            new StringTests().Run();
+            new ErrorTests().Run();
+            new ColorTests().Run();
         }
     }
 }
