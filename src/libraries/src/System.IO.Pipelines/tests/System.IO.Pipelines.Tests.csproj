@@ -13,6 +13,7 @@
     <Compile Include="Infrastructure\HeapBufferPool.cs" />
     <Compile Include="Infrastructure\DisposeTrackingBufferPool.cs" />
     <Compile Include="Infrastructure\ReadOnlyStream.cs" />
+    <Compile Include="Infrastructure\WriteCheckStream.cs" />
     <Compile Include="Infrastructure\WriteOnlyStream.cs" />
     <Compile Include="Infrastructure\CancelledWritesStream.cs" />
     <Compile Include="Infrastructure\CancelledReadsStream.cs" />

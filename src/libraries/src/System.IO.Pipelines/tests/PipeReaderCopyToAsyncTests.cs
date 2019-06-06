@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO.Pipelines.Tests.Infrastructure;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,17 +35,26 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public async Task CopyToAsyncWorks()
         {
-            var helloBytes = Encoding.UTF8.GetBytes("Hello World");
+            var messages = new List<byte[]>()
+            {
+                Encoding.UTF8.GetBytes("Hello World1"),
+                Encoding.UTF8.GetBytes("Hello World2"),
+                Encoding.UTF8.GetBytes("Hello World3"),
+            };
 
             var pipe = new Pipe(s_testOptions);
-            await pipe.Writer.WriteAsync(helloBytes);
+            var stream = new WriteCheckMemoryStream();
+
+            Task task = pipe.Reader.CopyToAsync(stream);
+            foreach (var msg in messages)
+            {
+                await pipe.Writer.WriteAsync(msg);
+                await stream.WaitForBytesWrittenAsync(msg.Length);
+            }
             pipe.Writer.Complete();
-
-            var stream = new MemoryStream();
-            await pipe.Reader.CopyToAsync(stream);
-            pipe.Reader.Complete();
-
-            Assert.Equal(helloBytes, stream.ToArray());
+            await task;
+            
+            Assert.Equal(messages.SelectMany(msg => msg).ToArray(), stream.ToArray());
         }
 
         [Fact]
@@ -124,6 +135,18 @@ namespace System.IO.Pipelines.Tests
             Task task = pipe.Reader.CopyToAsync(stream);
 
             pipe.Reader.CancelPendingRead();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(() => task);
+        }
+
+        [Fact]
+        public async Task CancelingBetweenReadsThrowsOperationCancelledException()
+        {
+            var pipe = new Pipe(s_testOptions);
+            var stream = new WriteCheckMemoryStream { MidWriteCancellation = new CancellationTokenSource() };
+            Task task = pipe.Reader.CopyToAsync(stream, stream.MidWriteCancellation.Token);
+            pipe.Writer.WriteEmpty(10);
+            await pipe.Writer.FlushAsync();
 
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }
