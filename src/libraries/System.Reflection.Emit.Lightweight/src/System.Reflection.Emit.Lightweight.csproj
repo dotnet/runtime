@@ -2,11 +2,11 @@
   <PropertyGroup>
     <AssemblyName>System.Reflection.Emit.Lightweight</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IsPartialFacadeAssembly Condition="'$(TargetsNetStandard)' != 'true' AND '$(TargetsAot)' != 'true'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true' OR '$(TargetsAot)' == 'true'">SR.PlatformNotSupported_RefEmitLightweight</GeneratePlatformNotSupportedAssemblyMessage>
+    <IsPartialFacadeAssembly Condition="'$(TargetsNetStandard)' != 'true'">true</IsPartialFacadeAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">SR.PlatformNotSupported_RefEmitLightweight</GeneratePlatformNotSupportedAssemblyMessage>
     <OmitResources>$(IsPartialFacadeAssembly)</OmitResources>
     <ProjectGuid>{FEF9FF32-8DE5-4C52-BC4E-8725A1FAA1E9}</ProjectGuid>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uap10.0.16299-Debug;uap10.0.16299-Release;uap10.0.16299aot-Debug;uap10.0.16299aot-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netstandard-Debug;netstandard-Release;netstandard1.0-Debug;netstandard1.0-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

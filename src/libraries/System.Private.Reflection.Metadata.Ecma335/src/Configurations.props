@@ -1,7 +1,6 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      uapaot-Windows_NT;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

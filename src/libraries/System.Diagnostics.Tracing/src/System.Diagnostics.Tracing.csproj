@@ -3,7 +3,7 @@
     <AssemblyName>System.Diagnostics.Tracing</AssemblyName>
     <ProjectGuid>{EB880FDC-326D-42B3-A3FD-0CD3BA29A7F4}</ProjectGuid>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

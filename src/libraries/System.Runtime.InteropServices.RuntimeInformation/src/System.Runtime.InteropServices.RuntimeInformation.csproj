@@ -3,7 +3,7 @@
     <RootNamespace>System.Runtime.InteropServices</RootNamespace>
     <ProjectGuid>{1CBC030D-B5D3-4AB5-A9FD-24EC5F6F38D2}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Runtime\InteropServices\RuntimeInformation\RuntimeInformation.cs" />

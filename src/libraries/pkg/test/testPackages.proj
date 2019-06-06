@@ -46,9 +46,6 @@
     <TestSupportFiles Include="$(SourceDir)shims\netfxreference.props">
       <DestinationFolder>$(TestToolsDir)</DestinationFolder>
     </TestSupportFiles>
-    <TestSupportFiles Include="$(RepositoryEngineeringDir)dependencies.props">
-      <DestinationFolder>$(TestToolsDir)</DestinationFolder>
-    </TestSupportFiles>
     <TestSupportFiles Include="$(RepositoryEngineeringDir)versions.props">
       <DestinationFolder>$(TestToolsDir)eng/</DestinationFolder>
     </TestSupportFiles>

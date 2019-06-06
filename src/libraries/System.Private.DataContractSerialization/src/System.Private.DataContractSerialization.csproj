@@ -12,7 +12,7 @@
     <DefineConstants Condition="'$(TargetsAOT)'=='true'">$(DefineConstants);uapaot</DefineConstants>
     <!-- We do not want to block reflection for this assembly -->
     <BlockReflectionAttribute Condition="'$(TargetsAOT)'=='true'">false</BlockReflectionAttribute>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <RuntimeSerializationSources>System\Runtime\Serialization</RuntimeSerializationSources>

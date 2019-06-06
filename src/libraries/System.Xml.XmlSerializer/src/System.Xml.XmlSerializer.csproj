@@ -4,7 +4,7 @@
     <RootNamespace>System.Xml.XmlSerializer</RootNamespace>
     <ProjectGuid>{D62A6082-5229-4845-8BE9-75753E08C65A}</ProjectGuid>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />

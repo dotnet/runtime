@@ -176,11 +176,6 @@
     "CommonTypes": []
   },
   {
-    "Name": "Microsoft.TargetingPack.Private.NETNative",
-    "Description": "Contains a private targeting pack which contains only the System.Private.* libraries that ship with the .NET Native ILC toolchain. Used for producing platform specific libraries such as facades.",
-    "CommonTypes": []
-  },
-  {
     "Name": "Microsoft.VisualBasic.Core",
     "Description": "Provides types that support the Visual Basic runtime",
     "CommonTypes": [

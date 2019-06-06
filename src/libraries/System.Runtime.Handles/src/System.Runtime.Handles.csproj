@@ -3,7 +3,7 @@
     <ProjectGuid>{D85EE71C-F05B-4331-9300-8E2833D49E19}</ProjectGuid>
     <AssemblyName>System.Runtime.Handles</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />

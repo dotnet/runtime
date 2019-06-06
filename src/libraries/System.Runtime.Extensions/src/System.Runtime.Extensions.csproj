@@ -7,7 +7,7 @@
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
     <GenFacadesIgnoreMissingTypes Condition="'$(TargetsAOT)'=='true' OR '$(TargetGroup)' == 'uap'">true</GenFacadesIgnoreMissingTypes>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
     <Nullable>enable</Nullable>
     <DefineConstants Condition="'$(TargetGroup)' == 'uapaot'">$(DefineConstants);INTERNAL_NULLABLE_ATTRIBUTES</DefineConstants> <!-- TODO-NULLABLE: Remove when uapaot Corelib defines these attributes -->
   </PropertyGroup>

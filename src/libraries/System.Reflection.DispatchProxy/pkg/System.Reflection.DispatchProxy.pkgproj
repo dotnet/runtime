@@ -9,6 +9,9 @@
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.DispatchProxy.csproj" />
     <HarvestIncludePaths Include="runtimes/aot/lib/netcore50" />
+    <HarvestIncludePaths Include="runtimes/win-aot/lib/uap10.0.16299" />
+    <HarvestIncludePaths Include="runtimes/win/lib/uap10.0.16299" />
+    <HarvestIncludePaths Include="ref/uap10.0.16299" />
     <HarvestIncludePaths Include="ref/netstandard1.3;lib/netstandard1.3" />
   </ItemGroup>
   <ItemGroup>

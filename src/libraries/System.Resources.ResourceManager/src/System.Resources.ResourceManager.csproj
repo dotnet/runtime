@@ -3,7 +3,7 @@
     <AssemblyName>System.Resources.ResourceManager</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ProjectGuid>{3E7810B2-2802-4867-B223-30427F3F2D5B}</ProjectGuid>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Diagnostics.Tools" />

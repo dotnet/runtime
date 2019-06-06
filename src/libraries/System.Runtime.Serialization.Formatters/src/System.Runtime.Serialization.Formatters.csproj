@@ -4,7 +4,7 @@
     <AssemblyName>System.Runtime.Serialization.Formatters</AssemblyName>
     <RootNamespace>System.Runtime.Serialization.Formatters</RootNamespace>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Serialization.Formatters.TypeForwards.cs" />

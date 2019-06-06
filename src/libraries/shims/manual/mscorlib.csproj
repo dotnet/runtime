@@ -2,31 +2,4 @@
   <ItemGroup>
     <Compile Include="mscorlib.forwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAot)' == 'true'">
-    <ReferencePath Include="$(RefPath)System.Reflection.Emit.dll" Aliases="System_Reflection_Emit" />
-    <ReferencePath Include="$(RefPath)System.Reflection.Emit.Lightweight.dll" Aliases="System_Reflection_Emit_Lightweight" />
-    <ReferencePath Include="$(RefPath)System.Reflection.Emit.ILGeneration.dll" Aliases="System_Reflection_Emit_ILGeneration" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetsAot)' == 'true'">
-    <SeedTypePreference Include="System.Reflection.Emit.AssemblyBuilder" Aliases="System_Reflection_Emit" />
-    <SeedTypePreference Include="System.Reflection.Emit.AssemblyBuilderAccess" Aliases="System_Reflection_Emit" />
-    <SeedTypePreference Include="System.Reflection.Emit.ConstructorBuilder" Aliases="System_Reflection_Emit" />
-    <SeedTypePreference Include="System.Reflection.Emit.CustomAttributeBuilder" Aliases="System_Reflection_Emit_ILGeneration" />
-    <SeedTypePreference Include="System.Reflection.Emit.DynamicILInfo" Aliases="System_Reflection_Emit_Lightweight" />
-    <SeedTypePreference Include="System.Reflection.Emit.DynamicMethod" Aliases="System_Reflection_Emit_Lightweight" />
-    <SeedTypePreference Include="System.Reflection.Emit.EnumBuilder" Aliases="System_Reflection_Emit" />
-    <SeedTypePreference Include="System.Reflection.Emit.EventBuilder" Aliases="System_Reflection_Emit" />
-    <SeedTypePreference Include="System.Reflection.Emit.FieldBuilder" Aliases="System_Reflection_Emit" />
-    <SeedTypePreference Include="System.Reflection.Emit.GenericTypeParameterBuilder" Aliases="System_Reflection_Emit" />
-    <SeedTypePreference Include="System.Reflection.Emit.ILGenerator" Aliases="System_Reflection_Emit_ILGeneration" />
-    <SeedTypePreference Include="System.Reflection.Emit.Label" Aliases="System_Reflection_Emit_ILGeneration" />
-    <SeedTypePreference Include="System.Reflection.Emit.LocalBuilder" Aliases="System_Reflection_Emit_ILGeneration" />
-    <SeedTypePreference Include="System.Reflection.Emit.MethodBuilder" Aliases="System_Reflection_Emit" />
-    <SeedTypePreference Include="System.Reflection.Emit.ModuleBuilder" Aliases="System_Reflection_Emit" />
-    <SeedTypePreference Include="System.Reflection.Emit.ParameterBuilder" Aliases="System_Reflection_Emit_ILGeneration" />
-    <SeedTypePreference Include="System.Reflection.Emit.PropertyBuilder" Aliases="System_Reflection_Emit" />
-    <SeedTypePreference Include="System.Reflection.Emit.SignatureHelper" Aliases="System_Reflection_Emit_ILGeneration" />
-    <SeedTypePreference Include="System.Reflection.Emit.TypeBuilder" Aliases="System_Reflection_Emit" />
-  </ItemGroup>
 </Project>

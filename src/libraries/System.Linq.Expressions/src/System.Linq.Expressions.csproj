@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- Enabling the interpreter for RC1 in all builds, see https://github.com/dotnet/corefx/issues/4033 -->
     <FeatureInterpret>true</FeatureInterpret>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup>
     <ProjectGuid>{AEF718E9-D4FC-418F-A7AE-ED6B2C7B3787}</ProjectGuid>

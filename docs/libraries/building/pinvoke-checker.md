@@ -9,7 +9,7 @@ Each project is analyzed against one of two possible lists we maintain.
 ## Legal UWP API's
 
 ### Applies to
-This applies to product libraries that are being built for use in a modern Windows app (aka UWP app, or app running on UAP). When building the `uapaot` or `uap` configurations we will apply this check. If the library does not have a `uap` or `uapaot` configuration explicitly listed in `Configuration.props` in the project folder, when targeting `uap` or `uapaot` we will build the `netstandard` configuration, and apply this check.
+This applies to product libraries that are being built for use in a modern Windows app (aka UWP app, or app running on UAP). When building the `uap` configurations we will apply this check. If the library does not have a `uap` configuration explicitly listed in `Configuration.props` in the project folder, when targeting `uap` we will build the `netstandard` configuration, and apply this check.
 
 We do not currently apply this check to test binaries. Although when testing UWP libraries the tests must run within a test app, they do not need to pass through the store validation process. It is still possible they may call an API that does not work correctly within an app's security boundary and that call would have to be avoided.
 

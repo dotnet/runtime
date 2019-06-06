@@ -3,7 +3,7 @@
     <AssemblyName>System.Reflection.TypeExtensions</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ProjectGuid>{A9EF5E88-1AD9-4545-8AFE-CA0F5F00E2CB}</ProjectGuid>
-    <Configurations>net461-Debug;net461-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard1.3-Debug;netstandard1.3-Release;netstandard1.5-Debug;netstandard1.5-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>net461-Debug;net461-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard1.3-Debug;netstandard1.3-Release;netstandard1.5-Debug;netstandard1.5-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard1.3' OR '$(TargetGroup)' == 'netstandard1.5'">
     <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_ReflectionTypeExtensions</GeneratePlatformNotSupportedAssemblyMessage>

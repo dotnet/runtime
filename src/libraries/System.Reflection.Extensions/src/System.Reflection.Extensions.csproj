@@ -3,7 +3,7 @@
     <AssemblyName>System.Reflection.Extensions</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ProjectGuid>{26699AB1-DBAC-4819-A1C0-185AB37CF127}</ProjectGuid>
-    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />

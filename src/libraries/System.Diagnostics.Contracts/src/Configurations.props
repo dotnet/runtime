@@ -1,7 +1,6 @@
 ﻿<Project>
   <PropertyGroup>
     <BuildConfigurations>
-      uapaot-Windows_NT;
       uap-Windows_NT;
       netcoreapp-Windows_NT;
       netcoreapp-Unix;
