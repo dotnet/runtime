@@ -706,7 +706,7 @@ int fx_muxer_t::initialize_for_app(
     for (int i = 0; i < argc; ++i)
         context->argv.push_back(argv[i]);
 
-    trace::verbose(_X("Initialized context for app: %s"), host_info.app_path.c_str());
+    trace::info(_X("Initialized context for app: %s"), host_info.app_path.c_str());
     *host_context_handle = context.release();
     return rc;
 }
@@ -774,7 +774,7 @@ int fx_muxer_t::initialize_for_runtime_config(
 
     context->is_app = false;
 
-    trace::verbose(_X("Initialized %s for config: %s"), already_initialized ? _X("secondary context") : _X("context"), runtime_config_path);
+    trace::info(_X("Initialized %s for config: %s"), already_initialized ? _X("secondary context") : _X("context"), runtime_config_path);
     *host_context_handle = context.release();
     return rc;
 }
