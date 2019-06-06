@@ -372,7 +372,7 @@ ICALL(CULINF_9, "internal_get_cultures", ves_icall_System_Globalization_CultureI
 ICALL_TYPE(REGINF, "System.Globalization.RegionInfo", REGINF_2)
 ICALL(REGINF_2, "construct_internal_region_from_name", ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name)
 
-#if defined(ENABLE_MONODROID) || defined(ENABLE_MONOTOUCH)
+#if defined(ENABLE_MONODROID) || defined(ENABLE_MONOTOUCH) || defined(TARGET_WASM)
 ICALL_TYPE(DEFLATESTREAM, "System.IO.Compression.DeflateStreamNative", DEFLATESTREAM_1)
 NOHANDLES(ICALL(DEFLATESTREAM_1, "CloseZStream", ves_icall_System_IO_Compression_DeflateStreamNative_CloseZStream))
 NOHANDLES(ICALL(DEFLATESTREAM_2, "CreateZStream", ves_icall_System_IO_Compression_DeflateStreamNative_CreateZStream))

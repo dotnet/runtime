@@ -200,7 +200,7 @@ ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8*, s
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_ZeroMemory (guint8*, guint);
 #endif
 ICALL_EXPORT void ves_icall_System_Runtime_RuntimeImports_ecvt_s(char*, size_t, double, int, int*, int*);
-#if defined(ENABLE_MONODROID) || defined(ENABLE_MONOTOUCH)
+#if defined(ENABLE_MONODROID) || defined(ENABLE_MONOTOUCH) || defined(TARGET_WASM)
 ICALL_EXPORT gpointer ves_icall_System_IO_Compression_DeflateStreamNative_CreateZStream (gint32 compress, MonoBoolean gzip, gpointer feeder, gpointer data);
 ICALL_EXPORT gint32 ves_icall_System_IO_Compression_DeflateStreamNative_CloseZStream (gpointer stream);
 ICALL_EXPORT gint32 ves_icall_System_IO_Compression_DeflateStreamNative_Flush (gpointer stream);
