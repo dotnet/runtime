@@ -512,7 +512,7 @@ unregister_thread (void *arg)
 	MonoThreadHandle* handle;
 
 	info = (MonoThreadInfo *) arg;
-	g_assert (info);
+	g_assertf (info, ""); // f includes __func__
 	g_assert (mono_thread_info_is_current (info));
 	g_assert (mono_thread_info_is_live (info));
 
@@ -631,7 +631,7 @@ mono_thread_info_current (void)
 
 	We cannot function after cleanup since there's no way to ensure what will happen.
 	*/
-	g_assert (info);
+	g_assertf (info, ""); // f includes __func__
 
 	/*We're looking up the current thread which will not be freed until we finish running, so no need to keep it on a HP */
 	mono_hazard_pointer_clear (mono_hazard_pointer_get (), 1);
@@ -725,7 +725,7 @@ mono_thread_info_detach (void)
 gboolean
 mono_thread_info_try_get_internal_thread_gchandle (MonoThreadInfo *info, guint32 *gchandle)
 {
-	g_assert (info);
+	g_assertf (info, ""); // f includes __func__
 	g_assert (mono_thread_info_is_current (info));
 
 	if (info->internal_thread_gchandle == G_MAXUINT32)
@@ -738,7 +738,7 @@ mono_thread_info_try_get_internal_thread_gchandle (MonoThreadInfo *info, guint32
 void
 mono_thread_info_set_internal_thread_gchandle (MonoThreadInfo *info, guint32 gchandle)
 {
-	g_assert (info);
+	g_assertf (info, ""); // f includes __func__
 	g_assert (mono_thread_info_is_current (info));
 	g_assert (gchandle != G_MAXUINT32);
 	info->internal_thread_gchandle = gchandle;
@@ -747,7 +747,7 @@ mono_thread_info_set_internal_thread_gchandle (MonoThreadInfo *info, guint32 gch
 void
 mono_thread_info_unset_internal_thread_gchandle (THREAD_INFO_TYPE *info)
 {
-	g_assert (info);
+	g_assertf (info, ""); // f includes __func__
 	g_assert (mono_thread_info_is_current (info));
 	info->internal_thread_gchandle = G_MAXUINT32;
 }
@@ -1396,7 +1396,7 @@ STW to make sure no unsafe pending suspend is in progress.
 static void
 mono_thread_info_suspend_lock_with_info (MonoThreadInfo *info)
 {
-	g_assert (info);
+	g_assertf (info, ""); // f includes __func__
 	g_assert (mono_thread_info_is_current (info));
 	g_assert (mono_thread_info_is_live (info));
 
@@ -1796,7 +1796,7 @@ mono_thread_info_install_interrupt (void (*callback) (gpointer data), gpointer d
 	*interrupted = FALSE;
 
 	info = mono_thread_info_current ();
-	g_assert (info);
+	g_assertf (info, ""); // f includes __func__
 
 	/* The memory of this token can be freed at 2 places:
 	 *  - if the token is not interrupted: it will be freed in uninstall, as info->interrupt_token has not been replaced
@@ -1837,7 +1837,7 @@ mono_thread_info_uninstall_interrupt (gboolean *interrupted)
 	*interrupted = FALSE;
 
 	info = mono_thread_info_current ();
-	g_assert (info);
+	g_assertf (info, ""); // f includes __func__
 
 	previous_token = (MonoThreadInfoInterruptToken *)mono_atomic_xchg_ptr ((gpointer*) &info->interrupt_token, NULL);
 
@@ -1862,7 +1862,7 @@ set_interrupt_state (MonoThreadInfo *info)
 {
 	MonoThreadInfoInterruptToken *token, *previous_token;
 
-	g_assert (info);
+	g_assertf (info, ""); // f includes __func__
 
 	/* Atomically obtain the token the thread is
 	* waiting on, and change it to a flag value. */
@@ -1930,7 +1930,7 @@ mono_thread_info_self_interrupt (void)
 	MonoThreadInfoInterruptToken *token;
 
 	info = mono_thread_info_current ();
-	g_assert (info);
+	g_assertf (info, ""); // f includes __func__
 
 	token = set_interrupt_state (info);
 	g_assert (!token);
@@ -1948,7 +1948,7 @@ mono_thread_info_clear_self_interrupt (void)
 	MonoThreadInfoInterruptToken *previous_token;
 
 	info = mono_thread_info_current ();
-	g_assert (info);
+	g_assertf (info, ""); // f includes __func__
 
 	previous_token = (MonoThreadInfoInterruptToken *)mono_atomic_cas_ptr ((gpointer*) &info->interrupt_token, NULL, INTERRUPT_STATE);
 	g_assert (previous_token == NULL || previous_token == INTERRUPT_STATE);
@@ -1959,14 +1959,14 @@ mono_thread_info_clear_self_interrupt (void)
 gboolean
 mono_thread_info_is_interrupt_state (MonoThreadInfo *info)
 {
-	g_assert (info);
+	g_assertf (info, ""); // f includes __func__
 	return mono_atomic_load_ptr ((gpointer*) &info->interrupt_token) == INTERRUPT_STATE;
 }
 
 void
 mono_thread_info_describe_interrupt_token (MonoThreadInfo *info, GString *text)
 {
-	g_assert (info);
+	g_assertf (info, ""); // f includes __func__
 
 	if (!mono_atomic_load_ptr ((gpointer*) &info->interrupt_token))
 		g_string_append_printf (text, "not waiting");
