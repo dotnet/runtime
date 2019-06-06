@@ -523,7 +523,9 @@ HRESULT ProfilerThreadEnum::Init()
     }
     CONTRACTL_END;
 
-    ThreadStoreLockHolder tsLock;
+    // If a profiler has requested that the runtime suspend to do stack snapshots, it
+    // will be holding the ThreadStore lock already
+    ThreadStoreLockHolder tsLock(!g_profControlBlock.fProfilerRequestedRuntimeSuspend);
 
     Thread * pThread = NULL;
 
@@ -546,6 +548,7 @@ HRESULT ProfilerThreadEnum::Init()
         *m_elements.Append() = (ThreadID) pThread;
     }
     
+    _ASSERTE(ThreadStore::HoldingThreadStore() || g_profControlBlock.fProfilerRequestedRuntimeSuspend);
     return S_OK;
 }
 
