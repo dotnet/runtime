@@ -22,6 +22,11 @@ namespace System.ComponentModel.Tests
 
         public string StringProperty { get; private set; }
 
+        public const string ProtectedStringPropertyName = nameof(ProtectedStringProperty);
+        protected string ProtectedStringProperty { get; private set; }
+
+        public string ProtectedStringPropertyValue => ProtectedStringProperty;
+
         public DescriptorTestComponent(string stringPropertyValue = "")
         {
             StringProperty = stringPropertyValue;
