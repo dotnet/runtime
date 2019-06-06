@@ -4,11 +4,11 @@ include ../mcs/build/config.make
 # NETCORETESTS_VERSION and NETCOREAPP_VERSION must be updated in sync, we are using coreclr repo for that but that's fine for now
 #
 
-# Extracted MicrosoftPrivateCoreFxNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L18
-NETCORETESTS_VERSION := 4.6.0-preview6.19273.8
+# Extracted MicrosoftPrivateCoreFxNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L21
+NETCORETESTS_VERSION := 4.6.0-preview7.19305.1
 
-# Extracted MicrosoftNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L22
-NETCOREAPP_VERSION := 3.0.0-preview6-27727-02
+# Extracted MicrosoftNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L25
+NETCOREAPP_VERSION := 3.0.0-preview7-27804-03
 
 # Extracted from https://dotnetcli.blob.core.windows.net/dotnet/aspnetcore/Runtime/master/latest.version
 ASPNETCOREAPP_VERSION := 3.0.0-preview-18614-0151
@@ -95,13 +95,15 @@ run-aspnet-sample: prepare
 # COREHOST_TRACE=1 
 SHAREDRUNTIME := shared/Microsoft.NETCore.App/$(NETCOREAPP_VERSION)
 
-# CORLIB_BUILD_FLAGS="-c Debug" to compile System.Private.CoreLib.dll in debug mode
 bcl: update-roslyn
 	$(MAKE) -C ../mcs/build/ common/Consts.cs
 	$(DOTNET) build $(CORETARGETS) $(CORLIB_BUILD_FLAGS) -p:BuildArch=$(COREARCH) \
 	-p:OutputPath=bin/$(COREARCH) \
 	-p:RoslynPropsFile="../../../netcore/roslyn/packages/microsoft.net.compilers.toolset/$(ROSLYN_VERSION)/build/Microsoft.Net.Compilers.Toolset.props" \
 	../mcs/class/System.Private.CoreLib/System.Private.CoreLib.csproj
+
+debug-bcl:
+	$(MAKE) bcl CORLIB_BUILD_FLAGS="-c Debug"
 
 runtime:
 	$(MAKE) -C ../mono
@@ -117,7 +119,7 @@ nupkg:
 	$(DOTNET) pack roslyn-restore.csproj -p:NuspecFile=metapackage.nuspec -p:NuspecProperties=\"RID=$(RID)\;VERSION=$(VERSION)$(VERSTUB)\;PLATFORM_AOT_SUFFIX=$(PLATFORM_AOT_SUFFIX)\;COREARCH=$(COREARCH)\;PLATFORM_AOT_PREFIX=$(PLATFORM_AOT_PREFIX)\" --output ../artifacts/ --no-build
 
 clean:
-	rm -rf ../.dotnet sdk shared host dotnet tests obj corefx roslyn LICENSE.txt ThirdPartyNotices.txt $(NETCORESDK_FILE) $(ASPNETCORESDK_FILE)
+	rm -rf .configured ../.dotnet sdk shared host dotnet tests obj corefx roslyn LICENSE.txt ThirdPartyNotices.txt $(NETCORESDK_FILE) $(ASPNETCORESDK_FILE)
 
 #
 # Running tests:
@@ -127,7 +129,6 @@ clean:
 #
 
 # e.g. `make xtest-System.Collections.Tests`
-# '-parallel none -verbose' and MONO_ENV_OPTIONS="--debug" for debug
 xtest-%: prepare update-corefx-tests
 	echo -n "***************** $* *********************"
 	cp corefx/restore/corefx-restore.deps.json corefx/tests/extracted/$*/xunit.console.deps.json
@@ -142,11 +143,17 @@ xtest-%: prepare update-corefx-tests
 		$(XUNIT_FLAGS) @../../../../CoreFX.issues.rsp \
 		$(FIXTURE) || true
 
+debug-xtest-%:
+	MONO_ENV_OPTIONS="--debug" $(MAKE) xtest-$*
+
 # these tests won't be included in `xtestall`
 EXCLUDED_COREFX_TESTS =
 
-xtestall: update-corefx-tests $(foreach workingtest, $(foreach test, $(wildcard corefx/tests/extracted/*), \
+xtestall-noload: $(foreach workingtest, $(foreach test, $(wildcard corefx/tests/extracted/*), \
 		$(filter-out $(EXCLUDED_COREFX_TESTS), $(notdir $(test)))), $(addprefix xtest-, $(workingtest)))
+
+xtestall: update-corefx-tests
+	$(MAKE) xtestall-noload
 
 # build a test assembly in COREFX_ROOT and copy it to corefx/tests/extracted
 # e.g. `make build-local-corefx-test-System.Runtime COREFX_ROOT=/prj/corefx-master`

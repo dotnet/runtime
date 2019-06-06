@@ -13,3 +13,4 @@ packs/
 /obj
 corefx-test-assets.xml
 Makefile
+.configured

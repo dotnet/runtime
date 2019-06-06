@@ -7589,6 +7589,14 @@ ves_icall_System_Environment_get_TickCount (void)
 	return (gint32) (mono_msec_boottime () & 0xffffffff);
 }
 
+#if ENABLE_NETCORE
+gint64
+ves_icall_System_Environment_get_TickCount64 (void)
+{
+	return mono_msec_boottime ();
+}
+#endif
+
 gint32
 ves_icall_System_Runtime_Versioning_VersioningHelper_GetRuntimeId (MonoError *error)
 {

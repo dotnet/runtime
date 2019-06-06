@@ -577,23 +577,26 @@
 # throws ArgumentException
 -nomethod System.Reflection.Tests.PointerTests.PointerPropertyGetValue
 
-# TODO: ignore in CoreFX for mono runtime:
--nomethod System.Tests.StringTests.NormalizationTest
--nomethod System.Tests.GCTests.KeepAlive
--nomethod System.Tests.GCTests.LargeObjectHeapCompactionModeRoundTrips
--nomethod System.Tests.GCTests.GetGCMemoryInfo
--nomethod System.Tests.GCTests.Collect_CallsFinalizer
+# GC.GetTotalAllocatedBytes is not implemented
+-nomethod System.Tests.GCTests.GetTotalAllocatedBytes
+
+# GC.GetAllocatedBytesForCurrentThread is not implemented
 -nomethod System.Tests.GCTests.GetAllocatedBytesForCurrentThread
--nomethod System.Tests.GCTests.GetTotalMemoryTest_ForceCollection
--nomethod System.Tests.GCTests.LatencyRoundtrips    
--nomethod System.Tests.GCTests.KeepAlive_Null
--nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.GetOrCreateValue
--nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.Add
--nomethod System.Runtime.CompilerServices.Tests.ConditionalWeakTableTests.GetValue
+
+# GCSettings.LatencyMode is not implemented
+-nomethod System.Tests.GCTests.LatencyRoundtrips
+
+# WeakReference.get_TrackResurrection is not implemented
+-nomethod System.Tests.WeakReferenceTests.NonGeneric
+
+# Could not load type 'System.Nullable`1[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]' from assembly 'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
 -nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignature
--nomethod System.Tests.EnumTests.Parse
--nomethod System.Tests.EnumTests.Parse_NetCoreApp11
--nomethod System.Tests.ArgIteratorTests.ArgIterator_Throws_PlatformNotSupportedException
+
+# Disabled in coreclr too: https://github.com/dotnet/coreclr/blob/master/tests/CoreFX/CoreFX.issues.rsp#L68-L71
+-nomethod System.Tests.StringTests.CasingNegativeTest
+-nomethod System.Tests.StringTests.ToLowerNullCulture
+-nomethod System.Tests.StringTests.CompareNegativeTest
+-nomethod System.Tests.StringTests.ToUpperNullCulture
 
 ####################################################################
 ##  System.Text.Json.Tests
@@ -645,6 +648,7 @@
 ##  System.ComponentModel.Composition.Tests
 ####################################################################
 
+-nomethod System.ComponentModel.Composition.MetadataTests.TestOptionalMetadataValueTypeMismatch
 -nomethod System.ComponentModel.Composition.CompositionServicesTests.GetDefaultContractNameTest
 -nomethod System.ComponentModel.Composition.MetadataViewProviderTests.GetMetadataView_InterfaceWithIndexer_ShouldThrowNotSupportedException
 -nomethod Tests.Integration.ExportFactoryTests.ExportFactoryStandardImports_ShouldWorkProperly
@@ -798,6 +802,9 @@
 -nomethod System.Tests.EnvironmentTests.FailFast_ExceptionStackTrace_ArgumentException
 -nomethod System.Tests.EnvironmentTests.FailFast_ExceptionStackTrace_StackOverflowException
 
+# GC.GetGCMemoryInfo is not implemented
+-nomethod System.Tests.AppDomainTests.MonitoringIsEnabled
+
 # Mono expands generic Types in stacktraces unlike the .NET Core (sounds more like a feature: https://gist.github.com/EgorBo/3abb37d2ff4fc904bc7472c62498f933)
 -nomethod System.Tests.EnvironmentStackTrace.StackTraceTest
 
@@ -919,3 +926,42 @@
 
 -nomethod System.Xml.Tests.CTransformResolverTest.TC_AbsolutePath_Transform
 -nomethod System.Xml.Tests.CXmlResolverTest.TC_AbsolutePath_Transform
+
+####################################################################
+##  System.Globalization.Tests
+####################################################################
+
+-nomethod System.Globalization.Tests.RegionInfoPropertyTests.EnglishName
+
+####################################################################
+##  System.IO.FileSystem.Watcher.Tests
+####################################################################
+
+-nomethod System.IO.Tests.File_Move_Tests.File_Move_From_Unwatched_To_Watched
+
+####################################################################
+##  System.IO.MemoryMappedFiles.Tests
+####################################################################
+
+-nomethod System.IO.MemoryMappedFiles.Tests.MemoryMappedViewStreamTests.ValidAccessLevelCombinations
+-nomethod System.IO.MemoryMappedFiles.Tests.MemoryMappedViewAccessorTests.ValidAccessLevelCombinations
+
+####################################################################
+##  System.Net.Requests.Tests
+####################################################################
+
+# hangs:
+-nomethod System.Net.Tests.HttpWebRequestTest.HttpWebRequest_SetHostHeader_ContainsPortNumber
+
+####################################################################
+##  System.Security.Cryptography.X509Certificates.Tests
+####################################################################
+
+-nomethod System.Security.Cryptography.X509Certificates.Tests.DynamicChainTests.TestInvalidAia
+
+####################################################################
+##  System.Runtime.Serialization.Json.Tests
+####################################################################
+
+-nomethod DataContractJsonSerializerTests.DCJS_VerifyDateTimeForDateTimeFormat
+-nomethod DataContractJsonSerializerTests.DCJS_VerifyDateTimeForFormatStringDCJsonSerSettings

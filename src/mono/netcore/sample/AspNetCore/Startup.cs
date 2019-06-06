@@ -32,9 +32,8 @@ namespace AspNetCore
             {
                 endpoints.MapGet("/", async context =>
                 {
-                    string corlib = typeof(object).Assembly.FullName;
-                    bool isMono = corlib.Contains("0.0.0.0");
-                    await context.Response.WriteAsync("Hello World " + (isMono ? "from mono!\n" : "\n") + corlib);
+                    bool isMono = typeof(object).Assembly.GetType("Mono.RuntimeStructs") != null;
+                    await context.Response.WriteAsync("Hello World " + (isMono ? "from mono!\n" : "from CoreCLR"));
                 });
             });
         }
