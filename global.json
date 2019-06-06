@@ -7,8 +7,8 @@
     "python": "2.7.15"
   },
   "msbuild-sdks": {
-    "Microsoft.DotNet.Arcade.Sdk": "1.0.0-beta.19304.1",
-    "Microsoft.DotNet.Helix.Sdk": "2.0.0-beta.19304.1",
+    "Microsoft.DotNet.Arcade.Sdk": "1.0.0-beta.19305.13",
+    "Microsoft.DotNet.Helix.Sdk": "2.0.0-beta.19305.13",
     "Microsoft.Build.NoTargets": "1.0.53",
     "Microsoft.Build.Traversal": "2.0.2"
   }
