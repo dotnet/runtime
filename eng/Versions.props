@@ -32,7 +32,7 @@
     <SystemThreadingAccessControlVersion>4.6.0-preview7.19306.3</SystemThreadingAccessControlVersion>
     <SystemWindowsExtensionsPackageVersion>4.6.0-preview7.19306.3</SystemWindowsExtensionsPackageVersion>
     <!-- standard -->
-    <NETStandardLibraryPackageVersion>2.1.0-prerelease.19306.1</NETStandardLibraryPackageVersion>
+    <NETStandardLibraryPackageVersion>2.1.0-prerelease.19306.2</NETStandardLibraryPackageVersion>
     <!-- coreclr -->
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview7.19306.1</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- winforms -->
