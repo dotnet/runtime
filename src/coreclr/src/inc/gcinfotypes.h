@@ -251,6 +251,12 @@ inline bool IsValidFieldReturnKind(ReturnKind returnKind)
     return (returnKind == RT_Scalar || returnKind == RT_Object || returnKind == RT_ByRef);
 }
 
+inline bool IsPointerFieldReturnKind(ReturnKind returnKind)
+{
+    _ASSERTE(IsValidFieldReturnKind(returnKind));
+    return (returnKind == RT_Object || returnKind == RT_ByRef);
+}
+
 inline bool IsValidReturnRegister(size_t regNo)
 {
     return (regNo == 0)

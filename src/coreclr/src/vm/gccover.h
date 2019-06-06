@@ -68,9 +68,11 @@ public:
 
 #if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
 
-#define INTERRUPT_INSTR                 0xF4    // X86 HLT instruction (any 1 byte illegal instruction will do)
-#define INTERRUPT_INSTR_CALL            0xFA    // X86 CLI instruction 
-#define INTERRUPT_INSTR_PROTECT_RET     0xFB    // X86 STI instruction 
+#define INTERRUPT_INSTR                        0xF4    // X86 HLT instruction (any 1 byte illegal instruction will do)
+#define INTERRUPT_INSTR_CALL                   0xFA    // X86 CLI instruction 
+#define INTERRUPT_INSTR_PROTECT_FIRST_RET      0xFB    // X86 STI instruction, protect the first return register
+#define INTERRUPT_INSTR_PROTECT_SECOND_RET     0xEC    // X86 IN instruction, protect the second return register
+#define INTERRUPT_INSTR_PROTECT_BOTH_RET       0xED    // X86 IN instruction, protect both return registers
 
 #elif defined(_TARGET_ARM_)
 
