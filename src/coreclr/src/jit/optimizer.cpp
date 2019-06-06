@@ -3553,7 +3553,7 @@ void Compiler::optUnrollLoops()
         if (compStressCompile(STRESS_UNROLL_LOOPS, 50))
         {
             // In stress mode, quadruple the size limit, and drop
-            // the restriction that loop limit must be Vector<T>.Count.
+            // the restriction that loop limit must be vector element count.
 
             unrollLimitSz *= 4;
             requiredFlags &= ~LPFLG_SIMD_LIMIT;
