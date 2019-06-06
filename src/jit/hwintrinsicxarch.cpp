@@ -757,6 +757,7 @@ static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicC
 //    the expanded intrinsic.
 //
 GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
+                                  CORINFO_CLASS_HANDLE  clsHnd,
                                   CORINFO_METHOD_HANDLE method,
                                   CORINFO_SIG_INFO*     sig,
                                   bool                  mustExpand)
@@ -954,7 +955,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
     {
         case InstructionSet_Vector128:
         case InstructionSet_Vector256:
-            return impBaseIntrinsic(intrinsic, method, sig, mustExpand);
+            return impBaseIntrinsic(intrinsic, clsHnd, method, sig, mustExpand);
         case InstructionSet_SSE:
             return impSSEIntrinsic(intrinsic, method, sig, mustExpand);
         case InstructionSet_SSE2:
@@ -1002,6 +1003,7 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 //    the expanded intrinsic.
 //
 GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
+                                    CORINFO_CLASS_HANDLE  clsHnd,
                                     CORINFO_METHOD_HANDLE method,
                                     CORINFO_SIG_INFO*     sig,
                                     bool                  mustExpand)
@@ -1035,11 +1037,14 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             retType = getSIMDTypeForSize(retSimdSize);
         }
     }
-    else
+    else if (retType == TYP_STRUCT)
     {
-        assert(retType == TYP_STRUCT);
         baseType = getBaseTypeAndSizeOfSIMDType(sig->retTypeClass, &simdSize);
         retType  = getSIMDTypeForSize(simdSize);
+    }
+    else
+    {
+        baseType = getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize);
     }
 
     if (!varTypeIsArithmetic(baseType))
@@ -1091,6 +1096,17 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             retNode = impSIMDPopStack(retType, /* expectAddr: */ false, sig->retTypeClass);
             SetOpLclRelatedToSIMDIntrinsic(retNode);
             assert(retNode->gtType == getSIMDTypeForSize(getSIMDTypeSizeInBytes(sig->retTypeSigClass)));
+            break;
+        }
+
+        case NI_Vector128_Count:
+        case NI_Vector256_Count:
+        {
+            assert(sig->numArgs == 0);
+
+            GenTreeIntCon* countNode = gtNewIconNode(getSIMDVectorLength(simdSize, baseType), TYP_INT);
+            countNode->gtFlags |= GTF_ICON_SIMD_COUNT;
+            retNode = countNode;
             break;
         }
 

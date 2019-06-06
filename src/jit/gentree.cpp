@@ -10196,7 +10196,7 @@ void Compiler::gtDispConst(GenTree* tree)
 #ifdef FEATURE_SIMD
                 if ((tree->gtFlags & GTF_ICON_SIMD_COUNT) != 0)
                 {
-                    printf(" Vector<T>.Count");
+                    printf(" vector element count");
                 }
 #endif
 
