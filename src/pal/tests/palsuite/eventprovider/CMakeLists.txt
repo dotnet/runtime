@@ -26,7 +26,7 @@ add_executable(eventprovidertest
             )
 set(EVENT_PROVIDER_DEPENDENCIES "")
 if(FEATURE_EVENT_TRACE)
-    add_definitions(-DFEATURE_EVENT_TRACE=1)
+    add_definitions(-DFEATURE_EVENT_TRACE)
     list(APPEND EVENT_PROVIDER_DEPENDENCIES
         eventprovider
         )

@@ -3,7 +3,7 @@ include(${CLR_DIR}/crossgen.cmake)
 # Add back some of the macro removed by crossgen.cmake.
 add_definitions(
     -DEnC_SUPPORTED
-    -DFEATURE_EVENT_TRACE=1
+    -DFEATURE_EVENT_TRACE
     -DFEATURE_MULTICOREJIT
     -DFEATURE_VERSIONING_LOG
 )

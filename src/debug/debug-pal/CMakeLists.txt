@@ -2,7 +2,7 @@
 include_directories(../inc)
 include_directories(../../pal/inc)
 
-add_definitions(-DPAL_STDCPP_COMPAT=1)
+add_definitions(-DPAL_STDCPP_COMPAT)
 
 if(WIN32)
     add_definitions(-DWIN32_LEAN_AND_MEAN)
