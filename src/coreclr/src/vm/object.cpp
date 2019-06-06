@@ -649,6 +649,10 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
             if ((nextObj != NULL) &&
                 (nextObj->GetGCSafeMethodTable() != g_pFreeObjectMethodTable))
             {
+                // we need a read barrier here - to make sure we read the object header _after_                
+                // reading data that tells us that the object is eligible for verification
+                // (also see: gc.cpp/a_fit_segment_end_p)
+                VOLATILE_MEMORY_BARRIER();
                 CHECK_AND_TEAR_DOWN(nextObj->GetHeader()->Validate(FALSE));
             }
         }
