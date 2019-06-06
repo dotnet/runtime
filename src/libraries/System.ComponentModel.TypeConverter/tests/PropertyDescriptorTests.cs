@@ -191,11 +191,11 @@ namespace System.ComponentModel.Tests
                 name: DescriptorTestComponent.ProtectedStringPropertyName,
                 type: typeof(string));
 
-            const string propertyValue = "Test";
+            const string PropertyValue = "Test";
 
-            property.SetValue(component, propertyValue);
-            Assert.Equal(propertyValue, property.GetValue(component));
-            Assert.Equal(propertyValue, component.ProtectedStringPropertyValue);
+            property.SetValue(component, PropertyValue);
+            Assert.Equal(PropertyValue, property.GetValue(component));
+            Assert.Equal(PropertyValue, component.ProtectedStringPropertyValue);
         }
 
         [Fact]
@@ -220,12 +220,12 @@ namespace System.ComponentModel.Tests
                 attributes: new[] { ReadOnlyAttribute.No });
 
             // The property descriptor should be redirected to reflect over the designer.
-            const string propertyValue = "Test";
+            const string PropertyValue = "Test";
 
             Assert.False(designer.StringPropertyHasBeenSet);
-            newStringProperty.SetValue(component, propertyValue);
+            newStringProperty.SetValue(component, PropertyValue);
             Assert.Empty(component.StringProperty);
-            Assert.Equal(propertyValue, newStringProperty.GetValue(component));
+            Assert.Equal(PropertyValue, newStringProperty.GetValue(component));
             Assert.True(designer.StringPropertyHasBeenSet);
 
             Assert.False(designer.ShouldSerializeStringPropertyCalled);
