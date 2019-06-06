@@ -3500,7 +3500,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
             if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
             {
-                GenTree* hwintrinsic = impHWIntrinsic(ni, method, sig, mustExpand);
+                GenTree* hwintrinsic = impHWIntrinsic(ni, clsHnd, method, sig, mustExpand);
 
                 if (mustExpand && (hwintrinsic == nullptr))
                 {
