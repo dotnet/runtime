@@ -49,6 +49,7 @@ namespace System.Threading
         [System.CLSCompliantAttribute(false)]
         public PreAllocatedOverlapped(System.Threading.IOCompletionCallback callback, object state, object pinData) { }
         public void Dispose() { }
+        ~PreAllocatedOverlapped() { }
     }
     public sealed partial class ThreadPoolBoundHandle : System.IDisposable
     {
