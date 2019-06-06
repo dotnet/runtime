@@ -5,6 +5,7 @@
 #ifndef __ERROR_CODES_H__
 #define __ERROR_CODES_H__
 
+// These error and exit codes are document in the host-error-codes.md
 enum StatusCode
 {
     // Success
@@ -18,7 +19,7 @@ enum StatusCode
     CoreHostLibMissingFailure           = 0x80008083,
     CoreHostEntryPointFailure           = 0x80008084,
     CoreHostCurHostFindFailure          = 0x80008085,
-    CoreHostResolveModeFailure          = 0x80008086,
+    // unused                           = 0x80008086,
     CoreClrResolveFailure               = 0x80008087,
     CoreClrBindFailure                  = 0x80008088,
     CoreClrInitFailure                  = 0x80008089,
@@ -27,7 +28,7 @@ enum StatusCode
     ResolverResolveFailure              = 0x8000808c,
     LibHostCurExeFindFailure            = 0x8000808d,
     LibHostInitFailure                  = 0x8000808e,
-    LibHostMuxFailure                   = 0x8000808f,
+    // unused                           = 0x8000808f,
     LibHostExecModeFailure              = 0x80008090,
     LibHostSdkFindFailure               = 0x80008091,
     LibHostInvalidArgs                  = 0x80008092,
