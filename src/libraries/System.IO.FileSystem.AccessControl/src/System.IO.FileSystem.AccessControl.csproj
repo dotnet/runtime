@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{D77FBA6C-1AA6-45A4-93E2-97A370672C53}</ProjectGuid>
     <AllowUnsafeBlocks Condition="'$(TargetsWindows)' == 'true'">true</AllowUnsafeBlocks>
