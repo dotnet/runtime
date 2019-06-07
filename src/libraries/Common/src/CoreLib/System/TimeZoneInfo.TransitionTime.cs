@@ -106,7 +106,7 @@ namespace System
                 }
             }
 
-            void IDeserializationCallback.OnDeserialization(object sender)
+            void IDeserializationCallback.OnDeserialization(object? sender)
             {
                 // OnDeserialization is called after each instance of this class is deserialized.
                 // This callback method performs TransitionTime validation after being deserialized.

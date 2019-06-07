@@ -245,7 +245,7 @@ namespace System.Reflection
             throw new PlatformNotSupportedException();
         }
 
-        public void OnDeserialization(object sender)
+        public void OnDeserialization(object? sender)
         {
             throw new PlatformNotSupportedException();
         }
