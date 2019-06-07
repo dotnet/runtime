@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Diagnostics;
+using System.Text.Unicode;
 
 namespace System.Net.Http.Headers
 {
@@ -99,19 +101,52 @@ namespace System.Net.Http.Headers
             }
 
             // If it's a known header value, use the known value instead of allocating a new string.
-            if (_knownHeader != null && _knownHeader.KnownValues != null)
+            if (_knownHeader != null)
             {
-                string[] knownValues = _knownHeader.KnownValues;
-                for (int i = 0; i < knownValues.Length; i++)
+                if (_knownHeader.KnownValues != null)
                 {
-                    if (ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(knownValues[i], headerValue))
+                    string[] knownValues = _knownHeader.KnownValues;
+                    for (int i = 0; i < knownValues.Length; i++)
                     {
-                        return knownValues[i];
+                        if (ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(knownValues[i], headerValue))
+                        {
+                            return knownValues[i];
+                        }
+                    }
+                }
+
+                if (_knownHeader == KnownHeaders.Location)
+                {
+                    // Normally Location should be in ISO-8859-1 but occasionally some servers respond with UTF-8.
+                    if (TryDecodeUtf8(headerValue, out string decoded))
+                    {
+                        return decoded;
                     }
                 }
             }
 
             return HttpRuleParser.DefaultHttpEncoding.GetString(headerValue);
+        }
+
+        private static bool TryDecodeUtf8(ReadOnlySpan<byte> input, out string decoded)
+        {
+            char[] rented = ArrayPool<char>.Shared.Rent(input.Length);
+
+            try
+            {
+                if (Utf8.ToUtf16(input, rented, out _, out int charsWritten, replaceInvalidSequences: false) == OperationStatus.Done)
+                {
+                    decoded = new string(rented, 0, charsWritten);
+                    return true;
+                }
+            }
+            finally
+            {
+                ArrayPool<char>.Shared.Return(rented);
+            }
+
+            decoded = null;
+            return false;
         }
     }
 }
