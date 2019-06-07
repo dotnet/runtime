@@ -217,11 +217,11 @@ namespace System
             lock (s_table)
             {
                 syntax._flags &= ~UriSyntaxFlags.V1_UnknownUri;
-                UriParser oldSyntax = (UriParser)s_table[lwrCaseSchemeName];
+                UriParser? oldSyntax = (UriParser?)s_table[lwrCaseSchemeName];
                 if (oldSyntax != null)
                     throw new InvalidOperationException(SR.Format(SR.net_uri_AlreadyRegistered, oldSyntax.SchemeName));
 
-                oldSyntax = (UriParser)s_tempTable[syntax.SchemeName];
+                oldSyntax = (UriParser?)s_tempTable[syntax.SchemeName];
                 if (oldSyntax != null)
                 {
                     // optimization on schemeName, will try to keep the first reference
@@ -243,12 +243,12 @@ namespace System
         internal static UriParser FindOrFetchAsUnknownV1Syntax(string lwrCaseScheme)
         {
             // check may be other thread just added one
-            UriParser syntax = (UriParser)s_table[lwrCaseScheme];
+            UriParser? syntax = (UriParser?)s_table[lwrCaseScheme];
             if (syntax != null)
             {
                 return syntax;
             }
-            syntax = (UriParser)s_tempTable[lwrCaseScheme];
+            syntax = (UriParser?)s_tempTable[lwrCaseScheme];
             if (syntax != null)
             {
                 return syntax;
@@ -265,8 +265,8 @@ namespace System
             }
         }
 
-        internal static UriParser GetSyntax(string lwrCaseScheme) =>
-            (UriParser)(s_table[lwrCaseScheme] ?? s_tempTable[lwrCaseScheme]);
+        internal static UriParser? GetSyntax(string lwrCaseScheme) =>
+            (UriParser?)(s_table[lwrCaseScheme] ?? s_tempTable[lwrCaseScheme]);
 
         //
         // Builtin and User Simple syntaxes do not need custom validation/parsing (i.e. virtual method calls),
@@ -329,12 +329,12 @@ namespace System
             return effectiveParser;
         }
 
-        internal void InternalValidate(Uri thisUri, out UriFormatException parsingError)
+        internal void InternalValidate(Uri thisUri, out UriFormatException? parsingError)
         {
             InitializeAndValidate(thisUri, out parsingError);
         }
 
-        internal string InternalResolve(Uri thisBaseUri, Uri uriLink, out UriFormatException parsingError)
+        internal string? InternalResolve(Uri thisBaseUri, Uri uriLink, out UriFormatException? parsingError)
         {
             return Resolve(thisBaseUri, uriLink, out parsingError);
         }

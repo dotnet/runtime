@@ -4,6 +4,7 @@
 
 using System.Text;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -128,7 +129,9 @@ namespace System
         private const short c_MaxUnicodeCharsReallocate = 40;
         private const short c_MaxUTF_8BytesPerUnicodeChar = 4;
         private const short c_EncodedCharsPerByte = 3;
-        internal static unsafe char[] EscapeString(string input, int start, int end, char[] dest, ref int destPos,
+
+        [return: NotNullIfNotNull("dest")]
+        internal static unsafe char[]? EscapeString(string input, int start, int end, char[]? dest, ref int destPos,
             bool isUriString, char force1, char force2, char rsvd)
         {
             if (end - start >= Uri.c_MaxUriBufferSize)
@@ -232,15 +235,15 @@ namespace System
         //
         // ensure destination array has enough space and contains all the needed input stuff
         //
-        private static unsafe char[] EnsureDestinationSize(char* pStr, char[] dest, int currentInputPos,
+        private static unsafe char[] EnsureDestinationSize(char* pStr, char[]? dest, int currentInputPos,
             short charsToAdd, short minReallocateChars, ref int destPos, int prevInputPos)
         {
-            if ((object)dest == null || dest.Length < destPos + (currentInputPos - prevInputPos) + charsToAdd)
+            if ((object?)dest == null || dest.Length < destPos + (currentInputPos - prevInputPos) + charsToAdd)
             {
                 // allocating or reallocating array by ensuring enough space based on maxCharsToAdd.
                 char[] newresult = new char[destPos + (currentInputPos - prevInputPos) + minReallocateChars];
 
-                if ((object)dest != null && destPos != 0)
+                if ((object?)dest != null && destPos != 0)
                     Buffer.BlockCopy(dest, 0, newresult, 0, destPos << 1);
                 dest = newresult;
             }
@@ -263,7 +266,7 @@ namespace System
         //   For this reason it returns a char[] that is usually the same ref as the input "dest" value.
         //
         internal static unsafe char[] UnescapeString(string input, int start, int end, char[] dest,
-            ref int destPosition, char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser syntax,
+            ref int destPosition, char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax,
             bool isQuery)
         {
             fixed (char* pStr = input)
@@ -273,15 +276,15 @@ namespace System
             }
         }
         internal static unsafe char[] UnescapeString(char* pStr, int start, int end, char[] dest, ref int destPosition,
-            char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser syntax, bool isQuery)
+            char rsvd1, char rsvd2, char rsvd3, UnescapeMode unescapeMode, UriParser? syntax, bool isQuery)
         {
-            byte[] bytes = null;
+            byte[]? bytes = null;
             byte escapedReallocations = 0;
             bool escapeReserved = false;
             int next = start;
             bool iriParsing = Uri.IriParsingStatic(syntax)
                                 && ((unescapeMode & UnescapeMode.EscapeUnescape) == UnescapeMode.EscapeUnescape);
-            char[] unescapedChars = null;
+            char[]? unescapedChars = null;
 
             while (true)
             {
@@ -450,7 +453,7 @@ namespace System
 
                             int byteCount = 1;
                             // lazy initialization of max size, will reuse the array for next sequences
-                            if ((object)bytes == null)
+                            if ((object?)bytes == null)
                                 bytes = new byte[end - next];
 
                             bytes[0] = (byte)ch;

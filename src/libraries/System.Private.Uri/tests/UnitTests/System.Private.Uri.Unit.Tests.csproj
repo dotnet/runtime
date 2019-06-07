@@ -5,6 +5,7 @@
     <NoWarn>436</NoWarn>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Fakes\FakeUri.cs" />

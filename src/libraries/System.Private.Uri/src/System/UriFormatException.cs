@@ -17,11 +17,11 @@ namespace System
         {
         }
 
-        public UriFormatException(string textString) : base(textString)
+        public UriFormatException(string? textString) : base(textString)
         {
         }
 
-        public UriFormatException(string textString, Exception e) : base(textString, e)
+        public UriFormatException(string? textString, Exception? e) : base(textString, e)
         {
         }
 

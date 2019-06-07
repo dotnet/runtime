@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 
@@ -18,7 +19,7 @@ namespace System
 
         internal static string ParseCanonicalName(string str, int start, int end, ref bool loopback)
         {
-            string res = null;
+            string? res = null;
 
             for (int i = end - 1; i >= start; --i)
             {
@@ -211,7 +212,7 @@ namespace System
             {
                 fixed (char* host = hostname)
                 {
-                    return IdnEquivalent(host, 0, hostname.Length, ref allAscii, ref atLeastOneValidIdn);
+                    return IdnEquivalent(host, 0, hostname.Length, ref allAscii, ref atLeastOneValidIdn)!;
                 }
             }
         }
@@ -219,14 +220,14 @@ namespace System
         //
         // Will convert a host name into its idn equivalent + tell you if it had a valid idn label
         //
-        internal static unsafe string IdnEquivalent(char* hostname, int start, int end, ref bool allAscii, ref bool atLeastOneValidIdn)
+        internal static unsafe string? IdnEquivalent(char* hostname, int start, int end, ref bool allAscii, ref bool atLeastOneValidIdn)
         {
-            string bidiStrippedHost = null;
-            string idnEquivalent = IdnEquivalent(hostname, start, end, ref allAscii, ref bidiStrippedHost);
+            string? bidiStrippedHost = null;
+            string? idnEquivalent = IdnEquivalent(hostname, start, end, ref allAscii, ref bidiStrippedHost);
 
             if (idnEquivalent != null)
             {
-                string strippedHost = (allAscii ? idnEquivalent : bidiStrippedHost);
+                string strippedHost = (allAscii ? idnEquivalent : bidiStrippedHost!);
 
                 fixed (char* strippedHostPtr = strippedHost)
                 {
@@ -298,9 +299,9 @@ namespace System
         //
         // Will convert a host name into its idn equivalent
         //
-        internal static unsafe string IdnEquivalent(char* hostname, int start, int end, ref bool allAscii, ref string bidiStrippedHost)
+        internal static unsafe string? IdnEquivalent(char* hostname, int start, int end, ref bool allAscii, ref string? bidiStrippedHost)
         {
-            string idn = null;
+            string? idn = null;
             if (end <= start)
                 return idn;
 
@@ -371,7 +372,7 @@ namespace System
         //
         // Will convert a host name into its unicode equivalent expanding any existing idn names present
         //
-        internal static unsafe string UnicodeEquivalent(string idnHost, char* hostname, int start, int end)
+        internal static unsafe string? UnicodeEquivalent(string idnHost, char* hostname, int start, int end)
         {
             // Test common scenario first for perf
             // try to get unicode equivalent 
@@ -389,18 +390,18 @@ namespace System
             return UnicodeEquivalent(hostname, start, end, ref dummy, ref dummy);
         }
 
-        internal static unsafe string UnicodeEquivalent(char* hostname, int start, int end, ref bool allAscii, ref bool atLeastOneValidIdn)
+        internal static unsafe string? UnicodeEquivalent(char* hostname, int start, int end, ref bool allAscii, ref bool atLeastOneValidIdn)
         {
             // hostname already validated
             allAscii = true;
             atLeastOneValidIdn = false;
-            string idn = null;
+            string? idn = null;
             if (end <= start)
                 return idn;
 
             string unescapedHostname = UriHelper.StripBidiControlCharacter(hostname, start, (end - start));
 
-            string unicodeEqvlHost = null;
+            string? unicodeEqvlHost = null;
             int curPos = 0;
             int newPos = 0;
             int length = unescapedHostname.Length;
