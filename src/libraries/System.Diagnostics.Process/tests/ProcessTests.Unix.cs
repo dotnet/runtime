@@ -157,6 +157,7 @@ namespace System.Diagnostics.Tests
         }
 
         // Active issue https://github.com/dotnet/corefx/issues/37739
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotRedHatFamily6))]
         [PlatformSpecific(~TestPlatforms.OSX)] // On OSX, ProcessName returns the script interpreter.
         public void ProcessNameMatchesScriptName()
         {
@@ -172,7 +173,7 @@ namespace System.Diagnostics.Tests
                 try
                 {
                     string stat = File.ReadAllText($"/proc/{process.Id}/stat");
-                    Assert.Contains($"({scriptName})", stat);
+                    Assert.Contains($"({scriptName.Substring(0, 15)})", stat);
                     string cmdline = File.ReadAllText($"/proc/{process.Id}/cmdline");
                     Assert.Equal($"/bin/sh\0{filename}\0", cmdline);
 
