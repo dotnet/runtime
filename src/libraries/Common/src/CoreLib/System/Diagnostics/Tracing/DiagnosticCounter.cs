@@ -77,6 +77,8 @@ namespace System.Diagnostics.Tracing
 
         public string? DisplayName { get; set; }
 
+        public string? DisplayUnits { get; set; }
+
         public string Name { get; }
 
         public EventSource EventSource { get; }

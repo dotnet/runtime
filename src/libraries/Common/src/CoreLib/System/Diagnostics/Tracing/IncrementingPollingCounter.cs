@@ -81,6 +81,7 @@ namespace System.Diagnostics.Tracing
                 payload.CounterType = "Sum";
                 payload.Metadata = GetMetadataString();
                 payload.Increment = _increment - _prevIncrement;
+                payload.DisplayUnits = DisplayUnits ?? "";
                 _prevIncrement = _increment;
                 EventSource.Write("EventCounters", new EventSourceOptions() { Level = EventLevel.LogAlways }, new IncrementingPollingCounterPayloadType(payload));
             }
