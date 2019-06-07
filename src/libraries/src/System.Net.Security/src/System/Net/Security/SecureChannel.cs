@@ -268,7 +268,7 @@ namespace System.Net.Security
             {
                 if (certificate.Handle != IntPtr.Zero)
                 {
-                    certificateEx = new X509Certificate2(certificate.Handle);
+                    certificateEx = new X509Certificate2(certificate);
                 }
             }
             catch (SecurityException) { }
