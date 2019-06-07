@@ -328,7 +328,7 @@ namespace System.Runtime.Loader
 
             foreach (ResolveEventHandler handler in eventHandler.GetInvocationList())
             {
-                Assembly asm = handler(null /* AppDomain */, args);
+                Assembly? asm = handler(null /* AppDomain */, args);
                 RuntimeAssembly? ret = GetRuntimeAssembly(asm);
                 if (ret != null)
                     return ret;
@@ -337,7 +337,7 @@ namespace System.Runtime.Loader
             return null;
         }
 
-        private static RuntimeAssembly? GetRuntimeAssembly(Assembly asm)
+        private static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
         {
             return
                 asm == null ? null :

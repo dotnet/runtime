@@ -211,7 +211,7 @@ namespace System
                                                 "DaylightDelta should not ever be more than 24h");
             }
 
-            void IDeserializationCallback.OnDeserialization(object sender)
+            void IDeserializationCallback.OnDeserialization(object? sender)
             {
                 // OnDeserialization is called after each instance of this class is deserialized.
                 // This callback method performs AdjustmentRule validation after being deserialized.
