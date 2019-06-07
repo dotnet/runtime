@@ -42,6 +42,8 @@ namespace System.Diagnostics.Tracing
 
         public string? Metadata { get; set; }
 
+        public string? DisplayUnits { get; set; }
+
         #region Implementation of the IEnumerable interface
 
         public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
@@ -60,6 +62,7 @@ namespace System.Diagnostics.Tracing
             {
                 yield return new KeyValuePair<string, object?>("Name", Name);
                 yield return new KeyValuePair<string, object?>("DisplayName", DisplayName);
+                yield return new KeyValuePair<string, object?>("DisplayUnits", DisplayUnits);
                 yield return new KeyValuePair<string, object?>("Mean", Mean);
                 yield return new KeyValuePair<string, object?>("StandardDeviation", StandardDeviation);
                 yield return new KeyValuePair<string, object?>("Count", Count);
@@ -94,6 +97,8 @@ namespace System.Diagnostics.Tracing
 
         public string? CounterType { get; set; }
 
+        public string? DisplayUnits { get; set; }
+
         #region Implementation of the IEnumerable interface
 
         public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
@@ -118,6 +123,7 @@ namespace System.Diagnostics.Tracing
                 yield return new KeyValuePair<string, object?>("Series", $"Interval={IntervalSec}");
                 yield return new KeyValuePair<string, object?>("CounterType", "Sum");
                 yield return new KeyValuePair<string, object?>("Metadata", Metadata);
+                yield return new KeyValuePair<string, object?>("DisplayUnits", DisplayUnits);
             }
         }
 

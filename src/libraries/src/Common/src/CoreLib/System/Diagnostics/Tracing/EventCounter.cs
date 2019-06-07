@@ -106,7 +106,8 @@ namespace System.Diagnostics.Tracing
                 payload.Series = $"Interval={pollingIntervalMillisec}"; // TODO: This may need to change when we support multi-session
                 payload.CounterType = "Mean";
                 payload.Metadata = GetMetadataString();
-                payload.DisplayName = DisplayName;
+                payload.DisplayName = DisplayName ?? "";
+                payload.DisplayUnits = DisplayUnits ?? "";
                 payload.Name = Name;
                 ResetStatistics();
                 EventSource.Write("EventCounters", new EventSourceOptions() { Level = EventLevel.LogAlways }, new CounterPayloadType(payload));
