@@ -751,18 +751,14 @@ namespace System.Collections.Immutable
                 return false;
             }
 
-            int matches = 0;
             foreach (T item in otherSet)
             {
                 if (!Contains(item, origin))
                 {
                     return false;
                 }
-
-                matches++;
             }
-
-            return matches == origin.Count;
+            return true;
         }
 
         /// <summary>
