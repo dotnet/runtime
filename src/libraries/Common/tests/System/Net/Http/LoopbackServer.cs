@@ -122,6 +122,20 @@ namespace System.Net.Test.Common
         {
             List<string> lines = null;
 
+            // Note, we assume there's no request body.
+            // We'll close the connection after reading the request header and sending the response.
+            await AcceptConnectionAsync(async connection =>
+            {
+                lines = await connection.ReadRequestHeaderAndSendCustomResponseAsync(response).ConfigureAwait(false);
+            });
+
+            return lines;
+        }
+
+        public async Task<List<string>> AcceptConnectionSendCustomResponseAndCloseAsync(byte[] response)
+        {
+            List<string> lines = null;
+
             // Note, we assume there's no request body.  
             // We'll close the connection after reading the request header and sending the response.
             await AcceptConnectionAsync(async connection =>
@@ -588,6 +602,13 @@ namespace System.Net.Test.Common
             {
                 List<string> lines = await ReadRequestHeaderAsync().ConfigureAwait(false);
                 await _writer.WriteAsync(response).ConfigureAwait(false);
+                return lines;
+            }
+
+            public async Task<List<string>> ReadRequestHeaderAndSendCustomResponseAsync(byte[] response)
+            {
+                List<string> lines = await ReadRequestHeaderAsync().ConfigureAwait(false);
+                await _stream.WriteAsync(response, 0, response.Length).ConfigureAwait(false);
                 return lines;
             }
 
