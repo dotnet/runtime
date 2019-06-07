@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Data.Tests.Common
@@ -317,6 +319,18 @@ namespace System.Data.Tests.Common
 
             Assert.False(_dataReader.IsDBNull("text_col"));
             Assert.True(_dataReader.IsDBNull("dbnull_col"));
+        }
+
+        [Fact]
+        public Task GetValueAsyncByColumnNameCanceledTest()
+        {
+            return Assert.ThrowsAsync<TaskCanceledException>(() => _dataReader.GetFieldValueAsync<string>("text_col", new CancellationToken(true)));
+        }
+
+        [Fact]
+        public Task IsDbNullAsyncByColumnNameCanceledTest()
+        {
+            return Assert.ThrowsAsync<TaskCanceledException>(() => _dataReader.IsDBNullAsync("dbnull_col", new CancellationToken(true)));
         }
 
         private void SkipRows(int rowsToSkip)
