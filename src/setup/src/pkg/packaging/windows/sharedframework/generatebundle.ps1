@@ -79,21 +79,47 @@ function RunLightForBundle
     Write-Host Running light for bundle..
     $AuthWsxRoot =  Join-Path $PackagingRoot "windows\sharedframework"
 
-    Start-Sleep 1
-
-    .\light.exe -nologo `
-        -cultures:en-us `
-        bundle.wixobj `
-        -ext WixBalExtension.dll `
-        -ext WixUtilExtension.dll `
-        -ext WixTagExtension.dll `
-        -b "$AuthWsxRoot" `
-        -out $DotnetBundleOutput | Out-Host
-
-    if($LastExitCode -ne 0)
+    $lightLogFile = $null
+    $maxRetries = 5
+    foreach ($retry in 0..$maxRetries)
     {
-        $result = $false
-        Write-Host "Light failed with exit code $LastExitCode."
+        if ($retry)
+        {
+            # Wait one second per number of retries. This is intended to avoid
+            # interference by Windows Defender by giving it time to catch up.
+            $sleepTime = $retry
+            Write-Host "Retrying after $($sleepTime)s of sleep..."
+            Start-Sleep $sleepTime
+            Write-Host "Retrying... (#$retry of $maxRetries)"
+        }
+
+        $lightLogFile = Join-Path $WixTempPath "runtime-bundle-light-$retry.log"
+
+        .\light.exe -nologo `
+            -cultures:en-us `
+            bundle.wixobj `
+            -ext WixBalExtension.dll `
+            -ext WixUtilExtension.dll `
+            -ext WixTagExtension.dll `
+            -b "$AuthWsxRoot" `
+            -out $DotnetBundleOutput > $lightLogFile
+
+        if($LastExitCode -ne 0)
+        {
+            $result = $false
+            
+            Write-Host "Light failed with exit code $LastExitCode. Output written to $lightLogFile"
+        }
+        else
+        {
+            $result = $true
+            break
+        }
+    }
+
+    if ($lightLogFile)
+    {
+        Get-Content $lightLogFile | Out-Host
     }
 
     popd

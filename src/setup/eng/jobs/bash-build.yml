@@ -178,6 +178,7 @@ jobs:
           *.log
           *.binlog
         TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
+        CleanTargetFolder: true
       continueOnError: true
       condition: succeededOrFailed()
 

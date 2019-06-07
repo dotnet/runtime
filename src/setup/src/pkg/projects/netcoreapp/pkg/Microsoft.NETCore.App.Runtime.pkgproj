@@ -2,17 +2,12 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
-  <PropertyGroup>
-    <Version>$(HostResolverVersion)</Version>
-  </PropertyGroup>    
-
-  <ItemGroup>
-    <Dependency Include="Microsoft.NETCore.DotNetAppHost">
-      <Version>$(AppHostVersion)</Version>
-    </Dependency>
-  </ItemGroup>
-     
-  <Import Project="$(MSBuildProjectName).props" />
+  <!--
+    Include HostPolicy and HostResolver based on legacy packages. This can be collapsed once the
+    legacy packages are no longer used.
+  -->
+  <Import Project="..\..\Microsoft.NETCore.DotNetHostPolicy\Microsoft.NETCore.DotNetHostPolicy.props" />
+  <Import Project="..\..\Microsoft.NETCore.DotNetHostResolver\Microsoft.NETCore.DotNetHostResolver.props" />
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

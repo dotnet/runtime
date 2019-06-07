@@ -16,6 +16,14 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <!--
+      Only build WindowsDesktop assets if this is on Windows and we know WD assets are available
+      and supported. This lets us skip them on the non-Windows official build legs.
+    -->
+    <BuildOnUnknownPlatforms>false</BuildOnUnknownPlatforms>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <BuildDebPackage>false</BuildDebPackage>
     <BuildRpmPackage>false</BuildRpmPackage>
     <GeneratePkg>false</GeneratePkg>
