@@ -36,9 +36,7 @@ namespace System
 
         public ApplicationId Copy() => new ApplicationId(_publicKeyToken, Name, Version, ProcessorArchitecture, Culture);
 
-#pragma warning disable CS8609 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         public override string ToString()
-#pragma warning restore CS8609
         {
             Span<char> charSpan = stackalloc char[128];
             var sb = new ValueStringBuilder(charSpan);

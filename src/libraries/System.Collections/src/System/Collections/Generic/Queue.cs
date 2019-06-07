@@ -241,14 +241,14 @@ namespace System.Collections.Generic
             return removed;
         }
 
-        public bool TryDequeue(out T result) // TODO-NULLABLE-GENERIC
+        public bool TryDequeue([MaybeNullWhen(false)] out T result)
         {
             int head = _head;
             T[] array = _array;
 
             if (_size == 0)
             {
-            	result = default!; // TODO-NULLABLE-GENERIC
+            	result = default!;
                 return false;
             }
 
@@ -276,11 +276,11 @@ namespace System.Collections.Generic
             return _array[_head];
         }
 
-        public bool TryPeek(out T result) // TODO-NULLABLE-GENERIC
+        public bool TryPeek([MaybeNullWhen(false)] out T result)
         {
             if (_size == 0)
             {
-            	result = default!; // TODO-NULLABLE-GENERIC
+            	result = default!;
                 return false;
             }
 
@@ -397,20 +397,20 @@ namespace System.Collections.Generic
             private readonly Queue<T> _q;
             private readonly int _version;
             private int _index;   // -1 = not started, -2 = ended/disposed
-            private T _currentElement;
+            [AllowNull] private T _currentElement;
 
             internal Enumerator(Queue<T> q)
             {
                 _q = q;
                 _version = q._version;
                 _index = -1;
-                _currentElement = default!; // TODO-NULLABLE-GENERIC
+                _currentElement = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
 
             public void Dispose()
             {
                 _index = -2;
-                _currentElement = default!; // TODO-NULLABLE-GENERIC
+                _currentElement = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
 
             public bool MoveNext()
@@ -426,7 +426,7 @@ namespace System.Collections.Generic
                 {
                     // We've run past the last element
                     _index = -2;
-                    _currentElement = default!; // TODO-NULLABLE-GENERIC
+                    _currentElement = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
                     return false;
                 }
 
@@ -478,7 +478,7 @@ namespace System.Collections.Generic
             {
                 if (_version != _q._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 _index = -1;
-                _currentElement = default!; // TODO-NULLABLE-GENERIC
+                _currentElement = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
         }
     }

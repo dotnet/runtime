@@ -25,7 +25,7 @@ namespace System.Buffers
                         ThrowHelper.ThrowObjectDisposedException_ArrayMemoryPoolBuffer();
                     }
 
-                    return new Memory<T>(array!); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+                    return new Memory<T>(array!); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                 }
             }
 

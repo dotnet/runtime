@@ -532,7 +532,7 @@ namespace System.Collections.Generic
             private LinkedList<T> _list;
             private LinkedListNode<T>? _node;
             private int _version;
-            private T _current;
+            [AllowNull] private T _current;
             private int _index;
 
             const string LinkedListName = "LinkedList";
@@ -545,7 +545,7 @@ namespace System.Collections.Generic
                 _list = list;
                 _version = list.version;
                 _node = list.head;
-                _current = default!; // TODO-NULLABLE-GENERIC
+                _current = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
                 _index = 0;
             }
 
@@ -563,7 +563,7 @@ namespace System.Collections.Generic
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
 
-                    return _current;
+                    return Current;
                 }
             }
 
@@ -597,7 +597,7 @@ namespace System.Collections.Generic
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
 
-                _current = default!; // TODO-NULLABLE-GENERIC
+                _current = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
                 _node = _list.head;
                 _index = 0;
             }

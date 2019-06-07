@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
@@ -17,8 +18,8 @@ namespace System.Buffers
     public readonly partial struct ReadOnlySequence<T>
     {
         // The data is essentially two SequencePositions, however the Start and End SequencePositions are deconstructed to improve packing.
-        private readonly object? _startObject;
-        private readonly object? _endObject;
+        [AllowNull] private readonly object? _startObject;
+        [AllowNull] private readonly object? _endObject;
         private readonly int _startInteger;
         private readonly int _endInteger;
 
@@ -117,10 +118,10 @@ namespace System.Buffers
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            _startObject = array!; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
-            _endObject = array!; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            _startObject = array!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            _endObject = array!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             _startInteger = ReadOnlySequence.ArrayToSequenceStart(0);
-            _endInteger = ReadOnlySequence.ArrayToSequenceEnd(array!.Length); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+            _endInteger = ReadOnlySequence.ArrayToSequenceEnd(array!.Length); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }
 
         /// <summary>
@@ -484,7 +485,7 @@ namespace System.Buffers
 
                 if (SequenceMarshal.TryGetString(charSequence, out string? text, out int start, out int length))
                 {
-                    return text!.Substring(start, length); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                    return text!.Substring(start, length); // TODO-NULLABLE: Remove ! when nullable attributes are respected
                 }
 
                 if (Length < int.MaxValue)

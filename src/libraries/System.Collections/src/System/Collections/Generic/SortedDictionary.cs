@@ -105,7 +105,7 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!)); // TODO-NULLABLE-GENERIC
+                TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
                 if (node == null)
                 {
                     throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
@@ -120,7 +120,7 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!)); // TODO-NULLABLE-GENERIC
+                TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
                 if (node == null)
                 {
                     _set.Add(new KeyValuePair<TKey, TValue>(key, value));
@@ -220,7 +220,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(key));
             }
 
-            return _set.Contains(new KeyValuePair<TKey, TValue>(key, default(TValue)!)); // TODO-NULLABLE-GENERIC
+            return _set.Contains(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
         }
 
         public bool ContainsValue(TValue value)
@@ -276,20 +276,20 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(key));
             }
 
-            return _set.Remove(new KeyValuePair<TKey, TValue>(key, default(TValue)!)); // TODO-NULLABLE-GENERIC
+            return _set.Remove(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
         }
 
-        public bool TryGetValue(TKey key, out TValue value) // TODO-NULLABLE-GENERIC
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             if (key == null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!)); // TODO-NULLABLE-GENERIC
+            TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
             if (node == null)
             {
-                value = default(TValue)!; // TODO-NULLABLE-GENERIC
+                value = default(TValue)!;
                 return false;
             }
             value = node.Item.Value;
@@ -343,7 +343,7 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                if (value == null && !(default(TValue)! == null)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
+                if (value == null && !(default(TValue)! == null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
                     throw new ArgumentNullException(nameof(value));
 
                 try
@@ -372,7 +372,7 @@ namespace System.Collections.Generic
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (value == null && !(default(TValue)! == null)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
+            if (value == null && !(default(TValue)! == null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
                 throw new ArgumentNullException(nameof(value));
 
             try
@@ -381,7 +381,7 @@ namespace System.Collections.Generic
 
                 try
                 {
-                    Add(tempKey, (TValue)value!); // TODO-NULLABLE-GENERIC
+                    Add(tempKey, (TValue)value!);
                 }
                 catch (InvalidCastException)
                 {

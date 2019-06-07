@@ -14,6 +14,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Threading;
 
@@ -578,7 +579,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="T:System.InvalidOperationException">The underlying collection was modified
         /// outside of this <see
         /// cref="T:System.Collections.Concurrent.BlockingCollection{T}"/> instance.</exception>
-        public bool TryTake(out T item) // TODO-NULLABLE-GENERIC
+        public bool TryTake([MaybeNullWhen(false)] out T item)
         {
             return TryTake(out item, 0, CancellationToken.None);
         }
@@ -600,7 +601,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="T:System.InvalidOperationException">The underlying collection was modified
         /// outside of this <see
         /// cref="T:System.Collections.Concurrent.BlockingCollection{T}"/> instance.</exception>
-        public bool TryTake(out T item, TimeSpan timeout) // TODO-NULLABLE-GENERIC
+        public bool TryTake([MaybeNullWhen(false)] out T item, TimeSpan timeout)
         {
             ValidateTimeout(timeout);
             return TryTakeWithNoTimeValidation(out item, (int)timeout.TotalMilliseconds, CancellationToken.None, null);
@@ -621,7 +622,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="T:System.InvalidOperationException">The underlying collection was modified
         /// outside of this <see
         /// cref="T:System.Collections.Concurrent.BlockingCollection{T}"/> instance.</exception>
-        public bool TryTake(out T item, int millisecondsTimeout) // TODO-NULLABLE-GENERIC
+        public bool TryTake([MaybeNullWhen(false)] out T item, int millisecondsTimeout)
         {
             ValidateMillisecondsTimeout(millisecondsTimeout);
             return TryTakeWithNoTimeValidation(out item, millisecondsTimeout, CancellationToken.None, null);
@@ -646,7 +647,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="T:System.InvalidOperationException">The underlying collection was modified
         /// outside of this <see
         /// cref="T:System.Collections.Concurrent.BlockingCollection{T}"/> instance.</exception>
-        public bool TryTake(out T item, int millisecondsTimeout, CancellationToken cancellationToken) // TODO-NULLABLE-GENERIC
+        public bool TryTake([MaybeNullWhen(false)] out T item, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             ValidateMillisecondsTimeout(millisecondsTimeout);
             return TryTakeWithNoTimeValidation(out item, millisecondsTimeout, cancellationToken, null);
@@ -668,10 +669,10 @@ nameof(boundedCapacity), boundedCapacity,
         /// <returns>False if the collection remained empty till the timeout period was exhausted. True otherwise.</returns>
         /// <exception cref="OperationCanceledException">If the <see cref="CancellationToken"/> is canceled.</exception>
         /// <exception cref="System.ObjectDisposedException">If the collection has been disposed.</exception>
-        private bool TryTakeWithNoTimeValidation(out T item, int millisecondsTimeout, CancellationToken cancellationToken, CancellationTokenSource? combinedTokenSource) // TODO-NULLABLE-GENERIC
+        private bool TryTakeWithNoTimeValidation([MaybeNullWhen(false)] out T item, int millisecondsTimeout, CancellationToken cancellationToken, CancellationTokenSource? combinedTokenSource)
         {
             CheckDisposed();
-            item = default(T)!; // TODO-NULLABLE-GENERIC
+            item = default(T)!;
 
             if (cancellationToken.IsCancellationRequested)
                 throw new OperationCanceledException(SR.Common_OperationCanceled, cancellationToken);
@@ -1093,7 +1094,7 @@ nameof(boundedCapacity), boundedCapacity,
                 {
                     if (collections[i]._freeNodes != null)
                     {
-                        handlesList.Add(collections[i]._freeNodes!.AvailableWaitHandle); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
+                        handlesList.Add(collections[i]._freeNodes!.AvailableWaitHandle); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                         tokensList.Add(collections[i]._producersCancellationTokenSource.Token);
                     }
                 }
@@ -1166,7 +1167,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="T:System.ArgumentOutOfRangeException">The count of <paramref name="collections"/> is greater than the maximum size of
         /// 62 for STA and 63 for MTA.</exception>
         /// <remarks>A call to TakeFromAny may block until an item is available to be removed.</remarks>
-        public static int TakeFromAny(BlockingCollection<T>[] collections, out T item) // TODO-NULLABLE-GENERIC
+        public static int TakeFromAny(BlockingCollection<T>[] collections, [MaybeNullWhen(false)] out T item)
         {
             return TakeFromAny(collections, out item, CancellationToken.None);
         }
@@ -1195,7 +1196,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="T:System.ArgumentOutOfRangeException">The count of <paramref name="collections"/> is greater than the maximum size of 
         /// 62 for STA and 63 for MTA.</exception>
         /// <remarks>A call to TakeFromAny may block until an item is available to be removed.</remarks>
-        public static int TakeFromAny(BlockingCollection<T>[] collections, out T item, CancellationToken cancellationToken) // TODO-NULLABLE-GENERIC
+        public static int TakeFromAny(BlockingCollection<T>[] collections, [MaybeNullWhen(false)] out T item, CancellationToken cancellationToken)
         {
             int returnValue = TryTakeFromAnyCore(collections, out item, Timeout.Infinite, true, cancellationToken);
             Debug.Assert((returnValue >= 0 && returnValue < collections.Length)
@@ -1223,7 +1224,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="T:System.ArgumentOutOfRangeException">The count of <paramref name="collections"/> is greater than the maximum size of
         /// 62 for STA and 63 for MTA.</exception>
         /// <remarks>A call to TryTakeFromAny may block until an item is available to be removed.</remarks>
-        public static int TryTakeFromAny(BlockingCollection<T>[] collections, out T item) // TODO-NULLABLE-GENERIC
+        public static int TryTakeFromAny(BlockingCollection<T>[] collections, [MaybeNullWhen(false)] out T item)
         {
             return TryTakeFromAny(collections, out item, 0);
         }
@@ -1254,7 +1255,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="T:System.ArgumentOutOfRangeException">The count of <paramref name="collections"/> is greater than the maximum size of
         /// 62 for STA and 63 for MTA.</exception>
         /// <remarks>A call to TryTakeFromAny may block until an item is available to be removed.</remarks>
-        public static int TryTakeFromAny(BlockingCollection<T>[] collections, out T item, TimeSpan timeout) // TODO-NULLABLE-GENERIC
+        public static int TryTakeFromAny(BlockingCollection<T>[] collections, [MaybeNullWhen(false)] out T item, TimeSpan timeout)
         {
             ValidateTimeout(timeout);
             return TryTakeFromAnyCore(collections, out item, (int)timeout.TotalMilliseconds, false, CancellationToken.None);
@@ -1284,7 +1285,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="T:System.ArgumentOutOfRangeException">The count of <paramref name="collections"/> is greater than the maximum size of
         /// 62 for STA and 63 for MTA.</exception>
         /// <remarks>A call to TryTakeFromAny may block until an item is available to be removed.</remarks>
-        public static int TryTakeFromAny(BlockingCollection<T>[] collections, out T item, int millisecondsTimeout) // TODO-NULLABLE-GENERIC
+        public static int TryTakeFromAny(BlockingCollection<T>[] collections, [MaybeNullWhen(false)] out T item, int millisecondsTimeout)
         {
             ValidateMillisecondsTimeout(millisecondsTimeout);
             return TryTakeFromAnyCore(collections, out item, millisecondsTimeout, false, CancellationToken.None);
@@ -1318,7 +1319,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="T:System.ArgumentOutOfRangeException">The count of <paramref name="collections"/> is greater than the maximum size of
         /// 62 for STA and 63 for MTA.</exception>
         /// <remarks>A call to TryTakeFromAny may block until an item is available to be removed.</remarks>
-        public static int TryTakeFromAny(BlockingCollection<T>[] collections, out T item, int millisecondsTimeout, CancellationToken cancellationToken) // TODO-NULLABLE-GENERIC
+        public static int TryTakeFromAny(BlockingCollection<T>[] collections, [MaybeNullWhen(false)] out T item, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             ValidateMillisecondsTimeout(millisecondsTimeout);
             return TryTakeFromAnyCore(collections, out item, millisecondsTimeout, false, cancellationToken);
@@ -1341,7 +1342,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="System.ArgumentException">If the collections argument is a 0-length array or contains a 
         /// null element. Also, if at least one of the collections has been marked complete for adds.</exception>
         /// <exception cref="System.ObjectDisposedException">If at least one of the collections has been disposed.</exception>
-        private static int TryTakeFromAnyCore(BlockingCollection<T>[] collections, out T item, int millisecondsTimeout, bool isTakeOperation, CancellationToken externalCancellationToken) // TODO-NULLABLE-GENERIC
+        private static int TryTakeFromAnyCore(BlockingCollection<T>[] collections, [MaybeNullWhen(false)] out T item, int millisecondsTimeout, bool isTakeOperation, CancellationToken externalCancellationToken)
         {
             ValidateCollectionsArray(collections, false);
 
@@ -1375,7 +1376,7 @@ nameof(boundedCapacity), boundedCapacity,
         /// <exception cref="System.ArgumentException">If the collections argument is a 0-length array or contains a 
         /// null element. Also, if at least one of the collections has been marked complete for adds.</exception>
         /// <exception cref="System.ObjectDisposedException">If at least one of the collections has been disposed.</exception>
-        private static int TryTakeFromAnyCoreSlow(BlockingCollection<T>[] collections, out T item, int millisecondsTimeout, bool isTakeOperation, CancellationToken externalCancellationToken) // TODO-NULLABLE-GENERIC
+        private static int TryTakeFromAnyCoreSlow(BlockingCollection<T>[] collections, [MaybeNullWhen(false)] out T item, int millisecondsTimeout, bool isTakeOperation, CancellationToken externalCancellationToken)
         {
             const int OPERATION_FAILED = -1;
 
@@ -1453,7 +1454,7 @@ nameof(boundedCapacity), boundedCapacity,
                     timeout = UpdateTimeOut(startTime, millisecondsTimeout);
             }
 
-            item = default(T)!; //case#2  // TODO-NULLABLE-GENERIC
+            item = default(T)!; //case#2
             return OPERATION_FAILED;
         }
 

@@ -20,7 +20,7 @@ namespace System.Threading
                 throw new ArgumentNullException(nameof(waitHandle));
             }
 
-            return waitHandle.SafeWaitHandle!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            return waitHandle.SafeWaitHandle;
         }
 
         /// <summary>
