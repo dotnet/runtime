@@ -51,7 +51,7 @@ if(CLR_CMAKE_PLATFORM_UNIX)
   # Need generate a right form of asmparse.cpp to avoid the following options.
   # Clang also produces a bad-codegen on this prebuilt file with optimization.
   # https://github.com/dotnet/coreclr/issues/2305
-  add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-Wno-delete-non-virtual-dtor;-Wno-register>")
+  add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-Wno-register>")
   add_compile_options(-Wno-array-bounds)
   add_compile_options(-Wno-unused-label)
   set_source_files_properties( prebuilt/asmparse.cpp PROPERTIES COMPILE_FLAGS "-O0" )

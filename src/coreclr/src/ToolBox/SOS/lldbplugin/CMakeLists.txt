@@ -124,8 +124,6 @@ endif()
 
 message(STATUS "LLDB_H: ${LLDB_H}")
 
-add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-delete-non-virtual-dtor>)
-
 include_directories(inc)
 include_directories("${LLDB_H}")
 include_directories(${CLR_DIR}/src/debug/inc)

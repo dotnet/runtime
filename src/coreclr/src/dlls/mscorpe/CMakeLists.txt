@@ -9,10 +9,6 @@ set(MSCORPE_SOURCES
   ceefilegenwritertokens.cpp
 )
 
-if(NOT WIN32)
-  add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wno-delete-non-virtual-dtor>)
-endif()
-
 add_library_clr(mscorpe STATIC
   ${MSCORPE_SOURCES}
 )
