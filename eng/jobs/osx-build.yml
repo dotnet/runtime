@@ -41,6 +41,14 @@ jobs:
       displayName: Publish 
       condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
 
+  - task: PublishTestResults@2
+    displayName: Publish Test Results
+    inputs:
+      testResultsFormat: VSTest
+      testResultsFiles: 'bin/tests/**/*.trx'
+      mergeTestResults: true
+      testRunTitle: ${{ parameters.displayName }}
+    condition: always()
   - task: CopyFiles@2
     displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
     inputs:
