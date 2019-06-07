@@ -15,12 +15,6 @@
 
     <GenerateCompressedArchive>true</GenerateCompressedArchive>
 
-    <!--
-      Only build WindowsDesktop shared framework if this is on Windows and we know WD assets are
-      available. This lets us skip them on the non-Windows official build legs.
-    -->
-    <BuildOnUnknownPlatforms>false</BuildOnUnknownPlatforms>
-
     <TargetFrameworkName>netcoreapp</TargetFrameworkName>
     <TargetFrameworkVersion>3.0</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>

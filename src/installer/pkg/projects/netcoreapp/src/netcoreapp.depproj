@@ -60,7 +60,14 @@
       <_ToolsToPackage Include="$(_runtimePackageDir)tools/**/*.*"/>
       <FilesToPackage Include="@(_ToolsToPackage)">
         <NuGetPackageId>$(_runtimePackageId)</NuGetPackageId>
-        <TargetPath>tools/%(RecursiveDir)</TargetPath>
+        <!--
+          Trim '/' at the end of the target path, if exists. The packaging tools automatically add
+          an ending '/' for files without any extension, resulting in e.g. 'tools//' for Linux
+          'crossgen', which creates a dir without a name in the nupkg. This folder collapses when
+          extracted to disk, but results in confusing artifacts when inspected manually, especially
+          when 'crossgen.dbg' is outside this nameless dir.
+        -->
+        <TargetPath>$([System.String]::new('tools/%(RecursiveDir)').TrimEnd('/'))</TargetPath>
         <IsNative>true</IsNative>
       </FilesToPackage>
       <FilesToPackage Condition="'$(_crossDir)' != ''" Include="$(_jitPackageDir)runtimes$(_crossDir)/native/*.*">

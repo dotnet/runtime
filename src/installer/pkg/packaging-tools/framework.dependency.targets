@@ -62,6 +62,25 @@
     <Message Importance="low" Text="%(_DependenciesToPackageWithVersion.Identity) : %(_DependenciesToPackageWithVersion.Version) : %(_DependenciesToPackageWithVersion.TargetFramework)" />
   </Target>
 
+  <!--
+    When performing a restore, do so in a separate MSBuild call, removing any properties that don't
+    affect restore. This allows MSBuild to nicely handle parallel exclusivity.
+
+    Without this, the irrelevant properties cause a cache miss. Both restores run at the same time
+    with the same intermediate location, causing file lock errors.
+  -->
+  <Target Name="ParallelSafeRestore"
+          BeforeTargets="RestorePackages"
+          Condition="'$(InParallelSafeRestore)' != 'true'">
+    <MSBuild
+      Projects="$(MSBuildProjectFullPath)"
+      Targets="RestorePackages"
+      RemoveProperties="BaseId;IdPrefix"
+      Properties="
+        RestorePackages=true;
+        InParallelSafeRestore=true" />
+  </Target>
+
   <!-- Creates the *.versions.txt file describing where data in this package came from. -->
   <Target Name="GenerateHashVersionsFile"
           DependsOnTargets="GetDependencyVersionFiles"

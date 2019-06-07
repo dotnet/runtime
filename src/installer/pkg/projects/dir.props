@@ -19,6 +19,9 @@
     <BuildLineupPackage>true</BuildLineupPackage>
 
     <PackProjectDependencies>true</PackProjectDependencies>
+
+    <RestorePackages>true</RestorePackages>
+    <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
 
   <!-- In *.builds projects, the current phase's name is the same as the project name. -->
@@ -78,7 +81,8 @@
     <PackageTargetFramework>$(NETCoreAppFramework)</PackageTargetFramework>
     <CrossGenOutputPath>$(CrossGenRootPath)/$(MSBuildProjectName)/$(NuGetRuntimeIdentifier)</CrossGenOutputPath>
     <ContainsPackageReferences>true</ContainsPackageReferences>
-    <RestorePackages>true</RestorePackages>
+    <!-- Disable restore normally: this is handled by ParallelSafeRestore. -->
+    <RestorePackages>false</RestorePackages>
     <RidSpecificAssets Condition="'$(NuGetRuntimeIdentifier)' != ''">true</RidSpecificAssets>
     <IntermediateOutputPath>$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)</IntermediateOutputPath>
     <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>

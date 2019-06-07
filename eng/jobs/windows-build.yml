@@ -73,6 +73,7 @@ jobs:
         --src-builds
         -- $(CommonMSBuildArgs)
         /p:BuildAppx=false
+        /bl:$(Build.SourcesDirectory)\binaries.binlog
       displayName: Build binaries
       condition: succeeded()
 
@@ -87,21 +88,21 @@ jobs:
           msbuildArguments: '/t:SignBinaries  
             $(CommonMSBuildArgs)
             $(MsbuildSigningArguments)
-            /bl:$(Build.SourcesDirectory)\singbinaries.binlog'
+            /bl:$(Build.SourcesDirectory)\sign.binaries.binlog'
         condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
 
     # Build Nuget package
     - script: build.cmd -pkg
        -- '$(CommonMSBuildArgs)
         /p:BuildFullPlatformManifest=${{ parameters.buildFullPlatformManifest }}
-        /flp:v=detailed;LogFile=$(Build.SourcesDirectory)\packages.binlog'
+        /bl:$(Build.SourcesDirectory)\pkg.binlog'
       displayName: Build Nuget package
       condition: succeeded()
 
     # Build Shared Frameworks
     - script: build.cmd -sharedfx
         -- '$(CommonMSBuildArgs)
-        /bl:$(Build.SourcesDirectory)\sharedframework.binlog'
+        /bl:$(Build.SourcesDirectory)\sharedfx.binlog'
       displayName: Build sharedframework layouts (new infrastructure)
       condition: succeeded()
 
@@ -150,14 +151,14 @@ jobs:
       - script: build.cmd -packaging
           -- '/t:BuildCombinedInstallers
           $(CommonMSBuildArgs)
-          /bl:$(Build.SourcesDirectory)\createbundles.binlog'
+          /bl:$(Build.SourcesDirectory)\packaging.createbundles.binlog'
         displayName: Create bundles
         condition: succeeded()
 
       - script: build.cmd -packaging
           -- '/t:ExtractEngineBundle
           $(CommonMSBuildArgs)
-          /bl:$(Build.SourcesDirectory)\extractengine.binlog'
+          /bl:$(Build.SourcesDirectory)\packaging.extractengine.binlog'
         displayName: Extract Engine from Bundle
         condition: succeeded()
 
@@ -171,13 +172,13 @@ jobs:
             msbuildArguments: '/t:SignEngine 
               $(CommonMSBuildArgs) 
               $(MsbuildSigningArguments)
-              /bl:$(Build.SourcesDirectory)\signengine.binlog'
+              /bl:$(Build.SourcesDirectory)\sign.engine.binlog'
           condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
 
       - script: build.cmd -packaging
           -- '/t:ReattachEngineToBundle
           $(CommonMSBuildArgs)
-          /bl:$(Build.SourcesDirectory)\reattachengine.binlog'
+          /bl:$(Build.SourcesDirectory)\packaging.reattachengine.binlog'
         displayName: Re-attach Engine
         condition: succeeded()
 
@@ -191,7 +192,7 @@ jobs:
             msbuildArguments: '/t:SignBundle  
               $(CommonMSBuildArgs) 
               $(MsbuildSigningArguments)
-              /bl:$(Build.SourcesDirectory)\signbundle.binlog'
+              /bl:$(Build.SourcesDirectory)\sign.bundle.binlog'
           condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
     # Publish all build assets
     - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
@@ -213,6 +214,7 @@ jobs:
           *.log
           *.binlog
         TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
+        CleanTargetFolder: true
       continueOnError: true
       condition: succeededOrFailed()
     - task: PublishBuildArtifacts@1

@@ -30,6 +30,7 @@
     <RuntimePackageFile
       Include="
         $(PackageOutputPath)**/runtime.*.nupkg;
+        $(PackageOutputPath)**/*.Runtime.*.nupkg;
         $(PackageOutputPath)**/*.App.Host.*.nupkg"
       RelativeBlobPath="$(BinariesRelativePath)"/>
 

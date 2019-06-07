@@ -7,11 +7,6 @@
   <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
 
   <PropertyGroup>
-    <RestorePackages>true</RestorePackages>
-    <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <!--
       If we are stabilizing set the StableVersion property for the packages.
       Needs to happen in dir.targets to allow all the pkgproj's to set Version property first.
