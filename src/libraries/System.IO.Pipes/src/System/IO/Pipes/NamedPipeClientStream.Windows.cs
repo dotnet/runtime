@@ -108,7 +108,7 @@ namespace System.IO.Pipes
             return true;
         }
 
-        public int NumberOfServerInstances
+        public unsafe int NumberOfServerInstances
         {
             [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
@@ -120,14 +120,13 @@ namespace System.IO.Pipes
                 // GERERIC_READ access. [Edit: Seems like CreateFile slaps on a READ_ATTRIBUTES 
                 // access request before calling NTCreateFile, so all NamedPipeClientStreams can read
                 // this if they are created (on WinXP SP2 at least)] 
-                int numInstances;
-                if (!Interop.Kernel32.GetNamedPipeHandleState(InternalHandle, IntPtr.Zero, out numInstances,
-                    IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, 0))
+                uint numInstances;
+                if (!Interop.Kernel32.GetNamedPipeHandleStateW(InternalHandle, null, &numInstances, null, null, null, 0))
                 {
                     throw WinIOError(Marshal.GetLastWin32Error());
                 }
 
-                return numInstances;
+                return (int)numInstances;
             }
         }
 
@@ -148,10 +147,5 @@ namespace System.IO.Pipes
                 }
             }
         }
-
-        // -----------------------------
-        // ---- PAL layer ends here ----
-        // -----------------------------
-
     }
 }

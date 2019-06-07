@@ -5,7 +5,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -197,7 +196,7 @@ namespace System.IO.Pipes
 
         // Gets the transmission mode for the pipe.  This is virtual so that subclassing types can 
         // override this in cases where only one mode is legal (such as anonymous pipes)
-        public virtual PipeTransmissionMode TransmissionMode
+        public unsafe virtual PipeTransmissionMode TransmissionMode
         {
             [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
@@ -206,9 +205,8 @@ namespace System.IO.Pipes
 
                 if (_isFromExistingHandle)
                 {
-                    int pipeFlags;
-                    if (!Interop.Kernel32.GetNamedPipeInfo(_handle, out pipeFlags, IntPtr.Zero, IntPtr.Zero,
-                            IntPtr.Zero))
+                    uint pipeFlags;
+                    if (!Interop.Kernel32.GetNamedPipeInfo(_handle, &pipeFlags, null, null, null))
                     {
                         throw WinIOError(Marshal.GetLastWin32Error());
                     }
@@ -230,7 +228,7 @@ namespace System.IO.Pipes
 
         // Gets the buffer size in the inbound direction for the pipe. This checks if pipe has read
         // access. If that passes, call to GetNamedPipeInfo will succeed.
-        public virtual int InBufferSize
+        public unsafe virtual int InBufferSize
         {
             [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands")]
             get
@@ -241,13 +239,13 @@ namespace System.IO.Pipes
                     throw new NotSupportedException(SR.NotSupported_UnreadableStream);
                 }
 
-                int inBufferSize;
-                if (!Interop.Kernel32.GetNamedPipeInfo(_handle, IntPtr.Zero, IntPtr.Zero, out inBufferSize, IntPtr.Zero))
+                uint inBufferSize;
+                if (!Interop.Kernel32.GetNamedPipeInfo(_handle, null, null, &inBufferSize, null))
                 {
                     throw WinIOError(Marshal.GetLastWin32Error());
                 }
 
-                return inBufferSize;
+                return (int)inBufferSize;
             }
         }
 
@@ -255,7 +253,7 @@ namespace System.IO.Pipes
         // if it's an outbound only pipe because GetNamedPipeInfo requires read access to the pipe.
         // However, returning cached is good fallback, especially if user specified a value in 
         // the ctor.
-        public virtual int OutBufferSize
+        public unsafe virtual int OutBufferSize
         {
             [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
             get
@@ -266,20 +264,19 @@ namespace System.IO.Pipes
                     throw new NotSupportedException(SR.NotSupported_UnwritableStream);
                 }
 
-                int outBufferSize;
+                uint outBufferSize;
 
                 // Use cached value if direction is out; otherwise get fresh version
                 if (_pipeDirection == PipeDirection.Out)
                 {
                     outBufferSize = _outBufferSize;
                 }
-                else if (!Interop.Kernel32.GetNamedPipeInfo(_handle, IntPtr.Zero, out outBufferSize,
-                    IntPtr.Zero, IntPtr.Zero))
+                else if (!Interop.Kernel32.GetNamedPipeInfo(_handle, null, &outBufferSize, null, null))
                 {
                     throw WinIOError(Marshal.GetLastWin32Error());
                 }
 
-                return outBufferSize;
+                return (int)outBufferSize;
             }
         }
 
@@ -440,11 +437,10 @@ namespace System.IO.Pipes
         /// <summary>
         /// Determine pipe read mode from Win32 
         /// </summary>
-        private void UpdateReadMode()
+        private unsafe void UpdateReadMode()
         {
-            int flags;
-            if (!Interop.Kernel32.GetNamedPipeHandleState(SafePipeHandle, out flags, IntPtr.Zero, IntPtr.Zero,
-                    IntPtr.Zero, IntPtr.Zero, 0))
+            uint flags;
+            if (!Interop.Kernel32.GetNamedPipeHandleStateW(SafePipeHandle, &flags, null, null, null, null, 0))
             {
                 throw WinIOError(Marshal.GetLastWin32Error());
             }

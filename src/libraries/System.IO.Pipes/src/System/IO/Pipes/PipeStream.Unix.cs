@@ -385,7 +385,7 @@ namespace System.IO.Pipes
             // If we don't, just return the buffer size that was passed to the constructor.
             return _handle != null ?
                 CheckPipeCall(Interop.Sys.Fcntl.GetPipeSz(_handle)) :
-                _outBufferSize;
+                (int)_outBufferSize;
         }
 
         internal static void ConfigureSocket(
