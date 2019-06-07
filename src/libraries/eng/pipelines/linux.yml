@@ -109,6 +109,8 @@ jobs:
       buildScriptPrefix: $(_buildScriptPrefix)
       buildExtraArguments: $(_buildExtraArguments)
       submitToHelix: true
+      # Temporary till we reduced workloads on ARM64
+      timeoutInMinutes: 180
 
       variables:
         - linuxArm64Queues: \(Ubuntu.1604.Arm64.Open\)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-helix-arm64v8-b049512-20190321153539
