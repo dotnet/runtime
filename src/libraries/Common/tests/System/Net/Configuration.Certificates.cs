@@ -75,7 +75,7 @@ namespace System.Net.Test.Common
                     return new X509Certificate2(
                         File.ReadAllBytes(Path.Combine(TestDataFolder, certificateFileName)),
                         CertificatePassword,
-                        X509KeyStorageFlags.DefaultKeySet);
+                        X509KeyStorageFlags.DefaultKeySet | X509KeyStorageFlags.Exportable);
                 }
                 catch (Exception ex)
                 {
