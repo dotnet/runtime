@@ -127,5 +127,20 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 }
             }
         }
+
+        public static void EnsureFileDirectoryExists(string filePath)
+        {
+            string directory = Path.GetDirectoryName(filePath);
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+        }
+
+        public static void CreateEmptyFile(string filePath)
+        {
+            EnsureFileDirectoryExists(filePath);
+            File.WriteAllText(filePath, string.Empty);
+        }
     }
 }
