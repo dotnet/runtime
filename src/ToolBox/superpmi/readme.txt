@@ -50,6 +50,9 @@ Set the following environment variables:
 (On Linux, use libclrjit.so and libsuperpmi-shim-collector.so. On Mac,
 use libclrjit.dylib and libsuperpmi-shim-collector.dylib.)
 
+If collecting using crossgen, set COMPlus_AltJitNgen=* instead of, or in
+addition to, COMPlus_AltJit=*.
+
 Then, run some managed programs. When done running programs, un-set these
 variables.
 
