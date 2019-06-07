@@ -12,6 +12,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -446,14 +447,14 @@ namespace System.Collections.Concurrent
         /// the top of the <see cref="T:System.Collections.Concurrent.ConcurrentStack{T}"/> or an
         /// unspecified value if the operation failed.</param>
         /// <returns>true if and object was returned successfully; otherwise, false.</returns>
-        public bool TryPeek(out T result) // TODO-NULLABLE-GENERIC
+        public bool TryPeek([MaybeNullWhen(false)] out T result)
         {
             Node? head = _head;
 
             // If the stack is empty, return false; else return the element and true.
             if (head == null)
             {
-                result = default(T)!; // TODO-NULLABLE-GENERIC
+                result = default(T)!;
                 return false;
             }
             else
@@ -473,13 +474,13 @@ namespace System.Collections.Concurrent
         /// <returns>true if an element was removed and returned from the top of the <see
         /// cref="ConcurrentStack{T}"/>
         /// successfully; otherwise, false.</returns>
-        public bool TryPop(out T result) // TODO-NULLABLE-GENERIC
+        public bool TryPop([MaybeNullWhen(false)] out T result)
         {
             Node? head = _head;
             //stack is empty
             if (head == null)
             {
-                result = default(T)!; // TODO-NULLABLE-GENERIC
+                result = default(T)!;
                 return false;
             }
             if (Interlocked.CompareExchange(ref _head, head._next, head) == head)
@@ -572,17 +573,17 @@ namespace System.Collections.Concurrent
         /// </summary>
         /// <param name="result">The popped item</param>
         /// <returns>True if succeeded, false otherwise</returns>
-        private bool TryPopCore(out T result) // TODO-NULLABLE-GENERIC
+        private bool TryPopCore([MaybeNullWhen(false)] out T result)
         {
             Node? poppedNode;
 
             if (TryPopCore(1, out poppedNode) == 1)
             {
-                result = poppedNode!._value; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                result = poppedNode!._value; // TODO-NULLABLE: Remove ! when nullable attributes are respected
                 return true;
             }
 
-            result = default(T)!; // TODO-NULLABLE-GENERIC
+            result = default(T)!;
             return false;
         }
 
@@ -597,7 +598,7 @@ namespace System.Collections.Concurrent
         /// </param>
         /// <returns>The number of objects successfully popped from the top of
         /// the <see cref="ConcurrentStack{T}"/>.</returns>
-        private int TryPopCore(int count, out Node? poppedHead) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        private int TryPopCore(int count, [NotNullWhen(true)] out Node? poppedHead)
         {
             SpinWait spin = new SpinWait();
 

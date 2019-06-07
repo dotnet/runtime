@@ -30,7 +30,8 @@ namespace System.Net
 
         #region HtmlEncode / HtmlDecode methods
 
-        public static string? HtmlEncode(string? value) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("value")]
+        public static string? HtmlEncode(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -182,7 +183,8 @@ namespace System.Net
             }
         }
 
-        public static string? HtmlDecode(string? value) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("value")]
+        public static string? HtmlDecode(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -403,7 +405,8 @@ namespace System.Net
         #region UrlEncode public methods
 
         [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings", Justification = "Already shipped public API; code moved here as part of API consolidation")]
-        public static string? UrlEncode(string? value) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("value")]
+        public static string? UrlEncode(string? value)
         {
             if (string.IsNullOrEmpty(value))
                 return value;
@@ -454,7 +457,8 @@ namespace System.Net
             return Encoding.UTF8.GetString(newBytes);
         }
 
-        public static byte[]? UrlEncodeToBytes(byte[]? value, int offset, int count) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("value")]
+        public static byte[]? UrlEncodeToBytes(byte[]? value, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(value, offset, count))
             {
@@ -493,7 +497,8 @@ namespace System.Net
 
         #region UrlDecode implementation
 
-        private static string? UrlDecodeInternal(string? value, Encoding encoding) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("value")]
+        private static string? UrlDecodeInternal(string? value, Encoding encoding)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -555,7 +560,8 @@ namespace System.Net
             return helper.GetString();
         }
 
-        private static byte[]? UrlDecodeInternal(byte[]? bytes, int offset, int count) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("bytes")]
+        private static byte[]? UrlDecodeInternal(byte[]? bytes, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
             {
@@ -591,7 +597,7 @@ namespace System.Net
 
             if (decodedBytesCount < decodedBytes.Length)
             {
-                Array.Resize(ref decodedBytes!, decodedBytesCount); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                Array.Resize(ref decodedBytes!, decodedBytesCount); // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
 
             return decodedBytes;
@@ -603,12 +609,14 @@ namespace System.Net
 
 
         [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings", Justification = "Already shipped public API; code moved here as part of API consolidation")]
-        public static string? UrlDecode(string? encodedValue) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("encodedValue")]
+        public static string? UrlDecode(string? encodedValue)
         {
             return UrlDecodeInternal(encodedValue, Encoding.UTF8);
         }
 
-        public static byte[]? UrlDecodeToBytes(byte[]? encodedValue, int offset, int count) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        [return: NotNullIfNotNull("encodedValue")]
+        public static byte[]? UrlDecodeToBytes(byte[]? encodedValue, int offset, int count)
         {
             return UrlDecodeInternal(encodedValue, offset, count);
         }

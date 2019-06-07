@@ -330,9 +330,7 @@ namespace System.IO
         #endregion
 
         // Returns a string containing the characters written to this TextWriter so far.
-#pragma warning disable CS8609 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
         public override string ToString()
-#pragma warning restore CS8609
         {
             return _sb.ToString();
         }

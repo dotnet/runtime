@@ -176,7 +176,7 @@ namespace System.Buffers
 
                 int newSize = checked(_buffer.Length + growBy);
 
-                Array.Resize(ref _buffer!, newSize); // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+                Array.Resize(ref _buffer!, newSize); // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
 
             Debug.Assert(FreeCapacity > 0 && FreeCapacity >= sizeHint);

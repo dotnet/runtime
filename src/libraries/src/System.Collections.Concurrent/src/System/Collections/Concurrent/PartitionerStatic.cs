@@ -1677,7 +1677,7 @@ namespace System.Collections.Concurrent
             // Because of the lack of typeof(T).IsValueType we need two pieces of information
             // to determine this. default(T) will return a non null for Value Types, except those
             // using Nullable<>, that is why we need a second condition.
-            if (default(TSource)! != null || Nullable.GetUnderlyingType(typeof(TSource)) != null) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
+            if (default(TSource)! != null || Nullable.GetUnderlyingType(typeof(TSource)) != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
             {
                 // Marshal.SizeOf fails for value types that don't have explicit layouts. We
                 // just fall back to some arbitrary constant in that case. Is there a better way?

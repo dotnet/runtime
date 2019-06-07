@@ -2,16 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System.Collections.Generic
 {
     public static class CollectionExtensions
     {
+        [return: MaybeNull]
         public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key) where TKey : object
         {
-            return dictionary.GetValueOrDefault(key, default(TValue)!); // TODO-NULLABLE-GENERIC
+            return dictionary.GetValueOrDefault(key, default(TValue)!); // TODO-NULLABLE: Remove ! when nullable attributes are respected
         }
 
-        public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, TValue defaultValue) where TKey : object
+        [return: MaybeNull]
+        public static TValue GetValueOrDefault<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dictionary, TKey key, [AllowNull] TValue defaultValue) where TKey : object
         {
             if (dictionary == null)
             {
@@ -38,7 +42,7 @@ namespace System.Collections.Generic
             return false;
         }
 
-        public static bool Remove<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, out TValue value) where TKey : object // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        public static bool Remove<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, [MaybeNullWhen(false)] out TValue value) where TKey : object
         {
             if (dictionary == null)
             {
@@ -51,7 +55,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            value = default(TValue)!; // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+            value = default(TValue)!;
             return false;
         }
     }

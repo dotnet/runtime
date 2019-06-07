@@ -28,9 +28,7 @@ namespace System.Diagnostics
         /// </summary>
         void IDisposable.Dispose()
         {
-#pragma warning disable CS8619 // TODO-NULLABLE: Compiler complains about `provider`
             foreach ((Assembly _, MetadataReaderProvider? provider) in _metadataCache)
-#pragma warning restore CS8619
             {
                 provider?.Dispose();
             }

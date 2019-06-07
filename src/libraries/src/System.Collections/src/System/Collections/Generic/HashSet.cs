@@ -199,7 +199,7 @@ namespace System.Collections.Generic
             _count = count;
         }
 
-        public HashSet(int capacity, IEqualityComparer<T> comparer)
+        public HashSet(int capacity, IEqualityComparer<T>? comparer)
             : this(comparer)
         {
             if (capacity < 0)
@@ -481,7 +481,7 @@ namespace System.Collections.Generic
         /// a value that has more complete data than the value you currently have, although their
         /// comparer functions indicate they are equal.
         /// </remarks>
-        public bool TryGetValue(T equalValue, out T actualValue) // TODO-NULLABLE-GENERIC
+        public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
         {
             if (_buckets != null)
             {
@@ -492,7 +492,7 @@ namespace System.Collections.Generic
                     return true;
                 }
             }
-            actualValue = default!; // TODO-NULLABLE-GENERIC
+            actualValue = default!;
             return false;
         }
 
@@ -1762,14 +1762,14 @@ namespace System.Collections.Generic
             private HashSet<T> _set;
             private int _index;
             private int _version;
-            private T _current;
+            [AllowNull] private T _current;
 
             internal Enumerator(HashSet<T> set)
             {
                 _set = set;
                 _index = 0;
                 _version = set._version;
-                _current = default!; // TODO-NULLABLE-GENERIC
+                _current = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
 
             public void Dispose()
@@ -1794,7 +1794,7 @@ namespace System.Collections.Generic
                     _index++;
                 }
                 _index = _set._lastIndex + 1;
-                _current = default!; // TODO-NULLABLE-GENERIC
+                _current = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
                 return false;
             }
 
@@ -1826,7 +1826,7 @@ namespace System.Collections.Generic
                 }
 
                 _index = 0;
-                _current = default!; // TODO-NULLABLE-GENERIC
+                _current = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
         }
     }
