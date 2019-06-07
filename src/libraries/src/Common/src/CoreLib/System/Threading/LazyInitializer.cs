@@ -135,7 +135,7 @@ namespace System.Threading
         /// <param name="syncLock">A reference to an object used as the mutually exclusive lock for initializing
         /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, a new object will be instantiated.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
-        public static T EnsureInitialized<T>([AllowNull] ref T target, ref bool initialized, ref object? syncLock)
+        public static T EnsureInitialized<T>([AllowNull] ref T target, ref bool initialized, [NotNull] ref object? syncLock)
         {
             // Fast path.
             if (Volatile.Read(ref initialized))
@@ -157,7 +157,7 @@ namespace System.Threading
         /// a new object will be instantiated.
         /// </param>
         /// <returns>The initialized object.</returns>
-        private static T EnsureInitializedCore<T>([AllowNull] ref T target, ref bool initialized, ref object? syncLock)
+        private static T EnsureInitializedCore<T>([AllowNull] ref T target, ref bool initialized, [NotNull] ref object? syncLock)
         {
             // Lazily initialize the lock if necessary and then double check if initialization is still required.
             lock (EnsureLockInitialized(ref syncLock))
@@ -194,7 +194,7 @@ namespace System.Threading
         /// <param name="valueFactory">The <see cref="T:System.Func{T}"/> invoked to initialize the
         /// reference or value.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
-        public static T EnsureInitialized<T>([AllowNull] ref T target, ref bool initialized, ref object? syncLock, Func<T> valueFactory)
+        public static T EnsureInitialized<T>([AllowNull] ref T target, ref bool initialized, [NotNull] ref object? syncLock, Func<T> valueFactory)
         {
             // Fast path.
             if (Volatile.Read(ref initialized))
@@ -218,7 +218,7 @@ namespace System.Threading
         /// The <see cref="T:System.Func{T}"/> to invoke in order to produce the lazily-initialized value.
         /// </param>
         /// <returns>The initialized object.</returns>
-        private static T EnsureInitializedCore<T>([AllowNull] ref T target, ref bool initialized, ref object? syncLock, Func<T> valueFactory)
+        private static T EnsureInitializedCore<T>([AllowNull] ref T target, ref bool initialized, [NotNull] ref object? syncLock, Func<T> valueFactory)
         {
             // Lazily initialize the lock if necessary and then double check if initialization is still required.
             lock (EnsureLockInitialized(ref syncLock))
@@ -242,7 +242,7 @@ namespace System.Threading
         /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, a new object will be instantiated.</param>
         /// <param name="valueFactory">The <see cref="T:System.Func{T}"/> invoked to initialize the reference.</param>
         /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
-        public static T EnsureInitialized<T>([AllowNull] ref T target, ref object? syncLock, Func<T> valueFactory) where T : class =>
+        public static T EnsureInitialized<T>([AllowNull] ref T target, [NotNull] ref object? syncLock, Func<T> valueFactory) where T : class =>
             Volatile.Read(ref target) ?? EnsureInitializedCore(ref target, ref syncLock, valueFactory);
 
         /// <summary>
@@ -257,7 +257,7 @@ namespace System.Threading
         /// The <see cref="T:System.Func{T}"/> to invoke in order to produce the lazily-initialized value.
         /// </param>
         /// <returns>The initialized object.</returns>
-        private static T EnsureInitializedCore<T>([AllowNull] ref T target, ref object? syncLock, Func<T> valueFactory) where T : class
+        private static T EnsureInitializedCore<T>([AllowNull] ref T target, [NotNull] ref object? syncLock, Func<T> valueFactory) where T : class
         {
             // Lazily initialize the lock if necessary and then double check if initialization is still required.
             lock (EnsureLockInitialized(ref syncLock))
@@ -281,7 +281,7 @@ namespace System.Threading
         /// <param name="syncLock">A reference to a location containing a mutual exclusive lock. If <paramref name="syncLock"/> is null,
         /// a new object will be instantiated.</param>
         /// <returns>Initialized lock object.</returns>
-        private static object EnsureLockInitialized(ref object? syncLock) =>
+        private static object EnsureLockInitialized([NotNull] ref object? syncLock) =>
             syncLock ??
             Interlocked.CompareExchange(ref syncLock, new object(), null) ??
             syncLock!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
