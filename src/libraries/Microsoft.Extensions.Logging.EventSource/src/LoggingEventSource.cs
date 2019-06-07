@@ -12,16 +12,16 @@ using Microsoft.Extensions.Primitives;
 namespace Microsoft.Extensions.Logging.EventSource
 {
     /// <summary>
-    /// The LoggingEventSource is the bridge form all ILogger based logging to EventSource/EventListener logging.
+    /// The LoggingEventSource is the bridge from all ILogger based logging to EventSource/EventListener logging.
     ///
-    /// You turn this logging on by enabling the EvenSource called
+    /// You turn this logging on by enabling the EventSource called
     ///
     ///      Microsoft-Extensions-Logging
     ///
     /// When you enabled the EventSource, the EventLevel you set is translated in the obvious way to the level
     /// associated with the ILogger (thus Debug = verbose, Informational = Informational ... Critical == Critical)
     ///
-    /// This allows you to filter by event level in a straighforward way.
+    /// This allows you to filter by event level in a straightforward way.
     ///
     /// For finer control you can specify a EventSource Argument called
     ///
@@ -37,10 +37,10 @@ namespace Microsoft.Extensions.Logging.EventSource
     /// AS A SUFFIX.   Thus Net* will match any loggers that start with the 'Net'.
     ///
     /// The LEVEL is a number or a LogLevel string. 0=Trace, 1=Debug, 2=Information, 3=Warning,  4=Error, Critical=5
-    /// This speicifies the level for the associated pattern.  If the number is not specified, (first form
+    /// This specifies the level for the associated pattern.  If the number is not specified, (first form
     /// of the specification) it is the default level for the EventSource.
     ///
-    /// First match is used if a partciular name matches more than one pattern.
+    /// First match is used if a particular name matches more than one pattern.
     ///
     /// In addition the level and FilterSpec argument, you can also set EventSource Keywords.  See the Keywords
     /// definition below, but basically you get to decide if you wish to have
@@ -84,11 +84,11 @@ namespace Microsoft.Extensions.Logging.EventSource
         public static class Keywords
         {
             /// <summary>
-            /// Meta events are evnets about the LoggingEventSource itself (that is they did not come from ILogger
+            /// Meta events are events about the LoggingEventSource itself (that is they did not come from ILogger
             /// </summary>
             public const EventKeywords Meta = (EventKeywords)1;
             /// <summary>
-            /// Turns on the 'Message' event when ILogger.Log() is called.   It gives the information in a programatic (not formatted) way
+            /// Turns on the 'Message' event when ILogger.Log() is called.   It gives the information in a programmatic (not formatted) way
             /// </summary>
             public const EventKeywords Message = (EventKeywords)2;
             /// <summary>
@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Logging.EventSource
 
         // It's important to have _filterSpec initialization here rather than in ctor
         // base ctor might call OnEventCommand and set filter spec
-        // having assingment in ctor would overwrite the value
+        // having assignment in ctor would overwrite the value
         private LoggerFilterRule[] _filterSpec = new LoggerFilterRule[0];
         private CancellationTokenSource _cancellationTokenSource;
 
@@ -118,7 +118,7 @@ namespace Microsoft.Extensions.Logging.EventSource
 
         /// <summary>
         /// FormattedMessage() is called when ILogger.Log() is called. and the FormattedMessage keyword is active
-        /// This only gives you the human reasable formatted message.
+        /// This only gives you the human readable formatted message.
         /// </summary>
         [Event(1, Keywords = Keywords.FormattedMessage, Level = EventLevel.LogAlways)]
         internal unsafe void FormattedMessage(LogLevel Level, int FactoryID, string LoggerName, int EventId, string EventName, string FormattedMessage)
@@ -146,7 +146,7 @@ namespace Microsoft.Extensions.Logging.EventSource
 
         /// <summary>
         /// Message() is called when ILogger.Log() is called. and the Message keyword is active
-        /// This gives you the logged information in a programatic format (arguments are key-value pairs)
+        /// This gives you the logged information in a programmatic format (arguments are key-value pairs)
         /// </summary>
         [Event(2, Keywords = Keywords.Message, Level = EventLevel.LogAlways)]
         internal void Message(LogLevel Level, int FactoryID, string LoggerName, int EventId, string EventName, ExceptionInfo Exception, IEnumerable<KeyValuePair<string, string>> Arguments)
@@ -273,7 +273,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         }
 
         /// <summary>
-        /// Set the filtering specifcation.  null means turn off all loggers.   Empty string is turn on all providers.
+        /// Set the filtering specification.  null means turn off all loggers.   Empty string is turn on all providers.
         /// </summary>
         /// <param name="filterSpec"></param>
         [NonEvent]
@@ -305,7 +305,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         ///
         /// The :Level can be omitted (thus Pat1;Pat2 ...) in which case the level is 1 (Debug).
         ///
-        /// A completely emtry sting act like * (all loggers set to Debug level).
+        /// A completely empty string act like * (all loggers set to Debug level).
         ///
         /// The first specification that 'loggers' Name matches is used.
         /// </summary>
@@ -358,7 +358,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// <summary>
         /// Parses the level specification (which should look like :N where n is a  number 0 (Trace)
         /// through 5 (Critical).   It can also be an empty string (which means 1 (Debug) and ';' marks
-        /// the end of the specifcation This specification should start at spec[curPos]
+        /// the end of the specification. This specification should start at spec[curPos]
         /// It returns the value in 'ret' and returns true if successful.  If false is returned ret is left unchanged.
         /// </summary>
         [NonEvent]
