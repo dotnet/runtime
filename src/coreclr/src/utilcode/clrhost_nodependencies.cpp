@@ -334,55 +334,6 @@ ClrDebugState *CLRInitDebugState()
 
 #endif //defined(_DEBUG_IMPL) && defined(ENABLE_CONTRACTS_IMPL)
 
-
-LPVOID ClrAllocInProcessHeapBootstrap (DWORD dwFlags, SIZE_T dwBytes)
-{
-#if defined(SELF_NO_HOST)
-    static HANDLE hHeap = NULL;
-
-    // This could race, but the result would be that this
-    // variable gets double initialized.
-    if (hHeap == NULL)
-        hHeap = ClrGetProcessHeap();
-
-    return ClrHeapAlloc(hHeap, dwFlags, S_SIZE_T(dwBytes));
-#else //!defined(SELF_NO_HOST)
-    FastAllocInProcessHeapFunc pfnHeapAlloc = (FastAllocInProcessHeapFunc)
-        GetClrCallbacks().m_pfnGetCLRFunction("EEHeapAllocInProcessHeap");
-    if (pfnHeapAlloc != NULL)
-    {
-        __ClrAllocInProcessHeap = pfnHeapAlloc;
-        return pfnHeapAlloc(dwFlags, dwBytes);
-    }
-    return ClrHeapAlloc(ClrGetProcessHeap(), dwFlags, S_SIZE_T(dwBytes));
-#endif // !defined(SELF_NO_HOST)
-}
-FastAllocInProcessHeapFunc __ClrAllocInProcessHeap = (FastAllocInProcessHeapFunc) ClrAllocInProcessHeapBootstrap;
-
-BOOL ClrFreeInProcessHeapBootstrap (DWORD dwFlags, LPVOID lpMem)
-{
-#if defined(SELF_NO_HOST)
-    static HANDLE hHeap = NULL;
-
-    // This could race, but the result would be that this
-    // variable gets double initialized.
-    if (hHeap == NULL)
-        hHeap = ClrGetProcessHeap();
-
-    return ClrHeapFree(hHeap, dwFlags,lpMem);
-#else //!defined(SELF_NO_HOST)
-    FastFreeInProcessHeapFunc pfnHeapFree = (FastFreeInProcessHeapFunc)
-        GetClrCallbacks().m_pfnGetCLRFunction("EEHeapFreeInProcessHeap");
-    if (pfnHeapFree)
-    {
-        __ClrFreeInProcessHeap = pfnHeapFree;
-        return (*pfnHeapFree)(dwFlags,lpMem);
-    }
-    return ClrHeapFree(ClrGetProcessHeap(),dwFlags,lpMem);
-#endif //!defined(SELF_NO_HOST)
-}
-FastFreeInProcessHeapFunc __ClrFreeInProcessHeap = (FastFreeInProcessHeapFunc) ClrFreeInProcessHeapBootstrap;
-
 const NoThrow nothrow = { 0 };
 
 #ifdef HAS_ADDRESS_SANITIZER

@@ -1179,31 +1179,6 @@ void ForceEEShutdown(ShutdownCompleteAction sca)
     EEPolicy::HandleExitProcess(sca);
 }
 
-//---------------------------------------------------------------------------
-// %%Function: IsRuntimeStarted
-//
-// Parameters:
-//  pdwStartupFlags: out parameter that is set to the startup flags if the
-//                   runtime is started.
-//
-// Returns:
-//  TRUE if the runtime has been started, FALSE otherwise.
-//
-// Description:
-// This is a helper used only by the v4+ Shim to determine if this runtime
-// has ever been started. It is exposed ot the Shim via GetCLRFunction.
-// ---------------------------------------------------------------------------
-BOOL IsRuntimeStarted(DWORD *pdwStartupFlags)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (pdwStartupFlags != NULL) // this parameter is optional
-    {
-        *pdwStartupFlags = 0;
-    }
-    return g_fEEStarted;
-}
-
 static bool WaitForEndOfShutdown_OneIteration()
 {
     CONTRACTL{

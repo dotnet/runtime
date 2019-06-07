@@ -77,7 +77,7 @@ public:
                       UINT32  nIndex, 
         __deref_out_z LPCSTR *pszString) const
     {
-        return const_cast<StgPoolReadOnly &>(m_StringPool).GetString(
+        return const_cast<StgPoolReadOnly &>(m_StringPool).GetStringReadOnly(
             nIndex, 
             pszString);
     }

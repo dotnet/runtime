@@ -1848,10 +1848,6 @@ HMODULE CLRGetModuleHandle(LPCWSTR lpModuleFileName)
 }
 #endif // !FEATURE_PAL
 
-LPVOID EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes);
-BOOL EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem);
-BOOL IsRuntimeStarted(DWORD *pdwStartupFlags);
-
 void *GetCLRFunction(LPCSTR FunctionName)
 {
 
@@ -1860,19 +1856,7 @@ void *GetCLRFunction(LPCSTR FunctionName)
 
     LIMITED_METHOD_CONTRACT;
 
-    if (strcmp(FunctionName, "EEHeapAllocInProcessHeap") == 0)
     {
-        func = (void*)EEHeapAllocInProcessHeap;
-    }
-    else if (strcmp(FunctionName, "EEHeapFreeInProcessHeap") == 0)
-    {
-        func = (void*)EEHeapFreeInProcessHeap;
-    }
-    else if (strcmp(FunctionName, "IsRuntimeStarted") == 0)
-    {
-        func = (void*)IsRuntimeStarted;
-    }
-    else {
         _ASSERTE ("Unknown function name");
         func = NULL;
     }
