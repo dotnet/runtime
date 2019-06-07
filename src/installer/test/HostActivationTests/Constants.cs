@@ -56,5 +56,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public const string GloballyRegisteredPath = "_DOTNET_TEST_GLOBALLY_REGISTERED_PATH";
             public const string InstallLocationFilePath = "_DOTNET_TEST_INSTALL_LOCATION_FILE_PATH";
         }
+
+        public static class RuntimeId
+        {
+            public const string EnvironmentVariable = "DOTNET_RUNTIME_ID";
+        }
+
+        public static class MultilevelLookup
+        {
+            public const string EnvironmentVariable = "DOTNET_MULTILEVEL_LOOKUP";
+        }
+
+        public static class HostTracing
+        {
+            public const string TraceLevelEnvironmentVariable = "COREHOST_TRACE";
+            public const string TraceFileEnvironmentVariable = "COREHOST_TRACEFILE";
+        }
     }
 }
