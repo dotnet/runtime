@@ -175,7 +175,7 @@ namespace System.Globalization
             m_name = null!;
         }
 
-        void IDeserializationCallback.OnDeserialization(object sender)
+        void IDeserializationCallback.OnDeserialization(object? sender)
         {
             OnDeserialized();
         }

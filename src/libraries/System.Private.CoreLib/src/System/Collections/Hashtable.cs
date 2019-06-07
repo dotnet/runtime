@@ -1153,7 +1153,7 @@ namespace System.Collections
         //
         // DeserializationEvent Listener 
         //
-        public virtual void OnDeserialization(object sender)
+        public virtual void OnDeserialization(object? sender)
         {
             if (_buckets != null)
             {
@@ -1491,7 +1491,7 @@ namespace System.Collections
                 }
             }
 
-            public override void OnDeserialization(object sender)
+            public override void OnDeserialization(object? sender)
             {
                 // Does nothing.  We have to implement this because our parent HT implements it,
                 // but it doesn't do anything meaningful.  The real work will be done when we
