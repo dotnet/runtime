@@ -41,10 +41,7 @@ namespace System.Linq
         private static IEnumerable<TSource> IntersectIterator<TSource>(IEnumerable<TSource> first, IEnumerable<TSource> second, IEqualityComparer<TSource> comparer)
         {
             Set<TSource> set = new Set<TSource>(comparer);
-            foreach (TSource element in second)
-            {
-                set.Add(element);
-            }
+            set.UnionWith(second);
 
             foreach (TSource element in first)
             {
