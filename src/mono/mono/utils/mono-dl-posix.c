@@ -39,6 +39,27 @@ mono_dl_get_so_suffixes (void)
 {
 	static const char *suffixes[] = {
 		".so",
+#if defined (_AIX)
+/*
+ * libtool generating sysv style names (.so) still results in an .a archive,
+ * (AIX prefers to put shared objects inside the same ar archive used for
+ * static members, likely as a fat library system) so try common member names
+ * when no suffix is given. The same path with member names can be tried, then
+ * .a and .so extensions with member names. (The suffixless member names are
+ * for when .so names are specified, but the archive is a member - the runtime
+ * should just keep trying with one of these suffixes then.)
+ *
+ * Unfortunately, this strategy won't work for "aix" style libtool sonames -
+ * it tries something awful like like "libfoo.a(libfoo.so.9)" which requires
+ * you to hardcode a version in the member name.
+ */
+		"(shr.o)",
+		"(shr_64.o)",
+		".a(shr.o)",
+		".a(shr_64.o)",
+		".so(shr.o)",
+		".so(shr_64.o)",
+#endif
 		"",
 	};
 	return suffixes;

@@ -31,6 +31,40 @@ struct MonoDlFallbackHandler {
 
 static GSList *fallback_handlers;
 
+#if defined (_AIX)
+#include <ar.h>
+#include <fcntl.h>
+
+/**
+ * On AIX/PASE, a shared library can be contained inside of an ar format
+ * archive. Determine if the file is an ar archive or not.
+ */
+static gboolean
+is_library_ar_archive (char *path)
+{
+	int lfd, readret;
+	char magic[SAIAMAG + 1];
+	lfd = open (path, O_RDONLY);
+
+	/* don't assume it's an archive on error */
+	if (lfd == -1)
+		return FALSE;
+
+	readret = read (lfd, magic, SAIAMAG);
+	close (lfd);
+	if (readret != SAIAMAG)
+		return FALSE;
+
+	magic [SAIAMAG] = '\0';
+
+	/* check for equality with either version of header */
+	if (strncmp(magic, AIAMAG, SAIAMAG) == 0 ||
+	    strncmp(magic, AIAMAGBIG, SAIAMAG) == 0)
+		return TRUE;
+	return FALSE;
+}
+#endif
+
 /*
  * read a value string from line with any of the following formats:
  * \s*=\s*'string'
@@ -190,6 +224,23 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 		g_free (lname);
 		if (llname) {
 			lib = mono_dl_open_file (llname, lflags);
+#if defined (_AIX)
+			/*
+			 * HACK: deal with AIX archive members because libtool
+			 * underspecifies when using --with-aix-soname=svr4 -
+			 * without this check, Mono can't find System.Native
+			 * at build time.
+			 * XXX: Does this also need to be in other places?
+			 */
+			if (!lib && is_library_ar_archive (llname)) {
+				/* try common suffix */
+				char *llaixname;
+				llaixname = g_strconcat (llname, "(shr_64.o)", NULL);
+				lib = mono_dl_open_file (llaixname, lflags);
+				/* XXX: try another suffix like (shr.o)? */
+				g_free (llaixname);
+			}
+#endif
 			g_free (llname);
 		}
 		if (!lib) {

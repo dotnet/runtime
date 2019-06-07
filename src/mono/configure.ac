@@ -470,15 +470,55 @@ case "$host" in
 		mono_cv_clang=no
 		;;
 	*-*-aix*|*-*-os400*)
-		dnl Set up a 64-bit build
+		dnl IMPORTANT: For svr4 sonames on AIX, you should set
+		dnl `OBJECT_MODE=64` when configuring.
+		dnl libtool cannot generate functioning svr4 sonames on
+		dnl 64-bit without it.
+		dnl Unfortunately, everything is complicated by the fact that
+		dnl gcc doesn't respect this variable. (otherwise we could set
+		dnl it for build time for configure and make)
+		dnl On IBM i PASE using IBM's packages, GCC *does* respect this
+		dnl variable, and builds are 64-bit by default. svr4 sonames
+		dnl must still be specified when configuring on i, however.
+		dnl As such, because Mono doesn't support 32-bit AIX or PASE,
+		dnl set up a 64-bit build (assming GCC; XLC not supported)
+		dnl regardless of what variable is used.
+		case $host_os in
+			aix*)
+			if test "x$OBJECT_MODE" = "x64" && test "x$CC" = "x" && test "x$CXX" = "x"; then
+				dnl HACK: Set -maix64 at the GCC invocation
+				dnl level explicitly to work around the fact
+				dnl GCC in default maix32 mode explodes when
+				dnl binutils respects OBJECT_MODE.
+				dnl When that check occurs, flags are not
+				dnl passed to to the compiler, so GCC has no
+				dnl chance to change its mode.
+				dnl Otherwise, it may enter a state where it
+				dnl runs, but uses the libtool "compile"
+				dnl wrapper, which subtly breaks other things.
+				dnl This should propagate to all uses of CC.
+				dnl This is only set if not manually set.
+				CC="gcc -maix64"
+				CXX="g++ -maix64"
+				echo
+			fi
+			;;
+			dnl Not needed on i because it defaults to 64-bit and
+			dnl has a GCC smart enough to respect OBJECT_MODE.
+		esac
+		dnl We still set this for *FLAGS, however, because we may not
+		dnl be setting OBJECT_MODE.
+		LDFLAGS="$LDFLAGS -maix64"
 		CPPFLAGS="$CPPFLAGS -maix64 -DGC_AIX_THREADS -D_ALL_SOURCE -D_THREAD_SAFE -D_LARGE_FILES -D_REENTRANT"
-		LDFLAGS="-maix64"
 		libmono_cflags="-D_THREAD_SAFE -D_REENTRANT"
 		dnl Would you believe GNU nm doesn't know how to process AIX libraries?
 		dnl Hardcode IBM binutils in case GNU ones end up on our path. Also
-		dnl specifiy 64-bit mode for tools.
+		dnl specifiy 64-bit mode for tools. (OBJECT_MODE is finicky with cmake.)
+		dnl XXX: We should stop the hardcoding madness
 		AR="/usr/bin/ar -X64"
 		NM="/usr/bin/nm -X64"
+		STRIP="/usr/bin/strip -X64"
+		RANLIB="/usr/bin/ranlib -X64"
 		dnl SGen is the future (changes to Boehm support code would be
 		dnl required if you wish to re-enable Boehm)
 		support_boehm=no
@@ -2821,6 +2861,13 @@ if test x$host_win32 = xno; then
 	AC_CHECK_FUNCS(shm_open)
 
 	dnl ********************************
+	dnl ***  Checks for gettext lib  ***
+	dnl ********************************
+	# This is needed for some hackery for AIX;
+	# Mono itself doesn't use it, but DllMap includes it
+	AC_SEARCH_LIBS([gettext], [intl])
+
+	dnl ********************************
 	dnl *** Checks for timezone stuff **
 	dnl ********************************
 	AC_CACHE_CHECK(for tm_gmtoff in struct tm, ac_cv_struct_tm_gmtoff,
@@ -3479,6 +3526,10 @@ if test x$host_win32 = xno; then
 
 			int main ()
 			{
+			#ifdef __PASE__
+				/* IBM i doesn't implement this and returns SIGILL */
+				return -1;
+			#endif
 				int fd = shm_open("/mono_configure_shm_open", O_CREAT | O_RDWR, 0777);
 				if (fd == -1)
 					return -1;
@@ -4155,6 +4206,7 @@ LIBC="libc.so.6"
 INTL="libc.so.6"
 SQLITE="libsqlite.so.0"
 SQLITE3="libsqlite3.so.0"
+ODBC="libodbc.so.2"
 X11="libX11.so"
 GDKX11="libgdk-x11-2.0.so.0"
 GTKX11="libgtk-x11-2.0.so.0"
@@ -4327,11 +4379,6 @@ case "$host" in
 		  aix*|os400*)
 			BTLS_SUPPORTED=yes
 			BTLS_PLATFORM=powerpc
-			dnl on AIX/PASE, shared libraries can be inside archives
-			dnl if they are, we specify them by lib.a(lib.so)
-			dnl we may hardcode 64-bit names at times, but we don't do 32-bit AIX, so
-			LIBC="libc.a(shr_64.o)"
-			INTL="libintl.a(libintl.so.8)"
 			;;
 		  linux*)
 			BTLS_SUPPORTED=yes
@@ -4796,6 +4843,44 @@ jit_status="Building and using the JIT"
 libsuffix=".so"
 
 case "$host" in
+     *-*-aix*)
+	dnl on AIX/PASE, shared libraries can be and usually are inside archives
+	dnl so, we specify them by libfoo.a(libfoo.so.0) for libtool's conventions,
+	dnl or libfoo.a(shr[_64].o) for the AIX system convention,
+	dnl or lib.so[.0](shr[_64].o) for libtool's hybrid convention
+	dnl we may hardcode 64-bit names at times, but we don't do 32-bit AIX
+	LIBC="libc.a(shr_64.o)"
+	# Thanks, I hate it! This is crumbly, especially the one-liner.
+	AC_MSG_CHECKING([how to dlopen libintl])
+	AC_LINK_IFELSE([AC_LANG_SOURCE([
+		/* XXX: Check for libintl header/gettext func better? */
+		#include <libintl.h>
+
+		int main (void) {
+			gettext("Dummy for autoconf");
+			return 1;
+		}
+	])],
+	[
+	INTL="$(dump -X64 -Hp conftest$EXEEXT | grep libintl | cut -c 38- | tr -s " " | awk '{print $1"("$2")"}')"
+	AC_MSG_RESULT([yes, $INTL])
+	],
+	[
+	INTL="libintl.a(libintl.so.8)"
+	AC_MSG_RESULT([no, falling back to $INTL])
+	])
+	SQLITE3="libsqlite3.a(libsqlite3.so.0)"
+	# it's very tempting to set a libsuffix, but it depends on the soname value
+	;;
+     *-*-os400*)
+	dnl However, IBM's packages for i try to be more "normal" than the AIX world, naming wise.
+	dnl The library archives has "normal" .so names, but they're members with predictable "shr" names for fat libraries.
+	LIBC="libc.a(shr_64.o)"
+	INTL="libintl.so(shr_64.o)"
+	SQLITE3="libsqlite3.so(shr_64.o)"
+	# likewise, it's safer to assume ".so(shr_64.o)" due to official IBM packages being built this way, but as with AIX, others may not be guaranteed
+	# it may be worth revisiting this in the future
+	;;
      *-*-darwin*)
 	libsuffix=".dylib"
 	LIBC="libc.dylib"
@@ -5707,7 +5792,7 @@ if test "x$enable_btls" = "xyes"; then
 		case $host_os in
 			aix*|os400*)
 				btls_cflags="$btls_cflags -maix64 -mminimal-toc -pthread -D_ALL_SOURCE -D_THREAD_SAFE -D_REENTRANT"
-				BTLS_CMAKE_ARGS="-DCMAKE_AR=/usr/bin/ar -DCMAKE_C_ARCHIVE_CREATE=\"<CMAKE_AR> -X64 cr <TARGET> <LINK_FLAGS> <OBJECTS>\""
+				BTLS_CMAKE_ARGS="$BTLS_CMAKE_ARGS -DCMAKE_AR=/usr/bin/ar -DCMAKE_C_ARCHIVE_CREATE=\"<CMAKE_AR> -X64 cr <TARGET> <LINK_FLAGS> <OBJECTS>\""
 		esac
 		;;
 	android-armv5)
@@ -5817,6 +5902,7 @@ AC_SUBST(LIBC)
 AC_SUBST(INTL)
 AC_SUBST(SQLITE)
 AC_SUBST(SQLITE3)
+AC_SUBST(ODBC)
 AC_SUBST(X11)
 AC_SUBST(GDKX11)
 AC_SUBST(GTKX11)
@@ -6263,6 +6349,15 @@ elif case $host_os in aix*|os400*) true;; *) false;; esac; then
 	MONO_NATIVE_CPPFLAGS=$CPPFLAGS
 	MONO_NATIVE_CXXFLAGS=$CXXFLAGS
 	MONO_NATIVE_CFLAGS=$CFLAGS
+	dnl nosymbolic- is a hack in case -G for linking is used, as -G seems
+	dnl to change the way unresolved symbols work on library load in an
+	dnl incompatible manner. (as references to runtime functions are
+	dnl resolved later) Default params otherwise are that, so seems OK.
+	dnl Likewise, we don't seem to need to cover the entire runtime with
+	dnl it either, on both AIX and PASE. -brtl from -G does seem to spew
+	dnl Big Scary TOC Warnings (tm) from the linker, but it doesn't seem
+	dnl problematic with gcc's -mminimal-toc.
+	dnl ----
 	dnl flock in AIX exists in libbsd (not the same as freedesktop.org
 	dnl libbsd) which Mono.Native needs.
 	dnl Because of the way that the library is built by default, unresolved
@@ -6271,7 +6366,7 @@ elif case $host_os in aix*|os400*) true;; *) false;; esac; then
 	dnl better to explicitly link it, even though it has it shadows libc's
 	dnl ioctl with its own. (As for the other unresolved imports, those
 	dnl should be provided by the Mono runtime loaded.)
-	MONO_NATIVE_LDFLAGS="$LDFLAGS -lbsd"
+	MONO_NATIVE_LDFLAGS="$LDFLAGS -lbsd -Wl,-bnosymbolic-"
 
 	mono_native=yes
 	mono_native_compat=no
