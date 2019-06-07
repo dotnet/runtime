@@ -175,7 +175,7 @@ namespace System.Resources.Extensions.Tests
 
                 foreach (var pair in PrimitiveAsString)
                 {
-                    writer.AddResource(pair.Key, GetSerializationTypeName(pair.Value.GetType()), GetStringValue(pair.Value));
+                    writer.AddResource(pair.Key, GetStringValue(pair.Value), GetSerializationTypeName(pair.Value.GetType()));
                 }
 
                 var formatter = new BinaryFormatter();
@@ -184,7 +184,7 @@ namespace System.Resources.Extensions.Tests
                     using (MemoryStream memoryStream = new MemoryStream())
                     {
                         formatter.Serialize(memoryStream, pair.Value);
-                        writer.AddBinaryFormattedResource(pair.Key, GetSerializationTypeName(pair.Value.GetType()), memoryStream.ToArray());
+                        writer.AddBinaryFormattedResource(pair.Key, memoryStream.ToArray(), GetSerializationTypeName(pair.Value.GetType()));
                     }
                 }
 
@@ -201,17 +201,17 @@ namespace System.Resources.Extensions.Tests
                 {
                     TypeConverter converter = TypeDescriptor.GetConverter(pair.Value.GetType());
                     byte[] buffer = (byte[])converter.ConvertTo(pair.Value, typeof(byte[]));
-                    writer.AddTypeConverterResource(pair.Key, GetSerializationTypeName(pair.Value.GetType()), buffer);
+                    writer.AddTypeConverterResource(pair.Key, buffer, GetSerializationTypeName(pair.Value.GetType()));
                 }
 
                 foreach (var pair in StringConverterWithoutDrawing)
                 {
-                    writer.AddResource(pair.Key, GetSerializationTypeName(pair.Value.GetType()), GetStringValue(pair.Value));
+                    writer.AddResource(pair.Key, GetStringValue(pair.Value), GetSerializationTypeName(pair.Value.GetType()));
                 }
 
                 foreach (var pair in ActivatorWithoutDrawing)
                 {
-                    writer.AddActivatorResource(pair.Key, GetSerializationTypeName(pair.Value.type), pair.Value.stream, false);
+                    writer.AddActivatorResource(pair.Key, pair.Value.stream, GetSerializationTypeName(pair.Value.type), false);
                 }
 
                 writer.Generate();
