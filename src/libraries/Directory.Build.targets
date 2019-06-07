@@ -90,7 +90,10 @@
 
     <!-- binplace targeting packs which may be different from BuildConfiguration -->
     <BinPlaceConfiguration Include="netstandard">
-      <RefPath>$(RefRootPath)netstandard/</RefPath>
+      <RefPath>$(NetStandardRefPath)</RefPath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Include="netstandard2.1">
+      <RefPath>$(NetStandard21RefPath)</RefPath>
     </BinPlaceConfiguration>
     <!-- some libraries that produce packages will remain targeting netcoreapp2.0 -->
     <BinPlaceConfiguration Condition="'$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp2.0">
