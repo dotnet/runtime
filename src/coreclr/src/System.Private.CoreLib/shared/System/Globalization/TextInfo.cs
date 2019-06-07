@@ -63,7 +63,7 @@ namespace System.Globalization
             FinishInitialization();
         }
 
-        void IDeserializationCallback.OnDeserialization(object sender)
+        void IDeserializationCallback.OnDeserialization(object? sender)
         {
             throw new PlatformNotSupportedException();
         }
