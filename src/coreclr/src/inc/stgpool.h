@@ -234,6 +234,42 @@ public:
         
         return hr;
     }
+
+//*****************************************************************************
+// Return a pointer to a null terminated string given an offset previously
+// handed out by AddString or FindString. Only valid for use if the Storage pool is actuall ReadOnly, and not derived
+//*****************************************************************************
+    __checkReturn 
+    inline HRESULT GetStringReadOnly(
+                    UINT32  nIndex, 
+        __deref_out LPCSTR *pszString)
+    {
+        HRESULT hr;
+        
+        // Size of the data in the heap will be ignored, because we have verified during creation of the string 
+        // heap (code:Initialize) and when adding new strings (e.g. code:AddString, 
+        // code:AddTemporaryStringBuffer), that the heap is null-terminated, therefore we don't have to check it 
+        // for each string in the heap
+        MetaData::DataBlob stringData;
+        
+        // Get data from the heap (clears stringData on error)
+        IfFailGo(GetDataReadOnly(
+            nIndex, 
+            &stringData));
+        _ASSERTE(hr == S_OK);
+        // Raw data are always at least 1 byte long, otherwise it would be invalid offset and hr != S_OK
+        PREFAST_ASSUME(stringData.GetDataPointer() != NULL);
+        // Fills output string
+        *pszString = reinterpret_cast<LPSTR>(stringData.GetDataPointer());
+        //_ASSERTE(stringData.GetSize() > strlen(*pszString));
+        
+        return hr;
+    ErrExit:
+        // Clears output string on error
+        *pszString = NULL;
+        
+        return hr;
+    }
 #ifdef _PREFAST_
 #pragma warning(pop)
 #endif

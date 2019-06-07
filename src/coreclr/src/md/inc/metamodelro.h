@@ -29,7 +29,7 @@
 template <class MiniMd> class CLiteWeightStgdb;
 class CMiniMdRW;
 class MDInternalRO;
-class CMiniMd : public CMiniMdTemplate<CMiniMd>
+class CMiniMd final: public CMiniMdTemplate<CMiniMd>
 {
 public:
     friend class CLiteWeightStgdb<CMiniMd>;

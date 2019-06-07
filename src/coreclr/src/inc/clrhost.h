@@ -182,8 +182,11 @@ inline void ClrFlsSetValue(DWORD slot, void *pData)
     }
 }
 
-typedef LPVOID (*FastAllocInProcessHeapFunc)(DWORD dwFlags, SIZE_T dwBytes);
-extern FastAllocInProcessHeapFunc __ClrAllocInProcessHeap;
+#ifndef SELF_NO_HOST
+LPVOID EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes);
+BOOL EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem);
+#endif
+
 inline LPVOID ClrAllocInProcessHeap(DWORD dwFlags, S_SIZE_T dwBytes)
 {
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
@@ -193,7 +196,7 @@ inline LPVOID ClrAllocInProcessHeap(DWORD dwFlags, S_SIZE_T dwBytes)
     }
 
 #ifndef SELF_NO_HOST
-    return __ClrAllocInProcessHeap(dwFlags, dwBytes.Value());
+    return EEHeapAllocInProcessHeap(dwFlags, dwBytes.Value());
 #else
 #undef HeapAlloc
 #undef GetProcessHeap
@@ -206,13 +209,11 @@ inline LPVOID ClrAllocInProcessHeap(DWORD dwFlags, S_SIZE_T dwBytes)
 #endif
 }
 
-typedef BOOL (*FastFreeInProcessHeapFunc)(DWORD dwFlags, LPVOID lpMem);
-extern FastFreeInProcessHeapFunc __ClrFreeInProcessHeap;
 inline BOOL ClrFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem)
 {
     STATIC_CONTRACT_SUPPORTS_DAC_HOST_ONLY;
 #ifndef SELF_NO_HOST
-    return __ClrFreeInProcessHeap(dwFlags, lpMem);
+    return EEHeapFreeInProcessHeap(dwFlags, lpMem);
 #else
 #undef HeapFree
 #undef GetProcessHeap

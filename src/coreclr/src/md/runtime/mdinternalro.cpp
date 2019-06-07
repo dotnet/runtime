@@ -963,7 +963,7 @@ HRESULT MDInternalRO::GetCustomAttributeByName( // S_OK or error.
     __deref_out_bcount(*pcbData) const void  **ppData, // [OUT] Put pointer to data here.
     __out ULONG *pcbData)               // [OUT] Put size of data here.
 {
-    return m_LiteWeightStgdb.m_MiniMd.CommonGetCustomAttributeByName(tkObj, szName, ppData, pcbData);
+    return m_LiteWeightStgdb.m_MiniMd.CommonGetCustomAttributeByNameEx(tkObj, szName, NULL, ppData, pcbData);
 } // MDInternalRO::GetCustomAttributeByName
 
 
