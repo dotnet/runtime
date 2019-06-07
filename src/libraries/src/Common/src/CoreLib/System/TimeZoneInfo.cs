@@ -1007,7 +1007,7 @@ namespace System
                 disableDaylightSavingTime);
         }
 
-        void IDeserializationCallback.OnDeserialization(object sender)
+        void IDeserializationCallback.OnDeserialization(object? sender)
         {
             try
             {

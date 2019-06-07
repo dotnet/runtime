@@ -276,7 +276,7 @@ namespace System
                 flags |= SignMask;
         }
 
-        void IDeserializationCallback.OnDeserialization(object sender)
+        void IDeserializationCallback.OnDeserialization(object? sender)
         {
             // OnDeserialization is called after each instance of this class is deserialized.
             // This callback method performs decimal validation after being deserialized.
