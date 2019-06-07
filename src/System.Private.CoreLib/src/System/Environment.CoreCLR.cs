@@ -20,6 +20,7 @@ namespace System
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern void _Exit(int exitCode);
 
+        [DoesNotReturn]
         public static void Exit(int exitCode) => _Exit(exitCode);
 
         public static extern int ExitCode

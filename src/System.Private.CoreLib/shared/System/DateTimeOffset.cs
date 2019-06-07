@@ -591,7 +591,7 @@ namespace System
 
         // ----- SECTION: private serialization instance methods  ----------------*
 
-        void IDeserializationCallback.OnDeserialization(object sender)
+        void IDeserializationCallback.OnDeserialization(object? sender)
         {
             try
             {
