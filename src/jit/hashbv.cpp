@@ -793,15 +793,16 @@ void hashBv::setBit(indexType index)
 {
     assert(index >= 0);
     assert(this->numNodes == this->getNodeCount());
-    hashBvNode* result = nullptr;
 
     indexType baseIndex = index & ~(BITS_PER_NODE - 1);
     indexType base      = index - baseIndex;
     indexType elem      = base / BITS_PER_ELEMENT;
     indexType posi      = base % BITS_PER_ELEMENT;
 
+    hashBvNode* result = nodeArr[0];
+
     // this should be the 99% case :  when there is only one node in the structure
-    if ((result = nodeArr[0]) && result->baseIndex == baseIndex)
+    if ((result != nullptr) && (result->baseIndex == baseIndex))
     {
         result->elements[elem] |= indexType(1) << posi;
         return;

@@ -101,7 +101,7 @@ FORCEINLINE void YieldProcessorNormalized(const YieldProcessorNormalizationInfo 
     {
         // On platforms with a small SIZE_T, prevent overflow on the multiply below. normalizationInfo.yieldsPerNormalizedYield
         // is limited to MinNsPerNormalizedYield by InitializeYieldProcessorNormalized().
-        const unsigned int MaxCount = (unsigned int)SIZE_MAX / MinNsPerNormalizedYield;
+        const unsigned int MaxCount = UINT_MAX / MinNsPerNormalizedYield;
         if (count > MaxCount)
         {
             count = MaxCount;
@@ -147,7 +147,7 @@ FORCEINLINE void YieldProcessorNormalizedForPreSkylakeCount(
     {
         // On platforms with a small SIZE_T, prevent overflow on the multiply below. normalizationInfo.yieldsPerNormalizedYield
         // is limited to MinNsPerNormalizedYield by InitializeYieldProcessorNormalized().
-        const unsigned int MaxCount = (unsigned int)SIZE_MAX / MinNsPerNormalizedYield;
+        const unsigned int MaxCount = UINT_MAX / MinNsPerNormalizedYield;
         if (preSkylakeCount > MaxCount)
         {
             preSkylakeCount = MaxCount;
