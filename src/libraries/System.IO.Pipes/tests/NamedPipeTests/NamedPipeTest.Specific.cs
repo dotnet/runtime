@@ -297,27 +297,31 @@ namespace System.IO.Pipes.Tests
             {
                 using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation))
                 {
-                    int expectedNumberOfServerInstances;
                     Task serverTask = server.WaitForConnectionAsync();
 
                     client.Connect();
                     await serverTask;
 
-                    Assert.True(Interop.TryGetNumberOfServerInstances(client.SafePipeHandle, out expectedNumberOfServerInstances), "GetNamedPipeHandleState failed");
-                    Assert.Equal(expectedNumberOfServerInstances, client.NumberOfServerInstances);
+                    Assert.True(InteropTest.TryGetNumberOfServerInstances(client.SafePipeHandle, out uint expectedNumberOfServerInstances), "GetNamedPipeHandleState failed");
+                    Assert.Equal(expectedNumberOfServerInstances, (uint)client.NumberOfServerInstances);
                 }
             }
         }
 
-        [Fact]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(TokenImpersonationLevel.None, false)]
+        [InlineData(TokenImpersonationLevel.Anonymous, false)]
+        [InlineData(TokenImpersonationLevel.Identification, true)]
+        [InlineData(TokenImpersonationLevel.Impersonation, true)]
+        [InlineData(TokenImpersonationLevel.Delegation, true)]
         [PlatformSpecific(TestPlatforms.Windows)] // Win32 P/Invokes to verify the user name
-        public async Task Windows_GetImpersonationUserName_Succeed()
+        public async Task Windows_GetImpersonationUserName_Succeed(TokenImpersonationLevel level, bool expectedResult)
         {
             string pipeName = GetUniquePipeName();
 
             using (var server = new NamedPipeServerStream(pipeName))
             {
-                using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation))
+                using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, level))
                 {
                     string expectedUserName;
                     Task serverTask = server.WaitForConnectionAsync();
@@ -325,8 +329,20 @@ namespace System.IO.Pipes.Tests
                     client.Connect();
                     await serverTask;
 
-                    Assert.True(Interop.TryGetImpersonationUserName(server.SafePipeHandle, out expectedUserName), "GetNamedPipeHandleState failed");
-                    Assert.Equal(expectedUserName, server.GetImpersonationUserName());
+                    Assert.Equal(expectedResult, InteropTest.TryGetImpersonationUserName(server.SafePipeHandle, out expectedUserName));
+
+                    if (!expectedResult)
+                    {
+                        Assert.Equal(string.Empty, expectedUserName);
+                        Assert.Throws<IOException>(() => server.GetImpersonationUserName());
+                    }
+                    else
+                    {
+                        string actualUserName = server.GetImpersonationUserName();
+                        Assert.NotNull(actualUserName);
+                        Assert.False(string.IsNullOrWhiteSpace(actualUserName));
+                        Assert.Equal(expectedUserName, actualUserName);
+                    }
                 }
             }
         }

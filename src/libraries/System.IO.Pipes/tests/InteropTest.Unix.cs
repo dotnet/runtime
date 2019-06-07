@@ -12,7 +12,7 @@ namespace System.IO.Pipes.Tests
     /// <summary>
     /// The class contains interop declarations and helpers methods for them.
     /// </summary>
-    internal static partial class Interop
+    internal static partial class InteropTest
     {
         [DllImport("libc", SetLastError = true)]
         private static extern unsafe int gethostname(byte* name, int len);
@@ -38,7 +38,7 @@ namespace System.IO.Pipes.Tests
         // @todo: These are called by some Windows-specific tests. Those tests should really be split out into
         // partial classes and included only in Windows builds.
         internal static unsafe bool CancelIoEx(SafeHandle handle) { throw new Exception("Should not call on Unix."); }
-        internal static bool TryGetImpersonationUserName(SafePipeHandle handle, out string userName) { throw new Exception("Should not call on Unix."); }
-        internal static bool TryGetNumberOfServerInstances(SafePipeHandle handle, out int numberOfServerInstances) { throw new Exception("Should not call on Unix."); }
+        internal static bool TryGetImpersonationUserName(SafePipeHandle handle, out string impersonationUserName) { throw new Exception("Should not call on Unix."); }
+        internal static bool TryGetNumberOfServerInstances(SafePipeHandle handle, out uint numberOfServerInstances) { throw new Exception("Should not call on Unix."); }
     }
 }

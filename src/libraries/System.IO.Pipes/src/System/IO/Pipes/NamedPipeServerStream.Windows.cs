@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
 using System.Security.Principal;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -183,16 +182,15 @@ namespace System.IO.Pipes
         {
             CheckWriteOperations();
 
-            const int UserNameMaxLength = Interop.Kernel32.CREDUI_MAX_USERNAME_LENGTH + 1;
-            char* userName = stackalloc char[UserNameMaxLength]; // ~1K
+            const uint UserNameMaxLength = Interop.Kernel32.CREDUI_MAX_USERNAME_LENGTH + 1;
+            char* userName = stackalloc char[(int)UserNameMaxLength]; // ~1K
 
-            if (!Interop.Kernel32.GetNamedPipeHandleState(InternalHandle, IntPtr.Zero, IntPtr.Zero,
-                IntPtr.Zero, IntPtr.Zero, userName, UserNameMaxLength))
+            if (Interop.Kernel32.GetNamedPipeHandleStateW(InternalHandle, null, null, null, null, userName, UserNameMaxLength))
             {
-                throw WinIOError(Marshal.GetLastWin32Error());
+                return new string(userName);
             }
 
-            return new string(userName);
+            return HandleGetImpersonationUserNameError(Marshal.GetLastWin32Error(), UserNameMaxLength, userName);
         }
 
         // -----------------------------

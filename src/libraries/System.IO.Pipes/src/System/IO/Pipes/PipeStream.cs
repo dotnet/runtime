@@ -27,7 +27,7 @@ namespace System.IO.Pipes
         private PipeTransmissionMode _readMode;
         private PipeTransmissionMode _transmissionMode;
         private PipeDirection _pipeDirection;
-        private int _outBufferSize;
+        private uint _outBufferSize;
         private PipeState _state;
 
         protected PipeStream(PipeDirection direction, int bufferSize)
@@ -41,7 +41,7 @@ namespace System.IO.Pipes
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            Init(direction, PipeTransmissionMode.Byte, bufferSize);
+            Init(direction, PipeTransmissionMode.Byte, (uint)bufferSize);
         }
 
         protected PipeStream(PipeDirection direction, PipeTransmissionMode transmissionMode, int outBufferSize)
@@ -59,10 +59,10 @@ namespace System.IO.Pipes
                 throw new ArgumentOutOfRangeException(nameof(outBufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            Init(direction, transmissionMode, outBufferSize);
+            Init(direction, transmissionMode, (uint)outBufferSize);
         }
 
-        private void Init(PipeDirection direction, PipeTransmissionMode transmissionMode, int outBufferSize)
+        private void Init(PipeDirection direction, PipeTransmissionMode transmissionMode, uint outBufferSize)
         {
             Debug.Assert(direction >= PipeDirection.In && direction <= PipeDirection.InOut, "invalid pipe direction");
             Debug.Assert(transmissionMode >= PipeTransmissionMode.Byte && transmissionMode <= PipeTransmissionMode.Message, "transmissionMode is out of range");
