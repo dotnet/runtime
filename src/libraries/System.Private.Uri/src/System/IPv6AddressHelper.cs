@@ -13,7 +13,7 @@ namespace System
     {
         // methods
 
-        internal static unsafe string ParseCanonicalName(string str, int start, ref bool isLoopback, ref string scopeId)
+        internal static unsafe string ParseCanonicalName(string str, int start, ref bool isLoopback, ref string? scopeId)
         {
             Span<ushort> numbers = stackalloc ushort[NumberOfLabels];
             numbers.Clear();

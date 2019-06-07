@@ -5,6 +5,7 @@
 using System.Text;
 using System.Globalization;
 using System.Threading;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -21,7 +22,7 @@ namespace System
         private string _query = string.Empty;
         private string _scheme = "http";
         private string _schemeDelimiter = Uri.SchemeDelimiter;
-        private Uri _uri;
+        private Uri _uri = null!; // initialized in ctor via helper
         private string _username = string.Empty;
 
         // constructors
@@ -48,7 +49,7 @@ namespace System
 
         public UriBuilder(Uri uri)
         {
-            if ((object)uri == null)
+            if ((object?)uri == null)
                 throw new ArgumentNullException(nameof(uri));
 
             Init(uri);
@@ -83,31 +84,31 @@ namespace System
             SetFieldsFromUri(uri);
         }
 
-        public UriBuilder(string schemeName, string hostName)
+        public UriBuilder(string? schemeName, string? hostName)
         {
-            Scheme = schemeName;
-            Host = hostName;
+            Scheme = schemeName!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            Host = hostName!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
         }
 
-        public UriBuilder(string scheme, string host, int portNumber) : this(scheme, host)
+        public UriBuilder(string? scheme, string? host, int portNumber) : this(scheme, host)
         {
             Port = portNumber;
         }
 
-        public UriBuilder(string scheme,
-                          string host,
+        public UriBuilder(string? scheme,
+                          string? host,
                           int port,
-                          string pathValue
+                          string? pathValue
                           ) : this(scheme, host, port)
         {
-            Path = pathValue;
+            Path = pathValue!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
         }
 
-        public UriBuilder(string scheme,
-                          string host,
+        public UriBuilder(string? scheme,
+                          string? host,
                           int port,
-                          string path,
-                          string extraValue
+                          string? path,
+                          string? extraValue
                           ) : this(scheme, host, port, path)
         {
             try
@@ -127,7 +128,7 @@ namespace System
 
         // properties
 
-        private string Extra
+        private string? Extra
         {
             set
             {
@@ -167,6 +168,7 @@ namespace System
             }
         }
 
+        [AllowNull]
         public string Fragment
         {
             get
@@ -188,6 +190,7 @@ namespace System
             }
         }
 
+        [AllowNull]
         public string Host
         {
             get
@@ -212,6 +215,7 @@ namespace System
             }
         }
 
+        [AllowNull]
         public string Password
         {
             get
@@ -229,6 +233,7 @@ namespace System
             }
         }
 
+        [AllowNull]
         public string Path
         {
             get
@@ -263,6 +268,7 @@ namespace System
             }
         }
 
+        [AllowNull]
         public string Query
         {
             get
@@ -284,6 +290,7 @@ namespace System
             }
         }
 
+        [AllowNull]
         public string Scheme
         {
             get
@@ -330,6 +337,7 @@ namespace System
             }
         }
 
+        [AllowNull]
         public string UserName
         {
             get
@@ -349,7 +357,7 @@ namespace System
 
         // methods
 
-        public override bool Equals(object rparam)
+        public override bool Equals(object? rparam)
         {
             if (rparam == null)
             {
@@ -400,7 +408,7 @@ namespace System
 
             if (_scheme.Length != 0)
             {
-                UriParser syntax = UriParser.GetSyntax(_scheme);
+                UriParser? syntax = UriParser.GetSyntax(_scheme);
                 if (syntax != null)
                     _schemeDelimiter = syntax.InFact(UriSyntaxFlags.MustHaveAuthority) ||
                                         (_host.Length != 0 && syntax.NotAny(UriSyntaxFlags.MailToLikeUri) && syntax.InFact(UriSyntaxFlags.OptionalAuthority))

@@ -209,7 +209,7 @@ namespace System.Net.Test.Uri.IriTest
 
         private string EscapeUnescapeTestComponent(string uriInput, UriComponents component)
         {
-            string ret = null;
+            string? ret = null;
             HeapCheck hc = new HeapCheck(uriInput);
 
             unsafe
