@@ -1,7 +1,7 @@
 Code Coverage
 =============
 
-"Code coverage" is a measure that indicates how much of our library code is exercised by our test suites.  We measure code coverage using the [Coverlet](https://github.com/tonerdo/coverlet), and a report of our latest code coverage results can be seen by clicking the coverage badge on the [CoreFX home page](https://github.com/dotnet/corefx), linking to the latest [Coverage Report](https://ci.dot.net/job/dotnet_corefx/job/master/job/code_coverage_windows/Code_Coverage_Report/).
+"Code coverage" is a measure that indicates how much of our library code is exercised by our test suites. We measure code coverage using the [Coverlet](https://github.com/tonerdo/coverlet) global tool and use [ReportGenerator](https://github.com/danielpalme/ReportGenerator) to visualize that data. Daily/regular reports are currently not available.
 
 This report shows each library currently being tested with code coverage and provides statistics around the quality of the code coverage for the library.  It also provides a line-by-line breakdown of what lines are being covered and what lines are not.
 
@@ -23,20 +23,6 @@ Our default, somewhat-arbitrary initial goal for a library is 90% code coverage.
 Issues are opened for a library when a cursory examination of its code coverage reveal that there are likely still some meaningful gaps that need to be addressed.  We welcome contributions to our test suites to help address these gaps and close these issues.  Many of these issues are marked as [up-for-grabs](https://github.com/dotnet/corefx/labels/up-for-grabs).
 
 An issue need not be addressed in its entirety. We happily accept contributions that improve our tests and work towards improving code coverage numbers even if they only incrementally improve the situation.
-
-## Automated Code Coverage Runs
-
-Code coverage runs are performed approximately twice a day. The results of these runs are all available from the site linked to by the code coverage badge on the home page.
-
-## PR Code Coverage Runs
-
-Jenkins can create a coverage report using your PR. Ask for it using `@dotnet-bot test code coverage please`.
-
-After it's done the report can be found in the build log, it looks like eg
-`https://ci.dot.net/job/dotnet_corefx/job/master/job/code_coverage_windows_prtest/16/artifact/bin/tests/coverage`
-then add index.htm on the end:
-`https://ci.dot.net/job/dotnet_corefx/job/master/job/code_coverage_windows_prtest/16/artifact/bin/tests/coverage/index.htm`
-You can navigate to this from your PR by clicking the "Details" link to the right of the code coverage job listed at the bottom of the PR after having issued the above request to dotnet-bot.  In the Jenkins UI for the resulting build, click the "Build Artifacts" link and navigate through the resulting hierarchy to the index.htm file.
 
 ## Local Code Coverage Runs
 
