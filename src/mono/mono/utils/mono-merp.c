@@ -372,7 +372,7 @@ mono_merp_write_fingerprint_payload (const char *non_param_data, const MERPStruc
 
 	g_async_safe_fprintf(handle, "{\n");
 	g_async_safe_fprintf(handle, "\t\"payload\" : \n");
-	g_write (handle, non_param_data, (guint32)strlen (non_param_data));	\
+	g_write (handle, non_param_data, (guint32)strlen (non_param_data));
 	g_async_safe_fprintf(handle, ",\n");
 
 	g_async_safe_fprintf(handle, "\t\"parameters\" : \n{\n");

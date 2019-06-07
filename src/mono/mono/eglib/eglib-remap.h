@@ -133,6 +133,7 @@
 #define g_pattern_match_string monoeg_g_pattern_match_string
 #define g_pattern_spec_free monoeg_g_pattern_spec_free
 #define g_pattern_spec_new monoeg_g_pattern_spec_new
+#define g_async_safe_fgets monoeg_g_async_safe_fgets
 #define g_async_safe_fprintf monoeg_g_async_safe_fprintf
 #define g_async_safe_vfprintf monoeg_g_async_safe_vfprintf
 #define g_async_safe_printf monoeg_g_async_safe_printf

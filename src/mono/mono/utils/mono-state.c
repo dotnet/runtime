@@ -927,6 +927,63 @@ mono_native_state_add_memory (MonoStateWriter *writer)
 	mono_state_writer_printf(writer, "},\n");
 }
 
+#define MONO_CRASH_REPORTING_MAPPING_LINE_LIMIT 30
+
+static void
+mono_native_state_add_process_map (MonoStateWriter *writer)
+{
+#if defined(__linux__) && !defined(HOST_ANDROID)
+	int handle = g_open ("/proc/self/maps", O_RDONLY, S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
+	if (handle == -1) {
+		g_async_safe_printf ("Couldn't find /proc/self/maps on Linux system. Continuing.");
+		return;
+	}
+
+	assert_has_space (writer);
+	mono_state_writer_indent (writer);
+	mono_state_writer_object_key (writer, "process_map");
+	mono_state_writer_printf(writer, "[\n");
+
+	int mapping = 0;
+	while (mapping < MONO_CRASH_REPORTING_MAPPING_LINE_LIMIT) {
+		if (mapping > 0)
+			mono_state_writer_printf (writer, "\",\n");
+
+		mono_state_writer_printf (writer, "\t\"");
+
+		while (TRUE) {
+			char line [10];
+			gboolean newline = FALSE;
+			int charsCopied = g_async_safe_fgets (line, sizeof (line), handle, &newline);
+
+			if (charsCopied == 0)
+				break;
+
+			for (int i=0; i < charsCopied; i++)
+				g_assert (isprint (line [i]));
+
+			g_assert (line [charsCopied] == '\0');
+
+			mono_state_writer_printf (writer, "%s", line);
+
+			if (newline)
+				break;
+		}
+
+		mapping++;
+	}
+
+	if (mapping > 0)
+		mono_state_writer_printf (writer, "\"");
+
+	mono_state_writer_indent (writer);
+	writer->indent--;
+	mono_state_writer_printf(writer, "],\n");
+
+	close (handle);
+#endif
+}
+
 static void
 mono_native_state_add_prologue (MonoStateWriter *writer)
 {
@@ -960,6 +1017,10 @@ mono_native_state_add_prologue (MonoStateWriter *writer)
 
 		mono_state_writer_printf(writer, "\"%.*s\",\n", (int)length, assertion_msg);
 	}
+
+#ifndef MONO_PRIVATE_CRASHES
+	mono_native_state_add_process_map (writer);
+#endif
 
 	// Start threads array
 	assert_has_space (writer);

@@ -906,37 +906,6 @@ dump_memory_around_ip (MonoContext *mctx)
 }
 
 static void
-print_process_map (void)
-{
-#ifdef __linux__
-	FILE *fp = fopen ("/proc/self/maps", "r");
-	char line [256];
-
-	if (fp == NULL) {
-		mono_runtime_printf_err ("no /proc/self/maps, not on linux?\n");
-		return;
-	}
-
-	mono_runtime_printf_err ("/proc/self/maps:");
-	const int max_lines = 25;
-	int i = 0;
-
-	while (fgets (line, sizeof (line), fp) && i++ < max_lines) {
-		// strip newline
-		size_t len = strlen (line);
-		if (len > 0 && line [len - 1] == '\n')
-			line [len - 1] = '\0';
-
-		mono_runtime_printf_err ("%s", line);
-	}
-
-	fclose (fp);
-#else
-	/* do nothing */
-#endif
-}
-
-static void
 assert_printer_callback (void)
 {
 	mono_dump_native_crash_info ("SIGABRT", NULL, NULL);
@@ -1153,8 +1122,6 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 void
 mono_dump_native_crash_info (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 {
-	print_process_map ();
-
 	dump_native_stacktrace (signal, mctx);
 
 	dump_memory_around_ip (mctx);
