@@ -76,6 +76,8 @@ typedef HRESULT (__stdcall * PFN_DestroyICeeFileGen)(ICeeFileGen ** ceeFileGen);
 
 class ICeeFileGen {
   public:
+    virtual ~ICeeFileGen() = default;
+
     virtual HRESULT CreateCeeFile(HCEEFILE *ceeFile); // call this to instantiate a file handle
 
     // <TODO>@FUTURE: remove this function. We no longer support mdScope.</TODO>
