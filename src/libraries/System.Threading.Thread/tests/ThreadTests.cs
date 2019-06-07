@@ -1090,13 +1090,6 @@ namespace System.Threading.Threads.Tests
             Thread.BeginThreadAffinity();
             Thread.EndThreadAffinity();
 
-            ThreadTestHelpers.RunTestInBackgroundThread(() =>
-            {
-                // TODO: Port tests for these once all of the necessary interop APIs are available
-                Thread.CurrentThread.DisableComObjectEagerCleanup();
-                Marshal.CleanupUnusedObjectsInCurrentContext();
-            });
-
 #pragma warning disable 618 // obsolete members
             Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.GetCompressedStack());
             Assert.Throws<InvalidOperationException>(() => Thread.CurrentThread.SetCompressedStack(CompressedStack.Capture()));
