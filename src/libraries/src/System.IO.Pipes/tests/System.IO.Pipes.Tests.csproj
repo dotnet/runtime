@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{142469EC-D665-4FE2-845A-FDA69F9CC557}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -31,6 +31,32 @@
       <Link>Common\System\Threading\Tasks\TaskTimeoutExtensions.cs</Link>
     </Compile>
   </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.CancelIoEx.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.CancelIoEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.FreeLibrary.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.FreeLibrary.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.LoadLibraryEx.cs">
+      <Link>Common\CoreLib\Interop\Windows\Interop.LoadLibraryEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
+      <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Errors.cs">
+      <Link>Common\Interop\Windows\Interop.Errors.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetNamedPipeHandleState.cs">
+      <Link>Common\Interop\Windows\Interop.GetNamedPipeHandleState.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.MaxLengths.cs">
+      <Link>Common\Interop\Windows\Interop.MaxLengths.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="NamedPipeTests\NamedPipeTest.CurrentUserOnly.netcoreapp.cs" />
     <Compile Include="PipeTest.Read.netcoreapp.cs" />
@@ -44,11 +70,19 @@
     <Compile Include="NamedPipeTests\NamedPipeTest.UnixDomainSockets.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="Interop.Windows.cs" />
+    <Compile Include="InteropTest.Windows.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Windows.cs" />
   </ItemGroup>
+  <!-- Windows: Win32 only -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
+    <Compile Include="InteropTest.Windows.Win32.cs" />
+  </ItemGroup>
+  <!-- Windows: UAP - Win32 + WinRT -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' == 'uap'">
+    <Compile Include="InteropTest.Windows.Uap.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="Interop.Unix.cs" />
+    <Compile Include="InteropTest.Unix.cs" />
     <Compile Include="NamedPipeTests\NamedPipeTest.RunAsClient.Unix.cs" />
     <Compile Include="NativeOverlapped.unix.cs" />
   </ItemGroup>

@@ -71,7 +71,7 @@ namespace System.IO.Pipes.Tests
         public static void NotSupportedPipePath_Throws_PlatformNotSupportedException()
         {
             string hostName;
-            Assert.True(Interop.TryGetHostName(out hostName));
+            Assert.True(InteropTest.TryGetHostName(out hostName));
 
             Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream("foobar" + hostName, "foobar"));
             Assert.Throws<PlatformNotSupportedException>(() => new NamedPipeClientStream(hostName, "foobar" + Path.GetInvalidFileNameChars()[0]));
