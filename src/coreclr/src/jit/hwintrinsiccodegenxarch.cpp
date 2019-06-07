@@ -174,7 +174,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 if ((ival != -1) && varTypeIsFloating(baseType))
                 {
                     assert((ival >= 0) && (ival <= 127));
-                    genHWIntrinsic_R_R_RM_I(node, ins, ival);
+                    genHWIntrinsic_R_R_RM_I(node, ins, static_cast<int8_t>(ival));
                 }
                 else if (category == HW_Category_MemoryLoad)
                 {
