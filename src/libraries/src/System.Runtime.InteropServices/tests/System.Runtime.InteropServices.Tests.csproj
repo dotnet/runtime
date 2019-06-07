@@ -54,11 +54,9 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\Copy\SingleArrayTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\AddRefTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\AllocHGlobalTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\AreComObjectsAvailableForCleanupTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\BindToMonikerTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ChangeWrapperHandleStrengthTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ChangeWrapperHandleStrengthTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\CleanupUnusedObjectsInCurrentContextTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\CreateAggregatedObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\CreateWrapperOfTypeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\CreateWrapperOfTypeTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
