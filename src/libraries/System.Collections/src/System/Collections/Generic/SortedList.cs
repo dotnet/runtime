@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace System.Collections.Generic
@@ -270,7 +271,7 @@ namespace System.Collections.Generic
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
 
-            if (value == null && !(default(TValue)! == null))    // null is an invalid value for Value types // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
+            if (value == null && !(default(TValue)! == null))    // null is an invalid value for Value types  // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
                 throw new ArgumentNullException(nameof(value));
 
             if (!(key is TKey))
@@ -623,7 +624,7 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                if (value == null && !(default(TValue)! == null)) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
+                if (value == null && !(default(TValue)! == null)) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
                     throw new ArgumentNullException(nameof(value));
 
                 TKey tempKey = (TKey)key;
@@ -677,7 +678,7 @@ namespace System.Collections.Generic
             version++;
         }
 
-        public bool TryGetValue(TKey key, out TValue value) // TODO-NULLABLE-GENERIC
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             int i = IndexOfKey(key);
             if (i >= 0)
@@ -686,7 +687,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            value = default(TValue)!; // TODO-NULLABLE-GENERIC
+            value = default(TValue)!;
             return false;
         }
 
@@ -762,8 +763,8 @@ namespace System.Collections.Generic
         private struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {
             private SortedList<TKey, TValue> _sortedList;
-            private TKey _key;
-            private TValue _value;
+            [AllowNull] private TKey _key;
+            [AllowNull] private TValue _value;
             private int _index;
             private int _version;
             private int _getEnumeratorRetType;  // What should Enumerator.Current return?
@@ -777,15 +778,15 @@ namespace System.Collections.Generic
                 _index = 0;
                 _version = _sortedList.version;
                 _getEnumeratorRetType = getEnumeratorRetType;
-                _key = default(TKey)!; // TODO-NULLABLE-GENERIC
-                _value = default(TValue)!; // TODO-NULLABLE-GENERIC
+                _key = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _value = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
 
             public void Dispose()
             {
                 _index = 0;
-                _key = default(TKey)!; // TODO-NULLABLE-GENERIC
-                _value = default(TValue)!; // TODO-NULLABLE-GENERIC
+                _key = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _value = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
 
             object IDictionaryEnumerator.Key
@@ -814,8 +815,8 @@ namespace System.Collections.Generic
                 }
 
                 _index = _sortedList.Count + 1;
-                _key = default(TKey)!; // TODO-NULLABLE-GENERIC
-                _value = default(TValue)!; // TODO-NULLABLE-GENERIC
+                _key = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _value = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
                 return false;
             }
 
@@ -881,8 +882,8 @@ namespace System.Collections.Generic
                 }
 
                 _index = 0;
-                _key = default(TKey)!; // TODO-NULLABLE-GENERIC
-                _value = default(TValue)!; // TODO-NULLABLE-GENERIC
+                _key = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _value = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
         }
 
@@ -891,7 +892,7 @@ namespace System.Collections.Generic
             private SortedList<TKey, TValue> _sortedList;
             private int _index;
             private int _version;
-            private TKey _currentKey = default!;
+            [AllowNull] private TKey _currentKey = default!;
 
             internal SortedListKeyEnumerator(SortedList<TKey, TValue> sortedList)
             {
@@ -902,7 +903,7 @@ namespace System.Collections.Generic
             public void Dispose()
             {
                 _index = 0;
-                _currentKey = default(TKey)!; // TODO-NULLABLE-GENERIC
+                _currentKey = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
 
             public bool MoveNext()
@@ -920,7 +921,7 @@ namespace System.Collections.Generic
                 }
 
                 _index = _sortedList.Count + 1;
-                _currentKey = default(TKey)!; // TODO-NULLABLE-GENERIC
+                _currentKey = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
                 return false;
             }
 
@@ -952,7 +953,7 @@ namespace System.Collections.Generic
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
                 _index = 0;
-                _currentKey = default(TKey)!; // TODO-NULLABLE-GENERIC
+                _currentKey = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
         }
 
@@ -961,7 +962,7 @@ namespace System.Collections.Generic
             private SortedList<TKey, TValue> _sortedList;
             private int _index;
             private int _version;
-            private TValue _currentValue = default!;
+            [AllowNull] private TValue _currentValue = default!;
 
             internal SortedListValueEnumerator(SortedList<TKey, TValue> sortedList)
             {
@@ -972,7 +973,7 @@ namespace System.Collections.Generic
             public void Dispose()
             {
                 _index = 0;
-                _currentValue = default(TValue)!; // TODO-NULLABLE-GENERIC
+                _currentValue = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
 
             public bool MoveNext()
@@ -990,7 +991,7 @@ namespace System.Collections.Generic
                 }
 
                 _index = _sortedList.Count + 1;
-                _currentValue = default(TValue)!; // TODO-NULLABLE-GENERIC
+                _currentValue = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
                 return false;
             }
 
@@ -1022,7 +1023,7 @@ namespace System.Collections.Generic
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
                 _index = 0;
-                _currentValue = default(TValue)!; // TODO-NULLABLE-GENERIC
+                _currentValue = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
         }
 

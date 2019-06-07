@@ -15,6 +15,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -334,11 +335,11 @@ namespace System.Collections.Concurrent
         /// <returns>true if an object was removed successfully; otherwise, false.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="key"/> is a null reference
         /// (Nothing in Visual Basic).</exception>
-        public bool TryRemove(TKey key, out TValue value) // TODO-NULLABLE-GENERIC
+        public bool TryRemove(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             if (key == null) ThrowKeyNullException();
 
-            return TryRemoveInternal(key, out value, false, default(TValue)!); // TODO-NULLABLE-GENERIC
+            return TryRemoveInternal(key, out value, false, default(TValue)!); // TODO-NULLABLE: Remove ! when nullable attributes are respected
         }
 
         /// <summary>
@@ -351,7 +352,7 @@ namespace System.Collections.Concurrent
         /// <param name="matchValue">Whether removal of the key is conditional on its value.</param>
         /// <param name="oldValue">The conditional value to compare against if <paramref name="matchValue"/> is true</param>
         /// <returns></returns>
-        private bool TryRemoveInternal(TKey key, out TValue value, bool matchValue, TValue oldValue) // TODO-NULLABLE-GENERIC
+        private bool TryRemoveInternal(TKey key, [MaybeNullWhen(false)] out TValue value, bool matchValue, [AllowNull] TValue oldValue)
         {
             int hashcode = _comparer.GetHashCode(key);
             while (true)
@@ -382,7 +383,7 @@ namespace System.Collections.Concurrent
                                 bool valuesMatch = EqualityComparer<TValue>.Default.Equals(oldValue, curr._value);
                                 if (!valuesMatch)
                                 {
-                                    value = default(TValue)!; // TODO-NULLABLE-GENERIC
+                                    value = default(TValue)!;
                                     return false;
                                 }
                             }
@@ -404,7 +405,7 @@ namespace System.Collections.Concurrent
                     }
                 }
 
-                value = default(TValue)!; // TODO-NULLABLE-GENERIC
+                value = default(TValue)!;
                 return false;
             }
         }
@@ -422,13 +423,13 @@ namespace System.Collections.Concurrent
         /// otherwise, false.</returns>
         /// <exception cref="T:System.ArgumentNullException"><paramref name="key"/> is a null reference
         /// (Nothing in Visual Basic).</exception>
-        public bool TryGetValue(TKey key, out TValue value) // TODO-NULLABLE-GENERIC
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
             if (key == null) ThrowKeyNullException();
             return TryGetValueInternal(key, _comparer.GetHashCode(key), out value);
         }
 
-        private bool TryGetValueInternal(TKey key, int hashcode, out TValue value) // TODO-NULLABLE-GENERIC
+        private bool TryGetValueInternal(TKey key, int hashcode, [MaybeNullWhen(false)] out TValue value)
         {
             Debug.Assert(_comparer.GetHashCode(key) == hashcode);
 
@@ -452,7 +453,7 @@ namespace System.Collections.Concurrent
                 n = n._next;
             }
 
-            value = default(TValue)!; // TODO-NULLABLE-GENERIC
+            value = default(TValue)!;
             return false;
         }
 
@@ -913,7 +914,7 @@ namespace System.Collections.Concurrent
                     ThrowValueNullException();
                 }
             }
-            else if (default(TValue)! != null) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34757
+            else if (default(TValue)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
             {
                 ThrowValueNullException();
             }
@@ -1607,7 +1608,7 @@ namespace System.Collections.Concurrent
                 if (!(key is TKey)) throw new ArgumentException(SR.ConcurrentDictionary_TypeOfKeyIncorrect);
                 ThrowIfInvalidObjectValue(value);
 
-                ((ConcurrentDictionary<TKey, TValue>)this)[(TKey)key] = (TValue)value!; // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+                ((ConcurrentDictionary<TKey, TValue>)this)[(TKey)key] = (TValue)value!;
             }
         }
 
@@ -2062,7 +2063,7 @@ namespace System.Collections.Concurrent
                 get { return _enumerator.Current.Value; }
             }
 
-#pragma warning disable CS8612 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
+#pragma warning disable CS8612 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
             public object Current
 #pragma warning restore CS8612
             {

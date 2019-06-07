@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -98,7 +99,7 @@ namespace System.Collections.Concurrent
         /// removed from the <see cref="ConcurrentBag{T}"/> or the default value
         /// of <typeparamref name="T"/> if the operation failed.</param>
         /// <returns>true if an object was removed successfully; otherwise, false.</returns>
-        public bool TryTake(out T result) // TODO-NULLABLE-GENERIC
+        public bool TryTake([MaybeNullWhen(false)] out T result)
         {
             WorkStealingQueue? queue = GetCurrentThreadWorkStealingQueue(forceCreate: false);
             return (queue != null && queue.TryLocalPop(out result)) || TrySteal(out result, take: true);
@@ -111,7 +112,7 @@ namespace System.Collections.Concurrent
         /// the <see cref="ConcurrentBag{T}"/> or the default value of
         /// <typeparamref name="T"/> if the operation failed.</param>
         /// <returns>true if and object was returned successfully; otherwise, false.</returns>
-        public bool TryPeek(out T result) // TODO-NULLABLE-GENERIC
+        public bool TryPeek([MaybeNullWhen(false)] out T result)
         {
             WorkStealingQueue? queue = GetCurrentThreadWorkStealingQueue(forceCreate: false);
             return (queue != null && queue.TryLocalPeek(out result)) || TrySteal(out result, take: false);
@@ -120,7 +121,7 @@ namespace System.Collections.Concurrent
         /// <summary>Gets the work-stealing queue data structure for the current thread.</summary>
         /// <param name="forceCreate">Whether to create a new queue if this thread doesn't have one.</param>
         /// <returns>The local queue object, or null if the thread doesn't have one.</returns>
-        private WorkStealingQueue? GetCurrentThreadWorkStealingQueue(bool forceCreate) => // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        private WorkStealingQueue? GetCurrentThreadWorkStealingQueue(bool forceCreate) =>
             _locals.Value ??
             (forceCreate ? CreateWorkStealingQueueForCurrentThread() : null);
 
@@ -234,7 +235,7 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// Attempts to steal from each queue starting from <paramref name="startInclusive"/> to <paramref name="endExclusive"/>.
         /// </summary>
-        private bool TryStealFromTo(WorkStealingQueue? startInclusive, WorkStealingQueue? endExclusive, out T result, bool take) // TODO-NULLABLE-GENERIC
+        private bool TryStealFromTo(WorkStealingQueue? startInclusive, WorkStealingQueue? endExclusive, [MaybeNullWhen(false)] out T result, bool take)
         {
             for (WorkStealingQueue? queue = startInclusive; queue != endExclusive; queue = queue._nextQueue)
             {
@@ -244,7 +245,7 @@ namespace System.Collections.Concurrent
                 }
             }
 
-            result = default(T)!; // TODO-NULLABLE-GENERIC
+            result = default(T)!;
             return false;
         }
 
@@ -859,7 +860,7 @@ namespace System.Collections.Concurrent
 
             /// <summary>Remove an item from the tail of the queue.</summary>
             /// <param name="result">The removed item</param>
-            internal bool TryLocalPop(out T result) // TODO-NULLABLE-GENERIC
+            internal bool TryLocalPop([MaybeNullWhen(false)] out T result)
             {
                 Debug.Assert(Environment.CurrentManagedThreadId == _ownerThreadId);
 
@@ -888,7 +889,7 @@ namespace System.Collections.Concurrent
                     {
                         int idx = tail & _mask;
                         result = _array[idx];
-                        _array[idx] = default(T)!; // TODO-NULLABLE-GENERIC
+                        _array[idx] = default(T)!;
                         _addTakeCount--;
                         return true;
                     }
@@ -910,7 +911,7 @@ namespace System.Collections.Concurrent
                         {
                             // We encountered a race condition and the element was stolen, restore the tail.
                             _tailIndex = tail + 1;
-                            result = default(T)!; // TODO-NULLABLE-GENERIC
+                            result = default(T)!;
                             return false;
                         }
                     }
@@ -928,7 +929,7 @@ namespace System.Collections.Concurrent
             /// <summary>Peek an item from the tail of the queue.</summary>
             /// <param name="result">the peeked item</param>
             /// <returns>True if succeeded, false otherwise</returns>
-            internal bool TryLocalPeek(out T result) // TODO-NULLABLE-GENERIC
+            internal bool TryLocalPeek([MaybeNullWhen(false)] out T result)
             {
                 Debug.Assert(Environment.CurrentManagedThreadId == _ownerThreadId);
 
@@ -954,14 +955,14 @@ namespace System.Collections.Concurrent
                     }
                 }
 
-                result = default(T)!; // TODO-NULLABLE-GENERIC
+                result = default(T)!;
                 return false;
             }
 
             /// <summary>Steal an item from the head of the queue.</summary>
             /// <param name="result">the removed item</param>
             /// <param name="take">true to take the item; false to simply peek at it</param>
-            internal bool TrySteal(out T result, bool take) // TODO-NULLABLE-GENERIC
+            internal bool TrySteal([MaybeNullWhen(false)] out T result, bool take)
             {
                 lock (this)
                 {
@@ -992,7 +993,7 @@ namespace System.Collections.Concurrent
                         {
                             int idx = head & _mask;
                             result = _array[idx];
-                            _array[idx] = default(T)!; // TODO-NULLABLE-GENERIC
+                            _array[idx] = default(T)!;
                             _stealCount++;
                             return true;
                         }
@@ -1011,7 +1012,7 @@ namespace System.Collections.Concurrent
                 }
 
                 // The queue was empty.
-                result = default(T)!; // TODO-NULLABLE-GENERIC
+                result = default(T)!;
                 return false;
             }
 
@@ -1081,7 +1082,7 @@ namespace System.Collections.Concurrent
         private sealed class Enumerator : IEnumerator<T>
         {
             private readonly T[] _array;
-            private T _current = default!;
+            [AllowNull] private T _current = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             private int _index;
 
             public Enumerator(T[] array)
@@ -1119,7 +1120,7 @@ namespace System.Collections.Concurrent
             public void Reset()
             {
                 _index = 0;
-                _current = default(T)!; // TODO-NULLABLE-GENERIC
+                _current = default(T)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
             }
 
             public void Dispose() { }

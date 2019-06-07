@@ -56,7 +56,7 @@ namespace System.Threading.Tasks.Sources
             // Reset/update state for the next use/await of this instance.
             _version++;
             _completed = false;
-            _result = default!; // TODO-NULLABLE-GENERIC
+            _result = default!;
             _error = null;
             _executionContext = null;
             _capturedContext = null;
@@ -114,7 +114,7 @@ namespace System.Threading.Tasks.Sources
         /// <param name="state">The state object to pass to <paramref name="continuation"/> when it's invoked.</param>
         /// <param name="token">Opaque value that was provided to the <see cref="ValueTask"/>'s constructor.</param>
         /// <param name="flags">The flags describing the behavior of the continuation.</param>
-        public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/26761
+        public void OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags)
         {
             if (continuation == null)
             {

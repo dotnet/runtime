@@ -41,7 +41,7 @@ namespace System.Buffers
                     if (nextSegment == null)
                         ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
 
-                    next = new SequencePosition(nextSegment!, 0); // TODO-NULLABLE: https://github.com/dotnet/csharplang/issues/538
+                    next = new SequencePosition(nextSegment!, 0); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                     memory = startSegment.Memory.Slice(startIndex);
                 }
                 else
