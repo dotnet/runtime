@@ -10,14 +10,20 @@
 
     <!-- Include the platform manifest in the data dir. -->
     <PlatformManifestTargetPath>data/PlatformManifest.txt</PlatformManifestTargetPath>
-    <FrameworkListTargetPath>data/</FrameworkListTargetPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Runtime'))">
+    <FrameworkPackType>runtime</FrameworkPackType>
+    <BuildRidSpecificPacks>true</BuildRidSpecificPacks>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Host'))">
     <FrameworkPackType>apphost</FrameworkPackType>
-
-    <!-- AppHost packs are only per-RID, e.g. 'Microsoft.NETCore.App.Host.win-x64'. -->
     <BuildRidSpecificPacks>true</BuildRidSpecificPacks>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BuildRidSpecificPacks)' == 'true'">
+    <!-- RID-specific packs don't have a lineup package. -->
     <BuildLineupPackage>false</BuildLineupPackage>
 
     <!--
@@ -46,6 +52,9 @@
 
     <!-- Location to lay out pack contents, and where to grab bits to create installers. -->
     <PackLayoutDir>$(InstallerSourceIntermediateOutputDir)layout/$(FrameworkPackType)/</PackLayoutDir>
+
+    <!-- Include a list of framework files in the data dir. -->
+    <FrameworkListTargetPath>data/</FrameworkListTargetPath>
   </PropertyGroup>
 
   <PropertyGroup>

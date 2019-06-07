@@ -23,6 +23,14 @@
       <WixProductMoniker>$(AppHostPackBrandName)</WixProductMoniker>
     </PropertyGroup>
 
+    <!-- Runtime packs are obtained only through NuGet. -->
+    <PropertyGroup Condition="'$(FrameworkPackType)' == 'runtime'">
+      <BuildDebPackage>false</BuildDebPackage>
+      <BuildRpmPackage>false</BuildRpmPackage>
+      <GeneratePkg>false</GeneratePkg>
+      <GenerateMSI>false</GenerateMSI>
+    </PropertyGroup>
+
     <PropertyGroup Condition="'$(GenerateSharedFramework)' == 'true'">
       <InstallerName>$(ShortFrameworkName)-runtime</InstallerName>
       <WixProductMoniker>$(SharedFrameworkBrandName)</WixProductMoniker>
