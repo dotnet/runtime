@@ -117,7 +117,6 @@ static InstructionSet X64VersionOfIsa(InstructionSet isa)
             return InstructionSet_POPCNT_X64;
         default:
             unreached();
-            return InstructionSet_ILLEGAL;
     }
 }
 
@@ -396,10 +395,7 @@ GenTree* HWIntrinsicInfo::lookupLastOp(const GenTreeHWIntrinsic* node)
         }
 
         default:
-        {
             unreached();
-            return nullptr;
-        }
     }
 }
 
@@ -660,7 +656,6 @@ GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdT
 
         default:
             unreached();
-            return nullptr;
     }
 }
 
@@ -906,9 +901,9 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
                 op3 = addRangeCheckIfNeeded(intrinsic, op3, mustExpand);
 
-                argType = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
-                op2     = getArgForHWIntrinsic(argType, argClass);
-                var_types op2Type;
+                argType           = JITtype2varType(strip(info.compCompHnd->getArgType(sig, arg2, &argClass)));
+                op2               = getArgForHWIntrinsic(argType, argClass);
+                var_types op2Type = TYP_UNDEF;
                 if (intrinsic == NI_AVX2_GatherVector128 || intrinsic == NI_AVX2_GatherVector256)
                 {
                     assert(varTypeIsSIMD(op2->TypeGet()));
@@ -1958,10 +1953,7 @@ GenTree* Compiler::impBMI1OrBMI2Intrinsic(NamedIntrinsic        intrinsic,
         }
 
         default:
-        {
             unreached();
-            return nullptr;
-        }
     }
 }
 

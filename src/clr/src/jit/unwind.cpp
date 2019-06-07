@@ -120,9 +120,10 @@ void Compiler::unwindGetFuncLocations(FuncInfoDsc*             func,
 
 #if defined(_TARGET_UNIX_)
 
-void Compiler::createCfiCode(FuncInfoDsc* func, UCHAR codeOffset, UCHAR cfiOpcode, USHORT dwarfReg, INT offset)
+void Compiler::createCfiCode(FuncInfoDsc* func, UNATIVE_OFFSET codeOffset, UCHAR cfiOpcode, short dwarfReg, INT offset)
 {
-    CFI_CODE cfiEntry(codeOffset, cfiOpcode, dwarfReg, offset);
+    noway_assert(static_cast<UCHAR>(codeOffset) == codeOffset);
+    CFI_CODE cfiEntry(static_cast<UCHAR>(codeOffset), cfiOpcode, dwarfReg, offset);
     func->cfiCodes->push_back(cfiEntry);
 }
 
@@ -130,9 +131,8 @@ void Compiler::unwindPushPopCFI(regNumber reg)
 {
     assert(compGeneratingProlog);
 
-    FuncInfoDsc* func     = funCurrentFunc();
-    unsigned int cbProlog = unwindGetCurrentOffset(func);
-    noway_assert((BYTE)cbProlog == cbProlog);
+    FuncInfoDsc*   func     = funCurrentFunc();
+    UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
 
     regMaskTP relOffsetMask = RBM_CALLEE_SAVED
 #if defined(UNIX_AMD64_ABI) && ETW_EBP_FRAMED
@@ -205,12 +205,11 @@ void Compiler::unwindPushPopMaskCFI(regMaskTP regMask, bool isFloat)
 void Compiler::unwindAllocStackCFI(unsigned size)
 {
     assert(compGeneratingProlog);
-    FuncInfoDsc* func     = funCurrentFunc();
-    unsigned int cbProlog = 0;
+    FuncInfoDsc*   func     = funCurrentFunc();
+    UNATIVE_OFFSET cbProlog = 0;
     if (compGeneratingProlog)
     {
         cbProlog = unwindGetCurrentOffset(func);
-        noway_assert((BYTE)cbProlog == cbProlog);
     }
     createCfiCode(func, cbProlog, CFI_ADJUST_CFA_OFFSET, DWARF_REG_ILLEGAL, size);
 }
@@ -225,9 +224,8 @@ void Compiler::unwindAllocStackCFI(unsigned size)
 void Compiler::unwindSetFrameRegCFI(regNumber reg, unsigned offset)
 {
     assert(compGeneratingProlog);
-    FuncInfoDsc* func     = funCurrentFunc();
-    unsigned int cbProlog = unwindGetCurrentOffset(func);
-    noway_assert((BYTE)cbProlog == cbProlog);
+    FuncInfoDsc*   func     = funCurrentFunc();
+    UNATIVE_OFFSET cbProlog = unwindGetCurrentOffset(func);
 
     createCfiCode(func, cbProlog, CFI_DEF_CFA_REGISTER, mapRegNumToDwarfReg(reg));
     if (offset != 0)

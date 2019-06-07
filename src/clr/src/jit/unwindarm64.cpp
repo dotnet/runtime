@@ -19,9 +19,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #if defined(_TARGET_ARM64_)
 
 #if defined(_TARGET_UNIX_)
-int Compiler::mapRegNumToDwarfReg(regNumber reg)
+short Compiler::mapRegNumToDwarfReg(regNumber reg)
 {
-    int dwarfReg = DWARF_REG_ILLEGAL;
+    short dwarfReg = DWARF_REG_ILLEGAL;
 
     NYI("CFI codes");
 
