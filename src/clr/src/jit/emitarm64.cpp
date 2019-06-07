@@ -10849,8 +10849,9 @@ void emitter::emitDispIns(
             break;
 
         case IF_BR_1B: // BR_1B   ................ ......nnnnn.....         Rn
+            // The size of a branch target is always EA_PTRSIZE
             assert(insOptsNone(id->idInsOpt()));
-            emitDispReg(id->idReg3(), size, false);
+            emitDispReg(id->idReg3(), EA_PTRSIZE, false);
             break;
 
         case IF_LS_1A: // LS_1A   XX...V..iiiiiiii iiiiiiiiiiittttt      Rt    PC imm(1MB)
