@@ -89,7 +89,37 @@ namespace System.IO.Pipelines
         /// <summary>
         /// Asynchronously reads the bytes from the <see cref="PipeReader"/> and writes them to the specified stream, using a specified buffer size and cancellation token.
         /// </summary>
-        /// <param name="destination">The stream to which the contents of the current stream will be copied.</param>
+        /// <param name="destination">The <see cref="PipeWriter"/> to which the contents of the current stream will be copied.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous copy operation.</returns>
+        public virtual Task CopyToAsync(PipeWriter destination, CancellationToken cancellationToken = default)
+        {
+            if (destination == null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            return CopyToAsyncCore(destination, async (destination, memory, cancellationToken) =>
+            {
+                FlushResult result = await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
+
+                if (result.IsCanceled)
+                {
+                    ThrowHelper.ThrowOperationCanceledException_FlushCanceled();
+                }
+            },
+            cancellationToken);
+        }
+
+        /// <summary>
+        /// Asynchronously reads the bytes from the <see cref="PipeReader"/> and writes them to the specified stream, using a specified buffer size and cancellation token.
+        /// </summary>
+        /// <param name="destination">The <see cref="Stream"/> to which the contents of the current stream will be copied.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
         /// <returns>A task that represents the asynchronous copy operation.</returns>
         public virtual Task CopyToAsync(Stream destination, CancellationToken cancellationToken = default)
@@ -104,10 +134,13 @@ namespace System.IO.Pipelines
                 return Task.FromCanceled(cancellationToken);
             }
 
-            return CopyToAsyncCore(destination, cancellationToken);
+            return CopyToAsyncCore(
+                destination,
+                (destination, memory, cancellationToken) => destination.WriteAsync(memory, cancellationToken),
+                cancellationToken);
         }
 
-        private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
+        private async Task CopyToAsyncCore<TStream>(TStream destination, Func<TStream, ReadOnlyMemory<byte>, CancellationToken, ValueTask> writeAsync, CancellationToken cancellationToken)
         {
             while (true)
             {
@@ -126,7 +159,7 @@ namespace System.IO.Pipelines
 
                     while (buffer.TryGet(ref position, out ReadOnlyMemory<byte> memory))
                     {
-                        await destination.WriteAsync(memory, cancellationToken).ConfigureAwait(false);
+                        await writeAsync(destination, memory, cancellationToken).ConfigureAwait(false);
 
                         consumed = position;
                     }
