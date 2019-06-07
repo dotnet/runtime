@@ -48,7 +48,7 @@ namespace System.Net.WebSockets
             {
                 await _webSocket.ConnectAsync(uri, cancellationToken, options).ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (!(ex is OperationCanceledException && cancellationToken.IsCancellationRequested))
             {
                 WebErrorStatus status = RTWebSocketError.GetStatus(ex.HResult);
                 var inner = new Exception(status.ToString(), ex);
