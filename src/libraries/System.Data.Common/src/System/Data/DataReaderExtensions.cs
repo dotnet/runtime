@@ -88,7 +88,7 @@ namespace System.Data
         public static Task<T> GetFieldValueAsync<T>(this DbDataReader reader, string name, CancellationToken cancellationToken = default(CancellationToken))
         {
             AssertNotNull(reader);
-            return reader.GetFieldValueAsync<T>(reader.GetOrdinal(name));
+            return reader.GetFieldValueAsync<T>(reader.GetOrdinal(name), cancellationToken);
         }
 
         public static float GetFloat(this DbDataReader reader, string name)
@@ -168,7 +168,7 @@ namespace System.Data
         public static Task<bool> IsDBNullAsync(this DbDataReader reader, string name, CancellationToken cancellationToken = default(CancellationToken))
         {
             AssertNotNull(reader);
-            return reader.IsDBNullAsync(reader.GetOrdinal(name));
+            return reader.IsDBNullAsync(reader.GetOrdinal(name), cancellationToken);
         }
 
         private static void AssertNotNull(DbDataReader reader)
