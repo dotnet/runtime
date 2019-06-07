@@ -34,11 +34,6 @@
     <FrameworkListFileProfile Include="Microsoft.Win32.Registry.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileProfile Include="Microsoft.Win32.SystemEvents.dll" Profile="WindowsForms;WPF" />
     <FrameworkListFileProfile Include="PresentationCore.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationFramework-SystemCore.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationFramework-SystemData.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationFramework-SystemDrawing.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationFramework-SystemXml.dll" Profile="WPF" />
-    <FrameworkListFileProfile Include="PresentationFramework-SystemXmlLinq.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="PresentationFramework.Aero.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="PresentationFramework.Aero2.dll" Profile="WPF" />
     <FrameworkListFileProfile Include="PresentationFramework.AeroLite.dll" Profile="WPF" />
