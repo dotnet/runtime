@@ -1008,6 +1008,7 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method, MonoError *error)
 
 	marshal_types = g_newa (int, sig->param_count);
 	complex_count = complex_out_count = 0;
+	gboolean has_byreflike = FALSE;
 	for (i = 0; i < sig->param_count; i++) {
 		MonoType *ptype = sig->params[i];
 		int mt = mono_get_xdomain_marshal_type (ptype);
@@ -1022,6 +1023,10 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method, MonoError *error)
 			if (ptype->byref) complex_out_count++;
 		}
 		marshal_types [i] = mt;
+		/* Can't make a xdomain wrapper for a method with an IsByRefLike result */
+		if (!ptype->byref && m_class_is_byreflike (mono_class_from_mono_type_internal (ptype))) {
+			has_byreflike = TRUE;
+		}
 	}
 
 	if (sig->ret->type != MONO_TYPE_VOID) {
@@ -1030,9 +1035,25 @@ mono_marshal_get_xappdomain_invoke (MonoMethod *method, MonoError *error)
 		copy_return = ret_marshal_type != MONO_MARSHAL_SERIALIZE;
 	}
 	
+	/* Can't make a xdomain wrapper for a method with an IsByRefLike result */
+	if (!sig->ret->byref && m_class_is_byreflike (mono_class_from_mono_type_internal (sig->ret))) {
+		has_byreflike = TRUE;
+	}
+
 	/* Locals */
 
 #ifndef DISABLE_JIT
+	if (has_byreflike) {
+		/* Make a wrapper that throws a NotImplementedException if it's ever called */
+		mono_mb_emit_exception (mb, "NotImplementedException", "Cross AppDomain calls with IsByRefLike parameter or return types are not implemented");
+		info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+		info->d.remoting.method = method;
+		res = mono_remoting_mb_create_and_cache (method, mb, sig, sig->param_count + 16, info);
+		mono_mb_free (mb);
+		return res;
+	}
+
+
 	MonoType *object_type = mono_get_object_type ();
 	MonoType *byte_array_type = m_class_get_byval_arg (byte_array_class);
 	MonoType *int32_type = mono_get_int32_type ();
