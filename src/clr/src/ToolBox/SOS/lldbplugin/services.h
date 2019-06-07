@@ -26,7 +26,7 @@ private:
 
 public:
     LLDBServices(lldb::SBDebugger &debugger, lldb::SBCommandReturnObject &returnObject, lldb::SBProcess *process = nullptr, lldb::SBThread *thread = nullptr);
-    ~LLDBServices();
+    virtual ~LLDBServices();
  
     //----------------------------------------------------------------------------
     // IUnknown

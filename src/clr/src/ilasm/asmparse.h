@@ -19,6 +19,8 @@
 class ReadStream {
 public:
 
+    virtual ~ReadStream() = default;
+
     virtual unsigned getAll(__out char** ppch) = 0;
 
     // read at most 'buffLen' bytes into 'buff', Return the
@@ -276,7 +278,7 @@ class AsmParse : public ErrorReporter
 {
 public:
     AsmParse(ReadStream* stream, Assembler *aAssem);
-    ~AsmParse();
+    virtual ~AsmParse();
     void CreateEnvironment(ReadStream* stream);
 	void ParseFile(ReadStream* stream); 
         // The parser knows how to put line numbers on things and report the error 
