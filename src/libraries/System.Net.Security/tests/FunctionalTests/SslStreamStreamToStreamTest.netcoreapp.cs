@@ -16,14 +16,15 @@ namespace System.Net.Security.Tests
 
     public sealed class SslStreamStreamToStreamTest_MemoryAsync : SslStreamStreamToStreamTest_CancelableReadWriteAsync
     {
-        protected override async Task DoHandshake(SslStream clientSslStream, SslStream serverSslStream)
+        protected override async Task DoHandshake(SslStream clientSslStream, SslStream serverSslStream, X509Certificate serverCertificate = null, X509Certificate clientCertificate = null)
         {
-            using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
+            X509CertificateCollection clientCerts = clientCertificate != null ? new X509CertificateCollection() { clientCertificate } : null;
+            await WithServerCertificate(serverCertificate, async(certificate, name) =>
             {
-                Task t1 = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions() { TargetHost = certificate.GetNameInfo(X509NameType.SimpleName, false) }, CancellationToken.None);
-                Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions() { ServerCertificate = certificate }, CancellationToken.None);
+                Task t1 = clientSslStream.AuthenticateAsClientAsync(new SslClientAuthenticationOptions() { TargetHost = name, ClientCertificates = clientCerts }, CancellationToken.None);
+                Task t2 = serverSslStream.AuthenticateAsServerAsync(new SslServerAuthenticationOptions() { ServerCertificate = certificate, ClientCertificateRequired = clientCertificate != null }, CancellationToken.None);
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(t1, t2);
-            }
+            });
         }
 
         protected override Task<int> ReadAsync(Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
