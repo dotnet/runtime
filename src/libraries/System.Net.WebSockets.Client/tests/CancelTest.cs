@@ -16,7 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
-        public async Task ConnectAsync_Cancel_ThrowsWebSocketExceptionWithMessage(Uri server)
+        public async Task ConnectAsync_Cancel_ThrowsCancellationException(Uri server)
         {
             using (var cws = new ClientWebSocket())
             {
@@ -25,15 +25,7 @@ namespace System.Net.WebSockets.Client.Tests
                 var ub = new UriBuilder(server);
                 ub.Query = "delay10sec";
 
-                WebSocketException ex =
-                    await Assert.ThrowsAsync<WebSocketException>(() => cws.ConnectAsync(ub.Uri, cts.Token));
-                Assert.Equal(
-                    ResourceHelper.GetExceptionMessage("net_webstatus_ConnectFailure"),
-                    ex.Message);
-                if (PlatformDetection.IsNetCore) // bug fix in netcoreapp: https://github.com/dotnet/corefx/pull/35960
-                {
-                    Assert.Equal(WebSocketError.Faulted, ex.WebSocketErrorCode);
-                }
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cws.ConnectAsync(ub.Uri, cts.Token));
                 Assert.Equal(WebSocketState.Closed, cws.State);
             }
         }

@@ -223,10 +223,12 @@ namespace System.Net.WebSockets
                 Abort();
                 response?.Dispose();
 
-                if (exc is WebSocketException)
+                if (exc is WebSocketException ||
+                    (exc is OperationCanceledException && cancellationToken.IsCancellationRequested))
                 {
                     throw;
                 }
+
                 throw new WebSocketException(WebSocketError.Faulted, SR.net_webstatus_ConnectFailure, exc);
             }
             finally

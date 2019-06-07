@@ -267,5 +267,45 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(expectedCloseStatusDescription, cws.CloseStatusDescription);
             }
         }
+
+        [ConditionalFact(nameof(WebSocketsSupported))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
+        public async Task ConnectAsync_CancellationRequestedBeforeConnect_ThrowsOperationCanceledException()
+        {
+            using (var clientSocket = new ClientWebSocket())
+            {
+                var cts = new CancellationTokenSource();
+                cts.Cancel();
+                Task t = clientSocket.ConnectAsync(new Uri("ws://" + Guid.NewGuid().ToString("N")), cts.Token);
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+            }
+        }
+
+        [ConditionalFact(nameof(WebSocketsSupported))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
+        public async Task ConnectAsync_CancellationRequestedAfterConnect_ThrowsOperationCanceledException()
+        {
+            var releaseServer = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                var clientSocket = new ClientWebSocket();
+                try
+                {
+                    var cts = new CancellationTokenSource();
+                    Task t = clientSocket.ConnectAsync(uri, cts.Token);
+                    Assert.False(t.IsCompleted);
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t);
+                }
+                finally
+                {
+                    releaseServer.SetResult(true);
+                    clientSocket.Dispose();
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                await releaseServer.Task;
+            }), new LoopbackServer.Options { WebSocketEndpoint = true });
+        }
     }
 }
