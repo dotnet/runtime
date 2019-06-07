@@ -186,8 +186,6 @@ namespace System.IO.Pipelines
         /// <inheritdoc />
         public override void OnWriterCompleted(Action<Exception, object> callback, object state)
         {
-            // REVIEW: Do we fire this when the stream has ended?
-            throw new NotSupportedException("OnWriterCompleted is not supported");
         }
 
         /// <inheritdoc />

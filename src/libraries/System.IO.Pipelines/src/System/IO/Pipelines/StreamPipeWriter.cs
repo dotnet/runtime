@@ -232,7 +232,6 @@ namespace System.IO.Pipelines
         /// <inheritdoc />
         public override void OnReaderCompleted(Action<Exception, object> callback, object state)
         {
-            throw new NotSupportedException("OnReaderCompleted is not supported.");
         }
 
         /// <inheritdoc />

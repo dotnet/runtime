@@ -484,10 +484,11 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void OnWriterCompletedThrowsNotSupportedException()
         {
+            bool fired = false;
             PipeReader reader = PipeReader.Create(Stream.Null);
-
-            Assert.Throws<NotSupportedException>(() => reader.OnWriterCompleted((_, __) => { }, null));
+            reader.OnWriterCompleted((_, __) => { fired = true; }, null);
             reader.Complete();
+            Assert.False(fired);
         }
 
         [Fact]

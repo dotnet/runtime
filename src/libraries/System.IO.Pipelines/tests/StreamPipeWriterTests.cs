@@ -453,9 +453,11 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void OnReaderCompletedThrowsNotSupported()
         {
+            bool fired = false;
             PipeWriter writer = PipeWriter.Create(Stream.Null);
-            Assert.Throws<NotSupportedException>(() => writer.OnReaderCompleted((_, __) => { }, null));
+            writer.OnReaderCompleted((_, __) => { fired = true; }, null);
             writer.Complete();
+            Assert.False(fired);
         }
 
         private class FlushAsyncAwareStream : WriteOnlyStream
