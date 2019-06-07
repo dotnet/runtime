@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO.Pipelines.Tests.Infrastructure;
 using System.Linq;
@@ -21,8 +22,8 @@ namespace System.IO.Pipelines.Tests
         public async Task CopyToAsyncThrowsArgumentNullExceptionForNullDestination()
         {
             var pipe = new Pipe(s_testOptions);
-            var ex = await Assert.ThrowsAsync<ArgumentNullException>(() => pipe.Reader.CopyToAsync(null));
-            Assert.Equal("destination", ex.ParamName);
+            await AssertExtensions.ThrowsAsync<ArgumentNullException>("destination", () => pipe.Reader.CopyToAsync((Stream)null));
+            await AssertExtensions.ThrowsAsync<ArgumentNullException>("destination", () => pipe.Reader.CopyToAsync((PipeWriter)null));
         }
 
         [Fact]
@@ -33,7 +34,7 @@ namespace System.IO.Pipelines.Tests
         }
 
         [Fact]
-        public async Task CopyToAsyncWorks()
+        public async Task CopyToAsyncStreamWorks()
         {
             var messages = new List<byte[]>()
             {
@@ -55,6 +56,35 @@ namespace System.IO.Pipelines.Tests
             await task;
             
             Assert.Equal(messages.SelectMany(msg => msg).ToArray(), stream.ToArray());
+        }
+
+        [Fact]
+        public async Task CopyToAsyncPipeWriterWorks()
+        {
+            var messages = new List<byte[]>()
+            {
+                Encoding.UTF8.GetBytes("Hello World1"),
+                Encoding.UTF8.GetBytes("Hello World2"),
+                Encoding.UTF8.GetBytes("Hello World3"),
+            };
+
+            var pipe = new Pipe(s_testOptions);
+            var targetPipe = new Pipe(s_testOptions);
+
+            Task task = pipe.Reader.CopyToAsync(targetPipe.Writer);
+            foreach (var msg in messages)
+            {
+                await pipe.Writer.WriteAsync(msg);
+            }
+            pipe.Writer.Complete();
+            await task;
+
+            ReadResult readResult = await targetPipe.Reader.ReadAsync();
+            Assert.Equal(messages.SelectMany(msg => msg).ToArray(), readResult.Buffer.ToArray());
+
+            targetPipe.Reader.AdvanceTo(readResult.Buffer.End);
+            targetPipe.Reader.Complete();
+            targetPipe.Writer.Complete();
         }
 
         [Fact]
@@ -160,6 +190,35 @@ namespace System.IO.Pipelines.Tests
             Task task = pipe.Reader.CopyToAsync(stream, cts.Token);
 
             cts.Cancel();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(() => task);
+        }
+
+        [Fact]
+        public async Task CancelingPipeWriterViaCancellationTokenThrowsOperationCancelledException()
+        {
+            var pipe = new Pipe(s_testOptions);
+            // This should make the write call pause
+            var targetPipe = new Pipe(new PipeOptions(pauseWriterThreshold: 1, resumeWriterThreshold: 1));
+            var cts = new CancellationTokenSource();
+            await pipe.Writer.WriteAsync(Encoding.ASCII.GetBytes("Gello World"));
+            Task task = pipe.Reader.CopyToAsync(targetPipe.Writer, cts.Token);
+
+            cts.Cancel();
+
+            await Assert.ThrowsAsync<OperationCanceledException>(() => task);
+        }
+
+        [Fact]
+        public async Task CancelingPipeWriterViaPendingFlushThrowsOperationCancelledException()
+        {
+            var pipe = new Pipe(s_testOptions);
+            // This should make the write call pause
+            var targetPipe = new Pipe(new PipeOptions(pauseWriterThreshold: 1, resumeWriterThreshold: 1));
+            await pipe.Writer.WriteAsync(Encoding.ASCII.GetBytes("Gello World"));
+            Task task = pipe.Reader.CopyToAsync(targetPipe.Writer);
+
+            targetPipe.Writer.CancelPendingFlush();
 
             await Assert.ThrowsAsync<OperationCanceledException>(() => task);
         }

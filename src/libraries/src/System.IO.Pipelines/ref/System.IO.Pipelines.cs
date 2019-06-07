@@ -47,6 +47,7 @@ namespace System.IO.Pipelines
         public virtual System.IO.Stream AsStream() { throw null; }
         public abstract void CancelPendingRead();
         public abstract void Complete(System.Exception exception = null);
+        public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Pipelines.PipeWriter destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual System.Threading.Tasks.Task CopyToAsync(System.IO.Stream destination, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.IO.Pipelines.PipeReader Create(System.IO.Stream stream, System.IO.Pipelines.StreamPipeReaderOptions readerOptions = null) { throw null; }
         public abstract void OnWriterCompleted(System.Action<System.Exception, object> callback, object state);
