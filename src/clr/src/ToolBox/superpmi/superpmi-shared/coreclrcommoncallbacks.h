@@ -10,11 +10,6 @@
 
 IExecutionEngine* STDMETHODCALLTYPE IEE_t();
 HRESULT STDMETHODCALLTYPE GetCORSystemDirectory(LPWSTR pbuffer, DWORD cchBuffer, DWORD* pdwlength);
-LPVOID STDMETHODCALLTYPE EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes);
-BOOL STDMETHODCALLTYPE EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem);
 void* STDMETHODCALLTYPE GetCLRFunction(LPCSTR functionName);
-
-typedef LPVOID(STDMETHODCALLTYPE* pfnEEHeapAllocInProcessHeap)(DWORD dwFlags, SIZE_T dwBytes);
-typedef BOOL(STDMETHODCALLTYPE* pfnEEHeapFreeInProcessHeap)(DWORD dwFlags, LPVOID lpMem);
 
 #endif

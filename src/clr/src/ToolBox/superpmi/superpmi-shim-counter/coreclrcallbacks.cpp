@@ -8,8 +8,6 @@
 #include "iexecutionengine.h"
 
 CoreClrCallbacks*           original_CoreClrCallbacks         = nullptr;
-pfnEEHeapAllocInProcessHeap original_EEHeapAllocInProcessHeap = nullptr;
-pfnEEHeapFreeInProcessHeap  original_EEHeapFreeInProcessHeap  = nullptr;
 
 IExecutionEngine* STDMETHODCALLTYPE IEE_t()
 {
@@ -26,33 +24,7 @@ HRESULT STDMETHODCALLTYPE GetCORSystemDirectory(LPWSTR pbuffer, DWORD cchBuffer,
 }
 */
 
-LPVOID STDMETHODCALLTYPE EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes)
-{
-    if (original_EEHeapAllocInProcessHeap == nullptr)
-        __debugbreak();
-    return original_EEHeapAllocInProcessHeap(dwFlags, dwBytes);
-}
-
-BOOL STDMETHODCALLTYPE EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem)
-{
-    if (original_EEHeapFreeInProcessHeap == nullptr)
-        __debugbreak();
-    return original_EEHeapFreeInProcessHeap(dwFlags, lpMem);
-}
-
 void* STDMETHODCALLTYPE GetCLRFunction(LPCSTR functionName)
 {
-    if (strcmp(functionName, "EEHeapAllocInProcessHeap") == 0)
-    {
-        original_EEHeapAllocInProcessHeap =
-            (pfnEEHeapAllocInProcessHeap)original_CoreClrCallbacks->m_pfnGetCLRFunction("EEHeapAllocInProcessHeap");
-        return (void*)EEHeapAllocInProcessHeap;
-    }
-    if (strcmp(functionName, "EEHeapFreeInProcessHeap") == 0)
-    {
-        original_EEHeapFreeInProcessHeap =
-            (pfnEEHeapFreeInProcessHeap)original_CoreClrCallbacks->m_pfnGetCLRFunction("EEHeapFreeInProcessHeap");
-        return (void*)EEHeapFreeInProcessHeap;
-    }
     return original_CoreClrCallbacks->m_pfnGetCLRFunction(functionName);
 }

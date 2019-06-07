@@ -24,33 +24,8 @@ HRESULT STDMETHODCALLTYPE GetCORSystemDirectory(LPWSTR pbuffer, DWORD cchBuffer,
 
 HANDLE ourHeap = nullptr;
 
-LPVOID STDMETHODCALLTYPE EEHeapAllocInProcessHeap(DWORD dwFlags, SIZE_T dwBytes)
-{
-    if (ourHeap == nullptr)
-        ourHeap = HeapCreate(0, 4096, 0);
-    if (ourHeap == nullptr)
-    {
-        LogError("HeapCreate Failed");
-        __debugbreak();
-        return nullptr;
-    }
-    LPVOID result = HeapAlloc(ourHeap, dwFlags, dwBytes);
-    //   LogDebug("EEHeapAllocInProcessHeap %p %u %u", result, dwFlags, dwBytes);
-    return result;
-}
-
-BOOL STDMETHODCALLTYPE EEHeapFreeInProcessHeap(DWORD dwFlags, LPVOID lpMem)
-{
-    //  return true;
-    return HeapFree(ourHeap, dwFlags, lpMem);
-}
-
 void* STDMETHODCALLTYPE GetCLRFunction(LPCSTR functionName)
 {
-    if (strcmp(functionName, "EEHeapAllocInProcessHeap") == 0)
-        return (void*)EEHeapAllocInProcessHeap;
-    if (strcmp(functionName, "EEHeapFreeInProcessHeap") == 0)
-        return (void*)EEHeapFreeInProcessHeap;
     DebugBreakorAV(132);
     return nullptr;
 }

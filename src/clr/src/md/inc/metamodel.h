@@ -150,7 +150,7 @@ public:
     virtual int CommonIsRo() = 0;
     
     __checkReturn 
-    virtual HRESULT CommonGetCustomAttributeByName( // S_OK or error.
+    HRESULT CommonGetCustomAttributeByName( // S_OK or error.
         mdToken     tkObj,                  // [IN] Object with Custom Attribute.
         LPCUTF8     szName,                 // [IN] Name of desired Custom Attribute.
         const void  **ppData,               // [OUT] Put pointer to data here.
@@ -440,16 +440,6 @@ public:
         ULONG       ulTarget,           // target for search
         RID        *pRid) = 0;
 
-    // Search a table for multiple (adjacent) rows containing the given
-    //  key value.  EG, InterfaceImpls all point back to the implementing class.
-    __checkReturn 
-    HRESULT SearchTableForMultipleRows(     // First RID found, or 0.
-        ULONG       ixTbl,              // Table to search.
-        CMiniColDef sColumn,            // Sorted key column, containing search value.
-        ULONG       ulTarget,           // Target for search.
-        RID        *pEnd,               // [OPTIONAL, OUT]
-        RID        *pFoundRid);
-    
     // Search for a custom value with a given type.
     __checkReturn 
     HRESULT FindCustomAttributeFor(// RID of custom value, or 0.
@@ -731,6 +721,85 @@ public:
         }
         return hr;
     }
+
+    //*****************************************************************************
+    // Search a table for multiple (adjacent) rows containing the given
+    //  key value.  EG, InterfaceImpls all point back to the implementing class.
+    //*****************************************************************************
+    __checkReturn 
+    HRESULT SearchTableForMultipleRows(
+        ULONG       ixTbl,      // Table to search.
+        CMiniColDef sColumn,    // Sorted key column, containing search value.
+        ULONG       ulTarget,   // Target for search.
+        RID        *pEnd,       // [OPTIONAL, OUT] 
+        RID        *pFoundRid)  // First RID found, or 0.
+    {
+        HRESULT hr;
+        ULONG   ridBegin;   // RID of first entry.
+        ULONG   ridEnd;     // RID of first entry past last entry.
+        
+        // Search for any entry in the table.
+        IfFailRet(static_cast<Impl*>(this)->vSearchTable(ixTbl, sColumn, ulTarget, &ridBegin));
+
+        // If nothing found, return invalid RID.
+        if (ridBegin == 0)
+        {
+            if (pEnd != NULL)
+            {
+                *pEnd = 0;
+            }
+            *pFoundRid = 0;
+            return S_OK;
+        }
+
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // If you change the rows touched while searching, please update
+        // CMiniMdRW::GetHotMetadataTokensSearchAware
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        
+        // End will be at least one larger than found record.
+        ridEnd = ridBegin + 1;
+        
+        // Search back to start of group.
+        for (;;)
+        {
+            void *pRow;
+            if (ridBegin <= 1)
+            {
+                break;
+            }
+            IfFailRet(static_cast<Impl*>(this)->vGetRow(ixTbl, ridBegin-1, &pRow));
+            if (getIX(pRow, sColumn) != ulTarget)
+            {
+                break;
+            }
+            --ridBegin;
+        }
+        
+        // If desired, search forward to end of group.
+        if (pEnd != NULL)
+        {
+            for (;;)
+            {
+                void *pRow;
+                if (ridEnd > GetCountRecs(ixTbl))
+                {
+                    break;
+                }
+                IfFailRet(static_cast<Impl*>(this)->vGetRow(ixTbl, ridEnd, &pRow));
+                if (getIX(pRow, sColumn) != ulTarget)
+                {
+                    break;
+                }
+                ++ridEnd;
+            }
+            *pEnd = ridEnd;
+        }
+        
+        *pFoundRid = ridBegin;
+        return S_OK;
+    } // SearchTableForMultipleRows
 
     //*****************************************************************************
     // Get name and sig of a methodDef
