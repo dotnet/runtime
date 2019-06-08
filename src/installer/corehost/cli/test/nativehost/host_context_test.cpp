@@ -478,6 +478,8 @@ bool host_context_test::mixed(
     };
     std::thread app_start = std::thread(run_app);
 
+    wait_for_signal_mock_execute_assembly();
+
     bool success = config_test(hostfxr, check_properties, config_path, argc, argv, secondary_delegate_type, secondary_log_prefix, test_output);
     block_mock.unblock();
     app_start.join();
