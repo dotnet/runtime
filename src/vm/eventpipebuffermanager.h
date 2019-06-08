@@ -229,7 +229,7 @@ public:
     EventPipeBuffer* TryGetBuffer(LARGE_INTEGER beforeTimeStamp);
 
     // Convert the buffer into read only
-    void ConvertBufferToReadOnly(EventPipeBuffer *pNewReadBuffer);
+    bool TryConvertBufferToReadOnly(EventPipeBuffer *pNewReadBuffer);
 
 #ifdef _DEBUG
     // Validate the consistency of the list.
