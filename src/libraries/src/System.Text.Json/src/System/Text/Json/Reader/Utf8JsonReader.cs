@@ -501,22 +501,26 @@ namespace System.Text.Json
                 // Cannot create a span directly since it gets passed to instance methods on a ref struct.
                 unsafe
                 {
-                    byte* ptr = stackalloc byte[length];
-                    otherUtf8Text = new Span<byte>(ptr, length);
+                    byte* ptr = stackalloc byte[JsonConstants.StackallocThreshold];
+                    otherUtf8Text = new Span<byte>(ptr, JsonConstants.StackallocThreshold);
                 }
             }
 
             ReadOnlySpan<byte> utf16Text = MemoryMarshal.AsBytes(text);
             OperationStatus status = JsonWriterHelper.ToUtf8(utf16Text, otherUtf8Text, out int consumed, out int written);
             Debug.Assert(status != OperationStatus.DestinationTooSmall);
+            bool result;
             if (status > OperationStatus.DestinationTooSmall)   // Equivalent to: (status == NeedMoreData || status == InvalidData)
             {
-                return false;
+                result = false;
             }
-            Debug.Assert(status == OperationStatus.Done);
-            Debug.Assert(consumed == utf16Text.Length);
+            else
+            {
+                Debug.Assert(status == OperationStatus.Done);
+                Debug.Assert(consumed == utf16Text.Length);
 
-            bool result = TextEqualsHelper(otherUtf8Text.Slice(0, written));
+                result = TextEqualsHelper(otherUtf8Text.Slice(0, written));
+            }
 
             if (otherUtf8TextArray != null)
             {
