@@ -210,18 +210,20 @@ namespace System.Runtime.Loader
             }
         }
 
+#region AppDomainEvents
         // Occurs when an Assembly is loaded
-        public static event AssemblyLoadEventHandler AssemblyLoad;
+        internal static event AssemblyLoadEventHandler AssemblyLoad;
 
         // Occurs when resolution of type fails
-        public static event ResolveEventHandler TypeResolve;
+        internal static event ResolveEventHandler TypeResolve;
 
         // Occurs when resolution of resource fails
-        public static event ResolveEventHandler ResourceResolve;
+        internal static event ResolveEventHandler ResourceResolve;
 
         // Occurs when resolution of assembly fails
         // This event is fired after resolve events of AssemblyLoadContext fails
-        public static event ResolveEventHandler AssemblyResolve;
+        internal static event ResolveEventHandler AssemblyResolve;
+#endregion
 
         public static AssemblyLoadContext Default => DefaultAssemblyLoadContext.s_loadContext;
 

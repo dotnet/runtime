@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 {
                     DesignerNamespaceResolveEventArgs eventArgs = new DesignerNamespaceResolveEventArgs(namespaceName);
 
-                    handler(null /* AppDomain */, eventArgs);
+                    handler(AppDomain.CurrentDomain, eventArgs);
 
                     Collection<string> assemblyFilesCollection = eventArgs.ResolvedAssemblyFiles;
                     if (assemblyFilesCollection.Count > 0)
