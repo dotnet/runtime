@@ -2797,7 +2797,7 @@ compute_llvm_code_range (MonoAotModule *amodule, guint8 **code_start, guint8 **c
 			addr = get_method (i);
 			gsize val = (gsize)addr;
 			if (val) {
-				g_assert (val > prev);
+				//g_assert (val > prev);
 				if (val < min)
 					min = val;
 				else if (val > max)

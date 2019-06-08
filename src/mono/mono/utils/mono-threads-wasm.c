@@ -18,8 +18,9 @@ EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_base (void)
 {
+	// Return the bottom limit of the stack
 	return EM_ASM_INT ({
-		return STACK_BASE;
+		return STACK_MAX;
 	});
 }
 
@@ -31,7 +32,6 @@ wasm_get_stack_size (void)
 		return TOTAL_STACK;
 	});
 }
-
 
 int
 mono_thread_info_get_system_max_stack_size (void)

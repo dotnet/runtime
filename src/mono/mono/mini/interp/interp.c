@@ -2802,7 +2802,7 @@ static int opcode_counts[512];
 #define DUMP_INSTR()
 #endif
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(TARGET_WASM)
 #define USE_COMPUTED_GOTO 1
 #endif
 #if USE_COMPUTED_GOTO
