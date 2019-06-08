@@ -6,6 +6,7 @@ namespace System.Diagnostics.Tracing
         public void AddMetadata(string key, string value) { }
         public void Dispose() { }
         public string DisplayName { get { throw null; } set { } }
+        public string DisplayUnits { get { throw null; } set { } }
         public string Name { get { throw null; } }
         public System.Diagnostics.Tracing.EventSource EventSource { get { throw null; } }
     }
