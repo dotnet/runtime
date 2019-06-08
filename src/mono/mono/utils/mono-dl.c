@@ -43,7 +43,7 @@ static gboolean
 is_library_ar_archive (char *path)
 {
 	int lfd, readret;
-	char magic[SAIAMAG + 1];
+	char magic [SAIAMAG];
 	lfd = open (path, O_RDONLY);
 
 	/* don't assume it's an archive on error */
@@ -52,16 +52,10 @@ is_library_ar_archive (char *path)
 
 	readret = read (lfd, magic, SAIAMAG);
 	close (lfd);
-	if (readret != SAIAMAG)
-		return FALSE;
-
-	magic [SAIAMAG] = '\0';
-
 	/* check for equality with either version of header */
-	if (strncmp(magic, AIAMAG, SAIAMAG) == 0 ||
-	    strncmp(magic, AIAMAGBIG, SAIAMAG) == 0)
-		return TRUE;
-	return FALSE;
+	return readret == SAIAMAG &&
+		(memcmp (magic, AIAMAG, SAIAMAG) == 0 ||
+		 memcmp (magic, AIAMAGBIG, SAIAMAG) == 0);
 }
 #endif
 
