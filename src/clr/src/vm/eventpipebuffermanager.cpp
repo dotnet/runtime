@@ -572,20 +572,21 @@ void EventPipeBufferManager::WriteAllBuffersToFile(EventPipeFile *pFile, LARGE_I
         {
             EventPipeBufferList* pBufferList = bufferListList[i];
             EventPipeBuffer* pBuffer = bufferList[i];
-            pBufferList->ConvertBufferToReadOnly(pBuffer);
-
-            // Peek the next event out of the buffer.
-            EventPipeBuffer *pContainingBuffer = pBuffer;
-            EventPipeEventInstance *pNext = pBuffer->PeekNext(stopTimeStamp);
-            if (pNext != NULL)
+            if (pBufferList->TryConvertBufferToReadOnly(pBuffer))
             {
-                // If it's the oldest event we've seen, then save it.
-                if((pOldestInstance == NULL) ||
-                   (pOldestInstance->GetTimeStamp()->QuadPart > pNext->GetTimeStamp()->QuadPart))
+                // Peek the next event out of the buffer.
+                EventPipeBuffer *pContainingBuffer = pBuffer;
+                EventPipeEventInstance *pNext = pBuffer->PeekNext(stopTimeStamp);
+                if (pNext != NULL)
                 {
-                    pOldestInstance = pNext;
-                    pOldestContainingBuffer = pContainingBuffer;
-                    pOldestContainingList = pBufferList;
+                    // If it's the oldest event we've seen, then save it.
+                    if((pOldestInstance == NULL) ||
+                    (pOldestInstance->GetTimeStamp()->QuadPart > pNext->GetTimeStamp()->QuadPart))
+                    {
+                        pOldestInstance = pNext;
+                        pOldestContainingBuffer = pContainingBuffer;
+                        pOldestContainingList = pBufferList;
+                    }
                 }
             }
         }
@@ -653,30 +654,31 @@ EventPipeEventInstance* EventPipeBufferManager::GetNextEvent()
     {
         EventPipeBufferList* pBufferList = bufferListList[i];
         EventPipeBuffer* pBuffer = bufferList[i];
-        pBufferList->ConvertBufferToReadOnly(pBuffer);
-
-        // Peek the next event out of the buffer.
-        EventPipeBuffer *pContainingBuffer = pBuffer;
-
-        // PERF: This may be too aggressive? If this method is being called frequently enough to keep pace with the
-        // writing threads we could be in a state of high lock contention and lots of churning buffers. Each writer
-        // would take several locks, allocate a new buffer, write one event into it, then the reader would take the
-        // lock, convert the buffer to read-only and read the single event out of it. Allowing more events to accumulate
-        // in the buffers before converting between writable and read-only amortizes a lot of the overhead. One way
-        // to achieve that would be picking a stopTimeStamp that was Xms in the past. This would let Xms of events
-        // to accumulate in the write buffer before we converted it and forced the writer to allocate another. Other more
-        // sophisticated approaches would probably build a low overhead synchronization mechanism to read and write the
-        // buffer at the same time.
-        EventPipeEventInstance *pNext = pBuffer->PeekNext(stopTimeStamp);
-        if (pNext != NULL)
+        if (pBufferList->TryConvertBufferToReadOnly(pBuffer))
         {
-            // If it's the oldest event we've seen, then save it.
-            if((pOldestInstance == NULL) ||
-                (pOldestInstance->GetTimeStamp()->QuadPart > pNext->GetTimeStamp()->QuadPart))
+            // Peek the next event out of the buffer.
+            EventPipeBuffer *pContainingBuffer = pBuffer;
+
+            // PERF: This may be too aggressive? If this method is being called frequently enough to keep pace with the
+            // writing threads we could be in a state of high lock contention and lots of churning buffers. Each writer
+            // would take several locks, allocate a new buffer, write one event into it, then the reader would take the
+            // lock, convert the buffer to read-only and read the single event out of it. Allowing more events to accumulate
+            // in the buffers before converting between writable and read-only amortizes a lot of the overhead. One way
+            // to achieve that would be picking a stopTimeStamp that was Xms in the past. This would let Xms of events
+            // to accumulate in the write buffer before we converted it and forced the writer to allocate another. Other more
+            // sophisticated approaches would probably build a low overhead synchronization mechanism to read and write the
+            // buffer at the same time.
+            EventPipeEventInstance *pNext = pBuffer->PeekNext(stopTimeStamp);
+            if (pNext != NULL)
             {
-                pOldestInstance = pNext;
-                pOldestContainingBuffer = pContainingBuffer;
-                pOldestContainingList = pBufferList;
+                // If it's the oldest event we've seen, then save it.
+                if((pOldestInstance == NULL) ||
+                    (pOldestInstance->GetTimeStamp()->QuadPart > pNext->GetTimeStamp()->QuadPart))
+                {
+                    pOldestInstance = pNext;
+                    pOldestContainingBuffer = pContainingBuffer;
+                    pOldestContainingList = pBufferList;
+                }
             }
         }
     }
@@ -1033,7 +1035,7 @@ EventPipeBuffer* EventPipeBufferList::TryGetBuffer(LARGE_INTEGER beforeTimeStamp
     return candidate;
 }
 
-void EventPipeBufferList::ConvertBufferToReadOnly(EventPipeBuffer* pNewReadBuffer)
+bool EventPipeBufferList::TryConvertBufferToReadOnly(EventPipeBuffer* pNewReadBuffer)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(pNewReadBuffer != nullptr);
@@ -1043,8 +1045,17 @@ void EventPipeBufferList::ConvertBufferToReadOnly(EventPipeBuffer* pNewReadBuffe
         if (m_pThread->GetWriteBuffer(m_pManager) == pNewReadBuffer)
         {
             m_pThread->SetWriteBuffer(m_pManager, nullptr);
+            _ASSERTE(pNewReadBuffer->GetVolatileState() == EventPipeBufferState::READ_ONLY);
+            return true;
         }
     }
+    // It is possible that EventPipeBufferList::TryGetBuffer(...) returns a writable buffer
+    // yet it is not returned as EventPipeThread::GetWriteBuffer(...). This is because 
+    // EventPipeBufferManager::AllocateBufferForThread() insert the new writable buffer into 
+    // the EventPipeBufferList first, and then it is added to the writable buffer hash table
+    // by EventPipeThread::SetWriteBuffer() next. The two operations are not atomic so it is possible 
+    // to observe this partial state.
+    return pNewReadBuffer->GetVolatileState() == EventPipeBufferState::READ_ONLY;
 }
 
 void EventPipeBufferList::PopNextEvent(EventPipeBuffer *pContainingBuffer, EventPipeEventInstance *pNext)
