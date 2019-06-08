@@ -31,7 +31,7 @@ namespace System.Runtime.Loader
         private static extern void LoadFromPath(IntPtr ptrNativeAssemblyLoadContext, string? ilPath, string? niPath, ObjectHandleOnStack retAssembly);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern Assembly[] GetLoadedAssemblies();
+        internal static extern Assembly[] GetLoadedAssemblies();
 
         private Assembly InternalLoadFromPath(string? assemblyPath, string? nativeImagePath)
         {
@@ -298,7 +298,7 @@ namespace System.Runtime.Loader
         // This method is called by the VM.
         private static void OnAssemblyLoad(RuntimeAssembly assembly)
         {
-            AssemblyLoad?.Invoke(null /* AppDomain */, new AssemblyLoadEventArgs(assembly));
+            AssemblyLoad?.Invoke(AppDomain.CurrentDomain, new AssemblyLoadEventArgs(assembly));
         }
 
         // This method is called by the VM.
@@ -328,7 +328,7 @@ namespace System.Runtime.Loader
 
             foreach (ResolveEventHandler handler in eventHandler.GetInvocationList())
             {
-                Assembly? asm = handler(null /* AppDomain */, args);
+                Assembly? asm = handler(AppDomain.CurrentDomain, args);
                 RuntimeAssembly? ret = GetRuntimeAssembly(asm);
                 if (ret != null)
                     return ret;
