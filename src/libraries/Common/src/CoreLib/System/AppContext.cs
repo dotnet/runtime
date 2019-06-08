@@ -74,7 +74,7 @@ namespace System
         {
             AssemblyLoadContext.OnProcessExit();
 
-            ProcessExit?.Invoke(null /* AppDomain */, EventArgs.Empty);
+            ProcessExit?.Invoke(AppDomain.CurrentDomain, EventArgs.Empty);
         }
 
         /// <summary>
