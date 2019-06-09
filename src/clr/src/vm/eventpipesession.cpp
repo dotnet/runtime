@@ -183,14 +183,17 @@ DWORD WINAPI EventPipeSession::ThreadProc(void *args)
 
             if (!fSuccess)
             {
-                EventPipe::RunWithCallbackPostponed([pEventPipeSession](EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue){pEventPipeSession->Disable();});
+                // TODO: Notify `EventPipe::Disable` instead, this would disable the session, and remove it from the active list.
+                EventPipe::RunWithCallbackPostponed([pEventPipeSession](EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue) {
+                    pEventPipeSession->Disable();
+                });
             }
         }
         EX_CATCH
         {
             pEventPipeSession->SetThreadShutdownEvent();
             // TODO: STRESS_LOG ?
-            // TODO: Should we notify EventPipe itself to remove this session from the list.
+            // TODO: Notify `EventPipe` itself to remove this session from the list.
         }
         EX_END_CATCH(SwallowAllExceptions);
     }
@@ -235,7 +238,7 @@ bool EventPipeSession::IsValid()
     }
     CONTRACTL_END;
 
-    return (m_pProviderList != nullptr) && (!m_pProviderList->IsEmpty());
+    return !m_pProviderList->IsEmpty();
 }
 
 void EventPipeSession::AddSessionProvider(EventPipeSessionProvider *pProvider)
@@ -392,7 +395,6 @@ void EventPipeSession::EnableRundown()
             Config.GetFilterData()));
     }
 
-    m_pRundownThread = GetThread();
     m_rundownEnabled = true;
 }
 
@@ -403,7 +405,6 @@ void EventPipeSession::DisableIpcStreamingThread()
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
 
@@ -428,23 +429,16 @@ void EventPipeSession::Disable()
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        // Lock must be held by EventPipe::Disable.
-        PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
-
-    if (m_pFile == nullptr)
-        return;
 
     DisableIpcStreamingThread();
 
     // Force all in-progress writes to either finish or cancel
     // This is required to ensure we can safely flush and delete the buffers
-    m_pBufferManager->SuspendWriteEvent();
-    {
-        WriteAllBuffersToFile();
-        m_pProviderList->Clear();
-    }
+    m_pBufferManager->SuspendWriteEvent(GetId());
+    WriteAllBuffersToFile();
+    m_pProviderList->Clear();
 }
 
 void EventPipeSession::ExecuteRundown()

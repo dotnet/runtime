@@ -18,11 +18,11 @@ class EventPipeSession;
 class EventPipeConfiguration
 {
 public:
-    EventPipeConfiguration(EventPipeSessions *pSessions);
-    ~EventPipeConfiguration();
-
     // Perform initialization that cannot be performed in the constructor.
     void Initialize();
+
+    // Perform cleanup that cannot be performed in the destructor.
+    void Shutdown();
 
     // Create a new provider.
     EventPipeProvider *CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData, EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue);
@@ -76,7 +76,7 @@ public:
     void DeleteSession(EventPipeSession *pSession);
 
     // Check that a single bit is set.
-    bool IsValidId(EventPipeSessionID id)
+    static bool IsValidId(EventPipeSessionID id)
     {
         return (id > 0) && ((id & (id - 1)) == 0);
     }
@@ -106,23 +106,21 @@ private:
     // Get the enabled provider.
     EventPipeSessionProvider *GetSessionProvider(EventPipeSession &session, EventPipeProvider *pProvider);
 
-    // The list of EventPipe sessions.
-    EventPipeSessions *const m_pSessions;
-
     // The list of event pipe providers.
-    SList<SListElem<EventPipeProvider *>> *m_pProviderList;
+    SList<SListElem<EventPipeProvider *>> *m_pProviderList = nullptr;
 
     // The provider used to write configuration events to the event stream.
-    EventPipeProvider *m_pConfigProvider;
+    EventPipeProvider *m_pConfigProvider = nullptr;
 
     // The event used to write event information to the event stream.
-    EventPipeEvent *m_pMetadataEvent;
+    EventPipeEvent *m_pMetadataEvent = nullptr;
 
     // The provider name for the configuration event pipe provider.
     // This provider is used to emit configuration events.
     const static WCHAR *s_configurationProviderName;
 
-    uint64_t m_activeSessions;
+    // Bitmask tracking EventPipe active sessions.
+    uint64_t m_activeSessions = 0;
 };
 
 #endif // FEATURE_PERFTRACING

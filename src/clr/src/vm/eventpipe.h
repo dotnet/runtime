@@ -264,9 +264,6 @@ private:
     SList<SListElem<EventPipeProviderCallbackData>> list;
 };
 
-// TODO: Maybe this could be an array: EventPipeSession *EventPipeSessions[64];
-typedef MapSHashWithRemove<EventPipeSessionID, EventPipeSession *> EventPipeSessions;
-
 class EventPipe
 {
     // Declare friends.
@@ -358,7 +355,20 @@ public:
 
 private:
     // The counterpart to WriteEvent which after the payload is constructed
-    static void WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId = NULL, LPCGUID pRelatedActivityId = NULL);
+    static void WriteEventInternal(
+        EventPipeEvent &event,
+        EventPipeEventPayload &payload,
+        LPCGUID pActivityId = nullptr,
+        LPCGUID pRelatedActivityId = nullptr);
+
+    static void WriteEventInternal(
+        Thread *pThread,
+        EventPipeEvent &event,
+        EventPipeEventPayload &payload,
+        LPCGUID pActivityId,
+        LPCGUID pRelatedActivityId,
+        Thread *pEventThread = nullptr,
+        StackContents *pStack = nullptr);
 
     static void DisableInternal(EventPipeSessionID id, EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue);
 
@@ -370,12 +380,20 @@ private:
     // Callback function for the stack walker.  For each frame walked, this callback is invoked.
     static StackWalkAction StackWalkCallback(CrawlFrame *pCf, StackContents *pData);
 
-    // Get the configuration object.
-    // This is called directly by the EventPipeProvider constructor to register the new provider.
-    static EventPipeConfiguration *GetConfiguration()
+    template <typename EventPipeSessionHandlerCallback>
+    static void ForEachSession(EventPipeSessionHandlerCallback callback)
     {
         LIMITED_METHOD_CONTRACT;
-        return s_pConfig;
+        _ASSERTE(IsLockOwnedByCurrentThread());
+
+        for (VolatilePtr<EventPipeSession> &session : s_pSessions)
+        {
+            // Entering EventPipe lock gave us a barrier, we don't need
+            // more of them
+            EventPipeSession *const pSession = session.LoadWithoutBarrier();
+            if (pSession)
+                callback(*pSession);
+        }
     }
 
     // Get the event pipe configuration lock.
@@ -386,9 +404,10 @@ private:
     }
 
     static CrstStatic s_configCrst;
-    static bool s_tracingInitialized;
-    static EventPipeConfiguration *s_pConfig;
-    static EventPipeSessions *s_pSessions;
+    static Volatile<bool> s_tracingInitialized;
+    static EventPipeConfiguration s_config;
+    static const uint32_t MaxNumberOfSessions = 64;
+    static VolatilePtr<EventPipeSession> s_pSessions[MaxNumberOfSessions];
     static EventPipeEventSource *s_pEventSource;
     static HANDLE s_fileSwitchTimerHandle;
     static ULONGLONG s_lastFlushTime;
