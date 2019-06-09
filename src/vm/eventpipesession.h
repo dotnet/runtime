@@ -32,7 +32,7 @@ private:
     const EventPipeSessionID m_Id;
 
     // The set of configurations for each provider in the session.
-    EventPipeSessionProviderList *m_pProviderList;
+    EventPipeSessionProviderList *const m_pProviderList;
 
     // The configured size of the circular buffer.
     const size_t m_CircularBufferSizeInBytes;
@@ -64,9 +64,6 @@ private:
 
     //
     CLREvent m_threadShutdownEvent;
-
-    //
-    Thread *m_pRundownThread = nullptr;
 
     void CreateIpcStreamingThread();
 
@@ -122,12 +119,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_sessionStartTime;
-    }
-
-    bool IsRundownThread() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_pRundownThread == GetThread());
     }
 
     // Get the session start timestamp.
