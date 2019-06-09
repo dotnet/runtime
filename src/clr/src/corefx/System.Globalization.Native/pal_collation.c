@@ -4,7 +4,7 @@
 //
 
 #include <assert.h>
-#include <pthread.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <search.h>
@@ -42,7 +42,6 @@ typedef struct { int32_t key; UCollator* UCollator; } TCollatorMap;
  */
 struct SortHandle
 {
-    pthread_mutex_t collatorsLockObject;
     UCollator* collatorsPerOption[CompareOptionsMask + 1];
 };
 
@@ -342,12 +341,6 @@ void CreateSortHandle(SortHandle** ppSortHandle)
     }
 
     memset(*ppSortHandle, 0, sizeof(SortHandle));
-
-    int result = pthread_mutex_init(&(*ppSortHandle)->collatorsLockObject, NULL);
-    if (result != 0)
-    {
-        assert(FALSE && "Unexpected pthread_mutex_init return value.");
-    }
 }
 
 ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandle** ppSortHandle)
@@ -366,7 +359,6 @@ ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandl
 
     if (U_FAILURE(err))
     {
-        pthread_mutex_destroy(&(*ppSortHandle)->collatorsLockObject);
         free(*ppSortHandle);
         (*ppSortHandle) = NULL;
     }
@@ -385,38 +377,37 @@ void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
         }
     }
 
-    pthread_mutex_destroy(&pSortHandle->collatorsLockObject);
-
     free(pSortHandle);
 }
 
 const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32_t options, UErrorCode* pErr)
 {
-    UCollator* pCollator;
     if (options == 0)
     {
-        pCollator = pSortHandle->collatorsPerOption[0];
+        return pSortHandle->collatorsPerOption[0];
     }
     else
     {
-        int lockResult = pthread_mutex_lock(&pSortHandle->collatorsLockObject);
-        if (lockResult != 0)
-        {
-            assert(FALSE && "Unexpected pthread_mutex_lock return value.");
-        }
-
         options &= CompareOptionsMask;
-        pCollator = pSortHandle->collatorsPerOption[options];
-        if (pCollator == NULL)
+        UCollator* pCollator = pSortHandle->collatorsPerOption[options];
+        if (pCollator != NULL)
         {
-            pCollator = CloneCollatorWithOptions(pSortHandle->collatorsPerOption[0], options, pErr);
-            pSortHandle->collatorsPerOption[options] = pCollator;
+            return pCollator;
         }
 
-        pthread_mutex_unlock(&pSortHandle->collatorsLockObject);
-    }
+        pCollator = CloneCollatorWithOptions(pSortHandle->collatorsPerOption[0], options, pErr);
+        UCollator* pNull = NULL;
 
-    return pCollator;
+        // we are not using the standard atomic_compare_exchange_strong to workaround bugs in clang 5.0 (https://bugs.llvm.org/show_bug.cgi?id=37457)
+        if (!__atomic_compare_exchange_n(&pSortHandle->collatorsPerOption[options], &pNull, pCollator, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
+        {
+            ucol_close(pCollator);
+            pCollator = pSortHandle->collatorsPerOption[options];
+            assert(pCollator != NULL && "pCollator not expected to be null here.");
+        }
+
+        return pCollator;
+    }
 }
 
 int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
