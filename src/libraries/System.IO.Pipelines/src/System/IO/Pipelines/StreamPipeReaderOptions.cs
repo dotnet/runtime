@@ -22,7 +22,7 @@ namespace System.IO.Pipelines
         /// <summary>
         /// Creates a new instance of <see cref="StreamPipeReaderOptions"/>.
         /// </summary>
-        public StreamPipeReaderOptions(MemoryPool<byte> pool = null, int bufferSize = DefaultBufferSize, int minimumReadSize = DefaultMinimumReadSize)
+        public StreamPipeReaderOptions(MemoryPool<byte> pool = null, int bufferSize = DefaultBufferSize, int minimumReadSize = DefaultMinimumReadSize, bool leaveOpen = false)
         {
             Pool = pool ?? MemoryPool<byte>.Shared;
 
@@ -39,6 +39,7 @@ namespace System.IO.Pipelines
             }
 
             MinimumReadSize = minimumReadSize;
+            LeaveOpen = leaveOpen;
         }
 
         /// <summary>
@@ -55,5 +56,10 @@ namespace System.IO.Pipelines
         /// The <see cref="MemoryPool{T}"/> to use when allocating memory.
         /// </summary>
         public MemoryPool<byte> Pool { get; }
+
+        /// <summary>
+        /// Leave underlying stream open after pipe reader completes.
+        /// </summary>
+        public bool LeaveOpen { get; }
     }
 }

@@ -530,6 +530,17 @@ namespace System.IO.Pipelines.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => new StreamPipeReaderOptions(minimumReadSize: 0));
         }
 
+        [Fact]
+        public void LeaveUnderlyingStreamOpen()
+        {
+            var stream = new MemoryStream();
+            var reader = PipeReader.Create(stream, new StreamPipeReaderOptions(leaveOpen: true));
+
+            reader.Complete();
+
+            Assert.True(stream.CanRead);
+        }
+
         private static async Task<string> ReadFromPipeAsString(PipeReader reader)
         {
             ReadResult readResult = await reader.ReadAsync();

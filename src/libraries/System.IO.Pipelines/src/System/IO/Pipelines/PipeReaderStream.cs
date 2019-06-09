@@ -14,15 +14,19 @@ namespace System.IO.Pipelines
     {
         private readonly PipeReader _pipeReader;
 
-        public PipeReaderStream(PipeReader pipeReader)
+        public PipeReaderStream(PipeReader pipeReader, bool leaveOpen)
         {
             Debug.Assert(pipeReader != null);
             _pipeReader = pipeReader;
+            LeaveOpen = leaveOpen;
         }
 
         protected override void Dispose(bool disposing)
         {
-            _pipeReader.Complete();
+            if (!LeaveOpen)
+            {
+                _pipeReader.Complete();
+            }
             base.Dispose(disposing);
         }
 
@@ -35,6 +39,8 @@ namespace System.IO.Pipelines
         public override long Length => throw new NotSupportedException();
 
         public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        internal bool LeaveOpen { get; set; }
 
         public override void Flush()
         {

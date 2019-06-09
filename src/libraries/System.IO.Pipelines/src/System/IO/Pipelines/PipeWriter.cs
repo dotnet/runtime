@@ -48,10 +48,20 @@ namespace System.IO.Pipelines
         /// <summary>
         /// Returns a <see cref="Stream"/> that wraps the <see cref="PipeWriter"/>.
         /// </summary>
+        /// <param name="leaveOpen">Optional flag indicating disposing returned <see cref="Stream"/> won't complete <see cref="PipeWriter"/>.</param>
         /// <returns>The <see cref="Stream"/>.</returns>
-        public virtual Stream AsStream()
+        public virtual Stream AsStream(bool leaveOpen = false)
         {
-            return _stream ?? (_stream = new PipeWriterStream(this));
+            if (_stream == null)
+            {
+                _stream = new PipeWriterStream(this, leaveOpen);
+            }
+            else if (leaveOpen)
+            {
+                _stream.LeaveOpen = leaveOpen;
+            }
+
+            return _stream;
         }
 
         /// <summary>
