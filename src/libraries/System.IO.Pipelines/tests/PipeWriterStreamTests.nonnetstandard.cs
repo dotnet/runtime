@@ -50,7 +50,7 @@ namespace System.IO.Pipelines.Tests
         {
             byte[] helloBytes = Encoding.ASCII.GetBytes("Hello World");
             var pipe = new Pipe();
-            var stream = new PipeWriterStream(pipe.Writer);
+            var stream = new PipeWriterStream(pipe.Writer, leaveOpen: false);
 
             await writeAsync(stream, helloBytes);
 
@@ -167,6 +167,15 @@ namespace System.IO.Pipelines.Tests
             Assert.True(pipeWriter.FlushCalled);
         }
 
+        [Fact]
+        public void AsStreamDoNotCompleteWriter()
+        {
+            var pipeWriter = new NotImplementedPipeWriter();
+
+            // would throw in Complete if it was actually invoked
+            pipeWriter.AsStream(leaveOpen: true).Dispose();
+        }
+
         public class TestPipeWriter : PipeWriter
         {
             public bool FlushCalled { get; set; }
@@ -213,6 +222,21 @@ namespace System.IO.Pipelines.Tests
                 WriteAsyncCalled = true;
                 return default;
             }
+        }
+
+        public class NotImplementedPipeWriter : PipeWriter
+        {
+            public NotImplementedPipeWriter()
+            {
+            }
+
+            public override void Advance(int bytes) => throw new NotImplementedException();
+            public override void CancelPendingFlush() => throw new NotImplementedException();
+            public override void Complete(Exception exception = null) => throw new NotImplementedException();
+            public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override Memory<byte> GetMemory(int sizeHint = 0) => throw new NotImplementedException();
+            public override Span<byte> GetSpan(int sizeHint = 0) => throw new NotImplementedException();
+            public override void OnReaderCompleted(Action<Exception, object> callback, object state) => throw new NotImplementedException();
         }
 
         public static IEnumerable<object[]> WriteCalls

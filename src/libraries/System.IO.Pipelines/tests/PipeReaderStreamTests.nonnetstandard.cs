@@ -59,7 +59,7 @@ namespace System.IO.Pipelines.Tests
             await pipe.Writer.WriteAsync(helloBytes);
             pipe.Writer.Complete();
 
-            var stream = new PipeReaderStream(pipe.Reader);
+            var stream = new PipeReaderStream(pipe.Reader, leaveOpen: false);
 
             var buffer = new byte[1024];
             int read = await readAsync(stream, buffer);
@@ -278,6 +278,15 @@ namespace System.IO.Pipelines.Tests
             Assert.Equal(producedSum, consumedSum);
         }
 
+        [Fact]
+        public void AsStreamDoNotCompleteReader()
+        {
+            var pipeReader = new NotImplementedPipeReader();
+            
+            // would throw in Complete if it was actually invoked
+            pipeReader.AsStream(leaveOpen: true).Dispose();
+        }
+
         public class BuggyPipeReader : PipeReader
         {
             public override void AdvanceTo(SequencePosition consumed)
@@ -315,6 +324,17 @@ namespace System.IO.Pipelines.Tests
             {
                 throw new NotImplementedException();
             }
+        }
+
+        public class NotImplementedPipeReader : PipeReader
+        {
+            public override void AdvanceTo(SequencePosition consumed) => throw new NotImplementedException();
+            public override void AdvanceTo(SequencePosition consumed, SequencePosition examined) => throw new NotImplementedException();
+            public override void CancelPendingRead() => throw new NotImplementedException();
+            public override void Complete(Exception exception = null) => throw new NotImplementedException();
+            public override void OnWriterCompleted(Action<Exception, object> callback, object state) => throw new NotImplementedException();
+            public override ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
+            public override bool TryRead(out ReadResult result) => throw new NotImplementedException();
         }
 
         public class TestPipeReader : PipeReader
