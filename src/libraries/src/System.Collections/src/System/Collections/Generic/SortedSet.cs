@@ -1616,9 +1616,9 @@ namespace System.Collections.Generic
             }
         }
 
-        void IDeserializationCallback.OnDeserialization(object sender) => OnDeserialization(sender);
+        void IDeserializationCallback.OnDeserialization(object? sender) => OnDeserialization(sender);
 
-        protected virtual void OnDeserialization(object sender)
+        protected virtual void OnDeserialization(object? sender)
         {
             if (comparer != null)
             {
@@ -1950,7 +1950,7 @@ namespace System.Collections.Generic
                 throw new PlatformNotSupportedException();
             }
 
-            void IDeserializationCallback.OnDeserialization(object sender)
+            void IDeserializationCallback.OnDeserialization(object? sender)
             {
                 throw new PlatformNotSupportedException();
             }

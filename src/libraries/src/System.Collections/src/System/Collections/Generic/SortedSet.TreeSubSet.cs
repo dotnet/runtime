@@ -365,12 +365,12 @@ namespace System.Collections.Generic
                 throw new PlatformNotSupportedException();
             }
 
-            void IDeserializationCallback.OnDeserialization(object sender)
+            void IDeserializationCallback.OnDeserialization(object? sender)
             {
                 throw new PlatformNotSupportedException();
             }
 
-            protected override void OnDeserialization(object sender) => throw new PlatformNotSupportedException();
+            protected override void OnDeserialization(object? sender) => throw new PlatformNotSupportedException();
         }
     }
 }

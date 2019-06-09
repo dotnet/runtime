@@ -413,7 +413,7 @@ namespace System.Collections.Generic
 
         #region IDeserializationCallback methods
 
-        public virtual void OnDeserialization(object sender)
+        public virtual void OnDeserialization(object? sender)
         {
             if (_siInfo == null)
             {
