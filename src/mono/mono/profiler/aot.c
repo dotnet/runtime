@@ -17,6 +17,7 @@
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/class-internals.h>
+#include <mono/metadata/debug-helpers.h>
 #include <mono/mini/jit.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-os-mutex.h>
@@ -37,26 +38,39 @@ struct _MonoProfiler {
 	mono_mutex_t mutex;
 	gboolean verbose;
 	int duration;
+	MonoMethodDesc *write_at;
+	MonoMethodDesc *send_to;
+	char *send_to_arg;
+	char *send_to_str;
+	guint8 *buf;
+	gboolean disable;
+	int buf_pos, buf_len;
 };
 
 static MonoProfiler aot_profiler;
+
+static void
+prof_shutdown (MonoProfiler *prof);
 
 static void
 prof_jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 {
 	MonoImage *image = mono_class_get_image (mono_method_get_class (method));
 
-	if (!image->assembly || method->wrapper_type)
+	if (!image->assembly || method->wrapper_type || !prof->methods || prof->disable)
 		return;
+
+	if (prof->write_at && mono_method_desc_match (prof->write_at, method)) {
+		printf ("aot-profiler | Writing data at: '%s'.\n", mono_method_full_name (method, 1));
+		prof_shutdown (prof);
+		return;
+	}
 
 	mono_os_mutex_lock (&prof->mutex);
 	if (prof->methods)
 		g_ptr_array_add (prof->methods, method);
 	mono_os_mutex_unlock (&prof->mutex);
 }
-
-static void
-prof_shutdown (MonoProfiler *prof);
 
 static void
 usage (void)
@@ -67,6 +81,9 @@ usage (void)
 	mono_profiler_printf ("\tduration=NUM         profile only NUM seconds of runtime and write the data");
 	mono_profiler_printf ("\thelp                 show this usage info");
 	mono_profiler_printf ("\toutput=FILENAME      write the data to file FILENAME");
+	mono_profiler_printf ("\twrite-at-method=METHOD       write the data when METHOD is compiled.");
+	mono_profiler_printf ("\tsend-to-method=METHOD       call METHOD with the collected data.");
+	mono_profiler_printf ("\tsend-to-arg=STR      extra argument to pass to METHOD.");
 	mono_profiler_printf ("\tverbose              print diagnostic info");
 
 	exit (0);
@@ -102,6 +119,21 @@ parse_arg (const char *arg)
 	} else if (match_option (arg, "duration", &val)) {
 		char *end;
 		aot_profiler.duration = strtoul (val, &end, 10);
+	} else if (match_option (arg, "write-at-method", &val)) {
+		aot_profiler.write_at = mono_method_desc_new (val, TRUE);
+		if (!aot_profiler.write_at) {
+			mono_profiler_printf_err ("Could not parse method description: %s", val);
+			exit (1);
+		}
+	} else if (match_option (arg, "send-to-method", &val)) {
+		aot_profiler.send_to = mono_method_desc_new (val, TRUE);
+		if (!aot_profiler.send_to) {
+			mono_profiler_printf_err ("Could not parse method description: %s", val);
+			exit (1);
+		}
+		aot_profiler.send_to_str = strdup (val);
+	} else if (match_option (arg, "send-to-arg", &val)) {
+		aot_profiler.send_to_arg = strdup (val);
 	} else if (match_option (arg, "output", &val)) {
 		aot_profiler.outfile_name = g_strdup (val);
 	} else if (match_option (arg, "verbose", NULL)) {
@@ -229,21 +261,28 @@ mono_profiler_init_aot (const char *desc)
 
 	parse_args (desc [strlen ("aot")] == ':' ? desc + strlen ("aot") + 1 : "");
 
-	if (!aot_profiler.outfile_name)
-		aot_profiler.outfile_name = g_strdup ("output.aotprofile");
-	else if (*aot_profiler.outfile_name == '+')
-		aot_profiler.outfile_name = g_strdup_printf ("%s.%d", aot_profiler.outfile_name + 1, getpid ());
+	if (!aot_profiler.send_to) {
+		if (!aot_profiler.outfile_name)
+			aot_profiler.outfile_name = g_strdup ("output.aotprofile");
+		else if (*aot_profiler.outfile_name == '+')
+			aot_profiler.outfile_name = g_strdup_printf ("%s.%d", aot_profiler.outfile_name + 1, getpid ());
 
-	if (*aot_profiler.outfile_name == '|')
-		aot_profiler.outfile = popen (aot_profiler.outfile_name + 1, "w");
-	else if (*aot_profiler.outfile_name == '#')
-		aot_profiler.outfile = fdopen (strtol (aot_profiler.outfile_name + 1, NULL, 10), "a");
-	else
-		aot_profiler.outfile = fopen (aot_profiler.outfile_name, "w");
+		if (*aot_profiler.outfile_name == '|') {
+#ifdef HAVE_POPEN
+			aot_profiler.outfile = popen (aot_profiler.outfile_name + 1, "w");
+#else
+			g_assert_not_reached ();
+#endif
+		}  else if (*aot_profiler.outfile_name == '#') {
+			aot_profiler.outfile = fdopen (strtol (aot_profiler.outfile_name + 1, NULL, 10), "a");
+		} else {
+			aot_profiler.outfile = fopen (aot_profiler.outfile_name, "w");
+		}
 
-	if (!aot_profiler.outfile) {
-		mono_profiler_printf_err ("Could not create AOT profiler output file '%s': %s", aot_profiler.outfile_name, g_strerror (errno));
-		exit (1);
+		if (!aot_profiler.outfile) {
+			mono_profiler_printf_err ("Could not create AOT profiler output file '%s': %s", aot_profiler.outfile_name, g_strerror (errno));
+			exit (1);
+		}
 	}
 
 	aot_profiler.images = g_hash_table_new (NULL, NULL);
@@ -259,9 +298,30 @@ mono_profiler_init_aot (const char *desc)
 }
 
 static void
+make_room (MonoProfiler *prof, int n)
+{
+	if (prof->buf_pos + n >= prof->buf_len) {
+		int new_len = prof->buf_len * 2;
+		guint8 *new_buf = g_malloc0 (new_len);
+		memcpy (new_buf, prof->buf, prof->buf_pos);
+		g_free (prof->buf);
+		prof->buf = new_buf;
+		prof->buf_len = new_len;
+	}
+}
+
+static void
+emit_bytes (MonoProfiler *prof, guint8 *bytes, int len)
+{
+	make_room (prof, len);
+	memcpy (prof->buf + prof->buf_pos, bytes, len);
+	prof->buf_pos += len;
+}
+
+static void
 emit_byte (MonoProfiler *prof, guint8 value)
 {
-	fwrite (&value, sizeof (guint8), 1, prof->outfile);
+	emit_bytes (prof, &value, 1);
 }
 
 static void
@@ -269,7 +329,7 @@ emit_int32 (MonoProfiler *prof, gint32 value)
 {
 	for (int i = 0; i < sizeof (gint32); ++i) {
 		guint8 b = value;
-		fwrite (&b, sizeof (guint8), 1, prof->outfile);
+		emit_bytes (prof, &b, 1);
 		value >>= 8;
 	}
 }
@@ -280,7 +340,7 @@ emit_string (MonoProfiler *prof, const char *str)
 	int len = strlen (str);
 
 	emit_int32 (prof, len);
-	fwrite (str, len, 1, prof->outfile);
+	emit_bytes (prof, (guint8*)str, len);
 }
 
 static void
@@ -467,9 +527,13 @@ prof_shutdown (MonoProfiler *prof)
 	int mindex;
 	char magic [32];
 
+	prof->buf_len = 4096;
+	prof->buf = g_malloc0 (prof->buf_len);
+	prof->buf_pos = 0;
+
 	gint32 version = (AOT_PROFILER_MAJOR_VERSION << 16) | AOT_PROFILER_MINOR_VERSION;
 	sprintf (magic, AOT_PROFILER_MAGIC);
-	fwrite (magic, strlen (magic), 1, prof->outfile);
+	emit_bytes (prof, (guint8*)magic, strlen (magic));
 	emit_int32 (prof, version);
 
 	GHashTable *all_methods = g_hash_table_new (NULL, NULL);
@@ -488,9 +552,60 @@ prof_shutdown (MonoProfiler *prof)
 	}
 	emit_record (prof, AOTPROF_RECORD_NONE, 0);
 
-	fclose (prof->outfile);
+	if (prof->send_to) {
+		GHashTableIter iter;
+		gpointer id;
+		MonoImage *image;
+		MonoMethod *send_method = NULL;
+		MonoMethodSignature *sig;
+		ERROR_DECL (error);
 
-	mono_profiler_printf ("AOT profiler data written to '%s'", prof->outfile_name);
+		g_hash_table_iter_init (&iter, prof->images);
+		while (g_hash_table_iter_next (&iter, (void**)&image, (void**)&id)) {
+			send_method = mono_method_desc_search_in_image (prof->send_to, image);
+			if (send_method)
+				break;
+		}
+		if (!send_method) {
+			mono_profiler_printf_err ("Cannot find method in loaded assemblies: '%s'.", prof->send_to_str);
+			exit (1);
+		}
+
+		sig = mono_method_signature_checked (send_method, error);
+		mono_error_assert_ok (error);
+		if (sig->param_count != 3 || !sig->params [0]->byref || sig->params [0]->type != MONO_TYPE_U1 || sig->params [1]->type != MONO_TYPE_I4 || sig->params [2]->type != MONO_TYPE_STRING) {
+			mono_profiler_printf_err ("Method '%s' should have signature void (byte&,int,string).", prof->send_to_str);
+			exit (1);
+		}
+
+		// Don't collect data from the call
+		prof->disable = TRUE;
+
+		MonoString *extra_arg = NULL;
+		if (prof->send_to_arg) {
+			extra_arg = mono_string_new_checked (mono_domain_get (), prof->send_to_arg, error);
+			mono_error_assert_ok (error);
+		}
+
+		MonoObject *exc;
+		gpointer args [3];
+		int len = prof->buf_pos;
+		void *ptr = prof->buf;
+		args [0] = ptr;
+		args [1] = &len;
+		args [2] = extra_arg;
+
+		printf ("aot-profiler | Passing data to '%s': %p %d %s\n", mono_method_full_name (send_method, 1), args [0], len, extra_arg);
+		mono_runtime_try_invoke (send_method, NULL, args, &exc, error);
+		mono_error_assert_ok (error);
+		g_assert (exc == NULL);
+	} else {
+		g_assert (prof->outfile);
+		fwrite (prof->buf, 1, prof->buf_pos, prof->outfile);
+		fclose (prof->outfile);
+
+		mono_profiler_printf ("AOT profiler data written to '%s'", prof->outfile_name);
+	}
 
 	g_hash_table_destroy (all_methods);
 	g_hash_table_destroy (prof->classes);

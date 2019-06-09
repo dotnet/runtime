@@ -2124,7 +2124,7 @@ mono_utf16_to_utf8len (const mono_unichar2 *s, gsize slength, gsize *utf8_length
 gboolean
 mono_runtime_object_init_checked (MonoObject *this_obj, MonoError *error);
 
-MonoObject*
+MONO_PROFILER_API MonoObject*
 mono_runtime_try_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error);
 
 // The exc parameter is deliberately missing and so far this has proven to reduce code duplication.

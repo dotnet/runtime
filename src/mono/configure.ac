@@ -2175,6 +2175,7 @@ if test x$host_win32 = xno; then
 
 	AC_CHECK_FUNCS(openlog closelog)
 	AC_CHECK_FUNCS(atexit)
+	AC_CHECK_FUNCS(popen)
 
 	AC_FUNC_STRERROR_R()
 
