@@ -53,10 +53,20 @@ namespace System.IO.Pipelines
         /// <summary>
         /// Returns a <see cref="Stream"/> that wraps the <see cref="PipeReader"/>.
         /// </summary>
+        /// <param name="leaveOpen">Optional flag indicating disposing returned <see cref="Stream"/> won't complete <see cref="PipeReader"/>.</param>
         /// <returns>The <see cref="Stream"/>.</returns>
-        public virtual Stream AsStream()
+        public virtual Stream AsStream(bool leaveOpen = false)
         {
-            return _stream ?? (_stream = new PipeReaderStream(this));
+            if (_stream == null)
+            {
+                _stream = new PipeReaderStream(this, leaveOpen);
+            }
+            else if (leaveOpen)
+            {
+                _stream.LeaveOpen = leaveOpen;
+            }
+
+            return _stream;
         }
 
         /// <summary>

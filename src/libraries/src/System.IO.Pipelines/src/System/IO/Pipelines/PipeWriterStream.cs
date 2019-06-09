@@ -12,17 +12,23 @@ namespace System.IO.Pipelines
     {
         private readonly PipeWriter _pipeWriter;
 
-        public PipeWriterStream(PipeWriter pipeWriter)
+        public PipeWriterStream(PipeWriter pipeWriter, bool leaveOpen)
         {
             Debug.Assert(pipeWriter != null);
             _pipeWriter = pipeWriter;
+            LeaveOpen = leaveOpen;
         }
 
         protected override void Dispose(bool disposing)
         {
-            _pipeWriter.Complete();
+            if (!LeaveOpen)
+            {
+                _pipeWriter.Complete();
+            }
             base.Dispose(disposing);
         }
+
+        internal bool LeaveOpen { get; set; }
 
         public override bool CanRead => false;
 

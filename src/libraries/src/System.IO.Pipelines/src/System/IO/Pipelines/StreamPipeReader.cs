@@ -32,6 +32,7 @@ namespace System.IO.Pipelines
 
         // Mutable struct! Don't make this readonly
         private BufferSegmentStack _bufferSegmentPool;
+        private bool _leaveOpen;
 
         /// <summary>
         /// Creates a new StreamPipeReader.
@@ -51,6 +52,7 @@ namespace System.IO.Pipelines
             _minimumReadThreshold = Math.Min(options.MinimumReadSize, options.BufferSize);
             _pool = options.Pool == MemoryPool<byte>.Shared ? null : options.Pool;
             _bufferSize = _pool == null ? options.BufferSize : Math.Min(options.BufferSize, _pool.MaxBufferSize);
+            _leaveOpen = options.LeaveOpen;
         }
 
         /// <summary>
@@ -179,8 +181,10 @@ namespace System.IO.Pipelines
                 returnSegment.ResetMemory();
             }
 
-            // REVIEW: Do we need a way to avoid this (leaveOpen?)
-            InnerStream.Dispose();
+            if (!_leaveOpen)
+            {
+                InnerStream.Dispose();
+            }
         }
 
         /// <inheritdoc />

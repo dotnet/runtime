@@ -21,7 +21,7 @@ namespace System.IO.Pipelines
         /// <summary>
         /// Creates a new instance of <see cref="StreamPipeWriterOptions"/>.
         /// </summary>
-        public StreamPipeWriterOptions(MemoryPool<byte> pool = null, int minimumBufferSize = DefaultMinimumBufferSize)
+        public StreamPipeWriterOptions(MemoryPool<byte> pool = null, int minimumBufferSize = DefaultMinimumBufferSize, bool leaveOpen = false)
         {
             Pool = pool ?? MemoryPool<byte>.Shared;
 
@@ -31,6 +31,7 @@ namespace System.IO.Pipelines
             }
 
             MinimumBufferSize = minimumBufferSize;
+            LeaveOpen = leaveOpen;
         }
 
         /// <summary>
@@ -42,5 +43,10 @@ namespace System.IO.Pipelines
         /// The <see cref="MemoryPool{T}"/> to use when allocating memory.
         /// </summary>
         public MemoryPool<byte> Pool { get; }
+
+        /// <summary>
+        /// Leave underlying stream open after pipe writer completes.
+        /// </summary>
+        public bool LeaveOpen { get; }
     }
 }
