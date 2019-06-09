@@ -22,6 +22,12 @@ namespace System.Net.Http.Functional.Tests
 
     public abstract class DiagnosticsTest : HttpClientHandlerTestBase
     {
+        private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
+        private const string EnableActivityPropagationAppCtxSettingName = "System.Net.Http.EnableActivityPropagation";
+
+        private static bool EnableActivityPropagationEnvironmentVariableIsNotSet =>
+            string.IsNullOrEmpty(Environment.GetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName));
+
         public DiagnosticsTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
@@ -991,6 +997,119 @@ namespace System.Net.Http.Functional.Tests
 
                 return RemoteExecutor.SuccessExitCode;
             }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
+        }
+
+        [OuterLoop("Uses external server")]
+        [Fact]
+        public void SendAsync_ExpectedActivityPropagationWithoutListener()
+        {
+            RemoteExecutor.Invoke((useSocketsHttpHandlerString, useHttp2String) =>
+            {
+                using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString, useHttp2String))
+                {
+                    Activity parent = new Activity("parent").Start();
+                    using HttpResponseMessage response = client.GetAsync(Configuration.Http.RemoteEchoServer).Result;
+
+                    Assert.True(response.RequestMessage.Headers.Contains(parent.IdFormat == ActivityIdFormat.Hierarchical ? "Request-Id" : "traceparent"));
+                    parent.Stop();
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
+        }
+
+        [OuterLoop("Uses external server")]
+        [Fact]
+        public void SendAsync_ExpectedActivityPropagationWithoutListenerOrParentActivity()
+        {
+            RemoteExecutor.Invoke((useSocketsHttpHandlerString, useHttp2String) =>
+            {
+                using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString, useHttp2String))
+                {
+                    using HttpResponseMessage response = client.GetAsync(Configuration.Http.RemoteEchoServer).Result;
+
+                    Assert.False(response.RequestMessage.Headers.Contains("Request-Id"));
+                    Assert.False(response.RequestMessage.Headers.Contains("traceparent"));
+                    Assert.False(response.RequestMessage.Headers.Contains("tracestate"));
+                    Assert.False(response.RequestMessage.Headers.Contains("Correlation-Context"));
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }, UseSocketsHttpHandler.ToString(), UseHttp2.ToString()).Dispose();
+        }
+
+        [OuterLoop("Uses external server")]
+        [ConditionalTheory(nameof(EnableActivityPropagationEnvironmentVariableIsNotSet))]
+        [InlineData("true", true)]
+        [InlineData("1", true)]
+        [InlineData("0", false)]
+        [InlineData("false", false)]
+        [InlineData("FALSE", false)]
+        [InlineData("fAlSe", false)]
+        [InlineData("helloworld", true)]
+        [InlineData("", true)]
+        public void SendAsync_SuppressedGlobalStaticPropagationEnvVar(string envVarValue, bool isInstrumentationEnabled)
+        {
+            RemoteExecutor.Invoke((innerEnvVarValue, innerIsInstrumentationEnabled) =>
+            {
+                Environment.SetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName, innerEnvVarValue);
+
+                string eventKey = null;
+                bool anyEventLogged = false;
+                var diagnosticListenerObserver = new FakeDiagnosticListenerObserver(kvp =>
+                {
+                    anyEventLogged = true;
+                    eventKey = kvp.Key;
+                });
+
+                using (DiagnosticListener.AllListeners.Subscribe(diagnosticListenerObserver))
+                {
+                    diagnosticListenerObserver.Enable(s => s.Equals("System.Net.Http.HttpRequestOut"));
+                    using (HttpClient client = new HttpClient())
+                    {
+                        Activity parent = new Activity("parent").Start();
+                        using HttpResponseMessage response = client.GetAsync(Configuration.Http.RemoteEchoServer).Result;
+                        parent.Stop();
+                        Assert.Equal(bool.Parse(innerIsInstrumentationEnabled), response.RequestMessage.Headers.Contains(
+                            parent.IdFormat == ActivityIdFormat.Hierarchical ? "Request-Id" : "traceparent"));
+                    }
+
+                    if (!bool.Parse(innerIsInstrumentationEnabled))
+                    {
+                        Assert.False(anyEventLogged, $"{eventKey} event logged when Activity is suppressed globally");
+                    }
+                    else
+                    {
+                        Assert.True(anyEventLogged, $"{eventKey} event was not logged logged when Activity is not suppressed");
+                    }
+
+                    diagnosticListenerObserver.Disable();
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }, envVarValue, isInstrumentationEnabled.ToString()).Dispose();
+        }
+
+        [OuterLoop("Uses external server")]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        public void SendAsync_SuppressedGlobalStaticPropagationNoListenerAppCtx(bool switchValue, bool isInstrumentationEnabled)
+        {
+            RemoteExecutor.Invoke((innerSwitchValue, innerIsInstrumentationEnabled) =>
+            {
+                AppContext.SetSwitch(EnableActivityPropagationAppCtxSettingName, bool.Parse(innerSwitchValue));
+
+                using (HttpClient client = new HttpClient())
+                {
+                    Activity parent = new Activity("parent").Start();
+                    using HttpResponseMessage response = client.GetAsync(Configuration.Http.RemoteEchoServer).Result;
+                    parent.Stop();
+                    Assert.Equal(bool.Parse(innerIsInstrumentationEnabled), response.RequestMessage.Headers.Contains(
+                        parent.IdFormat == ActivityIdFormat.Hierarchical ? "Request-Id" : "traceparent"));
+                }
+
+                return RemoteExecutor.SuccessExitCode;
+            }, switchValue.ToString(), isInstrumentationEnabled.ToString()).Dispose();
         }
 
         [ActiveIssue(23209)]
