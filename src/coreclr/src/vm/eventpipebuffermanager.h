@@ -8,13 +8,13 @@
 #ifdef FEATURE_PERFTRACING
 
 #include "eventpipe.h"
-#include "eventpipefile.h"
-#include "eventpipebuffer.h"
-#include "eventpipesession.h"
 #include "spinlock.h"
 
+class EventPipeBuffer;
 class EventPipeBufferList;
 class EventPipeBufferManager;
+class EventPipeFile;
+class EventPipeSession;
 class EventPipeThread;
 
 void ReleaseEventPipeThreadRef(EventPipeThread* pThread);
@@ -24,14 +24,15 @@ typedef Wrapper<EventPipeThread*, AcquireEventPipeThreadRef, ReleaseEventPipeThr
 typedef MapSHashWithRemove<EventPipeBufferManager *, EventPipeBuffer *> EventPipeWriteBuffers;
 typedef MapSHashWithRemove<EventPipeBufferManager *, EventPipeBufferList *> EventPipeBufferLists;
 
+#ifndef __GNUC__
+  #define EVENTPIPE_THREAD_LOCAL __declspec(thread)
+#else  // !__GNUC__
+  #define EVENTPIPE_THREAD_LOCAL thread_local
+#endif // !__GNUC__
+
 class EventPipeThread
 {
-#ifndef __GNUC__
-    __declspec(thread) static
-#else  // !__GNUC__
-    thread_local static
-#endif // !__GNUC__
-        EventPipeThreadHolder gCurrentEventPipeThreadHolder;
+    static EVENTPIPE_THREAD_LOCAL EventPipeThreadHolder gCurrentEventPipeThreadHolder;
 
     ~EventPipeThread();
 
@@ -56,6 +57,9 @@ class EventPipeThread
     // buffers from all threads.
     SpinLock m_lock;
 
+    //
+    EventPipeSession *m_pRundownSession = nullptr;
+
 #ifdef DEBUG
     template <typename T>
     static bool AllValuesAreNull(T &map)
@@ -70,18 +74,50 @@ class EventPipeThread
 
 public:
     static EventPipeThread *Get();
+    static EventPipeThread *GetOrCreate();
     static void Set(EventPipeThread *pThread);
+
+    bool IsRundownThread() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_pRundownSession != nullptr);
+    }
+
+    void SetAsRundownThread(EventPipeSession *pSession)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_pRundownSession = pSession;
+    }
+
+    EventPipeSession *GetRundownSession() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_pRundownSession;
+    }
 
     EventPipeThread();
     void AddRef();
     void Release();
     SpinLock *GetLock();
+    Volatile<EventPipeSessionID> m_writingEventInProgress;
 
     EventPipeBuffer *GetWriteBuffer(EventPipeBufferManager *pBufferManager);
     void SetWriteBuffer(EventPipeBufferManager *pBufferManager, EventPipeBuffer *pNewBuffer);
     EventPipeBufferList *GetBufferList(EventPipeBufferManager *pBufferManager);
     void SetBufferList(EventPipeBufferManager *pBufferManager, EventPipeBufferList *pBufferList);
     void Remove(EventPipeBufferManager *pBufferManager);
+
+    void SetSessionWriteInProgress(uint64_t index)
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_writingEventInProgress.Store((index < 64) ? (1ULL << index) : UINT64_MAX);
+    }
+
+    EventPipeSessionID GetSessionWriteInProgress() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_writingEventInProgress.Load();
+    }
 };
 
 class EventPipeBufferManager
@@ -143,13 +179,7 @@ public:
     // Otherwise, if a stack trace is needed, one will be automatically collected.
     bool WriteEvent(Thread *pThread, EventPipeSession &session, EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId, Thread *pEventThread = NULL, StackContents *pStack = NULL);
 
-    // Ends the suspension period created by SuspendWriteEvent(). After this call returns WriteEvent()
-    // can again be called succesfully, new BufferLists and Buffers may be allocated.
-    // The caller is required to synchronize all calls to SuspendWriteEvent() and ResumeWriteEvent()
-    void ResumeWriteEvent();
-
-    // From the time this function returns until ResumeWriteEvent() is called a suspended state will
-    // be in effect that blocks all WriteEvent activity. All existing buffers will be in the
+    // Suspends all WriteEvent activity. All existing buffers will be in the
     // READ_ONLY state and no new EventPipeBuffers or EventPipeBufferLists can be created. Calls to
     // WriteEvent that start during the suspension period or were in progress but hadn't yet recorded
     // their event into a buffer before the start of the suspension period will return false and the
@@ -158,8 +188,7 @@ public:
     // EXPECTED USAGE: First the caller will disable all events via configuration, then call
     // SuspendWriteEvent() to force any WriteEvent calls that may still be in progress to either
     // finish or cancel. After that all BufferLists and Buffers can be safely drained and/or deleted.
-    // The caller is required to synchronize all calls to SuspendWriteEvent() and ResumeWriteEvent()
-    void SuspendWriteEvent();
+    void SuspendWriteEvent(EventPipeSessionID sessionId);
 
     // Write the contents of the managed buffers to the specified file.
     // The stopTimeStamp is used to determine when tracing was stopped to ensure that we
