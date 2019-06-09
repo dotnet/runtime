@@ -30035,6 +30035,8 @@ void gc_heap::init_static_data()
             max (6*1024*1024,  min ( Align(soh_segment_size/2), 200*1024*1024)));
 #endif //MULTIPLE_HEAPS
 
+    gen0_max_size = max (gen0_min_size, gen0_max_size);
+
     if (heap_hard_limit)
     {
         size_t gen0_max_size_seg = soh_segment_size / 4;
