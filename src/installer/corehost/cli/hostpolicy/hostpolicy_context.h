@@ -22,7 +22,7 @@ public:
     pal::string_t host_path;
 
     bool breadcrumbs_enabled;
-    std::unordered_set<pal::string_t> breadcrumbs;
+    mutable std::unordered_set<pal::string_t> breadcrumbs;
 
     coreclr_property_bag_t coreclr_properties;
 

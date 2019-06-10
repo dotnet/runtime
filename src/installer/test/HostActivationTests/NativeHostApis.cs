@@ -107,7 +107,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
-                .And.HaveStdErrContaining("Waiting for breadcrumb thread to exit...");
+                .And.HaveStdErrContaining("Done waiting for breadcrumb thread to exit...");
         }
 
         [Fact]
@@ -125,10 +125,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining("Unhandled exception. System.Exception: Goodbye World")
-                // The breadcrumb thread does not wait since destructors are not called when an exception is thrown.
-                // However, destructors will be called when the caller (such as a custom host) is compiled with SEH Exceptions (/EHa) and has a try\catch.
-                // Todo: add a native host test app so we can verify this behavior.
-                .And.NotHaveStdErrContaining("Waiting for breadcrumb thread to exit...");
+                .And.NotHaveStdErrContaining("Done waiting for breadcrumb thread to exit...");
         }
 
         private class SdkResolutionFixture

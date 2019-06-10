@@ -225,8 +225,12 @@ int run_app_for_context(
     pal::pal_clrstring(context.application, &managed_app);
 
     // Leave breadcrumbs for servicing.
-    breadcrumb_writer_t writer(context.breadcrumbs_enabled, context.breadcrumbs);
-    writer.begin_write();
+    std::shared_ptr<breadcrumb_writer_t> writer;
+    if (!context.breadcrumbs.empty())
+    {
+        writer = breadcrumb_writer_t::begin_write(context.breadcrumbs);
+        assert(context.breadcrumbs.empty());
+    }
 
     // Previous hostpolicy trace messages must be printed before executing assembly
     trace::flush();
@@ -254,9 +258,12 @@ int run_app_for_context(
         trace::warning(_X("Failed to shut down CoreCLR, HRESULT: 0x%X"), hr);
     }
 
-    return exit_code;
+    if (writer)
+    {
+        writer->end_write();
+    }
 
-    // The breadcrumb destructor will join to the background thread to finish writing
+    return exit_code;
 }
 
 int run_app(const int argc, const pal::char_t *argv[])

@@ -8,48 +8,37 @@
 #include <trace.h>
 #include "breadcrumbs.h"
 
-breadcrumb_writer_t::breadcrumb_writer_t(bool enabled, const std::unordered_set<pal::string_t> &files)
-    : m_files(files)
-    , m_enabled(enabled)
-    , m_status(false)
+breadcrumb_writer_t::breadcrumb_writer_t(std::unordered_set<pal::string_t> &files)
 {
-    if (enabled && !pal::get_default_breadcrumb_store(&m_breadcrumb_store))
+    assert(m_files.empty());
+    m_files.swap(files);
+    assert(files.empty());
+    if (!pal::get_default_breadcrumb_store(&m_breadcrumb_store))
     {
         m_breadcrumb_store.clear();
     }
 }
 
-breadcrumb_writer_t::~breadcrumb_writer_t()
-{
-    if (m_enabled)
-    {
-        end_write();
-    }
-}
-
 // Begin breadcrumb writing: write synchronously or launch a
 // thread to write breadcrumbs.
-void breadcrumb_writer_t::begin_write()
+std::shared_ptr<breadcrumb_writer_t> breadcrumb_writer_t::begin_write(std::unordered_set<pal::string_t> &files)
 {
-    if (m_enabled)
-    {
-        trace::verbose(_X("--- Begin breadcrumb write"));
-        if (m_breadcrumb_store.empty())
-        {
-            trace::verbose(_X("Breadcrumb store was not obtained... skipping write."));
-            m_status = false;
-            return;
-        }
+    trace::verbose(_X("--- Begin breadcrumb write"));
 
-        trace::verbose(_X("Number of breadcrumb files to write is %d"), m_files.size());
-        if (m_files.empty())
-        {
-            m_status = true;
-            return;
-        }
-        m_thread = std::thread(write_worker_callback, this);
-        trace::verbose(_X("Breadcrumbs will be written using a background thread"));
+    auto instance = std::make_shared<breadcrumb_writer_t>(files);
+    if (instance->m_breadcrumb_store.empty())
+    {
+        trace::verbose(_X("Breadcrumb store was not obtained... skipping write."));
+        return nullptr;
     }
+
+    // Add a reference to this object for the thread we will spawn
+    instance->m_threads_instance = instance;
+
+    instance->m_thread = std::thread(write_worker_callback, instance.get());
+    trace::verbose(_X("Breadcrumbs will be written using a background thread"));
+
+    return instance;
 }
 
 // Write the breadcrumbs. This method should be called
@@ -70,13 +59,18 @@ void breadcrumb_writer_t::write_callback()
             }
         }
     }
-    // m_status should not be modified by anyone else.
-    m_status = successful;
+    trace::verbose(_X("--- End breadcrumb write %d"), successful);
+
+    // Clear reference to this object for the thread.
+    m_threads_instance.reset();
 }
 
 // ThreadProc for the background writer.
 void breadcrumb_writer_t::write_worker_callback(breadcrumb_writer_t* p_this)
 {
+    assert(p_this);
+    assert(p_this->m_threads_instance);
+    assert(p_this->m_threads_instance.get() == p_this);
     try
     {
         trace::verbose(_X("Breadcrumb thread write callback..."));
@@ -89,7 +83,7 @@ void breadcrumb_writer_t::write_worker_callback(breadcrumb_writer_t* p_this)
 }
 
 // Wait for completion of the background tasks, if any.
-bool breadcrumb_writer_t::end_write()
+void breadcrumb_writer_t::end_write()
 {
     if (m_thread.joinable())
     {
@@ -98,6 +92,5 @@ bool breadcrumb_writer_t::end_write()
         // Block on the thread to exit.
         m_thread.join();
     }
-    trace::verbose(_X("--- End breadcrumb write %d"), m_status);
-    return m_status;
+    trace::verbose(_X("Done waiting for breadcrumb thread to exit..."));
 }
