@@ -10,7 +10,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
-EventPipeBuffer::EventPipeBuffer(unsigned int bufferSize DEBUG_ARG(EventPipeThread *pWriterThread))
+EventPipeBuffer::EventPipeBuffer(unsigned int bufferSize, EventPipeThread* pWriterThread, unsigned int eventSequenceNumber)
 {
     CONTRACTL
     {
@@ -20,9 +20,8 @@ EventPipeBuffer::EventPipeBuffer(unsigned int bufferSize DEBUG_ARG(EventPipeThre
     }
     CONTRACTL_END;
     m_state = EventPipeBufferState::WRITABLE;
-#ifdef DEBUG
     m_pWriterThread = pWriterThread;
-#endif
+    m_eventSequenceNumber = eventSequenceNumber;
     m_pBuffer = new BYTE[bufferSize];
     memset(m_pBuffer, 0, bufferSize);
     m_pLimit = m_pBuffer + bufferSize;
@@ -30,7 +29,7 @@ EventPipeBuffer::EventPipeBuffer(unsigned int bufferSize DEBUG_ARG(EventPipeThre
 
     QueryPerformanceCounter(&m_creationTimeStamp);
     _ASSERTE(m_creationTimeStamp.QuadPart > 0);
-    m_pLastPoppedEvent = NULL;
+    m_pCurrentReadEvent = NULL;
     m_pPrevBuffer = NULL;
     m_pNextBuffer = NULL;
 }
@@ -90,7 +89,13 @@ bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeSession &session, Eve
 
         EventPipeEventInstance *pInstance = new (m_pCurrent) EventPipeEventInstance(
             event,
-            (pThread == NULL) ? ::GetCurrentThreadId() : pThread->GetOSThreadId(),
+            (pThread == NULL) ? 
+#ifdef FEATURE_PAL
+                ::PAL_GetCurrentOSThreadId()
+#else
+                ::GetCurrentThreadId()
+#endif
+                : pThread->GetOSThreadId64(),
             pDataDest,
             payload.GetSize(),
             (pThread == NULL) ? NULL : pActivityId,
@@ -132,7 +137,7 @@ LARGE_INTEGER EventPipeBuffer::GetCreationTimeStamp() const
     return m_creationTimeStamp;
 }
 
-EventPipeEventInstance *EventPipeBuffer::GetNext(EventPipeEventInstance *pEvent, LARGE_INTEGER beforeTimeStamp)
+void EventPipeBuffer::MoveNextReadEvent()
 {
     CONTRACTL
     {
@@ -144,65 +149,51 @@ EventPipeEventInstance *EventPipeBuffer::GetNext(EventPipeEventInstance *pEvent,
     CONTRACTL_END;
 
     EventPipeEventInstance *pNextInstance = NULL;
-    // If input is NULL, return the first event if there is one.
-    if (pEvent == NULL)
-    {
-        // If this buffer contains an event, select it.
-        BYTE *pFirstAlignedInstance = GetNextAlignedAddress(m_pBuffer);
-        if (m_pCurrent > pFirstAlignedInstance)
-        {
-            pNextInstance = (EventPipeEventInstance *)pFirstAlignedInstance;
-        }
-        else
-        {
-            return NULL;
-        }
-    }
-    else
+
+    // If m_pCurrentReadEvent is NULL we've reached the end of the events
+    if (m_pCurrentReadEvent != NULL)
     {
         // Confirm that pEvent is within the used range of the buffer.
-        if (((BYTE *)pEvent < m_pBuffer) || ((BYTE *)pEvent >= m_pCurrent))
+        if (((BYTE*)m_pCurrentReadEvent < m_pBuffer) || ((BYTE*)m_pCurrentReadEvent >= m_pCurrent))
         {
             _ASSERT(!"Input pointer is out of range.");
-            return NULL;
-        }
-
-        if (pEvent->GetData())
-        {
-            // We have a pointer within the bounds of the buffer.
-            // Find the next event by skipping the current event with it's data payload immediately after the instance.
-            pNextInstance = (EventPipeEventInstance *)GetNextAlignedAddress(const_cast<BYTE *>(pEvent->GetData() + pEvent->GetDataLength()));
+            m_pCurrentReadEvent = NULL;
         }
         else
         {
-            // In case we do not have a payload, the next instance is right after the current instance
-            pNextInstance = (EventPipeEventInstance *)GetNextAlignedAddress((BYTE *)(pEvent + 1));
-        }
+            if (m_pCurrentReadEvent->GetData())
+            {
+                // We have a pointer within the bounds of the buffer.
+                // Find the next event by skipping the current event with it's data payload immediately after the instance.
+                m_pCurrentReadEvent = (EventPipeEventInstance *)GetNextAlignedAddress(const_cast<BYTE *>(m_pCurrentReadEvent->GetData() + m_pCurrentReadEvent->GetDataLength()));
+            }
+            else
+            {
+                // In case we do not have a payload, the next instance is right after the current instance
+                m_pCurrentReadEvent = (EventPipeEventInstance*)GetNextAlignedAddress((BYTE*)(m_pCurrentReadEvent + 1));
+            }
+            // this may roll over and that is fine
+            m_eventSequenceNumber++;
 
-        // Check to see if we've reached the end of the written portion of the buffer.
-        if ((BYTE *)pNextInstance >= m_pCurrent)
-        {
-            return NULL;
+            // Check to see if we've reached the end of the written portion of the buffer.
+            if ((BYTE*)m_pCurrentReadEvent >= m_pCurrent)
+            {
+                m_pCurrentReadEvent = NULL;
+            }
         }
     }
 
     // Ensure that the timestamp is valid.  The buffer is zero'd before use, so a zero timestamp is invalid.
-    LARGE_INTEGER nextTimeStamp = *pNextInstance->GetTimeStamp();
-    if (nextTimeStamp.QuadPart == 0)
+#ifdef DEBUG
+    if (m_pCurrentReadEvent != NULL)
     {
-        return NULL;
+        LARGE_INTEGER nextTimeStamp = *m_pCurrentReadEvent->GetTimeStamp();
+        _ASSERTE(nextTimeStamp.QuadPart != 0);
     }
-
-    // Ensure that the timestamp is earlier than the beforeTimeStamp.
-    if (nextTimeStamp.QuadPart >= beforeTimeStamp.QuadPart)
-    {
-        return NULL;
-    }
-
-    return pNextInstance;
+#endif
 }
 
-EventPipeEventInstance *EventPipeBuffer::PeekNext(LARGE_INTEGER beforeTimeStamp)
+EventPipeEventInstance* EventPipeBuffer::GetCurrentReadEvent()
 {
     CONTRACTL
     {
@@ -213,11 +204,10 @@ EventPipeEventInstance *EventPipeBuffer::PeekNext(LARGE_INTEGER beforeTimeStamp)
     }
     CONTRACTL_END;
 
-    // Get the next event using the last popped event as a marker.
-    return GetNext(m_pLastPoppedEvent, beforeTimeStamp);
+    return m_pCurrentReadEvent;
 }
 
-void EventPipeBuffer::PopNext(EventPipeEventInstance *pNext)
+unsigned int EventPipeBuffer::GetCurrentSequenceNumber()
 {
     CONTRACTL
     {
@@ -228,8 +218,13 @@ void EventPipeBuffer::PopNext(EventPipeEventInstance *pNext)
     }
     CONTRACTL_END;
 
-    if (pNext != NULL)
-        m_pLastPoppedEvent = pNext;
+    return m_eventSequenceNumber;
+}
+
+EventPipeThread* EventPipeBuffer::GetWriterThread()
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_pWriterThread;
 }
 
 EventPipeBufferState EventPipeBuffer::GetVolatileState()
@@ -242,7 +237,19 @@ void EventPipeBuffer::ConvertToReadOnly()
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(m_pWriterThread->GetLock()->OwnedByCurrentThread());
+    _ASSERTE(m_pCurrentReadEvent == NULL);
     m_state.Store(EventPipeBufferState::READ_ONLY);
+
+    // If this buffer contains an event, select it.
+    BYTE *pFirstAlignedInstance = GetNextAlignedAddress(m_pBuffer);
+    if (m_pCurrent > pFirstAlignedInstance)
+    {
+        m_pCurrentReadEvent = (EventPipeEventInstance*)pFirstAlignedInstance;
+    }
+    else
+    {
+        m_pCurrentReadEvent = NULL;
+    }
 }
 
 #ifdef _DEBUG

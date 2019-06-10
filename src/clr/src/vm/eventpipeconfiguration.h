@@ -67,6 +67,7 @@ public:
         LPCWSTR strOutputPath,
         IpcStream *const pStream,
         EventPipeSessionType sessionType,
+        EventPipeSerializationFormat format,
         unsigned int circularBufferSizeInMB,
         const EventPipeProviderConfiguration *pProviders,
         uint32_t numProviders,
@@ -88,16 +89,17 @@ public:
     }
 
 private:
-    // Helper function used to generate a "EventPipeSession ID" (bitmask).
-    EventPipeSessionID GenerateSessionId() const
+    // Helper function used to locate a free index in the range 0 - EventPipe::MaxNumberOfSessions
+    // Returns EventPipe::MaxNumberOfSessions if there are no free indexes
+    unsigned int GenerateSessionIndex() const
     {
         LIMITED_METHOD_CONTRACT;
-
+        _ASSERTE(EventPipe::MaxNumberOfSessions == 64);
         uint64_t id = 1;
-        for (uint64_t i = 0; i < 64; ++i, id <<= i)
+        for (unsigned int i = 0; i < 64; ++i, id <<= i)
             if ((m_activeSessions & id) == 0)
-                break;
-        return id;
+                return i;
+        return EventPipe::MaxNumberOfSessions;
     }
 
     // Get the provider without taking the lock.

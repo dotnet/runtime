@@ -331,6 +331,7 @@ set(VM_SOURCES_WKS
     eventpipemetadatagenerator.cpp
     eventpipeprotocolhelper.cpp
     eventpipeprovider.cpp
+    eventpipethread.cpp
     eventpipebuffer.cpp
     eventpipebuffermanager.cpp
     eventpipesession.cpp

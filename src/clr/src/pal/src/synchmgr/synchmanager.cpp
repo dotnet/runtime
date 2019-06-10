@@ -1486,6 +1486,7 @@ namespace CorUnix
         }
 
         HANDLE hWorkerThread = NULL;
+        SIZE_T osThreadId = 0;
         palErr = InternalCreateThread(pthrCurrent,
                                       NULL,
                                       0,
@@ -1493,11 +1494,12 @@ namespace CorUnix
                                       (PVOID)pSynchManager,
                                       0,
                                       PalWorkerThread,
-                                      &pSynchManager->m_dwWorkerThreadTid,
+                                      &osThreadId,
                                       &hWorkerThread);
 
         if (NO_ERROR == palErr)
         {
+            pSynchManager->m_dwWorkerThreadTid = (DWORD)osThreadId;
             palErr = InternalGetThreadDataFromHandle(pthrCurrent,
                                                      hWorkerThread,
                                                      0,
