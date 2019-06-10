@@ -110,6 +110,71 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             }
         }
 
+        [Theory]
+        [InlineData("win10-x64", "win/ManagedWin.dll", "native/win-x64")]
+        [InlineData("win10-x86", "win/ManagedWin.dll", "native/win-x86")]
+        [InlineData("linux", "any/ManagedAny.dll", "native/linux")]
+        public void MostSpecificRidAssemblySelectedPerType(string rid, string expectedAssemblyPath, string expectedNativePath)
+        {
+            using (TestApp app = NetCoreAppBuilder.PortableForNETCoreApp(SharedState.FrameworkReferenceApp)
+                .WithProject(p => p
+                    .WithAssemblyGroup(null, g => g.WithMainAssembly())
+                    .WithAssemblyGroup("any", g => g.WithAsset("any/ManagedAny.dll"))
+                    .WithAssemblyGroup("win", g => g.WithAsset("win/ManagedWin.dll"))
+                    .WithNativeLibraryGroup("win-x64", g => g.WithAsset("native/win-x64/n.dll"))
+                    .WithNativeLibraryGroup("win-x86", g => g.WithAsset("native/win-x86/n.dll"))
+                    .WithNativeLibraryGroup("linux", g => g.WithAsset("native/linux/n.so")))
+                .Build())
+            {
+                SharedState.DotNetWithNetCoreApp.Exec(app.AppDll)
+                    .EnableTracingAndCaptureOutputs()
+                    .RuntimeId(rid)
+                    .Execute()
+                    .Should().Pass()
+                    .And.HaveResolvedAssembly(expectedAssemblyPath, app)
+                    .And.HaveResolvedNativeLibraryPath(expectedNativePath, app);
+            }
+        }
+
+        [Theory]
+        // For "win" RIDs the DependencyLib which is RID-agnostic will not be included, 
+        // since there are other assembly (runtime) assets with more specific RID match.
+        [InlineData("win10-x64", "win/ManagedWin.dll;win/AnotherWin.dll", "native/win10-x64;native/win10-x64-2")]
+        [InlineData("win10-x86", "win/ManagedWin.dll;win/AnotherWin.dll", "native/win-x86")]
+        // For "linux" on the other hand the DependencyLib will be resolved because there are
+        // no RID-specific assembly assets available.
+        [InlineData("linux", "", "native/linux")]
+        public void MostSpecificRidAssemblySelectedPerTypeMultipleAssets(string rid, string expectedAssemblyPath, string expectedNativePath)
+        {
+            using (TestApp app = NetCoreAppBuilder.PortableForNETCoreApp(SharedState.FrameworkReferenceApp)
+                .WithProject(p => p
+                    .WithAssemblyGroup(null, g => g.WithMainAssembly()))
+                .WithPackage("ridSpecificLib", "1.0.0", p => p
+                    .WithAssemblyGroup(null, g => g.WithAsset("DependencyLib.dll"))
+                    .WithAssemblyGroup("win", g => g.WithAsset("win/ManagedWin.dll"))
+                    .WithAssemblyGroup("win", g => g.WithAsset("win/AnotherWin.dll"))
+                    .WithNativeLibraryGroup("win10-x64", g => g.WithAsset("native/win10-x64/n1.dll"))
+                    .WithNativeLibraryGroup("win10-x64", g => g.WithAsset("native/win10-x64/n2.dll"))
+                    .WithNativeLibraryGroup("win10-x64", g => g.WithAsset("native/win10-x64-2/n3.dll"))
+                    .WithNativeLibraryGroup("win-x86", g => g.WithAsset("native/win-x86/n1.dll"))
+                    .WithNativeLibraryGroup("win-x86", g => g.WithAsset("native/win-x86/n2.dll"))
+                    .WithNativeLibraryGroup("linux", g => g.WithAsset("native/linux/n.so")))
+                .WithPackage("ridAgnosticLib", "2.0.0", p => p
+                    .WithAssemblyGroup(null, g => g.WithAsset("PortableLib.dll").WithAsset("PortableLib2.dll")))
+                .Build())
+            {
+                SharedState.DotNetWithNetCoreApp.Exec(app.AppDll)
+                    .EnableTracingAndCaptureOutputs()
+                    .RuntimeId(rid)
+                    .Execute()
+                    .Should().Pass()
+                    // These are from a separate package which has no RID specific assets, so the RID-agnostic assets are always included
+                    .And.HaveResolvedAssembly("PortableLib.dll;PortableLib2.dll", app)
+                    .And.HaveResolvedAssembly(expectedAssemblyPath, app)
+                    .And.HaveResolvedNativeLibraryPath(expectedNativePath, app);
+            }
+        }
+
         public class SharedTestState : SharedTestStateBase
         {
             public TestApp FrameworkReferenceApp { get; }
