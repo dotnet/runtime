@@ -20,6 +20,7 @@ namespace System.Threading
         public bool Change(System.TimeSpan dueTime, System.TimeSpan period) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public bool Change(uint dueTime, uint period) { throw null; }
+        public static long ActiveCount { get { throw null; } }
         public void Dispose() { }
         public bool Dispose(System.Threading.WaitHandle notifyObject) { throw null; }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
