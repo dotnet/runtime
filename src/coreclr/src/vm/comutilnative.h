@@ -146,7 +146,7 @@ public:
 
 #ifdef FEATURE_BASICFREEZE
     static
-    void* QCALLTYPE RegisterFrozenSegment(void *pSection, INT32 sizeSection);
+    void* QCALLTYPE RegisterFrozenSegment(void *pSection, SIZE_T sizeSection);
 
     static
     void QCALLTYPE UnregisterFrozenSegment(void *segmentHandle);
