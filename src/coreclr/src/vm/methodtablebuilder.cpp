@@ -11302,6 +11302,12 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
     if (IsValueClass())
         return FALSE;
 
+    MethodTable * pParentMT = GetParentMethodTable();
+
+    // Trivial parents
+    if (pParentMT == NULL || pParentMT == g_pObjectClass)
+        return FALSE;
+
     // Always use the ReadyToRun field layout algorithm if the source IL image was ReadyToRun, independent on
     // whether ReadyToRun is actually enabled for the module. It is required to allow mixing and matching 
     // ReadyToRun images with NGen.
@@ -11312,16 +11318,30 @@ BOOL MethodTableBuilder::NeedsAlignedBaseOffset()
             return FALSE;
     }
 
-    MethodTable * pParentMT = GetParentMethodTable();
-
-    // Trivial parents
-    if (pParentMT == NULL || pParentMT == g_pObjectClass)
-        return FALSE;
-
     if (pParentMT->GetModule() == GetModule())
     {
         if (!pParentMT->GetClass()->HasLayoutDependsOnOtherModules())
             return FALSE;
+    }
+    else
+    {
+#ifdef FEATURE_READYTORUN_COMPILER
+        if (IsReadyToRunCompilation())
+        {
+            if (pParentMT->GetModule()->IsInCurrentVersionBubble())
+            {
+                return FALSE;
+            }
+        }
+#else // FEATURE_READYTORUN_COMPILER
+        if (GetModule()->GetFile()->IsILImageReadyToRun())
+        {
+            if (GetModule()->IsInSameVersionBubble(pParentMT->GetModule()))
+            {
+                return FALSE;
+            }
+        }
+#endif // FEATURE_READYTORUN_COMPILER
     }
 
     return TRUE;
