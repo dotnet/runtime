@@ -15,4 +15,12 @@
     <KnownFrameworkReference Remove="Microsoft.AspNetCore.App" />
     <KnownFrameworkReference Remove="Microsoft.WindowsDesktop.App" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- CodePages is part of the framework but we don't yet have a MicrosoftNETCoreAppPackageVersion with that change -->
+    <IgnoredReference Include="System.Text.Encoding.CodePages"/>
+  </ItemGroup>
+  <Target Name="CheckForWorkaroundRemoval" AfterTargets="ResolveReferences">
+    <Error Condition="'%(Reference.FileName)' == 'System.Text.Encoding.CodePages' AND '%(Reference.NuGetPackageId)' == 'Microsoft.NETCore.App'"
+           Text="Please remove IgnoredReference workaround from pkg\test\frameworkSettings\netcoreapp3.0\settings.targets" />
+  </Target>
 </Project>
