@@ -3406,6 +3406,67 @@ BOOL Module::IsInCurrentVersionBubble()
 #endif // FEATURE_NATIVE_IMAGE_GENERATION
 }
 
+#if defined(FEATURE_READYTORUN) && !defined(FEATURE_READYTORUN_COMPILER)
+//---------------------------------------------------------------------------------------
+// Check if the target module is in the same version bubble as this one
+// The current implementation uses the presence of an AssemblyRef for the target module's assembly in
+// the native manifest metadata.
+//
+// Arguments:
+//      * target - target module to check
+//
+// Return Value:
+//      TRUE if the target module is in the same version bubble as this one
+//
+BOOL Module::IsInSameVersionBubble(Module *target)
+{
+    CONTRACT(BOOL)
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACT_END;
+
+    if (this == target)
+    {
+        RETURN TRUE;
+    }
+
+    if (!HasNativeOrReadyToRunImage())
+    {
+        RETURN FALSE;
+    }
+
+    // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
+    COUNT_T cMeta=0;
+    const void* pMeta = GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta);
+    if (pMeta == NULL)
+    {
+        RETURN FALSE;
+    }
+
+    IMDInternalImport* pMdImport = GetNativeAssemblyImport();
+
+    LPCUTF8 targetName = target->GetAssembly()->GetSimpleName();
+
+    HENUMInternal assemblyEnum;
+    HRESULT hr = pMdImport->EnumAllInit(mdtAssemblyRef, &assemblyEnum);
+    mdAssemblyRef assemblyRef;
+    while (pMdImport->EnumNext(&assemblyEnum, &assemblyRef))
+    {
+        LPCSTR assemblyName;
+        hr = pMdImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL);
+        if (strcmp(assemblyName, targetName) == 0)
+        {
+            RETURN TRUE;
+        }
+    }
+
+    RETURN FALSE;
+}
+#endif // FEATURE_READYTORUN && !FEATURE_READYTORUN_COMPILER
+
 //---------------------------------------------------------------------------------------
 //
 // WinMD-aware helper to grab a readable public metadata interface. Any place that thinks
