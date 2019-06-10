@@ -11,7 +11,7 @@ export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 echo "Running init-dotnet.sh"
 source $working_tree_root/init-dotnet.sh
 
-dotnet=$working_tree_root/.dotnet/dotnet
+dotnet=${_InitializeDotNetCli}/dotnet
 
 echo "Running: $dotnet $@"
 $dotnet "$@"
