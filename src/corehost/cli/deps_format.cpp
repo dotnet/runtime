@@ -173,41 +173,52 @@ bool deps_json_t::perform_rid_fallback(rid_specific_assets_t* portable_assets, c
     
     for (auto& package : portable_assets->libs)
     {
-        pal::string_t matched_rid = package.second.rid_assets.count(host_rid) ? host_rid : _X("");
-        if (matched_rid.empty())
+        for (size_t asset_type_index = 0; asset_type_index < deps_entry_t::asset_types::count; asset_type_index++)
         {
-            if (rid_fallback_graph.count(host_rid) == 0)
+            auto& rid_assets = package.second[asset_type_index].rid_assets;
+            pal::string_t matched_rid = rid_assets.count(host_rid) ? host_rid : _X("");
+            if (matched_rid.empty())
             {
-                trace::warning(_X("The targeted framework does not support the runtime '%s'. Some native libraries from [%s] may fail to load on this platform."), host_rid.c_str(), package.first.c_str());
-            }
-            else
-            {
-                const auto& fallback_rids = rid_fallback_graph.find(host_rid)->second;
-                auto iter = std::find_if(fallback_rids.begin(), fallback_rids.end(), [&package](const pal::string_t& rid) {
-                    return package.second.rid_assets.count(rid);
-                });
-                if (iter != fallback_rids.end())
+                auto rid_fallback_iter = rid_fallback_graph.find(host_rid);
+                if (rid_fallback_iter == rid_fallback_graph.end())
                 {
-                    matched_rid = *iter;
+                    trace::warning(_X("The targeted framework does not support the runtime '%s'. Some native libraries from [%s] may fail to load on this platform."), host_rid.c_str(), package.first.c_str());
+                }
+                else
+                {
+                    const auto& fallback_rids = rid_fallback_iter->second;
+                    auto iter = std::find_if(fallback_rids.begin(), fallback_rids.end(), [&rid_assets](const pal::string_t& rid) {
+                        return rid_assets.count(rid);
+                        });
+                    if (iter != fallback_rids.end())
+                    {
+                        matched_rid = *iter;
+                    }
                 }
             }
-        }
 
-        if (matched_rid.empty())
-        {
-            package.second.rid_assets.clear();
-        }
-
-        for (auto iter = package.second.rid_assets.begin(); iter != package.second.rid_assets.end(); /* */)
-        {
-            if (iter->first != matched_rid)
+            if (matched_rid.empty())
             {
-                trace::verbose(_X("Chose %s, so removing rid (%s) specific assets for package %s"), matched_rid.c_str(), iter->first.c_str(), package.first.c_str());
-                iter = package.second.rid_assets.erase(iter);
+                rid_assets.clear();
             }
-            else
+
+            for (auto iter = rid_assets.begin(); iter != rid_assets.end(); /* */)
             {
-                ++iter;
+                if (iter->first != matched_rid)
+                {
+                    trace::verbose(
+                        _X("Chose %s, so removing rid (%s) specific assets for package %s and asset type %s"),
+                        matched_rid.c_str(),
+                        iter->first.c_str(),
+                        package.first.c_str(),
+                        deps_entry_t::s_known_asset_types[asset_type_index]);
+
+                    iter = rid_assets.erase(iter);
+                }
+                else
+                {
+                    ++iter;
+                }
             }
         }
     }
@@ -231,9 +242,9 @@ bool deps_json_t::process_runtime_targets(const json_value& json, const pal::str
         for (const auto& file : files)
         {
             const auto& type = file.second.at(_X("assetType")).as_string();
-            for (size_t i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
+            for (size_t asset_type_index = 0; asset_type_index < deps_entry_t::s_known_asset_types.size(); ++asset_type_index)
             {
-                if (pal::strcasecmp(type.c_str(), deps_entry_t::s_known_asset_types[i]) == 0)
+                if (pal::strcasecmp(type.c_str(), deps_entry_t::s_known_asset_types[asset_type_index]) == 0)
                 {
                     const auto& rid = file.second.at(_X("rid")).as_string();
 
@@ -255,14 +266,14 @@ bool deps_json_t::process_runtime_targets(const json_value& json, const pal::str
                     deps_asset_t asset(get_filename_without_ext(file.first), file.first, assembly_version, file_version);
 
                     trace::info(_X("Adding runtimeTargets %s asset %s rid=%s assemblyVersion=%s fileVersion=%s from %s"),
-                        deps_entry_t::s_known_asset_types[i],
+                        deps_entry_t::s_known_asset_types[asset_type_index],
                         asset.relative_path.c_str(),
                         rid.c_str(),
                         asset.assembly_version.as_str().c_str(),
                         asset.file_version.as_str().c_str(),
                         package.first.c_str());
 
-                    assets.libs[package.first].rid_assets[rid][i].push_back(asset);
+                    assets.libs[package.first][asset_type_index].rid_assets[rid].push_back(asset);
                 }
             }
         }
@@ -338,26 +349,26 @@ bool deps_json_t::load_framework_dependent(const pal::string_t& deps_path, const
     };
 
     const vec_asset_t empty;
-    auto get_relpaths = [&](const pal::string_t& package, int type_index, bool* rid_specific) -> const vec_asset_t& {
+    auto get_relpaths = [&](const pal::string_t& package, int asset_type_index, bool* rid_specific) -> const vec_asset_t& {
 
         *rid_specific = false;
 
         // Is there any rid specific assets for this type ("native" or "runtime" or "resources")
-        if (m_rid_assets.libs.count(package) && !m_rid_assets.libs[package].rid_assets.empty())
+        if (m_rid_assets.libs.count(package) && !m_rid_assets.libs[package][asset_type_index].rid_assets.empty())
         {
-            const auto& assets_by_type = m_rid_assets.libs[package].rid_assets.begin()->second[type_index];
-            if (!assets_by_type.empty())
+            const auto& assets_for_type = m_rid_assets.libs[package][asset_type_index].rid_assets.begin()->second;
+            if (!assets_for_type.empty())
             {
                 *rid_specific = true;
-                return assets_by_type;
+                return assets_for_type;
             }
 
-            trace::verbose(_X("There were no rid specific %s asset for %s"), deps_entry_t::s_known_asset_types[type_index], package.c_str());
+            trace::verbose(_X("There were no rid specific %s asset for %s"), deps_entry_t::s_known_asset_types[asset_type_index], package.c_str());
         }
 
         if (m_assets.libs.count(package))
         {
-            return m_assets.libs[package][type_index];
+            return m_assets.libs[package][asset_type_index];
         }
 
         return empty;
@@ -426,9 +437,12 @@ bool deps_json_t::has_package(const pal::string_t& name, const pal::string_t& ve
     auto iter = m_rid_assets.libs.find(pv);
     if (iter != m_rid_assets.libs.end())
     {
-        if (!iter->second.rid_assets.empty())
+        for (size_t asset_type_index = 0; asset_type_index < deps_entry_t::asset_types::count; asset_type_index++)
         {
-            return true;
+            if (!iter->second[asset_type_index].rid_assets.empty())
+            {
+                return true;
+            }
         }
     }
     

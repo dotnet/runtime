@@ -20,8 +20,9 @@ class deps_json_t
     typedef std::vector<deps_asset_t> vec_asset_t;
     typedef std::array<vec_asset_t, deps_entry_t::asset_types::count> assets_t;
     struct deps_assets_t { std::unordered_map<pal::string_t, assets_t> libs; };
-    struct rid_assets_t { std::unordered_map<pal::string_t, assets_t> rid_assets; };
-    struct rid_specific_assets_t { std::unordered_map<pal::string_t, rid_assets_t> libs; };
+    struct rid_assets_t { std::unordered_map<pal::string_t, vec_asset_t> rid_assets; };
+    typedef std::array<rid_assets_t, deps_entry_t::asset_types::count> rid_assets_per_type_t;
+    struct rid_specific_assets_t { std::unordered_map<pal::string_t, rid_assets_per_type_t> libs; };
 
     typedef std::unordered_map<pal::string_t, std::vector<pal::string_t>> str_to_vector_map_t;
 
