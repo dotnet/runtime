@@ -1342,7 +1342,7 @@ FCIMPLEND;
 **Arguments: args-> pointer to section, size of section
 **Exceptions: None
 ==============================================================================*/
-void* QCALLTYPE GCInterface::RegisterFrozenSegment(void* pSection, INT32 sizeSection)
+void* QCALLTYPE GCInterface::RegisterFrozenSegment(void* pSection, SIZE_T sizeSection)
 {
     QCALL_CONTRACT;
 

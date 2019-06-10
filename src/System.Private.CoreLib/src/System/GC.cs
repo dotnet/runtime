@@ -345,7 +345,7 @@ namespace System
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, int sectionSize);
+        private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern IntPtr _UnregisterFrozenSegment(IntPtr segmentHandle);
