@@ -1585,6 +1585,17 @@ CreateThread(
          OUT LPDWORD lpThreadId);
 
 PALIMPORT
+HANDLE
+PALAPI
+PAL_CreateThread64(
+    IN LPSECURITY_ATTRIBUTES lpThreadAttributes,
+    IN DWORD dwStackSize,
+    IN LPTHREAD_START_ROUTINE lpStartAddress,
+    IN LPVOID lpParameter,
+    IN DWORD dwCreationFlags,
+    OUT SIZE_T* pThreadId);
+
+PALIMPORT
 PAL_NORETURN
 VOID
 PALAPI

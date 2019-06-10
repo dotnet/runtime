@@ -22,6 +22,7 @@ namespace System.Diagnostics.Tracing
         // Miscellaneous constants.
         private const string DefaultAppName = "app";
         private const string NetPerfFileExtension = ".netperf";
+        private const string NetTraceFileExtension = ".nettrace";
         private const uint DefaultCircularBufferMB = 256; // MB (PerfView and dotnet-trace default)
         private const char ProviderConfigDelimiter = ',';
         private const char ConfigComponentDelimiter = ':';
@@ -87,7 +88,8 @@ namespace System.Diagnostics.Tracing
 
         private static string BuildTraceFileName()
         {
-            return GetAppName() + "." + Interop.GetCurrentProcessId().ToString() + NetPerfFileExtension;
+            return GetAppName() + "." + Interop.GetCurrentProcessId().ToString() +
+              ((Config_NetTraceFormat > 0) ? NetTraceFileExtension : NetPerfFileExtension);
         }
 
         private static string GetAppName()
@@ -171,6 +173,20 @@ namespace System.Diagnostics.Tracing
             get
             {
                 string? stringValue = CompatibilitySwitch.GetValueInternal("EnableEventPipe");
+                if ((stringValue == null) || (!int.TryParse(stringValue, out int value)))
+                {
+                    value = -1;     // Indicates no value (or is illegal)
+                }
+
+                return value;
+            }
+        }
+
+        private static int Config_NetTraceFormat
+        {
+            get
+            {
+                string? stringValue = CompatibilitySwitch.GetValueInternal("EventPipeNetTraceFormat");
                 if ((stringValue == null) || (!int.TryParse(stringValue, out int value)))
                 {
                     value = -1;     // Indicates no value (or is illegal)

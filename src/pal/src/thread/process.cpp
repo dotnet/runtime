@@ -1674,6 +1674,7 @@ public:
         PAL_ERROR pe = NO_ERROR;
         BOOL ret;
         UnambiguousProcessDescriptor unambiguousProcessDescriptor;
+        SIZE_T osThreadId = 0;
 
 #ifdef __APPLE__
         if (lpApplicationGroupId != NULL)
@@ -1734,7 +1735,6 @@ public:
 
         // Add a reference for the thread handler
         AddRef();
-
         pe = InternalCreateThread(
             pThread,
             NULL,
@@ -1743,7 +1743,7 @@ public:
             this,
             0,
             UserCreatedThread,
-            &m_threadId,
+            &osThreadId,
             &m_threadHandle);
 
         if (NO_ERROR != pe)
@@ -1752,7 +1752,7 @@ public:
             Release();
             goto exit;
         }
-
+        m_threadId = (DWORD)osThreadId;
     exit:
         return pe;
     }
