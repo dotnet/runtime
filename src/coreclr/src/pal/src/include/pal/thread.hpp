@@ -53,7 +53,7 @@ namespace CorUnix
         LPVOID lpParameter,
         DWORD dwCreationFlags,
         PalThreadType eThreadType,
-        LPDWORD lpThreadId,
+        SIZE_T* pThreadId,
         HANDLE *phThread
         );
 
@@ -215,7 +215,7 @@ namespace CorUnix
                 LPVOID,
                 DWORD,
                 PalThreadType,
-                LPDWORD,
+                SIZE_T*,
                 HANDLE*
                 );
 

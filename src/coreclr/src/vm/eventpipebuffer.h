@@ -57,9 +57,11 @@ private:
     Volatile<EventPipeBufferState> m_state;
 
     // Thread that is/was allowed to write into this buffer when m_state == WRITABLE
-#ifdef DEBUG
     EventPipeThread* m_pWriterThread;
-#endif
+
+    // The sequence number corresponding to m_pCurrentReadEvent
+    // Prior to read iteration it is the sequence number of the first event in the buffer
+    unsigned int m_eventSequenceNumber;
     
     // A pointer to the actual buffer.
     BYTE *m_pBuffer;
@@ -75,10 +77,8 @@ private:
     // timestamp >= this one. If not then all bets are off.
     LARGE_INTEGER m_creationTimeStamp;
 
-    // Used by PopNext as input to GetNext.
-    // If NULL, no events have been popped.
-    // The event will still remain in the buffer after it is popped, but PopNext will not return it again.
-    EventPipeEventInstance *m_pLastPoppedEvent;
+    // Pointer to the current event being read
+    EventPipeEventInstance *m_pCurrentReadEvent;
 
     // Each buffer will become part of a per-thread linked list of buffers.
     // The linked list is invasive, thus we declare the pointers here.
@@ -128,7 +128,7 @@ private:
 
 public:
 
-    EventPipeBuffer(unsigned int bufferSize DEBUG_ARG(EventPipeThread* pWriterThread));
+    EventPipeBuffer(unsigned int bufferSize, EventPipeThread* pWriterThread, unsigned int eventSequenceNumber);
     ~EventPipeBuffer();
 
     // Write an event to the buffer.
@@ -142,16 +142,20 @@ public:
     // Get the timestamp the buffer was created.
     LARGE_INTEGER GetCreationTimeStamp() const;
 
-    // Get the next event from the buffer as long as it is before the specified timestamp.
-    // Input of NULL gets the first event.
-    EventPipeEventInstance* GetNext(EventPipeEventInstance *pEvent, LARGE_INTEGER beforeTimeStamp);
+    // Advances read cursor to the next event or NULL if there aren't any more. When the
+    // buffer is first made readable the cursor is automatically positioned on the first
+    // event or NULL if there are no events in the buffer.
+    void MoveNextReadEvent();
 
-    // Get the next event from the buffer
-    EventPipeEventInstance* PeekNext(LARGE_INTEGER beforeTimeStamp);
+    // Returns the event at the current read cursor. The returned event pointer is valid
+    // until the buffer is deleted.
+    EventPipeEventInstance* GetCurrentReadEvent();
 
-    // Advance the buffer to the next event
-    // pEvent is expected to be the last event returned from PeekNext()
-    void PopNext(EventPipeEventInstance *pEvent);
+    // Gets the sequence number of the event corresponding to GetCurrentReadEvent();
+    unsigned int GetCurrentSequenceNumber();
+
+    // Get the thread that is (or was) assigned to write to this buffer
+    EventPipeThread* GetWriterThread();
 
     // Check the state of the buffer
     EventPipeBufferState GetVolatileState();
