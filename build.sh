@@ -150,14 +150,11 @@ restore_optdata()
 
     if [ $__isMSBuildOnNETCoreSupported == 1 ]; then
         # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
-        local DotNetCli="$__ProjectRoot/.dotnet/dotnet"
-        if [ ! -f $DotNetCli ]; then
-            source "$__ProjectRoot/init-dotnet.sh"
-            if [ $? != 0 ]; then
-                echo "Failed to install dotnet."
-                exit 1
-            fi
-        fi
+
+        # Init dotnet
+        source "${__ProjectRoot}/init-dotnet.sh"
+        local DotNetCli=${_InitializeDotNetCli}/dotnet
+
         __PgoOptDataVersion=$(DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 $DotNetCli msbuild $OptDataProjectFilePath /t:DumpPgoDataPackageVersion /nologo)
         if [ $? != 0 ]; then
             echo "Failed to get PGO data package version."
