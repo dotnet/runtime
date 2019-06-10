@@ -5,6 +5,7 @@
 using FluentAssertions;
 using FluentAssertions.Execution;
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
@@ -14,42 +15,50 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
         public const string TRUSTED_PLATFORM_ASSEMBLIES = "TRUSTED_PLATFORM_ASSEMBLIES";
         public const string NATIVE_DLL_SEARCH_DIRECTORIES = "NATIVE_DLL_SEARCH_DIRECTORIES";
 
-        public static AndConstraint<CommandResultAssertions> HaveRuntimePropertyContaining(this CommandResultAssertions assertion, string propertyName, string value)
+        public static AndConstraint<CommandResultAssertions> HaveRuntimePropertyContaining(this CommandResultAssertions assertion, string propertyName, params string[] values)
         {
             string propertyValue = GetMockPropertyValue(assertion, propertyName);
 
-            Execute.Assertion.ForCondition(propertyValue != null && propertyValue.Contains(value))
-                .FailWith("The property {0} doesn't contain expected value: {1}{2}{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+            foreach (string value in values)
+            {
+                Execute.Assertion.ForCondition(propertyValue != null && propertyValue.Contains(value))
+                    .FailWith("The property {0} doesn't contain expected value: {1}\n{2}\n{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+            }
+
             return new AndConstraint<CommandResultAssertions>(assertion);
         }
 
-        public static AndConstraint<CommandResultAssertions> NotHaveRuntimePropertyContaining(this CommandResultAssertions assertion, string propertyName, string value)
+        public static AndConstraint<CommandResultAssertions> NotHaveRuntimePropertyContaining(this CommandResultAssertions assertion, string propertyName, params string[] values)
         {
             string propertyValue = GetMockPropertyValue(assertion, propertyName);
 
-            Execute.Assertion.ForCondition(propertyValue != null && !propertyValue.Contains(value))
-                .FailWith("The property {0} contains unexpected value: {1}{2}{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+            foreach (string value in values)
+            {
+                Execute.Assertion.ForCondition(propertyValue != null && !propertyValue.Contains(value))
+                    .FailWith("The property {0} contains unexpected value: {1}\n{2}\n{3}", propertyName, value, propertyValue, assertion.GetDiagnosticsInfo());
+            }
+
             return new AndConstraint<CommandResultAssertions>(assertion);
         }
 
         public static AndConstraint<CommandResultAssertions> HaveResolvedAssembly(this CommandResultAssertions assertion, string assemblyPath, TestApp app = null)
         {
-            return assertion.HaveRuntimePropertyContaining(TRUSTED_PLATFORM_ASSEMBLIES, RelativePathToAbsoluteAppPath(assemblyPath, app));
+            return assertion.HaveRuntimePropertyContaining(TRUSTED_PLATFORM_ASSEMBLIES, RelativePathsToAbsoluteAppPaths(assemblyPath, app));
         }
 
         public static AndConstraint<CommandResultAssertions> NotHaveResolvedAssembly(this CommandResultAssertions assertion, string assemblyPath, TestApp app = null)
         {
-            return assertion.NotHaveRuntimePropertyContaining(TRUSTED_PLATFORM_ASSEMBLIES, RelativePathToAbsoluteAppPath(assemblyPath, app));
+            return assertion.NotHaveRuntimePropertyContaining(TRUSTED_PLATFORM_ASSEMBLIES, RelativePathsToAbsoluteAppPaths(assemblyPath, app));
         }
 
         public static AndConstraint<CommandResultAssertions> HaveResolvedNativeLibraryPath(this CommandResultAssertions assertion, string path, TestApp app = null)
         {
-            return assertion.HaveRuntimePropertyContaining(NATIVE_DLL_SEARCH_DIRECTORIES, RelativePathToAbsoluteAppPath(path, app));
+            return assertion.HaveRuntimePropertyContaining(NATIVE_DLL_SEARCH_DIRECTORIES, RelativePathsToAbsoluteAppPaths(path, app));
         }
 
         public static AndConstraint<CommandResultAssertions> NotHaveResolvedNativeLibraryPath(this CommandResultAssertions assertion, string path, TestApp app = null)
         {
-            return assertion.NotHaveRuntimePropertyContaining(NATIVE_DLL_SEARCH_DIRECTORIES, RelativePathToAbsoluteAppPath(path, app));
+            return assertion.NotHaveRuntimePropertyContaining(NATIVE_DLL_SEARCH_DIRECTORIES, RelativePathsToAbsoluteAppPaths(path, app));
         }
 
         private static string GetMockPropertyValue(CommandResultAssertions assertion, string propertyName)
@@ -70,15 +79,21 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
             return null;
         }
 
-        private static string RelativePathToAbsoluteAppPath(string relativePath, TestApp app)
+        private static string[] RelativePathsToAbsoluteAppPaths(string relativePaths, TestApp app)
         {
-            string path = relativePath.Replace('/', Path.DirectorySeparatorChar);
-            if (app != null)
+            List<string> paths = new List<string>();
+            foreach (string relativePath in relativePaths.Split(';'))
             {
-                path = Path.Combine(app.Location, path);
+                string path = relativePath.Replace('/', Path.DirectorySeparatorChar);
+                if (app != null)
+                {
+                    path = Path.Combine(app.Location, path);
+                }
+
+                paths.Add(path);
             }
 
-            return path;
+            return paths.ToArray();
         }
     }
 }
