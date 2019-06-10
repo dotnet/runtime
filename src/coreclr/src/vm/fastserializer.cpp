@@ -158,7 +158,7 @@ void FastSerializer::WriteObject(FastSerializableObject *pObject)
     }
     CONTRACTL_END;
 
-    WriteTag(FastSerializerTags::BeginObject);
+    WriteTag(pObject->IsPrivate() ? FastSerializerTags::BeginPrivateObject : FastSerializerTags::BeginObject);
 
     WriteSerializationType(pObject);
 
@@ -214,7 +214,7 @@ void FastSerializer::WriteSerializationType(FastSerializableObject *pObject)
     CONTRACTL_END;
 
     // Write the BeginObject tag.
-    WriteTag(FastSerializerTags::BeginObject);
+    WriteTag(pObject->IsPrivate() ? FastSerializerTags::BeginPrivateObject : FastSerializerTags::BeginObject);
 
     // Write a NullReferenceTag, which implies that the following fields belong to SerializationType.
     WriteTag(FastSerializerTags::NullReference);

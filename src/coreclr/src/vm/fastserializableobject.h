@@ -12,8 +12,8 @@ class FastSerializer;
 class FastSerializableObject
 {
 public:
-    FastSerializableObject(int objectVersion, int minReaderVersion) :
-        m_objectVersion(objectVersion), m_minReaderVersion(minReaderVersion)
+    FastSerializableObject(int objectVersion, int minReaderVersion, bool isPrivate) :
+        m_objectVersion(objectVersion), m_minReaderVersion(minReaderVersion), m_isPrivate(isPrivate)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -41,9 +41,16 @@ public:
         return m_minReaderVersion;
     }
 
+    bool IsPrivate() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_isPrivate;
+    }
+
 private:
     const int m_objectVersion;
     const int m_minReaderVersion;
+    const bool m_isPrivate;
 };
 
 #endif // FEATURE_PERFTRACING

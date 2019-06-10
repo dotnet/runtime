@@ -2212,7 +2212,11 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_PAL
+    SIZE_T  ourId = 0;
+#else
     DWORD   ourId = 0;
+#endif
     HANDLE  h = NULL;
     DWORD dwCreationFlags = CREATE_SUSPENDED;
 
@@ -2250,12 +2254,16 @@ BOOL Thread::CreateNewOSThread(SIZE_T sizeToCommitOrReserve, LPTHREAD_START_ROUT
     lpThreadArgs->lpThreadFunction = start;
     lpThreadArgs->lpArg = args;
 
-    h = ::CreateThread(NULL     /*=SECURITY_ATTRIBUTES*/,
-                       sizeToCommitOrReserve,
-                       intermediateThreadProc,
-                       lpThreadArgs,
-                       dwCreationFlags,
-                       &ourId);
+#ifdef FEATURE_PAL
+    h = ::PAL_CreateThread64(NULL     /*=SECURITY_ATTRIBUTES*/,
+#else
+    h = ::CreateThread(      NULL     /*=SECURITY_ATTRIBUTES*/,
+#endif
+                             sizeToCommitOrReserve,
+                             intermediateThreadProc,
+                             lpThreadArgs,
+                             dwCreationFlags,
+                             &ourId);
 
     if (h == NULL)
         return FALSE;
@@ -4710,7 +4718,11 @@ BOOL Thread::PrepareApartmentAndContext()
     }
     CONTRACTL_END;
 
+#ifdef FEATURE_PAL
+    m_OSThreadId = ::PAL_GetCurrentOSThreadId();
+#else
     m_OSThreadId = ::GetCurrentThreadId();
+#endif
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
     // Be very careful in here because we haven't set up e.g. TLS yet.
@@ -4952,7 +4964,11 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
             {
                 // We should never be attempting to CoUninitialize another thread than
                 // the currently running thread.
+#ifdef FEATURE_PAL
+                _ASSERTE(m_OSThreadId == ::PAL_GetCurrentOSThreadId());
+#else
                 _ASSERTE(m_OSThreadId == ::GetCurrentThreadId());
+#endif
 
                 // CoUninitialize the thread and reset the STA/MTA/CoInitialized state bits.
                 ::CoUninitialize();
@@ -5002,7 +5018,11 @@ Thread::ApartmentState Thread::SetApartment(ApartmentState state, BOOL fFireMDAO
     // Don't use the TS_Unstarted state bit to check for this, it's cleared far
     // too late in the day for us. Instead check whether we're in the correct
     // thread context.
+#ifdef FEATURE_PAL
+    if (m_OSThreadId != ::PAL_GetCurrentOSThreadId())
+#else
     if (m_OSThreadId != ::GetCurrentThreadId())
+#endif
     {
         FastInterlockOr((ULONG *) &m_State, (state == AS_InSTA) ? TS_InSTA : TS_InMTA);
         return state;

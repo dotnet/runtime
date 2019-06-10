@@ -2561,6 +2561,10 @@ public:
         return m_ThreadId;
     }
 
+    // The actual OS thread ID may be 64 bit on some platforms but 
+    // the runtime has historically used 32 bit IDs. We continue to
+    // downcast by default to limit the impact but GetOSThreadId64()
+    // is available for code-paths which correctly handle it.
     DWORD       GetOSThreadId()
     {
         LIMITED_METHOD_CONTRACT;
@@ -2568,17 +2572,29 @@ public:
 #ifndef DACCESS_COMPILE
         _ASSERTE (m_OSThreadId != 0xbaadf00d);
 #endif // !DACCESS_COMPILE
+        return (DWORD)m_OSThreadId;
+    }
+
+    // Allows access to the full 64 bit id on platforms which use it
+    SIZE_T      GetOSThreadId64()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+#ifndef DACCESS_COMPILE
+        _ASSERTE(m_OSThreadId != 0xbaadf00d);
+#endif // !DACCESS_COMPILE
         return m_OSThreadId;
     }
 
     // This API is to be used for Debugger only.
     // We need to be able to return the true value of m_OSThreadId.
+    // On platforms with 64 bit thread IDs we downcast to 32 bit.
     //
     DWORD       GetOSThreadIdForDebugger()
     {
         SUPPORTS_DAC;
         LIMITED_METHOD_CONTRACT;
-        return m_OSThreadId;
+        return (DWORD) m_OSThreadId;
     }
 
     BOOL        IsThreadPoolThread()
@@ -3639,7 +3655,7 @@ private:
                 || handle == SWITCHOUT_HANDLE_VALUE
                 || m_OSThreadId == 0
                 || m_OSThreadId == 0xbaadf00d
-                || ::MatchThreadHandleToOsId(handle, m_OSThreadId) );
+                || ::MatchThreadHandleToOsId(handle, (DWORD)m_OSThreadId) );
         }
 #endif
 
@@ -3655,7 +3671,7 @@ private:
             || h == SWITCHOUT_HANDLE_VALUE
             || m_OSThreadId == 0
             || m_OSThreadId == 0xbaadf00d
-            || ::MatchThreadHandleToOsId(h, m_OSThreadId) );
+            || ::MatchThreadHandleToOsId(h, (DWORD)m_OSThreadId) );
 #endif
         FastInterlockExchangePointer(&m_ThreadHandle, h);
     }
@@ -3672,7 +3688,7 @@ private:
     HANDLE          m_ThreadHandleForClose;
     HANDLE          m_ThreadHandleForResume;
     BOOL            m_WeOwnThreadHandle;
-    DWORD           m_OSThreadId;
+    SIZE_T          m_OSThreadId;
 
     BOOL CreateNewOSThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args);
 

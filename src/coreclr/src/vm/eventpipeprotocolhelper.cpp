@@ -187,12 +187,21 @@ void EventPipeProtocolHelper::CollectTracing(DiagnosticsIpc::IpcMessage& message
         return;
     }
 
+    // IPC should produce nettrace by default or be selectable via protocol
+    // but this is a simple starting point for testing
+    EventPipeSerializationFormat format = EventPipeSerializationFormat::NetPerfV3;
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeNetTraceFormat) > 0)
+    {
+        format = EventPipeSerializationFormat::NetTraceV4;
+    }
+
     auto sessionId = EventPipe::Enable(
         nullptr,                                        // strOutputPath (ignored in this scenario)
         payload->circularBufferSizeInMB,                         // circularBufferSizeInMB
         payload->providerConfigs.Ptr(),                          // pConfigs
         static_cast<uint32_t>(payload->providerConfigs.Size()),  // numConfigs
         EventPipeSessionType::IpcStream,                // EventPipeSessionType
+        format,                                         // EventPipeSerializationFormat
         pStream);                                       // IpcStream
 
     if (sessionId == 0)

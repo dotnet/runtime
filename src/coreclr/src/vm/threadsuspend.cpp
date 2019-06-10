@@ -1240,7 +1240,7 @@ BOOL Thread::IsContextSafeToRedirect(CONTEXT* pContext)
         if (pContext->ContextFlags & (CONTEXT_SERVICE_ACTIVE|CONTEXT_EXCEPTION_ACTIVE))
         {
             // cannot process exception
-            LOG((LF_ALWAYS, LL_WARNING, "thread [os id=0x08%x id=0x08%x] redirect failed due to ContextFlags of 0x%08x\n", m_OSThreadId, m_ThreadId, pContext->ContextFlags));
+            LOG((LF_ALWAYS, LL_WARNING, "thread [os id=0x08%x id=0x08%x] redirect failed due to ContextFlags of 0x%08x\n", (DWORD)m_OSThreadId, m_ThreadId, pContext->ContextFlags));
             isSafeToRedirect = FALSE;
         }
     }
@@ -4224,7 +4224,7 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 
                     if (thread->m_fPreemptiveGCDisabled)
                     {
-                        DWORD id = thread->m_OSThreadId;
+                        DWORD id = (DWORD) thread->m_OSThreadId;
                         if (id == 0xbaadf00d)
                         {
                             sprintf_s (message, COUNTOF(message), "Thread CLR ID=%x cannot be suspended",

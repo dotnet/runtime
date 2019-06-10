@@ -510,7 +510,7 @@ CreateThread(
           dwCreationFlags, lpThreadId);
 
     pThread = InternalGetCurrentThread();
-
+    SIZE_T osThreadId = 0;
     palError = InternalCreateThread(
         pThread,
         lpThreadAttributes,
@@ -519,7 +519,7 @@ CreateThread(
         lpParameter,
         dwCreationFlags,
         UserCreatedThread,
-        lpThreadId,
+        &osThreadId,
         &hNewThread
         );
 
@@ -527,9 +527,67 @@ CreateThread(
     {
         pThread->SetLastError(palError);
     }
-
+    if(lpThreadId != nullptr)
+    {
+        *lpThreadId = (DWORD)osThreadId;
+    }
     LOGEXIT("CreateThread returns HANDLE %p\n", hNewThread);
     PERF_EXIT(CreateThread);
+
+    return hNewThread;
+}
+
+/*++
+Function:
+  PAL_CreateThread64
+  Similar to CreateThread but passes out a 64 bit thread id on platforms which use one.
+
+Note:
+  lpThreadAttributes could be ignored.
+
+See MSDN doc.
+
+--*/
+HANDLE
+PALAPI
+PAL_CreateThread64(
+    IN LPSECURITY_ATTRIBUTES lpThreadAttributes,
+    IN DWORD dwStackSize,
+    IN LPTHREAD_START_ROUTINE lpStartAddress,
+    IN LPVOID lpParameter,
+    IN DWORD dwCreationFlags,
+    OUT SIZE_T* pThreadId)
+{
+    PAL_ERROR palError;
+    CPalThread *pThread;
+    HANDLE hNewThread = NULL;
+
+    PERF_ENTRY(PAL_CreateThread64);
+    ENTRY("PAL_CreateThread64(lpThreadAttr=%p, dwStackSize=%u, lpStartAddress=%p, "
+        "lpParameter=%p, dwFlags=%#x, pThreadId=%p)\n",
+        lpThreadAttributes, dwStackSize, lpStartAddress, lpParameter,
+        dwCreationFlags, pThreadId);
+
+    pThread = InternalGetCurrentThread();
+    palError = InternalCreateThread(
+        pThread,
+        lpThreadAttributes,
+        dwStackSize,
+        lpStartAddress,
+        lpParameter,
+        dwCreationFlags,
+        UserCreatedThread,
+        pThreadId,
+        &hNewThread
+    );
+
+    if (NO_ERROR != palError)
+    {
+        pThread->SetLastError(palError);
+    }
+
+    LOGEXIT("PAL_CreateThread64 returns HANDLE %p\n", hNewThread);
+    PERF_EXIT(PAL_CreateThread64);
 
     return hNewThread;
 }
@@ -543,7 +601,7 @@ CorUnix::InternalCreateThread(
     LPVOID lpParameter,
     DWORD dwCreationFlags,
     PalThreadType eThreadType,
-    LPDWORD lpThreadId,
+    SIZE_T* pThreadId,
     HANDLE *phThread
     )
 {
@@ -825,9 +883,9 @@ CorUnix::InternalCreateThread(
         //
         *phThread = hNewThread;
 
-        if (NULL != lpThreadId)
+        if (NULL != pThreadId)
         {
-            *lpThreadId = pNewThread->GetThreadId();
+            *pThreadId = pNewThread->GetThreadId();
         }
     }
     else

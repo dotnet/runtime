@@ -268,6 +268,7 @@ EventPipeSessionID EventPipe::Enable(
     const EventPipeProviderConfiguration *pProviders,
     uint32_t numProviders,
     EventPipeSessionType sessionType,
+    EventPipeSerializationFormat format,
     IpcStream *const pStream)
 {
     CONTRACTL
@@ -275,6 +276,7 @@ EventPipeSessionID EventPipe::Enable(
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
+        PRECONDITION(format < EventPipeSerializationFormat::Count);
         PRECONDITION(circularBufferSizeInMB > 0);
         PRECONDITION(numProviders > 0 && pProviders != nullptr);
     }
@@ -295,6 +297,7 @@ EventPipeSessionID EventPipe::Enable(
             strOutputPath,
             pStream,
             sessionType,
+            format,
             circularBufferSizeInMB,
             pProviders,
             numProviders);
@@ -477,6 +480,10 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
         _ASSERTE(!"Failed to get or create the EventPipeThread for rundown events.");
         return;
     }
+
+    // Write a final sequence point to the file now that all events have
+    // been emitted
+    pSession->WriteSequencePointUnbuffered();
 
     // Remove the session.
     s_config.DeleteSession(pSession);
@@ -699,7 +706,7 @@ void EventPipe::WriteEventInternal(
             //    as opposed a a buffer copy here
             EventPipeEventInstance instance(
                 event,
-                pThread->GetOSThreadId(),
+                pEventPipeThread->GetOSThreadId(),
                 pData,
                 payload.GetSize(),
                 pActivityId,
@@ -713,7 +720,7 @@ void EventPipe::WriteEventInternal(
             {
                 _ASSERTE(pRundownSession != nullptr);
                 if (pRundownSession != nullptr)
-                    pRundownSession->WriteEvent(instance);
+                    pRundownSession->WriteEventUnbuffered(instance, pEventPipeThread);
             }
             EX_CATCH {}
             EX_END_CATCH(SwallowAllExceptions);
@@ -742,7 +749,7 @@ void EventPipe::WriteEventInternal(
                 // allowed to set s_pSessions[i] = NULL at any time and that may have occured in between
                 // the check and the load
                 if (pSession != nullptr)
-                    pSession->WriteEvent(
+                    pSession->WriteEventBuffered(
                         pThread,
                         event,
                         payload,

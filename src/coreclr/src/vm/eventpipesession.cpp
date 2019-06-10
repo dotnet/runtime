@@ -13,30 +13,45 @@
 #ifdef FEATURE_PERFTRACING
 
 EventPipeSession::EventPipeSession(
-    EventPipeSessionID id,
+    unsigned int index,
     LPCWSTR strOutputPath,
     IpcStream *const pStream,
     EventPipeSessionType sessionType,
+    EventPipeSerializationFormat format,
     unsigned int circularBufferSizeInMB,
     const EventPipeProviderConfiguration *pProviders,
     uint32_t numProviders,
-    bool rundownEnabled) : m_Id(id),
+    bool rundownEnabled) : m_Id((EventPipeSessionID)1 << index),
+                           m_index(index),
                            m_pProviderList(new EventPipeSessionProviderList(pProviders, numProviders)),
-                           m_CircularBufferSizeInBytes(static_cast<size_t>(circularBufferSizeInMB) << 20),
-                           m_pBufferManager(new EventPipeBufferManager()),
                            m_rundownEnabled(rundownEnabled),
-                           m_SessionType(sessionType)
+                           m_SessionType(sessionType),
+                           m_format(format)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
+        PRECONDITION(index < EventPipe::MaxNumberOfSessions);
+        PRECONDITION(EventPipe::MaxNumberOfSessions == 64); // If MaxNumberOfSessions ever changed, fix the m_id calculation above
+        PRECONDITION(format < EventPipeSerializationFormat::Count);
         PRECONDITION(circularBufferSizeInMB > 0);
         PRECONDITION(numProviders > 0 && pProviders != nullptr);
         PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
+
+    size_t sequencePointAllocationBudget = 0;
+    // Hard coded 10MB for now, we'll probably want to make
+    // this configurable later.
+    if (GetSessionType() != EventPipeSessionType::Listener &&
+        GetSerializationFormat() >= EventPipeSerializationFormat::NetTraceV4)
+    {
+        sequencePointAllocationBudget = 10 * 1024 * 1024;
+    }
+
+    m_pBufferManager = new EventPipeBufferManager(this, static_cast<size_t>(circularBufferSizeInMB) << 20, sequencePointAllocationBudget);
 
     // Create the event pipe file.
     // A NULL output path means that we should not write the results to a file.
@@ -46,11 +61,11 @@ EventPipeSession::EventPipeSession(
     {
     case EventPipeSessionType::File:
         if (strOutputPath != nullptr)
-            m_pFile = new EventPipeFile(new FileStreamWriter(SString(strOutputPath)));
+            m_pFile = new EventPipeFile(new FileStreamWriter(SString(strOutputPath)), format);
         break;
 
     case EventPipeSessionType::IpcStream:
-        m_pFile = new EventPipeFile(new IpcStreamWriter(m_Id, pStream));
+        m_pFile = new EventPipeFile(new IpcStreamWriter(m_Id, pStream), format);
         break;
 
     default:
@@ -289,7 +304,7 @@ bool EventPipeSession::WriteAllBuffersToFile()
     return !m_pFile->HasErrors();
 }
 
-bool EventPipeSession::WriteEvent(
+bool EventPipeSession::WriteEventBuffered(
     Thread *pThread,
     EventPipeEvent &event,
     EventPipeEventPayload &payload,
@@ -308,11 +323,11 @@ bool EventPipeSession::WriteEvent(
 
     // Filter events specific to "this" session based on precomputed flag on provider/events.
     return event.IsEnabled(GetId()) ?
-        m_pBufferManager->WriteEvent(pThread, *this, event, payload, pActivityId, pRelatedActivityId) :
+        m_pBufferManager->WriteEvent(pThread, *this, event, payload, pActivityId, pRelatedActivityId, pEventThread, pStack) :
         false;
 }
 
-void EventPipeSession::WriteEvent(EventPipeEventInstance &instance)
+void EventPipeSession::WriteEventUnbuffered(EventPipeEventInstance &instance, EventPipeThread* pThread)
 {
     CONTRACTL
     {
@@ -324,7 +339,38 @@ void EventPipeSession::WriteEvent(EventPipeEventInstance &instance)
 
     if (m_pFile == nullptr)
         return;
-    m_pFile->WriteEvent(instance);
+    EventPipeThreadSessionState* pState = nullptr;
+    ULONGLONG captureThreadId;
+    unsigned int sequenceNumber;
+    {
+        SpinLockHolder _slh(pThread->GetLock());
+        pState = pThread->GetSessionState(this);
+        if (pState == nullptr)
+        {
+            return;
+        }
+        captureThreadId = pThread->GetOSThreadId();
+        sequenceNumber = pState->GetSequenceNumber();
+        pState->IncrementSequenceNumber();
+    }
+    m_pFile->WriteEvent(instance, captureThreadId, sequenceNumber, TRUE);
+}
+
+void EventPipeSession::WriteSequencePointUnbuffered()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (m_pFile == nullptr)
+        return;
+    EventPipeSequencePoint sequencePoint;
+    m_pBufferManager->InitSequencePointThreadList(&sequencePoint);
+    m_pFile->WriteSequencePoint(&sequencePoint);
 }
 
 EventPipeEventInstance *EventPipeSession::GetNextEvent()

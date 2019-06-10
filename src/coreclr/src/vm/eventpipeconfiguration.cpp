@@ -284,6 +284,7 @@ EventPipeSession *EventPipeConfiguration::CreateSession(
     LPCWSTR strOutputPath,
     IpcStream *const pStream,
     EventPipeSessionType sessionType,
+    EventPipeSerializationFormat format,
     unsigned int circularBufferSizeInMB,
     const EventPipeProviderConfiguration *pProviders,
     uint32_t numProviders,
@@ -294,14 +295,19 @@ EventPipeSession *EventPipeConfiguration::CreateSession(
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
+        PRECONDITION(format < EventPipeSerializationFormat::Count);
         PRECONDITION(circularBufferSizeInMB > 0);
         PRECONDITION(numProviders > 0 && pProviders != nullptr);
         PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
 
-    const EventPipeSessionID SessionId = GenerateSessionId();
-    return !IsValidId(SessionId) ? nullptr : new EventPipeSession(SessionId, strOutputPath, pStream, sessionType, circularBufferSizeInMB, pProviders, numProviders);
+    const unsigned int index = GenerateSessionIndex();
+    if (index >= EventPipe::MaxNumberOfSessions)
+    {
+        return nullptr;
+    }
+    return new EventPipeSession(index, strOutputPath, pStream, sessionType, format, circularBufferSizeInMB, pProviders, numProviders);
 }
 
 void EventPipeConfiguration::DeleteSession(EventPipeSession *pSession)
@@ -439,7 +445,11 @@ EventPipeEventInstance *EventPipeConfiguration::BuildEventMetadataEvent(EventPip
     // Construct the event instance.
     EventPipeEventInstance *pInstance = new EventPipeEventInstance(
         *m_pMetadataEvent,
+#ifdef FEATURE_PAL
+        PAL_GetCurrentOSThreadId(),
+#else
         GetCurrentThreadId(),
+#endif
         pInstancePayload,
         instancePayloadSize,
         NULL /* pActivityId */,
