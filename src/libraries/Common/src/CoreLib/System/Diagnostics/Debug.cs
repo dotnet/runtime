@@ -77,13 +77,13 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Print(string? message)
         {
-            Write(message);
+            WriteLine(message);
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Print(string format, params object?[] args)
         {
-            Write(string.Format(null, format, args));
+            WriteLine(string.Format(null, format, args));
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
