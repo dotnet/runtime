@@ -1645,36 +1645,23 @@ fDone:
 
 #endif // _TARGET_X86_ || _TARGET_AMD64_
 
-// fix this if/when AMD does multicore or SMT
-size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
+#if defined (_TARGET_X86_) || defined (_TARGET_AMD64_)
+static size_t GetCacheSizeFromCpuId()
 {
-    // No CONTRACT possible because GetCacheSizePerLogicalCpu uses SEH
-
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    static size_t maxSize;
-    static size_t maxTrueSize;
-
-    if (maxSize)
-    {
-        // maxSize and maxTrueSize cached
-        if (bTrueSize)
-        {
-            return maxTrueSize;
-        }
-        else
-        {
-            return maxSize;
-        }
-    }
-
-#if defined (_TARGET_X86_)
-    DefaultCatchFilterParam param;
+    // Can't return from a PAL_TRY. Instead, have it write to its parameter.
+    struct Param : DefaultCatchFilterParam {
+        size_t maxSize;
+    } param;
     param.pv = COMPLUS_EXCEPTION_EXECUTE_HANDLER;
+    param.maxSize = 0;
 
-    PAL_TRY(DefaultCatchFilterParam *, pParam, &param)
+    PAL_TRY(Param *, pParam, &param)
     {
+        size_t& maxSize = pParam->maxSize;
+
         unsigned char buffer[16];
         DWORD* dwBuffer = (DWORD*)buffer;
 
@@ -1691,15 +1678,15 @@ size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
                     //Once the OS API (LH and above) is updated with this information, we should start using the OS API to get the cache enumeration by
                     //uncommenting the lines below.
 
-                    tempSize = GetLogicalProcessorCacheSizeFromOS(); //use OS API for cache enumeration on LH and above
+                    maxSize = GetLogicalProcessorCacheSizeFromOS(); //use OS API for cache enumeration on LH and above
                     */
-                    size_t tempSize = 0;
+                    maxSize = 0;
                     if (maxCpuId >= 2)         // cpuid support for cache size determination is available
                     {
-                        tempSize = GetIntelDeterministicCacheEnum();          // try to use use deterministic cache size enumeration
-                        if (!tempSize)
+                        maxSize = GetIntelDeterministicCacheEnum();          // try to use use deterministic cache size enumeration
+                        if (!maxSize)
                         {                    // deterministic enumeration failed, fallback to legacy enumeration using descriptor values            
-                            tempSize = GetIntelDescriptorValuesCache();   
+                            maxSize = GetIntelDescriptorValuesCache();   
                         }   
                     }
 
@@ -1724,32 +1711,14 @@ size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
 
                         if (logicalProcessorCount)
                         {
-                            tempSize = tempSize / logicalProcessorCount;
+                            maxSize = maxSize / logicalProcessorCount;
                         }
-                    }
-
-                    // update maxSize once with final value
-                    maxTrueSize = tempSize;
-
-#ifdef _WIN64
-                    if (maxCpuId >= 2)
-                    {
-                        // If we're running on a Prescott or greater core, EM64T tests
-                        // show that starting with a gen0 larger than LLC improves performance.
-                        // Thus, start with a gen0 size that is larger than the cache.  The value of
-                        // 3 is a reasonable tradeoff between workingset and performance.
-                        maxSize = maxTrueSize * 3;
-                    }
-                    else
-#endif
-                    {
-                        maxSize = maxTrueSize;
                     }
                 }
             }
         }
 
-        if (dwBuffer[1] == 'htuA') {
+        else if (dwBuffer[1] == 'htuA') {
             if (dwBuffer[3] == 'itne') {
                 if (dwBuffer[2] == 'DMAc') {
 
@@ -1760,8 +1729,8 @@ size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
                         DWORD dwL2CacheBits = dwBuffer[2];
                         DWORD dwL3CacheBits = dwBuffer[3];
 
-                        maxTrueSize = (size_t)((dwL2CacheBits >> 16) * 1024);    // L2 cache size in ECX bits 31-16
-								
+                        maxSize = (size_t)((dwL2CacheBits >> 16) * 1024);    // L2 cache size in ECX bits 31-16
+                                
                         getcpuid(0x1, buffer);
                         DWORD dwBaseFamily = (dwBuffer[0] & (0xF << 8)) >> 8;
                         DWORD dwExtFamily  = (dwBuffer[0] & (0xFF << 20)) >> 20;
@@ -1796,18 +1765,15 @@ size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
                                 // 45nm Greyhound parts (and future parts based on newer northbridge) benefit
                                 // from increased gen0 size, taking L3 into account
                                 getcpuid(0x80000008, buffer);
-                                DWORD dwNumberOfCores = (dwBuffer[2] & (0xFF)) + 1;	    // NC is in ECX bits 7-0
+                                DWORD dwNumberOfCores = (dwBuffer[2] & (0xFF)) + 1;     // NC is in ECX bits 7-0
 
                                 DWORD dwL3CacheSize = (size_t)((dwL3CacheBits >> 18) * 512 * 1024);  // L3 size in EDX bits 31-18 * 512KB
                                 // L3 is shared between cores
                                 dwL3CacheSize = dwL3CacheSize / dwNumberOfCores;
-                                maxTrueSize += dwL3CacheSize;       // due to exclusive caches, add L3 size (possibly zero) to L2
+                                maxSize += dwL3CacheSize;       // due to exclusive caches, add L3 size (possibly zero) to L2
                                                                     // L1 is too small to worry about, so ignore it
                             }
                         }
-
-
-                        maxSize = maxTrueSize;
                     }
                 }
             }
@@ -1817,11 +1783,46 @@ size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
     {
     }
     PAL_ENDTRY
-#else
+
+    return param.maxSize;
+}
+#endif // _TARGET_X86_
+
+// fix this if/when AMD does multicore or SMT
+size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
+{
+    // No CONTRACT possible because GetCacheSizePerLogicalCpu uses SEH
+
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    static size_t maxSize;
+    static size_t maxTrueSize;
+
+    if (maxSize)
+    {
+        // maxSize and maxTrueSize cached
+        if (bTrueSize)
+        {
+            return maxTrueSize;
+        }
+        else
+        {
+            return maxSize;
+        }
+    }
+
+    // For x86, always get from cpuid.
+#if !defined (_TARGET_X86_)
     maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
 #endif
 
-#if defined(_TARGET_ARM64_)
+#if defined (_TARGET_X86) || defined(_TARGET_AMD64_)
+    if (maxSize == 0)
+    {
+        maxSize = maxTrueSize = GetCacheSizeFromCpuId();
+    }
+#elif defined(_TARGET_ARM64_)
     // Bigger gen0 size helps arm64 targets
     maxSize = maxTrueSize * 3;
 #endif
