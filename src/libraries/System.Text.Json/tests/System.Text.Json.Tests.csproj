@@ -23,6 +23,12 @@
     <Compile Include="JsonReaderStateAndOptionsTests.cs" />
     <Compile Include="JsonTestHelper.cs" />
     <Compile Include="JsonWriterOptionsTests.cs" />
+    <Compile Include="NewtonsoftTests\CamelCaseTests.cs" />
+    <Compile Include="NewtonsoftTests\CustomObjectConverterTests.cs" />
+    <Compile Include="NewtonsoftTests\DateTimeConverterTests.cs" />
+    <Compile Include="NewtonsoftTests\EnumConverterTests.cs" />
+    <Compile Include="NewtonsoftTests\ImmutableCollectionsTests.cs" />
+    <Compile Include="NewtonsoftTests\JsonSerializerTests.cs" />
     <Compile Include="Serialization\Array.ReadTests.cs" />
     <Compile Include="Serialization\Array.WriteTests.cs" />
     <Compile Include="Serialization\CacheTests.cs" />
