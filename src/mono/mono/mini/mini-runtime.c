@@ -649,7 +649,6 @@ mono_icall_get_wrapper_full (MonoJitICallInfo* callinfo, gboolean do_compile)
 
 		mono_loader_lock ();
 		if (!callinfo->trampoline) {
-			mono_register_jit_icall_wrapper (callinfo, trampoline);
 			callinfo->trampoline = trampoline;
 		}
 		mono_loader_unlock ();
@@ -2465,17 +2464,18 @@ lookup_start:
 	p = mono_create_ftnptr (target_domain, code);
 
 	if (callinfo) {
-		/*mono_register_jit_icall_wrapper takes the loader lock, so we take it on the outside. */
+		// FIXME Locking here is somewhat historical due to mono_register_jit_icall_wrapper taking loader lock.
+		// atomic_compare_exchange should suffice.
 		mono_loader_lock ();
 		mono_jit_lock ();
 		if (!callinfo->wrapper) {
 			callinfo->wrapper = p;
-			mono_register_jit_icall_wrapper (callinfo, p);
 		}
 		mono_jit_unlock ();
 		mono_loader_unlock ();
 	}
 
+	// FIXME p or callinfo->wrapper or does not matter?
 	return p;
 }
 

@@ -604,6 +604,8 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 	case OP_RCALL_MEMBASE: {
 		MonoCallInst *call = (MonoCallInst*)ins;
 		GSList *list;
+		MonoJitICallId jit_icall_id;
+		MonoMethod *method;
 
 		if (ins->opcode == OP_VCALL || ins->opcode == OP_VCALL_REG || ins->opcode == OP_VCALL_MEMBASE) {
 			/*
@@ -614,8 +616,8 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 				g_string_append_printf (sbuf, " R%d <-", ins->dreg);
 		}
 
-		if (call->method) {
-			char *full_name = mono_method_get_full_name (call->method);
+		if ((method = call->method)) {
+			char *full_name = mono_method_get_full_name (method);
 			g_string_append_printf (sbuf, " [%s]", full_name);
 			g_free (full_name);
 		} else if (call->fptr_is_patch) {
@@ -623,10 +625,8 @@ mono_print_ins_index_strbuf (int i, MonoInst *ins)
 
 			g_string_append_printf (sbuf, " ");
 			mono_print_ji (ji);
-		} else if (call->fptr) {
-			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (call->fptr);
-			if (info)
-				g_string_append_printf (sbuf, " [%s]", info->name);
+		} else if ((jit_icall_id = call->jit_icall_id)) {
+			g_string_append_printf (sbuf, " [%s]", mono_find_jit_icall_info (jit_icall_id)->name);
 		}
 
 		list = call->out_ireg_args;

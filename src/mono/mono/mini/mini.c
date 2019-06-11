@@ -2089,27 +2089,17 @@ mono_postprocess_patches (MonoCompile *cfg)
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		switch (patch_info->type) {
 		case MONO_PATCH_INFO_ABS: {
-			MonoJitICallInfo *info = mono_find_jit_icall_by_addr (patch_info->data.target);
-
 			/*
-			 * Change patches of type MONO_PATCH_INFO_ABS into patches describing the 
+			 * Change patches of type MONO_PATCH_INFO_ABS into patches describing the
 			 * absolute address.
 			 */
-			if (info) {
-				patch_info->type = MONO_PATCH_INFO_JIT_ICALL_ID;
-				patch_info->data.jit_icall_id = mono_jit_icall_info_id (info);
-			}
-
-			if (patch_info->type == MONO_PATCH_INFO_ABS) {
-				if (cfg->abs_patches) {
-					MonoJumpInfo *abs_ji = (MonoJumpInfo *)g_hash_table_lookup (cfg->abs_patches, patch_info->data.target);
-					if (abs_ji) {
-						patch_info->type = abs_ji->type;
-						patch_info->data.target = abs_ji->data.target;
-					}
+			if (cfg->abs_patches) {
+				MonoJumpInfo *abs_ji = (MonoJumpInfo *)g_hash_table_lookup (cfg->abs_patches, patch_info->data.target);
+				if (abs_ji) {
+					patch_info->type = abs_ji->type;
+					patch_info->data.target = abs_ji->data.target;
 				}
 			}
-
 			break;
 		}
 		case MONO_PATCH_INFO_SWITCH: {

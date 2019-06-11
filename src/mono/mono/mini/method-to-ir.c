@@ -2184,9 +2184,8 @@ mono_emit_jit_icall_by_info (MonoCompile *cfg, int il_offset, MonoJitICallInfo *
 		g_assert (!MONO_TYPE_IS_VOID (info->sig->ret));
 
 		return args [0];
-	} else {
-		return mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, args);
 	}
+	return mono_emit_jit_icall_id (cfg, mono_jit_icall_info_id (info), args);
 }
  
 static MonoInst*
@@ -6908,6 +6907,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 
 				if (info_type == MONO_PATCH_INFO_ICALL_ADDR) {
+					// non-JIT icall, mostly builtin, but also user-extensible
 					tailcall = FALSE;
 					ins = (MonoInst*)mini_emit_abs_call (cfg, MONO_PATCH_INFO_ICALL_ADDR_CALL, info_data, fsig, sp);
 					NULLIFY_INS (addr);
@@ -6915,6 +6915,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				} else if (info_type == MONO_PATCH_INFO_JIT_ICALL_ADDR
 						|| info_type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR
 						|| info_type == MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR) {
+					// FIXME change MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR to MONO_PATCH_INFO_JIT_ICALL_ADDR
 					tailcall = FALSE;
 					ins = (MonoInst*)mini_emit_abs_call (cfg, info_type, info_data, fsig, sp);
 					NULLIFY_INS (addr);
@@ -10095,7 +10096,8 @@ field_access_end:
 
 		case MONO_CEE_MONO_ICALL: {
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
-			MonoJitICallInfo * const info = mono_find_jit_icall_info ((MonoJitICallId)token);
+			const MonoJitICallId jit_icall_id = (MonoJitICallId)token;
+			MonoJitICallInfo * const info = mono_find_jit_icall_info (jit_icall_id);
 
 			CHECK_STACK (info->sig->param_count);
 			sp -= info->sig->param_count;
@@ -10110,10 +10112,10 @@ field_access_end:
 					 * infrastructure. Use an indirect call through a got slot initialized at load time
 					 * instead.
 					 */
-					EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL, GUINT_TO_POINTER ((MonoJitICallId)token));
+					EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL, GUINT_TO_POINTER (jit_icall_id));
 					ins = mini_emit_calli (cfg, info->sig, sp, addr, NULL, NULL);
 				} else {
-					ins = mono_emit_jit_icall_info (cfg, info, sp);
+					ins = mono_emit_jit_icall_id (cfg, jit_icall_id, sp);
 				}
 
 				/*
@@ -10123,7 +10125,7 @@ field_access_end:
 				NEW_BBLOCK (cfg, next_bb);
 				MONO_START_BB (cfg, next_bb);
 			} else {
-				ins = mono_emit_jit_icall_info (cfg, info, sp);
+				ins = mono_emit_jit_icall_id (cfg, jit_icall_id, sp);
 			}
 
 			if (!MONO_TYPE_IS_VOID (info->sig->ret))

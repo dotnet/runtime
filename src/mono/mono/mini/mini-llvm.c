@@ -3856,17 +3856,17 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		}
 	} else if (calli) {
 	} else {
-		MonoJitICallInfo *info = mono_find_jit_icall_by_addr (call->fptr);
+		const MonoJitICallId jit_icall_id = call->jit_icall_id;
 
-		if (info) {
+		if (jit_icall_id) {
 			if (cfg->compile_aot) {
-				callee = get_callee (ctx, llvm_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (mono_jit_icall_info_id (info)));
+				callee = get_callee (ctx, llvm_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (jit_icall_id));
 				if (!callee) {
 					set_failure (ctx, "can't encode patch");
 					return;
 				}
 			} else {
-				callee = get_jit_callee (ctx, "", llvm_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (mono_jit_icall_info_id (info)));
+				callee = get_jit_callee (ctx, "", llvm_sig, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (jit_icall_id));
 			}
 		} else {
 			if (cfg->compile_aot) {
