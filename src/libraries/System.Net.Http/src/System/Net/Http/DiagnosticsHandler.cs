@@ -28,16 +28,17 @@ namespace System.Net.Http
         {
             // check if there is a parent Activity (and propagation is not suppressed)
             // or if someone listens to HttpHandlerDiagnosticListener
-            return EnableActivityPropagation && (Activity.Current != null || s_diagnosticListener.IsEnabled());
+            return s_enableActivityPropagation && (Activity.Current != null || s_diagnosticListener.IsEnabled());
         }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             // HttpClientHandler is responsible to call static DiagnosticsHandler.IsEnabled() before forwarding request here.
-            // This code will not be reached if Activity propagation is disabled unless consumer unsubscribes
-            // from DiagnosticListener right after the check. So some requests happening right after subscription starts
-            // might not be instrumented. Similarly, when consumer unsubscribes, extra requests might be instrumented
+            // It will check if propagation is on (because parent Activity exists or there is a listener) or off (forcibly disabled)  
+            // This code won't be called unless consumer unsubscribes from DiagnosticListener right after the check.
+            // So some requests happening right after subscription starts might not be instrumented. Similarly,
+            // when consumer unsubscribes, extra requests might be instrumented
 
             if (request == null)
             {
@@ -163,7 +164,7 @@ namespace System.Net.Http
         private const string EnableActivityPropagationEnvironmentVariableSettingName = "DOTNET_SYSTEM_NET_HTTP_ENABLEACTIVITYPROPAGATION";
         private const string EnableActivityPropagationAppCtxSettingName = "System.Net.Http.EnableActivityPropagation";
 
-        private static readonly bool EnableActivityPropagation = GetEnableActivityPropagationValue();
+        private static readonly bool s_enableActivityPropagation = GetEnableActivityPropagationValue();
 
         private static bool GetEnableActivityPropagationValue()
         {
@@ -191,10 +192,10 @@ namespace System.Net.Http
             {
                 if (!request.Headers.Contains(DiagnosticsHandlerLoggingStrings.TraceParentHeaderName))
                 {
-                    request.Headers.Add(DiagnosticsHandlerLoggingStrings.TraceParentHeaderName, currentActivity.Id);
+                    request.Headers.TryAddWithoutValidation(DiagnosticsHandlerLoggingStrings.TraceParentHeaderName, currentActivity.Id);
                     if (currentActivity.TraceStateString != null)
                     {
-                        request.Headers.Add(DiagnosticsHandlerLoggingStrings.TraceStateHeaderName, currentActivity.TraceStateString);
+                        request.Headers.TryAddWithoutValidation(DiagnosticsHandlerLoggingStrings.TraceStateHeaderName, currentActivity.TraceStateString);
                     }
                 }
             }
@@ -202,7 +203,7 @@ namespace System.Net.Http
             {
                 if (!request.Headers.Contains(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName))
                 {
-                    request.Headers.Add(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName, currentActivity.Id);
+                    request.Headers.TryAddWithoutValidation(DiagnosticsHandlerLoggingStrings.RequestIdHeaderName, currentActivity.Id);
                 }
             }
 
@@ -218,7 +219,7 @@ namespace System.Net.Http
                         baggage.Add(new NameValueHeaderValue(WebUtility.UrlEncode(item.Key), WebUtility.UrlEncode(item.Value)).ToString());
                     }
                     while (e.MoveNext());
-                    request.Headers.Add(DiagnosticsHandlerLoggingStrings.CorrelationContextHeaderName, baggage);
+                    request.Headers.TryAddWithoutValidation(DiagnosticsHandlerLoggingStrings.CorrelationContextHeaderName, baggage);
                 }
             }
         }
