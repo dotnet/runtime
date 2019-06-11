@@ -642,6 +642,8 @@ void JITInlineTrackingMap::AddInlining(MethodDesc *inliner, MethodDesc *inlinee)
 {
     LIMITED_METHOD_CONTRACT;
 
+    inlinee = inlinee->LoadTypicalMethodDefinition();
+
     CrstHolder holder(&m_mapCrst);
     AddInliningDontTakeLock(inliner, inlinee);
 }
