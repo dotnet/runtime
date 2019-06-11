@@ -681,6 +681,7 @@ process_sync_log_stats()
 }
 
 #ifdef MULTIPLE_HEAPS
+#ifndef DACCESS_COMPILE
 
 enum gc_join_stage
 {
@@ -1123,6 +1124,8 @@ t_join gc_t_join;
 #ifdef BACKGROUND_GC
 t_join bgc_t_join;
 #endif //BACKGROUND_GC
+
+#endif // DACCESS_COMPILE
 
 #endif //MULTIPLE_HEAPS
 
@@ -4314,7 +4317,7 @@ BOOL reserve_initial_memory (size_t normal_size, size_t large_size, size_t num_h
     if (allatonce_block)
     {
         g_gc_lowest_address =  allatonce_block;
-        g_gc_highest_address = allatonce_block + (memory_details.block_count * (large_size + normal_size));
+        g_gc_highest_address = allatonce_block + requestedMemory;
         memory_details.allocation_pattern = initial_memory_details::ALLATONCE;
 
         for(size_t i = 0; i < memory_details.block_count; i++)
@@ -5036,24 +5039,14 @@ extern "C" uint64_t __rdtsc();
 #else // _MSC_VER
     extern "C" ptrdiff_t get_cycle_count(void);
 #endif // _MSC_VER
-#elif defined(_TARGET_ARM_)
-    static ptrdiff_t get_cycle_count()
-    {
-        // @ARMTODO: cycle counter is not exposed to user mode by CoreARM. For now (until we can show this
-        // makes a difference on the ARM configurations on which we'll run) just return 0. This will result in
-        // all buffer access times being reported as equal in access_time().
-        return 0;
-    }
-#elif defined(_TARGET_ARM64_)
-    static ptrdiff_t get_cycle_count()
-    {
-        // @ARM64TODO: cycle counter is not exposed to user mode by CoreARM. For now (until we can show this
-        // makes a difference on the ARM configurations on which we'll run) just return 0. This will result in
-        // all buffer access times being reported as equal in access_time().
-        return 0;
-    }
 #else
-#error NYI platform: get_cycle_count
+    static ptrdiff_t get_cycle_count()
+    {
+        // @ARMTODO, @ARM64TODO, @WASMTODO: cycle counter is not exposed to user mode. For now (until we can show this
+        // makes a difference on the configurations on which we'll run) just return 0. This will result in
+        // all buffer access times being reported as equal in access_time().
+        return 0;
+    }
 #endif //_TARGET_X86_
 
 class heap_select
