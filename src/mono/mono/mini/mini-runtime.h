@@ -419,8 +419,12 @@ MONO_API int         mono_regression_test_step      (int verbose_level, const ch
 
 
 void                   mono_interp_stub_init         (void);
-void                   mini_install_interp_callbacks (MonoEECallbacks *cbs);
-MonoEECallbacks*       mini_get_interp_callbacks     (void);
+void                   mini_install_interp_callbacks (const MonoEECallbacks *cbs);
+
+extern const
+MonoEECallbacks*       mono_interp_callbacks_pointer;
+
+#define mini_get_interp_callbacks() (mono_interp_callbacks_pointer)
 
 typedef struct _MonoDebuggerCallbacks MonoDebuggerCallbacks;
 

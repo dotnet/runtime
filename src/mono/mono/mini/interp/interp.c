@@ -2569,6 +2569,15 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	/* Write back the return value */
 	mono_arch_set_native_call_context_ret (ccontext, &frame, sig);
 }
+
+#else
+
+static void
+interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untyped)
+{
+	g_assert_not_reached ();
+}
+
 #endif /* MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE */
 
 static InterpMethod*
@@ -6674,6 +6683,13 @@ register_interp_stats (void)
 	mono_counters_register ("Inline failures", MONO_COUNTER_INTERP | MONO_COUNTER_INT, &mono_interp_stats.inline_failures);
 }
 
+#undef MONO_EE_CALLBACK
+#define MONO_EE_CALLBACK(ret, name, sig) interp_ ## name,
+
+static const MonoEECallbacks mono_interp_callbacks = {
+	MONO_EE_CALLBACKS
+};
+
 void
 mono_ee_interp_init (const char *opts)
 {
@@ -6689,38 +6705,7 @@ mono_ee_interp_init (const char *opts)
 		mono_interp_opt &= ~INTERP_OPT_INLINE;
 	mono_interp_transform_init ();
 
-	MonoEECallbacks c;
-#ifdef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
-	c.entry_from_trampoline = interp_entry_from_trampoline;
-#endif
-	c.to_native_trampoline = interp_to_native_trampoline;
-	c.create_method_pointer = interp_create_method_pointer;
-	c.create_method_pointer_llvmonly = interp_create_method_pointer_llvmonly;
-	c.runtime_invoke = interp_runtime_invoke;
-	c.init_delegate = interp_init_delegate;
-	c.delegate_ctor = interp_delegate_ctor;
-	c.get_remoting_invoke = interp_get_remoting_invoke;
-	c.set_resume_state = interp_set_resume_state;
-	c.run_finally = interp_run_finally;
-	c.run_filter = interp_run_filter;
-	c.frame_iter_init = interp_frame_iter_init;
-	c.frame_iter_next = interp_frame_iter_next;
-	c.find_jit_info = interp_find_jit_info;
-	c.set_breakpoint = interp_set_breakpoint;
-	c.clear_breakpoint = interp_clear_breakpoint;
-	c.frame_get_jit_info = interp_frame_get_jit_info;
-	c.frame_get_ip = interp_frame_get_ip;
-	c.frame_get_arg = interp_frame_get_arg;
-	c.frame_get_local = interp_frame_get_local;
-	c.frame_get_this = interp_frame_get_this;
-	c.frame_get_parent = interp_frame_get_parent;
-	c.frame_arg_to_data = interp_frame_arg_to_data;
-	c.data_to_frame_arg = interp_data_to_frame_arg;
-	c.frame_arg_to_storage = interp_frame_arg_to_storage;
-	c.frame_arg_set_storage = interp_frame_arg_set_storage;
-	c.start_single_stepping = interp_start_single_stepping;
-	c.stop_single_stepping = interp_stop_single_stepping;
-	mini_install_interp_callbacks (&c);
+	mini_install_interp_callbacks (&mono_interp_callbacks);
 
 	register_interp_stats ();
 }
