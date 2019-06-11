@@ -607,17 +607,6 @@ namespace ETW
 
         }MethodStructs;
 
-        enum class JitOptimizationTier
-        {
-            Unknown, // to identify older runtimes that would send this value
-            MinOptJitted,
-            Optimized,
-            QuickJitted,
-            OptimizedTier1,
-
-            Count
-        };
-
         static const UINT8 MethodFlagsJitOptimizationTierShift = 7;
         static const unsigned int MethodFlagsJitOptimizationTierLowMask = 0x7;
 
