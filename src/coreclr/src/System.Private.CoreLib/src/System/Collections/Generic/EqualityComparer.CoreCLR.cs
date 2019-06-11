@@ -36,7 +36,10 @@ namespace System.Collections.Generic
         }
     }
 
-    public sealed partial class GenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
+    public sealed partial class GenericEqualityComparer<T> : EqualityComparer<T>
+#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
+        where T : IEquatable<T>
+#nullable restore
     {
         internal override int IndexOf(T[] array, T value, int startIndex, int count)
         {
@@ -79,7 +82,10 @@ namespace System.Collections.Generic
         }
     }
 
-    public sealed partial class NullableEqualityComparer<T> : EqualityComparer<T?> where T : struct, IEquatable<T>
+    public sealed partial class NullableEqualityComparer<T> : EqualityComparer<T?> where T : struct,
+#nullable disable // to enable use with both T and T? for reference types due to IEquatable<T> being invariant
+        IEquatable<T>
+#nullable restore
     {
         internal override int IndexOf(T?[] array, T? value, int startIndex, int count)
         {
