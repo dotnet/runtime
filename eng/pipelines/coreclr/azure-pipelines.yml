@@ -151,6 +151,10 @@ jobs:
         - Linux_x64
         - Windows_NT_x64
         - Windows_NT_x86
+      ${{ if in(variables['Build.DefinitionName'], 'coreclr-corefx', 'coreclr-corefx-jitstress', 'coreclr-corefx-jitstressregs', 'coreclr-corefx-jitstress2-jitstressregs') }}:
+        platforms:
+        - Linux_x64
+        - Windows_NT_x64
 
 #
 # Release builds
@@ -194,7 +198,8 @@ jobs:
 # Checked test builds
 #
 # The test jobs that can be triggered by a PR, manually from ADO and that are scheduled
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'Manual', 'Schedule')) }}:
+# TODO: This long 'in' condition needs to be make data driven, perhaps by adding another layer of template.
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'Manual', 'Schedule'), in(variables['Build.DefinitionName'], 'coreclr-ci', 'coreclr-outerloop', 'coreclr-outerloop-jitstress', 'coreclr-outerloop-jitstress-isas-arm', 'coreclr-outerloop-jitstress-isas-x86', 'coreclr-outerloop-jitstressregs-x86', 'coreclr-outerloop-jitstressregs', 'coreclr-outerloop-jitstress2-jitstressregs', 'coreclr-outerloop-gcstress0x3-gcstress0xc', 'coreclr-outerloop-gcstress-extra', 'coreclr-outerloop-r2r', 'coreclr-outerloop-r2r-extra')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
@@ -238,31 +243,32 @@ jobs:
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop') }}:
           testGroup: outerloop
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-jitstress') }}:
-          testGroup: outerloop-jitstress
+          testGroup: jitstress
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-jitstress-isas-arm') }}:
-          testGroup: outerloop-jitstress-isas-arm
+          testGroup: jitstress-isas-arm
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-jitstress-isas-x86') }}:
-          testGroup: outerloop-jitstress-isas-x86
+          testGroup: jitstress-isas-x86
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-jitstressregs-x86') }}:
-          testGroup: outerloop-jitstressregs-x86
+          testGroup: jitstressregs-x86
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-jitstressregs') }}:
-          testGroup: outerloop-jitstressregs
+          testGroup: jitstressregs
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-jitstress2-jitstressregs') }}:
-          testGroup: outerloop-jitstress2-jitstressregs
+          testGroup: jitstress2-jitstressregs
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress0x3-gcstress0xc') }}:
-          testGroup: outerloop-gcstress0x3-gcstress0xc
+          testGroup: gcstress0x3-gcstress0xc
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-gcstress-extra') }}:
-          testGroup: outerloop-gcstress-extra
+          testGroup: gcstress-extra
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-r2r') }}:
           testGroup: outerloop
           readyToRun: true
           displayNameArgs: R2R
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-outerloop-r2r-extra') }}:
-          testGroup: outerloop-r2r-extra
+          testGroup: r2r-extra
           readyToRun: true
           displayNameArgs: R2R
 
-# The ReadyToRun test jobs that are triggered by default from a PR.
+# ReadyToRun test jobs that are triggered by default from a PR.
+
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
   - template: eng/platform-matrix.yml
     parameters:
@@ -277,19 +283,43 @@ jobs:
         readyToRun: true
         testGroup: innerloop
         displayNameArgs: R2R
-  # The CoreFX runs against CoreCLR
+
+#
+# CoreFX test runs against CoreCLR
+#
+
+# PR innerloop checked build
+
+# TODO: This long 'in' condition needs to be make data driven, perhaps by adding another layer of template.
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'Manual', 'Schedule'), in(variables['Build.DefinitionName'], 'coreclr-ci', 'coreclr-corefx', 'coreclr-corefx-jitstress', 'coreclr-corefx-jitstressregs', 'coreclr-corefx-jitstress2-jitstressregs')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
-      buildConfig: release
-      platforms:
-      - Windows_NT_x64
+      buildConfig: checked
+      ${{ if and(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.DefinitionName'], 'coreclr-ci')) }}:
+        platforms:
+        - Linux_x64
+        - Windows_NT_x64
+      ${{ if in(variables['Build.DefinitionName'], 'coreclr-corefx', 'coreclr-corefx-jitstress', 'coreclr-corefx-jitstressregs', 'coreclr-corefx-jitstress2-jitstressregs') }}:
+        platforms:
+        - Linux_x64
+        - Windows_NT_x64
       jobParameters:
+        ${{ if eq(variables['Build.DefinitionName'], 'coreclr-ci') }}:
+          testGroup: innerloop
+        ${{ if eq(variables['Build.DefinitionName'], 'coreclr-corefx') }}:
+          testGroup: outerloop
+        ${{ if eq(variables['Build.DefinitionName'], 'coreclr-corefx-jitstress') }}:
+          testGroup: jitstress
+        ${{ if eq(variables['Build.DefinitionName'], 'coreclr-corefx-jitstressregs') }}:
+          testGroup: jitstressregs
+        ${{ if eq(variables['Build.DefinitionName'], 'coreclr-corefx-jitstress2-jitstressregs') }}:
+          testGroup: jitstress2-jitstressregs
         corefxTests: true
-        testGroup: innerloop
         displayNameArgs: CoreFX
 
-# CI
+# CI (merge) jobs
+
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
   - template: eng/platform-matrix.yml
     parameters:
@@ -314,8 +344,8 @@ jobs:
       - Windows_NT_arm
       - Windows_NT_arm64
       jobParameters:
-        readyToRun: true
         testGroup: outerloop
+        readyToRun: true
         displayNameArgs: R2R
 
 #

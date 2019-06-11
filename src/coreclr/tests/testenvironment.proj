@@ -154,7 +154,6 @@
 
   <Target Name="CreateTestEnvFile" DependsOnTargets="OutputCOMPlusVariables">
     <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-      <_TestEnvFileLine Include="@echo off" />
       <_TestEnvFileLine Include="@(_COMPlusVariable->'set %(Identity)=%(Value)')"  />
     </ItemGroup>
 
