@@ -1140,6 +1140,54 @@ FCFuncStart(gWeakReferenceOfTFuncs)
     FCFuncElement("IsTrackResurrection", WeakReferenceOfTNative::IsTrackResurrection)
 FCFuncEnd()
 
+#ifdef FEATURE_PAL
+FCFuncStart(gPalKernel32Funcs)
+    QCFuncElement("CloseHandle", CloseHandle)
+    QCFuncElement("CreateEvent", CreateEventW)
+    QCFuncElement("CreateEventEx", CreateEventExW)
+    QCFuncElement("CreateMutex", CreateMutexW)
+    QCFuncElement("CreateMutexEx", CreateMutexExW)
+    QCFuncElement("CreateSemaphore", CreateSemaphoreW)
+    QCFuncElement("CreateSemaphoreEx", CreateSemaphoreExW)
+    QCFuncElement("FormatMessage", FormatMessageW)
+    QCFuncElement("FreeEnvironmentStrings", FreeEnvironmentStringsW)
+    QCFuncElement("GetCurrentProcessId", GetCurrentProcessId)
+    QCFuncElement("GetCurrentThreadId", GetCurrentThreadId)
+    QCFuncElement("GetEnvironmentStrings", GetEnvironmentStringsW)
+    QCFuncElement("GetEnvironmentVariable", GetEnvironmentVariableW)
+    QCFuncElement("GetStdHandle", GetStdHandle)
+    QCFuncElement("GetSystemInfo", GetSystemInfo)
+    QCFuncElement("LocalAlloc", LocalAlloc)
+    QCFuncElement("LocalReAlloc", LocalReAlloc)
+    QCFuncElement("LocalFree", LocalFree)
+    QCFuncElement("OpenEvent", OpenEventW)
+    QCFuncElement("OpenMutex", OpenMutexW)
+    QCFuncElement("OpenSemaphore", OpenSemaphoreW)
+    QCFuncElement("OutputDebugString", OutputDebugStringW)
+    QCFuncElement("QueryPerformanceCounter", QueryPerformanceCounter)
+    QCFuncElement("QueryPerformanceFrequency", QueryPerformanceFrequency)
+    QCFuncElement("ReleaseMutex", ReleaseMutex)
+    QCFuncElement("ReleaseSemaphore", ReleaseSemaphore)
+    QCFuncElement("ResetEvent", ResetEvent)
+    QCFuncElement("SetEnvironmentVariable", SetEnvironmentVariableW)
+    QCFuncElement("SetEvent", SetEvent)
+    QCFuncElement("WriteFile", WriteFile)
+FCFuncEnd()
+
+FCFuncStart(gPalOle32Funcs)
+    QCFuncElement("CoTaskMemAlloc", CoTaskMemAlloc)
+    QCFuncElement("CoTaskMemRealloc", CoTaskMemRealloc)
+    QCFuncElement("CoTaskMemFree", CoTaskMemFree)
+FCFuncEnd()
+
+FCFuncStart(gPalOleAut32Funcs)
+    QCFuncElement("SysAllocStringByteLen", SysAllocStringByteLen)
+    QCFuncElement("SysAllocStringLen", SysAllocStringLen)
+    QCFuncElement("SysFreeString", SysFreeString)
+    QCFuncElement("SysStringLen", SysStringLen)
+FCFuncEnd()
+#endif
+
 #ifdef FEATURE_COMINTEROP
 
 //
@@ -1215,6 +1263,9 @@ FCClassElement("IReflect", "System.Reflection", gStdMngIReflectFuncs)
 FCClassElement("InterfaceMarshaler", "System.StubHelpers", gInterfaceMarshalerFuncs)
 #endif
 FCClassElement("Interlocked", "System.Threading", gInterlockedFuncs)
+#if FEATURE_PAL
+FCClassElement("Kernel32", "", gPalKernel32Funcs)
+#endif
 FCClassElement("LoaderAllocatorScout", "System.Reflection", gLoaderAllocatorFuncs)
 FCClassElement("Marshal", "System.Runtime.InteropServices", gInteropMarshalFuncs)
 FCClassElement("Math", "System", gMathFuncs)
@@ -1240,6 +1291,10 @@ FCClassElement("OAVariantLib", "Microsoft.Win32", gOAVariantFuncs)
 FCClassElement("Object", "System", gObjectFuncs)
 #ifdef FEATURE_COMINTEROP
 FCClassElement("ObjectMarshaler", "System.StubHelpers", gObjectMarshalerFuncs)
+#endif
+#ifdef FEATURE_PAL
+FCClassElement("Ole32", "", gPalOle32Funcs)
+FCClassElement("OleAut32", "", gPalOleAut32Funcs)
 #endif
 FCClassElement("OverlappedData", "System.Threading", gOverlappedFuncs)
 

@@ -28,6 +28,7 @@
     <ProjectReference Include="testv1\test.csproj">
        <Project>{F74F55A1-DFCF-4C7C-B462-E96E1D0BB667}</Project>
     </ProjectReference>
+    <ProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="main.cs" />
