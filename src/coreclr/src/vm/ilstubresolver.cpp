@@ -233,6 +233,11 @@ bool ILStubResolver::IsNativeToCLRInteropStub()
     return (m_type == NativeToCLRInteropStub);
 }
 
+bool ILStubResolver::IsCLRToNativeInteropStub()
+{
+    return (m_type == CLRToNativeInteropStub);
+}
+
 void ILStubResolver::SetStubType(ILStubType stubType)
 {
     LIMITED_METHOD_CONTRACT;
@@ -392,7 +397,6 @@ COR_ILMETHOD_SECT_EH* ILStubResolver::AllocEHSect(size_t nClauses)
         return NULL;
     }
 }
-
 
 void ILStubResolver::FreeCompileTimeState()
 {
