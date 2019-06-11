@@ -41,6 +41,7 @@ steps:
       _HelixTargetQueues: ${{ join(',', parameters.helixQueues) }}
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen: ${{ parameters.runCrossGen }}
+      _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _Scenarios: ${{ join(',', parameters.scenarios) }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
@@ -76,6 +77,7 @@ steps:
       _HelixTargetQueues: ${{ join(',', parameters.helixQueues) }}
       _HelixType: ${{ parameters.helixType }}
       _RunCrossGen: ${{ parameters.runCrossGen }}
+      _RunInUnloadableContext: ${{ parameters.runInUnloadableContext }}
       _Scenarios: ${{ join(',', parameters.scenarios) }}
       _TimeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
       _TimeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
