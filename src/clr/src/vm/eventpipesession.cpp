@@ -269,7 +269,7 @@ void EventPipeSession::AddSessionProvider(EventPipeSessionProvider *pProvider)
     m_pProviderList->AddSessionProvider(pProvider);
 }
 
-EventPipeSessionProvider *EventPipeSession::GetSessionProvider(EventPipeProvider *pProvider)
+EventPipeSessionProvider *EventPipeSession::GetSessionProvider(EventPipeProvider *pProvider) const
 {
     CONTRACTL
     {
