@@ -15,16 +15,3 @@ IExecutionEngine* STDMETHODCALLTYPE IEE_t()
     iee->original_IEE    = original_CoreClrCallbacks->m_pfnIEE();
     return iee;
 }
-
-/*#pragma warning( suppress :4996 ) //deprecated
-HRESULT STDMETHODCALLTYPE GetCORSystemDirectory(LPWSTR pbuffer, DWORD cchBuffer, DWORD* pdwlength)
-{
-    DebugBreakorAV(131);
-    return 0;
-}
-*/
-
-void* STDMETHODCALLTYPE GetCLRFunction(LPCSTR functionName)
-{
-    return original_CoreClrCallbacks->m_pfnGetCLRFunction(functionName);
-}

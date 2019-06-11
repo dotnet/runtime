@@ -24,12 +24,6 @@ HRESULT STDMETHODCALLTYPE GetCORSystemDirectory(LPWSTR pbuffer, DWORD cchBuffer,
 
 HANDLE ourHeap = nullptr;
 
-void* STDMETHODCALLTYPE GetCLRFunction(LPCSTR functionName)
-{
-    DebugBreakorAV(132);
-    return nullptr;
-}
-
 CoreClrCallbacks* InitCoreClrCallbacks()
 {
     CoreClrCallbacks* temp = new CoreClrCallbacks();
@@ -38,7 +32,6 @@ CoreClrCallbacks* InitCoreClrCallbacks()
     temp->m_hmodCoreCLR              = (HINSTANCE)(size_t)0xbadbad01; // any non-null value seems okay...
     temp->m_pfnIEE                   = IEE_t;
     temp->m_pfnGetCORSystemDirectory = nullptr; // GetCORSystemDirectory;
-    temp->m_pfnGetCLRFunction        = GetCLRFunction;
 
     return temp;
 }

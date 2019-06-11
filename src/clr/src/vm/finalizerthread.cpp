@@ -105,28 +105,8 @@ void FinalizerThread::DoOneFinalization(Object* fobj, Thread* pThread)
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
 
-    class ResetFinalizerStartTime
-    {
-    public:
-        ResetFinalizerStartTime()
-        {
-            if (CLRHosted())
-            {
-                g_ObjFinalizeStartTime = CLRGetTickCount64();
-            }                    
-        }
-        ~ResetFinalizerStartTime()
-        {
-            if (g_ObjFinalizeStartTime)
-            {
-                g_ObjFinalizeStartTime = 0;
-            }
-        }
-    };
-    {
-        ResetFinalizerStartTime resetTime;
-        CallFinalizer(fobj);
-    }
+    CallFinalizer(fobj);
+
     pThread->InternalReset();
 }
 
@@ -365,21 +345,15 @@ VOID FinalizerThread::FinalizerThreadWorker(void *args)
         {
             GetFinalizerThread()->EEResetAbort(Thread::TAR_ALL);
         }
-        FastInterlockExchange ((LONG*)&g_FinalizerIsRunning, TRUE);
 
         FinalizeAllObjects(0);
         _ASSERTE(GetFinalizerThread()->GetDomain()->IsDefaultDomain());
 
-        FastInterlockExchange ((LONG*)&g_FinalizerIsRunning, FALSE);
         // We may still have the finalizer thread for abort.  If so the abort request is for previous finalizer method, not for next one.
         if (GetFinalizerThread()->IsAbortRequested())
         {
             GetFinalizerThread()->EEResetAbort(Thread::TAR_ALL);
         }
-
-        // Increment the loop count. This is currently used by the AddMemoryPressure heuristic to see
-        // if finalizers have run since the last time it triggered GC.
-        FastInterlockIncrement((LONG *)&g_FinalizerLoopCount);
 
         // Anyone waiting to drain the Q can now wake up.  Note that there is a
         // race in that another thread starting a drain, as we leave a drain, may
