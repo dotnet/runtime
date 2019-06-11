@@ -81,7 +81,7 @@ fi
       ]]></BashCLRTestEnvironmentCompatibilityCheck>
       <BashCLRTestEnvironmentCompatibilityCheck Condition="'$(UnloadabilityIncompatible)' == 'true'"><![CDATA[
 $(BashCLRTestEnvironmentCompatibilityCheck)
-if [ ! -z "$__RunInUnloadableContext" ]
+if [ ! -z "$RunInUnloadableContext" ]
 then
   echo SKIPPING EXECUTION BECAUSE the test is incompatible with unloadability
   exit $(GCBashScriptExitCode)
