@@ -132,7 +132,7 @@ mono.exe: mono-$(mono_bin_suffix).exe
 	ln -sf $< $@
 
 install-exec-hook:
-	(cd $(DESTDIR)$(bindir) && ln -sf mono-$(mono_bin_suffix) mono)
+	(cd $(DESTDIR)$(bindir) && ln -sf mono-$(mono_bin_suffix)$(EXEEXT) mono$(EXEEXT))
 	(cd $(DESTDIR)$(libdir); shopt -s nullglob 2>/dev/null; for i in libmono$(libmono_suffix)*; do ln -sf $$i `echo $$i | sed s/$(libmono_suffix)//` ; done)
 endif
 
