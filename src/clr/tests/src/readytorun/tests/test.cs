@@ -147,22 +147,12 @@ public class MyClass : IMyInterface
 #endif
    }
 
-   [DllImport("api-ms-win-core-sysinfo-l1-1-0.dll")]
-   public extern static int GetTickCount();
-
-   [DllImport("libcoreclr")]
-   public extern static int GetCurrentThreadId();
+   [DllImport("nativelibrary")]
+   public extern static int NativeMethod();
 
    static public void TestInterop()
    {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            GetTickCount();
-        }
-        else
-        {
-            GetCurrentThreadId();
-        }
+        NativeMethod();
    }
 
 #if V2

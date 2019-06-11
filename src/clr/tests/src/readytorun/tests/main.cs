@@ -123,15 +123,7 @@ class Program
 
     static void TestInterop()
     {
-        // Verify both intra-module and inter-module PInvoke interop
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-        {
-            MyClass.GetTickCount();
-        }
-        else
-        {
-            MyClass.GetCurrentThreadId();
-        }
+        MyClass.NativeMethod();
 
         MyClass.TestInterop();
     }
