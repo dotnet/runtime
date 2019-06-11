@@ -372,6 +372,10 @@ class CEECompileInfo : public ICorCompileInfo
     int GetVersionResilientTypeHashCode(CORINFO_MODULE_HANDLE moduleHandle, mdToken token);
 
     int GetVersionResilientMethodHashCode(CORINFO_METHOD_HANDLE methodHandle);
+
+    BOOL EnumMethodsForStub(CORINFO_METHOD_HANDLE hMethod, void** enumerator);
+    BOOL EnumNextMethodForStub(void * enumerator, CORINFO_METHOD_HANDLE *hMethod);
+    void EnumCloseForStubEnumerator(void *enumerator);
 #endif
 
     BOOL HasCustomAttribute(CORINFO_METHOD_HANDLE method, LPCSTR customAttributeName);

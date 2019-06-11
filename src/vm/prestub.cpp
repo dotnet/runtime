@@ -358,6 +358,20 @@ PCODE MethodDesc::PrepareCode(PrepareCodeConfig* pConfig)
     return PrepareILBasedCode(pConfig);
 }
 
+bool MayUsePrecompiledILStub()
+{
+    if (g_pConfig->InteropValidatePinnedObjects())
+        return false;
+
+    if (CORProfilerTrackTransitions())
+        return false;
+    
+    if (g_pConfig->InteropLogArguments())
+        return false;
+
+    return true;
+}
+
 PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 {
     STANDARD_VM_CONTRACT;
@@ -365,7 +379,39 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
 
     if (pConfig->MayUsePrecompiledCode())
     {
-        pCode = GetPrecompiledCode(pConfig);
+#ifdef FEATURE_READYTORUN
+        if (this->IsDynamicMethod() && GetLoaderModule()->IsSystem() && MayUsePrecompiledILStub())
+        {
+            DynamicMethodDesc *stubMethodDesc = this->AsDynamicMethodDesc();
+            if (stubMethodDesc->IsILStub() && stubMethodDesc->IsPInvokeStub())
+            {
+                ILStubResolver *pStubResolver = stubMethodDesc->GetILStubResolver();
+                if (pStubResolver->IsCLRToNativeInteropStub())
+                {
+                    MethodDesc *pTargetMD = stubMethodDesc->GetILStubResolver()->GetStubTargetMethodDesc();
+                    if (pTargetMD != NULL)
+                    {
+                        pCode = pTargetMD->GetPrecompiledR2RCode(pConfig);
+                        if (pCode != NULL)
+                        {
+                            LOG((LF_ZAP, LL_INFO10000,
+                                "ZAP: Using R2R precompiled code" FMT_ADDR " for %s.%s sig=\"%s\" (token %x).\n",
+                                DBG_ADDR(pCode),
+                                m_pszDebugClassName,
+                                m_pszDebugMethodName,
+                                m_pszDebugMethodSignature,
+                                GetMemberDef()));
+
+                            pConfig->SetNativeCode(pCode, &pCode);
+                        }
+                    }
+                }
+            }
+        }
+#endif // FEATURE_READYTORUN
+
+        if (pCode == NULL)
+            pCode = GetPrecompiledCode(pConfig);
     }
 
     if (pCode == NULL)
@@ -412,7 +458,7 @@ PCODE MethodDesc::GetPrecompiledCode(PrepareCodeConfig* pConfig)
         if (pCode != NULL)
         {
             LOG((LF_ZAP, LL_INFO10000,
-                    "ZAP: Using R2R precompiled code" FMT_ADDR "for %s.%s sig=\"%s\" (token %x).\n",
+                    "ZAP: Using R2R precompiled code" FMT_ADDR " for %s.%s sig=\"%s\" (token %x).\n",
                     DBG_ADDR(pCode),
                     m_pszDebugClassName,
                     m_pszDebugMethodName,
@@ -471,7 +517,7 @@ PCODE MethodDesc::GetPrecompiledNgenCode(PrepareCodeConfig* pConfig)
     if (pCode != NULL)
     {
         LOG((LF_ZAP, LL_INFO10000,
-            "ZAP: Using NGEN precompiled code" FMT_ADDR "for %s.%s sig=\"%s\" (token %x).\n",
+            "ZAP: Using NGEN precompiled code " FMT_ADDR " for %s.%s sig=\"%s\" (token %x).\n",
             DBG_ADDR(pCode),
             m_pszDebugClassName,
             m_pszDebugMethodName,
