@@ -31817,20 +31817,16 @@ void gc_heap::background_ephemeral_sweep()
             if (i >= 1)
             {
                 thread_gap (plug_end, end - plug_end, current_gen);
-                fix_brick_to_highest (plug_end, end);
             }
             else
             {
                 heap_segment_allocated (ephemeral_heap_segment) = plug_end;
                 // the following line is temporary.
                 heap_segment_saved_bg_allocated (ephemeral_heap_segment) = plug_end;
-#ifdef VERIFY_HEAP
-                if (GCConfig::GetHeapVerifyLevel() & GCConfig::HEAPVERIFY_GC)
-                {
-                    make_unused_array (plug_end, (end - plug_end));
-                }
-#endif //VERIFY_HEAP
+                make_unused_array (plug_end, (end - plug_end));
             }
+
+            fix_brick_to_highest (plug_end, end);
         }
 
         dd_fragmentation (dynamic_data_of (i)) = 
