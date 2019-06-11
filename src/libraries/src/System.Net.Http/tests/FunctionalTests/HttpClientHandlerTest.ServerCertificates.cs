@@ -86,7 +86,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(37250)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP won't send requests through a custom proxy")]
         [OuterLoop("Uses external server")]
         [Fact]
@@ -135,7 +134,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(37250)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP won't send requests through a custom proxy")]
         [OuterLoop("Uses external server")]
         [Fact]
