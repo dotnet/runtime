@@ -222,12 +222,6 @@ void ZapImage::OutputEntrypointsTableForReadyToRun()
     {
         ZapMethodHeader * pMethod = m_MethodCompilationOrder[i];
 
-        mdMethodDef token = GetJitInfo()->getMethodDefFromMethod(pMethod->GetHandle());
-        CORINFO_SIG_INFO sig;
-        GetJitInfo()->getMethodSig(pMethod->GetHandle(), &sig);
-
-        int rid = RidFromToken(token);
-        _ASSERTE(rid != 0);
 
         BlobVertex * pFixupBlob = NULL;
 
@@ -250,8 +244,16 @@ void ZapImage::OutputEntrypointsTableForReadyToRun()
             }
         }
 
+        CORINFO_SIG_INFO sig;
+        GetJitInfo()->getMethodSig(pMethod->GetHandle(), &sig);
+
+        mdMethodDef token = GetJitInfo()->getMethodDefFromMethod(pMethod->GetHandle());
+        int rid = RidFromToken(token);
+
         if (sig.sigInst.classInstCount > 0 || sig.sigInst.methInstCount > 0)
         {
+            _ASSERTE(rid != 0);
+            
             CORINFO_MODULE_HANDLE module = GetJitInfo()->getClassModule(pMethod->GetClassHandle());
             _ASSERTE(GetCompileInfo()->IsInCurrentVersionBubble(module));
             SigBuilder sigBuilder;
@@ -273,7 +275,29 @@ void ZapImage::OutputEntrypointsTableForReadyToRun()
         }
         else
         {
-            vertexArray.Set(rid - 1, new (GetHeap()) EntryPointVertex(pMethod->GetMethodIndex(), pFixupBlob));
+            int rid = RidFromToken(token);
+            if (rid != 0)
+            {
+                vertexArray.Set(rid - 1, new (GetHeap()) EntryPointVertex(pMethod->GetMethodIndex(), pFixupBlob));
+            }
+            else
+            {
+                // This is a p/invoke stub, get the list of methods associated with the stub, and put this code in that set of rids
+                void *targetMethodEnum;
+                BOOL isStubWithTargetMethods = GetCompileInfo()->EnumMethodsForStub(pMethod->GetHandle(), &targetMethodEnum);
+                _ASSERTE(isStubWithTargetMethods);
+
+                CORINFO_METHOD_HANDLE hTargetMethod;
+                while (GetCompileInfo()->EnumNextMethodForStub(targetMethodEnum, &hTargetMethod))
+                {
+                    mdMethodDef token = GetJitInfo()->getMethodDefFromMethod(hTargetMethod);
+                    int rid = RidFromToken(token);
+                    _ASSERTE(rid != 0);
+                    vertexArray.Set(rid - 1, new (GetHeap()) EntryPointVertex(pMethod->GetMethodIndex(), pFixupBlob));
+                }
+
+                GetCompileInfo()->EnumCloseForStubEnumerator(targetMethodEnum);
+            }
         }
 
         fEmpty = false;

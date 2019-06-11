@@ -69,9 +69,13 @@
 #include "versionresilienthashcode.h"
 #include "inlinetracking.h"
 #include "jithost.h"
+#include "stubgen.h"
 
 #ifdef CROSSGEN_COMPILE
 CompilationDomain * theDomain;
+#ifdef FEATURE_READYTORUN_COMPILER
+MapSHash<CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE> s_stubMethodsOfMethod;
+#endif // FEATURE_READYTORUN_COMPILER
 #endif
 
 VerboseLevel g_CorCompileVerboseLevel = CORCOMPILE_NO_LOG;
@@ -6192,11 +6196,17 @@ void CEEPreloader::GenerateMethodStubs(
     MethodDesc* pMD = GetMethod(hMethod);
     MethodDesc* pStubMD = NULL;
 
-    // Do not generate IL stubs when generating ReadyToRun images
+    // Do not generate IL stubs when generating ReadyToRun images except for System.Private.Corelib
     // This prevents versionability concerns around IL stubs exposing internal
     // implementation details of the CLR.
+    if (IsReadyToRunCompilation() && (!GetAppDomain()->ToCompilationDomain()->GetTargetModule()->IsSystem() || !pMD->IsNDirect()))
+        return;
+
+#if defined(_TARGET_ARM_) && defined(FEATURE_PAL)
+    // Cross-bitness compilation of il stubs does not work. Disable here.
     if (IsReadyToRunCompilation())
         return;
+#endif // defined(_TARGET_ARM_) && defined(FEATURE_PAL)
 
     DWORD dwNGenStubFlags = NDIRECTSTUB_FL_NGENEDSTUB;
 
@@ -6285,8 +6295,14 @@ void CEEPreloader::GenerateMethodStubs(
             // that we can recover the stub MethodDesc at prestub time, do the fixups, and wire up the native code
             if (pStubMD != NULL)
             {
-                 SetStubMethodDescOnInteropMethodDesc(pMD, pStubMD, false /* fReverseStub */);
-                 pStubMD = NULL;
+#ifdef FEATURE_READYTORUN_COMPILER
+                if (IsReadyToRunCompilation())
+                {
+                    s_stubMethodsOfMethod.Add(CORINFO_METHOD_HANDLE(pStubMD), CORINFO_METHOD_HANDLE(pMD));
+                }
+#endif // FEATURE_READYTORUN_COMPILER
+                SetStubMethodDescOnInteropMethodDesc(pMD, pStubMD, false /* fReverseStub */);
+                pStubMD = NULL;
             }
 
         }
@@ -6296,6 +6312,10 @@ void CEEPreloader::GenerateMethodStubs(
         LOG((LF_ZAP, LL_WARNING, "NGEN_ILSTUB: Generating forward interop stub FAILED: %s::%s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
     }
     EX_END_CATCH(RethrowTransientExceptions);
+
+    // Only P/Invoke stubs are eligible to be created in R2R
+    if (IsReadyToRunCompilation())
+        return;
 
     //
     // Now take care of reverse P/Invoke stubs for delegates
@@ -7290,6 +7310,94 @@ HRESULT CompilationDomain::SetPlatformWinmdPaths(LPCWSTR pwzPlatformWinmdPaths)
 
     return S_OK;
 }
+
+#ifdef FEATURE_READYTORUN_COMPILER
+
+class MethodsForStubEnumerator
+{
+    SHash<NoRemoveSHashTraits<MapSHashTraits<CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE>>>::KeyIterator current;
+    SHash<NoRemoveSHashTraits<MapSHashTraits<CORINFO_METHOD_HANDLE, CORINFO_METHOD_HANDLE>>>::KeyIterator end;
+    bool started = false;
+    bool complete = false;
+
+public:
+    MethodsForStubEnumerator(CORINFO_METHOD_HANDLE hMethod) : 
+        current(s_stubMethodsOfMethod.Begin(hMethod)),
+        end(s_stubMethodsOfMethod.End(hMethod))
+    {
+        complete = current == end;
+    }
+
+    bool Next()
+    {
+        if (complete)
+            return false;
+
+        if (started)
+        {
+            ++current;
+        }
+        else
+        {
+            started = true;
+        }
+
+        if (current == end)
+        {
+            complete = true;
+            return false;
+        }
+        return true;
+    }
+
+    CORINFO_METHOD_HANDLE Current()
+    {
+        return current->Value();
+    }
+};
+#endif // FEATURE_READYTORUN_COMPILER
+
+BOOL CEECompileInfo::EnumMethodsForStub(CORINFO_METHOD_HANDLE hMethod, void** enumerator)
+{
+#ifdef FEATURE_READYTORUN_COMPILER
+    *enumerator = NULL;
+    if (s_stubMethodsOfMethod.LookupPtr(hMethod) == NULL)
+        return FALSE;
+
+    *enumerator = new MethodsForStubEnumerator(hMethod);
+    return TRUE;
+#else
+    return FALSE;
+#endif // FEATURE_READYTORUN_COMPILER
+}
+
+BOOL CEECompileInfo::EnumNextMethodForStub(void * enumerator, CORINFO_METHOD_HANDLE *hMethod)
+{
+    *hMethod = NULL;
+#ifdef FEATURE_READYTORUN_COMPILER
+    auto stubEnum = (MethodsForStubEnumerator*)enumerator;
+    if (stubEnum->Next())
+    {
+        *hMethod = stubEnum->Current();
+        return TRUE;
+    }
+    else
+    {
+        return FALSE;
+    }
+#else
+    return FALSE;
+#endif // FEATURE_READYTORUN_COMPILER
+}
+
+void CEECompileInfo::EnumCloseForStubEnumerator(void *enumerator)
+{
+#ifdef FEATURE_READYTORUN_COMPILER
+    auto stubEnum = (MethodsForStubEnumerator*)enumerator;
+    delete stubEnum;
+#endif // FEATURE_READYTORUN_COMPILER
+}
+
 #endif // CROSSGEN_COMPILE
 
 
