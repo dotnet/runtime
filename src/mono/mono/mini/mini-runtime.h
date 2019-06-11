@@ -185,6 +185,10 @@ typedef struct MonoDebugOptions {
 	 * Enable this to debug problems with direct calls in llvm
 	 */
 	gboolean llvm_disable_self_init;
+	/*
+	 * Prevent LLVM from inlining any methods
+	 */
+	gboolean llvm_disable_inlining;
 	gboolean use_fallback_tls;
 	/*
 	 * Whenever data such as next sequence points and flags is required.
