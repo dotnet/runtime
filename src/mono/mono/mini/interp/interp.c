@@ -384,24 +384,33 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 	return imethod;
 }
 
-#if defined (MONO_CROSS_COMPILE) || defined (HOST_WASM) || defined (_MSC_VER)
-#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) \
+#if defined (MONO_CROSS_COMPILE) || defined (HOST_WASM)
+#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_label) \
 	(ext).kind = MONO_LMFEXT_INTERP_EXIT;
 
 #elif defined(MONO_ARCH_HAS_NO_PROPER_MONOCTX)
 /* some platforms, e.g. appleTV, don't provide us a precise MonoContext
  * (registers are not accurate), thus resuming to the label does not work. */
-#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) \
+#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_label) \
 	(ext).kind = MONO_LMFEXT_INTERP_EXIT;
-
+#elif defined (_MSC_VER)
+#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_label) \
+	(ext).kind = MONO_LMFEXT_INTERP_EXIT_WITH_CTX; \
+	(ext).interp_exit_label_set = FALSE; \
+	MONO_CONTEXT_GET_CURRENT ((ext).ctx); \
+	if ((ext).interp_exit_label_set == FALSE) \
+		mono_arch_do_ip_adjustment (&(ext).ctx); \
+	if ((ext).interp_exit_label_set == TRUE) \
+		goto exit_label; \
+	(ext).interp_exit_label_set = TRUE;
 #elif defined(MONO_ARCH_HAS_MONO_CONTEXT)
-#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) \
+#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_label) \
 	(ext).kind = MONO_LMFEXT_INTERP_EXIT_WITH_CTX; \
 	MONO_CONTEXT_GET_CURRENT ((ext).ctx); \
-	MONO_CONTEXT_SET_IP (&(ext).ctx, (exit_addr)); \
+	MONO_CONTEXT_SET_IP (&(ext).ctx, (&&exit_label)); \
 	mono_arch_do_ip_adjustment (&(ext).ctx);
 #else
-#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_addr) g_error ("requires working mono-context");
+#define INTERP_PUSH_LMF_WITH_CTX_BODY(ext, exit_label) g_error ("requires working mono-context");
 #endif
 
 /* INTERP_PUSH_LMF_WITH_CTX:
@@ -413,10 +422,10 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
  * This must be a macro in order to retrieve the right register values for
  * MonoContext.
  */
-#define INTERP_PUSH_LMF_WITH_CTX(frame, ext, exit_addr) \
+#define INTERP_PUSH_LMF_WITH_CTX(frame, ext, exit_label) \
 	memset (&(ext), 0, sizeof (MonoLMFExt)); \
 	(ext).interp_exit_data = (frame); \
-	INTERP_PUSH_LMF_WITH_CTX_BODY ((ext), (exit_addr)); \
+	INTERP_PUSH_LMF_WITH_CTX_BODY ((ext), exit_label); \
 	mono_push_lmf (&(ext));
 
 /*
@@ -1336,6 +1345,9 @@ interp_to_native_trampoline (gpointer addr, gpointer ccontext)
 }
 
 /* MONO_NO_OPTIMIATION is needed due to usage of INTERP_PUSH_LMF_WITH_CTX. */
+#ifdef _MSC_VER
+#pragma optimize ("", off)
+#endif
 static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE void
 ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr, gboolean string_ctor, ThreadContext *context)
 {
@@ -1367,7 +1379,7 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 	args = margs;
 #endif
 
-	INTERP_PUSH_LMF_WITH_CTX (frame, ext, &&exit_pinvoke);
+	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_pinvoke);
 	entry_func ((gpointer) addr, args);
 	interp_pop_lmf (&ext);
 
@@ -1389,6 +1401,9 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 exit_pinvoke:
 	return;
 }
+#ifdef _MSC_VER
+#pragma optimize ("", on)
+#endif
 
 /*
  * interp_init_delegate:
@@ -1974,11 +1989,14 @@ do_icall (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gp
 }
 
 /* MONO_NO_OPTIMIATION is needed due to usage of INTERP_PUSH_LMF_WITH_CTX. */
+#ifdef _MSC_VER
+#pragma optimize ("", off)
+#endif
 static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE stackval *
 do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr)
 {
 	MonoLMFExt ext;
-	INTERP_PUSH_LMF_WITH_CTX (frame, ext, &&exit_icall);
+	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_icall);
 
 	sp = do_icall (frame, sig, op, sp, ptr);
 
@@ -1988,6 +2006,9 @@ do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval
 exit_icall:
 	return sp;
 }
+#ifdef _MSC_VER
+#pragma optimize ("", on)
+#endif
 
 typedef struct {
 	int pindex;
