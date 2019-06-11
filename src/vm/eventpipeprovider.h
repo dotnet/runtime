@@ -96,7 +96,11 @@ private:
 
     // Unset the provider configuration for the specified session (disable sets of events).
     // This is called by EventPipeConfiguration.
-    EventPipeProviderCallbackData UnsetConfiguration(uint64_t sessionId);
+    EventPipeProviderCallbackData UnsetConfiguration(
+        uint64_t sessionId,
+        INT64 keywords,
+        EventPipeEventLevel providerLevel,
+        LPCWSTR pFilterData);
 
     // Refresh the runtime state of all events.
     void RefreshAllEvents(
@@ -105,7 +109,10 @@ private:
         EventPipeEventLevel providerLevel);
 
     // Prepare the data required for invoking callback
-    EventPipeProviderCallbackData PrepareCallbackData(LPCWSTR pFilterData);
+    EventPipeProviderCallbackData PrepareCallbackData(
+        INT64 keywords,
+        EventPipeEventLevel providerLevel,
+        LPCWSTR pFilterData);
 
     // Invoke the provider callback.
     static void InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData);
