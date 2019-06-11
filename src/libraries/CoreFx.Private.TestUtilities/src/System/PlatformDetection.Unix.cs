@@ -157,12 +157,19 @@ namespace System
 
         static Version ToVersion(string versionString)
         {
-            if (versionString.IndexOf('.') != -1)
-                return new Version(versionString);
+            try
+            {
+                if (versionString.IndexOf('.') != -1)
+                    return new Version(versionString);
 
-            // minor version is required by Version
-            // let's default it to 0
-            return new Version(int.Parse(versionString), 0);
+                // minor version is required by Version
+                // let's default it to 0
+                return new Version(int.Parse(versionString), 0);
+            }
+            catch (Exception exc)
+            {
+                throw new FormatException($"Failed to parse version string: '{versionString}'", exc);
+            }
         }
 
         private static (string name, Version version) GetDistroInfo() =>
