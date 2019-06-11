@@ -10,6 +10,5 @@
 
 IExecutionEngine* STDMETHODCALLTYPE IEE_t();
 HRESULT STDMETHODCALLTYPE GetCORSystemDirectory(LPWSTR pbuffer, DWORD cchBuffer, DWORD* pdwlength);
-void* STDMETHODCALLTYPE GetCLRFunction(LPCSTR functionName);
 
 #endif

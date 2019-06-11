@@ -4914,22 +4914,15 @@ BOOL IsIPInModule(HMODULE_TGT hModule, PCODE ip);
 // which in turn calls InitUtilcode.
 //
 // This structure collects all of the critical callback info passed in InitUtilcode().
-// Note that one of them is GetCLRFunction() which is itself a gofer for many other
-// callbacks. If a callback fetch be safely deferred until we have TLS and stack probe
-// functionality running, it should be added to that function rather than this structure.
-// Things like IEE are here because that callback has to be set up before GetCLRFunction()
-// can be safely called.
 //----------------------------------------------------------------------------------------
 struct CoreClrCallbacks
 {
     typedef IExecutionEngine* (* pfnIEE_t)();
     typedef HRESULT (* pfnGetCORSystemDirectory_t)(SString& pbuffer);
-    typedef void* (* pfnGetCLRFunction_t)(LPCSTR functionName);
 
     HINSTANCE                   m_hmodCoreCLR;
     pfnIEE_t                    m_pfnIEE;
     pfnGetCORSystemDirectory_t  m_pfnGetCORSystemDirectory;
-    pfnGetCLRFunction_t         m_pfnGetCLRFunction;
 };
 
 
@@ -5316,9 +5309,5 @@ struct SpinConstants
 };
 
 extern SpinConstants g_SpinConstants;
-
-// ======================================================================================
-
-void* GetCLRFunction(LPCSTR FunctionName);
 
 #endif // __UtilCode_h__
