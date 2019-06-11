@@ -6,9 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
-    public interface IEquatable<T>
+    public interface IEquatable<T> // invariant due to questionable semantics around equality and inheritance
     {
         bool Equals([AllowNull] T other);
     }
 }
-
