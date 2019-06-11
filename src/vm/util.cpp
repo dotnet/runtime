@@ -1832,39 +1832,6 @@ size_t GetCacheSizePerLogicalCpu(BOOL bTrueSize)
     else
         return maxSize;
 }
-
-//---------------------------------------------------------------------
-
-#ifndef FEATURE_PAL
-HMODULE CLRGetModuleHandle(LPCWSTR lpModuleFileName)
-{
-    // Don't use dynamic contract: will override GetLastError value
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-    HMODULE hMod = WszGetModuleHandle(lpModuleFileName);
-    return hMod;
-}
-#endif // !FEATURE_PAL
-
-void *GetCLRFunction(LPCSTR FunctionName)
-{
-
-    void* func = NULL;
-    BEGIN_ENTRYPOINT_VOIDRET;
-
-    LIMITED_METHOD_CONTRACT;
-
-    {
-        _ASSERTE ("Unknown function name");
-        func = NULL;
-    }
-    END_ENTRYPOINT_VOIDRET;
-
-    return func;
-}
-
 #endif // CROSSGEN_COMPILE
 
 LPVOID

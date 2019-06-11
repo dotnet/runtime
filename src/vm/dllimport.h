@@ -60,11 +60,6 @@ class NDirect
 
 public:
     //---------------------------------------------------------
-    // One-time init
-    //---------------------------------------------------------
-    static void Init();
-
-    //---------------------------------------------------------
     // Does a class or method have a NAT_L CustomAttribute?
     //
     // S_OK    = yes
@@ -129,18 +124,6 @@ private:
     static NATIVE_LIBRARY_HANDLE LoadLibraryModuleViaCallback(NDirectMethodDesc * pMD, LPCWSTR wszLibName);
     static NATIVE_LIBRARY_HANDLE LoadLibraryModuleBySearch(NDirectMethodDesc * pMD, LoadLibErrorTracker * pErrorTracker, LPCWSTR wszLibName);
     static NATIVE_LIBRARY_HANDLE LoadLibraryModuleBySearch(Assembly *callingAssembly, BOOL searchAssemblyDirectory, DWORD dllImportSearchPathFlags, LoadLibErrorTracker * pErrorTracker, LPCWSTR wszLibName);
-
-#if !defined(FEATURE_PAL)
-    // Indicates if the OS supports the new secure LoadLibraryEx flags introduced in KB2533623
-    static bool         s_fSecureLoadLibrarySupported;
-
-public:
-    static bool SecureLoadLibrarySupported()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return s_fSecureLoadLibrarySupported;
-    }
-#endif // !FEATURE_PAL
 };
 
 //----------------------------------------------------------------
