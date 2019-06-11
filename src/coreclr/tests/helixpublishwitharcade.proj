@@ -31,6 +31,8 @@
       </_PropertiesToPass>
     </PropertyGroup>
 
+    <Error Condition="'$(_Scenarios)' == ''" Text="_Scenarios not set" />
+
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PrepareCorrelationPayloadDirectory" />
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="PreparePayloadsDirectories" Properties="Scenarios=$(_Scenarios)" StopOnFirstFailure="true" />
 
