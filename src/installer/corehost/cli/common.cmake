@@ -31,7 +31,8 @@ list(APPEND SOURCES
 list(APPEND HEADERS
     ${CMAKE_CURRENT_LIST_DIR}/../common/trace.h
     ${CMAKE_CURRENT_LIST_DIR}/../common/utils.h
-    ${CMAKE_CURRENT_LIST_DIR}/../common/pal.h)
+    ${CMAKE_CURRENT_LIST_DIR}/../common/pal.h
+    ${CMAKE_CURRENT_LIST_DIR}/../error_codes.h)
 
 if(WIN32)
     list(APPEND SOURCES 
