@@ -42,7 +42,7 @@ MaskDWORD is also non-zero.
 2. AgeEphemeral. When Ephemeral GC happens, ages for handles which belong to the GC condemned generation should be 
 incremented by 1. The operation is done by calculating a new uint32_t using the old uint32_t value:
     NewGenerationDWORD = COMPUTE_AGED_CLUMPS(OldGenerationDWORD, BuildAgeMask(condemnedGeneration, MaxGen))
-so that if a byte in OldGenerationDWORD is smaller than or equals to condemnedGeneration. the coresponding byte in 
+so that if a byte in OldGenerationDWORD is smaller than or equals to condemnedGeneration. the corresponding byte in 
 NewGenerationDWORD is 1 bigger than the old value, otherwise it remains unchanged.
 
 3. Age. Similar as AgeEphemeral, but we use a special mask if condemned generation is max gen (2):
@@ -114,7 +114,7 @@ If you change any of those algorithm, please verify it by this program:
                     assert (mask == 0);
                     return;
             }
-            //any generaion bigger than 2 is actually 2
+            //any generation bigger than 2 is actually 2
             if (gen > 2)
                 gen = 2;
 
@@ -712,10 +712,10 @@ void CALLBACK BlockScanBlocksEphemeral(PTR_TableSegment pSegment, uint32_t uBloc
     uint32_t *pdwGen     = (uint32_t *)pSegment->rgGeneration + uBlock;
     uint32_t *pdwGenLast =             pdwGen                 + uCount;
 
-    // loop over all the blocks, checking for elligible clumps as we go
+    // loop over all the blocks, checking for eligible clumps as we go
     do
     {
-        // determine if any clumps in this block are elligible
+        // determine if any clumps in this block are eligible
         uint32_t dwClumpMask = COMPUTE_CLUMP_MASK(*pdwGen, dwAgeMask);
 
         // if there are any clumps to scan then scan them now
@@ -1396,7 +1396,7 @@ PTR_TableSegment CALLBACK StandardSegmentIterator(PTR_HandleTable pTable, PTR_Ta
     PTR_TableSegment pNextSegment = QuickSegmentIterator(pTable, pPrevSegment);
 
 #ifndef DACCESS_COMPILE
-    // re-sort the block chains if neccessary
+    // re-sort the block chains if necessary
     if (pNextSegment && pNextSegment->fResortChains)
         SegmentResortChains(pNextSegment);
 #endif
@@ -1592,7 +1592,7 @@ void SegmentScanByTypeChain(PTR_TableSegment pSegment, uint32_t uType, BLOCKSCAN
 
             } while ((uNext == uLast) && (uNext != uHead));
 
-            // call the calback for this group of blocks
+            // call the callback for this group of blocks
             pfnBlockHandler(pSegment, uBlock, (uLast - uBlock), pInfo);
 
             // advance to the next block
@@ -1656,7 +1656,7 @@ void SegmentScanByTypeMap(PTR_TableSegment pSegment, const BOOL *rgTypeInclusion
                 break;
         }
 
-        // call the calback for the group of blocks we found
+        // call the callback for the group of blocks we found
         pfnBlockHandler(pSegment, uFirst, (uBlock - uFirst), pInfo);
 
         // look for another range starting with the next block
