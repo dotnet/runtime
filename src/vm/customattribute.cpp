@@ -768,7 +768,7 @@ FCIMPL6(LPVOID, COMCustomAttribute::CreateCaObject, ReflectModuleBaseObject* pAt
         memset((void*)argToProtect, 0, cArgs * sizeof(OBJECTREF));
 
         // load the this pointer
-        argToProtect[0] = pCtorMD->GetMethodTable()->Allocate(); // this is the value to return after the ctor invocation
+        argToProtect[0] = gc.refCaType->GetType().GetMethodTable()->Allocate(); // this is the value to return after the ctor invocation
 
         if (pBlob) 
         {
