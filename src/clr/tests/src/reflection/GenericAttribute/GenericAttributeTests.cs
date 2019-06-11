@@ -133,6 +133,22 @@ class Program
         var b8 = ((ICustomAttributeProvider)programTypeInfo).GetCustomAttributes(typeof(MultiAttribute<bool?>), true);
         AssertAny(b8, a => (a as MultiAttribute<bool?>)?.Value == null);
 
+        var a9 = CustomAttributeExtensions.GetCustomAttributes<MultiAttribute<string>>(programTypeInfo, true);
+        AssertAny(a9, a => (a as MultiAttribute<string>)?.Value == "Ctor");
+        AssertAny(a9, a => (a as MultiAttribute<string>)?.Value == "Property");
+
+        var b9 = ((ICustomAttributeProvider)programTypeInfo).GetCustomAttributes(typeof(MultiAttribute<string>), true);
+        AssertAny(b9, a => (a as MultiAttribute<string>)?.Value == "Ctor");
+        AssertAny(b9, a => (a as MultiAttribute<string>)?.Value == "Property");
+
+        var a10 = CustomAttributeExtensions.GetCustomAttributes<MultiAttribute<Type>>(programTypeInfo, true);
+        AssertAny(a10, a => (a as MultiAttribute<Type>)?.Value == typeof(Class));
+        AssertAny(a10, a => (a as MultiAttribute<Type>)?.Value == typeof(Class.Derive));
+
+        var b10 = ((ICustomAttributeProvider)programTypeInfo).GetCustomAttributes(typeof(MultiAttribute<Type>), true);
+        AssertAny(b10, a => (a as MultiAttribute<Type>)?.Value == typeof(Class));
+        AssertAny(b10, a => (a as MultiAttribute<Type>)?.Value == typeof(Class.Derive));
+
         Assert(CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), false) == null);
         Assert(CustomAttributeExtensions.GetCustomAttributes(programTypeInfo, typeof(MultiAttribute<>), true) == null);
         Assert(!((ICustomAttributeProvider)programTypeInfo).GetCustomAttributes(typeof(MultiAttribute<>), true).GetEnumerator().MoveNext());
