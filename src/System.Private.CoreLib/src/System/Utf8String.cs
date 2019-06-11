@@ -14,7 +14,10 @@ namespace System
     /// <summary>
     /// Represents an immutable string of UTF-8 code units.
     /// </summary>
-    public sealed partial class Utf8String : IEquatable<Utf8String>
+    public sealed partial class Utf8String :
+#nullable disable // see comment on String
+        IEquatable<Utf8String>
+#nullable restore
     {
         /*
          * STATIC FIELDS
@@ -119,9 +122,7 @@ namespace System
         /// <summary>
         /// Performs an equality comparison using a <see cref="StringComparison.Ordinal"/> comparer.
         /// </summary>
-#pragma warning disable CS8614 // TODO-NULLABLE: Covariant interface arguments (https://github.com/dotnet/roslyn/issues/35817)
         public bool Equals(Utf8String? value)
-#pragma warning restore CS8614
         {
             // First, a very quick check for referential equality.
 
