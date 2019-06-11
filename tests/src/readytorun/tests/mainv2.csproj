@@ -26,6 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="fieldgetter.ilproj" />
     <ProjectReference Include="testv1\test.csproj" />
+    <ProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="main.cs" />
