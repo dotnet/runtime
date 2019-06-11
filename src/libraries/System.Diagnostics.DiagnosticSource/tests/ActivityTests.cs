@@ -39,13 +39,63 @@ namespace System.Diagnostics.Tests
         public void Baggage()
         {
             var activity = new Activity("activity");
+
+            // Baggage starts off empty
             Assert.Null(activity.GetBaggageItem("some baggage"));
+            Assert.Empty(activity.Baggage);
 
-            Assert.Equal(activity, activity.AddBaggage("some baggage", "value"));
-            Assert.Equal("value", activity.GetBaggageItem("some baggage"));
+            const string Key = "some baggage";
+            const string Value = "value";
 
-            var baggage = activity.Baggage.ToList();
-            Assert.Equal(1, baggage.Count);
+            // Add items, get them individually and via an enumerable
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.Equal(activity, activity.AddBaggage(Key + i, Value + i));
+                Assert.Equal(Value + i, activity.GetBaggageItem(Key + i));
+                Assert.Equal(i + 1, activity.Baggage.Count());
+                for (int j = 0; j < i; j++)
+                {
+                    Assert.Contains(new KeyValuePair<string, string>(Key + j, Value + j), activity.Baggage);
+                }
+            }
+
+            // Now test baggage via child activities
+            activity.Start();
+            try
+            {
+                // Start a child
+                var anotherActivity = new Activity("another activity");
+                anotherActivity.Start();
+                try
+                {
+                    // Its parent should match.
+                    Assert.Same(activity, anotherActivity.Parent);
+
+                    // All of the parent's baggage should be available via the child.
+                    for (int i = 0; i < 3; i++)
+                    {
+                        Assert.Equal(Value + i, anotherActivity.GetBaggageItem(Key + i));
+                        Assert.Contains(new KeyValuePair<string, string>(Key + i, Value + i), anotherActivity.Baggage);
+                    }
+
+                    // And we should be able to add additional baggage to the child, see that baggage, and still see the parent's.
+                    Assert.Same(anotherActivity, anotherActivity.AddBaggage("hello", "world"));
+                    Assert.Equal("world", anotherActivity.GetBaggageItem("hello"));
+                    Assert.Equal(4, anotherActivity.Baggage.Count());
+                    Assert.Equal(new KeyValuePair<string, string>("hello", "world"), anotherActivity.Baggage.First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 2, Value + 2), anotherActivity.Baggage.Skip(1).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 1, Value + 1), anotherActivity.Baggage.Skip(2).First());
+                    Assert.Equal(new KeyValuePair<string, string>(Key + 0, Value + 0), anotherActivity.Baggage.Skip(3).First());
+                }
+                finally
+                {
+                    anotherActivity.Stop();
+                }
+            }
+            finally
+            {
+                activity.Stop();
+            }
         }
 
         /// <summary>
@@ -55,13 +105,18 @@ namespace System.Diagnostics.Tests
         public void Tags()
         {
             var activity = new Activity("activity");
+            Assert.Empty(activity.Tags);
 
-            Assert.Equal(activity, activity.AddTag("some tag", "value"));
-
-            var tags = activity.Tags.ToList();
-            Assert.Equal(1, tags.Count);
-            Assert.Equal(tags[0].Key, "some tag");
-            Assert.Equal(tags[0].Value, "value");
+            const string Key = "some tag";
+            const string Value = "value";
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.Equal(activity, activity.AddTag(Key + i, Value + i));
+                List<KeyValuePair<string, string>> tags = activity.Tags.ToList();
+                Assert.Equal(i + 1, tags.Count);
+                Assert.Equal(tags[tags.Count - i - 1].Key, Key + i);
+                Assert.Equal(tags[tags.Count - i - 1].Value, Value + i);
+            }
         }
 
         /// <summary>
