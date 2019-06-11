@@ -131,10 +131,14 @@ EventPipeProviderCallbackData EventPipeProvider::SetConfiguration(
     m_providerLevel = (providerLevel < m_providerLevel) ? m_providerLevel : providerLevel;
 
     RefreshAllEvents(sessionId, keywords, providerLevel);
-    return PrepareCallbackData(pFilterData);
+    return PrepareCallbackData(keywords, providerLevel, pFilterData);
 }
 
-EventPipeProviderCallbackData EventPipeProvider::UnsetConfiguration(uint64_t sessionId)
+EventPipeProviderCallbackData EventPipeProvider::UnsetConfiguration(
+        uint64_t sessionId,
+        INT64 keywords,
+        EventPipeEventLevel providerLevel,
+        LPCWSTR pFilterData)
 {
     CONTRACTL
     {
@@ -148,7 +152,7 @@ EventPipeProviderCallbackData EventPipeProvider::UnsetConfiguration(uint64_t ses
 
     if (m_sessions & sessionId)
         m_sessions &= ~sessionId;
-    return PrepareCallbackData(nullptr);
+    return PrepareCallbackData(keywords, providerLevel, pFilterData);
 }
 
 EventPipeEvent *EventPipeProvider::AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata, unsigned int metadataLength)
@@ -253,7 +257,10 @@ void EventPipeProvider::AddEvent(EventPipeEvent &event)
     buffer.Destroy();
 }
 
-EventPipeProviderCallbackData EventPipeProvider::PrepareCallbackData(LPCWSTR pFilterData)
+EventPipeProviderCallbackData EventPipeProvider::PrepareCallbackData(
+        INT64 keywords,
+        EventPipeEventLevel providerLevel,
+        LPCWSTR pFilterData)
 {
     CONTRACTL
     {
@@ -268,8 +275,8 @@ EventPipeProviderCallbackData EventPipeProvider::PrepareCallbackData(LPCWSTR pFi
     result.pFilterData = pFilterData;
     result.pCallbackFunction = m_pCallbackFunction;
     result.enabled = (m_sessions != 0);
-    result.providerLevel = m_providerLevel;
-    result.keywords = m_keywords;
+    result.providerLevel = providerLevel;
+    result.keywords = keywords;
     result.pCallbackData = m_pCallbackData;
     return result;
 }
