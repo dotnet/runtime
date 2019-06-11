@@ -532,15 +532,10 @@ enum FWStatus
 };
 
 EXTERN DWORD g_FinalizerWaiterStatus;
-extern ULONGLONG g_ObjFinalizeStartTime;
-extern Volatile<BOOL> g_FinalizerIsRunning;
-extern Volatile<ULONG> g_FinalizerLoopCount;
 
 #if defined(FEATURE_PAL) && defined(FEATURE_EVENT_TRACE)
 extern Volatile<BOOL> g_TriggerHeapDump;
 #endif // FEATURE_PAL
-
-extern LONG GetProcessedExitProcessEventCount();
 
 #ifndef DACCESS_COMPILE
 //

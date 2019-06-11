@@ -609,8 +609,6 @@ inline BOOL CLRHosted()
 }
 
 #ifndef FEATURE_PAL
-HMODULE CLRGetModuleHandle(LPCWSTR lpModuleFileName);
-
 HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags);
 #endif // !FEATURE_PAL
 

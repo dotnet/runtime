@@ -15,8 +15,3 @@ IExecutionEngine* STDMETHODCALLTYPE IEE_t()
     iee->original_IEE    = original_CoreClrCallbacks->m_pfnIEE();
     return iee;
 }
-
-void* STDMETHODCALLTYPE GetCLRFunction(LPCSTR functionName)
-{
-    return original_CoreClrCallbacks->m_pfnGetCLRFunction(functionName);
-}

@@ -5492,14 +5492,6 @@ BOOL AppDomain::OnUnhandledException(OBJECTREF *pThrowable, BOOL isTerminating/*
     return retVal;
 }
 
-static LONG s_ProcessedExitProcessEventCount = 0;
-
-LONG GetProcessedExitProcessEventCount()
-{
-    LIMITED_METHOD_CONTRACT;
-    return s_ProcessedExitProcessEventCount;
-}
-
 void AppDomain::RaiseExitProcessEvent()
 {
     if (!g_fEEStarted)
@@ -6235,11 +6227,6 @@ AppDomain::RaiseAssemblyResolveEvent(
 
     RETURN pAssembly;
 } // AppDomain::RaiseAssemblyResolveEvent
-
-
-ULONGLONG g_ObjFinalizeStartTime = 0;
-Volatile<BOOL> g_FinalizerIsRunning = FALSE;
-Volatile<ULONG> g_FinalizerLoopCount = 0;
 
 enum WorkType
 {

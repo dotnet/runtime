@@ -207,14 +207,12 @@ extern "C" DLLEXPORT void __stdcall sxsJitStartup(CoreClrCallbacks const& origin
         original_CoreClrCallbacks->m_hmodCoreCLR              = original_cccallbacks.m_hmodCoreCLR;
         original_CoreClrCallbacks->m_pfnIEE                   = original_cccallbacks.m_pfnIEE;
         original_CoreClrCallbacks->m_pfnGetCORSystemDirectory = original_cccallbacks.m_pfnGetCORSystemDirectory;
-        original_CoreClrCallbacks->m_pfnGetCLRFunction        = original_cccallbacks.m_pfnGetCLRFunction;
 
         CoreClrCallbacks* temp = new CoreClrCallbacks();
 
         temp->m_hmodCoreCLR              = original_cccallbacks.m_hmodCoreCLR;
         temp->m_pfnIEE                   = IEE_t;
         temp->m_pfnGetCORSystemDirectory = original_cccallbacks.m_pfnGetCORSystemDirectory;
-        temp->m_pfnGetCLRFunction        = GetCLRFunction;
 
         pnsxsJitStartup(*temp);
     }
