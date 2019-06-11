@@ -71,3 +71,45 @@
 -nomethod System.Tests.StringTests.CompareNegativeTest
 -nomethod System.Tests.StringTests.ToLowerNullCulture
 -nomethod System.Tests.StringTests.ToUpperNullCulture
+
+#
+# Temporarily disable tests while bringing more CoreFX job configurations online.
+#
+
+-nonamespace System.Net.Http.Functional.Tests
+-nonamespace System.Net.Sockets.Tests
+
+-noclass System.Net.Tests.HttpListenerContextTests
+-noclass System.Net.Tests.HttpListenerAuthenticationTests
+-noclass System.Net.Tests.HttpListenerResponseTests
+-noclass System.Net.Tests.HttpListenerResponseCookiesTests
+
+-nomethod System.Net.Tests.HttpListenerResponseTests.Redirect_Invoke_SetsRedirectionProperties
+-nomethod System.Net.Mail.Tests.SmtpClientTest.TestMailDeliveryAsync
+
+-nomethod System.Net.Security.Tests.LoggingTest.EventSource_EventsRaisedAsExpected
+-nomethod System.Net.Security.Tests.SslStreamSniTest.SslStream_NoSniFromClient_CallbackReturnsNull
+
+# System.Linq.Expressions.Tests: timeout on Linux/x64
+-nonamespace System.Linq.Expressions.Tests
+
+# assert/crashes
+-nomethod System.Tests.RealFormatterTestsBase.TestFormatterSingle_F20
+-noclass System.Tests.RealFormatterTestsBase
+-noclass System.Tests.RealFormatterTests
+-noclass System.Buffers.Text.Tests.RealFormatterTests
+
+# System.Runtime.Serialization.Formatters.Tests: timeouts
+-nonamespace System.Runtime.Serialization.Formatters.Tests
+
+-nomethod Generic.Dictionary.DictionaryConcurrentAccessDetectionTests.DictionaryConcurrentAccessDetection_ReferenceTypeKey
+-nomethod Generic.Dictionary.DictionaryConcurrentAccessDetectionTests.DictionaryConcurrentAccessDetection_ValueTypeKey
+-nomethod MonoTests.System.Runtime.Caching.MemoryCacheTest.Contains
+-nomethod System.Numerics.Tests.ToStringTest.RunRegionSpecificStandardFormatToStringTests
+-nomethod System.Text.RegularExpressions.Tests.RegexMatchTests.Match_ExcessPrefix
+
+# Assert with JITMinOpts=1: https://github.com/dotnet/coreclr/issues/25070
+-nonamespace Microsoft.VisualBasic.Tests
+
+# Assert: https://github.com/dotnet/coreclr/issues/25050
+-nonamespace System.Data.Common.Tests
