@@ -185,6 +185,9 @@ namespace Mono.Linker {
 			Tracer = factory.CreateTracer (this);
 			MarkedKnownMembers = new KnownMembers ();
 			StripResources = true;
+
+			// See https://github.com/mono/linker/issues/612
+			DisabledOptimizations |= CodeOptimizations.UnreachableBodies;
 		}
 
 		public TypeDefinition GetType (string fullName)

@@ -5,6 +5,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody {
 	[SetupCompileArgument ("/debug:full")]
 	[SetupLinkerLinkSymbols ("true")]
 	[KeptSymbols ("test.exe")]
+	[SetupLinkerArgument ("--enable-opt", "unreachablebodies")]
 	public class BodyWithManyVariablesWithSymbols {
 		public static void Main()
 		{
