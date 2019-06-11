@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -58,6 +57,37 @@ namespace System.Text.Json.Serialization.Tests
             {
                 await ReadAsync(stream);
             }
+        }
+
+        [Fact]
+        public static async Task RoundTripLargeJsonViaJsonElementAsync()
+        {
+            // Generating tailored json
+            int i = 0;
+            StringBuilder json = new StringBuilder();
+            json.Append("{");
+            while (true)
+            {
+                if (json.Length >= 14757)
+                {
+                    break;
+                }
+                json.AppendFormat(@"""Key_{0}"":""{0}"",", i);
+                i++;
+            }
+            json.Remove(json.Length - 1, 1).Append("}");
+
+            JsonElement root = JsonSerializer.Parse<JsonElement>(json.ToString());
+            var ms = new MemoryStream();
+            await JsonSerializer.WriteAsync(ms, root, root.GetType());
+        }
+
+        [Fact]
+        public static async Task RoundTripLargeJsonViaPocoAsync()
+        {
+            byte[] array = JsonSerializer.Parse<byte[]>(JsonSerializer.ToString(new byte[11056]));
+            var ms = new MemoryStream();
+            await JsonSerializer.WriteAsync(ms, array, array.GetType());
         }
 
         private static async Task WriteAsync(TestStream stream)
