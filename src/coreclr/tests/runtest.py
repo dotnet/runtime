@@ -1066,7 +1066,7 @@ def run_tests(host_os,
     if run_in_context:
         print("Running test in an unloadable AssemblyLoadContext")
         os.environ["CLRCustomTestLauncher"] = os.path.join(coreclr_repo_location, "tests", "scripts", "runincontext%s" % (".cmd" if host_os == "Windows_NT" else ".sh"))
-        os.environ["__RunInUnloadableContext"] = "1";
+        os.environ["RunInUnloadableContext"] = "1";
         per_test_timeout = 20*60*1000
 
     # Set __TestTimeout environment variable, which is the per-test timeout in milliseconds.

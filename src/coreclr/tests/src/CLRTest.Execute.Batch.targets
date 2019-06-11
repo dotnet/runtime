@@ -78,7 +78,7 @@ IF NOT "%COMPlus_GCStress%"=="" (
       ]]></BatchCLRTestEnvironmentCompatibilityCheck>
       <BatchCLRTestEnvironmentCompatibilityCheck Condition="'$(UnloadabilityIncompatible)' == 'true'"><![CDATA[
 $(BatchCLRTestEnvironmentCompatibilityCheck)
-IF NOT "%__RunInUnloadableContext%"=="" (
+IF NOT "%RunInUnloadableContext%"=="" (
   ECHO SKIPPING EXECUTION BECAUSE the test is incompatible with unloadability
   popd
   Exit /b 0
