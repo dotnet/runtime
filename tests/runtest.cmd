@@ -36,7 +36,7 @@ set __CoreFXTestsRunAllAvailable=
 set __SkipGenerateLayout=
 set __BuildXUnitWrappers=
 set __PrintLastResultsOnly=
-set __RunInUnloadableContext=
+set RunInUnloadableContext=
 
 :Arg_Loop
 if "%1" == "" goto ArgsDone
@@ -94,7 +94,7 @@ REM change it to COMPlus_GCStress when we stop using xunit harness
 if /i "%1" == "gcstresslevel"                           (set COMPlus_GCStress=%2&set __TestTimeout=1800000&shift&shift&goto Arg_Loop)
 if /i "%1" == "collectdumps"                            (set __CollectDumps=true&shift&goto Arg_Loop)
 
-if /i "%1" == "runincontext"                            (set __RunInUnloadableContext=1&shift&goto Arg_Loop)
+if /i "%1" == "runincontext"                            (set RunInUnloadableContext=1&shift&goto Arg_Loop)
 
 if /i not "%1" == "msbuildargs" goto SkipMsbuildArgs
 :: All the rest of the args will be collected and passed directly to msbuild.
@@ -206,7 +206,7 @@ if defined __AltJitArch (
     set __RuntestPyArgs=%__RuntestPyArgs% -altjit_arch %__AltJitArch%
 )
 
-if defined __RunInUnloadableContext (
+if defined RunInUnloadableContext (
     set __RuntestPyArgs=%__RuntestPyArgs% --run_in_context
 )
 
