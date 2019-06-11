@@ -22,7 +22,7 @@ namespace System.Data.SqlClient.SNI
     {
         private const int DefaultSqlServerPort = 1433;
         private const int DefaultSqlServerDacPort = 1434;
-        private const string SqlServerSpnHeader = "MSSQLSvc";
+        private const string SqlServerSpnHeader = "MSSQLSvc/";
 
         public static readonly SNIProxy Singleton = new SNIProxy();
 
@@ -341,7 +341,7 @@ namespace System.Data.SqlClient.SNI
                 // If the DNS lookup failed, then resort to using the user provided hostname to construct the SPN.
                 fullyQualifiedDomainName = hostEntry?.HostName ?? hostNameOrAddress;
             }
-            string serverSpn = SqlServerSpnHeader + SpnServiceHostSeparator + fullyQualifiedDomainName;
+            string serverSpn = SqlServerSpnHeader + fullyQualifiedDomainName;
             if (!string.IsNullOrWhiteSpace(portOrInstanceName))
             {
                 serverSpn += ":" + portOrInstanceName;

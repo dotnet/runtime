@@ -43,10 +43,7 @@ namespace System.Net.Security
         {
             try
             {
-                // Convert any "SERVICE/HOST" style of targetName to use "SERVICE@HOST" style.
-                // This is because the System.Net.Security.Native GSS-API layer uses
-                // GSS_C_NT_HOSTBASED_SERVICE format for targetName.
-                _targetName = SafeGssNameHandle.CreateTarget(targetName.Replace('/', '@'));
+                _targetName = SafeGssNameHandle.CreateTarget(targetName);
             }
             catch
             {

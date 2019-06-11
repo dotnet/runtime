@@ -107,18 +107,6 @@ namespace System.Net.Security
             out uint outFlags,
             out bool isNtlmUsed)
         {
-            // If a TLS channel binding token (cbt) is available then get the pointer
-            // to the application specific data.
-            IntPtr cbtAppData = IntPtr.Zero;
-            int cbtAppDataSize = 0;
-            if (channelBinding != null)
-            {
-                int appDataOffset = Marshal.SizeOf<SecChannelBindings>();
-                Debug.Assert(appDataOffset < channelBinding.Size);
-                cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
-                cbtAppDataSize = channelBinding.Size - appDataOffset;
-            }
-
             outputBuffer = null;
             outFlags = 0;
 
@@ -138,19 +126,43 @@ namespace System.Net.Security
             try
             {
                 Interop.NetSecurityNative.Status minorStatus;
-                status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
-                                                          credential,
-                                                          ref context,
-                                                          isNtlm,
-                                                          cbtAppData,
-                                                          cbtAppDataSize,
-                                                          targetName,
-                                                          (uint)inFlags,
-                                                          buffer,
-                                                          (buffer == null) ? 0 : buffer.Length,
-                                                          ref token,
-                                                          out outFlags,
-                                                          out isNtlmUsed);
+
+                if (channelBinding != null)
+                {
+                    // If a TLS channel binding token (cbt) is available then get the pointer
+                    // to the application specific data.
+                    int appDataOffset = Marshal.SizeOf<SecChannelBindings>();
+                    Debug.Assert(appDataOffset < channelBinding.Size);
+                    IntPtr cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
+                    int cbtAppDataSize = channelBinding.Size - appDataOffset;
+                    status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
+                                                                      credential,
+                                                                      ref context,
+                                                                      isNtlm,
+                                                                      cbtAppData,
+                                                                      cbtAppDataSize,
+                                                                      targetName,
+                                                                      (uint)inFlags,
+                                                                      buffer,
+                                                                      (buffer == null) ? 0 : buffer.Length,
+                                                                      ref token,
+                                                                      out outFlags,
+                                                                      out isNtlmUsed);
+                }
+                else
+                {
+                    status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
+                                                                      credential,
+                                                                      ref context,
+                                                                      isNtlm,
+                                                                      targetName,
+                                                                      (uint)inFlags,
+                                                                      buffer,
+                                                                      (buffer == null) ? 0 : buffer.Length,
+                                                                      ref token,
+                                                                      out outFlags,
+                                                                      out isNtlmUsed);
+                }
 
                 if ((status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE) &&
                     (status != Interop.NetSecurityNative.Status.GSS_S_CONTINUE_NEEDED))

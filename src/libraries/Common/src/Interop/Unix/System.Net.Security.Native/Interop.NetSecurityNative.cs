@@ -36,8 +36,8 @@ internal static partial class Interop
             int inputNameByteCount,
             out SafeGssNameHandle outputName);
 
-        [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ImportTargetName")]
-        internal static extern Status ImportTargetName(
+        [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_ImportPrincipalName")]
+        internal static extern Status ImportPrincipalName(
             out Status minorStatus,
             string inputName,
             int inputNameByteCount,
@@ -69,6 +69,20 @@ internal static partial class Interop
             ref IntPtr credHandle);
 
         [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitSecContext")]
+        internal static extern Status InitSecContext(
+            out Status minorStatus,
+            SafeGssCredHandle initiatorCredHandle,
+            ref SafeGssContextHandle contextHandle,
+            bool isNtlmOnly,
+            SafeGssNameHandle targetName,
+            uint reqFlags,
+            byte[] inputBytes,
+            int inputLength,
+            ref GssBuffer token,
+            out uint retFlags,
+            out bool isNtlmUsed);
+
+        [DllImport(Interop.Libraries.NetSecurityNative, EntryPoint="NetSecurityNative_InitSecContextEx")]
         internal static extern Status InitSecContext(
             out Status minorStatus,
             SafeGssCredHandle initiatorCredHandle,

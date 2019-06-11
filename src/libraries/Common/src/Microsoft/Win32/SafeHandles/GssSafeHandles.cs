@@ -36,7 +36,7 @@ namespace Microsoft.Win32.SafeHandles
             Debug.Assert(!string.IsNullOrEmpty(name), "Invalid target name passed to SafeGssNameHandle create");
             SafeGssNameHandle retHandle;
             Interop.NetSecurityNative.Status minorStatus;
-            Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.ImportTargetName(
+            Interop.NetSecurityNative.Status status = Interop.NetSecurityNative.ImportPrincipalName(
                 out minorStatus, name, Encoding.UTF8.GetByteCount(name), out retHandle);
 
             if (status != Interop.NetSecurityNative.Status.GSS_S_COMPLETE)
