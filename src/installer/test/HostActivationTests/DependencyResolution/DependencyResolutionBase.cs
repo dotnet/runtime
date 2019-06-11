@@ -20,8 +20,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                 return SharedFramework.CalculateUniqueTestDirectory(baseDir);
             }
 
-            public SharedTestStateBase(string name)
-                : base(GetBaseDir(name), name)
+            public SharedTestStateBase()
+                : base(GetBaseDir("dependencyResolution"), "dependencyResolution")
             {
                 _builtDotnet = Path.Combine(TestArtifactsPath, "sharedFrameworkPublish");
             }

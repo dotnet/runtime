@@ -181,7 +181,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
 
             public DotNetCli DotNetWithNetCoreApp { get; }
 
-            public SharedTestState() : base("DependencyResolution")
+            public SharedTestState() : base()
             {
                 DotNetWithNetCoreApp = DotNet("WithNetCoreApp")
                     .AddMicrosoftNETCoreAppFrameworkMockCoreClr("4.0.0")

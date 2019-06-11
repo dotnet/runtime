@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
     public class TestArtifact : IDisposable
     {
         private static readonly string TestArtifactDirectoryEnvironmentVariable = "TEST_ARTIFACTS";
-        private static Lazy<string> _testArtifactsPath = new Lazy<string>(() =>
+        private static readonly Lazy<string> _testArtifactsPath = new Lazy<string>(() =>
         {
             return Environment.GetEnvironmentVariable(TestArtifactDirectoryEnvironmentVariable)
                    ?? Path.Combine(AppContext.BaseDirectory, TestArtifactDirectoryEnvironmentVariable);
@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
         public string Location { get; }
         public string Name { get; }
 
-        private List<TestArtifact> _copies = new List<TestArtifact>();
+        private readonly List<TestArtifact> _copies = new List<TestArtifact>();
 
         public TestArtifact(string location, string name = null)
         {
@@ -46,7 +46,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
             source._copies.Add(this);
         }
 
-        public void Dispose()
+        protected void RegisterCopy(TestArtifact artifact)
+        {
+            _copies.Add(artifact);
+        }
+
+        public virtual void Dispose()
         {
             if (!PreserveTestRuns() && Directory.Exists(Location))
             {
