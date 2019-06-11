@@ -696,17 +696,26 @@ namespace System.Net.Http.Functional.Tests
 
         private static async Task<int> EstablishConnectionAndProcessOneRequestAsync(HttpClient client, Http2LoopbackServer server)
         {
+            int streamId = -1;
+
             // Establish connection and send initial request/response to ensure connection is available for subsequent use
-            Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
-
-            await server.EstablishConnectionAsync();
-
-            int streamId = await server.ReadRequestHeaderAsync();
-            await server.SendDefaultResponseAsync(streamId);
-
-            HttpResponseMessage response = await sendTask;
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-            Assert.Equal(0, (await response.Content.ReadAsByteArrayAsync()).Length);
+            await new[]
+            {
+                Task.Run(async () =>
+                {
+                    using (HttpResponseMessage response = await client.GetAsync(server.Address))
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        Assert.Equal(0, (await response.Content.ReadAsByteArrayAsync()).Length);
+                    }
+                }),
+                Task.Run(async () =>
+                {
+                    await server.EstablishConnectionAsync();
+                    streamId = await server.ReadRequestHeaderAsync();
+                    await server.SendDefaultResponseAsync(streamId);
+                })
+            }.WhenAllOrAnyFailed(TestHelper.PassingTestTimeoutMilliseconds);
 
             return streamId;
         }
