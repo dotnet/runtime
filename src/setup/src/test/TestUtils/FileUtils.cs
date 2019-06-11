@@ -130,10 +130,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         public static void EnsureFileDirectoryExists(string filePath)
         {
-            string directory = Path.GetDirectoryName(filePath);
-            if (!Directory.Exists(directory))
+            EnsureDirectoryExists(Path.GetDirectoryName(filePath));
+        }
+
+        public static void EnsureDirectoryExists(string path)
+        {
+            if (!Directory.Exists(path))
             {
-                Directory.CreateDirectory(directory);
+                Directory.CreateDirectory(path);
             }
         }
 
