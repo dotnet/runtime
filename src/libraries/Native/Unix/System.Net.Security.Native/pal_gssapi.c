@@ -144,26 +144,52 @@ NetSecurityNative_ImportUserName(uint32_t* minorStatus, char* inputName, uint32_
     return gss_import_name(minorStatus, &inputNameBuffer, GSS_C_NT_USER_NAME, outputName);
 }
 
-uint32_t NetSecurityNative_ImportTargetName(uint32_t* minorStatus,
-                                            char* inputName,
-                                            uint32_t inputNameLen,
-                                            GssName** outputName)
+uint32_t NetSecurityNative_ImportPrincipalName(uint32_t* minorStatus,
+                                               char* inputName,
+                                               uint32_t inputNameLen,
+                                               GssName** outputName)
 {
     assert(minorStatus != NULL);
     assert(inputName != NULL);
     assert(outputName != NULL);
     assert(*outputName == NULL);
 
+    // Principal name will usually be in the form SERVICE/HOST. But SPNEGO protocol prefers
+    // GSS_C_NT_HOSTBASED_SERVICE format. That format uses '@' separator instead of '/' between
+    // service name and host name. So convert input string into that format.
+    char* ptrSlash = memchr(inputName, '/', inputNameLen);
+    char* inputNameCopy = NULL;
+    if (ptrSlash != NULL)
+    {
+        inputNameCopy = (char*) malloc(inputNameLen);
+        if (inputNameCopy != NULL)
+        {
+            memcpy(inputNameCopy, inputName, inputNameLen);
+            inputNameCopy[ptrSlash - inputName] = '@';
+            inputName = inputNameCopy;
+        }
+        else
+        {
+          *minorStatus = 0;
+          return GSS_S_BAD_NAME;
+        }
+    }
+
     GssBuffer inputNameBuffer = {.length = inputNameLen, .value = inputName};
-    return gss_import_name(minorStatus, &inputNameBuffer, GSS_C_NT_HOSTBASED_SERVICE, outputName);
+    uint32_t result = gss_import_name(minorStatus, &inputNameBuffer, GSS_C_NT_HOSTBASED_SERVICE, outputName);
+
+    if (inputNameCopy != NULL)
+    {
+        free(inputNameCopy);
+    }
+
+    return result;
 }
 
 uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                           GssCredId* claimantCredHandle,
                                           GssCtxId** contextHandle,
                                           uint32_t isNtlm,
-                                          void* cbt,
-                                          int32_t cbtSize,
                                           GssName* targetName,
                                           uint32_t reqFlags,
                                           uint8_t* inputBytes,
@@ -171,6 +197,35 @@ uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                           PAL_GssBuffer* outBuffer,
                                           uint32_t* retFlags,
                                           int32_t* isNtlmUsed)
+{
+    return NetSecurityNative_InitSecContextEx(minorStatus,
+                                              claimantCredHandle,
+                                              contextHandle,
+                                              isNtlm,
+                                              NULL,
+                                              0,
+                                              targetName,
+                                              reqFlags,
+                                              inputBytes,
+                                              inputLength,
+                                              outBuffer,
+                                              retFlags,
+                                              isNtlmUsed);
+}
+
+uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
+                                            GssCredId* claimantCredHandle,
+                                            GssCtxId** contextHandle,
+                                            uint32_t isNtlm,
+                                            void* cbt,
+                                            int32_t cbtSize,
+                                            GssName* targetName,
+                                            uint32_t reqFlags,
+                                            uint8_t* inputBytes,
+                                            uint32_t inputLength,
+                                            PAL_GssBuffer* outBuffer,
+                                            uint32_t* retFlags,
+                                            int32_t* isNtlmUsed)
 {
     assert(minorStatus != NULL);
     assert(contextHandle != NULL);

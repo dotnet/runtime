@@ -79,7 +79,7 @@ NetSecurityNative_ImportUserName(uint32_t* minorStatus, char* inputName, uint32_
 /*
 Shims the gss_import_name method with nametype = GSS_C_NT_USER_NAME.
 */
-DLLEXPORT uint32_t NetSecurityNative_ImportTargetName(uint32_t* minorStatus,
+DLLEXPORT uint32_t NetSecurityNative_ImportPrincipalName(uint32_t* minorStatus,
                                                          char* inputName,
                                                          uint32_t inputNameLen,
                                                          GssName** outputName);
@@ -107,8 +107,6 @@ DLLEXPORT uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                                     GssCredId* claimantCredHandle,
                                                     GssCtxId** contextHandle,
                                                     uint32_t isNtlm,
-                                                    void* cbt,
-                                                    int32_t cbtSize,
                                                     GssName* targetName,
                                                     uint32_t reqFlags,
                                                     uint8_t* inputBytes,
@@ -116,6 +114,20 @@ DLLEXPORT uint32_t NetSecurityNative_InitSecContext(uint32_t* minorStatus,
                                                     PAL_GssBuffer* outBuffer,
                                                     uint32_t* retFlags,
                                                     int32_t* isNtlmUsed);
+
+DLLEXPORT uint32_t NetSecurityNative_InitSecContextEx(uint32_t* minorStatus,
+                                                      GssCredId* claimantCredHandle,
+                                                      GssCtxId** contextHandle,
+                                                      uint32_t isNtlm,
+                                                      void* cbt,
+                                                      int32_t cbtSize,
+                                                      GssName* targetName,
+                                                      uint32_t reqFlags,
+                                                      uint8_t* inputBytes,
+                                                      uint32_t inputLength,
+                                                      PAL_GssBuffer* outBuffer,
+                                                      uint32_t* retFlags,
+                                                      int32_t* isNtlmUsed);
 
 /*
 Shims the gss_accept_sec_context method.
