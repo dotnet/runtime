@@ -23,7 +23,15 @@ namespace System
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed partial class String : IComparable, IEnumerable, IConvertible, IEnumerable<char>, IComparable<string>, IEquatable<string>, ICloneable
+    public sealed partial class String : IComparable, IEnumerable, IConvertible, IEnumerable<char>, IComparable<string?>,
+        // IEquatable<string> is invariant by design.  However, the lack of covariance means that String?
+        // couldn't be used in places constrained to T : IEquatable<String>.  As a workaround, until the
+        // language provides a mechanism for this, we make the generic type argument oblivious, in conjunction
+        // with making all such constraints oblivious as well.
+#nullable disable
+        IEquatable<string>,
+#nullable restore
+        ICloneable
     {
         /*
          * CONSTRUCTORS

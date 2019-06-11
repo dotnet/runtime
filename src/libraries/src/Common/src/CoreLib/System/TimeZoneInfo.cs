@@ -30,7 +30,11 @@ namespace System
 
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public sealed partial class TimeZoneInfo : IEquatable<TimeZoneInfo>, ISerializable, IDeserializationCallback
+    public sealed partial class TimeZoneInfo :
+#nullable disable // see comment on String
+        IEquatable<TimeZoneInfo>,
+#nullable restore
+        ISerializable, IDeserializationCallback
     {
         private enum TimeZoneInfoResult
         {
@@ -765,9 +769,7 @@ namespace System
         /// Returns value equality. Equals does not compare any localizable
         /// String objects (DisplayName, StandardName, DaylightName).
         /// </summary>
-#pragma warning disable CS8614 // TODO-NULLABLE: Covariant interface arguments (https://github.com/dotnet/roslyn/issues/35817)
         public bool Equals(TimeZoneInfo? other) =>
-#pragma warning restore CS8614
             other != null &&
             string.Equals(_id, other._id, StringComparison.OrdinalIgnoreCase) &&
             HasSameRules(other);
