@@ -11,6 +11,10 @@ endif(CLR_CMAKE_PLATFORM_DARWIN)
 
 set(SOURCES ForeignThreadExceptionsNative.cpp)
 
+if(NOT WIN32)
+add_compile_options(-pthread)
+endif()
+
 # add the executable
 add_library (ForeignThreadExceptionsNative SHARED ${SOURCES})
 
