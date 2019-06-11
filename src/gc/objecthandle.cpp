@@ -79,7 +79,7 @@ void CALLBACK PromoteRefCounted(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pExtra
     WRAPPER_NO_CONTRACT;
     UNREFERENCED_PARAMETER(pExtraInfo);
 
-    // there are too many races when asychnronously scanning ref-counted handles so we no longer support it
+    // there are too many races when asynchronously scanning ref-counted handles so we no longer support it
     _ASSERTE(!((ScanContext*)lp1)->concurrent);
 
     LOG((LF_GC, LL_INFO1000, LOG_HANDLE_OBJECT_CLASS("", pObjRef, "causes promotion of ", *pObjRef)));
@@ -1167,7 +1167,7 @@ void Ref_CheckReachable(uint32_t condemned, uint32_t maxgen, uintptr_t lp1)
 // strong handle to refer to the secondary as this could case a cycle in the graph if the secondary somehow
 // pointed back to the primary. Can't use weak handle because that would not keep the secondary object alive.
 //
-// The result is that a dependenHandle has the EFFECT of 
+// The result is that a dependentHandle has the EFFECT of 
 //    * long weak handles in both the primary and secondary objects
 //    * a strong reference from the primary object to the secondary one
 //
