@@ -125,7 +125,7 @@ void QuickSort(uintptr_t *pData, int left, int right, PFNCOMPARE pfnCompare)
  *
  * Returns:
  *  <0 - handle P should be freed before handle Q
- *  =0 - handles are eqivalent for free order purposes
+ *  =0 - handles are equivalent for free order purposes
  *  >0 - handle Q should be freed before handle P
  *
  */
@@ -238,7 +238,7 @@ BOOL TableCanFreeSegmentNow(HandleTable *pTable, TableSegment *pSegment)
     _ASSERTE(threadId.IsCurrentThread());
 #endif // _DEBUG
 
-    // deterine if any segment is currently being scanned asynchronously
+    // determine if any segment is currently being scanned asynchronously
     TableSegment *pSegmentAsync = NULL;
 
     // do we have async info?
@@ -1315,7 +1315,7 @@ void SegmentTrimExcessPages(TableSegment *pSegment)
 /*
  * BlockAllocHandlesInMask
  *
- * Attempts to allocate the requested number of handes of the specified type,
+ * Attempts to allocate the requested number of handles of the specified type,
  * from the specified mask of the specified handle block.
  *
  * Returns the number of available handles actually allocated.
@@ -1475,7 +1475,7 @@ uint32_t BlockAllocHandlesInitial(TableSegment *pSegment, uint32_t uType, uint32
 /*
  * BlockAllocHandles
  *
- * Attempts to allocate the requested number of handes of the specified type,
+ * Attempts to allocate the requested number of handles of the specified type,
  * from the specified handle block.
  *
  * Returns the number of available handles actually allocated.
@@ -1533,7 +1533,7 @@ uint32_t BlockAllocHandles(TableSegment *pSegment, uint32_t uBlock, OBJECTHANDLE
 /*
  * SegmentAllocHandlesFromTypeChain
  *
- * Attempts to allocate the requested number of handes of the specified type,
+ * Attempts to allocate the requested number of handles of the specified type,
  * from the specified segment's block chain for the specified type.  This routine
  * ONLY scavenges existing blocks in the type chain.  No new blocks are committed.
  *
@@ -1617,7 +1617,7 @@ uint32_t SegmentAllocHandlesFromTypeChain(TableSegment *pSegment, uint32_t uType
 /*
  * SegmentAllocHandlesFromFreeList
  *
- * Attempts to allocate the requested number of handes of the specified type,
+ * Attempts to allocate the requested number of handles of the specified type,
  * by committing blocks from the free list to that type's type chain.
  *
  * Returns the number of available handles actually allocated.
@@ -1676,7 +1676,7 @@ uint32_t SegmentAllocHandlesFromFreeList(TableSegment *pSegment, uint32_t uType,
 /*
  * SegmentAllocHandles
  *
- * Attempts to allocate the requested number of handes of the specified type,
+ * Attempts to allocate the requested number of handles of the specified type,
  * from the specified segment.
  *
  * Returns the number of available handles actually allocated.
@@ -1714,7 +1714,7 @@ uint32_t SegmentAllocHandles(TableSegment *pSegment, uint32_t uType, OBJECTHANDL
 /*
  * TableAllocBulkHandles
  *
- * Attempts to allocate the requested number of handes of the specified type.
+ * Attempts to allocate the requested number of handles of the specified type.
  *
  * Returns the number of handles that were actually allocated.  This is always
  * the same as the number of handles requested except in out-of-memory conditions,
