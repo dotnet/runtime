@@ -1780,6 +1780,8 @@ OBJECTREF GetDependentHandleSecondary(OBJECTHANDLE handle)
 
 void PopulateHandleTableDacVars(GcDacVars* gcDacVars)
 {
+    UNREFERENCED_PARAMETER(gcDacVars);
+
     static_assert(offsetof(HandleTableMap, pBuckets) == offsetof(dac_handle_table_map, pBuckets), "handle table map DAC layout mismatch");
     static_assert(offsetof(HandleTableMap, pNext) == offsetof(dac_handle_table_map, pNext), "handle table map DAC layout mismatch");
     static_assert(offsetof(HandleTableMap, dwMaxIndex) == offsetof(dac_handle_table_map, dwMaxIndex), "handle table map DAC layout mismatch");
