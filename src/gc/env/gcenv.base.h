@@ -11,9 +11,6 @@
 #include <intrin.h>
 #endif // _MSC_VER
 
-#define REDHAWK_PALIMPORT extern "C"
-#define REDHAWK_PALAPI __stdcall
-
 #if !defined(_MSC_VER)
 #define _alloca alloca
 #endif //_MSC_VER
