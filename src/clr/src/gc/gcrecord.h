@@ -409,16 +409,16 @@ struct gc_history_global
     gc_reason reason;
     int pause_mode;
     uint32_t mem_pressure;
-    uint32_t global_mechanims_p;
+    uint32_t global_mechanisms_p;
 
     void set_mechanism_p (gc_global_mechanism_p mechanism)
     {
-        global_mechanims_p |= (1 << mechanism);
+        global_mechanisms_p |= (1 << mechanism);
     }
 
     BOOL get_mechanism_p (gc_global_mechanism_p mechanism)
     {
-        return (global_mechanims_p & (1 << mechanism));
+        return (global_mechanisms_p & (1 << mechanism));
     }
 
     void print();
