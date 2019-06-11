@@ -290,6 +290,8 @@ namespace System.Threading
 
         #region Queue implementation
 
+        public long ActiveCount { get; private set; }
+
         public bool UpdateTimer(TimerQueueTimer timer, uint dueTime, uint period)
         {
             int nowTicks = TickCount;
@@ -304,6 +306,7 @@ namespace System.Threading
                 // If the timer wasn't previously scheduled, now add it to the right list.
                 timer._short = shouldBeShort;
                 LinkTimer(timer);
+                ++ActiveCount;
             }
             else if (timer._short != shouldBeShort)
             {
@@ -379,6 +382,8 @@ namespace System.Threading
         {
             if (timer._dueTime != Timeout.UnsignedInfinite)
             {
+                --ActiveCount;
+                Debug.Assert(ActiveCount >= 0);
                 UnlinkTimer(timer);
                 timer._prev = null;
                 timer._next = null;
@@ -824,6 +829,26 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_PeriodTooLarge);
 
             return _timer._timer.Change((uint)dueTime, (uint)period);
+        }
+
+        /// <summary>
+        /// Gets the number of timers that are currently active. An active timer is registered to tick at some point in the
+        /// future, and has not yet been canceled.
+        /// </summary>
+        public static long ActiveCount
+        {
+            get
+            {
+                long count = 0;
+                foreach (TimerQueue queue in TimerQueue.Instances)
+                {
+                    lock (queue)
+                    {
+                        count += queue.ActiveCount;
+                    }
+                }
+                return count;
+            }
         }
 
         public bool Dispose(WaitHandle notifyObject)
