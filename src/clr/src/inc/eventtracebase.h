@@ -461,6 +461,7 @@ namespace ETW
 
         static VOID ProcessShutdown();
         static VOID ModuleRangeRundown();
+        static VOID SendOneTimeRundownEvents();
         static VOID StartRundown();
         static VOID EndRundown();
         static VOID EnumerateForCaptureState();
