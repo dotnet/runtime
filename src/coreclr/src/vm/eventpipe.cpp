@@ -449,9 +449,6 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
     // Log the process information event.
     LogProcessInformationEvent(*s_pEventSource);
 
-    // Log the runtime information event.
-    ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
-
     // Disable pSession tracing.
     s_config.Disable(*pSession, pEventPipeProviderCallbackDataQueue);
 
