@@ -867,7 +867,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     {
 #ifdef FEATURE_PERFMAP
         // Save the JIT'd method information so that perf can resolve JIT'd call frames.
-        PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode);
+        PerfMap::LogJITCompiledMethod(this, pCode, sizeOfCode, pConfig);
 #endif
     }
 
@@ -1141,6 +1141,67 @@ BOOL PrepareCodeConfig::MayUsePrecompiledCode()
 {
     LIMITED_METHOD_CONTRACT;
     return m_mayUsePrecompiledCode;
+}
+
+PrepareCodeConfig::JitOptimizationTier PrepareCodeConfig::GetJitOptimizationTier(
+    PrepareCodeConfig *config,
+    MethodDesc *methodDesc)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(methodDesc != nullptr);
+    _ASSERTE(config == nullptr || methodDesc == config->GetMethodDesc());
+
+    if (config != nullptr)
+    {
+        if (config->JitSwitchedToMinOpt())
+        {
+            return JitOptimizationTier::MinOptJitted;
+        }
+    #ifdef FEATURE_TIERED_COMPILATION
+        else if (config->JitSwitchedToOptimized())
+        {
+            _ASSERTE(methodDesc->IsEligibleForTieredCompilation());
+            _ASSERTE(config->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTierOptimized);
+            return JitOptimizationTier::Optimized;
+        }
+        else if (methodDesc->IsEligibleForTieredCompilation())
+        {
+            switch (config->GetCodeVersion().GetOptimizationTier())
+            {
+                case NativeCodeVersion::OptimizationTier0:
+                    return JitOptimizationTier::QuickJitted;
+
+                case NativeCodeVersion::OptimizationTier1:
+                    return JitOptimizationTier::OptimizedTier1;
+
+                case NativeCodeVersion::OptimizationTierOptimized:
+                    return JitOptimizationTier::Optimized;
+
+                default:
+                    UNREACHABLE();
+            }
+        }
+    #endif
+    }
+
+    return methodDesc->IsJitOptimizationDisabled() ? JitOptimizationTier::MinOptJitted : JitOptimizationTier::Optimized;
+}
+
+const char *PrepareCodeConfig::GetJitOptimizationTierStr(PrepareCodeConfig *config, MethodDesc *methodDesc)
+{
+    WRAPPER_NO_CONTRACT;
+
+    switch (GetJitOptimizationTier(config, methodDesc))
+    {
+        case JitOptimizationTier::Unknown: return "Unknown";
+        case JitOptimizationTier::MinOptJitted: return "MinOptJitted";
+        case JitOptimizationTier::Optimized: return "Optimized";
+        case JitOptimizationTier::QuickJitted: return "QuickJitted";
+        case JitOptimizationTier::OptimizedTier1: return "OptimizedTier1";
+
+        default:
+            UNREACHABLE();
+    }
 }
 
 #ifdef FEATURE_CODE_VERSIONING

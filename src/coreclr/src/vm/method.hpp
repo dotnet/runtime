@@ -2068,6 +2068,21 @@ public:
     void SetReadyToRunRejectedPrecompiledCode();
 
 #ifndef CROSSGEN_COMPILE
+public:
+    enum class JitOptimizationTier : UINT8
+    {
+        Unknown, // to identify older runtimes that would send this value
+        MinOptJitted,
+        Optimized,
+        QuickJitted,
+        OptimizedTier1,
+
+        Count
+    };
+
+    static JitOptimizationTier GetJitOptimizationTier(PrepareCodeConfig *config, MethodDesc *methodDesc);
+    static const char *GetJitOptimizationTierStr(PrepareCodeConfig *config, MethodDesc *methodDesc);
+
     bool JitSwitchedToMinOpt() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -2085,6 +2100,7 @@ public:
     }
 
 #ifdef FEATURE_TIERED_COMPILATION
+public:
     bool JitSwitchedToOptimized() const
     {
         LIMITED_METHOD_CONTRACT;
@@ -2102,6 +2118,7 @@ public:
     }
 #endif
 
+public:
     PrepareCodeConfig *GetNextInSameThread() const
     {
         LIMITED_METHOD_CONTRACT;

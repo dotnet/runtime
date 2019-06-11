@@ -6322,7 +6322,6 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     if(pMethodDesc->GetMethodTable_NoLogging())
         bIsGenericMethod = pMethodDesc->HasClassOrMethodInstantiation_NoLogging();
 
-    int jitOptimizationTier = -1;
     NativeCodeVersionId nativeCodeId = 0;
     ulMethodFlags = ulMethodFlags |
         (bHasSharedGenericCode ? ETW::MethodLog::MethodStructs::SharedGenericCode : 0) |
@@ -6340,59 +6339,16 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
             ulMethodFlags |= ETW::MethodLog::MethodStructs::ReadyToRunRejectedPrecompiledCode;
         }
 
-        if (pConfig->JitSwitchedToMinOpt())
-        {
-            jitOptimizationTier = (int)JitOptimizationTier::MinOptJitted;
-        }
-#ifdef FEATURE_TIERED_COMPILATION
-        else if (pConfig->JitSwitchedToOptimized())
-        {
-            _ASSERTE(pMethodDesc->IsEligibleForTieredCompilation());
-            _ASSERTE(pConfig->GetCodeVersion().GetOptimizationTier() == NativeCodeVersion::OptimizationTierOptimized);
-            jitOptimizationTier = (int)JitOptimizationTier::Optimized;
-        }
-        else if (pMethodDesc->IsEligibleForTieredCompilation())
-        {
-            switch (pConfig->GetCodeVersion().GetOptimizationTier())
-            {
-                case NativeCodeVersion::OptimizationTier0:
-                    jitOptimizationTier = (int)JitOptimizationTier::QuickJitted;
-                    break;
-
-                case NativeCodeVersion::OptimizationTier1:
-                    jitOptimizationTier = (int)JitOptimizationTier::OptimizedTier1;
-                    break;
-
-                case NativeCodeVersion::OptimizationTierOptimized:
-                    jitOptimizationTier = (int)JitOptimizationTier::Optimized;
-                    break;
-
-                default:
-                    UNREACHABLE();
-            }
-        }
-#endif
-
 #ifdef FEATURE_CODE_VERSIONING
         nativeCodeId = pConfig->GetCodeVersion().GetVersionId();
 #endif
     }
 
-    if (jitOptimizationTier < 0)
-    {
-        if (pMethodDesc->IsJitOptimizationDisabled())
-        {
-            jitOptimizationTier = (int)JitOptimizationTier::MinOptJitted;
-        }
-        else
-        {
-            jitOptimizationTier = (int)JitOptimizationTier::Optimized;
-        }
-    }
-    static_assert_no_msg((unsigned int)JitOptimizationTier::Count - 1 <= MethodFlagsJitOptimizationTierLowMask);
-    _ASSERTE((unsigned int)jitOptimizationTier <= MethodFlagsJitOptimizationTierLowMask);
+    unsigned int jitOptimizationTier = (unsigned int)PrepareCodeConfig::GetJitOptimizationTier(pConfig, pMethodDesc);
+    static_assert_no_msg((unsigned int)PrepareCodeConfig::JitOptimizationTier::Count - 1 <= MethodFlagsJitOptimizationTierLowMask);
+    _ASSERTE(jitOptimizationTier <= MethodFlagsJitOptimizationTierLowMask);
     _ASSERTE(((ulMethodFlags >> MethodFlagsJitOptimizationTierShift) & MethodFlagsJitOptimizationTierLowMask) == 0);
-    ulMethodFlags |= (unsigned int)jitOptimizationTier << MethodFlagsJitOptimizationTierShift;
+    ulMethodFlags |= jitOptimizationTier << MethodFlagsJitOptimizationTierShift;
 
     // Intentionally set the extent flags (cold vs. hot) only after all the other common
     // flags (above) have been set.
