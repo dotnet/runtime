@@ -16,7 +16,6 @@
   <!-- source-built packages -->
   <ItemGroup>
     <!-- arcade -->
-    <PackageReference Include="Microsoft.DotNet.GenAPI" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Configuration" Version="$(MicrosoftDotNetBuildTasksConfigurationPackageVersion)" />
@@ -24,6 +23,12 @@
 
     <!-- roslyn -->
     <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="$(MicrosoftNetCompilersToolsetVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <!-- excluded from offline portion of source build -->
+  <ItemGroup Condition="'$(OfflineBuild)' != 'true'">
+    <!-- arcade -->
+    <PackageReference Include="Microsoft.DotNet.GenAPI" Version="$(MicrosoftDotNetGenApiPackageVersion)" />
   </ItemGroup>
 
   <!-- excluded from source build -->

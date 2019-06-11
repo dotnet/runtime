@@ -125,6 +125,7 @@
 
   <Import Project="$(RepositoryEngineeringDir)referenceFromRuntime.targets" />
   <Import Project="$(RepositoryEngineeringDir)illink.targets" />
+  <Import Project="$(RepositoryEngineeringDir)notSupported.SourceBuild.targets" Condition="'$(DotNetBuildFromSource)' == 'true'" />
 
   <Target Name="ReportConfigurationErrorMessage"
           BeforeTargets="AssignProjectConfiguration"
