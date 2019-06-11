@@ -134,7 +134,7 @@ EventPipeThread::~EventPipeThread()
 {
     LIMITED_METHOD_CONTRACT;
 #ifdef DEBUG
-    for (int i = 0; i < EventPipe::MaxNumberOfSessions; i++)
+    for (uint32_t i = 0; i < EventPipe::MaxNumberOfSessions; i++)
     {
         _ASSERTE(m_sessionState[i] == NULL);
     }

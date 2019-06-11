@@ -564,7 +564,7 @@ void EventPipeBufferManager::WriteAllBuffersToFileV4(EventPipeFile *pFile, LARGE
     //                    Time --->
     //   Thread A events: A_1     A_4     A_9 A_10 A_11 A_12 A_13      A_15
     //   Thread B events:     B_2     B_6                         B_14      B_20
-    //                                             /|\
+    //                                             /|\.
     //                                              |
     //                                            Assume sequence point was triggered here
     // Then we promise that events A_1, A_4, A_9, A_10, B_2_ and B_6 will be written in one or more event blocks,
