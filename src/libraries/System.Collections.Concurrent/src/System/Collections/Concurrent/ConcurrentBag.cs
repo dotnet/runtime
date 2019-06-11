@@ -714,7 +714,7 @@ namespace System.Collections.Concurrent
                     // >= _tailIndex, then the queue is about to be empty.  This does mean, though, that while holding the lock,
                     // it is possible to observe Count == 1 but IsEmpty == true.  As such, we simply need to avoid doing any operation
                     // while the bag is frozen that requires those values to be consistent.
-                    return _headIndex >= _tailIndex;
+                    return _headIndex - _tailIndex >= 0;
                 }
             }
 
@@ -751,7 +751,7 @@ namespace System.Collections.Concurrent
                             // for the head to end up > than the tail, since you can't set any more bits than all of them.
                             _headIndex = _headIndex & _mask;
                             _tailIndex = tail = tail & _mask;
-                            Debug.Assert(_headIndex <= _tailIndex);
+                            Debug.Assert(_headIndex - _tailIndex <= 0);
 
                             Interlocked.Exchange(ref _currentOp, (int)Operation.Add); // ensure subsequent reads aren't reordered before this
                         }
@@ -774,7 +774,7 @@ namespace System.Collections.Concurrent
                     //   take the lock, and another steal couldn't then increment the header further because it'll see that
                     //   there's currently an add operation in progress and wait until the add completes.
                     int head = _headIndex; // read after _currentOp set to Add
-                    if (!_frozen && head < tail - 1 & tail < (head + _mask))
+                    if (!_frozen && (head - (tail - 1) < 0) && (tail - (head + _mask) < 0))
                     {
                         _array[tail & _mask] = item;
                         _tailIndex = tail + 1;
@@ -849,7 +849,7 @@ namespace System.Collections.Concurrent
                 lock (this) // synchronize with steals
                 {
                     // If the queue isn't empty, reset the state to clear out all items.
-                    if (_headIndex < _tailIndex)
+                    if (_headIndex - _tailIndex < 0)
                     {
                         _headIndex = _tailIndex = StartIndex;
                         _addTakeCount = _stealCount = 0;
@@ -865,7 +865,7 @@ namespace System.Collections.Concurrent
                 Debug.Assert(Environment.CurrentManagedThreadId == _ownerThreadId);
 
                 int tail = _tailIndex;
-                if (_headIndex >= tail)
+                if (_headIndex - tail >= 0)
                 {
                     result = default(T)!;
                     return false;
@@ -885,7 +885,7 @@ namespace System.Collections.Concurrent
                     // Note that we use _headIndex < tail rather than _headIndex <= tail to account
                     // for stealing peeks, which don't increment _headIndex, and which could observe
                     // the written default(T) in a race condition to peek at the element.
-                    if (!_frozen && _headIndex < tail)
+                    if (!_frozen && (_headIndex - tail < 0))
                     {
                         int idx = tail & _mask;
                         result = _array[idx];
@@ -898,7 +898,7 @@ namespace System.Collections.Concurrent
                         // Interaction with steals: 0 or 1 elements left.
                         _currentOp = (int)Operation.None; // set back to None to avoid a deadlock
                         Monitor.Enter(this, ref lockTaken);
-                        if (_headIndex <= tail)
+                        if (_headIndex - tail <= 0)
                         {
                             // Element still available. Take it.
                             int idx = tail & _mask;
@@ -934,7 +934,7 @@ namespace System.Collections.Concurrent
                 Debug.Assert(Environment.CurrentManagedThreadId == _ownerThreadId);
 
                 int tail = _tailIndex;
-                if (_headIndex < tail)
+                if (_headIndex - tail < 0)
                 {
                     // It is possible to enable lock-free peeks, following the same general approach
                     // that's used in TryLocalPop.  However, peeks are more complicated as we can't
@@ -947,7 +947,7 @@ namespace System.Collections.Concurrent
                     // for now we'll use the simpler/safer code.
                     lock (this)
                     {
-                        if (_headIndex < tail)
+                        if (_headIndex - tail < 0)
                         {
                             result = _array[(tail - 1) & _mask];
                             return true;
@@ -973,7 +973,7 @@ namespace System.Collections.Concurrent
                         // is in progress, as add operations need to accurately count transitions
                         // from empty to non-empty, and they can only do that if there are no concurrent
                         // steal operations happening at the time.
-                        if (head < _tailIndex - 1 && _currentOp != (int)Operation.Add)
+                        if ((head - (_tailIndex - 2) >= 0) && _currentOp == (int)Operation.Add)
                         {
                             var spinner = new SpinWait();
                             do

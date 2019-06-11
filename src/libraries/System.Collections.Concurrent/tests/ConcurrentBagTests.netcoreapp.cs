@@ -70,7 +70,7 @@ namespace System.Collections.Concurrent.Tests
         public static void Clear_ConcurrentUsage_NoExceptions(int threadsCount, int itemsPerThread)
         {
             var bag = new ConcurrentBag<int>();
-            Task.WaitAll((from i in Enumerable.Range(0, threadsCount) select Task.Run(() =>
+            Task.WaitAll((from i in Enumerable.Range(0, threadsCount) select Task.Factory.StartNew(() =>
             {
                 var random = new Random();
                 for (int j = 0; j < itemsPerThread; j++)
@@ -85,7 +85,7 @@ namespace System.Collections.Concurrent.Tests
                         case 4: bag.ToArray(); break;
                     }
                 }
-            })).ToArray());
+            }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray());
         }
     }
 }
