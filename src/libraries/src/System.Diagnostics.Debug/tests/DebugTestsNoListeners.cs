@@ -121,8 +121,8 @@ namespace System.Diagnostics.Tests
         [Fact]
         public void Print()
         {
-            VerifyLogged(() => Debug.Print("logged"), "logged");
-            VerifyLogged(() => Debug.Print("logged {0}", 5), "logged 5");
+            VerifyLogged(() => Debug.Print("logged"), "logged" + Environment.NewLine);
+            VerifyLogged(() => Debug.Print("logged {0}", 5), "logged 5" + Environment.NewLine);
 
             GoToNextLine();
         }
