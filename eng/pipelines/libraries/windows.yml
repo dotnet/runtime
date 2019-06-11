@@ -50,15 +50,6 @@ jobs:
               _architecture: x64
               _framework: uap
               _helixQueues: $(uapNetfxQueues)
-
-          # Run arm on the matrix or in Outerloop
-          ${{ if or(eq(parameters.fullMatrix, 'true'), or(eq(parameters.testScope, 'outerloop'), eq(parameters.testScope, 'all'))) }}:
-            arm64_Release:
-              _BuildConfig: Release
-              _architecture: arm64
-              _framework: netcoreapp
-              _helixQueues: $(windowsArmQueue)
-              _publishTests: true
           
           # Full test matrix
           ${{ if eq(parameters.fullMatrix, 'true') }}:
@@ -102,6 +93,13 @@ jobs:
               _framework: uap
               _helixQueues: $(uapNetfxQueues)
 
+            arm64_Release:
+              _BuildConfig: Release
+              _architecture: arm64
+              _framework: netcoreapp
+              _helixQueues: $(windowsArmQueue)
+              _publishTests: true
+
       pool:
         name: Hosted VS2017
 
@@ -126,7 +124,6 @@ jobs:
         displayName: Packaging All Configurations
         strategy:
           matrix:
-            # PR Validation Matrix
             ${{ if eq(parameters.fullMatrix, 'false') }}:
               x64_Debug:
                 _BuildConfig: Debug
@@ -134,7 +131,6 @@ jobs:
                 _framework: allConfigurations
                 _helixQueues: $(allConfigurationsQueues)
 
-            # Official Build Matrix
             ${{ if eq(parameters.fullMatrix, 'true') }}:
               x64_Release:
                 _BuildConfig: Release
@@ -166,23 +162,23 @@ jobs:
             displayName: Build Packages and Tests
 
       # Legs without HELIX testing
-    - ${{ if eq(parameters.fullMatrix, 'true') }}:
-      - job: WindowsNoTest
-        displayName: Windows
-        strategy:
-          matrix:
-            arm_Release:
-              _BuildConfig: Release
-              _architecture: arm
-              _framework: netcoreapp
+      - ${{ if eq(parameters.fullMatrix, 'true') }}:
+        - job: WindowsNoTest
+          displayName: Windows
+          strategy:
+            matrix:
+              arm_Release:
+                _BuildConfig: Release
+                _architecture: arm
+                _framework: netcoreapp
 
-            UAP_arm_Release:
-              _BuildConfig: Release
-              _architecture: arm
-              _framework: uap
+              UAP_arm_Release:
+                _BuildConfig: Release
+                _architecture: arm
+                _framework: uap
 
-        pool:
-          name: Hosted VS2017
+          pool:
+            name: Hosted VS2017
 
-        submitToHelix: false
-        buildExtraArguments: /p:RuntimeOS=win10
+          submitToHelix: false
+          buildExtraArguments: /p:RuntimeOS=win10
