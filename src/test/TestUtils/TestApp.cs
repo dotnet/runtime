@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.CoreSetup.Test.HostActivation;
 using System.IO;
 
 namespace Microsoft.DotNet.CoreSetup.Test
@@ -30,6 +31,14 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             AssemblyName = source.AssemblyName;
             LoadAssets();
+        }
+
+        public static TestApp CreateEmpty(string name)
+        {
+            string location = GetNewTestArtifactPath(name);
+            FileUtils.EnsureDirectoryExists(location);
+
+            return new TestApp(location);
         }
 
         public TestApp Copy()

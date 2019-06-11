@@ -29,33 +29,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public TestApp App { get; set; }
         }
 
-        public class RuntimeFileBuilder
+        public abstract class FileBuilder
         {
             public string Path { get; set; }
-            public string AssemblyVersion { get; set; }
-            public string FileVersion { get; set; }
 
             public string SourcePath { get; set; }
             public string FileOnDiskPath { get; set; }
 
-            public RuntimeFileBuilder(string path)
+            public FileBuilder(string path)
             {
                 Path = path;
             }
 
-            public RuntimeFileBuilder CopyFromFile(string sourcePath)
-            {
-                SourcePath = sourcePath;
-                return this;
-            }
-
-            public RuntimeFileBuilder WithFileOnDiskPath(string relativePath)
-            {
-                FileOnDiskPath = relativePath;
-                return this;
-            }
-
-            internal RuntimeFile Build(BuildContext context)
+            internal void Build(BuildContext context)
             {
                 string path = ToDiskPath(FileOnDiskPath ?? Path);
                 string absolutePath = System.IO.Path.Combine(context.App.Location, path);
@@ -64,17 +50,93 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     FileUtils.EnsureFileDirectoryExists(absolutePath);
                     File.Copy(SourcePath, absolutePath);
                 }
-                else
+                else if (FileOnDiskPath == null || FileOnDiskPath.Length >= 0)
                 {
                     FileUtils.CreateEmptyFile(absolutePath);
                 }
-
-                return new RuntimeFile(Path, AssemblyVersion, FileVersion);
             }
 
-            private static string ToDiskPath(string assetPath)
+            protected static string ToDiskPath(string assetPath)
             {
                 return assetPath.Replace('/', System.IO.Path.DirectorySeparatorChar);
+            }
+        }
+
+        public abstract class FileBuilder<T> : FileBuilder
+            where T : FileBuilder
+        {
+            public FileBuilder(string path)
+                : base(path)
+            {
+            }
+
+            public T CopyFromFile(string sourcePath)
+            {
+                SourcePath = sourcePath;
+                return this as T;
+            }
+
+            public T WithFileOnDiskPath(string relativePath)
+            {
+                FileOnDiskPath = relativePath;
+                return this as T;
+            }
+
+            public T NotOnDisk()
+            {
+                FileOnDiskPath = string.Empty;
+                return this as T;
+            }
+        }
+
+        public class RuntimeFileBuilder : FileBuilder<RuntimeFileBuilder>
+        {
+            public string AssemblyVersion { get; set; }
+            public string FileVersion { get; set; }
+
+            public RuntimeFileBuilder(string path)
+                : base(path)
+            {
+            }
+
+            public RuntimeFileBuilder WithVersion(string assemblyVersion, string fileVersion)
+            {
+                AssemblyVersion = assemblyVersion;
+                FileVersion = fileVersion;
+                return this;
+            }
+
+            internal new RuntimeFile Build(BuildContext context)
+            {
+                base.Build(context);
+                return new RuntimeFile(Path, AssemblyVersion, FileVersion);
+            }
+        }
+
+        public class ResourceAssemblyBuilder : FileBuilder<ResourceAssemblyBuilder>
+        {
+            public string Locale { get; set; }
+
+            public ResourceAssemblyBuilder(string path)
+                : base(path)
+            {
+                int i = path.IndexOf('/');
+                if (i > 0)
+                {
+                    Locale = path.Substring(0, i);
+                }
+            }
+
+            public ResourceAssemblyBuilder WithLocale(string locale)
+            {
+                Locale = locale;
+                return this;
+            }
+
+            internal new ResourceAssembly Build(BuildContext context)
+            {
+                base.Build(context);
+                return new ResourceAssembly(Path, Locale);
             }
         }
 
@@ -103,9 +165,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 return this;
             }
 
-            public RuntimeAssetGroupBuilder WithAsset(string path)
+            public RuntimeAssetGroupBuilder WithAsset(string path, Action<RuntimeFileBuilder> customizer = null)
             {
-                return WithAsset(new RuntimeFileBuilder(path));
+                RuntimeFileBuilder runtimeFile = new RuntimeFileBuilder(path);
+                customizer?.Invoke(runtimeFile);
+                return WithAsset(runtimeFile);
             }
 
             internal RuntimeAssetGroup Build(BuildContext context)
@@ -136,6 +200,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             public List<RuntimeAssetGroupBuilder> AssemblyGroups { get; } = new List<RuntimeAssetGroupBuilder>();
             public List<RuntimeAssetGroupBuilder> NativeLibraryGroups { get; } = new List<RuntimeAssetGroupBuilder>();
+            public List<ResourceAssemblyBuilder> ResourceAssemblies { get; } = new List<ResourceAssemblyBuilder>();
 
             public RuntimeLibraryBuilder(RuntimeLibraryType type, string name, string version)
             {
@@ -166,6 +231,14 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 return this;
             }
 
+            public RuntimeLibraryBuilder WithResourceAssembly(string path, Action<ResourceAssemblyBuilder> customizer = null)
+            {
+                ResourceAssemblyBuilder resourceAssembly = new ResourceAssemblyBuilder(path);
+                customizer?.Invoke(resourceAssembly);
+                ResourceAssemblies.Add(resourceAssembly);
+                return this;
+            }
+
             internal RuntimeLibrary Build(BuildContext context)
             {
                 return new RuntimeLibrary(
@@ -175,7 +248,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                     string.Empty,
                     AssemblyGroups.Select(g => g.Build(context)).ToList(),
                     NativeLibraryGroups.Select(g => g.Build(context)).ToList(),
-                    Enumerable.Empty<ResourceAssembly>(),
+                    ResourceAssemblies.Select(ra => ra.Build(context)).ToList(),
                     Enumerable.Empty<Dependency>(),
                     false);
             }
