@@ -801,7 +801,7 @@ public:
         DWORD dwMethodDescLocalNum = (DWORD)-1;
 
         // Notify the profiler of call out of the runtime
-        if (!SF_IsReverseCOMStub(m_dwStubFlags) && (CORProfilerTrackTransitions() || SF_IsNGENedStubForProfiling(m_dwStubFlags)))
+        if (!SF_IsReverseCOMStub(m_dwStubFlags) && (CORProfilerTrackTransitions() || (!IsReadyToRunCompilation() && SF_IsNGENedStubForProfiling(m_dwStubFlags))))
         {
             dwMethodDescLocalNum = m_slIL.EmitProfilerBeginTransitionCallback(pcsDispatch, m_dwStubFlags);
             _ASSERTE(dwMethodDescLocalNum != (DWORD)-1);
@@ -2295,27 +2295,23 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
 #endif // FEATURE_COMINTEROP
             {
                 EmitLoadStubContext(pcsEmit, dwStubFlags);
+                // pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_NDIRECT_TARGET, 1, 1);
+                pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
+                pcsEmit->EmitADD();
 
+                if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
                 {
-                    // Perf: inline the helper for now
-                    //pcsEmit->EmitCALL(METHOD__STUBHELPERS__GET_NDIRECT_TARGET, 1, 1);
-                    pcsEmit->EmitLDC(offsetof(NDirectMethodDesc, ndirect.m_pWriteableData));
-                    pcsEmit->EmitADD();
-
-                    if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
-                    {
-                        pcsEmit->EmitDUP();
-                    }
-
-                    pcsEmit->EmitLDIND_I();
-
-                    if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
-                    {
-                        pcsEmit->EmitADD();
-                    }
-
-                    pcsEmit->EmitLDIND_I();
+                    pcsEmit->EmitDUP();
                 }
+
+                pcsEmit->EmitLDIND_I();
+
+                if (decltype(NDirectMethodDesc::ndirect.m_pWriteableData)::isRelative)
+                {
+                    pcsEmit->EmitADD();
+                }
+
+                pcsEmit->EmitLDIND_I();
             }
 #ifdef FEATURE_COMINTEROP
             else
