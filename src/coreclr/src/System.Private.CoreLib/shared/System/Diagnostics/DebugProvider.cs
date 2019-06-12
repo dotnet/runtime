@@ -99,7 +99,7 @@ namespace System.Diagnostics
             int indentCount = Debug.IndentSize * Debug.IndentLevel;
             if (_indentString?.Length == indentCount)
             {
-                return _indentString!; // TODO-NULLABLE: Null conditional access (https://github.com/dotnet/roslyn/issues/34942)
+                return _indentString;
             }
             return _indentString = new string(' ', indentCount);
         }

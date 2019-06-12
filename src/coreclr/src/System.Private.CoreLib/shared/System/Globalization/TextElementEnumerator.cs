@@ -50,7 +50,7 @@ namespace System.Globalization
             return true;
         }
 
-#pragma warning disable CS8612 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
+#pragma warning disable CS8612 // TODO-NULLABLE: Covariance in interfaces (https://github.com/dotnet/roslyn/issues/35227)
         public object Current => GetTextElement();
 #pragma warning restore CS8612
 
