@@ -516,6 +516,13 @@ namespace System.Runtime.CompilerServices
             m_task = box; // important: this must be done before storing stateMachine into box.StateMachine!
             box.StateMachine = stateMachine;
             box.Context = currentContext;
+
+            // Finally, log the creation of the state machine box object / task for this async method.
+            if (AsyncCausalityTracer.LoggingOn)
+            {
+                AsyncCausalityTracer.TraceOperationCreation(box, "Async: " + stateMachine.GetType().Name);
+            }
+
             return box;
         }
 
