@@ -253,6 +253,7 @@ namespace System.Text.Json.Tests
                 if (json.TokenType == JsonTokenType.Number)
                 {
                     Assert.False(json.TryGetInt32(out int value));
+                    Assert.Equal(default, value);
                     Assert.True(json.TryGetDouble(out double doubleValue));
                     Assert.Equal(expected, doubleValue);
 
@@ -291,6 +292,7 @@ namespace System.Text.Json.Tests
                 if (json.TokenType == JsonTokenType.Number)
                 {
                     Assert.False(json.TryGetInt64(out long value));
+                    Assert.Equal(default, value);
                     Assert.True(json.TryGetDouble(out double doubleValue));
                     Assert.Equal(expected, doubleValue);
 
@@ -330,6 +332,7 @@ namespace System.Text.Json.Tests
                 if (json.TokenType == JsonTokenType.Number)
                 {
                     Assert.False(json.TryGetUInt32(out uint value));
+                    Assert.Equal(default, value);
                     Assert.True(json.TryGetDouble(out double doubleValue));
                     Assert.Equal(expected, doubleValue);
 
@@ -368,6 +371,7 @@ namespace System.Text.Json.Tests
                 if (json.TokenType == JsonTokenType.Number)
                 {
                     Assert.False(json.TryGetUInt64(out ulong value));
+                    Assert.Equal(default, value);
                     Assert.True(json.TryGetDouble(out double doubleValue));
                     Assert.Equal(expected, doubleValue);
 
@@ -453,6 +457,7 @@ namespace System.Text.Json.Tests
                 if (json.TokenType == JsonTokenType.Number)
                 {
                     Assert.False(json.TryGetDecimal(out decimal value));
+                    Assert.Equal(default, value);
                     Assert.True(json.TryGetDouble(out double doubleValue));
                     Assert.Equal(expected, doubleValue);
 
@@ -1147,6 +1152,7 @@ namespace System.Text.Json.Tests
             while (json.Read())
             {
                 Assert.False(json.TryGetDateTime(out DateTime actualDateTime));
+                Assert.Equal(default, actualDateTime);
 
                 try
                 {
@@ -1170,6 +1176,7 @@ namespace System.Text.Json.Tests
                 if (json.TokenType == JsonTokenType.String)
                 {
                     Assert.False(json.TryGetDateTimeOffset(out DateTimeOffset actualDateTime));
+                    Assert.Equal(default, actualDateTime);
 
                     try
                     {
@@ -1241,7 +1248,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(JsonTokenType.String, json.TokenType);
 
             Assert.False(json.TryGetGuid(out Guid actual));
-            Assert.Equal(Guid.Empty, actual);
+            Assert.Equal(default, actual);
 
             JsonTestHelper.AssertThrows<FormatException>(json, (jsonReader) => jsonReader.GetGuid());
         }

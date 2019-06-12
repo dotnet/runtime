@@ -389,7 +389,15 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return Utf8Parser.TryParse(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
+            if (Utf8Parser.TryParse(span, out int tmp, out int bytesConsumed)
+                && span.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = 0;
+            return false;
         }
 
         /// <summary>
@@ -410,7 +418,15 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return Utf8Parser.TryParse(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
+            if (Utf8Parser.TryParse(span, out long tmp, out int bytesConsumed) 
+                && span.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = 0;
+            return false;
         }
 
         /// <summary>
@@ -432,7 +448,15 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return Utf8Parser.TryParse(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
+            if (Utf8Parser.TryParse(span, out uint tmp, out int bytesConsumed)
+                && span.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = 0;
+            return false;
         }
 
         /// <summary>
@@ -454,7 +478,15 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return Utf8Parser.TryParse(span, out value, out int bytesConsumed) && span.Length == bytesConsumed;
+            if (Utf8Parser.TryParse(span, out ulong tmp, out int bytesConsumed) 
+                && span.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = 0;
+            return false;
         }
 
         /// <summary>
@@ -475,7 +507,15 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return Utf8Parser.TryParse(span, out value, out int bytesConsumed, _numberFormat) && span.Length == bytesConsumed;
+            if (Utf8Parser.TryParse(span, out float tmp, out int bytesConsumed, _numberFormat) 
+                && span.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = 0;
+            return false;
         }
 
         /// <summary>
@@ -496,7 +536,15 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return Utf8Parser.TryParse(span, out value, out int bytesConsumed, _numberFormat) && span.Length == bytesConsumed;
+            if (Utf8Parser.TryParse(span, out double tmp, out int bytesConsumed, _numberFormat)
+                && span.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = 0;
+            return false;
         }
 
         /// <summary>
@@ -517,7 +565,15 @@ namespace System.Text.Json
             }
 
             ReadOnlySpan<byte> span = HasValueSequence ? ValueSequence.ToArray() : ValueSpan;
-            return Utf8Parser.TryParse(span, out value, out int bytesConsumed, _numberFormat) && span.Length == bytesConsumed;
+            if (Utf8Parser.TryParse(span, out decimal tmp, out int bytesConsumed, _numberFormat)
+                && span.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = 0;
+            return false;
         }
 
         /// <summary>
@@ -573,10 +629,16 @@ namespace System.Text.Json
 
             Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
 
+            if (span.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
+                && JsonHelpers.TryParseAsISO(span, out DateTime tmp, out int bytesConsumed)
+                && span.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
             value = default;
-            return (span.Length <= JsonConstants.MaximumDateTimeOffsetParseLength)
-                && JsonHelpers.TryParseAsISO(span, out value, out int bytesConsumed)
-                && span.Length == bytesConsumed;
+            return false;
         }
 
         /// <summary>
@@ -632,10 +694,16 @@ namespace System.Text.Json
 
             Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
 
+            if (span.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
+                && JsonHelpers.TryParseAsISO(span, out DateTimeOffset tmp, out int bytesConsumed)
+                && span.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
             value = default;
-            return (span.Length <= JsonConstants.MaximumDateTimeOffsetParseLength)
-                && JsonHelpers.TryParseAsISO(span, out value, out int bytesConsumed)
-                && span.Length == bytesConsumed;
+            return false;
         }
 
         /// <summary>
@@ -691,8 +759,15 @@ namespace System.Text.Json
 
             Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
 
+            if (span.Length == JsonConstants.MaximumFormatGuidLength
+                && Utf8Parser.TryParse(span, out Guid tmp, out _, 'D'))
+            {
+                value = tmp;
+                return true;
+            }
+
             value = default;
-            return (span.Length == JsonConstants.MaximumFormatGuidLength) && Utf8Parser.TryParse(span, out value, out _, 'D');
+            return false;
         }
     }
 }

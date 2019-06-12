@@ -391,7 +391,7 @@ namespace System.Text.Json
                 return true;
             }
 
-            value = default;
+            value = 0;
             return false;
         }
 
@@ -413,7 +413,7 @@ namespace System.Text.Json
                 return true;
             }
 
-            value = default;
+            value = 0;
             return false;
         }
 
@@ -435,7 +435,7 @@ namespace System.Text.Json
                 return true;
             }
 
-            value = default;
+            value = 0;
             return false;
         }
 
@@ -457,7 +457,7 @@ namespace System.Text.Json
                 return true;
             }
 
-            value = default;
+            value = 0;
             return false;
         }
 
@@ -481,7 +481,7 @@ namespace System.Text.Json
                 return true;
             }
 
-            value = default;
+            value = 0;
             return false;
         }
 
@@ -505,7 +505,7 @@ namespace System.Text.Json
                 return true;
             }
 
-            value = default;
+            value = 0;
             return false;
         }
 
@@ -529,7 +529,7 @@ namespace System.Text.Json
                 return true;
             }
 
-            value = default;
+            value = 0;
             return false;
         }
 
@@ -558,10 +558,16 @@ namespace System.Text.Json
 
             Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
 
+            if (segment.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
+                && JsonHelpers.TryParseAsISO(segment, out DateTime tmp, out int bytesConsumed)
+                && segment.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
             value = default;
-            return (segment.Length <= JsonConstants.MaximumDateTimeOffsetParseLength)
-                && JsonHelpers.TryParseAsISO(segment, out value, out int bytesConsumed)
-                && segment.Length == bytesConsumed;
+            return false;
         }
 
         internal bool TryGetValue(int index, out DateTimeOffset value)
@@ -589,10 +595,16 @@ namespace System.Text.Json
 
             Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
 
+            if (segment.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
+                && JsonHelpers.TryParseAsISO(segment, out DateTimeOffset tmp, out int bytesConsumed)
+                && segment.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
             value = default;
-            return (segment.Length <= JsonConstants.MaximumDateTimeOffsetParseLength)
-                && JsonHelpers.TryParseAsISO(segment, out value, out int bytesConsumed)
-                && segment.Length == bytesConsumed;
+            return false;
         }
 
         internal bool TryGetValue(int index, out Guid value)
@@ -620,8 +632,15 @@ namespace System.Text.Json
 
             Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
 
+            if (segment.Length == JsonConstants.MaximumFormatGuidLength
+                && Utf8Parser.TryParse(segment, out Guid tmp, out _, 'D'))
+            {
+                value = tmp;
+                return true;
+            }
+
             value = default;
-            return (segment.Length == JsonConstants.MaximumFormatGuidLength) && Utf8Parser.TryParse(segment, out value, out _, 'D');
+            return false;
         }
 
         internal string GetRawValueAsString(int index)
