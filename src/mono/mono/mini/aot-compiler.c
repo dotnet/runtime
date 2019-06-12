@@ -12154,7 +12154,7 @@ load_profile_file (MonoAotCompile *acfg, char *filename)
 	int res, len, version;
 	char magic [32];
 
-	infile = fopen (filename, "r");
+	infile = fopen (filename, "rb");
 	if (!infile) {
 		fprintf (stderr, "Unable to open file '%s': %s.\n", filename, strerror (errno));
 		exit (1);
