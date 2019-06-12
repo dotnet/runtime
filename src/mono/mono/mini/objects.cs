@@ -860,6 +860,29 @@ class Tests {
 		return 0;
 	}
 
+	public static string[] StringValues = { "Val1", "Val2", "Val3" };
+
+	public static IEnumerable<string> GetStringValues ()
+	{
+		foreach (string val in StringValues)
+			yield return val;
+	}
+
+	public static int test_0_cast_special_iface () {
+		try {
+			IEnumerable<string> strings = GetStringValues ();
+			IList<string> stringIList = (IList<string>) strings;
+
+			// No exception thrown. Maybe it's an actual IList ?
+			// Make sure it's not bluffing
+			if (!"Val2".Equals (stringIList [1]))
+				return 1;
+		} catch (InvalidCastException) {
+		}
+
+		return 0;
+	}
+
 	private static int[] daysmonthleap = { 0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
 	private static int AbsoluteDays (int year, int month, int day)

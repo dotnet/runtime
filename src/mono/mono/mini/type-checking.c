@@ -357,9 +357,8 @@ mini_emit_castclass (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClass *kl
 }
 
 static void
-emit_special_array_iface_check (MonoCompile *cfg, MonoInst *src, MonoClass* klass, int vtable_reg, MonoBasicBlock *true_bb, int context_used)
+emit_special_array_iface_check (MonoCompile *cfg, MonoInst *src, MonoClass* klass, int vtable_reg, MonoBasicBlock *not_an_array, MonoBasicBlock *true_bb, int context_used)
 {
-	MonoBasicBlock *not_an_array;
 	int rank_reg;
 
 	if (!m_class_is_array_special_interface (klass))
@@ -367,16 +366,15 @@ emit_special_array_iface_check (MonoCompile *cfg, MonoInst *src, MonoClass* klas
 
 	rank_reg = alloc_ireg (cfg);
 
-	NEW_BBLOCK (cfg, not_an_array);
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, rank));
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rank_reg, 1);
-	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, not_an_array);
+	if (not_an_array)
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, not_an_array);
+	else
+		MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");
 
 	emit_castclass_with_cache_no_details (cfg, src, klass, context_used);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, true_bb);
-
-	MONO_START_BB (cfg, not_an_array);
-
 }
 
 /*
@@ -411,9 +409,11 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 		int tmp_reg = alloc_preg (cfg);
 #ifndef DISABLE_REMOTING
 		MonoBasicBlock *interface_fail_bb;
+		MonoBasicBlock *array_fail_bb;
 		int klass_reg = alloc_preg (cfg);
 
 		NEW_BBLOCK (cfg, interface_fail_bb);
+		NEW_BBLOCK (cfg, array_fail_bb);
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		mini_emit_iface_cast (cfg, tmp_reg, klass, interface_fail_bb, is_null_bb);
@@ -422,7 +422,10 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 		MONO_START_BB (cfg, interface_fail_bb);
 
 		//Check if it's a rank zero array and emit fallback casting
-		emit_special_array_iface_check (cfg, src, klass, tmp_reg, is_null_bb, context_used);
+		emit_special_array_iface_check (cfg, src, klass, tmp_reg, array_fail_bb, is_null_bb, context_used);
+
+		// array check failed
+		MONO_START_BB (cfg, array_fail_bb);
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 
@@ -451,7 +454,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 			MONO_START_BB (cfg, interface_fail_bb);
 
 			//Check if it's a rank zero array and emit fallback casting
-			emit_special_array_iface_check (cfg, src, klass, tmp_reg, is_null_bb, context_used);
+			emit_special_array_iface_check (cfg, src, klass, tmp_reg, NULL, is_null_bb, context_used);
 		} else {
 			mini_emit_iface_cast (cfg, tmp_reg, klass, NULL, NULL);
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
