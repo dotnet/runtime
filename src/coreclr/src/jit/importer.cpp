@@ -13787,8 +13787,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 constraintCall = (prefixFlags & PREFIX_CONSTRAINED) != 0;
 
                 bool newBBcreatedForTailcallStress;
+                bool passedStressModeValidation;
 
                 newBBcreatedForTailcallStress = false;
+                passedStressModeValidation    = true;
 
                 if (compIsForInlining())
                 {
@@ -13816,22 +13818,41 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                             (OPCODE)getU1LittleEndian(codeAddr + sz) == CEE_RET; // Next opcode is a CEE_RET
 
                         bool hasTailPrefix = (prefixFlags & PREFIX_TAILCALL_EXPLICIT);
-                        if (newBBcreatedForTailcallStress && !hasTailPrefix && // User hasn't set "tail." prefix yet.
-                            verCheckTailCallConstraint(opcode, &resolvedToken,
-                                                       constraintCall ? &constrainedResolvedToken : nullptr,
-                                                       true) // Is it legal to do tailcall?
-                            )
+                        if (newBBcreatedForTailcallStress && !hasTailPrefix)
                         {
-                            CORINFO_METHOD_HANDLE declaredCalleeHnd = callInfo.hMethod;
-                            bool                  isVirtual         = (callInfo.kind == CORINFO_VIRTUALCALL_STUB) ||
-                                             (callInfo.kind == CORINFO_VIRTUALCALL_VTABLE);
-                            CORINFO_METHOD_HANDLE exactCalleeHnd = isVirtual ? nullptr : declaredCalleeHnd;
-                            if (info.compCompHnd->canTailCall(info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd,
-                                                              hasTailPrefix)) // Is it legal to do tailcall?
+                            // Do a more detailed evaluation of legality
+                            const bool returnFalseIfInvalid = true;
+                            const bool passedConstraintCheck =
+                                verCheckTailCallConstraint(opcode, &resolvedToken,
+                                                           constraintCall ? &constrainedResolvedToken : nullptr,
+                                                           returnFalseIfInvalid);
+
+                            if (passedConstraintCheck)
                             {
-                                // Stress the tailcall.
-                                JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
-                                prefixFlags |= PREFIX_TAILCALL_EXPLICIT;
+                                // Now check with the runtime
+                                CORINFO_METHOD_HANDLE declaredCalleeHnd = callInfo.hMethod;
+                                bool                  isVirtual         = (callInfo.kind == CORINFO_VIRTUALCALL_STUB) ||
+                                                 (callInfo.kind == CORINFO_VIRTUALCALL_VTABLE);
+                                CORINFO_METHOD_HANDLE exactCalleeHnd = isVirtual ? nullptr : declaredCalleeHnd;
+                                if (info.compCompHnd->canTailCall(info.compMethodHnd, declaredCalleeHnd, exactCalleeHnd,
+                                                                  hasTailPrefix)) // Is it legal to do tailcall?
+                                {
+                                    // Stress the tailcall.
+                                    JITDUMP(" (Tailcall stress: prefixFlags |= PREFIX_TAILCALL_EXPLICIT)");
+                                    prefixFlags |= PREFIX_TAILCALL_EXPLICIT;
+                                }
+                                else
+                                {
+                                    // Runtime disallows this tail call
+                                    JITDUMP(" (Tailcall stress: runtime preventing tailcall)");
+                                    passedStressModeValidation = false;
+                                }
+                            }
+                            else
+                            {
+                                // Constraints disallow this tail call
+                                JITDUMP(" (Tailcall stress: constraint check failed)");
+                                passedStressModeValidation = false;
                             }
                         }
                     }
@@ -13841,9 +13862,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 bool isRecursive;
                 isRecursive = !compIsForInlining() && (callInfo.hMethod == info.compMethodHnd);
 
-                // Note that when running under tail call stress, a call will be marked as explicit tail prefixed
-                // hence will not be considered for implicit tail calling.
-                if (impIsImplicitTailCallCandidate(opcode, codeAddr + sz, codeEndp, prefixFlags, isRecursive))
+                // If we've already disqualified this call as a tail call under tail call stress,
+                // don't consider it for implicit tail calling either.
+                //
+                // When not running under tail call stress, we may mark this call as an implicit
+                // tail call candidate. We'll do an "equivalent" validation during impImportCall.
+                //
+                // Note that when running under tail call stress, a call marked as explicit
+                // tail prefixed will not be considered for implicit tail calling.
+                if (passedStressModeValidation &&
+                    impIsImplicitTailCallCandidate(opcode, codeAddr + sz, codeEndp, prefixFlags, isRecursive))
                 {
                     if (compIsForInlining())
                     {
