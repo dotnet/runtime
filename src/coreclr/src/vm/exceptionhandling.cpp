@@ -5193,15 +5193,6 @@ BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD e
 #ifdef _TARGET_ARM_
 static inline BOOL HandleArmSingleStep(PCONTEXT pContext, PEXCEPTION_RECORD pExceptionRecord, Thread *pThread)
 {
-#ifdef __linux__
-    // On ARM Linux exception point to the break instruction,
-    // but the rest of the code expects that it points to an instruction after the break
-    if (pExceptionRecord->ExceptionCode == EXCEPTION_BREAKPOINT)
-    {
-        SetIP(pContext, GetIP(pContext) + CORDbg_BREAK_INSTRUCTION_SIZE);
-        pExceptionRecord->ExceptionAddress = (void *)GetIP(pContext);
-    }
-#endif
     // On ARM we don't have any reliable hardware support for single stepping so it is emulated in software.
     // The implementation will end up throwing an EXCEPTION_BREAKPOINT rather than an EXCEPTION_SINGLE_STEP
     // and leaves other aspects of the thread context in an invalid state. Therefore we use this opportunity
@@ -5285,6 +5276,18 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         Thread *pThread = GetThread();
         if (pThread != NULL && g_pDebugInterface != NULL)
         {
+            // On ARM and ARM64 Linux exception point to the break instruction.
+            // See https://static.docs.arm.com/ddi0487/db/DDI0487D_b_armv8_arm.pdf#page=6916&zoom=100,0,152
+            // at aarch64/exceptions/debug/AArch64.SoftwareBreakpoint
+            // However, the rest of the code expects that it points to an instruction after the break.
+#if defined(__linux__) && (defined(_TARGET_ARM_) || defined(_TARGET_ARM64_))
+            if (ex->GetExceptionRecord()->ExceptionCode == STATUS_BREAKPOINT)
+            {
+                SetIP(ex->GetContextRecord(), GetIP(ex->GetContextRecord()) + CORDbg_BREAK_INSTRUCTION_SIZE);
+                ex->GetExceptionRecord()->ExceptionAddress = (void *)GetIP(ex->GetContextRecord());
+            }
+#endif
+
 #ifdef _TARGET_ARM_
             HandleArmSingleStep(ex->GetContextRecord(), ex->GetExceptionRecord(), pThread);
 #endif
