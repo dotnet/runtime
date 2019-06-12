@@ -27,8 +27,9 @@ namespace System.Tests
             {
                 if (!string.IsNullOrEmpty(sigTermExitCode))
                 {
-                    AppDomain.CurrentDomain.ProcessExit += delegate
+                    AppDomain.CurrentDomain.ProcessExit += (sender, args) =>
                     {
+                        Assert.Same(AppDomain.CurrentDomain, sender);
                         Environment.ExitCode = int.Parse(sigTermExitCode);
                     };
                 }
