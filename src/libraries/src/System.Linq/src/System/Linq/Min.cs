@@ -166,6 +166,11 @@ namespace System.Linq
                 }
 
                 value = e.Current;
+                if (float.IsNaN(value))
+                {
+                    return value;
+                }
+
                 while (e.MoveNext())
                 {
                     float x = e.Current;
@@ -214,6 +219,11 @@ namespace System.Linq
                 while (!value.HasValue);
 
                 float valueVal = value.GetValueOrDefault();
+                if (float.IsNaN(valueVal))
+                {
+                    return value;
+                }
+
                 while (e.MoveNext())
                 {
                     float? cur = e.Current;
@@ -252,6 +262,11 @@ namespace System.Linq
                 }
 
                 value = e.Current;
+                if (double.IsNaN(value))
+                {
+                    return value;
+                }
+
                 while (e.MoveNext())
                 {
                     double x = e.Current;
@@ -291,6 +306,11 @@ namespace System.Linq
                 while (!value.HasValue);
 
                 double valueVal = value.GetValueOrDefault();
+                if (double.IsNaN(valueVal))
+                {
+                    return value;
+                }
+
                 while (e.MoveNext())
                 {
                     double? cur = e.Current;
@@ -620,6 +640,11 @@ namespace System.Linq
                 }
 
                 value = selector(e.Current);
+                if (float.IsNaN(value))
+                {
+                    return value;
+                }
+
                 while (e.MoveNext())
                 {
                     float x = selector(e.Current);
@@ -673,6 +698,11 @@ namespace System.Linq
                 while (!value.HasValue);
 
                 float valueVal = value.GetValueOrDefault();
+                if (float.IsNaN(valueVal))
+                {
+                    return value;
+                }
+
                 while (e.MoveNext())
                 {
                     float? cur = selector(e.Current);
@@ -716,6 +746,11 @@ namespace System.Linq
                 }
 
                 value = selector(e.Current);
+                if (double.IsNaN(value))
+                {
+                    return value;
+                }
+
                 while (e.MoveNext())
                 {
                     double x = selector(e.Current);
@@ -760,6 +795,11 @@ namespace System.Linq
                 while (!value.HasValue);
 
                 double valueVal = value.GetValueOrDefault();
+                if (double.IsNaN(valueVal))
+                {
+                    return value;
+                }
+
                 while (e.MoveNext())
                 {
                     double? cur = selector(e.Current);
