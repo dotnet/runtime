@@ -44,12 +44,16 @@ namespace System.Net.Test.Common
     {
         public string Name { get; }
         public string Value { get; }
+        public byte[] Raw { get; }
 
-        public HttpHeaderData(string name, string value)
+        public HttpHeaderData(string name, string value, byte[] raw = null)
         {
             Name = name;
             Value = value;
+            Raw = raw;
         }
+
+        public override string ToString() => Name == null ? "<empty>" : (Name + ": " + (Value ?? string.Empty));
     }
 
     public class HttpRequestData

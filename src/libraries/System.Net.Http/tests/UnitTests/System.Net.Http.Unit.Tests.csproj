@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{5F9C3C9F-652E-461E-B2D6-85D264F5A733}</ProjectGuid>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
@@ -26,6 +26,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>ProductionCode\Common\CoreLib\System\IO\StreamHelpers.CopyValidation.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
+      <Link>Common\System\Net\InternalException.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpDateParser.cs">
       <Link>Common\System\Net\HttpDateParser.cs</Link>
@@ -309,11 +312,29 @@
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\HPackEncoder.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\HPackEncoder.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\HPackDecoder.cs">
+      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\HPackDecoder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\HPackDecodingException.cs">
+      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\HPackDecodingException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\Huffman.cs">
+      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\Huffman.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\HuffmanDecodingException.cs">
+      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\HuffmanDecodingException.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\IntegerEncoder.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\IntegerEncoder.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\IntegerDecoder.cs">
+      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\IntegerDecoder.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\StaticTable.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\StaticTable.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HPack\DynamicTable.cs">
+      <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\HPack\DynamicTable.cs</Link>
     </Compile>
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs">
       <Link>ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.cs</Link>
@@ -386,6 +407,8 @@
     <Compile Include="Headers\UriHeaderParserTest.cs" />
     <Compile Include="Headers\ViaHeaderValueTest.cs" />
     <Compile Include="Headers\WarningHeaderValueTest.cs" />
+    <Compile Include="HPack\HPackDecoderTest.cs" />
+    <Compile Include="HPack\HPackIntegerTest.cs" />
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />
