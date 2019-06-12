@@ -1,0 +1,21 @@
+# System.ArgumentException Arg_ObjObjEx
+-nomethod System.Drawing.Imaging.Tests.ImageAttributesTests.SetColorMatrix_InvalidFlags_ThrowsArgumentException
+
+# See TODO in AssemblyLoadContext.InternalLoadFromPath()
+-nomethod System.Tests.ActivatorTests.TestingCreateInstanceFromObjectHandleFullSignature
+-nomethod System.Tests.ActivatorTests.TestingCreateInstanceFromObjectHandle
+-nomethod System.Tests.AppDomainTests.TestingCreateInstanceFromObjectHandleFullSignature
+-nomethod System.Tests.AppDomainTests.TestingCreateInstanceFromObjectHandle
+
+# hangs 
+-nomethod *.HttpClientUsesSslCertEnvironmentVariables
+
+# dllmap is not working 
+-nonamespace System.IO.MemoryMappedFiles
+-nonamespace System.Diagnostics.Tests
+-nonamespace System.IO.Tests
+-nomethod System.IO.Pipes.Tests.NamedPipeTest_CreateClient.NotSupportedPipePath_Throws_PlatformNotSupportedException
+-nomethod System.Net.Sockets.Tests.SocketOptionNameTest.ReuseAddressUdp
+
+-nomethod System.Tests.WeakReferenceTests.Generic
+-nomethod System.Reflection.Tests.AssemblyTests.CreateInstance

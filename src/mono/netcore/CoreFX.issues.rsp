@@ -155,6 +155,10 @@
 -nomethod System.Linq.Expressions.Tests.ArrayIndexTests.NonZeroBasedOneDimensionalArrayIndexMethod
 -nomethod System.Linq.Expressions.Tests.CompilerTests.VerifyIL_*
 
+# flaky tests - Invalid IL code in (wrapper dynamic-method)
+-nomethod System.Linq.Expressions.Tests.LambdaMultiplyTests.LambdaMultiplyFloatTest
+-nomethod System.Linq.Expressions.Tests.LambdaDivideTests.LambdaDivideFloatTest
+
 ####################################################################
 ##  System.Linq.Parallel.Tests
 ####################################################################

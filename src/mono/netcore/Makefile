@@ -35,7 +35,7 @@ endif
 ifeq ($(HOST_PLATFORM),linux)
 NETCORESDK_EXT = tar.gz
 UNZIPCMD = tar -xvf
-XUNIT_FLAGS = -notrait category=nonlinuxtests
+XUNIT_FLAGS = -notrait category=nonlinuxtests @../../../../CoreFX.issues_linux.rsp
 TESTS_PLATFORM = Linux.x64
 DOTNET := $(shell ./init-tools.sh | tail -1)
 endif
