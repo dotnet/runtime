@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Net.Sockets.Tests
 {
-    public class DisposedSocket
+    public partial class DisposedSocket
     {
         private static readonly byte[] s_buffer = new byte[1];
         private static readonly IList<ArraySegment<byte>> s_buffers = new List<ArraySegment<byte>> { new ArraySegment<byte>(s_buffer) };
