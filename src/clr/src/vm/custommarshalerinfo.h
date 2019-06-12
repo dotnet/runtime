@@ -75,10 +75,10 @@ public:
         return m_bDataIsByValue;
     }
 
-    OBJECTHANDLE GetCustomMarshaler()
+    OBJECTREF GetCustomMarshaler()
     {
         LIMITED_METHOD_CONTRACT;
-        return m_hndCustomMarshaler;
+        return m_pLoaderAllocator->GetHandleValue(m_hndCustomMarshaler);
     }
 
     TypeHandle GetCustomMarshalerType()
@@ -90,7 +90,7 @@ public:
             MODE_COOPERATIVE;
         }
         CONTRACTL_END;
-        return ObjectFromHandle(m_hndCustomMarshaler)->GetTypeHandle();
+        return m_pLoaderAllocator->GetHandleValue(m_hndCustomMarshaler)->GetTypeHandle();
     }
 
     // Helper function to retrieve a custom marshaler method desc.
@@ -102,7 +102,8 @@ public:
 private:
     int                 m_NativeSize;
     TypeHandle          m_hndManagedType;
-    OBJECTHANDLE        m_hndCustomMarshaler;
+    LoaderAllocator*    m_pLoaderAllocator;
+    LOADERHANDLE        m_hndCustomMarshaler;
     MethodDesc*         m_pMarshalNativeToManagedMD;
     MethodDesc*         m_pMarshalManagedToNativeMD;
     MethodDesc*         m_pCleanUpNativeDataMD;
