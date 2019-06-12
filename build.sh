@@ -151,22 +151,23 @@ restore_optdata()
     if [ $__isMSBuildOnNETCoreSupported == 1 ]; then
         # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
 
-        # Init dotnet
-        source "${__ProjectRoot}/init-dotnet.sh"
-        local DotNetCli=${_InitializeDotNetCli}/dotnet
-
-        __PgoOptDataVersion=$(DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 $DotNetCli msbuild $OptDataProjectFilePath /t:DumpPgoDataPackageVersion /nologo)
-        if [ $? != 0 ]; then
+        # Writes into ${__IntermediatesDir}/optdataversion.txt
+        ${__ProjectDir}/dotnet.sh msbuild $OptDataProjectFilePath /t:DumpPgoDataPackageVersion /nologo 2>&1 >/dev/null
+        if [ ! -f "${__IntermediatesDir}/optdataversion.txt" ]; then
             echo "Failed to get PGO data package version."
             exit $?
         fi
-        __PgoOptDataVersion=$(echo $__PgoOptDataVersion | sed 's/^\s*//')
-        __IbcOptDataVersion=$(DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 $DotNetCli msbuild $OptDataProjectFilePath /t:DumpIbcDataPackageVersion /nologo)
-        if [ $? != 0 ]; then
+
+        __PgoOptDataVersion=$(<"${__IntermediatesDir}/optdataversion.txt")
+
+        # Writes into ${__IntermediatesDir}/ibcoptdataversion.txt
+        ${__ProjectDir}/dotnet.sh msbuild $OptDataProjectFilePath /t:DumpIbcDataPackageVersion /nologo 2>&1 >/dev/null
+        if [ ! -f "${__IntermediatesDir}/ibcoptdataversion.txt" ]; then
             echo "Failed to get IBC data package version."
             exit $?
         fi
-        __IbcOptDataVersion=$(echo $__IbcOptDataVersion | sed 's/^[[:blank:]]*//')
+
+        __IbcOptDataVersion=$(<"${__IntermediatesDir}/ibcoptdataversion.txt")
     fi
 }
 
