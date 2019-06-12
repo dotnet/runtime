@@ -111,5 +111,7 @@ fi
 
 # run all xunit tests
 if [ "$test" = "true" ]; then
-  make xtestall
+  for testdir in corefx/tests/extracted/*; do
+    ../scripts/ci/./run-step.sh --label=$(basename $testdir) --timeout=15m make xtest-$(basename $testdir)
+  done
 fi

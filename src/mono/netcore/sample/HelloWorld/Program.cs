@@ -6,8 +6,8 @@ namespace HelloWorld
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
-
+            bool isMono = typeof(object).Assembly.GetType("Mono.RuntimeStructs") != null;
+            Console.WriteLine("Hello World " + (isMono ? "from Mono!" : "from CoreCLR!"));
             Console.WriteLine(typeof(object).Assembly.FullName);
             Console.WriteLine(System.Reflection.Assembly.GetEntryAssembly ());
             Console.WriteLine(System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription);

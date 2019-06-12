@@ -62,6 +62,14 @@
 -nomethod System.Diagnostics.Tests.ProcessTests.GetProcesses_RemoteMachinePath_ReturnsExpected
 
 ####################################################################
+##  System.Diagnostics.Debug
+####################################################################
+
+# disabled in CoreCLR too
+-nomethod System.Diagnostics.Tests.DebugTestsNoListeners.Print
+-nomethod System.Diagnostics.Tests.DebugTestsUsingListeners.Print
+
+####################################################################
 ##  System.Diagnostics.TraceSource.Tests
 ####################################################################
 
@@ -222,6 +230,9 @@
 -nomethod System.Net.Sockets.Tests.UdpClientTest.Finalize_NoExceptionsThrown
 # TODO: Hangs
 -nomethod System.Net.Sockets.Tests.CreateSocket.CtorAndAccept_SocketNotKeptAliveViaInheritance
+
+# flaky test
+-nomethod System.Net.Sockets.Tests.SocketOptionNameTest.MulticastInterface_Set_AnyInterface_Succeeds
 
 ####################################################################
 ##  System.Reflection.Emit.ILGeneration.Tests
@@ -648,8 +659,9 @@
 -nomethod System.ComponentModel.Composition.MetadataViewProviderTests.GetMetadataView_InterfaceWithIndexer_ShouldThrowNotSupportedException
 -nomethod Tests.Integration.ExportFactoryTests.ExportFactoryStandardImports_ShouldWorkProperly
 
-# flacky test - System.TypeLoadException : Could not load type '_proxy_System.ComponentModel.Composition.IStronglyTypedStructure_3b7f133d-79c7-449e-8f68-22aa093dbb8d' from assembly ''.
+# flaky test - System.TypeLoadException : Could not load type '_proxy_System.ComponentModel.Composition.IStronglyTypedStructure_3b7f133d-79c7-449e-8f68-22aa093dbb8d' from assembly ''.
 -nomethod System.ComponentModel.Composition.MetadataAttributeTests.StronglyTypedStructureTest
+-nomethod System.ComponentModel.Composition.MetadataAttributeTests.StronglyTypedStructureTestWithTransparentViews
 
 ####################################################################
 ##  System.Composition.TypedParts.Tests
@@ -886,6 +898,9 @@
 -nomethod System.Reflection.Tests.TypeTests.GetEnumUnderlyingType
 -nomethod System.Reflection.Tests.TypeTests_HiddenTestingOrder.HideDetectionHappensAfterPrivateInBaseClassChecks
 
+# flaky tests
+-nomethod System.Reflection.Tests.TypeInfoDeclaredImplementedInterfacesTests.*
+
 ####################################################################
 ##  System.Utf8String.Experimental.Tests
 ####################################################################
@@ -953,6 +968,9 @@
 ####################################################################
 
 -nomethod System.Security.Cryptography.X509Certificates.Tests.DynamicChainTests.TestInvalidAia
+
+# disabled in CoreCLR too
+-noclass System.Security.Cryptography.X509Certificates.Tests.X509Certificate2UITests
 
 ####################################################################
 ##  System.Runtime.Serialization.Json.Tests

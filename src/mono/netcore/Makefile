@@ -21,7 +21,7 @@ UNZIPCMD = python -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1], 'r').extr
 XUNIT_FLAGS =
 TESTS_PLATFORM = Windows_NT.x64
 DOTNET := $(shell powershell -ExecutionPolicy Bypass -Command "./init-tools.ps1")/dotnet.exe
-DOTNET := $(subst \,/,$(DOTNET))
+DOTNET := "$(subst \,/,$(DOTNET))"
 endif
 
 ifeq ($(HOST_PLATFORM),macos)
@@ -110,7 +110,8 @@ runtime:
 
 link-mono:
 	cp ../mono/mini/.libs/libmonosgen-2.0$(PLATFORM_AOT_SUFFIX) $(SHAREDRUNTIME)/$(PLATFORM_AOT_PREFIX)coreclr$(PLATFORM_AOT_SUFFIX)
-	cp ../mcs/class/System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.{dll,pdb} $(SHAREDRUNTIME)
+	cp ../mcs/class/System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.dll $(SHAREDRUNTIME)
+	cp ../mcs/class/System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.pdb $(SHAREDRUNTIME)
 
 prepare: $(ASPNETCORESDK_FILE) $(NETCORESDK_FILE) update-corefx update-roslyn link-mono
 
@@ -139,7 +140,7 @@ xtest-%: prepare update-corefx-tests
 	sed -i -e 's/9.9.9/$(NETCOREAPP_VERSION)/g' corefx/tests/extracted/$*/*.runtimeconfig.json
 	cd corefx/tests/extracted/$* && \
 	COMPlus_DebugWriteToStdErr=1 $(CURDIR)/./dotnet --fx-version "$(NETCOREAPP_VERSION)" xunit.console.dll $*.dll \
-		-html ../../TestResult-$*.html -nunit ../../TestResult-$*-netcore-xunit.xml \
+		-html ../../TestResult-$*.html -xml ../../TestResult-$*-netcore-xunit.xml \
 		$(XUNIT_FLAGS) @../../../../CoreFX.issues.rsp \
 		$(FIXTURE) || true
 
