@@ -25,7 +25,7 @@ namespace System.Security
         public void Assert() { }
         public bool ContainsNonCodeAccessPermissions() { return false; }
         [Obsolete]
-        public static byte[] ConvertPermissionSet(string inFormat, byte[] inData, string outFormat) { throw new NotImplementedException(); }
+        public static byte[] ConvertPermissionSet(string inFormat, byte[] inData, string outFormat) { throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); }
         public virtual PermissionSet Copy() { return new PermissionSet(this); }
         public virtual void CopyTo(Array array, int index) { }
         public void Demand() { }
