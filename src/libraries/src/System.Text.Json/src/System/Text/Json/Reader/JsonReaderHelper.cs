@@ -275,10 +275,16 @@ namespace System.Text.Json
             sourceUnescaped = sourceUnescaped.Slice(0, written);
             Debug.Assert(!sourceUnescaped.IsEmpty);
 
+            if (sourceUnescaped.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
+                && JsonHelpers.TryParseAsISO(sourceUnescaped, out DateTime tmp, out int bytesConsumed)
+                && sourceUnescaped.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
             value = default;
-            return (sourceUnescaped.Length <= JsonConstants.MaximumDateTimeOffsetParseLength)
-                && JsonHelpers.TryParseAsISO(sourceUnescaped, out value, out int bytesConsumed)
-                && sourceUnescaped.Length == bytesConsumed;
+            return false;
         }
 
         public static bool TryGetEscapedDateTimeOffset(ReadOnlySpan<byte> source, out DateTimeOffset value)
@@ -295,10 +301,16 @@ namespace System.Text.Json
             sourceUnescaped = sourceUnescaped.Slice(0, written);
             Debug.Assert(!sourceUnescaped.IsEmpty);
 
+            if (sourceUnescaped.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
+                && JsonHelpers.TryParseAsISO(sourceUnescaped, out DateTimeOffset tmp, out int bytesConsumed)
+                && sourceUnescaped.Length == bytesConsumed)
+            {
+                value = tmp;
+                return true;
+            }
+
             value = default;
-            return (sourceUnescaped.Length <= JsonConstants.MaximumDateTimeOffsetParseLength)
-                && JsonHelpers.TryParseAsISO(sourceUnescaped, out value, out int bytesConsumed)
-                && sourceUnescaped.Length == bytesConsumed;
+            return false;
         }
 
         public static bool TryGetEscapedGuid(ReadOnlySpan<byte> source, out Guid value)
@@ -316,8 +328,15 @@ namespace System.Text.Json
             utf8Unescaped = utf8Unescaped.Slice(0, written);
             Debug.Assert(!utf8Unescaped.IsEmpty);
 
+            if (utf8Unescaped.Length == JsonConstants.MaximumFormatGuidLength 
+                && Utf8Parser.TryParse(utf8Unescaped, out Guid tmp, out _, 'D'))
+            {
+                value = tmp;
+                return true;
+            }
+
             value = default;
-            return (utf8Unescaped.Length == JsonConstants.MaximumFormatGuidLength) && Utf8Parser.TryParse(utf8Unescaped, out value, out _, 'D');
+            return false;
         }
     }
 }
