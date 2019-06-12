@@ -53,7 +53,7 @@ namespace System.Collections.Generic
     [Serializable]
     [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SortedList<TKey, TValue> :
-        IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue> where TKey : object
+        IDictionary<TKey, TValue>, IDictionary, IReadOnlyDictionary<TKey, TValue> where TKey : notnull
     {
         private TKey[] keys; // Do not rename (binary serialization)
         private TValue[] values; // Do not rename (binary serialization)
