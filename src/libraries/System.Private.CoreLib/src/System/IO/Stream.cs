@@ -42,11 +42,7 @@ namespace System.IO
         {
             // Lazily-initialize _asyncActiveSemaphore.  As we're never accessing the SemaphoreSlim's
             // WaitHandle, we don't need to worry about Disposing it.
-#pragma warning disable CS8634 // TODO-NULLABLE: Remove warning disable when nullable attributes are respected
-#pragma warning disable CS8603 // TODO-NULLABLE: Remove warning disable when nullable attributes are respected
-            return LazyInitializer.EnsureInitialized(ref _asyncActiveSemaphore, () => new SemaphoreSlim(1, 1));
-#pragma warning restore CS8603
-#pragma warning restore CS8634
+            return LazyInitializer.EnsureInitialized<SemaphoreSlim>(ref _asyncActiveSemaphore!, () => new SemaphoreSlim(1, 1)); // TODO-NULLABLE: Remove ! when nullable attributes are respected
         }
 
         public abstract bool CanRead

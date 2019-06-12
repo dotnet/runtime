@@ -3429,7 +3429,7 @@ namespace System.Diagnostics.Tracing
                             // overwrite inline message with the localized message
                             if (msg != null) eventAttribute.Message = msg;
 
-                            AddEventDescriptor(ref eventData!, eventName, eventAttribute, args, hasRelatedActivityID); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                            AddEventDescriptor(ref eventData, eventName, eventAttribute, args, hasRelatedActivityID);
                         }
                     }
                 }
@@ -3440,7 +3440,7 @@ namespace System.Diagnostics.Tracing
                 if (source != null)
                 {
                     Debug.Assert(eventData != null);
-                    TrimEventDescriptors(ref eventData!); // TODO-NULLABLE: Pass non-null string? to string ref (https://github.com/dotnet/roslyn/issues/34874)
+                    TrimEventDescriptors(ref eventData);
                     source.m_eventData = eventData;     // officially initialize it. We do this at most once (it is racy otherwise). 
 #if FEATURE_MANAGED_ETW_CHANNELS
                     source.m_channelData = manifest.GetChannelData();
