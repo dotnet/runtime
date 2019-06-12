@@ -1348,8 +1348,6 @@ public class Tests
 		}
 	}
 
-	// FIXME: The runtime-invoke wrapper used by BeginInvoke is not found
-	[Category ("!FULLAOT")]
 	// FIXME: Wasm is single threaded and can't handle blocking waits
 	[Category ("!WASM")]
 	public static int test_0_begin_end_invoke () {

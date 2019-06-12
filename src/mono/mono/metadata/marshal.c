@@ -1847,12 +1847,15 @@ mono_marshal_get_delegate_begin_invoke (MonoMethod *method)
 
 	get_marshal_cb ()->emit_delegate_begin_invoke (mb, sig);
 
+	WrapperInfo *info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	info->d.delegate_invoke.method = method;
+
 	if (ctx) {
 		MonoMethod *def;
-		def = mono_mb_create_and_cache (cache, method->klass, mb, sig, sig->param_count + 16);
+		def = mono_mb_create_and_cache_full (cache, method->klass, mb, sig, sig->param_count + 16, info, NULL);
 		res = cache_generic_delegate_wrapper (cache, orig_method, def, ctx);
 	} else {
-		res = mono_mb_create_and_cache (cache, sig, mb, sig, sig->param_count + 16);
+		res = mono_mb_create_and_cache_full (cache, sig, mb, sig, sig->param_count + 16, info, NULL);
 	}
 
 	mono_mb_free (mb);
@@ -2026,13 +2029,16 @@ mono_marshal_get_delegate_end_invoke (MonoMethod *method)
 
 	get_marshal_cb ()->emit_delegate_end_invoke (mb, sig);
 
+	WrapperInfo *info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_NONE);
+	info->d.delegate_invoke.method = method;
+
 	if (ctx) {
 		MonoMethod *def;
-		def = mono_mb_create_and_cache (cache, method->klass, mb, sig, sig->param_count + 16);
+		def = mono_mb_create_and_cache_full (cache, method->klass, mb, sig, sig->param_count + 16, info, NULL);
 		res = cache_generic_delegate_wrapper (cache, orig_method, def, ctx);
 	} else {
-		res = mono_mb_create_and_cache (cache, sig,
-										mb, sig, sig->param_count + 16);
+		res = mono_mb_create_and_cache_full (cache, sig,
+											 mb, sig, sig->param_count + 16, info, NULL);
 	}
 	mono_mb_free (mb);
 

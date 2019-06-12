@@ -4030,6 +4030,7 @@ mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, Mon
 	MonoGenericContainer *class_container, *method_container = NULL;
 	MonoGenericContext *context = mono_method_get_context (method);
 	MonoGenericInst *inst;
+	WrapperInfo *info = NULL;
 
 	error_init (error);
 
@@ -4039,7 +4040,10 @@ mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, Mon
 	 * same wrapper, breaking AOT which assumes wrappers are unique.
 	 * FIXME: Add other cases.
 	 */
-	if (method->wrapper_type == MONO_WRAPPER_SYNCHRONIZED) {
+	if (method->wrapper_type)
+		info = mono_marshal_get_wrapper_info (method);
+	switch (method->wrapper_type) {
+	case MONO_WRAPPER_SYNCHRONIZED: {
 		MonoMethod *wrapper = mono_marshal_method_from_wrapper (method);
 
 		MonoMethod *gwrapper = mini_get_shared_method_full (wrapper, flags, error);
@@ -4047,16 +4051,27 @@ mini_get_shared_method_full (MonoMethod *method, GetSharedMethodFlags flags, Mon
 
 		return mono_marshal_get_synchronized_wrapper (gwrapper);
 	}
-	if (method->wrapper_type == MONO_WRAPPER_DELEGATE_INVOKE) {
-		WrapperInfo *info = mono_marshal_get_wrapper_info (method);
-
+	case MONO_WRAPPER_DELEGATE_INVOKE: {
 		if (info->subtype == WRAPPER_SUBTYPE_NONE) {
 			MonoMethod *ginvoke = mini_get_shared_method_full (info->d.delegate_invoke.method, flags, error);
 			return_val_if_nok (error, NULL);
 
-			MonoMethod *m = mono_marshal_get_delegate_invoke (ginvoke, NULL);
-			return m;
+			return mono_marshal_get_delegate_invoke (ginvoke, NULL);
 		}
+		break;
+	}
+	case MONO_WRAPPER_DELEGATE_BEGIN_INVOKE:
+	case MONO_WRAPPER_DELEGATE_END_INVOKE: {
+		MonoMethod *ginvoke = mini_get_shared_method_full (info->d.delegate_invoke.method, flags, error);
+		return_val_if_nok (error, NULL);
+
+		if (method->wrapper_type == MONO_WRAPPER_DELEGATE_BEGIN_INVOKE)
+			return mono_marshal_get_delegate_begin_invoke (ginvoke);
+		else
+			return mono_marshal_get_delegate_end_invoke (ginvoke);
+	}
+	default:
+		break;
 	}
 
 	if (method->is_generic || (mono_class_is_gtd (method->klass) && !method->is_inflated)) {
