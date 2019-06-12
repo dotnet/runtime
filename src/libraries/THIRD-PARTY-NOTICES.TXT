@@ -8,6 +8,15 @@ bring it to our attention. Post an issue or email us:
 
 The attached notices are provided for information only.
 
+License notice for ASP.NET
+-------------------------------
+
+Copyright (c) .NET Foundation. All rights reserved.
+Licensed under the Apache License, Version 2.0.
+
+Available at
+https://github.com/aspnet/AspNetCore/blob/master/LICENSE.txt
+
 License notice for Slicing-by-8 
 -------------------------------
 

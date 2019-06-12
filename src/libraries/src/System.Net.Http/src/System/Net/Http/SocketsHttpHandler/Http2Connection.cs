@@ -316,6 +316,7 @@ namespace System.Net.Http
 
             _hpackDecoder.Decode(
                 GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), frameHeader.PaddedFlag, frameHeader.PriorityFlag),
+                frameHeader.EndHeadersFlag,
                 s_http2StreamOnResponseHeader,
                 http2Stream);
             _incomingBuffer.Discard(frameHeader.Length);
@@ -331,6 +332,7 @@ namespace System.Net.Http
 
                 _hpackDecoder.Decode(
                     _incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length),
+                    frameHeader.EndHeadersFlag,
                     s_http2StreamOnResponseHeader,
                     http2Stream);
                 _incomingBuffer.Discard(frameHeader.Length);
