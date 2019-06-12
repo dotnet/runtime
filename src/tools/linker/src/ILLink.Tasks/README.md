@@ -1,10 +1,83 @@
 # ILLink.Tasks
 
-ILLink.Tasks is a package containing MSBuild tasks and targets that
-will run the linker to run during publish of a .NET Core app.
+ILLink.Tasks contains MSBuild tasks that run the linker for .NET Core. It runs illink.dll, built from the same [sources](../linker/) that are used to build monolinker.exe. ILLink.Tasks is shipped as part of the .NET Core 3.0 SDK.
 
-ILLink.Tasks provides an MSBuild task called ILLink that makes it easy
-to run the linker from an MSBuild project file:
+Note: in previous versions of .NET Core, ILLink.Tasks was shipped as an external nuget package. This is no longer supported - please update to the latest 3.0 SDK and try the new experience!
+
+## Usage
+
+To use this tool, set `PublishTrimmed` to `true` in your project and publish a self-contained app:
+
+```
+dotnet publish -r <rid> -c Release
+```
+
+The publish output will include a subset of the framework libraries, depending on what the application code calls. For a "hello world" app, this reduces the size from ~68MB to ~28MB.
+
+Applications or frameworks (including ASP<span />.NET Core and WPF) that use reflection or related dynamic features will often break when trimmed, because the linker does not know about this dynamic behavior, and can not determine in general which framework types will be required for reflection at runtime. To trim such apps, you will need to tell the linker about any types needed by reflection in your code, and in packages or frameworks that you depend on. Be sure to test your apps after trimming.
+
+## How it works
+
+The IL linker scans the IL of your application to detect which code is actually required, and trims unused framework libraries. This can significantly reduce the size of some apps. Typically small tool-like console apps benefit the most as they tend to use fairly small subsets of the framework, and are usually more amenable to trimming. Applications that use reflection may not work with this approach.
+
+## Default behavior
+
+By default, the linker will operate in a conservative mode that keeps
+all managed assemblies that aren't part of the framework (they are
+kept intact, and the linker simply copies them). This means that any reflection calls to non-framework code should continue to work. Reflection calls to code in the framework can potentially break if the target of the call is removed. Any framework assemblies that aren't predicted to be used at runtime will be removed from the publish output. Used framework assemblies will be kept entirely.
+
+# Adding reflection roots
+
+If your app or its dependencies use reflection, you may need to tell the linker to keep reflection targets explicitly. For example, dependency injection in ASP<span />.NET Core apps will activate
+types depending on what is present at runtime, and therefore may fail
+if the linker has removed assemblies that would otherwise be
+present. Similarly, WPF apps may call into framework code depending on
+the features used. If you know beforehand what your app will require
+at runtime, you can tell the linker about this in a few ways.
+
+For example, an app may reflect over `System.IO.File`:
+```csharp
+Type file = System.Type.GetType("System.IO.File,System.IO.FileSystem");
+```
+
+To ensure that this works with `PublishTrimmed=true`:
+
+- You can include a direct reference to the required type in your code
+  somewhere, for example by using `typeof(System.IO.File)`.
+
+- You can tell the linker to explicitly keep an assembly by adding it
+  to your csproj (use the assembly name *without* extension):
+
+  ```xml
+  <ItemGroup>
+    <TrimmerRootAssembly Include="System.IO.FileSystem" />
+  </ItemGroup>
+  ```
+
+- You can give the linker a more specific list of types/methods,
+  etc. to include using an xml file, using the format described at
+  http://github.com/mono/linker
+
+  `.csproj`:
+  ```xml
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="TrimmerRoots.xml" />
+  </ItemGroup>
+  ```
+
+  `TrimmerRoots.xml`:
+  ```xml
+  <linker>
+    <assembly fullname="System.IO.FileSystem">
+      <type fullname="System.IO.File" />
+    </assembly>
+  </linker>
+  ```
+
+
+# MSBuild task
+
+The linker can be invoked as an MSBuild task, `ILLink`. We recommend not using the task directly, because the SDK has built-in logic that handles computing the right set of reference assemblies as inputs, incremental linking, and similar logic. If you would like to use the [advanced options](../linker/README.md), you can invoke the msbuild task directly and pass any extra arguments like this:
 
 ```xml
 <ILLink AssemblyPaths="@(AssemblyFilesToLink)"
@@ -14,20 +87,13 @@ to run the linker from an MSBuild project file:
         ExtraArgs="-t -c link -l none" />
 ```
 
-For a description of the options that this task supports, see the
+For a full description of the inputs that this task supports, see the
 comments in [LinkTask.cs](LinkTask.cs).
 
 
-In addition, ILLink.Tasks contains MSBuild logic that makes the linker
-run automatically during `dotnet publish` for .NET Core apps. This
-will:
+# Building
 
-- Determine the assemblies and options to pass to illink.
-- Remove unused native files from the publish output.
-
-The full set of options is described below.
-
-## Building
+To build ILLink.Tasks:
 
 ```
 linker> dotnet restore illink.sln
@@ -39,55 +105,13 @@ To produce a package:
 linker> ./eng/dotnet.{sh/ps1} pack illink.sln
 ```
 
-## Using ILLink.Tasks
+In .NET Core 3.0, this package is shipped with the SDK.
 
-Add a package reference to the linker. Ensure that either the
-[dotnet-core](https://dotnet.myget.org/gallery/dotnet-core) myget feed
-or the path to the locally-built linker package path exists in the
-project's nuget.config. If using myget, you probably want to ensure
-that you're using the latest version available at
-https://dotnet.myget.org/feed/dotnet-core/package/nuget/ILLink.Tasks.
-
-After adding the package, linking will be turned on during `dotnet
-publish`. The publish output will contain the linked assemblies.
-
-## Default behavior
-
-By default, the linker will operate in a conservative mode that keeps
-all managed assemblies that aren't part of the framework (they are
-kept intact, and the linker simply copies them). It also analyzes all
-non-framework assemblies to find and keep code used by them (they are
-roots for the analysis). This means that unanalyzed reflection calls
-within the app should continue to work after linking. Reflection calls
-to code in the framework can potentially break when using the linker,
-if the target of the call is removed.
-
-For portable publish, framework assemblies usually do not get
-published with the app. In this case they will not be analyzed or
-linked.
-
-For self-contained publish, framework assemblies are part of the
-publish output, and are analyzed by the linker. Any framework
-assemblies that aren't predicted to be used at runtime based on the
-linker analysis will be removed from the publish output. Used
-framework assemblies will be kept, and any used code within these
-assemblies will be compiled to native code. Unused parts of used
-framework assemblies are kept as IL, so that reflection calls will
-continue to work, with runtime JIT compilation.
-
-Native dependencies that aren't referenced by any of the kept managed
-assemblies will be removed from the publish output as well.
-
-## Caveats
-
-You should make sure to test the publish output before deploying your
-code, because the linker can potentially break apps that use
-reflection.
+# Caveats
 
 The linker does not analyze reflection calls, so any reflection
 targets outside of the kept assemblies will need to be rooted
-explicitly using either `LinkerRootAssemblies` or
-`LinkerRootDescriptors` (see below).
+explicitly (see above).
 
 Sometimes an application may include multiple versions of the same
 assembly. This may happen when portable apps include platform-specific
@@ -96,76 +120,3 @@ publish output. In such cases, the linker will pick one of the
 duplicate assemblies to analyze. This means that dependencies of the
 un-analyzed duplicates may not be included in the application, so you
 may need to root such dependencies manually.
-
-## Options
-
-The following MSBuild properties can be used to control the behavior
-of the linker, from the command-line (via `dotnet publish
-/p:PropertyName=PropertyValue`), or from the .csproj file (via
-`<PropertyName>PropertyValue</PropertyName>`). They are defined and
-used in
-[ILLink.Tasks.targets](ILLink.Tasks.targets).
-
-- `LinkDuringPublish` (default `true`) - Set to `false` to disable
-  linking.
-
-- `ShowLinkerSizeComparison` (default `false`) - Set to `true` to
-  print out a table showing the size impact of the linker.
-
-- `RootAllApplicationAssemblies` (default `true`) - If `true`, all
-  application assemblies are rooted by the linker. This means they are
-  kept in their entirety, and analyzed for dependencies. If `false`,
-  only the app dll's entry point is rooted.
-
-- `LinkerRootAssemblies` - The set of assemblies to root. The default
-  depends on the value of `RootAllApplicationAssemblies`. Additional
-  assemblies can be rooted by adding them to this ItemGroup.
-
-- `LinkerRootDescriptors` - The set of [xml descriptors](../linker#syntax-of-xml-descriptor)
-  specifying additional roots within assemblies. The default is to
-  include a generated descriptor that roots everything in the
-  application assembly if `RootAllApplicationAssemblies` is
-  `true`. Additional roots from descriptors can be included by adding
-  the descriptor files to this ItemGroup.
-
-- `ExtraLinkerArgs` - Extra arguments to pass to the linker. The
-  default sets some flags that output symbols, tolerate resolution
-  errors, log warnings, skip mono-specific localization assemblies,
-  and keep type-forwarder assemblies. See
-  [ILLink.Tasks.targets](ILLink.Tasks.targets).
-  Setting this will override the defaults.
-
-- Assembly actions: illink has the ability to specify an [action](../linker#actions-on-the-assemblies) to
-  take per-assembly. ILLink.Tasks provides high-level switches that
-  control the action to take for a set of assemblies. The set of
-  managed files that make up the application are split into
-  "application" and "platform" assemblies. The "platform" represents
-  the .NET framework, while the "application" represents the rest of
-  the application and its other dependencies. The assembly action can
-  be set for each of these groups independently, for assemblies that
-  are analyzed as used and as unused, with the following switches:
-
-  - `UsedApplicationAssemblyAction` - The default is to `Copy` any used
-    application assemblies to the output, leaving them as-is.
-  - `UnusedApplicationAssemblyAction` - The default is to `Delete` (not
-    publish) unused application assemblies.
-  - `UsedPlatformAssemblyAction` - For self-contained publish, the
-    default is `AddBypassNGen`, which will add the BypassNGenAttribute
-    to unused code in used platform assemblies. This causes the native
-    compilation step to compile only parts of these assemblies that
-    are used. For portable publish, the default is to `Skip` these,
-    because the platform assemblies are generally not published with
-    the app.
-  - `UnusedPlatformAssemblyAction` - For self-contained publish, the
-    default is to `Delete` (not publish) unused platform
-    assemblies. For portable publish, the default is to `Skip`.
-
-  The full list of assembly actions is described in
-  [AssemblyAction.cs](../linker/Linker/AssemblyAction.cs) Some
-  combinations of actions may be disallowed if they do not make
-  sense. For more details, see
-  [SetAssemblyActions.cs](SetAssemblyActions.cs).
-
-- `LinkerTrimNativeDeps` (default `true`) - If `true`, enable
-  detection and removal of unused native dependencies. If `false`, all
-  native dependencies are kept.
