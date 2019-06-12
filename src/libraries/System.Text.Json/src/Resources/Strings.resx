@@ -356,9 +356,6 @@
   <data name="SerializationNotSupportedCollectionType" xml:space="preserve">
     <value>The collection type '{0}' is not supported.</value>
   </data>
-  <data name="SerializationDataExtensionPropertyInvalidElement" xml:space="preserve">
-    <value>The data extension property '{0}.{1}' cannot contain dictionary values of type '{2}'. Dictionary values must be of type JsonElement.</value>
-  </data>
   <data name="SerializationNotSupportedCollection" xml:space="preserve">
     <value>The collection type '{0}' on '{1}' is not supported.</value>
   </data>

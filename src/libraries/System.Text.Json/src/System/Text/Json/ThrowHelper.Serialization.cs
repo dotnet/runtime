@@ -118,12 +118,6 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(JsonClassInfo jsonClassInfo, Type invalidType)
-        {
-            throw new InvalidOperationException(SR.Format(SR.SerializationDataExtensionPropertyInvalidElement, jsonClassInfo.Type, jsonClassInfo.DataExtensionProperty.PropertyInfo.Name, invalidType));
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_DeserializeMissingParameterlessConstructor(Type invalidType)
         {
             throw new NotSupportedException(SR.Format(SR.DeserializeMissingParameterlessConstructor, invalidType));
