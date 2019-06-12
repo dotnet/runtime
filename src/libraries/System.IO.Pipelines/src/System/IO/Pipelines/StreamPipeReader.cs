@@ -241,12 +241,16 @@ namespace System.IO.Pipelines
                 {
                     ClearCancellationToken();
 
-                    if (cancellationToken.IsCancellationRequested)
+                    if (tokenSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+                    {
+                        // Catch cancellation and translate it into setting isCanceled = true
+                        isCanceled = true;
+                    }
+                    else
                     {
                         throw;
                     }
 
-                    isCanceled = true;
                 }
 
                 return new ReadResult(GetCurrentReadOnlySequence(), isCanceled, _isStreamCompleted);
