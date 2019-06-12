@@ -221,6 +221,7 @@ namespace System.Tests
             {
                 EventHandler handler = (sender, e) =>
                 {
+                    Assert.Same(AppDomain.CurrentDomain, sender);
                     File.Create(pathToFile);
                 };
 
@@ -519,9 +520,13 @@ namespace System.Tests
                 bool AssemblyLoadFlag = false;
                 AssemblyLoadEventHandler handler = (sender, args) =>
                 {
+                    Assert.Same(AppDomain.CurrentDomain, sender);
+                    Assert.NotNull(args);
+                    Assert.NotNull(args.LoadedAssembly);
+
                     if (args.LoadedAssembly.FullName.Equals(typeof(AppDomainTests).Assembly.FullName))
                     {
-                        AssemblyLoadFlag = !AssemblyLoadFlag;
+                        AssemblyLoadFlag = true;
                     }
                 };
 
@@ -541,14 +546,44 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18718", TargetFrameworkMonikers.Uap)] // Need to copy files out of execution directory'
+        public void AssemblyResolveInvalidAssemblyName()
+        {
+            RemoteExecutor.Invoke(() => {
+                bool AssemblyResolveFlag = false;
+                ResolveEventHandler handler = (sender, args) =>
+                {
+                    Assert.Same(AppDomain.CurrentDomain, sender);
+                    Assert.NotNull(args);
+                    Assert.NotNull(args.Name);
+                    Assert.NotNull(args.RequestingAssembly);
+                    AssemblyResolveFlag = true;
+                    return null;
+                };
+
+                AppDomain.CurrentDomain.AssemblyResolve += handler;
+
+                Type t = Type.GetType("AssemblyResolveTestApp.Class1, InvalidAssemblyName", throwOnError : false);
+                Assert.Null(t);
+                Assert.True(AssemblyResolveFlag);
+                return RemoteExecutor.SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Does not support Assembly.LoadFile")]
         public void AssemblyResolve()
         {
             CopyTestAssemblies();
 
             RemoteExecutor.Invoke(() => {
-                ResolveEventHandler handler = (sender, e) =>
+                // bool AssemblyResolveFlag = false;
+                ResolveEventHandler handler = (sender, args) =>
                 {
+                    Assert.Same(AppDomain.CurrentDomain, sender);
+                    Assert.NotNull(args);
+                    Assert.NotNull(args.Name);
+                    Assert.NotNull(args.RequestingAssembly);
+                    // AssemblyResolveFlag = true;
                     return Assembly.LoadFile(Path.Combine(Environment.CurrentDirectory, "AssemblyResolveTestApp.dll"));
                 };
 
@@ -556,22 +591,30 @@ namespace System.Tests
 
                 Type t = Type.GetType("AssemblyResolveTestApp.Class1, AssemblyResolveTestApp", true);
                 Assert.NotNull(t);
+                // https://github.com/dotnet/corefx/issues/38361
+                // Assert.True(AssemblyResolveFlag);
                 return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18718", TargetFrameworkMonikers.Uap)] // Need to copy files out of execution directory
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Does not support Assembly.LoadFile")]
         public void AssemblyResolve_RequestingAssembly()
         {
             CopyTestAssemblies();
 
             RemoteExecutor.Invoke(() => {
+                // bool AssemblyResolveFlag = false;
+
                 Assembly a = Assembly.LoadFile(Path.Combine(Environment.CurrentDirectory, "TestAppOutsideOfTPA.exe"));
 
-                ResolveEventHandler handler = (sender, e) =>
+                ResolveEventHandler handler = (sender, args) =>
                 {
-                    Assert.Equal(e.RequestingAssembly, a);
+                    Assert.Same(AppDomain.CurrentDomain, sender);
+                    Assert.NotNull(args);
+                    Assert.NotNull(args.Name);
+                    Assert.Same(a, args.RequestingAssembly);
+                    // AssemblyResolveFlag = true;
                     return Assembly.LoadFile(Path.Combine(Environment.CurrentDirectory, "AssemblyResolveTestApp.dll"));
                 };
 
@@ -580,6 +623,8 @@ namespace System.Tests
                 MethodInfo myMethodInfo = ptype.GetMethod("foo");
                 object ret = myMethodInfo.Invoke(null, null);
                 Assert.NotNull(ret);
+                // https://github.com/dotnet/corefx/issues/38361
+                // Assert.True(AssemblyResolveFlag);
                 return RemoteExecutor.SuccessExitCode;
             }).Dispose();
         }
@@ -626,6 +671,10 @@ namespace System.Tests
 
                 ResolveEventHandler handler = (sender, args) =>
                 {
+                    Assert.Same(AppDomain.CurrentDomain, sender);
+                    Assert.NotNull(args);
+                    Assert.NotNull(args.Name);
+                    Assert.NotNull(args.RequestingAssembly);
                     return Assembly.Load("TestApp");
                 };
 
@@ -655,6 +704,10 @@ namespace System.Tests
 
                 ResolveEventHandler handler = (sender, args) =>
                 {
+                    Assert.Same(AppDomain.CurrentDomain, sender);
+                    Assert.NotNull(args);
+                    Assert.NotNull(args.Name);
+                    Assert.NotNull(args.RequestingAssembly);
                     return Assembly.Load("TestApp");
                 };
 
