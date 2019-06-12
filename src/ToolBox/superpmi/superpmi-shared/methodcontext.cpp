@@ -4353,6 +4353,7 @@ void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
     key.A = (DWORDLONG)field;
     key.B = (DWORDLONG)memberParent;
 
+    value.B = (DWORD)result;
     if (structType == nullptr)
     {
         value.A = 0;
@@ -4360,9 +4361,18 @@ void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
     else
     {
         value.A = (DWORDLONG)*structType;
-    }
-    value.B = (DWORD)result;
 
+        // If we had a previous call with null 'structType', we will not have captured the
+        // class handle (we use only 'field' and 'memberParent' as keys).
+        // Update the value in that case.
+        unsigned index = GetFieldType->GetIndex(key);
+        if ((index != -1) && (GetFieldType->GetItem(index).A == 0))
+        {
+            GetFieldType->Update(index, value);
+            DEBUG_REC(dmpGetFieldType(key, value));
+            return;
+        }
+    }
     GetFieldType->Add(key, value);
     DEBUG_REC(dmpGetFieldType(key, value));
 }
