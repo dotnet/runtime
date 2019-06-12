@@ -4205,7 +4205,7 @@ namespace System
                 object? result = ((MethodInfo)invokeMethod).Invoke(target, bindingFlags, binder, providedArgs, culture);
 
                 if (state != null)
-                    binder.ReorderArgumentArray(ref providedArgs!, state); // TODO-NULLABLE: Pass non-null string? to string ref (https://github.com/dotnet/roslyn/issues/34874)
+                    binder.ReorderArgumentArray(ref providedArgs, state);
 
                 return result;
             }
@@ -4407,7 +4407,7 @@ namespace System
 
                 try
                 {
-                    invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args!, null, culture, null, out state); //TODO-NULLABLE: Pass non-null string? to string ref (https://github.com/dotnet/roslyn/issues/34874)
+                    invokeMethod = binder.BindToMethod(bindingAttr, cons, ref args, null, culture, null, out state);
                 }
                 catch (MissingMethodException) { invokeMethod = null; }
 

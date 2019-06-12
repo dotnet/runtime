@@ -418,7 +418,7 @@ namespace Internal.Win32
                                 {
                                     Array.Resize(ref strings!, stringsCount > 0 ? stringsCount * 2 : 4); // TODO-NULLABLE: Remove ! when nullable attributes are respected
                                 }
-                                strings![stringsCount++] = toAdd; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                                strings[stringsCount++] = toAdd;
                             }
                         }
 
