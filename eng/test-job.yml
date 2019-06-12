@@ -10,6 +10,7 @@ parameters:
   # If true, run the corefx tests instead of the coreclr ones
   corefxTests: false
   displayNameArgs: ''
+  runInUnloadableContext: false
 
 ### Test job
 
@@ -205,6 +206,7 @@ jobs:
           timeoutPerTestInMinutes: 90
 
         runCrossGen: ${{ parameters.readyToRun }}
+        runInUnloadableContext: ${{ parameters.runInUnloadableContext }}
 
         ${{ if eq(variables['System.TeamProject'], 'internal') }}:
           # Access token variable for internal project from the
