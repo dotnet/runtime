@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
+using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
@@ -518,6 +520,10 @@ namespace System.Net.Http.Functional.Tests
         private static bool IsNtlmInstalled => Capability.IsNtlmInstalled();
         private static bool IsWindowsServerAvailable => !string.IsNullOrEmpty(Configuration.Http.WindowsServerHttpHost);
         private static bool IsDomainJoinedServerAvailable => !string.IsNullOrEmpty(Configuration.Http.DomainJoinedHttpHost);
+        private static NetworkCredential DomainCredential = new NetworkCredential(
+                    Configuration.Security.ActiveDirectoryUserName,
+                    Configuration.Security.ActiveDirectoryUserPassword,
+                    Configuration.Security.ActiveDirectoryName);
 
         [ConditionalFact(nameof(IsDomainJoinedServerAvailable))]
         public async Task Credentials_DomainJoinedServerUsesKerberos_Success()
@@ -530,19 +536,39 @@ namespace System.Net.Http.Functional.Tests
             using (HttpClientHandler handler = CreateHttpClientHandler())
             using (HttpClient client = CreateHttpClient(handler))
             {
-                handler.Credentials = new NetworkCredential(
-                    Configuration.Security.ActiveDirectoryUserName,
-                    Configuration.Security.ActiveDirectoryUserPassword,
-                    Configuration.Security.ActiveDirectoryName);
+                handler.Credentials = DomainCredential;
+
+                string server = $"http://{Configuration.Http.DomainJoinedHttpHost}/test/auth/kerberos/showidentity.ashx";
+                using (HttpResponseMessage response = await client.GetAsync(server))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    string body = await response.Content.ReadAsStringAsync();
+                    _output.WriteLine(body);
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(IsDomainJoinedServerAvailable))]
+        public async Task Credentials_DomainJoinedServerUsesKerberos_UseIpAddressAndHostHeader_Success()
+        {
+            if (IsCurlHandler || IsWinHttpHandler)
+            {
+                throw new SkipTestException("Skipping test on platform handlers (CurlHandler, WinHttpHandler)");
+            }
+
+            using (HttpClientHandler handler = CreateHttpClientHandler())
+            using (HttpClient client = CreateHttpClient(handler))
+            {
+                handler.Credentials = DomainCredential;
+
+                IPAddress[] addresses = Dns.GetHostAddresses(Configuration.Http.DomainJoinedHttpHost);
+                IPAddress hostIP = addresses.Where(a => a.AddressFamily == AddressFamily.InterNetwork).Select(a => a).First();
 
                 var request = new HttpRequestMessage();
-                var server = $"http://{Configuration.Http.DomainJoinedHttpHost}/test/auth/kerberos/showidentity.ashx";
-                request.RequestUri = new Uri(server);
-
-                // Force HTTP/1.1 since both CurlHandler and SocketsHttpHandler have problems with
-                // HTTP/2.0 and Windows authentication (due to HTTP/2.0 -> HTTP/1.1 downgrade handling).
-                // Issue #35195 (for SocketsHttpHandler).
-                request.Version = new Version(1,1);
+                request.RequestUri = new Uri($"http://{hostIP}/test/auth/kerberos/showidentity.ashx");
+                request.Headers.Host = Configuration.Http.DomainJoinedHttpHost;
+                _output.WriteLine(request.RequestUri.AbsoluteUri.ToString());
+                _output.WriteLine($"Host: {request.Headers.Host}");
 
                 using (HttpResponseMessage response = await client.SendAsync(request))
                 {
@@ -569,15 +595,7 @@ namespace System.Net.Http.Functional.Tests
                     Configuration.Security.WindowsServerUserName,
                     Configuration.Security.WindowsServerUserPassword);
 
-                var request = new HttpRequestMessage();
-                request.RequestUri = new Uri(server);
-
-                // Force HTTP/1.1 since both CurlHandler and SocketsHttpHandler have problems with
-                // HTTP/2.0 and Windows authentication (due to HTTP/2.0 -> HTTP/1.1 downgrade handling).
-                // Issue #35195 (for SocketsHttpHandler).
-                request.Version = new Version(1,1);
-
-                using (HttpResponseMessage response = await client.SendAsync(request))
+                using (HttpResponseMessage response = await client.GetAsync(server))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     string body = await response.Content.ReadAsStringAsync();
