@@ -76,20 +76,16 @@ namespace System.Reflection
         public sealed override Assembly Assembly => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Module Module => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
-#pragma warning disable CS8608 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         public sealed override Type ReflectedType => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Type BaseType => throw new NotSupportedException(SR.NotSupported_SignatureType);
-#pragma warning restore CS8608
 
         public sealed override Type[] GetInterfaces() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsAssignableFrom(Type? c) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override int MetadataToken => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
-#pragma warning disable CS8608 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         public sealed override Type DeclaringType => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override MethodBase DeclaringMethod => throw new NotSupportedException(SR.NotSupported_SignatureType);
-#pragma warning restore CS8608
 
         public sealed override Type[] GetGenericParameterConstraints() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override GenericParameterAttributes GenericParameterAttributes => throw new NotSupportedException(SR.NotSupported_SignatureType);
@@ -143,9 +139,7 @@ namespace System.Reflection
         public sealed override bool IsSubclassOf(Type c) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsValueTypeImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
 
-#pragma warning disable CS8608 // TODO-NULLABLE: Covariant return types (https://github.com/dotnet/roslyn/issues/23268)
         public sealed override StructLayoutAttribute StructLayoutAttribute => throw new NotSupportedException(SR.NotSupported_SignatureType);
-#pragma warning restore CS8608
 
         public sealed override RuntimeTypeHandle TypeHandle => throw new NotSupportedException(SR.NotSupported_SignatureType);
     }
