@@ -57,7 +57,7 @@ internal static partial class Interop
         [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetSortVersion")]
         internal static extern int GetSortVersion(CriticalSortHandle sortHandle);
 
-        internal class CriticalSortHandle : CriticalHandle
+        internal sealed class CriticalSortHandle : CriticalHandle
         {
             private CriticalSortHandle() :
                 base(IntPtr.Zero)
