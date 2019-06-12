@@ -970,7 +970,7 @@ while :; do
     shift
 done
 
-__CommonMSBuildArgs="/p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__BuildOS=$__BuildOS "/nodeReuse:false" $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
+__CommonMSBuildArgs="/p:__BuildArch=$__BuildArch /p:__BuildType=$__BuildType /p:__BuildOS=$__BuildOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"
 
 # Configure environment if we are doing a verbose build
 if [ $__VerboseBuild == 1 ]; then
