@@ -12,19 +12,20 @@ internal static partial class Interop
     internal static partial class Globalization
     {
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetSortHandle")]
-        internal static extern unsafe ResultCode GetSortHandle(byte[] localeName, out SafeSortHandle sortHandle);
+        internal static extern unsafe ResultCode GetSortHandle(byte[] localeName, out CriticalSortHandle sortHandle);
 
+        [SuppressUnmanagedCodeSecurity]
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_CloseSortHandle")]
         internal static extern unsafe void CloseSortHandle(IntPtr handle);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_CompareString")]
-        internal static extern unsafe int CompareString(SafeSortHandle sortHandle, char* lpStr1, int cwStr1Len, char* lpStr2, int cwStr2Len, CompareOptions options);
+        internal static extern unsafe int CompareString(CriticalSortHandle sortHandle, char* lpStr1, int cwStr1Len, char* lpStr2, int cwStr2Len, CompareOptions options);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_IndexOf")]
-        internal static extern unsafe int IndexOf(SafeSortHandle sortHandle, char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options, int* matchLengthPtr);
+        internal static extern unsafe int IndexOf(CriticalSortHandle sortHandle, char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options, int* matchLengthPtr);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_LastIndexOf")]
-        internal static extern unsafe int LastIndexOf(SafeSortHandle sortHandle, char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options);
+        internal static extern unsafe int LastIndexOf(CriticalSortHandle sortHandle, char* target, int cwTargetLength, char* pSource, int cwSourceLength, CompareOptions options);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_IndexOfOrdinalIgnoreCase")]
         internal static extern unsafe int IndexOfOrdinalIgnoreCase(string target, int cwTargetLength, char* pSource, int cwSourceLength, bool findLast);
@@ -33,33 +34,33 @@ internal static partial class Interop
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_StartsWith")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool StartsWith(SafeSortHandle sortHandle, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options);
+        internal static extern unsafe bool StartsWith(CriticalSortHandle sortHandle, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_EndsWith")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool EndsWith(SafeSortHandle sortHandle, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options);
+        internal static extern unsafe bool EndsWith(CriticalSortHandle sortHandle, char* target, int cwTargetLength, char* source, int cwSourceLength, CompareOptions options);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_StartsWith")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool StartsWith(SafeSortHandle sortHandle, string target, int cwTargetLength, string source, int cwSourceLength, CompareOptions options);
+        internal static extern unsafe bool StartsWith(CriticalSortHandle sortHandle, string target, int cwTargetLength, string source, int cwSourceLength, CompareOptions options);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_EndsWith")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern unsafe bool EndsWith(SafeSortHandle sortHandle, string target, int cwTargetLength, string source, int cwSourceLength, CompareOptions options);
+        internal static extern unsafe bool EndsWith(CriticalSortHandle sortHandle, string target, int cwTargetLength, string source, int cwSourceLength, CompareOptions options);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetSortKey")]
-        internal static extern unsafe int GetSortKey(SafeSortHandle sortHandle, char* str, int strLength, byte* sortKey, int sortKeyLength, CompareOptions options);
+        internal static extern unsafe int GetSortKey(CriticalSortHandle sortHandle, char* str, int strLength, byte* sortKey, int sortKeyLength, CompareOptions options);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_CompareStringOrdinalIgnoreCase")]
         internal static extern unsafe int CompareStringOrdinalIgnoreCase(char* lpStr1, int cwStr1Len, char* lpStr2, int cwStr2Len);
 
         [DllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetSortVersion")]
-        internal static extern int GetSortVersion(SafeSortHandle sortHandle);
+        internal static extern int GetSortVersion(CriticalSortHandle sortHandle);
 
-        internal class SafeSortHandle : SafeHandle
+        internal class CriticalSortHandle : CriticalHandle
         {
-            private SafeSortHandle() :
-                base(IntPtr.Zero, true)
+            private CriticalSortHandle() :
+                base(IntPtr.Zero)
             {
             }
 
