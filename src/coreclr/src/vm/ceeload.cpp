@@ -3420,22 +3420,16 @@ BOOL Module::IsInCurrentVersionBubble()
 //
 BOOL Module::IsInSameVersionBubble(Module *target)
 {
-    CONTRACT(BOOL)
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACT_END;
+    STANDARD_VM_CONTRACT;
 
     if (this == target)
     {
-        RETURN TRUE;
+        return TRUE;
     }
 
     if (!HasNativeOrReadyToRunImage())
     {
-        RETURN FALSE;
+        return FALSE;
     }
 
     // Check if the current module's image has native manifest metadata, otherwise the current->GetNativeAssemblyImport() asserts.
@@ -3443,7 +3437,7 @@ BOOL Module::IsInSameVersionBubble(Module *target)
     const void* pMeta = GetFile()->GetOpenedILimage()->GetNativeManifestMetadata(&cMeta);
     if (pMeta == NULL)
     {
-        RETURN FALSE;
+        return FALSE;
     }
 
     IMDInternalImport* pMdImport = GetNativeAssemblyImport();
@@ -3459,11 +3453,11 @@ BOOL Module::IsInSameVersionBubble(Module *target)
         hr = pMdImport->GetAssemblyRefProps(assemblyRef, NULL, NULL, &assemblyName, NULL, NULL, NULL, NULL);
         if (strcmp(assemblyName, targetName) == 0)
         {
-            RETURN TRUE;
+            return TRUE;
         }
     }
 
-    RETURN FALSE;
+    return FALSE;
 }
 #endif // FEATURE_READYTORUN && !FEATURE_READYTORUN_COMPILER
 
