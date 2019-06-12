@@ -108,8 +108,8 @@ namespace System.Resources.Extensions
             if (an1.CultureInfo?.LCID != an2.CultureInfo?.LCID)
                 return false;
 
-            byte[] pkt1 = an1.GetPublicKeyToken();
-            byte[] pkt2 = an2.GetPublicKeyToken();
+            byte[]? pkt1 = an1.GetPublicKeyToken();
+            byte[]? pkt2 = an2.GetPublicKeyToken();
             return pkt1.AsSpan().SequenceEqual(pkt2);
         }
 
