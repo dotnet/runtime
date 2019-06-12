@@ -303,9 +303,6 @@
     <CLSCompliant Condition="'$(CLSCompliant)'=='' and '$(IsTestProject)'=='true'">false</CLSCompliant>
     <CLSCompliant Condition="'$(CLSCompliant)'==''">true</CLSCompliant>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
-
-    <!-- TODO-NULLABLE: remove CS8609, CS8610 once we consume roslyn that allows nullable covariant overrides -->
-    <NoWarn>$(NoWarn);CS8609;CS8610</NoWarn>
   </PropertyGroup>
 
   <!-- Set up some common paths -->
