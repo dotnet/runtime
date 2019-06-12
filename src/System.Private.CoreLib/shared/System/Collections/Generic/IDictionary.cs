@@ -11,7 +11,7 @@ namespace System.Collections.Generic
     // Keys can be any non-null object.  Values can be any object.
     // You can look up a value in an IDictionary via the default indexed
     // property, Items.
-    public interface IDictionary<TKey, TValue> : ICollection<KeyValuePair<TKey, TValue>> where TKey : object
+    public interface IDictionary<TKey, TValue> : ICollection<KeyValuePair<TKey, TValue>> where TKey : notnull
     {
         // Interfaces are not serializable
         // The Item property provides methods to read and edit entries 
