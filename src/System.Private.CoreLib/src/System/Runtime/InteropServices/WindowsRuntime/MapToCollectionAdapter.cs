@@ -27,7 +27,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // int Count { get }
-        internal int Count<K, V>() where K : object
+        internal int Count<K, V>() where K : notnull
         {
             object _this = Unsafe.As<object>(this);
 
@@ -57,13 +57,13 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool IsReadOnly { get }
-        internal bool IsReadOnly<K, V>() where K : object
+        internal bool IsReadOnly<K, V>() where K : notnull
         {
             return false;
         }
 
         // void Add(T item)
-        internal void Add<K, V>(KeyValuePair<K, V> item) where K : object
+        internal void Add<K, V>(KeyValuePair<K, V> item) where K : notnull
         {
             object _this = Unsafe.As<object>(this);
 
@@ -79,7 +79,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void Clear()
-        internal void Clear<K, V>() where K : object
+        internal void Clear<K, V>() where K : notnull
         {
             object _this = Unsafe.As<object>(this);
 
@@ -95,7 +95,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool Contains(T item)
-        internal bool Contains<K, V>(KeyValuePair<K, V> item) where K : object
+        internal bool Contains<K, V>(KeyValuePair<K, V> item) where K : notnull
         {
             object _this = Unsafe.As<object>(this);
 
@@ -119,7 +119,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // void CopyTo(T[] array, int arrayIndex)
-        internal void CopyTo<K, V>(KeyValuePair<K, V>[] array, int arrayIndex) where K : object
+        internal void CopyTo<K, V>(KeyValuePair<K, V>[] array, int arrayIndex) where K : notnull
         {
             if (array == null)
                 throw new ArgumentNullException(nameof(array));
@@ -142,7 +142,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         }
 
         // bool Remove(T item)
-        internal bool Remove<K, V>(KeyValuePair<K, V> item) where K : object
+        internal bool Remove<K, V>(KeyValuePair<K, V> item) where K : notnull
         {
             object _this = Unsafe.As<object>(this);
 
