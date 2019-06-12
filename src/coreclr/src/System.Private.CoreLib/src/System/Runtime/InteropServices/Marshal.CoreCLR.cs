@@ -388,7 +388,7 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern IntPtr CreateAggregatedObject(IntPtr pOuter, object o);
 
-        public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : object
+        public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : notnull
         {
             return CreateAggregatedObject(pOuter, (object)o);
         }
