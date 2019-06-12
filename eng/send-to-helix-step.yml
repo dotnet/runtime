@@ -16,6 +16,7 @@ parameters:
   timeoutPerTestInMinutes: ''
   runCrossGen: ''
   helixProjectArguments: ''
+  runInUnloadableContext: ''
 
 steps:
 - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
