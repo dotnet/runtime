@@ -45,6 +45,7 @@ jobs:
 ##           \---------> Pri1 -----------------> plain runtests
 ##           |                \----------------> jitstress
 ##           |                \----------------> gcstress
+##           |                \----------------> runincontext
 ##           |                \----------------> maybe more (dynamically selected runtest modes)
 ##           |
 ##           \---------> Pri1 crossgen --------> plain runtests
@@ -155,6 +156,11 @@ jobs:
         platforms:
         - Linux_x64
         - Windows_NT_x64
+      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-runincontext') }}:
+        platforms:
+        - Linux_x64
+        - Windows_NT_x64
+        - Windows_NT_x86
 
 #
 # Release builds
@@ -199,7 +205,7 @@ jobs:
 #
 # The test jobs that can be triggered by a PR, manually from ADO and that are scheduled
 # TODO: This long 'in' condition needs to be make data driven, perhaps by adding another layer of template.
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'Manual', 'Schedule'), in(variables['Build.DefinitionName'], 'coreclr-ci', 'coreclr-outerloop', 'coreclr-outerloop-jitstress', 'coreclr-outerloop-jitstress-isas-arm', 'coreclr-outerloop-jitstress-isas-x86', 'coreclr-outerloop-jitstressregs-x86', 'coreclr-outerloop-jitstressregs', 'coreclr-outerloop-jitstress2-jitstressregs', 'coreclr-outerloop-gcstress0x3-gcstress0xc', 'coreclr-outerloop-gcstress-extra', 'coreclr-outerloop-r2r', 'coreclr-outerloop-r2r-extra')) }}:
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'Manual', 'Schedule'), in(variables['Build.DefinitionName'], 'coreclr-ci', 'coreclr-outerloop', 'coreclr-outerloop-jitstress', 'coreclr-outerloop-jitstress-isas-arm', 'coreclr-outerloop-jitstress-isas-x86', 'coreclr-outerloop-jitstressregs-x86', 'coreclr-outerloop-jitstressregs', 'coreclr-outerloop-jitstress2-jitstressregs', 'coreclr-outerloop-gcstress0x3-gcstress0xc', 'coreclr-outerloop-gcstress-extra', 'coreclr-outerloop-r2r', 'coreclr-outerloop-r2r-extra', 'coreclr-runincontext')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
@@ -237,6 +243,11 @@ jobs:
         - Linux_x64
         - Windows_NT_x64
         - Windows_NT_x86
+      ${{ if eq(variables['Build.DefinitionName'], 'coreclr-runincontext') }}:
+        platforms:
+        - Linux_x64
+        - Windows_NT_x64
+        - Windows_NT_x86
       jobParameters:
         ${{ if eq(variables['Build.DefinitionName'], 'coreclr-ci') }}:
           testGroup: innerloop
@@ -266,6 +277,10 @@ jobs:
           testGroup: r2r-extra
           readyToRun: true
           displayNameArgs: R2R
+        ${{ if eq(variables['Build.DefinitionName'], 'coreclr-runincontext') }}:
+          testGroup: outerloop
+          runInUnloadableContext: true
+          displayNameArgs: RunInContext
 
 # ReadyToRun test jobs that are triggered by default from a PR.
 
