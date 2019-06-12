@@ -152,11 +152,7 @@ namespace System.Threading.Tasks
         private CompletionState EnsureCompletionStateInitialized()
         {
             // ValueLock not needed, but it's ok if it's held
-#pragma warning disable CS8634 // TODO-NULLABLE: Remove warning disable when nullable attributes are respected
-#pragma warning disable CS8603 // TODO-NULLABLE: Remove warning disable when nullable attributes are respected
-            return LazyInitializer.EnsureInitialized(ref m_completionState!, () => new CompletionState());
-#pragma warning restore CS8603
-#pragma warning restore CS8634
+            return LazyInitializer.EnsureInitialized<CompletionState>(ref m_completionState!, () => new CompletionState()); // TODO-NULLABLE: Remove ! when nullable attributes are respected
         }
 
         /// <summary>Gets whether completion has been requested.</summary>
