@@ -36,7 +36,7 @@ namespace System.Runtime.InteropServices
         {
         }
 
-        public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : object
+        public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : notnull
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
         }

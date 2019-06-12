@@ -781,7 +781,7 @@ namespace System.Collections
                 return false;
             }
 
-#pragma warning disable CS8612 // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/23268
+#pragma warning disable CS8612 // TODO-NULLABLE: Covariance in interfaces (https://github.com/dotnet/roslyn/issues/35227)
             public virtual object Current
 #pragma warning restore CS8612
             {

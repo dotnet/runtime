@@ -896,7 +896,7 @@ namespace System.Runtime.InteropServices
             return GetFunctionPointerForDelegateInternal(d);
         }
 
-        public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : object
+        public static IntPtr GetFunctionPointerForDelegate<TDelegate>(TDelegate d) where TDelegate : notnull
         {
             return GetFunctionPointerForDelegate((Delegate)(object)d);
         }
