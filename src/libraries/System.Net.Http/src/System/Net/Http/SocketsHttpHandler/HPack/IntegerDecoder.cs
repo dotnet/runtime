@@ -1,6 +1,8 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the Apache License, Version 2.0.
+// See THIRD-PARTY-NOTICES.TXT in the project root for license information.
+
+using System.Diagnostics;
 
 namespace System.Net.Http.HPack
 {
@@ -11,8 +13,15 @@ namespace System.Net.Http.HPack
 
         public int Value { get; private set; }
 
+        /// <summary>
+        /// Decodes the first byte of the integer.
+        /// </summary>
+        /// <param name="prefixLength">The length of the prefix, in bits, that the integer was encoded with. Must be between 1 and 8.</param>
+        /// <returns>If the integer has been fully decoded, true. Otherwise, false -- <see cref="Decode(byte)"/> must be called on subsequent bytes.</returns>
         public bool StartDecode(byte b, int prefixLength)
         {
+            Debug.Assert(prefixLength >= 1 && prefixLength <= 8);
+
             if (b < ((1 << prefixLength) - 1))
             {
                 Value = b;
@@ -26,6 +35,10 @@ namespace System.Net.Http.HPack
             }
         }
 
+        /// <summary>
+        /// Decodes subsequent bytes of an integer.
+        /// </summary>
+        /// <returns>If the integer has been fully decoded, true. Otherwise, false -- <see cref="Decode(byte)"/> must be called on subsequent bytes.</returns>
         public bool Decode(byte b)
         {
             _i = _i + (b & 127) * (1 << _m);

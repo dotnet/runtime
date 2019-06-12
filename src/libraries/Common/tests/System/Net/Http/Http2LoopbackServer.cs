@@ -579,6 +579,9 @@ namespace System.Net.Test.Common
             {
                 (int bytesConsumed, HttpHeaderData headerData) = DecodeHeader(data.Span.Slice(i));
 
+                byte[] headerRaw = data.Span.Slice(i, bytesConsumed).ToArray();
+                headerData = new HttpHeaderData(headerData.Name, headerData.Value, headerRaw);
+
                 requestData.Headers.Add(headerData);
                 i += bytesConsumed;
             }

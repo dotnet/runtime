@@ -37,7 +37,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader ContentMD5 = new KnownHeader("Content-MD5", HttpHeaderType.Content, ByteArrayHeaderParser.Parser);
         public static readonly KnownHeader ContentRange = new KnownHeader("Content-Range", HttpHeaderType.Content, GenericHeaderParser.ContentRangeParser, null, StaticTable.ContentRange);
         public static readonly KnownHeader ContentSecurityPolicy = new KnownHeader("Content-Security-Policy");
-        public static readonly KnownHeader ContentType = new KnownHeader("Content-Type", HttpHeaderType.Content, MediaTypeHeaderParser.SingleValueParser);
+        public static readonly KnownHeader ContentType = new KnownHeader("Content-Type", HttpHeaderType.Content, MediaTypeHeaderParser.SingleValueParser, null, StaticTable.ContentType);
         public static readonly KnownHeader Cookie = new KnownHeader("Cookie", StaticTable.Cookie);
         public static readonly KnownHeader Cookie2 = new KnownHeader("Cookie2");
         public static readonly KnownHeader Date = new KnownHeader("Date", HttpHeaderType.General, DateHeaderParser.Parser, null, StaticTable.Date);
