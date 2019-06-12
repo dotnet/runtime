@@ -8,6 +8,7 @@
     <InboxOnTargetFramework Include="net45">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
+    <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
     <!-- Since UAP are package based we still want to enable
          OOBing libraries that happen to overlap with their framework package.
          This avoids us having to lock the API in our NuGet packages just
