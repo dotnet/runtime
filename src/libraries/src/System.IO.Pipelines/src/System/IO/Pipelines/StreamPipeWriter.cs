@@ -306,13 +306,13 @@ namespace System.IO.Pipelines
                         _internalTokenSource = null;
                     }
 
-                    if (cancellationToken.IsCancellationRequested)
+                    if (localToken.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
                     {
-                        throw;
+                        // Catch cancellation and translate it into setting isCanceled = true
+                        return new FlushResult(isCanceled: true, isCompleted: false);
                     }
 
-                    // Catch any cancellation and translate it into setting isCanceled = true
-                    return new FlushResult(isCanceled: true, isCompleted: false);
+                    throw;
                 }
             }
         }
