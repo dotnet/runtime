@@ -390,12 +390,23 @@ if %__RestoreOptData% EQU 1 (
 )
 
 REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
-for /f "tokens=*" %%s in ('call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpPgoDataPackageVersion /nologo') do (
-    set __PgoOptDataVersion=%%s
+call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpPgoDataPackageVersion /nologo
+
+if not exist "%__IntermediatesDir%\optdataversion.txt" (
+    echo "Failed to get PGO data package version."
+    exit /b !errorlevel!
 )
-for /f "tokens=*" %%s in ('call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpIbcDataPackageVersion /nologo') do (
-    set __IbcOptDataVersion=%%s
+
+set /p __PgoOptDataVersion<"%__IntermediatesDir%\optdataversion.txt"
+
+call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpIbcDataPackageVersion /nologo
+
+if not exist "%__IntermediatesDir%\ibcoptdataversion.txt" (
+    echo "Failed to get PGO data package version."
+    exit /b !errorlevel!
 )
+
+set /p __IbcOptDataVersion=<"%__IntermediatesDir%\ibcoptdataversion.txt"
 
 REM =========================================================================================
 REM ===

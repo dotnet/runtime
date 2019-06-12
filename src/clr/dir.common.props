@@ -56,6 +56,8 @@
     <BinDir>$(__BinDir)\</BinDir>
     <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(PlatformConfigPathPart)\</BinDir>
 
+    <OptDataIntermediateOutputPath Condition="'$(OptDataIntermediateOutputPath)' == ''">$(RootBinDir)obj/$(BuildOS).$(BuildArch).$(BuildType)/</OptDataIntermediateOutputPath>
+
     <!-- We don't append back slash because this path is used by nuget.exe as output directory and it
          fails to write packages to it if the path contains the forward slash.
     -->
