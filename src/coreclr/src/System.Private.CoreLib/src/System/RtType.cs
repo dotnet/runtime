@@ -4432,7 +4432,7 @@ namespace System
                 {
                     server = ((ConstructorInfo)invokeMethod).Invoke(bindingAttr, binder, args, culture);
                     if (state != null)
-                        binder.ReorderArgumentArray(ref args!, state);
+                        binder.ReorderArgumentArray(ref args, state);
                 }
             }
 
