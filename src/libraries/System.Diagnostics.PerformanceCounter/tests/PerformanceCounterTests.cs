@@ -145,6 +145,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue(38180)]
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndCanWriteToPerfCounters))]
         public static void PerformanceCounter_NextValue_ProcessorCounter()
         {
