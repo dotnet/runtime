@@ -245,7 +245,8 @@
               '$(PackageTargetRuntime)' == '$(PackageRID)'
             )">
     <PropertyGroup>
-      <FrameworkListFile>$(IntermediateOutputPath)FrameworkList.xml</FrameworkListFile>
+      <FrameworkListFilename Condition="'$(FrameworkListFilename)' == ''">FrameworkList.xml</FrameworkListFilename>
+      <FrameworkListFile>$(IntermediateOutputPath)$(FrameworkListFilename)</FrameworkListFile>
     </PropertyGroup>
 
     <ItemGroup>
