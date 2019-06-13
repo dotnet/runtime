@@ -28,10 +28,13 @@ namespace System.Text.Json.Serialization.Tests
         public double MyDouble { get; set; }
         public DateTime MyDateTime { get; set; }
         public DateTimeOffset MyDateTimeOffset { get; set; }
+        public SampleSByteEnum MySByteEnum { get; set; }
         public SampleByteEnum MyByteEnum { get; set; }
         public SampleEnum MyEnum { get; set; }
+        public SampleEnumInt16 MyInt16Enum { get; set; }
         public SampleInt64Enum MyInt64Enum { get; set; }
         public SampleUInt32Enum MyUInt32Enum { get; set; }
+        public SampleEnumUInt16 MyUInt16Enum { get; set; }
         public SampleUInt64Enum MyUInt64Enum { get; set; }
         public short[] MyInt16Array { get; set; }
         public int[] MyInt32Array { get; set; }
