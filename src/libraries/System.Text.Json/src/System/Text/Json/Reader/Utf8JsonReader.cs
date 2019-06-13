@@ -19,6 +19,7 @@ namespace System.Text.Json
     /// To be able to set max depth while reading OR allow skipping comments, create an instance of 
     /// <see cref="JsonReaderState"/> and pass that in to the reader.
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public ref partial struct Utf8JsonReader
     {
         private ReadOnlySpan<byte> _buffer;
@@ -2434,5 +2435,28 @@ namespace System.Text.Json
             _tokenType = JsonTokenType.Comment;
             return true;
         }
+
+        private string DebuggerDisplay => $"TokenType = {DebugTokenType} (TokenStartIndex = {TokenStartIndex}) Consumed = {BytesConsumed}";
+
+        // Using TokenType.ToString() (or {TokenType}) fails to render in the debug window. The
+        // message "The runtime refused to evaluate the expression at this time." is shown. This
+        // is a workaround until we root cause and fix the issue.
+        private string DebugTokenType
+            => TokenType switch
+            {
+                JsonTokenType.Comment => nameof(JsonTokenType.Comment),
+                JsonTokenType.EndArray => nameof(JsonTokenType.EndArray),
+                JsonTokenType.EndObject => nameof(JsonTokenType.EndObject),
+                JsonTokenType.False => nameof(JsonTokenType.False),
+                JsonTokenType.None => nameof(JsonTokenType.None),
+                JsonTokenType.Null => nameof(JsonTokenType.Null),
+                JsonTokenType.Number => nameof(JsonTokenType.Number),
+                JsonTokenType.PropertyName => nameof(JsonTokenType.PropertyName),
+                JsonTokenType.StartArray => nameof(JsonTokenType.StartArray),
+                JsonTokenType.StartObject => nameof(JsonTokenType.StartObject),
+                JsonTokenType.String => nameof(JsonTokenType.String),
+                JsonTokenType.True => nameof(JsonTokenType.True),
+                _ => ((byte)TokenType).ToString()
+            };
     }
 }

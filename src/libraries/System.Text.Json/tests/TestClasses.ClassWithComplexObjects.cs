@@ -51,7 +51,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonElement>(Object);
             JsonElement jsonObject = (JsonElement)Object;
             Assert.Equal(JsonValueType.Object, jsonObject.Type);
-            JsonProperty property = jsonObject.EnumerateObject().First();
+            JsonElement.ObjectEnumerator enumerator = jsonObject.EnumerateObject();
+            JsonProperty property = enumerator.First();
             Assert.Equal("NestedArray", property.Name);
             Assert.True(property.NameEquals("NestedArray"));
             ValidateArray(property.Value);

@@ -2,18 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Buffers;
-using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 namespace System.Text.Json
 {
     /// <summary>
     ///   Represents a specific JSON value within a <see cref="JsonDocument"/>.
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public readonly partial struct JsonElement
     {
         private readonly JsonDocument _parent;
@@ -1286,5 +1283,7 @@ namespace System.Text.Json
                 throw new InvalidOperationException();
             }
         }
+
+        private string DebuggerDisplay => $"Type = {Type} : \"{ToString()}\"";
     }
 }

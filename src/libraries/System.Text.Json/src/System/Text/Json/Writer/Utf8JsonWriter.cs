@@ -30,6 +30,7 @@ namespace System.Text.Json
     /// To be able to format the output with indentation and whitespace OR to skip validation, create an instance of 
     /// <see cref="JsonWriterOptions"/> and pass that in to the writer.
     /// </remarks>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public sealed partial class Utf8JsonWriter : IDisposable
 #if BUILDING_INBOX_LIBRARY
         , IAsyncDisposable
@@ -1091,5 +1092,7 @@ namespace System.Text.Json
         {
             _currentDepth |= 1 << 31;
         }
+
+        private string DebuggerDisplay => $"BytesCommitted = {BytesCommitted} BytesPending = {BytesPending} CurrentDepth = {CurrentDepth}";
     }
 }

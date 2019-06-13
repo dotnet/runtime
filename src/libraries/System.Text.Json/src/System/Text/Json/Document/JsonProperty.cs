@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 
 namespace System.Text.Json
 {
     /// <summary>
     ///   Represents a single property for a JSON object.
     /// </summary>
+    [DebuggerDisplay("{DebuggerDisplay,nq}")]
     public readonly struct JsonProperty
     {
         /// <summary>
@@ -99,5 +101,8 @@ namespace System.Text.Json
         {
             return Value.GetPropertyRawText();
         }
+
+        private string DebuggerDisplay
+            => Value.Type == JsonValueType.Undefined ? "<Undefined>" : $"\"{ToString()}\"";
     }
 }
