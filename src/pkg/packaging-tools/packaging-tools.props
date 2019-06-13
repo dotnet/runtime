@@ -8,13 +8,18 @@
   <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Ref'))">
     <FrameworkPackType>targeting</FrameworkPackType>
 
-    <!-- Include the platform manifest in the data dir. -->
+    <!-- Include manifests in the data dir. -->
     <PlatformManifestTargetPath>data/PlatformManifest.txt</PlatformManifestTargetPath>
+    <FrameworkListTargetPath>data/</FrameworkListTargetPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Runtime'))">
     <FrameworkPackType>runtime</FrameworkPackType>
     <BuildRidSpecificPacks>true</BuildRidSpecificPacks>
+
+    <!-- Include a list of runtime files in the data dir. -->
+    <FrameworkListFilename>RuntimeList.xml</FrameworkListFilename>
+    <FrameworkListTargetPath>data/</FrameworkListTargetPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="$(MSBuildProjectName.EndsWith('.Host'))">
@@ -52,9 +57,6 @@
 
     <!-- Location to lay out pack contents, and where to grab bits to create installers. -->
     <PackLayoutDir>$(InstallerSourceIntermediateOutputDir)layout/$(FrameworkPackType)/</PackLayoutDir>
-
-    <!-- Include a list of framework files in the data dir. -->
-    <FrameworkListTargetPath>data/</FrameworkListTargetPath>
   </PropertyGroup>
 
   <PropertyGroup>
