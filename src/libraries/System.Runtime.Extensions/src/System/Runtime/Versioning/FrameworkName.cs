@@ -6,7 +6,10 @@ using System.Diagnostics;
 
 namespace System.Runtime.Versioning
 {
-    public sealed class FrameworkName : IEquatable<FrameworkName?>
+    public sealed class FrameworkName :
+#nullable disable
+        IEquatable<FrameworkName>
+#nullable restore
     {
         private readonly string _identifier;
         private readonly Version _version = null!;
