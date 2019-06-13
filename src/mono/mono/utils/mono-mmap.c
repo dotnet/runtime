@@ -399,7 +399,7 @@ mono_file_map_error (size_t length, int flags, int fd, guint64 offset, void **re
 	if (ptr == MAP_FAILED) {
 		if (error_message) {
 			*error_message = g_strdup_printf ("%s failed file:%s length:0x%zX offset:0x%lluX error:%s(0x%X)\n",
-				__func__, filepath ? filepath : "", length, offset, g_strerror (errno), errno);
+				__func__, filepath ? filepath : "", length, (unsigned long long)offset, g_strerror (errno), errno);
 		}
 		return NULL;
 	}
