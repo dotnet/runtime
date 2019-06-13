@@ -92,10 +92,10 @@ namespace System.Globalization
             Array.Resize(ref registryEraRanges, iFoundEras);
 
             // Sort them
-            Array.Sort(registryEraRanges!, CompareEraRanges); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            Array.Sort(registryEraRanges, CompareEraRanges);
 
             // Clean up era information
-            for (int i = 0; i < registryEraRanges!.Length; i++) // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            for (int i = 0; i < registryEraRanges.Length; i++)
             {
                 // eras count backwards from length to 1 (and are 1 based indexes into string arrays)
                 registryEraRanges[i].era = registryEraRanges.Length - i;

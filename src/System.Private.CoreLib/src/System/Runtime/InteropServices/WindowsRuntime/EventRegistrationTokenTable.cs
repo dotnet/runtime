@@ -152,7 +152,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         // Remove the event handler from the table and 
         // Get the delegate associated with an event registration token if it exists
         // If the event registration token is not registered, returns false
-        public bool RemoveEventHandler(EventRegistrationToken token, out T handler)
+        public bool RemoveEventHandler(EventRegistrationToken token, [NotNullWhen(true)] out T? handler)
         {
             lock (m_tokens)
             {
@@ -196,7 +196,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
                 // value.  Therefore we need to make sure we really have the handler we want before taking the
                 // fast path.
                 EventRegistrationToken preferredToken = GetPreferredToken(handler);
-                T registeredHandler;
+                T? registeredHandler;
                 if (m_tokens.TryGetValue(preferredToken, out registeredHandler))
                 {
                     if (registeredHandler == handler)
@@ -228,7 +228,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         private void RemoveEventHandlerNoLock(EventRegistrationToken token)
         {
-            T handler;
+            T? handler;
             if (m_tokens.TryGetValue(token, out handler))
             {
                 m_tokens.Remove(token);

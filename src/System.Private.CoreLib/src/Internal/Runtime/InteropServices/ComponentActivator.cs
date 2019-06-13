@@ -15,14 +15,14 @@ namespace Internal.Runtime.InteropServices
 {
     public static class ComponentActivator
     {
-        private static readonly Dictionary<string, IsolatedComponentLoadContext> s_AssemblyLoadContexts;
-        private static readonly Dictionary<IntPtr, Delegate> s_Delegates = new Dictionary<IntPtr, Delegate>();
+        private static readonly Dictionary<string, IsolatedComponentLoadContext> s_assemblyLoadContexts;
+        private static readonly Dictionary<IntPtr, Delegate> s_delegates = new Dictionary<IntPtr, Delegate>();
 
         public delegate int ComponentEntryPoint(IntPtr args, int sizeBytes);
 
         static ComponentActivator()
         {
-            s_AssemblyLoadContexts = new Dictionary<string, IsolatedComponentLoadContext>(StringComparer.InvariantCulture);
+            s_assemblyLoadContexts = new Dictionary<string, IsolatedComponentLoadContext>(StringComparer.InvariantCulture);
         }
 
         private static string MarshalToString(IntPtr arg, string argName)
@@ -91,10 +91,10 @@ namespace Internal.Runtime.InteropServices
 
                 IntPtr functionPtr = Marshal.GetFunctionPointerForDelegate(d);
 
-                lock(s_Delegates)
+                lock(s_delegates)
                 {
                     // Keep a reference to the delegate to prevent it from being garbage collected
-                    s_Delegates[functionPtr] = d;
+                    s_delegates[functionPtr] = d;
                 }
 
                 Marshal.WriteIntPtr(functionHandle, functionPtr);
@@ -126,14 +126,14 @@ namespace Internal.Runtime.InteropServices
 
         private static IsolatedComponentLoadContext GetIsolatedComponentLoadContext(string assemblyPath)
         {
-            IsolatedComponentLoadContext alc;
+            IsolatedComponentLoadContext? alc;
 
-            lock (s_AssemblyLoadContexts)
+            lock (s_assemblyLoadContexts)
             {
-                if (!s_AssemblyLoadContexts.TryGetValue(assemblyPath, out alc))
+                if (!s_assemblyLoadContexts.TryGetValue(assemblyPath, out alc))
                 {
                     alc = new IsolatedComponentLoadContext(assemblyPath);
-                    s_AssemblyLoadContexts.Add(assemblyPath, alc);
+                    s_assemblyLoadContexts.Add(assemblyPath, alc);
                 }
             }
 

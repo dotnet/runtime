@@ -390,7 +390,7 @@ namespace System
             for (int i = 0; i < attributes.Length; i++)
             {
                 Type attrType = attributes[i].GetType();
-                AttributeUsageAttribute usage;
+                AttributeUsageAttribute? usage;
                 types.TryGetValue(attrType, out usage);
 
                 if (usage == null)

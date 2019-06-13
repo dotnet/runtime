@@ -67,11 +67,11 @@ namespace System.Resources
 
         private void InitializeBinaryFormatter()
         {
-            LazyInitializer.EnsureInitialized<Type>(ref s_binaryFormatterType!, () => // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            LazyInitializer.EnsureInitialized(ref s_binaryFormatterType, () =>
                 Type.GetType("System.Runtime.Serialization.Formatters.Binary.BinaryFormatter, System.Runtime.Serialization.Formatters, Version=0.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
                 throwOnError: true)!);
 
-            LazyInitializer.EnsureInitialized<Func<object?,Stream,object>>(ref s_deserializeMethod!, () => // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            LazyInitializer.EnsureInitialized(ref s_deserializeMethod, () =>
             {
                 MethodInfo binaryFormatterDeserialize = s_binaryFormatterType!.GetMethod("Deserialize", new Type[] { typeof(Stream) })!;
 

@@ -130,7 +130,7 @@ namespace System
                 case SpecialFolder.System:
                     return SystemDirectory;
                 case SpecialFolder.Windows:
-                    return Path.GetDirectoryName(SystemDirectory)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    return Path.GetDirectoryName(SystemDirectory)!;
                 default:
                     return string.Empty;
             }

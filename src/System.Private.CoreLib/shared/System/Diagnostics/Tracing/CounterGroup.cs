@@ -52,11 +52,9 @@ namespace System.Diagnostics.Tracing
         {
             if (e.Command == EventCommand.Enable || e.Command == EventCommand.Update)
             {
-                string valueStr;
-                float value;
                 Debug.Assert(e.Arguments != null);
 
-                if (e.Arguments.TryGetValue("EventCounterIntervalSec", out valueStr) && float.TryParse(valueStr, out value))
+                if (e.Arguments.TryGetValue("EventCounterIntervalSec", out string? valueStr) && float.TryParse(valueStr, out float value))
                 {
                     lock (this)      // Lock the CounterGroup
                     {
