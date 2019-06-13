@@ -337,7 +337,8 @@ namespace System.Text.Encodings.Web
 
             // this loop processes character pairs (in case they are surrogates).
             // there is an if block below to process single last character.
-            for (int secondCharIndex = 1; secondCharIndex < valueLength; secondCharIndex++)
+            int secondCharIndex;
+            for (secondCharIndex = 1; secondCharIndex < valueLength; secondCharIndex++)
             {
                 if (!wasSurrogatePair)
                 {
@@ -370,7 +371,7 @@ namespace System.Text.Encodings.Web
                 }
             }
 
-            if (!wasSurrogatePair)
+            if (!wasSurrogatePair || (secondCharIndex == valueLength))
             {
                 firstChar = value[valueLength - 1];
                 int nextScalar = UnicodeHelpers.GetScalarValueFromUtf16(firstChar, null, out wasSurrogatePair);
