@@ -26,13 +26,17 @@
   <!-- DumpPgoDataPackageVersion is used by build.sh and build.cmd to pass   -->
   <!-- the version information to cmake. The task will write a file to the   -->
   <!-- intermediates directory to be read back by build.cmd/sh. The path for -->
-  <!-- the file is $(__IntermediatesDir)\optdataversion.txt       -->
+  <!-- the file is passed as proprty: PgoDataPackageVersionOutputFile        -->
   <!--                                                                       -->
 
   <Target Name="DumpPgoDataPackageVersion">
-    <!-- Keep the old message for backcompat. -->
-    <Message Text="$(optimizationIBCCoreCLRVersion)" Importance="High" />
-    <WriteLinesToFile File="$(__IntermediatesDir)\optdataversion.txt" Lines="$(optimizationIBCCoreCLRVersion)" Overwrite="true"/>
+    <!-- Error if PgoDataPackageVersionOutputFile is not set. -->
+    <Error Condition="'$(PgoDataPackageVersionOutputFile)'==''" />
+
+    <!-- Cleanup old version file -->
+    <Delete Files="$(PgoDataPackageVersionOutputFile)" Condition="Exists('$(PgoDataPackageVersionOutputFile)')" />
+    <Message Text="optimizationPGOCoreCLRVersion: $(optimizationPGOCoreCLRVersion) written to: $(PgoDataPackageVersionOutputFile)" Importance="High" />
+    <WriteLinesToFile File="$(PgoDataPackageVersionOutputFile)" Lines="$(optimizationPGOCoreCLRVersion)" Overwrite="true"/>
   </Target>
 
   <!--                                                                       -->
@@ -43,12 +47,16 @@
   <!-- DumpIbcDataPackageVersion is used by build.sh and build.cmd to pass   -->
   <!-- the version information to cmake. The task will write a file to the   -->
   <!-- intermediates directory to be read back by build.cmd/sh. The path for -->
-  <!-- the file is $(__IntermediatesDir)\ibcoptdataversion.txt    -->
+  <!-- the file is IbcDataPackageVersionOutputFile                           -->
   <!--                                                                       -->
   <Target Name="DumpIbcDataPackageVersion">
-    <!-- Keep the old message for backcompat. -->
-    <Message Importance="high" Text="$(optimizationIBCCoreCLRVersion)" />
-    <WriteLinesToFile File="$(__IntermediatesDir)\ibcoptdataversion.txt" Lines="$(optimizationIBCCoreCLRVersion)" Overwrite="true"/>
+    <!-- Error if PgoDataPackageVersionOutputFile is not set. -->
+    <Error Condition="'$(IbcDataPackageVersionOutputFile)'==''" />
+
+    <!-- Cleanup old version file -->
+    <Delete Files="$(IbcDataPackageVersionOutputFile)" Condition="Exists('$(IbcDataPackageVersionOutputFile)')" />
+    <Message Text="optimizationIBCCoreCLRVersion: $(optimizationIBCCoreCLRVersion) written to: $(IbcDataPackageVersionOutputFile)" Importance="High" />
+    <WriteLinesToFile File="$(IbcDataPackageVersionOutputFile)" Lines="$(optimizationIBCCoreCLRVersion)" Overwrite="true"/>
   </Target>
 
 </Project>

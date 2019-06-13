@@ -17,12 +17,16 @@
   <!-- DumpIbcMergePackageVersion is used by build.sh and build.cmd to pass  -->
   <!-- the version information to cmake. The task will write a file to the   -->
   <!-- intermediates directory to be read back by build.cmd/sh. The path for -->
-  <!-- the file is $(__IntermediatesDir)\ibcmergeversion.txt      -->
+  <!-- the file is IbcMergePackageVersionOutputFile                          -->
   <!--                                                                       -->
   <Target Name="DumpIbcMergePackageVersion">
-    <!-- Output the package version to stdout for backcompat -->
-    <Message Importance="high" Text="$(IbcMergePackageVersion)" />
-    <WriteLinesToFile File="$(__IntermediatesDir)\ibcmergeversion.txt" Lines="$(IbcMergePackageVersion)" Overwrite="true"/>
+    <!-- Error if PgoDataPackageVersionOutputFile is not set. -->
+    <Error Condition="'$(IbcMergePackageVersionOutputFile)'==''" />
+
+    <!-- Cleanup old version file -->
+    <Delete Files="$(IbcMergePackageVersionOutputFile)" Condition="Exists('$(IbcMergePackageVersionOutputFile)')" />
+    <Message Text="IbcMergePackageVersion: $(IbcMergePackageVersion) written to: $(IbcMergePackageVersionOutputFile)" Importance="High" />
+    <WriteLinesToFile File="$(IbcMergePackageVersionOutputFile)" Lines="$(optimizationIBCCoreCLRVersion)" Overwrite="true"/>
   </Target>
 
   <PropertyGroup>
