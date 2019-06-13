@@ -179,6 +179,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [ActiveIssue(29742, TestPlatforms.Windows)]
         [ConditionalTheory(nameof(PlatformSupportsUnixDomainSockets))]
         [InlineData(5000, 1, 1)]
         [InlineData(500, 18, 21)]
