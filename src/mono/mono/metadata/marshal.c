@@ -2511,7 +2511,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 {
 	MonoMethodSignature *sig, *csig, *callsig;
 	MonoMethodBuilder *mb;
-	GHashTable *method_cache = NULL, *sig_cache;
+	GHashTable *method_cache = NULL, *sig_cache = NULL;
 	GHashTable **cache_table = NULL;
 	MonoClass *target_klass;
 	MonoMethod *res = NULL;
