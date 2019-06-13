@@ -397,7 +397,7 @@ if not exist "%__IntermediatesDir%\optdataversion.txt" (
     exit /b !errorlevel!
 )
 
-set /p __PgoOptDataVersion<"%__IntermediatesDir%\optdataversion.txt"
+set /p __PgoOptDataVersion=<"%__IntermediatesDir%\optdataversion.txt"
 
 call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpIbcDataPackageVersion /nologo %__CommonMSBuildArgs%
 
@@ -652,7 +652,7 @@ if %__BuildCoreLib% EQU 1 (
             exit /b 1
         )
         
-        set /p __IbcMergeVersion<"%__IntermediatesDir%\ibcmergeversion.txt"
+        set /p __IbcMergeVersion=<"%__IntermediatesDir%\ibcmergeversion.txt"
 
         set IbcMergePath=%__PackagesDir%\microsoft.dotnet.ibcmerge\!__IbcMergeVersion!\tools\netcoreapp2.0\ibcmerge.dll
         if exist !IbcMergePath! (
