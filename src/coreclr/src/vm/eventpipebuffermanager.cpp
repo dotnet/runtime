@@ -161,7 +161,7 @@ EventPipeBuffer* EventPipeBufferManager::AllocateBufferForThread(EventPipeThread
         _ASSERTE(requestSize <= availableBufferSize);
         bufferSize = Max(requestSize, bufferSize);
         bufferSize = Min((unsigned int)bufferSize, (unsigned int)availableBufferSize);
-        
+
         // Don't allow the buffer size to exceed 1MB.
         const unsigned int maxBufferSize = 1024 * 1024;
         bufferSize = Min(bufferSize, maxBufferSize);
@@ -438,7 +438,7 @@ bool EventPipeBufferManager::WriteEvent(Thread *pThread, EventPipeSession &sessi
                 return false;
 
             // This lock looks unnecessary for the sequence number, but didn't want to
-            // do a broader refactoring to take it out. If it shows up as a perf 
+            // do a broader refactoring to take it out. If it shows up as a perf
             // problem then we should.
             SpinLockHolder _slh(pEventPipeThread->GetLock());
             pSessionState->IncrementSequenceNumber();
@@ -547,14 +547,14 @@ void EventPipeBufferManager::WriteAllBuffersToFileV4(EventPipeFile *pFile, LARGE
     CONTRACTL_END;
 
     //
-    // In V3 of the format this code does a full timestamp order sort on the events which made the file easier to consume, 
+    // In V3 of the format this code does a full timestamp order sort on the events which made the file easier to consume,
     // but the perf implications for emitting the file are less desirable. Imagine an application with 500 threads emitting
     // 10 events per sec per thread (granted this is a questionable number of threads to use in an app, but that isn't
     // under our control). A nieve sort of 500 ordered lists is going to pull the oldest event from each of 500 lists,
     // compare all the timestamps, then emit the oldest one. This could easily add a thousand CPU cycles per-event. A
-    // better implementation could maintain a min-heap so that we scale O(log(N)) instead of O(N)but fundamentally sorting 
+    // better implementation could maintain a min-heap so that we scale O(log(N)) instead of O(N)but fundamentally sorting
     // has a cost and we didn't want a file format that forces the runtime to pay it on every event.
-    // 
+    //
     // We minimize sorting using two mechanisms:
     // 1) Explicit sequence points - Every X MB of buffer space that is distributed to threads we record the current
     // timestamp. We ensure when writing events in the file that all events before the sequence point time are written
@@ -574,7 +574,7 @@ void EventPipeBufferManager::WriteAllBuffersToFileV4(EventPipeFile *pFile, LARGE
     // need an arbitrarily large cache in the reader to store all the events, however there is a fair amount of slop
     // in the current scheme. In the worst case you could imagine N threads, each of which was already allocated a
     // max size buffer (currently 1MB) but only an insignificant portion has been used. Even if the trigger
-    // threshhold is a modest amount such as 10MB, the threads could first write 1MB * N bytes to the stream 
+    // threshhold is a modest amount such as 10MB, the threads could first write 1MB * N bytes to the stream
     // beforehand. I'm betting on these extreme cases being very rare and even something like 1GB isn't a crazy
     // amount of virtual memory to use on to parse an extreme trace. However if I am wrong we can control
     // both the allocation policy and the triggering instrumentation. Nothing requires us to give out 1MB buffers to
@@ -584,11 +584,11 @@ void EventPipeBufferManager::WriteAllBuffersToFileV4(EventPipeFile *pFile, LARGE
     // 2) We mark which events are the oldest ones in the stream at the time we emit them and we do this at regular
     // intervals of time. When we emit all the events every X ms, there will be at least one event in there with
     // a marker showing that all events older than that one have already been emitted. As soon as the reader sees
-    // this it can sort the events which have older timestamps and emit them. 
+    // this it can sort the events which have older timestamps and emit them.
     //
-    // Why have both mechanisms? The sequence points in #1 worked fine to guarantee that given the whole trace you 
-    // could  sort it with a bounded cache, but it doesn't help much for real-time usage. Imagine that we have two 
-    // threads emitting 1KB/sec of events and sequence points occur every 10MB. The reader would need to wait for 
+    // Why have both mechanisms? The sequence points in #1 worked fine to guarantee that given the whole trace you
+    // could  sort it with a bounded cache, but it doesn't help much for real-time usage. Imagine that we have two
+    // threads emitting 1KB/sec of events and sequence points occur every 10MB. The reader would need to wait for
     // 10,000 seconds to accumulate all the events before it could sort and process them. On the other hand if we
     // only had mechanism #2 the reader can generate the sort quickly in real-time, but it is messy to do the buffer
     // management. The reader reads in a bunch of event block buffers and starts emitting events from sub-sections
@@ -622,9 +622,9 @@ void EventPipeBufferManager::WriteAllBuffersToFileV4(EventPipeFile *pFile, LARGE
             // loop across events on this thread
             bool eventsWritten = false;
             unsigned int sequenceNumber = 0;
-            while (GetCurrentEvent() != nullptr) 
+            while (GetCurrentEvent() != nullptr)
             {
-                // The first event emitted on each thread (detected by !eventsWritten) is guaranteed to 
+                // The first event emitted on each thread (detected by !eventsWritten) is guaranteed to
                 // be the oldest  event cached in our buffers so we mark it. This implements mechanism #2
                 // in the big comment above.
 
@@ -697,7 +697,7 @@ EventPipeEventInstance* EventPipeBufferManager::GetNextEvent()
 {
     CONTRACTL
     {
-        NOTHROW;
+        THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(!EventPipe::IsLockOwnedByCurrentThread());
@@ -708,10 +708,10 @@ EventPipeEventInstance* EventPipeBufferManager::GetNextEvent()
     // writing threads we could be in a state of high lock contention and lots of churning buffers. Each writer
     // would take several locks, allocate a new buffer, write one event into it, then the reader would take the
     // lock, convert the buffer to read-only and read the single event out of it. Allowing more events to accumulate
-    // in the buffers before converting between writable and read-only amortizes a lot of the overhead. One way 
+    // in the buffers before converting between writable and read-only amortizes a lot of the overhead. One way
     // to achieve that would be picking a stopTimeStamp that was Xms in the past. This would let Xms of events
     // to accumulate in the write buffer before we converted it and forced the writer to allocate another. Other more
-    // sophisticated approaches would probably build a low overhead synchronization mechanism to read and write the 
+    // sophisticated approaches would probably build a low overhead synchronization mechanism to read and write the
     // buffer at the same time.
     LARGE_INTEGER stopTimeStamp;
     QueryPerformanceCounter(&stopTimeStamp);
@@ -948,10 +948,10 @@ bool EventPipeBufferManager::TryConvertBufferToReadOnly(EventPipeBuffer* pNewRea
     }
 
     // It is possible that EventPipeBufferList::TryGetBuffer(...) returns a writable buffer
-    // yet it is not returned as EventPipeThread::GetWriteBuffer(...). This is because 
-    // EventPipeBufferManager::AllocateBufferForThread() insert the new writable buffer into 
+    // yet it is not returned as EventPipeThread::GetWriteBuffer(...). This is because
+    // EventPipeBufferManager::AllocateBufferForThread() insert the new writable buffer into
     // the EventPipeBufferList first, and then it is added to the writable buffer hash table
-    // by EventPipeThread::SetWriteBuffer() next. The two operations are not atomic so it is possible 
+    // by EventPipeThread::SetWriteBuffer() next. The two operations are not atomic so it is possible
     // to observe this partial state.
     return pNewReadBuffer->GetVolatileState() == EventPipeBufferState::READ_ONLY;
 }
