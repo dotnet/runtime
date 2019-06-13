@@ -118,7 +118,7 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 	mono_cond_t signal_cond;
 	OSEventWaitData *data = NULL;
 	gboolean alerted;
-	gint64 start;
+	gint64 start = 0;
 	gint i;
 
 	g_assert (mono_lazy_is_initialized (&status));
