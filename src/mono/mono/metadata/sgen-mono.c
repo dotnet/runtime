@@ -256,6 +256,8 @@ emit_managed_allocater_noilgen (MonoMethodBuilder *mb, gboolean slowpath, gboole
 {
 }
 
+#if !ENABLE_ILGEN
+
 static void
 install_noilgen (void)
 {
@@ -265,6 +267,8 @@ install_noilgen (void)
 	cb.emit_managed_allocater = emit_managed_allocater_noilgen;
 	mono_install_sgen_mono_callbacks (&cb);
 }
+
+#endif
 
 static MonoSgenMonoCallbacks *
 get_sgen_mono_cb (void)
