@@ -26,13 +26,13 @@
   <!-- DumpPgoDataPackageVersion is used by build.sh and build.cmd to pass   -->
   <!-- the version information to cmake. The task will write a file to the   -->
   <!-- intermediates directory to be read back by build.cmd/sh. The path for -->
-  <!-- the file is $(OptDataIntermediateOutputPath)\optdataversion.txt       -->
+  <!-- the file is $(__IntermediatesDir)\optdataversion.txt       -->
   <!--                                                                       -->
 
   <Target Name="DumpPgoDataPackageVersion">
     <!-- Keep the old message for backcompat. -->
     <Message Text="$(optimizationIBCCoreCLRVersion)" Importance="High" />
-    <WriteLinesToFile File="$(OptDataIntermediateOutputPath)\optdataversion.txt" Lines="$(optimizationIBCCoreCLRVersion)" Overwrite="true"/>
+    <WriteLinesToFile File="$(__IntermediatesDir)\optdataversion.txt" Lines="$(optimizationIBCCoreCLRVersion)" Overwrite="true"/>
   </Target>
 
   <!--                                                                       -->
@@ -43,12 +43,12 @@
   <!-- DumpIbcDataPackageVersion is used by build.sh and build.cmd to pass   -->
   <!-- the version information to cmake. The task will write a file to the   -->
   <!-- intermediates directory to be read back by build.cmd/sh. The path for -->
-  <!-- the file is $(OptDataIntermediateOutputPath)\ibcoptdataversion.txt    -->
+  <!-- the file is $(__IntermediatesDir)\ibcoptdataversion.txt    -->
   <!--                                                                       -->
   <Target Name="DumpIbcDataPackageVersion">
     <!-- Keep the old message for backcompat. -->
     <Message Importance="high" Text="$(optimizationIBCCoreCLRVersion)" />
-    <WriteLinesToFile File="$(OptDataIntermediateOutputPath)\ibcoptdataversion.txt" Lines="$(optimizationIBCCoreCLRVersion)" Overwrite="true"/>
+    <WriteLinesToFile File="$(__IntermediatesDir)\ibcoptdataversion.txt" Lines="$(optimizationIBCCoreCLRVersion)" Overwrite="true"/>
   </Target>
 
 </Project>
