@@ -442,7 +442,9 @@ void ZapInfo::CompileMethod()
     // this they can add the hint and reduce the perf cost at runtime.
     m_pImage->m_pPreloader->PrePrepareMethodIfNecessary(m_currentMethodHandle);
 
-    DWORD methodAttribs = getMethodAttribs(m_currentMethodHandle);
+    // Retrieve method attributes from EEJitInfo - the ZapInfo's version updates
+    // some of the flags related to hardware intrinsics but we don't want that.
+    DWORD methodAttribs = m_pEEJitInfo->getMethodAttribs(m_currentMethodHandle);
     if (methodAttribs & CORINFO_FLG_AGGRESSIVE_OPT)
     {
         // Skip methods marked with MethodImplOptions.AggressiveOptimization, they will be jitted instead. In the future,
@@ -452,6 +454,27 @@ void ZapInfo::CompileMethod()
             m_zapper->Info(W("Skipped because of aggressive optimization flag\n"));
         return;
     }
+
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+    if (methodAttribs & CORINFO_FLG_JIT_INTRINSIC)
+    {
+        // Skip generating hardware intrinsic method bodies.
+        //
+        // We don't know what the implementation should do (whether it can do the actual intrinsic thing, or whether
+        // it should throw a PlatformNotSupportedException).
+
+        const char* namespaceName;
+        getMethodNameFromMetadata(m_currentMethodHandle, nullptr, &namespaceName, nullptr);
+        if (strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0
+            || strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0
+            || strcmp(namespaceName, "System.Runtime.Intrinsics") == 0)
+        {
+            if (m_zapper->m_pOpt->m_verbose)
+                m_zapper->Info(W("Skipped due to being a hardware intrinsic\n"));
+            return;
+        }
+    }
+#endif
 
     m_jitFlags = ComputeJitFlags(m_currentMethodHandle);
 
@@ -2089,6 +2112,94 @@ void ZapInfo::GetProfilingHandle(BOOL                      *pbHookFunction,
     *pbIndirectedHandles = TRUE;
 }
 
+//
+// This strips the CORINFO_FLG_JIT_INTRINSIC flag from some of the hardware intrinsic methods.
+//
+DWORD FilterHardwareIntrinsicMethodAttribs(DWORD attribs, CORINFO_METHOD_HANDLE ftn, ICorDynamicInfo* pJitInfo)
+{
+    if (attribs & CORINFO_FLG_JIT_INTRINSIC)
+    {
+        // Figure out which intrinsic we are dealing with.
+        const char* namespaceName;
+        const char* className;
+        const char* enclosingClassName;
+        const char* methodName = pJitInfo->getMethodNameFromMetadata(ftn, &className, &namespaceName, &enclosingClassName);
+
+        // Is this the get_IsSupported method that checks whether intrinsic is supported?
+        bool fIsGetIsSupportedMethod = strcmp(methodName, "get_IsSupported") == 0;
+
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+        bool fIsX86intrinsic = strcmp(namespaceName, "System.Runtime.Intrinsics.X86") == 0;
+
+        // If it's anything related to Sse/Sse2, we can expand unconditionally since this is a baseline
+        // requirement of CoreCLR.
+        if (fIsX86intrinsic
+            && (
+                strcmp(className, "Sse") == 0 || strcmp(className, "Sse2") == 0
+                || (
+                    strcmp(className, "X64") == 0
+                    && (
+                        strcmp(enclosingClassName, "Sse") == 0 || strcmp(enclosingClassName, "Sse2") == 0
+                        )
+                    )
+                )
+            )
+        {
+            return attribs;
+        }
+
+        // If it's an intrinsic that requires VEX encoding, do not report as intrinsic
+        // to force this to become a regular method call.
+        // We don't allow RyuJIT to use VEX encoding at AOT compilation time, so these
+        // cannot be pregenerated. Not reporting them as intrinsic will make sure
+        // it will do the right thing at runtime (the called method will be JITted).
+        // It will be slower, but correct.
+        if (fIsX86intrinsic
+            && (
+                strcmp(className, "Avx") == 0 || strcmp(className, "Fma") == 0 || strcmp(className, "Avx2") == 0 || strcmp(className, "Bmi1") == 0 || strcmp(className, "Bmi2") == 0
+                || (
+                    strcmp(className, "X64") == 0
+                    && (
+                        strcmp(enclosingClassName, "Bmi1") == 0 || strcmp(enclosingClassName, "Bmi2") == 0
+                        )
+                    )
+                )
+            )
+        {
+            // We do want the IsSupported for VEX instructions to be recognized as intrinsic so that the
+            // potentially worse quality code doesn't actually run until tiered JIT starts
+            // kicking in and recompiling methods. Reporting this as intrinsic makes RyuJIT expand it
+            // into `return false`.
+            if (fIsGetIsSupportedMethod)
+                return attribs;
+
+            // Treat other intrinsic methods as a regular method call (into a JITted method).
+            return (attribs & ~CORINFO_FLG_JIT_INTRINSIC) | CORINFO_FLG_DONT_INLINE;
+        }
+
+#endif // defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+
+        // Do not report the get_IsSupported method as an intrinsic if it's an intrinsic on the architecture
+        // we are targeting. This will turn the call into a regular call.
+        // We also make sure none of the hardware intrinsic method bodies get pregenerated in crossgen
+        // (see ZapInfo::CompileMethod) but get JITted instead. The JITted method will have the correct
+        // answer for the CPU the code is running on.
+        if (fIsGetIsSupportedMethod && (
+#if defined(_TARGET_X86_) || defined(_TARGET_AMD64_)
+            fIsX86intrinsic ||
+#elif _TARGET_ARM64_
+            strcmp(namespaceName, "System.Runtime.Intrinsics.Arm.Arm64") == 0 ||
+#endif
+            strcmp(namespaceName, "System.Runtime.Intrinsics") == 0))
+        {
+            // Treat as a regular method call (into a JITted method).
+            return (attribs & ~CORINFO_FLG_JIT_INTRINSIC) | CORINFO_FLG_DONT_INLINE;
+        }
+    }
+
+    return attribs;
+}
+
 //return a callable stub that will do the virtual or interface call
 
 
@@ -2113,6 +2224,8 @@ void ZapInfo::getCallInfo(CORINFO_RESOLVED_TOKEN * pResolvedToken,
                                */
                               (CORINFO_CALLINFO_FLAGS)(flags | CORINFO_CALLINFO_KINDONLY),
                               pResult);
+
+    pResult->methodFlags = FilterHardwareIntrinsicMethodAttribs(pResult->methodFlags, pResult->hMethod, m_pEEJitInfo);
 
 #ifdef FEATURE_READYTORUN_COMPILER
     if (IsReadyToRunCompilation())
@@ -3696,7 +3809,8 @@ unsigned ZapInfo::getMethodHash(CORINFO_METHOD_HANDLE ftn)
 
 DWORD ZapInfo::getMethodAttribs(CORINFO_METHOD_HANDLE ftn)
 {
-    return m_pEEJitInfo->getMethodAttribs(ftn);
+    DWORD result = m_pEEJitInfo->getMethodAttribs(ftn);
+    return FilterHardwareIntrinsicMethodAttribs(result, ftn, m_pEEJitInfo);
 }
 
 void ZapInfo::setMethodAttribs(CORINFO_METHOD_HANDLE ftn, CorInfoMethodRuntimeFlags attribs)
