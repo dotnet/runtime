@@ -108,6 +108,7 @@ void PrintUsageHelper()
        W("\n")
        W("    /? or /help          - Display this screen\n")
        W("    /nologo              - Prevents displaying the logo\n")
+       W("    /nowarnings          - Prevents displaying warning messages\n")
        W("    /silent              - Do not display completion message\n")
        W("    /verbose             - Display verbose information\n")
        W("    @response.rsp        - Process command line arguments from specified\n")
@@ -178,6 +179,7 @@ void PrintUsageHelper()
 
 class CrossgenLogger : public ICorSvcLogger
 {
+public:
     STDMETHODIMP_(ULONG)    AddRef()  {return E_NOTIMPL;}
     STDMETHODIMP_(ULONG)    Release() {return E_NOTIMPL;}
     STDMETHODIMP            QueryInterface(REFIID riid,void ** ppv)
@@ -205,10 +207,20 @@ class CrossgenLogger : public ICorSvcLogger
     {
         if (logLevel == LogLevel_Error)
             OutputErr(message);
-        else
+        else if(logLevel != LogLevel_Warning || m_bEnableWarningLogging)
             Output(message);
         return S_OK;
     }
+
+    void SetWarningLogging(bool value)
+    {
+        m_bEnableWarningLogging = value;
+    }
+
+    CrossgenLogger() : m_bEnableWarningLogging(true) { }
+
+private:
+    bool m_bEnableWarningLogging;
 };
 
 CrossgenLogger                g_CrossgenLogger;
@@ -488,6 +500,10 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         else if (MatchParameter(*argv, W("verbose")))
         {
             dwFlags |= NGENWORKER_FLAGS_VERBOSE;
+        }
+        else if (MatchParameter(*argv, W("nowarnings")))
+        {
+            dwFlags |= NGENWORKER_FLAGS_SUPPRESS_WARNINGS;
         }
         else if (MatchParameter(*argv, W("Tuning")))
         {
@@ -890,6 +906,12 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         
         
     }
+
+    // Verbose mode will always print warnings
+    if ((dwFlags & NGENWORKER_FLAGS_VERBOSE) != 0)
+        dwFlags &= ~NGENWORKER_FLAGS_SUPPRESS_WARNINGS;
+
+    g_CrossgenLogger.SetWarningLogging((dwFlags & NGENWORKER_FLAGS_SUPPRESS_WARNINGS) == 0);
 
     // Initialize the logger
     SetSvcLogger(&g_CrossgenLogger);
