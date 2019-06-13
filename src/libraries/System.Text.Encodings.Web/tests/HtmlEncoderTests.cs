@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -13,18 +13,23 @@ namespace Microsoft.Framework.WebEncoders
 {
     public class HtmlEncoderTests
     {
-        [Fact]
-        public void TestSurrogate()
+        [Theory]
+        [InlineData("&#x1F4A9;", "\U0001f4a9")]
+        [InlineData("&#x1F602;2", "\U0001F6022")]
+        [InlineData("&#x1F602; 21", "\U0001F602 21")]
+        [InlineData("x&#x1F602;y", "x\U0001F602y")]
+        [InlineData("&#x1F602;x&#x1F602;y", "\U0001F602x\U0001F602y")]
+        public void TestSurrogate(string expected, string actual)
         {
-            Assert.Equal("&#x1F4A9;", System.Text.Encodings.Web.HtmlEncoder.Default.Encode("\U0001f4a9"));
+            Assert.Equal(expected, System.Text.Encodings.Web.HtmlEncoder.Default.Encode(actual));
             
             using (var writer = new StringWriter())
             {
-                System.Text.Encodings.Web.HtmlEncoder.Default.Encode(writer, "\U0001f4a9");
-                Assert.Equal("&#x1F4A9;", writer.GetStringBuilder().ToString());
+                System.Text.Encodings.Web.HtmlEncoder.Default.Encode(writer, actual);
+                Assert.Equal(expected, writer.GetStringBuilder().ToString());
             }
         }
-        
+
         [Fact]
         public void Ctor_WithTextEncoderSettings()
         {
