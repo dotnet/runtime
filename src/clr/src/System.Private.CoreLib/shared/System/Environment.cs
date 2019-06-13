@@ -149,7 +149,7 @@ namespace System
                     versionSpan = versionSpan.Slice(0, separatorIndex);
 
                 // Return zeros rather then failing if the version string fails to parse
-                return Version.TryParse(versionSpan, out Version? version) ? version! : new Version(); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                return Version.TryParse(versionSpan, out Version? version) ? version : new Version();
             }
         }
 

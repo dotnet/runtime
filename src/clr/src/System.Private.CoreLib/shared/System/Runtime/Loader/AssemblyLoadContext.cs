@@ -248,11 +248,7 @@ namespace System.Runtime.Loader
 
                 foreach (WeakReference<AssemblyLoadContext> weakAlc in alcList)
                 {
-                    AssemblyLoadContext? alc = null;
-
-                    weakAlc.TryGetTarget(out alc);
-
-                    if (alc != null)
+                    if (weakAlc.TryGetTarget(out AssemblyLoadContext? alc))
                     {
                         yield return alc;
                     }
@@ -428,7 +424,7 @@ namespace System.Runtime.Loader
             {
                 foreach (var alcAlive in s_allContexts)
                 {
-                    if (alcAlive.Value.TryGetTarget(out AssemblyLoadContext alc))
+                    if (alcAlive.Value.TryGetTarget(out AssemblyLoadContext? alc))
                     {
                         alc.RaiseUnloadEvent();
                     }

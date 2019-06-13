@@ -1161,7 +1161,7 @@ namespace System.Collections
                 return;
             }
 
-            SerializationInfo siInfo;
+            SerializationInfo? siInfo;
             HashHelpers.SerializationInfoTable.TryGetValue(this, out siInfo);
 
             if (siInfo == null)

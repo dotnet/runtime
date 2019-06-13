@@ -108,7 +108,7 @@ namespace Internal.Runtime.InteropServices
     {
         // Collection of all ALCs used for COM activation. In the event we want to support
         // unloadable COM server ALCs, this will need to be changed.
-        private static readonly Dictionary<string, AssemblyLoadContext> s_AssemblyLoadContexts = new Dictionary<string, AssemblyLoadContext>(StringComparer.InvariantCultureIgnoreCase);
+        private static readonly Dictionary<string, AssemblyLoadContext> s_assemblyLoadContexts = new Dictionary<string, AssemblyLoadContext>(StringComparer.InvariantCultureIgnoreCase);
 
         /// <summary>
         /// Entry point for unmanaged COM activation API from managed code
@@ -370,14 +370,14 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
 
         private static AssemblyLoadContext GetALC(string assemblyPath)
         {
-            AssemblyLoadContext alc;
+            AssemblyLoadContext? alc;
 
-            lock (s_AssemblyLoadContexts)
+            lock (s_assemblyLoadContexts)
             {
-                if (!s_AssemblyLoadContexts.TryGetValue(assemblyPath, out alc))
+                if (!s_assemblyLoadContexts.TryGetValue(assemblyPath, out alc))
                 {
                     alc = new IsolatedComponentLoadContext(assemblyPath);
-                    s_AssemblyLoadContexts.Add(assemblyPath, alc);
+                    s_assemblyLoadContexts.Add(assemblyPath, alc);
                 }
             }
 

@@ -128,15 +128,14 @@ namespace System
                         _items = new T[_capacity];
                         _items[0] = _item;
                     }
-                    else
-                    if (_capacity == _count)
+                    else if (_capacity == _count)
                     {
                         int newCapacity = 2 * _capacity;
                         Array.Resize(ref _items, newCapacity);
                         _capacity = newCapacity;
                     }
 
-                    _items![_count] = item; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    _items![_count] = item;
                 }
                 _count++;
             }

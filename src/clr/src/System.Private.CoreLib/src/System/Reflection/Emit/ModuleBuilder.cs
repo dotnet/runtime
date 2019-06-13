@@ -102,7 +102,7 @@ namespace System.Reflection.Emit
 
         internal void CheckTypeNameConflict(string strTypeName, Type? enclosingType)
         {
-            if (_typeBuilderDict.TryGetValue(strTypeName, out Type foundType) &&
+            if (_typeBuilderDict.TryGetValue(strTypeName, out Type? foundType) &&
                 ReferenceEquals(foundType.DeclaringType, enclosingType))
             {
                 // Cannot have two types with the same name
@@ -224,7 +224,7 @@ namespace System.Reflection.Emit
             }
             else
             {
-                if (_typeBuilderDict.TryGetValue(strTypeName, out Type foundType))
+                if (_typeBuilderDict.TryGetValue(strTypeName, out Type? foundType))
                 {
                     return foundType;
                 }
