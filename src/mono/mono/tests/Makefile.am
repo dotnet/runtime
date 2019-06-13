@@ -1021,7 +1021,8 @@ TESTS_IL_SRC=			\
 	custom-modifiers-append.1.il \
 	gh-13056_mono_local_cprop_av.il \
 	gh-13057_mono_local_emulate_ops_av.il \
-	module-cctor-entrypoint.il
+	module-cctor-entrypoint.il \
+	bug-gh-9706.il
 
 # This test crashes the runtime, even with recent fixes.
 #	incorrect-ldvirtftn-read-behind-for-dup.il

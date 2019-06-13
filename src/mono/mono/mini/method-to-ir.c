@@ -6539,8 +6539,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				ins = mono_emit_jit_icall (cfg, mono_debugger_agent_user_break, NULL);
 			} else {
 				MONO_INST_NEW (cfg, ins, OP_NOP);
+				MONO_ADD_INS (cfg->cbb, ins);
 			}
-			MONO_ADD_INS (cfg->cbb, ins);
 			break;
 		case MONO_CEE_LDARG_0:
 		case MONO_CEE_LDARG_1:
