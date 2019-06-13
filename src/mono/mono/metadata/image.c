@@ -1348,7 +1348,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 {
 	ERROR_DECL (error);
 	MonoCLIImageInfo *iinfo;
-	MonoDotNetHeader *header;
 	GSList *l;
 
 	MONO_PROFILER_RAISE (image_loading, (image));
@@ -1356,7 +1355,6 @@ do_mono_image_load (MonoImage *image, MonoImageOpenStatus *status,
 	mono_image_init (image);
 
 	iinfo = image->image_info;
-	header = &iinfo->cli_header;
 
 	if (!image->metadata_only) {
 		for (l = image_loaders; l; l = l->next) {
