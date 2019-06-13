@@ -13027,6 +13027,12 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
         return tree;
     }
 #endif // FEATURE_SIMD
+#ifdef FEATURE_HW_INTRINSICS
+    if (tree->OperGet() == GT_HWIntrinsic)
+    {
+        return tree;
+    }
+#endif
 
     if (tree->gtOper == GT_ALLOCOBJ)
     {
