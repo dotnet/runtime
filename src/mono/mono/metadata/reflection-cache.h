@@ -39,7 +39,7 @@ alloc_reflected_entry (MonoDomain *domain)
 		return (ReflectedEntry *)mono_mempool_alloc (domain->mp, sizeof (ReflectedEntry));
 }
 
-static void
+static inline void
 free_reflected_entry (ReflectedEntry *entry)
 {
 	if (!mono_gc_is_moving ())
