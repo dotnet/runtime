@@ -410,5 +410,57 @@ namespace System
         /// <summary>Creates a <see cref="ReadOnlyMemory{T}"/> with the specified values in its backing field.</summary>
         public static ReadOnlyMemory<T> DangerousCreateReadOnlyMemory<T>(object obj, int offset, int length) =>
             DangerousCreateMemory<T>(obj, offset, length);
+
+        public static TheoryData<string[], int> IndexOfNullData => new TheoryData<string[], int>()
+        {
+            { new string[] { "1", null, "2" }, 1},
+            { new string[] { "1", "3", "2" }, -1},
+            { null, -1},
+            { new string[] { "1", null, null }, 1},
+            { new string[] { null, null, null }, 0},
+        };
+
+        public static TheoryData<string[], string[], int> IndexOfNullSequenceData => new TheoryData<string[], string[], int>()
+        {
+            { new string[] { "1", null, "2" }, new string[] { "1", null, "2" }, 0},
+            { new string[] { "1", null, "2" }, new string[] { null }, 1},
+            { new string[] { "1", null, "2" }, (string[])null, 0},
+
+            { new string[] { "1", "3", "2" }, new string[] { "1", null, "2" }, -1},
+            { new string[] { "1", "3", "2" }, new string[] { null }, -1},
+            { new string[] { "1", "3", "2" }, (string[])null, 0},
+
+            { null, new string[] { "1", null, "2" }, -1},
+
+            { new string[] { "1", null, null }, new string[] { null, null, "2" }, -1},
+            { new string[] { null, null, null }, new string[] { null, null }, 0},
+        };
+
+        public static TheoryData<string[], int> LastIndexOfNullData => new TheoryData<string[], int>()
+        {
+            { new string[] { "1", null, "2" }, 1},
+            { new string[] { "1", "3", "2" }, -1},
+            { null, -1},
+            { new string[] { "1", null, null }, 2},
+            { new string[] { null, null, null }, 2},
+            { new string[] { null, null, "3" }, 1},
+        };
+
+        public static TheoryData<string[], string[], int> LastIndexOfNullSequenceData => new TheoryData<string[], string[], int>()
+        {
+            { new string[] { "1", null, "2" }, new string[] { "1", null, "2" }, 0},
+            { new string[] { "1", null, "2" }, new string[] { null }, 1},
+            { new string[] { "1", null, "2" }, (string[])null, 0},
+
+            { new string[] { "1", "3", "1" }, new string[] { "1", null, "2" }, -1},
+            { new string[] { "1", "3", "1" }, new string[] { "1" }, 2},
+            { new string[] { "1", "3", "1" }, new string[] { null }, -1},
+            { new string[] { "1", "3", "1" }, (string[])null, 0},
+
+            { null, new string[] { "1", null, "2" }, -1},
+
+            { new string[] { "1", null, null }, new string[] { null, null, "2" }, -1},
+            { new string[] { null, null, null }, new string[] { null, null }, 1},
+        };
     }
 }
