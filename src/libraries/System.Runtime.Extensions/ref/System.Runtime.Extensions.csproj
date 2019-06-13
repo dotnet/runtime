@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{33B27785-02FD-4544-8E7D-EB802248BEC3}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Extensions.cs" />
