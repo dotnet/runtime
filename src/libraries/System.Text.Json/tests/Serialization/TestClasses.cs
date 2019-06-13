@@ -22,10 +22,31 @@ namespace System.Text.Json.Serialization.Tests
         Max = byte.MaxValue
     }
 
+    public enum SampleSByteEnum : sbyte
+    {
+        One = 0,
+        Two = 1,
+        Max = sbyte.MaxValue
+    }
+
     public enum SampleEnum
     {
         One = 1,
         Two = 2
+    }
+
+    public enum SampleEnumInt16 : short
+    {
+        One = 1,
+        Two = 2,
+        Max = short.MaxValue
+    }
+
+    public enum SampleEnumUInt16 : ushort
+    {
+        One = 1,
+        Two = 2,
+        Max = ushort.MaxValue
     }
 
     public enum SampleInt64Enum : long
