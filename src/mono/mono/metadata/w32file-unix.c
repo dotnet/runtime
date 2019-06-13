@@ -5010,9 +5010,7 @@ mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwr
 gboolean
 mono_w32file_replace (const gunichar2 *destination_file_name, const gunichar2 *source_file_name, const gunichar2 *destination_backup_file_name, guint32 flags, gint32 *error)
 {
-	gboolean result;
-
-	result = ReplaceFile (destination_file_name, source_file_name, destination_backup_file_name, flags, NULL, NULL);
+	const gboolean result = ReplaceFile (destination_file_name, source_file_name, destination_backup_file_name, flags, NULL, NULL);
 	if (!result)
 		*error = mono_w32error_get_last ();
 	return result;
@@ -5021,13 +5019,11 @@ mono_w32file_replace (const gunichar2 *destination_file_name, const gunichar2 *s
 gint64
 mono_w32file_get_file_size (gpointer handle, gint32 *error)
 {
-	gint64 length;
-	guint32 length_hi;
+	guint32 length_hi = 0;
 
-	length = GetFileSize (handle, &length_hi);
-	if(length==INVALID_FILE_SIZE) {
-		*error=mono_w32error_get_last ();
-	}
+	const gint64 length = GetFileSize (handle, &length_hi);
+	if (length == INVALID_FILE_SIZE)
+		*error = mono_w32error_get_last ();
 
 	return length | ((gint64)length_hi << 32);
 }
