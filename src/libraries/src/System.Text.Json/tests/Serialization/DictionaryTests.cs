@@ -124,12 +124,34 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Parse(json, type));
         }
 
+        [Theory]
+        [InlineData(typeof(int[]), @"""test""")]
+        [InlineData(typeof(int[]), @"1")]
+        [InlineData(typeof(int[]), @"false")]
+        [InlineData(typeof(int[]), @"{}")]
+        [InlineData(typeof(int[]), @"[""test""")]
+        [InlineData(typeof(int[]), @"[true]")]
+        // [InlineData(typeof(int[]), @"[{}]")] TODO #38485: Uncomment when fixed
+        [InlineData(typeof(int[]), @"[[]]")]
+        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": {}}")]
+        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": ""test""}")]
+        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": 1}")]
+        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": true}")]
+        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [""test""]}")]
+        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [[]]}")]
+        // [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [{}]}")] TODO #38485: Uncomment when fixed
+        public static void InvalidJsonForArrayShouldFail(Type type, string json)
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse(json, type));
+        }
+
         [Fact]
         public static void InvalidEmptyDictionaryInput()
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<string>("{}"));
         }
 
+        [Fact]
         public static void PocoWithDictionaryObject()
         {
             PocoDictionary dict = JsonSerializer.Parse<PocoDictionary>("{\n\t\"key\" : {\"a\" : \"b\", \"c\" : \"d\"}}");
@@ -137,7 +159,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(dict.key["c"], "d");
         }
 
-        class PocoDictionary
+        public class PocoDictionary
         {
             public Dictionary<string, string> key { get; set; }
         }
@@ -160,7 +182,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"{""Id"":10}", element.ToString());
         }
 
-        class Poco
+        public class Poco
         {
             public int Id { get; set; }
         }

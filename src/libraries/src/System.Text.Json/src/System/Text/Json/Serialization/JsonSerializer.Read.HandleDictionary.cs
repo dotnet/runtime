@@ -46,6 +46,11 @@ namespace System.Text.Json
                 }
                 else
                 {
+                    if (classInfo.CreateObject == null)
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(classInfo.Type, reader, state.JsonPath);
+                        return;
+                    }
                     state.Current.ReturnValue = classInfo.CreateObject();
                 }
                 return;

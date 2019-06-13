@@ -52,7 +52,15 @@ namespace System.Text.Json
         {
             Debug.Assert(ShouldDeserialize);
 
+            // We need a property in order to a apply a value in a dictionary.
             if (state.Current.KeyName == null && (state.Current.IsProcessingDictionary || state.Current.IsProcessingImmutableDictionary))
+            {
+                ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state.JsonPath);
+                return;
+            }
+
+            // We need an initialized array in order to store the values.
+            if (state.Current.IsProcessingEnumerable && state.Current.TempEnumerableValues == null && state.Current.ReturnValue == null)
             {
                 ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(RuntimePropertyType, reader, state.JsonPath);
                 return;
