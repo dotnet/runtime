@@ -1449,6 +1449,9 @@ mono_crash_reporting_register_native_library (const char *module_path, const cha
 static gboolean
 check_whitelisted_module (const char *in_name, const char **out_module)
 {
+#ifndef MONO_PRIVATE_CRASHES
+		return TRUE;
+#else
 	if (g_str_has_suffix (in_name, "mono-sgen")) {
 		if (out_module)
 			*out_module = "mono";
@@ -1465,6 +1468,7 @@ check_whitelisted_module (const char *in_name, const char **out_module)
 	}
 
 	return FALSE;
+#endif
 }
 
 static intptr_t
