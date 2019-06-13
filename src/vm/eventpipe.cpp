@@ -30,10 +30,8 @@
 CrstStatic EventPipe::s_configCrst;
 Volatile<bool> EventPipe::s_tracingInitialized = false;
 EventPipeConfiguration EventPipe::s_config;
-EventPipeEventSource *EventPipe::s_pEventSource = NULL;
-HANDLE EventPipe::s_fileSwitchTimerHandle = NULL;
+EventPipeEventSource *EventPipe::s_pEventSource = nullptr;
 VolatilePtr<EventPipeSession> EventPipe::s_pSessions[MaxNumberOfSessions];
-ULONGLONG EventPipe::s_lastFlushTime = 0;
 
 #ifdef FEATURE_PAL
 // This function is auto-generated from /src/scripts/genEventPipe.py
@@ -186,6 +184,12 @@ void EventPipe::Initialize()
 {
     STANDARD_VM_CONTRACT;
 
+    if (s_tracingInitialized)
+    {
+        _ASSERTE(!"EventPipe::Initialize was already initialized.");
+        return;
+    }
+
     const bool tracingInitialized = s_configCrst.InitNoThrow(
         CrstEventPipe,
         (CrstFlags)(CRST_REENTRANCY | CRST_TAKEN_DURING_SHUTDOWN | CRST_HOST_BREAKABLE));
@@ -206,7 +210,10 @@ void EventPipe::Initialize()
     const unsigned long DefaultProfilerSamplingRateInNanoseconds = 1000000; // 1 msec.
     SampleProfiler::SetSamplingRate(DefaultProfilerSamplingRateInNanoseconds);
 
-    s_tracingInitialized = tracingInitialized;
+    {
+        CrstHolder _crst(GetLock());
+        s_tracingInitialized = tracingInitialized;
+    }
 }
 
 void EventPipe::Shutdown()
@@ -216,13 +223,9 @@ void EventPipe::Shutdown()
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
-        // These 3 pointers are initialized once on EventPipe::Initialize
-        //PRECONDITION(s_pEventSource != nullptr);
+        PRECONDITION(s_tracingInitialized);
     }
     CONTRACTL_END;
-
-    if (s_pEventSource == nullptr)
-        return;
 
     if (g_fProcessDetach)
     {
@@ -238,28 +241,37 @@ void EventPipe::Shutdown()
         return;
     }
 
-    // Mark tracing as no longer initialized.
-    s_tracingInitialized = false;
-
     // We are shutting down, so if disabling EventPipe throws, we need to move along anyway.
     EX_TRY
     {
-        for (uint32_t i = 0; i < MaxNumberOfSessions; ++i)
+        bool tracingInitialized = false;
         {
-            EventPipeSession *pSession = s_pSessions[i].Load();
-            if (pSession)
-                Disable(static_cast<EventPipeSessionID>(1ULL << i));
+            CrstHolder _crst(GetLock());
+            tracingInitialized = s_tracingInitialized;
+
+            // Mark tracing as no longer initialized.
+            s_tracingInitialized = false;
+        }
+
+        if (tracingInitialized)
+        {
+            for (uint32_t i = 0; i < MaxNumberOfSessions; ++i)
+            {
+                EventPipeSession *pSession = s_pSessions[i].Load();
+                if (pSession)
+                    Disable(static_cast<EventPipeSessionID>(1ULL << i));
+            }
+
+            // Remove EventPipeEventSource first since it tries to use the data structures that we remove below.
+            // We need to do this after disabling sessions since those try to write to EventPipeEventSource.
+            delete s_pEventSource;
+            s_pEventSource = nullptr;
+
+            s_config.Shutdown();
         }
     }
     EX_CATCH {}
     EX_END_CATCH(SwallowAllExceptions);
-
-    // Remove EventPipeEventSource first since it tries to use the data structures that we remove below.
-    // We need to do this after disabling sessions since those try to write to EventPipeEventSource.
-    delete s_pEventSource;
-    s_pEventSource = nullptr;
-
-    s_config.Shutdown();
 }
 
 EventPipeSessionID EventPipe::Enable(
@@ -282,9 +294,6 @@ EventPipeSessionID EventPipe::Enable(
     }
     CONTRACTL_END;
 
-    if (!s_tracingInitialized)
-        return 0;
-
     // If the state or arguments are invalid, bail here.
     if (sessionType == EventPipeSessionType::File && strOutputPath == nullptr)
         return 0;
@@ -293,6 +302,9 @@ EventPipeSessionID EventPipe::Enable(
 
     EventPipeSessionID sessionId = 0;
     RunWithCallbackPostponed([&](EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue) {
+        if (!s_tracingInitialized)
+            return;
+
         EventPipeSession *const pSession = s_config.CreateSession(
             strOutputPath,
             pStream,
@@ -334,10 +346,6 @@ EventPipeSessionID EventPipe::EnableInternal(
         PRECONDITION(IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
-
-    // If tracing is not initialized or is already enabled, bail here.
-    if (!s_tracingInitialized)
-        return 0;
 
     if (pSession == nullptr || !pSession->IsValid())
         return 0;
@@ -493,13 +501,15 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
 EventPipeSession *EventPipe::GetSession(EventPipeSessionID id)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(s_tracingInitialized);
-
-    if (!s_tracingInitialized)
-        return nullptr;
 
     {
         CrstHolder _crst(GetLock());
+
+        if (!s_tracingInitialized)
+        {
+            _ASSERTE(!"EventPipe::GetSession invoked before EventPipe was initialized.");
+            return nullptr;
+        }
 
         // Attempt to get the specified session ID.
         const uint64_t index = GetArrayIndex(id);
@@ -675,9 +685,12 @@ void EventPipe::WriteEventInternal(
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(s_tracingInitialized);
     }
     CONTRACTL_END;
+
+    // We can't proceed if tracing is not initialized.
+    if (!s_tracingInitialized)
+        return;
 
     EventPipeThread *const pEventPipeThread = EventPipeThread::GetOrCreate();
     if (pEventPipeThread == nullptr)
@@ -772,10 +785,6 @@ void EventPipe::WriteSampleProfileEvent(Thread *pSamplingThread, EventPipeEvent 
         PRECONDITION(pEvent != nullptr);
     }
     CONTRACTL_END;
-
-    // We can't proceed if tracing is not initialized.
-    if (!s_tracingInitialized)
-        return;
 
     EventPipeEventPayload payload(pData, length);
     WriteEventInternal(

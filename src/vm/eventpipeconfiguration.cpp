@@ -51,6 +51,7 @@ void EventPipeConfiguration::Shutdown()
         NOTHROW;
         GC_TRIGGERS;
         MODE_ANY;
+        PRECONDITION(m_activeSessions == 0);
     }
     CONTRACTL_END;
 
