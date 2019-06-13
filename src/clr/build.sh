@@ -152,7 +152,7 @@ restore_optdata()
         # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
 
         # Writes into ${__IntermediatesDir}/optdataversion.txt
-        ${__ProjectDir}/dotnet.sh msbuild $OptDataProjectFilePath /t:DumpPgoDataPackageVersion /nologo 2>&1 >/dev/null
+        ${__ProjectDir}/dotnet.sh msbuild $OptDataProjectFilePath /t:DumpPgoDataPackageVersion ${__CommonMSBuildArgs} /nologo 2>&1 >/dev/null
         if [ ! -f "${__IntermediatesDir}/optdataversion.txt" ]; then
             echo "Failed to get PGO data package version."
             exit $?
@@ -161,7 +161,7 @@ restore_optdata()
         __PgoOptDataVersion=$(<"${__IntermediatesDir}/optdataversion.txt")
 
         # Writes into ${__IntermediatesDir}/ibcoptdataversion.txt
-        ${__ProjectDir}/dotnet.sh msbuild $OptDataProjectFilePath /t:DumpIbcDataPackageVersion /nologo 2>&1 >/dev/null
+        ${__ProjectDir}/dotnet.sh msbuild $OptDataProjectFilePath /t:DumpIbcDataPackageVersion ${__CommonMSBuildArgs} /nologo 2>&1 >/dev/null
         if [ ! -f "${__IntermediatesDir}/ibcoptdataversion.txt" ]; then
             echo "Failed to get IBC data package version."
             exit $?
