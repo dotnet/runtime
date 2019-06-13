@@ -77,20 +77,43 @@ namespace Microsoft.DotNet.Build.Tasks
                     AssemblyName = FileUtilities.GetAssemblyName(item.ItemSpec),
                     FileVersion = FileUtilities.GetFileVersion(item.ItemSpec),
                     IsNative = item.GetMetadata("IsNative") == "true",
-                    IsSymbolFile = item.GetMetadata("IsSymbolFile") == "true"
+                    IsSymbolFile = item.GetMetadata("IsSymbolFile") == "true",
+                    IsResourceFile = item.ItemSpec
+                        .EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase)
                 })
                 .Where(f =>
                     !f.IsSymbolFile &&
                     (f.Filename.EndsWith(".dll", StringComparison.OrdinalIgnoreCase) || f.IsNative))
+                // Remove duplicate files this task is given.
+                .GroupBy(f => f.Item.ItemSpec)
+                .Select(g => g.First())
+                // Make order stable between builds.
                 .OrderBy(f => f.TargetPath, StringComparer.Ordinal)
                 .ThenBy(f => f.Filename, StringComparer.Ordinal))
             {
+                string type = "Managed";
+
+                if (f.IsNative)
+                {
+                    type = "Native";
+                }
+                else if (f.IsResourceFile)
+                {
+                    type = "Resources";
+                }
+
+                string path = Path.Combine(f.TargetPath, f.Filename).Replace('\\', '/');
+
                 var element = new XElement(
                     "File",
-                    new XAttribute("Type", f.IsNative ? "Native" : "Managed"),
-                    new XAttribute(
-                        "Path",
-                        Path.Combine(f.TargetPath, f.Filename).Replace('\\', '/')));
+                    new XAttribute("Type", type),
+                    new XAttribute("Path", path));
+
+                if (f.IsResourceFile)
+                {
+                    element.Add(
+                        new XAttribute("Culture", Path.GetFileName(Path.GetDirectoryName(path))));
+                }
 
                 if (f.AssemblyName != null)
                 {

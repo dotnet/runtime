@@ -7,6 +7,7 @@
 
     <File Include="@(ArchitectureSpecificNativeFile)">
       <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
+      <IsNative>true</IsNative>
     </File>
     <File Include="$(VersionTxtFile)" />
   </ItemGroup>
