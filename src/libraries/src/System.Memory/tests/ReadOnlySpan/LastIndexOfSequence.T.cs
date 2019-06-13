@@ -241,5 +241,13 @@ namespace System.SpanTests
             int index = span.LastIndexOf(value);
             Assert.Equal(-1, index);
         }
+
+        [Theory]
+        [MemberData(nameof(TestHelpers.LastIndexOfNullSequenceData), MemberType = typeof(TestHelpers))]
+        public static void LastIndexOfNullSequence_String(string[] spanInput, string[] searchInput, int expected)
+        {
+            ReadOnlySpan<string> theStrings = spanInput;
+            Assert.Equal(expected, theStrings.LastIndexOf(searchInput));
+        }
     }
 }
