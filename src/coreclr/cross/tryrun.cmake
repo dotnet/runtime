@@ -3,6 +3,7 @@ set(TARGET_ARCH_NAME $ENV{TARGET_BUILD_ARCH})
 
 macro(set_cache_value)
   set(${ARGV0} ${ARGV1} CACHE STRING "Result from TRY_RUN" FORCE)
+  set(${ARGV0}__TRYRUN_OUTPUT "dummy output" CACHE STRING "Output from TRY_RUN" FORCE)
 endmacro()
 
 if(EXISTS ${CROSS_ROOTFS}/usr/lib/gcc/armv6-alpine-linux-musleabihf OR
