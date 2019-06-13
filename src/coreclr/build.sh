@@ -151,23 +151,26 @@ restore_optdata()
     if [ $__isMSBuildOnNETCoreSupported == 1 ]; then
         # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
 
-        # Writes into ${__IntermediatesDir}/optdataversion.txt
-        ${__ProjectDir}/dotnet.sh msbuild $OptDataProjectFilePath /t:DumpPgoDataPackageVersion ${__CommonMSBuildArgs} /nologo 2>&1 >/dev/null
-        if [ ! -f "${__IntermediatesDir}/optdataversion.txt" ]; then
+        local PgoDataPackageVersionOutputFile="${__IntermediatesDir}/optdataversion.txt"
+        local IbcDataPackageVersionOutputFile="${__IntermediatesDir}/ibcoptdataversion.txt"
+
+        # Writes into ${PgoDataPackageVersionOutputFile}
+        ${__ProjectDir}/dotnet.sh msbuild $OptDataProjectFilePath /t:DumpPgoDataPackageVersion ${__CommonMSBuildArgs} /p:PgoDataPackageVersionOutputFile=${PgoDataPackageVersionOutputFile} /nologo 2>&1 > /dev/null
+        if [ $? != 0 ] || [ ! -f "${PgoDataPackageVersionOutputFile}" ]; then
             echo "Failed to get PGO data package version."
             exit $?
         fi
 
-        __PgoOptDataVersion=$(<"${__IntermediatesDir}/optdataversion.txt")
+        __PgoOptDataVersion=$(<"${PgoDataPackageVersionOutputFile}")
 
-        # Writes into ${__IntermediatesDir}/ibcoptdataversion.txt
-        ${__ProjectDir}/dotnet.sh msbuild $OptDataProjectFilePath /t:DumpIbcDataPackageVersion ${__CommonMSBuildArgs} /nologo 2>&1 >/dev/null
-        if [ ! -f "${__IntermediatesDir}/ibcoptdataversion.txt" ]; then
+        # Writes into ${IbcDataPackageVersionOutputFile}
+        ${__ProjectDir}/dotnet.sh msbuild $OptDataProjectFilePath /t:DumpIbcDataPackageVersion ${__CommonMSBuildArgs} /p:IbcDataPackageVersionOutputFile=${IbcDataPackageVersionOutputFile} /nologo 2>&1 > /dev/null
+        if [ $? != 0 ] || [ ! -f "${IbcDataPackageVersionOutputFile}" ]; then
             echo "Failed to get IBC data package version."
             exit $?
         fi
 
-        __IbcOptDataVersion=$(<"${__IntermediatesDir}/ibcoptdataversion.txt")
+        __IbcOptDataVersion=$(<"${IbcDataPackageVersionOutputFile}")
     fi
 }
 
