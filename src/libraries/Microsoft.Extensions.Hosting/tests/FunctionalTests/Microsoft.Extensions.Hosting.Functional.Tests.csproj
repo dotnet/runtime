@@ -4,8 +4,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp3.0;net472</TargetFrameworks>
-    <!-- https://github.com/aspnet/AspNetCore/issues/6549 -->
-    <BuildHelixPayload>false</BuildHelixPayload>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,7 +13,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\IntegrationTesting\src\Microsoft.Extensions.Hosting.IntegrationTesting.csproj" />
 
+    <Reference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" />
     <Reference Include="Microsoft.Extensions.Hosting" />
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions" />
     <Reference Include="Microsoft.Extensions.Logging.Testing" />
   </ItemGroup>
 
