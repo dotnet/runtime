@@ -597,7 +597,7 @@ namespace System.Net
 
             if (decodedBytesCount < decodedBytes.Length)
             {
-                Array.Resize(ref decodedBytes!, decodedBytesCount); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                Array.Resize(ref decodedBytes, decodedBytesCount);
             }
 
             return decodedBytes;
