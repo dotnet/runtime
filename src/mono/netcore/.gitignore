@@ -12,5 +12,6 @@ packs/
 /roslyn
 /obj
 corefx-test-assets.xml
-Makefile
 .configured
+/System.Private.CoreLib/src/System/Environment.Mono.cs
+/config.make

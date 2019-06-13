@@ -1,0 +1,8 @@
+namespace System
+{
+	partial class Environment
+	{
+		// This is the version of the corlib-runtime interface (defined in configure.ac)
+		const string mono_corlib_version = "@MONO_CORLIB_VERSION@";
+	}
+}

@@ -1320,6 +1320,9 @@ if test x$cross_compiling = xyes -o x$enable_mcs_build = xno; then
    DISABLE_MCS_DOCS_default=yes
 elif test x$with_runtime_preset = xnetcore; then
    DISABLE_MCS_DOCS_default=yes
+   BTLS_SUPPORTED=no
+   enable_mcs_build=no
+   enable_support_build=no
 
    mono_feature_disable_remoting='yes'
    mono_feature_disable_reflection_emit_save='yes'
@@ -6677,9 +6680,6 @@ fi
     echo "RUNTIME = $mono_build_root/runtime/mono-wrapper" >> $mcs_topdir/build/config.make
     echo "ILDISASM = $mono_build_root/runtime/monodis-wrapper" >> $mcs_topdir/build/config.make
     echo "JAY_CFLAGS = $JAY_CFLAGS" >> $mcs_topdir/build/config.make
-    echo "RID = $RID" >> $mcs_topdir/build/config.make
-    echo "COREARCH = $COREARCH" >> $mcs_topdir/build/config.make
-    echo "CORETARGETS = $CORETARGETS" >> $mcs_topdir/build/config.make
     echo "VERSION = $VERSION" >> $mcs_topdir/build/config.make
 
     case $INSTALL in
@@ -6819,6 +6819,24 @@ if test x$buildsgen = xyes; then
 		thread_suspend_msg="Suspend:       Preemptive"
 	fi
 fi
+
+if test "x$with_core" == "xonly"; then
+  echo "RID = $RID" >> netcore/config.make
+  echo "COREARCH = $COREARCH" >> netcore/config.make
+  echo "CORETARGETS = $CORETARGETS" >> netcore/config.make
+  echo "MONO_CORLIB_VERSION = $MONO_CORLIB_VERSION" >> netcore/config.make
+
+  if test x$host_darwin = xyes; then
+    echo "HOST_PLATFORM ?= macos" >> netcore/config.make
+  elif test x$host_win32 = xyes; then
+    echo "HOST_PLATFORM ?= win32" >> netcore/config.make
+  elif test x$host_linux = xyes; then
+    echo "HOST_PLATFORM ?= linux" >> netcore/config.make
+  else
+    echo "HOST_PLATFORM ?= unix" >> netcore/config.make
+  fi
+fi
+
 	
 echo "
 	mcs source:    $mcsdir

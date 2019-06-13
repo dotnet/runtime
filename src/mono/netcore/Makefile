@@ -1,4 +1,4 @@
-include ../mcs/build/config.make
+include config.make
 
 #
 # NETCORETESTS_VERSION and NETCOREAPP_VERSION must be updated in sync, we are using coreclr repo for that but that's fine for now
@@ -16,6 +16,8 @@ ASPNETCOREAPP_VERSION := 3.0.0-preview-18614-0151
 ROSLYN_VERSION := 3.2.0-beta3-19310-04
 
 ifeq ($(HOST_PLATFORM),win32)
+PLATFORM_AOT_SUFFIX := .dll
+PLATFORM_AOT_PREFIX :=
 NETCORESDK_EXT = zip
 UNZIPCMD = python -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1], 'r').extractall()"
 XUNIT_FLAGS =
@@ -25,6 +27,8 @@ DOTNET := "$(subst \,/,$(DOTNET))"
 endif
 
 ifeq ($(HOST_PLATFORM),macos)
+PLATFORM_AOT_SUFFIX := .dylib
+PLATFORM_AOT_PREFIX := lib
 NETCORESDK_EXT = tar.gz
 UNZIPCMD = tar -xvf
 XUNIT_FLAGS = -notrait category=nonosxtests
@@ -33,6 +37,8 @@ DOTNET := $(shell ./init-tools.sh | tail -1)
 endif
 
 ifeq ($(HOST_PLATFORM),linux)
+PLATFORM_AOT_SUFFIX := .so
+PLATFORM_AOT_PREFIX := lib
 NETCORESDK_EXT = tar.gz
 UNZIPCMD = tar -xvf
 XUNIT_FLAGS = -notrait category=nonlinuxtests @../../../../CoreFX.issues_linux.rsp
@@ -51,7 +57,7 @@ TEST_ASSETS_URL = $(FEED_BASE_URL)/corefx-tests/$(NETCORETESTS_VERSION)/$(TESTS_
 BLAME = $(shell git blame ../configure.ac | grep AC_INIT | cut -f1 -d' ')
 VERSTUB = .$(shell git rev-list --count $(BLAME)..HEAD)
 
-all: runtime bcl
+all: bcl
 
 $(NETCORESDK_FILE):
 	curl $(NETCORE_URL) --output $(NETCORESDK_FILE)
@@ -74,13 +80,6 @@ corefx/.stamp-dl-corefx-$(NETCORETESTS_VERSION): corefx-restore.csproj
 update-roslyn: roslyn-restore.csproj
 	$(DOTNET) restore roslyn-restore.csproj -p:RoslynVersion=$(ROSLYN_VERSION) --packages roslyn/packages -p:OutputPath=roslyn/restore/
 
-update-corefx-tests: corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION)
-
-corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION):
-	curl $(TEST_ASSETS_URL) --output corefx-test-assets.xml
-	python dl-test-assets.py corefx-test-assets.xml $(FEED_BASE_URL) corefx/tests
-	touch $@
-
 run-sample: prepare
 	$(DOTNET) build sample/HelloWorld
 	MONO_ENV_OPTIONS="--debug" COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(NETCOREAPP_VERSION)" sample/HelloWorld/bin/Debug/netcoreapp3.0/HelloWorld.dll
@@ -89,18 +88,21 @@ run-aspnet-sample: prepare
 	rm -rf sample/AspNetCore/{bin,obj}
 	$(DOTNET) publish sample/AspNetCore -c Debug -r $(RID)
 	cp ../mono/mini/.libs/libmonosgen-2.0$(PLATFORM_AOT_SUFFIX) sample/AspNetCore/bin/Debug/netcoreapp3.0/$(RID)/publish/$(PLATFORM_AOT_PREFIX)coreclr$(PLATFORM_AOT_SUFFIX)
-	cp ../mcs/class/System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.dll sample/AspNetCore/bin/Debug/netcoreapp3.0/$(RID)/publish/
+	cp System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.dll sample/AspNetCore/bin/Debug/netcoreapp3.0/$(RID)/publish/
 	COMPlus_DebugWriteToStdErr=1 ./dotnet --fx-version "$(ASPNETCOREAPP_VERSION)" sample/AspNetCore/bin/Debug/netcoreapp3.0/$(RID)/publish/AspNetCore.dll
 
 # COREHOST_TRACE=1 
 SHAREDRUNTIME := shared/Microsoft.NETCore.App/$(NETCOREAPP_VERSION)
 
-bcl: update-roslyn
-	$(MAKE) -C ../mcs/build/ common/Consts.cs
+System.Private.CoreLib/src/System/Environment.Mono.cs: System.Private.CoreLib/src/System/Environment.Mono.in
+	test -n '$(MONO_CORLIB_VERSION)'
+	sed -e 's,@''MONO_CORLIB_VERSION@,$(MONO_CORLIB_VERSION),' $< > $@
+
+bcl: update-roslyn System.Private.CoreLib/src/System/Environment.Mono.cs
 	$(DOTNET) build $(CORETARGETS) $(CORLIB_BUILD_FLAGS) -p:BuildArch=$(COREARCH) \
 	-p:OutputPath=bin/$(COREARCH) \
-	-p:RoslynPropsFile="../../../netcore/roslyn/packages/microsoft.net.compilers.toolset/$(ROSLYN_VERSION)/build/Microsoft.Net.Compilers.Toolset.props" \
-	../mcs/class/System.Private.CoreLib/System.Private.CoreLib.csproj
+	-p:RoslynPropsFile="../roslyn/packages/microsoft.net.compilers.toolset/$(ROSLYN_VERSION)/build/Microsoft.Net.Compilers.Toolset.props" \
+	System.Private.CoreLib/System.Private.CoreLib.csproj
 
 debug-bcl:
 	$(MAKE) bcl CORLIB_BUILD_FLAGS="-c Debug"
@@ -110,8 +112,8 @@ runtime:
 
 link-mono:
 	cp ../mono/mini/.libs/libmonosgen-2.0$(PLATFORM_AOT_SUFFIX) $(SHAREDRUNTIME)/$(PLATFORM_AOT_PREFIX)coreclr$(PLATFORM_AOT_SUFFIX)
-	cp ../mcs/class/System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.dll $(SHAREDRUNTIME)
-	cp ../mcs/class/System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.pdb $(SHAREDRUNTIME)
+	cp System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.dll $(SHAREDRUNTIME)
+	cp System.Private.CoreLib/bin/$(COREARCH)/System.Private.CoreLib.pdb $(SHAREDRUNTIME)
 
 prepare: $(ASPNETCORESDK_FILE) $(NETCORESDK_FILE) update-corefx update-roslyn link-mono
 
@@ -122,15 +124,32 @@ nupkg:
 clean:
 	rm -rf .configured ../.dotnet sdk shared host dotnet tests obj corefx roslyn LICENSE.txt ThirdPartyNotices.txt $(NETCORESDK_FILE) $(ASPNETCORESDK_FILE)
 
+
+update-tests-corefx: corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION)
+
+corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION):
+	curl $(TEST_ASSETS_URL) --output corefx-test-assets.xml
+	python dl-test-assets.py corefx-test-assets.xml $(FEED_BASE_URL) corefx/tests
+	touch $@
+
 #
-# Running tests:
+# Running CoreFX tests
 #
-# We have two modes to run then with xtest-Foo.Test to be the prefered one because it runs all tests and simple runner
-# with rules like tes-Foo which runs limited set of test
+# You can run either individual test assembly or run all CoreFX tests. The tests are automatically downloaded
+# from the shared location and built locally.
+#
+# Running all test: `make run-tests-corefx`
+#
+# Running individual test: MONO_ENV_OPTIONS="--debug" make run-tests-corefx-System.Collections.Tests
 #
 
-# e.g. `make xtest-System.Collections.Tests`
-xtest-%: prepare update-corefx-tests
+# these tests won't be included in `run-tests-corefx-all`
+EXCLUDED_COREFX_TESTS :=
+
+run-tests-corefx: $(foreach workingtest, $(foreach test, $(wildcard corefx/tests/extracted/*), \
+		$(filter-out $(EXCLUDED_COREFX_TESTS), $(notdir $(test)))), $(addprefix run-tests-corefx-, $(workingtest)))
+
+run-tests-corefx-%: prepare update-tests-corefx
 	echo -n "***************** $* *********************"
 	cp corefx/restore/corefx-restore.deps.json corefx/tests/extracted/$*/xunit.console.deps.json
 	cp corefx/restore/corefx-restore.deps.json corefx/tests/extracted/$*/Microsoft.DotNet.RemoteExecutorHost.deps.json
@@ -144,60 +163,11 @@ xtest-%: prepare update-corefx-tests
 		$(XUNIT_FLAGS) @../../../../CoreFX.issues.rsp \
 		$(FIXTURE) || true
 
-debug-xtest-%:
-	MONO_ENV_OPTIONS="--debug" $(MAKE) xtest-$*
-
-# these tests won't be included in `xtestall`
-EXCLUDED_COREFX_TESTS =
-
-xtestall-noload: $(foreach workingtest, $(foreach test, $(wildcard corefx/tests/extracted/*), \
-		$(filter-out $(EXCLUDED_COREFX_TESTS), $(notdir $(test)))), $(addprefix xtest-, $(workingtest)))
-
-xtestall: update-corefx-tests
-	$(MAKE) xtestall-noload
-
 # build a test assembly in COREFX_ROOT and copy it to corefx/tests/extracted
-# e.g. `make build-local-corefx-test-System.Runtime COREFX_ROOT=/prj/corefx-master`
-build-local-corefx-test-%: check-env
+# e.g. `make build-test-corefx-System.Runtime COREFX_ROOT=/prj/corefx-master`
+build-test-corefx-%: check-env
 	cd $(COREFX_ROOT)/src/$*/tests && $(DOTNET) build -o "$(CURDIR)/corefx/tests/extracted/tmp"
 	cp $(CURDIR)/corefx/tests/extracted/tmp/$*.Tests.{dll,pdb} $(CURDIR)/corefx/tests/extracted/$*.Tests/
 	rm -rf $(CURDIR)/corefx/tests/extracted/tmp
-
-#
-# console test runner (obsolete)
-#
-TEST_SUITES = \
-	System.Runtime.Tests \
-	System.Runtime.CompilerServices.Unsafe.Tests \
-	System.Collections.Tests
-
-# The binary directory under $(COREFIX_BINDIR)
-System.Runtime.CompilerServices.Unsafe.Tests_PROFILE = netstandard-Debug
-System.Runtime.Tests_PROFILE = netcoreapp-Unix-Debug
-System.Collections.Tests_PROFILE = netcoreapp-Debug
-System.Reflection.Emit.Tests_PROFILE = netcoreapp-Debug
-System.Reflection.Emit.ILGeneration.Tests_PROFILE = netcoreapp-Debug
-System.Reflection.Emit.Lightweight.Tests_PROFILE = netcoreapp-Debug
-System.Threading.Tests_PROFILE = netcoreapp-Debug
-System.Threading.Thread.Tests_PROFILE = netcoreapp-Debug
-
-COREFX_BINDIR=$(COREFX_ROOT)/artifacts/bin
-
-check-env:
-	@if [ "x$(COREFX_ROOT)" == "x" ]; then echo "Set COREFX_ROOT to the root of the fully built corefx repo."; exit 1; fi
-
-build-%: check-env
-	cd gen-xunit-runner && $(DOTNET) run ../tests $(COREFX_ROOT) $(COREFX_BINDIR)/$*/$($*_PROFILE)/$*.dll $(XUNIT_FLAGS) @../CoreFX.issues.rsp $(XUNIT_ARGS)
-	cp $(COREFX_BINDIR)/RemoteExecutorConsoleApp/netstandard-Debug/RemoteExecutorConsoleApp.* tests/$*
-	cp $(COREFX_BINDIR)/System.Runtime.Tests/netcoreapp-Unix-Debug/TestLoadAssembly.dll tests/$*
-	sed -e 's/9.9.9/$(VERSION)/g' < tests/$*/RemoteExecutorConsoleApp.runtimeconfig.json > 2 && mv 2 tests/$*/RemoteExecutorConsoleApp.runtimeconfig.json
-	cd tests/$* && $(DOTNET) build
-
-run-%: check-env
-	cd tests/$* && MONO_PATH=bin/Debug/netcoreapp3.0 MONO_ENV_OPTIONS="--debug --explicit-null-checks" COMPlus_DebugWriteToStdErr=1 ../../dotnet bin/Debug/netcoreapp3.0/$*-runner.dll
-
-build-base: $(addprefix build-, $(TEST_SUITES))
-
-check: $(addprefix run-, $(TEST_SUITES))
 
 distdir:
