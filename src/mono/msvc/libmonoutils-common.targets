@@ -68,6 +68,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-string.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-time.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-time.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\strenc-internals.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\strenc.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\strenc.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-uri.c" />

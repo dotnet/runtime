@@ -115,6 +115,7 @@ monoutils_sources = \
 	mono-string.h		\
 	mono-time.c  		\
 	mono-time.h  		\
+	strenc-internals.h 	\
 	strenc.h		\
 	strenc.c		\
 	mono-uri.c		\

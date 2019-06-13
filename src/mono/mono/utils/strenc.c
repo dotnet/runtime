@@ -13,6 +13,9 @@
 #include <string.h>
 
 #include "strenc.h"
+#include "strenc-internals.h"
+#include "mono-error.h"
+#include "mono-error-internals.h"
 
 static const char trailingBytesForUTF8[256] = {
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -40,8 +43,7 @@ static const char trailingBytesForUTF8[256] = {
  * Callers must free the returned string if not NULL. \p bytes holds the number
  * of bytes in the returned string, not including the terminator.
  */
-gunichar2 *
-mono_unicode_from_external (const gchar *in, gsize *bytes)
+gunichar2 *mono_unicode_from_external (const gchar *in, gsize *bytes)
 {
 	gchar *res=NULL;
 	gchar **encodings;
@@ -174,14 +176,24 @@ gchar *mono_utf8_from_external (const gchar *in)
  */
 gchar *mono_unicode_to_external (const gunichar2 *uni)
 {
+	return mono_unicode_to_external_checked (uni, NULL);
+}
+
+gchar *mono_unicode_to_external_checked (const gunichar2 *uni, MonoError *err)
+{
 	gchar *utf8;
 	gchar *encoding_list;
+	GError *gerr = NULL;
 	
 	/* Turn the unicode into utf8 to start with, because its
 	 * easier to work with gchar * than gunichar2 *
 	 */
-	utf8=g_utf16_to_utf8 (uni, -1, NULL, NULL, NULL);
-	g_assert (utf8!=NULL);
+	utf8=g_utf16_to_utf8 (uni, -1, NULL, NULL, &gerr);
+	if (utf8 == NULL) {
+		mono_error_set_argument (err, "uni", gerr->message);
+		g_error_free (gerr);
+		return utf8;
+	}
 	
 	encoding_list=g_getenv ("MONO_EXTERNAL_ENCODINGS");
 	if(encoding_list==NULL) {
