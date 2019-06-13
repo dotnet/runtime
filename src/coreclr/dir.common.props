@@ -56,10 +56,12 @@
     <BinDir>$(__BinDir)\</BinDir>
     <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(PlatformConfigPathPart)\</BinDir>
 
-    <!-- Use the global __IntermediatesDir to find the location of the obj   -->
+    <!-- Use the envvar __IntermediatesDir to find the location of the obj   -->
     <!-- dir                                                                 -->
     <!-- Note that if nmake is used, the obj/ folder is nmakeobj/ therefore  -->
-    <!-- env variable is the only source of truth.                           -->
+    <!-- env variable is the only source of truth. This is only done for the -->
+    <!-- windows formatting jobs which use nmake and clang-format to build   -->
+    <!-- the product.                                                        -->
     <__IntermediatesDir Condition="'$(__IntermediatesDir)' == ''">$(RootBinDir)obj/$(BuildOS).$(BuildArch).$(BuildType)/</__IntermediatesDir>
 
     <!-- We don't append back slash because this path is used by nuget.exe as output directory and it
