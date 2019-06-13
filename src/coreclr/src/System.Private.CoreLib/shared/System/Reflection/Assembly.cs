@@ -235,7 +235,7 @@ namespace System.Reflection
 
             string normalizedPath = Path.GetFullPath(path);
 
-            Assembly result;
+            Assembly? result;
             lock (s_loadfile)
             {
                 if (s_loadfile.TryGetValue(normalizedPath, out result))

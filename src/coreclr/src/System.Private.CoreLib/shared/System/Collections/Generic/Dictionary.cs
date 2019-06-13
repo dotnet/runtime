@@ -675,7 +675,7 @@ namespace System.Collections.Generic
 
         public virtual void OnDeserialization(object? sender)
         {
-            HashHelpers.SerializationInfoTable.TryGetValue(this, out SerializationInfo siInfo);
+            HashHelpers.SerializationInfoTable.TryGetValue(this, out SerializationInfo? siInfo);
 
             if (siInfo == null)
             {

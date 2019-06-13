@@ -144,7 +144,7 @@ namespace System.Runtime.Loader
             else if (assemblyName.Name != null)
             {
                 // Load code assembly - simply look it up in the dictionary by its simple name.
-                if (_assemblyPaths.TryGetValue(assemblyName.Name, out string assemblyPath))
+                if (_assemblyPaths.TryGetValue(assemblyName.Name, out string? assemblyPath))
                 {
                     // Only returnd the assembly if it exists on disk - this is to make the behavior of the API
                     // consistent. Resource and native resolutions will only return existing files

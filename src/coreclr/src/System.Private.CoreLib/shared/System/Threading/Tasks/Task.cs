@@ -194,7 +194,7 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(task != null, "Null Task objects can't be added to the ActiveTasks collection");
 
-            LazyInitializer.EnsureInitialized<Dictionary<int, Task>>(ref s_currentActiveTasks!, () => new Dictionary<int, Task>()); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            LazyInitializer.EnsureInitialized(ref s_currentActiveTasks, () => new Dictionary<int, Task>());
 
             int taskId = task.Id;
             lock (s_currentActiveTasks)
@@ -1343,7 +1343,7 @@ namespace System.Threading.Tasks
         /// <returns>The initialized contingent properties object.</returns>
         internal ContingentProperties EnsureContingentPropertiesInitialized()
         {
-            return LazyInitializer.EnsureInitialized<ContingentProperties>(ref m_contingentProperties!, () => new ContingentProperties())!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            return LazyInitializer.EnsureInitialized(ref m_contingentProperties, () => new ContingentProperties());
         }
 
         /// <summary>
