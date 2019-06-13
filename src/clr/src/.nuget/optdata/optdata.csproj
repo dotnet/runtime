@@ -26,7 +26,7 @@
   <!-- DumpPgoDataPackageVersion is used by build.sh and build.cmd to pass   -->
   <!-- the version information to cmake. The task will write a file to the   -->
   <!-- intermediates directory to be read back by build.cmd/sh. The path for -->
-  <!-- the file is $(OptDataIntermediateOutputPath)\optdataversion.txt          -->
+  <!-- the file is $(OptDataIntermediateOutputPath)\optdataversion.txt       -->
   <!--                                                                       -->
 
   <Target Name="DumpPgoDataPackageVersion">
@@ -43,7 +43,7 @@
   <!-- DumpIbcDataPackageVersion is used by build.sh and build.cmd to pass   -->
   <!-- the version information to cmake. The task will write a file to the   -->
   <!-- intermediates directory to be read back by build.cmd/sh. The path for -->
-  <!-- the file is $(OptDataIntermediateOutputPath)\ibcoptdataversion.txt       -->
+  <!-- the file is $(OptDataIntermediateOutputPath)\ibcoptdataversion.txt    -->
   <!--                                                                       -->
   <Target Name="DumpIbcDataPackageVersion">
     <!-- Keep the old message for backcompat. -->
