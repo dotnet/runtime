@@ -327,7 +327,7 @@ dyn_array_ptr_ensure_capacity (DynPtrArray *da, int capacity)
 	}
 }
 
-static void
+static inline void
 dyn_array_ptr_set_all (DynPtrArray *dst, DynPtrArray *src)
 {
 	const int copysize = src->array.size;
