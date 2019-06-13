@@ -786,14 +786,9 @@ static void readdir(const pal::string_t& path, const pal::string_t& pattern, boo
             case DT_LNK:
             case DT_UNKNOWN:
                 {
-                    std::string fullFilename;
-
-                    fullFilename.append(path);
-                    fullFilename.push_back(DIR_SEPARATOR);
-                    fullFilename.append(entry->d_name);
-
                     struct stat sb;
-                    if (stat(fullFilename.c_str(), &sb) == -1)
+
+                    if (fstatat(dirfd(dir), entry->d_name, &sb, 0) == -1)
                     {
                         continue;
                     }
