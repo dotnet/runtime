@@ -1694,7 +1694,7 @@ namespace System
             // Since v1.0 two Uris are equal if everything but fragment and UserInfo does match
 
             // This check is for a case where we already fixed up the equal references
-            if ((object)_string == (object)obj!._string) // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            if ((object)_string == (object)obj._string)
             {
                 return true;
             }
