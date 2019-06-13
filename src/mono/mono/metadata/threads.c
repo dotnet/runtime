@@ -6373,6 +6373,7 @@ summarizer_supervisor_end (SummarizerSupervisorState *state)
 static gboolean
 summarizer_state_init (SummarizerGlobalState *state, MonoNativeThreadId current, int *my_index)
 {
+	*my_index = 0;
 	gint32 started_state = mono_atomic_cas_i32 (&state->has_owner, 1 /* set */, 0 /* compare */);
 	gboolean not_started = started_state == 0;
 	if (not_started) {
@@ -6546,7 +6547,7 @@ mono_threads_summarize_execute_internal (MonoContext *ctx, gchar **out, MonoStac
 {
 	static SummarizerGlobalState state;
 
-	int current_idx;
+	int current_idx = 0;
 	MonoNativeThreadId current = mono_native_thread_id_get ();
 	gboolean thread_given_control = summarizer_state_init (&state, current, &current_idx);
 
