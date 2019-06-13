@@ -427,7 +427,11 @@ void ZapInfo::CompileMethod()
 
     // If we are doing partial ngen, only compile methods with profile data
     if (!CurrentMethodHasProfileData() && m_zapper->m_pOpt->m_fPartialNGen)
+    {
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Info(W("Skipped because of no profile data\n"));
         return;
+    }
 
     // During ngen we look for a hint attribute on the method that indicates
     // the method should be preprocessed for early
@@ -444,6 +448,8 @@ void ZapInfo::CompileMethod()
         // Skip methods marked with MethodImplOptions.AggressiveOptimization, they will be jitted instead. In the future,
         // consider letting the JIT determine whether aggressively optimized code can/should be pregenerated for the method
         // instead of this check.
+        if (m_zapper->m_pOpt->m_verbose)
+            m_zapper->Info(W("Skipped because of aggressive optimization flag\n"));
         return;
     }
 
