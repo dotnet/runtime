@@ -13,7 +13,7 @@ NETCOREAPP_VERSION := 3.0.0-preview7-27804-03
 # Extracted from https://dotnetcli.blob.core.windows.net/dotnet/aspnetcore/Runtime/master/latest.version
 ASPNETCOREAPP_VERSION := 3.0.0-preview-18614-0151
 
-ROSLYN_VERSION := 3.2.0-beta3-19279-03
+ROSLYN_VERSION := 3.2.0-beta3-19310-04
 
 ifeq ($(HOST_PLATFORM),win32)
 NETCORESDK_EXT = zip
