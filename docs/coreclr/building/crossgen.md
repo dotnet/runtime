@@ -43,13 +43,20 @@ If your `System.Private.CoreLib.dll` and JIT compiler (`clrjit.dll` on Windows o
     
 If your files are scattered in different directories, or if you want to create native images for other assemblies, the command line is slightly more complex:
 
-    .\crossgen.exe /JITPath path\clrjit.dll /Platform_Assemblies_Paths "path1;path2;..." path\assemblyName.dll
-    ./crossgen -JITPath path/libclrjit.so -Platform_Assemblies_Paths "path1:path2:..." path/assemblyName.dll
+    .\crossgen.exe /JITPath path\clrjit.dll /p "path1;path2;..." path\assemblyName.dll
+    ./crossgen -JITPath path/libclrjit.so -p "path1:path2:..." path/assemblyName.dll
     
-The /Platform_Assemblies_Paths is used to specify the locations of all the dependencies of the input assembly, including the input assembly itself.
+The /p is used to specify the locations of all the dependencies of the input assembly, including the input assembly itself.
 You should use full paths for these locations. Relative paths do not always work.
 If there are multiple paths, separate them with semicolons (`;`) on Windows, or colons (`:`) on non-Windows platforms.
-It is generally a good idea to enclose the path list in quotes to protect any special characters from the shell.
+
+Another way to reference assemblies is by using the /r switch, which takes file names instead of paths. This switch can be used multiple times, once for each reference file, since is not a semicolon/colon separated list of file names. Example:
+
+    .\crossgen.exe /JITPath path\clrjit.dll /r "reference1.dll" /r "path\reference2.dll" /r ... path\assemblyName.dll
+    ./crossgen -JITPath path/libclrjit.so -r "reference1.dll" -r "path/reference2.dll" /r ... path/assemblyName.dll
+
+It is generally a good idea to enclose the path list or file names in quotes to protect any special characters from the shell.
+Note that the /r and /p options cannot be used together.
 
 Using native images
 -------------------
