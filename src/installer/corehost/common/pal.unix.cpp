@@ -812,11 +812,12 @@ static void readdir(const pal::string_t& path, const pal::string_t& pattern, boo
                 continue;
             }
 
-            pal::string_t filepath(entry->d_name);
-            if (filepath != _X(".") && filepath != _X(".."))
+            if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."))
             {
-                files.push_back(filepath);
+                continue;
             }
+
+            files.emplace_back(entry->d_name);
         }
 
         closedir(dir);
