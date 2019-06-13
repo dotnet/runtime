@@ -9,6 +9,7 @@
     <NoWarn>$(NoWarn);CS1591</NoWarn>
     <!-- This is actually a library for test projects, not a test project. -->
     <IsUnitTestProject>false</IsUnitTestProject>
+    <IsPackable>true</IsPackable>
     <IsShipping>true</IsShipping>
     <HasReferenceAssembly>false</HasReferenceAssembly>
     <ExcludeFromSourceBuild>true</ExcludeFromSourceBuild>
