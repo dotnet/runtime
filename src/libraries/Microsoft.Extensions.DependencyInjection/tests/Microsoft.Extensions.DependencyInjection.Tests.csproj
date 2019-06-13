@@ -6,10 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <Reference Include="Microsoft.Extensions.DependencyInjection.Specification.Tests" />
+    <Reference Include="Microsoft.Extensions.DependencyInjection" />
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions" />
     <Reference Include="Newtonsoft.Json" />
-
-    <ProjectReference Include="..\src\Microsoft.Extensions.DependencyInjection.csproj" />
-    <ProjectReference Include="..\..\DI.Specification.Tests\src\Microsoft.Extensions.DependencyInjection.Specification.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>
