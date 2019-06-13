@@ -13,6 +13,7 @@ namespace System.Text.Json
         /// <summary>
         ///   An enumerable and enumerator for the contents of a JSON array.
         /// </summary>
+        [DebuggerDisplay("{Current,nq}")]
         public struct ArrayEnumerator : IEnumerable<JsonElement>, IEnumerator<JsonElement>
         {
             private readonly JsonElement _target;
