@@ -395,7 +395,7 @@ set IbcDataPackageVersionOutputFile="%__IntermediatesDir%\ibcoptdataversion.txt"
 REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
 call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpPgoDataPackageVersion /nologo %__CommonMSBuildArgs% /p:PgoDataPackageVersionOutputFile=%PgoDataPackageVersionOutputFile%
 
- if not not !errorlevel! == 0 (
+ if not !errorlevel! == 0 (
     echo "Failed to get PGO data package version."
     exit /b 1
 )
@@ -408,7 +408,7 @@ set /p __PgoOptDataVersion=<"%PgoDataPackageVersionOutputFile%"
 
 call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpIbcDataPackageVersion /nologo %__CommonMSBuildArgs% /p:IbcDataPackageVersionOutputFile=%IbcDataPackageVersionOutputFile%
 
- if not not !errorlevel! == 0 (
+ if not !errorlevel! == 0 (
     echo "Failed to get IBC data package version."
     exit /b 1
 )
@@ -660,7 +660,7 @@ if %__BuildCoreLib% EQU 1 (
         set IbcMergePackageVersionOutputFile="%__IntermediatesDir%\ibcmergeversion.txt"
         call "%__ProjectDir%\dotnet.cmd" msbuild "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackageVersion /nologo %__CommonMSBuildArgs% /p:IbcMergePackageVersionOutputFile=%IbcMergePackageVersionOutputFile%
 
-        if not not !errorlevel! == 0 (
+        if not !errorlevel! == 0 (
             echo "Failed to determine IBC Merge version."
             exit /b 1
         )
