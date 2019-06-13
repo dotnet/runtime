@@ -162,7 +162,12 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    ((IList)state.Current.ReturnValue).Add(value);
+                    if (!(state.Current.ReturnValue is IList list))
+                    {
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(value.GetType(), reader, state.JsonPath);
+                        return;
+                    }
+                    list.Add(value);
                 }
             }
             else if (!setPropertyDirectly && state.Current.IsEnumerableProperty)
