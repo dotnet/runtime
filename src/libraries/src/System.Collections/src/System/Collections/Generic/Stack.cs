@@ -181,7 +181,7 @@ namespace System.Collections.Generic
             int threshold = (int)(((double)_array.Length) * 0.9);
             if (_size < threshold)
             {
-                Array.Resize(ref _array!, _size); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                Array.Resize(ref _array, _size);
                 _version++;
             }
         }
@@ -283,7 +283,7 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void PushWithResize(T item)
         {
-            Array.Resize(ref _array!, (_array.Length == 0) ? DefaultCapacity : 2 * _array.Length); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            Array.Resize(ref _array, (_array.Length == 0) ? DefaultCapacity : 2 * _array.Length);
             _array[_size] = item;
             _version++;
             _size++;

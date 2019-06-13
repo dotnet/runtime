@@ -118,8 +118,8 @@ namespace System.Buffers
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            _startObject = array!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
-            _endObject = array!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            _startObject = array!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            _endObject = array!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
             _startInteger = ReadOnlySequence.ArrayToSequenceStart(0);
             _endInteger = ReadOnlySequence.ArrayToSequenceEnd(array!.Length); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }
@@ -485,7 +485,7 @@ namespace System.Buffers
 
                 if (SequenceMarshal.TryGetString(charSequence, out string? text, out int start, out int length))
                 {
-                    return text!.Substring(start, length); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    return text.Substring(start, length);
                 }
 
                 if (Length < int.MaxValue)

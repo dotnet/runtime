@@ -579,7 +579,7 @@ namespace System.Collections.Concurrent
 
             if (TryPopCore(1, out poppedNode) == 1)
             {
-                result = poppedNode!._value; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                result = poppedNode!._value;
                 return true;
             }
 
@@ -598,7 +598,7 @@ namespace System.Collections.Concurrent
         /// </param>
         /// <returns>The number of objects successfully popped from the top of
         /// the <see cref="ConcurrentStack{T}"/>.</returns>
-        private int TryPopCore(int count, [NotNullWhen(true)] out Node? poppedHead)
+        private int TryPopCore(int count, out Node? poppedHead)
         {
             SpinWait spin = new SpinWait();
 

@@ -281,7 +281,7 @@ namespace System
             Uri? relativeLink;
             if (TryCreate(relativeUri, UriKind.RelativeOrAbsolute, out relativeLink))
             {
-                if (!relativeLink!.IsAbsoluteUri) // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                if (!relativeLink.IsAbsoluteUri)
                     return TryCreate(baseUri, relativeLink, out result);
 
                 result = relativeLink;
@@ -391,7 +391,7 @@ namespace System
             if (!Uri.TryCreate(uriString, uriKind, out result))
                 return false;
 
-            return result!.IsWellFormedOriginalString(); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            return result.IsWellFormedOriginalString();
         }
 
         //
