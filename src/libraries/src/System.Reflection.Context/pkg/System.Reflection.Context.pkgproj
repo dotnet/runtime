@@ -2,13 +2,12 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Reflection.Context.csproj">
-      <SupportedFramework>uap10.0.16299;netcoreapp2.0;net45;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>uap10.0.16299;netcoreapp2.0;net45</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Reflection.Context.csproj" />
     <InboxOnTargetFramework Include="net45">
       <AsFrameworkReference>true</AsFrameworkReference>
     </InboxOnTargetFramework>
-    <InboxOnTargetFramework Include="$(AllXamarinFrameworks)" />
     <!-- Since UAP are package based we still want to enable
          OOBing libraries that happen to overlap with their framework package.
          This avoids us having to lock the API in our NuGet packages just
