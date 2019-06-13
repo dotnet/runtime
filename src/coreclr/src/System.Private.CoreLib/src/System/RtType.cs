@@ -4620,10 +4620,10 @@ namespace System
 
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type GetTypeFromProgIDImpl(string progID, string? server, bool throwOnError);
+        internal static extern Type? GetTypeFromProgIDImpl(string progID, string? server, bool throwOnError);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern Type GetTypeFromCLSIDImpl(Guid clsid, string? server, bool throwOnError);
+        internal static extern Type? GetTypeFromCLSIDImpl(Guid clsid, string? server, bool throwOnError);
 #else // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
         internal static Type GetTypeFromProgIDImpl(String progID, String? server, bool throwOnError)
         {
