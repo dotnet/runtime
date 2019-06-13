@@ -131,19 +131,19 @@ dyn_array_copy (DynArray *dst, DynArray *src, int elem_size)
 }
 
 /* int */
-static void
+static inline void
 dyn_array_int_init (DynIntArray *da)
 {
 	dyn_array_init (&da->array);
 }
 
-static void
+static inline void
 dyn_array_int_uninit (DynIntArray *da)
 {
 	dyn_array_uninit (&da->array, sizeof (int));
 }
 
-static int
+static inline int
 dyn_array_int_size (DynIntArray *da)
 {
 	return da->array.size;
@@ -157,14 +157,14 @@ dyn_array_int_empty (DynIntArray *da)
 }
 #endif
 
-static void
+static inline void
 dyn_array_int_add (DynIntArray *da, int x)
 {
 	int *p = (int *)dyn_array_add (&da->array, sizeof (int));
 	*p = x;
 }
 
-static int
+static inline int
 dyn_array_int_get (DynIntArray *da, int x)
 {
 	return ((int*)da->array.data)[x];
@@ -178,13 +178,13 @@ dyn_array_int_set (DynIntArray *da, int idx, int val)
 }
 #endif
 
-static void
+static inline void
 dyn_array_int_ensure_independent (DynIntArray *da)
 {
 	dyn_array_ensure_independent (&da->array, sizeof (int));
 }
 
-static void
+static inline void
 dyn_array_int_copy (DynIntArray *dst, DynIntArray *src)
 {
 	dyn_array_copy (&dst->array, &src->array, sizeof (int));
@@ -198,7 +198,7 @@ dyn_array_int_is_copy (DynIntArray *da)
 
 /* ptr */
 
-static void
+static inline void
 dyn_array_ptr_init (DynPtrArray *da)
 {
 	dyn_array_init (&da->array);
@@ -244,7 +244,7 @@ dyn_array_ptr_get (DynPtrArray *da, int x)
 	return ((void**)da->array.data)[x];
 }
 
-static void
+static inline void
 dyn_array_ptr_set (DynPtrArray *da, int x, void *ptr)
 {
 #ifdef OPTIMIZATION_SINGLETON_DYN_ARRAY
