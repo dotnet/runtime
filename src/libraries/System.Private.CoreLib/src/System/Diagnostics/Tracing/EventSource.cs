@@ -1734,7 +1734,7 @@ namespace System.Diagnostics.Tracing
             hash.Start();
             hash.Append(namespaceBytes);
             hash.Append(bytes);
-            Array.Resize(ref bytes!, 16); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            Array.Resize(ref bytes, 16);
             hash.Finish(bytes);
 
             bytes[7] = unchecked((byte)((bytes[7] & 0x0F) | 0x50));    // Set high 4 bits of octet 7 to 5, as per RFC 4122
@@ -5446,8 +5446,8 @@ namespace System.Diagnostics.Tracing
                 {
                     ManifestError(SR.Format(SR.EventSource_IllegalOpcodeValue, name, value));
                 }
-                string prevName;
-                if (opcodeTab.TryGetValue(value, out prevName) && !name.Equals(prevName, StringComparison.Ordinal))
+
+                if (opcodeTab.TryGetValue(value, out string? prevName) && !name.Equals(prevName, StringComparison.Ordinal))
                 {
                     ManifestError(SR.Format(SR.EventSource_OpcodeCollision, name, prevName, value));
                 }
@@ -5462,8 +5462,8 @@ namespace System.Diagnostics.Tracing
                 {
                     ManifestError(SR.Format(SR.EventSource_IllegalTaskValue, name, value));
                 }
-                string prevName;
-                if (taskTab != null && taskTab.TryGetValue(value, out prevName) && !name.Equals(prevName, StringComparison.Ordinal))
+
+                if (taskTab != null && taskTab.TryGetValue(value, out string? prevName) && !name.Equals(prevName, StringComparison.Ordinal))
                 {
                     ManifestError(SR.Format(SR.EventSource_TaskCollision, name, prevName, value));
                 }
@@ -5484,8 +5484,8 @@ namespace System.Diagnostics.Tracing
                 {
                     ManifestError(SR.Format(SR.EventSource_IllegalKeywordsValue, name, "0x" + value.ToString("x", CultureInfo.CurrentCulture)));
                 }
-                string prevName;
-                if (keywordTab != null && keywordTab.TryGetValue(value, out prevName) && !name.Equals(prevName, StringComparison.Ordinal))
+
+                if (keywordTab != null && keywordTab.TryGetValue(value, out string? prevName) && !name.Equals(prevName, StringComparison.Ordinal))
                 {
                     ManifestError(SR.Format(SR.EventSource_KeywordCollision, name, prevName, "0x" + value.ToString("x", CultureInfo.CurrentCulture)));
                 }
@@ -5652,10 +5652,9 @@ namespace System.Diagnostics.Tracing
 
             // at this point we have all the information we need to translate the C# Message
             // to the manifest string we'll put in the stringTab
-            string msg;
-            if (stringTab.TryGetValue("event_" + eventName, out msg))
+            if (stringTab.TryGetValue("event_" + eventName, out string? msg))
             {
-                msg = TranslateToManifestConvention(msg!, eventName); // https://github.com/dotnet/roslyn/issues/26761
+                msg = TranslateToManifestConvention(msg, eventName);
                 stringTab["event_" + eventName] = msg;
             }
 
@@ -5687,7 +5686,7 @@ namespace System.Diagnostics.Tracing
             if (channelTab.Count == MaxCountChannels)
                 ManifestError(SR.EventSource_MaxChannelExceeded);
 
-            ChannelInfo info;
+            ChannelInfo? info;
             if (!channelTab.TryGetValue((int)channel, out info))
             {
                 // If we were not given an explicit channel, allocate one.  
@@ -5967,8 +5966,8 @@ namespace System.Diagnostics.Tracing
                 return;
 
             stringBuilder.Append(" message=\"$(string.").Append(key).Append(")\"");
-            string prevValue;
-            if (stringTab.TryGetValue(key, out prevValue) && !prevValue.Equals(value))
+
+            if (stringTab.TryGetValue(key, out string? prevValue) && !prevValue.Equals(value))
             {
                 ManifestError(SR.Format(SR.EventSource_DuplicateStringKey, key), true);
                 return;
@@ -6045,7 +6044,7 @@ namespace System.Diagnostics.Tracing
             if (resources != null && eventMessage == null)
                 eventMessage = resources.GetString("event_" + eventName, CultureInfo.InvariantCulture);
 
-            Debug.Assert(info.Attribs != null);
+            Debug.Assert(info!.Attribs != null);
             if (info.Attribs.EventChannelType == EventChannelType.Admin && eventMessage == null)
                 ManifestError(SR.Format(SR.EventSource_EventWithAdminChannelMustHaveMessage, eventName, info.Name));
             return info.Name;
@@ -6056,7 +6055,7 @@ namespace System.Diagnostics.Tracing
             if (task == EventTask.None)
                 return "";
 
-            string ret;
+            string? ret;
             if (taskTab == null)
                 taskTab = new Dictionary<int, string>();
             if (!taskTab.TryGetValue((int)task, out ret))
@@ -6209,14 +6208,14 @@ namespace System.Diagnostics.Tracing
                     if (stringBuilder == null)
                         return eventMessage;
                     UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, i - writtenSoFar);
-                    return stringBuilder!.ToString(); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    return stringBuilder.ToString();
                 }
 
                 if (eventMessage[i] == '%')
                 {
                     // handle format message escaping character '%' by escaping it
                     UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, i - writtenSoFar);
-                    stringBuilder!.Append("%%"); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    stringBuilder.Append("%%");
                     i++;
                     writtenSoFar = i;
                 }
@@ -6225,7 +6224,7 @@ namespace System.Diagnostics.Tracing
                 {
                     // handle C# escaped '{" and '}'
                     UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, i - writtenSoFar);
-                    stringBuilder!.Append(eventMessage[i]); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    stringBuilder.Append(eventMessage[i]);
                     i++; i++;
                     writtenSoFar = i;
                 }
@@ -6244,7 +6243,7 @@ namespace System.Diagnostics.Tracing
                         i++;
                         UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, leftBracket - writtenSoFar);
                         int manIndex = TranslateIndexToManifestConvention(argNum, evtName);
-                        stringBuilder!.Append('%').Append(manIndex); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                        stringBuilder.Append('%').Append(manIndex);
                         // An '!' after the insert specifier {n} will be interpreted as a literal.
                         // We'll escape it so that mc.exe does not attempt to consider it the 
                         // beginning of a format string.
@@ -6264,7 +6263,7 @@ namespace System.Diagnostics.Tracing
                 {
                     UpdateStringBuilder(ref stringBuilder, eventMessage, writtenSoFar, i - writtenSoFar);
                     i++;
-                    stringBuilder!.Append(s_escapes[chIdx]); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    stringBuilder.Append(s_escapes[chIdx]);
                     writtenSoFar = i;
                 }
                 else
@@ -6274,7 +6273,7 @@ namespace System.Diagnostics.Tracing
 
         private int TranslateIndexToManifestConvention(int idx, string evtName)
         {
-            List<int> byteArrArgIndices;
+            List<int>? byteArrArgIndices;
             if (perEventByteArrayArgIndices.TryGetValue(evtName, out byteArrArgIndices))
             {
                 foreach (var byArrIdx in byteArrArgIndices)

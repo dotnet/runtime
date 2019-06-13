@@ -235,7 +235,7 @@ namespace System.Runtime.InteropServices
                 return IntPtr.Zero;
             }
 
-            if (!s_nativeDllResolveMap.TryGetValue(assembly, out DllImportResolver resolver))
+            if (!s_nativeDllResolveMap.TryGetValue(assembly, out DllImportResolver? resolver))
             {
                 return IntPtr.Zero;
             }
