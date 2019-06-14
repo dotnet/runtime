@@ -57,6 +57,9 @@ namespace System.Globalization
 
         private int culture; // Do not rename (binary serialization). The fields sole purpose is to support Desktop serialization.
 
+        [NonSerialized]
+        private IntPtr _sortHandle;
+
         internal CompareInfo(CultureInfo culture)
         {
             m_name = culture._name;
