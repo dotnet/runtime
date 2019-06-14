@@ -39,6 +39,9 @@ namespace System.Globalization
             ~(CompareOptions.IgnoreCase | CompareOptions.IgnoreSymbols | CompareOptions.IgnoreNonSpace |
               CompareOptions.IgnoreWidth | CompareOptions.IgnoreKanaType | CompareOptions.StringSort);
 
+        [NonSerialized]
+        private static readonly object _lock = new object(); // must be initialized before Invariant field
+
         // Cache the invariant CompareInfo
         internal static readonly CompareInfo Invariant = CultureInfo.InvariantCulture.CompareInfo;
 
@@ -56,9 +59,6 @@ namespace System.Globalization
         private SortVersion? m_SortVersion; // Do not rename (binary serialization)
 
         private int culture; // Do not rename (binary serialization). The fields sole purpose is to support Desktop serialization.
-
-        [NonSerialized]
-        private IntPtr _sortHandle;
 
         internal CompareInfo(CultureInfo culture)
         {

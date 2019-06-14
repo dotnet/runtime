@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Threading;
 
 using Internal.Runtime.CompilerServices;
 
@@ -15,7 +17,15 @@ namespace System.Globalization
     public partial class CompareInfo
     {
         [NonSerialized]
+        private IntPtr _sortHandle;
+
+        [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
+
+        // in most scenarios there is a limited number of cultures with limited number of sort options
+        // so caching the sort handles and not freeing them is OK, see https://github.com/dotnet/coreclr/pull/25117 for more
+        [NonSerialized]
+        private static Dictionary<string, IntPtr> s_sortNameToSortHandleCache;
 
         private void InitSort(CultureInfo culture)
         {
@@ -27,17 +37,38 @@ namespace System.Globalization
             }
             else
             {
-                Interop.Globalization.ResultCode resultCode = Interop.Globalization.GetSortHandle(GetNullTerminatedUtf8String(_sortName), out _sortHandle);
-                if (resultCode != Interop.Globalization.ResultCode.Success)
-                {
-                    Interop.Globalization.CloseSortHandle(_sortHandle);
-
-                    if (resultCode == Interop.Globalization.ResultCode.OutOfMemory)
-                        throw new OutOfMemoryException();
-
-                    throw new ExternalException(SR.Arg_ExternalException);
-                }
                 _isAsciiEqualityOrdinal = (_sortName == "en-US" || _sortName == "");
+
+                lock (_lock)
+                {
+                    if (s_sortNameToSortHandleCache == null)
+                    {
+                        s_sortNameToSortHandleCache = new Dictionary<string, IntPtr>();
+                    }
+
+                    if (!s_sortNameToSortHandleCache.TryGetValue(_sortName, out _sortHandle))
+                    {
+                        s_sortNameToSortHandleCache.Add(_sortName, (_sortHandle = GetSortHandle(_sortName)));
+                    }
+                }
+            }
+        }
+
+        private static IntPtr GetSortHandle(string sortName)
+        {
+            var resultCode = Interop.Globalization.GetSortHandle(GetNullTerminatedUtf8String(sortName), out IntPtr sortHandle);
+            if (resultCode == Interop.Globalization.ResultCode.Success)
+            {
+                return sortHandle;
+            }
+            else
+            {
+                Interop.Globalization.CloseSortHandle(sortHandle);
+
+                if (resultCode == Interop.Globalization.ResultCode.OutOfMemory)
+                    throw new OutOfMemoryException();
+
+                throw new ExternalException(SR.Arg_ExternalException);
             }
         }
 
