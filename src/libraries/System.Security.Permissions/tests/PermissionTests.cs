@@ -7,6 +7,7 @@ using System.Configuration;
 using System.DirectoryServices;
 using System.Reflection;
 using System.Web;
+using System.Xaml.Permissions;
 
 namespace System.Security.Permissions.Tests
 {
@@ -164,6 +165,33 @@ namespace System.Security.Permissions.Tests
         {
             GacIdentityPermissionAttribute gipa = new GacIdentityPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = gipa.CreatePermission();
+        }
+
+        [Fact]
+        public static void MediaPermissionCallMethods()
+        {
+            MediaPermission mp = new MediaPermission();
+            MediaPermission mp2 = new MediaPermission(MediaPermissionAudio.AllAudio);
+            MediaPermission mp3 = new MediaPermission(MediaPermissionVideo.AllVideo);
+            MediaPermission mp4 = new MediaPermission(MediaPermissionImage.AllImage);
+            MediaPermission mp5 = new MediaPermission(MediaPermissionAudio.AllAudio,
+                                                     MediaPermissionVideo.AllVideo,
+                                                     MediaPermissionImage.AllImage);
+            bool testbool = mp.IsUnrestricted();
+            IPermission ip = mp.Copy();
+            IPermission ip2 = mp.Intersect(ip);
+            IPermission ip3 = mp.Union(ip);
+            testbool = mp.IsSubsetOf(ip);
+            SecurityElement se = new SecurityElement("");
+            mp.FromXml(se);
+            se = mp.ToXml();
+        }
+
+        [Fact]
+        public static void MediaPermissionAttributeCallMethods()
+        {
+            MediaPermissionAttribute mpa = new MediaPermissionAttribute(new Permissions.SecurityAction());
+            IPermission ip = mpa.CreatePermission();
         }
 
         [Fact]
@@ -391,6 +419,49 @@ namespace System.Security.Permissions.Tests
         {
             UrlIdentityPermissionAttribute uipa = new UrlIdentityPermissionAttribute(new Permissions.SecurityAction());
             IPermission ip = uipa.CreatePermission();
+        }
+
+        [Fact]
+        public static void WebBrowserPermissionCallMethods()
+        {
+            WebBrowserPermission wp = new WebBrowserPermission();
+            WebBrowserPermission wp2 = new WebBrowserPermission(PermissionState.Unrestricted);
+            WebBrowserPermission wp3 = new WebBrowserPermission(WebBrowserPermissionLevel.Unrestricted);
+            bool testbool = wp.IsUnrestricted();
+            IPermission ip = wp.Copy();
+            IPermission ip2 = wp.Intersect(ip);
+            IPermission ip3= wp.Union(ip);
+            testbool = wp.IsSubsetOf(ip);
+            SecurityElement se = new SecurityElement("");
+            wp.FromXml(se);
+            se = wp.ToXml();
+        }
+
+        [Fact]
+        public static void WebBrowserPermissionAttributeCallMethods()
+        {
+            WebBrowserPermissionAttribute wpa = new WebBrowserPermissionAttribute(new Permissions.SecurityAction());
+            IPermission ip = wpa.CreatePermission();
+        }
+
+        [Fact]
+        public static void XamlLoadPermissionCallMethods()
+        {
+            XamlAccessLevel accessLevel = XamlAccessLevel.AssemblyAccessTo(Assembly.GetExecutingAssembly().GetName());
+            XamlLoadPermission xp = new XamlLoadPermission(accessLevel);
+            XamlLoadPermission xp2 = new XamlLoadPermission(PermissionState.Unrestricted);
+            XamlLoadPermission xp3 = new XamlLoadPermission(Array.Empty<XamlAccessLevel>());
+            bool testbool = xp.IsUnrestricted();
+            IPermission ip = xp.Copy();
+            IPermission ip2 = xp.Intersect(ip);
+            IPermission ip3 = xp.Union(ip);
+            testbool = xp.IsSubsetOf(ip);
+            testbool = xp.Equals(new object());
+            testbool = xp.Includes(accessLevel);
+            int hash = xp.GetHashCode();
+            SecurityElement se = new SecurityElement("");
+            xp.FromXml(se);
+            se = xp.ToXml();
         }
 
         [Fact]
