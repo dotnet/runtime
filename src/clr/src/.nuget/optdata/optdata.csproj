@@ -18,12 +18,45 @@
     </RestoreSources>
   </PropertyGroup>
 
+  <!--                                                                       -->
+  <!-- Task: DumpPgoDataPackageVersion                                       -->
+  <!--                                                                       -->
+  <!-- Notes:                                                                -->
+  <!--                                                                       -->
+  <!-- DumpPgoDataPackageVersion is used by build.sh and build.cmd to pass   -->
+  <!-- the version information to cmake. The task will write a file to be    -->
+  <!-- read back by build.cmd/sh. The path for the file is:                  --> 
+  <!-- $(PgoDataPackageVersionOutputFile)                                    -->
+  <!--                                                                       -->
+
   <Target Name="DumpPgoDataPackageVersion">
-    <Message Importance="high" Text="$(optimizationPGOCoreCLRVersion)" />
+    <!-- Error if PgoDataPackageVersionOutputFile is not set. -->
+    <Error Condition="'$(PgoDataPackageVersionOutputFile)'==''" Text="PgoDataPackageVersionOutputFile must be passed as a property." />
+
+    <!-- Cleanup old version file -->
+    <Delete Files="$(PgoDataPackageVersionOutputFile)" Condition="Exists('$(PgoDataPackageVersionOutputFile)')" />
+    <WriteLinesToFile File="$(PgoDataPackageVersionOutputFile)" Lines="$(optimizationPGOCoreCLRVersion)" Overwrite="true"/>
+    <Message Text="optimizationPGOCoreCLRVersion: $(optimizationPGOCoreCLRVersion) written to: $(PgoDataPackageVersionOutputFile)" Importance="High" />
   </Target>
 
+  <!--                                                                       -->
+  <!-- Task: DumpIbcDataPackageVersion                                       -->
+  <!--                                                                       -->
+  <!-- Notes:                                                                -->
+  <!--                                                                       -->
+  <!-- DumpIbcDataPackageVersion is used by build.sh and build.cmd to pass   -->
+  <!-- the version information to cmake. The task will write a file to be    -->
+  <!-- read back by build.cmd/sh. The path for the file is:                  --> 
+  <!-- $(IbcDataPackageVersionOutputFile)                                    -->
+  <!--                                                                       -->
   <Target Name="DumpIbcDataPackageVersion">
-    <Message Importance="high" Text="$(optimizationIBCCoreCLRVersion)" />
+    <!-- Error if PgoDataPackageVersionOutputFile is not set. -->
+    <Error Condition="'$(IbcDataPackageVersionOutputFile)'==''" Text="IbcDataPackageVersionOutputFile must be passed as a property." />
+
+    <!-- Cleanup old version file -->
+    <Delete Files="$(IbcDataPackageVersionOutputFile)" Condition="Exists('$(IbcDataPackageVersionOutputFile)')" />
+    <WriteLinesToFile File="$(IbcDataPackageVersionOutputFile)" Lines="$(optimizationIBCCoreCLRVersion)" Overwrite="true"/>
+    <Message Text="optimizationIBCCoreCLRVersion: $(optimizationIBCCoreCLRVersion) written to: $(IbcDataPackageVersionOutputFile)" Importance="High" />
   </Target>
 
 </Project>
