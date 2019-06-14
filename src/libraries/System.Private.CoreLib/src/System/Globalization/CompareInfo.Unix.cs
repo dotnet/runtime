@@ -22,11 +22,6 @@ namespace System.Globalization
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
 
-        // in most scenarios there is a limited number of cultures with limited number of sort options
-        // so caching the sort handles and not freeing them is OK, see https://github.com/dotnet/coreclr/pull/25117 for more
-        [NonSerialized]
-        private static Dictionary<string, IntPtr> s_sortNameToSortHandleCache;
-
         private void InitSort(CultureInfo culture)
         {
             _sortName = culture.SortName;
@@ -39,36 +34,7 @@ namespace System.Globalization
             {
                 _isAsciiEqualityOrdinal = (_sortName == "en-US" || _sortName == "");
 
-                lock (_lock)
-                {
-                    if (s_sortNameToSortHandleCache == null)
-                    {
-                        s_sortNameToSortHandleCache = new Dictionary<string, IntPtr>();
-                    }
-
-                    if (!s_sortNameToSortHandleCache.TryGetValue(_sortName, out _sortHandle))
-                    {
-                        s_sortNameToSortHandleCache.Add(_sortName, (_sortHandle = GetSortHandle(_sortName)));
-                    }
-                }
-            }
-        }
-
-        private static IntPtr GetSortHandle(string sortName)
-        {
-            var resultCode = Interop.Globalization.GetSortHandle(GetNullTerminatedUtf8String(sortName), out IntPtr sortHandle);
-            if (resultCode == Interop.Globalization.ResultCode.Success)
-            {
-                return sortHandle;
-            }
-            else
-            {
-                Interop.Globalization.CloseSortHandle(sortHandle);
-
-                if (resultCode == Interop.Globalization.ResultCode.OutOfMemory)
-                    throw new OutOfMemoryException();
-
-                throw new ExternalException(SR.Arg_ExternalException);
+                _sortHandle = SortHandleCache.GetCachedSortHandle(_sortName);
             }
         }
 
@@ -946,20 +912,6 @@ namespace System.Globalization
             return (options & CompareOptions.IgnoreSymbols) == 0;
         }
 
-        private static byte[] GetNullTerminatedUtf8String(string s)
-        {
-            int byteLen = System.Text.Encoding.UTF8.GetByteCount(s);
-
-            // Allocate an extra byte (which defaults to 0) as the null terminator.
-            byte[] buffer = new byte[byteLen + 1];
-
-            int bytesWritten = System.Text.Encoding.UTF8.GetBytes(s, 0, s.Length, buffer, 0);
-
-            Debug.Assert(bytesWritten == byteLen);
-
-            return buffer;
-        }
-
         private SortVersion GetSortVersion()
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -970,6 +922,66 @@ namespace System.Globalization
                                                              (byte) ((LCID  & 0x00FF0000) >> 16),
                                                              (byte) ((LCID  & 0x0000FF00) >> 8),
                                                              (byte) (LCID  & 0xFF)));
+        }
+
+        private static class SortHandleCache
+        {
+            private static readonly object s_lock = new object();
+
+            // in most scenarios there is a limited number of cultures with limited number of sort options
+            // so caching the sort handles and not freeing them is OK, see https://github.com/dotnet/coreclr/pull/25117 for more
+            private static readonly Dictionary<string, IntPtr> s_sortNameToSortHandleCache = new Dictionary<string, IntPtr>();
+
+            internal static IntPtr GetCachedSortHandle(string sortName)
+            {
+                lock (s_lock)
+                {
+                    if (!s_sortNameToSortHandleCache.TryGetValue(sortName, out IntPtr result))
+                    {
+                        result = GetSortHandle(sortName);
+
+                        try
+                        {
+                            s_sortNameToSortHandleCache.Add(sortName, result);
+                        }
+                        catch
+                        {
+                            Interop.Globalization.CloseSortHandle(result);
+
+                            throw;
+                        }
+                    }
+
+                    return result;
+                }
+            }
+
+            private static IntPtr GetSortHandle(string sortName)
+            {
+                switch(Interop.Globalization.GetSortHandle(GetNullTerminatedUtf8String(sortName), out IntPtr sortHandle))
+                {
+                    case Interop.Globalization.ResultCode.Success:
+                        return sortHandle;
+                    case Interop.Globalization.ResultCode.OutOfMemory:
+                        throw new OutOfMemoryException();
+                    default:
+                        throw new ExternalException(SR.Arg_ExternalException);
+                }
+            }
+
+            private static byte[] GetNullTerminatedUtf8String(string s)
+            {
+                int byteLen = System.Text.Encoding.UTF8.GetByteCount(s);
+
+                // Allocate an extra byte (which defaults to 0) as the null terminator.
+                byte[] buffer = new byte[byteLen + 1];
+
+                int bytesWritten = System.Text.Encoding.UTF8.GetBytes(s, 0, s.Length, buffer, 0);
+
+                Debug.Assert(bytesWritten == byteLen);
+
+                return buffer;
+            }
         }
 
         // See https://github.com/dotnet/coreclr/blob/master/src/utilcode/util_nodependencies.cpp#L970
