@@ -24,9 +24,9 @@
   <!-- Notes:                                                                -->
   <!--                                                                       -->
   <!-- DumpPgoDataPackageVersion is used by build.sh and build.cmd to pass   -->
-  <!-- the version information to cmake. The task will write a file to the   -->
-  <!-- intermediates directory to be read back by build.cmd/sh. The path for -->
-  <!-- the file is passed as proprty: PgoDataPackageVersionOutputFile        -->
+  <!-- the version information to cmake. The task will write a file to be    -->
+  <!-- read back by build.cmd/sh. The path for the file is:                  --> 
+  <!-- $(PgoDataPackageVersionOutputFile)                                    -->
   <!--                                                                       -->
 
   <Target Name="DumpPgoDataPackageVersion">
@@ -45,9 +45,9 @@
   <!-- Notes:                                                                -->
   <!--                                                                       -->
   <!-- DumpIbcDataPackageVersion is used by build.sh and build.cmd to pass   -->
-  <!-- the version information to cmake. The task will write a file to the   -->
-  <!-- intermediates directory to be read back by build.cmd/sh. The path for -->
-  <!-- the file is IbcDataPackageVersionOutputFile                           -->
+  <!-- the version information to cmake. The task will write a file to be    -->
+  <!-- read back by build.cmd/sh. The path for the file is:                  --> 
+  <!-- $(IbcDataPackageVersionOutputFile)                                    -->
   <!--                                                                       -->
   <Target Name="DumpIbcDataPackageVersion">
     <!-- Error if PgoDataPackageVersionOutputFile is not set. -->
