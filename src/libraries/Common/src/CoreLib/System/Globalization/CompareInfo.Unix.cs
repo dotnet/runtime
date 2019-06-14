@@ -926,15 +926,13 @@ namespace System.Globalization
 
         private static class SortHandleCache
         {
-            private static readonly object s_lock = new object();
-
             // in most scenarios there is a limited number of cultures with limited number of sort options
             // so caching the sort handles and not freeing them is OK, see https://github.com/dotnet/coreclr/pull/25117 for more
             private static readonly Dictionary<string, IntPtr> s_sortNameToSortHandleCache = new Dictionary<string, IntPtr>();
 
             internal static IntPtr GetCachedSortHandle(string sortName)
             {
-                lock (s_lock)
+                lock (s_sortNameToSortHandleCache)
                 {
                     if (!s_sortNameToSortHandleCache.TryGetValue(sortName, out IntPtr result))
                     {
