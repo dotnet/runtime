@@ -1862,7 +1862,7 @@ namespace System
 
         internal object? GenericCache
         {
-            get => Cache.GenericCache;
+            get => CacheIfExists?.GenericCache;
             set => Cache.GenericCache = value;
         }
 
@@ -2374,6 +2374,21 @@ namespace System
         internal override bool CacheEquals(object? o)
         {
             return (o is RuntimeType t) && (t.m_handle == m_handle);
+        }
+
+        private RuntimeTypeCache? CacheIfExists
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (m_cache != IntPtr.Zero)
+                {
+                    object cache = GCHandle.InternalGet(m_cache);
+                    Debug.Assert(cache == null || cache is RuntimeTypeCache);
+                    return Unsafe.As<RuntimeTypeCache>(cache);
+                }
+                return null;
+            }
         }
 
         private RuntimeTypeCache Cache
@@ -4439,83 +4454,44 @@ namespace System
         }
 
         // the cache entry
-        private class ActivatorCacheEntry
+        private sealed class ActivatorCache
         {
-            // the type to cache
-            internal readonly RuntimeType _type;
-            // the delegate containing the call to the ctor, will be replaced by an IntPtr to feed a calli with
-            internal volatile CtorDelegate? _ctor;
+            // the delegate containing the call to the ctor
             internal readonly RuntimeMethodHandleInternal _hCtorMethodHandle;
-            internal readonly MethodAttributes _ctorAttributes;
+            internal MethodAttributes _ctorAttributes;
+            internal CtorDelegate? _ctor;
+
             // Lazy initialization was performed
             internal volatile bool _isFullyInitialized;
 
-            internal ActivatorCacheEntry(RuntimeType t, RuntimeMethodHandleInternal rmh)
+            private static ConstructorInfo? s_delegateCtorInfo;
+
+            internal ActivatorCache(RuntimeMethodHandleInternal rmh)
             {
-                _type = t;
                 _hCtorMethodHandle = rmh;
+            }
+
+            private void Initialize()
+            {
                 if (!_hCtorMethodHandle.IsNullHandle())
-                    _ctorAttributes = RuntimeMethodHandle.GetAttributes(_hCtorMethodHandle);
-            }
-        }
-
-        private class ActivatorCache
-        {
-            private const int CacheSize = 16;
-            private volatile int hash_counter; //Counter for wrap around
-            private readonly ActivatorCacheEntry[] cache = new ActivatorCacheEntry[CacheSize];
-
-            private volatile ConstructorInfo? delegateCtorInfo;
-
-            private void InitializeDelegateCreator()
-            {
-                ConstructorInfo? ctorInfo = typeof(CtorDelegate).GetConstructor(new Type[] { typeof(object), typeof(IntPtr) });
-                delegateCtorInfo = ctorInfo; // this assignment should be last
-            }
-
-            private void InitializeCacheEntry(ActivatorCacheEntry ace)
-            {
-                if (!ace._type.IsValueType)
                 {
-                    Debug.Assert(!ace._hCtorMethodHandle.IsNullHandle(), "Expected the default ctor method handle for a reference type.");
+                    _ctorAttributes = RuntimeMethodHandle.GetAttributes(_hCtorMethodHandle);
 
-                    if (delegateCtorInfo == null)
-                        InitializeDelegateCreator();
+                    // The default ctor path is optimized for reference types only
+                    ConstructorInfo delegateCtorInfo = s_delegateCtorInfo ?? (s_delegateCtorInfo = typeof(CtorDelegate).GetConstructor(new Type[] { typeof(object), typeof(IntPtr) })!);
 
                     // No synchronization needed here. In the worst case we create extra garbage
-                    CtorDelegate ctor = (CtorDelegate)delegateCtorInfo!.Invoke(new object?[] { null, RuntimeMethodHandle.GetFunctionPointer(ace._hCtorMethodHandle) });
-                    ace._ctor = ctor;
+                    _ctor = (CtorDelegate)delegateCtorInfo.Invoke(new object?[] { null, RuntimeMethodHandle.GetFunctionPointer(_hCtorMethodHandle) });
                 }
-                ace._isFullyInitialized = true;
+                _isFullyInitialized = true;
             }
 
-            internal ActivatorCacheEntry? GetEntry(RuntimeType t)
+            public void EnsureInitialized()
             {
-                int index = hash_counter;
-                for (int i = 0; i < CacheSize; i++)
-                {
-                    ActivatorCacheEntry ace = Volatile.Read(ref cache[index]);
-                    if (ace != null && ace._type == t) //check for type match..
-                    {
-                        if (!ace._isFullyInitialized)
-                            InitializeCacheEntry(ace);
-                        return ace;
-                    }
-                    index = (index + 1) & (ActivatorCache.CacheSize - 1);
-                }
-                return null;
-            }
-
-            internal void SetEntry(ActivatorCacheEntry ace)
-            {
-                // fill the array backwards to hit the most recently filled entries first in GetEntry
-                int index = (hash_counter - 1) & (ActivatorCache.CacheSize - 1);
-                hash_counter = index;
-                Volatile.Write(ref cache[index], ace);
+                if (!_isFullyInitialized)
+                    Initialize();
             }
         }
-
-        private static volatile ActivatorCache s_ActivatorCache;
 
         /// <summary>
         /// The slow path of CreateInstanceDefaultCtor
@@ -4534,17 +4510,8 @@ namespace System
 
             if (canBeCached && fillCache)
             {
-                ActivatorCache activatorCache = s_ActivatorCache;
-                if (activatorCache == null)
-                {
-                    // No synchronization needed here. In the worst case we create extra garbage
-                    activatorCache = new ActivatorCache();
-                    s_ActivatorCache = activatorCache;
-                }
-
                 // cache the ctor
-                ActivatorCacheEntry ace = new ActivatorCacheEntry(this, runtimeCtor);
-                activatorCache.SetEntry(ace);
+                GenericCache = new ActivatorCache(runtimeCtor);
             }
 
             return instance;
@@ -4558,9 +4525,11 @@ namespace System
         internal object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
         {
             // Call the cached 
-            ActivatorCacheEntry? cacheEntry = s_ActivatorCache?.GetEntry(this);
+            ActivatorCache? cacheEntry = GenericCache as ActivatorCache;
             if (cacheEntry != null)
             {
+                cacheEntry.EnsureInitialized();
+
                 if (publicOnly)
                 {
                     if (cacheEntry._ctor != null &&
