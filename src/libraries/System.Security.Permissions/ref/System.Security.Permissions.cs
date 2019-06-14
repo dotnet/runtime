@@ -1040,6 +1040,55 @@ namespace System.Security.Permissions
         ChangeAcl = 8192,
         AllFlags = 13111,
     }
+    public sealed partial class MediaPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
+    {
+        public MediaPermission() { }
+        public MediaPermission(System.Security.Permissions.MediaPermissionAudio permissionAudio) { }
+        public MediaPermission(System.Security.Permissions.MediaPermissionAudio permissionAudio, System.Security.Permissions.MediaPermissionVideo permissionVideo, System.Security.Permissions.MediaPermissionImage permissionImage) { }
+        public MediaPermission(System.Security.Permissions.MediaPermissionImage permissionImage) { }
+        public MediaPermission(System.Security.Permissions.MediaPermissionVideo permissionVideo) { }
+        public MediaPermission(System.Security.Permissions.PermissionState state) { }
+        public System.Security.Permissions.MediaPermissionAudio Audio { get { throw null; } }
+        public System.Security.Permissions.MediaPermissionImage Image { get { throw null; } }
+        public System.Security.Permissions.MediaPermissionVideo Video { get { throw null; } }
+        public override System.Security.IPermission Copy() { throw null; }
+        public override void FromXml(System.Security.SecurityElement securityElement) { }
+        public override System.Security.IPermission Intersect(System.Security.IPermission target) { throw null; }
+        public override bool IsSubsetOf(System.Security.IPermission target) { throw null; }
+        public bool IsUnrestricted() { throw null; }
+        public override System.Security.SecurityElement ToXml() { throw null; }
+        public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    public sealed partial class MediaPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
+    {
+        public MediaPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+        public System.Security.Permissions.MediaPermissionAudio Audio { get { throw null; } set { } }
+        public System.Security.Permissions.MediaPermissionImage Image { get { throw null; } set { } }
+        public System.Security.Permissions.MediaPermissionVideo Video { get { throw null; } set { } }
+        public override System.Security.IPermission CreatePermission() { throw null; }
+    }
+    public enum MediaPermissionAudio
+    {
+        NoAudio = 0,
+        SiteOfOriginAudio = 1,
+        SafeAudio = 2,
+        AllAudio = 3,
+    }
+    public enum MediaPermissionImage
+    {
+        NoImage = 0,
+        SiteOfOriginImage = 1,
+        SafeImage = 2,
+        AllImage = 3,
+    }
+    public enum MediaPermissionVideo
+    {
+        NoVideo = 0,
+        SiteOfOriginVideo = 1,
+        SafeVideo = 2,
+        AllVideo = 3,
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple=true, Inherited=false)]
     public sealed partial class PermissionSetAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
     {
@@ -1396,6 +1445,33 @@ namespace System.Security.Permissions
         public UrlIdentityPermissionAttribute(System.Security.Permissions.SecurityAction action) : base (default(System.Security.Permissions.SecurityAction)) { }
         public string Url { get { throw null; } set { } }
         public override System.Security.IPermission CreatePermission() { throw null; }
+    }
+    public sealed partial class WebBrowserPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
+    {
+        public WebBrowserPermission() { }
+        public WebBrowserPermission(System.Security.Permissions.PermissionState state) { }
+        public WebBrowserPermission(System.Security.Permissions.WebBrowserPermissionLevel webBrowserPermissionLevel) { }
+        public System.Security.Permissions.WebBrowserPermissionLevel Level { get { throw null; } set { } }
+        public override System.Security.IPermission Copy() { throw null; }
+        public override void FromXml(System.Security.SecurityElement securityElement) { }
+        public override System.Security.IPermission Intersect(System.Security.IPermission target) { throw null; }
+        public override bool IsSubsetOf(System.Security.IPermission target) { throw null; }
+        public bool IsUnrestricted() { throw null; }
+        public override System.Security.SecurityElement ToXml() { throw null; }
+        public override System.Security.IPermission Union(System.Security.IPermission target) { throw null; }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Assembly | System.AttributeTargets.Class | System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Struct, AllowMultiple = true, Inherited = false)]
+    public sealed partial class WebBrowserPermissionAttribute : System.Security.Permissions.CodeAccessSecurityAttribute
+    {
+        public WebBrowserPermissionAttribute(System.Security.Permissions.SecurityAction action) : base(default(System.Security.Permissions.SecurityAction)) { }
+        public System.Security.Permissions.WebBrowserPermissionLevel Level { get { throw null; } set { } }
+        public override System.Security.IPermission CreatePermission() { throw null; }
+    }
+    public enum WebBrowserPermissionLevel
+    {
+        None = 0,
+        Safe = 1,
+        Unrestricted = 2,
     }
     public sealed partial class ZoneIdentityPermission : System.Security.CodeAccessPermission
     {
@@ -2013,5 +2089,35 @@ namespace System.Web
         Medium = 400,
         High = 500,
         Unrestricted = 600,
+    }
+}
+namespace System.Xaml.Permissions
+{
+    public partial class XamlAccessLevel
+    {
+        internal XamlAccessLevel() { }
+        public System.Reflection.AssemblyName AssemblyAccessToAssemblyName { get { throw null; } }
+        public string PrivateAccessToTypeName { get { throw null; } }
+        public static System.Xaml.Permissions.XamlAccessLevel AssemblyAccessTo(System.Reflection.Assembly assembly) { throw null; }
+        public static System.Xaml.Permissions.XamlAccessLevel AssemblyAccessTo(System.Reflection.AssemblyName assemblyName) { throw null; }
+        public static System.Xaml.Permissions.XamlAccessLevel PrivateAccessTo(string assemblyQualifiedTypeName) { throw null; }
+        public static System.Xaml.Permissions.XamlAccessLevel PrivateAccessTo(System.Type type) { throw null; }
+    }
+    public sealed partial class XamlLoadPermission : System.Security.CodeAccessPermission, System.Security.Permissions.IUnrestrictedPermission
+    {
+        public XamlLoadPermission(System.Collections.Generic.IEnumerable<System.Xaml.Permissions.XamlAccessLevel> allowedAccess) { }
+        public XamlLoadPermission(System.Security.Permissions.PermissionState state) { }
+        public XamlLoadPermission(System.Xaml.Permissions.XamlAccessLevel allowedAccess) { }
+        public System.Collections.Generic.IList<System.Xaml.Permissions.XamlAccessLevel> AllowedAccess { get { throw null; } }
+        public override System.Security.IPermission Copy() { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public override void FromXml(System.Security.SecurityElement elem) { }
+        public override int GetHashCode() { throw null; }
+        public bool Includes(System.Xaml.Permissions.XamlAccessLevel requestedAccess) { throw null; }
+        public override System.Security.IPermission Intersect(System.Security.IPermission target) { throw null; }
+        public override bool IsSubsetOf(System.Security.IPermission target) { throw null; }
+        public bool IsUnrestricted() { throw null; }
+        public override System.Security.SecurityElement ToXml() { throw null; }
+        public override System.Security.IPermission Union(System.Security.IPermission other) { throw null; }
     }
 }

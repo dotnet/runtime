@@ -89,6 +89,7 @@
     <Compile Include="System\Security\Permissions\KeyContainerPermissionAccessEntryEnumerator.cs" />
     <Compile Include="System\Security\Permissions\KeyContainerPermissionAttribute.cs" />
     <Compile Include="System\Security\Permissions\KeyContainerPermissionFlags.cs" />
+    <Compile Include="System\Security\Permissions\MediaPermission.cs" />
     <Compile Include="System\Security\Permissions\PermissionSetAttribute.cs" />
     <Compile Include="System\Security\Permissions\PrincipalPermission.cs" />
     <Compile Include="System\Security\Permissions\PrincipalPermissionAttribute.cs" />
@@ -120,6 +121,7 @@
     <Compile Include="System\Security\Permissions\UIPermissionWindow.cs" />
     <Compile Include="System\Security\Permissions\UrlIdentityPermission.cs" />
     <Compile Include="System\Security\Permissions\UrlIdentityPermissionAttribute.cs" />
+    <Compile Include="System\Security\Permissions\WebBrowserPermission.cs" />
     <Compile Include="System\Security\Permissions\ZoneIdentityPermission.cs" />
     <Compile Include="System\Security\Permissions\ZoneIdentityPermissionAttribute.cs" />
     <Compile Include="System\Security\Policy\AllMembershipCondition.cs" />
@@ -176,6 +178,8 @@
     <Compile Include="System\Web\AspNetHostingPermission.cs" />
     <Compile Include="System\Web\AspNetHostingPermissionAttribute.cs" />
     <Compile Include="System\Web\AspNetHostingPermissionLevel.cs" />
+    <Compile Include="System\Xaml\Permissions\XamlAccessLevel.cs" />
+    <Compile Include="System\Xaml\Permissions\XamlLoadPermission.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="$(CommonPath)\CoreLib\System\Security\IStackWalk.cs">
@@ -201,6 +205,8 @@
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Transactions" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Security.AccessControl" />
