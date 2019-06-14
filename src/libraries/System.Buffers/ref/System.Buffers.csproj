@@ -5,6 +5,7 @@
     <AssemblyVersion>4.0.2.0</AssemblyVersion>
     <ProjectGuid>{11AE73F7-3532-47B9-8FF6-B4F22D76456C}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Buffers.cs" />
