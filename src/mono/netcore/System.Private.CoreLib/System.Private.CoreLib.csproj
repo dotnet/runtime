@@ -28,8 +28,8 @@
 
   <!-- Compilation options -->
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">$(BuildType)</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">$(BuildArch)</Platform>
+    <Configuration Condition=" '$(BuildType)' != '' ">$(BuildType)</Configuration>
+    <Platform Condition=" '$(BuildArch)' != '' ">$(BuildArch)</Platform>
     <Platform Condition=" '$(Platform)' == 'armel' ">arm</Platform>
     <ProjectGuid>{DD18B4BA-3B49-437B-9E34-41EF8A640CE0}</ProjectGuid>
 

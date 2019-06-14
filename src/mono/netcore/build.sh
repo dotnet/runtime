@@ -83,6 +83,7 @@ while [[ $# > 0 ]]; do
   shift
 done
 
+CPU_COUNT=$(getconf _NPROCESSORS_ONLN || echo 4)
 
 # run .././autogen.sh only once or if "--rebuild" argument is provided
 if [[ "$force_rebuild" == "true" || ! -f .configured ]]; then
@@ -91,8 +92,6 @@ if [[ "$force_rebuild" == "true" || ! -f .configured ]]; then
   make -j$CPU_COUNT
   touch .configured
 fi
-
-CPU_COUNT=$(getconf _NPROCESSORS_ONLN || echo 4)
 
 # build mono runtime
 if [ "$skipnative" = "false" ]; then
