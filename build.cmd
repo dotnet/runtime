@@ -397,11 +397,11 @@ call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpPgoDa
 
  if not !errorlevel! == 0 (
     echo "Failed to get PGO data package version."
-    exit /b 1
+    exit /b !errorlevel!
 )
 if not exist "%PgoDataPackageVersionOutputFile%" (
     echo "Failed to get PGO data package version."
-    exit /b !errorlevel!
+    exit /b 1
 )
 
 set /p __PgoOptDataVersion=<"%PgoDataPackageVersionOutputFile%"
@@ -410,12 +410,12 @@ call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpIbcDa
 
  if not !errorlevel! == 0 (
     echo "Failed to get IBC data package version."
-    exit /b 1
+    exit /b !errorlevel!
 )
 
 if not exist "%IbcDataPackageVersionOutputFile%" (
     echo "Failed to get IBC data package version."
-    exit /b !errorlevel!
+    exit /b 1
 )
 
 set /p __IbcOptDataVersion=<"%IbcDataPackageVersionOutputFile%"
@@ -662,7 +662,7 @@ if %__BuildCoreLib% EQU 1 (
 
         if not !errorlevel! == 0 (
             echo "Failed to determine IBC Merge version."
-            exit /b 1
+            exit /b !errorlevel!
         )
         if not exist "%IbcMergePackageVersionOutputFile%" (
             echo "Failed to determine IBC Merge version."
