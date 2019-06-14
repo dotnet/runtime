@@ -1836,7 +1836,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	CallInfo *cinfo;
 	ArgInfo *ainfo = NULL;
 	int stackSize;    
-	MonoMethodHeader *header;
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
@@ -1858,8 +1857,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		MONO_ADD_INS (cfg->cbb, ins);
 		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, cinfo->ret.reg, FALSE);
 	}
-
-	header = cfg->header;
 
 	for (i = 0; i < n; ++i) {
 		MonoType *t;
@@ -2643,7 +2640,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_BREAK: {
 			mono_add_patch_info (cfg, code - cfg->native_code,
 					     MONO_PATCH_INFO_JIT_ICALL_ID,
-					     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_break);
+					     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_break));
 			S390_CALL_TEMPLATE (code, s390_r14);
 		}
 			break;
