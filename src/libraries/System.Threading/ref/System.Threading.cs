@@ -10,20 +10,20 @@ namespace System.Threading
     public partial class AbandonedMutexException : System.SystemException
     {
         public AbandonedMutexException() { }
-        public AbandonedMutexException(int location, System.Threading.WaitHandle handle) { }
+        public AbandonedMutexException(int location, System.Threading.WaitHandle? handle) { }
         protected AbandonedMutexException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public AbandonedMutexException(string message) { }
-        public AbandonedMutexException(string message, System.Exception inner) { }
-        public AbandonedMutexException(string message, System.Exception inner, int location, System.Threading.WaitHandle handle) { }
-        public AbandonedMutexException(string message, int location, System.Threading.WaitHandle handle) { }
-        public System.Threading.Mutex Mutex { get { throw null; } }
+        public AbandonedMutexException(string? message) { }
+        public AbandonedMutexException(string? message, System.Exception? inner) { }
+        public AbandonedMutexException(string? message, System.Exception? inner, int location, System.Threading.WaitHandle? handle) { }
+        public AbandonedMutexException(string? message, int location, System.Threading.WaitHandle? handle) { }
+        public System.Threading.Mutex? Mutex { get { throw null; } }
         public int MutexIndex { get { throw null; } }
     }
     public partial struct AsyncFlowControl : System.IDisposable
     {
         private object _dummy;
         public void Dispose() { }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.Threading.AsyncFlowControl obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Threading.AsyncFlowControl a, System.Threading.AsyncFlowControl b) { throw null; }
@@ -35,14 +35,17 @@ namespace System.Threading
         private readonly T _PreviousValue_k__BackingField;
         private readonly T _CurrentValue_k__BackingField;
         private readonly int _dummyPrimitive;
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public T CurrentValue { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public T PreviousValue { get { throw null; } }
         public bool ThreadContextChanged { get { throw null; } }
     }
     public sealed partial class AsyncLocal<T>
     {
         public AsyncLocal() { }
-        public AsyncLocal(System.Action<System.Threading.AsyncLocalValueChangedArgs<T>> valueChangedHandler) { }
+        public AsyncLocal(System.Action<System.Threading.AsyncLocalValueChangedArgs<T>>? valueChangedHandler) { }
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public T Value { get { throw null; } set { } }
     }
     public sealed partial class AutoResetEvent : System.Threading.EventWaitHandle
@@ -52,7 +55,7 @@ namespace System.Threading
     public partial class Barrier : System.IDisposable
     {
         public Barrier(int participantCount) { }
-        public Barrier(int participantCount, System.Action<System.Threading.Barrier> postPhaseAction) { }
+        public Barrier(int participantCount, System.Action<System.Threading.Barrier>? postPhaseAction) { }
         public long CurrentPhaseNumber { get { throw null; } }
         public int ParticipantCount { get { throw null; } }
         public int ParticipantsRemaining { get { throw null; } }
@@ -72,12 +75,12 @@ namespace System.Threading
     public partial class BarrierPostPhaseException : System.Exception
     {
         public BarrierPostPhaseException() { }
-        public BarrierPostPhaseException(System.Exception innerException) { }
+        public BarrierPostPhaseException(System.Exception? innerException) { }
         protected BarrierPostPhaseException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public BarrierPostPhaseException(string message) { }
-        public BarrierPostPhaseException(string message, System.Exception innerException) { }
+        public BarrierPostPhaseException(string? message) { }
+        public BarrierPostPhaseException(string? message, System.Exception? innerException) { }
     }
-    public delegate void ContextCallback(object state);
+    public delegate void ContextCallback(object? state);
     public partial class CountdownEvent : System.IDisposable
     {
         public CountdownEvent(int initialCount) { }
@@ -110,30 +113,30 @@ namespace System.Threading
     public partial class EventWaitHandle : System.Threading.WaitHandle
     {
         public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode) { }
-        public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string name) { }
-        public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string name, out bool createdNew) { throw null; }
+        public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string? name) { }
+        public EventWaitHandle(bool initialState, System.Threading.EventResetMode mode, string? name, out bool createdNew) { throw null; }
         public static System.Threading.EventWaitHandle OpenExisting(string name) { throw null; }
         public bool Reset() { throw null; }
         public bool Set() { throw null; }
-        public static bool TryOpenExisting(string name, out System.Threading.EventWaitHandle result) { throw null; }
+        public static bool TryOpenExisting(string name, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.EventWaitHandle? result) { throw null; }
     }
     public sealed partial class ExecutionContext : System.IDisposable, System.Runtime.Serialization.ISerializable
     {
         internal ExecutionContext() { }
-        public static System.Threading.ExecutionContext Capture() { throw null; }
+        public static System.Threading.ExecutionContext? Capture() { throw null; }
         public System.Threading.ExecutionContext CreateCopy() { throw null; }
         public void Dispose() { }
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static bool IsFlowSuppressed() { throw null; }
         public static void RestoreFlow() { }
-        public static void Run(System.Threading.ExecutionContext executionContext, System.Threading.ContextCallback callback, object state) { }
+        public static void Run(System.Threading.ExecutionContext executionContext, System.Threading.ContextCallback callback, object? state) { }
         public static System.Threading.AsyncFlowControl SuppressFlow() { throw null; }
     }
     public partial class HostExecutionContext : System.IDisposable
     {
         public HostExecutionContext() { }
-        public HostExecutionContext(object state) { }
-        protected internal object State { get { throw null; } set { } }
+        public HostExecutionContext(object? state) { }
+        protected internal object? State { get { throw null; } set { } }
         public virtual System.Threading.HostExecutionContext CreateCopy() { throw null; }
         public void Dispose() { }
         public virtual void Dispose(bool disposing) { }
@@ -141,7 +144,7 @@ namespace System.Threading
     public partial class HostExecutionContextManager
     {
         public HostExecutionContextManager() { }
-        public virtual System.Threading.HostExecutionContext Capture() { throw null; }
+        public virtual System.Threading.HostExecutionContext? Capture() { throw null; }
         public virtual void Revert(object previousState) { }
         public virtual object SetHostExecutionContext(System.Threading.HostExecutionContext hostExecutionContext) { throw null; }
     }
@@ -153,18 +156,20 @@ namespace System.Threading
         public static int CompareExchange(ref int location1, int value, int comparand) { throw null; }
         public static long CompareExchange(ref long location1, long value, long comparand) { throw null; }
         public static System.IntPtr CompareExchange(ref System.IntPtr location1, System.IntPtr value, System.IntPtr comparand) { throw null; }
-        public static object CompareExchange(ref object location1, object value, object comparand) { throw null; }
+        public static object? CompareExchange(ref object? location1, object? value, object? comparand) { throw null; }
         public static float CompareExchange(ref float location1, float value, float comparand) { throw null; }
-        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class { throw null; }
+        public static T CompareExchange<T>(ref T location1, T value, T comparand) where T : class? { throw null; }
         public static int Decrement(ref int location) { throw null; }
         public static long Decrement(ref long location) { throw null; }
         public static double Exchange(ref double location1, double value) { throw null; }
         public static int Exchange(ref int location1, int value) { throw null; }
         public static long Exchange(ref long location1, long value) { throw null; }
         public static System.IntPtr Exchange(ref System.IntPtr location1, System.IntPtr value) { throw null; }
-        public static object Exchange(ref object location1, object value) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
+        public static object? Exchange([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref object? location1, object? value) { throw null; }
         public static float Exchange(ref float location1, float value) { throw null; }
-        public static T Exchange<T>(ref T location1, T value) where T : class { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
+        public static T Exchange<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location1, T value) where T : class? { throw null; }
         public static int Increment(ref int location) { throw null; }
         public static long Increment(ref long location) { throw null; }
         public static void MemoryBarrier() { }
@@ -173,16 +178,16 @@ namespace System.Threading
     }
     public static partial class LazyInitializer
     {
-        public static T EnsureInitialized<T>(ref T target) where T : class { throw null; }
-        public static T EnsureInitialized<T>(ref T target, ref bool initialized, ref object syncLock) { throw null; }
-        public static T EnsureInitialized<T>(ref T target, ref bool initialized, ref object syncLock, System.Func<T> valueFactory) { throw null; }
-        public static T EnsureInitialized<T>(ref T target, System.Func<T> valueFactory) where T : class { throw null; }
-        public static T EnsureInitialized<T>(ref T target, ref object syncLock, System.Func<T> valueFactory) where T : class { throw null; }
+        public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T? target) where T : class { throw null; }
+        public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] ref T target, ref bool initialized, [System.Diagnostics.CodeAnalysis.NotNullAttribute] ref object? syncLock) { throw null; }
+        public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] ref T target, ref bool initialized, [System.Diagnostics.CodeAnalysis.NotNullAttribute] ref object? syncLock, System.Func<T> valueFactory) { throw null; }
+        public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T? target, System.Func<T> valueFactory) where T : class { throw null; }
+        public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T? target, [System.Diagnostics.CodeAnalysis.NotNullAttribute] ref object? syncLock, System.Func<T> valueFactory) where T : class { throw null; }
     }
     public partial struct LockCookie
     {
         private int _dummyPrimitive;
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.Threading.LockCookie obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Threading.LockCookie a, System.Threading.LockCookie b) { throw null; }
@@ -192,8 +197,8 @@ namespace System.Threading
     {
         public LockRecursionException() { }
         protected LockRecursionException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public LockRecursionException(string message) { }
-        public LockRecursionException(string message, System.Exception innerException) { }
+        public LockRecursionException(string? message) { }
+        public LockRecursionException(string? message, System.Exception? innerException) { }
     }
     public enum LockRecursionPolicy
     {
@@ -248,11 +253,11 @@ namespace System.Threading
     {
         public Mutex() { }
         public Mutex(bool initiallyOwned) { }
-        public Mutex(bool initiallyOwned, string name) { }
-        public Mutex(bool initiallyOwned, string name, out bool createdNew) { throw null; }
+        public Mutex(bool initiallyOwned, string? name) { }
+        public Mutex(bool initiallyOwned, string? name, out bool createdNew) { throw null; }
         public static System.Threading.Mutex OpenExisting(string name) { throw null; }
         public void ReleaseMutex() { }
-        public static bool TryOpenExisting(string name, out System.Threading.Mutex result) { throw null; }
+        public static bool TryOpenExisting(string name, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.Mutex? result) { throw null; }
     }
     public sealed partial class ReaderWriterLock : System.Runtime.ConstrainedExecution.CriticalFinalizerObject
     {
@@ -305,19 +310,19 @@ namespace System.Threading
     public sealed partial class Semaphore : System.Threading.WaitHandle
     {
         public Semaphore(int initialCount, int maximumCount) { }
-        public Semaphore(int initialCount, int maximumCount, string name) { }
-        public Semaphore(int initialCount, int maximumCount, string name, out bool createdNew) { throw null; }
+        public Semaphore(int initialCount, int maximumCount, string? name) { }
+        public Semaphore(int initialCount, int maximumCount, string? name, out bool createdNew) { throw null; }
         public static System.Threading.Semaphore OpenExisting(string name) { throw null; }
         public int Release() { throw null; }
         public int Release(int releaseCount) { throw null; }
-        public static bool TryOpenExisting(string name, out System.Threading.Semaphore result) { throw null; }
+        public static bool TryOpenExisting(string name, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Threading.Semaphore? result) { throw null; }
     }
     public partial class SemaphoreFullException : System.SystemException
     {
         public SemaphoreFullException() { }
         protected SemaphoreFullException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public SemaphoreFullException(string message) { }
-        public SemaphoreFullException(string message, System.Exception innerException) { }
+        public SemaphoreFullException(string? message) { }
+        public SemaphoreFullException(string? message, System.Exception? innerException) { }
     }
     public partial class SemaphoreSlim : System.IDisposable
     {
@@ -342,7 +347,7 @@ namespace System.Threading
         public System.Threading.Tasks.Task<bool> WaitAsync(System.TimeSpan timeout) { throw null; }
         public System.Threading.Tasks.Task<bool> WaitAsync(System.TimeSpan timeout, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
-    public delegate void SendOrPostCallback(object state);
+    public delegate void SendOrPostCallback(object? state);
     public partial struct SpinLock
     {
         private int _dummyPrimitive;
@@ -372,14 +377,14 @@ namespace System.Threading
     public partial class SynchronizationContext
     {
         public SynchronizationContext() { }
-        public static System.Threading.SynchronizationContext Current { get { throw null; } }
+        public static System.Threading.SynchronizationContext? Current { get { throw null; } }
         public virtual System.Threading.SynchronizationContext CreateCopy() { throw null; }
         public bool IsWaitNotificationRequired() { throw null; }
         public virtual void OperationCompleted() { }
         public virtual void OperationStarted() { }
-        public virtual void Post(System.Threading.SendOrPostCallback d, object state) { }
-        public virtual void Send(System.Threading.SendOrPostCallback d, object state) { }
-        public static void SetSynchronizationContext(System.Threading.SynchronizationContext syncContext) { }
+        public virtual void Post(System.Threading.SendOrPostCallback d, object? state) { }
+        public virtual void Send(System.Threading.SendOrPostCallback d, object? state) { }
+        public static void SetSynchronizationContext(System.Threading.SynchronizationContext? syncContext) { }
         protected void SetWaitNotificationRequired() { }
         [System.CLSCompliantAttribute(false)]
         [System.Runtime.ConstrainedExecution.PrePrepareMethodAttribute]
@@ -392,8 +397,8 @@ namespace System.Threading
     {
         public SynchronizationLockException() { }
         protected SynchronizationLockException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public SynchronizationLockException(string message) { }
-        public SynchronizationLockException(string message, System.Exception innerException) { }
+        public SynchronizationLockException(string? message) { }
+        public SynchronizationLockException(string? message, System.Exception? innerException) { }
     }
     public partial class ThreadLocal<T> : System.IDisposable
     {
@@ -402,12 +407,13 @@ namespace System.Threading
         public ThreadLocal(System.Func<T> valueFactory) { }
         public ThreadLocal(System.Func<T> valueFactory, bool trackAllValues) { }
         public bool IsValueCreated { get { throw null; } }
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public T Value { get { throw null; } set { } }
         public System.Collections.Generic.IList<T> Values { get { throw null; } }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         ~ThreadLocal() { }
-        public override string ToString() { throw null; }
+        public override string? ToString() { throw null; }
     }
     public static partial class Volatile
     {
@@ -429,7 +435,8 @@ namespace System.Threading
         public static ulong Read(ref ulong location) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.UIntPtr Read(ref System.UIntPtr location) { throw null; }
-        public static T Read<T>(ref T location) where T : class { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location")]
+        public static T Read<T>(ref T location) where T : class? { throw null; }
         public static void Write(ref bool location, bool value) { }
         public static void Write(ref byte location, byte value) { }
         public static void Write(ref double location, double value) { }
@@ -448,13 +455,13 @@ namespace System.Threading
         public static void Write(ref ulong location, ulong value) { }
         [System.CLSCompliantAttribute(false)]
         public static void Write(ref System.UIntPtr location, System.UIntPtr value) { }
-        public static void Write<T>(ref T location, T value) where T : class { }
+        public static void Write<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location, T value) where T : class? { }
     }
     public partial class WaitHandleCannotBeOpenedException : System.ApplicationException
     {
         public WaitHandleCannotBeOpenedException() { }
         protected WaitHandleCannotBeOpenedException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public WaitHandleCannotBeOpenedException(string message) { }
-        public WaitHandleCannotBeOpenedException(string message, System.Exception innerException) { }
+        public WaitHandleCannotBeOpenedException(string? message) { }
+        public WaitHandleCannotBeOpenedException(string? message, System.Exception? innerException) { }
     }
 }
