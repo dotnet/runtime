@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{DC78B562-4F74-49C2-9766-3B65CD610CCC}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Threading.Timer.cs" />
