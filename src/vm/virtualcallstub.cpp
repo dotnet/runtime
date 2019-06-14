@@ -1461,7 +1461,14 @@ ResolveCacheElem *VirtualCallStubManager::GetResolveCacheElem(void *pMT,
         elem = (ResolveCacheElem*) (cache_entries->Find(&probeRC));
         if (elem  == CALL_STUB_EMPTY_ENTRY)
         {
-            elem = GenerateResolveCacheElem(target, pMT, token);
+            bool reenteredCooperativeGCMode = false;
+            elem = GenerateResolveCacheElem(target, pMT, token, &reenteredCooperativeGCMode);
+            if (reenteredCooperativeGCMode)
+            {
+                // The prober may have been invalidated by reentering cooperative GC mode, reset it
+                BOOL success = cache_entries->SetUpProber(token, (size_t)pMT, &probeRC);
+                _ASSERTE(success);
+            }
             elem = (ResolveCacheElem*) (cache_entries->Add((size_t) elem, &probeRC));
         }
     }
@@ -1980,8 +1987,15 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                             if (addrOfDispatch == CALL_STUB_EMPTY_ENTRY)
                             {
                                 PCODE addrOfFail = pResolveHolder->stub()->failEntryPoint();
+                                bool reenteredCooperativeGCMode = false;
                                 pDispatchHolder = GenerateDispatchStub(
-                                    target, addrOfFail, objectType, token.To_SIZE_T());
+                                    target, addrOfFail, objectType, token.To_SIZE_T(), &reenteredCooperativeGCMode);
+                                if (reenteredCooperativeGCMode)
+                                {
+                                    // The prober may have been invalidated by reentering cooperative GC mode, reset it
+                                    BOOL success = dispatchers->SetUpProber(token.To_SIZE_T(), (size_t)objectType, &probeD);
+                                    _ASSERTE(success);
+                                }
                                 dispatchers->Add((size_t)(pDispatchHolder->stub()->entryPoint()), &probeD);
                             }
                             else
@@ -2097,8 +2111,15 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
                                     // so we may have to create it now
                                     ResolveHolder* pResolveHolder = ResolveHolder::FromResolveEntry(pCallSite->GetSiteTarget());
                                     PCODE addrOfFail = pResolveHolder->stub()->failEntryPoint();
+                                    bool reenteredCooperativeGCMode = false;
                                     pDispatchHolder = GenerateDispatchStub(
-                                        target, addrOfFail, objectType, token.To_SIZE_T());
+                                        target, addrOfFail, objectType, token.To_SIZE_T(), &reenteredCooperativeGCMode);
+                                    if (reenteredCooperativeGCMode)
+                                    {
+                                        // The prober may have been invalidated by reentering cooperative GC mode, reset it
+                                        BOOL success = dispatchers->SetUpProber(token.To_SIZE_T(), (size_t)objectType, &probeD);
+                                        _ASSERTE(success);
+                                    }
                                     dispatchers->Add((size_t)(pDispatchHolder->stub()->entryPoint()), &probeD);
                                 }
                                 else
@@ -2714,7 +2735,8 @@ are the addresses the stub is to transfer to depending on the test with pMTExpec
 DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            addrOfCode,
                                                              PCODE            addrOfFail,
                                                              void *           pMTExpected,
-                                                             size_t           dispatchToken)
+                                                             size_t           dispatchToken,
+                                                             bool *           pMayHaveReenteredCooperativeGCMode)
 {
     CONTRACT (DispatchHolder*) {
         THROWS;
@@ -2723,6 +2745,8 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
         PRECONDITION(addrOfCode != NULL);
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
+        PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
+        PRECONDITION(!*pMayHaveReenteredCooperativeGCMode);
         POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACT_END;
 
@@ -2736,7 +2760,8 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
         RETURN GenerateDispatchStubLong(addrOfCode,
                                         addrOfFail,
                                         pMTExpected,
-                                        dispatchToken);
+                                        dispatchToken,
+                                        pMayHaveReenteredCooperativeGCMode);
     }
 
     dispatchHolderSize = DispatchHolder::GetHolderSize(DispatchStub::e_TYPE_SHORT);
@@ -2750,7 +2775,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     if (!DispatchHolder::CanShortJumpDispatchStubReachFailTarget(addrOfFail, (LPCBYTE)holder))
     {
         m_fShouldAllocateLongJumpDispatchStubs = TRUE;
-        RETURN GenerateDispatchStub(addrOfCode, addrOfFail, pMTExpected, dispatchToken);
+        RETURN GenerateDispatchStub(addrOfCode, addrOfFail, pMTExpected, dispatchToken, pMayHaveReenteredCooperativeGCMode);
     }
 #endif
 
@@ -2769,6 +2794,9 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
         EntryPointSlots::SlotType slotType;
         TADDR slot = holder->stub()->implTargetSlot(&slotType);
         pMD->RecordAndBackpatchEntryPointSlot(m_loaderAllocator, slot, slotType);
+
+        // RecordAndBackpatchEntryPointSlot() takes a lock that would exit and reenter cooperative GC mode
+        *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif
 
@@ -2797,7 +2825,8 @@ are the addresses the stub is to transfer to depending on the test with pMTExpec
 DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE            addrOfCode,
                                                                  PCODE            addrOfFail,
                                                                  void *           pMTExpected,
-                                                                 size_t           dispatchToken)
+                                                                 size_t           dispatchToken,
+                                                                 bool *           pMayHaveReenteredCooperativeGCMode)
 {
     CONTRACT (DispatchHolder*) {
         THROWS;
@@ -2806,6 +2835,8 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
         PRECONDITION(addrOfCode != NULL);
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
+        PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
+        PRECONDITION(!*pMayHaveReenteredCooperativeGCMode);
         POSTCONDITION(CheckPointer(RETVAL));
     } CONTRACT_END;
 
@@ -2825,6 +2856,9 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
         EntryPointSlots::SlotType slotType;
         TADDR slot = holder->stub()->implTargetSlot(&slotType);
         pMD->RecordAndBackpatchEntryPointSlot(m_loaderAllocator, slot, slotType);
+
+        // RecordAndBackpatchEntryPointSlot() takes a lock that would exit and reenter cooperative GC mode
+        *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif
 
@@ -2974,13 +3008,16 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
 */
 ResolveCacheElem *VirtualCallStubManager::GenerateResolveCacheElem(void *addrOfCode,
                                                                    void *pMTExpected,
-                                                                   size_t token)
+                                                                   size_t token,
+                                                                   bool *pMayHaveReenteredCooperativeGCMode)
 {
     CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
+        PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
+        PRECONDITION(!*pMayHaveReenteredCooperativeGCMode);
     }
     CONTRACTL_END
 
@@ -3004,6 +3041,9 @@ ResolveCacheElem *VirtualCallStubManager::GenerateResolveCacheElem(void *addrOfC
             m_loaderAllocator,
             (TADDR)&e->target,
             EntryPointSlots::SlotType_Normal);
+
+        // RecordAndBackpatchEntryPointSlot() takes a lock that would exit and reenter cooperative GC mode
+        *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif
 
