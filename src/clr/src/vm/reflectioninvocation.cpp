@@ -476,10 +476,7 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
             else 
                 rv = pVMT->Allocate();
 
-            if (!pVMT->Collectible())
-            {
-                *pbCanBeCached = true;
-            }
+            *pbCanBeCached = true;
         }
         else // !pVMT->HasDefaultConstructor()
         {
@@ -495,7 +492,6 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
 
             // We've got the class, lets allocate it and call the constructor
             OBJECTREF o;
-            bool remoting = false;
 
             o = AllocateObject(pVMT);
             GCPROTECT_BEGIN(o);
@@ -518,7 +514,7 @@ FCIMPL6(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
             // No need to set these if they cannot be cached. In particular, if the type is a value type with a custom
             // parameterless constructor, don't allow caching and have subsequent calls come back here to allocate an object and
             // call the constructor.
-            if (!remoting && !pVMT->Collectible() && !pVMT->IsValueType())
+            if (!pVMT->IsValueType())
             {
                 *pbCanBeCached = true;
                 *pConstructor = pMeth;
