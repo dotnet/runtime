@@ -389,13 +389,36 @@ if %__RestoreOptData% EQU 1 (
     )
 )
 
+set PgoDataPackageVersionOutputFile="%__IntermediatesDir%\optdataversion.txt"
+set IbcDataPackageVersionOutputFile="%__IntermediatesDir%\ibcoptdataversion.txt"
+
 REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
-for /f "tokens=*" %%s in ('call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpPgoDataPackageVersion /nologo') do (
-    set __PgoOptDataVersion=%%s
+call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpPgoDataPackageVersion /nologo %__CommonMSBuildArgs% /p:PgoDataPackageVersionOutputFile=%PgoDataPackageVersionOutputFile%
+
+ if not !errorlevel! == 0 (
+    echo "Failed to get PGO data package version."
+    exit /b !errorlevel!
 )
-for /f "tokens=*" %%s in ('call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpIbcDataPackageVersion /nologo') do (
-    set __IbcOptDataVersion=%%s
+if not exist "%PgoDataPackageVersionOutputFile%" (
+    echo "Failed to get PGO data package version."
+    exit /b 1
 )
+
+set /p __PgoOptDataVersion=<"%PgoDataPackageVersionOutputFile%"
+
+call "%__ProjectDir%\dotnet.cmd" msbuild "%OptDataProjectFilePath%" /t:DumpIbcDataPackageVersion /nologo %__CommonMSBuildArgs% /p:IbcDataPackageVersionOutputFile=%IbcDataPackageVersionOutputFile%
+
+ if not !errorlevel! == 0 (
+    echo "Failed to get IBC data package version."
+    exit /b !errorlevel!
+)
+
+if not exist "%IbcDataPackageVersionOutputFile%" (
+    echo "Failed to get IBC data package version."
+    exit /b 1
+)
+
+set /p __IbcOptDataVersion=<"%IbcDataPackageVersionOutputFile%"
 
 REM =========================================================================================
 REM ===
@@ -634,9 +657,19 @@ if %__BuildCoreLib% EQU 1 (
     if %__IbcOptimize% EQU 1 (
         echo %__MsgPrefix%Commencing IBCMerge of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
         set IbcMergeProjectFilePath=%__ProjectDir%\src\.nuget\optdata\ibcmerge.csproj
-        for /f "tokens=*" %%s in ('call "%__ProjectDir%\dotnet.cmd" msbuild "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackageVersion /nologo') do @(
-            set __IbcMergeVersion=%%s
+        set IbcMergePackageVersionOutputFile="%__IntermediatesDir%\ibcmergeversion.txt"
+        call "%__ProjectDir%\dotnet.cmd" msbuild "!IbcMergeProjectFilePath!" /t:DumpIbcMergePackageVersion /nologo %__CommonMSBuildArgs% /p:IbcMergePackageVersionOutputFile=%IbcMergePackageVersionOutputFile%
+
+        if not !errorlevel! == 0 (
+            echo "Failed to determine IBC Merge version."
+            exit /b !errorlevel!
         )
+        if not exist "%IbcMergePackageVersionOutputFile%" (
+            echo "Failed to determine IBC Merge version."
+            exit /b 1
+        )
+        
+        set /p __IbcMergeVersion=<"%IbcMergePackageVersionOutputFile%"
 
         set IbcMergePath=%__PackagesDir%\microsoft.dotnet.ibcmerge\!__IbcMergeVersion!\tools\netcoreapp2.0\ibcmerge.dll
         if exist !IbcMergePath! (
