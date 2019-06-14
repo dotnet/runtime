@@ -140,6 +140,7 @@
 
   <!-- Sources -->
   <ItemGroup>
+      <Compile Include="AssemblyInfo.cs" />
       <Compile Include="resources\SR.common.cs" />
       <Compile Include="resources\SR.cs" />
   </ItemGroup>
