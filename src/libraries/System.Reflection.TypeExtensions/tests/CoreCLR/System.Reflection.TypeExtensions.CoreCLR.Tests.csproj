@@ -10,10 +10,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MemberInfoTests.CoreCLR.cs" />
-    <Compile Include="ModuleTests.CoreCLR.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+    <Compile Include="MemberInfoTests.cs" />
+    <Compile Include="ModuleTests.cs" />
   </ItemGroup>
 </Project>

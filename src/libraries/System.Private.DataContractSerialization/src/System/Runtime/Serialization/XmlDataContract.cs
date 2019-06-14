@@ -16,13 +16,8 @@ namespace System.Runtime.Serialization
     using System.Linq;
     using System.Runtime.CompilerServices;
 
-#if uapaot
-    public delegate IXmlSerializable CreateXmlSerializableDelegate();
-    public sealed class XmlDataContract : DataContract
-#else
     internal delegate IXmlSerializable CreateXmlSerializableDelegate();
     internal sealed class XmlDataContract : DataContract
-#endif
     {
         private XmlDataContractCriticalHelper _helper;
 
@@ -91,14 +86,8 @@ namespace System.Runtime.Serialization
             set { _helper.IsTopLevelElementNullable = value; }
         }
 
-#if uapaot
-        private CreateXmlSerializableDelegate _createXmlSerializableDelegate;
-        public CreateXmlSerializableDelegate CreateXmlSerializableDelegate        
-#else
         internal CreateXmlSerializableDelegate CreateXmlSerializableDelegate
-#endif
         {
-#if !uapaot
             get
             {
                 // We create XmlSerializableDelegate via CodeGen when CodeGen is enabled;
@@ -122,22 +111,6 @@ namespace System.Runtime.Serialization
 
                 return () => ReflectionCreateXmlSerializable(this.UnderlyingType);
             }
-#else              
-            get
-            {
-                if (DataContractSerializer.Option == SerializationOption.CodeGenOnly 
-                 || (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup && _createXmlSerializableDelegate != null))
-                {
-                    return _createXmlSerializableDelegate;
-                }
-
-                return () => ReflectionCreateXmlSerializable(this.UnderlyingType);
-            }
-            set
-            {
-                _createXmlSerializableDelegate = value;
-            }
-#endif            
         }
 
         internal override bool CanContainReferences => false;
@@ -285,7 +258,6 @@ namespace System.Runtime.Serialization
             return ctor;
         }
 
-#if !uapaot
         internal CreateXmlSerializableDelegate GenerateCreateXmlSerializableDelegate()
         {
             Type type = this.UnderlyingType;
@@ -378,9 +350,7 @@ namespace System.Runtime.Serialization
 
             return false;
         }
-#endif
 
-        [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
         internal IXmlSerializable ReflectionCreateXmlSerializable(Type type)
         {
             if (type.IsValueType)

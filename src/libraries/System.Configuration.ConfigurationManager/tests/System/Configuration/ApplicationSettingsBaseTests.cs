@@ -46,10 +46,9 @@ namespace System.ConfigurationTests
         {
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp)),
-            InlineData(true),
-            InlineData(false)
-            ]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [ActiveIssue("dotnet/corefx #18832", TargetFrameworkMonikers.NetFramework)]
         public void Context_SimpleSettings_InNotNull(bool isSynchronized)
         {
@@ -60,10 +59,9 @@ namespace System.ConfigurationTests
             Assert.NotNull(settings.Context);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp)),
-            InlineData(true),
-            InlineData(false)
-            ]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [ActiveIssue("dotnet/corefx #18832", TargetFrameworkMonikers.NetFramework)]
         public void Providers_SimpleSettings_Empty(bool isSynchronized)
         {
@@ -75,10 +73,9 @@ namespace System.ConfigurationTests
             Assert.NotNull(settings.Providers[typeof(LocalFileSettingsProvider).Name]);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp)),
-            InlineData(true),
-            InlineData(false)
-            ]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [ActiveIssue("dotnet/corefx #18832", TargetFrameworkMonikers.NetFramework)]
         public void GetSetStringProperty_SimpleSettings_Ok(bool isSynchronized)
         {
@@ -91,10 +88,9 @@ namespace System.ConfigurationTests
             Assert.Equal("Foo", settings.StringProperty);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp)),
-            InlineData(true),
-            InlineData(false)
-            ]
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         [ActiveIssue("dotnet/corefx #18832", TargetFrameworkMonikers.NetFramework)]
         public void GetSetIntProperty_SimpleSettings_Ok(bool isSynchronized)
         {
@@ -152,7 +148,7 @@ namespace System.ConfigurationTests
             Assert.Equal(DefaultIntPropertyValue, settings.IntProperty);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
+        [Fact]
         [ActiveIssue("dotnet/corefx #18832", TargetFrameworkMonikers.NetFramework)]
         public void Reload_SimpleSettings_Ok()
         {
@@ -191,7 +187,7 @@ namespace System.ConfigurationTests
         {
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
+        [Fact]
         [ActiveIssue("dotnet/corefx #18832", TargetFrameworkMonikers.NetFramework)]
         public void SettingsProperty_SettingsWithAttributes_Ok()
         {

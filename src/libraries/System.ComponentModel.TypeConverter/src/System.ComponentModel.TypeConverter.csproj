@@ -243,9 +243,6 @@
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverter.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />

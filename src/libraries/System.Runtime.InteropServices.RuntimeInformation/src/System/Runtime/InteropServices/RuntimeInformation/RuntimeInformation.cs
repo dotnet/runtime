@@ -9,12 +9,7 @@ namespace System.Runtime.InteropServices
 {
     public static partial class RuntimeInformation
     {
-#if uapaot
-        private const string FrameworkName = ".NET Native";
-#else // uap || netcoreapp
         private const string FrameworkName = ".NET Core";
-#endif
-
         private static string s_frameworkDescription;
 
         public static string FrameworkDescription

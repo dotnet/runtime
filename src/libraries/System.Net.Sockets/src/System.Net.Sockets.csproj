@@ -115,7 +115,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
-    <!-- Windows: CoreCLR and .NET Native -->
+    <!-- Windows: CoreCLR -->
     <Compile Include="System\Net\Sockets\AcceptOverlappedAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\BaseOverlappedAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Sockets\ConnectOverlappedAsyncResult.Windows.cs" />

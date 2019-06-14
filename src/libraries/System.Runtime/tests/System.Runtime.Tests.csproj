@@ -332,7 +332,4 @@
     <ProjectReference Include="TestModule\System.Reflection.TestModule.ilproj" />
     <ProjectReference Include="TestStructs\System.TestStructs.ilproj" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

@@ -108,7 +108,4 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="ISOWeek\ISOWeekTests.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.BindToMoniker(null));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative))]
+        [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
         [InlineData(null)]
         [InlineData("")]

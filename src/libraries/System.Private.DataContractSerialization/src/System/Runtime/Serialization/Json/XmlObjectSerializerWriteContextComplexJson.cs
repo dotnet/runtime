@@ -13,11 +13,7 @@ using DataContractDictionary = System.Collections.Generic.Dictionary<System.Xml.
 
 namespace System.Runtime.Serialization.Json
 {
-#if uapaot
-    public class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
-#else
     internal class XmlObjectSerializerWriteContextComplexJson : XmlObjectSerializerWriteContextComplex
-#endif
     {
         private DataContractJsonSerializer _jsonSerializer;
         private EmitTypeInformation _emitXsiType;

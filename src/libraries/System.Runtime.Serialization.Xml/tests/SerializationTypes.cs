@@ -839,6 +839,18 @@ namespace SerializationTypes
         public string StringField2;
     }
 
+    [KnownType(typeof(List<SimpleType>))]
+    [KnownType(typeof(SimpleType[]))]
+    [DataContract]
+    public class TypeWithKnownTypesOfCollectionsWithConflictingXmlName
+    {
+        [DataMember]
+        public object Value1 = new List<SimpleType>();
+
+        [DataMember]
+        public object Value2 = new SimpleType[1];
+
+    }
 }
 
 public class TypeWithXmlElementProperty

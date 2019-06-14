@@ -32,7 +32,7 @@ once before you can iterate and work on a given library project.
 Below is a list of all the various options we pivot the project builds on:
 
 - **Target Frameworks:** NetFx (aka Desktop), netstandard (aka dotnet/Portable), NETCoreApp (aka .NET Core), UAP (aka UWP/Store/netcore50)
-- **Platform Runtimes:** NetFx (aka CLR/Desktop), CoreCLR, CoreRT (aka NetNative/AOT/MRT)
+- **Platform Runtimes:** NetFx (aka CLR/Desktop), CoreCLR, Mono
 - **OS:** Windows_NT, Linux, OSX, FreeBSD, AnyOS
 - **Flavor:** Debug, Release
 - **Architecture:** x86, x64, arm, arm64, AnyCPU
@@ -245,7 +245,6 @@ Each source file should use the following guidelines
 - Classes that are forked based on a feature set should have file names `<class>.<feature>.cs`.
  - Where `<feature>` is the name of something that causes a fork in code that isn't a single configuration. Examples:
   - `.CoreCLR.cs` - implementation specific to CoreCLR runtime
-  - `.CoreRT.cs` - implementation specific to CoreRT runtime
   - `.Win32.cs` - implementation based on [Win32](https://en.wikipedia.org/wiki/Windows_API)
   - `.WinRT.cs` - implementation based on [WinRT](https://en.wikipedia.org/wiki/Windows_Runtime)
   - `.Uap.cs` - implementation specific to UAP, also known as [UWP](https://en.wikipedia.org/wiki/Universal_Windows_Platform)

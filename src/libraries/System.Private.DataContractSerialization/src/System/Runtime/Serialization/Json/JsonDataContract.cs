@@ -38,16 +38,7 @@ namespace System.Runtime.Serialization.Json
             // with the restructuring for multi-file, this is no longer true - instead
             // this has become a normal method
             JsonReadWriteDelegates result;
-#if uapaot
-            // The c passed in could be a clone which is different from the original key,
-            // We'll need to get the original key data contract from generated assembly.
-            DataContract keyDc = (c?.UnderlyingType != null) ?
-                DataContract.GetDataContractFromGeneratedAssembly(c.UnderlyingType)
-                : null;
-            return (keyDc != null && JsonReadWriteDelegates.GetJsonDelegates().TryGetValue(keyDc, out result)) ? result : null;
-#else
             return JsonReadWriteDelegates.GetJsonDelegates().TryGetValue(c, out result) ? result : null;
-#endif
         }
 
         internal static JsonReadWriteDelegates GetReadWriteDelegatesFromGeneratedAssembly(DataContract c)
@@ -312,11 +303,7 @@ namespace System.Runtime.Serialization.Json
         }
     }
 
-#if uapaot
-    public class JsonReadWriteDelegates
-#else
     internal class JsonReadWriteDelegates
-#endif
     {
         // this is the global dictionary for JSON delegates introduced for multi-file
         private static Dictionary<DataContract, JsonReadWriteDelegates> s_jsonDelegates = new Dictionary<DataContract, JsonReadWriteDelegates>();

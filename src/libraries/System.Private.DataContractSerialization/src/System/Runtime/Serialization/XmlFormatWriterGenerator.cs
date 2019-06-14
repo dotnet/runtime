@@ -15,7 +15,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT || uapaot
+#if USE_REFEMIT
     public delegate void XmlFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract dataContract);
     public delegate void XmlFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, CollectionDataContract dataContract);
     public sealed class XmlFormatWriterGenerator
@@ -49,7 +49,7 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         private class CriticalHelper
         {
-#if !USE_REFEMIT && !uapaot
+#if !USE_REFEMIT
             private CodeGenerator _ilg;
             private ArgBuilder _xmlWriterArg;
             private ArgBuilder _contextArg;
@@ -64,9 +64,6 @@ namespace System.Runtime.Serialization
             private int _childElementIndex = 0;
 #endif
 
-#if uapaot
-            [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
-#endif
             private XmlFormatClassWriterDelegate CreateReflectionXmlFormatClassWriterDelegate()
             {
                 return new ReflectionXmlFormatWriter().ReflectionWriteClass;
@@ -78,15 +75,9 @@ namespace System.Runtime.Serialization
                 {
                     return CreateReflectionXmlFormatClassWriterDelegate();
                 }
-#if uapaot
-                else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
-                {
-                    return CreateReflectionXmlFormatClassWriterDelegate();
-                }
-#endif
                 else
                 {
-#if USE_REFEMIT || uapaot
+#if USE_REFEMIT
                     throw new InvalidOperationException("Cannot generate class writer");
 #else
                     _ilg = new CodeGenerator();
@@ -113,9 +104,6 @@ namespace System.Runtime.Serialization
                 }
             }
 
-#if uapaot
-            [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
-#endif
             private XmlFormatCollectionWriterDelegate CreateReflectionXmlFormatCollectionWriterDelegate()
             {
                 return new ReflectionXmlFormatWriter().ReflectionWriteCollection;
@@ -127,15 +115,9 @@ namespace System.Runtime.Serialization
                 {
                     return CreateReflectionXmlFormatCollectionWriterDelegate();
                 }
-#if uapaot
-                else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
-                {
-                    return CreateReflectionXmlFormatCollectionWriterDelegate();
-                }
-#endif
                 else
                 {
-#if USE_REFEMIT || uapaot
+#if USE_REFEMIT
                     throw new InvalidOperationException("Cannot generate class writer");
 #else
                     _ilg = new CodeGenerator();
@@ -162,7 +144,7 @@ namespace System.Runtime.Serialization
                 }
             }
 
-#if !USE_REFEMIT && !uapaot
+#if !USE_REFEMIT
             private void InitArgs(Type objType)
             {
                 _xmlWriterArg = _ilg.GetArg(0);

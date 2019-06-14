@@ -10,7 +10,6 @@
     <NoWarn>$(NoWarn);3021</NoWarn>
     <DefineConstants>$(DefineConstants);CORERT</DefineConstants>
     <SystemReflectionMetadataPath>..\..\System.Reflection.Metadata\src\</SystemReflectionMetadataPath>
-    <Configurations>uapaot-Windows_NT-Debug;uapaot-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

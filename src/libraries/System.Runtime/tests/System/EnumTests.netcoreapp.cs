@@ -138,7 +138,6 @@ namespace System.Tests
             Assert.True(formatFExceptionName == nameof(InvalidOperationException) || formatFExceptionName == "ContractException");
         }
 
-#if netcoreapp // .NetNative does not support RefEmit nor any other way to create Enum types with unusual backing types.
         private static EnumBuilder GetNonRuntimeEnumTypeBuilder(Type underlyingType)
         {
             AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Name"), AssemblyBuilderAccess.Run);
@@ -226,6 +225,5 @@ namespace System.Tests
 
             return enumBuilder.CreateTypeInfo().AsType();
         }
-#endif //netcoreapp        
     }
 }

@@ -28,7 +28,7 @@ namespace System.Runtime.CompilerServices.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative))]
+        [Fact]
         public static void DynamicCode_Jit()
         {
             Assert.True(RuntimeFeature.IsDynamicCodeSupported);
