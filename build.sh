@@ -47,6 +47,7 @@ usage()
     echo "-skipnuget - skip building nuget packages."
     echo "-skiprestoreoptdata - skip restoring optimization data used by profile-based optimizations."
     echo "-skipcrossgen - skip native image generation"
+    echo "-skipmanagedtools -- skip build tools such as R2Rdump and RunInContext"
     echo "-crossgenonly - only run native image generation"
     echo "-partialngen - build CoreLib as PartialNGen"
     echo "-verbose - optional argument to enable verbose build output."
@@ -870,6 +871,10 @@ while :; do
 
         skipcrossgen|-skipcrossgen)
             __SkipCrossgen=1
+            ;;
+
+        skipmanagedtools | -skipmanagedtools)
+            __BuildManagedTools=0
             ;;
 
         crossgenonly|-crossgenonly)
