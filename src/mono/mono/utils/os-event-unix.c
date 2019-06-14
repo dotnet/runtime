@@ -102,7 +102,9 @@ typedef struct {
 static void
 signal_and_unref (gpointer user_data)
 {
-	OSEventWaitData *data = (OSEventWaitData*) user_data;
+	OSEventWaitData *data;
+
+	data = (OSEventWaitData*) user_data;
 
 	mono_os_event_set (&data->event);
 	if (mono_atomic_dec_i32 ((gint32*) &data->ref) == 0) {
