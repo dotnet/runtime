@@ -290,7 +290,6 @@
       <Compile Include="..\..\mcs\class\corlib\System\TypeSpec.cs" />
 
       <Compile Include="..\..\mcs\class\corlib\System.Runtime.CompilerServices\PreserveDependencyAttribute.cs" />
-      <Compile Include="..\..\mcs\class\referencesource\mscorlib\system\rttype.cs" />
   </ItemGroup>
 
   <Import Project="shared\System.Private.CoreLib.Shared.projitems" />
