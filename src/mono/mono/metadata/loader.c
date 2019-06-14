@@ -2906,7 +2906,10 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	// FIXME: for internal callers maybe it makes sense to do this check at the call site, not
 	// here?
 	if (mono_method_has_no_body (method)) {
-		mono_error_set_bad_image (error, img, "Method has no body");
+		if (method->is_reabstracted == 1)
+			mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%s", method->name);
+		else
+			mono_error_set_bad_image (error, img, "Method has no body");
 		return NULL;
 	}
 

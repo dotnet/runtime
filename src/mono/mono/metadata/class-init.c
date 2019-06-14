@@ -1533,6 +1533,14 @@ print_implemented_interfaces (MonoClass *klass)
 	}
 }
 
+static gboolean 
+method_is_reabstracted (guint16 flags)
+{
+	if ((flags & METHOD_ATTRIBUTE_ABSTRACT && flags & METHOD_ATTRIBUTE_FINAL))
+		return TRUE;
+	return FALSE;
+}
+
 /*
  * Return the number of virtual methods.
  * Even for interfaces we can't simply return the number of methods as all CLR types are allowed to have static methods.
@@ -1554,8 +1562,11 @@ count_virtual_methods (MonoClass *klass)
 		mcount = mono_class_get_method_count (klass);
 		for (i = 0; i < mcount; ++i) {
 			flags = klass->methods [i]->flags;
-			if (flags & METHOD_ATTRIBUTE_VIRTUAL)
+			if ((flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+				if (method_is_reabstracted (flags))
+					continue;
 				++vcount;
+			}
 		}
 	} else {
 		int first_idx = mono_class_get_first_method_idx (klass);
@@ -1563,8 +1574,11 @@ count_virtual_methods (MonoClass *klass)
 		for (i = 0; i < mcount; ++i) {
 			flags = mono_metadata_decode_table_row_col (klass->image, MONO_TABLE_METHOD, first_idx + i, MONO_METHOD_FLAGS);
 
-			if (flags & METHOD_ATTRIBUTE_VIRTUAL)
+			if ((flags & METHOD_ATTRIBUTE_VIRTUAL)) {
+				if (method_is_reabstracted (flags))
+					continue;
 				++vcount;
+			}
 		}
 	}
 	return vcount;
@@ -3161,6 +3175,7 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	// it can happen (for injected generic array interfaces) that the same slot is
 	// processed multiple times (those interfaces have overlapping slots), and it
 	// will not always be the first pass the one that fills the slot.
+	// Now it is okay to implement a class that is not abstract and implements a interface that has an abstract method because it's reabstracted
 	if (!mono_class_is_abstract (klass)) {
 		for (i = 0; i < klass->interface_offsets_count; i++) {
 			int ic_offset;
@@ -3175,6 +3190,8 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 				int im_slot = ic_offset + im->slot;
 				
 				if (im->flags & METHOD_ATTRIBUTE_STATIC)
+					continue;
+				if (im->is_reabstracted == 1)
 					continue;
 
 				TRACE_INTERFACE_VTABLE (printf ("      [class is not abstract, checking slot %d for interface '%s'.'%s', method %s, slot check is %d]\n",
@@ -3313,9 +3330,12 @@ mono_class_setup_vtable_general (MonoClass *klass, MonoMethod **overrides, int o
 	g_assert (cur_slot <= max_vtsize);
 
 	/* Ensure that all vtable slots are filled with concrete instance methods */
+	// Now it is okay to implement a class that is not abstract and implements a interface that has an abstract method because it's reabstracted
 	if (!mono_class_is_abstract (klass)) {
 		for (i = 0; i < cur_slot; ++i) {
 			if (vtable [i] == NULL || (vtable [i]->flags & (METHOD_ATTRIBUTE_ABSTRACT | METHOD_ATTRIBUTE_STATIC))) {
+				if (vtable [i]->is_reabstracted == 1)
+					continue;
 				char *type_name = mono_type_get_full_name (klass);
 				char *method_name = vtable [i] ? mono_method_full_name (vtable [i], TRUE) : g_strdup ("none");
 				mono_class_set_type_load_failure (klass, "Type %s has invalid vtable method slot %d with method %s", type_name, i, method_name);
@@ -4994,7 +5014,13 @@ mono_class_setup_methods (MonoClass *klass)
 		/*Only assign slots to virtual methods as interfaces are allowed to have static methods.*/
 		for (i = 0; i < count; ++i) {
 			if (methods [i]->flags & METHOD_ATTRIBUTE_VIRTUAL)
+			{
+				if (method_is_reabstracted (methods[i]->flags)) {
+					methods [i]->is_reabstracted = 1;
+					continue;
+				}
 				methods [i]->slot = slot++;
+			}
 		}
 	}
 

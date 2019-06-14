@@ -78,6 +78,7 @@ struct _MonoMethod {
 	unsigned int is_inflated:1; /* whether we're a MonoMethodInflated */
 	unsigned int skip_visibility:1; /* whenever to skip JIT visibility checks */
 	unsigned int verification_success:1; /* whether this method has been verified successfully.*/
+	unsigned int is_reabstracted:1; /* whenever this is a reabstraction of another interface */
 	signed int slot : 16;
 
 	/*
