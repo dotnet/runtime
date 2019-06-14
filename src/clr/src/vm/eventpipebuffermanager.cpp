@@ -7,6 +7,7 @@
 #include "eventpipeconfiguration.h"
 #include "eventpipebuffer.h"
 #include "eventpipebuffermanager.h"
+#include "eventpipeeventpayload.h"
 #include "eventpipefile.h"
 #include "eventpipethread.h"
 #include "eventpipesession.h"
