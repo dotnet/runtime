@@ -1752,7 +1752,7 @@ mono_image_loaded_by_guid (const char *guid)
 }
 
 static MonoImage *
-register_image (MonoImage *image)
+register_image (MonoImage *image, gboolean *problematic)
 {
 	MonoImage *image2;
 	GHashTable *loaded_images = get_loaded_images_hash (image->ref_only);
@@ -1776,6 +1776,8 @@ register_image (MonoImage *image)
 
 	if (mono_is_problematic_image (image)) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "Registering %s, problematic image '%s'", image->ref_only ? "REFONLY" : "default", image->name);
+		if (problematic)
+			*problematic = TRUE;
 	}
 	return image;
 }
@@ -1818,7 +1820,7 @@ mono_image_open_from_data_internal (char *data, guint32 data_len, gboolean need_
 	if (image == NULL)
 		return NULL;
 
-	return register_image (image);
+	return register_image (image, NULL);
 }
 
 /**
@@ -1907,7 +1909,7 @@ mono_image_open_from_module_handle (HMODULE module_handle, char* fname, gboolean
 	if (image == NULL)
 		return NULL;
 
-	return register_image (image);
+	return register_image (image, NULL);
 }
 #endif
 
@@ -1954,6 +1956,10 @@ mono_image_open_a_lot_parameterized (const char *fname, MonoImageOpenStatus *sta
 				//  to see it again when we go searching for an image
 				//  to load.
 				mono_images_unlock ();
+
+				if (problematic)
+					*problematic = TRUE;
+
 				return NULL;
 			}
 			g_assert (m_image_is_module_handle (image));
@@ -2050,12 +2056,10 @@ mono_image_open_a_lot_parameterized (const char *fname, MonoImageOpenStatus *sta
 
 	// Image not loaded, load it now
 	image = do_mono_image_open (fname, status, TRUE, TRUE, refonly, FALSE, load_from_context);
-	if (problematic)
-		*problematic = TRUE;
 	if (image == NULL)
 		return NULL;
 
-	return register_image (image);
+	return register_image (image, problematic);
 }
 
 MonoImage *
