@@ -31,12 +31,12 @@
 
   <Target Name="DumpPgoDataPackageVersion">
     <!-- Error if PgoDataPackageVersionOutputFile is not set. -->
-    <Error Condition="'$(PgoDataPackageVersionOutputFile)'==''" />
+    <Error Condition="'$(PgoDataPackageVersionOutputFile)'==''" Text="PgoDataPackageVersionOutputFile must be passed as a property." />
 
     <!-- Cleanup old version file -->
     <Delete Files="$(PgoDataPackageVersionOutputFile)" Condition="Exists('$(PgoDataPackageVersionOutputFile)')" />
-    <Message Text="optimizationPGOCoreCLRVersion: $(optimizationPGOCoreCLRVersion) written to: $(PgoDataPackageVersionOutputFile)" Importance="High" />
     <WriteLinesToFile File="$(PgoDataPackageVersionOutputFile)" Lines="$(optimizationPGOCoreCLRVersion)" Overwrite="true"/>
+    <Message Text="optimizationPGOCoreCLRVersion: $(optimizationPGOCoreCLRVersion) written to: $(PgoDataPackageVersionOutputFile)" Importance="High" />
   </Target>
 
   <!--                                                                       -->
@@ -51,12 +51,12 @@
   <!--                                                                       -->
   <Target Name="DumpIbcDataPackageVersion">
     <!-- Error if PgoDataPackageVersionOutputFile is not set. -->
-    <Error Condition="'$(IbcDataPackageVersionOutputFile)'==''" />
+    <Error Condition="'$(IbcDataPackageVersionOutputFile)'==''" Text="IbcDataPackageVersionOutputFile must be passed as a property." />
 
     <!-- Cleanup old version file -->
     <Delete Files="$(IbcDataPackageVersionOutputFile)" Condition="Exists('$(IbcDataPackageVersionOutputFile)')" />
-    <Message Text="optimizationIBCCoreCLRVersion: $(optimizationIBCCoreCLRVersion) written to: $(IbcDataPackageVersionOutputFile)" Importance="High" />
     <WriteLinesToFile File="$(IbcDataPackageVersionOutputFile)" Lines="$(optimizationIBCCoreCLRVersion)" Overwrite="true"/>
+    <Message Text="optimizationIBCCoreCLRVersion: $(optimizationIBCCoreCLRVersion) written to: $(IbcDataPackageVersionOutputFile)" Importance="High" />
   </Target>
 
 </Project>
