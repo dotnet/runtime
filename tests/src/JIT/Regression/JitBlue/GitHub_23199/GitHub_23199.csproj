@@ -29,8 +29,7 @@
   <ItemGroup>
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
-  <!-- OSX doesn't support GCStress=0xc. -->
-  <PropertyGroup Condition="'$(__BuildOS)' != 'OSX'">
+  <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
 set COMPlus_GcStressOnDirectCalls=1
