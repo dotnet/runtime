@@ -745,12 +745,19 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
     // code version will activate then.
     ILCodeVersion ilParent;
     HRESULT hr = S_OK;
-    MethodDescBackpatchInfoTracker::ConditionalLockHolder lockHolder;
+    bool mayHaveEntryPointSlotsToBackpatch = pMethod->MayHaveEntryPointSlotsToBackpatch();
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder lockHolder(mayHaveEntryPointSlotsToBackpatch);
 
     {
-        // As long as we are exclusively using precode publishing for tiered compilation
-        // methods this first attempt should succeed
+        // Backpatching entry point slots requires cooperative GC mode, see
+        // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
+        // may be taken in any GC mode. The lock is taken in cooperative GC mode on some other paths, so the same ordering
+        // must be used here to prevent deadlock.
+        GCX_MAYBE_COOP(mayHaveEntryPointSlotsToBackpatch);
         CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+
+        // As long as we are exclusively using any non-JumpStamp publishing for tiered compilation
+        // methods this first attempt should succeed
         ilParent = nativeCodeVersion.GetILCodeVersion();
         hr = ilParent.SetActiveNativeCodeVersion(nativeCodeVersion, FALSE);
         LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "TieredCompilationManager::ActivateCodeVersion Method=0x%pM (%s::%s), code version id=0x%x. SetActiveNativeCodeVersion ret=0x%x\n",
@@ -768,7 +775,13 @@ void TieredCompilationManager::ActivateCodeVersion(NativeCodeVersion nativeCodeV
         // viable. This fallback path is just here as a proof-of-concept.
         ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_FOR_REJIT);
         {
+            // Backpatching entry point slots requires cooperative GC mode, see
+            // MethodDescBackpatchInfoTracker::Backpatch_Locked(). The code version manager's table lock is an unsafe lock that
+            // may be taken in any GC mode. The lock is taken in cooperative GC mode on some other paths, so the same ordering
+            // must be used here to prevent deadlock.
+            GCX_MAYBE_COOP(mayHaveEntryPointSlotsToBackpatch);
             CodeVersionManager::TableLockHolder lock(pCodeVersionManager);
+
             hr = ilParent.SetActiveNativeCodeVersion(nativeCodeVersion, TRUE);
             LOG((LF_TIEREDCOMPILATION, LL_INFO10000, "TieredCompilationManager::ActivateCodeVersion Method=0x%pM (%s::%s), code version id=0x%x. [Suspended] SetActiveNativeCodeVersion ret=0x%x\n",
                 pMethod, pMethod->m_pszDebugClassName, pMethod->m_pszDebugMethodName,
