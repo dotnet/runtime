@@ -15,9 +15,9 @@
   <!-- Notes:                                                                -->
   <!--                                                                       -->
   <!-- DumpIbcMergePackageVersion is used by build.sh and build.cmd to pass  -->
-  <!-- the version information to cmake. The task will write a file to the   -->
-  <!-- intermediates directory to be read back by build.cmd/sh. The path for -->
-  <!-- the file is IbcMergePackageVersionOutputFile                          -->
+  <!-- the version information to cmake. The task will write a file to be    -->
+  <!-- read back by build.cmd/sh. The path for the file is:                  --> 
+  <!-- $(IbcMergePackageVersionOutputFile)                                    -->
   <!--                                                                       -->
   <Target Name="DumpIbcMergePackageVersion">
     <!-- Error if PgoDataPackageVersionOutputFile is not set. -->
