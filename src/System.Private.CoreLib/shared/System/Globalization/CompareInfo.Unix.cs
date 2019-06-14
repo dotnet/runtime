@@ -15,9 +15,6 @@ namespace System.Globalization
     public partial class CompareInfo
     {
         [NonSerialized]
-        private Interop.Globalization.CriticalSortHandle _sortHandle = null!; // initialized in helper called by ctors
-
-        [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
 
         private void InitSort(CultureInfo culture)
@@ -33,7 +30,7 @@ namespace System.Globalization
                 Interop.Globalization.ResultCode resultCode = Interop.Globalization.GetSortHandle(GetNullTerminatedUtf8String(_sortName), out _sortHandle);
                 if (resultCode != Interop.Globalization.ResultCode.Success)
                 {
-                    _sortHandle.Dispose();
+                    Interop.Globalization.CloseSortHandle(_sortHandle);
 
                     if (resultCode == Interop.Globalization.ResultCode.OutOfMemory)
                         throw new OutOfMemoryException();
