@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "common.h"
+#include "eventpipeeventpayload.h"
 #include "eventpipeeventsource.h"
 #include "eventpipe.h"
 #include "eventpipeevent.h"

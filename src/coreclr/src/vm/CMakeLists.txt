@@ -323,8 +323,10 @@ set(VM_SOURCES_WKS
     eventpipeconfiguration.cpp
     eventpipeevent.cpp
     eventpipeeventinstance.cpp
+    eventpipeeventpayload.cpp
     eventpipeeventsource.cpp
     eventpipeblock.cpp
+    eventpipecommontypes.cpp
     eventpipefile.cpp
     eventpipeinternal.cpp
     eventpipejsonfile.cpp
@@ -443,9 +445,11 @@ set(VM_HEADERS_WKS
     eventpipeblock.h
     eventpipebuffer.h
     eventpipebuffermanager.h
+    eventpipecommontypes.h
     eventpipeconfiguration.h
     eventpipeevent.h
     eventpipeeventinstance.h
+    eventpipeeventpayload.h
     eventpipeeventsource.h
     eventpipefile.h
     eventpipeinternal.h
@@ -502,6 +506,7 @@ set(VM_HEADERS_WKS
     sha1.h
     simplerwlock.hpp
     sourceline.h
+    stackcontents.h
     stackingallocator.h
     stringliteralmap.h
     stubcache.h
