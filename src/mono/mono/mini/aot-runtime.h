@@ -268,9 +268,6 @@ gboolean mono_aot_init_llvmonly_method      (gpointer amodule, guint32 method_in
 GHashTable *mono_aot_get_weak_field_indexes (MonoImage *image);
 MonoAotMethodFlags mono_aot_get_method_flags (guint8 *code);
 
-/* This is an exported function */
-MONO_API void     mono_aot_register_module           (gpointer *aot_info);
-
 /* These are used to load the AOT data for aot images compiled with MONO_AOT_FILE_FLAG_SEPARATE_DATA */
 /*
  * Return the AOT data for ASSEMBLY. SIZE is the size of the data. OUT_HANDLE should be set to a handle which is later

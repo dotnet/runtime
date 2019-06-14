@@ -163,6 +163,13 @@ mono_running_on_valgrind (void)
 		return FALSE;
 }
 
+void
+mono_set_use_llvm (mono_bool use_llvm)
+{
+	mono_use_llvm = (gboolean)use_llvm;
+}
+
+
 typedef struct {
 	void *ip;
 	MonoMethod *method;
