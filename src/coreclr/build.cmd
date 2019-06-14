@@ -179,6 +179,7 @@ if /i "%1" == "-skipnative"          (set __BuildNative=0&set processedArgs=!pro
 if /i "%1" == "-skipcrossarchnative" (set __SkipCrossArchNative=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skiptests"           (set __BuildTests=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skipbuildpackages"   (set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-skipmanagedtools"    (set __BuildManagedTools=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-generatelayout"      (set __GenerateLayout=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "-usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -1029,6 +1030,7 @@ echo -skipnative: skip building native components ^(default: native components a
 echo -skipcrossarchnative: skip building cross-architecture native components ^(default: components are built^).
 echo -skiptests: skip building tests ^(default: tests are built^).
 echo -skipbuildpackages: skip building nuget packages ^(default: packages are built^).
+echo -skipmanagedtools: skip build tools such as R2R dump and RunInContext
 echo -skiprestoreoptdata: skip restoring optimization data used by profile-based optimizations.
 echo -skiprestore: skip restoring packages ^(default: packages are restored during build^).
 echo -disableoss: Disable Open Source Signing for System.Private.CoreLib.
