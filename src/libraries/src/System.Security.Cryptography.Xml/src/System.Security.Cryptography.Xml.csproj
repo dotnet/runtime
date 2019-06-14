@@ -111,7 +111,4 @@
     <Reference Include="System" />
     <Reference Include="System.Security" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

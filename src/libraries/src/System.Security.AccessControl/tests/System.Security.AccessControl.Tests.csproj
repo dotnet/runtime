@@ -69,7 +69,4 @@
     <Compile Include="SystemAcl\SystemAcl_SetAudit.cs" />
     <Compile Include="Utils.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

@@ -14,11 +14,7 @@ using System.Diagnostics;
 
 namespace System.Runtime.Serialization.Json
 {
-#if uapaot
-    public class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
-#else
     internal class XmlObjectSerializerReadContextComplexJson : XmlObjectSerializerReadContextComplex
-#endif
     {
         private string _extensionDataValueType;
         private DataContractJsonSerializer _jsonSerializer;
@@ -306,7 +302,6 @@ namespace System.Runtime.Serialization.Json
             return name;
         }
 
-#if !uapaot
         public static void ThrowDuplicateMemberException(object obj, XmlDictionaryString[] memberNames, int memberIndex)
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(
@@ -344,6 +339,5 @@ namespace System.Runtime.Serialization.Json
         {
             return BitFlagsGenerator.IsBitSet(bytes, bitIndex);
         }
-#endif
     }
 }

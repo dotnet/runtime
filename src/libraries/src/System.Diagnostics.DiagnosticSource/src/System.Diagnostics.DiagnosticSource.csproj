@@ -7,7 +7,6 @@
          to work with older NuGet clients -->
     <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard1.1'">netstandard1.1;portable-net45+win8+wpa81</PackageTargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <BlockReflectionAttribute>false</BlockReflectionAttribute>
     <CLSCompliant>false</CLSCompliant>
     <Configurations>net45-Debug;net45-Release;net46-Debug;net46-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release;netstandard1.1-Debug;netstandard1.1-Release;netstandard1.3-Debug;netstandard1.3-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>

@@ -330,15 +330,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Transactions.Local" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">
     <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Xml.XmlSerializer" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <ProjectReference Include="..\..\System.Private.Xml\src\System.Private.Xml.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap' or '$(TargetGroup)' == 'uapaot'">
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
 </Project>

@@ -2,7 +2,6 @@
   <PropertyGroup>
     <ProjectGuid>{B7697463-7C98-4462-BA09-67B7BF3842B6}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <BlockReflectionAttribute>false</BlockReflectionAttribute>
     <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
@@ -253,9 +252,6 @@
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
     <Reference Include="System.Security.Cryptography.ProtectedData" />
     <Reference Include="System.Security.Permissions" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true'">
     <Reference Include="mscorlib" />

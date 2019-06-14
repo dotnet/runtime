@@ -45,7 +45,4 @@
   <ItemGroup>
     <ReferenceFromRuntime Include="Microsoft.Diagnostics.Tracing.TraceEvent" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

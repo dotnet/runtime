@@ -17,7 +17,7 @@ namespace System.Runtime.Serialization
     using Xml.Schema;
     using System.Collections.Concurrent;
 
-#if USE_REFEMIT || uapaot
+#if USE_REFEMIT
     public abstract class DataContract
 #else
     internal abstract class DataContract
@@ -60,54 +60,8 @@ namespace System.Runtime.Serialization
 
         internal static DataContract GetDataContractFromGeneratedAssembly(Type type)
         {
-#if uapaot
-            if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
-            {
-                return null;
-            }
-
-            type = GetDataContractAdapterTypeForGeneratedAssembly(type);
-            DataContract dataContract = GetGeneratedDataContract(type);
-            if (dataContract == null)
-            {
-                if (type.IsInterface && !CollectionDataContract.IsCollectionInterface(type))
-                {
-                    type = Globals.TypeOfObject;
-                    dataContract = GetGeneratedDataContract(type);
-                }
-                if (dataContract == null)
-                {
-                    if (DataContractSerializer.Option == SerializationOption.CodeGenOnly)
-                    {
-                        throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, type));
-                    }
-                }
-            }
-
-            if (dataContract is InvalidDataContract && DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
-            {
-                return null;
-            }
-
-            return dataContract;
-#else
             return null;
-#endif
         }
-
-#if uapaot
-        // This method returns adapter types used to get DataContract from
-        // generated assembly. 
-        private static Type GetDataContractAdapterTypeForGeneratedAssembly(Type type)
-        {
-            if (type == Globals.TypeOfDateTimeOffset)
-            {
-                return Globals.TypeOfDateTimeOffsetAdapter;
-            }
-
-            return type;
-        }
-#endif
 
         internal MethodInfo ParseMethod
         {
@@ -141,13 +95,6 @@ namespace System.Runtime.Serialization
         {
             return DataContractCriticalHelper.GetDataContractSkipValidation(id, typeHandle, type);
         }
-#if uapaot
-        internal static DataContract GetDataContractCreatedAtRuntime(Type type, SerializationMode mode = SerializationMode.SharedContract)
-        {
-            DataContract dataContract = DataContractCriticalHelper.GetDataContractCreatedAtRuntime(type);
-            return dataContract.GetValidContract(mode);
-        }
-#endif
 
         internal static DataContract GetGetOnlyCollectionDataContract(int id, RuntimeTypeHandle typeHandle, Type type, SerializationMode mode)
         {
@@ -210,7 +157,7 @@ namespace System.Runtime.Serialization
             DataContractCriticalHelper.ThrowInvalidDataContractException(message, type);
         }
 
-#if USE_REFEMIT || uapaot
+#if USE_REFEMIT
         internal DataContractCriticalHelper Helper
 #else
         protected DataContractCriticalHelper Helper
@@ -245,17 +192,6 @@ namespace System.Runtime.Serialization
             get
             { return _helper.TypeForInitialization; }
         }
-
-#if uapaot
-        /// <summary>
-        /// Invoked once immediately before attempting to read, permitting additional setup or verification
-        /// </summary>
-        /// <param name="xmlReader">The reader from which the next read will occur.</param>
-        public virtual void PrepareToRead(XmlReaderDelegator xmlReader)
-        {
-            // Base class does no work.  Intended for derived types to execute before serializer attempts to read.
-        }
-#endif
 
         public virtual void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context)
         {
@@ -371,12 +307,6 @@ namespace System.Runtime.Serialization
             get { return false; }
         }
 
-#if uapaot
-        public bool TypeIsInterface;
-        public bool TypeIsCollectionInterface;
-        public Type GenericTypeDefinition;
-#endif
-
         internal virtual void WriteRootElement(XmlWriterDelegator writer, XmlDictionaryString name, XmlDictionaryString ns)
         {
             if (object.ReferenceEquals(ns, DictionaryGlobals.SerializationNamespace) && !IsPrimitive)
@@ -404,9 +334,6 @@ namespace System.Runtime.Serialization
         {
             private static Dictionary<TypeHandleRef, IntRef> s_typeToIDCache = new Dictionary<TypeHandleRef, IntRef>(new TypeHandleRefEqualityComparer());
             private static DataContract[] s_dataContractCache = new DataContract[32];
-#if uapaot
-            private static ConcurrentDictionary<Type, DataContract> s_dataContractCacheCreatedAtRuntime = new ConcurrentDictionary<Type, DataContract>();
-#endif
             private static int s_dataContractID;
             private static Dictionary<Type, DataContract> s_typeToBuiltInContract;
             private static Dictionary<XmlQualifiedName, DataContract> s_nameToBuiltInContract;
@@ -439,12 +366,6 @@ namespace System.Runtime.Serialization
 
             internal static DataContract GetDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type type)
             {
-#if uapaot
-                // The generated serialization assembly uses different ids than the running code.
-                // We should have 'dataContractCache' from 'Type' to 'DataContract', since ids are not used at runtime.
-                id = GetId(typeHandle);
-#endif
-
                 DataContract dataContract = s_dataContractCache[id];
                 if (dataContract == null)
                 {
@@ -458,31 +379,8 @@ namespace System.Runtime.Serialization
                 return dataContract;
             }
 
-#if uapaot
-            internal static DataContract GetDataContractCreatedAtRuntime(Type type)
-            {
-                if (type == null)
-                {
-                    throw new ArgumentNullException(nameof(type));
-                }
-
-                DataContract dataContract = s_dataContractCacheCreatedAtRuntime.GetOrAdd(type, (t) =>
-                {
-                    return CreateDataContract(t);
-                });
-
-                return dataContract.GetValidContract();
-            }
-#endif
-
             internal static DataContract GetGetOnlyCollectionDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type type)
             {
-#if uapaot
-                // The generated serialization assembly uses different ids than the running code.
-                // We should have 'dataContractCache' from 'Type' to 'DataContract', since ids are not used at runtime.
-                id = GetId(typeHandle);
-#endif
-
                 DataContract dataContract = s_dataContractCache[id];
                 if (dataContract == null)
                 {
@@ -1191,12 +1089,8 @@ namespace System.Runtime.Serialization
 
             internal virtual DataContractDictionary KnownDataContracts
             {
-#if uapaot
-                get; set;
-#else
                 get { return null; }
                 set { /* do nothing */ }
-#endif
             }
 
             internal virtual bool IsISerializable
@@ -2302,12 +2196,10 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-#if !uapaot
         internal static string SanitizeTypeName(string typeName)
         {
             return typeName.Replace('.', '_');
         }
-#endif
     }
 
     internal interface IGenericNameProvider

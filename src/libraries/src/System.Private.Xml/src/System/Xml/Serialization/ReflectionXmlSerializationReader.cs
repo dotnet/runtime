@@ -2087,8 +2087,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    // This class and it's contained members must be public so that reflection metadata is available on uapaot
-    public static class ReflectionXmlSerializationReaderHelper
+    internal static class ReflectionXmlSerializationReaderHelper
     {
         public delegate void SetMemberValueDelegate(object o, object val);
 

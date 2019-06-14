@@ -47,12 +47,9 @@ namespace System.Xml
             }
         }
 
-        // This method is marked Removable because WebRequest has a lot of dependencies that will bloat
-        // self-contained distributions of .NET Apps.
         // This code is statically reachable from any place that uses XmlReaderSettings (i.e. every app that
         // does something XML related is going to have this in their transitive call graph). People rarely need
         // this functionality though.
-        [RemovableFeature("System.Xml.XmlUrlResolver.NonFileUrlSupport")] 
         private static WebRequest CreateWebRequestOrThrowIfRemoved(Uri uri, ICredentials credentials, IWebProxy proxy,
             RequestCachePolicy cachePolicy)
         {

@@ -35,7 +35,4 @@
   <ItemGroup>
     <Reference Include="System.Memory" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

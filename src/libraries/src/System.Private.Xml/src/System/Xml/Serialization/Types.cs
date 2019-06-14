@@ -726,7 +726,6 @@ namespace System.Xml.Serialization
             return typeDesc;
         }
 
-#if !FEATURE_SERIALIZATION_UAPAOT
         internal TypeMapping GetTypeMappingFromTypeDesc(TypeDesc typeDesc)
         {
             foreach (TypeMapping typeMapping in TypeMappings)
@@ -748,7 +747,6 @@ namespace System.Xml.Serialization
             }
             return null;
         }
-#endif
 
         private TypeDesc ImportTypeDesc(Type type, MemberInfo memberInfo, bool directReference)
         {

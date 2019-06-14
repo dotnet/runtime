@@ -45,9 +45,6 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="System\Uri.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAOT)'=='true'">
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
   </ItemGroup>

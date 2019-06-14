@@ -37,9 +37,6 @@
     <Reference Include="System.Runtime.WindowsRuntime" />
     <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUap)'=='true'">
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetsNetStandard)' == 'true'">
     <Reference Include="System.Runtime" />
     <Reference Include="System.IO" />

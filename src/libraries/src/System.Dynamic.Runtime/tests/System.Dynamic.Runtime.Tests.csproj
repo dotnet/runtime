@@ -153,7 +153,4 @@
     <Compile Include="Common.cs" />
     <Compile Include="ErrorVerifier.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

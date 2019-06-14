@@ -36,8 +36,7 @@ namespace System
                 IsFullFramework ?
                 netFxParamName : netCoreParamName;
 
-            if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
-                Assert.Equal(expectedParamName, exception.ParamName);
+            Assert.Equal(expectedParamName, exception.ParamName);
         }
 
         public static void Throws<T>(string netCoreParamName, string netFxParamName, Func<object> testCode)
@@ -55,8 +54,7 @@ namespace System
                 IsFullFramework ?
                 netFxParamName : netCoreParamName;
 
-            if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
-                Assert.Equal(expectedParamName, exception.ParamName);
+            Assert.Equal(expectedParamName, exception.ParamName);
         }
 
         public static T Throws<T>(string paramName, Action action)
@@ -64,8 +62,7 @@ namespace System
         {
             T exception = Assert.Throws<T>(action);
 
-            if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
-                Assert.Equal(paramName, exception.ParamName);
+            Assert.Equal(paramName, exception.ParamName);
 
             return exception;
         }
@@ -83,8 +80,7 @@ namespace System
         {
             T exception = Assert.Throws<T>(testCode);
 
-            if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
-                Assert.Equal(paramName, exception.ParamName);
+            Assert.Equal(paramName, exception.ParamName);
 
             return exception;
         }
@@ -94,8 +90,7 @@ namespace System
         {
             T exception = await Assert.ThrowsAsync<T>(testCode);
 
-            if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
-                Assert.Equal(paramName, exception.ParamName);
+            Assert.Equal(paramName, exception.ParamName);
 
             return exception;
         }
@@ -111,10 +106,7 @@ namespace System
                 if (typeof(ArgumentException).IsAssignableFrom(typeof(TNetFxExceptionType)))
                 {
                     Exception exception = Assert.Throws(typeof(TNetFxExceptionType), action);
-                    if (!RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
-                    {
-                        Assert.Equal(paramName, ((ArgumentException)exception).ParamName);
-                    }
+                    Assert.Equal(paramName, ((ArgumentException)exception).ParamName);
                 }
                 else
                 {

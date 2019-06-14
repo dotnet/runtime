@@ -17,7 +17,7 @@ namespace System.Text.RegularExpressions.Tests
         /// <returns></returns>
         public static IEnumerable<object[]> TransformRegexOptions(string testDataMethodName, int regexOptionsArrayIndex)
         {
-            // On Uap or NetNative the compiled feature isn't currently enabled,
+            // On UWP the compiled feature isn't currently enabled,
             // therefore we don't need the additional test data.
             if (PlatformDetection.IsUap)
             {

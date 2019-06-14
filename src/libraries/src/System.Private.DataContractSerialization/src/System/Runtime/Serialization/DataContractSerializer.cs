@@ -50,14 +50,8 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if uapaot
-        [RemovableFeature(ReflectionBasedSerializationFeature.Name, UseNopBody = true)]
-#endif
         private static bool IsReflectionBackupAllowed()
         {
-            // The RemovableFeature annotation above is going to replace this with
-            // "return false" if reflection based serialization feature was removed
-            // at publishing time.
             return true;
         }
 
@@ -94,11 +88,7 @@ namespace System.Runtime.Serialization
             Initialize(type, rootName, rootNamespace, knownTypes, int.MaxValue, false, false, null, false);
         }
 
-#if uapaot
-        public DataContractSerializer(Type type, IEnumerable<Type> knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, bool preserveObjectReferences)
-#else
         internal DataContractSerializer(Type type, IEnumerable<Type> knownTypes, int maxItemsInObjectGraph, bool ignoreExtensionDataObject, bool preserveObjectReferences)
-#endif
         {
             Initialize(type, knownTypes, maxItemsInObjectGraph, ignoreExtensionDataObject, preserveObjectReferences, null, false);
         }
@@ -426,10 +416,6 @@ namespace System.Runtime.Serialization
             if (dataContractResolver == null)
                 dataContractResolver = this.DataContractResolver;
 
-#if uapaot
-            // Give the root contract a chance to initialize or pre-verify the read
-            RootContract.PrepareToRead(xmlReader);
-#endif
             if (verifyObjectName)
             {
                 if (!InternalIsStartObject(xmlReader))

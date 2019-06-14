@@ -9,8 +9,9 @@
     <NoWarn>$(NoWarn);1685</NoWarn>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the options -->
   <ItemGroup>
+    <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
+    <Compile Include="System\Diagnostics\StackTraceSymbols.cs" />
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolBinder.cs" />
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolDocument.cs" />
     <Compile Include="System\Diagnostics\SymbolStore\ISymbolMethod.cs" />
@@ -25,8 +26,7 @@
     <Compile Include="System\Diagnostics\SymbolStore\SymLanguageType.cs" />
     <Compile Include="System\Diagnostics\SymbolStore\SymLanguageVendor.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
-    <Compile Include="System\Diagnostics\StackTraceSymbols.CoreCLR.cs" />
+  <ItemGroup>
     <ProjectReference Include="..\..\System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Debug\src\System.Diagnostics.Debug.csproj" />
     <ProjectReference Include="..\..\System.IO\src\System.IO.csproj" />
@@ -35,9 +35,6 @@
     <ProjectReference Include="..\..\System.Runtime.Extensions\src\System.Runtime.Extensions.csproj" />
     <ProjectReference Include="..\..\System.Reflection.Metadata\src\System.Reflection.Metadata.csproj" />
     <ProjectReference Include="..\..\System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsAOT)'!='true'">
-    <Compile Include="System\Diagnostics\StackFrameExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />

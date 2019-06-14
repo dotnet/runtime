@@ -25,7 +25,6 @@ namespace System.Xml.Serialization
         {
         }
     }
-#if !FEATURE_SERIALIZATION_UAPAOT
     internal class XmlSerializationCodeGen
     {
         private IndentedWriter _writer;
@@ -407,5 +406,4 @@ namespace System.Xml.Serialization
             return mapping.TypeDesc.CanBeElementValue;
         }
     }
-#endif
 }

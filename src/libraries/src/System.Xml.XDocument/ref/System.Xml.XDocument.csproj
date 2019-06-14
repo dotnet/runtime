@@ -5,7 +5,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Xml.XDocument.cs" />
-    <Compile Include="System.Xml.XDocument.Manual.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.IO\ref\System.IO.csproj" />

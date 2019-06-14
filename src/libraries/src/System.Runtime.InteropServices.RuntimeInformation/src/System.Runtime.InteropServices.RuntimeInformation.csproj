@@ -31,7 +31,7 @@
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap' and '$(TargetGroup)' != 'uapaot'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.RtlGetVersion.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.RtlGetVersion.cs</Link>
     </Compile>

@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Resources;
 using System.Runtime.CompilerServices;
 
-#if !FEATURE_SERIALIZATION_UAPAOT
 namespace System.Xml.Serialization
 {
     using System;
@@ -1670,4 +1669,3 @@ namespace System.Xml.Serialization
         }
     }
 }
-#endif

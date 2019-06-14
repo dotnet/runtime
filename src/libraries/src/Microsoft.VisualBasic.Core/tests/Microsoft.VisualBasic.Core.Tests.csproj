@@ -64,7 +64,4 @@
     <Compile Include="UtilsTests.cs" />
     <Compile Include="VBMathTests.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

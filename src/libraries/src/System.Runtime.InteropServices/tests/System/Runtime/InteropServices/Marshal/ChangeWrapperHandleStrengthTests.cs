@@ -34,7 +34,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { d };
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative))]
+        [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
         [MemberData(nameof(ChangeWrapperHandleStrength_TestData))]
         public void ChangeWrapperHandleStrength_ValidObject_Success(object otp)
@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices.Tests
             Marshal.ChangeWrapperHandleStrength(otp, fIsWeak: false);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void ChangeWrapperHandleStrength_NullObject_ThrowsArgumentNullException()
         {
