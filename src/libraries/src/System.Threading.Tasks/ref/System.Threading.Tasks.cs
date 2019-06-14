@@ -11,10 +11,10 @@ namespace System
     {
         public OperationCanceledException() { }
         protected OperationCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public OperationCanceledException(string message) { }
-        public OperationCanceledException(string message, System.Exception innerException) { }
-        public OperationCanceledException(string message, System.Exception innerException, System.Threading.CancellationToken token) { }
-        public OperationCanceledException(string message, System.Threading.CancellationToken token) { }
+        public OperationCanceledException(string? message) { }
+        public OperationCanceledException(string? message, System.Exception? innerException) { }
+        public OperationCanceledException(string? message, System.Exception? innerException, System.Threading.CancellationToken token) { }
+        public OperationCanceledException(string? message, System.Threading.CancellationToken token) { }
         public OperationCanceledException(System.Threading.CancellationToken token) { }
         public System.Threading.CancellationToken CancellationToken { get { throw null; } }
     }
@@ -130,17 +130,17 @@ namespace System.Threading.Tasks
     {
         public TaskCanceledException() { }
         protected TaskCanceledException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public TaskCanceledException(string message) { }
-        public TaskCanceledException(string message, System.Exception innerException) { }
-        public TaskCanceledException(string message, System.Exception innerException, System.Threading.CancellationToken token) { }
-        public TaskCanceledException(System.Threading.Tasks.Task task) { }
-        public System.Threading.Tasks.Task Task { get { throw null; } }
+        public TaskCanceledException(string? message) { }
+        public TaskCanceledException(string? message, System.Exception? innerException) { }
+        public TaskCanceledException(string? message, System.Exception? innerException, System.Threading.CancellationToken token) { }
+        public TaskCanceledException(System.Threading.Tasks.Task? task) { }
+        public System.Threading.Tasks.Task? Task { get { throw null; } }
     }
     public partial class TaskCompletionSource<TResult>
     {
         public TaskCompletionSource() { }
-        public TaskCompletionSource(object state) { }
-        public TaskCompletionSource(object state, System.Threading.Tasks.TaskCreationOptions creationOptions) { }
+        public TaskCompletionSource(object? state) { }
+        public TaskCompletionSource(object? state, System.Threading.Tasks.TaskCreationOptions creationOptions) { }
         public TaskCompletionSource(System.Threading.Tasks.TaskCreationOptions creationOptions) { }
         public System.Threading.Tasks.Task<TResult> Task { get { throw null; } }
         public void SetCanceled() { }
@@ -161,9 +161,9 @@ namespace System.Threading.Tasks
     public partial class TaskSchedulerException : System.Exception
     {
         public TaskSchedulerException() { }
-        public TaskSchedulerException(System.Exception innerException) { }
+        public TaskSchedulerException(System.Exception? innerException) { }
         protected TaskSchedulerException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public TaskSchedulerException(string message) { }
-        public TaskSchedulerException(string message, System.Exception innerException) { }
+        public TaskSchedulerException(string? message) { }
+        public TaskSchedulerException(string? message, System.Exception? innerException) { }
     }
 }
