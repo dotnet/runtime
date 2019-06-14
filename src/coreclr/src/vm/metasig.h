@@ -601,6 +601,8 @@ DEFINE_METASIG_T(IM(IAsyncResult_RetVoid, C(IASYNCRESULT), v))
 DEFINE_METASIG(IM(Int_RetRefT, i, r(G(0))))
 DEFINE_METASIG_T(IM(Int_RetReadOnlyRefT, i, Q(INATTRIBUTE) r(G(0))))
 
+DEFINE_METASIG(GM(RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, _, M(0)))
+
 // Undefine macros in case we include the file again in the compilation unit
 
 #undef  DEFINE_METASIG
