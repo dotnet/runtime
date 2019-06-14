@@ -21,7 +21,4 @@
   <ItemGroup>
     <Reference Include="Windows" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

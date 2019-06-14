@@ -26,7 +26,6 @@ namespace System.Xml.Serialization
         private bool _debugEnabled = DiagnosticsSwitches.KeepTempFiles.Enabled;
         private StringWriter _writer = new StringWriter(CultureInfo.InvariantCulture);
 
-#if !FEATURE_SERIALIZATION_UAPAOT
         // SxS: This method does not take any resource name and does not expose any resources to the caller.
         // It's OK to suppress the SxS warning.
         internal void AddImport(Type type, Hashtable types)
@@ -99,7 +98,6 @@ namespace System.Xml.Serialization
         {
             get { return _writer; }
         }
-#endif
 
         internal static string GetTempAssemblyName(AssemblyName parent, string ns)
         {

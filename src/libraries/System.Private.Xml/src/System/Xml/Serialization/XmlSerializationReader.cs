@@ -108,38 +108,6 @@ namespace System.Xml.Serialization
 
         protected abstract void InitIDs();
 
-#if FEATURE_SERIALIZATION_UAPAOT
-        // this method must be called before any generated deserialization methods are called
-        internal void Init(XmlReader r, XmlDeserializationEvents events, string encodingStyle)
-        {
-            _events = events;
-            _r = r;
-            _soap12 = (encodingStyle == Soap12.Encoding);
-
-            _schemaNsID = r.NameTable.Add(XmlSchema.Namespace);
-            _schemaNs2000ID = r.NameTable.Add("http://www.w3.org/2000/10/XMLSchema");
-            _schemaNs1999ID = r.NameTable.Add("http://www.w3.org/1999/XMLSchema");
-            _schemaNonXsdTypesNsID = r.NameTable.Add(UrtTypes.Namespace);
-            _instanceNsID = r.NameTable.Add(XmlSchema.InstanceNamespace);
-            _instanceNs2000ID = r.NameTable.Add("http://www.w3.org/2000/10/XMLSchema-instance");
-            _instanceNs1999ID = r.NameTable.Add("http://www.w3.org/1999/XMLSchema-instance");
-            _soapNsID = r.NameTable.Add(Soap.Encoding);
-            _soap12NsID = r.NameTable.Add(Soap12.Encoding);
-            _schemaID = r.NameTable.Add("schema");
-            _wsdlNsID = r.NameTable.Add(Wsdl.Namespace);
-            _wsdlArrayTypeID = r.NameTable.Add(Wsdl.ArrayType);
-            _nullID = r.NameTable.Add("null");
-            _nilID = r.NameTable.Add("nil");
-            _typeID = r.NameTable.Add("type");
-            _arrayTypeID = r.NameTable.Add("arrayType");
-            _itemTypeID = r.NameTable.Add("itemType");
-            _arraySizeID = r.NameTable.Add("arraySize");
-            _arrayID = r.NameTable.Add("Array");
-            _urTypeID = r.NameTable.Add(Soap.UrType);
-            InitIDs();
-        }
-#endif
-
         // this method must be called before any generated deserialization methods are called
         internal void Init(XmlReader r, XmlDeserializationEvents events, string encodingStyle, TempAssembly tempAssembly)
         {
@@ -2074,7 +2042,6 @@ namespace System.Xml.Serialization
     ///<internalonly/>
     public delegate object XmlSerializationReadCallback();
 
-#if !FEATURE_SERIALIZATION_UAPAOT
     internal class XmlSerializationReaderCodeGen : XmlSerializationCodeGen
     {
         private Hashtable _idNames = new Hashtable();
@@ -5173,5 +5140,4 @@ namespace System.Xml.Serialization
             RaCodeGen.WriteLocalDecl(typeFullName, variableName, initValue, useReflection);
         }
     }
-#endif
 }

@@ -33,9 +33,6 @@
       <Link>Common\System\ThreadCultureChange.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="BinaryFormatterTests.rd.xml" />
-  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Reference Include="System.Text.Json" />
   </ItemGroup>

@@ -20,9 +20,8 @@ namespace System
         //
 
         public static bool HasWindowsShell => IsWindows && IsNotWindowsServerCore && IsNotWindowsNanoServer && IsNotWindowsIoTCore;
-        public static bool IsUap => IsInAppContainer || IsNetNative;
+        public static bool IsUap => IsInAppContainer;
         public static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase);
-        public static bool IsNetNative => RuntimeInformation.FrameworkDescription.StartsWith(".NET Native", StringComparison.OrdinalIgnoreCase);
         public static bool IsNetCore => RuntimeInformation.FrameworkDescription.StartsWith(".NET Core", StringComparison.OrdinalIgnoreCase);
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
         public static bool IsOSX => RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
@@ -51,8 +50,6 @@ namespace System
 
         public static bool IsDomainJoinedMachine => !Environment.MachineName.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase);
 
-        public static bool IsNotNetNative => !IsNetNative;
-
         // Windows - Schannel supports alpn from win8.1/2012 R2 and higher.
         // Linux - OpenSsl supports alpn from openssl 1.0.2 and higher.
         // OSX - SecureTransport doesn't expose alpn APIs. #30492
@@ -62,12 +59,6 @@ namespace System
         public static bool SupportsClientAlpn => SupportsAlpn || (IsOSX && PlatformDetection.OSXVersion > new Version(10, 12));
         // OpenSSL 1.1.1 and above.
         public static bool SupportsTls13 => !IsWindows && !IsOSX && (OpenSslVersion.CompareTo(new Version(1,1,1)) >= 0);
-
-        // Officially, .NET Native only supports processes running in an AppContainer. However, the majority of tests still work fine
-        // in a normal Win32 process and we often do so as running in an AppContainer imposes a substantial tax in debuggability
-        // and investigatability. This predicate is used in ConditionalFacts to disable the specific tests that really need to be
-        // running in AppContainer when running on .NetNative.
-        public static bool IsNotNetNativeRunningAsConsoleApp => !(IsNetNative && !IsInAppContainer);
 
         private static Lazy<bool> m_isWindowsSubsystemForLinux = new Lazy<bool>(GetIsWindowsSubsystemForLinux);
 
@@ -136,10 +127,9 @@ namespace System
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
 
-        public static bool IsReflectionEmitSupported = !PlatformDetection.IsNetNative;
+        public static bool IsReflectionEmitSupported = true;
 
-        // Tracked in: https://github.com/dotnet/corert/issues/3643 in case we change our mind about this.
-        public static bool IsInvokingStaticConstructorsSupported => !PlatformDetection.IsNetNative;
+        public static bool IsInvokingStaticConstructorsSupported => true;
 
         // System.Security.Cryptography.Xml.XmlDsigXsltTransform.GetOutput() relies on XslCompiledTransform which relies
         // heavily on Reflection.Emit

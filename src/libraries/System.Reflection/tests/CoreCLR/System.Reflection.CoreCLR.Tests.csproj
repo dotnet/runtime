@@ -5,7 +5,7 @@
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="AssemblyTests.CoreCLR.cs" />
+    <Compile Include="AssemblyTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\..\..\Common\tests\Data\TinyAssembly.dll">

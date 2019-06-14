@@ -158,7 +158,4 @@
       <Link>Common\System\Collections\IDictionary.NonGeneric.Tests.netcoreapp.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

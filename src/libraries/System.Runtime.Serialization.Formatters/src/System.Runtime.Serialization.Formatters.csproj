@@ -67,7 +67,4 @@
     <ProjectReference Include="..\..\System.Collections.Concurrent\src\System.Collections.Concurrent.csproj" />
     <ProjectReference Include="..\..\System.Collections.NonGeneric\src\System.Collections.NonGeneric.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\System.Runtime.Serialization.Formatters.rd.xml" />
-  </ItemGroup>
 </Project>

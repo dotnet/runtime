@@ -117,7 +117,4 @@
     <Compile Include="ImmutableSortedSetBuilderTest.nonnetstandard.cs" />
     <Compile Include="ImmutableSortedDictionaryTest.nonnetstandard.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

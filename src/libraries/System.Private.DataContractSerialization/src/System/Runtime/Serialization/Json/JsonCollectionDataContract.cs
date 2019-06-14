@@ -19,9 +19,6 @@ namespace System.Runtime.Serialization.Json
             _helper = base.Helper as JsonCollectionDataContractCriticalHelper;
         }
 
-#if uapaot
-        [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
-#endif
         private JsonFormatCollectionReaderDelegate CreateJsonFormatReaderDelegate()
         {
             return new ReflectionJsonCollectionReader().ReflectionReadCollection;
@@ -42,23 +39,9 @@ namespace System.Runtime.Serialization.Json
                             {
                                 tempDelegate = CreateJsonFormatReaderDelegate();
                             }
-#if uapaot
-                            else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
-                            {
-                                tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract)?.CollectionReaderDelegate;
-                                tempDelegate = tempDelegate ?? CreateJsonFormatReaderDelegate();
-
-                                if (tempDelegate == null)
-                                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalCollectionDataContract.UnderlyingType));
-                            }
-#endif
                             else 
                             {
-#if uapaot
-                                tempDelegate = JsonDataContract.GetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract).CollectionReaderDelegate;
-#else   
                                 tempDelegate = new JsonFormatReaderGenerator().GenerateCollectionReader(TraditionalCollectionDataContract);
-#endif
                             }
 
                             Interlocked.MemoryBarrier();
@@ -70,9 +53,6 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-#if uapaot
-        [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
-#endif
         private JsonFormatGetOnlyCollectionReaderDelegate CreateJsonFormatGetOnlyReaderDelegate()
         {
             return new ReflectionJsonCollectionReader().ReflectionReadGetOnlyCollection;
@@ -99,23 +79,9 @@ namespace System.Runtime.Serialization.Json
                             {
                                 tempDelegate = CreateJsonFormatGetOnlyReaderDelegate();
                             }
-#if uapaot
-                            else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
-                            {
-                                tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract)?.GetOnlyCollectionReaderDelegate;
-                                tempDelegate = tempDelegate ?? CreateJsonFormatGetOnlyReaderDelegate();
-
-                                if (tempDelegate == null)
-                                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalCollectionDataContract.UnderlyingType));
-                            }
-#endif
                             else
                             {
-#if uapaot
-                                tempDelegate = JsonDataContract.GetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract).GetOnlyCollectionReaderDelegate;
-#else   
                                 tempDelegate =  new JsonFormatReaderGenerator().GenerateGetOnlyCollectionReader(TraditionalCollectionDataContract);
-#endif
                             }
 
                             Interlocked.MemoryBarrier();
@@ -127,9 +93,6 @@ namespace System.Runtime.Serialization.Json
             }
         }
 
-#if uapaot
-        [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
-#endif
         private JsonFormatCollectionWriterDelegate CreateJsonFormatWriterDelegate()
         {
             return new ReflectionJsonFormatWriter().ReflectionWriteCollection;
@@ -151,23 +114,9 @@ namespace System.Runtime.Serialization.Json
                             {
                                 tempDelegate = CreateJsonFormatWriterDelegate();
                             }
-#if uapaot
-                            else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
-                            {
-                                tempDelegate = JsonDataContract.TryGetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract)?.CollectionWriterDelegate;
-                                tempDelegate = tempDelegate ?? CreateJsonFormatWriterDelegate();
-
-                                if (tempDelegate == null)
-                                    throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, TraditionalCollectionDataContract.UnderlyingType));
-                            }
-#endif
                             else
                             {
-#if uapaot
-                                tempDelegate = JsonDataContract.GetReadWriteDelegatesFromGeneratedAssembly(TraditionalCollectionDataContract).CollectionWriterDelegate;
-#else   
                                 tempDelegate = new JsonFormatWriterGenerator().GenerateCollectionWriter(TraditionalCollectionDataContract);
-#endif
                             }
 
                             Interlocked.MemoryBarrier();

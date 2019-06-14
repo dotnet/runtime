@@ -57,7 +57,6 @@ namespace System.Xml.Serialization
 
         internal TempAssembly(XmlMapping[] xmlMappings, Type[] types, string defaultNamespace, string location)
         {
-#if !FEATURE_SERIALIZATION_UAPAOT
             bool containsSoapMapping = false;
             for (int i = 0; i < xmlMappings.Length; i++)
             {
@@ -94,7 +93,6 @@ namespace System.Xml.Serialization
             {
                 throw new PlatformNotSupportedException("Compiling JScript/CSharp scripts is not supported");
             }
-#endif
 
 #if DEBUG
             // use exception in the place of Debug.Assert to avoid throwing asserts from a server process such as aspnet_ewp.exe
@@ -211,13 +209,11 @@ namespace System.Xml.Serialization
                     return null;
                 }
 
-#if !FEATURE_SERIALIZATION_UAPAOT
                 if (!IsSerializerVersionMatch(serializer, type, defaultNamespace))
                 {
                     XmlSerializationEventSource.Log.XmlSerializerExpired(serializerName, type.FullName);
                     return null;
                 }
-#endif
             }
             else
             {
@@ -256,7 +252,6 @@ namespace System.Xml.Serialization
             return null;
         }
 
-#if !FEATURE_SERIALIZATION_UAPAOT
         private static bool IsSerializerVersionMatch(Assembly serializer, Type type, string defaultNamespace)
         {
             if (serializer == null)
@@ -516,7 +511,6 @@ namespace System.Xml.Serialization
 
             return writerType.Assembly;
         }
-#endif
 
         private static MethodInfo GetMethodFromType(Type type, string methodName)
         {

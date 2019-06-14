@@ -16,7 +16,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" Condition="'$(TargetsNetFx)' == 'true'" />
-    <ReferenceFromRuntime Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap' OR '$(TargetGroup)' == 'uapaot'" />
+    <ReferenceFromRuntime Include="System.Private.CoreLib" Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard1.3' OR '$(TargetGroup)' == 'netstandard1.5'">
     <Reference Include="System.Reflection" />

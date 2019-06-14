@@ -505,7 +505,7 @@ namespace System.Runtime.Serialization
         }
     }
 
-#if USE_REFEMIT || uapaot
+#if USE_REFEMIT
     public class AttributeData
 #else
     internal class AttributeData
@@ -517,7 +517,7 @@ namespace System.Runtime.Serialization
         public string value;
     }
 
-#if USE_REFEMIT || uapaot
+#if USE_REFEMIT
     public class ElementData
 #else
     internal class ElementData

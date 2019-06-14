@@ -15,7 +15,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT || uapaot
+#if USE_REFEMIT
     public delegate object XmlFormatClassReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[] memberNamespaces);
     public delegate object XmlFormatCollectionReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract);
     public delegate void XmlFormatGetOnlyCollectionReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString itemName, XmlDictionaryString itemNamespace, CollectionDataContract collectionContract);
@@ -58,7 +58,6 @@ namespace System.Runtime.Serialization
         /// </SecurityNote>
         private class CriticalHelper
         {
-#if !uapaot
             private CodeGenerator _ilg;
             private LocalBuilder _objectLocal;
             private Type _objectType;
@@ -67,11 +66,7 @@ namespace System.Runtime.Serialization
             private ArgBuilder _memberNamesArg;
             private ArgBuilder _memberNamespacesArg;
             private ArgBuilder _collectionContractArg;
-#endif
 
-#if uapaot
-            [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
-#endif
             private XmlFormatClassReaderDelegate CreateReflectionXmlClassReader(ClassDataContract classContract)
             {
                 return new ReflectionXmlClassReader(classContract).ReflectionReadClass;
@@ -83,17 +78,8 @@ namespace System.Runtime.Serialization
                 {
                     return CreateReflectionXmlClassReader(classContract);
                 }
-#if uapaot
-                else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
-                {
-                    return CreateReflectionXmlClassReader(classContract);
-                }
-#endif
                 else
                 {
-#if uapaot
-                    throw new InvalidOperationException("Cannot generate class reader");
-#else
                     _ilg = new CodeGenerator();
                     bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null);
                     try
@@ -166,13 +152,9 @@ namespace System.Runtime.Serialization
                         }
                     }
                     return (XmlFormatClassReaderDelegate)_ilg.EndMethod();
-#endif
                 }
             }
 
-#if uapaot
-            [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
-#endif
             private XmlFormatCollectionReaderDelegate CreateReflectionXmlCollectionReader()
             {
                 return new ReflectionXmlCollectionReader().ReflectionReadCollection;
@@ -184,29 +166,16 @@ namespace System.Runtime.Serialization
                 {
                     return CreateReflectionXmlCollectionReader();
                 }
-#if uapaot
-                else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
-                {
-                    return CreateReflectionXmlCollectionReader();
-                }
-#endif
                 else
                 {
-#if uapaot
-                    throw new InvalidOperationException("Cannot generate class reader");
-#else
                     _ilg = GenerateCollectionReaderHelper(collectionContract, false /*isGetOnlyCollection*/);
                     ReadCollection(collectionContract);
                     _ilg.Load(_objectLocal);
                     _ilg.ConvertValue(_objectLocal.LocalType, _ilg.CurrentMethod.ReturnType);
                     return (XmlFormatCollectionReaderDelegate)_ilg.EndMethod();
-#endif
                 }
             }
 
-#if uapaot
-            [RemovableFeature(ReflectionBasedSerializationFeature.Name)]
-#endif
             private XmlFormatGetOnlyCollectionReaderDelegate CreateReflectionReadGetOnlyCollectionReader()
             {
                 return new ReflectionXmlCollectionReader().ReflectionReadGetOnlyCollection;
@@ -218,25 +187,14 @@ namespace System.Runtime.Serialization
                 {
                     return CreateReflectionReadGetOnlyCollectionReader();
                 }
-#if uapaot
-                else if (DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
-                {
-                    return CreateReflectionReadGetOnlyCollectionReader();
-                }
-#endif
                 else
                 {
-#if uapaot
-                    throw new InvalidOperationException("Cannot generate class reader");
-#else
                     _ilg = GenerateCollectionReaderHelper(collectionContract, true /*isGetOnlyCollection*/);
                     ReadGetOnlyCollection(collectionContract);
                     return (XmlFormatGetOnlyCollectionReaderDelegate)_ilg.EndMethod();
-#endif
                 }
             }
 
-#if !uapaot
             private CodeGenerator GenerateCollectionReaderHelper(CollectionDataContract collectionContract, bool isGetOnlyCollection)
             {
                 _ilg = new CodeGenerator();
@@ -975,7 +933,6 @@ namespace System.Runtime.Serialization
                 _ilg.Call(XmlFormatGeneratorStatics.CreateSerializationExceptionMethod);
                 _ilg.Throw();
             }
-#endif
         }
 
         internal static object UnsafeGetUninitializedObject(Type type)

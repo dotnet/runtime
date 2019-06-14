@@ -85,11 +85,11 @@ Security Transparency      | [Details](#security-transparency)
 
 ### App Domains
 
-**Justification**. AppDomains require runtime support and are generally quite expensive. They are not implemented in .NET Core or .NET Native. We do not plan on adding this capability in future.
+**Justification**. AppDomains require runtime support and are generally quite expensive. They are not implemented in .NET Core. We do not plan on adding this capability in future.
 
 **Replacement**. AppDomains were used for different features; for isolation we recommend processes and/or containers. For dynamic loading, we provide `AssemblyLoadContext`. Information (such as the name and base directory) is provided by APIs on other types, for instance `AppContext.BaseDirectory`. Some scenarios, such as getting the list of loaded assemblies are unsupported as they are inherently fragile.
 
-To make code migration from .NET Framework easier, we have exposed some of the `AppDomain` API surface in .NET Core and .NET Native. Some of the APIs work fine (e.g. `UnhandledException`), some of them do nothing (e.g. `SetCachePath`) and some of them throw `PlatformNotSupportedException` (e.g. `CreateDomain`). See more details about particular API differences in [TODO](https://github.com/dotnet/corefx/issues/18405).
+To make code migration from .NET Framework easier, we have exposed some of the `AppDomain` API surface in .NET Core. Some of the APIs work fine (e.g. `UnhandledException`), some of them do nothing (e.g. `SetCachePath`) and some of them throw `PlatformNotSupportedException` (e.g. `CreateDomain`). See more details about particular API differences in [TODO](https://github.com/dotnet/corefx/issues/18405).
 
 ### Remoting
 
@@ -99,7 +99,7 @@ To make code migration from .NET Framework easier, we have exposed some of the `
 
 ### Code Access Security (CAS)
 
-**Justification**. Sandboxing, i.e. relying on the runtime or the framework to constrain which resources a managed application or library can run is [not supported on .NET Framework](https://msdn.microsoft.com/en-us/library/c5tk9z76(v=vs.110).aspx) and therefore is also not supported on .NET Core or .NET Native. We believe that there are simply too many pieces in the .NET Framework and runtime that can result in elevation of privileges. Thus we don't treat [CAS as security boundary](https://msdn.microsoft.com/en-us/library/c5tk9z76(v=vs.110).aspx) anymore. On top of that, it makes the implementation more complicated and often has correctness performance implications for applications that don’t intend to use it.
+**Justification**. Sandboxing, i.e. relying on the runtime or the framework to constrain which resources a managed application or library can run is [not supported on .NET Framework](https://msdn.microsoft.com/en-us/library/c5tk9z76(v=vs.110).aspx) and therefore is also not supported on .NET Core. We believe that there are simply too many pieces in the .NET Framework and runtime that can result in elevation of privileges. Thus we don't treat [CAS as security boundary](https://msdn.microsoft.com/en-us/library/c5tk9z76(v=vs.110).aspx) anymore. On top of that, it makes the implementation more complicated and often has correctness performance implications for applications that don’t intend to use it.
 
 **Replacement**. Use operating system provided security boundaries, such as virtualization, containers, or user accounts for running processes with the least set of privileges.
 

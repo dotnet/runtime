@@ -76,7 +76,4 @@
     <Compile Include="TextWriter\TextWriterTests.cs" />
     <Compile Include="TextWriter\TextWriterTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

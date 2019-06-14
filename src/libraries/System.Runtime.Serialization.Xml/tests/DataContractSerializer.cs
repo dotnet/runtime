@@ -4084,6 +4084,14 @@ public static partial class DataContractSerializerTests
         Assert.NotNull(actual);
     }
 
+    [Fact]
+    public static void DCS_DifferentCollectionsOfSameTypeAsKnownTypes()
+    {
+        Assert.Throws<InvalidOperationException>(() => {
+            (new DataContractSerializer(typeof(TypeWithKnownTypesOfCollectionsWithConflictingXmlName))).WriteObject(new MemoryStream(), new TypeWithKnownTypesOfCollectionsWithConflictingXmlName());
+        });
+    }
+
     private static T DeserializeString<T>(string stringToDeserialize, bool shouldReportDeserializationExceptions = true, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null)
     {
         DataContractSerializer dcs;

@@ -5,14 +5,6 @@
 using System;
 using System.Xml;
 
-#if uapaot
-namespace System.Runtime.Serialization.Json
-{
-    public delegate object JsonFormatClassReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContextComplexJson context, XmlDictionaryString emptyDictionaryString, XmlDictionaryString[] memberNames);
-    public delegate object JsonFormatCollectionReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContextComplexJson context, XmlDictionaryString emptyDictionaryString, XmlDictionaryString itemName, CollectionDataContract collectionContract);
-    public delegate void JsonFormatGetOnlyCollectionReaderDelegate(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContextComplexJson context, XmlDictionaryString emptyDictionaryString, XmlDictionaryString itemName, CollectionDataContract collectionContract);
-}
-#else
 namespace System.Runtime.Serialization.Json
 {
     using System;
@@ -1047,4 +1039,3 @@ namespace System.Runtime.Serialization.Json
         }
     }
 }
-#endif

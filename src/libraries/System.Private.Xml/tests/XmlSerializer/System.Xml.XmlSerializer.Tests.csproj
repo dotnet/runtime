@@ -11,7 +11,4 @@
     <Compile Include="$(TestSourceFolder)XmlSerializerTests.Internal.cs" />
     <Compile Include="$(TestSourceFolder)XmlSerializerTests.RuntimeOnly.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

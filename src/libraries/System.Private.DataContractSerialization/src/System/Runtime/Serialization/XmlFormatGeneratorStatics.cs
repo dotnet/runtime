@@ -954,7 +954,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-#if !uapaot
         private static MethodInfo s_getTypeHandleMethod;
         internal static MethodInfo GetTypeHandleMethod
         {
@@ -1038,6 +1037,5 @@ namespace System.Runtime.Serialization
                 return s_collectionSerializationExceptionMessageProperty;
             }
         }
-#endif
     }
 }

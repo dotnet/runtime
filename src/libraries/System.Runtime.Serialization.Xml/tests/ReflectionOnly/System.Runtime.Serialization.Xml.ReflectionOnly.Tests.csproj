@@ -13,8 +13,6 @@
     <Compile Include="$(TestSourceFolder)..\MyResolver.cs" />
     <Compile Include="$(TestSourceFolder)..\XmlDictionaryReaderTests.cs" />
     <Compile Include="$(TestSourceFolder)..\XmlDictionaryWriterTest.cs" />
-    <Compile Include="$(TestSourceFolder)..\SerializationTypes.CoreCLR.cs" />
-    <Compile Include="$(TestSourceFolder)..\DataContractSerializer.CoreCLR.cs" />
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
@@ -63,8 +61,5 @@
     <Compile Include="$(TestSourceFolder)..\SerializationTestTypes\SelfRefAndCycles.cs">
       <Link>SerializationTestTypes\SelfRefAndCycles.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
 </Project>

@@ -16,7 +16,7 @@ namespace System.ConfigurationTests
         };
 
         [ActiveIssue(37364)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
+        [Fact]
         public void GetPropertyValues_NotStoredProperty_ValueEqualsNull()
         {
             var property = new SettingsProperty("PropertyName");
@@ -32,7 +32,7 @@ namespace System.ConfigurationTests
         }
 
         [ActiveIssue(37364)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
+        [Fact]
         public void GetPropertyValues_NotStoredConnectionStringProperty_ValueEqualsEmptyString()
         {
             var property = new SettingsProperty("PropertyName");

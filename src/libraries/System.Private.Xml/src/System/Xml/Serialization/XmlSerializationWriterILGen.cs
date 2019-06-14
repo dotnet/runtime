@@ -13,7 +13,6 @@ using System.Text;
 using System.Xml.Schema;
 using System.Xml.Extensions;
 
-#if !FEATURE_SERIALIZATION_UAPAOT
 namespace System.Xml.Serialization
 {
     internal class XmlSerializationWriterILGen : XmlSerializationILGen
@@ -2633,4 +2632,3 @@ namespace System.Xml.Serialization
         }
     }
 }
-#endif

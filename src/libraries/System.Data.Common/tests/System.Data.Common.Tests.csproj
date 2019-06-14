@@ -120,7 +120,4 @@
     <Compile Include="System\Data\Common\DbProviderFactoriesTests.netcoreapp.cs" />
     <Compile Include="System\Xml\XmlDataDocumentTests.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
-  </ItemGroup>
 </Project>

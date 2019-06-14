@@ -5,13 +5,6 @@
 using System;
 using System.Xml;
 
-#if uapaot
-namespace System.Runtime.Serialization.Json
-{
-    public delegate void JsonFormatClassWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, ClassDataContract dataContract, XmlDictionaryString[] memberNames);
-    public delegate void JsonFormatCollectionWriterDelegate(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, CollectionDataContract dataContract);
-}
-#else
 namespace System.Runtime.Serialization.Json
 {
     using System;
@@ -734,4 +727,3 @@ namespace System.Runtime.Serialization.Json
         }
     }
 }
-#endif

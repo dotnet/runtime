@@ -70,7 +70,6 @@ namespace System
         public static bool IsNetfx470OrNewer { get { throw null; } }
         public static bool IsNetfx471OrNewer { get { throw null; } }
         public static bool IsNetfx472OrNewer { get { throw null; } }
-        public static bool IsNetNative { get { throw null; } }
         public static bool IsNonZeroLowerBoundArraySupported { get { throw null; } }
         public static bool IsNotArm64Process { get { throw null; } }
         public static bool IsNotArmNorArm64Process { get { throw null; } }
@@ -79,8 +78,6 @@ namespace System
         public static bool IsNotInAppContainer { get { throw null; } }
         public static bool IsNotIntMaxValueArrayIndexSupported { get { throw null; } }
         public static bool IsNotMacOsHighSierraOrHigher { get { throw null; } }
-        public static bool IsNotNetNative { get { throw null; } }
-        public static bool IsNotNetNativeRunningAsConsoleApp { get { throw null; } }
         public static bool IsNotOneCoreUAP { get { throw null; } }
         public static bool IsNotOSX { get { throw null; } }
         public static bool IsNotRedHatFamily { get { throw null; } }
