@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{82D06A2D-008D-4A4A-A83D-FB7F04721C87}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Threading.Thread.cs" />
