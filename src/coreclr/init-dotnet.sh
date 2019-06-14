@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
-__scriptpath=$(cd "$(dirname "$0")"; pwd -P)
+__scriptpath="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 echo "Installing dotnet using Arcade..."
 
-source $__scriptpath/eng/configure-toolset.sh
-source $__scriptpath/eng/common/tools.sh
+source ${__scriptpath}/eng/configure-toolset.sh
+source ${__scriptpath}/eng/common/tools.sh
 
 InitializeBuildTool
 
