@@ -66,7 +66,7 @@ namespace System.Text.Json
                                 break;
                             }
                         }
-                        else if (readStack.Current.IsProcessingDictionary || readStack.Current.IsProcessingImmutableDictionary)
+                        else if (readStack.Current.IsProcessingDictionary || readStack.Current.IsProcessingIDictionaryConstructibleOrKeyValuePair)
                         {
                             HandleStartDictionary(options, ref reader, ref readStack);
                         }
@@ -81,7 +81,7 @@ namespace System.Text.Json
                         {
                             readStack.Pop();
                         }
-                        else if (readStack.Current.IsProcessingDictionary || readStack.Current.IsProcessingImmutableDictionary)
+                        else if (readStack.Current.IsProcessingDictionary || readStack.Current.IsProcessingIDictionaryConstructibleOrKeyValuePair)
                         {
                             HandleEndDictionary(options, ref reader, ref readStack);
                         }

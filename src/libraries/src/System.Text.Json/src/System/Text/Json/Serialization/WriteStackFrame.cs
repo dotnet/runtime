@@ -2,10 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
-using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json
 {
@@ -18,9 +16,9 @@ namespace System.Text.Json
         // Support Dictionary keys.
         public string KeyName;
 
-        // Whether the current object is an immutable dictionary.
-        public bool IsImmutableDictionary;
-        public bool IsImmutableDictionaryProperty;
+        // Whether the current object can be constructed with IDictionary.
+        public bool IsIDictionaryConstructible;
+        public bool IsIDictionaryConstructibleProperty;
 
         // The current enumerator for the IEnumerable or IDictionary.
         public IEnumerator Enumerator;
@@ -47,10 +45,17 @@ namespace System.Text.Json
             {
                 JsonPropertyInfo = JsonClassInfo.GetPolicyProperty();
             }
-            else if (JsonClassInfo.ClassType == ClassType.ImmutableDictionary)
+            else if (JsonClassInfo.ClassType == ClassType.IDictionaryConstructible)
             {
                 JsonPropertyInfo = JsonClassInfo.GetPolicyProperty();
-                IsImmutableDictionary = true;
+                IsIDictionaryConstructible = true;
+            }
+            else if (JsonClassInfo.ClassType == ClassType.KeyValuePair)
+            {
+                JsonPropertyInfo = JsonClassInfo.GetPolicyPropertyOfKeyValuePair();
+                // Advance to the next property, since the first one is the KeyValuePair type itself,
+                // not its first property (Key or Value).
+                PropertyIndex++;
             }
         }
 
@@ -70,7 +75,7 @@ namespace System.Text.Json
                 Debug.Assert(writeNull == false);
 
                 // Write start without a property name.
-                if (classType == ClassType.Object || classType == ClassType.Dictionary || classType == ClassType.ImmutableDictionary)
+                if (classType == ClassType.Object || classType == ClassType.Dictionary || classType == ClassType.IDictionaryConstructible)
                 {
                     writer.WriteStartObject();
                     StartObjectWritten = true;
@@ -91,7 +96,7 @@ namespace System.Text.Json
             }
             else if (classType == ClassType.Object ||
                 classType == ClassType.Dictionary ||
-                classType == ClassType.ImmutableDictionary)
+                classType == ClassType.IDictionaryConstructible)
             {
                 writer.WriteStartObject(propertyName);
                 StartObjectWritten = true;
@@ -111,7 +116,7 @@ namespace System.Text.Json
             JsonClassInfo = null;
             JsonPropertyInfo = null;
             PropertyIndex = 0;
-            IsImmutableDictionary = false;
+            IsIDictionaryConstructible = false;
             PopStackOnEndObject = false;
             PopStackOnEnd = false;
             StartObjectWritten = false;
@@ -121,7 +126,7 @@ namespace System.Text.Json
         {
             PropertyIndex = 0;
             PopStackOnEndObject = false;
-            IsImmutableDictionaryProperty = false;
+            IsIDictionaryConstructibleProperty = false;
             JsonPropertyInfo = null;
         }
 

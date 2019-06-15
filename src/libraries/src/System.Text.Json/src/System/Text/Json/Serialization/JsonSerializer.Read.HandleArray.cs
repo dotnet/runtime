@@ -37,7 +37,7 @@ namespace System.Text.Json
 
             // Verify that we don't have a multidimensional array.
             Type arrayType = jsonPropertyInfo.RuntimePropertyType;
-            if (!typeof(IEnumerable).IsAssignableFrom(arrayType) || (arrayType.IsArray && arrayType.GetArrayRank() > 1))
+            if (!state.Current.IsProcessingKeyValuePair && !typeof(IEnumerable).IsAssignableFrom(arrayType) || (arrayType.IsArray && arrayType.GetArrayRank() > 1))
             {
                 ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(arrayType, reader, state.JsonPath);
             }
@@ -128,7 +128,7 @@ namespace System.Text.Json
                     state.Current.ReturnValue = value;
                     return true;
                 }
-                else if (state.Current.IsEnumerable || state.Current.IsDictionary || state.Current.IsImmutableDictionary)
+                else if (state.Current.IsEnumerable || state.Current.IsDictionary || state.Current.IsIDictionaryConstructible)
                 {
                     // Returning a non-converted list.
                     return true;
@@ -207,7 +207,10 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_DeserializeDuplicateKey(key, reader, state.JsonPath);
                 }
             }
-            else if (state.Current.IsImmutableDictionary || (state.Current.IsImmutableDictionaryProperty && !setPropertyDirectly))
+            else if (state.Current.IsIDictionaryConstructible ||
+                (state.Current.IsIDictionaryConstructibleProperty && !setPropertyDirectly) ||
+                state.Current.IsKeyValuePair ||
+                (state.Current.IsKeyValuePairProperty && !setPropertyDirectly))
             {
                 Debug.Assert(state.Current.TempDictionaryValues != null);
                 IDictionary dictionary = (IDictionary)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.TempDictionaryValues);
@@ -286,7 +289,7 @@ namespace System.Text.Json
                     ThrowHelper.ThrowJsonException_DeserializeDuplicateKey(key, reader, state.JsonPath);
                 }
             }
-            else if (state.Current.IsProcessingImmutableDictionary)
+            else if (state.Current.IsProcessingIDictionaryConstructibleOrKeyValuePair)
             {
                 Debug.Assert(state.Current.TempDictionaryValues != null);
                 IDictionary<string, TProperty> dictionary = (IDictionary<string, TProperty>)state.Current.TempDictionaryValues;
