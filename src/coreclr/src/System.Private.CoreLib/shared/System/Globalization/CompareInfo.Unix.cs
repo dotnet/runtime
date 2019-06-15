@@ -936,7 +936,7 @@ namespace System.Globalization
                 {
                     if (!s_sortNameToSortHandleCache.TryGetValue(sortName, out IntPtr result))
                     {
-                        var resultCode = Interop.Globalization.GetSortHandle(sortName, out result);
+                        Interop.Globalization.ResultCode resultCode = Interop.Globalization.GetSortHandle(sortName, out result);
 
                         if (resultCode == Interop.Globalization.ResultCode.OutOfMemory)
                             throw new OutOfMemoryException();
