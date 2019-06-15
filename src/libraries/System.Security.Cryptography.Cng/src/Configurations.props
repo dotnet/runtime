@@ -2,6 +2,7 @@
   <PropertyGroup>
     <PackageConfigurations>
       netstandard;
+      netstandard2.1;
       net461-Windows_NT;
       netcoreapp-Windows_NT;
       netcoreapp;

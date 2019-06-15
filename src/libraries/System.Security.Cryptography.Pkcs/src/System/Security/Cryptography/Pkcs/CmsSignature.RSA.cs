@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             internal override bool VerifySignature(
-#if netcoreapp
+#if netcoreapp || netstandard21
                 ReadOnlySpan<byte> valueHash,
                 ReadOnlyMemory<byte> signature,
 #else
@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 return publicKey.VerifyHash(
                     valueHash,
-#if netcoreapp
+#if netcoreapp || netstandard21
                     signature.Span,
 #else
                     signature,
@@ -123,7 +123,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             protected override bool Sign(
-#if netcoreapp
+#if netcoreapp || netstandard21
                 ReadOnlySpan<byte> dataHash,
 #else
                 byte[] dataHash,
@@ -151,7 +151,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 signatureAlgorithm = new Oid(Oids.Rsa, Oids.Rsa);
 
-#if netcoreapp
+#if netcoreapp || netstandard21
                 byte[] signature = new byte[privateKey.KeySize / 8];
 
                 bool signed = privateKey.TrySignHash(
@@ -176,7 +176,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
 #endif
                 signatureValue = privateKey.SignHash(
-#if netcoreapp
+#if netcoreapp || netstandard21
                     dataHash.ToArray(),
 #else
                     dataHash,
@@ -267,7 +267,7 @@ namespace System.Security.Cryptography.Pkcs
             }
 
             protected override bool Sign(
-#if netcoreapp
+#if netcoreapp || netstandard21
                 ReadOnlySpan<byte> dataHash,
 #else
                 byte[] dataHash,
