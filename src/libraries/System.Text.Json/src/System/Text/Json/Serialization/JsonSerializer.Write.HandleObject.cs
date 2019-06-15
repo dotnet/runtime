@@ -51,6 +51,7 @@ namespace System.Text.Json
         {
             Debug.Assert(
                 state.Current.JsonClassInfo.ClassType == ClassType.Object ||
+                state.Current.JsonClassInfo.ClassType == ClassType.KeyValuePair ||
                 state.Current.JsonClassInfo.ClassType == ClassType.Unknown);
 
             JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(state.Current.PropertyIndex);
@@ -105,9 +106,9 @@ namespace System.Text.Json
             }
 
             // A property that returns an immutable dictionary keeps the same stack frame.
-            if (jsonPropertyInfo.ClassType == ClassType.ImmutableDictionary)
+            if (jsonPropertyInfo.ClassType == ClassType.IDictionaryConstructible)
             {
-                state.Current.IsImmutableDictionaryProperty = true;
+                state.Current.IsIDictionaryConstructibleProperty = true;
 
                 bool endOfEnumerable = HandleDictionary(jsonPropertyInfo.ElementClassInfo, options, writer, ref state);
                 if (endOfEnumerable)
@@ -136,6 +137,13 @@ namespace System.Text.Json
 
                 // Set the PropertyInfo so we can obtain the property name in order to write it.
                 state.Current.JsonPropertyInfo = previousPropertyInfo;
+
+                if (state.Current.JsonPropertyInfo.ClassType == ClassType.KeyValuePair)
+                {
+                    // Advance to the next property, since the first one is the KeyValuePair type itself,
+                    // not its first property (Key or Value).
+                    state.Current.PropertyIndex++;
+                }
             }
             else
             {

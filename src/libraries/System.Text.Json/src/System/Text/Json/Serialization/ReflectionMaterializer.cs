@@ -4,7 +4,6 @@
 
 using System.Diagnostics;
 using System.Reflection;
-using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json
 {
@@ -33,7 +32,7 @@ namespace System.Text.Json
             }
 
             return createRange.CreateDelegate(
-                typeof(DefaultImmutableConverter.ImmutableCreateRangeDelegate<>).MakeGenericType(elementType), null);
+                typeof(JsonSerializerOptions.ImmutableCreateRangeDelegate<>).MakeGenericType(elementType), null);
         }
 
         public override object ImmutableDictionaryCreateRange(Type constructingType, Type elementType)
@@ -46,7 +45,7 @@ namespace System.Text.Json
             }
 
             return createRange.CreateDelegate(
-                typeof(DefaultImmutableConverter.ImmutableDictCreateRangeDelegate<,>).MakeGenericType(typeof(string), elementType), null);
+                typeof(JsonSerializerOptions.ImmutableDictCreateRangeDelegate<,>).MakeGenericType(typeof(string), elementType), null);
         }
     }
 }

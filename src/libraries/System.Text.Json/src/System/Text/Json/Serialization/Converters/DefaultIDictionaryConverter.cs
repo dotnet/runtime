@@ -3,19 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Text.Json.Serialization.Policies;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class DefaultIEnumerableConstructibleConverter : JsonEnumerableConverter
+    internal sealed class DefaultIDictionaryConverter : JsonDictionaryConverter
     {
-        public override IEnumerable CreateFromList(ref ReadStack state, IList sourceList, JsonSerializerOptions options)
+        public override IDictionary CreateFromDictionary(ref ReadStack state, IDictionary sourceDictionary, JsonSerializerOptions options)
         {
-            Type enumerableType = state.Current.JsonPropertyInfo.RuntimePropertyType;
+            Type dictionaryType = state.Current.JsonPropertyInfo.RuntimePropertyType;
             JsonClassInfo elementClassInfo = state.Current.JsonPropertyInfo.ElementClassInfo;
             JsonPropertyInfo propertyInfo = options.GetJsonPropertyInfoFromClassInfo(elementClassInfo, options);
-            return propertyInfo.CreateIEnumerableConstructibleType(enumerableType, sourceList);
+            return propertyInfo.CreateIDictionaryInstance(dictionaryType, sourceDictionary, state.JsonPath, options);
         }
     }
 }

@@ -11,7 +11,7 @@ namespace System.Text.Json
     {
         private static void HandleStartObject(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
         {
-            Debug.Assert(!state.Current.IsProcessingDictionary && !state.Current.IsProcessingImmutableDictionary);
+            Debug.Assert(!state.Current.IsProcessingDictionary && !state.Current.IsProcessingIDictionaryConstructibleOrKeyValuePair);
 
             if (state.Current.IsProcessingEnumerable)
             {
@@ -42,7 +42,7 @@ namespace System.Text.Json
                 }
             }
 
-            if (state.Current.IsProcessingImmutableDictionary)
+            if (state.Current.IsProcessingIDictionaryConstructibleOrKeyValuePair)
             {
                 state.Current.TempDictionaryValues = (IDictionary)classInfo.CreateObject();
             }
@@ -54,7 +54,7 @@ namespace System.Text.Json
 
         private static void HandleEndObject(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
         {
-            Debug.Assert(!state.Current.IsProcessingDictionary && !state.Current.IsProcessingImmutableDictionary);
+            Debug.Assert(!state.Current.IsProcessingDictionary && !state.Current.IsProcessingIDictionaryConstructibleOrKeyValuePair);
 
             state.Current.JsonClassInfo.UpdateSortedPropertyCache(ref state.Current);
 

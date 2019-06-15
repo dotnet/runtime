@@ -105,7 +105,7 @@ namespace System.Text.Json
                 value = (TProperty)polymorphicEnumerator.Current.Value;
                 key = polymorphicEnumerator.Current.Key;
             }
-            else if (current.IsImmutableDictionary || current.IsImmutableDictionaryProperty)
+            else if (current.IsIDictionaryConstructible || current.IsIDictionaryConstructibleProperty)
             {
                 value = (TProperty)((DictionaryEntry)current.Enumerator.Current).Value;
                 key = (string)((DictionaryEntry)current.Enumerator.Current).Key;

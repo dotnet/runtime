@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
@@ -19,6 +20,7 @@ namespace System.Text.Json
 
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
         private readonly ConcurrentDictionary<Type, JsonPropertyInfo> _objectJsonProperties = new ConcurrentDictionary<Type, JsonPropertyInfo>();
+        private static ConcurrentDictionary<string, object> s_createRangeDelegates = new ConcurrentDictionary<string, object>();
         private ClassMaterializer _classMaterializerStrategy;
         private JsonNamingPolicy _dictionayKeyPolicy;
         private JsonNamingPolicy _jsonPropertyNamingPolicy;
@@ -306,8 +308,16 @@ namespace System.Text.Json
             };
         }
 
+        internal delegate object ImmutableCreateRangeDelegate<T>(IEnumerable<T> items);
+        internal delegate object ImmutableDictCreateRangeDelegate<TKey, TValue>(IEnumerable<KeyValuePair<TKey, TValue>> items);
+
         internal JsonPropertyInfo GetJsonPropertyInfoFromClassInfo(JsonClassInfo classInfo, JsonSerializerOptions options)
         {
+            if (classInfo.ClassType == ClassType.KeyValuePair)
+            {
+                return classInfo.GetPolicyPropertyOfKeyValuePair();
+            }
+
             if (classInfo.ClassType != ClassType.Object)
             {
                 return classInfo.GetPolicyProperty();
@@ -323,6 +333,22 @@ namespace System.Text.Json
 
             return propertyInfo;
         }
+
+        internal bool CreateRangeDelegatesContainsKey(string key)
+        {
+            return s_createRangeDelegates.ContainsKey(key);
+        }
+
+        internal bool TryGetCreateRangeDelegate(string delegateKey, out object createRangeDelegate)
+        {
+            return s_createRangeDelegates.TryGetValue(delegateKey, out createRangeDelegate) && createRangeDelegate != null;
+        }
+
+        internal bool TryAddCreateRangeDelegate(string key, object createRangeDelegate)
+        {
+            return s_createRangeDelegates.TryAdd(key, createRangeDelegate);
+        }
+
 
         private void VerifyMutable()
         {
