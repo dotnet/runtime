@@ -36,10 +36,15 @@ if not defined __OutputDir goto Usage
 if not defined __Arch goto Usage 
 
 REM Check if the platform is supported
-if /i %__Arch% == "arm" (
+if /i "%__Arch%" == "arm" (
     echo No runtime dependencies for Arm32.
     exit /b 0
-    )
+)
+
+if /i "%__Arch%" == "arm64" (
+    echo No runtime dependencies for Arm64.
+    exit /b 0
+)
 
 REM =========================================================================================
 REM ===
