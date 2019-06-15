@@ -156,9 +156,13 @@ generate_layout()
     cp -r $__BinDir/* $CORE_ROOT/ > /dev/null
 
     if [ "$__BuildOS" != "OSX" ]; then
-        nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --outputDir=$CORE_ROOT"
+        nextCommand="\"$__TestDir/setup-stress-dependencies.sh\" --arch=$__BuildArch --outputDir=$CORE_ROOT"
         echo "Resolve runtime dependences via $nextCommand"
         eval $nextCommand
+        if [ $? != 0 ]; then
+            echo "${__MsgPrefix}Error: setup-stress-dependencies failed."
+            exit 1
+        fi
     fi
 
     # Precompile framework assemblies with crossgen if required
