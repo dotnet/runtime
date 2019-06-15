@@ -54,7 +54,7 @@
     </Compile>
     <Compile Include="Task\TaskDisposeTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="CancellationTokenTests.netcoreapp.cs" />
     <Compile Include="Task\TaskCanceledExceptionTests.netcoreapp.cs" />
     <Compile Include="Task\TaskStatusTest.netcoreapp.cs" />

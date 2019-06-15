@@ -49,7 +49,7 @@
     <Compile Include="AbortTest.cs" />
     <Compile Include="CancelTest.cs" />
     <Compile Include="ClientWebSocketOptionsTests.cs" />
-    <Compile Include="ClientWebSocketOptionsTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="ClientWebSocketOptionsTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="ClientWebSocketTestBase.cs" />
     <Compile Include="ClientWebSocketUnitTest.cs" />
     <Compile Include="CloseTest.cs" />
@@ -58,12 +58,12 @@
     <Compile Include="KeepAliveTest.cs" />
     <Compile Include="LoopbackHelper.cs" />
     <Compile Include="ResourceHelper.cs" />
-    <Compile Include="SendReceiveTest.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="SendReceiveTest.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="SendReceiveTest.cs" />
     <Compile Include="WebSocketData.cs" />
     <Compile Include="WebSocketHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(NuGetPackageRoot)system.net.testdata\1.0.2\content\**\*.*" DestinationDir="TestData" />
+    <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataPackageVersion)" />
   </ItemGroup>
 </Project>

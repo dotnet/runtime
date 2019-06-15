@@ -3,28 +3,28 @@
     <ProjectGuid>{BF4F9507-8FBD-45EA-81C9-3ED89C052C91}</ProjectGuid>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="System\IO\IsolatedStorage\IdentityTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageBaseClassTests.cs" />
     <Compile Include="System\IO\IsolatedStorage\IsolatedStorageFileStreamTests.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
+  <ItemGroup Condition="'$(TargetsUap)' != 'true'">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32Unix.cs">
       <Link>Internals\Helper.Win32Unix.cs</Link>
     </Compile>
     <Compile Include="System\IO\IsolatedStorage\HelperTests.Win32Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'uap' AND '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUap)' != 'true' AND '$(TargetsWindows)' == 'true'">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Win32.cs">
       <Link>Internals\Helper.Win32.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'uap' AND '$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUap)' != 'true' AND '$(TargetsUnix)' == 'true'">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.Unix.cs">
       <Link>Internals\Helper.Unix.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="'$(TargetsUap)' == 'true'">
     <Compile Include="..\src\System\IO\IsolatedStorage\Helper.WinRT.cs">
       <Link>Internals\Helper.WinRT.cs</Link>
     </Compile>
@@ -65,7 +65,7 @@
     <Compile Include="System\IO\IsolatedStorage\TestHelper.cs" />
     <Compile Include="System\IO\IsolatedStorage\RemoveTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="'$(TargetsUap)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
   </ItemGroup>

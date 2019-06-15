@@ -1,11 +1,12 @@
 <Project>
   <Import Project="..\Directory.Build.props" />
+
   <PropertyGroup>
-    <ContainsPackageReferences>true</ContainsPackageReferences>
     <!-- We need configuration-specific assets files. -->
     <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
     <ProjectAssetsFile>$(RestoreOutputPath)/project.assets.json</ProjectAssetsFile>
     <MSBuildProjectExtensionsPath>$(IntermediateOutputPath)</MSBuildProjectExtensionsPath>
+    <SkipDeriveTargetFrameworks>true</SkipDeriveTargetFrameworks>
     <!-- let us control the output path -->
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>

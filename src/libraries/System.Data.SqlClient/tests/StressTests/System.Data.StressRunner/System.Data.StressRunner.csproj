@@ -3,12 +3,8 @@
     <ProjectGuid>{529B187A-DE4F-4F4D-9FBB-D3D416FDB683}</ProjectGuid>
     <RootNamespace>DPStressHarness</RootNamespace>
     <OutputType>Exe</OutputType>
-    <!-- Don't attempt to publish for any runtime.  
-         Though this is an EXE it is built as netstandard and will be 
-         published for a specific framework/runtime by a referencing project. -->
-    <CopyNuGetImplementations>false</CopyNuGetImplementations>
     <NoWarn>3021</NoWarn>
-    <Configurations>netstandard-Unix-Debug;netstandard-Unix-Release;netstandard-Windows_NT-Debug;netstandard-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\IMonitorLoader\IMonitorLoader.csproj" />

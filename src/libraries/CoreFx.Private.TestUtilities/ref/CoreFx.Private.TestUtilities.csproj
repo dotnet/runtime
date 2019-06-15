@@ -2,19 +2,20 @@
   <PropertyGroup>
     <ProjectGuid>{E2E59C98-998F-9965-991D-99411166AF6F}</ProjectGuid>
     <ShouldWriteSigningRequired>false</ShouldWriteSigningRequired>
-    <AllowReferenceFromRuntime>true</AllowReferenceFromRuntime>
-    <RuntimeProjectFile>$(RepoRoot)\external\test-runtime\XUnit.Runtime.depproj</RuntimeProjectFile>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CoreFx.Private.TestUtilities.cs" />
-    <ReferenceFromRuntime Include="xunit.core" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">
     <Compile Include="CoreFx.Private.TestUtilities.netcoreapp.cs" />
     <ProjectReference Include="..\..\System.Collections\ref\System.Collections.csproj" />
     <ProjectReference Include="..\..\System.Diagnostics.Process\ref\System.Diagnostics.Process.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
+    <PackageReference Include="xunit.core" Version="$(XUnitPackageVersion)" ExcludeAssets="build" />
   </ItemGroup>
 </Project>

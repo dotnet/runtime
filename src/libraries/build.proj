@@ -19,11 +19,18 @@
 
   <Target Name="Restore" DependsOnTargets="GenerateConfigurationProps">
     <ItemGroup>
-      <_RestoreProjects Include="external\dir.proj" />
+      <_RestoreProjects Include="external\dir.proj" Build="true" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+      <_RestoreProjects Include="$(SourceDir)tests.proj" Build="false" />
+      <!-- Remove when ref and src project restore is enabled. -->
+      <_RestoreProjects Include="$(SourceDir)CoreFx.Private.TestUtilities\ref\CoreFx.Private.TestUtilities.csproj" Build="false" />
+      <_RestoreProjects Include="$(SourceDir)CoreFx.Private.TestUtilities\src\CoreFx.Private.TestUtilities.csproj" Build="false" />
     </ItemGroup>
 
-    <MSBuild Projects="@(_RestoreProjects)" Properties="$(ProjectProperties);DefaultBuildAllTarget=Restore" />
-    <MSBuild Projects="@(_RestoreProjects)" Properties="$(ProjectProperties)" />
+    <MSBuild Projects="@(_RestoreProjects)" Targets="Restore" Properties="$(ProjectProperties)" />
+    <MSBuild Projects="@(_RestoreProjects)" Condition="'%(Build)' != 'false'" Properties="$(ProjectProperties)" />
   </Target>
 
   <Target Name="BuildNative">
@@ -44,42 +51,22 @@
 
   <Target Name="BuildTests">
     <ItemGroup>
-      <_TestProjects Include="src\tests.builds" />
+      <_TestProjects Include="src\tests.proj" />
     </ItemGroup>
 
     <MSBuild Projects="@(_TestProjects)"
-             Targets="BuildAllProjects"
-             Properties="$(ProjectProperties);BuildTests=true" />
+             Targets="Build"
+             Properties="$(ProjectProperties)" />
   </Target>
 
   <Target Name="Test">
     <ItemGroup>
-      <_TestProjects Include="src\tests.builds" />
+      <_TestProjects Include="src\tests.proj" />
     </ItemGroup>
 
     <MSBuild Projects="@(_TestProjects)"
-             Targets="TestAllProjects"
-             Properties="$(ProjectProperties);Test=true" />
-  </Target>
-
-  <Target Name="IntegrationTest">
-    <ItemGroup>
-      <_TestProjects Include="src\tests.builds" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(_TestProjects)"
-             Targets="TestAllProjects"
-             Properties="$(ProjectProperties);IntegrationTest=true" />
-  </Target>
-
-  <Target Name="PerformanceTest">
-    <ItemGroup>
-      <_TestProjects Include="src\tests.builds" />
-    </ItemGroup>
-
-    <MSBuild Projects="@(_TestProjects)"
-             Targets="TestAllProjects"
-             Properties="$(ProjectProperties);PerformanceTest=true" />
+             Targets="Test"
+             Properties="$(ProjectProperties)" />
   </Target>
 
   <Target Name="Pack">
@@ -92,16 +79,7 @@
 
   <Target Name="Build" DependsOnTargets="$(BuildDependsOn)" />
 
-  <Target Name="Clean">
-    <RemoveDir Directories="$(ArtifactsObjDir)" />
-    <RemoveDir Directories="$(ArtifactsBinDir)" />
-    <RemoveDir Directories="$(ArtifactsPackagesDir)" />
-  </Target>
-
   <Target Name="Rebuild" DependsOnTargets="Clean;Build" />
-
-  <!-- Hook that can be used to insert custom build tasks to the build process such as setup and/or cleanup tasks -->
-  <Import Project="build.override.targets" Condition="Exists('build.override.targets')" />
 
   <!-- set up inputs for UpdateVSConfigurations in a target to avoid globbing all the time -->
   <Target Name="_setProjectsToUpdate" BeforeTargets="UpdateVSConfigurations">
@@ -115,6 +93,5 @@
     </ItemGroup>
   </Target>
 
-  <!-- Define an empty Execute target for Arcade's publish to BAR finds it: https://github.com/dotnet/arcade/issues/1452 -->
-  <Target Name="Execute" />
+  <Import Project="$(RepositoryEngineeringDir)restore\uap-tools.targets" />
 </Project>

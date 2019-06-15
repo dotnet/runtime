@@ -33,7 +33,7 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="FileSystemTest.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="File\AppendAsync.cs" />
 	<Compile Include="File\Move.netcoreapp.cs" />
     <Compile Include="File\ReadWriteAllLinesAsync.cs" />
@@ -176,7 +176,7 @@
       <Link>Common\System\IO\PathFeatures.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="'$(TargetsUap)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="Windows" />
   </ItemGroup>

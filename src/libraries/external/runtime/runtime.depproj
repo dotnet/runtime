@@ -4,15 +4,19 @@
     <NoWarn>$(NoWarn);NU1603;NU1605</NoWarn>
     <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' AND ('$(ConfigurationGroup)' == 'Debug' OR '$(Coverage)' == 'true')">true</SwapNativeForIL>
     <!-- uap10.0.16299 is missing IL -->
-    <SwapNativeForIL Condition="'$(TargetGroup)'=='uap10.0.16299'">false</SwapNativeForIL>
+    <SwapNativeForIL Condition="'$(TargetFramework)'=='uap10.0.16299'">false</SwapNativeForIL>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+    <PackageReference Include="Microsoft.DiaSymReader.Native" Version="1.7.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsPackageVersion)" />
     <PackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR">
       <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
       <!-- Following is version used in release/uwp6.0 -->
-      <Version Condition="'$(TargetGroup)'=='uap10.0.16299'">2.1.0-b-uwp6-25707-02</Version>
+      <Version Condition="'$(TargetFramework)'=='uap10.0.16299'">2.1.0-b-uwp6-25707-02</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.TestHost" Version="$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)" />
     <PackageReference Include="runtime.native.System.Data.SqlClient.sni" Version="$(RuntimeNativeSystemDataSqlClientSniPackageVersion)" />

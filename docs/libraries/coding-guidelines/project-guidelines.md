@@ -22,7 +22,6 @@ once before you can iterate and work on a given library project.
 - build-test.cmd cannot be ran successfully until build.cmd has been ran at least once for a `BuildConfiguration`.
 - Build src\tests.builds which builds all applicable test projects. For test project information see [tests](#tests).
 - The build pass will happen twice. Once for the specific `$(BuildConfiguration)` and once for netstandard. That way we run both sets of applicable tests against for the given `$(BuildConfiguration)`.
-- TODO: Currently as part of src/post.builds we call CloudBuild.targets which sets up our test runs. This needs to be moved to be part of build-test.cmd now.
 
 ## Behind the scenes with build-packages.cmd/sh
 - build-packages.cmd cannot be run successfully until build.cmd has been ran at least once for a BuildConfiguration.

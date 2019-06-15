@@ -8,7 +8,7 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <DefaultReferenceExclusions Include="System.Diagnostics.Debug" />
     <DefaultReferenceExclusions Include="System.Runtime.Extensions" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
@@ -23,7 +23,7 @@
     <Compile Include="EmptyAttributeTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="DebuggerTests.cs" />
     <Compile Include="DebugTests.cs" />
     <Compile Include="DebugTestsNoListeners.cs" />

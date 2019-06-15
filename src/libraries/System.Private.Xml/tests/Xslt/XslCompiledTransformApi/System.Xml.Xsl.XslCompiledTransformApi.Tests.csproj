@@ -15,10 +15,12 @@
     <Compile Include="XsltSettings.cs" />
     <Compile Include="XunitAssemblyAttribute.cs" />
     <Compile Include="XslCompiledTransform.cs" />
-    <SupplementalTestData Include="..\TestFiles\**\*.*">
-      <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <DestinationDir>TestFiles\%(RecursiveDir)</DestinationDir>
-    </SupplementalTestData>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\TestFiles\**\*"
+          Link="TestFiles\%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest"
+          Visible="false" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />

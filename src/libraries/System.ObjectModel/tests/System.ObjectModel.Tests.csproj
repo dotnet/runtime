@@ -43,7 +43,7 @@
       <Link>Common\System\Diagnostics\DebuggerAttributes.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="KeyedCollection\TestMethods.netcoreapp.cs" />
     <Compile Include="System\Collections\ObjectModel\KeyedCollectionTests.netcoreapp.cs" />
     <Compile Include="System\Windows\Markup\ValueSerializerAttributeTests.cs" />

@@ -1,4 +1,7 @@
 ﻿<Project>
+  <PropertyGroup>
+    <EnableProjectRestore Condition="'$(MSBuildProjectExtension)' == '.csproj'">true</EnableProjectRestore>
+  </PropertyGroup>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
     <AssemblyVersion>1.0.1.0</AssemblyVersion>

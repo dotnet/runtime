@@ -33,9 +33,9 @@
     <Compile Include="WindowAndCursorProps.cs" />
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(MSBuildThisFileDirectory)TestData\**\*.*">
-      <Link>%(RecursiveDir)%(Filename)%(Extension)</Link>
-    </SupplementalTestData>
+    <None Include="$(MSBuildThisFileDirectory)TestData\**\*"
+          Link="%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="ConsoleEncoding.Windows.cs" />
@@ -49,8 +49,5 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.cs">
       <Link>Interop\Unix\System.Native\Interop.Fcntl.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="ncursesFormats\" />
   </ItemGroup>
 </Project>
