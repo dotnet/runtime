@@ -33,12 +33,10 @@
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
 set COMPlus_GcStressOnDirectCalls=1
-set COMPlus_GcStress=0xc
 ]]></CLRTestBatchPreCommands>
   <BashCLRTestPreCommands><![CDATA[
 $(BashCLRTestPreCommands)
 export COMPlus_GcStressOnDirectCalls=1
-export COMPlus_GcStress=0xc
 ]]></BashCLRTestPreCommands>
   </PropertyGroup>
   <ItemGroup>
