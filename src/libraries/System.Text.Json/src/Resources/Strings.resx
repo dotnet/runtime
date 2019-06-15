@@ -344,9 +344,6 @@
   <data name="DeserializeDuplicateKey" xml:space="preserve">
     <value>An item with the same property name '{0}' has already been added.</value>
   </data>
-  <data name="DeserializeTypeNotSupported" xml:space="preserve">
-    <value>Deserialization of type {0} is not supported.</value>
-  </data>
   <data name="SerializationDataExtensionPropertyInvalid" xml:space="preserve">
     <value>The data extension property '{0}.{1}' does not match the required signature of IDictionary&lt;string, JsonElement&gt; or IDictionary&lt;string, object&gt;.</value>
   </data>

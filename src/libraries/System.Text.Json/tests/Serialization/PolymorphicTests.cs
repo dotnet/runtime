@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using Xunit;
@@ -95,39 +96,67 @@ namespace System.Text.Json.Serialization.Tests
             json = JsonSerializer.ToString<object>(list);
             Assert.Equal(ExpectedJson, json);
 
-            IEnumerable<object> ienumerable = new List<object> { 1, true, address, null, "foo" };
+            IEnumerable ienumerable = new List<object> { 1, true, address, null, "foo" };
             json = JsonSerializer.ToString(ienumerable);
             Assert.Equal(ExpectedJson, json);
 
             json = JsonSerializer.ToString<object>(ienumerable);
             Assert.Equal(ExpectedJson, json);
 
-            IList<object> ilist = new List<object> { 1, true, address, null, "foo" };
+            IList ilist = new List<object> { 1, true, address, null, "foo" };
             json = JsonSerializer.ToString(ilist);
             Assert.Equal(ExpectedJson, json);
 
             json = JsonSerializer.ToString<object>(ilist);
             Assert.Equal(ExpectedJson, json);
 
-            ICollection<object> icollection = new List<object> { 1, true, address, null, "foo" };
+            ICollection icollection = new List<object> { 1, true, address, null, "foo" };
             json = JsonSerializer.ToString(icollection);
             Assert.Equal(ExpectedJson, json);
 
             json = JsonSerializer.ToString<object>(icollection);
             Assert.Equal(ExpectedJson, json);
 
-            IReadOnlyCollection<object> ireadonlycollection = new List<object> { 1, true, address, null, "foo" };
-            json = JsonSerializer.ToString(ireadonlycollection);
+            IEnumerable<object> genericIEnumerable = new List<object> { 1, true, address, null, "foo" };
+            json = JsonSerializer.ToString(genericIEnumerable);
             Assert.Equal(ExpectedJson, json);
 
-            json = JsonSerializer.ToString<object>(ireadonlycollection);
+            json = JsonSerializer.ToString<object>(genericIEnumerable);
             Assert.Equal(ExpectedJson, json);
 
-            IReadOnlyList<object> ireadonlylist = new List<object> { 1, true, address, null, "foo" };
-            json = JsonSerializer.ToString(ireadonlylist);
+            IList<object> genericIList = new List<object> { 1, true, address, null, "foo" };
+            json = JsonSerializer.ToString(genericIList);
             Assert.Equal(ExpectedJson, json);
 
-            json = JsonSerializer.ToString<object>(ireadonlylist);
+            json = JsonSerializer.ToString<object>(genericIList);
+            Assert.Equal(ExpectedJson, json);
+
+            ICollection<object> genericICollection = new List<object> { 1, true, address, null, "foo" };
+            json = JsonSerializer.ToString(genericICollection);
+            Assert.Equal(ExpectedJson, json);
+
+            json = JsonSerializer.ToString<object>(genericICollection);
+            Assert.Equal(ExpectedJson, json);
+
+            IReadOnlyCollection<object> genericIReadOnlyCollection = new List<object> { 1, true, address, null, "foo" };
+            json = JsonSerializer.ToString(genericIReadOnlyCollection);
+            Assert.Equal(ExpectedJson, json);
+
+            json = JsonSerializer.ToString<object>(genericIReadOnlyCollection);
+            Assert.Equal(ExpectedJson, json);
+
+            IReadOnlyList<object> genericIReadonlyList = new List<object> { 1, true, address, null, "foo" };
+            json = JsonSerializer.ToString(genericIReadonlyList);
+            Assert.Equal(ExpectedJson, json);
+
+            json = JsonSerializer.ToString<object>(genericIReadonlyList);
+            Assert.Equal(ExpectedJson, json);
+
+            ISet<object> iset = new HashSet<object> { 1, true, address, null, "foo" };
+            json = JsonSerializer.ToString(iset);
+            Assert.Equal(ExpectedJson, json);
+
+            json = JsonSerializer.ToString<object>(iset);
             Assert.Equal(ExpectedJson, json);
 
             Stack<object> stack = new Stack<object>(new List<object> { 1, true, address, null, "foo" });
@@ -259,11 +288,15 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Contains(@"""Address"":{""City"":""MyCity""}", json);
                 Assert.Contains(@"""List"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""Array"":[""Hello"",""Again""]", json);
+                Assert.Contains(@"""IEnumerable"":[""Hello"",""World""]", json);
+                Assert.Contains(@"""IList"":[""Hello"",""World""]", json);
+                Assert.Contains(@"""ICollection"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""IEnumerableT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""IListT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""ICollectionT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""IReadOnlyCollectionT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""IReadOnlyListT"":[""Hello"",""World""]", json);
+                Assert.Contains(@"""ISetT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""StackT"":[""World"",""Hello""]", json);
                 Assert.Contains(@"""QueueT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""HashSetT"":[""Hello"",""World""]", json);

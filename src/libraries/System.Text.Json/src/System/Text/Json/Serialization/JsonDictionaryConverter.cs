@@ -6,8 +6,8 @@ using System.Collections;
 
 namespace System.Text.Json.Serialization.Policies
 {
-    internal abstract class JsonEnumerableConverter
+    internal abstract class JsonDictionaryConverter
     {
-        public abstract IEnumerable CreateFromList(ref ReadStack state, IList sourceList, JsonSerializerOptions options);
+        public abstract IDictionary CreateFromDictionary(ref ReadStack state, IDictionary sourceDictionary, JsonSerializerOptions options);
     }
 }

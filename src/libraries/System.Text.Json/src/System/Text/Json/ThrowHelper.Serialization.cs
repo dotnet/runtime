@@ -42,6 +42,13 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static JsonException GetJsonException_DeserializeUnableToConvertValue(Type propertyType, string path)
+        {
+            string message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType) + $" Path: {path}.";
+            return new JsonException(message, path, null, null);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_DeserializeCannotBeNull(in Utf8JsonReader reader, string path)
         {
             ThowJsonException(SR.DeserializeCannotBeNull, in reader, path);
