@@ -12,7 +12,7 @@ internal static partial class Interop
     internal static partial class Globalization
     {
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_GetSortHandle")]
-        internal static extern unsafe ResultCode GetSortHandle(byte[] localeName, out IntPtr sortHandle);
+        internal static extern unsafe ResultCode GetSortHandle(string localeName, out IntPtr sortHandle);
 
         [DllImport(Libraries.GlobalizationNative, CharSet = CharSet.Unicode, EntryPoint = "GlobalizationNative_CloseSortHandle")]
         internal static extern unsafe void CloseSortHandle(IntPtr handle);
