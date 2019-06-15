@@ -936,7 +936,12 @@ namespace System.Globalization
                 {
                     if (!s_sortNameToSortHandleCache.TryGetValue(sortName, out IntPtr result))
                     {
-                        result = GetSortHandle(sortName);
+                        var resultCode = Interop.Globalization.GetSortHandle(sortName, out result);
+
+                        if (resultCode == Interop.Globalization.ResultCode.OutOfMemory)
+                            throw new OutOfMemoryException();
+                        else if (resultCode != Interop.Globalization.ResultCode.Success)
+                            throw new ExternalException(SR.Arg_ExternalException);
 
                         try
                         {
@@ -952,33 +957,6 @@ namespace System.Globalization
 
                     return result;
                 }
-            }
-
-            private static IntPtr GetSortHandle(string sortName)
-            {
-                switch(Interop.Globalization.GetSortHandle(GetNullTerminatedUtf8String(sortName), out IntPtr sortHandle))
-                {
-                    case Interop.Globalization.ResultCode.Success:
-                        return sortHandle;
-                    case Interop.Globalization.ResultCode.OutOfMemory:
-                        throw new OutOfMemoryException();
-                    default:
-                        throw new ExternalException(SR.Arg_ExternalException);
-                }
-            }
-
-            private static byte[] GetNullTerminatedUtf8String(string s)
-            {
-                int byteLen = System.Text.Encoding.UTF8.GetByteCount(s);
-
-                // Allocate an extra byte (which defaults to 0) as the null terminator.
-                byte[] buffer = new byte[byteLen + 1];
-
-                int bytesWritten = System.Text.Encoding.UTF8.GetBytes(s, 0, s.Length, buffer, 0);
-
-                Debug.Assert(bytesWritten == byteLen);
-
-                return buffer;
             }
         }
 
