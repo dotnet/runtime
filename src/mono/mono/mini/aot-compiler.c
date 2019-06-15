@@ -13248,7 +13248,37 @@ static MonoMethodSignature * const * const interp_in_static_sigs [] = {
     &mono_icall_sig_void_uint32_ptrref,
     &mono_icall_sig_void,
 };
+#else
+// Common signatures for which we use interp in wrappers even in fullaot + trampolines mode
+// for increased performance
+static MonoMethodSignature *const * const interp_in_static_common_sigs [] = {
+	&mono_icall_sig_void,
+	&mono_icall_sig_ptr,
+	&mono_icall_sig_void_ptr,
+	&mono_icall_sig_ptr_ptr,
+	&mono_icall_sig_void_ptr_ptr,
+	&mono_icall_sig_ptr_ptr_ptr,
+	&mono_icall_sig_void_ptr_ptr_ptr,
+	&mono_icall_sig_ptr_ptr_ptr_ptr,
+	&mono_icall_sig_void_ptr_ptr_ptr_ptr,
+	&mono_icall_sig_ptr_ptr_ptr_ptr_ptr,
+	&mono_icall_sig_void_ptr_ptr_ptr_ptr_ptr,
+	&mono_icall_sig_ptr_ptr_ptr_ptr_ptr_ptr,
+	&mono_icall_sig_void_ptr_ptr_ptr_ptr_ptr_ptr,
+	&mono_icall_sig_ptr_ptr_ptr_ptr_ptr_ptr_ptr,
+};
 #endif
+
+static void
+add_interp_in_wrapper_for_sig (MonoAotCompile *acfg, MonoMethodSignature *sig)
+{
+	MonoMethod *wrapper;
+
+	sig = mono_metadata_signature_dup_full (mono_get_corlib (), sig);
+	sig->pinvoke = FALSE;
+	wrapper = mini_get_interp_in_wrapper (sig);
+	add_method (acfg, wrapper);
+}
 
 int
 mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options, gpointer **global_aot_state)
@@ -13551,13 +13581,11 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 		add_method (acfg, wrapper);
 
 #ifndef MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE
-		for (int i = 0; i < G_N_ELEMENTS (interp_in_static_sigs); i++) {
-			MonoMethodSignature *sig = *interp_in_static_sigs [i];
-			sig = mono_metadata_signature_dup_full (mono_get_corlib (), sig);
-			sig->pinvoke = FALSE;
-			wrapper = mini_get_interp_in_wrapper (sig);
-			add_method (acfg, wrapper);
-		}
+		for (int i = 0; i < G_N_ELEMENTS (interp_in_static_sigs); i++)
+			add_interp_in_wrapper_for_sig (acfg, *interp_in_static_sigs [i]);
+#else
+		for (int i = 0; i < G_N_ELEMENTS (interp_in_static_common_sigs); i++)
+			add_interp_in_wrapper_for_sig (acfg, *interp_in_static_common_sigs [i]);
 #endif
 
 		/* required for mixed mode */
