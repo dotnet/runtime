@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
-  <Import Project="dir.common.props" />
+  <!-- dir.common.props is imported by Directory.Build.props when building with Arcade -->
+  <Import Project="dir.common.props" Condition="'$(ArcadeBuild)' != 'true'" />
 
   <!-- [ARCADE REMOVE] This entire file can be removed. Properties set by this file should be moved into
        dir.common.props and Directory.Build.props as appropriate and projects should stop importing this. -->
