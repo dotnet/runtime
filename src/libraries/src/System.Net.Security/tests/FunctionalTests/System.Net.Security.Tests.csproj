@@ -157,6 +157,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(NuGetPackageRoot)system.net.testdata\1.0.2\content\**\*.*" DestinationDir="TestData" />
+    <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataPackageVersion)" />
   </ItemGroup>
 </Project>

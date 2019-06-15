@@ -92,7 +92,7 @@
       <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="CngPkcs8Tests.cs" />
     <Compile Include="DSACngPkcs8Tests.cs" />
     <Compile Include="DSACngProvider.cs" />

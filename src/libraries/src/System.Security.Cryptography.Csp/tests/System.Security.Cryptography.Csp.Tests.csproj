@@ -39,7 +39,7 @@
       <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="AesCryptoServiceProviderTests.cs" />
     <Compile Include="DESCryptoServiceProviderProvider.cs" />
     <Compile Include="DESCryptoServiceProviderTests.cs" />

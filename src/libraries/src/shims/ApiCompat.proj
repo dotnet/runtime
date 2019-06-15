@@ -8,10 +8,10 @@
     <ApiCompatBaselineIgnoreFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netfx461.ignore.txt</ApiCompatBaselineIgnoreFile>
     <ApiCompatNSBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandard.txt</ApiCompatNSBaselineFile>
     <ApiCompatNSOnlyBaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.$(TargetGroup).netstandardOnly.txt</ApiCompatNSOnlyBaselineFile>
-    <ApiCompatImplementationDirs>$(RefPath)</ApiCompatImplementationDirs>
+    <ApiCompatImplementationDirs>$(RefPath.TrimEnd('\/'))</ApiCompatImplementationDirs>
     <!-- If we are targeting uap run ApiCompat against the implementation assemblies instead since they don't match the reference assemblies -->
     <!-- also include $(RefPath) last to pick up windows.winmd dependency, which we don't place in RuntimePath -->
-    <ApiCompatImplementationDirs Condition="'$(TargetsUap)' == 'true'">$(RuntimePath),$(RefPath)</ApiCompatImplementationDirs>
+    <ApiCompatImplementationDirs Condition="'$(TargetsUap)' == 'true'">$(RuntimePath.TrimEnd('\/')),$(RefPath.TrimEnd('\/'))</ApiCompatImplementationDirs>
     <!-- Set to true to build this project -->
     <!-- Separate property otherwise /p:BaselineApiCompat=true would force it to run even for non-UAP -->
     <BaselineApiCompat Condition="'$(BaselineApiCompat)' == ''">false</BaselineApiCompat>
@@ -55,7 +55,7 @@
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netfx to $(TargetGroup)" />
 
     <PropertyGroup>
-      <NETStandard21OnlyRef>$(NetStandard21RefPath)/netstandard.dll</NETStandard21OnlyRef>
+      <NETStandard21OnlyRef>$(NetStandard21RefPath)netstandard.dll</NETStandard21OnlyRef>
     </PropertyGroup>
 
     <Exec Command="$(_ApiCompatCommand) &quot;$(NETStandard21OnlyRef)&quot; @&quot;$(ApiCompatResponseFile)&quot; --baseline $(ApiCompatNSOnlyBaselineFile)"
@@ -69,7 +69,7 @@
     <Error Condition="'$(ApiCompatExitCode)' != '0'" Text="ApiCompat failed comparing netstandard.dll to $(TargetGroup)" />
 
     <!-- TODO: Once the repo targets netstandard2.1, have this instance of APICompat run against NetStandard21RefPath -->
-    <Exec Command="$(_ApiCompatCommand) &quot;$(NetStandardRefPath)&quot; --baseline &quot;$(ApiCompatNSBaselineFile)&quot; @&quot;$(ApiCompatResponseFile)&quot;"
+    <Exec Command="$(_ApiCompatCommand) &quot;$(NetStandardRefPath.TrimEnd('\/'))&quot; --baseline &quot;$(ApiCompatNSBaselineFile)&quot; @&quot;$(ApiCompatResponseFile)&quot;"
           CustomErrorRegularExpression="^[a-zA-Z]+ :"
           StandardOutputImportance="Low"
           IgnoreExitCode="true"

@@ -13,13 +13,13 @@
     <AnalyzerPropsFile>$(ArtifactsToolsetDir)Common\Tools.Analyzers.props</AnalyzerPropsFile>
   </PropertyGroup>
 
+  <Import Project="Analyzers.props" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+
   <!-- source-built packages -->
   <ItemGroup>
     <!-- arcade -->
     <PackageReference Include="Microsoft.DotNet.GenFacades" Version="$(MicrosoftDotNetGenFacadesPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
-    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Configuration" Version="$(MicrosoftDotNetBuildTasksConfigurationPackageVersion)" />
-    <PackageReference Include="Microsoft.DotNet.CodeAnalysis" Version="$(MicrosoftDotNetCodeAnalysisPackageVersion)" />
 
     <!-- roslyn -->
     <PackageReference Include="Microsoft.Net.Compilers.Toolset" Version="$(MicrosoftNetCompilersToolsetVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
@@ -35,7 +35,6 @@
   <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
     <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Feed" Version="$(MicrosoftDotNetBuildTasksFeedPackageVersion)" />
-    <PackageReference Include="Microsoft.DotNet.CoreFxTesting" Version="$(MicrosoftDotNetCoreFxTestingPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksPackageVersion)" />
     
     <!-- Symbol publishing -->
@@ -45,13 +44,8 @@
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
     <PackageReference Include="Microsoft.SourceLink.Vsts.Git" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
 
-    <!-- analyzers -->
-    <PackageReference Include="Desktop.Analyzers" Version="1.1.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="2.9.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" Version="1.1.0" />
-    <PackageReference Include="System.Runtime.Analyzers" Version="1.1.0" />
-    <PackageReference Include="System.Runtime.InteropServices.Analyzers" Version="1.1.0" />
-    <PackageReference Include="System.Security.Cryptography.Hashing.Algorithms.Analyzers" Version="1.1.0" />
+    <!-- UWP test tools -->
+    <PackageReference Include="Microsoft.DotNet.UAP.TestTools" Version="$(MicrosoftDotNetUapTestToolsPackageVersion)" Condition="$(TargetGroup.StartsWith('uap'))" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
   <UsingTask TaskName="Microsoft.DotNet.Arcade.Sdk.SaveItems" AssemblyFile="$(ArcadeSdkBuildTasksAssembly)" />
@@ -66,5 +60,9 @@
                File="$(AnalyzerPropsFile)" />
 
   </Target>
+
+  <Import Project="$(RepositoryEngineeringDir)restore\docs.targets" Condition="'$(DotNetBuildFromSource)' != 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\optimizationData.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(EnableNgenOptimization)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)restore\illink.targets" Condition="'$(ILLinkTrimAssembly)' != 'false'" />
 
 </Project>

@@ -22,12 +22,12 @@ From within the utility directory, run the utility with the arguments:
 
 For example:
 ```
-dotnet run d:\output "d:\repos\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\9.9.9" "d:\repos\corefx\artifacts\bin\System.Runtime.Tests\netcoreapp-Windows_NT-Debug\System.Runtime.Tests.dll"
+dotnet run d:\output "d:\repos\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\3.0.0" "d:\repos\corefx\artifacts\bin\System.Runtime.Tests\netcoreapp-Windows_NT-Debug\System.Runtime.Tests.dll"
 ```
 This will run the tool and result in output written to the console like:
 ```
 3/27/2019 10:55:37 PM | Test assembly path    : d:\repos\corefx\artifacts\bin\System.Runtime.Tests\netcoreapp-Windows_NT-Debug\System.Runtime.Tests.dll
-3/27/2019 10:55:37 PM | Helper assemblies path: d:\repos\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\9.9.9\
+3/27/2019 10:55:37 PM | Helper assemblies path: d:\repos\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Debug-x64\shared\Microsoft.NETCore.App\3.0.0\
 3/27/2019 10:55:37 PM | Output path           : d:\output\System.Runtime.Tests\
 3/27/2019 10:55:37 PM | Xunit arguments       : d:\repos\corefx\artifacts\bin\System.Runtime.Tests\netcoreapp-Windows_NT-Debug\System.Runtime.Tests.dll -notrait category=nonnetcoreapptests -notrait category=nonwindowstests -notrait category=IgnoreForCI -notrait category=failing -notrait category=OuterLoop
 3/27/2019 10:55:37 PM |

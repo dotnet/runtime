@@ -20,7 +20,7 @@
     <Compile Include="SymmetricAlgorithm\Minimal.cs" />
     <Compile Include="SymmetricAlgorithm\Trivial.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="CryptoStream.netcoreapp.cs" />
     <Compile Include="FixedTimeEqualsTests.cs" />
     <Compile Include="HashAlgorithmTest.netcoreapp.cs" />

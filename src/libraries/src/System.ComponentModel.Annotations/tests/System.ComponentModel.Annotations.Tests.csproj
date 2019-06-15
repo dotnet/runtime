@@ -17,7 +17,7 @@
     <Compile Include="System\ComponentModel\DataAnnotations\DataTypeAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DisplayColumnAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttributeTests.cs" />
-    <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttributeTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="System\ComponentModel\DataAnnotations\DisplayFormatAttributeTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="System\ComponentModel\DataAnnotations\EditableAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\EmailAddressAttributeTests.cs" />
     <Compile Include="System\ComponentModel\DataAnnotations\EnumDataTypeAttributeTests.cs" />

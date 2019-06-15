@@ -35,7 +35,6 @@
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
-  <Import Project="$(RepositoryEngineeringDir)CodeAnalysis.targets" />
 
   <!-- Corefx-specific binplacing properties -->
   <PropertyGroup>
@@ -49,7 +48,6 @@
 
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' And ('$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' And ('$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
-    <BinPlaceTest Condition="'$(BinPlaceTest)' == '' And '$(IsTestProject)' == 'true'">true</BinPlaceTest>
   </PropertyGroup>
 
   <ItemGroup Condition="'@(BinPlaceConfiguration)' == ''">
@@ -57,8 +55,6 @@
     <BinPlaceConfiguration Include="$(_bc_TargetGroup)-$(_bc_OSGroup)">
       <RefPath>$(BuildConfigurationRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
-      <!-- we want to bin place the test output into the working directory -->
-      <TestPath>$(TestPath)</TestPath>
     </BinPlaceConfiguration>
     <!-- binplace to directories for packages -->
     <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' AND '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
@@ -124,7 +120,9 @@
   <Import Project="$(RepositoryEngineeringDir)references.targets" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 
-  <Import Project="$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets" Condition="Exists('$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets')" />
+  <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.targets" />
+  <Import Sdk="Microsoft.DotNet.CoreFxTesting" Project="Sdk.targets"  />
+  <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.targets" />
 
   <Import Project="$(RepositoryEngineeringDir)referenceFromRuntime.targets" />
   <Import Project="$(RepositoryEngineeringDir)illink.targets" />
@@ -158,7 +156,7 @@
     <Message Text="Generated reference assembly source code: $(_RefSourceFileOutputPath)" />
   </Target>
 
-  <Import Project="$(RepositoryEngineeringDir)/DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
+  <Import Project="$(RepositoryEngineeringDir)DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
 
   <!-- Define this now until we can clean-up targets that depend on it in the packaging targets -->
   <Target Name="CreateVersionFileDuringBuild" />

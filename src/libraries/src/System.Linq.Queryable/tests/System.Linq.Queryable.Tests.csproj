@@ -3,7 +3,7 @@
     <ProjectGuid>{7B88D79B-B799-4116-A7D0-AED572540CD4}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="AppendPrependTests.cs" />
     <Compile Include="TakeLastTests.cs" />
     <Compile Include="SkipLastTests.cs" />

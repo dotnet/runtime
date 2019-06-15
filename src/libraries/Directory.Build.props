@@ -1,4 +1,4 @@
-﻿<Project TreatAsLocalProperty="ExcludeRestorePackageImports">
+﻿<Project>
   <!-- Base repo layout properties -->
   <PropertyGroup>
     <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
@@ -18,7 +18,7 @@
     <UseSharedCompilation>true</UseSharedCompilation>
 
     <ToolSetCommonDirectory>$(MSBuildThisFileDirectory)artifacts\toolset\Common\</ToolSetCommonDirectory>
-    <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
+    <IsSourceProject Condition="'$(MSBuildProjectName)' != 'CoreFx.Private.TestUtilities'">$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
   </PropertyGroup>
 
   <!-- Define vNext UAP Moniker -->
@@ -86,21 +86,14 @@
     <IsPrerelease>true</IsPrerelease>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- Need to set ProjectAssetsFile to something so it doesn't get set to the Tools.proj assets file when we import the generated props -->
-    <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == ''">unused</ProjectAssetsFile>
-    <!-- Nuget will normally disable all generated imports as part of a restore to avoid 
-         non-determinism where first restore changes a subsequent restore,
-         but we need these since they define properties (like TargetFramework) needed by restore.
-         In this case we garuntee this is ok since these specific props are not restored by this project's restore. -->
-    <_excludeRestorePackageImports>$(ExcludeRestorePackageImports)</_excludeRestorePackageImports>
-    <ExcludeRestorePackageImports>false</ExcludeRestorePackageImports>
+  <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.props" />
+  <Import Sdk="Microsoft.DotNet.CoreFxTesting" Project="Sdk.props" />
+
+  <PropertyGroup>    
+    <EnableProjectRestore Condition="'$(IsTestProject)' == 'true'">true</EnableProjectRestore>
   </PropertyGroup>
-  <Import Project="$(ToolSetCommonDirectory)Tools.proj.nuget.g.props" Condition="Exists('$(ToolSetCommonDirectory)Tools.proj.nuget.g.props')" />
-  <PropertyGroup>
-    <ProjectAssetsFile Condition="'$(ProjectAssetsFile)' == 'unused'" />
-    <ExcludeRestorePackageImports>$(_excludeRestorePackageImports)</ExcludeRestorePackageImports>
-  </PropertyGroup>
+
+  <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.props" />
 
   <!-- Common repo directories -->
   <PropertyGroup>
@@ -111,18 +104,6 @@
 
     <!-- Use msbuild path functions as that property is used in bash scripts. -->
     <SourceDir>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src'))</SourceDir>
-  </PropertyGroup>
-
-  <!-- Enable the analyzers for this repo -->
-  <PropertyGroup>
-    <EnableAnalyzers Condition="'$(EnableAnalyzers)' == '' AND '$(IsSourceProject)' == 'true'">true</EnableAnalyzers>
-  </PropertyGroup>
-
-  <!-- Default properties for CI builds -->
-  <PropertyGroup Condition="'$(IsTestProject)' == 'true' and '$(ContinuousIntegrationBuild)' == 'true' and '$(OfficialBuildId)' == ''">
-    <WithoutCategories>IgnoreForCI</WithoutCategories>
-    <EnableDumpling>false</EnableDumpling>
-    <CrashDumpFolder Condition="'$(OS)' == 'Windows_NT'">%TMP%\CoreRunCrashDumps</CrashDumpFolder>
   </PropertyGroup>
 
   <!-- list of nuget package sources passed to nuget restore -->
@@ -188,10 +169,10 @@
 
   <!-- Set some shortcuts for more terse conditions in project files -->
   <PropertyGroup>
-    <TargetsNetCoreApp Condition="$(TargetGroup.StartsWith('netcoreapp'))">true</TargetsNetCoreApp>
-    <TargetsUap Condition="$(TargetGroup.StartsWith('uap'))">true</TargetsUap>
-    <TargetsNetStandard Condition="$(TargetGroup.StartsWith('netstandard'))">true</TargetsNetStandard>
-    <TargetsNetFx Condition="$(TargetGroup.StartsWith('net4')) OR '$(TargetGroup)' == 'netfx'">true</TargetsNetFx>
+    <TargetsNetCoreApp Condition="$(TargetFramework.StartsWith('netcoreapp'))">true</TargetsNetCoreApp>
+    <TargetsUap Condition="$(TargetFramework.StartsWith('uap'))">true</TargetsUap>
+    <TargetsNetStandard Condition="$(TargetFramework.StartsWith('netstandard'))">true</TargetsNetStandard>
+    <TargetsNetFx Condition="$(TargetFramework.StartsWith('net4'))">true</TargetsNetFx>
   </PropertyGroup>
 
   <!-- set properties for each vertical -->
@@ -242,16 +223,6 @@
     <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- Embed IBC data on release builds, if IBCMerge isn't available this will just log the commandline -->
-    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(ConfigurationGroup)' == 'Release'">true</EnableNgenOptimization>
-
-    <WindowsCoreFxOptimizationDataPackageId>optimization.windows_nt-x64.IBC.CoreFx</WindowsCoreFxOptimizationDataPackageId>
-    <WindowsCoreFxOptimizationDataVersion>$(optimizationwindows_ntx64IBCCoreFxPackageVersion)</WindowsCoreFxOptimizationDataVersion>
-    <LinuxCoreFxOptimizationDataPackageId>optimization.linux-x64.IBC.CoreFx</LinuxCoreFxOptimizationDataPackageId>
-    <LinuxCoreFxOptimizationDataVersion>$(optimizationwindows_ntx64IBCCoreFxPackageVersion)</LinuxCoreFxOptimizationDataVersion>
-  </PropertyGroup>
-
   <!-- Set up Default symbol and optimization for Configuration -->
   <Choose>
     <When Condition="'$(ConfigurationGroup)'=='Debug'">
@@ -281,6 +252,8 @@
     <CopyNuGetImplementations>false</CopyNuGetImplementations>
     <!-- Don't reference implicit framework packages, all projects in this repo must be explicit -->
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <!-- We can't generate an apphost without restoring the targeting pack. -->
+    <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
   <!-- Language configuration -->
@@ -299,9 +272,6 @@
 
     <!-- Suppress preview message as we are usually using preview SDK versions. -->
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
-
-    <CLSCompliant Condition="'$(CLSCompliant)'=='' and '$(IsTestProject)'=='true'">false</CLSCompliant>
-    <CLSCompliant Condition="'$(CLSCompliant)'==''">true</CLSCompliant>
     <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
   </PropertyGroup>
 
@@ -321,20 +291,16 @@
 
     <TargetOutputRelPath Condition="'$(TargetGroup)'!=''">$(TargetGroup)/</TargetOutputRelPath>
 
-    <RuntimePath Condition="'$(RuntimePath)' == ''">$(ArtifactsBinDir)runtime/$(BuildConfiguration)/</RuntimePath>
-    <TestWorkingDir Condition="'$(TestWorkingDir)'==''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'tests'))</TestWorkingDir>
-    <TestPath Condition="'$(TestPath)' == ''">$([MSBuild]::NormalizeDirectory('$(TestWorkingDir)', '$(MSBuildProjectName)', '$(BuildConfiguration)'))</TestPath>
-    <RefRootPath>$(ArtifactsBinDir)ref/</RefRootPath>
-    <BuildConfigurationRefPath>$(RefRootPath)$(_bc_TargetGroup)/</BuildConfigurationRefPath>
-    <BuildConfigurationRefPath Condition="$(_bc_TargetGroup.EndsWith('aot'))">$(RefRootPath)$(_bc_TargetGroup.TrimEnd('aot'))/</BuildConfigurationRefPath>
-    <RefPath>$(RefRootPath)$(TargetGroup)/</RefPath>
-    <RefPath Condition="$(TargetGroup.EndsWith('aot'))">$(RefRootPath)$(TargetGroup.TrimEnd('aot'))/</RefPath>
-    <NetStandardRefPath>$(RefRootPath)netstandard/</NetStandardRefPath>
-    <NetStandard21RefPath>$(RefRootPath)netstandard2.1/</NetStandard21RefPath>
-    <NetFxRefPath>$(RefRootPath)netfx/</NetFxRefPath>
-    <IbcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'ibc'))</IbcOptimizationDataDir>
+    <RuntimePath Condition="'$(RuntimePath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(BuildConfiguration)'))</RuntimePath>
+    <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
+    <BuildConfigurationRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(_bc_TargetGroup)'))</BuildConfigurationRefPath>
+    <BuildConfigurationRefPath Condition="$(_bc_TargetGroup.EndsWith('aot'))">$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(_bc_TargetGroup.TrimEnd('aot'))'))</BuildConfigurationRefPath>
+    <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetGroup)'))</RefPath>
+    <RefPath Condition="$(TargetGroup.EndsWith('aot'))">$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetGroup.TrimEnd('aot'))'))</RefPath>
+    <NetStandardRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard'))</NetStandardRefPath>
+    <NetStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.1'))</NetStandard21RefPath>
+    <NetFxRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netfx'))</NetFxRefPath>
     <ILAsmToolPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsToolsetDir)', 'ilasm'))</ILAsmToolPath>
-    <ILLinkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsToolsetDir)', 'ILLink'))</ILLinkDir>
 
     <!-- Helix properties -->
     <OSPlatformConfig>$(OSGroup).$(Platform).$(ConfigurationGroup)</OSPlatformConfig>
@@ -361,16 +327,15 @@
     <BinPlaceUAPFramework Condition="'$(_bc_TargetGroup)' == 'uap'">true</BinPlaceUAPFramework>
     <BinPlaceNETFXRuntime Condition="'$(_bc_TargetGroup)' == 'netfx'">true</BinPlaceNETFXRuntime>
 
-    <NETCoreAppTestSharedFxVersion>9.9.9</NETCoreAppTestSharedFxVersion>
     <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'testhost', '$(BuildConfiguration)'))</TestHostRootPath>
-    <NETCoreAppTestHostFxrPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'host', 'fxr', '$(NETCoreAppTestSharedFxVersion)'))</NETCoreAppTestHostFxrPath>
-    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(NETCoreAppTestSharedFxVersion)'))</NETCoreAppTestSharedFrameworkPath>
+    <NETCoreAppTestHostFxrPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'host', 'fxr', '$(ProductVersion)'))</NETCoreAppTestHostFxrPath>
+    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(ProductVersion)'))</NETCoreAppTestSharedFrameworkPath>
 
     <!-- For UAP, we'll produce the layout and hard-link this into each test's directory -->
     <UAPTestSharedFrameworkPath>$(TestHostRootPath)UAPLayout</UAPTestSharedFrameworkPath>
 
     <!-- interop is not available on NETStandard1.0 -->
-    <IncludeDllSafeSearchPathAttribute Condition="'$(TargetGroup)' == 'netstandard1.0'">false</IncludeDllSafeSearchPathAttribute>
+    <IncludeDllSafeSearchPathAttribute Condition="'$(TargetFramework)' == 'netstandard1.0'">false</IncludeDllSafeSearchPathAttribute>
 
     <VersionFileForPackages Condition="'$(VersionFileForPackages)' == ''">$(ArtifactsObjDir)version.txt</VersionFileForPackages>
   </PropertyGroup>
@@ -389,35 +354,26 @@
 
   <!-- Specify the default constants for each target group -->
   <PropertyGroup>
-    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants),uap</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netfx'">$(DefineConstants),netfx</DefineConstants>
+    <DefineConstants Condition="'$(TargetsUap)' == 'true'">$(DefineConstants),uap</DefineConstants>
+    <DefineConstants Condition="'$(TargetsNetFx)' == 'true'">$(DefineConstants),netfx</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netstandard'">$(DefineConstants),netstandard</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.0'">$(DefineConstants),NETSTANDARD10</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard2.1'">$(DefineConstants),netstandard21</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard1.0'">$(DefineConstants),NETSTANDARD10</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netstandard2.1'">$(DefineConstants),netstandard21</DefineConstants>
     <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp'">$(DefineConstants),netcoreapp</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)' == 'netcoreapp2.0'">$(DefineConstants),netcoreapp20</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)' == 'netcoreapp2.0'">$(DefineConstants),netcoreapp20</DefineConstants>
   </PropertyGroup>
 
   <PropertyGroup>
     <!-- F5 and debugging support for netcoreapp and netfx inside VS. -->
     <EnableLaunchSettings Condition="'$(EnableLaunchSettings)' == ''AND '$(DotNetBuildFromSource)' != 'true'">true</EnableLaunchSettings>
-    <EnableVSTestReferences Condition="'$(EnableVSTestReferences)' == ''">true</EnableVSTestReferences>
   </PropertyGroup>
 
   <!-- Test properties for full build. -->
-  <PropertyGroup Condition="'$(BuildAllProjects)' == 'true'">
+  <PropertyGroup Condition="'$(TestAllProjects)' == 'true'">
     <GenerateFullCoverageReport Condition="'$(GenerateFullCoverageReport)' == ''">true</GenerateFullCoverageReport>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)references.props" />
-  <Import Condition="'$(IsTestProject)' == 'true' AND '$(IsTestSupportProject)' != 'true' AND '$(EnableVSTestReferences)' == 'true'" Project="$(RuntimePath)Microsoft.NET.Test.Sdk.props" />
-
-  <ItemDefinitionGroup Condition="'$(IsTestProject)' != 'true'">
-    <!-- Project references for non-test assemblies should never be copied to the output. -->
-    <ProjectReference>
-      <Private>false</Private>
-    </ProjectReference>
-  </ItemDefinitionGroup>
 
   <!-- Import it at the end of the props file to override the OutputPath for reference assemblies and use common directory props -->
   <Import Project="$(RepositoryEngineeringDir)ReferenceAssemblies.props" />

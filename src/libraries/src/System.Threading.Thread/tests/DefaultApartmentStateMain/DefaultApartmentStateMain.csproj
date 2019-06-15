@@ -5,7 +5,7 @@
     <TargetExt>.exe</TargetExt>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <ProjectGuid>{32432E07-5CA4-41F3-9855-22AB1F1E69B3}</ProjectGuid>
-    <Configurations>netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DefaultApartmentStateMain.cs" />

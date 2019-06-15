@@ -15,7 +15,7 @@
       <_TestProjectRootDir Condition="'$(DirectoryToBuild)'!=''">$(DirectoryToBuild)</_TestProjectRootDir>
     </PropertyGroup>
     <ItemGroup>
-      <!-- Keep in sync with pattern for test projects in tests.builds -->
+      <!-- Keep in sync with pattern for test projects in tests.proj -->
       <TestProjects Include="$(_TestProjectRootDir)*\tests\**\*Tests.csproj" />
       <TestProjects Include="$(_TestProjectRootDir)*\tests\**\*Tests.vbproj" />
     </ItemGroup>

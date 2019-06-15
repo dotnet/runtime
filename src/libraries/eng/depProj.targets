@@ -66,7 +66,7 @@ See the LICENSE file in the project root for more information.
   <Target Name="RunRestoreDuringBuild"
           DependsOnTargets="Restore"
           BeforeTargets="ResolvePackageAssets"
-          Condition="!('$(VSDesignTimeBuild)'=='true' and '$(VisualStudioVersion)' >= '14.0')" />
+          Condition="'$(VSDesignTimeBuild)' != 'true'" />
 
   <Target Name="CoreCompile">
 

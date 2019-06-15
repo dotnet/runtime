@@ -4,7 +4,7 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Debug;netfx-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="MemberInfoTests.cs" />
     <Compile Include="ModuleTests.cs" />
   </ItemGroup>

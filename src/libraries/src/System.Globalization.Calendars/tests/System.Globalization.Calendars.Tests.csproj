@@ -105,7 +105,7 @@
     <Compile Include="$(CommonTestPath)\System\RandomDataGenerator.cs" />
     <!-- Helpers -->
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="ISOWeek\ISOWeekTests.netcoreapp.cs" />
   </ItemGroup>
 </Project>

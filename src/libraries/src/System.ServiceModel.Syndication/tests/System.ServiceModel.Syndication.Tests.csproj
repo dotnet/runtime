@@ -39,7 +39,7 @@
     <Compile Include="System\ServiceModel\Syndication\SyndicationVersionsTests.cs" />
     <Compile Include="System\ServiceModel\Syndication\WorkspaceTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="$(MsBuildThisFileDirectory)netcoreapp\BasicScenarioTests.netcoreapp.cs" />
     <Compile Include="System\ServiceModel\Syndication\SyndicationFeedTests.netcoreapp.cs" />
     <Compile Include="System\ServiceModel\Syndication\SyndicationTextInputTests.cs" />

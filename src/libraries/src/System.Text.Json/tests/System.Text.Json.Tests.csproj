@@ -84,8 +84,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="Newtonsoft.Json" />
-    <!-- Copy external dependency into the test output directory. -->
-    <SupplementalTestData Include="$(RuntimePath)Newtonsoft.Json.dll" />
+    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonPackageVersion)" />
   </ItemGroup>
 </Project>

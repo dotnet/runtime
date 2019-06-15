@@ -7,7 +7,7 @@
     <NETStandardSupportPackageId>NETStandard.Library.NETFramework</NETStandardSupportPackageId>
     <NETStandardSupportPackageVersion>2.0.1-servicing-26011-01</NETStandardSupportPackageVersion>
     <NETStandardSupportRoot>$(NuGetPackageRoot)$(NETStandardSupportPackageId.ToLower())\$(NETStandardSupportPackageVersion)\build</NETStandardSupportRoot>
-    <AddNetStandardSupportPackage Condition="'$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net47'">true</AddNetStandardSupportPackage>
+    <AddNetStandardSupportPackage Condition="'$(TargetFramework)' == 'net461' OR '$(TargetFramework)' == 'net462' OR '$(TargetFramework)' == 'net47'">true</AddNetStandardSupportPackage>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsNetFx)' != 'true'">
     <!-- For things not .NETFramework we need the net472 targeting pack to generate facades -->
@@ -37,7 +37,7 @@
     <PackageReference Include="$(TargetingPackNugetPackageId)">
       <Version >$(_TargetingPackVersion)</Version>
     </PackageReference>
-    <PackageReference Include="System.Memory" Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46'">
+    <PackageReference Include="System.Memory" Condition="'$(TargetFramework)' == 'net45' OR '$(TargetFramework)' == 'net46'">
       <Version>4.5.2</Version>
     </PackageReference>
     <PackageReference Include="System.Numerics.Vectors" Condition="'$(TargetGroup)' == 'net461' OR '$(TargetGroup)' == 'netfx'">
@@ -55,10 +55,10 @@
   <Target Name="AddNETStandardShims" AfterTargets="FilterNugetPackages"
           Condition="'$(AddNetStandardSupportPackage)' == 'true'">
     <ItemGroup>
-      <_netStandardReference Condition="'$(TargetGroup)' != 'net461' AND '$(TargetGroup)' != 'net462'"
+      <_netStandardReference Condition="'$(TargetFramework)' != 'net461' AND '$(TargetFramework)' != 'net462'"
                              Include="$(NETStandardSupportRoot)\net47\lib\*.dll"
                              Exclude="@(_netStandardReference->'$(NETStandardSupportRoot)\net47\lib\%(FileName).dll')" />
-      <_netStandardReference Condition="'$(TargetGroup)' != 'net461'"
+      <_netStandardReference Condition="'$(TargetFramework)' != 'net461'"
                              Include="$(NETStandardSupportRoot)\net462\lib\*.dll"
                              Exclude="@(_netStandardReference->'$(NETStandardSupportRoot)\net462\lib\%(FileName).dll')" />
       <_netStandardReference Include="$(NETStandardSupportRoot)\net461\lib\*.dll"

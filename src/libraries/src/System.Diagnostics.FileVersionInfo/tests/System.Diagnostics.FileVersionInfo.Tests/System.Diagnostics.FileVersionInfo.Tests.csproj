@@ -35,14 +35,11 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Compile Include="FileVersionInfoTest.Unix.cs" />
   </ItemGroup>
-  <!-- References used -->
   <ItemGroup>
-    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj">
-      <Project>{28eb14be-3bc9-4543-aba6-a932424dfbd0}</Project>
-      <Name>System.Diagnostics.FileVersionInfo.TestAssembly</Name>
-    </ProjectReference>
+    <ProjectReference Include="..\System.Diagnostics.FileVersionInfo.TestAssembly\System.Diagnostics.FileVersionInfo.TestAssembly.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <SupplementalTestData Include="$(OutputPath)System.Diagnostics.FileVersionInfo.TestAssembly.dll" DestinationName="System.Diagnostics.FileVersionInfo.TestAssembly.ildll" />
-  </ItemGroup>
+  <Target Name="MangleTestAssemblyExtension" AfterTargets="PrepareForRun">
+    <!-- Copy TestAssembly to file without .dll extension so that ILC preserves it as a data file rather than feeding it to the output executable. -->
+    <Copy SourceFiles="$(OutDir)System.Diagnostics.FileVersionInfo.TestAssembly.dll" DestinationFiles="$(OutDir)System.Diagnostics.FileVersionInfo.TestAssembly.ildll" />
+  </Target>
 </Project>

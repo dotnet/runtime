@@ -13,13 +13,18 @@
     <UsingToolIbcOptimization>true</UsingToolIbcOptimization>
     <!-- Opt-out repo features -->
     <UsingToolXliff>false</UsingToolXliff>
+    <!-- Paths used during restore -->
+    <EnableNgenOptimization Condition="'$(EnableNgenOptimization)' == '' and '$(ConfigurationGroup)' == 'Release'">true</EnableNgenOptimization>
+    <ILLinkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsToolsetDir)', 'ILLink'))</ILLinkDir>
+    <IbcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'ibc'))</IbcOptimizationDataDir>
+    <XmlDocDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'docs'))</XmlDocDir>
   </PropertyGroup>
   <!-- Package names if they are used in more then one location in the repo -->
   <PropertyGroup>
-    <MicrosoftDotNetXUnitExtensionsPackage>Microsoft.DotNet.XUnitExtensions</MicrosoftDotNetXUnitExtensionsPackage>
-    <MicrosoftDotNetXUnitConsoleRunnerPackage>microsoft.dotnet.xunitconsolerunner</MicrosoftDotNetXUnitConsoleRunnerPackage>
-    <MicrosoftDotNetRemoteExecutorPackage>microsoft.dotnet.remoteexecutor</MicrosoftDotNetRemoteExecutorPackage>
     <NETStandardLibraryPackageId>NETStandard.Library</NETStandardLibraryPackageId>
+    <WindowsCoreFxOptimizationDataPackageId>optimization.windows_nt-x64.ibc.corefx</WindowsCoreFxOptimizationDataPackageId>
+    <LinuxCoreFxOptimizationDataPackageId>optimization.linux-x64.ibc.corefx</LinuxCoreFxOptimizationDataPackageId>
+    <MicrosoftDotNetUapTestToolsPackageId>microsoft.dotnet.uap.testtools</MicrosoftDotNetUapTestToolsPackageId>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Arcade dependencies -->
@@ -30,9 +35,7 @@
     <MicrosoftDotNetXUnitExtensionsPackageVersion>2.4.1-beta.19312.21</MicrosoftDotNetXUnitExtensionsPackageVersion>
     <MicrosoftDotNetXUnitConsoleRunnerPackageVersion>2.5.1-beta.19312.21</MicrosoftDotNetXUnitConsoleRunnerPackageVersion>
     <MicrosoftDotNetBuildTasksPackagingPackageVersion>1.0.0-beta.19312.21</MicrosoftDotNetBuildTasksPackagingPackageVersion>
-    <MicrosoftDotNetCoreFxTestingPackageVersion>1.0.0-beta.19312.21</MicrosoftDotNetCoreFxTestingPackageVersion>
     <MicrosoftDotNetRemoteExecutorPackageVersion>1.0.0-beta.19312.21</MicrosoftDotNetRemoteExecutorPackageVersion>
-    <MicrosoftDotNetBuildTasksConfigurationPackageVersion>1.0.0-beta.19312.21</MicrosoftDotNetBuildTasksConfigurationPackageVersion>
     <MicrosoftDotNetBuildTasksFeedPackageVersion>2.2.0-beta.19312.21</MicrosoftDotNetBuildTasksFeedPackageVersion>
     <MicrosoftDotNetVersionToolsTasksPackageVersion>1.0.0-beta.19312.21</MicrosoftDotNetVersionToolsTasksPackageVersion>
     <!-- Core-setup dependencies -->
@@ -53,17 +56,32 @@
     <RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
     <!-- Testing -->
-    <MicrosoftNETTestSdkPackageVersion>16.0.1</MicrosoftNETTestSdkPackageVersion>
+    <MicrosoftNETTestSdkPackageVersion>15.9.2</MicrosoftNETTestSdkPackageVersion>
     <XUnitPackageVersion>2.4.1-pre.build.4059</XUnitPackageVersion>
     <TraceEventPackageVersion>2.0.5</TraceEventPackageVersion>
     <MicrosoftDotNetUapTestToolsPackageVersion>1.0.31</MicrosoftDotNetUapTestToolsPackageVersion>
+    <NewtonsoftJsonPackageVersion>12.0.1</NewtonsoftJsonPackageVersion>
+    <MicrosoftExtensionsDependencyModelPackageVersion>3.0.0-preview5-27626-15</MicrosoftExtensionsDependencyModelPackageVersion>
+    <!-- Test data -->
+    <SystemIOCompressionTestDataPackageVersion>1.0.13</SystemIOCompressionTestDataPackageVersion>
+    <SystemIOPackagingTestDataPackageVersion>1.0.4</SystemIOPackagingTestDataPackageVersion>
+    <SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>1.0.7</SystemSecurityCryptographyX509CertificatesTestDataPackageVersion>
+    <SystemNetTestDataPackageVersion>1.0.6</SystemNetTestDataPackageVersion>
+    <SystemComponentModelTypeConverterTestDataPackageVersion>1.0.4</SystemComponentModelTypeConverterTestDataPackageVersion>
+    <SystemDrawingCommonTestDataPackageVersion>1.0.12</SystemDrawingCommonTestDataPackageVersion>
+    <SystemWindowsExtensionsTestDataPackageVersion>1.0.5</SystemWindowsExtensionsTestDataPackageVersion>
     <!-- Code coverage package version -->
     <CoverletConsolePackageVersion>1.5.0</CoverletConsolePackageVersion>
     <DotNetReportGeneratorGlobalToolPackageVersion>4.1.4</DotNetReportGeneratorGlobalToolPackageVersion>
     <!-- Publish symbol build task package -->
     <PublishSymbolsPackage>Microsoft.SymbolUploader.Build.Task</PublishSymbolsPackage>
     <PublishSymbolsPackageVersion>1.0.0-beta-63604-05</PublishSymbolsPackageVersion>
+    <!-- Docs -->
+    <MicrosoftPrivateIntellisensePackageVersion>3.0.0-preview3-190305-0</MicrosoftPrivateIntellisensePackageVersion>
+    <!-- ILLink -->
+    <ILLinkTasksPackageVersion>0.1.5-preview-1461378</ILLinkTasksPackageVersion>
   </PropertyGroup>
+
   <!-- Override isolated build dependency versions with versions from Repo API. -->
   <Import Project="$(DotNetPackageVersionPropsPath)" Condition="'$(DotNetPackageVersionPropsPath)' != ''" />
 </Project>

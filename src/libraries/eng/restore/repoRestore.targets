@@ -1,0 +1,23 @@
+<Project InitialTargets="_ClearResolvePackageAssets">
+  <PropertyGroup>
+    <!-- Disable restoring of package references in our projects -->
+    <RestoreProjectStyle Condition="'$(MSBuildProjectExtension)' != '.depproj'">None</RestoreProjectStyle>
+  </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)CodeAnalysis.targets" />
+  
+  <Import Project="$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets" Condition="Exists('$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets')" />
+  
+  <!--
+  Hack workaround for not restoring each project. Instead, we turn off all the targets
+  that require a `project.assets.json`, since ours will be empty anyway.
+  -->
+  <Target Name="_ClearResolvePackageAssets"
+          Condition="'$(MSBuildProjectExtension)' != '.depproj'">
+
+    <PropertyGroup>
+      <ResolvePackageDependenciesForBuildDependsOn></ResolvePackageDependenciesForBuildDependsOn>
+    </PropertyGroup>
+
+  </Target>
+</Project>
