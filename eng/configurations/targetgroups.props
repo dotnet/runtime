@@ -209,6 +209,7 @@
     <TargetGroups Include="package">
       <!-- this targetgroup is not considered compatible with any other targetgroup so it should only
            build when specified directly or BuildAllConfigurations is set to True.  -->
+      <TargetFramework>none</TargetFramework>
     </TargetGroups>
     <TargetGroups Include="mono">
       <TargetFramework>net463</TargetFramework>

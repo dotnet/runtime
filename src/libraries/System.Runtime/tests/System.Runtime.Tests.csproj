@@ -304,7 +304,7 @@
     <Compile Include="$(CommonPath)\..\tests\System\RealParserTestsBase.netcoreapp.cs" Link="System\RealParserTestsBase.netcoreapp.cs" />
     <Compile Include="System\RealParserTests.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' != 'true'">
     <Compile Include="System\StringSplitExtensions.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -18,7 +18,7 @@
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\DataContractSerializerHelper.cs" />
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Utils.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="SizeFTests.netcoreapp.cs" />
     <Compile Include="ColorTests.netcoreapp.cs" />
     <Compile Include="SizeTests.netcoreapp.cs" />

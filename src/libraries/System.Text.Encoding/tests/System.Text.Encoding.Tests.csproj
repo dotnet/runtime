@@ -9,14 +9,14 @@
   <ItemGroup>
     <Compile Include="ASCIIEncoding\ASCIIEncodingEncode.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingDecode.cs" />
-    <Compile Include="ASCIIEncoding\ASCIIEncodingEncode.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
-    <Compile Include="ASCIIEncoding\ASCIIEncodingDecode.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingEncode.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
+    <Compile Include="ASCIIEncoding\ASCIIEncodingDecode.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetDecoder.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetEncoder.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetMaxByteCount.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingGetMaxCharCount.cs" />
     <Compile Include="ASCIIEncoding\ASCIIEncodingTests.cs" />
-    <Compile Include="Decoder\DecoderSpanTests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
+    <Compile Include="Decoder\DecoderSpanTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="Decoder\DecoderConvert2.cs" />
     <Compile Include="Decoder\DecoderCtor.cs" />
     <Compile Include="Decoder\DecoderGetCharCount2.cs" />
@@ -27,7 +27,7 @@
     <Compile Include="DecoderFallback\DecoderFallbackTests.cs" />
     <Compile Include="DecoderFallbackException\DecoderFallbackExceptionTests.cs" />
     <Compile Include="EncoderFallbackException\EncoderFallbackExceptionTests.cs" />
-    <Compile Include="Encoder\EncoderSpanTests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
+    <Compile Include="Encoder\EncoderSpanTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="Encoder\EncoderConvert2.cs" />
     <Compile Include="Encoder\EncoderCtor.cs" />
     <Compile Include="Encoder\EncoderGetByteCount2.cs" />
@@ -40,9 +40,9 @@
     <Compile Include="Fallback\EncoderExceptionFallbackTests.cs" />
     <Compile Include="Fallback\DecoderExceptionFallbackTests.cs" />
     <Compile Include="NegativeEncodingTests.cs" />
-    <Compile Include="NegativeEncodingTests.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
+    <Compile Include="NegativeEncodingTests.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="EncodingTestHelpers.cs" />
-    <Compile Include="EncodingTestHelpers.netcoreapp.cs" Condition="'$(TargetGroup)'=='netcoreapp'" />
+    <Compile Include="EncodingTestHelpers.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="Latin1Encoding\Latin1EncodingEncode.cs" />
     <Compile Include="Latin1Encoding\Latin1EncodingDecode.cs" />
     <Compile Include="Latin1Encoding\Latin1EncodingGetMaxByteCount.cs" />

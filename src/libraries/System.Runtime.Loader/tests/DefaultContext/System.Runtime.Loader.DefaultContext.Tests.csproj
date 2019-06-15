@@ -14,11 +14,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>
   </ItemGroup>
-  <Target Name="RenameTestAssembly" AfterTargets="GetBinPlaceItems">
-    <ItemGroup>
-      <BinPlaceItem Remove="$(ArtifactsBinDir)**\System.Runtime.Loader.Noop.Assembly.dll" />
-      <SupplementalTestData Include="$(OutputPath)System.Runtime.Loader.Noop.Assembly_test.dll" />
-    </ItemGroup>
-    <Move SourceFiles="$(OutputPath)System.Runtime.Loader.Noop.Assembly.dll" DestinationFiles="$(OutputPath)System.Runtime.Loader.Noop.Assembly_test.dll" />
+  <Target Name="RenameTestAssembly" AfterTargets="PrepareForRun">
+    <Move SourceFiles="$(OutDir)System.Runtime.Loader.Noop.Assembly.dll" DestinationFiles="$(OutDir)System.Runtime.Loader.Noop.Assembly_test.dll" />
   </Target>
 </Project>

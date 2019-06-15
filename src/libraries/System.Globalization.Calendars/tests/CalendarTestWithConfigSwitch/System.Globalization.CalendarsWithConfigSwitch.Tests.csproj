@@ -3,8 +3,6 @@
     <ProjectGuid>{77BE33BB-790D-4D0C-9336-E073001CBD15}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release</Configurations>
     <TestRuntime>true</TestRuntime>
-    <!-- Overriding the runtime config file to include "Switch.System.Globalization.EnforceJapaneseEraYearRanges": true -->
-    <TestRuntimeConfigPath>$(AppDesignerFolder)/runtimeconfig.json</TestRuntimeConfigPath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CalendarTests.cs" />

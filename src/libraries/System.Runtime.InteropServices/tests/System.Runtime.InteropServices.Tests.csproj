@@ -99,7 +99,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringAutoTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringBSTR.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringUniTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringUTF8Tests.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\PtrToStringUTF8Tests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\QueryInterfaceTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\QueryInterfaceTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ReAllocHGlobalTests.cs" />
@@ -115,7 +115,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemAutoTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemUniTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemUTF8Tests.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\StringToCoTaskMemUTF8Tests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToHGlobalAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToHGlobalUniTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StringToHGlobalAutoTests.cs" />
@@ -125,7 +125,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\ThrowExceptionForHRTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeCoTaskMemAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeCoTaskMemUnicodeTests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeCoTaskMemUTF8Tests.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeCoTaskMemUTF8Tests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeGlobalAllocAnsiTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\ZeroFreeGlobalAllocUnicodeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\Common\CommonTypes.cs" />
@@ -139,7 +139,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\StringMarshalingTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\StructureToPtrTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\UnsafeAddrOfPinnedArrayElementTests.cs" />
-    <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />
+    <Compile Condition="'$(TargetsUap)' != 'true'" Include="System\Runtime\InteropServices\PrimaryInteropAssemblyAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\ProgIdAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\RuntimeEnvironmentTests.cs" />
     <Compile Include="System\Runtime\InteropServices\SafeBufferTests.cs" />

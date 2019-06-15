@@ -20,7 +20,7 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\libdl\Interop.dlopen.cs" Condition="'$(TargetGroup)' == 'netcoreapp2.0'">
+    <Compile Include="$(CommonPath)\Interop\Unix\libdl\Interop.dlopen.cs" Condition="'$(TargetFramework)' == 'netcoreapp2.0'">
       <Link>Common\Interop\Unix\libdl\Interop.dlopen.cs</Link>
     </Compile>
   </ItemGroup>

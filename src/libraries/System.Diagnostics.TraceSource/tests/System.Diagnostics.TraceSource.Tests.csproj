@@ -25,7 +25,7 @@
     <Compile Include="TraceTestHelper.cs" />
     <Compile Include="CorrelationManagerTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Compile Include="DefaultTraceListenerClassTests.netcoreapp.cs" />
   </ItemGroup>
 </Project>

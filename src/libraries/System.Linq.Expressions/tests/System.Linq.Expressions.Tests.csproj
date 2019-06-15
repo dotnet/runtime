@@ -272,6 +272,6 @@
     <Compile Include="Dynamic\ExpandoObjectProxyTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="xunit.execution.dotnet" />
+    <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitPackageVersion)" />
   </ItemGroup>
 </Project>

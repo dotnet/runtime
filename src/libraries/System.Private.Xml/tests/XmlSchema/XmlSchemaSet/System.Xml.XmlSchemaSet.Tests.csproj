@@ -38,9 +38,11 @@
     <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
       <Link>Common\System\IO\TempDirectory.cs</Link>
     </Compile>
-    <SupplementalTestData Include="..\TestFiles\**\*.*">
-      <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
-      <DestinationDir>TestFiles\%(RecursiveDir)</DestinationDir>
-    </SupplementalTestData>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\TestFiles\**\*"
+          Link="TestFiles\%(RecursiveDir)%(Filename)%(Extension)"
+          CopyToOutputDirectory="PreserveNewest"
+          Visible="false" />
   </ItemGroup>
 </Project>

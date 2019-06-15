@@ -1,0 +1,20 @@
+<Project>
+
+  <ItemGroup>
+    <PackageReference Include="illink.tasks" Version="$(ILLinkTasksPackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
+  </ItemGroup>
+
+  <Target Name="IncludeToolsFiles"
+          AfterTargets="Restore">
+
+    <ItemGroup>
+      <_illinkSrcFiles Include="$(NuGetPackageRoot)illink.tasks\$(ILLinkTasksPackageVersion)\tools\**\*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_illinkSrcFiles)"
+          DestinationFolder="$(ILLinkDir)%(_illinkSrcFiles.RecursiveDir)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+  </Target>
+</Project>

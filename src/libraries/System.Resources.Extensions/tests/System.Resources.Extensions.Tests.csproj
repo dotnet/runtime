@@ -18,8 +18,10 @@
       <Link>TypeNameComparer.cs</Link>
     </Compile>
     <Compile Include="TypeNameComparerTests.cs" />
-    <SupplementalTestData Include="$(NuGetPackageRoot)system.drawing.common.testdata\$(TestDataPackageVersion)\content\**\*.*" Link="%(RecursiveDir)%(Filename)%(Extension)" />
     <EmbeddedResource Include="TestData.resources" WithCulture="false" Type="Non-Resx" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Drawing.Common.TestData" Version="$(SystemDrawingCommonTestDataPackageVersion)" />    
   </ItemGroup>
   <!-- use the following target to regenerate the test resources file
        This is done from a test application and checked in so that we don't run

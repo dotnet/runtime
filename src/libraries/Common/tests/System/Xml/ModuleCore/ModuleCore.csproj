@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{3CF0CC76-4CE0-460A-BA37-657CFED39AB0}</ProjectGuid>
-    <IncludeTestFrameworkReferences>true</IncludeTestFrameworkReferences>
     <Configurations>netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
@@ -22,5 +21,9 @@
     </Compile>
     <Compile Include="XunitRunner.cs" />
     <Compile Include="XunitTestCase.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitPackageVersion)" />
+    <PackageReference Include="xunit.assert" Version="$(XUnitPackageVersion)" />
   </ItemGroup>
 </Project>

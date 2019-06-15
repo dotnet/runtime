@@ -4,9 +4,6 @@
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="xunit.execution.dotnet" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="EndOfLineHandlingTests.cs" />
     <Compile Include="ErrorCondition.cs" />
     <Compile Include="NamespaceHandlingTests.cs" />
@@ -45,5 +42,8 @@
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlDiff\XmlDiff.csproj" />
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlCoreTest\XmlCoreTest.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.extensibility.execution" Version="$(XUnitPackageVersion)" />
   </ItemGroup>
 </Project>

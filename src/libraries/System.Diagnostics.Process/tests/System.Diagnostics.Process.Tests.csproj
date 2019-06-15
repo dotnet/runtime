@@ -28,15 +28,15 @@
     <Compile Include="ProcessStartInfoTests.cs" />
     <Compile Include="ProcessStreamReadTests.cs" />
     <Compile Include="ProcessTestBase.cs" />
-    <Compile Condition="'$(TargetGroup)' != 'uap'" Include="ProcessTestBase.NonUap.cs" />
-    <Compile Condition="'$(TargetGroup)' == 'uap'" Include="ProcessTestBase.Uap.cs" />
+    <Compile Condition="'$(TargetsUap)' != 'true'" Include="ProcessTestBase.NonUap.cs" />
+    <Compile Condition="'$(TargetsUap)' == 'true'" Include="ProcessTestBase.Uap.cs" />
     <Compile Include="ProcessTests.cs" />
     <Compile Include="ProcessThreadTests.cs" />
     <Compile Include="ProcessWaitingTests.cs" />
     <Compile Include="RemotelyInvokable.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' or '$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">
     <Compile Include="ProcessStartInfoTests.netcoreapp.cs" />
     <Compile Include="ProcessStreamReadTests.netcoreapp.cs" />
     <Compile Include="ProcessTests.netcoreapp.cs" />

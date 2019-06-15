@@ -2,11 +2,11 @@
   <PropertyGroup>
     <ProjectGuid>{A28B0064-EFB2-4B77-B97C-DECF5DAB074E}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <HaveDSA Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap' OR '$(TargetGroup)'=='net462'">true</HaveDSA>
-    <HaveCertificateCreation Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap' OR '$(TargetGroup)'=='net472'">true</HaveCertificateCreation>
-    <DefineConstants Condition="'$(TargetGroup)'!='netcoreapp' AND '$(TargetGroup)'!='uap' AND '$(TargetGroup)'!='net462'">$(DefineConstants);NO_DSA_AVAILABLE</DefineConstants>
-    <DefineConstants Condition="'$(HaveCertificateCreation)'!='true'">$(DefineConstants);NO_EPHEMERALKEYSET_AVAILABLE</DefineConstants>
-    <DefineConstants Condition="'$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap'">$(DefineConstants);HAVE_THUMBPRINT_OVERLOADS</DefineConstants>
+    <HaveDSA Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">true</HaveDSA>
+    <HaveCertificateCreation Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">true</HaveCertificateCreation>
+    <DefineConstants Condition="'$(TargetsNetCoreApp)' != 'true' and '$(TargetsUap)' != 'true'">$(DefineConstants);NO_DSA_AVAILABLE</DefineConstants>
+    <DefineConstants Condition="'$(HaveCertificateCreation)' != 'true'">$(DefineConstants);NO_EPHEMERALKEYSET_AVAILABLE</DefineConstants>
+    <DefineConstants Condition="'$(TargetsNetCoreApp)' == 'true' or '$(TargetsUap)' == 'true'">$(DefineConstants);HAVE_THUMBPRINT_OVERLOADS</DefineConstants>
     <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);Unix</DefineConstants>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
@@ -127,6 +127,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <SupplementalTestData Include="$(NuGetPackageRoot)system.security.cryptography.x509certificates.testdata\1.0.3\content\**\*.*" DestinationDir="TestData" />
+    <PackageReference Include="System.Security.Cryptography.X509Certificates.TestData" Version="$(SystemSecurityCryptographyX509CertificatesTestDataPackageVersion)" />
   </ItemGroup>
 </Project>

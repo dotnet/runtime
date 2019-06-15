@@ -15,9 +15,9 @@
     <Compile Include="UmaTests.cs" />
     <Compile Include="UmsCtorTests.cs" />
     <Compile Include="HGlobalSafeBuffer.cs" />
-    <Compile Include="UmsDisposeAsync.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="UmsDisposeAsync.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="UmsReadWrite.cs" />
-    <Compile Include="UmsReadWrite.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="UmsReadWrite.netcoreapp.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="UmsSafeBuffer.cs" />
     <Compile Include="UmaCtorTests.cs" />
     <Compile Include="UmsFlush.cs" />

@@ -17,7 +17,7 @@
     <Compile Include="FormatterTests.cs" />
     <Compile Include="PlatformExtensions.cs" />
     <Compile Include="SerializationBinderTests.cs" />
-    <Compile Include="SerializationGuardTests.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="SerializationGuardTests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="SerializationInfoTests.cs" />
     <Compile Include="SerializationTypes.cs" />
     <Compile Include="SurrogateSelectorTests.cs" />
@@ -33,7 +33,7 @@
       <Link>Common\System\ThreadCultureChange.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">
     <Reference Include="System.Text.Json" />
   </ItemGroup>
 </Project>

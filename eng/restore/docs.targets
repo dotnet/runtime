@@ -1,25 +1,18 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputPath>$(XmlDocDir)</OutputPath>
-    <EnableBinPlacing>false</EnableBinPlacing>
-  </PropertyGroup>
+<Project>
 
   <ItemGroup>
-    <PackageReference Include="$(XmlDocPackage)">
-      <Version>$(XmlDocPackageVersion)</Version>
-    </PackageReference>
+    <PackageReference Include="microsoft.private.intellisense" Version="$(MicrosoftPrivateIntellisensePackageVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />
   </ItemGroup>
 
   <!-- the intellisense package doesn't use nuget conventions so we need to select manually -->
-  <Target Name="GetDocFiles" AfterTargets="ResolveReferences">
+  <Target Name="GetDocFiles"
+          AfterTargets="Restore">
+
     <ItemGroup>
-      <DocFile Include="$(XmlDocFileRoot)/**/*.xml"/>
+      <DocFile Include="$(NuGetPackageRoot)microsoft.private.intellisense/$(MicrosoftPrivateIntellisensePackageVersion)/xmldocs/netcoreapp/**/*.xml"/>
       <DocFile>
         <!-- trim off slash since it differs by platform and we need to do a string compare -->
         <LCID>$([System.String]::new('%(RecursiveDir)').TrimEnd('\/'))</LCID>
-        <!-- set metadata expected by depProj -->
-        <NuGetPackageId>$(XmlDocPackage)</NuGetPackageId>
-        <NuGetPackageVersion>$(XmlDocPackageVersion)</NuGetPackageVersion>
       </DocFile>
       <DocFile>
         <!-- map LCID to culture name that VS expects -->
@@ -39,10 +32,15 @@
       <DocFile>
         <SubFolder>%(Culture)/</SubFolder>
       </DocFile>
-      <!-- set item expected by depproj -->
-      <NuGetDeploy Include="@(DocFile)" />
     </ItemGroup>
 
     <Error Condition="'%(DocFile.Culture)' == 'unknown'" Text="Unknown language folder '%(LCID)' for doc files '@(DocFile)'" />
+    
+    <Copy SourceFiles="@(DocFile)"
+          DestinationFiles="$(XmlDocDir)\%(SubFolder)%(FileName)%(Extension)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
   </Target>
+
 </Project>

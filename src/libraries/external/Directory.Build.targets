@@ -2,7 +2,6 @@
   <Import Project="..\Directory.Build.targets" />
 
   <PropertyGroup>
-    <RestorePackages>true</RestorePackages>
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
 

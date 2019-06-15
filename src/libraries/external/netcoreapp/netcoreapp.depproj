@@ -3,9 +3,8 @@
        With this, we are able to compile assemblies against shipped, stable versions of .NET Core. -->
   <PropertyGroup>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
-    <NETCoreAppPackageVersion Condition="'$(TargetGroup)' == 'netcoreapp2.0'">2.0.7</NETCoreAppPackageVersion>
-    <NETCoreAppPackageVersion Condition="'$(TargetGroup)' == 'netcoreapp2.1'">2.1.3</NETCoreAppPackageVersion>
-    <TargetFramework>$(TargetGroup)</TargetFramework>
+    <NETCoreAppPackageVersion Condition="'$(TargetFramework)' == 'netcoreapp2.0'">2.0.7</NETCoreAppPackageVersion>
+    <NETCoreAppPackageVersion Condition="'$(TargetFramework)' == 'netcoreapp2.1'">2.1.3</NETCoreAppPackageVersion>
     <BinPlaceRef>true</BinPlaceRef>
   </PropertyGroup>
 

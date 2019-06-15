@@ -2,32 +2,25 @@
   <PropertyGroup>
     <AssemblyName>CoreFx.Private.TestUtilities</AssemblyName>
     <ProjectGuid>{EBDB0247-CA43-4226-B7A1-8FEF21061D09}</ProjectGuid>
-    <RuntimeProjectFile>$(RepoRoot)\external\test-runtime\XUnit.Runtime.depproj</RuntimeProjectFile>
     <ClsCompliant>false</ClsCompliant>
     <ShouldWriteSigningRequired>false</ShouldWriteSigningRequired>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
     <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
     <RunMatchingRefApiCompat>false</RunMatchingRefApiCompat>
-    <NoWarn Condition="'$(TargetGroup)' == 'netstandard'">$(NoWarn);CS3021</NoWarn>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard'">Test Utilities are not supported on this platform</GeneratePlatformNotSupportedAssemblyMessage>
+    <NoWarn Condition="'$(TargetsNetStandard)' == 'true'">$(NoWarn);CS3021</NoWarn>
+    <IncludeDefaultTestReferences>true</IncludeDefaultTestReferences>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsNetStandard)' == 'true'">Test Utilities are not supported on this platform</GeneratePlatformNotSupportedAssemblyMessage>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp2.0-Unix-Debug;netcoreapp2.0-Unix-Release;netcoreapp2.0-Windows_NT-Debug;netcoreapp2.0-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netstandard-Debug;netstandard-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="System\Buffers\BoundedMemory.cs" />
-    <Compile Include="System\Buffers\BoundedMemory.Creation.cs" />
-    <Compile Include="System\Buffers\BoundedMemory.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
-    <Compile Include="System\Buffers\BoundedMemory.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
-    <Compile Include="System\Buffers\PoisonPagePlacement.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netstandard'">
+  <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <Compile Include="System\AdminHelpers.cs" />
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
     <Compile Include="System\Net\PlatformDetection.Networking.cs" />
     <Compile Include="System\PlatformApis.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="System\TestEnvironment.cs" />
-    <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System\PlatformDetection.NetFx.cs" />
-    <Compile Condition="'$(TargetGroup)' != 'netfx' AND '$(TargetsWindows)' == 'true'" Include="System\PlatformDetection.NonNetFx.Windows.cs" />
+    <Compile Condition="'$(TargetsNetFx)' == 'true'" Include="System\PlatformDetection.NetFx.cs" />
+    <Compile Condition="'$(TargetsNetFx)' != 'true' AND '$(TargetsWindows)' == 'true'" Include="System\PlatformDetection.NonNetFx.Windows.cs" />
     <Compile Include="System\PlatformDetection.cs" />
     <Compile Include="System\PlatformDetection.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
     <Compile Include="System\PlatformDetection.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
@@ -37,6 +30,11 @@
     <Compile Include="System\AssertExtensions.cs" />
     <Compile Include="System\RetryHelper.cs" />
     <Compile Include="System\TheoryExtensions.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.Creation.cs" />
+    <Compile Include="System\Buffers\BoundedMemory.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
+    <Compile Include="System\Buffers\BoundedMemory.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="System\Buffers\PoisonPagePlacement.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="$(CommonPath)\CoreLib\Interop\Windows\Kernel32\Interop.GetCurrentProcess_IntPtr.cs">
@@ -105,25 +103,28 @@
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Runtime.InteropServices" />
-    <ReferenceFromRuntime Include="xunit.core" />
-    <ReferenceFromRuntime Include="$(MicrosoftDotNetXUnitExtensionsPackage)" />
-    <ReferenceFromRuntime Include="xunit.assert" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
+  <ItemGroup Condition="'$(TargetsNetFx)' != 'true'">
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="Microsoft.Win32.Primitives" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+  <ItemGroup Condition="'$(TargetsUap)' == 'true'">
     <Reference Include="Windows" />
     <Reference Include="mscorlib" />
     <Reference Include="System.Runtime.WindowsRuntime" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
+  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsPackageVersion)" />
+    <PackageReference Include="xunit.core" Version="$(XUnitPackageVersion)" ExcludeAssets="build" />
+    <PackageReference Include="xunit.assert" Version="$(XUnitPackageVersion)" />
   </ItemGroup>
 </Project>

@@ -6,7 +6,7 @@
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <!--Windows only files -->
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' And '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true' and '$(TargetsWindows)' == 'true'">
     <Compile Include="BasicEventSourceTest\Harness\EtwListener.cs" />
     <Compile Include="BasicEventSourceTest\TestEventCounter.Etw.cs" />
     <Compile Include="BasicEventSourceTest\TestsWrite.Etw.cs" />
@@ -43,6 +43,6 @@
     <Compile Include="CustomEventSources\UseInterfaceEventSource.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="Microsoft.Diagnostics.Tracing.TraceEvent" />
+    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent" Version="$(TraceEventPackageVersion)" />
   </ItemGroup>
 </Project>

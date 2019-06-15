@@ -42,7 +42,7 @@ public class Program
 
 3. Copy the just built corefx assemblies into your application directory. When using Visual Studio or the .NET Core SDK Host (`dotnet.exe`) you usually compile against *reference assemblies*. For simplicity we compile against the same assembly set that we use during run time.
 ```
-xcopy ..\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\9.9.9 runtime /e /i /y /s
+xcopy ..\corefx\artifacts\bin\testhost\netcoreapp-Windows_NT-Release-x64\shared\Microsoft.NETCore.App\$(ProductVersion) runtime /e /i /y /s
 ```
 
 You don't need all the assemblies that are built by corefx but copying the entire directory makes it easier if you want to reference additional ones. At a minimum, this app will need the following assemblies to run:
