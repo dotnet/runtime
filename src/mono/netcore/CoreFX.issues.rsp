@@ -142,6 +142,7 @@
 -nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertNullableFloatToNullableUIntTest
 -nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertFloatToNullableUIntTest
 -noclass System.Linq.Expressions.Tests.LambdaTests
+-noclass System.Linq.Expressions.Tests.LambdaDivideNullableTests
 -nomethod System.Linq.Expressions.Tests.BinaryCoalesceTests.VerifyIL_NullableIntCoalesceToNullableInt
 -nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedDoubleToULongTest
 -nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedDoubleToNullableULongTest

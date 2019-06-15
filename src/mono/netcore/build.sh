@@ -90,6 +90,7 @@ if [[ "$force_rebuild" == "true" || ! -f .configured ]]; then
   cd ..
   ./autogen.sh --with-core=only
   make -j$CPU_COUNT
+  cd netcore
   touch .configured
 fi
 

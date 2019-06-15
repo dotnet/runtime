@@ -9,6 +9,7 @@
 
 # hangs 
 -nomethod *.HttpClientUsesSslCertEnvironmentVariables
+-nomethod System.Threading.Tasks.Dataflow.Tests.DataflowBlockExtensionsTests.*
 
 # dllmap is not working 
 -nonamespace System.IO.MemoryMappedFiles

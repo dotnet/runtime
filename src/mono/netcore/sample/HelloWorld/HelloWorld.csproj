@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <OutputPath>bin</OutputPath>
     <TargetFramework>netcoreapp3.0</TargetFramework>
   </PropertyGroup>
 
