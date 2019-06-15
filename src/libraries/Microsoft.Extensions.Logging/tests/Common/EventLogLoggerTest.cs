@@ -157,14 +157,26 @@ namespace Microsoft.Extensions.Logging
             var expectedMessage = "Category: " + loggerName + Environment.NewLine +
                                   "EventId: 0" + Environment.NewLine +
                                   "Outer Scope" + Environment.NewLine +
-                                  "Inner Scope" + Environment.NewLine + Environment.NewLine +
+                                  "Inner Scope" + Environment.NewLine +
+                                  "K1: V1" + Environment.NewLine +
+                                  "K2: " + Environment.NewLine +
+                                  "K3: " + Environment.NewLine +
+                                  Environment.NewLine +
                                   "Message" + Environment.NewLine;
             var testEventLog = new TestEventLog(expectedMessage.Length);
             var logger = new EventLogLogger(loggerName, new EventLogSettings() { EventLog = testEventLog }, new LoggerExternalScopeProvider());
+            var scopeWithValues = new Dictionary<string, object>
+            {
+                { "K1", "V1" },
+                { "K2", "" },
+                { "K3", null },
+            };
 
             // Act
             using (logger.BeginScope("Outer Scope"))
             using (logger.BeginScope("Inner Scope"))
+            using (logger.BeginScope(scopeWithValues))
+            using (logger.BeginScope((object)null))
             {
                 logger.LogInformation("Message");
             }

@@ -98,10 +98,10 @@ namespace Microsoft.Extensions.Logging.EventLog
                 {
                     foreach (var pair in properties)
                     {
-                        sb.Append(pair.Key).Append(": ").AppendLine(pair.Value.ToString());
+                        sb.Append(pair.Key).Append(": ").AppendLine(pair.Value?.ToString());
                     }
                 }
-                else
+                else if (scope != null)
                 {
                     sb.AppendLine(scope.ToString());
                 }
