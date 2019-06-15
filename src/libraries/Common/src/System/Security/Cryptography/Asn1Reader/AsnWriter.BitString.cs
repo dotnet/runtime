@@ -117,7 +117,7 @@ namespace System.Security.Cryptography.Asn1
             _offset += bitString.Length;
         }
 
-#if netcoreapp || uap || NETCOREAPP
+#if netcoreapp || uap || NETCOREAPP || netstandard21
         /// <summary>
         ///   Write a Bit String value via a callback, with a tag UNIVERSAL 3.
         /// </summary>
