@@ -112,10 +112,22 @@
     <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Windows.cs">
       <Link>Common\System\Net\SocketAddressPal.Windows.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs">
+      <Link>ProductionCode\System\Net\NetworkInformation\InterfaceInfoPal.Windows.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs">
+      <Link>ProductionCode\Common\Interop\Windows\IpHlpApi\Interop.if_nametoindex.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
+      <Link>ProductionCode\Common\Interop\Windows\Interop.Libraries.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="..\..\src\System\Net\SocketException.Unix.cs">
       <Link>ProductionCode\System\Net\SocketException.Unix.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs">
+      <Link>ProductionCode\System\Net\NetworkInformation\InterfaceInfoPal.Unix.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Unix.cs">
       <Link>Common\System\Net\SocketAddressPal.Unix.cs</Link>
@@ -131,6 +143,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SocketAddress.cs">
       <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.SocketAddress.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs">
+      <Link>ProductionCode\Common\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs</Link>
     </Compile>
   </ItemGroup>
 </Project>

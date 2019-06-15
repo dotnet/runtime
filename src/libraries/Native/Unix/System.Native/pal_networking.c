@@ -27,6 +27,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include <net/if.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
@@ -50,7 +51,6 @@
 #include <sys/uio.h>
 #endif
 #if !HAVE_IN_PKTINFO
-#include <net/if.h>
 #if HAVE_GETIFADDRS
 #include <ifaddrs.h>
 #endif
@@ -2688,4 +2688,12 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     errno = ENOTSUP;
     return SystemNative_ConvertErrorPlatformToPal(errno);
 #endif
+}
+
+uint32_t SystemNative_InterfaceNameToIndex(char* interfaceName)
+{
+    assert(interfaceName != NULL);
+    if (interfaceName[0] == '%')
+        interfaceName++;
+    return if_nametoindex(interfaceName);
 }
