@@ -286,6 +286,7 @@ namespace System.Net.Primitives.Functional.Tests
             new object[] { "1::%1", "1::%1" },
             new object[] { "::1%12", "::1%12" },
             new object[] { "::%123", "::%123" },
+            new object[] { "Fe08::1%unknowninterface", "fe08::1" },
             // v4 as v6
             new object[] { "FE08::192.168.0.1", "fe08::c0a8:1" }, // Output is not IPv4 mapped
             new object[] { "::192.168.0.1", "::192.168.0.1" },
@@ -344,6 +345,25 @@ namespace System.Net.Primitives.Functional.Tests
             }
         }
 
+        public static readonly object[][] ScopeIds =
+        {
+            new object[] { "Fe08::1%123", 123},
+            new object[] { "Fe08::1%12345678", 12345678},
+            new object[] { "fe80::e8b0:63ff:fee8:6b3b%9", 9},
+            new object[] { "fe80::e8b0:63ff:fee8:6b3b", 0},
+            new object[] { "fe80::e8b0:63ff:fee8:6b3b%abcd0", 0},
+            new object[] { "::%unknownInterface", 0},
+            new object[] { "::%0", 0},
+        };
+
+        [Theory]
+        [MemberData(nameof(ScopeIds))]
+        public void ParseIPv6_ExtractsScopeId(string address, int expectedScopeId)
+        {
+            IPAddress ip = Parse(address);
+            Assert.Equal(expectedScopeId, ip.ScopeId);
+        }
+
         public static IEnumerable<object[]> InvalidIpv6Addresses()
         {
             yield return new object[] { "[:]" }; // malformed
@@ -399,9 +419,7 @@ namespace System.Net.Primitives.Functional.Tests
             yield return new object[] { "G::" }; // invalid hex
             yield return new object[] { "FFFFF::" }; // invalid value
             yield return new object[] { ":%12" }; // colon scope
-            yield return new object[] { "::%1a" }; // alphanumeric scope
             yield return new object[] { "[2001:0db8:85a3:08d3:1319:8a2e:0370:7344]:443/" }; // errneous ending slash after ignored port
-            yield return new object[] { "::1234%0x12" }; // invalid scope ID
 
             yield return new object[] { "e3fff:ffff:ffff:ffff:ffff:ffff:ffff:abcd" }; // 1st number too long
             yield return new object[] { "3fff:effff:ffff:ffff:ffff:ffff:ffff:abcd" }; // 2nd number too long
