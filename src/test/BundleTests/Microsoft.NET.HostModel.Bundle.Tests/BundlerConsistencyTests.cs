@@ -50,7 +50,6 @@ namespace Microsoft.NET.HostModel.Tests
 
             var hostName = BundleHelper.GetHostName(fixture);
             var appName = Path.GetFileNameWithoutExtension(hostName);
-            string publishPath = BundleHelper.GetPublishPath(fixture);
             var bundleDir = BundleHelper.GetBundleDir(fixture);
 
             // Generate a file specification without the apphost
@@ -60,6 +59,24 @@ namespace Microsoft.NET.HostModel.Tests
 
             Bundler bundler = new Bundler(hostName, bundleDir.FullName);
 
+            Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs));
+        }
+
+        [Fact]
+        public void TestWithDuplicateEntriesFails()
+        {
+            var fixture = sharedTestState.TestFixture.Copy();
+
+            var hostName = BundleHelper.GetHostName(fixture);
+            var bundleDir = BundleHelper.GetBundleDir(fixture);
+
+            // Generate a file specification with duplicate entries
+            var fileSpecs = new List<FileSpec>();
+            fileSpecs.Add(new FileSpec(BundleHelper.GetHostPath(fixture), BundleHelper.GetHostName(fixture)));
+            fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "app.repeat"));
+            fileSpecs.Add(new FileSpec(BundleHelper.GetAppPath(fixture), "app.repeat"));
+
+            Bundler bundler = new Bundler(hostName, bundleDir.FullName);
             Assert.Throws<ArgumentException>(() => bundler.GenerateBundle(fileSpecs));
         }
 
