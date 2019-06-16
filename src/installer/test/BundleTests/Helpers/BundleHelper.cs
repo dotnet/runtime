@@ -10,9 +10,25 @@ namespace BundleTests.Helpers
     public static class BundleHelper
     {
         public const string DotnetBundleExtractBaseEnvVariable = "DOTNET_BUNDLE_EXTRACT_BASE_DIR";
+
+        public static string GetHostPath(TestProjectFixture fixture)
+        {
+            return Path.Combine(GetPublishPath(fixture), GetHostName(fixture));
+        }
+
+        public static string GetAppPath(TestProjectFixture fixture)
+        {
+            return Path.Combine(GetPublishPath(fixture), GetAppName(fixture));
+        }
+
         public static string GetHostName(TestProjectFixture fixture)
         {
             return Path.GetFileName(fixture.TestProject.AppExe);
+        }
+
+        public static string GetAppName(TestProjectFixture fixture)
+        {
+            return Path.GetFileName(fixture.TestProject.AppDll);
         }
 
         public static string GetPublishPath(TestProjectFixture fixture)
