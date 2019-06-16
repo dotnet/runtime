@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -31,7 +30,15 @@ namespace System.Text.Json
                     return true;
                 }
 
-                state.Current.Enumerator = ((IDictionary)enumerable).GetEnumerator();
+                if (enumerable is IDictionary dictionary)
+                {
+                    state.Current.Enumerator = dictionary.GetEnumerator();
+                }
+                else
+                {
+                    state.Current.Enumerator = enumerable.GetEnumerator();
+                }
+
                 state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer);
             }
 
