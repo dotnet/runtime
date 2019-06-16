@@ -80,11 +80,7 @@ using System.Runtime.ConstrainedExecution;
   back into memory, etc), then they can provide a finalizer that will be 
   guaranteed to run before the CriticalHandle's critical finalizer.
 
-  Subclasses are expected to be written as follows (note that
-  SuppressUnmanagedCodeSecurity should always be used on any P/Invoke methods
-  invoked as part of ReleaseHandle, in order to switch the security check from
-  runtime to jit time and thus remove a possible failure path from the
-  invocation of the method):
+  Subclasses are expected to be written as follows:
 
   internal sealed MyCriticalHandleSubclass : CriticalHandle {
       // Called by P/Invoke when returning CriticalHandles
@@ -99,7 +95,7 @@ using System.Runtime.ConstrainedExecution;
           get { return handle == IntPtr.Zero; }
       }
 
-      [DllImport(Interop.Libraries.Kernel32), SuppressUnmanagedCodeSecurity, ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+      [DllImport(Interop.Libraries.Kernel32), ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       private static extern bool CloseHandle(IntPtr handle);
 
       override protected bool ReleaseHandle()
