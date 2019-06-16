@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
+using System.Threading;
 
 using Internal.Runtime.CompilerServices;
 
@@ -15,7 +17,7 @@ namespace System.Globalization
     public partial class CompareInfo
     {
         [NonSerialized]
-        private Interop.Globalization.SafeSortHandle _sortHandle = null!; // initialized in helper called by ctors
+        private IntPtr _sortHandle;
 
         [NonSerialized]
         private bool _isAsciiEqualityOrdinal;
@@ -30,17 +32,9 @@ namespace System.Globalization
             }
             else
             {
-                Interop.Globalization.ResultCode resultCode = Interop.Globalization.GetSortHandle(GetNullTerminatedUtf8String(_sortName), out _sortHandle);
-                if (resultCode != Interop.Globalization.ResultCode.Success)
-                {
-                    _sortHandle.Dispose();
-
-                    if (resultCode == Interop.Globalization.ResultCode.OutOfMemory)
-                        throw new OutOfMemoryException();
-
-                    throw new ExternalException(SR.Arg_ExternalException);
-                }
                 _isAsciiEqualityOrdinal = (_sortName == "en-US" || _sortName == "");
+
+                _sortHandle = SortHandleCache.GetCachedSortHandle(_sortName);
             }
         }
 
@@ -918,20 +912,6 @@ namespace System.Globalization
             return (options & CompareOptions.IgnoreSymbols) == 0;
         }
 
-        private static byte[] GetNullTerminatedUtf8String(string s)
-        {
-            int byteLen = System.Text.Encoding.UTF8.GetByteCount(s);
-
-            // Allocate an extra byte (which defaults to 0) as the null terminator.
-            byte[] buffer = new byte[byteLen + 1];
-
-            int bytesWritten = System.Text.Encoding.UTF8.GetBytes(s, 0, s.Length, buffer, 0);
-
-            Debug.Assert(bytesWritten == byteLen);
-
-            return buffer;
-        }
-
         private SortVersion GetSortVersion()
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -942,6 +922,42 @@ namespace System.Globalization
                                                              (byte) ((LCID  & 0x00FF0000) >> 16),
                                                              (byte) ((LCID  & 0x0000FF00) >> 8),
                                                              (byte) (LCID  & 0xFF)));
+        }
+
+        private static class SortHandleCache
+        {
+            // in most scenarios there is a limited number of cultures with limited number of sort options
+            // so caching the sort handles and not freeing them is OK, see https://github.com/dotnet/coreclr/pull/25117 for more
+            private static readonly Dictionary<string, IntPtr> s_sortNameToSortHandleCache = new Dictionary<string, IntPtr>();
+
+            internal static IntPtr GetCachedSortHandle(string sortName)
+            {
+                lock (s_sortNameToSortHandleCache)
+                {
+                    if (!s_sortNameToSortHandleCache.TryGetValue(sortName, out IntPtr result))
+                    {
+                        Interop.Globalization.ResultCode resultCode = Interop.Globalization.GetSortHandle(sortName, out result);
+
+                        if (resultCode == Interop.Globalization.ResultCode.OutOfMemory)
+                            throw new OutOfMemoryException();
+                        else if (resultCode != Interop.Globalization.ResultCode.Success)
+                            throw new ExternalException(SR.Arg_ExternalException);
+
+                        try
+                        {
+                            s_sortNameToSortHandleCache.Add(sortName, result);
+                        }
+                        catch
+                        {
+                            Interop.Globalization.CloseSortHandle(result);
+
+                            throw;
+                        }
+                    }
+
+                    return result;
+                }
+            }
         }
 
         // See https://github.com/dotnet/coreclr/blob/master/src/utilcode/util_nodependencies.cpp#L970
