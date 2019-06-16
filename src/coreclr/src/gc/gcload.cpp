@@ -13,6 +13,7 @@
 #include "gcenv.h"
 #include "gc.h"
 
+#ifdef BUILD_AS_STANDALONE
 #ifndef DLLEXPORT
 #ifdef _MSC_VER
 #define DLLEXPORT __declspec(dllexport)
@@ -22,6 +23,9 @@
 #endif // DLLEXPORT
 
 #define GC_EXPORT extern "C" DLLEXPORT
+#else
+#define GC_EXPORT extern "C"
+#endif
 
 // These symbols are defined in gc.cpp and populate the GcDacVars
 // structure with the addresses of DAC variables within the GC.
