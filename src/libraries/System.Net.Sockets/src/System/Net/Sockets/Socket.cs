@@ -4461,16 +4461,11 @@ namespace System.Net.Sockets
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposing)
-            {
-                return;
-            }
-
             if (NetEventSource.IsEnabled)
             {
                 try
                 {
-                    NetEventSource.Info(this, $"disposing:true CleanedUp:{CleanedUp}");
+                    NetEventSource.Info(this, $"disposing:{disposing} CleanedUp:{CleanedUp}");
                     NetEventSource.Enter(this);
                 }
                 catch (Exception exception) when (!ExceptionCheck.IsFatal(exception)) { }
@@ -4490,11 +4485,11 @@ namespace System.Net.Sockets
             try
             {
                 int timeout = _closeTimeout;
-                if (timeout == 0)
+                if (timeout == 0 || !disposing)
                 {
                     // Abortive.
                     if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Calling _handle.Dispose()");
-                    _handle.Dispose();
+                    _handle?.Dispose();
                 }
                 else
                 {
