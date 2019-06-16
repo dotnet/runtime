@@ -12,7 +12,6 @@ namespace System.Net.Sockets.Tests
 {
     public partial class DisposedSocket
     {
-        [ActiveIssue(37044, TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
@@ -22,6 +21,7 @@ namespace System.Net.Sockets.Tests
             RetryHelper.Execute(() =>
             {
                 GC.Collect();
+                GC.WaitForPendingFinalizers();
                 Assert.Equal(0, handles.Count(h => h.IsAlive));
             });
         }
