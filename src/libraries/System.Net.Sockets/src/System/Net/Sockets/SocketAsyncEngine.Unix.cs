@@ -331,6 +331,7 @@ namespace System.Net.Sockets
                             if (context != null)
                             {
                                 context.HandleEvents(_buffer[i].Events);
+                                context = null;
                             }
                         }
                     }
