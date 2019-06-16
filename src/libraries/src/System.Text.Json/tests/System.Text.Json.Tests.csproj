@@ -53,6 +53,7 @@
     <Compile Include="Serialization\Stream.ReadTests.cs" />
     <Compile Include="Serialization\Stream.WriteTests.cs" />
     <Compile Include="Serialization\TestClasses.cs" />
+    <Compile Include="Serialization\TestClasses.Dictionary.cs" />
     <Compile Include="Serialization\TestClasses.Polymorphic.cs" />
     <Compile Include="Serialization\TestClasses.SimpleTestClass.cs" />
     <Compile Include="Serialization\TestClasses.SimpleTestClassWithNullables.cs" />
