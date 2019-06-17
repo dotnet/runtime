@@ -539,7 +539,7 @@ PAL_GetLogicalProcessorCacheSizeFromOS()
             || sysctlbyname("hw.l1dcachesize", &cacheSizeFromSysctl, &sz, nullptr, 0) == 0;
         if (success)
         {
-            assert(cacheSizeFromSysctl > 0);
+            _ASSERTE(cacheSizeFromSysctl > 0);
             cacheSize = (size_t) cacheSizeFromSysctl;
         }
     }
