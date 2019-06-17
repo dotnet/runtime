@@ -96,7 +96,6 @@ namespace System.Transactions.Tests
         [InlineData(52)]
         [InlineData(53)]
         [InlineData(54)]
-        [ActiveIssue(31913, TargetFrameworkMonikers.Uap)]
         public void AsyncTSTest(int variation)
         {
             RemoteExecutor.Invoke(variationString =>
