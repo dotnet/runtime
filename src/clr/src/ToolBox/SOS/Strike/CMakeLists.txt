@@ -149,14 +149,15 @@ else(WIN32)
   generate_exports_file(${DEF_SOURCES} ${EXPORTS_FILE})
 endif(WIN32)
 
+if(CLR_CMAKE_PLATFORM_LINUX)
+  list(APPEND 
+    SOS_LIBRARY 
+    createdump_lib
+  )
+  add_definitions(-DCREATE_DUMP_SUPPORTED)
+endif(CLR_CMAKE_PLATFORM_LINUX)
+
 if(CLR_CMAKE_PLATFORM_ARCH_AMD64)
-  if(CLR_CMAKE_PLATFORM_LINUX)
-    list(APPEND 
-      SOS_LIBRARY 
-      createdump_lib
-    )
-    add_definitions(-DCREATE_DUMP_SUPPORTED)
-  endif(CLR_CMAKE_PLATFORM_LINUX)
   set(SOS_SOURCES_ARCH
     disasmX86.cpp
   )
