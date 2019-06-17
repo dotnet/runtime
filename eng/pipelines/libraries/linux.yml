@@ -23,6 +23,16 @@ jobs:
       displayName: Linux
       strategy:
         matrix:
+          # Run RedHat6 in release mode on CI to cover Release configuration differences
+          RedHat6_x64_Release:
+            _BuildConfig: Release
+            _architecture: x64
+            _framework: netcoreapp
+            _buildExtraArguments: /p:RuntimeOS=rhel.6 /p:PortableBuild=false
+            _dockerContainer: rhel6_container
+            _helixQueues: $(redhatHelixQueue)
+            _publishTests: ${{ parameters.fullMatrix }}
+
           ${{ if eq(parameters.fullMatrix, 'false') }}:
             x64_Debug:
               _BuildConfig: Debug
@@ -33,9 +43,8 @@ jobs:
               _buildScriptPrefix: ''
               _buildExtraArguments: ''
 
-            # Use a Release leg in PRs to validate both configurations
-            musl_x64_Release:
-              _BuildConfig: Release
+            musl_x64_Debug:
+              _BuildConfig: Debug
               _architecture: x64
               _framework: netcoreapp
               _helixQueues: $(alpineQueues)
@@ -105,6 +114,7 @@ jobs:
       timeoutInMinutes: 180
 
       variables:
+        - redhatHelixQueue: RedHat.6.Amd64.Open
 
         - ${{ if eq(parameters.fullMatrix, 'false') }}:
           - linuxDefaultQueues: Centos.7.Amd64.Open+RedHat.7.Amd64.Open+Debian.9.Amd64.Open+Ubuntu.1604.Amd64.Open+Ubuntu.1804.Amd64.Open+SLES.15.Amd64.Open+\(Fedora.29.Amd64.Open\)ubuntu.1604.amd64.open@mcr.microsoft.com/dotnet-buildtools/prereqs:fedora-29-09ca40b-20190508143249

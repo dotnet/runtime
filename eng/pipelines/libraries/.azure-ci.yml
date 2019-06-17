@@ -62,12 +62,6 @@ jobs:
       isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
       fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
 
-  # RedHat6 leg
-  - template: /eng/pipelines/redhat6.yml
-    parameters:
-      isOfficialBuild: ${{ and(ne(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest')) }}
-      fullMatrix: ${{ notIn(variables['Build.Reason'], 'PullRequest') }}
-
     # FreeBSD leg is only for official builds
     # - template: /eng/pipelines/freebsd.yml
     #   parameters:
@@ -84,5 +78,4 @@ jobs:
           - AllConfigurations
           - LinuxTest
           - MacOS
-          - RedHat6
           # - FreeBSD
