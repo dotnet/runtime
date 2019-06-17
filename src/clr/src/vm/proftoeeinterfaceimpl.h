@@ -57,6 +57,9 @@ class ProfileArgIterator
 private:
     void        *m_handle;
     ArgIterator  m_argIterator;
+#ifdef UNIX_AMD64_ABI
+    UINT64       m_bufferPos;
+#endif // UNIX_AMD64_ABI
 
 public:
     ProfileArgIterator(MetaSig * pMetaSig, void* platformSpecificHandle);
@@ -71,6 +74,10 @@ public:
         LIMITED_METHOD_CONTRACT;
         return m_argIterator.NumFixedArgs();
     }
+    
+#ifdef UNIX_AMD64_ABI
+    LPVOID CopyStructFromRegisters();
+#endif // UNIX_AMD64_ABI
 
     //
     // After initialization, this method is called repeatedly until it
