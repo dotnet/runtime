@@ -163,7 +163,6 @@ class Object;
 /* Tracing levels supported by CLR ETW */
 /***************************************/
 #define ETWMAX_TRACE_LEVEL 6        // Maximum Number of Trace Levels supported
-#define TRACE_LEVEL_NONE        0   // Tracing is not on
 #define TRACE_LEVEL_FATAL       1   // Abnormal exit or termination
 #define TRACE_LEVEL_ERROR       2   // Severe errors that need logging
 #define TRACE_LEVEL_WARNING     3   // Warnings such as allocation failure
