@@ -31,10 +31,7 @@ namespace System.Text.Json
     /// <see cref="JsonWriterOptions"/> and pass that in to the writer.
     /// </remarks>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
-    public sealed partial class Utf8JsonWriter : IDisposable
-#if BUILDING_INBOX_LIBRARY
-        , IAsyncDisposable
-#endif
+    public sealed partial class Utf8JsonWriter : IDisposable, IAsyncDisposable
     {
         // Depending on OS, either '\r\n' OR '\n'
         private static readonly int s_newLineLength = Environment.NewLine.Length;
@@ -340,7 +337,6 @@ namespace System.Text.Json
             _output = null;
         }
 
-#if BUILDING_INBOX_LIBRARY
         /// <summary>
         /// Asynchronously commits any left over JSON text that has not yet been flushed and releases all resources used by the current instance.
         /// </summary>
@@ -369,7 +365,6 @@ namespace System.Text.Json
             _arrayBufferWriter = null;
             _output = null;
         }
-#endif
 
         /// <summary>
         /// Asynchronously commits the JSON text written so far which makes it visible to the output destination.
