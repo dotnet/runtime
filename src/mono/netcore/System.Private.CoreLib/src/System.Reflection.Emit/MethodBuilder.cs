@@ -279,7 +279,7 @@ namespace System.Reflection.Emit
 			 * dynamically created ctors.
 			 */
 			if (type.is_created)
-				return MonoCustomAttrs.GetCustomAttributes (this, inherit);
+				return CustomAttribute.GetCustomAttributes (this, inherit);
 			else
 				throw NotSupported ();
 		}
@@ -287,7 +287,7 @@ namespace System.Reflection.Emit
 		public override object[] GetCustomAttributes (Type attributeType, bool inherit)
 		{
 			if (type.is_created)
-				return MonoCustomAttrs.GetCustomAttributes (this, attributeType, inherit);
+				return CustomAttribute.GetCustomAttributes (this, attributeType, inherit);
 			else
 				throw NotSupported ();
 		}

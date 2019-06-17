@@ -196,6 +196,7 @@
       <Compile Include="src\System.IO\FileLoadException.cs" />
       <Compile Include="src\System.Reflection\Assembly.cs" />
       <Compile Include="src\System.Reflection\AssemblyName.cs" />
+      <Compile Include="src\System.Reflection\CustomAttribute.cs" />
       <Compile Include="src\System.Reflection\CustomAttributeData.cs" />
       <Compile Include="src\System.Reflection\CustomAttributeTypedArgument.cs" />
       <Compile Include="src\System.Reflection\FieldInfo.cs" />
@@ -286,7 +287,6 @@
       <Compile Include="..\..\mcs\class\corlib\Mono\SafeStringMarshal.cs" />
       <Compile Include="..\..\mcs\class\corlib\Mono\SafeGPtrArrayHandle.cs" />
 
-      <Compile Include="..\..\mcs\class\corlib\System\MonoCustomAttrs.cs" />
       <Compile Include="..\..\mcs\class\corlib\System\TypeSpec.cs" />
 
       <Compile Include="..\..\mcs\class\corlib\System.Runtime.CompilerServices\PreserveDependencyAttribute.cs" />

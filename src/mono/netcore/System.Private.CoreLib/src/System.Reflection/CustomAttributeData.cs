@@ -117,23 +117,23 @@ namespace System.Reflection
 		}
 
 		public static IList<CustomAttributeData> GetCustomAttributes (Assembly target) {
-			return MonoCustomAttrs.GetCustomAttributesData (target);
+			return CustomAttribute.GetCustomAttributesData (target);
 		}
 
 		public static IList<CustomAttributeData> GetCustomAttributes (MemberInfo target) {
-			return MonoCustomAttrs.GetCustomAttributesData (target);
+			return CustomAttribute.GetCustomAttributesData (target);
 		}
 
 		internal static IList<CustomAttributeData> GetCustomAttributesInternal (RuntimeType target) {
-			return MonoCustomAttrs.GetCustomAttributesData (target);
+			return CustomAttribute.GetCustomAttributesData (target);
 		}
 
 		public static IList<CustomAttributeData> GetCustomAttributes (Module target) {
-			return MonoCustomAttrs.GetCustomAttributesData (target);
+			return CustomAttribute.GetCustomAttributesData (target);
 		}
 
 		public static IList<CustomAttributeData> GetCustomAttributes (ParameterInfo target) {
-			return MonoCustomAttrs.GetCustomAttributesData (target);
+			return CustomAttribute.GetCustomAttributesData (target);
 		}
 
 		virtual public Type AttributeType {

@@ -295,17 +295,17 @@ namespace System.Reflection
 		//
 		public override bool IsDefined (Type attributeType, bool inherit)
 		{
-			return MonoCustomAttrs.IsDefined (this, attributeType, false);
+			return CustomAttribute.IsDefined (this, attributeType, false);
 		}
 
 		public override object[] GetCustomAttributes (bool inherit)
 		{
-			return MonoCustomAttrs.GetCustomAttributes (this, false);
+			return CustomAttribute.GetCustomAttributes (this, false);
 		}
 		
 		public override object[] GetCustomAttributes (Type attributeType, bool inherit)
 		{
-			return MonoCustomAttrs.GetCustomAttributes (this, attributeType, false);
+			return CustomAttribute.GetCustomAttributes (this, attributeType, false);
 		}
 
 
