@@ -71,7 +71,7 @@ namespace System.Diagnostics.Tracing
 
         internal void OnMetricWritten(double value)
         {
-            Debug.Assert(Monitor.IsEntered(MyLock));
+            Debug.Assert(Monitor.IsEntered(this));
             _sum += value;
             _sumSquared += value * value;
             if (value > _max)
@@ -85,7 +85,7 @@ namespace System.Diagnostics.Tracing
 
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {
-            lock (MyLock)
+            lock (this)
             {
                 Flush();
                 CounterPayload payload = new CounterPayload();
@@ -116,7 +116,7 @@ namespace System.Diagnostics.Tracing
 
         private void ResetStatistics()
         {
-            Debug.Assert(Monitor.IsEntered(MyLock));
+            Debug.Assert(Monitor.IsEntered(this));
             _count = 0;
             _sum = 0;
             _sumSquared = 0;
@@ -154,7 +154,7 @@ namespace System.Diagnostics.Tracing
                 {
                     // It is possible that two threads both think the buffer is full, but only one get to actually flush it, the other
                     // will eventually enter this code path and potentially calling Flushing on a buffer that is not full, and that's okay too.
-                    lock (MyLock) // Lock the counter
+                    lock (this) // Lock the counter
                         Flush();
                     i = 0;
                 }
@@ -170,7 +170,7 @@ namespace System.Diagnostics.Tracing
 
         protected void Flush()
         {
-            Debug.Assert(Monitor.IsEntered(MyLock));
+            Debug.Assert(Monitor.IsEntered(this));
             for (int i = 0; i < _bufferedValues.Length; i++)
             {
                 var value = Interlocked.Exchange(ref _bufferedValues[i], UnusedBufferSlotValue);

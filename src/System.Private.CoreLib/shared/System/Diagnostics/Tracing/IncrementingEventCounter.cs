@@ -43,7 +43,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="increment">The value to increment by.</param>
         public void Increment(double increment = 1)
         {
-            lock (MyLock)
+            lock (this)
             {
                 _increment += increment;
             }
@@ -57,7 +57,7 @@ namespace System.Diagnostics.Tracing
 
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {
-            lock (MyLock)     // Lock the counter
+            lock (this)     // Lock the counter
             {
                 IncrementingCounterPayload payload = new IncrementingCounterPayload();
                 payload.Name = Name;
