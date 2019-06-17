@@ -148,8 +148,8 @@ namespace System.Text.Json
     public partial struct JsonReaderOptions
     {
         private int _dummyPrimitive;
-        public bool AllowTrailingCommas { get { throw null; } set { } }
-        public System.Text.Json.JsonCommentHandling CommentHandling { get { throw null; } set { } }
+        public bool AllowTrailingCommas { readonly get { throw null; } set { } }
+        public System.Text.Json.JsonCommentHandling CommentHandling { readonly get { throw null; } set { } }
         public int MaxDepth { get { throw null; } set { } }
     }
     public partial struct JsonReaderState
@@ -233,13 +233,13 @@ namespace System.Text.Json
         public long BytesConsumed { get { throw null; } }
         public int CurrentDepth { get { throw null; } }
         public System.Text.Json.JsonReaderState CurrentState { get { throw null; } }
-        public bool HasValueSequence { get { throw null; } }
+        public readonly bool HasValueSequence { get { throw null; } }
         public bool IsFinalBlock { get { throw null; } }
         public System.SequencePosition Position { get { throw null; } }
-        public long TokenStartIndex { get { throw null; } }
+        public readonly long TokenStartIndex { get { throw null; } }
         public System.Text.Json.JsonTokenType TokenType { get { throw null; } }
-        public System.Buffers.ReadOnlySequence<byte> ValueSequence { get { throw null; } }
-        public System.ReadOnlySpan<byte> ValueSpan { get { throw null; } }
+        public readonly System.Buffers.ReadOnlySequence<byte> ValueSequence { get { throw null; } }
+        public readonly System.ReadOnlySpan<byte> ValueSpan { get { throw null; } }
         public bool GetBoolean() { throw null; }
         public byte[] GetBytesFromBase64() { throw null; }
         public string GetComment() { throw null; }
@@ -276,7 +276,7 @@ namespace System.Text.Json
         public bool ValueTextEquals(System.ReadOnlySpan<char> text) { throw null; }
         public bool ValueTextEquals(string text) { throw null; }
     }
-    public sealed partial class Utf8JsonWriter : System.IDisposable
+    public sealed partial class Utf8JsonWriter : System.IAsyncDisposable, System.IDisposable
     {
         public Utf8JsonWriter(System.Buffers.IBufferWriter<byte> bufferWriter, System.Text.Json.JsonWriterOptions options = default(System.Text.Json.JsonWriterOptions)) { }
         public Utf8JsonWriter(System.IO.Stream utf8Json, System.Text.Json.JsonWriterOptions options = default(System.Text.Json.JsonWriterOptions)) { }
@@ -285,6 +285,7 @@ namespace System.Text.Json
         public int CurrentDepth { get { throw null; } }
         public System.Text.Json.JsonWriterOptions Options { get { throw null; } }
         public void Dispose() { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
         public void Flush() { }
         public System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public void Reset() { }
