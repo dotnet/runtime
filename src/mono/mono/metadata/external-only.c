@@ -95,7 +95,12 @@ mono_gchandle_get_target (uint32_t gchandle)
 void
 mono_gchandle_free (uint32_t gchandle)
 {
-	MONO_EXTERNAL_ONLY_GC_UNSAFE_VOID (mono_gchandle_free_internal (gchandle));
+	/* Xamarin.Mac and Xamarin.iOS can call this from a worker thread
+	 * that's not attached to the runtime. This is okay for SGen because
+	 * the gchandle code is lockfree.  SGen calls back into Mono which
+	 * fires a profiler event, so the profiler must be prepared to be
+	 * called from threads that aren't attached to Mono. */
+	MONO_EXTERNAL_ONLY_VOID (mono_gchandle_free_internal (gchandle));
 }
 
 /* GC write barriers support */
