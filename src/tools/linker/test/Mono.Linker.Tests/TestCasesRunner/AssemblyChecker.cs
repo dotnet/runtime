@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -335,6 +335,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			VerifyPseudoAttributes (src, linked);
 			VerifyGenericParameters (src, linked);
 			VerifyCustomAttributes (src, linked);
+			VerifyCustomAttributes(src.MethodReturnType, linked.MethodReturnType);
 			VerifyParameters (src, linked);
 			VerifySecurityAttributes (src, linked);
 			VerifyArrayInitializers (src, linked);
