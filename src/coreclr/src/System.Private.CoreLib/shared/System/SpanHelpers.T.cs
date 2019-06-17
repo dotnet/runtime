@@ -437,7 +437,7 @@ namespace System
             Debug.Assert(valueLength >= 0);
 
             if (valueLength == 0)
-                return 0;  // A zero-length sequence is always treated as "found" at the start of the search space.
+                return -1;  // A zero-length set of values is always treated as "not found".
 
             int index = -1;
             for (int i = 0; i < valueLength; i++)
@@ -798,7 +798,7 @@ namespace System
             Debug.Assert(valueLength >= 0);
 
             if (valueLength == 0)
-                return 0;  // A zero-length sequence is always treated as "found" at the start of the search space.
+                return -1;  // A zero-length set of values is always treated as "not found".
 
             int index = -1;
             for (int i = 0; i < valueLength; i++)
