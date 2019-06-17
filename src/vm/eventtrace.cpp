@@ -6794,7 +6794,6 @@ VOID ETW::MethodLog::SendEventsForNgenMethods(Module *pModule, DWORD dwEventOpti
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-#ifdef FEATURE_PREJIT
     if (!pModule)
         return;
 
@@ -6815,6 +6814,8 @@ VOID ETW::MethodLog::SendEventsForNgenMethods(Module *pModule, DWORD dwEventOpti
         return;
     }
 #endif // FEATURE_READYTORUN
+
+#ifdef FEATURE_PREJIT
     if (pModule->HasNativeImage())
     {
         MethodIterator mi(pModule);
