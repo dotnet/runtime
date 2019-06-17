@@ -146,5 +146,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             EnsureFileDirectoryExists(filePath);
             File.WriteAllText(filePath, string.Empty);
         }
+
+        public static void DeleteFileIfPossible(string filePath)
+        {
+            try
+            {
+                File.Delete(filePath);
+            }
+            catch (System.IO.IOException)
+            {
+            }
+        }
     }
 }
