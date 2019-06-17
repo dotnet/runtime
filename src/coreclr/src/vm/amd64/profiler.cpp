@@ -14,6 +14,7 @@
 
 #ifdef PROFILING_SUPPORTED
 #include "proftoeeinterfaceimpl.h"
+#include "argdestination.h"
 
 MethodDesc *FunctionIdToMethodDesc(FunctionID functionID);
 
@@ -22,6 +23,8 @@ MethodDesc *FunctionIdToMethodDesc(FunctionID functionID);
 #define PROFILE_ENTER        0x1
 #define PROFILE_LEAVE        0x2
 #define PROFILE_TAILCALL     0x4
+
+#define PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE 16
 
 typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
 {
@@ -49,6 +52,10 @@ typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
     UINT64      r9;
 #endif
     UINT32      flags;
+#if defined(UNIX_AMD64_ABI)
+    // A buffer to copy structs in to so they are sequential for GetFunctionEnter3Info.
+    UINT64      buffer[PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE];
+#endif
 } PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
 
 
@@ -118,6 +125,9 @@ ProfileArgIterator::ProfileArgIterator(MetaSig * pSig, void * platformSpecificHa
 
     m_handle = platformSpecificHandle;
     PROFILE_PLATFORM_SPECIFIC_DATA* pData = (PROFILE_PLATFORM_SPECIFIC_DATA*)m_handle;
+#ifdef UNIX_AMD64_ABI
+    m_bufferPos = 0;
+#endif // UNIX_AMD64_ABI
 
     // unwind a frame and get the Rsp for the profiled method to make sure it matches
     // what the JIT gave us
@@ -204,6 +214,84 @@ ProfileArgIterator::~ProfileArgIterator()
     m_handle = NULL;
 }
 
+#ifdef UNIX_AMD64_ABI
+LPVOID ProfileArgIterator::CopyStructFromRegisters()
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_FORBID_FAULT;
+    STATIC_CONTRACT_MODE_COOPERATIVE;
+
+ 
+    PROFILE_PLATFORM_SPECIFIC_DATA* pData = (PROFILE_PLATFORM_SPECIFIC_DATA*)m_handle;
+    ArgLocDesc *argLocDesc = m_argIterator.GetArgLocDescForStructInRegs();
+
+    LPVOID dest = (LPVOID)&pData->buffer[m_bufferPos];
+    BYTE* genRegSrc = (BYTE*)&pData->rdi + argLocDesc->m_idxGenReg * 8;
+    BYTE* floatRegSrc = (BYTE*)&pData->flt0 + argLocDesc->m_idxFloatReg * 8;
+
+    TypeHandle th;
+    m_argIterator.GetArgType(&th);
+    int fieldBytes = th.AsMethodTable()->GetNumInstanceFieldBytes();
+    INDEBUG(int remainingBytes = fieldBytes;)
+
+    EEClass* eeClass = argLocDesc->m_eeClass;
+    _ASSERTE(eeClass != NULL);
+
+    for (int i = 0; i < eeClass->GetNumberEightBytes(); i++)
+    {
+        int eightByteSize = eeClass->GetEightByteSize(i);
+        SystemVClassificationType eightByteClassification = eeClass->GetEightByteClassification(i);
+
+        _ASSERTE(remainingBytes >= eightByteSize);
+
+        if (eightByteClassification == SystemVClassificationTypeSSE)
+        {
+            if (eightByteSize == 8)
+            {
+                *(UINT64*)dest = *(UINT64*)floatRegSrc ;
+            }
+            else
+            {
+                _ASSERTE(eightByteSize == 4);
+                *(UINT32*)dest = *(UINT32*)floatRegSrc;
+            }
+            floatRegSrc += 8;
+        }
+        else
+        {
+            if (eightByteSize == 8)
+            {
+                _ASSERTE((eightByteClassification == SystemVClassificationTypeInteger) ||
+                         (eightByteClassification == SystemVClassificationTypeIntegerReference) ||
+                         (eightByteClassification == SystemVClassificationTypeIntegerByRef));
+
+                _ASSERTE(IS_ALIGNED((SIZE_T)genRegSrc, 8));
+                *(UINT64*)dest = *(UINT64*)genRegSrc;
+            }
+            else
+            {
+                _ASSERTE(eightByteClassification == SystemVClassificationTypeInteger);
+                memcpyNoGCRefs(dest, genRegSrc, eightByteSize);
+            }
+
+            genRegSrc += eightByteSize;
+        }
+
+        dest = (BYTE*)dest + eightByteSize;
+        INDEBUG(remainingBytes -= eightByteSize;)
+    }
+
+    _ASSERTE(remainingBytes == 0);
+    LPVOID destOrig = (LPVOID)&pData->buffer[m_bufferPos];
+    //Increase bufferPos by ceiling(fieldBytes/8)
+    m_bufferPos += (fieldBytes + 7) / 8;
+    _ASSERTE(m_bufferPos <= PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE);
+
+    return destOrig;
+}
+#endif // UNIX_AMD64_ABI
+
 /*
  * ProfileArgIterator::GetNextArgAddr
  *
@@ -248,12 +336,36 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
     }
 
     // if we're here we have an enregistered argument
+    CorElementType argType = m_argIterator.GetArgType();
+#if defined(UNIX_AMD64_ABI)
+    if (argOffset == TransitionBlock::StructInRegsOffset)
+    {
+        LPVOID argPtr = CopyStructFromRegisters();
+        return argPtr;
+    }
+    else
+    {
+        ArgLocDesc argLocDesc;
+        m_argIterator.GetArgLoc(argOffset, &argLocDesc);
+
+        if (argLocDesc.m_cFloatReg > 0)
+        {
+            return (LPBYTE)&pData->flt0 + (argLocDesc.m_idxFloatReg * 8);
+        }
+        else
+        {
+            // Stack arguments and float registers are already dealt with,
+            // so it better be a general purpose register
+            _ASSERTE(argLocDesc.m_cGenReg > 0);
+            return (LPBYTE)&pData->rdi + (argLocDesc.m_idxGenReg * 8);
+        }
+    }
+#else // UNIX_AMD64_ABI
     unsigned int regStructOfs = (argOffset - TransitionBlock::GetOffsetOfArgumentRegisters());
     _ASSERTE(regStructOfs < ARGUMENTREGISTERS_SIZE);
 
-    CorElementType t = m_argIterator.GetArgType();
     _ASSERTE(IS_ALIGNED(regStructOfs, sizeof(SLOT)));    
-    if (t == ELEMENT_TYPE_R4 || t == ELEMENT_TYPE_R8)
+    if (argType == ELEMENT_TYPE_R4 || argType == ELEMENT_TYPE_R8)
     {
         return (LPBYTE)&pData->flt0 + regStructOfs;
     }
@@ -267,7 +379,8 @@ LPVOID ProfileArgIterator::GetNextArgAddr()
 
         return pArg;
     }
-    
+#endif // UNIX_AMD64_ABI
+
     return NULL;
 }
 
