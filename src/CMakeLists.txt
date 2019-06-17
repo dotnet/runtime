@@ -16,10 +16,8 @@ endif(WIN32 AND FEATURE_EVENT_TRACE)
 
 
 if(CLR_CMAKE_PLATFORM_UNIX)
-  if(CLR_CMAKE_PLATFORM_LINUX)
-    if(CLR_CMAKE_PLATFORM_UNIX_AMD64 OR CLR_CMAKE_PLATFORM_UNIX_ARM)
-      add_subdirectory(debug/createdump)
-    endif()
+  if(CLR_CMAKE_PLATFORM_LINUX AND NOT CLR_CMAKE_PLATFORM_UNIX_X86)
+    add_subdirectory(debug/createdump)
   endif(CLR_CMAKE_PLATFORM_LINUX)
 
   add_subdirectory(ToolBox/SOS/Strike)

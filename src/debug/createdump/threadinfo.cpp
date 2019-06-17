@@ -5,6 +5,15 @@
 #include "createdump.h"
 #include <asm/ptrace.h>
 
+#if defined(__aarch64__)
+// See src/pal/src/include/pal/context.h
+#define MCREG_Fp(mc)      ((mc).regs[29])
+#define MCREG_Lr(mc)      ((mc).regs[30])
+#define MCREG_Sp(mc)      ((mc).sp)
+#define MCREG_Pc(mc)      ((mc).pc)
+#define MCREG_Cpsr(mc)    ((mc).pstate)
+#endif
+
 #ifndef THUMB_CODE
 #define THUMB_CODE 1
 #endif
@@ -50,10 +59,14 @@ ThreadInfo::Initialize(ICLRDataTarget* pDataTarget)
         }
     }
 
-#if defined(__arm__)
+#if defined(__aarch64__)
+    TRACE("Thread %04x PC %016llx SP %016llx\n", m_tid, (unsigned long long)MCREG_Pc(m_gpRegisters), (unsigned long long)MCREG_Sp(m_gpRegisters));
+#elif defined(__arm__)
     TRACE("Thread %04x PC %08lx SP %08lx\n", m_tid, (unsigned long)m_gpRegisters.ARM_pc, (unsigned long)m_gpRegisters.ARM_sp);
-#else
+#elif defined(__x86_64__)
     TRACE("Thread %04x RIP %016llx RSP %016llx\n", m_tid, (unsigned long long)m_gpRegisters.rip, (unsigned long long)m_gpRegisters.rsp);
+#else
+#error "Unsupported architecture"
 #endif
     return true;
 }
@@ -78,6 +91,9 @@ GetFrameLocation(CONTEXT* pContext, uint64_t* ip, uint64_t* sp)
 #elif defined(__i386__)
     *ip = pContext->Eip;
     *sp = pContext->Esp;
+#elif defined(__aarch64__)
+    *ip = pContext->Pc;
+    *sp = pContext->Sp;
 #elif defined(__arm__)
     *ip = pContext->Pc & ~THUMB_CODE;
     *sp = pContext->Sp;
@@ -176,6 +192,23 @@ ThreadInfo::UnwindThread(CrashInfo& crashInfo, IXCLRDataProcess* pClrDataProcess
 bool 
 ThreadInfo::GetRegistersWithPTrace()
 {
+#if defined(__aarch64__)
+    struct iovec gpRegsVec = { &m_gpRegisters, sizeof(m_gpRegisters) };
+    if (ptrace((__ptrace_request)PTRACE_GETREGSET, m_tid, NT_PRSTATUS, &gpRegsVec) == -1)
+    {
+        fprintf(stderr, "ptrace(PTRACE_GETREGSET, %d, NT_PRSTATUS) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
+        return false;
+    }
+    assert(sizeof(m_gpRegisters) == gpRegsVec.iov_len);
+
+    struct iovec fpRegsVec = { &m_fpRegisters, sizeof(m_fpRegisters) };
+    if (ptrace((__ptrace_request)PTRACE_GETREGSET, m_tid, NT_FPREGSET, &fpRegsVec) == -1)
+    {
+        fprintf(stderr, "ptrace(PTRACE_GETREGSET, %d, NT_FPREGSET) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
+        return false;
+    }
+    assert(sizeof(m_fpRegisters) == fpRegsVec.iov_len);
+#else
     if (ptrace((__ptrace_request)PTRACE_GETREGS, m_tid, nullptr, &m_gpRegisters) == -1)
     {
         fprintf(stderr, "ptrace(GETREGS, %d) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
@@ -203,6 +236,7 @@ ThreadInfo::GetRegistersWithPTrace()
         fprintf(stderr, "ptrace(PTRACE_GETVFPREGS, %d) FAILED %d (%s)\n", m_tid, errno, strerror(errno));
         return false;
     }
+#endif
 #endif
     return true;
 }
@@ -265,6 +299,20 @@ ThreadInfo::GetRegistersWithDataTarget(ICLRDataTarget* pDataTarget)
 
     assert(sizeof(context.FltSave.XmmRegisters) == sizeof(m_fpRegisters.xmm_space));
     memcpy(m_fpRegisters.xmm_space, context.FltSave.XmmRegisters, sizeof(m_fpRegisters.xmm_space));
+#elif defined(__aarch64__)
+    // See MCREG maps in PAL's context.h
+    assert(sizeof(m_gpRegisters.regs) == (sizeof(context.X) + sizeof(context.Fp) + sizeof(context.Lr)));
+    memcpy(m_gpRegisters.regs, context.X, sizeof(context.X));
+    MCREG_Fp(m_gpRegisters) = context.Fp;
+    MCREG_Lr(m_gpRegisters) = context.Lr;
+    MCREG_Sp(m_gpRegisters) = context.Sp;
+    MCREG_Pc(m_gpRegisters) = context.Pc;
+    MCREG_Cpsr(m_gpRegisters) = context.Cpsr;
+
+    assert(sizeof(m_fpRegisters.vregs) == sizeof(context.V));
+    memcpy(m_fpRegisters.vregs, context.V, sizeof(context.V));
+    m_fpRegisters.fpcr = context.Fpcr;
+    m_fpRegisters.fpsr = context.Fpsr;
 #elif defined(__arm__)
     m_gpRegisters.ARM_sp = context.Sp;
     m_gpRegisters.ARM_lr = context.Lr;
@@ -304,7 +352,9 @@ ThreadInfo::GetThreadStack(CrashInfo& crashInfo)
     uint64_t startAddress;
     size_t size;
 
-#if defined(__arm__)
+#if defined(__aarch64__)
+    startAddress = MCREG_Sp(m_gpRegisters) & PAGE_MASK;
+#elif defined(__arm__)
     startAddress = m_gpRegisters.ARM_sp & PAGE_MASK;
 #else
     startAddress = m_gpRegisters.rsp & PAGE_MASK;
@@ -387,6 +437,27 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
         memcpy(context->FltSave.XmmRegisters, m_fpRegisters.xmm_space, sizeof(context->FltSave.XmmRegisters));
     }
     // TODO: debug registers?
+#elif defined(__aarch64__)
+    if ((flags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
+    {
+        context->Fp = MCREG_Fp(m_gpRegisters);
+        context->Lr = MCREG_Lr(m_gpRegisters);
+        context->Sp = MCREG_Sp(m_gpRegisters);
+        context->Pc = MCREG_Pc(m_gpRegisters);
+        context->Cpsr = MCREG_Cpsr(m_gpRegisters);
+    }
+    if ((flags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
+    {
+        assert(sizeof(m_gpRegisters.regs) == (sizeof(context->X) + sizeof(context->Fp) + sizeof(context->Lr)));
+        memcpy(context->X, m_gpRegisters.regs, sizeof(context->X));
+    }
+    if ((flags & CONTEXT_FLOATING_POINT) == CONTEXT_FLOATING_POINT)
+    {
+        assert(sizeof(m_fpRegisters.vregs) == sizeof(context->V));
+        memcpy(context->V, m_fpRegisters.vregs, sizeof(context->V));
+        context->Fpcr = m_fpRegisters.fpcr;
+        context->Fpsr = m_fpRegisters.fpsr;
+    }
 #elif defined(__arm__)
     if ((flags & CONTEXT_CONTROL) == CONTEXT_CONTROL)
     {
@@ -394,7 +465,6 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
         context->Lr = m_gpRegisters.ARM_lr;
         context->Pc = m_gpRegisters.ARM_pc;
         context->Cpsr = m_gpRegisters.ARM_cpsr;
-
     }
     if ((flags & CONTEXT_INTEGER) == CONTEXT_INTEGER)
     {
