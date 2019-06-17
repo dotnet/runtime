@@ -4206,7 +4206,6 @@ VOID EtwCallbackCommon(
 
     bool bIsPublicTraceHandle = ProviderIndex == DotNETRuntime;
 #if !defined(FEATURE_PAL)
-    static_assert(GCEventLevel_None == TRACE_LEVEL_NONE, "GCEventLevel_None value mismatch");
     static_assert(GCEventLevel_Fatal == TRACE_LEVEL_FATAL, "GCEventLevel_Fatal value mismatch");
     static_assert(GCEventLevel_Error == TRACE_LEVEL_ERROR, "GCEventLevel_Error value mismatch");
     static_assert(GCEventLevel_Warning == TRACE_LEVEL_WARNING, "GCEventLevel_Warning mismatch");
