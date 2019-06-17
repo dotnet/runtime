@@ -44,6 +44,7 @@
 #include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-api.h>
+#include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/os-event.h>
 #include "log.h"
@@ -622,6 +623,8 @@ ensure_logbuf_unsafe (MonoProfilerThread *thread, int bytes)
  *
  * The lock does not support recursion.
  */
+static void
+buffer_lock_helper (void);
 
 static void
 buffer_lock (void)
@@ -637,31 +640,48 @@ buffer_lock (void)
 	 * is about to stop.
 	 */
 	if (mono_atomic_load_i32 (&log_profiler.buffer_lock_state) != get_thread ()->small_id << 16) {
-		MONO_ENTER_GC_SAFE;
+		/* We can get some sgen events (for example gc_handle_deleted)
+		 * from threads that are unattached to the runtime (but that
+		 * are attached to the profiler).  In that case, avoid mono
+		 * thread state transition to GC Safe around the loop, since
+		 * the thread won't be participating in Mono's suspension
+		 * mechianism anyway.
+		 */
+		MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+		if (info) {
+			MONO_ENTER_GC_SAFE_WITH_INFO (info);
 
-		gint32 old, new_;
+			buffer_lock_helper ();
 
-		do {
-		restart:
-			// Hold off if a thread wants to take the exclusive lock.
-			while (mono_atomic_load_i32 (&log_profiler.buffer_lock_exclusive_intent))
-				mono_thread_info_yield ();
-
-			old = mono_atomic_load_i32 (&log_profiler.buffer_lock_state);
-
-			// Is a thread holding the exclusive lock?
-			if (old >> 16) {
-				mono_thread_info_yield ();
-				goto restart;
-			}
-
-			new_ = old + 1;
-		} while (mono_atomic_cas_i32 (&log_profiler.buffer_lock_state, new_, old) != old);
-
-		MONO_EXIT_GC_SAFE;
+			MONO_EXIT_GC_SAFE_WITH_INFO;
+		} else
+			buffer_lock_helper ();
 	}
 
 	mono_memory_barrier ();
+}
+
+static void
+buffer_lock_helper (void)
+{
+	gint32 old, new_;
+
+	do {
+	restart:
+		// Hold off if a thread wants to take the exclusive lock.
+		while (mono_atomic_load_i32 (&log_profiler.buffer_lock_exclusive_intent))
+			mono_thread_info_yield ();
+
+		old = mono_atomic_load_i32 (&log_profiler.buffer_lock_state);
+
+		// Is a thread holding the exclusive lock?
+		if (old >> 16) {
+			mono_thread_info_yield ();
+			goto restart;
+		}
+
+		new_ = old + 1;
+	} while (mono_atomic_cas_i32 (&log_profiler.buffer_lock_state, new_, old) != old);
 }
 
 static void
