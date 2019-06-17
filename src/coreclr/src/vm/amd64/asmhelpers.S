@@ -35,9 +35,12 @@
 //        UINT64      r8;
 //        UINT64      r9;
 //        UINT32      flags;
+//        UINT64      buffer[PROFILE_PLATFORM_SPECIFIC_DATA_BUFFER_SIZE];
 //    } PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
-//
-.equ SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA, 0x8*22 + 0x8  // includes fudge to make FP_SPILL right
+
+// Buffer to copy structs sequentially
+.equ SIZEOF_PROFILE_STRUCT_BUFFER, 0x8*16
+.equ SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA, 0x8*22 + 0x8 + SIZEOF_PROFILE_STRUCT_BUFFER // includes fudge to make FP_SPILL right
 .equ SIZEOF_FP_ARG_SPILL, 0x10*2
 
 .equ SIZEOF_STACK_FRAME, SIZEOF_PROFILE_PLATFORM_SPECIFIC_DATA + SIZEOF_FP_ARG_SPILL
@@ -101,14 +104,14 @@ NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
   movsd                   real8 ptr [rsp + 0x60], xmm5    //      -- struct flt5 field
   movsd                   real8 ptr [rsp + 0x68], xmm6    //      -- struct flt6 field
   movsd                   real8 ptr [rsp + 0x70], xmm7    //      -- struct flt7 field
-  mov                     [rsp + 0x78], rdi     //                -- struct rdi field
-  mov                     [rsp + 0x80], rsi     //                -- struct rsi field
-  mov                     [rsp + 0x88], rdx     //                -- struct rdx field
-  mov                     [rsp + 0x90], rcx     //                -- struct rcx field
-  mov                     [rsp + 0x98], r8      //                -- struct r8 field
-  mov                     [rsp + 0xa0], r9      //                -- struct r9 field
+  mov                     [rsp + 0x78], rdi               //      -- struct rdi field
+  mov                     [rsp + 0x80], rsi               //      -- struct rsi field
+  mov                     [rsp + 0x88], rdx               //      -- struct rdx field
+  mov                     [rsp + 0x90], rcx               //      -- struct rcx field
+  mov                     [rsp + 0x98], r8                //      -- struct r8 field
+  mov                     [rsp + 0xa0], r9                //      -- struct r9 field
   mov                     r10, 0x1 // PROFILE_ENTER
-  mov                     [rsp + 0xa8], r10d   //                -- struct flags field
+  mov                     [rsp + 0xa8], r10d              //      -- struct flags field
 
   // get aligned stack ptr (rsp + FRAME_SIZE) & (-16)
   lea                     rax, [rsp + 0xb8]
