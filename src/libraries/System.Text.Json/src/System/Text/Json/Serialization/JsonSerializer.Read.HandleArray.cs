@@ -198,14 +198,7 @@ namespace System.Text.Json
 
                 string key = state.Current.KeyName;
                 Debug.Assert(!string.IsNullOrEmpty(key));
-                if (!dictionary.Contains(key))
-                {
-                    dictionary.Add(key, value);
-                }
-                else
-                {
-                    ThrowHelper.ThrowJsonException_DeserializeDuplicateKey(key, reader, state.JsonPath);
-                }
+                dictionary[key] = value;
             }
             else if (state.Current.IsIDictionaryConstructible ||
                 (state.Current.IsIDictionaryConstructibleProperty && !setPropertyDirectly) ||
@@ -217,14 +210,7 @@ namespace System.Text.Json
 
                 string key = state.Current.KeyName;
                 Debug.Assert(!string.IsNullOrEmpty(key));
-                if (!dictionary.Contains(key))
-                {
-                    dictionary.Add(key, value);
-                }
-                else
-                {
-                    ThrowHelper.ThrowJsonException_DeserializeDuplicateKey(key, reader, state.JsonPath);
-                }
+                dictionary[key] = value;
             }
             else
             {
@@ -280,14 +266,7 @@ namespace System.Text.Json
 
                 string key = state.Current.KeyName;
                 Debug.Assert(!string.IsNullOrEmpty(key));
-                if (!dictionary.ContainsKey(key)) // The IDictionary.TryAdd extension method is not available in netstandard.
-                {
-                    dictionary.Add(key, value);
-                }
-                else
-                {
-                    ThrowHelper.ThrowJsonException_DeserializeDuplicateKey(key, reader, state.JsonPath);
-                }
+                dictionary[key] = value;
             }
             else if (state.Current.IsProcessingIDictionaryConstructibleOrKeyValuePair)
             {
@@ -296,14 +275,7 @@ namespace System.Text.Json
 
                 string key = state.Current.KeyName;
                 Debug.Assert(!string.IsNullOrEmpty(key));
-                if (!dictionary.ContainsKey(key)) // The IDictionary.TryAdd extension method is not available in netstandard.
-                {
-                    dictionary.Add(key, value);
-                }
-                else
-                {
-                    ThrowHelper.ThrowJsonException_DeserializeDuplicateKey(key, reader, state.JsonPath);
-                }
+                dictionary[key] = value;
             }
             else
             {
