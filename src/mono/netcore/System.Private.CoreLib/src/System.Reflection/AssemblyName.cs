@@ -38,7 +38,9 @@ namespace System.Reflection
 
 		unsafe byte [] ComputePublicKeyToken ()
 		{
-			if (_publicKey == null || _publicKey.Length == 0)
+			if (_publicKey == null)
+				return null;
+			if (_publicKey.Length == 0)
 				return Array.Empty<byte>();
 				
 			var token = new byte [8];
