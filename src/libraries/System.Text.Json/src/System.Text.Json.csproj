@@ -167,6 +167,7 @@
     <Reference Include="System.Core" />
     <Reference Include="System.ValueTuple" />
     <Reference Include="System.Numerics.Vectors" />
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsNETStandard)' != 'true' AND '$(TargetsNetFx)' != 'true'">
     <Reference Include="System.Collections" />
