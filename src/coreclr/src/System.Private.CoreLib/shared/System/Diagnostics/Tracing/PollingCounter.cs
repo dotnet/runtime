@@ -47,7 +47,7 @@ namespace System.Diagnostics.Tracing
 
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {
-            lock (MyLock)
+            lock (this)
             {
                 double value = 0;
                 try 
