@@ -47,12 +47,12 @@ MONO_JIT_ICALL (generic_trampoline_delegate)	\
 MONO_JIT_ICALL (generic_trampoline_generic_virtual_remoting)	\
 MONO_JIT_ICALL (generic_trampoline_vcall)	\
 	\
-/* These must be ordered like MonoTlsKey. */ \
-MONO_JIT_ICALL (mono_tls_get_thread) \
-MONO_JIT_ICALL (mono_tls_get_jit_tls) \
+/* These must be ordered like MonoTlsKey (alphabetical). */ \
 MONO_JIT_ICALL (mono_tls_get_domain) \
-MONO_JIT_ICALL (mono_tls_get_sgen_thread_info) \
+MONO_JIT_ICALL (mono_tls_get_jit_tls) \
 MONO_JIT_ICALL (mono_tls_get_lmf_addr) \
+MONO_JIT_ICALL (mono_tls_get_sgen_thread_info) \
+MONO_JIT_ICALL (mono_tls_get_thread) \
 	\
 MONO_JIT_ICALL (__emul_fadd)	\
 MONO_JIT_ICALL (__emul_fcmp_ceq)	\

@@ -6481,7 +6481,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 		encode_method_ref (acfg, patch_info->data.method, p, &p);
 		break;
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
-	case MONO_PATCH_INFO_GET_TLS_TRAMP:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		encode_value (patch_info->data.index, p, &p);
 		break;
@@ -6625,8 +6624,7 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
 		break;
 	default:
-		g_warning ("unable to handle jump info %d", patch_info->type);
-		g_assert_not_reached ();
+		g_error ("unable to handle jump info %d", patch_info->type);
 	}
 
 	*endbuf = p;
@@ -12898,8 +12896,8 @@ add_preinit_got_slots (MonoAotCompile *acfg)
 	if (!acfg->aot_opts.llvm_only) {
 		for (i = 0; i < TLS_KEY_NUM; i++) {
 			ji = (MonoJumpInfo *)mono_mempool_alloc0 (acfg->mempool, sizeof (MonoJumpInfo));
-			ji->type = MONO_PATCH_INFO_GET_TLS_TRAMP;
-			ji->data.index = i;
+			ji->type = MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL;
+			ji->data.jit_icall_id = mono_get_tls_key_to_jit_icall_id (i);
 			add_preinit_slot (acfg, ji);
 		}
 	}

@@ -18,17 +18,21 @@
 #include <mono/utils/mono-forward-internal.h>
 
 /* TLS entries used by the runtime */
-// This ordering is mimiced in MONO_JIT_ICALLS and will be in mono_create_tls_get.
+// This ordering is mimiced in MONO_JIT_ICALLS (alphabetical).
 typedef enum {
-	/* mono_thread_internal_current () */
-	TLS_KEY_THREAD = 0,
-	TLS_KEY_JIT_TLS = 1,
-	/* mono_domain_get () */
-	TLS_KEY_DOMAIN = 2,
+	TLS_KEY_DOMAIN		 = 0, // mono_domain_get ()
+	TLS_KEY_JIT_TLS		 = 1,
+	TLS_KEY_LMF_ADDR	 = 2,
 	TLS_KEY_SGEN_THREAD_INFO = 3,
-	TLS_KEY_LMF_ADDR = 4,
-	TLS_KEY_NUM = 5
+	TLS_KEY_THREAD		 = 4, // mono_thread_internal_current ()
+	TLS_KEY_NUM		 = 5
 } MonoTlsKey;
+
+#if __cplusplus
+g_static_assert (TLS_KEY_DOMAIN == 0);
+#endif
+// There are only JIT icalls to get TLS, not set TLS.
+#define mono_get_tls_key_to_jit_icall_id(a)	((MonoJitICallId)((a) + MONO_JIT_ICALL_mono_tls_get_domain))
 
 #ifdef HOST_WIN32
 
@@ -95,10 +99,10 @@ G_EXTERN_C MonoDomain *mono_tls_get_domain (void);
 G_EXTERN_C SgenThreadInfo     *mono_tls_get_sgen_thread_info (void);
 G_EXTERN_C MonoLMF           **mono_tls_get_lmf_addr (void);
 
-G_EXTERN_C void mono_tls_set_thread 	   (MonoInternalThread *value);
-G_EXTERN_C void mono_tls_set_jit_tls 	   (MonoJitTlsData     *value);
-G_EXTERN_C void mono_tls_set_domain 	   (MonoDomain         *value);
-G_EXTERN_C void mono_tls_set_sgen_thread_info (SgenThreadInfo     *value);
-G_EXTERN_C void mono_tls_set_lmf_addr 	   (MonoLMF           **value);
+void mono_tls_set_thread 	   (MonoInternalThread *value);
+void mono_tls_set_jit_tls 	   (MonoJitTlsData     *value);
+void mono_tls_set_domain 	   (MonoDomain         *value);
+void mono_tls_set_sgen_thread_info (SgenThreadInfo     *value);
+void mono_tls_set_lmf_addr 	   (MonoLMF           **value);
 
 #endif /* __MONO_TLS_H__ */

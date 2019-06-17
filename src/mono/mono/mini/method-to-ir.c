@@ -1700,18 +1700,19 @@ mono_create_tls_get (MonoCompile *cfg, MonoTlsKey key)
 		return fast_tls;
 	}
 
+	const MonoJitICallId jit_icall_id = mono_get_tls_key_to_jit_icall_id (key);
+
 	if (cfg->compile_aot) {
 		MonoInst *addr;
 		/*
 		 * tls getters are critical pieces of code and we don't want to resolve them
 		 * through the standard plt/tramp mechanism since we might expose ourselves
 		 * to crashes and infinite recursions.
+		 * Therefore the NOCALL part of MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL, FALSE in is_plt_patch.
 		 */
-		EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_GET_TLS_TRAMP, GUINT_TO_POINTER(key));
+		EMIT_NEW_AOTCONST (cfg, addr, MONO_PATCH_INFO_JIT_ICALL_ADDR_NOCALL, GUINT_TO_POINTER (jit_icall_id));
 		return mini_emit_calli (cfg, mono_icall_sig_ptr, NULL, addr, NULL, NULL);
 	} else {
-		g_static_assert (TLS_KEY_THREAD == 0);
-		const MonoJitICallId jit_icall_id = (MonoJitICallId)(MONO_JIT_ICALL_mono_tls_get_thread + key);
 		return mono_emit_jit_icall_id (cfg, jit_icall_id, NULL);
 	}
 }

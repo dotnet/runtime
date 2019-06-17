@@ -5283,13 +5283,13 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					td->ip += 5;
 
 					CHECK_STACK (td, info->sig->param_count);
-					if (!strcmp (info->name, "mono_threads_attach_coop")) {
+					if (jit_icall_id == MONO_JIT_ICALL_mono_threads_attach_coop) {
 						rtm->needs_thread_attach = 1;
 
 						/* attach needs two arguments, and has one return value: leave one element on the stack */
 						interp_add_ins (td, MINT_POP);
 						td->last_ins->data [0] = 0;
-					} else if (!strcmp (info->name, "mono_threads_detach_coop")) {
+					} else if (jit_icall_id == MONO_JIT_ICALL_mono_threads_detach_coop) {
 						g_assert (rtm->needs_thread_attach);
 
 						/* detach consumes two arguments, and no return value: drop both of them */
