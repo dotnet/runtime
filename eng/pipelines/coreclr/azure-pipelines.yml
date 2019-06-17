@@ -197,8 +197,8 @@ jobs:
     parameters:
       jobTemplate: build-job.yml
       buildConfig: release
+      platformGroup: all
       jobParameters:
-        platformGroup: all
         # Publishing packages to blob feeds sometimes takes a long time
         # due to waiting for an exclusive lock on the feed.
         # See https://github.com/dotnet/arcade/blob/master/Documentation/CorePackages/AsyncPublishing.md
