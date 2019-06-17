@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.Cli.Build.Framework;
+using System;
+using System.IO;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
@@ -11,6 +13,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public static Command EnableHostTracing(this Command command)
         {
             return command.EnvironmentVariable(Constants.HostTracing.TraceLevelEnvironmentVariable, "1");
+        }
+
+        public static Command EnableHostTracingToFile(this Command command, out string filePath)
+        {
+            filePath = Path.Combine(TestArtifact.TestArtifactsPath, "trace" + Guid.NewGuid().ToString() + ".log");
+            if (File.Exists(filePath))
+            {
+                File.Delete(filePath);
+            }
+
+            return command
+                .EnableHostTracing()
+                .EnvironmentVariable(Constants.HostTracing.TraceFileEnvironmentVariable, filePath);
         }
 
         public static Command EnableTracingAndCaptureOutputs(this Command command)

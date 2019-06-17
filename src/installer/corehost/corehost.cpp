@@ -317,8 +317,7 @@ int main(const int argc, const pal::char_t* argv[])
 
     int exit_code = exe_start(argc, argv);
 
-    // Flush traces before exit - just to be sure, and also if we're showing a popup below the error should show up in traces
-    // by the time the popup is displayed.
+    // Flush traces before exit - just to be sure
     trace::flush();
 
 #if defined(_WIN32) && defined(FEATURE_APPHOST)
@@ -331,6 +330,11 @@ int main(const int argc, const pal::char_t* argv[])
         {
             executable_name = get_filename(executable_name);
         }
+
+        trace::verbose(_X("Creating a GUI message box with title: '%s' and message: '%s;."), executable_name.c_str(), g_buffered_errors.c_str());
+
+        // Flush here so that when the dialog is up, the traces are up to date (specifically when they are redirected to a file).
+        trace::flush();
 
         ::MessageBoxW(NULL, g_buffered_errors.c_str(), executable_name.c_str(), MB_OK);
     }

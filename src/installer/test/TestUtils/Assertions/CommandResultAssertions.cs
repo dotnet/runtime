@@ -126,15 +126,17 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
         public AndConstraint<CommandResultAssertions> FileContains(string path, string pattern)
         {
-            Execute.Assertion.ForCondition(System.IO.File.ReadAllText(path).Contains(pattern))
-                .FailWith("The command did not write the expected result '{0}' to the file: {1}{2}", pattern, path, GetDiagnosticsInfo());
+            string fileContent = System.IO.File.ReadAllText(path);
+            Execute.Assertion.ForCondition(fileContent.Contains(pattern))
+                .FailWith("The command did not write the expected result '{0}' to the file: {1}{2}\nfile content: {3}", pattern, path, GetDiagnosticsInfo(), fileContent);
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
         public AndConstraint<CommandResultAssertions> NotFileContains(string path, string pattern)
         {
-            Execute.Assertion.ForCondition(!System.IO.File.ReadAllText(path).Contains(pattern))
-                .FailWith("The command did not write the expected result '{1}' to the file: {1}{2}", pattern, path, GetDiagnosticsInfo());
+            string fileContent = System.IO.File.ReadAllText(path);
+            Execute.Assertion.ForCondition(!fileContent.Contains(pattern))
+                .FailWith("The command did not write the expected result '{1}' to the file: {1}{2}\nfile content: {3}", pattern, path, GetDiagnosticsInfo(), fileContent);
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
