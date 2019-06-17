@@ -56,7 +56,7 @@ namespace System.Diagnostics.Tracing
         {
             try
             {
-                lock (MyLock)
+                lock (this)
                 {
                     _increment = _totalValueProvider();
                 }
@@ -70,7 +70,7 @@ namespace System.Diagnostics.Tracing
         internal override void WritePayload(float intervalSec, int pollingIntervalMillisec)
         {
             UpdateMetric();
-            lock (MyLock)     // Lock the counter
+            lock (this)     // Lock the counter
             {
                 IncrementingCounterPayload payload = new IncrementingCounterPayload();
                 payload.Name = Name;
