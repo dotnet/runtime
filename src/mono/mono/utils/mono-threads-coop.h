@@ -116,11 +116,7 @@ void mono_threads_suspend_override_policy (MonoThreadsSuspendPolicy new_policy);
  * runtime assertion error when trying to switch the state of the current thread.
  */
 
-G_EXTERN_C // due to THREAD_INFO_TYPE varying
-gpointer
-mono_threads_enter_gc_safe_region_with_info (THREAD_INFO_TYPE *info, MonoStackData *stackdata);
-
-G_EXTERN_C // due to THREAD_INFO_TYPE varying
+MONO_PROFILER_API
 gpointer
 mono_threads_enter_gc_safe_region_with_info (THREAD_INFO_TYPE *info, MonoStackData *stackdata);
 

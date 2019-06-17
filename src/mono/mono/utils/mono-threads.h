@@ -432,7 +432,7 @@ MONO_API void*
 mono_thread_info_get_tools_data (void);
 
 
-THREAD_INFO_TYPE*
+MONO_PROFILER_API THREAD_INFO_TYPE*
 mono_thread_info_current_unchecked (void);
 
 MONO_API int
