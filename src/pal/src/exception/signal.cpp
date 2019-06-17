@@ -389,6 +389,28 @@ extern "C" void signal_handler_worker(int code, siginfo_t *siginfo, void *contex
 
 /*++
 Function :
+    IsRunningOnAlternateStack
+
+    Detects if the current signal handlers is running on an alternate stack
+
+Parameters :
+    The context of the signal
+
+Return :
+    true if we are running on an alternate stack
+
+--*/
+bool IsRunningOnAlternateStack(void *context)
+{
+    stack_t *signalStack = &((native_context_t *)context)->uc_stack;
+    // Check if the signalStack local variable address is within the alternate stack range. If it is not,
+    // then either the alternate stack was not installed at all or the current method is not running on it.
+    void* alternateStackEnd = (char *)signalStack->ss_sp + signalStack->ss_size;
+    return ((signalStack->ss_flags & SS_DISABLE) == 0) && (signalStack->ss_sp <= &signalStack) && (&signalStack < alternateStackEnd);
+}
+
+/*++
+Function :
     sigsegv_handler
 
     handle SIGSEGV signal (EXCEPTION_ACCESS_VIOLATION, others)
@@ -417,10 +439,10 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         // Now that we know the SIGSEGV didn't happen due to a stack overflow, execute the common
         // hardware signal handler on the original stack.
 
-        // Establish a return point in case the common_signal_handler returns
-
-        if (GetCurrentPalThread())
+        if (GetCurrentPalThread() && IsRunningOnAlternateStack(context))
         {
+            // Establish a return point in case the common_signal_handler returns
+
             volatile bool contextInitialization = true;
 
             void *ptr = alloca(sizeof(SignalHandlerWorkerReturnPoint) + alignof(SignalHandlerWorkerReturnPoint) - 1);
@@ -443,6 +465,8 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
         }
         else
         {
+            // The code flow gets here when the signal handler is not running on an alternate stack or when it wasn't created
+            // by coreclr. In both cases, we execute the common_signal_handler directly.
             // If thread isn't created by coreclr and has alternate signal stack GetCurrentPalThread() will return NULL too.
             // But since in this case we don't handle hardware exceptions (IsSafeToHandleHardwareException returns false)
             // we can call common_signal_handler on the alternate stack.
