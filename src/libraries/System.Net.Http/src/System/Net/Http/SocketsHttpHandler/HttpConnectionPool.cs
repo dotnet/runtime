@@ -510,7 +510,7 @@ namespace System.Net.Http
             }
 
             // If we reach this point, it means we need to fall back to a (new or existing) HTTP/1.1 connection.
-            return await GetHttpConnectionAsync(request, cancellationToken);
+            return await GetHttpConnectionAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
         public async Task<HttpResponseMessage> SendWithRetryAsync(HttpRequestMessage request, bool doRequestAuth, CancellationToken cancellationToken)
