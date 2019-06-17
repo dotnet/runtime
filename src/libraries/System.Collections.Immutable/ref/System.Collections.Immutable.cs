@@ -96,7 +96,7 @@ namespace System.Collections.Immutable
     }
     public partial struct ImmutableArray<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.Collections.IList, System.Collections.Immutable.IImmutableList<T>, System.Collections.IStructuralComparable, System.Collections.IStructuralEquatable, System.IEquatable<System.Collections.Immutable.ImmutableArray<T>>
     {
-        internal T[] array;
+        private T[] array;
         private object _dummy;
         public static readonly System.Collections.Immutable.ImmutableArray<T> Empty;
         public bool IsDefault { get { throw null; } }
@@ -251,6 +251,7 @@ namespace System.Collections.Immutable
         {
             private readonly T[] _array;
             private object _dummy;
+            private int _dummyPrimitive;
             public T Current { get { throw null; } }
             public bool MoveNext() { throw null; }
         }
@@ -385,6 +386,7 @@ namespace System.Collections.Immutable
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Collections.Generic.KeyValuePair<TKey, TValue> Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
@@ -485,6 +487,7 @@ namespace System.Collections.Immutable
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public T Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
@@ -697,6 +700,7 @@ namespace System.Collections.Immutable
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public T Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
@@ -753,7 +757,7 @@ namespace System.Collections.Immutable
         public static System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> source) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> source, System.Collections.Generic.IComparer<TKey> keyComparer) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> source, System.Collections.Generic.IComparer<TKey> keyComparer, System.Collections.Generic.IEqualityComparer<TValue> valueComparer) { throw null; }
-        public static System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue>.Builder source) { throw null; }
+        public static System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TKey, TValue>(this System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue>.Builder builder) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TSource, TKey, TValue>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Func<TSource, TValue> elementSelector) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TSource, TKey, TValue>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Func<TSource, TValue> elementSelector, System.Collections.Generic.IComparer<TKey> keyComparer) { throw null; }
         public static System.Collections.Immutable.ImmutableSortedDictionary<TKey, TValue> ToImmutableSortedDictionary<TSource, TKey, TValue>(this System.Collections.Generic.IEnumerable<TSource> source, System.Func<TSource, TKey> keySelector, System.Func<TSource, TValue> elementSelector, System.Collections.Generic.IComparer<TKey> keyComparer, System.Collections.Generic.IEqualityComparer<TValue> valueComparer) { throw null; }
@@ -871,6 +875,7 @@ namespace System.Collections.Immutable
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public System.Collections.Generic.KeyValuePair<TKey, TValue> Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
@@ -1003,6 +1008,7 @@ namespace System.Collections.Immutable
         public partial struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             private object _dummy;
+            private int _dummyPrimitive;
             public T Current { get { throw null; } }
             object System.Collections.IEnumerator.Current { get { throw null; } }
             public void Dispose() { }
