@@ -34,14 +34,14 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                JsonSerializer.Parse<IDictionary<string, int>>(@"{""Key"":1, ""Key"":2}");
-                Assert.True(false, "Expected JsonException was not thrown.");
+                JsonSerializer.Parse<IDictionary<string, string>>(@"{""Key"":1, ""Key"":2}");
+                Assert.True(false, "We follow 'Last value wins' approach for duplicate keys.");
             }
             catch (JsonException e)
             {
                 Assert.Equal(0, e.LineNumber);
-                Assert.Equal(17, e.BytePositionInLine);
-                Assert.Contains("LineNumber: 0 | BytePositionInLine: 17.", e.Message);
+                Assert.Equal(8, e.BytePositionInLine);
+                Assert.Contains("LineNumber: 0 | BytePositionInLine: 8.", e.Message);
                 Assert.Contains("$.Key", e.Path);
 
                 // Verify Path is not repeated.
