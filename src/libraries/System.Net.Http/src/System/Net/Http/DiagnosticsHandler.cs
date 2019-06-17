@@ -111,7 +111,7 @@ namespace System.Net.Http
 
                 return await responseTask.ConfigureAwait(false);
             }
-            catch (TaskCanceledException)
+            catch (OperationCanceledException)
             {
                 // we'll report task status in HttpRequestOut.Stop
                 throw;
