@@ -1727,7 +1727,6 @@ x86_align_and_patch (MonoCompile *cfg, guint8 *code, guint32 patch_type, gconstp
 	if (cfg->abs_patches) {
 		jinfo = (MonoJumpInfo*)g_hash_table_lookup (cfg->abs_patches, data);
 		if (jinfo && (jinfo->type == MONO_PATCH_INFO_JIT_ICALL_ADDR
-				|| jinfo->type == MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR
 				|| jinfo->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR))
 			needs_paddings = FALSE;
 	}
@@ -4898,7 +4897,6 @@ mono_arch_patch_code_new (MonoCompile *cfg, MonoDomain *domain, guint8 *code, Mo
 	case MONO_PATCH_INFO_LABEL:
 	case MONO_PATCH_INFO_RGCTX_FETCH:
 	case MONO_PATCH_INFO_JIT_ICALL_ADDR:
-	case MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR:
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		x86_patch (ip, (unsigned char*)target);
 		break;

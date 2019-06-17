@@ -464,7 +464,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	amd64_mov_reg_membase (code, AMD64_ARG_REG4, AMD64_RBP, tramp_offset, sizeof (target_mgreg_t));
 
 	if (aot) {
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR, GINT_TO_POINTER (tramp_type));
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, GINT_TO_POINTER (mono_trampoline_type_to_jit_icall_id (tramp_type)));
 	} else {
 		tramp = (guint8*)mono_get_trampoline_func (tramp_type);
 		amd64_mov_reg_imm (code, AMD64_R11, tramp);

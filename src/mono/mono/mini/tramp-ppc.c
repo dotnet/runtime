@@ -358,7 +358,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	ppc_ldr (code, ppc_r5, GREGS_OFFSET, ppc_r1);
 
 	if (aot) {
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR, GINT_TO_POINTER (tramp_type));
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, GINT_TO_POINTER (mono_trampoline_type_to_jit_icall_id (tramp_type)));
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		ppc_ldptr (code, ppc_r2, sizeof (target_mgreg_t), ppc_r12);
 		ppc_ldptr (code, ppc_r12, 0, ppc_r12);

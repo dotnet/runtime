@@ -3888,7 +3888,6 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 	case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 		ji->data.uindex = decode_value (p, &p);
 		break;
-	case MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR:
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		ji->data.index = decode_value (p, &p);
 		break;
@@ -5116,16 +5115,19 @@ mono_aot_plt_resolve (gpointer aot_module, guint32 plt_info_offset, guint8 *code
 	 * patches, so have to translate between the two.
 	 * FIXME: Clean this up, but how ?
 	 */
-	if (ji.type == MONO_PATCH_INFO_ABS || ji.type == MONO_PATCH_INFO_JIT_ICALL_ID
+	if (ji.type == MONO_PATCH_INFO_ABS
+		|| ji.type == MONO_PATCH_INFO_JIT_ICALL_ID
 		|| ji.type == MONO_PATCH_INFO_ICALL_ADDR
-		|| ji.type == MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR || ji.type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR
-		|| ji.type == MONO_PATCH_INFO_JIT_ICALL_ADDR || ji.type == MONO_PATCH_INFO_RGCTX_FETCH) {
+		|| ji.type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR
+		|| ji.type == MONO_PATCH_INFO_JIT_ICALL_ADDR
+		|| ji.type == MONO_PATCH_INFO_RGCTX_FETCH) {
 		/* These should already have a function descriptor */
 #ifdef PPC_USES_FUNCTION_DESCRIPTOR
 		/* Our function descriptors have a 0 environment, gcc created ones don't */
 		if (ji.type != MONO_PATCH_INFO_JIT_ICALL_ID
-				&& ji.type != MONO_PATCH_INFO_JIT_ICALL_ADDR && ji.type != MONO_PATCH_INFO_ICALL_ADDR
-				&& ji.type != MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR && ji.type != MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR)
+				&& ji.type != MONO_PATCH_INFO_JIT_ICALL_ADDR
+				&& ji.type != MONO_PATCH_INFO_ICALL_ADDR
+				&& ji.type != MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR)
 			g_assert (((gpointer*)target) [2] == 0);
 #endif
 		/* Empty */
@@ -5348,9 +5350,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 			 * When this code is executed, the runtime may not be initalized yet, so
 			 * resolve the patch info by hand.
 			 */
-			if (ji->type == MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR) {
-				target = (gpointer)mono_get_trampoline_func ((MonoTrampolineType)ji->data.index);
-			} else if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR) {
+			if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR) {
 				target = mono_create_specific_trampoline (GUINT_TO_POINTER (ji->data.uindex), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
 				target = mono_create_ftnptr_malloc ((guint8 *)target);
 			} else if (ji->type == MONO_PATCH_INFO_JIT_ICALL_ADDR) {
@@ -5386,9 +5386,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				case MONO_JIT_ICALL_generic_trampoline_delegate:
 				case MONO_JIT_ICALL_generic_trampoline_generic_virtual_remoting:
 				case MONO_JIT_ICALL_generic_trampoline_vcall:
-					g_assert (0); // FIXME replace MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR with MONO_PATCH_INFO_JIT_ICALL_ADDR.
-					g_static_assert (MONO_TRAMPOLINE_JIT == 0);
-					target = (gpointer)mono_get_trampoline_func ((MonoTrampolineType)(jit_icall_id - MONO_JIT_ICALL_generic_trampoline_jit));
+					target = (gpointer)mono_get_trampoline_func (mono_jit_icall_id_to_trampoline_type (jit_icall_id));
 					break;
 				default:
 					target = mono_arch_load_function (jit_icall_id);

@@ -284,7 +284,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 #endif
 
 	if (aot) {
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR, GINT_TO_POINTER (tramp_type));
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, GINT_TO_POINTER (mono_trampoline_type_to_jit_icall_id (tramp_type)));
 		x86_call_reg (code, X86_EAX);
 	} else {
 		tramp = (guint8*)mono_get_trampoline_func (tramp_type);

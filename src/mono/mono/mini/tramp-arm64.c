@@ -229,7 +229,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	arm_movx (code, ARMREG_R3, ARMREG_RZR);
 
 	if (aot) {
-		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_TRAMPOLINE_FUNC_ADDR, GINT_TO_POINTER (tramp_type));
+		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, GINT_TO_POINTER (mono_trampoline_type_to_jit_icall_id (tramp_type)));
 	} else {
 		tramp = (guint8*)mono_get_trampoline_func (tramp_type);
 		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)tramp);

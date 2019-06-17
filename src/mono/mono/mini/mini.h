@@ -1147,6 +1147,13 @@ typedef enum {
 	MONO_TRAMPOLINE_NUM      = 8,
 } MonoTrampolineType;
 
+// Assuming MONO_TRAMPOLINE_JIT / MONO_JIT_ICALL_generic_trampoline_jit are first.
+#if __cplusplus
+g_static_assert (MONO_TRAMPOLINE_JIT == 0);
+#endif
+#define mono_trampoline_type_to_jit_icall_id(a) ((a) + MONO_JIT_ICALL_generic_trampoline_jit)
+#define mono_jit_icall_id_to_trampoline_type(a) ((MonoTrampolineType)((a) - MONO_JIT_ICALL_generic_trampoline_jit))
+
 /* These trampolines return normally to their caller */
 #define MONO_TRAMPOLINE_TYPE_MUST_RETURN(t)		\
 	((t) == MONO_TRAMPOLINE_RGCTX_LAZY_FETCH)
