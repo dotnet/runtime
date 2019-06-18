@@ -8250,7 +8250,7 @@ void emitter::emitDispIns(
 
     /* By now the size better be set to something */
 
-    assert(emitInstCodeSz(id) || emitInstHasNoCode(ins));
+    assert(id->idCodeSize() || emitInstHasNoCode(ins));
 
     /* Figure out the operand size */
 
@@ -12307,9 +12307,9 @@ BYTE* emitter::emitOutputLJ(BYTE* dst, instrDesc* i)
 
         assert(jmp);
 
-        if (emitInstCodeSz(id) != JMP_SIZE_SMALL)
+        if (id->idCodeSize() != JMP_SIZE_SMALL)
         {
-            emitOffsAdj += emitInstCodeSz(id) - JMP_SIZE_SMALL;
+            emitOffsAdj += id->idCodeSize() - JMP_SIZE_SMALL;
 
 #ifdef DEBUG
             if (emitComp->verbose)

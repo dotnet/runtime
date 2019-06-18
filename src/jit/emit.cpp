@@ -3404,7 +3404,7 @@ void emitter::emitDispIG(insGroup* ig, insGroup* igPrev, bool verbose)
                     emitDispIns(id, false, true, false, ofs, nullptr, 0, ig);
 
                     ins += emitSizeOfInsDsc(id);
-                    ofs += emitInstCodeSz(id);
+                    ofs += id->idCodeSize();
                 } while (--cnt);
 
                 printf("\n");
@@ -3497,12 +3497,12 @@ size_t emitter::emitIssue1Instr(insGroup* ig, instrDesc* id, BYTE** dp)
     if (csz != id->idCodeSize())
     {
         /* It is fatal to under-estimate the instruction size */
-        noway_assert(emitInstCodeSz(id) >= csz);
+        noway_assert(id->idCodeSize() >= csz);
 
 #if DEBUG_EMIT
         if (EMITVERBOSE)
         {
-            printf("Instruction predicted size = %u, actual = %u\n", emitInstCodeSz(id), csz);
+            printf("Instruction predicted size = %u, actual = %u\n", id->idCodeSize(), csz);
         }
 #endif // DEBUG_EMIT
 
@@ -3772,7 +3772,7 @@ AGAIN:
 
         /* Get hold of the current jump size */
 
-        jsz = emitSizeOfJump(jmp);
+        jsz = jmp->idCodeSize();
 
         /* Get the group the jump is in */
 
@@ -3860,7 +3860,7 @@ AGAIN:
 
             if (jmp->idjShort)
             {
-                assert(emitSizeOfJump(jmp) == ssz);
+                assert(jmp->idCodeSize() == ssz);
 
                 // We should not be jumping/branching across funclets/functions
                 emitCheckFuncletBranch(jmp, jmpIG);
@@ -4229,7 +4229,7 @@ AGAIN:
 
         /* Make sure the size of the jump is marked correctly */
 
-        assert((0 == (jsz | jmpDist)) || (jsz == emitSizeOfJump(jmp)));
+        assert((0 == (jsz | jmpDist)) || (jsz == jmp->idCodeSize()));
 
 #ifdef DEBUG
         if (EMITVERBOSE)
@@ -5297,7 +5297,7 @@ UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
 
     while (insNum > 0)
     {
-        of += emitInstCodeSz(id);
+        of += id->idCodeSize();
 
         castto(id, BYTE*) += emitSizeOfInsDsc(id);
 
