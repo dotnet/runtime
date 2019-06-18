@@ -391,11 +391,13 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(() => { AppDomain.MonitoringIsEnabled = false; });
             AppDomain.MonitoringIsEnabled = true;
 
-            object o = new object();
-            Assert.InRange(AppDomain.MonitoringSurvivedProcessMemorySize, 1, long.MaxValue);
-            Assert.InRange(AppDomain.CurrentDomain.MonitoringSurvivedMemorySize, 1, long.MaxValue);
-            Assert.InRange(AppDomain.CurrentDomain.MonitoringTotalAllocatedMemorySize, 1, long.MaxValue);
-            GC.KeepAlive(o);
+            const int AllocationSize = 1_234_567;
+            object o = new byte[AllocationSize];
+            GC.Collect();
+
+            Assert.InRange(AppDomain.MonitoringSurvivedProcessMemorySize, AllocationSize, long.MaxValue);
+            Assert.InRange(AppDomain.CurrentDomain.MonitoringSurvivedMemorySize, AllocationSize, long.MaxValue);
+            Assert.InRange(AppDomain.CurrentDomain.MonitoringTotalAllocatedMemorySize, AllocationSize, long.MaxValue);
 
             using (Process p = Process.GetCurrentProcess())
             {
@@ -403,6 +405,8 @@ namespace System.Tests
                 TimeSpan monitoringTime = AppDomain.CurrentDomain.MonitoringTotalProcessorTime;
                 Assert.InRange(monitoringTime, processTime, TimeSpan.MaxValue);
             }
+
+            GC.KeepAlive(o);
         }
 
 #pragma warning disable 618
