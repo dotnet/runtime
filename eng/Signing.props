@@ -6,6 +6,10 @@
     <ItemsToSign Include="$(BinDir)*.exe" />
   </ItemGroup>
 
+  <ItemGroup>
+    <FileSignInfo Include="mscordaccore.dll" CertificateName="MicrosoftSHA2" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(BuildArch)' == 'x86'">
     <!-- Sign api-ms-win-core-xstate-l2-1-0 binary as it is only catalog signed in the current SDK. -->
     <ItemsToSign Condition="'$(BuildType)'=='Release'" Include="$(BinDir)Redist\ucrt\DLLs\$(BuildArch)\api-ms-win-core-xstate-l2-1-0.dll" />
