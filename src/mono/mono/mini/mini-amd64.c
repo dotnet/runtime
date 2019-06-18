@@ -4360,7 +4360,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 				/* Load info var */
 				amd64_mov_reg_membase (code, AMD64_R11, info_var->inst_basereg, info_var->inst_offset, 8);
-				val = ((offset) * sizeof (guint8*)) + MONO_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
+				val = ((offset) * sizeof (target_mgreg_t)) + MONO_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
 				/* Load the info->bp_addrs [offset], which is either NULL or the address of the breakpoint trampoline */
 				amd64_mov_reg_membase (code, AMD64_R11, AMD64_R11, val, 8);
 				amd64_test_reg_reg (code, AMD64_R11, AMD64_R11);

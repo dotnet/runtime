@@ -3355,7 +3355,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 				arm_ldrx (code, ARMREG_IP1, info_var->inst_basereg, info_var->inst_offset);
 				/* Add the offset */
-				val = ((offset / 4) * sizeof (guint8*)) + MONO_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
+				val = ((offset / 4) * sizeof (target_mgreg_t)) + MONO_STRUCT_OFFSET (SeqPointInfo, bp_addrs);
 				/* Load the info->bp_addrs [offset], which is either 0 or the address of the bp trampoline */
 				code = emit_ldrx (code, ARMREG_IP1, ARMREG_IP1, val);
 				/* Skip the load if its 0 */
