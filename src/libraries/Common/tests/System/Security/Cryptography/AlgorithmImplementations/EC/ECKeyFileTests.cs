@@ -27,6 +27,66 @@ namespace System.Security.Cryptography.Tests
             return EcDiffieHellman.Tests.ECDiffieHellmanFactory.IsCurveValid(oid);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void UseAfterDispose(bool importKey)
+        {
+            T key = CreateKey();
+
+            if (importKey)
+            {
+                ImportParameters(key, EccTestData.GetNistP256ReferenceKey());
+            }
+
+            byte[] ecPrivate;
+            byte[] pkcs8Private;
+            byte[] pkcs8EncryptedPrivate;
+            byte[] subjectPublicKeyInfo;
+
+            string pwStr = "Hello";
+            // Because the PBE algorithm uses PBES2 the string->byte encoding is UTF-8.
+            byte[] pwBytes = Encoding.UTF8.GetBytes(pwStr);
+
+            PbeParameters pbeParameters = new PbeParameters(
+                PbeEncryptionAlgorithm.Aes192Cbc,
+                HashAlgorithmName.SHA256,
+                3072);
+
+            // Ensure the key was loaded, then dispose it.
+            // Also ensures all of the inputs are valid for the disposed tests.
+            using (key)
+            {
+                ecPrivate = ExportECPrivateKey(key);
+                pkcs8Private = key.ExportPkcs8PrivateKey();
+                pkcs8EncryptedPrivate = key.ExportEncryptedPkcs8PrivateKey(pwStr, pbeParameters);
+                subjectPublicKeyInfo = key.ExportSubjectPublicKeyInfo();
+            }
+
+            Assert.Throws<ObjectDisposedException>(() => ImportECPrivateKey(key, ecPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ImportPkcs8PrivateKey(pkcs8Private, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey(pwStr, pkcs8EncryptedPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey(pwBytes, pkcs8EncryptedPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ImportSubjectPublicKeyInfo(subjectPublicKeyInfo, out _));
+
+            Assert.Throws<ObjectDisposedException>(() => ExportECPrivateKey(key));
+            Assert.Throws<ObjectDisposedException>(() => TryExportECPrivateKey(key, ecPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ExportPkcs8PrivateKey());
+            Assert.Throws<ObjectDisposedException>(() => key.TryExportPkcs8PrivateKey(pkcs8Private, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ExportEncryptedPkcs8PrivateKey(pwStr, pbeParameters));
+            Assert.Throws<ObjectDisposedException>(() => key.TryExportEncryptedPkcs8PrivateKey(pwStr, pbeParameters, pkcs8EncryptedPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ExportEncryptedPkcs8PrivateKey(pwBytes, pbeParameters));
+            Assert.Throws<ObjectDisposedException>(() => key.TryExportEncryptedPkcs8PrivateKey(pwBytes, pbeParameters, pkcs8EncryptedPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ExportSubjectPublicKeyInfo());
+            Assert.Throws<ObjectDisposedException>(() => key.TryExportSubjectPublicKeyInfo(subjectPublicKeyInfo, out _));
+
+            // Check encrypted import with the wrong password.
+            // It shouldn't do enough work to realize it was wrong.
+            pwBytes = Array.Empty<byte>();
+            Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey("", pkcs8EncryptedPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey(pwBytes, pkcs8EncryptedPrivate, out _));
+        }
+
         [Fact]
         public void ReadWriteNistP521Pkcs8()
         {

@@ -15,8 +15,15 @@ namespace Internal.Cryptography
     //
     internal struct CngAlgorithmCore
     {
+        private readonly string _disposedName;
         public CngAlgorithm DefaultKeyType;
         private CngKey _lazyKey;
+        private bool _disposed;
+
+        public CngAlgorithmCore(string disposedName) : this()
+        {
+            _disposedName = disposedName;
+        }
 
         public static CngKey Duplicate(CngKey key)
         {
@@ -28,6 +35,7 @@ namespace Internal.Cryptography
 
         public bool IsKeyGeneratedNamedCurve()
         {
+            ThrowIfDisposed();
             return (_lazyKey != null && _lazyKey.IsECNamedCurve());
         }
 
@@ -42,6 +50,8 @@ namespace Internal.Cryptography
 
         public CngKey GetOrGenerateKey(int keySize, CngAlgorithm algorithm)
         {
+            ThrowIfDisposed();
+
             // If our key size was changed, we need to generate a new key.
             if (_lazyKey != null)
             {
@@ -68,6 +78,8 @@ namespace Internal.Cryptography
 
         public CngKey GetOrGenerateKey(ECCurve? curve)
         {
+            ThrowIfDisposed();
+
             if (_lazyKey != null)
             {
                 return _lazyKey;
@@ -123,6 +135,7 @@ namespace Internal.Cryptography
         public void SetKey(CngKey key)
         {
             Debug.Assert(key != null);
+            ThrowIfDisposed();
 
             // If we already have a key, clear it out.
             DisposeKey();
@@ -133,6 +146,15 @@ namespace Internal.Cryptography
         public void Dispose()
         {
             DisposeKey();
+            _disposed = true;
+        }
+
+        internal void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(_disposedName);
+            }
         }
     }
 }

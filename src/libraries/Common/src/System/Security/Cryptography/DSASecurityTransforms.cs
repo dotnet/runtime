@@ -5,7 +5,6 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.IO;
-using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
@@ -28,6 +27,7 @@ namespace System.Security.Cryptography
             public sealed partial class DSASecurityTransforms : DSA
             {
                 private SecKeyPair _keys;
+                private bool _disposed;
 
                 public DSASecurityTransforms()
                     : this(1024)
@@ -36,7 +36,7 @@ namespace System.Security.Cryptography
 
                 public DSASecurityTransforms(int keySize)
                 {
-                    KeySize = keySize;
+                    base.KeySize = keySize;
                 }
 
                 internal DSASecurityTransforms(SafeSecKeyRefHandle publicKey)
@@ -71,6 +71,8 @@ namespace System.Security.Cryptography
                         // Set the KeySize before freeing the key so that an invalid value doesn't throw away the key
                         base.KeySize = value;
 
+                        ThrowIfDisposed();
+
                         if (_keys != null)
                         {
                             _keys.Dispose();
@@ -86,8 +88,7 @@ namespace System.Security.Cryptography
                     const string ExportPassword = "DotnetExportPassphrase";
                     SecKeyPair keys = GetKeys();
 
-                    if (keys.PublicKey == null ||
-                        (includePrivateParameters && keys.PrivateKey == null))
+                    if (includePrivateParameters && keys.PrivateKey == null)
                     { 
                         throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
                     }
@@ -152,6 +153,8 @@ namespace System.Security.Cryptography
                     if (parameters.Q.Length != 20)
                         throw new CryptographicException(SR.Cryptography_InvalidDsaParameters_QRestriction_ShortKey);
 
+                    ThrowIfDisposed();
+
                     if (hasPrivateKey)
                     {
                         SafeSecKeyRefHandle privateKey = ImportKey(parameters);
@@ -177,6 +180,24 @@ namespace System.Security.Cryptography
                         SafeSecKeyRefHandle publicKey = ImportKey(parameters);
                         SetKey(SecKeyPair.PublicOnly(publicKey));
                     }
+                }
+
+                public override void ImportEncryptedPkcs8PrivateKey(
+                    ReadOnlySpan<byte> passwordBytes,
+                    ReadOnlySpan<byte> source,
+                    out int bytesRead)
+                {
+                    ThrowIfDisposed();
+                    base.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
+                }
+
+                public override void ImportEncryptedPkcs8PrivateKey(
+                    ReadOnlySpan<char> password,
+                    ReadOnlySpan<byte> source,
+                    out int bytesRead)
+                {
+                    ThrowIfDisposed();
+                    base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
                 }
 
                 private static SafeSecKeyRefHandle ImportKey(DSAParameters parameters)
@@ -218,6 +239,8 @@ namespace System.Security.Cryptography
                     ReadOnlySpan<byte> source,
                     out int bytesRead)
                 {
+                    ThrowIfDisposed();
+
                     fixed (byte* ptr = &MemoryMarshal.GetReference(source))
                     {
                         using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
@@ -306,13 +329,30 @@ namespace System.Security.Cryptography
                             _keys.Dispose();
                             _keys = null;
                         }
+
+                        _disposed = true;
                     }
 
                     base.Dispose(disposing);
                 }
 
+                private void ThrowIfDisposed()
+                {
+                    // The other SecurityTransforms types use _keys.PublicKey == null,
+                    // but since Apple doesn't provide DSA key generation we can't easily tell
+                    // if a failed attempt to generate a key happened, or we're in a pristine state.
+                    //
+                    // So this type uses an explicit field, rather than inferred state.
+                    if (_disposed)
+                    {
+                        throw new ObjectDisposedException(nameof(DSA));
+                    }
+                }
+
                 internal SecKeyPair GetKeys()
                 {
+                    ThrowIfDisposed();
+
                     SecKeyPair current = _keys;
 
                     if (current != null)
@@ -330,6 +370,8 @@ namespace System.Security.Cryptography
 
                 private void SetKey(SecKeyPair newKeyPair)
                 {
+                    ThrowIfDisposed();
+
                     SecKeyPair current = _keys;
                     _keys = newKeyPair;
                     current?.Dispose();

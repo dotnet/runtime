@@ -7,23 +7,37 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.Apple;
 using System.Security.Cryptography.Asn1;
-using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
     internal sealed class EccSecurityTransforms : IDisposable
     {
         private SecKeyPair _keys;
+        private bool _disposed;
+        private readonly string _disposedName;
 
-        public void Dispose()
+        internal EccSecurityTransforms(string disposedTypeName)
+        {
+            Debug.Assert(disposedTypeName != null);
+            _disposedName = disposedTypeName;
+        }
+
+        internal void DisposeKey()
         {
             _keys?.Dispose();
             _keys = null;
         }
 
+        public void Dispose()
+        {
+            DisposeKey();
+            _disposed = true;
+        }
+
         internal int GenerateKey(ECCurve curve)
         {
             curve.Validate();
+            ThrowIfDisposed();
 
             if (!curve.IsNamed)
             {
@@ -64,8 +78,18 @@ namespace System.Security.Cryptography
             return newPair;
         }
 
+        internal void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(_disposedName);
+            }
+        }
+
         internal SecKeyPair GetOrGenerateKeys(int keySizeInBits)
         {
+            ThrowIfDisposed();
+
             SecKeyPair current = _keys;
 
             if (current != null)
@@ -85,6 +109,8 @@ namespace System.Security.Cryptography
 
         private void SetKey(SecKeyPair keyPair)
         {
+            ThrowIfDisposed();
+
             SecKeyPair current = _keys;
             _keys = keyPair;
             current?.Dispose();
@@ -97,8 +123,7 @@ namespace System.Security.Cryptography
             const string ExportPassword = "DotnetExportPassphrase";
             SecKeyPair keys = GetOrGenerateKeys(keySizeInBits);
 
-            if (keys.PublicKey == null ||
-                (includePrivateParameters && keys.PrivateKey == null))
+            if (includePrivateParameters && keys.PrivateKey == null)
             { 
                 throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
             }
@@ -137,6 +162,7 @@ namespace System.Security.Cryptography
         internal int ImportParameters(ECParameters parameters)
         {
             parameters.Validate();
+            ThrowIfDisposed();
 
             bool isPrivateKey = parameters.D != null;
             SecKeyPair newKeys;
@@ -206,6 +232,8 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             out int bytesRead)
         {
+            ThrowIfDisposed();
+
             fixed (byte* ptr = &MemoryMarshal.GetReference(source))
             {
                 using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))

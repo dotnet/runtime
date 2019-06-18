@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
     {
         public sealed partial class ECDiffieHellmanCng : ECDiffieHellman
         {
-            private readonly ECCngKey _key = new ECCngKey(BCryptNative.AlgorithmName.ECDH);
+            private readonly ECCngKey _key = new ECCngKey(BCryptNative.AlgorithmName.ECDH, nameof(ECDiffieHellman));
 
             private string GetCurveName(out string oidValue) => _key.GetCurveName(KeySize, out oidValue);
 

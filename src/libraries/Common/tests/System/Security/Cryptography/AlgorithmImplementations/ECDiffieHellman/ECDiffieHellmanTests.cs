@@ -111,6 +111,53 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void UseAfterDispose(bool importKey)
+        {
+            ECDiffieHellman key = ECDiffieHellmanFactory.Create();
+            ECDiffieHellmanPublicKey pubKey;
+            HashAlgorithmName hash = HashAlgorithmName.SHA256;
+
+            if (importKey)
+            {
+                key.ImportParameters(EccTestData.GetNistP256ReferenceKey());
+            }
+
+            // Ensure the key is populated, then dispose it.
+            using (key)
+            {
+                pubKey = key.PublicKey;
+                key.DeriveKeyFromHash(pubKey, hash);
+
+                pubKey.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => key.DeriveKeyFromHash(pubKey, hash));
+                Assert.Throws<ObjectDisposedException>(() => key.DeriveKeyFromHmac(pubKey, hash, null));
+                Assert.Throws<ObjectDisposedException>(() => key.DeriveKeyFromHmac(pubKey, hash, new byte[3]));
+                Assert.Throws<ObjectDisposedException>(() => key.DeriveKeyTls(pubKey, new byte[4], new byte[64]));
+
+                pubKey = key.PublicKey;
+            }
+
+            key.Dispose();
+
+            Assert.Throws<ObjectDisposedException>(() => key.DeriveKeyFromHash(pubKey, hash));
+            Assert.Throws<ObjectDisposedException>(() => key.DeriveKeyFromHmac(pubKey, hash, null));
+            Assert.Throws<ObjectDisposedException>(() => key.DeriveKeyFromHmac(pubKey, hash, new byte[3]));
+            Assert.Throws<ObjectDisposedException>(() => key.DeriveKeyTls(pubKey, new byte[4], new byte[64]));
+            Assert.Throws<ObjectDisposedException>(() => key.GenerateKey(ECCurve.NamedCurves.nistP256));
+            Assert.Throws<ObjectDisposedException>(() => key.ImportParameters(EccTestData.GetNistP256ReferenceKey()));
+
+            // Either set_KeySize or the ExportParameters should throw.
+            Assert.Throws<ObjectDisposedException>(
+                () =>
+                {
+                    key.KeySize = 384;
+                    key.ExportParameters(false);
+                });
+        }
+
 #if netcoreapp
         private static ECDiffieHellman OpenKnownKey()
         {

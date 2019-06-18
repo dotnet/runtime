@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Diagnostics;
 using Microsoft.Win32.SafeHandles;
 
@@ -31,6 +30,8 @@ namespace System.Security.Cryptography
                 if (string.IsNullOrEmpty(hashAlgorithm.Name))
                     throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
+                ThrowIfDisposed();
+
                 return ECDiffieHellmanDerivation.DeriveKeyFromHash(
                     otherPartyPublicKey,
                     hashAlgorithm,
@@ -51,6 +52,8 @@ namespace System.Security.Cryptography
                 if (string.IsNullOrEmpty(hashAlgorithm.Name))
                     throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
 
+                ThrowIfDisposed();
+
                 return ECDiffieHellmanDerivation.DeriveKeyFromHmac(
                     otherPartyPublicKey,
                     hashAlgorithm,
@@ -68,6 +71,8 @@ namespace System.Security.Cryptography
                     throw new ArgumentNullException(nameof(prfLabel));
                 if (prfSeed == null)
                     throw new ArgumentNullException(nameof(prfSeed));
+
+                ThrowIfDisposed();
 
                 return ECDiffieHellmanDerivation.DeriveKeyTls(
                     otherPartyPublicKey,

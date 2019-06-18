@@ -30,6 +30,8 @@ namespace System.Security.Cryptography
             public override void ImportParameters(ECParameters parameters)
             {
                 parameters.Validate();
+                ThrowIfDisposed();
+
                 ECCurve curve = parameters.Curve;
                 bool includePrivateParameters = (parameters.D != null);
 
@@ -102,6 +104,8 @@ namespace System.Security.Cryptography
 
             public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
             {
+                ThrowIfDisposed();
+
                 CngPkcs8.Pkcs8Response response = CngPkcs8.ImportPkcs8PrivateKey(source, out int localRead);
 
                 ProcessPkcs8Response(response);
@@ -113,6 +117,8 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> source,
                 out int bytesRead)
             {
+                ThrowIfDisposed();
+
                 CngPkcs8.Pkcs8Response response = CngPkcs8.ImportEncryptedPkcs8PrivateKey(
                     passwordBytes,
                     source,
@@ -127,6 +133,8 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> source,
                 out int bytesRead)
             {
+                ThrowIfDisposed();
+
                 CngPkcs8.Pkcs8Response response = CngPkcs8.ImportEncryptedPkcs8PrivateKey(
                     password,
                     source,

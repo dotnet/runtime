@@ -10,6 +10,8 @@ namespace System.Security.Cryptography
     {
         public DSAOpenSsl(DSAParameters parameters)
         {
+            // Make _key be non-null before calling ImportParameters
+            _key = new Lazy<SafeDsaHandle>();
             ImportParameters(parameters);
         }
 

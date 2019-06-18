@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
-using System.Diagnostics;
 using System.IO;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -43,9 +41,10 @@ namespace System.Security.Cryptography
             /// <param name="keySize">Size of the key to generate, in bits.</param>
             public ECDsaOpenSsl(int keySize)
             {
-                KeySize = keySize;
-                // Setting KeySize wakes up _key.
-                Debug.Assert(_key != null);
+                // Use the base setter to get the validation and field assignment without the
+                // side effect of dereferencing _key.
+                base.KeySize = keySize;
+                _key = new ECOpenSsl(this);
             }
 
             /// <summary>
@@ -78,6 +77,7 @@ namespace System.Security.Cryptography
                 if (hash == null)
                     throw new ArgumentNullException(nameof(hash));
 
+                ThrowIfDisposed();
                 SafeEcKeyHandle key = _key.Value;
                 int signatureLength = Interop.Crypto.EcDsaSize(key);
                 byte[] signature = new byte[signatureLength];
@@ -91,6 +91,7 @@ namespace System.Security.Cryptography
 
             public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
             {
+                ThrowIfDisposed();
                 SafeEcKeyHandle key = _key.Value;
 
                 byte[] converted;
@@ -135,6 +136,8 @@ namespace System.Security.Cryptography
 
             public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
             {
+                ThrowIfDisposed();
+
                 // The signature format for .NET is r.Concat(s). Each of r and s are of length BitsToBytes(KeySize), even
                 // when they would have leading zeroes.  If it's the correct size, then we need to encode it from
                 // r.Concat(s) to SEQUENCE(INTEGER(r), INTEGER(s)), because that's the format that OpenSSL expects.
@@ -165,7 +168,8 @@ namespace System.Security.Cryptography
             {
                 if (disposing)
                 {
-                    _key.Dispose();
+                    _key?.Dispose();
+                    _key = null;
                 }
 
                 base.Dispose(disposing);
@@ -185,15 +189,15 @@ namespace System.Security.Cryptography
                     // Set the KeySize before FreeKey so that an invalid value doesn't throw away the key
                     base.KeySize = value;
 
-                    // This is the only place where _key can be null, because it's called by the constructor
-                    // which sets KeySize.
-                    _key?.Dispose();
+                    ThrowIfDisposed();
+                    _key.Dispose();
                     _key = new ECOpenSsl(this);
                 }
             }
 
             public override void GenerateKey(ECCurve curve)
             {
+                ThrowIfDisposed();
                 _key.GenerateKey(curve);
 
                 // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
@@ -203,16 +207,54 @@ namespace System.Security.Cryptography
 
             public override void ImportParameters(ECParameters parameters)
             {
+                ThrowIfDisposed();
                 _key.ImportParameters(parameters);
                 ForceSetKeySize(_key.KeySize);
             }
 
-            public override ECParameters ExportExplicitParameters(bool includePrivateParameters) =>
-                ECOpenSsl.ExportExplicitParameters(_key.Value, includePrivateParameters);
+            public override ECParameters ExportExplicitParameters(bool includePrivateParameters)
+            {
+                ThrowIfDisposed();
+                return ECOpenSsl.ExportExplicitParameters(_key.Value, includePrivateParameters);
+            }
 
-            public override ECParameters ExportParameters(bool includePrivateParameters) =>
-                ECOpenSsl.ExportParameters(_key.Value, includePrivateParameters);
+            public override ECParameters ExportParameters(bool includePrivateParameters)
+            {
+                ThrowIfDisposed();
+                return ECOpenSsl.ExportParameters(_key.Value, includePrivateParameters);
+            }
 
+            public override void ImportEncryptedPkcs8PrivateKey(
+                ReadOnlySpan<byte> passwordBytes,
+                ReadOnlySpan<byte> source,
+                out int bytesRead)
+            {
+                ThrowIfDisposed();
+                base.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
+            }
+
+            public override void ImportEncryptedPkcs8PrivateKey(
+                ReadOnlySpan<char> password,
+                ReadOnlySpan<byte> source,
+                out int bytesRead)
+            {
+                ThrowIfDisposed();
+                base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
+            }
+
+            private void ThrowIfDisposed()
+            {
+                if (_key == null)
+                {
+                    throw new ObjectDisposedException(
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+                        nameof(ECDsa)
+#else
+                        nameof(ECDsaOpenSsl)
+#endif
+                    );
+                }
+            }
         }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     }

@@ -8,6 +8,8 @@ namespace System.Security.Cryptography
 {
     public sealed partial class DSACng : DSA
     {
+        private CngAlgorithmCore _core = new CngAlgorithmCore(nameof(DSACng));
+
         /// <summary>
         ///     Creates a new DSACng object that will use the specified key. The key's
         ///     <see cref="CngKey.AlgorithmGroup" /> must be Dsa. This constructor
@@ -33,6 +35,9 @@ namespace System.Security.Cryptography
             _core.Dispose();
         }
 
-        private CngAlgorithmCore _core;
+        private void ThrowIfDisposed()
+        {
+            _core.ThrowIfDisposed();
+        }
     }
 }

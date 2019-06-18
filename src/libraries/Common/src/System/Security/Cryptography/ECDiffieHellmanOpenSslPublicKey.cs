@@ -12,7 +12,7 @@ namespace System.Security.Cryptography
 #endif
         internal sealed class ECDiffieHellmanOpenSslPublicKey : ECDiffieHellmanPublicKey
         {
-            private readonly ECOpenSsl _key;
+            private ECOpenSsl _key;
 
             internal ECDiffieHellmanOpenSslPublicKey(SafeEvpPKeyHandle pkeyHandle)
             {
@@ -49,20 +49,28 @@ namespace System.Security.Cryptography
             }
 
             public override ECParameters ExportExplicitParameters() =>
-                ECOpenSsl.ExportExplicitParameters(_key.Value, includePrivateParameters: false);
+                ECOpenSsl.ExportExplicitParameters(GetKey(), includePrivateParameters: false);
 
             public override ECParameters ExportParameters() =>
-                ECOpenSsl.ExportParameters(_key.Value, includePrivateParameters: false);
+                ECOpenSsl.ExportParameters(GetKey(), includePrivateParameters: false);
 
-            internal bool HasCurveName => Interop.Crypto.EcKeyHasCurveName(_key.Value);
+            internal bool HasCurveName => Interop.Crypto.EcKeyHasCurveName(GetKey());
 
-            internal int KeySize => _key.KeySize;
+            internal int KeySize
+            {
+                get
+                {
+                    ThrowIfDisposed();
+                    return _key.KeySize;
+                }
+            }
 
             protected override void Dispose(bool disposing)
             {
                 if (disposing)
                 {
                     _key?.Dispose();
+                    _key = null;
                 }
 
                 base.Dispose(disposing);
@@ -70,7 +78,7 @@ namespace System.Security.Cryptography
 
             internal SafeEvpPKeyHandle DuplicateKeyHandle()
             {
-                SafeEcKeyHandle currentKey = _key.Value;
+                SafeEcKeyHandle currentKey = GetKey();
                 SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
 
                 try
@@ -90,6 +98,26 @@ namespace System.Security.Cryptography
                     pkeyHandle.Dispose();
                     throw;
                 }
+            }
+
+            private void ThrowIfDisposed()
+            {
+                if (_key == null)
+                {
+                    throw new ObjectDisposedException(
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+                        nameof(ECDiffieHellmanPublicKey)
+#else
+                        nameof(ECDiffieHellmanOpenSslPublicKey)
+#endif
+                    );
+                }
+            }
+
+            private SafeEcKeyHandle GetKey()
+            {
+                ThrowIfDisposed();
+                return _key.Value;
             }
         }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS

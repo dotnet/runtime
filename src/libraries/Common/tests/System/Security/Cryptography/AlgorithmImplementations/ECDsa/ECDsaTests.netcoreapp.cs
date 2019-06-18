@@ -15,6 +15,15 @@ namespace System.Security.Cryptography.EcDsa.Tests
         protected override byte[] SignData(ECDsa ecdsa, byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
             TryWithOutputArray(dest => ecdsa.TrySignData(new ReadOnlySpan<byte>(data, offset, count), dest, hashAlgorithm, out int bytesWritten) ? (true, bytesWritten) : (false, 0));
 
+        protected override void UseAfterDispose(ECDsa ecdsa, byte[] data, byte[] sig)
+        {
+            base.UseAfterDispose(ecdsa, data, sig);
+            byte[] hash = new byte[32];
+
+            Assert.Throws<ObjectDisposedException>(() => ecdsa.VerifyHash(hash.AsSpan(), sig.AsSpan()));
+            Assert.Throws<ObjectDisposedException>(() => ecdsa.TrySignHash(hash, sig, out _));
+        }
+
         [Theory, MemberData(nameof(RealImplementations))]
         public void SignData_InvalidArguments_Throws(ECDsa ecdsa)
         {
