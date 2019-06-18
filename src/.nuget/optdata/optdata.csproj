@@ -50,7 +50,7 @@
   <!-- $(IbcDataPackageVersionOutputFile)                                    -->
   <!--                                                                       -->
   <Target Name="DumpIbcDataPackageVersion">
-    <!-- Error if PgoDataPackageVersionOutputFile is not set. -->
+    <!-- Error if IbcDataPackageVersionOutputFile is not set. -->
     <Error Condition="'$(IbcDataPackageVersionOutputFile)'==''" Text="IbcDataPackageVersionOutputFile must be passed as a property." />
 
     <!-- Cleanup old version file -->
