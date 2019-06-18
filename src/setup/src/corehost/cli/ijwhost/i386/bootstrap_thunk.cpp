@@ -38,12 +38,7 @@ pal::dll_t bootstrap_thunk::get_dll_handle()
 // Returns the token of this thunk
 std::uint32_t bootstrap_thunk::get_token()
 {
-    std::uint32_t ulTok = 0;
-    BYTE *pbTok = (BYTE *)&ulTok;
-
-    memcpy(pbTok, &m_tok[0], sizeof(m_tok));
-
-    return ulTok;
+    return m_token;
 }
 
 //=================================================================================
@@ -62,9 +57,7 @@ void bootstrap_thunk::initialize(std::uintptr_t pThunkInitFcn,
                                           std::uintptr_t *pSlot)
 {
     
-    // First fill in the token portion of the struct.
-    BYTE *pbTok = (BYTE *)(&token);
-    memcpy(&m_tok[0], pbTok, sizeof(m_tok));
+    m_token = token;
 
     // Now set up the thunk code
     std::uintptr_t pFrom;

@@ -19,7 +19,7 @@ extern "C" void STDMETHODCALLTYPE start_runtime_thunk_stub();
 class bootstrap_thunk
 {
 private:
-    BYTE            m_tok[3];
+    std::uint32_t m_token;
 
     struct {
         BYTE            m_call;         //0xe8
