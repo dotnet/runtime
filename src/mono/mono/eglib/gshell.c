@@ -62,7 +62,7 @@ split_cmdline (const gchar *cmdline, GPtrArray *array, GError **gerror)
 					g_ptr_array_add (array, g_string_free (str, FALSE));
 					str = g_string_new ("");
 				}
-			} else if (c == '\\'){
+			} else if (c == '\\' && quote_char == '\"'){
 				escaped = TRUE;
 			} else 
 				g_string_append_c (str, c);
