@@ -4,8 +4,10 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -13,61 +15,10 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    public abstract class HttpClientMiniStress : HttpClientHandlerTestBase
+    public sealed class SocketsHttpHandler_HttpClientMiniStress_NoVersion : HttpClientMiniStress
     {
-        public HttpClientMiniStress(ITestOutputHelper output) : base(output) { }
-
-        [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
-        [MemberData(nameof(GetStressOptions))]
-        public void SingleClient_ManyGets_Sync(int numRequests, int dop, HttpCompletionOption completionOption)
-        {
-            string responseText = CreateResponse("abcdefghijklmnopqrstuvwxyz");
-            using (HttpClient client = CreateHttpClient())
-            {
-                Parallel.For(0, numRequests, new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new ThreadPerTaskScheduler() }, _ =>
-                {
-                    CreateServerAndGet(client, completionOption, responseText);
-                });
-            }
-        }
-
-        [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
-        public async Task SingleClient_ManyGets_Async(int numRequests, int dop, HttpCompletionOption completionOption)
-        {
-            string responseText = CreateResponse("abcdefghijklmnopqrstuvwxyz");
-            using (HttpClient client = CreateHttpClient())
-            {
-                await ForCountAsync(numRequests, dop, i => CreateServerAndGetAsync(client, completionOption, responseText));
-            }
-        }
-
-        [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
-        [MemberData(nameof(GetStressOptions))]
-        public void ManyClients_ManyGets(int numRequests, int dop, HttpCompletionOption completionOption)
-        {
-            string responseText = CreateResponse("abcdefghijklmnopqrstuvwxyz");
-            Parallel.For(0, numRequests, new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new ThreadPerTaskScheduler() }, _ =>
-            {
-                using (HttpClient client = CreateHttpClient())
-                {
-                    CreateServerAndGet(client, completionOption, responseText);
-                }
-            });
-        }
-
-        [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
-        [MemberData(nameof(PostStressOptions))]
-        public async Task ManyClients_ManyPosts_Async(int numRequests, int dop, int numBytes)
-        {
-            string responseText = CreateResponse("");
-            await ForCountAsync(numRequests, dop, async i =>
-            {
-                using (HttpClient client = CreateHttpClient())
-                {
-                    await CreateServerAndPostAsync(client, numBytes, responseText);
-                }
-            });
-        }
+        public SocketsHttpHandler_HttpClientMiniStress_NoVersion(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => true;
 
         [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         [InlineData(1000000)]
@@ -77,6 +28,110 @@ namespace System.Net.Http.Functional.Tests
             {
                 CreateHttpClient().Dispose();
             }
+        }
+    }
+
+    public sealed class SocketsHttpHandler_HttpClientMiniStress_Http2 : HttpClientMiniStress
+    {
+        public SocketsHttpHandler_HttpClientMiniStress_Http2(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => true;
+        protected override bool UseHttp2 => true;
+    }
+
+    public sealed class SocketsHttpHandler_HttpClientMiniStress_Http11 : HttpClientMiniStress
+    {
+        public SocketsHttpHandler_HttpClientMiniStress_Http11(ITestOutputHelper output) : base(output) { }
+        protected override bool UseSocketsHttpHandler => true;
+
+        [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
+        [MemberData(nameof(PostStressOptions))]
+        public async Task ManyClients_ManyPosts_Async(int numRequests, int dop, int numBytes)
+        {
+            (List<HttpHeaderData> headers, string content) = CreateResponse("abcdefghijklmnopqrstuvwxyz");
+            await ForCountAsync(numRequests, dop, async i =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    await CreateServerAndPostAsync(client, numBytes, headers, content);
+                }
+            });
+        }
+
+        private async Task CreateServerAndPostAsync(HttpClient client, int numBytes, List<HttpHeaderData> headers, string content)
+        {
+            string responseText = "HTTP/1.1 200 OK\r\n" + string.Join("\r\n", headers.Select(h => h.Name + ": " + h.Value)) + "\r\n\r\n" + content;
+
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                var content = new ByteArrayContent(new byte[numBytes]);
+                Task<HttpResponseMessage> postAsync = client.PostAsync(url, content);
+
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    byte[] postData = new byte[numBytes];
+                    while (!string.IsNullOrEmpty(await connection.ReadLineAsync().ConfigureAwait(false)));
+                    Assert.Equal(numBytes, await connection.ReadBlockAsync(postData, 0, numBytes));
+
+                    await connection.Writer.WriteAsync(responseText).ConfigureAwait(false);
+                    connection.Socket.Shutdown(SocketShutdown.Send);
+                });
+
+                (await postAsync.ConfigureAwait(false)).Dispose();
+            });
+        }
+    }
+
+    public abstract class HttpClientMiniStress : HttpClientHandlerTestBase
+    {
+        public HttpClientMiniStress(ITestOutputHelper output) : base(output) { }
+
+        protected override HttpClient CreateHttpClient() =>
+            CreateHttpClient(
+                new SocketsHttpHandler()
+                {
+                    SslOptions = new SslClientAuthenticationOptions()
+                    {
+                        RemoteCertificateValidationCallback = delegate { return true; },
+                    }
+                });
+
+        [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
+        [MemberData(nameof(GetStressOptions))]
+        public void SingleClient_ManyGets_Sync(int numRequests, int dop, HttpCompletionOption completionOption)
+        {
+            (List<HttpHeaderData> headers, string content) = CreateResponse("abcd");
+            using (HttpClient client = CreateHttpClient())
+            {
+                Parallel.For(0, numRequests, new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new ThreadPerTaskScheduler() }, _ =>
+                {
+                    CreateServerAndGet(client, completionOption, headers, content);
+                });
+            }
+        }
+
+        [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
+        [MemberData(nameof(GetStressOptions))]
+        public async Task SingleClient_ManyGets_Async(int numRequests, int dop, HttpCompletionOption completionOption)
+        {
+            (List<HttpHeaderData> headers, string content) = CreateResponse("abcdefghijklmnopqrstuvwxyz");
+            using (HttpClient client = CreateHttpClient())
+            {
+                await ForCountAsync(numRequests, dop, i => CreateServerAndGetAsync(client, completionOption, headers, content));
+            }
+        }
+
+        [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
+        [MemberData(nameof(GetStressOptions))]
+        public void ManyClients_ManyGets(int numRequests, int dop, HttpCompletionOption completionOption)
+        {
+            (List<HttpHeaderData> headers, string content) = CreateResponse("abcdefghijklmnopqrstuvwxyz");
+            Parallel.For(0, numRequests, new ParallelOptions { MaxDegreeOfParallelism = dop, TaskScheduler = new ThreadPerTaskScheduler() }, _ =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    CreateServerAndGet(client, completionOption, headers, content);
+                }
+            });
         }
 
         [ConditionalTheory(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
@@ -115,42 +170,35 @@ namespace System.Net.Http.Functional.Tests
                         yield return new object[] { numRequests, dop, completionoption };
         }
 
-        private static void CreateServerAndGet(HttpClient client, HttpCompletionOption completionOption, string responseText)
+        private void CreateServerAndGet(HttpClient client, HttpCompletionOption completionOption, List<HttpHeaderData> headers, string content)
         {
-            LoopbackServer.CreateServerAsync((server, url) =>
+            LoopbackServerFactory.CreateServerAsync((server, url) =>
             {
                 Task<HttpResponseMessage> getAsync = client.GetAsync(url, completionOption);
 
-                server.AcceptConnectionAsync(connection => 
-                {
-                    while (!string.IsNullOrEmpty(connection.ReadLine())) ;
+                new Task[] {
+                    getAsync,
+                    server.HandleRequestAsync(HttpStatusCode.OK, headers, content)
+                }.WhenAllOrAnyFailed().GetAwaiter().GetResult();
 
-                    connection.Writer.Write(responseText);
-                    connection.Socket.Shutdown(SocketShutdown.Send);
-
-                    return Task.CompletedTask;
-                }).GetAwaiter().GetResult();
-
-                getAsync.GetAwaiter().GetResult().Dispose();
+                getAsync.Result.Dispose();
                 return Task.CompletedTask;
             }).GetAwaiter().GetResult();
         }
 
-        private static async Task CreateServerAndGetAsync(HttpClient client, HttpCompletionOption completionOption, string responseText)
+        private async Task CreateServerAndGetAsync(HttpClient client, HttpCompletionOption completionOption, List<HttpHeaderData> headers, string content)
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 Task<HttpResponseMessage> getAsync = client.GetAsync(url, completionOption);
 
-                await server.AcceptConnectionAsync(async connection => 
+                await new Task[]
                 {
-                    while (!string.IsNullOrEmpty(await connection.ReadLineAsync().ConfigureAwait(false))) ;
+                    getAsync,
+                    server.HandleRequestAsync(HttpStatusCode.OK, headers, content),
+                }.WhenAllOrAnyFailed().ConfigureAwait(false);
 
-                    await connection.Writer.WriteAsync(responseText).ConfigureAwait(false);
-                    connection.Socket.Shutdown(SocketShutdown.Send);
-                });
-
-                (await getAsync.ConfigureAwait(false)).Dispose();
+                getAsync.Result.Dispose();
             });
         }
 
@@ -162,64 +210,41 @@ namespace System.Net.Http.Functional.Tests
                         yield return new object[] { numRequests, dop, numBytes };
         }
 
-        private static async Task CreateServerAndPostAsync(HttpClient client, int numBytes, string responseText)
-        {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                var content = new ByteArrayContent(new byte[numBytes]);
-                Task<HttpResponseMessage> postAsync = client.PostAsync(url, content);
-
-                await server.AcceptConnectionAsync(async connection => 
-                {
-                    byte[] postData = new byte[numBytes];
-                    while (!string.IsNullOrEmpty(await connection.ReadLineAsync().ConfigureAwait(false))) ;
-                    Assert.Equal(numBytes, await connection.ReadBlockAsync(postData, 0, numBytes));
-
-                    await connection.Writer.WriteAsync(responseText).ConfigureAwait(false);
-                    connection.Socket.Shutdown(SocketShutdown.Send);
-                });
-
-                (await postAsync.ConfigureAwait(false)).Dispose();
-            });
-        }
-
         [ConditionalFact(typeof(TestEnvironment), nameof(TestEnvironment.IsStressModeEnabled))]
         public async Task UnreadResponseMessage_Collectible()
         {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            await LoopbackServerFactory.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
                 {
                     Func<Task<WeakReference>> getAsync = () => client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).ContinueWith(t => new WeakReference(t.Result));
                     Task<WeakReference> wrt = getAsync();
 
-                    await server.AcceptConnectionAsync(async connection =>
-                    {
-                        while (!string.IsNullOrEmpty(await connection.ReadLineAsync())) ;
-                        await connection.Writer.WriteAsync(CreateResponse(new string('a', 32 * 1024)));
+                    await server.HandleRequestAsync(content: new string('a', 16 * 1024));
 
-                        WeakReference wr = wrt.GetAwaiter().GetResult();
-                        Assert.True(SpinWait.SpinUntil(() =>
-                        {
-                            GC.Collect();
-                            GC.WaitForPendingFinalizers();
-                            GC.Collect();
-                            return !wr.IsAlive;
-                        }, 10 * 1000), "Response object should have been collected");
-                    });
+                    WeakReference wr = wrt.GetAwaiter().GetResult();
+                    Assert.True(SpinWait.SpinUntil(() =>
+                    {
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                        GC.Collect();
+                        return !wr.IsAlive;
+                    }, 10 * 1000), "Response object should have been collected");
                 }
             });
         }
 
-        private static string CreateResponse(string asciiBody) =>
-            $"HTTP/1.1 200 OK\r\n" +
-            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-            "Content-Type: text/plain\r\n" +
-            $"Content-Length: {asciiBody.Length}\r\n" +
-            "\r\n" +
-            $"{asciiBody}";
+        protected (List<HttpHeaderData> Headers, string Content) CreateResponse(string asciiBody)
+        {
+            var headers = new List<HttpHeaderData>();
+            if (!UseHttp2)
+            {
+                headers.Add(new HttpHeaderData("Content-Length", asciiBody.Length.ToString()));
+            }
+            return (headers, asciiBody);
+        }
 
-        private static Task ForCountAsync(int count, int dop, Func<int, Task> bodyAsync)
+        protected static Task ForCountAsync(int count, int dop, Func<int, Task> bodyAsync)
         {
             var sched = new ThreadPerTaskScheduler();
             int nextAvailableIndex = 0;

@@ -165,12 +165,6 @@ namespace System.Net.Http.Functional.Tests
         protected override bool UseSocketsHttpHandler => false;
     }
 
-    public sealed class PlatformHandler_HttpClientMiniStress : HttpClientMiniStress
-    {
-        public PlatformHandler_HttpClientMiniStress(ITestOutputHelper output) : base(output) { }
-        protected override bool UseSocketsHttpHandler => false;
-    }
-
     public sealed class PlatformHandler_HttpClientHandlerTest : HttpClientHandlerTest
     {
         public PlatformHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) { }

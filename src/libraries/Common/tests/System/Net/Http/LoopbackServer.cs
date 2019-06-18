@@ -93,8 +93,7 @@ namespace System.Net.Test.Common
                 Stream stream = new NetworkStream(s, ownsSocket: false);
                 if (_options.UseSsl)
                 {
-                    var sslStream = new SslStream(stream, false, delegate
-                    { return true; });
+                    var sslStream = new SslStream(stream, false, delegate { return true; });
                     using (var cert = Configuration.Certificates.GetServerCertificate())
                     {
                         await sslStream.AuthenticateAsServerAsync(
