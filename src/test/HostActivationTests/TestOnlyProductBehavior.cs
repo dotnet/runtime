@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.NET.HostModel.AppHost;
 using System;
 using System.IO;
 
@@ -30,7 +31,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 throw new Exception($"Could not find product binary {productBinaryPath} to enable test only behavior on.");
             }
 
-            if (FileUtils.SearchInFile(productBinaryPath, OriginalTestOnlyMarker) == -1)
+            if (BinaryUtils.SearchInFile(productBinaryPath, OriginalTestOnlyMarker) == -1)
             {
                 // The marker is already enabled (probably by another call to TestOnlyProductBehavior)
                 // We allow this to be able to nest the enable calls seamlessly - so that tests don't have to track
@@ -44,11 +45,10 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             try
             {
-                FileUtils.SearchAndReplace(
+                BinaryUtils.SearchAndReplace(
                     productBinaryPath,
                     OriginalTestOnlyMarker,
-                    EnabledTestOnlyMarker,
-                    terminateWithNul: false);
+                    EnabledTestOnlyMarker);
                 returnDisposable = backup;
                 backup = null;
             }
