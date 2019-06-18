@@ -1356,6 +1356,10 @@ void CodeGen::genConsumeRegs(GenTree* tree)
         {
             genConsumeAddress(tree->AsIndir()->Addr());
         }
+        else if (tree->OperIs(GT_LEA))
+        {
+            genConsumeAddress(tree);
+        }
 #ifdef _TARGET_XARCH_
         else if (tree->OperIsLocalRead())
         {
