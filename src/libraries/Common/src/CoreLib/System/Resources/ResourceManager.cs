@@ -400,7 +400,7 @@ namespace System.Resources
                 throw new ArgumentNullException(nameof(culture));
 
             Dictionary<string, ResourceSet>? localResourceSets = _resourceSets;
-            ResourceSet rs;
+            ResourceSet? rs;
             if (localResourceSets != null)
             {
                 lock (localResourceSets)
@@ -509,7 +509,7 @@ namespace System.Resources
             lock (localResourceSets)
             {
                 // If another thread added this culture, return that.
-                ResourceSet lostRace;
+                ResourceSet? lostRace;
                 if (localResourceSets.TryGetValue(cultureName, out lostRace))
                 {
                     if (!object.ReferenceEquals(lostRace, rs))
