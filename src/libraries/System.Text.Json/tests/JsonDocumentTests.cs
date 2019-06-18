@@ -3165,7 +3165,6 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
-        [ActiveIssue(38178)]
         [InlineData("\"hello\"", new char[1] { (char)0xDC01 })]    // low surrogate - invalid
         [InlineData("\"hello\"", new char[1] { (char)0xD801 })]    // high surrogate - missing pair
         public static void InvalidUTF16Search(string jsonString, char[] lookup)
