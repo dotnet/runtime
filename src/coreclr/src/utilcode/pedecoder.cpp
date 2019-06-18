@@ -34,7 +34,7 @@ CHECK PEDecoder::CheckFormat() const
         {
             CHECK(CheckCorHeader());
 
-            if (IsILOnly() && !HasReadyToRunHeader())
+            if (IsILOnly())
                 CHECK(CheckILOnly());
 
             if (HasNativeHeader())
@@ -1406,6 +1406,12 @@ CHECK PEDecoder::CheckILOnly() const
 
     CHECK(CheckCorHeader());
 
+    if (HasReadyToRunHeader())
+    {
+        // Pretend R2R images are IL-only 
+        const_cast<PEDecoder *>(this)->m_flags |= FLAG_IL_ONLY_CHECKED;
+        CHECK_OK;
+    }
 
     // Allow only verifiable directories.
 
