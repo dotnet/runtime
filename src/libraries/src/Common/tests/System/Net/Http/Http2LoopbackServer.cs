@@ -194,8 +194,7 @@ namespace System.Net.Test.Common
 
             if (_options.UseSsl)
             {
-                var sslStream = new SslStream(_connectionStream, false, delegate
-                { return true; });
+                var sslStream = new SslStream(_connectionStream, false, delegate { return true; });
                 using (var cert = Configuration.Certificates.GetServerCertificate())
                 {
                     SslServerAuthenticationOptions options = new SslServerAuthenticationOptions();
