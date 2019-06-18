@@ -38,6 +38,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CopyConstructorMarshaler.cs" />
+    <Compile Include="../IjwHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="CMakeLists.txt" />
