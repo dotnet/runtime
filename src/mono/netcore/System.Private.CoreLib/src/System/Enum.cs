@@ -9,7 +9,7 @@ namespace System
 {
 	partial class Enum
 	{
-		sealed class EnumInfo
+		internal sealed class EnumInfo
 		{
 			public readonly bool HasFlagsAttribute;
 			public readonly ulong[] Values;
@@ -111,15 +111,15 @@ namespace System
 
 		static EnumInfo GetEnumInfo (RuntimeType enumType, bool getNames = true)
 		{
-			var entry = enumType.GenericCache as EnumInfo;
+			var entry = enumType.Cache.EnumInfo;
 
 			if (entry == null || (getNames && entry.Names == null)) {
 				if (!GetEnumValuesAndNames (enumType, out var values, out var names))
 					Array.Sort (values, names, System.Collections.Generic.Comparer<ulong>.Default);
 
-				bool hasFlagsAttribute = enumType.IsDefined (typeof(FlagsAttribute), inherit: false);
+				bool hasFlagsAttribute = enumType.IsDefined (typeof (FlagsAttribute), inherit: false);
 				entry = new EnumInfo (hasFlagsAttribute, values, names);
-				enumType.GenericCache = entry;
+				enumType.Cache.EnumInfo = entry;
 			}
 
 			return entry;

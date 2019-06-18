@@ -429,9 +429,6 @@ HANDLES(RT_12, "GetMethodsByName_native", ves_icall_RuntimeType_GetMethodsByName
 HANDLES(RT_13, "GetNestedTypes_native", ves_icall_RuntimeType_GetNestedTypes_native, GPtrArray_ptr, 4, (MonoReflectionType, char_ptr, guint32, guint32))
 HANDLES(RT_14, "GetPacking", ves_icall_RuntimeType_GetPacking, void, 3, (MonoReflectionType, guint32_ref, guint32_ref))
 HANDLES(RT_15, "GetPropertiesByName_native", ves_icall_RuntimeType_GetPropertiesByName_native, GPtrArray_ptr, 4, (MonoReflectionType, char_ptr, guint32, guint32))
-HANDLES(RT_16, "GetTypeCodeImplInternal", ves_icall_type_GetTypeCodeInternal, guint32, 1, (MonoReflectionType))
-HANDLES(RT_28, "IsTypeExportedToWindowsRuntime", ves_icall_System_RuntimeType_IsTypeExportedToWindowsRuntime, MonoBoolean, 0, ())
-HANDLES(RT_29, "IsWindowsRuntimeObjectType", ves_icall_System_RuntimeType_IsWindowsRuntimeObjectType, MonoBoolean, 0, ())
 HANDLES(RT_17, "MakeGenericType", ves_icall_RuntimeType_MakeGenericType, MonoReflectionType, 2, (MonoReflectionType, MonoArray))
 HANDLES(RT_18, "MakePointerType", ves_icall_RuntimeType_MakePointerType, MonoReflectionType, 1, (MonoReflectionType))
 HANDLES(RT_19, "getFullName", ves_icall_System_RuntimeType_getFullName, MonoString, 3, (MonoReflectionType, MonoBoolean, MonoBoolean))
@@ -439,7 +436,6 @@ HANDLES(RT_21, "get_DeclaringMethod", ves_icall_RuntimeType_get_DeclaringMethod,
 HANDLES(RT_22, "get_DeclaringType", ves_icall_RuntimeType_get_DeclaringType, MonoReflectionType, 1, (MonoReflectionType))
 HANDLES(RT_23, "get_Name", ves_icall_RuntimeType_get_Name, MonoString, 1, (MonoReflectionType))
 HANDLES(RT_24, "get_Namespace", ves_icall_RuntimeType_get_Namespace, MonoString, 1, (MonoReflectionType))
-HANDLES(RT_25, "get_core_clr_security_level", ves_icall_RuntimeType_get_core_clr_security_level, int, 1, (MonoReflectionType))
 HANDLES(RT_26, "make_array_type", ves_icall_RuntimeType_make_array_type, MonoReflectionType, 2, (MonoReflectionType, int))
 HANDLES(RT_27, "make_byref_type", ves_icall_RuntimeType_make_byref_type, MonoReflectionType, 1, (MonoReflectionType))
 
