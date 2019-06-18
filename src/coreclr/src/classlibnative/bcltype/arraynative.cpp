@@ -332,8 +332,9 @@ ArrayNative::AssignArrayEnum ArrayNative::CanAssignArrayTypeNoGC(const BASEARRAY
     // Copying primitives from one type to another
     if (CorTypeInfo::IsPrimitiveType_NoThrow(srcElType) && CorTypeInfo::IsPrimitiveType_NoThrow(destElType))
     {
-        if (srcElType == destElType)
+        if (GetNormalizedIntegralArrayElementType(srcElType) == GetNormalizedIntegralArrayElementType(destElType))
             return AssignWillWork;
+
         if (InvokeUtil::CanPrimitiveWiden(destElType, srcElType))
             return AssignPrimitiveWiden;
         else
