@@ -638,7 +638,7 @@ protected:
 
     private:
 #if defined(_TARGET_XARCH_)
-        unsigned _idCodeSize : 4; // size of instruction in bytes
+        unsigned _idCodeSize : 4; // size of instruction in bytes. Max size of an Intel instruction is 15 bytes.
         opSize   _idOpSize : 3;   // operand size: 0=1 , 1=2 , 2=4 , 3=8, 4=16, 5=32
                                   // At this point we have fully consumed first DWORD so that next field
                                   // doesn't cross a byte boundary.
@@ -884,6 +884,7 @@ protected:
         }
         void idCodeSize(unsigned sz)
         {
+            assert(sz <= 15); // Intel decoder limit.
             _idCodeSize = sz;
             assert(sz == _idCodeSize);
         }
@@ -1584,8 +1585,6 @@ private:
 
     void emitSetShortJump(instrDescJmp* id);
     void emitSetMediumJump(instrDescJmp* id);
-    UNATIVE_OFFSET emitSizeOfJump(instrDescJmp* jmp);
-    UNATIVE_OFFSET emitInstCodeSz(instrDesc* id);
 
 public:
     CORINFO_FIELD_HANDLE emitAnyConst(const void* cnsAddr, unsigned cnsSize, emitDataAlignment alignment);

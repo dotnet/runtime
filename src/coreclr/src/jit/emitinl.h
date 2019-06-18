@@ -5,22 +5,6 @@
 
 #ifndef _EMITINL_H_
 #define _EMITINL_H_
-/*****************************************************************************/
-/*****************************************************************************
- *
- *  Return the number of bytes of machine code the given instruction will
- *  produce.
- */
-
-inline UNATIVE_OFFSET emitter::emitInstCodeSz(instrDesc* id)
-{
-    return id->idCodeSize();
-}
-
-inline UNATIVE_OFFSET emitter::emitSizeOfJump(instrDescJmp* jmp)
-{
-    return jmp->idCodeSize();
-}
 
 #ifdef _TARGET_XARCH_
 
