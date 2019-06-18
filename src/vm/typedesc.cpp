@@ -505,23 +505,8 @@ BOOL TypeDesc::CanCastParam(TypeHandle fromParam, TypeHandle toParam, TypeHandle
         CorElementType toParamCorType = toParam.GetVerifierCorElementType();
         if(CorTypeInfo::IsPrimitiveType(toParamCorType))
         {
-            if (toParamCorType == fromParamCorType)
+            if (GetNormalizedIntegralArrayElementType(toParamCorType) == GetNormalizedIntegralArrayElementType(fromParamCorType))
                 return TRUE;
-
-            // Primitive types such as E_T_I4 and E_T_U4 are interchangeable
-            // Enums with interchangeable underlying types are interchangable
-            // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
-            if((toParamCorType != ELEMENT_TYPE_BOOLEAN)
-                &&(fromParamCorType != ELEMENT_TYPE_BOOLEAN)
-                &&(toParamCorType != ELEMENT_TYPE_CHAR)
-                &&(fromParamCorType != ELEMENT_TYPE_CHAR))
-            {
-                if ((CorTypeInfo::Size(toParamCorType) == CorTypeInfo::Size(fromParamCorType))
-                    && (CorTypeInfo::IsFloat(toParamCorType) == CorTypeInfo::IsFloat(fromParamCorType)))
-                {
-                    return TRUE;
-                }
-            }
         } // end if(CorTypeInfo::IsPrimitiveType(toParamCorType))
     } // end if(CorTypeInfo::IsPrimitiveType(fromParamCorType)) 
 
