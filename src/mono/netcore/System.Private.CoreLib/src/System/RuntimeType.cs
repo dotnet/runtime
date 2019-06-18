@@ -2551,6 +2551,12 @@ namespace System
 			}
 		}
 
+		internal override bool IsUserType {
+			get {
+				return false;
+			}
+		}
+
 		public override bool IsSubclassOf(Type type)
 		{
 			if ((object)type == null)
