@@ -46,8 +46,8 @@
     <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview7.19313.1</MicrosoftNETCoreILAsmPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview7.19313.1</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- Corefx dependencies -->
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview7.19317.2</MicrosoftNETCorePlatformsPackageVersion>
-    <runtimenativeSystemIOPortsPackageVersion>4.6.0-preview7.19317.2</runtimenativeSystemIOPortsPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview7.19318.1</MicrosoftNETCorePlatformsPackageVersion>
+    <runtimenativeSystemIOPortsPackageVersion>4.6.0-preview7.19318.1</runtimenativeSystemIOPortsPackageVersion>
     <!-- Standard dependencies -->
     <NETStandardLibraryPackageVersion>2.1.0-prerelease.19317.1</NETStandardLibraryPackageVersion>
     <!-- dotnet-optimization dependencies -->
