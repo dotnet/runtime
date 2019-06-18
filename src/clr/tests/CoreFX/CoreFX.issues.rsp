@@ -41,37 +41,15 @@
 -nonamespace System.ComponentModel.TypeConverterTests
 -nonamespace Tests.Integration
 
-# https://github.com/dotnet/coreclr/pull/24604
+# https://github.com/dotnet/corefx/issues/37886
 -nomethod System.Security.Cryptography.Rsa.Tests.RSAXml.FromNonsenseXml
 
-# Temporarily disabled tests waiting for CoreCLR/CoreFX changes to propagate 
--nomethod System.Tests.AppDomainTests.MonitoringIsEnabled
--nomethod System.Tests.AppDomainTests.MonitoringSurvivedMemorySize
--nomethod System.Tests.AppDomainTests.MonitoringSurvivedProcessMemorySize
--nomethod System.Tests.AppDomainTests.MonitoringTotalAllocatedMemorySize
--nomethod System.Tests.AppDomainTests.MonitoringTotalProcessorTime
--nomethod System.Text.Tests.StringBuilderTests.AppendFormat
+# requires corefx test updates
 -nomethod System.Diagnostics.Tests.DebugTestsNoListeners.Print
 -nomethod System.Diagnostics.Tests.DebugTestsUsingListeners.Print
+-nomethod System.Tests.ArrayTests.Copy_SourceAndDestinationNeverConvertible_ThrowsArrayTypeMismatchException
 
-# requires corefx test updates
--nomethod System.Tests.EnvironmentTests.FailFast_ExceptionStackTrace_StackOverflowException
--nomethod System.Tests.EnvironmentTests.FailFast_ExceptionStackTrace_InnerException
--nomethod System.Tests.EnvironmentTests.FailFast_ExceptionStackTrace_ArgumentException
-
-# requires corefx test updates: https://github.com/dotnet/corefx/pull/38269
--nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Module
--nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.String_Type_TypeArray_Type
--nomethod System.Reflection.Emit.Tests.MethodBuilderGetGenericArguments.GetGenericArguments_NonGenericMethod_ReturnsNull
--nomethod System.Reflection.Emit.Tests.MethodBuilderSetReturnType.SetReturnType_NullReturnType_ReturnsVoid
--nomethod System.Reflection.Emit.Tests.MethodBuilderSetSignature.SetSignature_AllParametersNull
--nomethod System.Reflection.Emit.Tests.MethodBuilderSetSignature.SetSignature_NullReturnType_CustomModifiersSetToWrongTypes
--nomethod System.Reflection.Emit.Tests.TypeBuilderDefineMethodTests.DefineMethod
--nomethod System.Tests.StringTests.CasingNegativeTest
--nomethod System.Tests.StringTests.CompareNegativeTest
--nomethod System.Tests.StringTests.ToLowerNullCulture
--nomethod System.Tests.StringTests.ToUpperNullCulture
-
+#
 #
 # Temporarily disable tests while bringing more CoreFX job configurations online.
 #
