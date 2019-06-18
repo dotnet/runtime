@@ -20,12 +20,12 @@
   <!-- $(IbcMergePackageVersionOutputFile)                                    -->
   <!--                                                                       -->
   <Target Name="DumpIbcMergePackageVersion">
-    <!-- Error if PgoDataPackageVersionOutputFile is not set. -->
+    <!-- Error if IbcMergePackageVersionOutputFile is not set. -->
     <Error Condition="'$(IbcMergePackageVersionOutputFile)'==''" Text="IbcMergePackageVersionOutputFile must be passed as a property." />
 
     <!-- Cleanup old version file -->
     <Delete Files="$(IbcMergePackageVersionOutputFile)" Condition="Exists('$(IbcMergePackageVersionOutputFile)')" />
-    <WriteLinesToFile File="$(IbcMergePackageVersionOutputFile)" Lines="$(optimizationIBCCoreCLRVersion)" Overwrite="true"/>
+    <WriteLinesToFile File="$(IbcMergePackageVersionOutputFile)" Lines="$(IbcMergePackageVersion)" Overwrite="true"/>
     <Message Text="IbcMergePackageVersion: $(IbcMergePackageVersion) written to: $(IbcMergePackageVersionOutputFile)" Importance="High" />
   </Target>
 
