@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.Win32.SafeHandles;
+
 namespace System.Security.Cryptography
 {
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
@@ -39,7 +41,8 @@ namespace System.Security.Cryptography
             {
                 if (disposing)
                 {
-                    _key.Dispose();
+                    _key?.Dispose();
+                    _key = null;
                 }
 
                 base.Dispose(disposing);
@@ -60,29 +63,77 @@ namespace System.Security.Cryptography
 
                     // Set the KeySize before FreeKey so that an invalid value doesn't throw away the key
                     base.KeySize = value;
-                    _key?.Dispose();
+
+                    ThrowIfDisposed();
+                    _key.Dispose();
                     _key = new ECOpenSsl(this);
                 }
             }
 
             public override void GenerateKey(ECCurve curve)
             {
+                ThrowIfDisposed();
                 KeySizeValue = _key.GenerateKey(curve);
             }
 
-            public override ECDiffieHellmanPublicKey PublicKey =>
-                new ECDiffieHellmanOpenSslPublicKey(_key.UpRefKeyHandle());
+            public override ECDiffieHellmanPublicKey PublicKey
+            {
+                get
+                {
+                    ThrowIfDisposed();
+                    return new ECDiffieHellmanOpenSslPublicKey(_key.UpRefKeyHandle());
+                }
+            }
 
             public override void ImportParameters(ECParameters parameters)
             {
+                ThrowIfDisposed();
                 KeySizeValue = _key.ImportParameters(parameters);
             }
 
             public override ECParameters ExportExplicitParameters(bool includePrivateParameters) =>
-                ECOpenSsl.ExportExplicitParameters(_key.Value, includePrivateParameters);
+                ECOpenSsl.ExportExplicitParameters(GetKey(), includePrivateParameters);
 
             public override ECParameters ExportParameters(bool includePrivateParameters) =>
-                ECOpenSsl.ExportParameters(_key.Value, includePrivateParameters);
+                ECOpenSsl.ExportParameters(GetKey(), includePrivateParameters);
+
+            public override void ImportEncryptedPkcs8PrivateKey(
+                ReadOnlySpan<byte> passwordBytes,
+                ReadOnlySpan<byte> source,
+                out int bytesRead)
+            {
+                ThrowIfDisposed();
+                base.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
+            }
+
+            public override void ImportEncryptedPkcs8PrivateKey(
+                ReadOnlySpan<char> password,
+                ReadOnlySpan<byte> source,
+                out int bytesRead)
+            {
+                ThrowIfDisposed();
+                base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
+            }
+
+            private void ThrowIfDisposed()
+            {
+                if (_key == null)
+                {
+                    throw new ObjectDisposedException(
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+                        nameof(ECDiffieHellman)
+#else
+                        nameof(ECDiffieHellmanOpenSsl)
+#endif
+                    );
+                }
+            }
+
+            private SafeEcKeyHandle GetKey()
+            {
+                ThrowIfDisposed();
+                return _key.Value;
+            }
         }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     }

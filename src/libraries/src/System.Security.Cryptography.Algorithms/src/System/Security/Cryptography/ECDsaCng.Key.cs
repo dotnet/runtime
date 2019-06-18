@@ -11,7 +11,7 @@ namespace System.Security.Cryptography
     {
         public sealed partial class ECDsaCng : ECDsa
         {
-            private readonly ECCngKey _key = new ECCngKey(AlgorithmName.ECDsa);
+            private readonly ECCngKey _key = new ECCngKey(AlgorithmName.ECDsa, nameof(ECDsa));
 
             private string GetCurveName(out string oidValue) => _key.GetCurveName(KeySize, out oidValue);
             

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.IO;
 using Internal.Cryptography;
@@ -35,7 +34,7 @@ namespace System.Security.Cryptography
             public DSAOpenSsl(int keySize)
             {
                 LegalKeySizesValue = s_legalKeySizes;
-                KeySize = keySize;
+                base.KeySize = keySize;
                 _key = new Lazy<SafeDsaHandle>(GenerateKey);
             }
 
@@ -51,6 +50,7 @@ namespace System.Security.Cryptography
                     // Set the KeySize before FreeKey so that an invalid value doesn't throw away the key
                     base.KeySize = value;
 
+                    ThrowIfDisposed();
                     FreeKey();
                     _key = new Lazy<SafeDsaHandle>(GenerateKey);
                 }
@@ -76,9 +76,7 @@ namespace System.Security.Cryptography
             public override DSAParameters ExportParameters(bool includePrivateParameters)
             {
                 // It's entirely possible that this line will cause the key to be generated in the first place.
-                SafeDsaHandle key = _key.Value;
-
-                CheckInvalidKey(key);
+                SafeDsaHandle key = GetKey();
 
                 DSAParameters dsaParameters = Interop.Crypto.ExportDsaParameters(key, includePrivateParameters);
                 bool hasPrivateKey = dsaParameters.X != null;
@@ -108,6 +106,8 @@ namespace System.Security.Cryptography
                 if (hasPrivateKey && parameters.X.Length != parameters.Q.Length)
                     throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedQX);
 
+                ThrowIfDisposed();
+
                 SafeDsaHandle key;
                 if (!Interop.Crypto.DsaKeyCreateByExplicitParameters(
                     out key,
@@ -123,11 +123,30 @@ namespace System.Security.Cryptography
                 SetKey(key);
             }
 
+            public override void ImportEncryptedPkcs8PrivateKey(
+                ReadOnlySpan<byte> passwordBytes,
+                ReadOnlySpan<byte> source,
+                out int bytesRead)
+            {
+                ThrowIfDisposed();
+                base.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
+            }
+
+            public override void ImportEncryptedPkcs8PrivateKey(
+                ReadOnlySpan<char> password,
+                ReadOnlySpan<byte> source,
+                out int bytesRead)
+            {
+                ThrowIfDisposed();
+                base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
+            }
+
             protected override void Dispose(bool disposing)
             {
                 if (disposing)
                 {
                     FreeKey();
+                    _key = null;
                 }
 
                 base.Dispose(disposing);
@@ -188,7 +207,7 @@ namespace System.Security.Cryptography
                 if (rgbHash == null)
                     throw new ArgumentNullException(nameof(rgbHash));
 
-                SafeDsaHandle key = _key.Value;
+                SafeDsaHandle key = GetKey();
                 int signatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
                 byte[] signature = CryptoPool.Rent(signatureSize);
                 try
@@ -218,7 +237,7 @@ namespace System.Security.Cryptography
             public override bool TryCreateSignature(ReadOnlySpan<byte> hash, Span<byte> destination, out int bytesWritten)
             {
                 byte[] converted;
-                SafeDsaHandle key = _key.Value;
+                SafeDsaHandle key = GetKey();
                 int signatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
                 byte[] signature = CryptoPool.Rent(signatureSize);
                 try
@@ -269,7 +288,7 @@ namespace System.Security.Cryptography
 
             public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
             {
-                SafeDsaHandle key = _key.Value;
+                SafeDsaHandle key = GetKey();
 
                 int expectedSignatureBytes = Interop.Crypto.DsaSignatureFieldSize(key) * 2;
                 if (signature.Length != expectedSignatureBytes)
@@ -283,8 +302,34 @@ namespace System.Security.Cryptography
                 return Interop.Crypto.DsaVerify(key, hash, openSslFormat);
             }
 
+            private void ThrowIfDisposed()
+            {
+                if (_key == null)
+                {
+                    throw new ObjectDisposedException(
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+                        nameof(DSA)
+#else
+                        nameof(DSAOpenSsl)
+#endif
+                    );
+                }
+            }
+
+            private SafeDsaHandle GetKey()
+            {
+                ThrowIfDisposed();
+
+                SafeDsaHandle key = _key.Value;
+                CheckInvalidKey(key);
+
+                return key;
+            }
+
             private void SetKey(SafeDsaHandle newKey)
             {
+                // Do not call ThrowIfDisposed here, as it breaks the SafeEvpPKey ctor
+
                 // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
                 // with the already loaded key.
                 ForceSetKeySize(BitsPerByte * Interop.Crypto.DsaKeySize(newKey));

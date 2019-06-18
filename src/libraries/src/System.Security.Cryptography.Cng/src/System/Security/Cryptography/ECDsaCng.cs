@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     public sealed partial class ECDsaCng : ECDsa
     {
-        private CngAlgorithmCore _core;
+        private CngAlgorithmCore _core = new CngAlgorithmCore(nameof(ECDsaCng));
         private CngAlgorithm _hashAlgorithm = CngAlgorithm.Sha256;
 
         /// <summary>
@@ -50,6 +50,11 @@ namespace System.Security.Cryptography
         protected override void Dispose(bool disposing)
         {
             _core.Dispose();
+        }
+
+        private void ThrowIfDisposed()
+        {
+            _core.ThrowIfDisposed();
         }
 
         private void DisposeKey()

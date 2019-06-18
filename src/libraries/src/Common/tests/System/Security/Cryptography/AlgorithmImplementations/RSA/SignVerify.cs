@@ -75,6 +75,37 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void UseAfterDispose(bool importKey)
+        {
+            RSA rsa = importKey ? RSAFactory.Create(TestData.RSA2048Params) : RSAFactory.Create(1024);
+            byte[] data = TestData.HelloBytes;
+            byte[] sig;
+            HashAlgorithmName alg = HashAlgorithmName.SHA1;
+            RSASignaturePadding padding = RSASignaturePadding.Pkcs1;
+
+            using (rsa)
+            {
+                sig = SignData(rsa, data, alg, padding);
+            }
+
+            Assert.Throws<ObjectDisposedException>(
+                () => VerifyData(rsa, sig, data, alg, padding));
+
+            Assert.Throws<ObjectDisposedException>(
+                () => VerifyHash(rsa, sig, data, alg, padding));
+
+            // Either set_KeySize or SignData should throw.
+            Assert.Throws<ObjectDisposedException>(
+                () =>
+                {
+                    rsa.KeySize = 1024 + 64;
+                    SignData(rsa, data, alg, padding);
+                });
+        }
+
         [Fact]
         public void InvalidKeySize_DoesNotInvalidateKey()
         {

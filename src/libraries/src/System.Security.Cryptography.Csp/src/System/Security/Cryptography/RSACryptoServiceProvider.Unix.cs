@@ -151,6 +151,22 @@ namespace System.Security.Cryptography
             _publicOnly = (parameters.P == null || parameters.P.Length == 0);
         }
 
+        public override void ImportEncryptedPkcs8PrivateKey(
+            ReadOnlySpan<byte> passwordBytes,
+            ReadOnlySpan<byte> source,
+            out int bytesRead)
+        {
+            _impl.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
+        }
+
+        public override void ImportEncryptedPkcs8PrivateKey(
+            ReadOnlySpan<char> password,
+            ReadOnlySpan<byte> source,
+            out int bytesRead)
+        {
+            _impl.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
+        }
+
         public override string KeyExchangeAlgorithm => _impl.KeyExchangeAlgorithm;
 
         public override int KeySize

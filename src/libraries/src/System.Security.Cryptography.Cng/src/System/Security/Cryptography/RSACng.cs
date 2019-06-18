@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Diagnostics;
-
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
     public sealed partial class RSACng : RSA
     {
+        private CngAlgorithmCore _core = new CngAlgorithmCore(nameof(RSACng));
+
         /// <summary>
         ///     Creates a new RSACng object that will use the specified key. The key's
         ///     <see cref="CngKey.AlgorithmGroup" /> must be Rsa. This constructor
@@ -36,6 +35,9 @@ namespace System.Security.Cryptography
             _core.Dispose();
         }
 
-        private CngAlgorithmCore _core;
+        private void ThrowIfDisposed()
+        {
+            _core.ThrowIfDisposed();
+        }
     }
 }

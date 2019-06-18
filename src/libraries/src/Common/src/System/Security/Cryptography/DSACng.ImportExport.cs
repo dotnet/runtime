@@ -59,6 +59,24 @@ namespace System.Security.Cryptography
                 ImportKeyBlob(blob, hasPrivateKey);
             }
 
+            public override void ImportEncryptedPkcs8PrivateKey(
+                ReadOnlySpan<byte> passwordBytes,
+                ReadOnlySpan<byte> source,
+                out int bytesRead)
+            {
+                ThrowIfDisposed();
+                base.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
+            }
+
+            public override void ImportEncryptedPkcs8PrivateKey(
+                ReadOnlySpan<char> password,
+                ReadOnlySpan<byte> source,
+                out int bytesRead)
+            {
+                ThrowIfDisposed();
+                base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
+            }
+
             public override byte[] ExportEncryptedPkcs8PrivateKey(
                 ReadOnlySpan<byte> passwordBytes,
                 PbeParameters pbeParameters)
