@@ -6,6 +6,12 @@ parameters:
   # 'all' - all platforms
   # 'gcstress' - platforms that support running under GCStress0x3 and GCStress0xC scenarios
   platformGroup: ''
+  # helixQueueGroup is a named collection of Helix Queues. If specified, it determines which Helix queues are
+  # used, instead of the usual criteria. Allowed values:
+  # 'pr' - the queues used for a pull request for the platform. Typically a small set.
+  # 'ci' - the queues used for a CI (post-merge) test run.
+  # 'all' - the queues used for non-PR, non-CI test runs, e.g., Manual or Scheduled runs. Typically this is all available queues.
+  helixQueueGroup: 'pr'
   jobParameters: {}
 
 jobs:
@@ -25,9 +31,9 @@ jobs:
       containerName: ubuntu_1404_arm_cross_build_image
       helixQueues:
       # Ubuntu.1404.Arm32.Open is used only by CI while Ubuntu.1604.Arm32.Open serves PRs and scheduled builds.
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'ci')) }}:
         - Ubuntu.1404.Arm32.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.helixQueueGroup, 'ci')) }}:
         - (Ubuntu.1804.Arm32.Open)Ubuntu.1604.Arm32.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm32v7-0a0ebdd-20190312215532
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - (Debian.9.Arm32)Ubuntu.1604.Arm32@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm32v7-0a0ebdd-20190312215452
@@ -49,7 +55,7 @@ jobs:
       helixQueues:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Ubuntu.1804.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-0a0ebdd-20190312220351
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.helixQueueGroup, 'pr', 'ci')) }}:
         - (Debian.9.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-0a0ebdd-20190312215438
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - (Debian.9.Arm64)Ubuntu.1604.Arm64.Docker@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-9-helix-arm64v8-0a0ebdd-20190312215438
@@ -120,9 +126,9 @@ jobs:
       osIdentifier: Linux
       containerName: centos7_x64_build_image
       helixQueues:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'pr', 'ci')) }}:
         - Ubuntu.1804.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.helixQueueGroup, 'pr', 'ci')) }}:
         - Debian.9.Amd64.Open
         - Ubuntu.1604.Amd64.Open
         - Ubuntu.1804.Amd64.Open
@@ -164,9 +170,9 @@ jobs:
       osGroup: OSX
       osIdentifier: OSX
       helixQueues:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'pr', 'ci')) }}:
         - OSX.1013.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.helixQueueGroup, 'pr', 'ci')) }}:
         - OSX.1012.Amd64.Open
         - OSX.1013.Amd64.Open
         - OSX.1014.Amd64.Open
@@ -186,9 +192,9 @@ jobs:
       osGroup: Windows_NT
       osIdentifier: Windows_NT
       helixQueues:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'pr', 'ci')) }}:
         - Windows.10.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.helixQueueGroup, 'pr', 'ci')) }}:
         # TODO: add Windows.10.Nano.Amd64.Open once https://github.com/dotnet/coreclr/issues/21693 has been resolved
         - Windows.7.Amd64.Open
         - Windows.81.Amd64.Open
@@ -211,9 +217,9 @@ jobs:
       osGroup: Windows_NT
       osIdentifier: Windows_NT
       helixQueues:
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'pr', 'ci')) }}:
         - Windows.10.Amd64.Open
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(variables['Build.Reason'], 'PullRequest', 'IndividualCI', 'BatchedCI')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), notIn(parameters.helixQueueGroup, 'pr', 'ci')) }}:
         - Windows.7.Amd64.Open
         - Windows.81.Amd64.Open
         - Windows.10.Amd64.Open
@@ -235,7 +241,7 @@ jobs:
       osIdentifier: Windows_NT
       helixQueues:
       # TODO: Due to the limited capacity of the machines in Windows.10.Arm64.Open queue limit this to CI builds and only to Windows_NT/arm
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
+      - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'ci')) }}:
         - Windows.10.Arm64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.10.Arm64
