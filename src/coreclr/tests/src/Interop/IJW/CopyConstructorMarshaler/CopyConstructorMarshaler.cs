@@ -21,10 +21,7 @@ namespace CopyConstructorMarshaler
 
             try
             {
-                // Load a fake mscoree.dll to avoid starting desktop
-                LoadLibraryEx(Path.Combine(Environment.CurrentDirectory, "mscoree.dll"), IntPtr.Zero, 0);
-
-                Assembly ijwNativeDll = Assembly.Load("IjwCopyConstructorMarshaler");
+                Assembly ijwNativeDll = IjwHelper.LoadIjwAssembly("IjwCopyConstructorMarshaler");
                 Type testType = ijwNativeDll.GetType("TestClass");
                 object testInstance = Activator.CreateInstance(testType);
                 MethodInfo testMethod = testType.GetMethod("PInvokeNumCopies");
