@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.Eventing.Reader;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Diagnostics.Tests
@@ -25,48 +26,30 @@ namespace System.Diagnostics.Tests
         [InlineData("Application")]
         public void GetLogInformation_UsingLogName_DoesNotThrow(string logName)
         {
-            DateTime? creationTime, lastAccessTime, lastWriteTime;
-            long? fileSize, recordCount, oldestRecordNumber;
-            int? attributes;
-            bool? isLogFull;
             using (var session = new EventLogSession())
             {
-                EventLogConfiguration configuration = null;
+                EventLogConfiguration configuration;
                 try
                 {
                     configuration = new EventLogConfiguration(logName, session);
                 }
                 catch (EventLogNotFoundException)
                 {
-                    configuration?.Dispose();
-                    return;
+                    throw new SkipTestException(nameof(EventLogNotFoundException));
                 }
 
-                EventLogInformation logInfo = session.GetLogInformation(configuration.LogName, PathType.LogName);
-                creationTime = logInfo.CreationTime;
-                lastAccessTime = logInfo.LastAccessTime;
-                lastWriteTime = logInfo.LastWriteTime;
-                fileSize = logInfo.FileSize;
-                attributes = logInfo.Attributes;
-                recordCount = logInfo.RecordCount;
-                oldestRecordNumber = logInfo.OldestRecordNumber;
-                isLogFull = logInfo.IsLogFull;
-
-                configuration.Dispose();
-            }
-            using (var session = new EventLogSession())
-            {
-                using (var configuration = new EventLogConfiguration(logName, session))
+                using (configuration)
                 {
                     EventLogInformation logInfo = session.GetLogInformation(configuration.LogName, PathType.LogName);
-                    Assert.Equal(creationTime, logInfo.CreationTime);
-                    Assert.Equal(lastAccessTime, logInfo.LastAccessTime);
-                    Assert.Equal(lastWriteTime, logInfo.LastWriteTime);
-                    Assert.Equal(fileSize, logInfo.FileSize);
-                    Assert.Equal(attributes, logInfo.Attributes);
-                    Assert.Equal(recordCount, logInfo.RecordCount);
-                    Assert.Equal(oldestRecordNumber, logInfo.OldestRecordNumber);
-                    Assert.Equal(isLogFull, logInfo.IsLogFull);
+
+                    Assert.Equal(logInfo.CreationTime, logInfo.CreationTime);
+                    Assert.Equal(logInfo.LastAccessTime, logInfo.LastAccessTime);
+                    Assert.Equal(logInfo.LastWriteTime, logInfo.LastWriteTime);
+                    Assert.Equal(logInfo.FileSize, logInfo.FileSize);
+                    Assert.Equal(logInfo.Attributes, logInfo.Attributes);
+                    Assert.Equal(logInfo.RecordCount, logInfo.RecordCount);
+                    Assert.Equal(logInfo.OldestRecordNumber, logInfo.OldestRecordNumber);
+                    Assert.Equal(logInfo.IsLogFull, logInfo.IsLogFull);
                 }
             }
         }
