@@ -2,18 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Reflection;
 using System.Globalization;
 using System.Threading;
 using System.Collections.Generic;
 using System.Runtime.Serialization;    
 using System.Runtime.CompilerServices;
-using System.Security;
 using DebuggerStepThroughAttribute = System.Diagnostics.DebuggerStepThroughAttribute;
 using System.Diagnostics.Contracts;
 using System.Runtime.InteropServices;
-using CustomAttribute=System.MonoCustomAttrs;
 
 namespace System 
 {
@@ -49,8 +46,7 @@ namespace System
         FullName,
     }
 
-    [Serializable]
-    internal class RuntimeType : TypeInfo, ISerializable, ICloneable
+    partial class RuntimeType
     {
         #region Definitions
 
@@ -1150,98 +1146,8 @@ namespace System
         }
         #endregion
 
-        #region Identity
-
-        public override Module Module
-        {
-            get
-            {
-                return GetRuntimeModule();
-            }
-        }
-
-        internal RuntimeModule GetRuntimeModule()
-        {
-            return RuntimeTypeHandle.GetModule(this);
-        }
-
-        public override Assembly Assembly 
-        {
-            get 
-            {
-                return GetRuntimeAssembly();
-            }
-        }
-
-        internal RuntimeAssembly GetRuntimeAssembly()
-        {
-            return RuntimeTypeHandle.GetAssembly(this);
-        }
-
-        public override RuntimeTypeHandle TypeHandle 
-        {
-            get 
-            {
-                return new RuntimeTypeHandle(this);
-            }
-        }
-        
-        #endregion
 
         #region Hierarchy
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public override bool IsInstanceOfType(Object? o)
-        {
-            return RuntimeTypeHandle.IsInstanceOfType(this, o);
-        }
-
-        public override bool IsAssignableFrom(System.Reflection.TypeInfo? typeInfo){
-            if(typeInfo==null) return false;
-            return IsAssignableFrom(typeInfo.AsType());
-        }
-
-        public override bool IsAssignableFrom(Type? c)
-        {
-            if ((object)c == null)
-                return false;
-
-            if (Object.ReferenceEquals(c, this))
-                return true;
-
-            RuntimeType fromType = c.UnderlyingSystemType as RuntimeType;
-
-            // For runtime type, let the VM decide.
-            if (fromType != null)
-            {
-                // both this and c (or their underlying system types) are runtime types
-                return RuntimeTypeHandle.CanCastTo(fromType, this);
-            }
-#if !FULL_AOT_RUNTIME
-            // Special case for TypeBuilder to be backward-compatible.
-            if (RuntimeFeature.IsDynamicCodeSupported && c is System.Reflection.Emit.TypeBuilder)
-            {
-                // If c is a subclass of this class, then c can be cast to this type.
-                if (c.IsSubclassOf(this))
-                    return true;
-
-                if (this.IsInterface)
-                {
-                    return c.ImplementInterface(this);
-                }
-                else if (this.IsGenericParameter)
-                {
-                    Type[] constraints = GetGenericParameterConstraints();
-                    for (int i = 0; i < constraints.Length; i++)
-                        if (!constraints[i].IsAssignableFrom(c))
-                            return false;
-
-                    return true;
-                }
-            }
-#endif
-            // For anything else we return false.
-            return false;
-        }
 
         // Reflexive, symmetric, transitive.
         public override bool IsEquivalentTo(Type? other)
@@ -1258,117 +1164,19 @@ namespace System
             return RuntimeTypeHandle.IsEquivalentTo(this, otherRtType);
         }
 
-        public override Type BaseType => GetBaseType();
-
-        private RuntimeType GetBaseType()
-        {
-            if (IsInterface)
-                return null;
-
-            if (RuntimeTypeHandle.IsGenericVariable(this))
-            {
-                Type[] constraints = GetGenericParameterConstraints();
-
-                RuntimeType baseType = ObjectType;
-
-                for (int i = 0; i < constraints.Length; i++)
-                {
-                    RuntimeType constraint = (RuntimeType)constraints[i];
-
-                    if (constraint.IsInterface)
-                        continue;
-
-                    if (constraint.IsGenericParameter)
-                    {
-                        GenericParameterAttributes special;
-                        special = constraint.GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
-
-                        if ((special & GenericParameterAttributes.ReferenceTypeConstraint) == 0 &&
-                            (special & GenericParameterAttributes.NotNullableValueTypeConstraint) == 0)
-                            continue;
-                    }
-
-                    baseType = constraint;
-                }
-
-                if (baseType == ObjectType)
-                {
-                    GenericParameterAttributes special;
-                    special = GenericParameterAttributes & GenericParameterAttributes.SpecialConstraintMask;
-                    if ((special & GenericParameterAttributes.NotNullableValueTypeConstraint) != 0)
-                        baseType = ValueType;
-                }
-
-                return baseType;
-            }
-
-            return RuntimeTypeHandle.GetBaseType(this);
-        }
-
-        public override Type UnderlyingSystemType => this;
-
         #endregion
 
         #region Attributes
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        protected override TypeAttributes GetAttributeFlagsImpl() 
-        {
-            return RuntimeTypeHandle.GetAttributes(this);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        protected override bool IsContextfulImpl() 
-        {
-            return RuntimeTypeHandle.IsContextful(this);
-        }
-
-        protected override bool IsByRefImpl() 
-        {
-            return RuntimeTypeHandle.IsByRef(this);
-        }
-
-        protected override bool IsPrimitiveImpl() 
-        {
-            return RuntimeTypeHandle.IsPrimitive(this);
-        }
-
-        protected override bool IsPointerImpl() 
-        {
-            return RuntimeTypeHandle.IsPointer(this);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        protected override bool IsCOMObjectImpl() 
-        {
-            return RuntimeTypeHandle.IsComObject(this, false);
-        }
 
         internal bool IsDelegate()
         {
             return GetBaseType() == typeof(System.MulticastDelegate);
         }
 
-        protected override bool IsValueTypeImpl()
-        {
-            // We need to return true for generic parameters with the ValueType constraint.
-            // So we cannot use the faster RuntimeTypeHandle.IsValueType because it returns 
-            // false for all generic parameters.
-            if (this == typeof(ValueType) || this == typeof(Enum)) 
-                return false;
-
-            return IsSubclassOf(typeof(ValueType));
-        }
-
         public override bool IsEnum => GetBaseType() == EnumType;
-
-        protected override bool HasElementTypeImpl() 
-        {
-            return RuntimeTypeHandle.HasElementType(this);
-        }
 
         public override GenericParameterAttributes GenericParameterAttributes
         {
-            [System.Security.SecuritySafeCritical]  // auto-generated
             get
             {
                 if (!IsGenericParameter)
@@ -1379,148 +1187,6 @@ namespace System
             }
         }
 
-        #endregion
-
-        #region Arrays
-
-        protected override bool IsArrayImpl() 
-        {
-            return RuntimeTypeHandle.IsArray(this);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public override int GetArrayRank() 
-        {
-            if (!IsArrayImpl())
-                throw new ArgumentException(Environment.GetResourceString("Argument_HasToBeArrayClass"));
-
-            return RuntimeTypeHandle.GetArrayRank(this);
-        }
-
-        public override Type GetElementType() 
-        {
-            return RuntimeTypeHandle.GetElementType(this);
-        }
-        #endregion
-
-        #region Enums
-        public override string[] GetEnumNames()
-        {
-            if (!IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
-            Contract.EndContractBlock();
-
-            String[] ret = Enum.InternalGetNames(this);
-
-            // Make a copy since we can't hand out the same array since users can modify them
-            String[] retVal = new String[ret.Length];
-
-            Array.Copy(ret, retVal, ret.Length);
-
-            return retVal;
-        }
-
-        [SecuritySafeCritical]
-        public override Array GetEnumValues()
-        {
-            if (!IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
-            Contract.EndContractBlock();
-
-            // Get all of the values
-            ulong[] values = Enum.InternalGetValues(this);
-
-            // Create a generic Array
-            Array ret = Array.CreateInstance(this, values.Length);
-
-            for (int i = 0; i < values.Length; i++)
-            {
-                Object val = Enum.ToObject(this, values[i]);
-                ret.SetValue(val, i);
-            }
-
-            return ret;
-        }
-
-        public override Type GetEnumUnderlyingType()
-        {
-            if (!IsEnum)
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnum"), "enumType");
-            Contract.EndContractBlock();
-
-            return Enum.InternalGetUnderlyingType(this);
-        }
-
-        public override bool IsEnumDefined(object value)
-        {
-            if (value == null)
-                throw new ArgumentNullException("value");
-            Contract.EndContractBlock();
-
-            // Check if both of them are of the same type
-            RuntimeType valueType = (RuntimeType)value.GetType();
-
-            // If the value is an Enum then we need to extract the underlying value from it
-            if (valueType.IsEnum)
-            {
-                if (!valueType.IsEquivalentTo(this))
-                    throw new ArgumentException(Environment.GetResourceString("Arg_EnumAndObjectMustBeSameType", valueType.ToString(), this.ToString()));
-
-                valueType = (RuntimeType)valueType.GetEnumUnderlyingType();
-            }
-
-            // If a string is passed in
-            if (valueType == StringType)
-            {
-                // Get all of the Fields, calling GetHashEntry directly to avoid copying
-                string[] names = Enum.InternalGetNames(this);
-                if (Array.IndexOf(names, value) >= 0)
-                    return true;
-                else
-                    return false;
-            }
-
-            // If an enum or integer value is passed in
-            if (Type.IsIntegerType(valueType))
-            {
-                RuntimeType underlyingType = Enum.InternalGetUnderlyingType(this);
-                if (underlyingType != valueType)
-                    throw new ArgumentException(Environment.GetResourceString("Arg_EnumUnderlyingTypeAndObjectMustBeSameType", valueType.ToString(), underlyingType.ToString()));
-
-                ulong[] ulValues = Enum.InternalGetValues(this);
-                ulong ulValue = Enum.ToUInt64(value);
-
-                return (Array.BinarySearch(ulValues, ulValue) >= 0);
-            }
-            else
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_UnknownEnumType"));
-            }
-        }
-
-        public override string GetEnumName(object value)
-        {
-            if (value == null)
-                throw new ArgumentNullException("value");
-            Contract.EndContractBlock();
-
-            Type valueType = value.GetType();
-
-            if (!(valueType.IsEnum || IsIntegerType(valueType)))
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeEnumBaseTypeOrEnum"), "value");
-
-            ulong[] ulValues = Enum.InternalGetValues(this);
-            ulong ulValue = Enum.ToUInt64(value);
-            int index = Array.BinarySearch(ulValues, ulValue);
-
-            if (index >= 0)
-            {
-                string[] names = Enum.InternalGetNames(this);
-                return names[index];
-            }
-
-            return null;
-        }
         #endregion
 
         #region Generics
@@ -1540,7 +1206,6 @@ namespace System
             return types;
         }
 
-        [System.Security.SecuritySafeCritical]  // auto-generated
         public override Type MakeGenericType(Type[] instantiation)
         {
             if (instantiation == null)
@@ -1590,16 +1255,6 @@ namespace System
             return ret;
         }
 
-        public override bool IsGenericTypeDefinition
-        {
-            get { return RuntimeTypeHandle.IsGenericTypeDefinition(this); }
-        }
-
-        public override bool IsGenericParameter
-        {
-            get { return RuntimeTypeHandle.IsGenericVariable(this); }
-        }
-
         public override int GenericParameterPosition
         {
             get 
@@ -1609,25 +1264,6 @@ namespace System
                 Contract.EndContractBlock();
                 return GetGenericParameterPosition ();
             }
-        }
-
-        public override Type GetGenericTypeDefinition() 
-        {
-            if (!IsGenericType)
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotGenericType"));
-            Contract.EndContractBlock();
-
-            return RuntimeTypeHandle.GetGenericTypeDefinition(this);
-        }
-
-        public override bool IsGenericType
-        {
-            get { return RuntimeTypeHandle.HasInstantiation(this); }
-        }
-
-        public override bool IsConstructedGenericType
-        {
-            get { return IsGenericType && !IsGenericTypeDefinition; }
         }
 
         #endregion
@@ -1646,24 +1282,6 @@ namespace System
             BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty;
         private static RuntimeType s_typedRef = (RuntimeType)typeof(TypedReference);
 
-        // GetDefaultMembers
-        // This will return a MemberInfo that has been marked with the [DefaultMemberAttribute]
-        public override MemberInfo[] GetDefaultMembers()
-        {
-            // See if we have cached the default member name
-            MemberInfo[] members = null;
-
-            String defaultMemberName = GetDefaultMemberName();
-            if (defaultMemberName != null)
-            {
-                members = GetMember(defaultMemberName);
-            }
-
-            if (members == null)
-                members = Array.Empty<MemberInfo> ();
-
-            return members;
-        }
         
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
@@ -2076,19 +1694,6 @@ namespace System
         }        
         #endregion
 
-        #region Object Overrides
-        [Pure]
-        public override bool Equals(object? obj)
-        {
-            // ComObjects are identified by the instance of the Type object and not the TypeHandle.
-            return obj == (object)this;
-        }
-
-        public override int GetHashCode() 
-        {
-            return RuntimeHelpers.GetHashCode(this);
-        }
-
         public static bool operator ==(RuntimeType left, RuntimeType right)
         {
             return object.ReferenceEquals(left, right);
@@ -2098,69 +1703,6 @@ namespace System
         {
             return !object.ReferenceEquals(left, right);
         }
-        #endregion
-
-        #region ICloneable
-        public Object Clone() 
-        {
-            return this;
-        }
-        #endregion
-
-        #region ISerializable
-        [System.Security.SecurityCritical]  // auto-generated
-        public void GetObjectData(SerializationInfo info, StreamingContext context) 
-        {
-            if (info==null) 
-                throw new ArgumentNullException("info");
-            Contract.EndContractBlock();
-
-			throw new NotImplementedException ();
-        }
-        #endregion
-
-        #region ICustomAttributeProvider
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public override Object[] GetCustomAttributes(bool inherit)
-        {
-            return CustomAttribute.GetCustomAttributes(this, inherit);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public override Object[] GetCustomAttributes(Type attributeType, bool inherit)
-        {
-            if ((object)attributeType == null)
-                throw new ArgumentNullException("attributeType");
-            Contract.EndContractBlock();
-
-            RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
-
-            return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType, inherit);
-        }
-
-        [System.Security.SecuritySafeCritical]  // auto-generated
-        public override bool IsDefined(Type attributeType, bool inherit)
-        {
-            if ((object)attributeType == null)
-                throw new ArgumentNullException("attributeType");
-            Contract.EndContractBlock();
-
-            RuntimeType attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
-
-            if (attributeRuntimeType == null) 
-                throw new ArgumentException(Environment.GetResourceString("Arg_MustBeType"),"attributeType");
-
-            return CustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
-        }
-
-        public override IList<CustomAttributeData> GetCustomAttributesData()
-        {
-            return CustomAttributeData.GetCustomAttributesInternal(this);
-        }
-        #endregion
 
         #region MemberInfo Overrides
 
@@ -2201,36 +1743,12 @@ namespace System
                 return typeName;
             }
         }
-        
-        public override MemberTypes MemberType 
-        {
-            get 
-            {
-                if (this.IsPublic || this.IsNotPublic)
-                    return MemberTypes.TypeInfo;
-                else
-                    return MemberTypes.NestedType;
-            }
-        }
 
-        public override Type ReflectedType => DeclaringType;
-
-        public override int MetadataToken
-        {
-            [System.Security.SecuritySafeCritical]  // auto-generated
-            get 
-            {
-                return RuntimeTypeHandle.GetToken(this);
-            }
-        }
         #endregion
 
         #region Legacy Internal
         private void CreateInstanceCheckThis()
         {
-            if (this is ReflectionOnlyType)
-                throw new ArgumentException(Environment.GetResourceString("Arg_ReflectionOnlyInvoke"));
-
             if (ContainsGenericParameters)
                 throw new ArgumentException(
                     Environment.GetResourceString("Acc_CreateGenericEx", this));
@@ -2245,7 +1763,6 @@ namespace System
                 throw new NotSupportedException(Environment.GetResourceString("Acc_CreateVoid"));
         }
         
-        [System.Security.SecurityCritical]  // auto-generated
         internal Object CreateInstanceImpl(
             BindingFlags bindingAttr, Binder binder, Object[] args, CultureInfo culture)
         {            
@@ -2271,7 +1788,7 @@ namespace System
                     bool publicOnly = (bindingAttr & BindingFlags.NonPublic) == 0;
                     bool wrapExceptions = (bindingAttr & BindingFlags.DoNotWrapExceptions) == 0;
                     if (argCnt == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
-                        && (IsGenericCOMObjectImpl() || IsValueType)) 
+                        && (IsValueType)) 
                     {
                         server = CreateInstanceDefaultCtor(publicOnly, false, true, wrapExceptions);
                     }
@@ -2357,16 +1874,12 @@ namespace System
         
         // Helper to invoke the default (parameterless) ctor.
         // fillCache is set in the SL2/3 compat mode or when called from Marshal.PtrToStructure.
-        [System.Security.SecuritySafeCritical]  // auto-generated
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
         internal Object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
         {
 			if (IsByRefLike)
 				throw new NotSupportedException (SR.NotSupported_ByRefLike);
-
-            if (GetType() == typeof(ReflectionOnlyType))
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotAllowedInReflectionOnly"));
 
             return CreateInstanceSlow(publicOnly, wrapExceptions, skipCheckThis, fillCache);
         }
@@ -2375,11 +1888,26 @@ namespace System
         
         
 #region keep in sync with object-internals.h
-		[NonSerialized]
 		MonoTypeInfo type_info;
 #endregion
 
-		internal Object GenericCache;
+        TypeCache cache;
+
+        internal TypeCache Cache {
+            get {
+                if (cache == null)
+                    LazyInitializer.EnsureInitialized (ref cache, () => new TypeCache ());
+
+                return cache;
+            }
+        }
+
+        internal sealed class TypeCache
+        {
+            public Enum.EnumInfo EnumInfo;
+            public TypeCode TypeCode;
+        }
+
 
 		internal RuntimeType (Object obj)
 		{
@@ -2891,32 +2419,9 @@ namespace System
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		internal extern void GetPacking (out int packing, out int size);
 
-		internal static Type GetTypeFromCLSIDImpl(Guid clsid, String server, bool throwOnError)
-		{
-			throw new NotImplementedException ("Unmanaged activation removed");
-		}
-
-		protected override TypeCode GetTypeCodeImpl ()
-		{
-			return GetTypeCodeImplInternal (this);
-		}
-
-		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		extern static TypeCode GetTypeCodeImplInternal (Type type);		
-
-		internal static Type GetTypeFromProgIDImpl(String progID, String server, bool throwOnError)
-		{
-			throw new NotImplementedException ("Unmanaged activation is not supported");
-		}
-
 		public override string ToString()
 		{
 			return getFullName (false, false);
-		}
-
-		bool IsGenericCOMObjectImpl ()
-		{
-			return false;
 		}
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
@@ -3020,18 +2525,6 @@ namespace System
 			get;
 		}
 
-		public override bool IsSecurityTransparent {
-			get { return false; }
-		}
-
-		public override bool IsSecurityCritical {
-			get { return true; }
-		}
-
-		public override bool IsSecuritySafeCritical {
-			get { return false; }
-		}
-
 		public override string? FullName {
 			get {
 				// https://bugzilla.xamarin.com/show_bug.cgi?id=57938
@@ -3058,12 +2551,6 @@ namespace System
 			}
 		}
 
-		internal override bool IsUserType {
-			get {
-				return false;
-			}
-		}
-
 		public override bool IsSubclassOf(Type type)
 		{
 			if ((object)type == null)
@@ -3075,14 +2562,6 @@ namespace System
 
 			return RuntimeTypeHandle.IsSubclassOf (this, rtType);
 		}
-
-		public override bool IsByRefLike {
-			get {
-				return RuntimeTypeHandle.IsByRefLike (this);
-			}
-		}
-
-		public override bool IsTypeDefinition => RuntimeTypeHandle.IsTypeDefinition (this);
 
         private const int DEFAULT_PACKING_SIZE = 8;
 
@@ -3119,30 +2598,6 @@ namespace System
                 pack = DEFAULT_PACKING_SIZE;
 
             return new StructLayoutAttribute (layoutKind) { Pack = pack, Size = size, CharSet = charSet };
-        }
-    }
-
-    // this is the introspection only type. This type overrides all the functions with runtime semantics
-    // and throws an exception.
-    // The idea behind this type is that it relieves RuntimeType from doing honerous checks about ReflectionOnly
-    // context.
-    // This type should not derive from RuntimeType but it's doing so for convinience.
-    // That should not present a security threat though it is risky as a direct call to one of the base method
-    // method (RuntimeType) and an instance of this type will work around the reason to have this type in the 
-    // first place. However given RuntimeType is not public all its methods are protected and require full trust
-    // to be accessed
-    [Serializable]
-    internal class ReflectionOnlyType : RuntimeType {
-
-        private ReflectionOnlyType() {}
-
-        // always throw
-        public override RuntimeTypeHandle TypeHandle 
-        {
-            get 
-            {
-                throw new InvalidOperationException(Environment.GetResourceString("InvalidOperation_NotAllowedInReflectionOnly"));
-            }
         }
     }
     
