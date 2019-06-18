@@ -4,18 +4,19 @@
 
 using System;
 
-namespace Microsoft.NET.HostModel.Bundle
+namespace Microsoft.NET.HostModel.AppHost
 {
     /// <summary>
-    /// This exception is thrown when a bundle extraction
-    /// operation fails due to known user errors.
+    /// Given app file name is longer than 1024 bytes
     /// </summary>
-    public class BundleException : Exception
+    public class AppNameTooLongException : AppHostUpdateException
     {
-        public BundleException(string message) :
-                base(message)
+        public string LongName { get; }
+        public AppNameTooLongException(string name)
         {
+            LongName = name;
         }
+
     }
 }
 
