@@ -67,6 +67,12 @@ mono_gc_max_generation (void)
 	return 0;
 }
 
+guint64
+mono_gc_get_allocated_bytes_for_current_thread (void)
+{
+	return 0;
+}
+
 int
 mono_gc_get_generation  (MonoObject *object)
 {

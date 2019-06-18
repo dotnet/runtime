@@ -265,17 +265,6 @@ MONO_RESTORE_WARNING
 	return res;
 }
 
-static MonoReflectionType*
-load_cattr_type_object (MonoImage *image, MonoType *t, gboolean header, const char *p, const char *boundp, const char **end, MonoError *error, guint32 *slen)
-{
-	MonoType *type;
-
-	type = load_cattr_type (image, t, header, p, boundp, end, error, slen);
-	if (!type)
-		return NULL;
-	return mono_type_get_object_checked (mono_domain_get (), type, error);
-}
-
 /*
  * If OUT_OBJ is non-NULL, created objects are stored into it and NULL is returned.
  * If OUT_OBJ is NULL, assert if objects were to be created.

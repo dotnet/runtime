@@ -414,6 +414,9 @@ struct _SgenThreadInfo {
 	char *tlab_next;
 	char *tlab_temp_end;
 	char *tlab_real_end;
+
+	/* Total bytes allocated by this thread in its lifetime so far. */
+	gint64 total_bytes_allocated;
 };
 
 gboolean sgen_is_worker_thread (MonoNativeThreadId thread);

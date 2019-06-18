@@ -828,7 +828,7 @@ mono_w32handle_wait_one (gpointer handle, guint32 timeout, gboolean alertable)
 	MonoW32Handle *handle_data;
 	MonoW32HandleWaitRet ret;
 	gboolean alerted;
-	gint64 start;
+	gint64 start = 0;
 	gboolean abandoned = FALSE;
 
 	alerted = FALSE;
@@ -991,7 +991,7 @@ mono_w32handle_wait_multiple (gpointer *handles, gsize nhandles, gboolean waital
 	MonoW32HandleWaitRet ret;
 	gboolean alerted, poll;
 	gint i;
-	gint64 start;
+	gint64 start = 0;
 	MonoW32Handle *handles_data [MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS];
 	gboolean abandoned [MONO_W32HANDLE_MAXIMUM_WAIT_OBJECTS] = {0};
 
@@ -1193,7 +1193,7 @@ mono_w32handle_signal_and_wait (gpointer signal_handle, gpointer wait_handle, gu
 {
 	MonoW32Handle *signal_handle_data, *wait_handle_data, *handles_data [2];
 	MonoW32HandleWaitRet ret;
-	gint64 start;
+	gint64 start = 0;
 	gboolean alerted;
 	gboolean abandoned = FALSE;
 

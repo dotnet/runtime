@@ -5022,7 +5022,7 @@ gint64
 mono_w32file_get_file_size (gpointer handle, gint32 *error)
 {
 	gint64 length;
-	guint32 length_hi;
+	guint32 length_hi = 0;
 
 	length = GetFileSize (handle, &length_hi);
 	if(length==INVALID_FILE_SIZE) {

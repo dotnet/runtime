@@ -311,6 +311,8 @@ void* mono_gc_invoke_with_gc_lock (MonoGCLockedCallbackFunc func, void *data);
 
 int mono_gc_get_los_limit (void);
 
+guint64 mono_gc_get_allocated_bytes_for_current_thread (void);
+
 guint8* mono_gc_get_card_table (int *shift_bits, gpointer *card_mask);
 guint8* mono_gc_get_target_card_table (int *shift_bits, target_mgreg_t *card_mask);
 gboolean mono_gc_card_table_nursery_check (void);

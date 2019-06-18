@@ -513,7 +513,7 @@ mono_threadpool_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObj
 gboolean
 mono_threadpool_remove_domain_jobs (MonoDomain *domain, int timeout)
 {
-	gint64 end;
+	gint64 end = 0;
 	ThreadPoolDomain *tpdomain;
 	gboolean ret;
 

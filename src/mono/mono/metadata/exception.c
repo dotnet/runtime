@@ -743,12 +743,6 @@ mono_get_exception_argument_out_of_range (const char *arg)
 	return mono_get_exception_argument_internal ("ArgumentOutOfRangeException", arg, NULL);
 }
 
-static MonoExceptionHandle
-mono_new_exception_argument_out_of_range (const char *arg, MonoError *error)
-{
-	return mono_exception_new_argument_internal ("ArgumentOutOfRangeException", arg, NULL, error);
-}
-
 /**
  * mono_get_exception_thread_state:
  * \param msg the message to present to the user

@@ -256,6 +256,8 @@ emit_managed_allocater_noilgen (MonoMethodBuilder *mb, gboolean slowpath, gboole
 {
 }
 
+#if !ENABLE_ILGEN
+
 static void
 install_noilgen (void)
 {
@@ -265,6 +267,8 @@ install_noilgen (void)
 	cb.emit_managed_allocater = emit_managed_allocater_noilgen;
 	mono_install_sgen_mono_callbacks (&cb);
 }
+
+#endif
 
 static MonoSgenMonoCallbacks *
 get_sgen_mono_cb (void)
@@ -2484,6 +2488,16 @@ int
 mono_gc_get_los_limit (void)
 {
 	return SGEN_MAX_SMALL_OBJ_SIZE;
+}
+
+guint64
+mono_gc_get_allocated_bytes_for_current_thread (void)
+{
+	SgenThreadInfo* info;
+	info = mono_thread_info_current ();
+
+	/*There are some more allocated bytes in the current tlab that have not been recorded yet */
+	return info->total_bytes_allocated + info->tlab_next - info->tlab_start;
 }
 
 gpointer

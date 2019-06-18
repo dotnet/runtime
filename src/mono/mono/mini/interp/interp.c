@@ -1769,7 +1769,7 @@ interp_entry (InterpEntryData *data)
 	MonoMethod *method;
 	MonoMethodSignature *sig;
 	MonoType *type;
-	gpointer orig_domain, attach_cookie;
+	gpointer orig_domain = NULL, attach_cookie;
 	int i;
 
 	if ((gsize)data->rmethod & 1) {

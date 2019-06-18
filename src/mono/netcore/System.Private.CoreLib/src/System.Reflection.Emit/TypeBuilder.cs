@@ -325,7 +325,7 @@ namespace System.Reflection.Emit
 			 * MS throws NotSupported here, but we can't because some corlib
 			 * classes make calls to IsDefined.
 			 */
-			return MonoCustomAttrs.IsDefined (this, attributeType, inherit);
+			return CustomAttribute.IsDefined (this, attributeType, inherit);
 		}
 		
 		public override object[] GetCustomAttributes(bool inherit)
