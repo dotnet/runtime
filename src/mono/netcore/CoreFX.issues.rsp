@@ -983,3 +983,20 @@
 
 -nomethod DataContractJsonSerializerTests.DCJS_VerifyDateTimeForDateTimeFormat
 -nomethod DataContractJsonSerializerTests.DCJS_VerifyDateTimeForFormatStringDCJsonSerSettings
+
+
+# requires corefx test updates https://github.com/dotnet/corefx/pull/38452
+-nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfAny_ManyInteger
+-nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfAny_ManyString
+-nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfMany_Byte
+-nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfMany_Char
+-nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthLastIndexOfAny_Byte_ManyByte
+-nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthLastIndexOfAny_ManyByte
+-nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthLastIndexOfAny_String_ManyByte
+-nomethod System.SpanTests.SpanTests.ZeroLengthIndexOfAny_ManyInteger
+-nomethod System.SpanTests.SpanTests.ZeroLengthIndexOfAny_ManyString
+-nomethod System.SpanTests.SpanTests.ZeroLengthIndexOfMany_Byte
+-nomethod System.SpanTests.SpanTests.ZeroLengthIndexOfMany_Char
+-nomethod System.SpanTests.SpanTests.ZeroLengthLastIndexOfAny_Byte_ManyByte
+-nomethod System.SpanTests.SpanTests.ZeroLengthLastIndexOfAny_ManyByte
+-nomethod System.SpanTests.SpanTests.ZeroLengthLastIndexOfAny_String_ManyByte
