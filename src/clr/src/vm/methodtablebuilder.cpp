@@ -8397,6 +8397,16 @@ MethodTableBuilder::HandleExplicitLayout(
             if (pFD->IsByValue())
             {
                 MethodTable *pByValueMT = pByValueClassCache[valueClassCacheIndex];
+                if (pByValueMT->IsByRefLike())
+                {
+                    if ((pFD->GetOffset_NoLogging() & ((ULONG)TARGET_POINTER_SIZE - 1)) != 0)
+                    {
+                        // If we got here, then a byref-like valuetype was misaligned.
+                        badOffset = pFD->GetOffset_NoLogging();
+                        fieldTrust.SetTrust(ExplicitFieldTrust::kNone);
+                        break;
+                    }
+                }
                 if (pByValueMT->ContainsPointers())
                 {
                     if ((pFD->GetOffset_NoLogging() & ((ULONG)TARGET_POINTER_SIZE - 1)) == 0)
