@@ -37,6 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ManagedCallingNative.cs" />
+    <Compile Include="../IjwHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../IjwNativeDll/CMakeLists.txt" />
