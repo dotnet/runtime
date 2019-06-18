@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices
         /// If unable to get the <see cref="ReadOnlySequenceSegment{T}"/>, return false.
         /// </summary>
         public static bool TryGetReadOnlySequenceSegment<T>(ReadOnlySequence<T> sequence,
-            out ReadOnlySequenceSegment<T>? startSegment,
+            [NotNullWhen(true)] out ReadOnlySequenceSegment<T>? startSegment,
             out int startIndex,
             [NotNullWhen(true)] out ReadOnlySequenceSegment<T>? endSegment,
             out int endIndex)
