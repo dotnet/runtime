@@ -134,11 +134,14 @@ CustomMarshalerInfo::~CustomMarshalerInfo()
 {
     WRAPPER_NO_CONTRACT;
 #ifndef CROSSGEN_COMPILE    
-    if (m_hndCustomMarshaler)
+    if (m_pLoaderAllocator->IsAlive() && m_hndCustomMarshaler)
     {
+        // Only free the LOADERHANDLE if the LoaderAllocator is still alive.
+        // If the loader allocator isn't alive, the handle has automatically
+        // been collected already.
         m_pLoaderAllocator->FreeHandle(m_hndCustomMarshaler);
-        m_hndCustomMarshaler = NULL;
     }
+    m_hndCustomMarshaler = NULL;
 #endif
 }
 
