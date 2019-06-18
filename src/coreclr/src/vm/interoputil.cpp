@@ -1404,23 +1404,6 @@ ErrExit:
     return hr;
 }
 
-void SafeRelease_OnException(IUnknown* pUnk, RCW* pRCW)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-#ifndef CROSSGEN_COMPILE
-#ifdef FEATURE_COMINTEROP
-    LogInterop(W("An exception occurred during release"));
-    LogInteropLeak(pUnk);
-#endif // FEATURE_COMINTEROP
-#endif // CROSSGEN_COMPILE
-}
-
 #include <optsmallperfcritical.h>
 //--------------------------------------------------------------------------------
 // Release helper, must be called in preemptive mode.  Only use this variant if
@@ -1437,50 +1420,10 @@ ULONG SafeReleasePreemp(IUnknown * pUnk, RCW * pRCW)
     if (pUnk == NULL)
         return 0;
 
-    ULONG res = 0;
-    Thread * const pThread = GetThreadNULLOk();
-
     // Message pump could happen, so arbitrary managed code could run.
     CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
 
-    bool fException = false;
-    
-    SCAN_EHMARKER();
-    PAL_CPP_TRY
-    {
-        SCAN_EHMARKER_TRY();
-        // This is a holder to tell the contract system that we're catching all exceptions.
-        CLR_TRY_MARKER();
-
-        // Its very possible that the punk has gone bad before we could release it. This is a common application
-        // error. We may AV trying to call Release, and that AV will show up as an AV in mscorwks, so we'll take
-        // down the Runtime. Mark that an AV is alright, and handled, in this scope using this holder.
-        AVInRuntimeImplOkayHolder AVOkay(pThread);
-
-        res = pUnk->Release();
-
-        SCAN_EHMARKER_END_TRY();
-    }
-    PAL_CPP_CATCH_ALL
-    {
-        SCAN_EHMARKER_CATCH();
-#if defined(STACK_GUARDS_DEBUG)
-        // Catching and just swallowing an exception means we need to tell
-        // the SO code that it should go back to normal operation, as it
-        // currently thinks that the exception is still on the fly.
-        pThread->GetCurrentStackGuard()->RestoreCurrentGuard();
-#endif
-        fException = true;
-        SCAN_EHMARKER_END_CATCH();
-    }
-    PAL_CPP_ENDTRY;
-
-    if (fException)
-    {
-        SafeRelease_OnException(pUnk, pRCW);
-    }
-
-    return res;
+    return pUnk->Release();
 }
 
 //--------------------------------------------------------------------------------
@@ -1504,42 +1447,7 @@ ULONG SafeRelease(IUnknown* pUnk, RCW* pRCW)
     // Message pump could happen, so arbitrary managed code could run.
     CONTRACT_VIOLATION(ThrowsViolation | FaultViolation);
 
-    bool fException = false;
-    
-    SCAN_EHMARKER();
-    PAL_CPP_TRY
-    {
-        SCAN_EHMARKER_TRY();
-        // This is a holder to tell the contract system that we're catching all exceptions.
-        CLR_TRY_MARKER();
-
-        // Its very possible that the punk has gone bad before we could release it. This is a common application
-        // error. We may AV trying to call Release, and that AV will show up as an AV in mscorwks, so we'll take
-        // down the Runtime. Mark that an AV is alright, and handled, in this scope using this holder.
-        AVInRuntimeImplOkayHolder AVOkay(pThread);
-
-        res = pUnk->Release();
-
-        SCAN_EHMARKER_END_TRY();
-    }
-    PAL_CPP_CATCH_ALL
-    {
-        SCAN_EHMARKER_CATCH();
-#if defined(STACK_GUARDS_DEBUG)
-        // Catching and just swallowing an exception means we need to tell
-        // the SO code that it should go back to normal operation, as it
-        // currently thinks that the exception is still on the fly.
-        pThread->GetCurrentStackGuard()->RestoreCurrentGuard();
-#endif
-        fException = true;
-        SCAN_EHMARKER_END_CATCH();
-    }
-    PAL_CPP_ENDTRY;
-
-    if (fException)
-    {
-        SafeRelease_OnException(pUnk, pRCW);
-    }
+    res = pUnk->Release();
 
     GCX_PREEMP_NO_DTOR_END();
 
