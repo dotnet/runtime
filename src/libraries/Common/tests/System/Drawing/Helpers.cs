@@ -20,7 +20,7 @@ namespace System.Drawing
         public const string AnyInstalledPrinters = nameof(Helpers) + "." + nameof(IsAnyInstalledPrinters);
         public const string WindowsRS3OrEarlier = nameof(Helpers) + "." + nameof(IsWindowsRS3OrEarlier);
 
-        public static bool GetIsDrawingSupported() => PlatformDetection.IsDrawingSupported;
+        public static bool GetIsDrawingSupported() => /* ActiveIssue(24525) */ PlatformDetection.IsNotRedHatFamily6 && PlatformDetection.IsDrawingSupported;
 
         public static bool IsNotUnix => PlatformDetection.IsWindows;
 
