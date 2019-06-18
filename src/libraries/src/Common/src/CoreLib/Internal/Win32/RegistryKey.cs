@@ -371,7 +371,7 @@ namespace Internal.Win32
                         // make sure the string is null terminated before processing the data
                         if (blob.Length > 0 && blob[blob.Length - 1] != (char)0)
                         {
-                            Array.Resize(ref blob!, blob.Length + 1); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                            Array.Resize(ref blob, blob.Length + 1);
                         }
 
                         string[] strings = Array.Empty<string>();
@@ -416,13 +416,13 @@ namespace Internal.Win32
                             {
                                 if (strings.Length == stringsCount)
                                 {
-                                    Array.Resize(ref strings!, stringsCount > 0 ? stringsCount * 2 : 4); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                                    Array.Resize(ref strings, stringsCount > 0 ? stringsCount * 2 : 4);
                                 }
                                 strings[stringsCount++] = toAdd;
                             }
                         }
 
-                        Array.Resize(ref strings!, stringsCount); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                        Array.Resize(ref strings, stringsCount);
                         data = strings;
                     }
                     break;

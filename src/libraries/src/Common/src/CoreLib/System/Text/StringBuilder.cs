@@ -1987,9 +1987,9 @@ namespace System.Text
                     }
                     else if (replacementsCount >= replacements.Length)
                     {
-                        Array.Resize(ref replacements!, replacements.Length * 3 / 2 + 4); // Grow by ~1.5x, but more in the begining // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                        Array.Resize(ref replacements, replacements.Length * 3 / 2 + 4); // Grow by ~1.5x, but more in the begining
                     }
-                    replacements![replacementsCount++] = indexInChunk; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    replacements[replacementsCount++] = indexInChunk;
                     indexInChunk += oldValue.Length;
                     count -= oldValue.Length;
                 }

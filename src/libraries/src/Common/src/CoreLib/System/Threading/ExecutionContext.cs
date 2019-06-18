@@ -546,7 +546,7 @@ namespace System.Threading
                 {
                     int newNotificationIndex = newChangeNotifications.Length;
                     Array.Resize(ref newChangeNotifications, newNotificationIndex + 1);
-                    newChangeNotifications![newNotificationIndex] = local; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    newChangeNotifications[newNotificationIndex] = local;
                 }
             }
 

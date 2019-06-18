@@ -618,7 +618,7 @@ namespace System
             string? id;
             if (TryGetLocalTzFile(out rawData, out id))
             {
-                TimeZoneInfo? result = GetTimeZoneFromTzData(rawData, id!); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                TimeZoneInfo? result = GetTimeZoneFromTzData(rawData, id);
                 if (result != null)
                 {
                     return result;

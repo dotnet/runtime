@@ -355,7 +355,7 @@ namespace System.Threading
                 Dictionary<string, LocalDataStoreSlot> nameToSlotMap = EnsureNameToSlotMap();
                 lock (nameToSlotMap)
                 {
-                    LocalDataStoreSlot slot;
+                    LocalDataStoreSlot? slot;
                     if (!nameToSlotMap.TryGetValue(name, out slot))
                     {
                         slot = AllocateSlot();
