@@ -43,6 +43,24 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void UseAfterDispose(bool importKey)
+        {
+            RSA rsa = importKey ? RSAFactory.Create(TestData.RSA2048Params) : RSAFactory.Create(1024);
+            byte[] data = TestData.HelloBytes;
+            byte[] enc;
+
+            using (rsa)
+            {
+                enc = Encrypt(rsa, data, RSAEncryptionPadding.Pkcs1);
+            }
+
+            Assert.Throws<ObjectDisposedException>(
+                () => Decrypt(rsa, enc, RSAEncryptionPadding.Pkcs1));
+        }
+
         [Fact]
         public void DecryptSavedAnswer()
         {

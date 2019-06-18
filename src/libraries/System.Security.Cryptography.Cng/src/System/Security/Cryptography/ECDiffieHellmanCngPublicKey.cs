@@ -11,6 +11,7 @@ namespace System.Security.Cryptography
     {
         private CngKeyBlobFormat _format;
         private string _curveName;
+        private bool _disposed;
 
         /// <summary>
         /// Wrap a CNG key
@@ -24,6 +25,11 @@ namespace System.Security.Cryptography
 
         protected override void Dispose(bool disposing)
         {
+            if (disposing)
+            {
+                _disposed = true;
+            }
+
             base.Dispose(disposing);
         }
 
@@ -84,6 +90,11 @@ namespace System.Security.Cryptography
         /// <returns></returns>
         public CngKey Import()
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(ECDiffieHellmanCngPublicKey));
+            }
+
             return CngKey.Import(ToByteArray(), _curveName, BlobFormat);
         }
 

@@ -21,9 +21,20 @@ namespace System.Security.Cryptography
         {
             private SafeNCryptKeyHandle _keyHandle;
             private int _lastKeySize;
+            private bool _disposed;
+
+            private void ThrowIfDisposed()
+            {
+                if (_disposed)
+                {
+                    throw new ObjectDisposedException(nameof(RSA));
+                }
+            }
 
             private SafeNCryptKeyHandle GetDuplicatedKeyHandle()
             {
+                ThrowIfDisposed();
+
                 int keySize = KeySize;
 
                 if (_lastKeySize != keySize)
@@ -82,6 +93,8 @@ namespace System.Security.Cryptography
 
             private void ImportKeyBlob(byte[] dsaBlob, bool includePrivate)
             {
+                ThrowIfDisposed();
+
                 // Use generic blob type for multiple version support
                 string blobType = includePrivate ?
                     Interop.BCrypt.KeyBlobType.BCRYPT_PRIVATE_KEY_BLOB :
@@ -93,6 +106,8 @@ namespace System.Security.Cryptography
 
             private void AcceptImport(CngPkcs8.Pkcs8Response response)
             {
+                ThrowIfDisposed();
+
                 SafeNCryptKeyHandle keyHandle = response.KeyHandle;
                 SetKeyHandle(keyHandle);
             }
@@ -116,6 +131,19 @@ namespace System.Security.Cryptography
                 // check.
                 ForceSetKeySize(newKeySize);
                 _lastKeySize = newKeySize;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    _keyHandle?.Dispose();
+                    _keyHandle = null;
+                    _disposed = true;
+                }
+
+
+                base.Dispose(disposing);
             }
         }
     }

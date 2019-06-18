@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
 
         public RSAOpenSsl(int keySize)
         {
-            KeySize = keySize;
+            base.KeySize = keySize;
             _key = new Lazy<SafeRsaHandle>(GenerateKey);
         }
 
@@ -53,6 +53,7 @@ namespace System.Security.Cryptography
                 // Set the KeySize before FreeKey so that an invalid value doesn't throw away the key
                 base.KeySize = value;
 
+                ThrowIfDisposed();
                 FreeKey();
                 _key = new Lazy<SafeRsaHandle>(GenerateKey);
             }
@@ -88,8 +89,7 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(padding));
 
             Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor oaepProcessor);
-            SafeRsaHandle key = _key.Value;
-            CheckInvalidKey(key);
+            SafeRsaHandle key = GetKey();
 
             int rsaSize = Interop.Crypto.RsaSize(key);
             byte[] buf = null;
@@ -127,8 +127,7 @@ namespace System.Security.Cryptography
             }
 
             Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor oaepProcessor);
-            SafeRsaHandle key = _key.Value;
-            CheckInvalidKey(key);
+            SafeRsaHandle key = GetKey();
 
             int keySizeBytes = Interop.Crypto.RsaSize(key);
 
@@ -261,9 +260,8 @@ namespace System.Security.Cryptography
                 throw new ArgumentNullException(nameof(padding));
 
             Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor oaepProcessor);
-            SafeRsaHandle key = _key.Value;
-            CheckInvalidKey(key);
-
+            SafeRsaHandle key = GetKey();
+            
             byte[] buf = new byte[Interop.Crypto.RsaSize(key)];
 
             bool encrypted = TryEncrypt(
@@ -291,8 +289,7 @@ namespace System.Security.Cryptography
             }
 
             Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor oaepProcessor);
-            SafeRsaHandle key = _key.Value;
-            CheckInvalidKey(key);
+            SafeRsaHandle key = GetKey();
 
             return TryEncrypt(key, data, destination, rsaPadding, oaepProcessor, out bytesWritten);
         }
@@ -375,9 +372,7 @@ namespace System.Security.Cryptography
         public override RSAParameters ExportParameters(bool includePrivateParameters)
         {
             // It's entirely possible that this line will cause the key to be generated in the first place.
-            SafeRsaHandle key = _key.Value;
-
-            CheckInvalidKey(key);
+            SafeRsaHandle key = GetKey();
 
             RSAParameters rsaParameters = Interop.Crypto.ExportRsaParameters(key, includePrivateParameters);
             bool hasPrivateKey = rsaParameters.D != null;
@@ -393,6 +388,7 @@ namespace System.Security.Cryptography
         public override void ImportParameters(RSAParameters parameters)
         {
             ValidateParameters(ref parameters);
+            ThrowIfDisposed();
 
             SafeRsaHandle key = Interop.Crypto.RsaCreate();
             bool imported = false;
@@ -443,6 +439,8 @@ namespace System.Security.Cryptography
 
         public override unsafe void ImportRSAPublicKey(ReadOnlySpan<byte> source, out int bytesRead)
         {
+            ThrowIfDisposed();
+
             fixed (byte* ptr = &MemoryMarshal.GetReference(source))
             {
                 using (MemoryManager<byte> manager = new PointerMemoryManager<byte>(ptr, source.Length))
@@ -466,11 +464,30 @@ namespace System.Security.Cryptography
             }
         }
 
+        public override void ImportEncryptedPkcs8PrivateKey(
+            ReadOnlySpan<byte> passwordBytes,
+            ReadOnlySpan<byte> source,
+            out int bytesRead)
+        {
+            ThrowIfDisposed();
+            base.ImportEncryptedPkcs8PrivateKey(passwordBytes, source, out bytesRead);
+        }
+
+        public override void ImportEncryptedPkcs8PrivateKey(
+            ReadOnlySpan<char> password,
+            ReadOnlySpan<byte> source,
+            out int bytesRead)
+        {
+            ThrowIfDisposed();
+            base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
                 FreeKey();
+                _key = null;
             }
 
             base.Dispose(disposing);
@@ -522,12 +539,32 @@ namespace System.Security.Cryptography
             return true;
         }
 
-        private static void CheckInvalidKey(SafeRsaHandle key)
+        private void ThrowIfDisposed()
         {
+            if (_key == null)
+            {
+                throw new ObjectDisposedException(
+#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
+                    nameof(RSA)
+#else
+                    nameof(RSAOpenSsl)
+#endif
+                );
+            }
+        }
+
+        private SafeRsaHandle GetKey()
+        {
+            ThrowIfDisposed();    
+
+            SafeRsaHandle key = _key.Value;
+
             if (key == null || key.IsInvalid)
             {
                 throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
             }
+
+            return key;
         }
 
         private static void CheckReturn(int returnValue)
@@ -663,7 +700,7 @@ namespace System.Security.Cryptography
             if (padding.Mode == RSASignaturePaddingMode.Pkcs1)
             {
                 int algorithmNid = GetAlgorithmNid(hashAlgorithm);
-                SafeRsaHandle rsa = _key.Value;
+                SafeRsaHandle rsa = GetKey();
 
                 int bytesRequired = Interop.Crypto.RsaSize(rsa);
 
@@ -695,7 +732,7 @@ namespace System.Security.Cryptography
             else if (padding.Mode == RSASignaturePaddingMode.Pss)
             {
                 RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
-                SafeRsaHandle rsa = _key.Value;
+                SafeRsaHandle rsa = GetKey();
 
                 int bytesRequired = Interop.Crypto.RsaSize(rsa);
 
@@ -766,13 +803,13 @@ namespace System.Security.Cryptography
             if (padding == RSASignaturePadding.Pkcs1)
             {
                 int algorithmNid = GetAlgorithmNid(hashAlgorithm);
-                SafeRsaHandle rsa = _key.Value;
+                SafeRsaHandle rsa = GetKey();
                 return Interop.Crypto.RsaVerify(algorithmNid, hash, signature, rsa);
             }
             else if (padding == RSASignaturePadding.Pss)
             {
                 RsaPaddingProcessor processor = RsaPaddingProcessor.OpenProcessor(hashAlgorithm);
-                SafeRsaHandle rsa = _key.Value;
+                SafeRsaHandle rsa = GetKey();
 
                 int requiredBytes = Interop.Crypto.RsaSize(rsa);
 

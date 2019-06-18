@@ -10,6 +10,8 @@ namespace System.Security.Cryptography
     {
         public RSAOpenSsl(RSAParameters parameters)
         {
+            // Make _key be non-null before calling ImportParameters
+            _key = new Lazy<SafeRsaHandle>();
             ImportParameters(parameters);
         }
 

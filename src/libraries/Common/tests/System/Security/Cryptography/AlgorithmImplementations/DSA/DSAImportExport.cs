@@ -132,6 +132,31 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void ExportAfterDispose(bool importKey)
+        {
+            DSA key = importKey ? DSAFactory.Create(DSATestData.GetDSA1024Params()) : DSAFactory.Create(512);
+            byte[] hash = new byte[20];
+
+            // Ensure that the key got created, and then Dispose it.
+            using (key)
+            {
+                try
+                {
+                    key.CreateSignature(hash);
+                }
+                catch (PlatformNotSupportedException) when (!SupportsKeyGeneration)
+                {
+                }
+            }
+
+            Assert.Throws<ObjectDisposedException>(() => key.ExportParameters(false));
+            Assert.Throws<ObjectDisposedException>(() => key.ExportParameters(true));
+            Assert.Throws<ObjectDisposedException>(() => key.ImportParameters(DSATestData.GetDSA1024Params()));
+        }
+
         internal static void AssertKeyEquals(in DSAParameters expected, in DSAParameters actual)
         {
             Assert.Equal(expected.G, actual.G);

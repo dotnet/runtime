@@ -22,9 +22,20 @@ namespace System.Security.Cryptography
         {
             private SafeNCryptKeyHandle _keyHandle;
             private int _lastKeySize;
+            private bool _disposed;
+
+            private void ThrowIfDisposed()
+            {
+                if (_disposed)
+                {
+                    throw new ObjectDisposedException(nameof(RSA));
+                }
+            }
 
             private SafeNCryptKeyHandle GetDuplicatedKeyHandle()
             {
+                ThrowIfDisposed();
+
                 int keySize = KeySize;
 
                 if (_lastKeySize != keySize)
@@ -82,6 +93,8 @@ namespace System.Security.Cryptography
 
             private void ImportKeyBlob(byte[] rsaBlob, bool includePrivate)
             {
+                ThrowIfDisposed();
+
                 string blobType = includePrivate
                     ? Interop.BCrypt.KeyBlobType.BCRYPT_RSAPRIVATE_BLOB
                     : Interop.BCrypt.KeyBlobType.BCRYPT_RSAPUBLIC_KEY_BLOB;
@@ -92,6 +105,8 @@ namespace System.Security.Cryptography
 
             private void AcceptImport(CngPkcs8.Pkcs8Response response)
             {
+                ThrowIfDisposed();
+
                 SafeNCryptKeyHandle keyHandle = response.KeyHandle;
                 SetKeyHandle(keyHandle);
             }
@@ -120,6 +135,19 @@ namespace System.Security.Cryptography
                 // alignment requirement. (In both cases Windows loads it just fine)
                 ForceSetKeySize(newKeySize);
                 _lastKeySize = newKeySize;
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    _keyHandle?.Dispose();
+                    _keyHandle = null;
+                    _disposed = true;
+                }
+
+
+                base.Dispose(disposing);
             }
         }
     }

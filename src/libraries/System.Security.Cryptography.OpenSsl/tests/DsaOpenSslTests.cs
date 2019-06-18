@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Security.Cryptography.Dsa.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -95,6 +96,17 @@ namespace System.Security.Cryptography.OpenSsl.Tests
             using (SafeEvpPKeyHandle pkey = ecdsa.DuplicateKeyHandle())
             {
                 Assert.ThrowsAny<CryptographicException>(() => new DSAOpenSsl(pkey));
+            }
+        }
+
+        [Fact]
+        public static void VerifyParameterCtor()
+        {
+            using (DSA dsa = new DSAOpenSsl(DSATestData.Dsa576Parameters))
+            {
+                DSAImportExport.AssertKeyEquals(
+                    DSATestData.Dsa576Parameters,
+                    dsa.ExportParameters(true));
             }
         }
     }

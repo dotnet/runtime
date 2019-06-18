@@ -13,15 +13,18 @@ namespace System.Security.Cryptography
         private SafeNCryptKeyHandle _keyHandle;
         private int _lastKeySize;
         private string _lastAlgorithm;
+        private bool _disposed;
         private readonly string _algorithmGroup;
+        private readonly string _disposedName;
 
-        internal ECCngKey(string algorithmGroup)
+        internal ECCngKey(string algorithmGroup, string disposedName)
         {
             Debug.Assert(
                 algorithmGroup == BCryptNative.AlgorithmName.ECDH ||
                 algorithmGroup == BCryptNative.AlgorithmName.ECDsa);
 
             _algorithmGroup = algorithmGroup;
+            _disposedName = disposedName;
         }
 
         internal int KeySize { get; private set; }
@@ -46,6 +49,8 @@ namespace System.Security.Cryptography
 
         internal SafeNCryptKeyHandle GetDuplicatedKeyHandle(int callerKeySizeProperty)
         {
+            ThrowIfDisposed();
+
             if (ECCng.IsECNamedCurve(_lastAlgorithm))
             {
                 // Curve was previously created, so use that
@@ -100,6 +105,7 @@ namespace System.Security.Cryptography
         internal void GenerateKey(ECCurve curve)
         {
             curve.Validate();
+            ThrowIfDisposed();
 
             if (_keyHandle != null)
             {
@@ -192,6 +198,12 @@ namespace System.Security.Cryptography
             KeySize = keySize;
         }
 
+        internal void FullDispose()
+        {
+            DisposeKey();
+            _disposed = true;
+        }
+
         internal void DisposeKey()
         {
             if (_keyHandle != null)
@@ -206,12 +218,22 @@ namespace System.Security.Cryptography
 
         internal void SetHandle(SafeNCryptKeyHandle keyHandle, string algorithmName)
         {
+            ThrowIfDisposed();
+
             _keyHandle?.Dispose();
             _keyHandle = keyHandle;
             _lastAlgorithm = algorithmName;
 
             KeySize = CngKeyLite.GetKeyLength(keyHandle);
             _lastKeySize = KeySize;
+        }
+
+        internal void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(_disposedName);
+            }
         }
     }
 }

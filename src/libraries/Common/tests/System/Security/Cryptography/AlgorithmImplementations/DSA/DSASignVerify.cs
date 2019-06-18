@@ -15,6 +15,15 @@ namespace System.Security.Cryptography.Dsa.Tests
         public override bool VerifyData(DSA dsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm) =>
             dsa.VerifyData(data, signature, hashAlgorithm);
 
+        protected override void UseAfterDispose(DSA dsa, byte[] data, byte[] sig)
+        {
+            base.UseAfterDispose(dsa, data, sig);
+            byte[] hash = new byte[20];
+
+            Assert.Throws<ObjectDisposedException>(() => dsa.CreateSignature(hash));
+            Assert.Throws<ObjectDisposedException>(() => dsa.VerifySignature(hash, sig));
+        }
+
         [Fact]
         public void InvalidStreamArrayArguments_Throws()
         {
@@ -65,6 +74,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
     }
 
+#if netcoreapp
     public sealed class DSASignVerify_Span : DSASignVerify
     {
         public override byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm) =>
@@ -72,6 +82,15 @@ namespace System.Security.Cryptography.Dsa.Tests
 
         public override bool VerifyData(DSA dsa, byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm) =>
             dsa.VerifyData((ReadOnlySpan<byte>)data, (ReadOnlySpan<byte>)signature, hashAlgorithm);
+
+        protected override void UseAfterDispose(DSA dsa, byte[] data, byte[] sig)
+        {
+            base.UseAfterDispose(dsa, data, sig);
+            byte[] hash = new byte[20];
+
+            Assert.Throws<ObjectDisposedException>(() => dsa.TryCreateSignature(hash, sig, out _));
+            Assert.Throws<ObjectDisposedException>(() => dsa.VerifySignature(hash.AsSpan(), sig.AsSpan()));
+        }
 
         private static byte[] TryWithOutputArray(Func<byte[], (bool, int)> func)
         {
@@ -87,7 +106,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             }
         }
     }
-
+#endif
     public abstract partial class DSASignVerify
     {
         public abstract byte[] SignData(DSA dsa, byte[] data, HashAlgorithmName hashAlgorithm);
@@ -105,6 +124,54 @@ namespace System.Security.Cryptography.Dsa.Tests
 
                 Assert.True(VerifyData(dsa, DSATestData.HelloBytes, signature, HashAlgorithmName.SHA1));
             }
+        }
+
+        [ConditionalFact(nameof(SupportsKeyGeneration))]
+        public void UseAfterDispose_NewKey()
+        {
+            UseAfterDispose(false);
+        }
+
+        [Fact]
+        public void UseAfterDispose_ImportedKey()
+        {
+            UseAfterDispose(true);
+        }
+
+        private void UseAfterDispose(bool importKey)
+        {
+            DSA key = importKey ? DSAFactory.Create(DSATestData.GetDSA1024Params()) : DSAFactory.Create(512);
+            byte[] data = { 1 };
+            byte[] sig;
+
+            // Ensure the key is populated, then dispose it.
+            using (key)
+            {
+                sig = SignData(key, data, HashAlgorithmName.SHA1);
+            }
+
+            key.Dispose();
+
+            UseAfterDispose(key, data, sig);
+
+            Assert.Throws<ObjectDisposedException>(() => key.ImportParameters(DSATestData.GetDSA1024Params()));
+
+            // Either set_KeySize or SignData should throw.
+            Assert.Throws<ObjectDisposedException>(
+                () =>
+                {
+                    key.KeySize = 576;
+                    SignData(key, data, HashAlgorithmName.SHA1);
+                });
+        }
+
+        protected virtual void UseAfterDispose(DSA dsa, byte[] data, byte[] sig)
+        {
+            Assert.Throws<ObjectDisposedException>(
+                () => SignData(dsa, data, HashAlgorithmName.SHA1));
+
+            Assert.Throws<ObjectDisposedException>(
+                () => VerifyData(dsa, data, sig, HashAlgorithmName.SHA1));
         }
 
         [ConditionalFact(nameof(SupportsKeyGeneration))]

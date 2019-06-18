@@ -48,6 +48,21 @@ namespace System.Security.Cryptography
     {
         public sealed partial class ECDsaCng : ECDsa
         {
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    _key?.FullDispose();
+                }
+
+                base.Dispose(disposing);
+            }
+
+            private void ThrowIfDisposed()
+            {
+                _key.ThrowIfDisposed();
+            }
+
             private void ImportFullKeyBlob(byte[] ecfullKeyBlob, bool includePrivateParameters)
             {
                 string blobType = includePrivateParameters ?
