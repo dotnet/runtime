@@ -21,7 +21,7 @@
     </Compile>
     <Compile Include="AdapterSwitches.cs" />
     <Compile Include="ColumnBinding.cs" />
-    <Compile Include="DBBindings.cs" />
+    <Compile Include="DbBindings.cs" />
     <Compile Include="DbConnectionOptions.cs" />
     <Compile Include="DbConnectionStringCommon.cs" />
     <Compile Include="DbParameterHelper.cs" />
