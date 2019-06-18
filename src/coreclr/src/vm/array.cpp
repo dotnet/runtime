@@ -32,14 +32,8 @@
 #include "typestring.h"
 #include "sigbuilder.h"
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4244)
-#endif // _MSC_VER
-
 #define MAX_SIZE_FOR_VALUECLASS_IN_ARRAY 0xffff
 #define MAX_PTRS_FOR_VALUECLASSS_IN_ARRAY 0xffff
-
 
 /*****************************************************************************************/
 LPCUTF8 ArrayMethodDesc::GetMethodName()
@@ -430,12 +424,12 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         pClass->SetMethodTable (pMT);
 
         // Fill In the method table
-        pClass->SetNumMethods(numVirtuals + numNonVirtualSlots);
+        pClass->SetNumMethods(static_cast<WORD>(numVirtuals + numNonVirtualSlots));
 
-        pClass->SetNumNonVirtualSlots(numNonVirtualSlots);
+        pClass->SetNumNonVirtualSlots(static_cast<WORD>(numNonVirtualSlots));
     }
 
-    pMT->SetNumVirtuals(numVirtuals);
+    pMT->SetNumVirtuals(static_cast<WORD>(numVirtuals));
 
     pMT->SetParentMethodTable(pParentClass);
 
@@ -741,7 +735,7 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         CGCDesc::GetCGCDescFromMT(pMT)->InitValueClassSeries(pMT, 1);
         pSeries = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
         pSeries->SetSeriesOffset(ArrayBase::GetDataPtrOffset(pMT));
-        pSeries->val_serie[0].set_val_serie_item (0, pMT->GetComponentSize());
+        pSeries->val_serie[0].set_val_serie_item (0, static_cast<HALF_SIZE_T>(pMT->GetComponentSize()));
     }
 #endif
 
@@ -1409,7 +1403,27 @@ MethodDesc* GetActualImplementationForArrayGenericIListOrIReadOnlyListMethod(Met
 }
 #endif // DACCESS_COMPILE
 
-#ifdef _MSC_VER
-#pragma warning(pop)
-#pragma warning(disable:4244)
-#endif // _MSC_VER: warning C4244
+CorElementType GetNormalizedIntegralArrayElementType(CorElementType elementType)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(CorTypeInfo::IsPrimitiveType_NoThrow(elementType));
+
+    // Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
+    // Enums with interchangeable underlying types are interchangable
+    // BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
+
+    switch (elementType)
+    {
+    case ELEMENT_TYPE_U1:
+    case ELEMENT_TYPE_U2:
+    case ELEMENT_TYPE_U4:
+    case ELEMENT_TYPE_U8:
+    case ELEMENT_TYPE_U:
+        return (CorElementType)(elementType - 1); // normalize to signed type
+    default:
+        break;
+    }
+
+    return elementType;
+}
