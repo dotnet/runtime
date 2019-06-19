@@ -7,7 +7,7 @@
       Could not load file or assembly 'System.Security.Cryptography.Pkcs, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a'. 
       The located assembly's manifest definition does not match the assembly reference. (0x80131040)
     -->
-    <Configurations>netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp-Debug;netcoreapp-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release<!-->;uap-Debug;uap-Release--></Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">

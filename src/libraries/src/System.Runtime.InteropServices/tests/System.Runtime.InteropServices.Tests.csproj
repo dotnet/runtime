@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{A824F4CD-935B-4496-A1B2-C3664936DA7B}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;netcoreapp-Debug;netcoreapp-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>
   <ItemGroup>
@@ -160,7 +160,7 @@
     <Compile Include="System\Runtime\InteropServices\Marshal\GetEndComSlotTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetExceptionPointersTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetHINSTANCETests.cs" />
-    <Compile Include="System\Runtime\InteropServices\Marshal\GetIDispatchForObjectTests.cs" />    
+    <Compile Include="System\Runtime\InteropServices\Marshal\GetIDispatchForObjectTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetTypedObjectForIUnknownTests.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshal\GetTypedObjectForIUnknownTests.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="System\Runtime\InteropServices\Marshal\IsTypeVisibleFromComTests.cs" />

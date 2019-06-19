@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{A7922FA3-306A-41B9-B8DC-CC4DBE685A85}</ProjectGuid>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <Configurations>netfx-Windows_NT-Debug;netfx-Windows_NT-Release;netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Configurations>netcoreapp-Debug;netcoreapp-Release;netfx-Windows_NT-Debug;netfx-Windows_NT-Release;uap-Debug;uap-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition=" '$(TargetsNetFx)' != 'true'">
     <Compile Include="DiagnosticSourceEventSourceBridgeTests.cs" />
