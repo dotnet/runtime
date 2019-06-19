@@ -1485,21 +1485,21 @@ namespace System.StubHelpers
         }
     }
 
-    // Keeps a Delegate instance alive across the full Managed->Native call.
+    // Keeps an object instance alive across the full Managed->Native call.
     // This ensures that users don't have to call GC.KeepAlive after passing a struct or class
     // that has a delegate field to native code.
-    internal sealed class DelegateCleanupWorkListElement : CleanupWorkListElement
+    internal sealed class KeepAliveCleanupWorkListElement : CleanupWorkListElement
     {
-        public DelegateCleanupWorkListElement(Delegate del)
+        public KeepAliveCleanupWorkListElement(object obj)
         {
-            m_del = del;
+            m_obj = obj;
         }
 
-        private Delegate m_del;
+        private object m_obj;
 
         protected override void DestroyCore()
         {
-            GC.KeepAlive(m_del);
+            GC.KeepAlive(m_obj);
         }
     }
 
@@ -1562,9 +1562,9 @@ namespace System.StubHelpers
             return element.AddRef();
         }
 
-        internal static void AddToCleanupList(ref CleanupWorkListElement pCleanupWorkList, Delegate del)
+        internal static void KeepAliveViaCleanupList(ref CleanupWorkListElement pCleanupWorkList, object obj)
         {
-            DelegateCleanupWorkListElement element = new DelegateCleanupWorkListElement(del);
+            KeepAliveCleanupWorkListElement element = new KeepAliveCleanupWorkListElement(obj);
             CleanupWorkListElement.AddToCleanupList(ref pCleanupWorkList, element);
         }
 
