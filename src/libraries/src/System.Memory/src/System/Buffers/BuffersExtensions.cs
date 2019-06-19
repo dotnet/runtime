@@ -110,6 +110,9 @@ namespace System.Buffers
         /// <summary>
         /// Writes contents of <paramref name="value"/> to <paramref name="writer"/>
         /// </summary>
+        /// <exception cref="System.ArgumentOutOfRangeException">
+        /// Thrown when the <paramref name="writer"/> is shorter than the <paramref name="value"/>.
+        /// </exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Write<T>(this IBufferWriter<T> writer, ReadOnlySpan<T> value)
         {
@@ -139,6 +142,12 @@ namespace System.Buffers
                 if (input.Length > 0)
                 {
                     destination = writer.GetSpan();
+
+                    if (destination.IsEmpty)
+                    {
+                        ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.writer);
+                    }
+
                     continue;
                 }
 

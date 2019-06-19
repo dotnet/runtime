@@ -120,6 +120,7 @@ namespace System
         array,
         culture,
         manager,
-        count
+        count,
+        writer,
     }
 }
