@@ -2213,13 +2213,16 @@ AssertionIndex Compiler::optFindComplementary(AssertionIndex assertIndex)
 
 /*****************************************************************************
  *
- *  Given a lclNum and a toType, return assertion index of the assertion that
- *  claims that a variable's value is always a valid subrange of toType.
- *  Thus we can discard or omit a cast to toType. Returns NO_ASSERTION_INDEX
+ *  Given a lclNum, a fromType and a toType, return assertion index of the assertion that
+ *  claims that a variable's value is always a valid subrange of the formType.
+ *  Thus we can discard or omit a cast to fromType. Returns NO_ASSERTION_INDEX
  *  if one such assertion could not be found in "assertions."
  */
 
-AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, var_types toType, ASSERT_VALARG_TP assertions)
+AssertionIndex Compiler::optAssertionIsSubrange(GenTree*         tree,
+                                                var_types        fromType,
+                                                var_types        toType,
+                                                ASSERT_VALARG_TP assertions)
 {
     if (!optLocalAssertionProp && BitVecOps::IsEmpty(apTraits, assertions))
     {
@@ -2241,6 +2244,16 @@ AssertionIndex Compiler::optAssertionIsSubrange(GenTree* tree, var_types toType,
             if (!isEqual)
             {
                 continue;
+            }
+
+            // If we have an unsigned fromType, then the loBound can't be negative
+            //
+            if (varTypeIsUnsigned(fromType))
+            {
+                if (curAssertion->op2.u2.loBound < 0)
+                {
+                    continue;
+                }
             }
 
             // Make sure the toType is within current assertion's bounds.
@@ -3384,11 +3397,18 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* t
 {
     assert(tree->gtOper == GT_CAST);
 
-    var_types toType = tree->gtCast.gtCastType;
-    GenTree*  op1    = tree->gtCast.CastOp();
+    var_types fromType = tree->CastFromType();
+    var_types toType   = tree->gtCast.gtCastType;
+    GenTree*  op1      = tree->gtCast.CastOp();
+
+    // force the fromType to unsigned if GT_UNSIGNED flag is set
+    if (tree->IsUnsigned())
+    {
+        fromType = genUnsignedType(fromType);
+    }
 
     // If we have a cast involving floating point types, then bail.
-    if (varTypeIsFloating(toType) || varTypeIsFloating(op1->TypeGet()))
+    if (varTypeIsFloating(toType) || varTypeIsFloating(fromType))
     {
         return nullptr;
     }
@@ -3406,7 +3426,7 @@ GenTree* Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, GenTree* t
         return nullptr;
     }
 
-    AssertionIndex index = optAssertionIsSubrange(lcl, toType, assertions);
+    AssertionIndex index = optAssertionIsSubrange(lcl, fromType, toType, assertions);
     if (index != NO_ASSERTION_INDEX)
     {
         LclVarDsc* varDsc = &lvaTable[lcl->gtLclVarCommon.gtLclNum];

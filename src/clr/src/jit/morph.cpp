@@ -6084,7 +6084,7 @@ GenTree* Compiler::fgMorphLocalVar(GenTree* tree, bool forceRemorph)
     {
 #if LOCAL_ASSERTION_PROP
         /* Assertion prop can tell us to omit adding a cast here */
-        if (optLocalAssertionProp && optAssertionIsSubrange(tree, varType, apFull) != NO_ASSERTION_INDEX)
+        if (optLocalAssertionProp && optAssertionIsSubrange(tree, TYP_INT, varType, apFull) != NO_ASSERTION_INDEX)
         {
             return tree;
         }
