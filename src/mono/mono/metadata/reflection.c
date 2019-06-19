@@ -2641,6 +2641,9 @@ ves_icall_RuntimeMethodInfo_MakeGenericMethod_impl (MonoReflectionMethodHandle r
 	MonoMethod *imethod = reflection_bind_generic_method_parameters (method, types, error);
 	return_val_if_nok (error, MONO_HANDLE_CAST (MonoReflectionMethod, NULL_HANDLE));
 
+	MonoReflectionType *reftype = MONO_HANDLE_GETVAL (rmethod, reftype);
+	MonoClass *refclass = mono_class_from_mono_type_internal (reftype->type);
+
 	/*FIXME but I think this is no longer necessary*/
 	if (image_is_dynamic (m_class_get_image (method->klass))) {
 		MonoDynamicImage *image = (MonoDynamicImage*)m_class_get_image (method->klass);
@@ -2653,7 +2656,7 @@ ves_icall_RuntimeMethodInfo_MakeGenericMethod_impl (MonoReflectionMethodHandle r
 		mono_image_unlock ((MonoImage*)image);
 	}
 
-	return mono_method_get_object_handle (MONO_HANDLE_DOMAIN (rmethod), imethod, NULL, error);
+	return mono_method_get_object_handle (MONO_HANDLE_DOMAIN (rmethod), imethod, refclass, error);
 }
 
 
