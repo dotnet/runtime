@@ -185,13 +185,8 @@
 -nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterDouble_P20
 -nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterSingle_F20
 
--nomethod System.SpanTests.SpanTests.MemoryMarshal_GenericStaticReturningSpan
--nomethod System.SpanTests.SpanTests.Span_Property
--nomethod System.SpanTests.SpanTests.ReadOnlySpan_Property
 -nomethod System.SpanTests.SpanTests.ReadOnlyMemory_PropertyReturningReadOnlySpan
--nomethod System.SpanTests.SpanTests.MemoryExtensions_StaticReturningReadOnlySpan
 -nomethod System.SpanTests.SpanTests.Span_StaticOperator
--nomethod System.SpanTests.SpanTests.MemoryManager_MethodReturningSpan
 -nomethod System.SpanTests.SpanTests.ReadOnlySpan_Constructor
 -nomethod System.SpanTests.SpanTests.ReadOnlySpan_Operator
 -nomethod System.SpanTests.SpanTests.Span_Constructor
