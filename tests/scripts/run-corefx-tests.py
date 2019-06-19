@@ -203,7 +203,7 @@ def copy_files(source_dir, target_dir):
 
     global testing
     assert os.path.isdir(source_dir)
-    assert os.path.isdir(target_dir)
+    assert testing or os.path.isdir(target_dir)
 
     for source_filename in os.listdir(source_dir):
         source_pathname = os.path.join(source_dir, source_filename)
@@ -221,6 +221,9 @@ def main(args):
     global Corefx_url
     global Unix_name_map
     global testing
+
+    if testing:
+        log("Running with testing = True")
 
     arch, ci_arch, build_type, clr_root, fx_root, fx_branch, fx_commit, env_script, exclusion_rsp_file, no_run_tests = validate_args(
         args)
@@ -325,17 +328,47 @@ def main(args):
     # by its dependencies.props file). Note that we always build Release corefx.
     # We must copy all files, not just the files that already exist in the corefx runtime
     # directory. This is required so we copy over all altjit compilers.
+    #
+    # We find the latest numbered directory in the 'Microsoft.NETCore.App' directory. This
+    # is expected to be the current product version, e.g., 3.0.0.
+    #
     # TODO: it might be cleaner to encapsulate the knowledge of how to do this in the
     # corefx msbuild files somewhere.
 
-    fx_runtime = os.path.join(fx_root,
-                             'artifacts',
-                             'bin',
-                             'testhost',
-                             'netcoreapp-%s-%s-%s' % (clr_os, 'Release', arch),
-                             'shared',
-                             'Microsoft.NETCore.App',
-                             '9.9.9')
+    netcore_app_path = os.path.join(fx_root,
+                                    'artifacts',
+                                    'bin',
+                                    'testhost',
+                                    'netcoreapp-%s-%s-%s' % (clr_os, 'Release', arch),
+                                    'shared',
+                                    'Microsoft.NETCore.App')
+
+    if not testing and not os.path.isdir(netcore_app_path):
+        log("Error: path not found or is not a directory: %s" % netcore_app_path)
+        sys.exit(1)
+
+    fx_runtime = None
+
+    if testing:
+        fx_runtime = os.path.join(netcore_app_path, '9.9.9')
+    else:
+        # Figure out what the latest product version is, and use that.
+        netcore_app_version_dirs = os.listdir(netcore_app_path)
+
+        if netcore_app_version_dirs is None:
+            log("Error: no version directories in %s" % netcore_app_path)
+            sys.exit(1)
+
+        netcore_app_version_dirs.sort(reverse=True)
+        for netcore_app_version_dir in netcore_app_version_dirs:
+            netcore_app_version_path = os.path.join(netcore_app_path, netcore_app_version_dir)
+            if os.path.isdir(netcore_app_version_path):
+                fx_runtime = netcore_app_version_path
+                break
+
+    if fx_runtime is None:
+        log("Error: couldn't find fx runtime directory in %s" % netcore_app_path)
+        sys.exit(1)
 
     log('Updating CoreCLR: %s => %s' % (core_root, fx_runtime))
     copy_files(core_root, fx_runtime)
