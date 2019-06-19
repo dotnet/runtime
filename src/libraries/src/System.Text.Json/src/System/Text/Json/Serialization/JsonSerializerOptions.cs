@@ -316,16 +316,6 @@ namespace System.Text.Json
 
         internal JsonPropertyInfo GetJsonPropertyInfoFromClassInfo(JsonClassInfo classInfo, JsonSerializerOptions options)
         {
-            if (classInfo.ClassType == ClassType.KeyValuePair)
-            {
-                return classInfo.GetPolicyPropertyOfKeyValuePair();
-            }
-
-            if (classInfo.ClassType != ClassType.Object)
-            {
-                return classInfo.GetPolicyProperty();
-            }
-
             Type objectType = classInfo.Type;
 
             if (!_objectJsonProperties.TryGetValue(objectType, out JsonPropertyInfo propertyInfo))

@@ -55,6 +55,8 @@
     <Compile Include="System\Text\Json\Serialization\Converters\DefaultIDictionaryConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\DefaultImmutableEnumerableConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\DefaultImmutableDictionaryConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonEnumConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonKeyValuePairConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterBoolean.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterByte.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterByteArray.cs" />
@@ -63,13 +65,13 @@
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterDateTimeOffset.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterDecimal.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterDouble.cs" />
-    <Compile Include="System\Text\Json\Serialization\Converters\JsonEnumConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterEnum.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterGuid.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterInt16.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterInt32.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterInt64.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterJsonElement.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterKeyValuePair.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterObject.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterSByte.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterSingle.cs" />
@@ -116,6 +118,7 @@
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Helpers.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Stream.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.String.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Utf8JsonWriter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Converters.cs" />
     <Compile Include="System\Text\Json\Serialization\MemberAccessor.cs" />

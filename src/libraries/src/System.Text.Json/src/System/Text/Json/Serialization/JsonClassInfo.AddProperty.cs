@@ -81,7 +81,6 @@ namespace System.Text.Json
                 case ClassType.Enumerable:
                 case ClassType.Dictionary:
                 case ClassType.IDictionaryConstructible:
-                case ClassType.KeyValuePair:
                 case ClassType.Unknown:
                     collectionElementType = GetElementType(runtimePropertyType, parentClassType, propertyInfo, options);
                     break;

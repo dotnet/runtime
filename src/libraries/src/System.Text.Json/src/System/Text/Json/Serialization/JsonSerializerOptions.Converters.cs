@@ -42,13 +42,13 @@ namespace System.Text.Json
 
         private static List<JsonConverter> GetDefaultConverters()
         {
-            const int NumberOfConverters = 1;
+            const int NumberOfConverters = 2;
 
             var converters = new List<JsonConverter>(NumberOfConverters);
 
             // Use a list for converters that implement CanConvert().
             converters.Add(new JsonConverterEnum(treatAsString: false));
-            // todo: converters.Add(new JsonConverterKeyValuePair());
+            converters.Add(new JsonKeyValuePairConverter());
 
             // We will likely add collection converters here in the future.
 
