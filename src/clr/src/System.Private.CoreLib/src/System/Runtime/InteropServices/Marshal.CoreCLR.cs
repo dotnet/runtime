@@ -687,7 +687,7 @@ namespace System.Runtime.InteropServices
         {
             object?[] objects = GetObjectsForNativeVariants(aSrcNativeVariant, cVars);
 
-            T[]? result = new T[objects.Length];
+            T[] result = new T[objects.Length];
             Array.Copy(objects, 0, result, 0, objects.Length);
 
             return result;
