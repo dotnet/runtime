@@ -3396,7 +3396,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			if (sig->ret->type != MONO_TYPE_VOID) {
 				*sp = *retval;
-                                sp++;
+				sp++;
 			}
 			ip += 3;
 			MINT_IN_BREAK;
@@ -6087,14 +6087,23 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 
 		MINT_IN_CASE(MINT_TRACE_EXIT) {
-			ip += 1;
+			// Set retval
+			i32 = READ32(ip + 1);
+			--sp;
+			if (i32 == -1)
+				;
+			else if (i32)
+				memcpy(frame->retval->data.p, sp->data.p, i32);
+			else
+				*frame->retval = *sp;
 
 			MonoProfilerCallContext *prof_ctx = g_alloca (sizeof (MonoProfilerCallContext));
 			prof_ctx->interp_frame = frame;
 			prof_ctx->method = imethod->method;
 
 			mono_trace_leave_method (imethod->method, prof_ctx);
-			MINT_IN_BREAK;
+			ip += 3;
+			goto exit_frame;
 		}
 
 		MINT_IN_CASE(MINT_LDARGA)
@@ -6674,6 +6683,20 @@ interp_frame_get_parent (MonoInterpFrameHandle frame)
 	InterpFrame *iframe = (InterpFrame*)frame;
 
 	return iframe->parent;
+}
+
+static gpointer
+interp_frame_get_res (MonoInterpFrameHandle frame)
+{
+	InterpFrame *iframe = (InterpFrame*)frame;
+	MonoMethodSignature *sig;
+
+	g_assert (iframe->imethod);
+	sig = mono_method_signature_internal (iframe->imethod->method);
+	if (sig->ret->type == MONO_TYPE_VOID)
+		return NULL;
+	else
+		return stackval_to_data_addr (sig->ret, iframe->retval);
 }
 
 static void

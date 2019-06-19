@@ -174,6 +174,8 @@ mono_trace_enter_method (MonoMethod *method, MonoProfilerCallContext *ctx)
 
 					printf ("this:[STRING:%p:%s], ", o, as);
 					g_free (as);
+				} else if (klass == mono_defaults.runtimetype_class) {
+					printf ("[this:[TYPE:%p:%s]], ", o, mono_type_full_name (((MonoReflectionType*)o)->type));
 				} else {
 					printf ("this:%p[%s.%s %s], ", o, m_class_get_name_space (klass), m_class_get_name (klass), o->vtable->domain->friendly_name);
 				}
@@ -244,6 +246,9 @@ mono_trace_enter_method (MonoMethod *method, MonoProfilerCallContext *ctx)
 					printf ("[INT32:%p:%d], ", o, *(gint32 *)data);
 				} else if (klass == mono_defaults.runtimetype_class) {
 					printf ("[TYPE:%s], ", mono_type_full_name (((MonoReflectionType*)o)->type));
+				} else if (m_class_get_rank (klass)) {
+					MonoArray *arr = (MonoArray*)o;
+					printf ("[%s.%s:[%d]%p], ", m_class_get_name_space (klass), m_class_get_name (klass), mono_array_length_internal (arr), o);
 				} else
 					printf ("[%s.%s:%p], ", m_class_get_name_space (klass), m_class_get_name (klass), o);
 			} else {
