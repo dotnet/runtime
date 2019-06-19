@@ -303,7 +303,7 @@ namespace System
             else if (obj is BStrWrapper)
             {
                 vt = VarEnum.VT_BSTR;
-                obj = (object)(((BStrWrapper)obj).WrappedObject);
+                obj = (object?)(((BStrWrapper)obj).WrappedObject);
             }
 
             if (obj != null)

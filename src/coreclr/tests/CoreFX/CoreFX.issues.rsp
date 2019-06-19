@@ -112,3 +112,5 @@
 -nomethod System.SpanTests.SpanTests.ZeroLengthLastIndexOfAny_ManyByte
 -nomethod System.SpanTests.SpanTests.ZeroLengthLastIndexOfAny_String_ManyByte
 
+# requires corefx test updates: https://github.com/dotnet/corefx/pull/38692
+-nomethod System.Tests.StringTests.CasingAsSpan_NullCulture_ThrowsArgumentNullException
