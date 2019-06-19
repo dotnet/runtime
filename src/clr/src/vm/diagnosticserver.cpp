@@ -131,7 +131,7 @@ bool DiagnosticServer::Initialize()
 
         // TODO: Should we handle/assert that (s_pIpc == nullptr)?
         s_pIpc = IpcStream::DiagnosticsIpc::Create(
-            "dotnetcore-diagnostic", ErrorCallback);
+            "dotnet-diagnostic", ErrorCallback);
 
         if (s_pIpc != nullptr)
         {
