@@ -228,7 +228,7 @@ namespace System
                 throw new InvalidOperationException(SR.InvalidOperation_SpanOverlappedOperation);
 
             if (culture == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+                culture = CultureInfo.CurrentCulture;
 
             // Assuming that changing case does not affect length
             if (destination.Length < source.Length)
@@ -237,7 +237,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 TextInfo.ToLowerAsciiInvariant(source, destination);
             else
-                culture!.TextInfo.ChangeCaseToLower(source, destination); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                culture.TextInfo.ChangeCaseToLower(source, destination);
             return source.Length;
         }
 
@@ -281,7 +281,7 @@ namespace System
                 throw new InvalidOperationException(SR.InvalidOperation_SpanOverlappedOperation);
 
             if (culture == null)
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.culture);
+                culture = CultureInfo.CurrentCulture;
 
             // Assuming that changing case does not affect length
             if (destination.Length < source.Length)
@@ -290,7 +290,7 @@ namespace System
             if (GlobalizationMode.Invariant)
                 TextInfo.ToUpperAsciiInvariant(source, destination);
             else
-                culture!.TextInfo.ChangeCaseToUpper(source, destination); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                culture.TextInfo.ChangeCaseToUpper(source, destination);
             return source.Length;
         }
 

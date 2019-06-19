@@ -7,16 +7,16 @@ namespace System.Runtime.InteropServices
     // Wrapper that is converted to a variant with VT_BSTR.
     public sealed class BStrWrapper
     {
-        public BStrWrapper(string value)
+        public BStrWrapper(string? value)
         {
             WrappedObject = value;
         }
 
-        public BStrWrapper(object value)
+        public BStrWrapper(object? value)
         {
-            WrappedObject = (string)value;
+            WrappedObject = (string?)value;
         }
 
-        public string WrappedObject { get; }
+        public string? WrappedObject { get; }
     }
 }
