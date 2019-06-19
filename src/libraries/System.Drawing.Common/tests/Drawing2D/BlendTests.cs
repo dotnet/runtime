@@ -32,7 +32,7 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Throws<OverflowException>(() => new Blend(-1));
         }
         
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotIntMaxValueArrayIndexSupported))]
         public void Ctor_LargeCount_ThrowsOutOfMemoryException()
         {
             Assert.Throws<OutOfMemoryException>(() => new Blend(int.MaxValue));
