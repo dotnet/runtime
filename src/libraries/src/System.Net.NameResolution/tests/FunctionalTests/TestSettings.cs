@@ -20,37 +20,27 @@ namespace System.Net.NameResolution.Tests
         // Timeout values in milliseconds.
         public const int PassingTestTimeout = 30_000;
 
-        public static Task<IPAddress> GetLocalIPAddress()
-        {
-            return ResolveHost(TestSettings.LocalHost, TestSettings.AddressFamily);
-        }
+        public static Task<IPAddress> GetLocalIPAddress() =>
+            ResolveHost(TestSettings.LocalHost, TestSettings.AddressFamily);
 
-        public static AddressFamily AddressFamily
-        {
-            get
-            {
-                // *nix machines are not always configured to resolve localhost to an IPv6 address.
-                return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                    AddressFamily.InterNetworkV6 :
-                    AddressFamily.InterNetwork;
-            }
-        }
+        public static AddressFamily AddressFamily =>
+            AddressFamily.InterNetwork;
 
         public static Task WhenAllOrAnyFailedWithTimeout(params Task[] tasks) => tasks.WhenAllOrAnyFailed(PassingTestTimeout);
 
         private static async Task<IPAddress> ResolveHost(string host, AddressFamily family)
         {
-            var hostEntry = await Dns.GetHostEntryAsync(host);
+            IPHostEntry hostEntry = await Dns.GetHostEntryAsync(host);
 
-            foreach (var address in hostEntry.AddressList)
+            foreach (IPAddress address in hostEntry.AddressList)
             {
                 if (address.AddressFamily == family)
                 {
                     return address;
                 }
             }
+
             return null;
         }
     }
 }
-
