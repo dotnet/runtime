@@ -413,10 +413,15 @@ namespace System.Net.Test.Common
     {
         public List<SettingsEntry> Entries;
 
-        public SettingsFrame(params SettingsEntry[] entries) :
-            base(entries.Length * 6, FrameType.Settings, FrameFlags.None, 0)
+        public SettingsFrame(FrameFlags flags, SettingsEntry[] entries) :
+            base(entries.Length * 6, FrameType.Settings, flags, 0)
         {
             Entries = new List<SettingsEntry>(entries);
+        }
+
+        public SettingsFrame(params SettingsEntry[] entries) :
+            this(FrameFlags.None, entries)
+        {
         }
 
         public static SettingsFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
@@ -433,7 +438,7 @@ namespace System.Net.Test.Common
                 entries.Add(new SettingsEntry { SettingId = id, Value = value });
             }
 
-            return new SettingsFrame(entries.ToArray());
+            return new SettingsFrame(header.Flags, entries.ToArray());
         }
 
         public override void WriteTo(Span<byte> buffer)
