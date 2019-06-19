@@ -92,6 +92,10 @@
 # Assert: https://github.com/dotnet/coreclr/issues/25050
 -nonamespace System.Data.Common.Tests
 
+# requires corefx test updates
+-nomethod System.Data.Tests.Common.DbConnectionStringBuilderTest.Add_Keyword_Invalid
+-nomethod System.Data.Tests.Common.DbConnectionStringBuilderTest.Indexer_Keyword_Invalid
+
 # requires corefx test updates https://github.com/dotnet/corefx/pull/38452
 -nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfAny_ManyInteger
 -nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfAny_ManyString
