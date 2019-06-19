@@ -16,7 +16,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     public partial struct EventRegistrationToken
     {
         private int _dummyPrimitive;
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken left, System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken right) { throw null; }
         public static bool operator !=(System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken left, System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken right) { throw null; }
@@ -24,9 +24,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
     public sealed partial class EventRegistrationTokenTable<T> where T : class
     {
         public EventRegistrationTokenTable() { }
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public T InvocationList { get { throw null; } set { } }
         public System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken AddEventHandler(T handler) { throw null; }
-        public static System.Runtime.InteropServices.WindowsRuntime.EventRegistrationTokenTable<T> GetOrCreateEventRegistrationTokenTable(ref System.Runtime.InteropServices.WindowsRuntime.EventRegistrationTokenTable<T> refEventTable) { throw null; }
+        public static System.Runtime.InteropServices.WindowsRuntime.EventRegistrationTokenTable<T> GetOrCreateEventRegistrationTokenTable(ref System.Runtime.InteropServices.WindowsRuntime.EventRegistrationTokenTable<T>? refEventTable) { throw null; }
         public void RemoveEventHandler(System.Runtime.InteropServices.WindowsRuntime.EventRegistrationToken token) { }
         public void RemoveEventHandler(T handler) { }
     }
