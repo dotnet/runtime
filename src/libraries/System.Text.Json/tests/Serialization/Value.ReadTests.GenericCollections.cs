@@ -716,18 +716,11 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, result.Count());
         }
 
-        [Fact(Skip = "Disabled until we write a converter for KeyValuePair")]
-        public static void ReadPrimitiveKeyValuePair()
+        [Fact]
+        public static void ReadPrimitiveKeyValuePairFail()
         {
-            KeyValuePair<string, int> input = JsonSerializer.Parse<KeyValuePair<string, int>>(@"{""Key"": 123}");
-
-            Assert.Equal(input.Key, "Key");
-            Assert.Equal(input.Value, 123);
-
-            input = JsonSerializer.Parse<KeyValuePair<string, int>>(@"{""Key"": ""Key"", ""Value"": 123}");
-
-            Assert.Equal(input.Key, "Key");
-            Assert.Equal(input.Value, 123);
+            // Invalid form: no Value
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<KeyValuePair<string, int>>(@"{""Key"": 123}"));
 
             // Invalid form: extra property
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<KeyValuePair<string, int>>(@"{""Key"": ""Key"", ""Value"": 123, ""Value2"": 456}"));
@@ -736,18 +729,9 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<KeyValuePair<string, int>>(@"{""Key"": ""Key"", ""Val"": 123"));
         }
 
-        [Fact(Skip = "Disabled until we write a converter for KeyValuePair")]
         public static void ReadListOfKeyValuePair()
         {
-            List<KeyValuePair<string, int>> input = JsonSerializer.Parse<List<KeyValuePair<string, int>>>(@"[{""123"":123},{""456"": 456}]");
-
-            Assert.Equal(2, input.Count);
-            Assert.Equal("123", input[0].Key);
-            Assert.Equal(123, input[0].Value);
-            Assert.Equal("456", input[1].Key);
-            Assert.Equal(456, input[1].Value);
-
-            input = JsonSerializer.Parse<List<KeyValuePair<string, int>>>(@"[{""Key"":""123"",""Value"": 123},{""Key"": ""456"",""Value"": 456}]");
+            List<KeyValuePair<string, int>> input = JsonSerializer.Parse<List<KeyValuePair<string, int>>>(@"""Key"":""Key"", ""Value"":[{""123"":123},{""456"": 456}]");
 
             Assert.Equal(2, input.Count);
             Assert.Equal("123", input[0].Key);
@@ -756,18 +740,9 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(456, input[1].Value);
         }
 
-        [Fact(Skip="Disabled until we write a converter for KeyValuePair")]
         public static void ReadKeyValuePairOfList()
         {
-            KeyValuePair<string, List<int>> input = JsonSerializer.Parse<KeyValuePair<string, List<int>>>(@"{""Key"":[1, 2, 3]}");
-
-            Assert.Equal("Key", input.Key);
-            Assert.Equal(3, input.Value.Count);
-            Assert.Equal(1, input.Value[0]);
-            Assert.Equal(2, input.Value[1]);
-            Assert.Equal(3, input.Value[2]);
-
-            input = JsonSerializer.Parse<KeyValuePair<string, List<int>>>(@"{""Key"": ""Key"", ""Value"": [1, 2, 3]}");
+            KeyValuePair<string, List<int>> input = JsonSerializer.Parse<KeyValuePair<string, List<int>>>(@"{""Key"":""Key"", Value:[1, 2, 3]}");
 
             Assert.Equal("Key", input.Key);
             Assert.Equal(3, input.Value.Count);
@@ -776,14 +751,28 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(3, input.Value[2]);
         }
 
-        [Fact(Skip = "Disabled until we write a converter for KeyValuePair")]
+        [Fact]
         public static void ReadKeyValuePairOfKeyValuePair()
         {
-            KeyValuePair<string, KeyValuePair<string, int>> input = JsonSerializer.Parse<KeyValuePair<string, KeyValuePair<string, int>>>(@"{""Key"":{""Key"":1}}");
+            KeyValuePair<string, KeyValuePair<int, int>> input = JsonSerializer.Parse<KeyValuePair<string, KeyValuePair<int, int>>>(@"{""Key"":""Key"", ""Value"":{""Key"":1, ""Value"":2}}");
 
             Assert.Equal("Key", input.Key);
-            Assert.Equal("Key", input.Value.Key);
-            Assert.Equal(1, input.Value.Value);
+            Assert.Equal(1, input.Value.Key);
+            Assert.Equal(2, input.Value.Value);
+        }
+
+        [Theory]
+        [InlineData(@"{""Key"":""Key"", ""Value"":{""Key"":1, ""Value"":2}}")]
+        [InlineData(@"{""Key"":""Key"", ""Value"":{""Value"":2, ""Key"":1}}")]
+        [InlineData(@"{""Value"":{""Key"":1, ""Value"":2}, ""Key"":""Key""}")]
+        [InlineData(@"{""Value"":{""Value"":2, ""Key"":1}, ""Key"":""Key""}")]
+        public static void ReadKeyValuePairOfKeyValuePair(string json)
+        {
+            KeyValuePair<string, KeyValuePair<int, int>> input = JsonSerializer.Parse<KeyValuePair<string, KeyValuePair<int, int>>>(json);
+
+            Assert.Equal("Key", input.Key);
+            Assert.Equal(1, input.Value.Key);
+            Assert.Equal(2, input.Value.Value);
         }
     }
 }

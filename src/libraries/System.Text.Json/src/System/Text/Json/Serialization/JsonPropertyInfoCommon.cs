@@ -211,29 +211,6 @@ namespace System.Text.Json
             return (IDictionary)createRangeDelegate.Invoke(CreateGenericIEnumerableFromDictionary(sourceDictionary));
         }
 
-        public override ValueType CreateKeyValuePairInstance(ref ReadStack state, IDictionary sourceDictionary, JsonSerializerOptions options)
-        {
-            Type enumerableType = state.Current.JsonPropertyInfo.RuntimePropertyType;
-
-            // Form {"MyKey": 1}.
-            if (sourceDictionary.Count == 1)
-            {
-                IDictionaryEnumerator enumerator = sourceDictionary.GetEnumerator();
-                enumerator.MoveNext();
-                return new KeyValuePair<string, TRuntimeProperty>((string)enumerator.Key, (TRuntimeProperty)enumerator.Value);
-            }
-            // Form {"Key": "MyKey", "Value": 1}.
-            else if (sourceDictionary.Count == 2 &&
-                sourceDictionary["Key"] is string key &&
-                sourceDictionary["Value"] is TRuntimeProperty value
-                )
-            {
-                return new KeyValuePair<string, TRuntimeProperty>(key, value);
-            }
-
-            throw ThrowHelper.GetJsonException_DeserializeUnableToConvertValue(enumerableType, state.JsonPath);
-        }
-
         private IEnumerable<TRuntimeProperty> CreateGenericTRuntimePropertyIEnumerable(IList sourceList)
         {
             foreach (object item in sourceList)

@@ -23,7 +23,7 @@ namespace System.Text.Json
             Debug.Assert(state.Current.ReturnValue != default || state.Current.TempDictionaryValues != default);
             Debug.Assert(state.Current.JsonClassInfo != default);
 
-            if (state.Current.IsProcessingDictionary || state.Current.IsProcessingIDictionaryConstructibleOrKeyValuePair)
+            if (state.Current.IsProcessingDictionary || state.Current.IsProcessingIDictionaryConstructible)
             {
                 if (ReferenceEquals(state.Current.JsonClassInfo.DataExtensionProperty, state.Current.JsonPropertyInfo))
                 {
@@ -56,9 +56,7 @@ namespace System.Text.Json
                         state.Current.IsDictionary ||
                         (state.Current.IsDictionaryProperty && state.Current.JsonPropertyInfo != null) ||
                         state.Current.IsIDictionaryConstructible ||
-                        (state.Current.IsIDictionaryConstructibleProperty && state.Current.JsonPropertyInfo != null) ||
-                        state.Current.IsKeyValuePair ||
-                        (state.Current.IsKeyValuePairProperty && state.Current.JsonPropertyInfo != null));
+                        (state.Current.IsIDictionaryConstructibleProperty && state.Current.JsonPropertyInfo != null));
 
                     state.Current.KeyName = keyName;
                 }

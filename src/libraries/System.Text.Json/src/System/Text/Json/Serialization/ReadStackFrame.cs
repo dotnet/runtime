@@ -45,15 +45,12 @@ namespace System.Text.Json
 
         public bool IsIDictionaryConstructible => JsonClassInfo.ClassType == ClassType.IDictionaryConstructible;
         public bool IsDictionary => JsonClassInfo.ClassType == ClassType.Dictionary;
-        public bool IsKeyValuePair => JsonClassInfo.ClassType == ClassType.KeyValuePair;
 
         public bool IsDictionaryProperty => JsonPropertyInfo != null &&
             !JsonPropertyInfo.IsPropertyPolicy &&
             JsonPropertyInfo.ClassType == ClassType.Dictionary;
         public bool IsIDictionaryConstructibleProperty => JsonPropertyInfo != null &&
             !JsonPropertyInfo.IsPropertyPolicy && (JsonPropertyInfo.ClassType == ClassType.IDictionaryConstructible);
-        public bool IsKeyValuePairProperty => JsonPropertyInfo != null &&
-            !JsonPropertyInfo.IsPropertyPolicy && (JsonPropertyInfo.ClassType == ClassType.KeyValuePair);
 
         public bool IsEnumerable => JsonClassInfo.ClassType == ClassType.Enumerable;
 
@@ -62,12 +59,9 @@ namespace System.Text.Json
             !JsonPropertyInfo.IsPropertyPolicy &&
             JsonPropertyInfo.ClassType == ClassType.Enumerable;
 
-        public bool IsProcessingEnumerableOrDictionary => IsProcessingEnumerable || IsProcessingDictionary || IsProcessingIDictionaryConstructibleOrKeyValuePair;
-        public bool IsProcessingIDictionaryConstructibleOrKeyValuePair => IsProcessingIDictionaryConstructible || IsProcessingKeyValuePair;
-
+        public bool IsProcessingEnumerableOrDictionary => IsProcessingEnumerable || IsProcessingDictionary || IsProcessingIDictionaryConstructible;
         public bool IsProcessingDictionary => IsDictionary || IsDictionaryProperty;
         public bool IsProcessingIDictionaryConstructible => IsIDictionaryConstructible || IsIDictionaryConstructibleProperty;
-        public bool IsProcessingKeyValuePair => IsKeyValuePair || IsKeyValuePairProperty;
         public bool IsProcessingEnumerable => IsEnumerable || IsEnumerableProperty;
 
         public bool IsProcessingValue
@@ -121,10 +115,6 @@ namespace System.Text.Json
                 JsonClassInfo.ClassType == ClassType.IDictionaryConstructible)
             {
                 JsonPropertyInfo = JsonClassInfo.GetPolicyProperty();
-            }
-            else if (JsonClassInfo.ClassType == ClassType.KeyValuePair)
-            {
-                JsonPropertyInfo = JsonClassInfo.GetPolicyPropertyOfKeyValuePair();
             }
         }
 

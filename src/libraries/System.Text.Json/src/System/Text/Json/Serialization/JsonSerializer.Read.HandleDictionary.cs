@@ -40,7 +40,7 @@ namespace System.Text.Json
 
                 JsonClassInfo classInfo = state.Current.JsonClassInfo;
 
-                if (state.Current.IsProcessingIDictionaryConstructibleOrKeyValuePair)
+                if (state.Current.IsProcessingIDictionaryConstructible)
                 {
                     state.Current.TempDictionaryValues = (IDictionary)classInfo.CreateObject();
                 }
@@ -58,7 +58,7 @@ namespace System.Text.Json
 
             state.Current.PropertyInitialized = true;
 
-            if (state.Current.IsProcessingIDictionaryConstructibleOrKeyValuePair)
+            if (state.Current.IsProcessingIDictionaryConstructible)
             {
                 JsonClassInfo dictionaryClassInfo = options.GetOrAddClass(jsonPropertyInfo.RuntimePropertyType);
                 state.Current.TempDictionaryValues = (IDictionary)dictionaryClassInfo.CreateObject();
@@ -99,52 +99,13 @@ namespace System.Text.Json
                 state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, converter.CreateFromDictionary(ref state, state.Current.TempDictionaryValues, options));
                 state.Current.ResetProperty();
             }
-            else if (state.Current.IsKeyValuePairProperty)
-            {
-                JsonClassInfo elementClassInfo = state.Current.JsonPropertyInfo.ElementClassInfo;
-
-                JsonPropertyInfo propertyInfo;
-                if (elementClassInfo.ClassType == ClassType.KeyValuePair)
-                {
-                    propertyInfo = elementClassInfo.GetPolicyPropertyOfKeyValuePair();
-                }
-                else
-                {
-                    propertyInfo = elementClassInfo.GetPolicyProperty();
-                }
-
-                Debug.Assert(state.Current.TempDictionaryValues != null);
-                state.Current.JsonPropertyInfo.SetValueAsObject(
-                    state.Current.ReturnValue,
-                    propertyInfo.CreateKeyValuePairInstance(ref state, state.Current.TempDictionaryValues, options));
-                state.Current.ResetProperty();
-            }
             else
             {
                 object value;
                 if (state.Current.TempDictionaryValues != null)
                 {
-                    if (state.Current.IsKeyValuePair)
-                    {
-                        JsonClassInfo elementClassInfo = state.Current.JsonClassInfo.ElementClassInfo;
-
-                        JsonPropertyInfo propertyInfo;
-                        if (elementClassInfo.ClassType == ClassType.KeyValuePair)
-                        {
-                            propertyInfo = elementClassInfo.GetPolicyPropertyOfKeyValuePair();
-                        }
-                        else
-                        {
-                            propertyInfo = elementClassInfo.GetPolicyProperty();
-                        }
-
-                        value = propertyInfo.CreateKeyValuePairInstance(ref state, state.Current.TempDictionaryValues, options);
-                    }
-                    else
-                    {
-                        JsonDictionaryConverter converter = state.Current.JsonPropertyInfo.DictionaryConverter;
-                        value = converter.CreateFromDictionary(ref state, state.Current.TempDictionaryValues, options);
-                    }
+                    JsonDictionaryConverter converter = state.Current.JsonPropertyInfo.DictionaryConverter;
+                    value = converter.CreateFromDictionary(ref state, state.Current.TempDictionaryValues, options);
                 }
                 else
                 {
