@@ -12,7 +12,7 @@ namespace System.Text.Json
     /// <summary>
     /// Provides options to be used with <see cref="JsonSerializer"/>.
     /// </summary>
-    public sealed class JsonSerializerOptions
+    public sealed partial class JsonSerializerOptions
     {
         internal const int BufferSizeDefault = 16 * 1024;
 
@@ -37,7 +37,10 @@ namespace System.Text.Json
         /// <summary>
         /// Constructs a new <see cref="JsonSerializerOptions"/> instance.
         /// </summary>
-        public JsonSerializerOptions() { }
+        public JsonSerializerOptions()
+        {
+            Converters = new ConverterList(this);
+        }
 
         /// <summary>
         /// Defines whether an extra comma at the end of a list of JSON values in an object or array
@@ -278,7 +281,7 @@ namespace System.Text.Json
         {
             _haveTypesBeenCreated = true;
 
-            // todo: for performance, consider obtaining the type from s_defaultOptions and then cloning.
+            // todo: for performance and reduced instances, consider using the converters and JsonClassInfo from s_defaultOptions by cloning (or reference directly if no changes).
             if (!_classes.TryGetValue(classType, out JsonClassInfo result))
             {
                 result = _classes.GetOrAdd(classType, new JsonClassInfo(classType, this));
@@ -350,7 +353,7 @@ namespace System.Text.Json
         }
 
 
-        private void VerifyMutable()
+        internal void VerifyMutable()
         {
             // The default options are hidden and thus should be immutable.
             Debug.Assert(this != s_defaultOptions);

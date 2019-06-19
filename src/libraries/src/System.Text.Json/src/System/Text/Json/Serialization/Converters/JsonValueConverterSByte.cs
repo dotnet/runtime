@@ -2,32 +2,29 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text.Json.Serialization.Policies;
-
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonValueConverterSByte : JsonValueConverter<sbyte>
+    internal sealed class JsonConverterSByte : JsonConverter<sbyte>
     {
-        public override bool TryRead(Type valueType, ref Utf8JsonReader reader, out sbyte value)
+        public override sbyte Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.Number ||
                 !reader.TryGetInt32(out int rawValue) ||
                 !JsonHelpers.IsInRangeInclusive(rawValue, sbyte.MinValue, sbyte.MaxValue))
             {
-                value = default;
-                return false;
+                ThrowHelper.ThrowJsonException();
+                return default;
             }
 
-            value = (sbyte)reader.GetInt32();
-            return true;
+            return (sbyte)reader.GetInt32();
         }
 
-        public override void Write(sbyte value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, sbyte value, JsonSerializerOptions options)
         {
             writer.WriteNumberValue(value);
         }
 
-        public override void Write(JsonEncodedText propertyName, sbyte value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, sbyte value, JsonEncodedText propertyName, JsonSerializerOptions options)
         {
             writer.WriteNumber(propertyName, value);
         }

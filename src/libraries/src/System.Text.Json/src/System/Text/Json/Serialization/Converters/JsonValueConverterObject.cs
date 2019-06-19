@@ -2,33 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text.Json.Serialization.Policies;
-
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonValueConverterObject : JsonValueConverter<object>
+    internal sealed class JsonConverterObject : JsonConverter<object>
     {
-        public override bool TryRead(Type valueType, ref Utf8JsonReader reader, out object value)
+        public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (JsonDocument.TryParseValue(ref reader, out JsonDocument document))
+            using (JsonDocument document = JsonDocument.ParseValue(ref reader))
             {
-                value = document.RootElement.Clone();
-                document.Dispose();
-                return true;
-            }
-            else
-            {
-                value = default;
-                return false;
+                return document.RootElement.Clone();
             }
         }
 
-        public override void Write(object value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
         {
             throw new InvalidOperationException();
         }
 
-        public override void Write(JsonEncodedText propertyName, object value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, object value, JsonEncodedText propertyName, JsonSerializerOptions options)
         {
             throw new InvalidOperationException();
         }

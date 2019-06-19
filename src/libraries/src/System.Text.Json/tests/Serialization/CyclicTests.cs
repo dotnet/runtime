@@ -15,8 +15,8 @@ namespace System.Text.Json.Serialization.Tests
             TestClassWithCycle obj = new TestClassWithCycle();
             obj.Parent = obj;
 
-            // We don't allow graph cycles; we throw InvalidOperation instead of an unrecoverable StackOverflow.
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.ToString(obj));
+            // We don't allow graph cycles; we throw JsonException instead of an unrecoverable StackOverflow.
+            Assert.Throws<JsonException>(() => JsonSerializer.ToString(obj));
         }
 
         [Fact]

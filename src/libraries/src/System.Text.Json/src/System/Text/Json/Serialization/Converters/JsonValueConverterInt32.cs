@@ -2,29 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text.Json.Serialization.Policies;
-
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonValueConverterInt32 : JsonValueConverter<int>
+    internal sealed class JsonConverterInt32 : JsonConverter<int>
     {
-        public override bool TryRead(Type valueType, ref Utf8JsonReader reader, out int value)
+        public override int Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.Number)
             {
-                value = default;
-                return false;
+                ThrowHelper.ThrowJsonException();
             }
 
-            return reader.TryGetInt32(out value);
+            return reader.GetInt32();
         }
 
-        public override void Write(int value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
         {
             writer.WriteNumberValue(value);
         }
 
-        public override void Write(JsonEncodedText propertyName, int value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, int value, JsonEncodedText propertyName, JsonSerializerOptions options)
         {
             writer.WriteNumber(propertyName, value);
         }

@@ -8,11 +8,41 @@ namespace System.Text.Json.Serialization.Tests
 {
     public static partial class OptionsTests
     {
+        private class TestConverter : JsonConverter<bool>
+        {
+            public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
+
+            public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
         [Fact]
         public static void SetOptionsFail()
         {
             var options = new JsonSerializerOptions();
 
+            // Verify these do not throw.
+            options.Converters.Clear();
+            TestConverter tc = new TestConverter();
+            options.Converters.Add(tc);
+            options.Converters.Insert(0, new TestConverter());
+            options.Converters.Remove(tc);
+            options.Converters.RemoveAt(0);
+
+            // Add one item for later.
+            options.Converters.Add(tc);
+
+            // Verify converter collection throws on null adds.
+            Assert.Throws<ArgumentNullException>(() => options.Converters.Add(null));
+            Assert.Throws<ArgumentNullException>(() => options.Converters.Insert(0, null));
+            Assert.Throws<ArgumentNullException>(() => options.Converters[0] = null);
+
+            // Perform serialization.
             JsonSerializer.Parse<int>("1", options);
 
             // Verify defaults and ensure getters do not throw.
@@ -26,6 +56,15 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(JsonCommentHandling.Disallow, options.ReadCommentHandling);
             Assert.False(options.WriteIndented);
 
+            Assert.Equal(tc, options.Converters[0]);
+            Assert.True(options.Converters.Contains(tc));
+            options.Converters.CopyTo(new JsonConverter[1] { null }, 0);
+            Assert.Equal(1, options.Converters.Count);
+            Assert.False(options.Converters.Equals(tc));
+            Assert.NotNull(options.Converters.GetEnumerator());
+            Assert.Equal(0, options.Converters.IndexOf(tc));
+            Assert.False(options.Converters.IsReadOnly);
+
             // Setters should always throw; we don't check to see if the value is the same or not.
             Assert.Throws<InvalidOperationException>(() => options.AllowTrailingCommas = options.AllowTrailingCommas);
             Assert.Throws<InvalidOperationException>(() => options.DefaultBufferSize = options.DefaultBufferSize);
@@ -36,6 +75,13 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => options.PropertyNamingPolicy = options.PropertyNamingPolicy);
             Assert.Throws<InvalidOperationException>(() => options.ReadCommentHandling = options.ReadCommentHandling);
             Assert.Throws<InvalidOperationException>(() => options.WriteIndented = options.WriteIndented);
+
+            Assert.Throws<InvalidOperationException>(() => options.Converters[0] = tc);
+            Assert.Throws<InvalidOperationException>(() => options.Converters.Clear());
+            Assert.Throws<InvalidOperationException>(() => options.Converters.Add(tc));
+            Assert.Throws<InvalidOperationException>(() => options.Converters.Insert(0, new TestConverter()));
+            Assert.Throws<InvalidOperationException>(() => options.Converters.Remove(tc));
+            Assert.Throws<InvalidOperationException>(() => options.Converters.RemoveAt(0));
         }
 
         [Fact]

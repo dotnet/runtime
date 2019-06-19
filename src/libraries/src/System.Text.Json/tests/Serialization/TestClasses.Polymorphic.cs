@@ -81,6 +81,23 @@ namespace System.Text.Json.Serialization.Tests
         }
     }
 
+    public class Employee : Person, ITestClass
+    {
+        public string OfficeNumber { get; set; }
+
+        public override void Initialize()
+        {
+            OfficeNumber = "101a";
+            base.Initialize();
+        }
+
+        public override void Verify()
+        {
+            Assert.Equal("101a", OfficeNumber);
+            base.Verify();
+        }
+    }
+
     public class UsaCustomer : Customer, ITestClass
     {
         public UsaCustomer() : base()

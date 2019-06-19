@@ -399,7 +399,7 @@ namespace System.Text.Json
                 return value;
             }
 
-            throw new FormatException();
+            throw ThrowHelper.GetFormatException();
         }
 
         /// <summary>
@@ -446,7 +446,7 @@ namespace System.Text.Json
                 return value;
             }
 
-            throw new FormatException();
+            throw ThrowHelper.GetFormatException();
         }
 
         /// <summary>
@@ -498,7 +498,7 @@ namespace System.Text.Json
                 return value;
             }
 
-            throw new FormatException();
+            throw ThrowHelper.GetFormatException();
         }
 
         /// <summary>
@@ -548,7 +548,7 @@ namespace System.Text.Json
                 return value;
             }
 
-            throw new FormatException();
+            throw ThrowHelper.GetFormatException();
         }
 
         /// <summary>
@@ -600,7 +600,7 @@ namespace System.Text.Json
                 return value;
             }
 
-            throw new FormatException();
+            throw ThrowHelper.GetFormatException();
         }
 
         /// <summary>
@@ -667,7 +667,7 @@ namespace System.Text.Json
                 return value;
             }
 
-            throw new FormatException();
+            throw ThrowHelper.GetFormatException();
         }
 
         /// <summary>
@@ -734,7 +734,7 @@ namespace System.Text.Json
                 return value;
             }
 
-            throw new FormatException();
+            throw ThrowHelper.GetFormatException();
         }
 
         /// <summary>
@@ -786,7 +786,7 @@ namespace System.Text.Json
                 return value;
             }
 
-            throw new FormatException();
+            throw ThrowHelper.GetFormatException();
         }
 
         /// <summary>
@@ -837,7 +837,7 @@ namespace System.Text.Json
                 return value;
             }
 
-            throw new FormatException();
+            throw ThrowHelper.GetFormatException();
         }
 
         /// <summary>
@@ -888,7 +888,7 @@ namespace System.Text.Json
                 return value;
             }
 
-            throw new FormatException();
+            throw ThrowHelper.GetFormatException();
         }
 
         /// <summary>
@@ -939,7 +939,7 @@ namespace System.Text.Json
                 return value;
             }
 
-            throw new FormatException();
+            throw ThrowHelper.GetFormatException();
         }
 
         internal string GetPropertyName()

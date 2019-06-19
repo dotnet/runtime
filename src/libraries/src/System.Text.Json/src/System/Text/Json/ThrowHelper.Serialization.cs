@@ -29,16 +29,16 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType, in Utf8JsonReader reader, string path)
+        public static void ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType, in Utf8JsonReader reader, string path, Exception innerException = null)
         {
-            ThowJsonException(SR.Format(SR.DeserializeUnableToConvertValue, propertyType), in reader, path);
+            ThrowJsonException(SR.Format(SR.DeserializeUnableToConvertValue, propertyType), in reader, path, innerException);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType, string path)
+        public static void ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType, string path, Exception innerException = null)
         {
             string message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType) + $" Path: {path}.";
-            throw new JsonException(message, path, null, null);
+            throw new JsonException(message, path, null, null, innerException);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -51,7 +51,67 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_DeserializeCannotBeNull(in Utf8JsonReader reader, string path)
         {
-            ThowJsonException(SR.DeserializeCannotBeNull, in reader, path);
+            ThrowJsonException(SR.DeserializeCannotBeNull, in reader, path);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_SerializationConverterRead(in Utf8JsonReader reader, string path, string converter)
+        {
+            ThrowJsonException(SR.Format(SR.SerializationConverterRead, converter), reader, path);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_SerializationConverterWrite(string path, string converter)
+        {
+            ThrowJsonException(SR.Format(SR.SerializationConverterWrite, converter), path);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowFormatException()
+        {
+            throw ThrowHelper.GetFormatException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException()
+        {
+            throw new JsonException();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowFormatException(string message)
+        {
+            throw new FormatException(message);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_SerializationConverterNotCompatible(Type converterType, Type type)
+        {
+            throw new InvalidOperationException(SR.Format(SR.SerializationConverterNotCompatible, converterType, type));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_SerializationConverterOnAttributeInvalid(Type classType, PropertyInfo propertyInfo)
+        {
+            string location = classType.ToString();
+            if (propertyInfo != null)
+            {
+                location += $".{propertyInfo.Name}";
+            }
+
+            throw new InvalidOperationException(SR.Format(SR.SerializationConverterOnAttributeInvalid, location));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(Type classType, PropertyInfo propertyInfo)
+        {
+            string location = classType.ToString();
+            if (propertyInfo != null)
+            {
+                location += $".{propertyInfo.ToString()}";
+            }
+
+            throw new InvalidOperationException(SR.Format(SR.SerializationConverterOnAttributeNotCompatible, location));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -79,24 +139,32 @@ namespace System.Text.Json
 
         public static void ThrowJsonException_DeserializeDuplicateKey(string key, in Utf8JsonReader reader, string path)
         {
-            ThowJsonException(SR.Format(SR.DeserializeDuplicateKey, key), in reader, path);
+            ThrowJsonException(SR.Format(SR.DeserializeDuplicateKey, key), in reader, path);
         }
 
-        private static void ThowJsonException(string message, in Utf8JsonReader reader, string path)
+        // todo: since we now catch and re-throw JsonException and add Path etc, we can clean up callers to this to not pass the reader and path.
+        private static void ThrowJsonException(string message, in Utf8JsonReader reader, string path, Exception innerException = null)
         {
             long lineNumber = reader.CurrentState._lineNumber;
             long bytePositionInLine = reader.CurrentState._bytePositionInLine;
 
             message += $" Path: {path} | LineNumber: {lineNumber} | BytePositionInLine: {bytePositionInLine}.";
-            throw new JsonException(message, path, lineNumber, bytePositionInLine);
+            throw new JsonException(message, path, lineNumber, bytePositionInLine, innerException);
+        }
+
+        private static void ThrowJsonException(string message, string path, Exception innerException = null)
+        {
+            message += $" Path: {path}.";
+            throw new JsonException(message, path, null, null, innerException);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ReThrowWithPath(JsonException exception, string path)
+        public static void ReThrowWithPath(in ReadStack readStack, JsonReaderException ex)
         {
-            Debug.Assert(exception.Path == null);
+            Debug.Assert(ex.Path == null);
 
-            string message = exception.Message;
+            string path = readStack.JsonPath;
+            string message = ex.Message;
 
             // Insert the "Path" portion before "LineNumber" and "BytePositionInLine".
             int iPos = message.LastIndexOf(" LineNumber: ", StringComparison.InvariantCulture);
@@ -109,14 +177,80 @@ namespace System.Text.Json
                 message += $" Path: {path}.";
             }
 
-            throw new JsonException(message, path, exception.LineNumber, exception.BytePositionInLine, exception);
+            throw new JsonException(message, path, ex.LineNumber, ex.BytePositionInLine, ex);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowInvalidOperationException_SerializationDuplicateAttribute(Type attribute)
+        public static void ReThrowWithPath(in ReadStack readStack, in Utf8JsonReader reader, Exception ex)
         {
-            throw new InvalidOperationException(SR.Format(SR.SerializationDuplicateAttribute, attribute));
+            JsonException jsonException = new JsonException(null, ex);
+            AddExceptionInformation(readStack, reader, jsonException);
+            throw jsonException;
         }
+
+        public static void AddExceptionInformation(in ReadStack readStack, in Utf8JsonReader reader, JsonException ex)
+        {
+            long lineNumber = reader.CurrentState._lineNumber;
+            ex.LineNumber = lineNumber;
+
+            long bytePositionInLine = reader.CurrentState._bytePositionInLine;
+            ex.BytePositionInLine = bytePositionInLine;
+
+            string path = readStack.JsonPath;
+            ex.Path = path;
+
+            // If the message is empty, use a default message with Path, LineNumber and BytePositionInLine.
+            if (string.IsNullOrEmpty(ex.Message))
+            {
+                Type propertyType = readStack.Current.JsonPropertyInfo?.RuntimePropertyType;
+                if (propertyType == null)
+                {
+                    propertyType = readStack.Current.JsonClassInfo.Type;
+                }
+
+                ex.SetMessage($"{SR.Format(SR.DeserializeUnableToConvertValue, propertyType)} Path: {path} | LineNumber: {lineNumber} | BytePositionInLine: {bytePositionInLine}.");
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ReThrowWithPath(in WriteStack writeStack, Exception ex)
+        {
+            JsonException jsonException = new JsonException(null, ex);
+            AddExceptionInformation(writeStack, jsonException);
+            throw jsonException;
+        }
+
+        public static void AddExceptionInformation(in WriteStack writeStack, JsonException ex)
+        {
+            string path = writeStack.PropertyPath;
+            ex.Path = path;
+
+            // If the message is empty, use a default message with the Path.
+            if (string.IsNullOrEmpty(ex.Message))
+            {
+                ex.SetMessage(SR.Format(SR.SerializeUnableToSerialize, path));
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_SerializationDuplicateAttribute(Type attribute, Type classType, PropertyInfo propertyInfo)
+        {
+            string location = classType.ToString();
+            if (propertyInfo != null)
+            {
+                location += $".{propertyInfo.Name}";
+            }
+
+            throw new InvalidOperationException(SR.Format(SR.SerializationDuplicateAttribute, attribute, location));
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type classType, Type attribute)
+        {
+            throw new InvalidOperationException(SR.Format(SR.SerializationDuplicateTypeAttribute, classType, attribute));
+        }
+
+        
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowInvalidOperationException_SerializationDataExtensionPropertyInvalid(JsonClassInfo jsonClassInfo, JsonPropertyInfo jsonPropertyInfo)

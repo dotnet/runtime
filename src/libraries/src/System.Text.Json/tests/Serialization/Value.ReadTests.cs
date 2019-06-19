@@ -95,7 +95,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ulong))]
         public static void PrimitivesShouldFailWithArrayOrObjectAssignment(Type primitiveType)
         {
-            // This test lines up with the built in JsonValueConverters
+            // This test lines up with the built in JsonConverters
             Assert.Throws<JsonException>(() => JsonSerializer.Parse(@"[]", primitiveType));
             Assert.Throws<JsonException>(() => JsonSerializer.Parse(@"{}", primitiveType));
         }
