@@ -78,7 +78,7 @@ namespace System.IO
                 s += Environment.NewLine + SR.Format(SR.IO_FileName_Name, FileName);
 
             if (InnerException != null)
-                s = s + " ---> " + InnerException.ToString();
+                s = s + Environment.NewLine + InnerExceptionPrefix + InnerException.ToString();
 
             if (StackTrace != null)
                 s += Environment.NewLine + StackTrace;

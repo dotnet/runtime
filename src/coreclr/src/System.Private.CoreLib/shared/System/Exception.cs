@@ -11,6 +11,8 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class Exception : ISerializable
     {
+        internal protected const string InnerExceptionPrefix = " ---> ";
+
         public Exception()
         {
             _HResult = HResults.COR_E_EXCEPTION;
@@ -151,7 +153,7 @@ namespace System
 
             if (_innerException != null)
             {
-                s = s + " ---> " + _innerException.ToString() + Environment.NewLine +
+                s = s + Environment.NewLine + InnerExceptionPrefix + _innerException.ToString() + Environment.NewLine +
                 "   " + SR.Exception_EndOfInnerExceptionStack;
             }
 

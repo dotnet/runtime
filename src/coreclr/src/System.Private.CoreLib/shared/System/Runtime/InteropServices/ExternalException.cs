@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices
             Exception? innerException = InnerException;
             if (innerException != null)
             {
-                s = s + " ---> " + innerException.ToString();
+                s = s + Environment.NewLine + InnerExceptionPrefix + innerException.ToString();
             }
 
             if (StackTrace != null)
