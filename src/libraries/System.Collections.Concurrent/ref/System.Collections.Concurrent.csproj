@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{772CB0A7-3D45-4D3A-B975-671A1937C761}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Collections.Concurrent.cs" />
