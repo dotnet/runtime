@@ -57,10 +57,6 @@ TypesMustExist : Type 'System.Security.Cryptography.DSAOpenSsl' does not exist i
 TypesMustExist : Type 'System.Security.Cryptography.ECDsaOpenSsl' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.RSAOpenSsl' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.SafeEvpPKeyHandle' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Security.Cryptography.Pkcs:
-MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.Certificates.set(System.Security.Cryptography.X509Certificates.X509Certificate2Collection)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.SignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.UnsignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security.Permissions:
 MembersMustExist : Member 'System.Security.Permissions.KeyContainerPermissionAccessEntryCollection..ctor()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Permissions.KeyContainerPermissionAccessEntryCollection.CopyTo(System.Array, System.Int32)' does not exist in the implementation but it does exist in the contract.
@@ -103,4 +99,4 @@ MembersMustExist : Member 'System.Security.Principal.WellKnownSidType System.Sec
 Compat issues with assembly System.ServiceProcess.ServiceController:
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.ServiceProcess.SessionChangeDescription' in the contract but not the implementation.
 TypeCannotChangeClassification : Type 'System.ServiceProcess.SessionChangeDescription' is marked as readonly in the contract so it must also be marked readonly in the implementation.
-Total Issues: 95
+Total Issues: 92

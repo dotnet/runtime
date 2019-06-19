@@ -95,10 +95,6 @@ TypesMustExist : Type 'System.Security.Cryptography.DSAOpenSsl' does not exist i
 TypesMustExist : Type 'System.Security.Cryptography.ECDsaOpenSsl' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.RSAOpenSsl' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Security.Cryptography.SafeEvpPKeyHandle' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Security.Cryptography.Pkcs:
-MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.Certificates.set(System.Security.Cryptography.X509Certificates.X509Certificate2Collection)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.SignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Security.Cryptography.Pkcs.CmsSigner.UnsignedAttributes.set(System.Security.Cryptography.CryptographicAttributeObjectCollection)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.ComponentModel.TypeConverter:
 CannotSealType : Type 'System.ComponentModel.BaseNumberConverter' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
 MembersMustExist : Member 'System.ComponentModel.BaseNumberConverter..ctor()' does not exist in the implementation but it does exist in the contract.
@@ -141,4 +137,4 @@ CannotSealType : Type 'System.Linq.EnumerableExecutor' is effectively (has a pri
 MembersMustExist : Member 'System.Linq.EnumerableExecutor..ctor()' does not exist in the implementation but it does exist in the contract.
 CannotSealType : Type 'System.Linq.EnumerableQuery' is effectively (has a private constructor) sealed in the implementation but not sealed in the contract.
 MembersMustExist : Member 'System.Linq.EnumerableQuery..ctor()' does not exist in the implementation but it does exist in the contract.
-Total Issues: 124
+Total Issues: 121
