@@ -83,7 +83,7 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 | [System.Reflection.Metadata](https://github.com/dotnet/corefx/labels/area-System.Reflection.Metadata) | [@tmat](https://github.com/tmat), [@nguerrera](https://github.com/nguerrera) |  |
 | [System.Resources](https://github.com/dotnet/corefx/labels/area-System.Resources)             | **[@krwq](https://github.com/krwq)**, [@tarekgh](https://github.com/tarekgh) | |
 | [System.Runtime](https://github.com/dotnet/corefx/labels/area-System.Runtime)                 | **[@bartonjs](https://github.com/bartonjs)**, [@joperezr](https://github.com/joperezr) | Included:<ul><li>System.Runtime.Serialization.Formatters</li><li>System.Runtime.InteropServices.RuntimeInfo</li><li>System.Array</li></ul>Excluded:<ul><li>Path -> System.IO</li><li>StopWatch -> System.Diagnostics</li><li>Uri -> System.Net</li><li>WebUtility -> System.Net</li></ul> |
-| [System.Runtime.Caching](https://github.com/dotnet/corefx/labels/area-System.Runtime.Caching) | [StephenMolloy](https://github.com/StephenMolloy), [@HongGit](https://github.com/HongGit) |  |
+| [System.Runtime.Caching](https://github.com/dotnet/corefx/labels/area-System.Runtime.Caching) | [@StephenMolloy](https://github.com/StephenMolloy), [@HongGit](https://github.com/HongGit) |  |
 | [System.Runtime.CompilerServices](https://github.com/dotnet/corefx/labels/area-System.Runtime.CompilerServices) | [@Anipik](https://github.com/Anipik) |  |
 | [System.Runtime.Extensions](https://github.com/dotnet/corefx/labels/area-System.Runtime.Extensions) |  [@Anipik](https://github.com/Anipik) | |
 | [System.Runtime.InteropServices](https://github.com/dotnet/corefx/labels/area-System.Runtime.InteropServices) | [@AaronRobinsonMSFT](https://github.com/AaronRobinsonMSFT), [@jkoritzinsky](https://github.com/jkoritzinsky) | Excluded:<ul><li>System.Runtime.InteropServices.RuntimeInfo</li></ul> |
@@ -99,7 +99,7 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 | [System.Threading](https://github.com/dotnet/corefx/labels/area-System.Threading)             | **[@kouvel](https://github.com/kouvel)** |  |
 | [System.Threading.Channels](https://github.com/dotnet/corefx/labels/area-System.Threading.Channels) | **[@tarekgh](https://github.com/tarekgh)**, [@stephentoub](https://github.com/stephentoub) |  |
 | [System.Threading.Tasks](https://github.com/dotnet/corefx/labels/area-System.Threading.Tasks) | **[@tarekgh](https://github.com/tarekgh)**, [@stephentoub](https://github.com/stephentoub) |  |
-| [System.Transactions](https://github.com/dotnet/corefx/labels/area-System.Transactions)       | [@jimcarley](https://github.com/jimcarley), [@qizhanMS](https://github.com/qizhanMS) |  |
+| [System.Transactions](https://github.com/dotnet/corefx/labels/area-System.Transactions)       | [@dasetser](https://github.com/dasetser), [@HongGit](https://github.com/HongGit) |  |
 | [System.Xml](https://github.com/dotnet/corefx/labels/area-System.Xml)                         | **[@buyaa-n](https://github.com/buyaa-n)**, [@krwq](https://github.com/krwq) |  |
 | **Microsoft contract assemblies** | | |
 | [Microsoft.CSharp](https://github.com/dotnet/corefx/labels/area-Microsoft.CSharp)             | [@cston](https://github.com/cston), [@333fred](https://github.com/333fred) | Archived component - limited churn/contributions (see [#33170](https://github.com/dotnet/corefx/issues/33170)) |
