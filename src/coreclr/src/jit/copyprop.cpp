@@ -180,6 +180,17 @@ void Compiler::optCopyProp(BasicBlock* block, GenTreeStmt* stmt, GenTree* tree, 
             continue;
         }
 
+        // Do not copy propagate if the old and new lclVar have different 'doNotEnregister' settings.
+        // This is primarily to avoid copy propagating to IND(ADDR(LCL_VAR)) where the replacement lclVar
+        // is not marked 'lvDoNotEnregister'.
+        // However, in addition, it may not be profitable to propagate a 'doNotEnregister' lclVar to an
+        // existing use of an enregisterable lclVar.
+
+        if (lvaTable[lclNum].lvDoNotEnregister != lvaTable[newLclNum].lvDoNotEnregister)
+        {
+            continue;
+        }
+
         if (op->gtFlags & GTF_VAR_CAST)
         {
             continue;
