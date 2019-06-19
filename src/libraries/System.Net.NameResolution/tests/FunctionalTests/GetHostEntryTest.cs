@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Net.NameResolution.Tests
 {
@@ -16,7 +18,6 @@ namespace System.Net.NameResolution.Tests
         public async Task Dns_GetHostEntryAsync_IPAddress_Ok()
         {
             IPAddress localIPAddress = await TestSettings.GetLocalIPAddress();
-
             await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(localIPAddress));
         }
 
@@ -24,16 +25,46 @@ namespace System.Net.NameResolution.Tests
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(32797)]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
-        public Task Dns_GetHostEntry_HostString_Ok(string hostName) => TestGetHostEntryAsync(() => Task.FromResult(Dns.GetHostEntry(hostName)));
+        public async Task Dns_GetHostEntry_HostString_Ok(string hostName)
+        {
+            try
+            {
+                await TestGetHostEntryAsync(() => Task.FromResult(Dns.GetHostEntry(hostName)));
+            }
+            catch (Exception ex) when (hostName == "")
+            {
+                // Additional data for debugging sporadic CI failures #24355
+                string actualHostName = Dns.GetHostName();
+                bool getHostEntrySuccess = false;
+                string etcHosts = "";
+                try
+                {
+                    Dns.GetHostEntry(actualHostName);
+                    getHostEntrySuccess = true;
+                    if (Environment.OSVersion.Platform != PlatformID.Win32NT)
+                    {
+                        etcHosts = File.ReadAllText("/etc/hosts");
+                    }
+                }
+                catch { }
+
+                throw new Exception(
+                    $"Failed for empty hostname.{Environment.NewLine}" +
+                    $"Dns.GetHostName() == {actualHostName}{Environment.NewLine}" +
+                    $"{nameof(getHostEntrySuccess)}=={getHostEntrySuccess}{Environment.NewLine}" +
+                    $"/etc/host =={Environment.NewLine}{etcHosts}",
+                    ex);
+            }
+        }
 
         [ActiveIssue(37362, TestPlatforms.OSX)]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] // [ActiveIssue(32797)]
         [InlineData("")]
         [InlineData(TestSettings.LocalHost)]
-        public Task Dns_GetHostEntryAsync_HostString_Ok(string hostName) => TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(hostName));
+        public async Task Dns_GetHostEntryAsync_HostString_Ok(string hostName) => await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(hostName));
 
         [Fact]
-        public Task Dns_GetHostEntryAsync_IPString_Ok() => TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(TestSettings.LocalIPString));
+        public async Task Dns_GetHostEntryAsync_IPString_Ok() => await TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(TestSettings.LocalIPString));
 
         private static async Task TestGetHostEntryAsync(Func<Task<IPHostEntry>> getHostEntryFunc)
         {
@@ -47,19 +78,14 @@ namespace System.Net.NameResolution.Tests
 
             Assert.NotNull(list1);
             Assert.NotNull(list2);
-
-            Assert.Equal(list1.Length, list2.Length);
-            for (var i = 0; i < list1.Length; i++)
-            {
-                Assert.Equal(list1[i], list2[i]);
-            }
+            Assert.Equal<IPAddress>(list1, list2);
         }
 
         [Fact]
-        public Task Dns_GetHostEntryAsync_NullStringHost_Fail() => Assert.ThrowsAsync<ArgumentNullException>(() => Dns.GetHostEntryAsync((string)null));
+        public async Task Dns_GetHostEntryAsync_NullStringHost_Fail() => await Assert.ThrowsAsync<ArgumentNullException>(() => Dns.GetHostEntryAsync((string)null));
 
         [Fact]
-        public Task Dns_GetHostEntryAsync_NullIPAddressHost_Fail() => Assert.ThrowsAsync<ArgumentNullException>(() => Dns.GetHostEntryAsync((IPAddress)null));
+        public async Task Dns_GetHostEntryAsync_NullIPAddressHost_Fail() => await Assert.ThrowsAsync<ArgumentNullException>(() => Dns.GetHostEntryAsync((IPAddress)null));
 
         public static IEnumerable<object[]> GetInvalidAddresses()
         {
