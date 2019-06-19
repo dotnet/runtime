@@ -137,6 +137,12 @@
   <data name="BindToVoidMethodButExpectResult" xml:space="preserve">
     <value>Cannot implicitly convert type 'void' to 'object'</value>
   </data>
+  <data name="EmptyDynamicView" xml:space="preserve">
+    <value>No further information on this object could be discovered</value>
+  </data>
+  <data name="GetValueonWriteOnlyProperty" xml:space="preserve">
+    <value>Write Only properties are not supported</value>
+  </data>
   <data name="BadBinaryOps" xml:space="preserve">
     <value>Operator '{0}' cannot be applied to operands of type '{1}' and '{2}'</value>
   </data>
