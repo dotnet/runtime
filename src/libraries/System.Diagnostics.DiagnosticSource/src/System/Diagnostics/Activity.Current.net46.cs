@@ -8,6 +8,8 @@ namespace System.Diagnostics
 {
     public partial class Activity
     {
+        private static readonly AsyncLocal<Activity> s_current = new AsyncLocal<Activity>();
+
         /// <summary>
         /// Gets or sets the current operation (Activity) for the current thread.  This flows 
         /// across async calls.
@@ -24,13 +26,9 @@ namespace System.Diagnostics
             }
         }
 
-#region private
         private static void SetCurrent(Activity activity)
         {
             s_current.Value = activity;
         }
-
-        private static readonly AsyncLocal<Activity> s_current = new AsyncLocal<Activity>();
-#endregion // private
     }
 }
