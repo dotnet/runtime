@@ -1563,5 +1563,69 @@ namespace System.Net.Http.Functional.Tests
                 await Assert.ThrowsAsync<HttpRequestException>(() => sendTask);
             }
         }
+
+        [Fact]
+        public async Task InboundWindowSize_Exceeded_Throw()
+        {
+            var semaphore = new SemaphoreSlim(0);
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    using HttpClient client = CreateHttpClient();
+                    using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+
+                    // Keep client open until server is done.
+                    await semaphore.WaitAsync(10000);
+                },
+                async server =>
+                {
+                    try
+                    {
+                        SettingsFrame clientSettings = await server.EstablishConnectionAsync();
+
+                        SettingsEntry clientWindowSizeSetting = clientSettings.Entries.SingleOrDefault(x => x.SettingId == SettingId.InitialWindowSize);
+                        int clientWindowSize = clientWindowSizeSetting.SettingId == SettingId.InitialWindowSize ? (int)clientWindowSizeSetting.Value : 65535;
+
+                        // Exceed the window size by 1 byte.
+                        ++clientWindowSize; 
+
+                        int streamId = await server.ReadRequestHeaderAsync();
+
+                        // Write the response.
+                        await server.SendDefaultResponseHeadersAsync(streamId);
+
+                        byte[] buffer = new byte[4096];
+                        int totalSent = 0;
+
+                        while (totalSent < clientWindowSize)
+                        {
+                            int sendSize = Math.Min(buffer.Length, clientWindowSize - totalSent);
+                            ReadOnlyMemory<byte> sendBuf = buffer.AsMemory(0, sendSize);
+
+                            await server.SendResponseDataAsync(streamId, sendBuf, endStream: false);
+                            totalSent += sendSize;
+                        }
+
+                        // Try to read a frame. Should get null if connection reset or RST_STREAM if stream reset.
+                        // If client is misbehaving, we'll get an OperationCanceledException due to timeout.
+                        try
+                        {
+                            Frame clientFrame = await server.ReadFrameAsync(TimeSpan.FromSeconds(5));
+                            Assert.True(clientFrame == null || (clientFrame.Type == FrameType.RstStream && clientFrame.StreamId == streamId),
+                                "Unexpected frame received from HttpClient; Expected either RST_STREAM or connection reset.");
+                        }
+                        catch (OperationCanceledException ex)
+                        {
+                            Assert.True(ex == null, "Stream unexpectedly left open by HttpClient; Expected either RST_STREAM or connection reset.");
+                        }
+                    }
+                    finally
+                    {
+                        // Shut down client.
+                        semaphore.Release();
+                    }
+                });
+        }
     }
 }
