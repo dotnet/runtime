@@ -348,14 +348,14 @@ namespace System.Net.Test.Common
         public byte[] Data;
 
         public PingFrame(byte[] data, FrameFlags flags, int streamId) :
-            base(Frame.FrameHeaderLength + 8, FrameType.Ping, flags, streamId)
+            base(8, FrameType.Ping, flags, streamId)
         {
             Data = data;
         }
 
         public static PingFrame ReadFrom(Frame header, ReadOnlySpan<byte> buffer)
         {
-            byte[] data = buffer.Slice(Frame.FrameHeaderLength).ToArray();
+            byte[] data = buffer.ToArray();
 
             return new PingFrame(data, header.Flags, header.StreamId);
         }
@@ -363,8 +363,9 @@ namespace System.Net.Test.Common
         public override void WriteTo(Span<byte> buffer)
         {
             base.WriteTo(buffer);
+            buffer = buffer.Slice(Frame.FrameHeaderLength, 8);
 
-            Data.CopyTo(buffer.Slice(Frame.FrameHeaderLength));
+            Data.CopyTo(buffer);
         }
 
         public override string ToString()

@@ -51,14 +51,14 @@ namespace System.Net.Http.Functional.Tests
                 },
                 async server =>
                 {
-                    await server.EstablishConnectionAsync();
-                    (int streamId, HttpRequestData requestData) = await server.ReadAndParseRequestHeaderAsync();
+                    Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                    (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync();
 
                     HttpHeaderData header = requestData.Headers.Single(x => x.Name == headerName);
                     Assert.Equal(expectedValue, header.Value);
                     Assert.True(expectedEncoding.AsSpan().SequenceEqual(header.Raw));
 
-                    await server.SendDefaultResponseAsync(streamId);
+                    await connection.SendDefaultResponseAsync(streamId);
                 });
         }
 
