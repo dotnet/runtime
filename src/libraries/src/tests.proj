@@ -11,11 +11,8 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
+    <!-- We currently only test with C# projects. -->
     <Project Include="$(SourceDir)*\tests\**\*.Tests.csproj" />
-
-    <!-- Harcoded list of non-csproj test projects to reduce time spent on file globbing. -->
-    <Project Include="$(SourceDir)System.Runtime\tests\TestStructs\System.TestStructs.ilproj" />
-    <Project Include="$(SourceDir)System.Runtime\tests\TestModule\System.Reflection.TestModule.ilproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' == 'true'">
