@@ -183,6 +183,7 @@ bool are_thunks_installed_for_module(pal::dll_t instance)
         {
             return true;
         }
+        currentChunk = currentChunk->GetNext();
     }
 
     return false;
