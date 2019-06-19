@@ -8,7 +8,7 @@
 //=================================================================================
 // Ctor
 bootstrap_thunk_chunk::bootstrap_thunk_chunk(size_t numThunks, pal::dll_t dll)
-    : m_dll(dll), m_numThunks(numThunks), m_next(NULL)
+    : m_dll(dll), m_numThunks(numThunks), m_next(nullptr)
 {
 #ifdef _DEBUG
     memset(m_thunks, 0, m_numThunks * sizeof(bootstrap_thunk));
