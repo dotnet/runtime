@@ -668,7 +668,7 @@
     <value>Insufficient memory to continue the execution of the program.</value>
   </data>
   <data name="Arg_ParamName_Name" xml:space="preserve">
-    <value>Parameter name: {0}</value>
+    <value>(Parameter '{0}')</value>
   </data>
   <data name="Arg_ParmArraySize" xml:space="preserve">
     <value>Must specify one or more parameters.</value>
