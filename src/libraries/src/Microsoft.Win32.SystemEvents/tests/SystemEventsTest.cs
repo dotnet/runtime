@@ -13,7 +13,7 @@ namespace Microsoft.Win32.SystemEventsTests
     {
         IntPtr s_hwnd = IntPtr.Zero;
 
-        public const int PostMessageWait = 10000;
+        public const int PostMessageWait = 30_000;
         public const int ExpectedEventMultiplier = 1000;
         public const int UnexpectedEventMultiplier = 10;
 
@@ -56,7 +56,7 @@ namespace Microsoft.Win32.SystemEventsTests
             {
                 // on an STA thread the HWND is created in the same thread synchronously when attaching to an event handler
                 // if we're on an MTA thread, a new thread is created to handle events and that thread creates the window, wait for it to complete.
-                Assert.True(windowReadyEvent.WaitOne(PostMessageWait * ExpectedEventMultiplier));
+                Assert.True(windowReadyEvent.WaitOne(PostMessageWait));
             }
         }
     }
