@@ -302,11 +302,6 @@ MONO_JIT_ICALL (mono_threads_exit_gc_unsafe_region_unbalanced) \
 MONO_JIT_ICALL (mono_threads_state_poll) \
 MONO_JIT_ICALL (mono_throw_exception) \
 MONO_JIT_ICALL (mono_throw_method_access) \
-MONO_JIT_ICALL (mono_tls_set_domain) \
-MONO_JIT_ICALL (mono_tls_set_jit_tls) \
-MONO_JIT_ICALL (mono_tls_set_lmf_addr) \
-MONO_JIT_ICALL (mono_tls_set_sgen_thread_info) \
-MONO_JIT_ICALL (mono_tls_set_thread) \
 MONO_JIT_ICALL (mono_trace_enter_method) \
 MONO_JIT_ICALL (mono_trace_leave_method) \
 MONO_JIT_ICALL (mono_upgrade_remote_class_wrapper) \

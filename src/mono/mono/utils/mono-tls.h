@@ -86,10 +86,8 @@ void mono_tls_free_keys (void);
 gint32 mono_tls_get_tls_offset (MonoTlsKey key);
 
 typedef gpointer (*MonoTlsGetter)(void);
-typedef void (*MonoTlsSetter)(gpointer);
 
 MonoTlsGetter mono_tls_get_tls_getter (MonoTlsKey key);
-MonoTlsSetter mono_tls_get_tls_setter (MonoTlsKey key);
 
 G_EXTERN_C MonoInternalThread *mono_tls_get_thread (void);
 G_EXTERN_C MonoJitTlsData     *mono_tls_get_jit_tls (void);

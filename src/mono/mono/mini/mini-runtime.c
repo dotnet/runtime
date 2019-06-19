@@ -1219,7 +1219,6 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_METHOD_CODE_SLOT:
 	case MONO_PATCH_INFO_AOT_JIT_INFO:
 	case MONO_PATCH_INFO_GET_TLS_TRAMP:
-	case MONO_PATCH_INFO_SET_TLS_TRAMP:
 		return hash | (gssize)ji->data.target;
 	case MONO_PATCH_INFO_GSHAREDVT_CALL:
 		return hash | (gssize)ji->data.gsharedvt->method;
@@ -1646,9 +1645,6 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		break;
 	case MONO_PATCH_INFO_GET_TLS_TRAMP: // FIXME replace with MONO_PATCH_INFO_JIT_ICALL?
 		target = (gpointer)mono_tls_get_tls_getter ((MonoTlsKey)patch_info->data.index);
-		break;
-	case MONO_PATCH_INFO_SET_TLS_TRAMP: // FIXME replace with MONO_PATCH_INFO_JIT_ICALL?
-		target = (gpointer)mono_tls_get_tls_setter ((MonoTlsKey)patch_info->data.index);
 		break;
 	case MONO_PATCH_INFO_PROFILER_ALLOCATION_COUNT: {
 		target = (gpointer) &mono_profiler_state.gc_allocation_count;
@@ -4650,11 +4646,6 @@ register_icalls (void)
 	register_icall_no_wrapper (mono_tls_get_domain, mono_icall_sig_ptr);
 	register_icall_no_wrapper (mono_tls_get_sgen_thread_info, mono_icall_sig_ptr);
 	register_icall_no_wrapper (mono_tls_get_lmf_addr, mono_icall_sig_ptr);
-	register_icall_no_wrapper (mono_tls_set_thread, mono_icall_sig_void_ptr);
-	register_icall_no_wrapper (mono_tls_set_jit_tls, mono_icall_sig_void_ptr);
-	register_icall_no_wrapper (mono_tls_set_domain, mono_icall_sig_void_ptr);
-	register_icall_no_wrapper (mono_tls_set_sgen_thread_info, mono_icall_sig_void_ptr);
-	register_icall_no_wrapper (mono_tls_set_lmf_addr, mono_icall_sig_void_ptr);
 
 	register_icall_no_wrapper (mono_interp_entry_from_trampoline, mono_icall_sig_void_ptr_ptr);
 	register_icall_no_wrapper (mono_interp_to_native_trampoline, mono_icall_sig_void_ptr_ptr);

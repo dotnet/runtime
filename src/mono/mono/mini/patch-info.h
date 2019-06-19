@@ -55,7 +55,6 @@ PATCH_INFO(GC_NURSERY_BITS, "gc_nursery_bits")
 PATCH_INFO(GSHAREDVT_IN_WRAPPER, "gsharedvt_in_wrapper")
 PATCH_INFO(ICALL_ADDR_CALL, "icall_addr_call")
 PATCH_INFO(GET_TLS_TRAMP, "get_tls_tramp")
-PATCH_INFO(SET_TLS_TRAMP, "set_tls_tramp")
 /*
  * The address of a C function implementing a JIT icall.
  * Same as JIT_ICALL_ADDR, but not treated as a call.

@@ -295,26 +295,6 @@ mono_tls_get_tls_getter (MonoTlsKey key)
 	return NULL;
 }
 
-/* Returns the setter (void (*)(gpointer)) for the mono tls key */
-MonoTlsSetter
-mono_tls_get_tls_setter (MonoTlsKey key)
-{
-	switch (key) {
-	case TLS_KEY_THREAD:
-		return (MonoTlsSetter)mono_tls_set_thread;
-	case TLS_KEY_JIT_TLS:
-		return (MonoTlsSetter)mono_tls_set_jit_tls;
-	case TLS_KEY_DOMAIN:
-		return (MonoTlsSetter)mono_tls_set_domain;
-	case TLS_KEY_SGEN_THREAD_INFO:
-		return (MonoTlsSetter)mono_tls_set_sgen_thread_info;
-	case TLS_KEY_LMF_ADDR:
-		return (MonoTlsSetter)mono_tls_set_lmf_addr;
-	}
-	g_assert_not_reached ();
-	return NULL;
-}
-
 // Casts on getters are for the !MONO_KEYWORD_THREAD case.
 
 /* Getters for each tls key */
