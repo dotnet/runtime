@@ -3269,7 +3269,7 @@ void MarshalInfo::GenerateArgumentIL(NDirectStubLinker* psl,
     pcsMarshal->EmitNOP("// } argument");
     pcsUnmarshal->EmitNOP("// } argument");
 
-    pMarshaler->EmitSetupArgument(pcsDispatch);
+    pMarshaler->EmitSetupArgumentForDispatch(pcsDispatch);
     if (m_paramidx == 0)
     {
         CorCallingConvention callConv = psl->GetStubTargetCallingConv();
@@ -4689,7 +4689,7 @@ void MarshalInfo::MarshalHiddenLengthArgument(NDirectStubLinker *psl, BOOL manag
     if (managedToNative)
     {
         ILCodeStream* pcsDispatch = psl->GetDispatchCodeStream();
-        pHiddenLengthMarshaler->EmitSetupArgument(pcsDispatch);
+        pHiddenLengthMarshaler->EmitSetupArgumentForDispatch(pcsDispatch);
     }
 }
 
