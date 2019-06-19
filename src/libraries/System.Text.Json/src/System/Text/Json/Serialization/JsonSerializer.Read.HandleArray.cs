@@ -37,7 +37,7 @@ namespace System.Text.Json
 
             // Verify that we don't have a multidimensional array.
             Type arrayType = jsonPropertyInfo.RuntimePropertyType;
-            if (!state.Current.IsProcessingKeyValuePair && !typeof(IEnumerable).IsAssignableFrom(arrayType) || (arrayType.IsArray && arrayType.GetArrayRank() > 1))
+            if (!typeof(IEnumerable).IsAssignableFrom(arrayType) || (arrayType.IsArray && arrayType.GetArrayRank() > 1))
             {
                 ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(arrayType, reader, state.JsonPath);
             }
@@ -208,9 +208,7 @@ namespace System.Text.Json
                 dictionary[key] = value;
             }
             else if (state.Current.IsIDictionaryConstructible ||
-                (state.Current.IsIDictionaryConstructibleProperty && !setPropertyDirectly) ||
-                state.Current.IsKeyValuePair ||
-                (state.Current.IsKeyValuePairProperty && !setPropertyDirectly))
+                (state.Current.IsIDictionaryConstructibleProperty && !setPropertyDirectly))
             {
                 Debug.Assert(state.Current.TempDictionaryValues != null);
                 IDictionary dictionary = (IDictionary)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.TempDictionaryValues);
@@ -275,7 +273,7 @@ namespace System.Text.Json
                 Debug.Assert(!string.IsNullOrEmpty(key));
                 dictionary[key] = value;
             }
-            else if (state.Current.IsProcessingIDictionaryConstructibleOrKeyValuePair)
+            else if (state.Current.IsProcessingIDictionaryConstructible)
             {
                 Debug.Assert(state.Current.TempDictionaryValues != null);
                 IDictionary<string, TProperty> dictionary = (IDictionary<string, TProperty>)state.Current.TempDictionaryValues;

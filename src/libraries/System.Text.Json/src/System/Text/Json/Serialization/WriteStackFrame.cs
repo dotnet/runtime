@@ -51,13 +51,6 @@ namespace System.Text.Json
                 JsonPropertyInfo = JsonClassInfo.GetPolicyProperty();
                 IsIDictionaryConstructible = true;
             }
-            else if (JsonClassInfo.ClassType == ClassType.KeyValuePair)
-            {
-                JsonPropertyInfo = JsonClassInfo.GetPolicyPropertyOfKeyValuePair();
-                // Advance to the next property, since the first one is the KeyValuePair type itself,
-                // not its first property (Key or Value).
-                PropertyIndex++;
-            }
         }
 
         public void WriteObjectOrArrayStart(ClassType classType, Utf8JsonWriter writer, bool writeNull = false)

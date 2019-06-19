@@ -72,8 +72,6 @@ namespace System.Text.Json
 
         public abstract IDictionary CreateImmutableDictionaryInstance(Type collectionType, string delegateKey, IDictionary sourceDictionary, string propertyPath, JsonSerializerOptions options);
 
-        public abstract ValueType CreateKeyValuePairInstance(ref ReadStack state, IDictionary sourceDictionary, JsonSerializerOptions options);
-
         public Type DeclaredPropertyType { get; private set; }
 
         private void DeterminePropertyName()
@@ -134,8 +132,7 @@ namespace System.Text.Json
         {
             if (ClassType != ClassType.Enumerable &&
                 ClassType != ClassType.Dictionary &&
-                ClassType != ClassType.IDictionaryConstructible &&
-                ClassType != ClassType.KeyValuePair)
+                ClassType != ClassType.IDictionaryConstructible)
             {
                 // We serialize if there is a getter + not ignoring readonly properties.
                 ShouldSerialize = HasGetter && (HasSetter || !Options.IgnoreReadOnlyProperties);
@@ -222,8 +219,7 @@ namespace System.Text.Json
                 {
                     Debug.Assert(ClassType == ClassType.Enumerable ||
                         ClassType == ClassType.Dictionary ||
-                        ClassType == ClassType.IDictionaryConstructible ||
-                        ClassType == ClassType.KeyValuePair);
+                        ClassType == ClassType.IDictionaryConstructible);
                     _elementClassInfo = Options.GetOrAddClass(_elementType);
                 }
 

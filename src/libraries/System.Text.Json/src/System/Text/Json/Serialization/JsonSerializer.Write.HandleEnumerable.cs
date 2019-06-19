@@ -60,12 +60,6 @@ namespace System.Text.Json
                     // An object or another enumerator requires a new stack frame.
                     object nextValue = state.Current.Enumerator.Current;
                     state.Push(elementClassInfo, nextValue);
-
-                    if (elementClassInfo.ClassType == ClassType.KeyValuePair)
-                    {
-                        state.Current.JsonPropertyInfo = elementClassInfo.GetPolicyPropertyOfKeyValuePair();
-                        state.Current.PropertyIndex++;
-                    }
                 }
 
                 return false;

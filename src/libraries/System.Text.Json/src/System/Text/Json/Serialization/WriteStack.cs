@@ -60,7 +60,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(nextClassInfo.ClassType == ClassType.Object || nextClassInfo.ClassType == ClassType.KeyValuePair || nextClassInfo.ClassType == ClassType.Unknown);
+                Debug.Assert(nextClassInfo.ClassType == ClassType.Object || nextClassInfo.ClassType == ClassType.Unknown);
                 Current.PopStackOnEndObject = true;
             }
         }
