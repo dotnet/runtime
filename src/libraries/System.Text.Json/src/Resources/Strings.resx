@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -347,8 +348,8 @@
   <data name="SerializationDataExtensionPropertyInvalid" xml:space="preserve">
     <value>The data extension property '{0}.{1}' does not match the required signature of IDictionary&lt;string, JsonElement&gt; or IDictionary&lt;string, object&gt;.</value>
   </data>
-  <data name="SerializationDuplicateAttribute" xml:space="preserve">
-    <value>A class cannot have more than one property that has the attribute '{0}'.</value>
+  <data name="SerializationDuplicateTypeAttribute" xml:space="preserve">
+    <value>The type '{0}' cannot have more than one property that has the attribute '{1}'.</value>
   </data>
   <data name="SerializationNotSupportedCollectionType" xml:space="preserve">
     <value>The collection type '{0}' is not supported.</value>
@@ -376,5 +377,26 @@
   </data>
   <data name="DeserializePolymorphicInterface" xml:space="preserve">
     <value>Deserialization of interface types is not supported. Type '{0}'</value>
+  </data>
+  <data name="SerializationConverterOnAttributeNotCompatible" xml:space="preserve">
+    <value>The converter specified on '{0}' is not compatible with the type '{1}'.</value>
+  </data>
+  <data name="SerializationConverterOnAttributeInvalid" xml:space="preserve">
+    <value>The converter specified on '{0}' does not derive from JsonConverter or have a public parameterless constructor.</value>
+  </data>
+  <data name="SerializationConverterRead" xml:space="preserve">
+    <value>The converter '{0}' read too much or not enough.</value>
+  </data>
+  <data name="SerializationConverterNotCompatible" xml:space="preserve">
+    <value>The converter '{0}' is not compatible with the type '{1}'.</value>
+  </data>
+  <data name="SerializationConverterWrite" xml:space="preserve">
+    <value>The converter '{0}' wrote too much or not enough.</value>
+  </data>
+  <data name="SerializationDuplicateAttribute" xml:space="preserve">
+    <value>The attribute '{0}' cannot exist more than once on '{1}'.</value>
+  </data>
+  <data name="SerializeUnableToSerialize" xml:space="preserve">
+    <value>The object or value could not be serialized. Path: {0}.</value>
   </data>
 </root>

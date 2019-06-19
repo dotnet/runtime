@@ -2,30 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text.Json.Serialization.Policies;
-
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonValueConverterBoolean : JsonValueConverter<bool>
+    internal sealed class JsonConverterBoolean : JsonConverter<bool>
     {
-        public override bool TryRead(Type valueType, ref Utf8JsonReader reader, out bool value)
+        public override bool Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.True && reader.TokenType != JsonTokenType.False)
             {
-                value = default;
-                return false;
+                ThrowHelper.ThrowJsonException();
             }
 
-            value = reader.GetBoolean();
-            return true;
+            return reader.GetBoolean();
         }
 
-        public override void Write(bool value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, bool value, JsonSerializerOptions options)
         {
             writer.WriteBooleanValue(value);
         }
 
-        public override void Write(JsonEncodedText propertyName, bool value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, bool value, JsonEncodedText propertyName, JsonSerializerOptions options)
         {
             writer.WriteBoolean(propertyName, value);
         }

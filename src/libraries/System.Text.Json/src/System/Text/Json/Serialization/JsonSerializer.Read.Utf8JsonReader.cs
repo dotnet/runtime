@@ -276,11 +276,11 @@ namespace System.Text.Json
                         }
                 }
             }
-            catch (JsonReaderException e)
+            catch (JsonReaderException ex)
             {
                 reader = restore;
                 // Re-throw with Path information.
-                ThrowHelper.ReThrowWithPath(e, readStack.JsonPath);
+                ThrowHelper.ReThrowWithPath(readStack, ex);
             }
 
             int length = valueSpan.IsEmpty ? checked((int)valueSequence.Length) : valueSpan.Length;

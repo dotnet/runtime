@@ -13,7 +13,7 @@ namespace System.Text.Json
         Unknown = 0,
         // POCO or rich data type
         Object = 1,
-        // Data type with single value
+        // Value or object with a converter.
         Value = 2,
         // IEnumerable
         Enumerable = 3,

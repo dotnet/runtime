@@ -122,6 +122,9 @@ namespace System.Text.Json
     public partial class JsonException : System.Exception
     {
         protected JsonException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public JsonException() { }
+        public JsonException(string message) { }
+        public JsonException(string message, System.Exception innerException) { }
         public JsonException(string message, string path, long? lineNumber, long? bytePositionInLine) { }
         public JsonException(string message, string path, long? lineNumber, long? bytePositionInLine, System.Exception innerException) { }
         public long? BytePositionInLine { get { throw null; } }
@@ -182,8 +185,10 @@ namespace System.Text.Json
     {
         public JsonSerializerOptions() { }
         public bool AllowTrailingCommas { get { throw null; } set { } }
+        public System.Collections.Generic.IList<System.Text.Json.Serialization.JsonConverter> Converters { get { throw null; } }
         public int DefaultBufferSize { get { throw null; } set { } }
         public System.Text.Json.JsonNamingPolicy DictionaryKeyPolicy { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonConverter GetConverter(System.Type typeToConvert) { throw null; }
         public bool IgnoreNullValues { get { throw null; } set { } }
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
         public int MaxDepth { get { throw null; } set { } }
@@ -274,7 +279,7 @@ namespace System.Text.Json
         public bool TrySkip() { throw null; }
         public bool ValueTextEquals(System.ReadOnlySpan<byte> utf8Text) { throw null; }
         public bool ValueTextEquals(System.ReadOnlySpan<char> text) { throw null; }
-        public bool ValueTextEquals(string text) { throw null; }
+        public bool ValueTextEquals(string utf8Text) { throw null; }
     }
     public sealed partial class Utf8JsonWriter : System.IAsyncDisposable, System.IDisposable
     {
@@ -408,6 +413,32 @@ namespace System.Text.Json.Serialization
     public abstract partial class JsonAttribute : System.Attribute
     {
         protected JsonAttribute() { }
+    }
+    public abstract partial class JsonConverter
+    {
+        internal JsonConverter() { }
+        public abstract bool CanConvert(System.Type type);
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class | System.AttributeTargets.Property | System.AttributeTargets.Struct, AllowMultiple=false)]
+    public partial class JsonConverterAttribute : System.Text.Json.Serialization.JsonAttribute
+    {
+        public JsonConverterAttribute(System.Type converterType) { }
+        protected JsonConverterAttribute() { }
+        public System.Type ConverterType { get { throw null; } }
+        public virtual System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert) { throw null; }
+    }
+    public abstract partial class JsonConverterFactory : System.Text.Json.Serialization.JsonConverter
+    {
+        protected internal JsonConverterFactory() { }
+        protected abstract System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert);
+    }
+    public abstract partial class JsonConverter<T> : System.Text.Json.Serialization.JsonConverter
+    {
+        protected internal JsonConverter() { }
+        public override bool CanConvert(System.Type type) { throw null; }
+        public abstract T Read(ref System.Text.Json.Utf8JsonReader reader, System.Type type, System.Text.Json.JsonSerializerOptions options);
+        public virtual void Write(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonEncodedText propertyName, System.Text.Json.JsonSerializerOptions options) { }
+        public abstract void Write(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonExtensionDataAttribute : System.Text.Json.Serialization.JsonAttribute

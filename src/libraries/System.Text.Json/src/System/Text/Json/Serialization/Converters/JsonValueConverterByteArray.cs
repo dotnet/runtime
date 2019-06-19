@@ -2,29 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text.Json.Serialization.Policies;
-
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonValueConverterByteArray : JsonValueConverter<byte[]>
+    internal sealed class JsonConverterByteArray : JsonConverter<byte[]>
     {
-        public override bool TryRead(Type valueType, ref Utf8JsonReader reader, out byte[] value)
+        public override byte[] Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.String)
             {
-                value = default;
-                return false;
+                ThrowHelper.ThrowJsonException();
             }
 
-            return reader.TryGetBytesFromBase64(out value);
+            return reader.GetBytesFromBase64();
         }
 
-        public override void Write(byte[] value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, byte[] value, JsonSerializerOptions options)
         {
             writer.WriteBase64StringValue(value);
         }
 
-        public override void Write(JsonEncodedText propertyName, byte[] value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, byte[] value, JsonEncodedText propertyName, JsonSerializerOptions options)
         {
             writer.WriteBase64String(propertyName, value);
         }

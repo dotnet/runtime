@@ -2,26 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text.Json.Serialization.Policies;
 using System.Runtime.InteropServices;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonValueConverterChar : JsonValueConverter<char>
+    internal sealed class JsonConverterChar : JsonConverter<char>
     {
-        public override bool TryRead(Type valueType, ref Utf8JsonReader reader, out char value)
+        public override char Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.String)
             {
-                value = default;
-                return false;
+                ThrowHelper.ThrowJsonException();
             }
 
-            value = reader.GetString()[0];
-            return true;
+            return reader.GetString()[0];
         }
 
-        public override void Write(char value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, char value, JsonSerializerOptions options)
         {
             writer.WriteStringValue(
 #if BUILDING_INBOX_LIBRARY
@@ -32,7 +29,7 @@ namespace System.Text.Json.Serialization.Converters
                 );
         }
 
-        public override void Write(JsonEncodedText propertyName, char value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, char value, JsonEncodedText propertyName, JsonSerializerOptions options)
         {
             writer.WriteString(propertyName,
 #if BUILDING_INBOX_LIBRARY

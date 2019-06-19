@@ -46,6 +46,12 @@ namespace System.Text.Json
             {
                 state.Current.TempDictionaryValues = (IDictionary)classInfo.CreateObject();
             }
+            else if (state.Current.JsonClassInfo.ClassType == ClassType.Value)
+            {
+                // Custom converter.
+                state.Current.JsonPropertyInfo.Read(JsonTokenType.StartObject, ref state, ref reader);
+                HandleEndObject(options, ref reader, ref state);
+            }
             else
             {
                 state.Current.ReturnValue = classInfo.CreateObject();

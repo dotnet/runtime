@@ -9,6 +9,9 @@ namespace System.Text.Json
 {
     internal static partial class ThrowHelper
     {
+        // If the exception source is this value, the serializer will re-throw as JsonException.
+        public const string ExceptionSourceValueToRethrowAsJsonException = "System.Text.Json.Rethrowable";
+
         public static ArgumentException GetArgumentException_MaxDepthMustBePositive()
         {
             return GetArgumentException(SR.MaxDepthMustBePositive);
@@ -27,7 +30,7 @@ namespace System.Text.Json
 
         public static InvalidOperationException GetInvalidOperationException_CallFlushFirst(int _buffered)
         {
-            return new InvalidOperationException(SR.Format(SR.CallFlushToAvoidDataLoss, _buffered));
+            return GetInvalidOperationException(SR.Format(SR.CallFlushToAvoidDataLoss, _buffered));
         }
 
         public static void ThrowArgumentException_PropertyNameTooLarge(int tokenLength)
@@ -131,7 +134,9 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static InvalidOperationException GetInvalidOperationException(string message)
         {
-            return new InvalidOperationException(message);
+            var ex = new InvalidOperationException(message);
+            ex.Source = ExceptionSourceValueToRethrowAsJsonException;
+            return ex;
         }
 
         public static void ThrowInvalidOperationException_DepthNonZeroOrEmptyJson(int currentDepth)
@@ -145,11 +150,11 @@ namespace System.Text.Json
             currentDepth &= JsonConstants.RemoveFlagsBitMask;
             if (currentDepth != 0)
             {
-                return new InvalidOperationException(SR.Format(SR.ZeroDepthAtEnd, currentDepth));
+                return GetInvalidOperationException(SR.Format(SR.ZeroDepthAtEnd, currentDepth));
             }
             else
             {
-                return new InvalidOperationException(SR.EmptyJsonIsInvalid);
+                return GetInvalidOperationException(SR.EmptyJsonIsInvalid);
             }
         }
 
@@ -195,19 +200,19 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static InvalidOperationException GetInvalidOperationException_CannotSkipOnPartial()
         {
-            return new InvalidOperationException(SR.CannotSkip);
+            return GetInvalidOperationException(SR.CannotSkip);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static InvalidOperationException GetInvalidOperationException(string message, JsonTokenType tokenType)
         {
-            return new InvalidOperationException(SR.Format(SR.InvalidCast, tokenType, message));
+            return GetInvalidOperationException(SR.Format(SR.InvalidCast, tokenType, message));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static InvalidOperationException GetInvalidOperationException(JsonTokenType tokenType)
         {
-            return new InvalidOperationException(SR.Format(SR.InvalidComparison, tokenType));
+            return GetInvalidOperationException(SR.Format(SR.InvalidComparison, tokenType));
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -215,7 +220,7 @@ namespace System.Text.Json
             JsonTokenType expectedType,
             JsonTokenType actualType)
         {
-            return new InvalidOperationException(
+            return GetInvalidOperationException(
                 SR.Format(SR.JsonElementHasWrongType, expectedType.ToValueType(), actualType.ToValueType()));
         }
 
@@ -224,7 +229,7 @@ namespace System.Text.Json
             string expectedTypeName,
             JsonTokenType actualType)
         {
-            return new InvalidOperationException(
+            return GetInvalidOperationException(
                 SR.Format(SR.JsonElementHasWrongType, expectedTypeName, actualType.ToValueType()));
         }
 
@@ -413,17 +418,17 @@ namespace System.Text.Json
 
         public static void ThrowInvalidOperationException_ReadInvalidUTF16(int charAsInt)
         {
-            throw new InvalidOperationException(SR.Format(SR.CannotReadInvalidUTF16, $"0x{charAsInt:X2}"));
+            throw GetInvalidOperationException(SR.Format(SR.CannotReadInvalidUTF16, $"0x{charAsInt:X2}"));
         }
 
         public static void ThrowInvalidOperationException_ReadInvalidUTF16()
         {
-            throw new InvalidOperationException(SR.CannotReadIncompleteUTF16);
+            throw GetInvalidOperationException(SR.CannotReadIncompleteUTF16);
         }
 
         public static InvalidOperationException GetInvalidOperationException_ReadInvalidUTF8(DecoderFallbackException innerException)
         {
-            return new InvalidOperationException(SR.CannotTranscodeInvalidUtf8, innerException);
+            return GetInvalidOperationException(SR.CannotTranscodeInvalidUtf8, innerException);
         }
 
         public static ArgumentException GetArgumentException_ReadInvalidUTF16(EncoderFallbackException innerException)
@@ -431,11 +436,20 @@ namespace System.Text.Json
             return new ArgumentException(SR.CannotTranscodeInvalidUtf16, innerException);
         }
 
+        public static InvalidOperationException GetInvalidOperationException(string message, Exception innerException)
+        {
+            InvalidOperationException ex = new InvalidOperationException(message, innerException);
+            ex.Source = ExceptionSourceValueToRethrowAsJsonException;
+            return ex;
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static InvalidOperationException GetInvalidOperationException(ExceptionResource resource, int currentDepth, byte token, JsonTokenType tokenType)
         {
             string message = GetResourceString(resource, currentDepth, token, tokenType);
-            return new InvalidOperationException(message);
+            InvalidOperationException ex = GetInvalidOperationException(message);
+            ex.Source = ExceptionSourceValueToRethrowAsJsonException;
+            return ex;
         }
 
         // This function will convert an ExceptionResource enum value to the resource string.
@@ -475,6 +489,13 @@ namespace System.Text.Json
             return message;
         }
 
+        public static FormatException GetFormatException()
+        {
+            var ex = new FormatException();
+            ex.Source = ExceptionSourceValueToRethrowAsJsonException;
+            return ex;
+        }
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static FormatException GetFormatException(NumericType numericType)
         {
@@ -507,7 +528,10 @@ namespace System.Text.Json
                     Debug.Fail($"The NumericType enum value: {numericType} is not part of the switch. Add the appropriate case and exception message.");
                     break;
             }
-            return new FormatException(message);
+
+            var ex = new FormatException(message);
+            ex.Source = ExceptionSourceValueToRethrowAsJsonException;
+            return ex;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -530,7 +554,10 @@ namespace System.Text.Json
                     Debug.Fail($"The DateType enum value: {dateType} is not part of the switch. Add the appropriate case and exception message.");
                     break;
             }
-            return new FormatException(message);
+
+            var ex = new FormatException(message);
+            ex.Source = ExceptionSourceValueToRethrowAsJsonException;
+            return ex;
         }
     }
 

@@ -4,7 +4,7 @@
 
 using System.Collections;
 
-namespace System.Text.Json.Serialization.Policies
+namespace System.Text.Json.Serialization.Converters
 {
     internal abstract class JsonDictionaryConverter
     {

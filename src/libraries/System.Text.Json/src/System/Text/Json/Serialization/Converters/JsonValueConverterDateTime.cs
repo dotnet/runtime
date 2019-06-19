@@ -2,29 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text.Json.Serialization.Policies;
-
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonValueConverterDateTime : JsonValueConverter<DateTime>
+    internal sealed class JsonConverterDateTime : JsonConverter<DateTime>
     {
-        public override bool TryRead(Type valueType, ref Utf8JsonReader reader, out DateTime value)
+        public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.String)
             {
-                value = default;
-                return false;
+                ThrowHelper.ThrowJsonException();
             }
 
-            return reader.TryGetDateTime(out value);
+            return reader.GetDateTime();
         }
 
-        public override void Write(DateTime value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
         {
             writer.WriteStringValue(value);
         }
 
-        public override void Write(JsonEncodedText propertyName, DateTime value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, DateTime value, JsonEncodedText propertyName, JsonSerializerOptions options)
         {
             writer.WriteString(propertyName, value);
         }
