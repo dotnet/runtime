@@ -134,7 +134,7 @@ namespace System.Diagnostics
             Name = name;
 
             // Insert myself into the list of all Listeners.   
-            lock (s_lock)
+            lock (s_allListenersLock)
             {
                 // Issue the callback for this new diagnostic listener.
                 var allListenerObservable = s_allListenerObservable;
@@ -160,7 +160,7 @@ namespace System.Diagnostics
         virtual public void Dispose()
         {
             // Remove myself from the list of all listeners.  
-            lock (s_lock)
+            lock (s_allListenersLock)
             {
                 if (_disposed)
                 {
@@ -350,7 +350,7 @@ namespace System.Diagnostics
         {
             public IDisposable Subscribe(IObserver<DiagnosticListener> observer)
             {
-                lock (s_lock)
+                lock (s_allListenersLock)
                 {
                     // Call back for each existing listener on the new callback (catch-up).   
                     for (DiagnosticListener cur = s_allListeners; cur != null; cur = cur._next)
@@ -368,7 +368,7 @@ namespace System.Diagnostics
             /// <param name="diagnosticListener"></param>
             internal void OnNewDiagnosticListener(DiagnosticListener diagnosticListener)
             {
-                Debug.Assert(Monitor.IsEntered(s_lock));     // We should only be called when we hold this lock
+                Debug.Assert(Monitor.IsEntered(s_allListenersLock));     // We should only be called when we hold this lock
 
                 // Simply send a callback to every subscriber that we have a new listener
                 for (var cur = _subscriptions; cur != null; cur = cur.Next)
@@ -382,7 +382,7 @@ namespace System.Diagnostics
             /// </summary>
             private bool Remove(AllListenerSubscription subscription)
             {
-                lock (s_lock)
+                lock (s_allListenersLock)
                 {
                     if (_subscriptions == subscription)
                     {
@@ -468,7 +468,7 @@ namespace System.Diagnostics
 
         private static DiagnosticListener s_allListeners;               // linked list of all instances of DiagnosticListeners.  
         private static AllListenerObservable s_allListenerObservable;   // to make callbacks to this object when listeners come into existence. 
-        private static object s_lock = new object();                    // A lock for  
+        private static readonly object s_allListenersLock = new object();
 #if false
         private static readonly DiagnosticListener s_default = new DiagnosticListener("DiagnosticListener.DefaultListener");
 #endif
