@@ -269,7 +269,11 @@ MONO_SIG_HANDLER_FUNC (static, sigint_handler)
 	in_sigint = FALSE;
 }
 
-static struct sigaction save_sigcont, save_sigint, save_sigwinch;
+static struct sigaction save_sigcont, save_sigwinch;
+
+#if HAVE_SIGACTION
+static struct sigaction save_sigint;
+#endif
 
 MONO_SIG_HANDLER_FUNC (static, sigcont_handler)
 {

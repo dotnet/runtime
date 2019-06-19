@@ -99,6 +99,7 @@
 /* define LOGDEBUG(...) g_message(__VA_ARGS__)  */
 
 /* The process' environment strings */
+#if defined (HAVE_FORK) && defined (HAVE_EXECVE)
 #if defined(__APPLE__)
 #if defined (TARGET_OSX)
 /* Apple defines this in crt_externs.h but doesn't provide that header for 
@@ -117,6 +118,7 @@ static char *mono_environ[1] = { NULL };
 G_BEGIN_DECLS
 extern char **environ;
 G_END_DECLS
+#endif
 #endif
 
 typedef enum {
