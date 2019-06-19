@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{DC485335-D0D7-4E28-9593-445B7B6BEFA7}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.InteropServices.WindowsRuntime.cs" />
