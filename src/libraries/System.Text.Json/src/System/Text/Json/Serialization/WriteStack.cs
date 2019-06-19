@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json
 {
@@ -70,6 +69,52 @@ namespace System.Text.Json
         {
             Debug.Assert(_index > 0);
             Current = _previous[--_index];
+        }
+
+        // Return a property path as a simple JSONPath using dot-notation when possible. When special characters are present, bracket-notation is used:
+        // $.x.y.z
+        // $['PropertyName.With.Special.Chars']
+        public string PropertyPath
+        {
+            get
+            {
+                StringBuilder sb = new StringBuilder("$");
+
+                for (int i = 0; i < _index; i++)
+                {
+                    AppendStackFrame(sb, _previous[i]);
+                }
+
+                AppendStackFrame(sb, Current);
+                return sb.ToString();
+            }
+        }
+
+        private void AppendStackFrame(StringBuilder sb, in WriteStackFrame frame)
+        {
+            // Append the property name.
+            string propertyName = frame.JsonPropertyInfo?.PropertyInfo?.Name;
+            AppendPropertyName(sb, propertyName);
+        }
+
+        private void AppendPropertyName(StringBuilder sb, string propertyName)
+        {
+            if (propertyName != null)
+            {
+                JsonEncodedText encodedPropertyName = JsonEncodedText.Encode(propertyName);
+
+                if (propertyName.IndexOfAny(ReadStack.SpecialCharacters) != -1)
+                {
+                    sb.Append(@"['");
+                    sb.Append(encodedPropertyName);
+                    sb.Append(@"']");
+                }
+                else
+                {
+                    sb.Append('.');
+                    sb.Append(encodedPropertyName);
+                }
+            }
         }
     }
 }

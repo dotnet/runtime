@@ -86,7 +86,7 @@ namespace System.Text.Json
         internal JsonClassInfo(Type type, JsonSerializerOptions options)
         {
             Type = type;
-            ClassType = GetClassType(type);
+            ClassType = GetClassType(type, options);
 
             CreateObject = options.ClassMaterializerStrategy.CreateConstructor(type);
 
@@ -136,7 +136,7 @@ namespace System.Text.Json
                         CreateObject = options.ClassMaterializerStrategy.CreateConstructor(policyProperty.RuntimePropertyType);
 
                         // Create a ClassInfo that maps to the element type which is used for (de)serialization and policies.
-                        Type elementType = GetElementType(type, parentType: null, memberInfo: null);
+                        Type elementType = GetElementType(type, parentType: null, memberInfo: null, options: options);
                         ElementClassInfo = options.GetOrAddClass(elementType);
                     }
                     break;
@@ -145,7 +145,7 @@ namespace System.Text.Json
                         // Add a single property that maps to the class type so we can have policies applied.
                         AddPolicyProperty(type, options);
 
-                        Type elementType = GetElementType(type, parentType: null, memberInfo: null);
+                        Type elementType = GetElementType(type, parentType: null, memberInfo: null, options: options);
 
                         CreateObject = options.ClassMaterializerStrategy.CreateConstructor(
                             typeof(Dictionary<,>).MakeGenericType(typeof(string), elementType));
@@ -164,7 +164,7 @@ namespace System.Text.Json
                         // Add a single property that maps to the class type so we can have policies applied.
                         AddPolicyProperty(type, options);
 
-                        Type elementType = GetElementType(type, parentType: null, memberInfo: null);
+                        Type elementType = GetElementType(type, parentType: null, memberInfo: null, options);
 
                         // Make this Dictionary<string, object> to accomodate input of form {"Key": "MyKey", "Value": 1}.
                         CreateObject = options.ClassMaterializerStrategy.CreateConstructor(typeof(Dictionary<string, object>));
@@ -229,7 +229,7 @@ namespace System.Text.Json
                 {
                     if (property != null)
                     {
-                        ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateAttribute(attributeType);
+                        ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, attributeType);
                     }
 
                     property = jsonPropertyInfo;
@@ -416,8 +416,8 @@ namespace System.Text.Json
             return key;
         }
 
-        // Return the element type of the IEnumerable or KeyValuePair, or return null if not an IEnumerable or KayValuePair.
-        public static Type GetElementType(Type propertyType, Type parentType, MemberInfo memberInfo)
+        // Return the element type of the IEnumerable or KeyValuePair, or return null if not an IEnumerable or KeyValuePair.
+        public static Type GetElementType(Type propertyType, Type parentType, MemberInfo memberInfo, JsonSerializerOptions options)
         {
             if (!typeof(IEnumerable).IsAssignableFrom(propertyType) && !IsKeyValuePair(propertyType))
             {
@@ -435,7 +435,7 @@ namespace System.Text.Json
             if (propertyType.IsGenericType)
             {
                 Type[] args = propertyType.GetGenericArguments();
-                ClassType classType = GetClassType(propertyType);
+                ClassType classType = GetClassType(propertyType, options);
 
                 if ((classType == ClassType.Dictionary || classType == ClassType.IDictionaryConstructible || classType == ClassType.KeyValuePair) &&
                     args.Length >= 2 && // It is >= 2 in case there is a IDictionary<TKey, TValue, TSomeExtension>.
@@ -461,7 +461,7 @@ namespace System.Text.Json
             throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(propertyType, parentType, memberInfo);
         }
 
-        public static ClassType GetClassType(Type type)
+        public static ClassType GetClassType(Type type, JsonSerializerOptions options)
         {
             Debug.Assert(type != null);
 
@@ -470,7 +470,12 @@ namespace System.Text.Json
                 type = Nullable.GetUnderlyingType(type);
             }
 
-            if (DefaultConverters.IsValueConvertable(type))
+            if (type == typeof(object))
+            {
+                return ClassType.Unknown;
+            }
+
+            if (options.HasConverter(type))
             {
                 return ClassType.Value;
             }
@@ -496,11 +501,6 @@ namespace System.Text.Json
             if (typeof(IEnumerable).IsAssignableFrom(type))
             {
                 return ClassType.Enumerable;
-            }
-
-            if (type == typeof(object))
-            {
-                return ClassType.Unknown;
             }
 
             return ClassType.Object;
@@ -563,9 +563,9 @@ namespace System.Text.Json
             return type.IsGenericType && type.GetGenericTypeDefinition() == typeof(ISet<>);
         }
 
-        public static bool HasConstructorThatTakesGenericIEnumerable(Type type)
+        public static bool HasConstructorThatTakesGenericIEnumerable(Type type, JsonSerializerOptions options)
         {
-            Type elementType = GetElementType(type, parentType: null, memberInfo: null);
+            Type elementType = GetElementType(type, parentType: null, memberInfo: null, options);
             return type.GetConstructor(new Type[] { typeof(List<>).MakeGenericType(elementType) }) != null;
         }
 

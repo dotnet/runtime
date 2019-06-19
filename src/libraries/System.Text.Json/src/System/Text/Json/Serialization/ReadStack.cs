@@ -11,7 +11,7 @@ namespace System.Text.Json
     [DebuggerDisplay("Current: ClassType.{Current.JsonClassInfo.ClassType}, {Current.JsonClassInfo.Type.Name}")]
     internal struct ReadStack
     {
-        private static readonly char[] SpecialCharacters = { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
+        internal static readonly char[] SpecialCharacters = { '.', ' ', '\'', '/', '"', '[', ']', '(', ')', '\t', '\n', '\r', '\f', '\b', '\\', '\u0085', '\u2028', '\u2029' };
 
         // A field is used instead of a property to avoid value semantics.
         public ReadStackFrame Current;
@@ -135,7 +135,6 @@ namespace System.Text.Json
             string propertyName;
             if (utf8PropertyName != null)
             {
-                // Attempt to get the JSON property name from the dictionary key.
                 propertyName = JsonHelpers.Utf8GetString(utf8PropertyName);
             }
             else

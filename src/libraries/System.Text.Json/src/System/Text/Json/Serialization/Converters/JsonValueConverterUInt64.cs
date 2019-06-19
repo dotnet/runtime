@@ -2,29 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Text.Json.Serialization.Policies;
-
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class JsonValueConverterUInt64 : JsonValueConverter<ulong>
+    internal sealed class JsonConverterUInt64 : JsonConverter<ulong>
     {
-        public override bool TryRead(Type valueType, ref Utf8JsonReader reader, out ulong value)
+        public override ulong Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (reader.TokenType != JsonTokenType.Number)
             {
-                value = default;
-                return false;
+                ThrowHelper.ThrowJsonException();
             }
 
-            return reader.TryGetUInt64(out value);
+            return reader.GetUInt64();
         }
 
-        public override void Write(ulong value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, ulong value, JsonSerializerOptions options)
         {
             writer.WriteNumberValue(value);
         }
 
-        public override void Write(JsonEncodedText propertyName, ulong value, Utf8JsonWriter writer)
+        public override void Write(Utf8JsonWriter writer, ulong value, JsonEncodedText propertyName, JsonSerializerOptions options)
         {
             writer.WriteNumber(propertyName, value);
         }

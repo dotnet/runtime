@@ -28,6 +28,7 @@ namespace System.Text.Json
 
         // The current property.
         public int PropertyIndex;
+        public bool MoveToNextProperty;
 
         // Has the Start tag been written.
         public bool StartObjectWritten;
@@ -117,6 +118,7 @@ namespace System.Text.Json
             JsonPropertyInfo = null;
             PropertyIndex = 0;
             IsIDictionaryConstructible = false;
+            MoveToNextProperty = false;
             PopStackOnEndObject = false;
             PopStackOnEnd = false;
             StartObjectWritten = false;
@@ -125,6 +127,7 @@ namespace System.Text.Json
         public void EndObject()
         {
             PropertyIndex = 0;
+            MoveToNextProperty = false;
             PopStackOnEndObject = false;
             IsIDictionaryConstructibleProperty = false;
             JsonPropertyInfo = null;
@@ -146,6 +149,7 @@ namespace System.Text.Json
         public void NextProperty()
         {
             JsonPropertyInfo = null;
+            MoveToNextProperty = false;
             PropertyIndex++;
         }
     }

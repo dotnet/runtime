@@ -5,7 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text.Json.Serialization.Policies;
+using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json
 {
@@ -60,23 +60,30 @@ namespace System.Text.Json
 
             jsonPropertyInfo = state.Current.JsonPropertyInfo;
 
-            // If current property is already set (from a constructor, for example) leave as-is.
-            if (jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue) == null)
+            if (state.Current.JsonClassInfo.ClassType == ClassType.Value)
             {
-                // Create the enumerable.
-                object value = ReadStackFrame.CreateEnumerableValue(ref reader, ref state, options);
-
-                // If value is not null, then we don't have a converter so apply the value.
-                if (value != null)
+                state.Current.JsonPropertyInfo.Read(JsonTokenType.StartObject, ref state, ref reader);
+            }
+            else
+            {
+                // If current property is already set (from a constructor, for example) leave as-is.
+                if (jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue) == null)
                 {
-                    if (state.Current.ReturnValue != null)
+                    // Create the enumerable.
+                    object value = ReadStackFrame.CreateEnumerableValue(ref reader, ref state, options);
+
+                    // If value is not null, then we don't have a converter so apply the value.
+                    if (value != null)
                     {
-                        state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value);
-                    }
-                    else
-                    {
-                        // Primitive arrays being returned without object
-                        state.Current.SetReturnValue(value);
+                        if (state.Current.ReturnValue != null)
+                        {
+                            state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value);
+                        }
+                        else
+                        {
+                            // Primitive arrays being returned without object
+                            state.Current.SetReturnValue(value);
+                        }
                     }
                 }
             }

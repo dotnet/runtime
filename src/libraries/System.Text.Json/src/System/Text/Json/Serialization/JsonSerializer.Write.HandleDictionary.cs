@@ -5,7 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text.Json.Serialization.Policies;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -53,7 +53,7 @@ namespace System.Text.Json
 
                 if (elementClassInfo.ClassType == ClassType.Value)
                 {
-                    elementClassInfo.GetPolicyProperty().WriteDictionary(ref state.Current, writer);
+                    elementClassInfo.GetPolicyProperty().WriteDictionary(ref state, writer);
                 }
                 else if (state.Current.Enumerator.Current == null)
                 {
@@ -87,7 +87,7 @@ namespace System.Text.Json
         }
 
         internal static void WriteDictionary<TProperty>(
-            JsonValueConverter<TProperty> converter,
+            JsonConverter<TProperty> converter,
             JsonSerializerOptions options,
             ref WriteStackFrame current,
             Utf8JsonWriter writer)
@@ -130,7 +130,7 @@ namespace System.Text.Json
             else
             {
                 JsonEncodedText escapedKey = JsonEncodedText.Encode(key);
-                converter.Write(escapedKey, value, writer);
+                converter.Write(writer, value, escapedKey, options);
             }
         }
     }
