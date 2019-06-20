@@ -1055,6 +1055,18 @@ namespace System.Tests
 
             yield return new object[] { new int[1] { 2 }, 0, new Int32Enum[1], 0, 1, new Int32Enum[] { (Int32Enum)2 } };
 
+            // Signed/Unsigned conversions
+            yield return new object[] { new byte[] { unchecked((byte)-2) }, 0, new sbyte[1], 0, 1, new sbyte[] { -2 } };
+            yield return new object[] { new sbyte[] { -3 }, 0, new byte[1], 0, 1, new byte[] { unchecked((byte)-3) } };
+            yield return new object[] { new ushort[] { unchecked((ushort)-4) }, 0, new short[1], 0, 1, new short[] { -4 } };
+            yield return new object[] { new short[] { -5 }, 0, new ushort[1], 0, 1, new ushort[] { unchecked((ushort)-5) } };
+            yield return new object[] { new uint[] { unchecked((uint)-6) }, 0, new int[1], 0, 1, new int[] { -6 } };
+            yield return new object[] { new int[] { -7 }, 0, new uint[1], 0, 1, new uint[] { unchecked((uint)-7) } };
+            yield return new object[] { new ulong[] { unchecked((ulong)-8) }, 0, new long[1], 0, 1, new long[] { -8 } };
+            yield return new object[] { new long[] { -9 }, 0, new ulong[1], 0, 1, new ulong[] { unchecked((ulong)-9) } };
+            yield return new object[] { new UIntPtr[] { new UIntPtr(10) }, 0, new IntPtr[1], 0, 1, new IntPtr[] { new IntPtr(10) } };
+            yield return new object[] { new IntPtr[] { new IntPtr(11) }, 0, new UIntPtr[1], 0, 1, new UIntPtr[] { new UIntPtr(11) } };
+
             // Misc
             yield return new object[] { new int[] { 0x12345678, 0x22334455, 0x778899aa }, 0, new int[3], 0, 3, new int[] { 0x12345678, 0x22334455, 0x778899aa } };
 
@@ -1362,7 +1374,6 @@ namespace System.Tests
             yield return new object[] { new ushort[1][], new char[1][] };
 
             // Can't primitive widen Int64
-            yield return new object[] { new long[1], new ulong[1] };
             yield return new object[] { new long[1], new int[1] };
             yield return new object[] { new long[1], new uint[1] };
             yield return new object[] { new long[1], new short[1] };
@@ -1375,7 +1386,6 @@ namespace System.Tests
             yield return new object[] { new long[1], new UIntPtr[1] };
 
             // Can't primitive widen UInt64
-            yield return new object[] { new ulong[1], new long[1] };
             yield return new object[] { new ulong[1], new int[1] };
             yield return new object[] { new ulong[1], new uint[1] };
             yield return new object[] { new ulong[1], new short[1] };
@@ -1389,7 +1399,6 @@ namespace System.Tests
 
             // Can't primitive widen Int32
             yield return new object[] { new int[1], new ulong[1] };
-            yield return new object[] { new int[1], new uint[1] };
             yield return new object[] { new int[1], new short[1] };
             yield return new object[] { new int[1], new ushort[1] };
             yield return new object[] { new int[1], new sbyte[1] };
@@ -1411,8 +1420,6 @@ namespace System.Tests
 
             // Can't primitive widen Int16
             yield return new object[] { new short[1], new ulong[1] };
-            yield return new object[] { new short[1], new ushort[1] };
-            yield return new object[] { new short[1], new ushort[1] };
             yield return new object[] { new short[1], new sbyte[1] };
             yield return new object[] { new short[1], new byte[1] };
             yield return new object[] { new short[1], new char[1] };
@@ -1431,14 +1438,12 @@ namespace System.Tests
             yield return new object[] { new sbyte[1], new ulong[1] };
             yield return new object[] { new sbyte[1], new uint[1] };
             yield return new object[] { new sbyte[1], new ushort[1] };
-            yield return new object[] { new sbyte[1], new byte[1] };
             yield return new object[] { new sbyte[1], new char[1] };
             yield return new object[] { new sbyte[1], new bool[1] };
             yield return new object[] { new sbyte[1], new IntPtr[1] };
             yield return new object[] { new sbyte[1], new UIntPtr[1] };
 
             // Can't primitive widen Byte
-            yield return new object[] { new byte[1], new sbyte[1] };
             yield return new object[] { new byte[1], new bool[1] };
             yield return new object[] { new byte[1], new IntPtr[1] };
             yield return new object[] { new byte[1], new UIntPtr[1] };
@@ -1500,7 +1505,6 @@ namespace System.Tests
             yield return new object[] { new IntPtr[1], new bool[1] };
             yield return new object[] { new IntPtr[1], new float[1] };
             yield return new object[] { new IntPtr[1], new double[1] };
-            yield return new object[] { new IntPtr[1], new UIntPtr[1] };
 
             // Can't primitive widen UIntPtr
             yield return new object[] { new UIntPtr[1], new long[1] };
@@ -1515,7 +1519,6 @@ namespace System.Tests
             yield return new object[] { new UIntPtr[1], new bool[1] };
             yield return new object[] { new UIntPtr[1], new float[1] };
             yield return new object[] { new UIntPtr[1], new double[1] };
-            yield return new object[] { new UIntPtr[1], new IntPtr[1] };
 
             // Interface[] -> Any[] only works if Any implements Interface
             yield return new object[] { new NonGenericInterface2[1], new StructWithNonGenericInterface1[1] };
