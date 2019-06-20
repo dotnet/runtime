@@ -217,7 +217,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(int[]), @"{}")]
         [InlineData(typeof(int[]), @"[""test""")]
         [InlineData(typeof(int[]), @"[true]")]
-        // [InlineData(typeof(int[]), @"[{}]")] TODO #38485: Uncomment when fixed
+        [InlineData(typeof(int[]), @"[{}]")]
         [InlineData(typeof(int[]), @"[[]]")]
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": {}}")]
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": ""test""}")]
@@ -225,7 +225,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": true}")]
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [""test""]}")]
         [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [[]]}")]
-        // [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [{}]}")] TODO #38485: Uncomment when fixed
+        [InlineData(typeof(Dictionary<string, int[]>), @"{""test"": [{}]}")]
         public static void InvalidJsonForArrayShouldFail(Type type, string json)
         {
             Assert.Throws<JsonException>(() => JsonSerializer.Parse(json, type));
