@@ -6715,18 +6715,13 @@ namespace System.Tests
         {
             //                          lower                upper          Culture
             yield return new object[] { "abcd",             "ABCD",         "en-US" };
+            yield return new object[] { "abcd",             "ABCD",         null };
             yield return new object[] { "latin i",          "LATIN I",      "en-US" };
+            yield return new object[] { "latin i",          "LATIN I",      null };
+            yield return new object[] { "",                 "",             null };
             yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
             yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
             yield return new object[] { "\ud801\udc29",     PlatformDetection.IsWindows7 ? "\ud801\udc29" : "\ud801\udc01", "en-US" };
-        }
-
-        public static IEnumerable<object[]> UpperLowerCasing_NullCulture_TestData()
-        {
-            //                          lower       upper
-            yield return new object[] { "abcd",     "ABCD" };
-            yield return new object[] { "latin i",  "LATIN I" };
-            yield return new object[] { "",         "" };
         }
 
         public static IEnumerable<object[]> StartEndWith_TestData()
@@ -6787,7 +6782,7 @@ namespace System.Tests
         [MemberData(nameof(UpperLowerCasing_TestData))]
         public static void CasingTest(string lowerForm, string upperForm, string cultureName)
         {
-            CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
+            CultureInfo ci = cultureName != null ? CultureInfo.GetCultureInfo(cultureName) : null;
             Assert.Equal(lowerForm, upperForm.ToLower(ci));
             Assert.Equal(upperForm, lowerForm.ToUpper(ci));
 
@@ -6802,21 +6797,6 @@ namespace System.Tests
 
             Assert.Equal(lowerForm, lowerForm.AsSpan().ToString());
             Assert.Equal(upperForm, upperForm.AsSpan().ToString());
-        }
-
-        [Theory]
-        [MemberData(nameof(UpperLowerCasing_NullCulture_TestData))]
-        public static void CasingTestNullCulture(string lowerForm, string upperForm)
-        {
-            Assert.Equal(lowerForm, upperForm.ToLower(null));
-            Assert.Equal(upperForm, lowerForm.ToUpper(null));
-        }
-
-        [Fact]
-        public static void CasingAsSpan_NullCulture_ThrowsArgumentNullException()
-        {
-            Assert.Throws<ArgumentNullException>("culture", () => "".AsSpan().ToLower(new Span<char>(), null));
-            Assert.Throws<ArgumentNullException>("culture", () => "".AsSpan().ToUpper(new Span<char>(), null));
         }
 
         [Theory]
