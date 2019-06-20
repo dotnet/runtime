@@ -4387,7 +4387,7 @@ LONG UserBreakpointFilter(EXCEPTION_POINTERS* pEP)
     }
 #endif // DEBUGGING_SUPPORTED
 
-    if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, FailFast))
+    if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, FailFast))
     {
         // Fire an ETW FailFast event
         FireEtwFailFast(W("StatusBreakpoint"),

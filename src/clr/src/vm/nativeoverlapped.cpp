@@ -79,7 +79,7 @@ FCIMPL3(void, CheckVMForIOPacket, LPOVERLAPPED* lpOverlapped, DWORD* errorCode, 
     }
 
     // if this will be "dispatched" to the managed callback fire the IODequeue event:
-    if (*lpOverlapped != NULL && ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadPoolIODequeue))
+    if (*lpOverlapped != NULL && ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolIODequeue))
         FireEtwThreadPoolIODequeue(*lpOverlapped, OverlappedDataObject::GetOverlapped(*lpOverlapped), GetClrInstanceId());
 
 #else // !FEATURE_PAL
@@ -144,7 +144,7 @@ FCIMPL1(LPOVERLAPPED, AllocateNativeOverlapped, OverlappedDataObject* overlapped
     HELPER_METHOD_FRAME_END();
     LOG((LF_INTEROP, LL_INFO10000, "In AllocNativeOperlapped thread 0x%x\n", GetThread()));
 
-    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadPoolIODequeue))
+    if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolIODequeue))
         FireEtwThreadPoolIOPack(lpOverlapped, overlappedUNSAFE, GetClrInstanceId());
 
     return lpOverlapped;
