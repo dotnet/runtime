@@ -1605,6 +1605,14 @@ PROFILE_DISABLED_TESTS += \
 
 PROFILE_DISABLED_TESTS += \
 	transparentproxy.exe
+
+# Tests depending on assembly load order. Under Full AOT using WinAOT
+# profile, console is still available, meaning that more assemblies (I18N)
+# will be loaded when AOT runtime initial loads mscorlib.
+if HOST_WIN32
+PROFILE_DISABLED_TESTS += \
+	assembly_append_ordering.exe
+endif
 endif
 
 REMOTING_DISABLED_TESTS = \
