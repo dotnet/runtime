@@ -10,9 +10,9 @@ namespace System.CodeDom.Compiler
     [System.AttributeUsageAttribute(System.AttributeTargets.All, Inherited=false, AllowMultiple=false)]
     public sealed partial class GeneratedCodeAttribute : System.Attribute
     {
-        public GeneratedCodeAttribute(string tool, string version) { }
-        public string Tool { get { throw null; } }
-        public string Version { get { throw null; } }
+        public GeneratedCodeAttribute(string? tool, string? version) { }
+        public string? Tool { get { throw null; } }
+        public string? Version { get { throw null; } }
     }
 }
 namespace System.Diagnostics.CodeAnalysis
@@ -29,9 +29,9 @@ namespace System.Diagnostics.CodeAnalysis
         public SuppressMessageAttribute(string category, string checkId) { }
         public string Category { get { throw null; } }
         public string CheckId { get { throw null; } }
-        public string Justification { get { throw null; } set { } }
-        public string MessageId { get { throw null; } set { } }
-        public string Scope { get { throw null; } set { } }
-        public string Target { get { throw null; } set { } }
+        public string? Justification { get { throw null; } set { } }
+        public string? MessageId { get { throw null; } set { } }
+        public string? Scope { get { throw null; } set { } }
+        public string? Target { get { throw null; } set { } }
     }
 }
