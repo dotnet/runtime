@@ -18,15 +18,15 @@
     <NativeBinary Include="$(BinDir)mscordbi.dll" />
     <NativeBinary Include="$(BinDir)mscorrc.debug.dll" />
     <NativeBinary Include="$(BinDir)mscorrc.dll" />
-    <NativeBinary Include="$(BinDir)sos.dll" />
+    <File Include="$(BinDir)SOS_README.md">
+      <TargetPath>runtimes\$(PackageTargetRuntime)\native</TargetPath>
+    </File>
     <NativeBinary Include="$(BinDir)Redist\ucrt\DLLs\$(BuildArch)\*.dll" Condition="'$(BuildType)'=='Release' AND '$(BuildArch)' != 'arm64'" />
     <CrossGenBinary Include="$(BinDir)System.Private.CoreLib.dll" />
-    <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen.exe" />
     <CrossArchitectureSpecificToolFile Include="$(BinDir)$(CrossTargetComponentFolder)\crossgen.exe" />
     <CrossArchitectureSpecificToolFile Include="$(BinDir)$(CrossTargetComponentFolder)\mscordaccore.dll" />
     <CrossArchitectureSpecificToolFile Include="$(BinDir)$(CrossTargetComponentFolder)\mscordbi.dll" />
-    <CrossArchitectureSpecificToolFile Include="$(BinDir)$(CrossTargetComponentFolder)\sos.dll" />
 
     <!-- prevent accidental inclusion in AOT projects. -->
     <File Include="$(PlaceholderFile)">
@@ -37,12 +37,10 @@
     </File>
 
     <!-- Create long-name files by including the same files again with a different target path. -->
-    <LongNameFile Include="$(BinDir)mscordaccore.dll;
-                           $(BinDir)sos.dll">
+    <LongNameFile Include="$(BinDir)mscordaccore.dll">
       <TargetPath>runtimes\$(PackageTargetRuntime)\native\%(FileName)$(LongNameSuffix)%(Extension)</TargetPath>
     </LongNameFile>
-    <LongNameFile Include="$(BinDir)$(CrossTargetComponentFolder)\mscordaccore.dll;
-                           $(BinDir)$(CrossTargetComponentFolder)\sos.dll"
+    <LongNameFile Include="$(BinDir)$(CrossTargetComponentFolder)\mscordaccore.dll"
                   Condition="'$(HasCrossTargetComponents)'=='true'">
       <TargetPath>tools\$(CrossTargetComponentFolder)_$(Platform)\%(FileName)$(CrossTargetLongNameSuffix)%(Extension)</TargetPath>
     </LongNameFile>

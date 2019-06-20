@@ -5,11 +5,11 @@
     <NativeBinary Include="$(BinDir)libdbgshim.dylib" />
     <NativeBinary Include="$(BinDir)libmscordaccore.dylib" />
     <NativeBinary Include="$(BinDir)libmscordbi.dylib" />
-    <NativeBinary Include="$(BinDir)libsos.dylib" />
+    <File Include="$(BinDir)SOS_README.md">
+      <TargetPath>runtimes\$(PackageTargetRuntime)\native</TargetPath>
+    </File>
     <NativeBinary Include="$(BinDir)System.Globalization.Native.dylib" />
-    <NativeBinary Include="$(BinDir)sosdocsunix.txt" />
     <CrossGenBinary Include="$(BinDir)System.Private.CoreLib.dll" />
-    <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen" />
   </ItemGroup>
 </Project>
