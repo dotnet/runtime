@@ -292,7 +292,7 @@ namespace System.SpanTests
 
             values = new ReadOnlySpan<int>(new int[] { });
             idx = sp.IndexOfAny(values);
-            Assert.Equal(0, idx);
+            Assert.Equal(-1, idx);
         }
 
         [Fact]
@@ -770,7 +770,7 @@ namespace System.SpanTests
 
             values = new ReadOnlySpan<string>(new string[] { });
             idx = sp.IndexOfAny(values);
-            Assert.Equal(0, idx);
+            Assert.Equal(-1, idx);
         }
 
         [Fact]
