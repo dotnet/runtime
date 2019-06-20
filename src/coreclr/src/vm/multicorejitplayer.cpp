@@ -562,7 +562,7 @@ void MulticoreJitProfilePlayer::JITMethod(Module * pModule, unsigned methodIndex
 	// Ensure non-null module
 	if (pModule == NULL)
 	{
-		if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD))
+		if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD))
 		{
 			_FireEtwMulticoreJitA(W("NULLMODULEPOINTER"), NULL, methodIndex, 0, 0);
 		}
@@ -619,7 +619,7 @@ BadMethod:
         
     MulticoreJitTrace(("Filtered out methods: pModule:[%s] token:[%x]", pModule->GetSimpleName(), token));
 
-    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD)) 
+    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD)) 
     {
         _FireEtwMulticoreJitA(W("FILTERMETHOD-GENERIC"), pModule->GetSimpleName(), token, 0, 0);
     }
@@ -744,7 +744,7 @@ HRESULT MulticoreJitProfilePlayer::UpdateModuleInfo()
                     info.Dump(W("    BlockingModule"), i);
     #endif
 
-                    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD)) 
+                    if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD)) 
                     {
                         _FireEtwMulticoreJitA(W("BLOCKINGMODULE"), info.m_pRecord->GetModuleName(), i, info.m_curLevel, info.m_needLevel);
                     }
@@ -842,7 +842,7 @@ bool MulticoreJitProfilePlayer::GroupWaitForModuleLoad(int pos)
 
         MulticoreJitTrace(("Delay: %d ms", delay));
 
-        if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD)) 
+        if (ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, TRACE_LEVEL_VERBOSE, CLR_PRIVATEMULTICOREJIT_KEYWORD)) 
         {
             _FireEtwMulticoreJit(W("GROUPWAIT"), W("Delay"), delay, 0, 0);
         }

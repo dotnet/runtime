@@ -5100,7 +5100,7 @@ void DoJITFailFast ()
     __report_gsfailure((ULONG_PTR)0);
 #endif // defined(_TARGET_X86_)
 #else // FEATURE_PAL
-    if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, FailFast))
+    if(ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, FailFast))
     {
         // Fire an ETW FailFast event
         FireEtwFailFast(W("Unsafe buffer security check failure: Buffer overrun detected"),

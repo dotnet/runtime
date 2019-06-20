@@ -2309,7 +2309,7 @@ BOOL ThreadpoolMgr::RegisterWaitForSingleObject(PHANDLE phNewWaitObject,
         // We fire the "enqueue" ETW event here, to "mark" the thread that had called the API, rather than the
         // thread that will PostQueuedCompletionStatus (the dedicated WaitThread).
         // This event correlates with ThreadPoolIODequeue in ThreadpoolMgr::AsyncCallbackCompletion
-        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadPoolIOEnqueue))
+        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolIOEnqueue))
             FireEtwThreadPoolIOEnqueue((LPOVERLAPPED)waitInfo, reinterpret_cast<void*>(Callback), (dwFlag & WAIT_SINGLE_EXECUTION) == 0, GetClrInstanceId());
     
         BOOL status = QueueUserAPC((PAPCFUNC)InsertNewWaitForSelf, threadCB->threadHandle, (size_t) waitInfo);
@@ -2867,7 +2867,7 @@ DWORD WINAPI ThreadpoolMgr::AsyncCallbackCompletion(PVOID pArgs)
 
         // We fire the "dequeue" ETW event here, before executing the user code, to enable correlation with
         // the ThreadPoolIOEnqueue fired in ThreadpoolMgr::RegisterWaitForSingleObject
-        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadPoolIODequeue))
+        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolIODequeue))
             FireEtwThreadPoolIODequeue(waitInfo, reinterpret_cast<void*>(waitInfo->Callback), GetClrInstanceId());
 
         // the user callback can throw, the host must be prepared to handle it.
@@ -3427,7 +3427,7 @@ Top:
         // Note: we still fire the event for managed async IO, despite the fact we don't have a paired IOEnqueue event
         // for this case. We do this to "mark" the end of the previous workitem. When we provide full support at the higher
         // abstraction level for managed IO we can remove the IODequeues fired here
-        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadPoolIODequeue)
+        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadPoolIODequeue)
                 && !AreEtwIOQueueEventsSpeciallyHandled((LPOVERLAPPED_COMPLETION_ROUTINE)key) && pOverlapped != NULL)
         {
             FireEtwThreadPoolIODequeue(pOverlapped, OverlappedDataObject::GetOverlappedForTracing(pOverlapped), GetClrInstanceId());
