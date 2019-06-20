@@ -170,8 +170,12 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _maxDepth = value;
+                EffectiveMaxDepth = (value == 0 ? JsonReaderOptions.DefaultMaxDepth : value);
             }
         }
+
+        // The default is 64 because that is what the reader uses, so re-use the same JsonReaderOptions.DefaultMaxDepth constant.
+        internal int EffectiveMaxDepth { get; private set; } = JsonReaderOptions.DefaultMaxDepth;
 
         /// <summary>
         /// Specifies the policy used to convert a property's name on an object to another format, such as camel-casing.
