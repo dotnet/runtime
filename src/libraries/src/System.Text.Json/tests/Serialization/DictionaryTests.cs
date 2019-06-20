@@ -800,6 +800,28 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void DeserializeDictionaryWithDuplicateProperties()
+        {
+            PocoDuplicate foo = JsonSerializer.Parse<PocoDuplicate>(@"{""BoolProperty"": false, ""BoolProperty"": true}");
+            Assert.True(foo.BoolProperty);
+
+            foo = JsonSerializer.Parse<PocoDuplicate>(@"{""BoolProperty"": false, ""IntProperty"" : 1, ""BoolProperty"": true , ""IntProperty"" : 2}");
+            Assert.True(foo.BoolProperty);
+            Assert.Equal(2, foo.IntProperty);
+
+            foo = JsonSerializer.Parse<PocoDuplicate>(@"{""DictProperty"" : {""a"" : ""b"", ""c"" : ""d""},""DictProperty"" : {""b"" : ""b"", ""c"" : ""e""}}");
+            Assert.Equal(3, foo.DictProperty.Count);
+            Assert.Equal("e", foo.DictProperty["c"]);
+        }
+
+        public class PocoDuplicate
+        {
+            public bool BoolProperty { get; set; }
+            public int IntProperty { get; set; }
+            public Dictionary<string, string> DictProperty { get; set; }
+        }
+
+        [Fact]
         public static void ClassWithNoSetter()
         {
             string json = @"{""MyDictionary"":{""Key"":""Value""}}";
