@@ -15,28 +15,34 @@ namespace System.Text.Json.Serialization.Tests
         void Verify();
     }
 
-    public enum SampleByteEnum : byte
+    public enum SampleEnumByte : byte
     {
-        One = 0,
-        Two = 1,
+        MinZero = byte.MinValue,
+        One = 1,
+        Two = 2,
         Max = byte.MaxValue
     }
 
-    public enum SampleSByteEnum : sbyte
+    public enum SampleEnumSByte : sbyte
     {
-        One = 0,
-        Two = 1,
+        MinNegative = sbyte.MinValue,
+        Zero = 0,
+        One = 1,
+        Two = 2,
         Max = sbyte.MaxValue
     }
 
     public enum SampleEnum
     {
+        MinZero = 0,
         One = 1,
         Two = 2
     }
 
     public enum SampleEnumInt16 : short
     {
+        MinNegative = short.MinValue,
+        Zero = 0,
         One = 1,
         Two = 2,
         Max = short.MaxValue
@@ -44,28 +50,43 @@ namespace System.Text.Json.Serialization.Tests
 
     public enum SampleEnumUInt16 : ushort
     {
+        MinZero = ushort.MinValue,
         One = 1,
         Two = 2,
         Max = ushort.MaxValue
     }
 
-    public enum SampleInt64Enum : long
+    public enum SampleEnumInt32 : Int32
     {
-        Min = long.MinValue,
-        Max = long.MaxValue
+        MinNegative = Int32.MinValue,
+        Zero = 0,
+        One = 1,
+        Two = 2,
+        Max = Int32.MaxValue
     }
 
-    public enum SampleUInt32Enum : UInt32
+    public enum SampleEnumUInt32 : UInt32
     {
-        One = 0,
-        Two = 1,
+        MinZero = UInt32.MinValue,
+        One = 1,
+        Two = 2,
         Max = UInt32.MaxValue
     }
 
-    public enum SampleUInt64Enum : ulong
+    public enum SampleEnumInt64 : long
     {
-        One = 0,
-        Two = 1,
+        MinNegative = long.MinValue,
+        Zero = 0,
+        One = 1,
+        Two = 2,
+        Max = long.MaxValue
+    }
+
+    public enum SampleEnumUInt64 : ulong
+    {
+        MinZero = ulong.MinValue,
+        One = 1,
+        Two = 2,
         Max = ulong.MaxValue
     }
 
