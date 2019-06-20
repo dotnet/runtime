@@ -99,7 +99,7 @@ namespace System.Data.Tests.Common
                     Assert.Equal(typeof(ArgumentException), ex.GetType());
                     Assert.Null(ex.InnerException);
                     Assert.NotNull(ex.Message);
-                    Assert.True(ex.Message.IndexOf("'" + keyword + "'") == -1);
+                    Assert.Contains(keyword, ex.Message);
                     Assert.Equal(keyword, ex.ParamName);
                 }
             }
@@ -302,7 +302,7 @@ namespace System.Data.Tests.Common
                     Assert.Equal(typeof(ArgumentException), ex.GetType());
                     Assert.Null(ex.InnerException);
                     Assert.NotNull(ex.Message);
-                    Assert.True(ex.Message.IndexOf("'" + keyword + "'") == -1);
+                    Assert.Contains(keyword, ex.Message);
                     Assert.Equal(keyword, ex.ParamName);
                 }
 
