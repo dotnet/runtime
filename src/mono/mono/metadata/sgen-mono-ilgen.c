@@ -47,6 +47,7 @@ enum {
 
 #ifdef MANAGED_ALLOCATION
 // Cache the SgenThreadInfo pointer in a local 'var'.
+// This is the only live producer of CEE_MONO_TLS.
 #define EMIT_TLS_ACCESS_VAR(mb, var) \
 	do { \
 		var = mono_mb_add_local ((mb), mono_get_int_type ());	\

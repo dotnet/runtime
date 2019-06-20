@@ -5774,13 +5774,11 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			if (sp > frame->stack)
 				g_warning ("retobj: more values on stack: %d", sp-frame->stack);
 			goto exit_frame;
-		MINT_IN_CASE(MINT_MONO_TLS) {
-			MonoTlsKey key = (MonoTlsKey)*(gint32 *)(ip + 1);
-			sp->data.p = mono_tls_get_tls_getter (key) (); // get function pointer and call it
+		MINT_IN_CASE(MINT_MONO_SGEN_THREAD_INFO)
+			sp->data.p = mono_tls_get_sgen_thread_info ();
 			sp++;
-			ip += 3;
+			++ip;
 			MINT_IN_BREAK;
-		}
 		MINT_IN_CASE(MINT_MONO_MEMORY_BARRIER) {
 			++ip;
 			mono_memory_barrier ();

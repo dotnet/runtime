@@ -5376,9 +5376,8 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case CEE_MONO_TLS: {
 				gint32 key = read32 (td->ip + 1);
 				td->ip += 5;
-				g_assert (key < TLS_KEY_NUM);
-				interp_add_ins (td, MINT_MONO_TLS);
-				WRITE32_INS (td->last_ins, 0, &key);
+				g_assertf (key == TLS_KEY_SGEN_THREAD_INFO, "%d", key);
+				interp_add_ins (td, MINT_MONO_SGEN_THREAD_INFO);
 				PUSH_SIMPLE_TYPE (td, STACK_TYPE_MP);
 				break;
 			}
