@@ -7260,7 +7260,7 @@ MONO_RESTORE_WARNING
 				 * get_generic_info_from_stack_frame () needs this to properly look up
 				 * the argument value during the handling of async exceptions.
 				 */
-				if (ins == cfg->args [0]) {
+				if (i == 0 && sig->hasthis) {
 					mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, code - cfg->native_code);
 					mono_add_var_location (cfg, ins, FALSE, ins->inst_basereg, ins->inst_offset, code - cfg->native_code, 0);
 				}
@@ -7316,7 +7316,8 @@ MONO_RESTORE_WARNING
 				g_assert_not_reached ();
 			}
 
-			if (ins == cfg->args [0]) {
+			if (i == 0 && sig->hasthis) {
+				g_assert (ainfo->storage == ArgInIReg);
 				mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, code - cfg->native_code);
 				mono_add_var_location (cfg, ins, TRUE, ins->dreg, 0, code - cfg->native_code, 0);
 			}
