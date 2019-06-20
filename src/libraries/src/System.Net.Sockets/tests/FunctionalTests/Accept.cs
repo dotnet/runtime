@@ -288,6 +288,75 @@ namespace System.Net.Sockets.Tests
                 }
             }
         }
+
+        [Fact]
+        public async Task AcceptGetsCanceledByDispose()
+        {
+            // We try this a couple of times to deal with a timing race: if the Dispose happens
+            // before the operation is started, we won't see a SocketException.
+
+            SocketError? localSocketError = null;
+            bool disposedException = false;
+            for (int i = 0; i < 10 && !localSocketError.HasValue; i++)
+            {
+                var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                Task acceptTask = Task.Factory.StartNew(() =>
+                {
+                    AcceptAsync(listener).GetAwaiter().GetResult();
+                }, TaskCreationOptions.LongRunning);
+
+                // Wait a little so the operation is started, then Dispose.
+                await Task.Delay(100);
+                Task disposeTask = Task.Factory.StartNew(() =>
+                {
+                    listener.Dispose();
+                }, TaskCreationOptions.LongRunning);
+
+                Task timeoutTask = Task.Delay(30000);
+
+                Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, acceptTask, timeoutTask));
+
+                await disposeTask;
+
+                try
+                {
+                    await acceptTask;
+                }
+                catch (SocketException se)
+                {
+                    localSocketError = se.SocketErrorCode;
+                }
+                catch (ObjectDisposedException)
+                {
+                    disposedException = true;
+                }
+
+                if (UsesApm)
+                {
+                    break;
+                }
+            }
+
+            if (UsesApm)
+            {
+                Assert.Null(localSocketError);
+                Assert.True(disposedException);
+            }
+            else
+            {
+                if (UsesSync)
+                {
+                    Assert.Equal(SocketError.Interrupted, localSocketError);
+                }
+                else
+                {
+                    Assert.Equal(SocketError.OperationAborted, localSocketError);
+                }
+            }
+        }
     }
 
     public sealed class AcceptSync : Accept<SocketHelperArraySync>

@@ -318,7 +318,7 @@ namespace System.Net.Sockets
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, SetLastError=true)]
     internal delegate SocketError WSARecvMsgDelegateBlocking(
-                IntPtr socketHandle,
+                SafeSocketHandle socketHandle,
                 IntPtr msg,
                 out int bytesTransferred,
                 IntPtr overlapped,
