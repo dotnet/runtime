@@ -12,26 +12,26 @@ namespace System.Diagnostics.Contracts
         public static event System.EventHandler<System.Diagnostics.Contracts.ContractFailedEventArgs> ContractFailed { add { } remove { } }
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Assert(bool condition) { }
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition) { }
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Assert(bool condition, string userMessage) { }
+        public static void Assert([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? userMessage) { }
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Assume(bool condition) { }
+        public static void Assume([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition) { }
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
         [System.Diagnostics.ConditionalAttribute("DEBUG")]
-        public static void Assume(bool condition, string userMessage) { }
+        public static void Assume([System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute(false)] bool condition, string? userMessage) { }
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
         public static void EndContractBlock() { }
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
         public static void Ensures(bool condition) { }
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
-        public static void Ensures(bool condition, string userMessage) { }
+        public static void Ensures(bool condition, string? userMessage) { }
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
         public static void EnsuresOnThrow<TException>(bool condition) where TException : System.Exception { }
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
-        public static void EnsuresOnThrow<TException>(bool condition, string userMessage) where TException : System.Exception { }
+        public static void EnsuresOnThrow<TException>(bool condition, string? userMessage) where TException : System.Exception { }
         public static bool Exists(int fromInclusive, int toExclusive, System.Predicate<int> predicate) { throw null; }
         public static bool Exists<T>(System.Collections.Generic.IEnumerable<T> collection, System.Predicate<T> predicate) { throw null; }
         public static bool ForAll(int fromInclusive, int toExclusive, System.Predicate<int> predicate) { throw null; }
@@ -39,14 +39,14 @@ namespace System.Diagnostics.Contracts
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
         public static void Invariant(bool condition) { }
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
-        public static void Invariant(bool condition, string userMessage) { }
+        public static void Invariant(bool condition, string? userMessage) { }
         public static T OldValue<T>(T value) { throw null; }
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
         public static void Requires(bool condition) { }
         [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
-        public static void Requires(bool condition, string userMessage) { }
+        public static void Requires(bool condition, string? userMessage) { }
         public static void Requires<TException>(bool condition) where TException : System.Exception { }
-        public static void Requires<TException>(bool condition, string userMessage) where TException : System.Exception { }
+        public static void Requires<TException>(bool condition, string? userMessage) where TException : System.Exception { }
         public static T Result<T>() { throw null; }
         public static T ValueAtReturn<T>(out T value) { throw null; }
     }
@@ -79,12 +79,12 @@ namespace System.Diagnostics.Contracts
     }
     public sealed partial class ContractFailedEventArgs : System.EventArgs
     {
-        public ContractFailedEventArgs(System.Diagnostics.Contracts.ContractFailureKind failureKind, string message, string condition, System.Exception originalException) { }
-        public string Condition { get { throw null; } }
+        public ContractFailedEventArgs(System.Diagnostics.Contracts.ContractFailureKind failureKind, string? message, string? condition, System.Exception? originalException) { }
+        public string? Condition { get { throw null; } }
         public System.Diagnostics.Contracts.ContractFailureKind FailureKind { get { throw null; } }
         public bool Handled { get { throw null; } }
-        public string Message { get { throw null; } }
-        public System.Exception OriginalException { get { throw null; } }
+        public string? Message { get { throw null; } }
+        public System.Exception? OriginalException { get { throw null; } }
         public bool Unwind { get { throw null; } }
         public void SetHandled() { }
         public void SetUnwind() { }
@@ -113,7 +113,7 @@ namespace System.Diagnostics.Contracts
         public string Category { get { throw null; } }
         public bool Enabled { get { throw null; } }
         public string Setting { get { throw null; } }
-        public string Value { get { throw null; } }
+        public string? Value { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field)]
     [System.Diagnostics.ConditionalAttribute("CONTRACTS_FULL")]
@@ -151,7 +151,7 @@ namespace System.Runtime.CompilerServices
 {
     public static partial class ContractHelper
     {
-        public static string RaiseContractFailedEvent(System.Diagnostics.Contracts.ContractFailureKind failureKind, string userMessage, string conditionText, System.Exception innerException) { throw null; }
-        public static void TriggerFailure(System.Diagnostics.Contracts.ContractFailureKind kind, string displayMessage, string userMessage, string conditionText, System.Exception innerException) { }
+        public static string? RaiseContractFailedEvent(System.Diagnostics.Contracts.ContractFailureKind failureKind, string? userMessage, string? conditionText, System.Exception? innerException) { throw null; }
+        public static void TriggerFailure(System.Diagnostics.Contracts.ContractFailureKind kind, string? displayMessage, string? userMessage, string? conditionText, System.Exception? innerException) { }
     }
 }
