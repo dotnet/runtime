@@ -8,7 +8,7 @@ parameters:
   helixType: '(unspecified)'
   condition: ''
   dependsOn: ''
-  containerName: ''
+  container: ''
   timeoutInMinutes: ''
   crossrootfsDir: ''
   enableMicrobuild: ''
@@ -73,8 +73,11 @@ jobs:
     workspace:
       clean: all
 
-    ${{ if ne(parameters.containerName, '') }}:
-      container: ${{ parameters.containerName }}
+    ${{ if ne(parameters.container, '') }}:
+      ${{ if eq(parameters.container.registry, 'mcr') }}:
+        container: ${{ format('{0}:{1}', 'mcr.microsoft.com/dotnet-buildtools/prereqs', parameters.container.image) }}
+      ${{ if ne(parameters.container.registry, 'mcr') }}:
+        container: ${{ format('{0}:{1}', parameters.container.registry, parameters.container.image) }}
 
     ${{ if eq(parameters.osGroup, 'Linux') }}:
       agentOs: Ubuntu

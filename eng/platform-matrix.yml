@@ -28,7 +28,9 @@ jobs:
       archType: arm
       osGroup: Linux
       osIdentifier: Linux
-      containerName: ubuntu_1404_arm_cross_build_image
+      container:
+        image: ubuntu-16.04-cross-14.04-23cacb0-20190528233931
+        registry: mcr
       helixQueues:
       # Ubuntu.1404.Arm32.Open is used only by CI while Ubuntu.1604.Arm32.Open serves PRs and scheduled builds.
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'ci')) }}:
@@ -51,7 +53,9 @@ jobs:
       archType: arm64
       osGroup: Linux
       osIdentifier: Linux
-      containerName: ubuntu_1604_arm64_cross_build_image
+      container:
+        image: ubuntu-16.04-cross-arm64-cfdd435-20190520220848
+        registry: mcr
       helixQueues:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Ubuntu.1804.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-helix-arm64v8-0a0ebdd-20190312220351
@@ -72,7 +76,9 @@ jobs:
       archType: x64
       osGroup: Linux
       osIdentifier: Linux_musl
-      containerName: musl_x64_build_image
+      container:
+        image: alpine-3.6-WithNode-cfdd435-20190521001804
+        registry: mcr
       helixQueues:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Alpine.38.Amd64.Open)Ubuntu.1604.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-45b1fa2-20190327215821
@@ -90,7 +96,9 @@ jobs:
       archType: arm64
       osGroup: Linux
       osIdentifier: Linux_musl
-      containerName: musl_arm64_build_image
+      container:
+        image: ubuntu-16.04-cross-arm64-alpine-406629a-20190520220848
+        registry: mcr
       helixQueues:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - (Alpine.38.Arm64.Open)Ubuntu.1604.Arm64.Docker.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.8-helix-arm64v8-46e69dd-20190313223330
@@ -108,7 +116,9 @@ jobs:
       archType: x64
       osGroup: Linux
       osIdentifier: Linux_rhel6
-      containerName: centos6_x64_build_image
+      container:
+        image: centos-6-3e800f1-20190501005338
+        registry: mcr
       helixQueues:
       # TODO: enable RedHat.6.Amd64.Open once https://github.com/dotnet/coreclr/issues/23580 is resolved
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -124,7 +134,9 @@ jobs:
       archType: x64
       osGroup: Linux
       osIdentifier: Linux
-      containerName: centos7_x64_build_image
+      container:
+        image: centos-7-3e800f1-20190501005343
+        registry: mcr
       helixQueues:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(parameters.helixQueueGroup, 'pr', 'ci')) }}:
         - Ubuntu.1804.Amd64.Open
