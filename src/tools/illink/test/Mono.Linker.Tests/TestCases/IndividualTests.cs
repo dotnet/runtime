@@ -86,8 +86,7 @@ namespace Mono.Linker.Tests.TestCases
 		public void DeterministicMvidWorks()
 		{
 			var testCase = CreateIndividualCase (typeof (DeterministicMvidWorks));
-			var runner = new TestRunner (new ObjectFactory ());
-			var result = runner.Run (testCase);
+			var result = Run (testCase, out TestRunner runner);
 
 			var originalMvid = GetMvid (result.InputAssemblyPath);
 			var firstOutputMvid = GetMvid (result.OutputAssemblyPath);
@@ -105,8 +104,7 @@ namespace Mono.Linker.Tests.TestCases
 		public void NewMvidWorks ()
 		{
 			var testCase = CreateIndividualCase (typeof (NewMvidWorks));
-			var runner = new TestRunner (new ObjectFactory ());
-			var result = runner.Run (testCase);
+			var result = Run (testCase, out TestRunner runner);
 
 			var originalMvid = GetMvid (result.InputAssemblyPath);
 			var firstOutputMvid = GetMvid (result.OutputAssemblyPath);
@@ -123,8 +121,7 @@ namespace Mono.Linker.Tests.TestCases
 		public void RetainMvidWorks ()
 		{
 			var testCase = CreateIndividualCase (typeof (RetainMvid));
-			var runner = new TestRunner (new ObjectFactory ());
-			var result = runner.Run (testCase);
+			var result = Run (testCase, out TestRunner runner);
 
 			var originalMvid = GetMvid (result.InputAssemblyPath);
 			var firstOutputMvid = GetMvid (result.OutputAssemblyPath);
@@ -141,8 +138,7 @@ namespace Mono.Linker.Tests.TestCases
 		public void DefaultMvidBehavior ()
 		{
 			var testCase = CreateIndividualCase (typeof (NewMvidWorks));
-			var runner = new TestRunner (new ObjectFactory ());
-			var result = runner.Run (testCase);
+			var result = Run (testCase, out TestRunner runner);
 
 			var originalMvid = GetMvid (result.InputAssemblyPath);
 			var firstOutputMvid = GetMvid (result.OutputAssemblyPath);
@@ -168,9 +164,15 @@ namespace Mono.Linker.Tests.TestCases
 			return TestDatabase.CreateCollector ().CreateIndividualCase (testCaseType);
 		}
 
-		protected virtual LinkedTestCaseResult Run (TestCase testCase)
+		protected LinkedTestCaseResult Run (TestCase testCase)
 		{
-			var runner = new TestRunner (new ObjectFactory ());
+			TestRunner runner;
+			return Run (testCase, out runner);
+		}
+		
+		protected virtual LinkedTestCaseResult Run (TestCase testCase, out TestRunner runner)
+		{
+			runner = new TestRunner (new ObjectFactory ());
 			return runner.Run (testCase);
 		}
 	}
