@@ -208,8 +208,8 @@ namespace System.Security.Cryptography.RNG.Tests
         [Fact]
         public static void GetInt32_NegativeBounds1000d20()
         {
-            int numberToGenerate = 1000;
-            Span<int> generated = stackalloc int[numberToGenerate];
+            int numberToGenerate = 10_000;
+            Span<int> generated = new int[numberToGenerate];
 
             for (int i = 0; i < numberToGenerate; i++)
             {
@@ -222,8 +222,8 @@ namespace System.Security.Cryptography.RNG.Tests
         [Fact]
         public static void GetInt32_1000d6()
         {
-            int numberToGenerate = 1000;
-            Span<int> generated = stackalloc int[numberToGenerate];
+            int numberToGenerate = 10_000;
+            Span<int> generated = new int[numberToGenerate];
 
             for (int i = 0; i < numberToGenerate; i++)
             {
@@ -243,8 +243,8 @@ namespace System.Security.Cryptography.RNG.Tests
         [InlineData(16_777_214, 16_777_217)]
         public static void GetInt32_MaskRangeCorrect(int fromInclusive, int toExclusive)
         {
-            int numberToGenerate = 1000;
-            Span<int> generated = stackalloc int[numberToGenerate];
+            int numberToGenerate = 10_000;
+            Span<int> generated = new int[numberToGenerate];
 
             for (int i = 0; i < numberToGenerate; i++)
             {
