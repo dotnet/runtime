@@ -282,6 +282,8 @@ namespace System.PrivateUri.Tests
         [InlineData("1:0:0:1:0:0:1:1", "1::1:0:0:1:1")]
         [InlineData("1:1:0:0:0:1:0:1", "1:1::1:0:1")]
         [InlineData("1:0:0:0:1:0:1:1", "1::1:0:1:1")]
+        [InlineData("::2:3:4:5:6:7:8", "0:2:3:4:5:6:7:8")]
+        [InlineData("1:2:3:4:5:6:7::", "1:2:3:4:5:6:7:0")]
         public void UriIPv6Host_CompressionRangeSelection_Success(string address, string expected)
         {
             ParseIPv6Address(address, expected);
