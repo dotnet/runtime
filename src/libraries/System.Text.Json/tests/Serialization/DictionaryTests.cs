@@ -776,16 +776,27 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void DeserializeDictionaryWithDuplicateKeys()
         {
-            // Strongly-typed IDictionary<,> case.
-            Dictionary<string, string> deserialize = JsonSerializer.Parse<Dictionary<string, string>>(@"{""Hello"":""World"", ""Hello"":""NewValue""}");
-            Assert.Equal("NewValue", deserialize["Hello"]);
+            // Non-generic IDictionary case.
+            IDictionary iDictionary = JsonSerializer.Parse<IDictionary>(@"{""Hello"":""World"", ""Hello"":""NewValue""}");
+            Assert.Equal("NewValue", iDictionary["Hello"].ToString());
 
-            deserialize = JsonSerializer.Parse<Dictionary<string, string>>(@"{""Hello"":""World"", ""myKey"" : ""myValue"", ""Hello"":""NewValue""}");
-            Assert.Equal("NewValue", deserialize["Hello"]);
+            // Generic IDictionary case.
+            IDictionary<string, string> iNonGenericDictionary = JsonSerializer.Parse<IDictionary<string, string>>(@"{""Hello"":""World"", ""Hello"":""NewValue""}");
+            Assert.Equal("NewValue", iNonGenericDictionary["Hello"]);
+
+            IDictionary<string, object> iNonGenericObjectDictionary = JsonSerializer.Parse<IDictionary<string, object>>(@"{""Hello"":""World"", ""Hello"":""NewValue""}");
+            Assert.Equal("NewValue", iNonGenericObjectDictionary["Hello"].ToString());
+
+            // Strongly-typed IDictionary<,> case.
+            Dictionary<string, string> dictionary = JsonSerializer.Parse<Dictionary<string, string>>(@"{""Hello"":""World"", ""Hello"":""NewValue""}");
+            Assert.Equal("NewValue", dictionary["Hello"]);
+
+            dictionary = JsonSerializer.Parse<Dictionary<string, string>>(@"{""Hello"":""World"", ""myKey"" : ""myValue"", ""Hello"":""NewValue""}");
+            Assert.Equal("NewValue", dictionary["Hello"]);
 
             // Weakly-typed IDictionary case.
-            Dictionary<string, object> deserializeObject = JsonSerializer.Parse<Dictionary<string, object>>(@"{""Hello"":""World"", ""Hello"": null}");
-            Assert.Null(deserializeObject["Hello"]);
+            Dictionary<string, object> dictionaryObject = JsonSerializer.Parse<Dictionary<string, object>>(@"{""Hello"":""World"", ""Hello"": null}");
+            Assert.Null(dictionaryObject["Hello"]);
         }
 
         [Fact]
