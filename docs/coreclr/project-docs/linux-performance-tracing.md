@@ -3,13 +3,27 @@
 
 When a performance problem is encountered on Linux, these instructions can be used to gather detailed information about what was happening on the machine at the time of the performance problem.
 
-# Required Tools #
+CoreCLR supports two different mechanisms for tracing .NET applications on Linux: EventPipe and LTTng. They both have tools built by the .NET team, namely dotnet-trace (which uses EventPipe) and PerfCollect (which uses LTTng). Here are some notable differences between the two tools to help you decide which to use:
+
+1. PerfCollect is leverages LTTng, which is a tracing framework built for the Linux kernel, so it can only be used on Linux. dotnet-trace is OS agnostic, so you can use it the same way across Windows/macOS and Linux. 
+
+2. PerfCollect uses [perf](https://perf.wiki.kernel.org/index.php/Main_Page), which gives you native callstacks. dotnet-trace can only give you managed callstack.
+
+3. PerfCollect has a machine-wide scope, so it can be used to capture events from multiple processes running on the same machine. dotnet-trace is specific to a single runtime instance. 
+
+4. PerfCollect can be started prior to the process start, whereas dotnet-trace can only be attached after the process has started and runtime has set up the necessary internal data structures to allow attach.
+
+5. PerfCollect supports .NET Core 2.1 or later. dotnet-trace supports .NET Core 3.0 or later. 
+
+# LTTng and PerfCollect (.NET Core 2.1 or later) #
+
+## Required Tools ##
 - **perfcollect**: Bash script that automates data collection.
 	- Available at <http://aka.ms/perfcollect>.
 - **PerfView**: Windows-based performance tool that can also analyze trace files collected with Perfcollect.
 	- Available at <http://aka.ms/perfview>.
 
-# Preparing Your Machine #
+## Preparing Your Machine ##
 Follow these steps to prepare your machine to collect a performance trace.
 
 1. Download Perfcollect.
@@ -30,7 +44,7 @@ Follow these steps to prepare your machine to collect a performance trace.
 	> sudo ./perfcollect install
 	> ```
 
-# Collecting a Trace #
+## Collecting a Trace ##
 1. Have two shell windows available - one for controlling tracing, referred to as **[Trace]**, and one for running the application, referred to as **[App]**.
 2. **[App]** Setup the application shell - this enables tracing configuration inside of CoreCLR.
 
@@ -81,7 +95,7 @@ Follow these steps to prepare your machine to collect a performance trace.
 
 	The compressed trace file is now stored in the current working directory.
 
-# Resolving Framework Symbols #
+## Resolving Framework Symbols ##
 Framework symbols need to be manually generated at the time the trace is collected.  They are different than app-level symbols because the framework is pre-compiled while apps are just-in-time-compiled.  For code like the framework that was precompiled to native
 code, you need a special tool called crossgen that knows how to generate the mapping from the native code to the name of the
 methods.  
@@ -125,7 +139,7 @@ VERSION is 2.1.0 the commands to update crossgen would be
 Once you have done this, perfcollect will use crossgen to include framework symbols.  The warning that perfcollect used to
 issue should go away.   This only has to be one once per machine (until you update your runtime). 
 
-### Alternative: Turn off use of precompiled code
+### Alternative: Turn off use of precompiled code ###
 
 If you don't have the abiltiy to update the .NET Runtime (to add crossgen), or if the above procedure did not work
 for some reason, there is another approach to getting framework symbols.   You can tell the runtime to simply 
@@ -138,7 +152,7 @@ in order to get symbols, you simply need to add one more.
 	> ```
 With this change you should get the symbols for all .NET code. 
 
-## Getting Symbols For the Native Runtime
+## Getting Symbols For the Native Runtime ##
 
 Most of the time you are interested in your own code, which perfcollect resolves by default.   Sometimes it is very
 useful to see what is going on inside the .NET Framework DLLs (which is what the last section was about), but sometimes
@@ -169,7 +183,7 @@ dlls that they are for.
     sudo cp mySymbols/* /usr/share/dotnet/shared/Microsoft.NETCore.App/2.1.0
 ```
 After this, you should get symbolic names for the native dlls when you run perfcollect.  
-# Collecting in a Docker Container #
+## Collecting in a Docker Container ##
 Perfcollect can be used to collect data for an application running inside a Docker container.  The main thing to know is that collecting a trace requires elevated privileges because the [default seccomp profile](https://docs.docker.com/engine/security/seccomp/) blocks a required syscall - perf_events_open.
 
 In order to use the instructions in this document to collect a trace, spawn a new shell inside the container that is privileged.
@@ -182,7 +196,7 @@ Even though the application hosted in the container isn't privileged, this new s
 
 If you want to try tracing in a container, we've written a [demo Dockerfile](https://raw.githubusercontent.com/dotnet/corefx-tools/master/src/performance/perfcollect/docker-demo/Dockerfile) that installs all of the performance tracing pre-requisites, sets the environment up for tracing, and starts a sample CPU-bound app.
 
-# Filtering #
+## Filtering ##
 Filtering is implemented on Windows through the latest mechanisms provided with the [EventSource](https://msdn.microsoft.com/en-us/library/system.diagnostics.tracing.eventsource(v=vs.110).aspx) class. 
 
 On Linux those mechanisms are not available yet. Instead, there are two environment variables that exist just on linux to do some basic filtering. 
@@ -192,10 +206,10 @@ On Linux those mechanisms are not available yet. Instead, there are two environm
 
 Setting one or both of these variables will only enable collecting events that contain the name you specify as a substring. Strings are treated as case insensitive. 
 
-# Viewing a Trace #
+## Viewing a Trace ##
 Traces are best viewed using PerfView on Windows.  Note that we're currently looking into porting the analysis pieces of PerfView to Linux so that the entire investigation can occur on Linux.
 
-## Open the Trace File ##
+### Open the Trace File ###
 1. Copy the trace.zip file from Linux to a Windows machine.
 2. Download PerfView from <http://aka.ms/perfview>.
 3. Run PerfView.exe
@@ -204,7 +218,7 @@ Traces are best viewed using PerfView on Windows.  Note that we're currently loo
 	> PerfView.exe <path to trace.zip file>
 	> ```
 
-## Select a View ##
+### Select a View ###
 PerfView will display the list of views that are supported based on the data contained in the trace file.
 
 - For CPU investigations, choose **CPU stacks**.
@@ -214,10 +228,10 @@ PerfView will display the list of views that are supported based on the data con
 
 For more details on how to interpret views in PerfView, see help links in the view itself, or from the main window in PerfView choose **Help->Users Guide**.
 
-# Extra Information #
+## Extra Information ##
 This information is not strictly required to collect and analyze traces, but is provided for those who are interested.
 
-## Prerequisites ##
+### Prerequisites ###
 Perfcollect will alert users to any prerequisites that are not installed and offer to install them.  Prerequisites can be installed automatically by running:
 
 >```bash
@@ -228,3 +242,34 @@ The current prerequisites are:
 
 1. perf: Also known as perf_event, the Linux Performance Events sub-system and companion user-mode collection/viewer application.  perf is part of the Linux kernel source, but is not usually installed by default.
 2. LTTng: Stands for "Linux Tracing Toolkit Next Generation", and is used to capture event data emitted at runtime by CoreCLR.  This data is then used to analyze the behavior of various runtime components such as the GC, JIT and thread pool.
+
+
+
+# EventPipe and dotnet-trace (.NET Core 3.0 Preview 5 or later)
+
+## Intro ##
+EventPipe is a new cross-platform tracing mechanism we built into the runtime from .NET Core 3.0. It works the same across all platforms we support (Windows, macOS, and Linux), and we have built various diagnostics tools on top of it. dotnet-trace is a dotnet CLI tool that allows you to trace your .NET application using EventPipe. 
+
+## Installing dotnet-trace ##
+dotnet-trace can be installed by using the dotnet CLI: 
+```
+dotnet tool install --global dotnet-trace --version 1.0.4-preview6.19311.1
+```
+
+## Collecting a trace ##
+To see which .NET processes are available for collecting traces on, you can run the following command to get their process IDs (PID):
+```
+dotnet-trace list-processes
+```
+
+Once you know the PID of the process you want to collect traces, you can run the following command to start tracing:
+```
+dotnet-trace collect --process-id <PID>
+```
+
+## Viewing the Trace ##
+The resulting trace can be viewed in [PerfView](http://aka.ms/perfview) on Windows. Alternatively on Linux/macOS, it can be viewed on [SpeedScope](https://speedscope.app) if you convert the trace format to speedscope by passing `--format speedscope` argument when collecting the trace.
+
+## More Information ##
+To read more about how to use dotnet-trace, please refer to the [dotnet-trace documentation](https://github.com/dotnet/diagnostics/blob/master/documentation/dotnet-trace-instructions.md).
+
