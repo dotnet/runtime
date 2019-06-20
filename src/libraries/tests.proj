@@ -8,6 +8,7 @@
     <CoverageReportDir>$(ArtifactsDir)coverage</CoverageReportDir>
     <!-- For UAP we are using an APPX that is registered with a unique ID. Because of that we need to run tests sequentially -->
     <SerializeProjects Condition="'$(BuildingUAPVertical)' == 'true' or '$(Coverage)' == 'true'">true</SerializeProjects>
+    <TraversalBuildDependsOn Condition="'$(BuildingUAPVertical)' == 'true' and '$(BuildAllConfigurations)' != 'true'">MakeCommonResourcesPriFile;$(TraversalBuildDependsOn)</TraversalBuildDependsOn>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(BuildAllConfigurations)' != 'true'">
@@ -28,7 +29,7 @@
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
   
   <Target Name="Build" DependsOnTargets="BuildAllProjects" />
-  <Target Name="BuildAllProjects" DependsOnTargets="FilterProjects">
+  <Target Name="BuildAllProjects" DependsOnTargets="$(TraversalBuildDependsOn);FilterProjects">
     <MSBuild Targets="Build"
              Projects="@(Project)"
              Properties="BuildAllProjects=true;BuildConfiguration=$(BuildConfiguration);%(Project.AdditionalProperties)"
