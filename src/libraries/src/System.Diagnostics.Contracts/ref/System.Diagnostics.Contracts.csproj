@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{5E0B1760-8753-467A-8B10-66B8994220DB}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Diagnostics.Contracts.cs" />
