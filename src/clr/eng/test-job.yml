@@ -3,6 +3,7 @@ parameters:
   archType: ''
   osGroup: ''
   osIdentifier: ''
+  container: ''
   testGroup: ''
   readyToRun: false
   helixQueues: ''
@@ -94,8 +95,8 @@ jobs:
     dependsOn: ${{ format('build_{0}_{1}_{2}', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
 
     # Run all steps in the container.
-    # Note that the containers are resources defined in azure-pipelines.yml
-    containerName: ${{ parameters.containerName }}
+    # Note that the containers are defined in platform-matrix.yml
+    container: ${{ parameters.container }}
 
     # "Total" means building tests, waiting for a queue in Helix to become available, and running the tests.
     # In case test-job.yml gets split into two separate jobs (e.g. build-test-job.yml and run-test.yml)

@@ -3,7 +3,7 @@ parameters:
   archType: ''
   osGroup: ''
   osIdentifier: ''
-  containerName: ''
+  container: ''
   crossrootfsDir: ''
   timeoutInMinutes: ''
 
@@ -28,8 +28,8 @@ jobs:
       condition: false
 
     # Run all steps in the container.
-    # Note that the containers are resources defined in azure-pipelines.yml
-    containerName: ${{ parameters.containerName }}
+    # Note that the containers are defined in platform-matrix.yml
+    container: ${{ parameters.container }}
 
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
