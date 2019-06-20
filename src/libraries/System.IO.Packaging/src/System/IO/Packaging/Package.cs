@@ -837,10 +837,6 @@ namespace System.IO.Packaging
 
             if (packageMode == FileMode.OpenOrCreate && packageAccess != FileAccess.ReadWrite)
                 throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
-            if (packageMode == FileMode.Create && packageAccess != FileAccess.ReadWrite)
-                throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
-            if (packageMode == FileMode.CreateNew && packageAccess != FileAccess.ReadWrite)
-                throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
             if (packageMode == FileMode.Open && packageAccess == FileAccess.Write)
                 throw new ArgumentException(SR.UnsupportedCombinationOfModeAccess);
             if (packageMode == FileMode.Truncate && packageAccess == FileAccess.Read)

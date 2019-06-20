@@ -3224,13 +3224,12 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop doesn't support Package.Open with FileAccess.Write and FileMode.CreateNew")]
         public void T113_String_CreateNew_Write_Open_Read()
         {
             var tempGuidName = GetTempFileInfoWithExtension(".docx");
-            AssertExtensions.Throws<ArgumentException>(null, () =>
-            {
-                Package package = Package.Open(tempGuidName.FullName, FileMode.CreateNew, FileAccess.Write);
-            });
+            Package package = Package.Open(tempGuidName.FullName, FileMode.CreateNew, FileAccess.Write);
+            package.Close();
             tempGuidName.Delete();
         }
 
@@ -3238,7 +3237,7 @@ namespace System.IO.Packaging.Tests
         public void T112_String_CreateNew_Read_Create_Read()
         {
             var tempGuidName = GetTempFileInfoWithExtension(".docx");
-            AssertExtensions.Throws<ArgumentException>(null, () =>
+            Assert.Throws<ArgumentException>(() =>
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.CreateNew, FileAccess.Read);
             });
@@ -3246,11 +3245,13 @@ namespace System.IO.Packaging.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Desktop doesn't support Package.Open with FileAccess.Write and FileMode.Create")]
         public void T111_String_Create_Write_Star()
         {
             var tempGuidName = GetTempFileInfoWithExtension(".docx");
             // opening the package attempts to read the package, and no permissions.
-            AssertExtensions.Throws<ArgumentException>(null, () => Package.Open(tempGuidName.FullName, FileMode.Create, FileAccess.Write));
+            Package package = Package.Open(tempGuidName.FullName, FileMode.Create, FileAccess.Write);
+            package.Close();
             tempGuidName.Delete();
         }
 
@@ -3538,7 +3539,7 @@ namespace System.IO.Packaging.Tests
         public void T100_String_Create_Read_Star()
         {
             var tempGuidName = GetTempFileInfoWithExtension(".docx");
-            AssertExtensions.Throws<ArgumentException>(null, () =>
+            Assert.Throws<ArgumentException>(() =>
             {
                 Package package = Package.Open(tempGuidName.FullName, FileMode.Create, FileAccess.Read);
             });
@@ -3792,12 +3793,21 @@ namespace System.IO.Packaging.Tests
             Uri returnedPackageUri = PackUriHelper.GetPackageUri(combinedUri);
             Uri returnedSamePackageUri = PackUriHelper.GetPackageUri(sameCombinedUri);
 
-            // Validate the PackageUri returned from PackUriHelper.GetPackageHelper matches what was given to PackUriHelper.Create
+            // Validate the PackageUri returned from PackUriHelper.GetPackageUri matches what was given to PackUriHelper.Create
             Assert.Equal(packageUri, returnedPackageUri);
             Assert.Equal(packageUri, returnedSamePackageUri);
 
             // Validate PackUriHelper.ComparePackUri correctly validates identical pack uri's.
             Assert.Equal(0, PackUriHelper.ComparePackUri(combinedUri, sameCombinedUri));
+
+            // Validate the PackageUri returned from PackUriHelper.GetPartUri matches what was given to PackUriHelper.Create
+            Uri returnedPartUri = PackUriHelper.GetPartUri(combinedUri);
+            Uri returnedSamePartUri = PackUriHelper.GetPartUri(sameCombinedUri);
+            Assert.Equal(partUri, returnedPartUri);
+            Assert.Equal(partUri, returnedSamePartUri);
+
+            // Validate PackUriHelper.ComparePartUri correctly validates identical pack uri's.
+            Assert.Equal(0, PackUriHelper.ComparePartUri(partUri, returnedPartUri));
         }
 
         [Fact]
@@ -3830,6 +3840,16 @@ namespace System.IO.Packaging.Tests
             Assert.NotEqual(0, PackUriHelper.ComparePackUri(combinedUriWithPart, combinedUriWithDifferentPart));
             Assert.NotEqual(0, PackUriHelper.ComparePackUri(combinedUriWithPart, combinedUriNoPart));
             Assert.NotEqual(0, PackUriHelper.ComparePackUri(combinedUriNoPart, combinedUriWithDifferentPart));
+
+            Uri returnedPartUri = PackUriHelper.GetPartUri(combinedUriWithPart);
+            Uri returnedPartUriDifferentPart = PackUriHelper.GetPartUri(combinedUriWithDifferentPart);
+
+            // Validate the PartUri returned from PackUriHelper.GetPartHelper matches what was given to PackUriHelper.Create
+            Assert.Equal(partUri, returnedPartUri);
+            Assert.Equal(differentPartUri, returnedPartUriDifferentPart);
+
+            // Validate the two different parts are considered different
+            Assert.NotEqual(0, PackUriHelper.ComparePartUri(partUri, differentPartUri));
         }
 
         [Fact]
@@ -3860,6 +3880,14 @@ namespace System.IO.Packaging.Tests
             // Validate PackUriHelper.ComparePackUri correctly compares pack uri's with different packages.
             Assert.NotEqual(0, PackUriHelper.ComparePackUri(packageUriWithPart, differentPackageSamePart));
             Assert.NotEqual(0, PackUriHelper.ComparePackUri(samePackageNoPart, differentPackageSamePart));
+
+            Uri returnedPartUri = PackUriHelper.GetPartUri(packageUriWithPart);
+            Uri returnedPartUriDifferentPackage = PackUriHelper.GetPartUri(differentPackageSamePart);
+            Assert.Equal(returnedPartUri, returnedPartUriDifferentPackage);
+            Assert.Equal(partUri, returnedPartUri);
+
+            // Validate the two parts are considered the same
+            Assert.Equal(0, PackUriHelper.ComparePartUri(returnedPartUri, returnedPartUriDifferentPackage));
         }
 
         [Fact]
