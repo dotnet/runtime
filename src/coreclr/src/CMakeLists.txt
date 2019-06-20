@@ -20,8 +20,6 @@ if(CLR_CMAKE_PLATFORM_UNIX)
     add_subdirectory(debug/createdump)
   endif(CLR_CMAKE_PLATFORM_LINUX)
 
-  add_subdirectory(ToolBox/SOS/Strike)
-
   # Include the dummy c++ include files
   include_directories("pal/inc/rt/cpp")
 

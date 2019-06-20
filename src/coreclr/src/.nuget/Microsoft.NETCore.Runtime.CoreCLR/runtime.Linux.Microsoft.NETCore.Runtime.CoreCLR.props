@@ -5,7 +5,6 @@
     <_PlatformDoesNotSupportCreatedump Condition="'$(_runtimeOSFamily)' == 'tizen'">true</_PlatformDoesNotSupportCreatedump>
     <_PlatformDoesNotSupportEventTrace Condition="'$(_runtimeOSFamily)' == 'tizen'">true</_PlatformDoesNotSupportEventTrace>
     <_PlatformDoesNotSupportEventTrace Condition="'$(Platform)' == 'x86'">true</_PlatformDoesNotSupportEventTrace>
-    <_PlatformDoesNotSupportSosPlugin Condition="'$(_runtimeOSFamily)' == 'android'">true</_PlatformDoesNotSupportSosPlugin>
   </PropertyGroup>
   <ItemGroup>
     <NativeBinary Include="$(BinDir)libcoreclr.so" />
@@ -13,13 +12,12 @@
     <NativeBinary Include="$(BinDir)libdbgshim.so" />
     <NativeBinary Include="$(BinDir)libmscordaccore.so" />
     <NativeBinary Include="$(BinDir)libmscordbi.so" />
-    <NativeBinary Include="$(BinDir)libsos.so" />
-    <NativeBinary Condition="'$(_PlatformDoesNotSupportSosPlugin)' != 'true'" Include="$(BinDir)libsosplugin.so" />
     <NativeBinary Include="$(BinDir)System.Globalization.Native.so" />
-    <NativeBinary Include="$(BinDir)sosdocsunix.txt" />
+    <File Include="$(BinDir)SOS_README.md">
+      <TargetPath>runtimes\$(PackageTargetRuntime)\native</TargetPath>
+    </File>
     <NativeBinary Condition="'$(_PlatformDoesNotSupportCreatedump)' != 'true'" Include="$(BinDir)createdump" />
     <CrossGenBinary Include="$(BinDir)System.Private.CoreLib.dll" />
-    <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen" />
     <CrossArchitectureSpecificToolFile Condition="'$(HasCrossTargetComponents)' == 'true'" Include="$(BinDir)$(CrossTargetComponentFolder)\crossgen" />
   </ItemGroup>

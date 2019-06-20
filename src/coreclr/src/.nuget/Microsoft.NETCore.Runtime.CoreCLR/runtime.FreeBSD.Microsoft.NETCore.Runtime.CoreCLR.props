@@ -6,12 +6,11 @@
     <NativeBinary Include="$(BinDir)libdbgshim.so" />
     <NativeBinary Include="$(BinDir)libmscordaccore.so" />
     <NativeBinary Include="$(BinDir)libmscordbi.so" />
-    <NativeBinary Include="$(BinDir)libsos.so" />
-    <NativeBinary Condition="'$(_PlatformDoesNotSupportSosPlugin)' != 'true'" Include="$(BinDir)libsosplugin.so" />
     <NativeBinary Include="$(BinDir)System.Globalization.Native.so" />
-    <NativeBinary Include="$(BinDir)sosdocsunix.txt" />
+    <File Include="$(BinDir)SOS_README.md">
+      <TargetPath>runtimes\$(PackageTargetRuntime)\native</TargetPath>
+    </File>
     <CrossGenBinary Include="$(BinDir)System.Private.CoreLib.dll" />
-    <ArchitectureSpecificLibFile Include="$(BinDir)SOS.NETCore.dll" />
     <ArchitectureSpecificToolFile Include="$(BinDir)crossgen" />
     <CrossArchitectureSpecificToolFile Condition="'$(HasCrossTargetComponents)' == 'true'" Include="$(BinDir)$(CrossTargetComponentFolder)\crossgen" />
   </ItemGroup>
