@@ -6313,11 +6313,12 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			code = mono_arm_emit_load_imm (code, ARMREG_LR, ins->inst_offset);
 			ARM_STR_REG_REG (code, MONO_ARCH_RGCTX_REG, ins->inst_basereg, ARMREG_LR);
 		}
+
+		mono_add_var_location (cfg, cfg->rgctx_var, TRUE, MONO_ARCH_RGCTX_REG, 0, 0, code - cfg->native_code);
+		mono_add_var_location (cfg, cfg->rgctx_var, FALSE, ins->inst_basereg, ins->inst_offset, code - cfg->native_code, 0);
 	}
 
 	/* load arguments allocated to register from the stack */
-	pos = 0;
-
 	cinfo = get_call_info (NULL, sig);
 
 	if (cinfo->ret.storage == RegTypeStructByAddr) {
@@ -6341,7 +6342,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	for (i = 0; i < sig->param_count + sig->hasthis; ++i) {
 		ArgInfo *ainfo = cinfo->args + i;
-		inst = cfg->args [pos];
+		inst = cfg->args [i];
 		
 		if (cfg->verbose_level > 2)
 			g_print ("Saving argument %d (type: %d)\n", i, ainfo->storage);
@@ -6361,8 +6362,14 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 			} else
 				g_assert_not_reached ();
 
+			if (i == 0 && sig->hasthis) {
+				g_assert (ainfo->storage == RegTypeGeneral);
+				mono_add_var_location (cfg, inst, TRUE, ainfo->reg, 0, 0, code - cfg->native_code);
+				mono_add_var_location (cfg, inst, TRUE, inst->dreg, 0, code - cfg->native_code, 0);
+			}
+
 			if (cfg->verbose_level > 2)
-				g_print ("Argument %d assigned to register %s\n", pos, mono_arch_regname (inst->dreg));
+				g_print ("Argument %d assigned to register %s\n", i, mono_arch_regname (inst->dreg));
 		} else {
 			switch (ainfo->storage) {
 			case RegTypeHFA:
@@ -6417,6 +6424,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 					}
 					break;
 				}
+				if (i == 0 && sig->hasthis) {
+					g_assert (ainfo->storage == RegTypeGeneral);
+					mono_add_var_location (cfg, inst, TRUE, ainfo->reg, 0, 0, code - cfg->native_code);
+					mono_add_var_location (cfg, inst, FALSE, inst->inst_basereg, inst->inst_offset, code - cfg->native_code, 0);
+                                }
 				break;
 			case RegTypeBaseGen:
 				if (arm_is_imm12 (prev_sp_offset + ainfo->offset)) {
@@ -6535,7 +6547,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				break;
 			}
 		}
-		pos++;
 	}
 
 	if (method->save_lmf)
