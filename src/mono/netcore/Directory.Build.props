@@ -15,6 +15,16 @@
     <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
   </PropertyGroup>
   
+  <PropertyGroup>
+    <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
+      https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
+      https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/index.json;
+      https://api.nuget.org/v3/index.json;
+      $(OverridePackageSource);
+      $(RestoreSources)
+    </RestoreSources>
+  </PropertyGroup>
+
   <!-- Informs build tools to apply .NET Framework metadata if not a test project -->
   <PropertyGroup>
     <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
