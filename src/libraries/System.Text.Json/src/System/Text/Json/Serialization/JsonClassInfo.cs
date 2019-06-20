@@ -46,7 +46,7 @@ namespace System.Text.Json
             // Set the sorted property cache. Overwrite any existing cache which can occur in multi-threaded cases.
             if (frame.PropertyRefCache != null)
             {
-                List<PropertyRef> cache = frame.PropertyRefCache;
+                HashSet<PropertyRef> cache = frame.PropertyRefCache;
 
                 // Add any missing properties. This creates a consistent cache count which is important for
                 // the loop in GetProperty() when there are multiple threads in a race conditions each generating
@@ -56,29 +56,17 @@ namespace System.Text.Json
                     for (int iProperty = 0; iProperty < _propertyRefs.Count; iProperty++)
                     {
                         PropertyRef propertyRef = _propertyRefs[iProperty];
-                        bool found = false;
-                        int iCacheProperty = 0;
-
-                        for (; iCacheProperty < cache.Count; iCacheProperty++)
-                        {
-                            if (IsPropertyRefEqual(ref propertyRef, cache[iCacheProperty]))
-                            {
-                                // The property is already cached, skip to the next property.
-                                found = true;
-                                break;
-                            }
-                        }
-
-                        if (found == false)
-                        {
-                            cache.Add(propertyRef);
-                            break;
-                        }
+                        // Cache the missing property or override the existing property.
+                        cache.Add(propertyRef);
                     }
                 }
 
                 Debug.Assert(cache.Count == _propertyRefs.Count);
-                _propertyRefsSorted = cache.ToArray();
+                if (_propertyRefsSorted == null || _propertyRefsSorted.Length < cache.Count)
+                {
+                    _propertyRefsSorted = new PropertyRef[cache.Count];
+                }
+                cache.CopyTo(_propertyRefsSorted);
                 frame.PropertyRefCache = null;
             }
         }
@@ -272,7 +260,7 @@ namespace System.Text.Json
                 if (propertyIndex == 0 && frame.PropertyRefCache == null)
                 {
                     // Create the temporary list on first property access to prevent a partially filled List.
-                    frame.PropertyRefCache = new List<PropertyRef>();
+                    frame.PropertyRefCache = new HashSet<PropertyRef>();
                 }
 
                 if (info != null)

@@ -38,7 +38,7 @@ namespace System.Text.Json
 
         // For performance, we order the properties by the first deserialize and PropertyIndex helps find the right slot quicker.
         public int PropertyIndex;
-        public List<PropertyRef> PropertyRefCache;
+        public HashSet<PropertyRef> PropertyRefCache;
 
         // The current JSON data for a property does not match a given POCO, so ignore the property (recursively).
         public bool Drain;
