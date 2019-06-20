@@ -1048,7 +1048,7 @@ public:
         //
         
         // If the category and the event is enabled...
-        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ILStubGenerated))
+        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ILStubGenerated))
         {
             EtwOnILStubGenerated(
                 pStubMD, 

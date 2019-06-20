@@ -341,7 +341,7 @@ ULONG WINAPI ThreadNative::KickOffThread(void* pass)
         //
 
         // Fire ETW event to correlate with the thread that created current thread
-        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadRunning))
+        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadRunning))
             FireEtwThreadRunning(pThread, GetClrInstanceId());
 
         // We have a sticky problem here.
@@ -445,7 +445,7 @@ void ThreadNative::StartInner(ThreadBaseObject* pThisUNSAFE)
         pNewThread->IncExternalCount();
 
         // Fire an ETW event to mark the current thread as the launcher of the new thread
-        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context, ThreadCreating))
+        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context, ThreadCreating))
             FireEtwThreadCreating(pNewThread, GetClrInstanceId());
 
         // copy out the managed name into a buffer that will not move if a GC happens

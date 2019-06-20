@@ -911,7 +911,7 @@ void SimpleComCallWrapper::BuildRefCountLogMessage(LPCWSTR wszOperation, StackSS
         if (handle != NULL)
             obj = *((_UNCHECKED_OBJECTREF *)(handle));
 
-        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, CCWRefCountChange)) 
+        if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, CCWRefCountChange)) 
         {
             EX_TRY
             {
