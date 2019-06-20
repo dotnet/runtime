@@ -4703,6 +4703,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 	CallInfo *cinfo;
 	ArgInfo *ainfo;
 	int i, part;
+	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
 
 	cinfo = cfg->arch.cinfo;
 	g_assert (cinfo);
@@ -4714,6 +4715,10 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 			switch (ainfo->storage) {
 			case ArgInIReg:
 				arm_movx (code, ins->dreg, ainfo->reg);
+				if (i == 0 && sig->hasthis) {
+					mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, code - cfg->native_code);
+					mono_add_var_location (cfg, ins, TRUE, ins->dreg, 0, code - cfg->native_code, 0);
+				}
 				break;
 			case ArgOnStack:
 				switch (ainfo->slot_size) {
@@ -4752,6 +4757,10 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 			case ArgInIReg:
 				/* Stack slots for arguments have size 8 */
 				code = emit_strx (code, ainfo->reg, ins->inst_basereg, ins->inst_offset);
+				if (i == 0 && sig->hasthis) {
+					mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, code - cfg->native_code);
+					mono_add_var_location (cfg, ins, FALSE, ins->inst_basereg, ins->inst_offset, code - cfg->native_code, 0);
+				}
 				break;
 			case ArgInFReg:
 				code = emit_strfpx (code, ainfo->reg, ins->inst_basereg, ins->inst_offset);
@@ -5072,6 +5081,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		g_assert (ins->opcode == OP_REGOFFSET);
 
 		code = emit_strx (code, MONO_ARCH_RGCTX_REG, ins->inst_basereg, ins->inst_offset); 
+
+		mono_add_var_location (cfg, cfg->rgctx_var, TRUE, MONO_ARCH_RGCTX_REG, 0, 0, code - cfg->native_code);
+		mono_add_var_location (cfg, cfg->rgctx_var, FALSE, ins->inst_basereg, ins->inst_offset, code - cfg->native_code, 0);
 	}
 		
 	/*
