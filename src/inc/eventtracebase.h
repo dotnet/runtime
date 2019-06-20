@@ -79,14 +79,14 @@ enum EtwThreadFlags
 // if the fields in the event are not cheap to calculate
 //
 #define ETW_EVENT_ENABLED(Context, EventDescriptor) \
-    ((MCGEN_ENABLE_CHECK(Context, EventDescriptor)) || EVENT_PIPE_ENABLED())
+    ((MCGEN_ENABLE_CHECK(Context.EtwProvider, EventDescriptor)) || EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword))
 
 //
 // Use this macro to check if a category of events is enabled
 //
 
 #define ETW_CATEGORY_ENABLED(Context, Level, Keyword) \
-    ((Context.IsEnabled && McGenEventProviderEnabled(&Context, Level, Keyword)) || EVENT_PIPE_ENABLED())
+    ((Context.EtwProvider.IsEnabled && McGenEventProviderEnabled(&(Context.EtwProvider), Level, Keyword)) || EventPipeHelper::IsEnabled(Context, Level, Keyword))
 
 
 // This macro only checks if a provider is enabled
@@ -95,17 +95,20 @@ enum EtwThreadFlags
         ((ProviderSymbol##_Context.IsEnabled) || EVENT_PIPE_ENABLED())
 
 
-#else //defined(FEATURE_PAL)
+#else //!defined(FEATURE_PAL)
 #if defined(FEATURE_PERFTRACING)
 #define ETW_INLINE
 #define ETWOnStartup(StartEventName, EndEventName)
 #define ETWFireEvent(EventName)
 
 #define ETW_TRACING_INITIALIZED(RegHandle) (TRUE)
-#define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::Enabled() || XplatEventLogger::IsEventLoggingEnabled())
-#define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::Enabled() || XplatEventLogger::IsEventLoggingEnabled())
+#define ETW_EVENT_ENABLED(Context, EventDescriptor) (EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword) || \
+        (XplatEventLogger::IsEventLoggingEnabled()))
+#define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
+        (XplatEventLogger::IsEventLoggingEnabled())
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
-#define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::Enabled() || XplatEventLogger::IsEventLoggingEnabled())
+#define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (EventPipeHelper::IsEnabled(Context, Level, Keyword) || \
+        (XplatEventLogger::IsEventLoggingEnabled()))
 #define ETW_PROVIDER_ENABLED(ProviderSymbol) (TRUE)
 #else //defined(FEATURE_PERFTRACING)
 #define ETW_INLINE
@@ -113,8 +116,8 @@ enum EtwThreadFlags
 #define ETWFireEvent(EventName)
 
 #define ETW_TRACING_INITIALIZED(RegHandle) (TRUE)
-#define ETW_EVENT_ENABLED(Context, EventDescriptor) (XplatEventLogger::IsEventLoggingEnabled())
 #define ETW_CATEGORY_ENABLED(Context, Level, Keyword) (XplatEventLogger::IsEventLoggingEnabled())
+#define ETW_EVENT_ENABLED(Context, EventDescriptor) (XplatEventLogger::IsEventLoggingEnabled())
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) (EventEnabled##EventDescriptor())
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) (XplatEventLogger::IsEventLoggingEnabled())
 #define ETW_PROVIDER_ENABLED(ProviderSymbol) (TRUE)
@@ -175,7 +178,8 @@ struct ProfilingScanContext;
 // Use this macro to check if ETW is initialized and the event is enabled
 //
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) \
-    ((Context.IsEnabled && ETW_TRACING_INITIALIZED(Context.RegistrationHandle) && ETW_EVENT_ENABLED(Context, EventDescriptor)) || EVENT_PIPE_ENABLED())
+    ((Context.EtwProvider.IsEnabled && ETW_TRACING_INITIALIZED(Context.EtwProvider.RegistrationHandle) && ETW_EVENT_ENABLED(Context, EventDescriptor))|| \
+        EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword))
 
 //
 // Using KEYWORDZERO means when checking the events category ignore the keyword
@@ -186,12 +190,12 @@ struct ProfilingScanContext;
 // Use this macro to check if ETW is initialized and the category is enabled
 //
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) \
-    ((ETW_TRACING_INITIALIZED(Context.RegistrationHandle) && ETW_CATEGORY_ENABLED(Context, Level, Keyword)) || EVENT_PIPE_ENABLED())
+    (ETW_TRACING_INITIALIZED(Context.EtwProvider.RegistrationHandle) && ETW_CATEGORY_ENABLED(Context, Level, Keyword))
 
-    #define ETWOnStartup(StartEventName, EndEventName) \
-        ETWTraceStartup trace##StartEventName##(Microsoft_Windows_DotNETRuntimePrivateHandle, &StartEventName, &StartupId, &EndEventName, &StartupId);
-    #define ETWFireEvent(EventName) \
-        ETWTraceStartup::StartupTraceEvent(Microsoft_Windows_DotNETRuntimePrivateHandle, &EventName, &StartupId);
+#define ETWOnStartup(StartEventName, EndEventName) \
+    ETWTraceStartup trace##StartEventName##(Microsoft_Windows_DotNETRuntimePrivateHandle, &StartEventName, &StartupId, &EndEventName, &StartupId);
+#define ETWFireEvent(EventName) \
+    ETWTraceStartup::StartupTraceEvent(Microsoft_Windows_DotNETRuntimePrivateHandle, &EventName, &StartupId);
 
 #ifndef FEATURE_REDHAWK
 // Headers
@@ -217,14 +221,24 @@ struct ProfilingScanContext;
 extern UINT32 g_nClrInstanceId;
 
 #define GetClrInstanceId()  (static_cast<UINT16>(g_nClrInstanceId))
+#if defined(FEATURE_PAL) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+#define KEYWORDZERO 0x0
 
-#if defined(FEATURE_PERFTRACING)
-class EventPipeHelper
-{
-public:
-    static bool Enabled();
-};
-#endif // defined(FEATURE_PERFTRACING)
+/***************************************/
+/* Tracing levels supported by CLR ETW */
+/***************************************/
+#define MAX_TRACE_LEVEL         6   // Maximum Number of Trace Levels supported
+#define TRACE_LEVEL_FATAL       1   // Abnormal exit or termination
+#define TRACE_LEVEL_ERROR       2   // Severe errors that need logging
+#define TRACE_LEVEL_WARNING     3   // Warnings such as allocation failure
+#define TRACE_LEVEL_INFORMATION 4   // Includes non-error cases such as Entry-Exit
+#define TRACE_LEVEL_VERBOSE     5   // Detailed traces from intermediate steps
+
+#define DEF_LTTNG_KEYWORD_ENABLED 1
+#include "clrproviders.h"
+#include "clrconfig.h"
+#endif  // defined(FEATURE_PAL) && (defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT))
+
 
 #if defined(FEATURE_EVENT_TRACE) || defined(FEATURE_EVENTSOURCE_XPLAT)
 
@@ -334,6 +348,14 @@ extern "C" {
 #endif //!FEATURE_PAL
 
 #include "clretwallmain.h"
+#if defined(FEATURE_PERFTRACING)
+class EventPipeHelper
+{
+public:
+    static bool Enabled();
+    static bool IsEnabled(DOTNET_TRACE_CONTEXT Context, UCHAR Level, ULONGLONG Keyword);
+};
+#endif // defined(FEATURE_PERFTRACING)
 
 #endif // FEATURE_EVENT_TRACE
 
@@ -1043,7 +1065,7 @@ public:
     }
     static void StartupTraceEvent(REGHANDLE _TraceHandle, PCEVENT_DESCRIPTOR _EventDescriptor, LPCGUID _EventGuid) {
         EVENT_DESCRIPTOR desc = *_EventDescriptor;
-        if(ETW_TRACING_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context, desc))
+        if(ETW_TRACING_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, desc))
         {
             CoMofTemplate_h(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context.RegistrationHandle, _EventDescriptor, _EventGuid, GetClrInstanceId());
         }
