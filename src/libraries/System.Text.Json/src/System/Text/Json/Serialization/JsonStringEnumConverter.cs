@@ -19,6 +19,16 @@ namespace System.Text.Json.Serialization
         private readonly EnumConverterOptions _converterOptions;
 
         /// <summary>
+        /// Constructor. Creates the <see cref="JsonStringEnumConverter"/> with the
+        /// default naming policy and allows integer values.
+        /// </summary>
+        public JsonStringEnumConverter()
+            : this(namingPolicy: null, allowIntegerValues: true)
+        {
+            // An empty constructor is needed for construction via attributes
+        }
+
+        /// <summary>
         /// Constructor.
         /// </summary>
         /// <param name="namingPolicy">
