@@ -48,7 +48,7 @@ namespace System.Reflection.Tests
         public void Ctor_String(string name, string expectedName)
         {
             AssemblyName assemblyName = new AssemblyName(name);
-            Assert.Equal(expectedName.ToLowerInvariant(), assemblyName.Name.ToLowerInvariant());
+            Assert.Equal(expectedName, assemblyName.Name);
             Assert.Equal(ProcessorArchitecture.None, assemblyName.ProcessorArchitecture);
         }
 
@@ -300,12 +300,7 @@ namespace System.Reflection.Tests
         public void FullName(string name, string expectedName)
         {
             AssemblyName assemblyName = new AssemblyName(name);
-
-            expectedName = expectedName.ToLowerInvariant();
-            string extended = $"{expectedName}, Culture=neutral, PublicKeyToken=null".ToLowerInvariant();
-            string afn = assemblyName.FullName.ToLowerInvariant();
-
-            Assert.True(afn == expectedName || afn == extended, $"Expected\n{afn} == {expectedName}\nor\n{afn} == {extended}");
+            Assert.Equal(expectedName, assemblyName.FullName);
         }
 
         [Fact]
@@ -407,10 +402,8 @@ namespace System.Reflection.Tests
             assemblyName.Version = version;
 
             string expected = "MyAssemblyName, Version=" + versionString;
-            string extended = expected + ", Culture=neutral, PublicKeyToken=null";
 
-            Assert.True(assemblyName.FullName == expected || assemblyName.FullName == extended,
-                        $"Expected\n{assemblyName.FullName} == {expected}\nor\n{assemblyName.FullName} == {extended}");
+            Assert.Equal(expected, assemblyName.FullName);
         }
 
         [Fact]
