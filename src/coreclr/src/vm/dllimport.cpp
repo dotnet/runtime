@@ -3801,7 +3801,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
     //
 
     UINT nativeStackSize = (SF_IsCOMStub(dwStubFlags) ? sizeof(SLOT) : 0);
-    bool fHasCopyCtorArgs = false;
     bool fStubNeedsCOM = SF_IsCOMStub(dwStubFlags);
     
     // Normally we would like this to be false so that we use the correct signature 
@@ -4038,8 +4037,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
                     COMPlusThrow(kMarshalDirectiveException, IDS_EE_NDIRECT_BADNATL_THISCALL);
             }
 
-            fHasCopyCtorArgs = info.GetMarshalType() == MarshalInfo::MARSHAL_TYPE_BLITTABLEVALUECLASSWITHCOPYCTOR ? TRUE : FALSE;
-
             argidx++;
         }
         
@@ -4134,7 +4131,6 @@ static void CreateNDirectStubWorker(StubState*         pss,
         DynamicMethodDesc *pDMD = pMD->AsDynamicMethodDesc();
 
         pDMD->SetNativeStackArgSize(static_cast<WORD>(nativeStackSize));
-        pDMD->SetHasCopyCtorArgs(fHasCopyCtorArgs);
         pDMD->SetStubNeedsCOMStarted(fStubNeedsCOM);
     }
 
@@ -5119,14 +5115,11 @@ MethodDesc* CreateInteropILStub(
         // appropriate intercept stub
 
         WORD cbStackArgSize = pStubMD->AsDynamicMethodDesc()->GetNativeStackArgSize();
-        BOOL fHasCopyCtorArgs = pStubMD->AsDynamicMethodDesc()->HasCopyCtorArgs();
-
         if (pTargetMD->IsNDirect())
         {
             NDirectMethodDesc *pTargetNMD = (NDirectMethodDesc *)pTargetMD;
             
             pTargetNMD->SetStackArgumentSize(cbStackArgSize, (CorPinvokeMap)0);
-            pTargetNMD->SetHasCopyCtorArgs(fHasCopyCtorArgs);
         }
 #ifdef FEATURE_COMINTEROP
         else
@@ -5138,7 +5131,6 @@ MethodDesc* CreateInteropILStub(
                 if (pComInfo != NULL)
                 {
                     pComInfo->SetStackArgumentSize(cbStackArgSize);
-                    pComInfo->SetHasCopyCtorArgs(fHasCopyCtorArgs);
                 }
             }
         }
@@ -5751,33 +5743,10 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     }
     CONTRACTL_END;
 
-    Stub *pInterceptStub = NULL;
-
     NDirectWriteableData* pWriteableData = GetWriteableData();
     EnsureWritablePages(pWriteableData);
     g_IBCLogger.LogNDirectCodeAccess(this);
-
-    if (pInterceptStub != NULL)
-    {
-        ndirect.m_pNativeNDirectTarget = pTarget;
-        
-#if defined(_TARGET_X86_)
-        pTarget = (PVOID)pInterceptStub->GetEntryPoint();
-
-        LPVOID oldTarget = GetNDirectImportThunkGlue()->GetEntrypoint();
-        if (FastInterlockCompareExchangePointer(&pWriteableData->m_pNDirectTarget, pTarget,
-                                                oldTarget) != oldTarget)
-        {
-            pInterceptStub->DecRef();
-        }
-#else
-        _ASSERTE(pInterceptStub == NULL); // we don't intercept for anything else than host on !_TARGET_X86_
-#endif
-    }
-    else
-    {
-        pWriteableData->m_pNDirectTarget = pTarget;
-    }
+    pWriteableData->m_pNDirectTarget = pTarget;
 }
 
 

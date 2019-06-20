@@ -2552,7 +2552,7 @@ protected:
         // mdStatic               = 0x0010,
         nomdCALLIStub             = 0x0020,
         nomdDelegateStub          = 0x0040,
-        nomdCopyCtorArgs          = 0x0080,
+        // unused                 = 0x0080
         nomdUnbreakable           = 0x0100,
         nomdDelegateCOMStub       = 0x0200,  // CLR->COM or COM->CLR call via a delegate (WinRT specific)
         nomdSignatureNeedsRestore = 0x0400,
@@ -2606,15 +2606,6 @@ public:
         m_dwExtendedFlags = (m_dwExtendedFlags & ~nomdStackArgSize) | ((DWORD)cbArgSize << 16);
     }
 
-    void SetHasCopyCtorArgs(bool value)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (value)
-        {
-            m_dwExtendedFlags |= nomdCopyCtorArgs;
-        }
-    }
-
     void SetUnbreakable(bool value)
     {
         LIMITED_METHOD_CONTRACT;
@@ -2666,7 +2657,6 @@ public:
     bool IsCLRToCOMStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsDelegateStub()); }
     bool IsCOMToCLRStub()    { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 == (m_dwExtendedFlags & mdStatic)) &&  IsReverseStub()); }
     bool IsPInvokeStub()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return ((0 != (m_dwExtendedFlags & mdStatic)) && !IsReverseStub() && !IsCALLIStub()); }
-    bool HasCopyCtorArgs()   { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdCopyCtorArgs));  }
     bool IsUnbreakable()     { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdUnbreakable));  }
     bool IsDelegateCOMStub() { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdDelegateCOMStub));  }
     bool IsSignatureNeedsRestore() { LIMITED_METHOD_CONTRACT; _ASSERTE(IsILStub()); return (0 != (m_dwExtendedFlags & nomdSignatureNeedsRestore)); }
@@ -2883,8 +2873,6 @@ public:
 
         kDefaultDllImportSearchPathsStatus = 0x2000, // either method has custom attribute or not.
 
-        kHasCopyCtorArgs                = 0x4000,
-
         kStdCallWithRetBuf              = 0x8000,   // Call returns large structure, only valid if kStdCall is also set
 
     };
@@ -3023,23 +3011,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return (ndirect.m_DefaultDllImportSearchPathsAttributeValue & 0x2) != 0;
-    }
-
-    BOOL HasCopyCtorArgs() const
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        return (ndirect.m_wFlags & kHasCopyCtorArgs) != 0;
-    }
-
-    void SetHasCopyCtorArgs(BOOL value)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        if (value)
-        {
-            InterlockedSetNDirectFlags(kHasCopyCtorArgs);
-        }
     }
 
     BOOL IsStdCallWithRetBuf() const
@@ -3212,7 +3183,6 @@ struct ComPlusCallInfo
     {
         kHasSuppressUnmanagedCodeAccess = 0x1,
         kRequiresArgumentWrapping       = 0x2,
-        kHasCopyCtorArgs                = 0x4,
     };
 
     union
@@ -3247,19 +3217,6 @@ struct ComPlusCallInfo
     // on x86 when we have an InlinedCallFrame representing a CLR->COM call.
     WORD        m_cbStackArgumentSize;
 
-    void SetHasCopyCtorArgs(BOOL value)
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (value)
-            FastInterlockOr(reinterpret_cast<DWORD *>(&m_flags), kHasCopyCtorArgs);
-    }
-
-    BOOL HasCopyCtorArgs()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return ((m_flags & kHasCopyCtorArgs) != 0);
-    }
-
     void InitStackArgumentSize()
     {
         LIMITED_METHOD_CONTRACT;
@@ -3287,11 +3244,7 @@ struct ComPlusCallInfo
         return m_cbStackArgumentSize;
     }
 
-    union
-    {
-        LPVOID      m_pRetThunk;         // used for late-bound calls
-        LPVOID      m_pInterceptStub;    // used for early-bound IL stub calls
-    };
+    LPVOID      m_pRetThunk;
 
 #else // _TARGET_X86_
     void InitStackArgumentSize()
@@ -3364,18 +3317,6 @@ public:
     }
 
 #ifdef _TARGET_X86_
-    BOOL HasCopyCtorArgs()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pComPlusCallInfo->HasCopyCtorArgs();
-    }
-
-    void SetHasCopyCtorArgs(BOOL value)
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_pComPlusCallInfo->SetHasCopyCtorArgs(value);
-    }
-
     WORD GetStackArgumentSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
