@@ -133,6 +133,29 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
+        /// This method parses the pack uri and returns the absolute 
+        /// path of the URI. This corresponds to the part within the 
+        /// package. This corresponds to the absolute path component in 
+        /// the Uri. If there is no part component present, this method
+        /// returns a null
+        /// </summary>
+        /// <param name="packUri">Returns a relative Uri that represents the
+        /// part within the package. If the pack Uri points to the entire
+        /// package then we return a null</param>
+        /// <returns>Returns a relative URI with an absolute path that points to a part within a package</returns>
+        /// <exception cref="ArgumentNullException">If packUri parameter is null</exception>
+        /// <exception cref="ArgumentException">If packUri parameter is not an absolute Uri</exception>
+        /// <exception cref="ArgumentException">If packUri parameter does not have "pack://" scheme</exception>
+        /// <exception cref="ArgumentException">If partUri extracted from packUri does not conform to the valid partUri syntax</exception>
+        public static Uri GetPartUri(Uri packUri)
+        {
+            //Parameter Validation is done in the following method
+            ValidateAndGetPackUriComponents(packUri, out _, out Uri partUri);
+
+            return partUri;
+        }
+
+        /// <summary>
         /// This method compares two pack uris and returns an int to indicate the equivalence. 
         /// </summary>
         /// <param name="firstPackUri">First Uri of pack:// scheme to be compared</param>
