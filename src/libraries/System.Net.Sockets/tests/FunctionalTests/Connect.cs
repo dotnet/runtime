@@ -85,6 +85,82 @@ namespace System.Net.Sockets.Tests
                 }
             }
         }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] // Not supported on OSX.
+        public async Task ConnectGetsCanceledByDispose()
+        {
+            bool usesApm = UsesApm ||
+                           (this is ConnectTask); // .NET Core ConnectAsync Task API is implemented using Apm
+
+            // We try this a couple of times to deal with a timing race: if the Dispose happens
+            // before the operation is started, we won't see a SocketException.
+
+            SocketError? localSocketError = null;
+            bool disposedException = false;
+            for (int i = 0; i < 10 && !localSocketError.HasValue; i++)
+            {
+                var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+                Task connectTask = Task.Factory.StartNew(() =>
+                {
+                    ConnectAsync(client, new IPEndPoint(IPAddress.Parse("1.1.1.1"), 23)).GetAwaiter().GetResult();
+                }, TaskCreationOptions.LongRunning);
+
+                // Wait a little so the operation is started, then Dispose.
+                await Task.Delay(100);
+                Task disposeTask = Task.Factory.StartNew(() =>
+                {
+                    client.Dispose();
+                }, TaskCreationOptions.LongRunning);
+
+                Task timeoutTask = Task.Delay(30000);
+
+                Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, connectTask, timeoutTask));
+
+                await disposeTask;
+
+                try
+                {
+                    await connectTask;
+                }
+                catch (SocketException se)
+                {
+                    // On connection timeout, retry.
+                    if (se.SocketErrorCode == SocketError.TimedOut)
+                    {
+                        continue;
+                    }
+
+                    localSocketError = se.SocketErrorCode;
+                }
+                catch (ObjectDisposedException)
+                {
+                    disposedException = true;
+                }
+
+                if (usesApm)
+                {
+                    break;
+                }
+            }
+            if (usesApm)
+            {
+                Assert.Null(localSocketError);
+                Assert.True(disposedException);
+            }
+            else
+            {
+                if (UsesSync)
+                {
+                    Assert.Equal(SocketError.NotSocket, localSocketError);
+                }
+                else
+                {
+                    Assert.Equal(SocketError.OperationAborted, localSocketError);
+                }
+            }
+        }
     }
 
     public sealed class ConnectSync : Connect<SocketHelperArraySync>
