@@ -8,14 +8,6 @@
     <MSBuildEnableAllPropertyFunctions>1</MSBuildEnableAllPropertyFunctions>
   </PropertyGroup>
 
-  <!-- TestHost destinations -->
-  <PropertyGroup>
-    <NETCoreAppTestSharedFxVersion>9.9.9</NETCoreAppTestSharedFxVersion>
-    <TestHostRootPath>$(BinDir)testhost\</TestHostRootPath>
-    <NETCoreAppTestHostFxrPath>$(TestHostRootPath)host\fxr\$(NETCoreAppTestSharedFxVersion)\</NETCoreAppTestHostFxrPath>
-    <NETCoreAppTestSharedFrameworkPath>$(TestHostRootPath)shared\Microsoft.NETCore.App\$(NETCoreAppTestSharedFxVersion)\</NETCoreAppTestSharedFrameworkPath>
-  </PropertyGroup>
-
   <ItemGroup>
     <DisabledTestDir Include="Common" />
     <_SkipTestDir Include="@(DisabledTestDir)" />
@@ -373,22 +365,23 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
              Properties="Language=C#;TargetRid=$(TargetRid)" />
   </Target>
 
-  <Target Name="ResolveTestHostDependencies">
+  <!--
+       Targets and properties for creating the testhost directory used to run corefx tests.
+   -->
+
+  <Target Name="CreateTestHost">
     <MSBuild Projects="$(MSBuildThisFileDirectory)src\Common\CoreFX\CoreFX.depproj"
-            Properties="OutputPath=$(NETCoreAppTestSharedFrameworkPath);" />
-  </Target>
-
-  <Target Name="CreateTestHost" DependsOnTargets="ResolveTestHostDependencies">
-    <MSBuild Projects="$(MSBuildProjectFile)"
-            Targets="SetupTestingHost"/>
+             Targets="Build;SetupTestingHost"
+             Properties="OutputPath=$(NETCoreAppTestSharedFrameworkPath)" />
 
     <MSBuild Projects="$(MSBuildProjectFile)"
-            Targets="GenerateTestSharedFrameworkDepsFile"/>
+             Targets="GenerateTestSharedFrameworkDepsFile"/>
   </Target>
 
   <UsingTask TaskName="GenerateDepsJson" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+
   <!-- After we copied all the framework libraries we need to generate a deps.json file for the shared test framework -->
-  <Target Name="GenerateTestSharedFrameworkDepsFile" AfterTargets="SetupTestingHost">
+  <Target Name="GenerateTestSharedFrameworkDepsFile">
     <ItemGroup>
       <!-- This is for HostPolicy, CoreCLR and Jit dependencies to continue to remain inside of the dep.json -->
       <ExceptionForDepsJson Include="microsoft.netcore.app" />
@@ -407,62 +400,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
                       RuntimeDirectory="$(NETCoreAppTestSharedFrameworkPath)"
                       DepsExceptions="@(ExceptionForDepsJson)"
                       OutputPath="$(_OutputTestSharedFrameworkDepsPath)"/>
-  </Target>
-
-  <Target Name="SetupTestingHost"  AfterTargets="CreateTestOverlay" Condition="'$(CreateTestHost)' != 'false'">
-
-    <PropertyGroup Condition="'$(OSGroup)'=='Windows_NT'">
-      <HostFxrFileName>hostfxr</HostFxrFileName>
-      <HostFxrFileExtension>dll</HostFxrFileExtension>
-      <DotnetExecutableName>dotnet.exe</DotnetExecutableName>
-      <HostPolicyFileName>hostpolicy</HostPolicyFileName>
-      <HostPolicyExtension>dll</HostPolicyExtension>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(OSGroup)'!='Windows_NT'">
-      <HostFxrFileName>libhostfxr</HostFxrFileName>
-      <HostFxrFileExtension Condition="'$(OSGroup)' == 'Linux' Or '$(OSGroup)' == 'FreeBSD'">so</HostFxrFileExtension>
-      <HostFxrFileExtension Condition="$(OSGroup) =='OSX'">dylib</HostFxrFileExtension>
-      <HostPolicyFileName>libhostpolicy</HostPolicyFileName>
-      <HostPolicyExtension>$(HostFxrFileExtension)</HostPolicyExtension>
-      <DotnetExecutableName>dotnet</DotnetExecutableName>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <!-- Workaround for packages on which Microsoft.NetCoreApp expresses a dependency
-      The <PackageToInclude> element doesn't allow a version to be specified and we end up with clashing assembly versions in Core_Root-->
-      <NetCoreAppPackagedAssemblies Include="System.Text.Encoding.CodePages.dll"/>
-      <!-- Use xunit dependencies defined in CoreFX.depproj instead of conflicting versions from test dependencies. -->
-      <TestDependenciesToExclude Include="$(CORE_ROOT)\**\xunit*"/>
-      <CoreCLRBinariesToExclude Include="@(NetCoreAppPackagedAssemblies);@(TestDependenciesToExclude -> '%(Identity)')" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <CoreCLRBinaries Include="$(CORE_ROOT)\**\*.*" Exclude="$(CORE_ROOT)\**\@(CoreCLRBinariesToExclude -> '%(Identity)' )" />
-      <HostFxFile Include="$(DotnetCliPath)\**\$(HostFxrFileName).$(HostFxrFileExtension)" />
-      <DotnetExe Include="$(DotnetCliPath)\$(DotnetExecutableName)" />
-      <HostPolicyFile Include="$(DotnetCliPath)\**\$(HostPolicyFileName).$(HostPolicyExtension)" />
-    </ItemGroup>
-
-    <Copy SourceFiles="@(HostFxFile)"
-          DestinationFolder="$(NETCoreAppTestHostFxrPath)"
-          SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="true" />
-
-    <!-- Should this be referenced from a NuGet package? -->
-    <Copy SourceFiles="@(HostPolicyFile)"
-          DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)"
-          SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="true" />
-
-    <Copy SourceFiles="@(DotnetExe)"
-          DestinationFolder="$(TestHostRootPath)"
-          SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="true"  />
-
-    <Copy SourceFiles="@(CoreCLRBinaries)"
-          DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)"
-          SkipUnchangedFiles="true" />
   </Target>
 
   <Target Name="Build">
