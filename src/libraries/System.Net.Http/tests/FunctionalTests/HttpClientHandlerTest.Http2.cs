@@ -1598,7 +1598,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [ActiveIssue(38708)]
         public async Task InboundWindowSize_Exceeded_Throw()
         {
             var semaphore = new SemaphoreSlim(0);
@@ -1607,10 +1606,31 @@ namespace System.Net.Http.Functional.Tests
                 async uri =>
                 {
                     using HttpClient client = CreateHttpClient();
-                    using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
 
-                    // Keep client open until server is done.
-                    await semaphore.WaitAsync(10000);
+                    Exception requestException = await Assert.ThrowsAsync<HttpRequestException>(async () =>
+                    {
+                        // GetAsync() tends to throw when running under high load.
+                        // This indicates enough content was buffered so a recv()
+                        // to pull in headers happened to read enough to exceed
+                        // the stream receive window.
+                        using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+
+                        // Keep client open until server is done.
+                        await semaphore.WaitAsync(10000);
+
+                        // ReadAsString() tends to throw under low load.
+                        await response.Content.ReadAsStringAsync();
+                    });
+
+                    // A Http2ProtocolException will be present somewhere in the inner exceptions.
+                    // Its location depends on where the exception was thrown.
+                    while (requestException?.GetType().FullName.Equals("System.Net.Http.Http2ProtocolException") == false)
+                    {
+                        requestException = requestException.InnerException;
+                    }
+
+                    Assert.NotNull(requestException);
+                    Assert.Contains("FLOW_CONTROL_ERROR", requestException.Message);
                 },
                 async server =>
                 {
