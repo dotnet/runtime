@@ -42,13 +42,6 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static JsonException GetJsonException_DeserializeUnableToConvertValue(Type propertyType, string path)
-        {
-            string message = SR.Format(SR.DeserializeUnableToConvertValue, propertyType) + $" Path: {path}.";
-            return new JsonException(message, path, null, null);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_DeserializeCannotBeNull(in Utf8JsonReader reader, string path)
         {
             ThrowJsonException(SR.DeserializeCannotBeNull, in reader, path);
@@ -75,21 +68,9 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowFormatException()
-        {
-            throw ThrowHelper.GetFormatException();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException()
         {
             throw new JsonException();
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowFormatException(string message)
-        {
-            throw new FormatException(message);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -143,11 +124,6 @@ namespace System.Text.Json
         public static void ThrowJsonException_DeserializeDataRemaining(long length, long bytesRemaining)
         {
             throw new JsonException(SR.Format(SR.DeserializeDataRemaining, length, bytesRemaining), path: null, lineNumber: null, bytePositionInLine: null);
-        }
-
-        public static void ThrowJsonException_DeserializeDuplicateKey(string key, in Utf8JsonReader reader, string path)
-        {
-            ThrowJsonException(SR.Format(SR.DeserializeDuplicateKey, key), in reader, path);
         }
 
         // todo: since we now catch and re-throw JsonException and add Path etc, we can clean up callers to this to not pass the reader and path.

@@ -52,6 +52,16 @@ namespace System.Text.Json.Serialization.Tests
                 Span<byte> json = JsonSerializer.ToUtf8Bytes("Hello");
                 Assert.Equal(Encoding.UTF8.GetBytes(@"""Hello"""), json.ToArray());
             }
+
+            {
+                Uri uri = new Uri("https://domain/path");
+                Assert.Equal(@"""https:\u002f\u002fdomain\u002fpath""", JsonSerializer.ToString(uri));
+            }
+
+            {
+                Uri.TryCreate("~/path", UriKind.RelativeOrAbsolute, out Uri uri);
+                Assert.Equal(@"""~\u002fpath""", JsonSerializer.ToString(uri));
+            }
         }
     }
 }
