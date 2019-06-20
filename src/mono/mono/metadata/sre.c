@@ -3834,17 +3834,20 @@ remove_instantiations_of_and_ensure_contents (gpointer key,
 static gboolean
 reflection_setup_internal_class (MonoReflectionTypeBuilderHandle ref_tb, MonoError *error)
 {
+	HANDLE_FUNCTION_ENTER ();
+
 	MonoReflectionModuleBuilderHandle module_ref = MONO_HANDLE_NEW_GET (MonoReflectionModuleBuilder, ref_tb, module);
 	GHashTable *unparented_classes = MONO_HANDLE_GETVAL(module_ref, unparented_classes);
+	gboolean ret_val;
 
 	if (unparented_classes) {
-		return reflection_setup_internal_class_internal (ref_tb, error);
+		ret_val = reflection_setup_internal_class_internal (ref_tb, error);
 	} else {
 		// If we're not being called recursively
 		unparented_classes = g_hash_table_new (NULL, NULL);
 		MONO_HANDLE_SETVAL (module_ref, unparented_classes, GHashTable *, unparented_classes);
 
-		gboolean ret_val = reflection_setup_internal_class_internal (ref_tb, error);
+		ret_val = reflection_setup_internal_class_internal (ref_tb, error);
 		mono_error_assert_ok (error);
 
 		// Fix the relationship between the created classes and their parents
@@ -3853,9 +3856,9 @@ reflection_setup_internal_class (MonoReflectionTypeBuilderHandle ref_tb, MonoErr
 
 		g_hash_table_destroy (unparented_classes);
 		MONO_HANDLE_SETVAL (module_ref, unparented_classes, GHashTable *, NULL);
-
-		return ret_val;
 	}
+
+	HANDLE_FUNCTION_RETURN_VAL (ret_val);
 }
 
 MonoReflectionTypeHandle
