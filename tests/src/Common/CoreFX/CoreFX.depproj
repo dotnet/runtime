@@ -9,173 +9,125 @@
       <ContainsPackageReferences>true</ContainsPackageReferences>
       <CLRTestKind>SharedLibrary</CLRTestKind>
       <IsTestProject>false</IsTestProject>
-      <!-- System.Composition and System.Composition.AttributedModel use different versioning conventions -->
-      <SystemCompositionVersions>1.3.0-preview3-26501-04</SystemCompositionVersions>
-      <MicrosoftDiagnosticsTracingTraceVentVersion>2.0.19</MicrosoftDiagnosticsTracingTraceVentVersion>
-      <MicrosoftDotnetPlatformAbstractionsVersion>2.1.0</MicrosoftDotnetPlatformAbstractionsVersion>
       <MicrosoftDiagnosticsRuntimePackageVersion>1.0.5</MicrosoftDiagnosticsRuntimePackageVersion>
   </PropertyGroup>
 
-  <!-- Switch RuntimeIdentifier according to currently running OSGroup -->
+  <!-- Switch RuntimeIdentifier according to currently targeted OSGroup -->
   <PropertyGroup>
-      <RuntimeIdentifier Condition="'$(OSGroup)' == 'Windows_NT'">win-x64</RuntimeIdentifier>
-      <RuntimeIdentifier Condition="'$(OSGroup)' == 'Linux'">linux-x64</RuntimeIdentifier>
-      <RuntimeIdentifier Condition="'$(OSGroup)' == 'OSX'">osx-x64</RuntimeIdentifier>
+      <RuntimeIdentifier Condition="'$(OSGroup)' == 'Windows_NT'">win-$(Platform)</RuntimeIdentifier>
+      <RuntimeIdentifier Condition="'$(OSGroup)' == 'Linux'">linux-$(Platform)</RuntimeIdentifier>
+      <RuntimeIdentifier Condition="'$(OSGroup)' == 'OSX'">osx-$(Platform)</RuntimeIdentifier>
       <NugetRuntimeIdentifier>$(RuntimeIdentifier)</NugetRuntimeIdentifier>
+
+      <!-- Set AdditionalRestoreArgs so the _DnuRestoreCommandFull in Tools\packageresolve.targets
+           passes these on to 'dotnet restore'. This is needed so all the various dirs.props files
+           set up the target architecture correctly, so $(Platform) above gets set correctly, among
+           other things. (Note that _DnuRestoreCommandFull doesn't properly set
+           TargetGroup/ConfigurationGroup/ArchGroup, and even if they are set, it isn't used by
+           the various dirs.props files.)
+      -->
+      <AdditionalRestoreArgs>/p:__BuildOS=$(__BuildOS) /p:__BuildType=$(__BuildType) /p:__BuildArch=$(__BuildArch)</AdditionalRestoreArgs>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.CodeDom">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Configuration.ConfigurationManager">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Composition.Hosting">
-      <Version>$(SystemCompositionVersions)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Composition.AttributedModel">
-      <Version>$(SystemCompositionVersions)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Composition.Convention">
-      <Version>$(SystemCompositionVersions)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Composition.Runtime">
-      <Version>$(SystemCompositionVersions)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Composition.TypedParts">
-      <Version>$(SystemCompositionVersions)</Version>
-    </PackageReference>
-    <PackageReference Include="System.ComponentModel.Composition">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Data.Odbc">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="runtime.native.System.Data.SqlClient.sni">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Principal.Windows">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Text.Encoding.CodePages">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Diagnostics.DiagnosticSource">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Data.SqlClient">
-      <!-- The 4.6 packages of System.Data.SqlClient have a version of 4.5 in the dll so they fail to load -->
-      <Version>4.7.0-preview4.19164.7</Version>
-    </PackageReference>
-    <PackageReference Include="System.Diagnostics.PerformanceCounter">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.DirectoryServices">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.DirectoryServices.AccountManagement">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.DirectoryServices.Protocols">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Drawing.Common">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.IO.Packaging">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.IO.Pipelines">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.IO.Ports">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Management">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Net.Http.WinHttpHandler">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Net.WebSockets.WebSocketProtocol">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Reflection.MetadataLoadContext">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.Caching">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Reflection.Context">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Cryptography.ProtectedData">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Cryptography.Pkcs">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Cryptography.Xml">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.ServiceModel.Syndication">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.ServiceProcess.ServiceController">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Text.Encoding.CodePages">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Text.Encodings.Web">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Threading.AccessControl">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Threading.Channels">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="System.Json">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces">
-      <Version>$(MicrosoftBclAsyncInterfacesVersion)</Version>
-    </PackageReference>
-  </ItemGroup>
-  <ItemGroup Condition="'$(OSGroup)' == 'Windows_NT'">
-    <!-- Windows Dependencies -->
-    <PackageReference Include="Microsoft.Win32.Registry">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Win32.Registry.AccessControl">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Win32.SystemEvents">
-      <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
-      <Version>$(MicrosoftDiagnosticsTracingTraceVentVersion)</Version>
-    </PackageReference>
-  </ItemGroup>
-  
-  <ItemGroup Condition="'$(OSGroup)' != 'Windows_NT'">
-    <PackageReference Include="Microsoft.DotNet.PlatformAbstractions">
-      <Version>$(MicrosoftDotnetPlatformAbstractionsVersion)</Version>
-    </PackageReference>
+
+    <!-- Microsoft.Private.CoreFx.OOB is a meta-package that contains references to most of what we need -->
+    <PackageReference Include="Microsoft.Private.CoreFx.OOB" Version="$(MicrosoftPrivateCoreFxNETCoreAppVersion)" />
+
+    <!-- dotnet.exe -->
+    <PackageReference Include="Microsoft.NETCore.DotNetHost" Version="$(MicrosoftNETCoreAppVersion)" />
+
+    <!-- hostfxr.dll -->
+    <PackageReference Include="Microsoft.NETCore.DotNetHostResolver" Version="$(MicrosoftNETCoreAppVersion)" />
+
+    <!-- hostpolicy.dll -->
+    <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy" Version="$(MicrosoftNETCoreAppVersion)" />
+
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Diagnostics.Runtime">
-      <Version>$(MicrosoftDiagnosticsRuntimePackageVersion)</Version>
-    </PackageReference>
-  </ItemGroup>
-  
-  <ItemGroup>
-    <PackageToInclude Include="@(PackageReference -> '%(Identity)' )"/>
-  </ItemGroup>
+  <!-- Target SetupTestingHost needs to run after "AfterResolveReferences" so @(ReferenceCopyLocalPaths) is
+       set up, and before "BeforeCompile" because @(ReferenceCopyLocalPaths) is cleared out during the
+       compile phase.
+  -->
+  <Target Name="SetupTestingHost" AfterTargets="AfterResolveReferences" BeforeTargets="BeforeCompile">
+
+    <Error Condition="'$(CORE_ROOT)' == ''"
+           Text="CORE_ROOT variable is not set." />
+
+    <PropertyGroup Condition="'$(OSGroup)'=='Windows_NT'">
+      <HostFxrFileName>hostfxr</HostFxrFileName>
+      <HostFxrFileExtension>dll</HostFxrFileExtension>
+      <DotnetExecutableName>dotnet.exe</DotnetExecutableName>
+      <HostPolicyFileName>hostpolicy</HostPolicyFileName>
+      <HostPolicyExtension>dll</HostPolicyExtension>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(OSGroup)'!='Windows_NT'">
+      <HostFxrFileName>libhostfxr</HostFxrFileName>
+      <HostFxrFileExtension Condition="'$(OSGroup)' == 'Linux' Or '$(OSGroup)' == 'FreeBSD'">so</HostFxrFileExtension>
+      <HostFxrFileExtension Condition="$(OSGroup) =='OSX'">dylib</HostFxrFileExtension>
+      <HostPolicyFileName>libhostpolicy</HostPolicyFileName>
+      <HostPolicyExtension>$(HostFxrFileExtension)</HostPolicyExtension>
+      <DotnetExecutableName>dotnet</DotnetExecutableName>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Workaround for packages on which Microsoft.NetCoreApp expresses a dependency
+           The <PackageToInclude> element doesn't allow a version to be specified and we end up with clashing assembly versions in Core_Root
+      -->
+      <!--
+      <NetCoreAppPackagedAssemblies Include="System.Text.Encoding.CodePages.dll"/>
+      -->
+
+      <!-- Use xunit dependencies defined in CoreFX.depproj instead of conflicting versions from test dependencies. -->
+      <TestDependenciesToExclude Include="$(CORE_ROOT)\**\xunit*"/>
+
+      <!-- Exclude subdirectories that contain cross-architecture (possibly cross-bitness) crossgen/JIT -->
+      <TestDependenciesToExclude Include="$(CORE_ROOT)\**\x64\*"/>
+
+      <!-- Don't include all the nuget files -->
+      <TestDependenciesToExclude Include="$(CORE_ROOT)\.nuget\**\*"/>
+
+      <CoreCLRBinariesToExclude Include="@(NetCoreAppPackagedAssemblies);@(TestDependenciesToExclude -> '%(Identity)')" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <!-- REVIEW: do we need to copy recursively (and flatten the structure into a single destination folder)? Can we just copy
+           the top level? Or, should we preserve the hierarchy?
+      -->
+      <CoreCLRBinaries Include="$(CORE_ROOT)\**\*.*" Exclude="$(CORE_ROOT)\**\@(CoreCLRBinariesToExclude -> '%(Identity)' )" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
+      <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
+      <HostPolicyFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostPolicyFileName)'" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(HostFxFile)"
+          DestinationFolder="$(NETCoreAppTestHostFxrPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+    <Copy SourceFiles="@(HostPolicyFile)"
+          DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true" />
+
+    <Copy SourceFiles="@(DotnetExe)"
+          DestinationFolder="$(TestHostRootPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="true"  />
+
+    <Copy SourceFiles="@(CoreCLRBinaries)"
+          DestinationFolder="$(NETCoreAppTestSharedFrameworkPath)"
+          SkipUnchangedFiles="true" />
+
+    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(OSGroup)' != 'Windows_NT'"/>
+  </Target>
+
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
   <PropertyGroup>
     <ProjectAssetsFile>$(SourceDir)Common\CoreFX\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
