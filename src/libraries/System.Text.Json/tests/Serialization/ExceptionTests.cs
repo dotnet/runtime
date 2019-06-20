@@ -30,12 +30,12 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ThrownFromSerializerFails()
+        public static void TypeMismatchIDictionaryExceptionThrown()
         {
             try
             {
-                JsonSerializer.Parse<IDictionary<string, string>>(@"{""Key"":1, ""Key"":2}");
-                Assert.True(false, "We follow 'Last value wins' approach for duplicate keys.");
+                JsonSerializer.Parse<IDictionary<string, string>>(@"{""Key"":1}");
+                Assert.True(false, "Type Mismatch JsonException was not thrown.");
             }
             catch (JsonException e)
             {
