@@ -50,9 +50,16 @@ namespace System.Text.Json
                             break;
                     }
 
-                    if (finishedSerializing && writer.CurrentDepth == 0)
+                    if (finishedSerializing)
                     {
-                        break;
+                        if (writer.CurrentDepth == 0)
+                        {
+                            break;
+                        }
+                    }
+                    else if (writer.CurrentDepth >= options.EffectiveMaxDepth)
+                    {
+                        ThrowHelper.ThrowJsonException_DepthTooLarge(writer.CurrentDepth, state, options);
                     }
 
                     // If serialization is not yet end and we surpass beyond flush threshold return false and flush stream.
