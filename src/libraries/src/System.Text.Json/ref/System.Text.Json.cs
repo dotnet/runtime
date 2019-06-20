@@ -442,6 +442,12 @@ namespace System.Text.Json.Serialization
         public virtual void Write(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonEncodedText propertyName, System.Text.Json.JsonSerializerOptions options) { }
         public abstract void Write(System.Text.Json.Utf8JsonWriter writer, T value, System.Text.Json.JsonSerializerOptions options);
     }
+    public sealed class JsonStringEnumConverter : System.Text.Json.Serialization.JsonConverterFactory
+    {
+        public JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy namingPolicy = null, bool allowIntegerValues = true) { }
+        public override bool CanConvert(System.Type type) { throw null; }
+        protected override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type type) { throw null; }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Property, AllowMultiple=false)]
     public sealed partial class JsonExtensionDataAttribute : System.Text.Json.Serialization.JsonAttribute
     {

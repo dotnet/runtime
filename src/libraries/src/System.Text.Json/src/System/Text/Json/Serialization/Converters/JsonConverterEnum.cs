@@ -8,12 +8,9 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class JsonConverterEnum : JsonConverterFactory
     {
-        public JsonConverterEnum(bool treatAsString)
+        public JsonConverterEnum()
         {
-            TreatAsString = treatAsString;
         }
-
-        public bool TreatAsString { get; private set; }
 
         public override bool CanConvert(Type type)
         {
@@ -26,7 +23,7 @@ namespace System.Text.Json.Serialization.Converters
                 typeof(JsonConverterEnum<>).MakeGenericType(type),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
-                new object[] { TreatAsString },
+                new object[] { EnumConverterOptions.AllowNumbers },
                 culture: null);
 
             return converter;
