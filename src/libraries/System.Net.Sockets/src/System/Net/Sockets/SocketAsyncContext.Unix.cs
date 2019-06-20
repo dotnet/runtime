@@ -228,10 +228,9 @@ namespace System.Net.Sockets
 
                         case State.Cancelled:
                             // Someone else cancelled the operation.
-                            // Just return true to indicate the operation was cancelled.
                             // The previous canceller will have fired the completion, etc.
                             Trace("Exit, previously cancelled");
-                            return true;
+                            return false;
                     }
                 }
 
@@ -736,7 +735,7 @@ namespace System.Net.Sockets
                 using (Lock())
                 {
                     observedSequenceNumber = _sequenceNumber;
-                    bool isReady = (_state == QueueState.Ready);
+                    bool isReady = (_state == QueueState.Ready) || (_state == QueueState.Stopped);
 
                     Trace(context, $"{isReady}");
 
@@ -1087,8 +1086,10 @@ namespace System.Net.Sockets
             }
 
             // Called when the socket is closed.
-            public void StopAndAbort(SocketAsyncContext context)
+            public bool StopAndAbort(SocketAsyncContext context)
             {
+                bool aborted = false;
+
                 // We should be called exactly once, by SafeSocketHandle.
                 Debug.Assert(_state != QueueState.Stopped);
 
@@ -1105,7 +1106,7 @@ namespace System.Net.Sockets
                         AsyncOperation op = _tail;
                         do
                         {
-                            op.TryCancel();
+                            aborted |= op.TryCancel();
                             op = op.Next;
                         } while (op != _tail);
                     }
@@ -1114,6 +1115,8 @@ namespace System.Net.Sockets
 
                     Trace(context, $"Exit");
                 }
+
+                return aborted;
             }
 
             [Conditional("SOCKETASYNCCONTEXT_TRACE")]
@@ -1177,11 +1180,13 @@ namespace System.Net.Sockets
             }
         }
 
-        public void Close()
+        public bool StopAndAbort()
         {
+            bool aborted = false;
+
             // Drain queues
-            _sendQueue.StopAndAbort(this);
-            _receiveQueue.StopAndAbort(this);
+            aborted |= _sendQueue.StopAndAbort(this);
+            aborted |= _receiveQueue.StopAndAbort(this);
 
             lock (_registerLock)
             { 
@@ -1189,6 +1194,8 @@ namespace System.Net.Sockets
                 // from the event port automatically by the OS when it's closed.
                 _asyncEngineToken.Free();
             }
+
+            return aborted;
         }
 
         public void SetNonBlocking()

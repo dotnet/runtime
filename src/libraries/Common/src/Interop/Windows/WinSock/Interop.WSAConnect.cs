@@ -10,10 +10,9 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        // This function is always potentially blocking so it uses an IntPtr.
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static extern SocketError WSAConnect(
-            [In] IntPtr socketHandle,
+            SafeSocketHandle socketHandle,
             [In] byte[] socketAddress,
             [In] int socketAddressSize,
             [In] IntPtr inBuffer,

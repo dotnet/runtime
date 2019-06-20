@@ -530,6 +530,11 @@ int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags)
     return result;
 }
 
+int32_t SystemNative_FcntlGetFD(intptr_t fd)
+{
+    return fcntl(ToFileDescriptor(fd), F_GETFD);
+}
+
 int32_t SystemNative_FcntlCanGetSetPipeSz(void)
 {
 #if defined(F_GETPIPE_SZ) && defined(F_SETPIPE_SZ)

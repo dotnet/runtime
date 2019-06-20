@@ -22,16 +22,6 @@ internal static partial class Interop
             NativeOverlapped* overlapped,
             IntPtr completionRoutine);
 
-        [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static unsafe extern SocketError WSARecv(
-            IntPtr socketHandle,
-            WSABuffer* buffer,
-            int bufferCount,
-            out int bytesTransferred,
-            ref SocketFlags socketFlags,
-            NativeOverlapped* overlapped,
-            IntPtr completionRoutine);
-
         internal static unsafe SocketError WSARecv(
             SafeHandle socketHandle,
             ref WSABuffer buffer,
@@ -50,22 +40,6 @@ internal static partial class Interop
 
         internal static unsafe SocketError WSARecv(
             SafeHandle socketHandle,
-            Span<WSABuffer> buffers,
-            int bufferCount,
-            out int bytesTransferred,
-            ref SocketFlags socketFlags,
-            NativeOverlapped* overlapped,
-            IntPtr completionRoutine)
-        {
-            Debug.Assert(!buffers.IsEmpty);
-            fixed (WSABuffer* buffersPtr = &MemoryMarshal.GetReference(buffers))
-            {
-                return WSARecv(socketHandle, buffersPtr, bufferCount, out bytesTransferred, ref socketFlags, overlapped, completionRoutine);
-            }
-        }
-
-        internal static unsafe SocketError WSARecv(
-            IntPtr socketHandle,
             Span<WSABuffer> buffers,
             int bufferCount,
             out int bytesTransferred,
