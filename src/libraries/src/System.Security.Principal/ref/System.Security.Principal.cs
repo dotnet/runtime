@@ -9,13 +9,13 @@ namespace System.Security.Principal
 {
     public partial interface IIdentity
     {
-        string AuthenticationType { get; }
+        string? AuthenticationType { get; }
         bool IsAuthenticated { get; }
-        string Name { get; }
+        string? Name { get; }
     }
     public partial interface IPrincipal
     {
-        System.Security.Principal.IIdentity Identity { get; }
+        System.Security.Principal.IIdentity? Identity { get; }
         bool IsInRole(string role);
     }
     public enum PrincipalPolicy
