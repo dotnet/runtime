@@ -304,7 +304,7 @@ static const AssemblyVersionMap framework_assemblies [] = {
 	FACADE_ASSEMBLY ("System.Threading.AccessControl"),
 	FACADE_ASSEMBLY ("System.Threading.Overlapped"),
 	FACADE_ASSEMBLY ("System.Threading.Tasks"),
-	{"System.Threading.Tasks.Dataflow", 0},
+	{"System.Threading.Tasks.Dataflow", 0, NULL, TRUE},
 	FACADE_ASSEMBLY ("System.Threading.Tasks.Extensions"),
 	FACADE_ASSEMBLY ("System.Threading.Tasks.Parallel"),
 	FACADE_ASSEMBLY ("System.Threading.Thread"),
