@@ -32,6 +32,9 @@ namespace System.Text.Json.Serialization.Tests
 
             string s2 = JsonSerializer.Parse<string>(@"""Hello""");
             Assert.Equal("Hello", s2);
+
+            Uri u = JsonSerializer.Parse<Uri>(@"""""");
+            Assert.Equal("", u.OriginalString);
         }
 
         [Fact]
@@ -93,6 +96,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ushort))]
         [InlineData(typeof(uint))]
         [InlineData(typeof(ulong))]
+        [InlineData(typeof(Uri))]
         public static void PrimitivesShouldFailWithArrayOrObjectAssignment(Type primitiveType)
         {
             // This test lines up with the built in JsonConverters
@@ -286,6 +290,16 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<char?>("1"));
 
             Assert.Throws<JsonException>(() => JsonSerializer.Parse<Enum>(unexpectedString));
+        }
+
+        [Fact]
+        public static void ReadPrimitiveUri()
+        {
+            Uri uri = JsonSerializer.Parse<Uri>(@"""https://domain/path""");
+            Assert.Equal("https:\u002f\u002fdomain\u002fpath", uri.ToString());
+
+            uri = JsonSerializer.Parse<Uri>(@"""~/path""");
+            Assert.Equal("~/path", uri.ToString());
         }
    }
 }
