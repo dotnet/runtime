@@ -255,6 +255,8 @@ namespace System.Net.Primitives.Functional.Tests
             new object[] { "E:E:E:E:E:0:0:1", "E:E:E:E:E::1" },
             new object[] { "E:E:E:E:E:0:2:2", "E:E:E:E:E:0:2:2" },
             new object[] { "E:E:E:E:E:E:0:1", "E:E:E:E:E:E:0:1" },
+            new object[] { "::2:3:4:5:6:7:8", "0:2:3:4:5:6:7:8" },
+            new object[] { "1:2:3:4:5:6:7::", "1:2:3:4:5:6:7:0" },
             new object[] { "::FFFF:192.168.0.1", "::FFFF:192.168.0.1" },
             new object[] { "::FFFF:0.168.0.1", "::FFFF:0.168.0.1" },
             new object[] { "::0.0.255.255", "::FFFF" },
