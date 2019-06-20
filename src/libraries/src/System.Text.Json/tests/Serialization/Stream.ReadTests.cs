@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
@@ -77,6 +78,26 @@ namespace System.Text.Json.Serialization.Tests
 
                 int i = await JsonSerializer.ReadAsync<int>(stream, options);
                 Assert.Equal(1, i);
+            }
+        }
+
+        [Fact]
+        public static async Task ReadReferenceTypeCollectionPassingNullValueAsync()
+        {
+            using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("null")))
+            {
+                IList<object> referenceTypeCollection  = await JsonSerializer.ReadAsync<IList<object>>(stream);
+                Assert.Null(referenceTypeCollection);
+            }
+        }
+
+        [Fact]
+        public static async Task ReadValueTypeCollectionPassingNullValueAsync()
+        {
+            using (MemoryStream stream = new MemoryStream(Encoding.UTF8.GetBytes("null")))
+            {
+                IList<int> valueTypeCollection = await JsonSerializer.ReadAsync<IList<int>>(stream);
+                Assert.Null(valueTypeCollection);
             }
         }
     }
