@@ -17,7 +17,7 @@ namespace NativeVarargsTest
     {
         static int Main(string[] args)
         {
-            if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7)
+            if(Environment.OSVersion.Platform != PlatformID.Win32NT || TestLibrary.Utilities.IsWindows7 || TestLibrary.Utilities.IsWindowsNanoServer)
             {
                 return 100;
             }
