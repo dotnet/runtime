@@ -658,7 +658,7 @@ mono_threadpool_io_remove_socket (int fd)
 
 	update = update_get_new ();
 	update->type = UPDATE_REMOVE_SOCKET;
-	update->data.add.fd = fd;
+	update->data.remove_socket.fd = fd;
 	mono_memory_barrier (); /* Ensure this is safely published before we wake up the selector */
 
 	selector_thread_wakeup ();
