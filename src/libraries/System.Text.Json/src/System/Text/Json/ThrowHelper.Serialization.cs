@@ -55,6 +55,14 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowJsonException_DepthTooLarge(int currentDepth, in WriteStack writeStack, JsonSerializerOptions options)
+        {
+            var ex = new JsonException(SR.Format(SR.DepthTooLarge, currentDepth, options.EffectiveMaxDepth));
+            AddExceptionInformation(writeStack, ex);
+            throw ex;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_SerializationConverterRead(in Utf8JsonReader reader, string path, string converter)
         {
             ThrowJsonException(SR.Format(SR.SerializationConverterRead, converter), reader, path);
