@@ -2266,6 +2266,24 @@ mini_get_memcpy_method (void)
 	return memcpy_method;
 }
 
+MonoInst*
+mini_emit_storing_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
+{
+	MonoInst *store;
+
+	/*
+	 * Add a release memory barrier so the object contents are flushed
+	 * to memory before storing the reference into another object.
+	 */
+	if (mini_get_debug_options ()->clr_memory_model)
+		mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
+
+	EMIT_NEW_STORE_MEMBASE (cfg, store, OP_STORE_MEMBASE_REG, ptr->dreg, 0, value->dreg);
+
+	mini_emit_write_barrier (cfg, ptr, value);
+	return store;
+}
+
 void
 mini_emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value)
 {
@@ -9023,7 +9041,7 @@ calli_end:
 				} else
 #endif
 				{
-					MonoInst *store, *wbarrier_ptr_ins = NULL;
+					MonoInst *store;
 
 					MONO_EMIT_NULL_CHECK (cfg, sp [0]->dreg, foffset > mono_target_pagesize ());
 
@@ -9042,29 +9060,28 @@ calli_end:
 						EMIT_NEW_BIALU_IMM (cfg, ins, OP_PSUB_IMM, offset_ins->dreg, offset_ins->dreg, 1);
 						dreg = alloc_ireg_mp (cfg);
 						EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, sp [0]->dreg, offset_ins->dreg);
-						wbarrier_ptr_ins = ins;
-						/* The decomposition will call mini_emit_memory_copy () which will emit a wbarrier if needed */
-						EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, dreg, 0, sp [1]->dreg);
-					} else {
-						EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, sp [0]->dreg, foffset, sp [1]->dreg);
-					}
-					if (sp [0]->opcode != OP_LDADDR)
-						store->flags |= MONO_INST_FAULT;
-
-					if (cfg->gen_write_barriers && mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !MONO_INS_IS_PCONST_NULL (sp [1])) {
-						if (mini_is_gsharedvt_klass (klass)) {
-							g_assert (wbarrier_ptr_ins);
-							mini_emit_write_barrier (cfg, wbarrier_ptr_ins, sp [1]);
+						if (cfg->gen_write_barriers && mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !MONO_INS_IS_PCONST_NULL (sp [1])) {
+							store = mini_emit_storing_write_barrier (cfg, ins, sp [1]);
 						} else {
+							/* The decomposition will call mini_emit_memory_copy () which will emit a wbarrier if needed */
+							EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, dreg, 0, sp [1]->dreg);
+						}
+					} else {
+						if (cfg->gen_write_barriers && mini_type_to_stind (cfg, field->type) == CEE_STIND_REF && !MONO_INS_IS_PCONST_NULL (sp [1])) {
 							/* insert call to write barrier */
 							MonoInst *ptr;
 							int dreg;
 
 							dreg = alloc_ireg_mp (cfg);
 							EMIT_NEW_BIALU_IMM (cfg, ptr, OP_PADD_IMM, dreg, sp [0]->dreg, foffset);
-							mini_emit_write_barrier (cfg, ptr, sp [1]);
+							store = mini_emit_storing_write_barrier (cfg, ptr, sp [1]);
+						} else {
+							EMIT_NEW_STORE_MEMBASE_TYPE (cfg, store, field->type, sp [0]->dreg, foffset, sp [1]->dreg);
 						}
 					}
+
+					if (sp [0]->opcode != OP_LDADDR)
+						store->flags |= MONO_INST_FAULT;
 
 					store->flags |= ins_flag;
 				}

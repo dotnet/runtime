@@ -245,6 +245,11 @@ typedef struct MonoDebugOptions {
 	gboolean test_tailcall_require;
 
 	/*
+	 * Use the the stricter clr memory model.
+	 */
+	gboolean clr_memory_model;
+
+	/*
 	 * Internal testing feature
 	 * Testing feature, skip loading the Nth aot loadable method.
 	 */

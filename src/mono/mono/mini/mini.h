@@ -2243,6 +2243,7 @@ MonoInst*         mini_emit_extra_arg_calli (MonoCompile *cfg, MonoMethodSignatu
 MonoInst*         mini_emit_llvmonly_calli (MonoCompile *cfg, MonoMethodSignature *fsig, MonoInst **args, MonoInst *addr);
 MonoInst*         mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, int context_used, MonoInst **sp);
 MonoInst*         mini_emit_memory_barrier (MonoCompile *cfg, int kind);
+MonoInst*         mini_emit_storing_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value);
 void              mini_emit_write_barrier (MonoCompile *cfg, MonoInst *ptr, MonoInst *value);
 MonoInst*         mini_emit_memory_load (MonoCompile *cfg, MonoType *type, MonoInst *src, int offset, int ins_flag);
 void              mini_emit_memory_store (MonoCompile *cfg, MonoType *type, MonoInst *dest, MonoInst *value, int ins_flag);
