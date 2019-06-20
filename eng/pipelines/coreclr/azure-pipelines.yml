@@ -1,25 +1,6 @@
 variables:
-  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-
-resources:
-  containers:
-  - container: ubuntu_1404_arm_cross_build_image
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-14.04-23cacb0-20190528233931
-
-  - container: ubuntu_1604_arm64_cross_build_image
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-cfdd435-20190520220848
-
-  - container: musl_x64_build_image
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.6-WithNode-cfdd435-20190521001804
-
-  - container: musl_arm64_build_image
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-406629a-20190520220848
-
-  - container: centos7_x64_build_image
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-3e800f1-20190501005343
-
-  - container: centos6_x64_build_image
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-6-3e800f1-20190501005338
+- name: DOTNET_SKIP_FIRST_TIME_EXPERIENCE
+  value: true
 
 trigger:
 - master

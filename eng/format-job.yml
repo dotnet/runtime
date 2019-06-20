@@ -3,7 +3,7 @@ parameters:
   archType: ''
   osGroup: ''
   osIdentifier: ''
-  containerName: ''
+  container: ''
   crossrootfsDir: ''
   timeoutInMinutes: ''
 
@@ -15,7 +15,7 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osIdentifier: ${{ parameters.osIdentifier }}
-    containerName: ${{ parameters.containerName }}
+    container: ${{ parameters.container }}
     crossrootfsDir: ${{ parameters.crossrootfsDir }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     name: ${{ format('format_{0}_{1}', parameters.osIdentifier, parameters.archType) }}
