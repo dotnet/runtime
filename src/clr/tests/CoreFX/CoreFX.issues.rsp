@@ -1,4 +1,4 @@
--notrait category=OuterLoop 
+-notrait category=OuterLoop
 -notrait category=RequiresElevation
 
 # Wrong Microsoft.Bcl.AsyncInterfaces binary (netcoreapp vs. netstandard)
@@ -49,11 +49,7 @@
 -nomethod System.Diagnostics.Tests.DebugTestsUsingListeners.Print
 -nomethod System.Tests.ArrayTests.Copy_SourceAndDestinationNeverConvertible_ThrowsArrayTypeMismatchException
 
-#
-#
-# Temporarily disable tests while bringing more CoreFX job configurations online.
-#
-
+# System.Net.Tests are known for their instability
 -nonamespace System.Net.Http.Functional.Tests
 -nonamespace System.Net.Sockets.Tests
 
@@ -68,22 +64,34 @@
 -nomethod System.Net.Security.Tests.LoggingTest.EventSource_EventsRaisedAsExpected
 -nomethod System.Net.Security.Tests.SslStreamSniTest.SslStream_NoSniFromClient_CallbackReturnsNull
 
-# System.Linq.Expressions.Tests: timeout on Linux/x64
+# System.Linq.Expressions.Tests and System.Linq.Expressions.Tests.ArrayBoundsTests.NewArrayBounds in particular are long-running:
+# https://github.com/dotnet/coreclr/issues/25269
+-nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.NewArrayBounds
 -nonamespace System.Linq.Expressions.Tests
 
-# assert/crashes
+# Assertion in System.Number.FormatDouble
+# https://github.com/dotnet/coreclr/issues/25081
 -nomethod System.Tests.RealFormatterTestsBase.TestFormatterSingle_F20
 -noclass System.Tests.RealFormatterTestsBase
 -noclass System.Tests.RealFormatterTests
 -noclass System.Buffers.Text.Tests.RealFormatterTests
 
-# System.Runtime.Serialization.Formatters.Tests: timeouts
--nonamespace System.Runtime.Serialization.Formatters.Tests
+# Timeout in System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.SerializeHugeObjectGraphs: https://github.com/dotnet/coreclr/issues/20246
+-nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.SerializeHugeObjectGraphs
 
+# Assert with TieredCompilation=1 JitStress=1/2: https://github.com/dotnet/coreclr/issues/25263
 -nomethod Generic.Dictionary.DictionaryConcurrentAccessDetectionTests.DictionaryConcurrentAccessDetection_ReferenceTypeKey
 -nomethod Generic.Dictionary.DictionaryConcurrentAccessDetectionTests.DictionaryConcurrentAccessDetection_ValueTypeKey
+
+# Test failure: https://github.com/dotnet/corefx/issues/37989
 -nomethod MonoTests.System.Runtime.Caching.MemoryCacheTest.Contains
+
+# Timeout in System.Numerics.Tests.ToStringTest.RunRegionSpecificStandardFormatToStringTests
+# https://github.com/dotnet/coreclr/issues/22414
 -nomethod System.Numerics.Tests.ToStringTest.RunRegionSpecificStandardFormatToStringTests
+
+# Timeout in System.Text.RegularExpressions.Tests.RegexMatchTests.Match_ExcessPrefix
+# https://github.com/dotnet/coreclr/issues/18912
 -nomethod System.Text.RegularExpressions.Tests.RegexMatchTests.Match_ExcessPrefix
 
 # Assert with JITMinOpts=1: https://github.com/dotnet/coreclr/issues/25070
