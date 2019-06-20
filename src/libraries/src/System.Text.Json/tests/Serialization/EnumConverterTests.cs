@@ -113,5 +113,36 @@ namespace System.Text.Json.Serialization.Tests
         {
             public FileAttributes Attributes { get; set; }
         }
+
+        public class Week
+        {
+            [JsonConverter(typeof(JsonStringEnumConverter))]
+            public DayOfWeek WorkStart { get; set; }
+            public DayOfWeek WorkEnd { get; set; }
+            [LowerCaseEnum]
+            public DayOfWeek WeekEnd { get; set; }
+        }
+
+        [AttributeUsage(AttributeTargets.Property | AttributeTargets.Class, AllowMultiple = false)]
+        private class LowerCaseEnumAttribute : JsonConverterAttribute
+        {
+            public LowerCaseEnumAttribute() { }
+
+            public override JsonConverter CreateConverter(Type typeToConvert)
+                => new JsonStringEnumConverter(new ToLower());
+        }
+
+        [Fact]
+        public void ConvertEnumUsingAttributes()
+        {
+            Week week = new Week { WorkStart = DayOfWeek.Monday, WorkEnd = DayOfWeek.Friday, WeekEnd = DayOfWeek.Saturday };
+            string json = JsonSerializer.ToString(week);
+            Assert.Equal(@"{""WorkStart"":""Monday"",""WorkEnd"":5,""WeekEnd"":""saturday""}", json);
+
+            week = JsonSerializer.Parse<Week>(json);
+            Assert.Equal(DayOfWeek.Monday, week.WorkStart);
+            Assert.Equal(DayOfWeek.Friday, week.WorkEnd);
+            Assert.Equal(DayOfWeek.Saturday, week.WeekEnd);
+        }
     }
 }

@@ -86,6 +86,11 @@ namespace System.Text.Json
                 converter = GetConverter(runtimePropertyType);
             }
 
+            if (converter is JsonConverterFactory factory)
+            {
+                converter = factory.GetConverterInternal(runtimePropertyType);
+            }
+
             return converter;
         }
 
