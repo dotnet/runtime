@@ -17,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.DotNet.PlatformAb
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.DependencyModel", "src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj", "{566D86A6-D940-4270-867E-C9EA0EA01F6E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostActivationTests", "src\test\HostActivationTests\HostActivationTests.csproj", "{23F4AB97-D15C-4C51-A641-DF5C5D5EF70F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostActivation.Tests", "src\test\HostActivation.Tests\HostActivation.Tests.csproj", "{23F4AB97-D15C-4C51-A641-DF5C5D5EF70F}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.DependencyModel.Tests", "src\test\Microsoft.Extensions.DependencyModel.Tests\Microsoft.Extensions.DependencyModel.Tests.csproj", "{D86A859D-E6FA-4E73-A255-5776FC473A25}"
 EndProject
