@@ -21,16 +21,20 @@ namespace System.Reflection.Emit
         public int GetTokenFor(string literal) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe void SetCode(byte* code, int codeSize, int maxStackSize) { }
-        public void SetCode(byte[] code, int maxStackSize) { }
+        public void SetCode(byte[]? code, int maxStackSize) { }
         [System.CLSCompliantAttribute(false)]
         public unsafe void SetExceptions(byte* exceptions, int exceptionsSize) { }
-        public void SetExceptions(byte[] exceptions) { }
+        public void SetExceptions(byte[]? exceptions) { }
         [System.CLSCompliantAttribute(false)]
         public unsafe void SetLocalSignature(byte* localSignature, int signatureSize) { }
-        public void SetLocalSignature(byte[] localSignature) { }
+        public void SetLocalSignature(byte[]? localSignature) { }
     }
     public sealed partial class DynamicMethod : System.Reflection.MethodInfo
     {
+        public override bool IsSecurityCritical { get { throw null; } }
+        public override bool IsSecuritySafeCritical { get { throw null; } }
+        public override bool IsSecurityTransparent { get { throw null; } }
+        public override System.Reflection.Module Module { get { throw null; } }
         public System.Reflection.Emit.DynamicILInfo GetDynamicILInfo() { throw null; }
     }
 }

@@ -3,6 +3,7 @@
     <ProjectGuid>{293B8D9F-361F-4DED-B95E-3EB2D7C5FBAD}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.Emit.Lightweight.cs" />
