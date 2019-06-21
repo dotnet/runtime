@@ -88,8 +88,10 @@ bool EventPipeBuffer::WriteEvent(Thread *pThread, EventPipeSession &session, Eve
             pStack = &s;
         }
 
+        unsigned int procNumber = EventPipe::GetCurrentProcessorNumber();
         EventPipeEventInstance *pInstance = new (m_pCurrent) EventPipeEventInstance(
             event,
+            procNumber,
             (pThread == NULL) ?
 #ifdef FEATURE_PAL
                 ::PAL_GetCurrentOSThreadId()
