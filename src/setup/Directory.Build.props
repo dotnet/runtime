@@ -41,7 +41,28 @@
     <UAPvNextTFM>uap$(UAPvNextVersion)</UAPvNextTFM>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)RepoDirectories.props" />
+  <PropertyGroup>
+    <!-- ProjectDir needs to be set for build-tools and legacy usages. New usages should use RepoRoot -->
+    <ProjectDir>$(RepoRoot)</ProjectDir>
+    <SourceDir>$(RepoRoot)src/</SourceDir>
+
+    <!-- Output directories -->
+    <BinDir Condition="'$(BinDir)'==''">$(ArtifactsBinDir)</BinDir>
+    <ObjDir Condition="'$(ObjDir)'==''">$(ArtifactsObjDir)</ObjDir>
+
+    <!-- Input Directories -->
+    <PackagesDir Condition="'$(PackagesDir)' == ''">$(NuGetPackageRoot)</PackagesDir>
+
+    <LocalBuildToolsDir>$(ObjDir)local-build-tasks\</LocalBuildToolsDir>
+    <LocalBuildToolsTaskDir>$(LocalBuildToolsDir)netstandard2.0\</LocalBuildToolsTaskDir>
+    <LocalBuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(LocalBuildToolsDir)net46\</LocalBuildToolsTaskDir>
+
+    <LocalBuildToolsTaskFile>$(LocalBuildToolsTaskDir)core-setup.tasks.dll</LocalBuildToolsTaskFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <HostMachineInfoProps>$(ObjDir)HostMachineInfo.props</HostMachineInfoProps>
+  </PropertyGroup>
 
   <PropertyGroup>
     <!--

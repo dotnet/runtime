@@ -1,0 +1,61 @@
+<Project>
+
+  <ItemGroup>
+    <ProjectToBuild Include="$(RepoRoot)src\corehost\build.proj" />
+    <ProjectToBuild Include="$(RepoRoot)src\pkg\packaging\installers.proj" />
+    <ProjectToBuild Include="$(RepoRoot)src\managed\**\*.csproj" />
+
+    <!--
+      Build pkgproj/depproj but not sfxproj. sfxproj requires pkgprojs to build their nupkgs first,
+      before Restore, which doesn't seem supported by Arcade.
+    -->
+    <ProjectToBuild Include="$(RepoRoot)src\pkg\projects\**\*.pkgproj" />
+    <ProjectToBuild Include="$(RepoRoot)src\pkg\projects\**\*.depproj" />
+
+    <!-- Test projects. -->
+    <ProjectToBuild Include="$(RepoRoot)src\test\BundleTests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
+    <ProjectToBuild Include="$(RepoRoot)src\test\BundleTests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj" />
+    <ProjectToBuild Include="$(RepoRoot)src\test\HostActivation.Tests\HostActivation.Tests.csproj" />
+    <ProjectToBuild Include="$(RepoRoot)src\test\Microsoft.Extensions.DependencyModel.Tests\Microsoft.Extensions.DependencyModel.Tests.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RepoTasksDir>$(RepoRoot)tools-local\tasks\</RepoTasksDir>
+    <RepoTasksOutputFile>$(ArtifactsObjDir)core-setup.tasks\$(Configuration)\build-semaphore.txt</RepoTasksOutputFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RepoTasksSrc Include="$(RepoTasksDir)**\*.cs" />
+  </ItemGroup>
+
+  <!--
+    Use this extensibility point to build custom tasks during Build.proj, before any restoring or
+    building happens in the repo. These DLLs would ideally live in Arcade and be restored as tools,
+    so the idea is building them here is somewhat equivalent.
+
+    Also create the host RID props file so the main build can use it statically.
+
+    Use synthetic inputs/outputs to avoid building it all the time. This should let devs build with
+    MSBuild node reuse enabled (the Arcade default). If it were built every time, it would hit file
+    locking issues vs. the persistent nodes that loaded the task DLL for the previous build. It
+    isn't particularly accurate, but better than nothing.
+  -->
+  <Target Name="BuildRepoTasks"
+          BeforeTargets="Execute"
+          Inputs="@(RepoTasksSrc)"
+          Outputs="$(RepoTasksOutputFile)">
+    <MSBuild
+      Projects="$(RepoTasksDir)core-setup.tasks.csproj"
+      Properties="RepoRoot=$(RepoRoot)"
+      Targets="
+        Restore;
+        Build;
+        CreateHostMachineInfoFile"/>
+    
+    <WriteLinesToFile
+      File="$(RepoTasksOutputFile)"
+      Lines="$(RepoTasksOutputFile)"
+      Overwrite="true" />
+  </Target>
+
+</Project>
