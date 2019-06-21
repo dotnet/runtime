@@ -151,13 +151,13 @@ namespace System.Net.Sockets
 #endif
 
                 InnerReleaseHandle();
-                innerSocket.Close(abortive: true);
+                innerSocket.DangerousRelease();
             }
 
             return true;
         }
 
-        internal void CloseAsIs(bool abortive)
+        internal void CloseAsIs()
         {
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_innerSocket={_innerSocket}");
 
@@ -175,17 +175,13 @@ namespace System.Net.Sockets
                     SpinWait sw = new SpinWait();
                     while (!_released)
                     {
-                        // The socket was not released due to the SafeHandle being used.
-                        // Try to make those on-going calls return.
-                        // On Linux, TryUnblockSocket will unblock current operations but it doesn't prevent
-                        // a new one from starting. So we must call TryUnblockSocket multiple times.
-                        abortive |= innerSocket.TryUnblockSocket();
                         sw.SpinOnce();
                     }
 
-                    abortive |= InnerReleaseHandle();
+                    InnerReleaseHandle();
 
-                    innerSocket.Close(abortive);
+                    // Now free it with blocking.
+                    innerSocket.BlockingRelease();
                 }
 #if DEBUG
             }
@@ -201,7 +197,7 @@ namespace System.Net.Sockets
         {
             private InnerSafeCloseSocket() : base(true) { }
 
-            private bool _abortive = true;
+            private bool _blockable;
 
             public override bool IsInvalid
             {
@@ -276,14 +272,16 @@ namespace System.Net.Sockets
             }
 #endif
 
-            internal void Close(bool abortive)
+            // Use this method to close the socket handle using the linger options specified on the socket.
+            // Guaranteed to only be called once, under a CER, and not if regular DangerousRelease is called.
+            internal void BlockingRelease()
             {
 #if DEBUG
                 // Expected to have outstanding operations such as Accept.
                 LogRemainingOperations();
 #endif
 
-                _abortive = abortive;
+                _blockable = true;
                 DangerousRelease();
             }
         }
