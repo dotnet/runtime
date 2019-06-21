@@ -67,11 +67,11 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Adds a key-value metadata to the EventCounter that will be included as a part of the payload
         /// </summary>
-        public void AddMetadata(string key, string value)
+        public void AddMetadata(string key, string? value)
         {
             lock (this)
             {
-                _metadata ??= new Dictionary<string, string>();
+                _metadata ??= new Dictionary<string, string?>();
                 _metadata.Add(key, value);
             }
         }
@@ -107,7 +107,7 @@ namespace System.Diagnostics.Tracing
         #region private implementation
 
         private CounterGroup _group;
-        private Dictionary<string, string>? _metadata;
+        private Dictionary<string, string?>? _metadata;
 
         internal abstract void WritePayload(float intervalSec, int pollingIntervalMillisec);
 
@@ -127,13 +127,13 @@ namespace System.Diagnostics.Tracing
 
             // The dictionary is only initialized to non-null when there's metadata to add, and no items
             // are ever removed, so if the dictionary is non-null, there must also be at least one element.
-            Dictionary<string, string>.Enumerator enumerator = _metadata.GetEnumerator();
+            Dictionary<string, string?>.Enumerator enumerator = _metadata.GetEnumerator();
             Debug.Assert(_metadata.Count > 0);
             bool gotOne = enumerator.MoveNext();
             Debug.Assert(gotOne);
 
             // If there's only one element, just concat a string for it.
-            KeyValuePair<string, string> current = enumerator.Current;
+            KeyValuePair<string, string?> current = enumerator.Current;
             if (!enumerator.MoveNext())
             {
                 return current.Key + ":" + current.Value;

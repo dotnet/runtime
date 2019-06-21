@@ -420,7 +420,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventSource">The instance of EventSource to send the command to</param>
         /// <param name="command">A positive user-defined EventCommand, or EventCommand.SendManifest</param>
         /// <param name="commandArguments">A set of (name-argument, value-argument) pairs associated with the command</param>
-        public static void SendCommand(EventSource eventSource, EventCommand command, IDictionary<string, string>? commandArguments)
+        public static void SendCommand(EventSource eventSource, EventCommand command, IDictionary<string, string?>? commandArguments)
         {
             if (eventSource == null)
                 throw new ArgumentNullException(nameof(eventSource));
@@ -1305,7 +1305,7 @@ namespace System.Diagnostics.Tracing
         /// check so that the varargs call is not made when the EventSource is not active.  
         /// </summary>
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "This does not need to be correct when racing with other threads")]
-        protected unsafe void WriteEvent(int eventId, params object[] args)
+        protected unsafe void WriteEvent(int eventId, params object?[] args)
         {
             WriteEventVarargs(eventId, null, args);
         }
@@ -1318,7 +1318,7 @@ namespace System.Diagnostics.Tracing
         /// particular method signature. Even if you use this for rare events, this call should be guarded by an <see cref="IsEnabled()"/>
         /// check so that the varargs call is not made when the EventSource is not active.
         /// </summary>
-        protected unsafe void WriteEventWithRelatedActivityId(int eventId, Guid relatedActivityId, params object[] args)
+        protected unsafe void WriteEventWithRelatedActivityId(int eventId, Guid relatedActivityId, params object?[] args)
         {
             WriteEventVarargs(eventId, &relatedActivityId, args);
         }
@@ -1899,7 +1899,7 @@ namespace System.Diagnostics.Tracing
             return dispatcher;
         }
 
-        private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object[] args)
+        private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
         {
             if (m_eventSourceEnabled)
             {
@@ -2052,7 +2052,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         /// <param name="infos"></param>
         /// <param name="args"></param>
-        private void LogEventArgsMismatches(ParameterInfo[] infos, object[] args)
+        private void LogEventArgsMismatches(ParameterInfo[] infos, object?[] args)
         {
 #if (!ES_BUILD_PCL && !ES_BUILD_PN)
             // It would be nice to have this on PCL builds, but it would be pointless since there isn't support for 
@@ -2067,7 +2067,7 @@ namespace System.Diagnostics.Tracing
                 // Checking to see if the Parameter types (from the Event method) match the supplied argument types.
                 // Fail if one of two things hold : either the argument type is not equal to the parameter type, or the 
                 // argument is null and the parameter type is non-nullable.
-                if ((args[i] != null && (args[i].GetType() != pType))
+                if ((args[i] != null && (args[i]!.GetType() != pType)) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                     || (args[i] == null && (!(pType.IsGenericType && pType.GetGenericTypeDefinition() == typeof(Nullable<>))))
                     )
                 {
@@ -2417,7 +2417,7 @@ namespace System.Diagnostics.Tracing
                 this.m_eventSource = eventSource;
                 this.m_eventProviderType = providerType;
             }
-            protected override void OnControllerCommand(ControllerCommand command, IDictionary<string, string>? arguments,
+            protected override void OnControllerCommand(ControllerCommand command, IDictionary<string, string?>? arguments,
                                                               int perEventSourceSessionId, int etwSessionId)
             {
                 // We use null to represent the ETW EventListener.  
@@ -2641,7 +2641,7 @@ namespace System.Diagnostics.Tracing
         internal void SendCommand(EventListener? listener, EventProviderType eventProviderType, int perEventSourceSessionId, int etwSessionId,
                                   EventCommand command, bool enable,
                                   EventLevel level, EventKeywords matchAnyKeyword,
-                                  IDictionary<string, string>? commandArguments)
+                                  IDictionary<string, string?>? commandArguments)
         {
             var commandArgs = new EventCommandEventArgs(command, commandArguments, this, listener, eventProviderType, perEventSourceSessionId, etwSessionId, enable, level, matchAnyKeyword);
             lock (EventListener.EventListenersLock)
@@ -2706,7 +2706,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 if (commandArgs.Arguments == null)
-                    commandArgs.Arguments = new Dictionary<string, string>();
+                    commandArgs.Arguments = new Dictionary<string, string?>();
 
                 if (commandArgs.Command == EventCommand.Update)
                 {
@@ -4203,7 +4203,7 @@ namespace System.Diagnostics.Tracing
         /// 
         /// This call never has an effect on other EventListeners.
         /// </summary>       
-        public void EnableEvents(EventSource eventSource, EventLevel level, EventKeywords matchAnyKeyword, IDictionary<string, string>? arguments)
+        public void EnableEvents(EventSource eventSource, EventLevel level, EventKeywords matchAnyKeyword, IDictionary<string, string?>? arguments)
         {
             if (eventSource == null)
             {
@@ -4630,7 +4630,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Gets the arguments for the callback.
         /// </summary>
-        public IDictionary<string, string>? Arguments { get; internal set; }
+        public IDictionary<string, string?>? Arguments { get; internal set; }
 
         /// <summary>
         /// Enables the event that has the specified identifier.
@@ -4658,7 +4658,7 @@ namespace System.Diagnostics.Tracing
 
 #region private
 
-        internal EventCommandEventArgs(EventCommand command, IDictionary<string, string>? arguments, EventSource eventSource,
+        internal EventCommandEventArgs(EventCommand command, IDictionary<string, string?>? arguments, EventSource eventSource,
             EventListener? listener, EventProviderType eventProviderType, int perEventSourceSessionId, int etwSessionId, bool enable, EventLevel level, EventKeywords matchAnyKeyword)
         {
             this.Command = command;
