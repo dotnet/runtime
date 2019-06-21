@@ -24,11 +24,11 @@ namespace Microsoft.DotNet.Build.Tasks
         public string Runtime { get; set; }
 
         [Required]
-        public string BuildToolsTaskDir { get; set; }
+        public string BuildTasksAssemblyPath { get; set; }
 
         public override bool Execute()
         {
-            EnsureInitialized(BuildToolsTaskDir);
+            EnsureInitialized(BuildTasksAssemblyPath);
 
             ExecuteCore();
 
@@ -74,6 +74,6 @@ namespace Microsoft.DotNet.Build.Tasks
             }
         }
 
-        partial void EnsureInitialized(string buildToolsTaskDir);
+        partial void EnsureInitialized(string buildTasksAssemblyPath);
     }
 }
