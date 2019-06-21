@@ -19,6 +19,7 @@
 
 UINT64 QCALLTYPE EventPipeInternal::Enable(
     __in_z LPCWSTR outputFile,
+    EventPipeSerializationFormat format,
     UINT32 circularBufferSizeInMB,
     EventPipeProviderConfiguration *pProviders,
     UINT32 numProviders)
@@ -29,6 +30,7 @@ UINT64 QCALLTYPE EventPipeInternal::Enable(
 
     // Invalid input!
     if (circularBufferSizeInMB == 0 ||
+        format >= EventPipeSerializationFormat::Count ||
         numProviders == 0 ||
         pProviders == nullptr)
     {
@@ -37,17 +39,6 @@ UINT64 QCALLTYPE EventPipeInternal::Enable(
 
     BEGIN_QCALL;
     {
-        // This was a quick and dirty mechanism for testing but it may not be the final
-        // configuration scheme we want. This path handles both the AI profiler scenario
-        // doing private reflection and the EnableEventPipe env var. If we want to flip
-        // the default for one but not the other we'll have to hoist the configuration
-        // check into managed code.
-        EventPipeSerializationFormat format = EventPipeSerializationFormat::NetPerfV3;
-        if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeNetTraceFormat) > 0)
-        {
-            format = EventPipeSerializationFormat::NetTraceV4;
-        }
-
         sessionID = EventPipe::Enable(
             outputFile,
             circularBufferSizeInMB,

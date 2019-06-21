@@ -179,6 +179,7 @@ bool EventPipeEventBlockBase::WriteEvent(EventPipeEventInstance &instance,
 
     unsigned int dataLength = 0;
     BYTE* alignedEnd = NULL;
+    unsigned int captureProcNumber = instance.GetProcNumber();
 
     if (!m_fUseHeaderCompression)
     {
@@ -217,6 +218,9 @@ bool EventPipeEventBlockBase::WriteEvent(EventPipeEventInstance &instance,
             memcpy(m_pWritePointer, &captureThreadId, sizeof(captureThreadId));
             m_pWritePointer += sizeof(captureThreadId);
 
+            memcpy(m_pWritePointer, &captureProcNumber, sizeof(captureProcNumber));
+            m_pWritePointer += sizeof(captureProcNumber);
+
             memcpy(m_pWritePointer, &stackId, sizeof(stackId));
             m_pWritePointer += sizeof(stackId);
         }
@@ -253,10 +257,12 @@ bool EventPipeEventBlockBase::WriteEvent(EventPipeEventInstance &instance,
         }
         
         if (m_lastHeader.SequenceNumber + (instance.GetMetadataId() != 0 ? 1 : 0) != sequenceNumber ||
-            m_lastHeader.CaptureThreadId != captureThreadId)
+            m_lastHeader.CaptureThreadId != captureThreadId ||
+            m_lastHeader.CaptureProcNumber != captureProcNumber)
         {
             WriteVarUInt32(pWritePointer, sequenceNumber - m_lastHeader.SequenceNumber - 1);
             WriteVarUInt64(pWritePointer, captureThreadId);
+            WriteVarUInt32(pWritePointer, captureProcNumber);
             flags |= (1 << 1);
         }
 
@@ -307,6 +313,7 @@ bool EventPipeEventBlockBase::WriteEvent(EventPipeEventInstance &instance,
         m_lastHeader.SequenceNumber = sequenceNumber;
         m_lastHeader.ThreadId = instance.GetThreadId64();
         m_lastHeader.CaptureThreadId = captureThreadId;
+        m_lastHeader.CaptureProcNumber = captureProcNumber;
         m_lastHeader.StackId = stackId;
         m_lastHeader.TimeStamp.QuadPart = timeStamp->QuadPart;
         memcpy(&m_lastHeader.ActivityId, instance.GetActivityId(), sizeof(GUID));

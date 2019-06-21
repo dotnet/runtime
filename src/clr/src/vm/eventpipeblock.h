@@ -96,6 +96,7 @@ struct EventPipeEventHeader
     DWORD SequenceNumber;
     ULONGLONG ThreadId;
     ULONGLONG CaptureThreadId;
+    DWORD CaptureProcNumber;
     DWORD StackId;
     LARGE_INTEGER TimeStamp;
     GUID ActivityId;

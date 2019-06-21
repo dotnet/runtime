@@ -453,6 +453,7 @@ EventPipeEventInstance *EventPipeConfiguration::BuildEventMetadataEvent(EventPip
     // Construct the event instance.
     EventPipeEventInstance *pInstance = new EventPipeEventInstance(
         *m_pMetadataEvent,
+        EventPipe::GetCurrentProcessorNumber(),
 #ifdef FEATURE_PAL
         PAL_GetCurrentOSThreadId(),
 #else
