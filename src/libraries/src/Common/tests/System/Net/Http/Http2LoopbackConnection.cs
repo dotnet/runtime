@@ -234,6 +234,21 @@ namespace System.Net.Test.Common
             _ignoreWindowUpdates = false;
         }
 
+        // This is similiar to WaitForConnectionShutdownAsync but will send GOAWAY for you
+        // and will ignore any errors if client has already shutdown
+        public async Task ShutdownIgnoringErrorsAsync(int lastStreamId)
+        {
+            try
+            {
+                await SendGoAway(lastStreamId);
+                await WaitForConnectionShutdownAsync();
+            }
+            catch (IOException)
+            {
+                // Ignore connection errors
+            }
+        }
+
         public async Task<int> ReadRequestHeaderAsync()
         {
             // Receive HEADERS frame for request.
