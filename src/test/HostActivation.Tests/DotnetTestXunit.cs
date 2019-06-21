@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             }
         }
 
-        public void ActivateDotnetTestXunitOnTestProject(
+        private void ActivateDotnetTestXunitOnTestProject(
             RepoDirectoriesProvider repoDirectories,
             TestProjectFixture testProjectFixture)
         {
