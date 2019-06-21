@@ -278,7 +278,7 @@ namespace System.Diagnostics.Tracing
             try
             {
                 ControllerCommand command = ControllerCommand.Update;
-                IDictionary<string, string>? args = null;
+                IDictionary<string, string?>? args = null;
                 bool skipFinalOnControllerCommand = false;
                 if (controlCode == Interop.Advapi32.EVENT_CONTROL_CODE_ENABLE_PROVIDER)
                 {
@@ -321,7 +321,7 @@ namespace System.Diagnostics.Tracing
                         if (bEnabling &&
                             GetDataFromController(etwSessionId, filterData, out command, out data, out keyIndex))
                         {
-                            args = new Dictionary<string, string>(4);
+                            args = new Dictionary<string, string?>(4);
                             Debug.Assert(data != null);
                             while (keyIndex < data.Length)
                             {
@@ -368,7 +368,7 @@ namespace System.Diagnostics.Tracing
         }
 
         // New in CLR4.0
-        protected virtual void OnControllerCommand(ControllerCommand command, IDictionary<string, string>? arguments, int sessionId, int etwSessionId) { }
+        protected virtual void OnControllerCommand(ControllerCommand command, IDictionary<string, string?>? arguments, int sessionId, int etwSessionId) { }
         protected EventLevel Level { get { return (EventLevel)m_level; } set { m_level = (byte)value; } }
         protected EventKeywords MatchAnyKeyword { get { return (EventKeywords)m_anyKeywordMask; } set { m_anyKeywordMask = unchecked((long)value); } }
         protected EventKeywords MatchAllKeyword { get { return (EventKeywords)m_allKeywordMask; } set { m_allKeywordMask = unchecked((long)value); } }
@@ -729,7 +729,7 @@ namespace System.Diagnostics.Tracing
         // <UsesUnsafeCode Name="Parameter dataDescriptor of type: EventData*" />
         // <UsesUnsafeCode Name="Parameter dataBuffer of type: Byte*" />
         // </SecurityKernel>
-        private static unsafe object? EncodeObject(ref object data, ref EventData* dataDescriptor, ref byte* dataBuffer, ref uint totalEventSize)
+        private static unsafe object? EncodeObject(ref object? data, ref EventData* dataDescriptor, ref byte* dataBuffer, ref uint totalEventSize)
         /*++
 
         Routine Description:
@@ -970,7 +970,7 @@ namespace System.Diagnostics.Tracing
         // </SecurityKernel>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity", Justification = "Performance-critical code")]
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1045:DoNotPassTypesByReference")]
-        internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, params object[] eventPayload)
+        internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, params object?[] eventPayload)
         {
             WriteEventErrorCode status = WriteEventErrorCode.NoError;
 
