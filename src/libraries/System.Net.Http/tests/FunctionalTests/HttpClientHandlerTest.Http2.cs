@@ -1605,25 +1605,22 @@ namespace System.Net.Http.Functional.Tests
             await Http2LoopbackServer.CreateClientAndServerAsync(
                 async uri =>
                 {
-                    using HttpClient client = CreateHttpClient();
-
+                    // An exception will be thrown by either GetAsync or ReadAsStringAsync once
+                    // the inbound window size has been exceeded. Which one depends on how quickly
+                    // ProcessIncomingFramesAsync() can read data off the socket.
                     Exception requestException = await Assert.ThrowsAsync<HttpRequestException>(async () =>
                     {
-                        // GetAsync() tends to throw when running under high load.
-                        // This indicates enough content was buffered so a recv()
-                        // to pull in headers happened to read enough to exceed
-                        // the stream receive window.
+                        using HttpClient client = CreateHttpClient();
                         using HttpResponseMessage response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
 
                         // Keep client open until server is done.
                         await semaphore.WaitAsync(10000);
 
-                        // ReadAsString() tends to throw under low load.
                         await response.Content.ReadAsStringAsync();
                     });
 
                     // A Http2ProtocolException will be present somewhere in the inner exceptions.
-                    // Its location depends on where the exception was thrown.
+                    // Its location depends on which method threw the exception.
                     while (requestException?.GetType().FullName.Equals("System.Net.Http.Http2ProtocolException") == false)
                     {
                         requestException = requestException.InnerException;
