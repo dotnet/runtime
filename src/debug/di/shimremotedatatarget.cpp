@@ -68,7 +68,9 @@ public:
 private:
     DbgTransportTarget  * m_pProxy;
     DbgTransportSession * m_pTransport;
+#ifndef __APPLE__
     int m_fd;                           // /proc/<pid>/mem handle
+#endif
 };
 
 
@@ -104,9 +106,11 @@ ShimRemoteDataTarget::ShimRemoteDataTarget(DWORD processId,
     m_fpContinueStatusChanged = NULL;
     m_pContinueStatusChangedUserData = NULL;
 
+#ifndef __APPLE__
     char memPath[128];
     _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", m_processId);
     m_fd = _open(memPath, 0); // O_RDONLY
+#endif
 }
 
 //---------------------------------------------------------------------------------------
@@ -131,11 +135,13 @@ ShimRemoteDataTarget::~ShimRemoteDataTarget()
 
 void ShimRemoteDataTarget::Dispose()
 {
+#ifndef __APPLE__
     if (m_fd != -1)
     {
         _close(m_fd);
         m_fd = -1;
     }
+#endif
     if (m_pTransport != NULL)
     {
         m_pProxy->ReleaseTransport(m_pTransport);
@@ -263,6 +269,7 @@ ShimRemoteDataTarget::ReadVirtual(
     size_t read = cbRequestSize;
     HRESULT hr = S_OK;
 
+#ifndef __APPLE__
     if (m_fd != -1)
     {
         read = _pread(m_fd, pBuffer, cbRequestSize, (ULONG64)address);
@@ -272,6 +279,7 @@ ShimRemoteDataTarget::ReadVirtual(
         }
     }
     else
+#endif
     {
         hr = m_pTransport->ReadMemory(reinterpret_cast<BYTE *>(CORDB_ADDRESS_TO_PTR(address)), pBuffer, cbRequestSize);
     }
