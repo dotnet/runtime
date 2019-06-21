@@ -12,7 +12,9 @@
     <!-- Test unsupported outside of windows -->
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
-  </PropertyGroup>
+    <!-- WinRT interop is not compatible with unloadability -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+</PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
   </PropertyGroup>

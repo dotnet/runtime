@@ -12,6 +12,8 @@
     <!-- Test unsupported outside of windows -->
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition="'$(TargetsWindows)' != 'true'">true</DisableProjectBuild>
+    <!-- The test fails casting from ClassFromA from the default ALC to type IGetTypeFromC from a custom ALC -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Interop.settings.targets))\Interop.settings.targets" />
 

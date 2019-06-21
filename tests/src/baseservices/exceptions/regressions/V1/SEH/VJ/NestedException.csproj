@@ -12,7 +12,9 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>1</CLRTestPriority>
-  </PropertyGroup>
+      <!-- This test leaves secondary threads running at exit -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+</PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
   </PropertyGroup>
