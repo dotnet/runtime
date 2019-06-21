@@ -312,18 +312,16 @@ namespace System
         }
 
         /// <summary>
-        /// Validates that the actual byte array is equal to the expected byte array. XUnit only displays the first 5 values
+        /// Validates that the actual array is equal to the expected array. XUnit only displays the first 5 values
         /// of each collection if the test fails. This doesn't display at what point or how the equality assertion failed.
         /// </summary>
-        /// <param name="expected">The byte array that <paramref name="actual"/> should be equal to.</param>
+        /// <param name="expected">The array that <paramref name="actual"/> should be equal to.</param>
         /// <param name="actual"></param>
-        public static void Equal(byte[] expected, byte[] actual)
+        public static void Equal<T>(T[] expected, T[] actual) where T: IEquatable<T>
         {
-            try
-            {
-                Assert.Equal(expected, actual);
-            }
-            catch (AssertActualExpectedException)
+            // Use the SequenceEqual to compare the arrays for better performance. The default Assert.Equal method compares
+            // the arrays by boxing each element that is very slow for large arrays.
+            if (!expected.AsSpan().SequenceEqual(actual.AsSpan()))
             {
                 string expectedString = string.Join(", ", expected);
                 string actualString = string.Join(", ", actual);

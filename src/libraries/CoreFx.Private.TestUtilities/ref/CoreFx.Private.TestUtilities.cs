@@ -15,7 +15,7 @@ namespace System
     public static partial class AssertExtensions
     {
         public static void Contains(string value, string substring) { }
-        public static void Equal(byte[] expected, byte[] actual) { }
+        public static void Equal<T>(T[] expected, T[] actual) where T : System.IEquatable<T> { }
         public static void Equal<T>(System.Collections.Generic.HashSet<T> expected, System.Collections.Generic.HashSet<T> actual) { }
         public static void GreaterThanOrEqualTo<T>(T actual, T greaterThanOrEqualTo, string userMessage = null) where T : System.IComparable { }
         public static void GreaterThan<T>(T actual, T greaterThan, string userMessage = null) where T : System.IComparable { }
