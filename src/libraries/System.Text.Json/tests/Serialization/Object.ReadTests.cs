@@ -90,6 +90,43 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public static void ReadArrayInObjectArray()
+        {
+            object[] array = JsonSerializer.Parse<object[]>(@"[[]]");
+            Assert.Equal(1, array.Length);
+            Assert.IsType<JsonElement>(array[0]);
+            Assert.Equal(JsonValueType.Array, ((JsonElement)array[0]).Type);
+        }
+
+        [Fact]
+        public static void ReadObjectInObjectArray()
+        {
+            object[] array = JsonSerializer.Parse<object[]>(@"[{}]");
+            Assert.Equal(1, array.Length);
+            Assert.IsType<JsonElement>(array[0]);
+            Assert.Equal(JsonValueType.Object, ((JsonElement)array[0]).Type);
+
+            // Scenario described in https://github.com/dotnet/corefx/issues/36169
+            array = JsonSerializer.Parse<object[]>("[1, false]");
+            Assert.Equal(2, array.Length);
+            Assert.IsType<JsonElement>(array[0]);
+            Assert.Equal(JsonValueType.Number, ((JsonElement)array[0]).Type);
+            Assert.Equal(1, ((JsonElement)array[0]).GetInt32());
+            Assert.IsType<JsonElement>(array[1]);
+            Assert.Equal(JsonValueType.False, ((JsonElement)array[1]).Type);
+
+            array = JsonSerializer.Parse<object[]>(@"[1, false, { ""name"" : ""Person"" }]");
+            Assert.Equal(3, array.Length);
+            Assert.IsType<JsonElement>(array[0]);
+            Assert.Equal(JsonValueType.Number, ((JsonElement)array[0]).Type);
+            Assert.Equal(1, ((JsonElement)array[0]).GetInt32());
+            Assert.IsType<JsonElement>(array[1]);
+            Assert.Equal(JsonValueType.False, ((JsonElement)array[1]).Type);
+            Assert.IsType<JsonElement>(array[2]);
+            Assert.Equal(JsonValueType.Object, ((JsonElement)array[2]).Type);
+        }
+
+        [Fact]
         public static void ReadClassWithComplexObjects()
         {
             ClassWithComplexObjects obj = JsonSerializer.Parse<ClassWithComplexObjects>(ClassWithComplexObjects.s_json);
