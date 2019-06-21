@@ -6,6 +6,7 @@
   -->
   <Import Project="framework.dependency.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
   <Import Project="framework.packaging.targets" Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" />
+  <Import Project="framework.sharedfx.targets" Condition="'$(MSBuildProjectExtension)' == '.sfxproj'" />
 
   <Import Project="installer.targets" />
 
