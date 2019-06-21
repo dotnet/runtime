@@ -164,10 +164,11 @@ run-tests-corefx-%: prepare update-tests-corefx
 		$(XUNIT_FLAGS) @../../../../CoreFX.issues.rsp \
 		$(FIXTURE) || true
 
-# build a test assembly in COREFX_ROOT and copy it to corefx/tests/extracted
+# build a test assembly in COREFX_ROOT (path to a fully built corefx repo) and copy it to corefx/tests/extracted
 # e.g. `make build-test-corefx-System.Runtime COREFX_ROOT=/prj/corefx-master`
 build-test-corefx-%:
 	cd $(COREFX_ROOT)/src/$*/tests && $(DOTNET) msbuild /p:OutputPath=tmp
 	cp $(COREFX_ROOT)/src/$*/tests/tmp/$*.Tests.{dll,pdb} $(CURDIR)/corefx/tests/extracted/$*.Tests/
+	rm -rf $(COREFX_ROOT)/src/$*/tests/tmp
 
 distdir:
