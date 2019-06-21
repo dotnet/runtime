@@ -110,14 +110,9 @@ namespace System.Diagnostics.Tracing
         /// Writes an event with no fields and default options.
         /// (Native API: EventWriteTransfer)
         /// </summary>
-        /// <param name="eventName">The name of the event. Must not be null.</param>
-        public unsafe void Write(string eventName)
+        /// <param name="eventName">The name of the event.</param>
+        public unsafe void Write(string? eventName)
         {
-            if (eventName == null)
-            {
-                throw new ArgumentNullException(nameof(eventName));
-            }
-
             if (!this.IsEnabled())
             {
                 return;
@@ -131,18 +126,13 @@ namespace System.Diagnostics.Tracing
         /// Writes an event with no fields.
         /// (Native API: EventWriteTransfer)
         /// </summary>
-        /// <param name="eventName">The name of the event. Must not be null.</param>
+        /// <param name="eventName">The name of the event.</param>
         /// <param name="options">
         /// Options for the event, such as the level, keywords, and opcode. Unset
         /// options will be set to default values.
         /// </param>
-        public unsafe void Write(string eventName, EventSourceOptions options)
+        public unsafe void Write(string? eventName, EventSourceOptions options)
         {
-            if (eventName == null)
-            {
-                throw new ArgumentNullException(nameof(eventName));
-            }
-
             if (!this.IsEnabled())
             {
                 return;
@@ -351,7 +341,7 @@ namespace System.Diagnostics.Tracing
             TraceLoggingEventTypes eventTypes,
              Guid* activityID,
              Guid* childActivityID,
-            params object[] values)
+            params object?[] values)
         {
             if (!this.IsEnabled())
             {
@@ -411,7 +401,7 @@ namespace System.Diagnostics.Tracing
             TraceLoggingEventTypes eventTypes,
             Guid* activityID,
             Guid* childActivityID,
-            params object[] values)
+            params object?[] values)
         {
 #if FEATURE_MANAGED_ETW
             int identity = 0;
