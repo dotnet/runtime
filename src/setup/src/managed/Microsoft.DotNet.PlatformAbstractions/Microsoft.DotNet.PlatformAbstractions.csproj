@@ -8,6 +8,15 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel" />
+    <InternalsVisibleTo Include="Microsoft.DotNet.Tools.Tests.Utilities" />
+    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel.Tests" />
+    <InternalsVisibleTo Include="Microsoft.DotNet.Configurer" />
+    <InternalsVisibleTo Include="Microsoft.DotNet.Configurer.UnitTests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
+
   <ItemGroup Condition=" '$(TargetFramework)' == 'netstandard1.3' ">
     <PackageReference Include="System.AppContext" Version="4.1.0" />
     <PackageReference Include="System.Collections" Version="4.0.11" />

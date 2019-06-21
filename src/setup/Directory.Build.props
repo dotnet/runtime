@@ -1,37 +1,28 @@
 <Project>
 
+  <!--
+    Import the arcade sdk with these requirements.
+    After:
+      Configuration setup
+    Before:
+      DebugType needs to be not be set to embedded at least for facades
+      OutputPath setup
+  -->
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+  <!--
+    Before Microsoft.Common.targets, set the extensions path to match the restore dir as Arcade
+    sets it, so MSBuild packages with targets files will be found and imported.
+  -->
   <PropertyGroup>
-    <!--
-    NOTE: This .props file assumes it is only imported by projects that use the SDK="Microsoft.NET.Sdk" in their project.
-    We are currently on too old of an SDK to detect - it doesn't have https://github.com/dotnet/sdk/pull/1242.
-    But once we move to a new version, we can remove this property setting, and everything else will work correctly.
-    -->
-    <UsingMicrosoftNETSdk Condition="'$(MSBuildProjectExtension)' == '.csproj'">true</UsingMicrosoftNETSdk>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UsingMicrosoftNETSdk)' == 'true'">
+  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
     <!-- SDK-based projects' Platform should default to AnyCPU, not $(TargetArchitecture) like Directory.Build.props sets. -->
     <Platform>AnyCPU</Platform>
     <UsingNETSdkCompiler>true</UsingNETSdkCompiler>
     <DisableBuildToolsRoslynVersion>true</DisableBuildToolsRoslynVersion>
-  </PropertyGroup>
-
-  <Import Project="Directory.Build.props" />
-
-  <PropertyGroup Condition="'$(UsingMicrosoftNETSdk)' == 'true'">
-    <!--
-    The Microsoft.NET.Sdk changed the definition of what it assumes $(BaseIntermediateOutputPath) is.
-    In the "old" .csproj files, BaseIntermediateOutputPath could be shared with many projects.
-    In the SDK-based .csproj files, BaseIntermediateOutputPath is assumed to be project-specific.
-    -->
-    <BaseIntermediateOutputPath>$(IntermediateOutputPath)</BaseIntermediateOutputPath>
-  </PropertyGroup>
-
-  <Import Condition="Exists('..\Directory.Build.props')" Project="..\Directory.Build.props" />
-
-  <PropertyGroup>
-    <!-- Directory.Build.props imports this .props file, so ensure it isn't imported again -->
-    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
   </PropertyGroup>
 
   <!-- Define vNext UAP Moniker -->
@@ -77,14 +68,10 @@
     <PortableBuild Condition="'$(PortableBuild)' == ''">true</PortableBuild>
   </PropertyGroup>
 
-  <Import Project="$(MSBuildThisFileDirectory)BranchInfo.props" />
-
   <PropertyGroup>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
     <NETCoreAppFrameworkIdentifier>.NETCoreApp</NETCoreAppFrameworkIdentifier>
-    <NETCoreAppFrameworkVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppFrameworkVersion>
     <NETCoreAppFrameworkMoniker>$(NETCoreAppFrameworkIdentifier),Version=v$(NETCoreAppFrameworkVersion)</NETCoreAppFrameworkMoniker>
-    <NETCoreAppFramework>netcoreapp$(NETCoreAppFrameworkVersion)</NETCoreAppFramework>
     <NETCoreAppFrameworkBrandName>.NET Core $(NETCoreAppFrameworkVersion)</NETCoreAppFrameworkBrandName>
   </PropertyGroup>
 
@@ -97,91 +84,16 @@
     <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
   </PropertyGroup>
 
-  <!-- Import Build tools common props file where repo-independent properties are found -->
-  <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
-
-  <!-- Versioning -->
+  <!-- Platform detection -->
   <PropertyGroup>
-    <VersionSuffix></VersionSuffix>
-    <VersionSuffix Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">$(PreReleaseLabel)</VersionSuffix>
-    <VersionSuffix Condition="'$(IncludeBuildNumberInPackageVersion)' == 'true'">$(VersionSuffix)-$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
+    <DefaultOSGroup Condition="'$(OS)'=='Unix' AND Exists('/Applications')">OSX</DefaultOSGroup>
+    <DefaultOSGroup Condition="'$(DefaultOSGroup)'=='' AND '$(OS)'=='Unix' AND $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</DefaultOSGroup>
+    <DefaultOSGroup Condition="'$(DefaultOSGroup)'=='' AND '$(OS)'=='Unix' AND $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</DefaultOSGroup>
+    <DefaultOSGroup Condition="'$(DefaultOSGroup)'=='' AND '$(OS)'=='Unix'">Linux</DefaultOSGroup>
+    <DefaultOSGroup Condition="'$(DefaultOSGroup)'==''">$(OS)</DefaultOSGroup>
+    <RunningOnUnix Condition="'$(OS)'!='Windows_NT'">true</RunningOnUnix>
 
-    <ProductVersionSuffix Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">-$(VersionSuffix)</ProductVersionSuffix>
-    <ProductBandVersion Condition="'$(ProductBandVersion)' == ''">$(MajorVersion).$(MinorVersion)</ProductBandVersion>
-    <ProductionVersion Condition="'$(ProductionVersion)' == ''">$(ProductBandVersion).$(PatchVersion)</ProductionVersion>
-    <ProductVersion>$(ProductionVersion)$(ProductVersionSuffix)</ProductVersion>
-
-    <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
-
-    <RuntimeDepsRpmVersion Condition="'$(RuntimeDepsRpmVersion)'==''">$(ProductVersion)</RuntimeDepsRpmVersion>
-    <RuntimeDepsDebVersion Condition="'$(RuntimeDepsDebVersion)'==''">$(ProductVersion)</RuntimeDepsDebVersion>
-
-    <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
-
-    <!--
-      By default, we are always building the nuget packages for HostPolicy, HostFXR and
-      Dotnet/AppHost. Thus, the "UseShipped*" properties (below) are always set to false.
-
-      However, there are scenarios when some of these components will not change (e.g. during
-      servicing, we may only change HostPolicy but not HostFXR and Dotnet/AppHost). In such cases,
-      set the appropriate "UseShipped*" property below to true so that we will use the last shipped
-      version of the package.
-    -->
-
-    <!-- The host/apphost package versions are only updated whenever there is a change in the components -->
-    <UseShippedHostPackage>false</UseShippedHostPackage>
-    <HostVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductVersion)</HostVersion>
-    <HostVersion Condition="'$(UseShippedHostPackage)' == 'true'">2.0.0</HostVersion>
-
-    <!-- The AppHostVersion is used for all hosts that aren't dotnet.exe -->
-    <UseShippedAppHostPackage>false</UseShippedAppHostPackage>
-    <AppHostVersion Condition="'$(UseShippedAppHostPackage)' != 'true'">$(ProductVersion)</AppHostVersion>
-    <AppHostVersion Condition="'$(UseShippedAppHostPackage)' == 'true'">2.0.0</AppHostVersion>
-
-    <!--
-        The FXR Resolver package version is only updated whenever there is a change in it.
-        If there is ever a need to use a shipped version of the package, then set the property
-        below to true.
-    -->
-    <UseShippedHostResolverPackage>false</UseShippedHostResolverPackage>
-    <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductVersion)</HostResolverVersion>
-    <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' == 'true'">2.0.0</HostResolverVersion>
-
-    <!--
-         Host Policy package version is only updated whenever there is a change in it.
-         If there is ever a need to use a shipped version of the package, then set the property
-         below to true.
-    -->
-    <UseShippedHostPolicyPackage>false</UseShippedHostPolicyPackage>
-    <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' != 'true'">$(ProductVersion)</HostPolicyVersion>
-    <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' == 'true'">2.0.0</HostPolicyVersion>
-
-    <BinariesRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</BinariesRelativePath>
-    <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</InstallersRelativePath>
-  </PropertyGroup>
-
-  <!-- temporary workaround until https://github.com/dotnet/buildtools/pull/1707 is merged to master -->
-  <ItemGroup>
-    <DotnetSourceList Include="$(RestoreSources)" />
-  </ItemGroup>
-
-  <!-- list of projects to perform batch restore -->
-  <ItemGroup>
-    <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)tools-local/tasks/core-setup.tasks.csproj" />
-    <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\pkg\deps\deps.csproj" />
-    <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
-    <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
-  </ItemGroup>
-  <PropertyGroup>
-    <DotnetRestorePrefix Condition="'$(RunningOnUnix)' == 'true'">DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1 </DotnetRestorePrefix>
-    <DotnetRestoreCommand>$(DotnetRestorePrefix)$(DotnetRestoreCommand)</DotnetRestoreCommand>
-    <!-- Same as $(DotnetRestoreCommand), only doesn't specify `packages` arg -->
-    <DotnetRestoreCommandNoPackages>$(DotnetRestorePrefix)"$(DotnetToolCommand)" restore $(DotnetRestoreSource)</DotnetRestoreCommandNoPackages>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(BuildAllProjects)'=='true'">
-    <!-- When we do a traversal build we get all packages up front, don't restore them again -->
-    <RestorePackages>false</RestorePackages>
+    <RunningOnCore Condition="'$(MSBuildRuntimeType)' == 'core'">true</RunningOnCore>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -283,7 +195,7 @@
   <PropertyGroup Condition="'$(PortableBuild)' == 'true'">
     <OutputRid Condition="'$(OSGroup)' == 'Windows_NT'">win-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(OSGroup)' == 'OSX'">osx-$(TargetArchitecture)</OutputRid>
-    <OutputRid Condition="'$(OSGroup)' == 'Linux'">linux-$(TargetArchitecture)</OutputRid>
+    <OutputRid Condition="'$(OSGroup)' == 'Linux' or '$(OSGroup)' == 'Unix'">linux-$(TargetArchitecture)</OutputRid>
     <OutputRid Condition="'$(OSGroup)' == 'FreeBSD'">freebsd-$(TargetArchitecture)</OutputRid>
   </PropertyGroup>
 
@@ -300,21 +212,16 @@
   <PropertyGroup>
     <OSPlatformConfig>$(OutputRid).$(ConfigurationGroup)</OSPlatformConfig>
 
-    <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
-    <BaseOutputRootPath>$(BaseOutputPath)$(OSPlatformConfig)\</BaseOutputRootPath>
-    <CrossGenRootPath>$(BaseOutputRootPath)\crossgen</CrossGenRootPath>
-    <OutputPath Condition="'$(OutputPath)'==''">$(BaseOutputPath)$(OSPlatformConfig)\$(MSBuildProjectName)\</OutputPath>
+    <BaseOutputRootPath>$(BinDir)$(OSPlatformConfig)\</BaseOutputRootPath>
+    <CrossGenRootPath>$(BaseOutputRootPath)crossgen\</CrossGenRootPath>
 
-    <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(BaseIntermediateOutputPath)$(OSPlatformConfig)\</IntermediateOutputRootPath>
-    <IntermediateOutputPath Condition="'$(IntermediateOutputPath)' == ''">$(IntermediateOutputRootPath)$(MSBuildProjectName)\</IntermediateOutputPath>
-
-    <CoreHostOutputDir>$(BaseOutputRootPath)corehost\</CoreHostOutputDir>
+    <IntermediateOutputRootPath Condition="'$(IntermediateOutputRootPath)' == ''">$(ObjDir)$(OSPlatformConfig)\</IntermediateOutputRootPath>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)/</PackagesBasePath>
-    <PackageOutputPath Condition="'$(PackageOutputPath)'==''">$(PackagesBasePath)packages/</PackageOutputPath>
-    <AssetOutputPath Condition="'$(AssetOutputPath)'==''">$(PackageOutputPath)</AssetOutputPath>
-    <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(PackageOutputPath)</SymbolPackageOutputPath>
     <PackageSymbolsBinDir Condition="'$(PackageSymbolsBinDir)' == ''">$(PackagesBasePath)symbols/</PackageSymbolsBinDir>
+
+    <AssetOutputPath Condition="'$(AssetOutputPath)'==''">$(ArtifactsShippingPackagesDir)</AssetOutputPath>
+    <SymbolPackageOutputPath Condition="'$(SymbolPackageOutputPath)'==''">$(ArtifactsShippingPackagesDir)</SymbolPackageOutputPath>
 
     <!-- Use '/' instead of '\': used directly by WiX which doesn't accept trailing '\'. -->
     <SharedFrameworkPublishDir>$(IntermediateOutputRootPath)sharedFrameworkPublish/</SharedFrameworkPublishDir>
@@ -469,43 +376,6 @@
     <PackageTargetRid>$(OutputRid)</PackageTargetRid>
     <PackageTargetRid Condition="'$(OutputRid)' == 'osx.10.11-x64'">osx.10.10-x64</PackageTargetRid>
     <PackageTargetRid Condition="$(OutputRid.StartsWith('rhel.7.')) and $(OutputRid.EndsWith('-x64'))">rhel.7-x64</PackageTargetRid>
-    <ProductMoniker>$(SharedFrameworkNugetVersion)-$(PackageTargetRid)</ProductMoniker>
-    <HostResolverVersionMoniker>$(HostResolverVersion)-$(PackageTargetRid)</HostResolverVersionMoniker>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <CombinedInstallerFile>$(CombinedInstallerStart)$(ProductMoniker)$(CombinedInstallerExtension)</CombinedInstallerFile>
-    <CombinedInstallerEngine>$(CombinedInstallerStart)$(ProductMoniker)-engine.exe</CombinedInstallerEngine>
-
-    <SharedHostInstallerFile>$(SharedHostInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
-    <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersionMoniker)$(InstallerExtension)</HostFxrInstallerFile>
-    <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
-    <DotnetRuntimeDependenciesPackageInstallerFile>$(DotnetRuntimeDependenciesPackageInstallerStart)$(ProductMoniker)$(InstallerExtension)</DotnetRuntimeDependenciesPackageInstallerFile>
-  </PropertyGroup>
-
-  <!-- Runtime Deb and Rpm packages are distro version agnostic -->
-  <PropertyGroup Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">
-    <SharedHostInstallerFile>$(SharedHostInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedHostInstallerFile>
-    <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersion)-$(TargetArchitecture)$(InstallerExtension)</HostFxrInstallerFile>
-    <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedFrameworkInstallerFile>
-  </PropertyGroup>
-
-  <!-- Runtime-deps Deb package is distro version agnostic. -->
-  <PropertyGroup Condition="'$(InstallerExtension)' == '.deb'">
-    <DotnetRuntimeDependenciesPackageInstallerFile>$(DotnetRuntimeDependenciesPackageInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</DotnetRuntimeDependenciesPackageInstallerFile>
-  </PropertyGroup>
-
-  <PropertyGroup>
-   <HostPackageVersion>$(HostVersion)</HostPackageVersion>
-   <HostPackageRelease>1</HostPackageRelease>
-   <HostResolverPackageVersion>$(HostResolverVersion)</HostResolverPackageVersion>
-   <HostResolverPackageRelease>1</HostResolverPackageRelease>
-   <RuntimePackageVersion>$(SharedFrameworkNugetVersion)</RuntimePackageVersion>
-   <RuntimePackageRelease>1</RuntimePackageRelease>
-   <RuntimeDepsDebPackageVersion>$(RuntimeDepsDebVersion)</RuntimeDepsDebPackageVersion>
-   <RuntimeDepsDebPackageRelease>1</RuntimeDepsDebPackageRelease>
-   <RuntimeDepsRpmPackageVersion>$(RuntimeDepsRpmVersion)</RuntimeDepsRpmPackageVersion>
-   <RuntimeDepsRpmPackageRelease>1</RuntimeDepsRpmPackageRelease>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UsingNETSdkCompiler)' != 'true'">
@@ -534,15 +404,4 @@
     <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <!-- These properties should be passed through to new msbuild instances (like 'dotnet build')
-         in order to get the correct output directories in the child project.
-    -->
-    <MSBuildPassThroughPropertyList>/p:OSGroup=$(OSGroup) /p:PortableBuild=$(PortableBuild) /p:TargetArchitecture=$(TargetArchitecture) /p:ConfigurationGroup=$(ConfigurationGroup) /p:VersionSuffix=$(VersionSuffix)</MSBuildPassThroughPropertyList>
-    <MSBuildPassThroughPropertyList Condition="'$(OutputRid)' != ''">$(MSBuildPassThroughPropertyList) /p:OutputRid=$(OutputRid)</MSBuildPassThroughPropertyList>
-  </PropertyGroup>
-
-  <!-- Use Roslyn Compilers to build -->
-  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'!='true' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false' and '$(RoslynIncompatibleMsbuildVersion)' != 'true'" />
-  <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'=='true' and Exists('$(RoslynPropsFile)') and '$(RoslynIncompatibleMsbuildVersion)' != 'true'" />
 </Project>

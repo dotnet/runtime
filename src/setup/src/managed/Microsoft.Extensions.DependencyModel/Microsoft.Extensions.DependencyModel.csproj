@@ -11,7 +11,11 @@
   <ItemGroup>
     <Compile Include="..\Microsoft.DotNet.PlatformAbstractions\HashCodeCombiner.cs" />
   </ItemGroup>
-  
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.DependencyModel.Tests" />
+  </ItemGroup>
+
   <Choose>
     <!--
     Since we added a target for netstandard2.0 so users aren't forced to download the 1.x dependencies,
