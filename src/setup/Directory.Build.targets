@@ -107,6 +107,44 @@
     </PropertyGroup>
   </Target>
 
+  <Target Name="GetInstallerLocations"
+          DependsOnTargets="GetProductVersions">
+    <PropertyGroup>
+      <CombinedInstallerFile>$(CombinedInstallerStart)$(ProductMoniker)$(CombinedInstallerExtension)</CombinedInstallerFile>
+      <CombinedInstallerEngine>$(CombinedInstallerStart)$(ProductMoniker)-engine.exe</CombinedInstallerEngine>
+
+      <SharedHostInstallerFile>$(SharedHostInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedHostInstallerFile>
+      <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersionMoniker)$(InstallerExtension)</HostFxrInstallerFile>
+      <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(ProductMoniker)$(InstallerExtension)</SharedFrameworkInstallerFile>
+      <DotnetRuntimeDependenciesPackageInstallerFile>$(DotnetRuntimeDependenciesPackageInstallerStart)$(ProductMoniker)$(InstallerExtension)</DotnetRuntimeDependenciesPackageInstallerFile>
+
+      <CombinedCompressedFile>dotnet-runtime-$(ProductMoniker)$(CompressedFileExtension)</CombinedCompressedFile>
+      <HostFxrCompressedFile>dotnet-hostfxr-internal-$(PackageTargetRid).$(HostResolverVersion)$(CompressedFileExtension)</HostFxrCompressedFile>
+      <NetHostCompressedFile>dotnet-nethost-$(AppHostVersion)-$(PackageTargetRid)$(CompressedFileExtension)</NetHostCompressedFile>
+      <SharedFrameworkCompressedFile>dotnet-runtime-internal-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkCompressedFile>
+      <SharedFrameworkSymbolsCompressedFile>dotnet-runtime-symbols-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkSymbolsCompressedFile>
+
+      <HostFxrDebPkgName>$(DotnetHostFxrString)$(ProductBandVersion)</HostFxrDebPkgName>
+      <HostFxrDebPkgName>$(HostFxrDebPkgName.ToLower())</HostFxrDebPkgName>
+      <SharedFxDebPkgName>$(DotnetRuntimeString)$(ProductBandVersion)</SharedFxDebPkgName>
+      <SharedFxDebPkgName>$(SharedFxDebPkgName.ToLower())</SharedFxDebPkgName>
+      <RuntimeDependenciesDebPkgName>$(DotnetRuntimeDependenciesPackageString)$(ProductBandVersion)</RuntimeDependenciesDebPkgName>
+      <RuntimeDependenciesDebPkgName>$(RuntimeDependenciesDebPkgName.ToLower())</RuntimeDependenciesDebPkgName>
+    </PropertyGroup>
+
+    <!-- Runtime Deb and Rpm packages are distro version agnostic -->
+    <PropertyGroup Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">
+      <SharedHostInstallerFile>$(SharedHostInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedHostInstallerFile>
+      <HostFxrInstallerFile>$(HostFxrInstallerStart)$(HostResolverVersion)-$(TargetArchitecture)$(InstallerExtension)</HostFxrInstallerFile>
+      <SharedFrameworkInstallerFile>$(SharedFrameworkInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedFrameworkInstallerFile>
+    </PropertyGroup>
+
+    <!-- Runtime-deps Deb package is distro version agnostic. -->
+    <PropertyGroup Condition="'$(InstallerExtension)' == '.deb'">
+      <DotnetRuntimeDependenciesPackageInstallerFile>$(DotnetRuntimeDependenciesPackageInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</DotnetRuntimeDependenciesPackageInstallerFile>
+    </PropertyGroup>
+  </Target>
+
   <Target Name="CreateHostMachineInfoFile">
     <GetTargetMachineInfo>
       <Output PropertyName="HostMachineRid" TaskParameter="RuntimeIdentifier" />

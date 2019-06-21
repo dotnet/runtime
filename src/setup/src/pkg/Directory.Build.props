@@ -1,14 +1,9 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" InitialTargets="ValidateArgs" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\Directory.Build.props" />
+﻿<Project>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
 
   <PropertyGroup>
     <Platform>$(TargetArchitecture)</Platform>
     <DotNetHostBinDir>$(BaseOutputRootPath)corehost</DotNetHostBinDir>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <VersionTxtFile>$(ObjDir)version.txt</VersionTxtFile>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -27,6 +22,10 @@
     <!-- this repo doesn't currently use the index so don't force it to be in sync -->
     <SkipIndexCheck>true</SkipIndexCheck>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.Build.Tasks.Packaging" Version="$(MicrosoftDotNetBuildTasksPackagingPackageVersion)" />
+  </ItemGroup>
 
   <PropertyGroup>
     <PackagingToolsDir>$(MSBuildThisFileDirectory)packaging-tools/</PackagingToolsDir>
@@ -83,17 +82,6 @@
     <InstallerSourceOSPlatformConfig Condition="'$(InstallerSourceOSPlatformConfig)' == ''">$(OSPlatformConfig)</InstallerSourceOSPlatformConfig>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <ProductBrandPrefix Condition="'$(ProductBrandPrefix)' == ''">Microsoft .NET Core</ProductBrandPrefix>
-    <ProductBrandSuffix>$(ProductionVersion)</ProductBrandSuffix>
-    <ProductBrandSuffix Condition="'$(ReleaseBrandSuffix)'!=''">$(ProductionVersion) $(ReleaseBrandSuffix)</ProductBrandSuffix>
-    <SharedHostBrandName>$(ProductBrandPrefix) Host - $(ProductBrandSuffix)</SharedHostBrandName>
-    <HostFxrBrandName>$(ProductBrandPrefix) Host FX Resolver - $(ProductBrandSuffix)</HostFxrBrandName>
-    <TargetingPackBrandName>$(ProductBrandPrefix) Targeting Pack - $(ProductBrandSuffix)</TargetingPackBrandName>
-    <AppHostPackBrandName>$(ProductBrandPrefix) AppHost Pack - $(ProductBrandSuffix)</AppHostPackBrandName>
-    <SharedFrameworkBrandName>$(ProductBrandPrefix) Runtime - $(ProductBrandSuffix)</SharedFrameworkBrandName>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageIndex Include="$(PackageIndexFile)" />
   </ItemGroup>
@@ -106,7 +94,7 @@
   </Target>
 
   <Target Name="ValidatePreReleaseStrings" Condition="'$(StabilizePackageVersion)'!='true'">
-    <Error Condition="'$(PreReleaseLabel)'==''" Text="PreReleaseLabel is undefined" />
+    <Error Condition="'$(PreReleaseVersionLabel)'==''" Text="PreReleaseVersionLabel is undefined" />
     <Error Condition="'$(BuildNumberMajor)'==''" Text="BuildNumberMajor is undefined" />
     <Error Condition="'$(BuildNumberMinor)'==''" Text="BuildNumberMinor is undefined" />
   </Target>
