@@ -660,7 +660,7 @@ namespace System
             }
             else if (!tzDirectory.EndsWith(Path.DirectorySeparatorChar))
             {
-                tzDirectory += Path.DirectorySeparatorChar;
+                tzDirectory += PathInternal.DirectorySeparatorCharAsString;
             }
 
             return tzDirectory;
