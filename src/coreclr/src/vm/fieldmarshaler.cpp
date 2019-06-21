@@ -3064,7 +3064,7 @@ VOID FieldMarshaler_Delegate::UpdateNativeImpl(OBJECTREF* pCLRValue, LPVOID pNat
     if (*pCLRValue != NULL && ppCleanupWorkListOnStack != NULL)
     {
         // Call StubHelpers.AddToCleanupList to ensure the delegate is kept alive across the full native call.
-        MethodDescCallSite AddToCleanupList(METHOD__STUBHELPERS__KEEP_ALIVE_VIA_CLEANUP_LIST);
+        MethodDescCallSite AddToCleanupList(METHOD__STUBHELPERS__ADD_TO_CLEANUP_LIST_DELEGATE);
 
         ARG_SLOT args[] =
         {
