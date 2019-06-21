@@ -24,6 +24,11 @@ namespace System.IO.Enumeration
         private readonly string _directory;
 
         public FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions options = null)
+            : this(directory, transform, options, isNormalized: false)
+        {
+        }
+
+        internal FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions options, bool isNormalized)
         {
             _directory = directory ?? throw new ArgumentNullException(nameof(directory));
             _transform = transform ?? throw new ArgumentNullException(nameof(transform));
@@ -31,7 +36,7 @@ namespace System.IO.Enumeration
 
             // We need to create the enumerator up front to ensure that we throw I/O exceptions for
             // the root directory on creation of the enumerable.
-            _enumerator = new DelegateEnumerator(this);
+            _enumerator = new DelegateEnumerator(this, isNormalized);
         }
 
         public FindPredicate ShouldIncludePredicate { get; set; }
@@ -39,7 +44,7 @@ namespace System.IO.Enumeration
 
         public IEnumerator<TResult> GetEnumerator()
         {
-            return Interlocked.Exchange(ref _enumerator, null) ?? new DelegateEnumerator(this);
+            return Interlocked.Exchange(ref _enumerator, null) ?? new DelegateEnumerator(this, isNormalized: false);
         }
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -58,8 +63,8 @@ namespace System.IO.Enumeration
         {
             private readonly FileSystemEnumerable<TResult> _enumerable;
 
-            public DelegateEnumerator(FileSystemEnumerable<TResult> enumerable)
-                : base(enumerable._directory, enumerable._options)
+            public DelegateEnumerator(FileSystemEnumerable<TResult> enumerable, bool isNormalized)
+                : base(enumerable._directory, isNormalized, enumerable._options)
             {
                 _enumerable = enumerable;
             }

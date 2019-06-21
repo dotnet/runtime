@@ -10,7 +10,7 @@ namespace System.IO.Tests
 {
     #region EnumerateFiles
 
-    public class Directory_EnumFiles_Str : Directory_GetFiles_str
+    public class Directory_EnumFiles_str : Directory_GetFiles_str
     {
         public override string[] GetEntries(string path)
         {

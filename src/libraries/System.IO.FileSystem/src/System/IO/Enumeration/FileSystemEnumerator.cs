@@ -16,6 +16,33 @@ namespace System.IO.Enumeration
     public unsafe abstract partial class FileSystemEnumerator<TResult> : CriticalFinalizerObject, IEnumerator<TResult>
     {
         /// <summary>
+        /// Encapsulates a find operation.
+        /// </summary>
+        /// <param name="directory">The directory to search in.</param>
+        /// <param name="options">Enumeration options to use.</param>
+        public FileSystemEnumerator(string directory, EnumerationOptions options = null)
+            : this(directory, isNormalized: false, options)
+        {
+        }
+
+        /// <summary>
+        /// Encapsulates a find operation.
+        /// </summary>
+        /// <param name="directory">The directory to search in.</param>
+        /// <param name="isNormalized">Whether the directory path is already normalized or not.</param>
+        /// <param name="options">Enumeration options to use.</param>
+        internal FileSystemEnumerator(string directory, bool isNormalized, EnumerationOptions options = null)
+        {
+            _originalRootDirectory = directory ?? throw new ArgumentNullException(nameof(directory));
+
+            string path = isNormalized ? directory : Path.GetFullPath(directory);
+            _rootDirectory = Path.TrimEndingDirectorySeparator(path);
+            _options = options ?? EnumerationOptions.Default;
+
+            Init();
+        }
+
+        /// <summary>
         /// Return true if the given file system entry should be included in the results.
         /// </summary>
         protected virtual bool ShouldIncludeEntry(ref FileSystemEntry entry) => true;

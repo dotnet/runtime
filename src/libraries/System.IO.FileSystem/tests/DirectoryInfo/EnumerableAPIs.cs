@@ -9,7 +9,7 @@ namespace System.IO.Tests
 {
     #region EnumerateFiles
 
-    public class DirectoryInfo_EnumerateFiles_Str : Directory_GetFiles_str
+    public class DirectoryInfo_EnumerateFiles_str : Directory_GetFiles_str
     {
         public override string[] GetEntries(string path)
         {

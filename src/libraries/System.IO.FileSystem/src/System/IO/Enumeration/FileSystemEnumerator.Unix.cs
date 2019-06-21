@@ -33,17 +33,8 @@ namespace System.IO.Enumeration
         // Used to get the raw entry data
         private byte[] _entryBuffer;
 
-        /// <summary>
-        /// Encapsulates a find operation.
-        /// </summary>
-        /// <param name="directory">The directory to search in.</param>
-        /// <param name="options">Enumeration options to use.</param>
-        public FileSystemEnumerator(string directory, EnumerationOptions options = null)
+        private void Init()
         {
-            _originalRootDirectory = directory ?? throw new ArgumentNullException(nameof(directory));
-            _rootDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
-            _options = options ?? EnumerationOptions.Default;
-
             // We need to initialize the directory handle up front to ensure
             // we immediately throw IO exceptions for missing directory/etc.
             _directoryHandle = CreateDirectoryHandle(_rootDirectory);
