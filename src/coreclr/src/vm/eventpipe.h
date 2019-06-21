@@ -114,6 +114,21 @@ public:
             InvokeCallback(eventPipeProviderCallbackData);
     }
 
+    // Returns the a number 0...N representing the processor number this thread is currently
+    // running on. If for any reason we can't tell then return 0xFFFFFFFF.
+    static unsigned int GetCurrentProcessorNumber()
+    {
+#ifndef FEATURE_PAL
+        if (s_pProcGroupOffsets)
+        {
+            PROCESSOR_NUMBER procNum;
+            GetCurrentProcessorNumberEx(&procNum);
+            return s_pProcGroupOffsets[procNum.Group] + procNum.Number;
+        }
+#endif
+        return 0xFFFFFFFF;
+    }
+
 private:
     static void InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData);
 
@@ -174,6 +189,13 @@ private:
     static EventPipeConfiguration s_config;
     static VolatilePtr<EventPipeSession> s_pSessions[MaxNumberOfSessions];
     static EventPipeEventSource *s_pEventSource;
+
+    // A mapping from windows processor group index to the total number of processors
+    // in all groups preceding it. For example if there are three groups with sizes: 
+    // 1, 7, 6 the table would be 0, 1, 8
+#ifndef FEATURE_PAL
+    static unsigned int * s_pProcGroupOffsets;
+#endif
 };
 
 static_assert(EventPipe::MaxNumberOfSessions == 64, "Maximum number of EventPipe sessions is not 64.");

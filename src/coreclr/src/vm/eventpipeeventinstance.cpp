@@ -13,6 +13,7 @@
 
 EventPipeEventInstance::EventPipeEventInstance(
     EventPipeEvent &event,
+    unsigned int procNumber,
     ULONGLONG threadId,
     BYTE *pData,
     unsigned int length,
@@ -32,6 +33,7 @@ EventPipeEventInstance::EventPipeEventInstance(
     m_debugEventEnd = 0xCAFEBABE;
 #endif // _DEBUG
     m_pEvent = &event;
+    m_procNumber = procNumber;
     m_threadId = threadId;
     if (pActivityId != NULL)
     {
@@ -101,6 +103,7 @@ unsigned int EventPipeEventInstance::GetAlignedTotalSize(EventPipeSerializationF
             sizeof(unsigned int) +          // Sequence number (implied by the buffer containing the event instance)
             sizeof(m_threadId) +            // Thread ID
             sizeof(ULONGLONG) +             // Capture Thread ID (implied by the buffer containing the event instance)
+            sizeof(m_procNumber) +          // ProcNumber
             sizeof(unsigned int) +          // Stack intern table id
             sizeof(m_timeStamp) +           // TimeStamp
             sizeof(m_activityId) +          // Activity ID

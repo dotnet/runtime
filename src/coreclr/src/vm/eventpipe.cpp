@@ -33,6 +33,9 @@ Volatile<bool> EventPipe::s_tracingInitialized = false;
 EventPipeConfiguration EventPipe::s_config;
 EventPipeEventSource *EventPipe::s_pEventSource = nullptr;
 VolatilePtr<EventPipeSession> EventPipe::s_pSessions[MaxNumberOfSessions];
+#ifndef FEATURE_PAL
+unsigned int * EventPipe::s_pProcGroupOffsets = nullptr;
+#endif
 
 #ifdef FEATURE_PAL
 // This function is auto-generated from /src/scripts/genEventPipe.py
@@ -70,6 +73,26 @@ void EventPipe::Initialize()
     // Set the sampling rate for the sample profiler.
     const unsigned long DefaultProfilerSamplingRateInNanoseconds = 1000000; // 1 msec.
     SampleProfiler::SetSamplingRate(DefaultProfilerSamplingRateInNanoseconds);
+
+
+    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeProcNumbers) != 0)
+    {
+#ifndef FEATURE_PAL
+        // setup the windows processor group offset table
+        WORD numGroups = ::GetActiveProcessorGroupCount();
+        s_pProcGroupOffsets = new (nothrow) unsigned int[numGroups];
+        if (s_pProcGroupOffsets)
+        {
+            unsigned int countProcs = 0;
+            for (WORD i = 0; i < numGroups; i++)
+            {
+                s_pProcGroupOffsets[i] = countProcs;
+                countProcs += GetActiveProcessorCount(i);
+            }
+        }
+#endif
+    }
+
 
     {
         CrstHolder _crst(GetLock());
@@ -577,6 +600,7 @@ void EventPipe::WriteEventInternal(
             //    as opposed a a buffer copy here
             EventPipeEventInstance instance(
                 event,
+                GetCurrentProcessorNumber(),
                 pEventPipeThread->GetOSThreadId(),
                 pData,
                 payload.GetSize(),
