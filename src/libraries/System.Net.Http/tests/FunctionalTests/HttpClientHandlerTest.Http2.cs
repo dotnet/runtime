@@ -227,7 +227,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler)
             {
-                // WinHTTP does not genenerate an exception here. 
+                // WinHTTP does not genenerate an exception here.
                 // It seems to ignore a RST_STREAM sent before headers are sent, and continue to wait for HEADERS.
                 return;
             }
@@ -384,12 +384,12 @@ namespace System.Net.Http.Functional.Tests
         }
 
         private static Frame MakeSimpleHeadersFrame(int streamId, bool endHeaders = false, bool endStream = false) =>
-            new HeadersFrame(new byte[] { 0x88 },       // :status: 200 
+            new HeadersFrame(new byte[] { 0x88 },       // :status: 200
                 (endHeaders ? FrameFlags.EndHeaders : FrameFlags.None) | (endStream ? FrameFlags.EndStream : FrameFlags.None),
                 0, 0, 0, streamId);
 
         private static Frame MakeSimpleContinuationFrame(int streamId, bool endHeaders = false) =>
-            new ContinuationFrame(new byte[] { 0x88 },       // :status: 200 
+            new ContinuationFrame(new byte[] { 0x88 },       // :status: 200
                 (endHeaders ? FrameFlags.EndHeaders : FrameFlags.None),
                 0, 0, 0, streamId);
 
@@ -1387,8 +1387,7 @@ namespace System.Net.Http.Functional.Tests
                 await connection.ReadBodyAsync();
                 await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.OK);
                 await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes("OK"));
-                await connection.SendGoAway(streamId);
-                await connection.WaitForConnectionShutdownAsync();
+                await connection.ShutdownIgnoringErrorsAsync(streamId);
             });
         }
 
@@ -1433,8 +1432,8 @@ namespace System.Net.Http.Functional.Tests
                     Assert.True(false, "Should not be here");
                 }
                 catch (IOException) { };
-                await connection.SendGoAway(streamId);
-                await connection.WaitForConnectionShutdownAsync();
+
+                await connection.ShutdownIgnoringErrorsAsync(streamId);
             });
         }
 
@@ -1494,8 +1493,7 @@ namespace System.Net.Http.Functional.Tests
                 }
                 var headers = new HttpHeaderData[] { new HttpHeaderData("x-last", "done") };
                 await connection.SendResponseHeadersAsync(streamId, endStream: true, isTrailingHeader : true, headers: headers);
-                await connection.SendGoAway(streamId);
-                await connection.WaitForConnectionShutdownAsync();
+                await connection.ShutdownIgnoringErrorsAsync(streamId);
             });
         }
 
@@ -1541,7 +1539,7 @@ namespace System.Net.Http.Functional.Tests
                 });
             }
         }
-        
+
         // rfc7540 8.1.2.3.
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2GetAsync_MultipleStatusHeaders_Throws()
@@ -1622,7 +1620,7 @@ namespace System.Net.Http.Functional.Tests
                         int clientWindowSize = clientWindowSizeSetting.SettingId == SettingId.InitialWindowSize ? (int)clientWindowSizeSetting.Value : 65535;
 
                         // Exceed the window size by 1 byte.
-                        ++clientWindowSize; 
+                        ++clientWindowSize;
 
                         int streamId = await connection.ReadRequestHeaderAsync();
 
