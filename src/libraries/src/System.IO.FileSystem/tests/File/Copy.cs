@@ -137,7 +137,7 @@ namespace System.IO.Tests
             {
                 char[] readData = new char[data.Length];
                 stream.Read(readData, 0, data.Length);
-                Assert.Equal(data, readData);
+                AssertExtensions.Equal(data, readData);
             }
 
             // Ensure last write/access time on the new file is appropriate
@@ -269,7 +269,7 @@ namespace System.IO.Tests
             {
                 char[] readData = new char[sourceData.Length];
                 stream.Read(readData, 0, sourceData.Length);
-                Assert.Equal(sourceData, readData);
+                AssertExtensions.Equal(sourceData, readData);
             }
         }
 
@@ -295,7 +295,7 @@ namespace System.IO.Tests
             {
                 char[] readData = new char[sourceData.Length];
                 stream.Read(readData, 0, sourceData.Length);
-                Assert.Equal(destData, readData);
+                AssertExtensions.Equal(destData, readData);
             }
         }
 
