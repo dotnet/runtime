@@ -15,4 +15,8 @@
     <PackageReference Include="Microsoft.NETCore.App.Internal" Version="$(MNAVersion)" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <DisableImplicitNETCorePlatformsReference>true</DisableImplicitNETCorePlatformsReference>
+  </PropertyGroup>
+
 </Project>
