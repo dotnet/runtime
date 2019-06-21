@@ -177,7 +177,7 @@ namespace System.IO
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
 
-            FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options);
+            FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
 
             switch (searchTarget)
             {

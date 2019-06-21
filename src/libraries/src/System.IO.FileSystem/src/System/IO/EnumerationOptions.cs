@@ -89,7 +89,6 @@ namespace System.IO
         /// </remarks>
         public MatchType MatchType { get; set; }
 
-
         /// <summary>
         /// For APIs that allow specifying a match expression this will allow you to specify case matching behavior.
         /// </summary>

@@ -20,6 +20,8 @@ namespace System.IO
 {
     public sealed partial class DirectoryInfo : FileSystemInfo
     {
+        private bool _isNormalized;
+
         public DirectoryInfo(string path)
         {
             Init(originalPath: path,
@@ -45,6 +47,8 @@ namespace System.IO
                     Path.GetFileName(Path.TrimEndingDirectorySeparator(fullPath.AsSpan()))).ToString();
 
             FullPath = fullPath;
+
+            _isNormalized = isNormalized;
         }
 
         public DirectoryInfo Parent
@@ -165,7 +169,7 @@ namespace System.IO
         public IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(string searchPattern, EnumerationOptions enumerationOptions)
             => InternalEnumerateInfos(FullPath, searchPattern, SearchTarget.Both, enumerationOptions);
 
-        internal static IEnumerable<FileSystemInfo> InternalEnumerateInfos(
+        private IEnumerable<FileSystemInfo> InternalEnumerateInfos(
             string path,
             string searchPattern,
             SearchTarget searchTarget,
@@ -175,16 +179,16 @@ namespace System.IO
             if (searchPattern == null)
                 throw new ArgumentNullException(nameof(searchPattern));
 
-            FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options);
+            _isNormalized &= FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
 
             switch (searchTarget)
             {
                 case SearchTarget.Directories:
-                    return FileSystemEnumerableFactory.DirectoryInfos(path, searchPattern, options);
+                    return FileSystemEnumerableFactory.DirectoryInfos(path, searchPattern, options, _isNormalized);
                 case SearchTarget.Files:
-                    return FileSystemEnumerableFactory.FileInfos(path, searchPattern, options);
+                    return FileSystemEnumerableFactory.FileInfos(path, searchPattern, options, _isNormalized);
                 case SearchTarget.Both:
-                    return FileSystemEnumerableFactory.FileSystemInfos(path, searchPattern, options);
+                    return FileSystemEnumerableFactory.FileSystemInfos(path, searchPattern, options, _isNormalized);
                 default:
                     throw new ArgumentException(SR.ArgumentOutOfRange_Enum, nameof(searchTarget));
             }

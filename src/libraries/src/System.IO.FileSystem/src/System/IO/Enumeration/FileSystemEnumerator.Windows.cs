@@ -41,17 +41,8 @@ namespace System.IO.Enumeration
         private bool _lastEntryFound;
         private Queue<(IntPtr Handle, string Path)> _pending;
 
-        /// <summary>
-        /// Encapsulates a find operation.
-        /// </summary>
-        /// <param name="directory">The directory to search in.</param>
-        /// <param name="options">Enumeration options to use.</param>
-        public FileSystemEnumerator(string directory, EnumerationOptions options = null)
+        private void Init()
         {
-            _originalRootDirectory = directory ?? throw new ArgumentNullException(nameof(directory));
-            _rootDirectory = Path.TrimEndingDirectorySeparator(Path.GetFullPath(directory));
-            _options = options ?? EnumerationOptions.Default;
-
             // We'll only suppress the media insertion prompt on the topmost directory as that is the
             // most likely scenario and we don't want to take the perf hit for large enumerations.
             // (We weren't consistent with how we handled this historically.)
