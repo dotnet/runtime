@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{F512184F-76E5-4AE5-8AB5-395AF9D18712}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.Primitives.cs" />
