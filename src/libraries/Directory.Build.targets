@@ -156,6 +156,9 @@
     <Message Text="Generated reference assembly source code: $(_RefSourceFileOutputPath)" />
   </Target>
 
+  <!-- Import Packaging targets -->
+  <Import Project="$(RepositoryEngineeringDir)Packaging.targets" />
+
   <Import Project="$(RepositoryEngineeringDir)DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
 
   <!-- Define this now until we can clean-up targets that depend on it in the packaging targets -->
