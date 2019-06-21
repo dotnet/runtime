@@ -32,6 +32,12 @@ static bool TryParseCircularBufferSize(uint8_t*& bufferCursor, uint32_t& bufferL
     return CanParse && (circularBufferSizeInMB > 0);
 }
 
+static bool TryParseSerializationFormat(uint8_t*& bufferCursor, uint32_t& bufferLen, EventPipeSerializationFormat& serializationFormat)
+{
+    const bool CanParse = TryParse(bufferCursor, bufferLen, (uint32_t&)serializationFormat);
+    return CanParse && (0 <= (int)serializationFormat) && ((int)serializationFormat < (int)EventPipeSerializationFormat::Count);
+}
+
 const EventPipeCollectTracingCommandPayload* EventPipeCollectTracingCommandPayload::TryParse(BYTE* lpBuffer, uint16_t& BufferSize)
 {
     CONTRACTL
@@ -54,6 +60,7 @@ const EventPipeCollectTracingCommandPayload* EventPipeCollectTracingCommandPaylo
     uint8_t* pBufferCursor = payload->incomingBuffer;
     uint32_t bufferLen = BufferSize;
     if (!TryParseCircularBufferSize(pBufferCursor, bufferLen, payload->circularBufferSizeInMB) ||
+        !TryParseSerializationFormat(pBufferCursor, bufferLen, payload->serializationFormat) ||
         !TryParseString(pBufferCursor, bufferLen, payload->outputPath) ||
         !EventPipeProtocolHelper::TryParseProviderConfiguration(pBufferCursor, bufferLen, payload->providerConfigs))
     {
@@ -187,21 +194,13 @@ void EventPipeProtocolHelper::CollectTracing(DiagnosticsIpc::IpcMessage& message
         return;
     }
 
-    // IPC should produce nettrace by default or be selectable via protocol
-    // but this is a simple starting point for testing
-    EventPipeSerializationFormat format = EventPipeSerializationFormat::NetPerfV3;
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EventPipeNetTraceFormat) > 0)
-    {
-        format = EventPipeSerializationFormat::NetTraceV4;
-    }
-
     auto sessionId = EventPipe::Enable(
         nullptr,                                        // strOutputPath (ignored in this scenario)
         payload->circularBufferSizeInMB,                         // circularBufferSizeInMB
         payload->providerConfigs.Ptr(),                          // pConfigs
         static_cast<uint32_t>(payload->providerConfigs.Size()),  // numConfigs
         EventPipeSessionType::IpcStream,                // EventPipeSessionType
-        format,                                         // EventPipeSerializationFormat
+        payload->serializationFormat,                   // EventPipeSerializationFormat
         pStream);                                       // IpcStream
 
     if (sessionId == 0)

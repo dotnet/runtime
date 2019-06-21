@@ -24,7 +24,13 @@ class EventPipeEventInstance
 
 public:
 
-    EventPipeEventInstance(EventPipeEvent &event, ULONGLONG threadID, BYTE *pData, unsigned int length, LPCGUID pActivityId, LPCGUID pRelatedActivityId);
+    EventPipeEventInstance(EventPipeEvent &event, 
+                           unsigned int procNumber,
+                           ULONGLONG threadID,
+                           BYTE *pData,
+                           unsigned int length,
+                           LPCGUID pActivityId,
+                           LPCGUID pRelatedActivityId);
 
     void EnsureStack(const EventPipeSession &session);
 
@@ -61,6 +67,13 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         m_metadataId = metadataId;
+    }
+
+    unsigned int GetProcNumber() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_procNumber;
     }
 
     DWORD GetThreadId32() const
@@ -129,6 +142,7 @@ protected:
 
     EventPipeEvent *m_pEvent;
     unsigned int m_metadataId;
+    unsigned int m_procNumber;
     ULONGLONG m_threadId;
     LARGE_INTEGER m_timeStamp;
     GUID m_activityId;

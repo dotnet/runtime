@@ -46,6 +46,7 @@ public:
     //!
     static UINT64 QCALLTYPE Enable(
         __in_z LPCWSTR outputFile,
+        EventPipeSerializationFormat format,
         UINT32 circularBufferSizeInMB,
         EventPipeProviderConfiguration *pProviders,
         UINT32 numProviders);

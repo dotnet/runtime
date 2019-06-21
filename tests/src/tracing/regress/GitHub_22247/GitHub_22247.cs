@@ -4,6 +4,12 @@ using System.Reflection;
 
 namespace EventPipe.Issue22247
 {
+    public enum EventPipeSerializationFormat
+    {
+        NetPerf,
+        NetTrace
+    }
+
     public sealed class TraceConfiguration
     {
         private ConstructorInfo m_configurationCtor;
@@ -26,6 +32,7 @@ namespace EventPipe.Issue22247
                 new object[]
                 {
                     outputFile,
+                    EventPipeSerializationFormat.NetTrace,
                     circularBufferMB
                 });
         }
@@ -75,11 +82,17 @@ namespace EventPipe.Issue22247
                 Console.WriteLine("configurationType == null");
                 return false;
             }
+            Type formatType = SPC.GetType("System.Diagnostics.Tracing.EventPipeSerializationFormat");
+            if (formatType == null)
+            {
+                Console.WriteLine("formatType == null");
+                return false;
+            }
 
             m_configurationCtor = configurationType.GetConstructor(
                 BindingFlags.NonPublic | BindingFlags.Instance,
                 null,
-                new Type[] { typeof(string), typeof(uint) },
+                new Type[] { typeof(string), formatType, typeof(uint) },
                 null);
             if (m_configurationCtor == null)
             {

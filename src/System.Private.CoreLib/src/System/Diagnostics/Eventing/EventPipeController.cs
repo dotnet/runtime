@@ -68,6 +68,7 @@ namespace System.Diagnostics.Tracing
             // Create a new configuration object.
             EventPipeConfiguration config = new EventPipeConfiguration(
                 outputFilePath,
+                (Config_NetTraceFormat != 0) ? EventPipeSerializationFormat.NetTrace : EventPipeSerializationFormat.NetPerf,
                 Config_EventPipeCircularMB);
 
             // Get the configuration.
@@ -89,7 +90,7 @@ namespace System.Diagnostics.Tracing
         private static string BuildTraceFileName()
         {
             return GetAppName() + "." + Interop.GetCurrentProcessId().ToString() +
-              ((Config_NetTraceFormat > 0) ? NetTraceFileExtension : NetPerfFileExtension);
+              ((Config_NetTraceFormat != 0) ? NetTraceFileExtension : NetPerfFileExtension);
         }
 
         private static string GetAppName()

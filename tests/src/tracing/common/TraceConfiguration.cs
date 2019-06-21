@@ -7,6 +7,12 @@ using System.Reflection;
 
 namespace Tracing.Tests.Common
 {
+    public enum EventPipeSerializationFormat
+    {
+        NetPerf,
+        NetTrace
+    }
+
     public sealed class TraceConfiguration
     {
         private ConstructorInfo m_configurationCtor;
@@ -29,6 +35,7 @@ namespace Tracing.Tests.Common
                 new object[]
                 {
                     outputFile,
+                    EventPipeSerializationFormat.NetTrace,
                     circularBufferMB
                 });
         }
@@ -79,10 +86,17 @@ namespace Tracing.Tests.Common
                return false;
            }
 
-           m_configurationCtor = configurationType.GetConstructor(
+            Type formatType = SPC.GetType("System.Diagnostics.Tracing.EventPipeSerializationFormat");
+            if (formatType == null)
+            {
+                Console.WriteLine("formatType == null");
+                return false;
+            }
+
+            m_configurationCtor = configurationType.GetConstructor(
                BindingFlags.NonPublic | BindingFlags.Instance,
                null,
-               new Type[] { typeof(string), typeof(uint) },
+               new Type[] { typeof(string), formatType, typeof(uint) },
                null);
            if(m_configurationCtor == null)
            {
