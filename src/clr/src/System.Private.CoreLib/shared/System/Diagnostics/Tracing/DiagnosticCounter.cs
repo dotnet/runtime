@@ -71,7 +71,7 @@ namespace System.Diagnostics.Tracing
         {
             lock (this)
             {
-                _metadata = _metadata ?? new Dictionary<string, string>();
+                _metadata ??= new Dictionary<string, string>();
                 _metadata.Add(key, value);
             }
         }
@@ -125,12 +125,32 @@ namespace System.Diagnostics.Tracing
                 return "";
             }
 
-            StringBuilder sb = new StringBuilder("");
-            foreach(KeyValuePair<string, string> kvPair in _metadata)
+            // The dictionary is only initialized to non-null when there's metadata to add, and no items
+            // are ever removed, so if the dictionary is non-null, there must also be at least one element.
+            Dictionary<string, string>.Enumerator enumerator = _metadata.GetEnumerator();
+            Debug.Assert(_metadata.Count > 0);
+            bool gotOne = enumerator.MoveNext();
+            Debug.Assert(gotOne);
+
+            // If there's only one element, just concat a string for it.
+            KeyValuePair<string, string> current = enumerator.Current;
+            if (!enumerator.MoveNext())
             {
-                sb.Append($"{kvPair.Key}:{kvPair.Value},");
+                return current.Key + ":" + current.Value;
             }
-            return sb.Length == 0 ? "" : sb.ToString(0, sb.Length - 1); // Get rid of the last ","
+
+            // Otherwise, append it, then append the element we moved to, and then
+            // iterate through the remainder of the elements, appending each.
+            var sb = new StringBuilder().Append(current.Key).Append(':').Append(current.Value);
+            do
+            {
+                current = enumerator.Current;
+                sb.Append(',').Append(current.Key).Append(':').Append(current.Value);
+            }
+            while (enumerator.MoveNext());
+
+            // Return the final string.
+            return sb.ToString();
         }
 
         #endregion // private implementation
