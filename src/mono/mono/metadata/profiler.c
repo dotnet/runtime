@@ -9,6 +9,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-config-dirs.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/profiler-legacy.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/utils/mono-dl.h>
@@ -956,25 +957,6 @@ update_callback (volatile gpointer *location, gpointer new_, volatile gint32 *co
 #undef MONO_PROFILER_EVENT_5
 #undef _MONO_PROFILER_EVENT
 
-/*
- * The following code is here to maintain compatibility with a few profiler API
- * functions used by Xamarin.{Android,iOS,Mac} so that they keep working
- * regardless of which system Mono version is used.
- *
- * TODO: Remove this some day if we're OK with breaking compatibility.
- */
-
-typedef void *MonoLegacyProfiler;
-
-typedef void (*MonoLegacyProfileFunc) (MonoLegacyProfiler *prof);
-typedef void (*MonoLegacyProfileThreadFunc) (MonoLegacyProfiler *prof, uintptr_t tid);
-typedef void (*MonoLegacyProfileGCFunc) (MonoLegacyProfiler *prof, MonoProfilerGCEvent event, int generation);
-typedef void (*MonoLegacyProfileGCResizeFunc) (MonoLegacyProfiler *prof, int64_t new_size);
-typedef void (*MonoLegacyProfileJitResult) (MonoLegacyProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo, int result);
-typedef void (*MonoLegacyProfileAllocFunc) (MonoLegacyProfiler *prof, MonoObject *obj, MonoClass *klass);
-typedef void (*MonoLegacyProfileMethodFunc) (MonoLegacyProfiler *prof, MonoMethod *method);
-typedef void (*MonoLegacyProfileExceptionFunc) (MonoLegacyProfiler *prof, MonoObject *object);
-typedef void (*MonoLegacyProfileExceptionClauseFunc) (MonoLegacyProfiler *prof, MonoMethod *method, int clause_type, int clause_num);
 
 struct _MonoProfiler {
 	MonoProfilerHandle handle;
@@ -993,15 +975,6 @@ struct _MonoProfiler {
 };
 
 static MonoProfiler *current;
-
-MONO_API void mono_profiler_install (MonoLegacyProfiler *prof, MonoLegacyProfileFunc callback);
-MONO_API void mono_profiler_install_thread (MonoLegacyProfileThreadFunc start, MonoLegacyProfileThreadFunc end);
-MONO_API void mono_profiler_install_gc (MonoLegacyProfileGCFunc callback, MonoLegacyProfileGCResizeFunc heap_resize_callback);
-MONO_API void mono_profiler_install_jit_end (MonoLegacyProfileJitResult end);
-MONO_API void mono_profiler_set_events (int flags);
-MONO_API void mono_profiler_install_allocation (MonoLegacyProfileAllocFunc callback);
-MONO_API void mono_profiler_install_enter_leave (MonoLegacyProfileMethodFunc enter, MonoLegacyProfileMethodFunc fleave);
-MONO_API void mono_profiler_install_exception (MonoLegacyProfileExceptionFunc throw_callback, MonoLegacyProfileMethodFunc exc_method_leave, MonoLegacyProfileExceptionClauseFunc clause_callback);
 
 static void
 shutdown_cb (MonoProfiler *prof)

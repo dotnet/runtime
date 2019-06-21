@@ -245,6 +245,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\opcodes.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\profiler.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\profiler-events.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\profiler-legacy.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\reflection.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\row-indexes.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\tokentype.h" />

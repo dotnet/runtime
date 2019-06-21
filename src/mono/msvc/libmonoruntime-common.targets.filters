@@ -672,6 +672,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\profiler-events.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common\public</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\profiler-legacy.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common\public</Filter>
+    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\reflection.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common\public</Filter>
     </ClInclude>
