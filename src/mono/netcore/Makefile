@@ -20,8 +20,9 @@ PLATFORM_AOT_SUFFIX := .dll
 PLATFORM_AOT_PREFIX :=
 NETCORESDK_EXT = zip
 UNZIPCMD = python -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1], 'r').extractall()"
-XUNIT_FLAGS =
+XUNIT_FLAGS = -notrait category=nonwindowstests
 TESTS_PLATFORM = Windows_NT.x64
+ON_RUNTIME_EXTRACT = chmod -R 755 {host,shared,./dotnet}
 DOTNET := $(shell powershell -ExecutionPolicy Bypass -Command "./init-tools.ps1")/dotnet.exe
 DOTNET := "$(subst \,/,$(DOTNET))"
 endif
@@ -63,6 +64,7 @@ $(NETCORESDK_FILE):
 	curl $(NETCORE_URL) --output $(NETCORESDK_FILE)
 	rm -rf shared/Microsoft.NETCore.App
 	$(UNZIPCMD) $(NETCORESDK_FILE)
+	$(ON_RUNTIME_EXTRACT)
 
 # AspNetCoreApp contains its own .NET Core Runtime but we don't need it so let's remove it 
 # and update version in Microsoft.AspNetCore.App.runtimeconfig.json to NETCOREAPP_VERSION
@@ -164,9 +166,8 @@ run-tests-corefx-%: prepare update-tests-corefx
 
 # build a test assembly in COREFX_ROOT and copy it to corefx/tests/extracted
 # e.g. `make build-test-corefx-System.Runtime COREFX_ROOT=/prj/corefx-master`
-build-test-corefx-%: check-env
-	cd $(COREFX_ROOT)/src/$*/tests && $(DOTNET) build -o "$(CURDIR)/corefx/tests/extracted/tmp"
-	cp $(CURDIR)/corefx/tests/extracted/tmp/$*.Tests.{dll,pdb} $(CURDIR)/corefx/tests/extracted/$*.Tests/
-	rm -rf $(CURDIR)/corefx/tests/extracted/tmp
+build-test-corefx-%:
+	cd $(COREFX_ROOT)/src/$*/tests && $(DOTNET) msbuild /p:OutputPath=tmp
+	cp $(COREFX_ROOT)/src/$*/tests/tmp/$*.Tests.{dll,pdb} $(CURDIR)/corefx/tests/extracted/$*.Tests/
 
 distdir:
