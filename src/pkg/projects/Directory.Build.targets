@@ -1,10 +1,10 @@
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\Directory.Build.targets" />
+<Project>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />
 
   <Import Project="$(PackagingToolsDir)packaging-tools.targets" />
 
-  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
-  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(LocalBuildToolsTaskFile)"/>
+  <UsingTask TaskName="GenerateFileVersionProps" AssemblyFile="$(LocalBuildToolsTaskFile)"/>
 
   <PropertyGroup>
     <!--
@@ -15,10 +15,39 @@
   </PropertyGroup>
 
   <!--
-    Remove duplicate files returned by PrereleaseResolveNuGetPackageAssets. The resolve task
-    performs extra detection to pick up a PDB file for any file listed in the assets file. This
-    causes duplicates if the assets file lists PDBs. If foo.dll and foo.pdb exist in the package and
-    both are listed in the assets file, the task finds:
+    For any Dependency items with a VersionProp, set it to the property by that name given by the
+    version generation target.
+  -->
+  <Target Name="SetCustomPackageDependencyVersions"
+          BeforeTargets="GetPackageDependencies"
+          DependsOnTargets="GetProductVersions">
+    <ItemGroup>
+      <Dependency Version="$(%(Dependency.VersionProp))" Condition="'%(Dependency.VersionProp)' != ''" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    If the project is configured to use a shipped package version, set it. Use a target because we
+    need the versions from GetProductVersions.
+  -->
+  <Target Name="SetSpecificPackageVersion"
+          Condition="'$(VersionProp)' != ''"
+          BeforeTargets="GenerateNuSpec"
+          DependsOnTargets="GetProductVersions">
+    <!-- Use item metadata: $(%(foo)) works, $($(foo)) doesn't. -->
+    <ItemGroup>
+      <VersionPropItem Include="$(VersionProp)" />
+    </ItemGroup>
+    <PropertyGroup>
+      <Version>$(%(VersionPropItem.Identity))</Version>
+    </PropertyGroup>
+  </Target>
+
+  <!--
+    Remove duplicate files returned by restore. The resolve task performs extra detection to pick up
+    a PDB file for any file listed in the assets file. This causes duplicates if the assets file
+    lists PDBs. If foo.dll and foo.pdb exist in the package and both are listed in the assets file,
+    the task finds:
 
       foo.dll
       foo.pdb (based on foo.dll entry)
@@ -27,8 +56,7 @@
 
     The duplicates cause package validation failure and must be filtered out.
   -->
-  <Target Name="RemoveDuplicateResolvedNuGetPackageAssets"
-          AfterTargets="ResolveNuGetPackages">
+  <Target Name="RemoveDuplicateResolvedNuGetPackageAssets">
     <RemoveDuplicates Inputs="@(ReferenceCopyLocalPaths)">
       <Output TaskParameter="Filtered" ItemName="FilteredReferenceCopyLocalPaths"/>
     </RemoveDuplicates>
@@ -275,40 +303,21 @@
   </Target>
 
   <!--
-    Get Project items: build the project, and build runtime packages if necessary. All projects in
-    this directory are ProjectProviders.
+    Create RuntimeDependencies just before they're needed. Use MSBuild to get their identities, like
+    GetPkgProjPackageDependencies: this finds package id and version without any guesswork.
   -->
-  <Target Name="GetProjectsToBuild" Returns="@(Project)">
+  <Target Name="CreateRuntimeDependencyItems"
+          BeforeTargets="DetermineRuntimeDependencies"
+          Condition="'$(PackageTargetRuntime)' == '' and '$(HasRuntimePackages)' != 'false'">
+    <MSBuild
+      Targets="GetPackageIdentity"
+      BuildInParallel="$(BuildInParallel)"
+      Projects="@(RuntimeProject -> WithMetadataValue('Extension', '.pkgproj'))">
+      <Output TaskParameter="TargetOutputs" ItemName="_runtimeDependencyIdentity" />
+    </MSBuild>
+
     <ItemGroup>
-      <!-- The pkg and src builds both build these projects. Add them to both phases. -->
-      <PkgSrcProject Include="@(RuntimeProject)" Condition="'$(BuildRuntimePackages)' == 'true'" />
-      <PkgSrcProject Include="@(RidSpecificPackProject)" Condition="'$(BuildRidSpecificPacks)' == 'true'" />
-      <PkgSrcProject Include="$(MSBuildProjectFullPath)" Condition="'$(BuildLineupPackage)' == 'true'"/>
-
-      <Project Include="@(PkgSrcProject)" Phase="pkg" />
-      <Project Include="@(PkgSrcProject)" Phase="src" />
-
-      <!--
-        Create framework pack non-nuget packages/installers. Similar to the runtime package, we only
-        make one Debian or RPM package for all distros of that type.
-      -->
-      <Project
-        Include="$(MSBuildProjectFullPath)"
-        Phase="installer"
-        Condition="
-          '$(FrameworkPackType)' != '' AND
-          '$(BuildDistroIndependentInstallers)' == 'true'" />
-    </ItemGroup>
-
-    <!-- Create shared framework and its installers. -->
-    <ItemGroup Condition="'$(GenerateSharedFramework)' == 'true' AND '$(BuildDistroIndependentInstallers)' == 'true'">
-      <Project Include="$(MSBuildProjectFullPath)" Phase="sharedfx" />
-      <!--
-        Currently any pkgproj is assumed to only build one type of installer, so there is no
-        distinction between this Project and a targeting pack installer Project. Some
-        AdditionalProperties may need to be added if this assumption doesn't hold up.
-      -->
-      <Project Include="$(MSBuildProjectFullPath)" Phase="installer" />
+      <RuntimeDependency Include="@(_runtimeDependencyIdentity)" />
     </ItemGroup>
   </Target>
 

@@ -5,13 +5,22 @@
     overrides that shouldn't be applied to other projects.
   -->
   <Import Project="framework.dependency.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
-  <Import Project="framework.packaging.targets" Condition="'$(IsFrameworkPackage)' == 'true'" />
+  <Import Project="framework.packaging.targets" Condition="'$(MSBuildProjectExtension)' == '.pkgproj'" />
+
+  <Import Project="installer.targets" />
+
+  <!-- Required by Common.Targets but not used by packaging projects. -->
+  <Target Name="CreateManifestResourceNames" />
+  <Target Name="CoreCompile" />
 
   <!--
     Set up properties for installer file. These depend on properties defined in the project file.
     (Unlike properties set up in packaging-tools.props, which shouldn't.)
   -->
-  <Target Name="GetInstallerProperties">
+  <Target Name="GetInstallerProperties"
+          DependsOnTargets="
+            GetInstallerBrandingNames;
+            GetProductVersions">
     <!-- Detect framework pack suffix and apply defaults. -->
     <PropertyGroup Condition="'$(FrameworkPackType)' == 'targeting'">
       <InstallerName>$(ShortFrameworkName)-targeting-pack</InstallerName>
@@ -28,6 +37,11 @@
       <BuildDebPackage>false</BuildDebPackage>
       <BuildRpmPackage>false</BuildRpmPackage>
       <GeneratePkg>false</GeneratePkg>
+      <GenerateMSI>false</GenerateMSI>
+    </PropertyGroup>
+
+    <!-- Non-framework pkgproj shouldn't build MSIs. -->
+    <PropertyGroup Condition="'$(FrameworkPackType)' == '' and '$(MSBuildProjectExtension)' == '.pkgproj'">
       <GenerateMSI>false</GenerateMSI>
     </PropertyGroup>
 
