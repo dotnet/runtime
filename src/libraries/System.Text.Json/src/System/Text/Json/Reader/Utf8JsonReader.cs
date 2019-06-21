@@ -2436,6 +2436,7 @@ namespace System.Text.Json
             return true;
         }
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"TokenType = {DebugTokenType} (TokenStartIndex = {TokenStartIndex}) Consumed = {BytesConsumed}";
 
         // Using TokenType.ToString() (or {TokenType}) fails to render in the debug window. The
