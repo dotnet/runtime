@@ -18,7 +18,7 @@ endif(WIN32 AND FEATURE_EVENT_TRACE)
 if(CLR_CMAKE_PLATFORM_UNIX)
   if(CLR_CMAKE_PLATFORM_LINUX AND NOT CLR_CMAKE_PLATFORM_UNIX_X86)
     add_subdirectory(debug/createdump)
-  endif(CLR_CMAKE_PLATFORM_LINUX)
+  endif(CLR_CMAKE_PLATFORM_LINUX AND NOT CLR_CMAKE_PLATFORM_UNIX_X86)
 
   # Include the dummy c++ include files
   include_directories("pal/inc/rt/cpp")
