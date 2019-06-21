@@ -13,6 +13,8 @@
     <TestUnsupportedOutsideWindows>true</TestUnsupportedOutsideWindows>
     <DisableProjectBuild Condition="'$(TargetsUnix)' == 'true'">true</DisableProjectBuild>
     <DisableProjectBuild Condition="'$(Platform)' == 'arm' or '$(Platform)' == 'arm64'">true</DisableProjectBuild>
+    <!-- WinRT interop is not compatible with unloadability -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">

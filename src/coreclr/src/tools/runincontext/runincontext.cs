@@ -483,6 +483,7 @@ public class TestRunner
         {
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            Thread.Sleep(10);
         }
 
         if (_input.BreakAfterRun)
@@ -562,6 +563,7 @@ public class RunInContext
 
     private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
+        Console.WriteLine($"RunInContext FAIL! Exiting due to unhandled exception in the test: {e.ExceptionObject}");
         Environment.Exit(FailureExitCode);
     }
 
