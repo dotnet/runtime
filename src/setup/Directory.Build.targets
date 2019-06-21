@@ -140,77 +140,10 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="GetCommitCount"
-          Condition="'$(CommitCount)' == ''">
-    <Exec Command="git rev-list --count HEAD"
-          StandardOutputImportance="Low"
-          IgnoreExitCode="true"
-          IgnoreStandardErrorWarningFormat="true"
-          ConsoleToMSBuild="true">
-     <Output TaskParameter="ConsoleOutput" PropertyName="CommitCount" />
-     <Output TaskParameter="ExitCode" PropertyName="CommitCountExitCode" />
-    </Exec>
-    <Error Condition="'$(CommitCount)' == ''" Text="Unable to determine the 'commit count'.  'Commit count' is used for generating an msi version.  If you are building outside of a git repo, you must pass the '/p:CommitCount=[value]' property" />
-  </Target>
-
   <Target Name="GetBundleDisplayVersion">
     <PropertyGroup>
       <BundleDisplayVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion).$(BuildNumberMajor)</BundleDisplayVersion>
     </PropertyGroup>
-  </Target>
-
-  <!-- Override Target from buildtools -->
-  <Target Name="GenerateVersionHeader"
-      Inputs="$(MSBuildProjectFile)"
-      Outputs="$(NativeVersionHeaderFile)"
-      DependsOnTargets="CreateVersionFileDuringBuild;GetLatestCommitHash"
-      Condition="'$(NativeVersionHeaderFile)'!='' and '$(GenerateVersionHeader)'=='true' and !Exists($(NativeVersionHeaderFile))">
-
-    <ItemGroup>
-      <!-- Defining versioning variables -->
-      <NativeVersionLines Include="#include &lt;Windows.h&gt;" />
-      <NativeVersionLines Include="#ifndef VER_COMPANYNAME_STR" />
-      <NativeVersionLines Include="#define VER_COMPANYNAME_STR         &quot;Microsoft Corporation&quot;" />
-      <NativeVersionLines Include="#endif" />
-      <NativeVersionLines Include="#ifndef VER_FILEDESCRIPTION_STR" />
-      <NativeVersionLines Include="#define VER_FILEDESCRIPTION_STR     &quot;$(FileDescription)&quot;" />
-      <NativeVersionLines Include="#endif" />
-      <NativeVersionLines Include="#ifndef VER_INTERNALNAME_STR" />
-      <NativeVersionLines Include="#define VER_INTERNALNAME_STR        VER_FILEDESCRIPTION_STR" />
-      <NativeVersionLines Include="#endif" />
-      <NativeVersionLines Include="#ifndef VER_ORIGINALFILENAME_STR" />
-      <NativeVersionLines Include="#define VER_ORIGINALFILENAME_STR    VER_FILEDESCRIPTION_STR" />
-      <NativeVersionLines Include="#endif" />
-      <NativeVersionLines Include="#ifndef VER_PRODUCTNAME_STR" />
-      <NativeVersionLines Include="#define VER_PRODUCTNAME_STR         &quot;Microsoft\xae .NET Core&quot;" />
-      <NativeVersionLines Include="#endif" />
-      <NativeVersionLines Include="#undef VER_PRODUCTVERSION" />
-      <NativeVersionLines Include="#define VER_PRODUCTVERSION          $(MajorVersion),$(MinorVersion),$(BuildNumberMajor),$(BuildNumberMinor)" />
-      <NativeVersionLines Include="#undef VER_PRODUCTVERSION_STR" />
-      <NativeVersionLines Include="#define VER_PRODUCTVERSION_STR      &quot;$(MajorVersion).$(MinorVersion).$(BuildNumberMajor).$(BuildNumberMinor)$(BuiltByString). Commit Hash%3A $(LatestCommit)&quot;" />
-      <NativeVersionLines Include="#undef VER_FILEVERSION" />
-      <NativeVersionLines Include="#define VER_FILEVERSION             $(MajorVersion),$(MinorVersion),$(BuildNumberMajor),$(BuildNumberMinor)" />
-      <NativeVersionLines Include="#undef VER_FILEVERSION_STR" />
-      <NativeVersionLines Include="#define VER_FILEVERSION_STR         &quot;$(MajorVersion).$(MinorVersion).$(BuildNumberMajor).$(BuildNumberMinor)$(BuiltByString). Commit Hash%3A $(LatestCommit)&quot;" />
-      <NativeVersionLines Include="#ifndef VER_LEGALCOPYRIGHT_STR" />
-      <NativeVersionLines Include="#define VER_LEGALCOPYRIGHT_STR      &quot;\xa9 Microsoft Corporation.  All rights reserved.&quot;" />
-      <NativeVersionLines Include="#endif" />
-      <NativeVersionLines Include="#ifndef VER_DEBUG" />
-      <NativeVersionLines Condition="'$(Configuration)'=='Debug'" Include="#define VER_DEBUG                   VS_FF_DEBUG" />
-      <NativeVersionLines Condition="'$(Configuration)'!='Debug'" Include="#define VER_DEBUG                   0" />
-      <NativeVersionLines Include="#endif" />
-    </ItemGroup>
-
-    <MakeDir Condition="!Exists('$(NativeVersionFileDir)')" Directories="$(NativeVersionFileDir)" />
-
-    <WriteLinesToFile
-      File="$(NativeVersionHeaderFile)"
-      Lines="@(NativeVersionLines)"
-      Overwrite="true" />
-
-    <ItemGroup>
-      <FileWrites Include="$(NativeVersionHeaderFile)" />
-    </ItemGroup>
   </Target>
 
 </Project>
