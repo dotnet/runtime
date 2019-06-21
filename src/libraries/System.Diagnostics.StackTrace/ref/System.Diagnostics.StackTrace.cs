@@ -14,13 +14,13 @@ namespace System.Diagnostics
         public StackFrame(bool fNeedFileInfo) { }
         public StackFrame(int skipFrames) { }
         public StackFrame(int skipFrames, bool fNeedFileInfo) { }
-        public StackFrame(string fileName, int lineNumber) { }
-        public StackFrame(string fileName, int lineNumber, int colNumber) { }
+        public StackFrame(string? fileName, int lineNumber) { }
+        public StackFrame(string? fileName, int lineNumber, int colNumber) { }
         public virtual int GetFileColumnNumber() { throw null; }
         public virtual int GetFileLineNumber() { throw null; }
-        public virtual string GetFileName() { throw null; }
+        public virtual string? GetFileName() { throw null; }
         public virtual int GetILOffset() { throw null; }
-        public virtual System.Reflection.MethodBase GetMethod() { throw null; }
+        public virtual System.Reflection.MethodBase? GetMethod() { throw null; }
         public virtual int GetNativeOffset() { throw null; }
         public override string ToString() { throw null; }
     }
@@ -46,8 +46,8 @@ namespace System.Diagnostics
         public StackTrace(int skipFrames) { }
         public StackTrace(int skipFrames, bool fNeedFileInfo) { }
         public virtual int FrameCount { get { throw null; } }
-        public virtual System.Diagnostics.StackFrame GetFrame(int index) { throw null; }
-        public virtual System.Diagnostics.StackFrame[] GetFrames() { throw null; }
+        public virtual System.Diagnostics.StackFrame? GetFrame(int index) { throw null; }
+        public virtual System.Diagnostics.StackFrame?[] GetFrames() { throw null; }
         public override string ToString() { throw null; }
     }
 }
@@ -56,11 +56,11 @@ namespace System.Diagnostics.SymbolStore
     public partial interface ISymbolBinder
     {
         [System.ObsoleteAttribute("The recommended alternative is ISymbolBinder1.GetReader. ISymbolBinder1.GetReader takes the importer interface pointer as an IntPtr instead of an Int32, and thus works on both 32-bit and 64-bit architectures. https://go.microsoft.com/fwlink/?linkid=14202=14202")]
-        System.Diagnostics.SymbolStore.ISymbolReader GetReader(int importer, string filename, string searchPath);
+        System.Diagnostics.SymbolStore.ISymbolReader? GetReader(int importer, string filename, string searchPath);
     }
     public partial interface ISymbolBinder1
     {
-        System.Diagnostics.SymbolStore.ISymbolReader GetReader(System.IntPtr importer, string filename, string searchPath);
+        System.Diagnostics.SymbolStore.ISymbolReader? GetReader(System.IntPtr importer, string filename, string searchPath);
     }
     public partial interface ISymbolDocument
     {
@@ -90,8 +90,8 @@ namespace System.Diagnostics.SymbolStore
         System.Diagnostics.SymbolStore.ISymbolVariable[] GetParameters();
         int[] GetRanges(System.Diagnostics.SymbolStore.ISymbolDocument document, int line, int column);
         System.Diagnostics.SymbolStore.ISymbolScope GetScope(int offset);
-        void GetSequencePoints(int[] offsets, System.Diagnostics.SymbolStore.ISymbolDocument[] documents, int[] lines, int[] columns, int[] endLines, int[] endColumns);
-        bool GetSourceStartEnd(System.Diagnostics.SymbolStore.ISymbolDocument[] docs, int[] lines, int[] columns);
+        void GetSequencePoints(int[]? offsets, System.Diagnostics.SymbolStore.ISymbolDocument[]? documents, int[]? lines, int[]? columns, int[]? endLines, int[]? endColumns);
+        bool GetSourceStartEnd(System.Diagnostics.SymbolStore.ISymbolDocument[]? docs, int[]? lines, int[]? columns);
     }
     public partial interface ISymbolNamespace
     {
@@ -102,11 +102,11 @@ namespace System.Diagnostics.SymbolStore
     public partial interface ISymbolReader
     {
         System.Diagnostics.SymbolStore.SymbolToken UserEntryPoint { get; }
-        System.Diagnostics.SymbolStore.ISymbolDocument GetDocument(string url, System.Guid language, System.Guid languageVendor, System.Guid documentType);
+        System.Diagnostics.SymbolStore.ISymbolDocument? GetDocument(string url, System.Guid language, System.Guid languageVendor, System.Guid documentType);
         System.Diagnostics.SymbolStore.ISymbolDocument[] GetDocuments();
         System.Diagnostics.SymbolStore.ISymbolVariable[] GetGlobalVariables();
-        System.Diagnostics.SymbolStore.ISymbolMethod GetMethod(System.Diagnostics.SymbolStore.SymbolToken method);
-        System.Diagnostics.SymbolStore.ISymbolMethod GetMethod(System.Diagnostics.SymbolStore.SymbolToken method, int version);
+        System.Diagnostics.SymbolStore.ISymbolMethod? GetMethod(System.Diagnostics.SymbolStore.SymbolToken method);
+        System.Diagnostics.SymbolStore.ISymbolMethod? GetMethod(System.Diagnostics.SymbolStore.SymbolToken method, int version);
         System.Diagnostics.SymbolStore.ISymbolMethod GetMethodFromDocumentPosition(System.Diagnostics.SymbolStore.ISymbolDocument document, int line, int column);
         System.Diagnostics.SymbolStore.ISymbolNamespace[] GetNamespaces();
         byte[] GetSymAttribute(System.Diagnostics.SymbolStore.SymbolToken parent, string name);
@@ -172,10 +172,10 @@ namespace System.Diagnostics.SymbolStore
     }
     public readonly partial struct SymbolToken
     {
-        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public SymbolToken(int val) { throw null; }
         public bool Equals(System.Diagnostics.SymbolStore.SymbolToken obj) { throw null; }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public int GetToken() { throw null; }
         public static bool operator ==(System.Diagnostics.SymbolStore.SymbolToken a, System.Diagnostics.SymbolStore.SymbolToken b) { throw null; }
