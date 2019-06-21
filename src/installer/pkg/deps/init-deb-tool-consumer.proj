@@ -20,7 +20,7 @@
     </PropertyGroup>
 
     <Exec Command="$(DotnetRestoreCommand) $(DotnetDebToolSourceDir)"/>
-    <Exec Command="$(DotnetToolCommand) pack $(DotnetDebToolSourceDir) --output $(PackageOutputPath) $(VersionSuffixArg)"/>
+    <Exec Command="$(DotNetTool) pack $(DotnetDebToolSourceDir) --output $(PackageOutputPath) $(VersionSuffixArg)"/>
 
     <RemoveDir
       Condition="Exists('$(DebtoolConsumerDeployDir)')"
