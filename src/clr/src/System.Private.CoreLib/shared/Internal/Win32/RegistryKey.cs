@@ -84,7 +84,7 @@ namespace Internal.Win32
         public RegistryKey? OpenSubKey(string name, bool writable)
         {
             // Make sure that the name does not contain double slahes
-            Debug.Assert(name.IndexOf("\\\\") == -1);
+            Debug.Assert(!name.Contains(@"\\"));
 
             int ret = Interop.Advapi32.RegOpenKeyEx(_hkey,
                 name,
