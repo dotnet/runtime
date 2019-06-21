@@ -2059,9 +2059,10 @@ void emitter::emitEndFnEpilog()
         // underestimation of the epilog size is harmless (since the EIP
         // can not be between instructions).
         assert(emitEpilogCnt == 1 ||
-               (emitExitSeqSize - newSize) <= 5 // delta between size of various forms of jmp (size is either 6 or 5)
+               (emitExitSeqSize - newSize) <= 6 // delta between size of various forms of jmp (size is either 6 or 5,
+                                                // or a 5 byte mov plus 2 byte jmp)
                                                 // and various forms of ret (size is either 1 or 3). The combination can
-                                                // be anything been 1 and 5.
+                                                // be anything between 1 and 6.
                );
         emitExitSeqSize = newSize;
     }
