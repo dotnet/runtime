@@ -33,7 +33,7 @@ static bool s_fNGenNoMetaData;
 // Zapper Object instead of creating one on your own.
 
 
-STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr)
+STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, SIZE_T customBaseAddress=0, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr)
 {    
     HRESULT hr = S_OK;
 
@@ -82,6 +82,8 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
 
         if (pwzOutputFilename)
             zap->SetOutputFilename(pwzOutputFilename);
+
+        zap->SetCustomBaseAddress(customBaseAddress);
 
         if (pwzPlatformAssembliesPaths != nullptr)
             zap->SetPlatformAssembliesPaths(pwzPlatformAssembliesPaths);
@@ -407,6 +409,8 @@ void Zapper::Init(ZapperOptions *pOptions, bool fFreeZapperOptions)
 
     m_pAssemblyEmit = NULL;
     m_fFreeZapperOptions = fFreeZapperOptions;
+
+    m_customBaseAddress = 0;
 
 #ifdef LOGGING
     InitializeLogging();
@@ -1687,4 +1691,15 @@ void Zapper::SetOutputFilename(LPCWSTR pwzOutputFilename)
 SString Zapper::GetOutputFileName()
 {
     return m_outputFilename;
+}
+
+
+void Zapper::SetCustomBaseAddress(SIZE_T baseAddress)
+{
+    m_customBaseAddress = baseAddress;
+}
+
+SIZE_T Zapper::GetCustomBaseAddress()
+{
+    return m_customBaseAddress;
 }

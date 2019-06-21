@@ -129,6 +129,8 @@ class Zapper
 
     SString                 m_outputFilename;
 
+    SIZE_T                  m_customBaseAddress;
+
   public:
 
     struct assemblyDependencies
@@ -361,6 +363,9 @@ class Zapper
 
     void SetOutputFilename(LPCWSTR pwszOutputFilename);
     SString GetOutputFileName();
+
+    void SetCustomBaseAddress(SIZE_T baseAddress);
+    SIZE_T GetCustomBaseAddress();
 
  private:
 

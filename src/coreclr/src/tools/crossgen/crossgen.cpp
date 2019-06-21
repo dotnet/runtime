@@ -34,7 +34,7 @@ enum ReturnValues
 #define NumItems(s) (sizeof(s) / sizeof(s[0]))
 
 STDAPI CreatePDBWorker(LPCWSTR pwzAssemblyPath, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzAppNiPaths, LPCWSTR pwzPdbPath, BOOL fGeneratePDBLinesInfo, LPCWSTR pwzManagedPdbSearchPath, LPCWSTR pwzPlatformWinmdPaths, LPCWSTR pwzDiasymreaderPath);
-STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr);
+STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembliesPaths, LPCWSTR pwzTrustedPlatformAssemblies, LPCWSTR pwzPlatformResourceRoots, LPCWSTR pwzAppPaths, LPCWSTR pwzOutputFilename=NULL, SIZE_T customBaseAddress=0, LPCWSTR pwzPlatformWinmdPaths=NULL, ICorSvcLogger *pLogger = NULL, LPCWSTR pwszCLRJITPath = nullptr);
 void SetSvcLogger(ICorSvcLogger *pCorSvcLogger);
 void SetMscorlibPath(LPCWSTR wzSystemDirectory);
 
@@ -154,6 +154,9 @@ void PrintUsageHelper()
        W("    /LargeVersionBubble  - Generate image with a version bubble including all\n")
        W("                           input assemblies\n")
 
+#endif
+#ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+       W("    /BaseAddress <value> - Specifies base address to use for compilation.\n")
 #endif
 #ifdef FEATURE_WINMD_RESILIENT
        W(" WinMD Parameters\n")
@@ -436,6 +439,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
     LPCWSTR pwzOutputFilename = NULL;
     LPCWSTR pwzPublicKeys = nullptr;
     bool fLargeVersionBubbleSwitch = false;
+    SIZE_T baseAddress = 0;
 
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
     LPCWSTR pwszCLRJITPath = nullptr;
@@ -542,6 +546,19 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
         {
             dwFlags |= NGENWORKER_FLAGS_LARGEVERSIONBUBBLE;
             fLargeVersionBubbleSwitch = true;
+        }
+#endif
+#ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+        else if (MatchParameter(*argv, W("BaseAddress")))
+        {
+            if (baseAddress != 0)
+            {
+                OutputErr(W("Cannot specify multiple base addresses.\n"));
+                exit(INVALID_ARGUMENTS);
+            }
+            baseAddress = (SIZE_T) _wcstoui64(argv[1], NULL, 0);
+            argv++;
+            argc--;
         }
 #endif
         else if (MatchParameter(*argv, W("NoMetaData")))
@@ -942,6 +959,7 @@ int _cdecl wmain(int argc, __in_ecount(argc) WCHAR **argv)
          pwzPlatformResourceRoots,
          pwzAppPaths,
          pwzOutputFilename,
+         baseAddress,
          pwzPlatformWinmdPaths
 #if !defined(FEATURE_MERGE_JIT_AND_ENGINE)
         ,
