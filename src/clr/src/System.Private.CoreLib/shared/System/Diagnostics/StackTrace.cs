@@ -159,10 +159,10 @@ namespace System.Diagnostics
         /// The nth element of this array is the same as GetFrame(n).
         /// The length of the array is the same as FrameCount.
         /// </summary>
-        public virtual StackFrame?[]? GetFrames()
+        public virtual StackFrame?[] GetFrames()
         {
             if (_stackFrames == null || _numOfFrames <= 0)
-                return null;
+                return Array.Empty<StackFrame>();
 
             // We have to return a subset of the array. Unfortunately this
             // means we have to allocate a new array and copy over.
