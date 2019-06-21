@@ -10,9 +10,10 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
+        // This method is always blocking, so it uses an IntPtr.
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static extern unsafe int send(
-            SafeSocketHandle socketHandle,
+            [In] IntPtr socketHandle,
             [In] byte* pinnedBuffer,
             [In] int len,
             [In] SocketFlags socketFlags);

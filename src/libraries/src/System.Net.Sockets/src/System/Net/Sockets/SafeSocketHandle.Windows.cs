@@ -60,7 +60,7 @@ namespace System.Net.Sockets
                     catch (Exception exception) when (!ExceptionCheck.IsFatal(exception))
                     {
                         bool closed = IsClosed;
-                        CloseAsIs(abortive: false);
+                        CloseAsIs();
                         if (closed)
                         {
                             // If the handle was closed just before the call to BindHandle,
@@ -108,7 +108,7 @@ namespace System.Net.Sockets
             return CreateSocket(InnerSafeCloseSocket.Accept(socketHandle, socketAddress, ref socketAddressSize));
         }
 
-        private bool InnerReleaseHandle()
+        private void InnerReleaseHandle()
         {
             // Keep m_IocpBoundHandle around after disposing it to allow freeing NativeOverlapped.
             // ThreadPoolBoundHandle allows FreeNativeOverlapped even after it has been disposed.
@@ -116,8 +116,6 @@ namespace System.Net.Sockets
             {
                 _iocpBoundHandle.Dispose();
             }
-
-            return false;
         }
 
         internal sealed partial class InnerSafeCloseSocket : SafeHandleMinusOneIsInvalid
@@ -126,10 +124,10 @@ namespace System.Net.Sockets
             {
                 SocketError errorCode;
 
-                // If _abortive was set to false in Close, it's safe to block here, which means
+                // If _blockable was set in BlockingRelease, it's safe to block here, which means
                 // we can honor the linger options set on the socket.  It also means closesocket() might return WSAEWOULDBLOCK, in which
                 // case we need to do some recovery.
-                if (!_abortive)
+                if (_blockable)
                 {
                     if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle}, Following 'blockable' branch");
                     errorCode = Interop.Winsock.closesocket(handle);
@@ -179,7 +177,7 @@ namespace System.Net.Sockets
                     // It failed.  Fall through to the regular abortive close.
                 }
 
-                // By default or if non abortive path failed, set linger timeout to zero to get an abortive close (RST).
+                // By default or if CloseAsIs() path failed, set linger timeout to zero to get an abortive close (RST).
                 Interop.Winsock.Linger lingerStruct;
                 lingerStruct.OnOff = 1;
                 lingerStruct.Time = 0;
@@ -224,18 +222,12 @@ namespace System.Net.Sockets
 
             internal static InnerSafeCloseSocket Accept(SafeSocketHandle socketHandle, byte[] socketAddress, ref int socketAddressSize)
             {
-                InnerSafeCloseSocket result = Interop.Winsock.accept(socketHandle, socketAddress, ref socketAddressSize);
+                InnerSafeCloseSocket result = Interop.Winsock.accept(socketHandle.DangerousGetHandle(), socketAddress, ref socketAddressSize);
                 if (result.IsInvalid)
                 {
                     result.SetHandleAsInvalid();
                 }
                 return result;
-            }
-
-            internal unsafe bool TryUnblockSocket()
-            {
-                // Try to cancel all pending IO.
-                return Interop.Kernel32.CancelIoEx(this, null);
             }
         }
     }

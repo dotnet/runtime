@@ -1107,12 +1107,8 @@ namespace System.Net.Sockets
             int localAddrLength;
             IntPtr remoteAddr;
 
-            bool refAdded = false;
             try
             {
-                _currentSocket.SafeHandle.DangerousAddRef(ref refAdded);
-                IntPtr handle = _currentSocket.SafeHandle.DangerousGetHandle();
-
                 Debug.Assert(_singleBufferHandleState == SingleBufferHandleState.Set);
                 bool userBuffer = _count >= _acceptAddressBufferCount;
 
@@ -1127,6 +1123,9 @@ namespace System.Net.Sockets
                     out remoteSocketAddress.InternalSize
                     );
                 Marshal.Copy(remoteAddr, remoteSocketAddress.Buffer, 0, remoteSocketAddress.Size);
+
+                // Set the socket context.
+                IntPtr handle = _currentSocket.SafeHandle.DangerousGetHandle();
 
                 socketError = Interop.Winsock.setsockopt(
                     _acceptSocket.SafeHandle,
@@ -1143,13 +1142,6 @@ namespace System.Net.Sockets
             catch (ObjectDisposedException)
             {
                 socketError = SocketError.OperationAborted;
-            }
-            finally
-            {
-                if (refAdded)
-                {
-                    _currentSocket.SafeHandle.DangerousRelease();
-                }
             }
 
             return socketError;
