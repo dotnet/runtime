@@ -1284,6 +1284,7 @@ namespace System.Text.Json
             }
         }
 
+        [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"Type = {Type} : \"{ToString()}\"";
     }
 }
