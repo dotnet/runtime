@@ -2,10 +2,10 @@
 
   <!--
     This Directory.Build.props prevents the SDK from skipping down to the root
-    Directory.Build.props, following the dir.props chain instead.
+    Directory.Build.props, following the Directory.Build.props chain instead.
 
     Specifically, gets LibPrefix, LibSuffix, etc.
   -->
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
 
 </Project>
