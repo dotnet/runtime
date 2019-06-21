@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.IO;
 
 namespace Microsoft.DotNet.CoreSetup.Test
@@ -28,7 +29,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             RepoRoot = repoRoot ?? GetRepoRootDirectory();
 
-            string baseArtifactsFolder = artifacts ?? Path.Combine(RepoRoot, "bin");
+            string baseArtifactsFolder = artifacts ?? Path.Combine(RepoRoot, "artifacts");
+            string baseBinFolder = artifacts ?? Path.Combine(baseArtifactsFolder, "bin");
+            string baseObjFolder = artifacts ?? Path.Combine(baseArtifactsFolder, "obj");
 
             TargetRID = Environment.GetEnvironmentVariable("TEST_TARGETRID");
             BuildRID = Environment.GetEnvironmentVariable("BUILDRID");
@@ -45,13 +48,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 throw new InvalidOperationException("ERROR: Test SDK folder not found.");
             }
 
-            Artifacts = Path.Combine(baseArtifactsFolder, osPlatformConfig);
+            Artifacts = Path.Combine(baseBinFolder, osPlatformConfig);
             HostArtifacts = artifacts ?? Path.Combine(Artifacts, "corehost");
 
             NugetPackages = nugetPackages ?? Path.Combine(RepoRoot, "packages");
 
             CorehostPackages = corehostPackages ?? Path.Combine(Artifacts, "corehost");
-            BuiltDotnet = builtDotnet ?? Path.Combine(baseArtifactsFolder, "obj", osPlatformConfig, "sharedFrameworkPublish");
+            BuiltDotnet = builtDotnet ?? Path.Combine(baseObjFolder, osPlatformConfig, "sharedFrameworkPublish");
         }
 
         private static string GetRepoRootDirectory()

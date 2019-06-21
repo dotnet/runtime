@@ -1,11 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
     <AssemblyName>HostActivation.Tests</AssemblyName>
     <PackageId>HostActivation.Tests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <DefineConstants Condition="'$(OSGroup)' == 'Windows_NT'">$(DefineConstants);WINDOWS</DefineConstants>
+    <!-- Reduce the length of the test output dir to make it more reliable on Windows. -->
+    <TestsOutputName>ha</TestsOutputName>
+    <UsesTestAssets>true</UsesTestAssets>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BuildingInsideVisualStudio)' == 'true'">
@@ -18,9 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
-    <PackageReference Include="xunit" Version="2.2.0" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyModel" Version="2.1.0" />
     <PackageReference Include="Microsoft.DotNet.PlatformAbstractions" Version="2.1.0" />
