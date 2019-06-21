@@ -5,17 +5,30 @@
 
   <PropertyGroup>
     <PackageTargets>
+      GetInstallerLocations;
       GenerateVersionBadge;
       GenerateCompressedFiles;
-      GenerateNugetPackages;
       GenerateInstallers;
-      GenerateProjectInstallers;
     </PackageTargets>
   </PropertyGroup>
 
-  <Target Name="Build" DependsOnTargets="BuildInstallers;BuildCombinedInstallers" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
+  <Target Name="Build" DependsOnTargets="BuildDependencies;BuildInstallers;BuildCombinedInstallers" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
   <Target Name="BuildInstallers" DependsOnTargets="$(PackageTargets)" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
   <Target Name="BuildCombinedInstallers" DependsOnTargets="GenerateCombinedInstallers" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
+
+  <!--
+    To build installers, we need shared fx layouts to be built first. Call MSBuild on the
+    requirements so that parallel MSBuild does the ordering work.
+  -->
+  <Target Name="BuildDependencies">
+    <ItemGroup>
+      <SharedFrameworkProject Include="$(SourceDir)pkg\projects\**\*.sfxproj" />
+    </ItemGroup>
+
+    <MSBuild
+      Projects="@(SharedFrameworkProject)"
+      Targets="Build"/>
+  </Target>
 
   <Target Name="InitPackage">
     <ItemGroup>
@@ -58,7 +71,7 @@
 
     <!-- Copy nethost -->
     <PropertyGroup>
-      <_NetHostOutputDir>$(BaseOutputPath)$(InstallerSourceOSPlatformConfig)\corehost\</_NetHostOutputDir>
+      <_NetHostOutputDir>$(BaseOutputRootPath)corehost\</_NetHostOutputDir>
     </PropertyGroup>
     <ItemGroup>
       <NetHostFiles Include="$(_NetHostOutputDir)nethost.h" />
@@ -111,9 +124,15 @@
                       />
   </Target>
 
-  <Target Name="GenerateCompressedFiles" DependsOnTargets="InitPackage;GenerateZip;GenerateTarBall" Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'"/>
+  <Target Name="GenerateCompressedFiles"
+          DependsOnTargets="
+            InitPackage;
+            GetInstallerLocations;
+            GenerateZip;
+            GenerateTarBall"
+          Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'"/>
 
-  <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
+  <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(LocalBuildToolsTaskFile)"/>
   <Target Name="GenerateZip"
           Condition="'$(OSGroup)'=='Windows_NT'">
 
@@ -186,32 +205,5 @@
   <Target Name="GenerateInstallers" DependsOnTargets="InitPackage;$(InstallerDependsOn)" />
 
   <Target Name="GenerateCombinedInstallers" DependsOnTargets="InitPackage;GenerateBundles" />
-
-  <!-- Run the project-based installer creation infrastructure as well. -->
-  <Target Name="GenerateProjectInstallers">
-    <MSBuild Projects="..\projects\installer.builds" />
-  </Target>
-
-  <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage" Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'">
-
-    <ItemGroup>
-      <!-- The list of packages we are servicing -->
-      <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
-      <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
-      <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.NET.HostModel\Microsoft.NET.HostModel.csproj" />
-    </ItemGroup>
-
-    <ItemGroup Condition="'$(BuildAllPackages)' == 'true'">
-      <!-- The list of packages we are not servicing -->
-    </ItemGroup>
-
-    <PropertyGroup>
-      <PackArgs>--no-restore --no-build --output $(PackageOutputPath)</PackArgs>
-      <PackArgs>$(PackArgs) $(MSBuildPassThroughPropertyList) /p:BaseOutputPath=$(IntermediateOutputForPackaging)</PackArgs>
-    </PropertyGroup>
-
-    <Exec Command="$(DotnetToolCommand) pack %(PackageProjects.Identity) $(PackArgs)"
-          Condition="'@(PackageProjects)' != ''" />
-  </Target>
 
 </Project>
