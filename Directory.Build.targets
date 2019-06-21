@@ -1,21 +1,130 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
-  <Target Name="CheckForBuildTools">
-    <Error Condition="!Exists('$(ToolsDir)')"
-           Text="The tools directory [$(ToolsDir)] does not exist. Please run sync in your enlistment to ensure the tools are installed before attempting to build an individual project." />
-  </Target>
   <Import Project="$(RepositoryEngineeringDir)/DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
 
   <!-- Provide default targets which can be hooked onto or overridden as necessary -->
-  <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
-  <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
-  <Target Name="Test" />
+  <Target Name="Pack" />
 
-  <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)Build.Common.targets') and '$(UseLiveBuildTools)' != 'true'" />
+  <UsingTask TaskName="GenerateGuidFromName" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+  <UsingTask TaskName="GenerateMsiVersion" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+  <UsingTask TaskName="GetTargetMachineInfo" AssemblyFile="$(LocalBuildToolsTaskFile)" />
+  <UsingTask TaskName="RegenerateReadmeTable" AssemblyFile="$(LocalBuildToolsTaskFile)" />
 
- <Target Name="BuildCustomTasks">
-    <Exec Command="$(DotnetToolCommand) build $(MSBuildThisFileDirectory)tools-local/tasks/core-setup.tasks.csproj" />
+  <!--
+    Arcade SDK versioning is defined by static properties in a targets file: work around this by
+    moving properties based on versioning into a target.
+  -->
+  <Target Name="GetProductVersions">
+    <PropertyGroup>
+      <IncludePreReleaseLabelInPackageVersion Condition="'$(DotNetFinalVersionKind)' != 'release'">true</IncludePreReleaseLabelInPackageVersion>
+      <IncludeBuildNumberInPackageVersion Condition="'$(StabilizePackageVersion)' != 'true'">true</IncludeBuildNumberInPackageVersion>
+
+      <ProductVersionSuffix Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">-$(VersionSuffix)</ProductVersionSuffix>
+      <ProductBandVersion Condition="'$(ProductBandVersion)' == ''">$(MajorVersion).$(MinorVersion)</ProductBandVersion>
+      <ProductionVersion Condition="'$(ProductionVersion)' == ''">$(ProductBandVersion).$(PatchVersion)</ProductionVersion>
+      <ProductVersion>$(ProductionVersion)$(ProductVersionSuffix)</ProductVersion>
+
+      <SharedFrameworkNugetVersion>$(ProductVersion)</SharedFrameworkNugetVersion>
+
+      <RuntimeDepsRpmVersion Condition="'$(RuntimeDepsRpmVersion)'==''">$(ProductVersion)</RuntimeDepsRpmVersion>
+      <RuntimeDepsDebVersion Condition="'$(RuntimeDepsDebVersion)'==''">$(ProductVersion)</RuntimeDepsDebVersion>
+
+      <NuGetVersion>$(SharedFrameworkNugetVersion)</NuGetVersion>
+
+      <!--
+        By default, we are always building the nuget packages for HostPolicy, HostFXR and
+        Dotnet/AppHost. Thus, the "UseShipped*" properties (below) are always set to false.
+
+        However, there are scenarios when some of these components will not change (e.g. during
+        servicing, we may only change HostPolicy but not HostFXR and Dotnet/AppHost). In such cases,
+        set the appropriate "UseShipped*" property below to true so that we will use the last shipped
+        version of the package.
+      -->
+
+      <!-- The host/apphost package versions are only updated whenever there is a change in the components -->
+      <UseShippedHostPackage>false</UseShippedHostPackage>
+      <HostVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductVersion)</HostVersion>
+      <HostVersion Condition="'$(UseShippedHostPackage)' == 'true'">2.0.0</HostVersion>
+
+      <!-- The AppHostVersion is used for all hosts that aren't dotnet.exe -->
+      <UseShippedAppHostPackage>false</UseShippedAppHostPackage>
+      <AppHostVersion Condition="'$(UseShippedAppHostPackage)' != 'true'">$(ProductVersion)</AppHostVersion>
+      <AppHostVersion Condition="'$(UseShippedAppHostPackage)' == 'true'">2.0.0</AppHostVersion>
+
+      <!--
+        The FXR Resolver package version is only updated whenever there is a change in it.
+        If there is ever a need to use a shipped version of the package, then set the property
+        below to true.
+      -->
+      <UseShippedHostResolverPackage>false</UseShippedHostResolverPackage>
+      <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductVersion)</HostResolverVersion>
+      <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' == 'true'">2.0.0</HostResolverVersion>
+
+      <!--
+        Host Policy package version is only updated whenever there is a change in it.
+        If there is ever a need to use a shipped version of the package, then set the property
+        below to true.
+      -->
+      <UseShippedHostPolicyPackage>false</UseShippedHostPolicyPackage>
+      <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' != 'true'">$(ProductVersion)</HostPolicyVersion>
+      <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' == 'true'">2.0.0</HostPolicyVersion>
+
+      <BinariesRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</BinariesRelativePath>
+      <InstallersRelativePath>Runtime/$(SharedFrameworkNugetVersion)/</InstallersRelativePath>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(OutputRid)' != ''">
+      <ProductMoniker>$(SharedFrameworkNugetVersion)-$(PackageTargetRid)</ProductMoniker>
+      <HostResolverVersionMoniker>$(HostResolverVersion)-$(PackageTargetRid)</HostResolverVersionMoniker>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <HostPackageVersion>$(HostVersion)</HostPackageVersion>
+      <HostPackageRelease>1</HostPackageRelease>
+      <HostResolverPackageVersion>$(HostResolverVersion)</HostResolverPackageVersion>
+      <HostResolverPackageRelease>1</HostResolverPackageRelease>
+      <RuntimePackageVersion>$(SharedFrameworkNugetVersion)</RuntimePackageVersion>
+      <RuntimePackageRelease>1</RuntimePackageRelease>
+      <RuntimeDepsDebPackageVersion>$(RuntimeDepsDebVersion)</RuntimeDepsDebPackageVersion>
+      <RuntimeDepsDebPackageRelease>1</RuntimeDepsDebPackageRelease>
+      <RuntimeDepsRpmPackageVersion>$(RuntimeDepsRpmVersion)</RuntimeDepsRpmPackageVersion>
+      <RuntimeDepsRpmPackageRelease>1</RuntimeDepsRpmPackageRelease>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(InstallerExtension)' == '.deb'">
+      <HostPackageVersion Condition="'$(UseShippedHostPackage)' != 'true'">$(ProductionVersion)</HostPackageVersion>
+      <HostPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</HostPackageVersion>
+
+      <HostResolverPackageVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductionVersion)</HostResolverPackageVersion>
+      <HostResolverPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</HostResolverPackageVersion>
+
+      <RuntimePackageVersion>$(ProductionVersion)</RuntimePackageVersion>
+      <RuntimePackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">$(ProductionVersion)~$(VersionSuffix)</RuntimePackageVersion>
+
+      <RuntimeDepsDebPackageVersion>$(ProductionVersion)</RuntimeDepsDebPackageVersion>
+      <RuntimeDepsDebPackageVersion Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true' AND '$(VersionSuffix)' !=''">$(ProductionVersion)~$(VersionSuffix)</RuntimeDepsDebPackageVersion>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="CreateHostMachineInfoFile">
+    <GetTargetMachineInfo>
+      <Output PropertyName="HostMachineRid" TaskParameter="RuntimeIdentifier" />
+    </GetTargetMachineInfo>
+
+    <PropertyGroup>
+      <HostMachineInfoPropsContent>
+&lt;Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003"&gt;
+  &lt;PropertyGroup&gt;
+    &lt;HostMachineRid&gt;$(HostMachineRid)&lt;/HostMachineRid&gt;
+  &lt;/PropertyGroup&gt;
+&lt;/Project&gt;
+      </HostMachineInfoPropsContent>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(HostMachineInfoProps)"
+                      Lines="$(HostMachineInfoPropsContent)"
+                      Overwrite="True" />
   </Target>
 
   <Target Name="GetLatestCommitHash"
