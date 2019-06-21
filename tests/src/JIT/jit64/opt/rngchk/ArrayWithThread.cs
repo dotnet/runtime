@@ -12,7 +12,8 @@ namespace ArrayWithThread
     internal class Class1
     {
         public static int val = 0;
-        public static AutoResetEvent myResetEvent = new AutoResetEvent(false);
+        public static AutoResetEvent myResetEvent1 = new AutoResetEvent(false);
+        public static ManualResetEvent myResetEvent2 = new ManualResetEvent(false);
         private static int Main()
         {
             int retVal = 100;
@@ -38,7 +39,8 @@ namespace ArrayWithThread
         private static bool DoTest(RngTest Test)
         {
             bool bResult = false;
-            myResetEvent.Reset();
+            myResetEvent1.Reset();
+            myResetEvent2.Reset();
             try
             {
                 Thread t = new Thread(new ThreadStart(Class1.ThreadFunc));
@@ -58,8 +60,9 @@ namespace ArrayWithThread
         }
         private static void ThreadFunc()
         {
-            myResetEvent.WaitOne();
+            myResetEvent1.WaitOne();
             Class1.val = 101;
+            myResetEvent2.Set();
             return;
         }
     }
@@ -71,8 +74,8 @@ namespace ArrayWithThread
             int[] numbers = new int[100];
             for (; index < numbers.Length; index++)
             {
-                Class1.myResetEvent.Set();
-                Thread.Sleep(1);
+                Class1.myResetEvent1.Set();
+                Class1.myResetEvent2.WaitOne();
                 numbers[index] = index * index;
             }
         }
@@ -85,8 +88,8 @@ namespace ArrayWithThread
             upper = numbers.Length;
             for (; index < upper; index++)
             {
-                Class1.myResetEvent.Set();
-                Thread.Sleep(1);
+                Class1.myResetEvent1.Set();
+                Class1.myResetEvent2.WaitOne();
                 numbers[index] = index * index;
             }
         }
