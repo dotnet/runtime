@@ -231,7 +231,18 @@
 
   <PropertyGroup>
     <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
-    <UseSourceLink>true</UseSourceLink>
+  </PropertyGroup>
+
+  <!--
+    Always disable sourcelink for now:
+    error MSB4057: The target "InitializeSourceControlInformationFromSourceControlManager" does not exist in the project. [/work/src/corehost/build.proj]
+  -->
+  <PropertyGroup Condition="'$(DisableSourceLink)' == 'true' or true">
+    <EnableSourceLink>false</EnableSourceLink>
+    <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+    <DeterministicSourcePaths>false</DeterministicSourcePaths>
+    <!-- Normally set by sourcelink, and needed by the Pack targets -->
+    <RepositoryUrl>https://github.com/dotnet/core-setup</RepositoryUrl>
   </PropertyGroup>
 
   <!-- Set up Default symbol and optimization for Configuration -->
