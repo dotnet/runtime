@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <AssemblyName>HostActivationTests</AssemblyName>
-    <PackageId>HostActivationTests</PackageId>
+    <AssemblyName>HostActivation.Tests</AssemblyName>
+    <PackageId>HostActivation.Tests</PackageId>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <DefineConstants Condition="'$(OSGroup)' == 'Windows_NT'">$(DefineConstants);WINDOWS</DefineConstants>
   </PropertyGroup>
