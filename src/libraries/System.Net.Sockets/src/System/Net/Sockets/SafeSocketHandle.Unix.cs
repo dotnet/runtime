@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -196,16 +195,12 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        private bool InnerReleaseHandle()
+        private void InnerReleaseHandle()
         {
-            bool aborted = false;
-
             if (_asyncContext != null)
             {
-                aborted = _asyncContext.StopAndAbort();
+                _asyncContext.Close();
             }
-
-            return aborted;
         }
 
         internal sealed partial class InnerSafeCloseSocket : SafeHandleMinusOneIsInvalid
@@ -248,10 +243,10 @@ namespace System.Net.Sockets
             {
                 Interop.Error errorCode = Interop.Error.SUCCESS;
 
-                // If _abortive was set to false in Close, it's safe to block here, which means
+                // If _blockable was set in BlockingRelease, it's safe to block here, which means
                 // we can honor the linger options set on the socket.  It also means closesocket() might return WSAEWOULDBLOCK, in which
                 // case we need to do some recovery.
-                if (!_abortive)
+                if (_blockable)
                 {
                     if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle} Following 'blockable' branch.");
 
@@ -273,7 +268,7 @@ namespace System.Net.Sockets
                     // The socket could not be made blocking; fall through to the regular abortive close.
                 }
 
-                // By default or non abortive path failed, set linger timeout to zero to get an abortive close (RST).
+                // By default or if CloseAsIs() path failed, set linger timeout to zero to get an abortive close (RST).
                 var linger = new Interop.Sys.LingerOption
                 {
                     OnOff = 1,
@@ -362,43 +357,6 @@ namespace System.Net.Sockets
                 var res = new InnerSafeCloseSocket();
                 res.SetHandle(acceptedFd);
                 return res;
-            }
-
-            internal unsafe bool TryUnblockSocket()
-            {
-                // Calling 'close' on a socket that has pending blocking calls (e.g. recv, send, accept, ...)
-                // may block indefinitly. This is a best effort attempt to not get blocked and make those operations return.
-                // We need to ensure we keep the expected TCP behavior that is observed by the socket peer (FIN vs RST close).
-                // What we do here isn't specified by POSIX and doesn't work on all OSes.
-                // On Linux this works well.
-                // On OSX, TCP connections will be closed with a FIN close instead of an abortive RST close.
-                // And, pending TCP connect operations and UDP receive are not abortable.
-
-                // Don't touch sockets which don't have the CLOEXEC flag set. These may be shared
-                // with other processes and we want to avoid disconnecting them.
-                int fdFlags = Interop.Sys.Fcntl.GetFD(this);
-                if (fdFlags == 0)
-                {
-                    return false;
-                }
-
-                int type = 0;
-                int optLen = sizeof(int);
-                Interop.Error err = Interop.Sys.GetSockOpt(this, SocketOptionLevel.Socket, SocketOptionName.Type, (byte*)&type, &optLen);
-                Debug.Assert(err == Interop.Error.SUCCESS);
-                if (err == Interop.Error.SUCCESS)
-                {
-                    if (type == (int)SocketType.Stream)
-                    {
-                        Interop.Sys.Disconnect(this);
-                    }
-                    else
-                    {
-                        Interop.Sys.Shutdown(this, SocketShutdown.Both);
-                    }
-                }
-
-                return true;
             }
         }
     }

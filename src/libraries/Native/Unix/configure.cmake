@@ -369,11 +369,6 @@ check_symbol_exists(
     "sys/types.h;sys/event.h"
     HAVE_KQUEUE)
 
-check_symbol_exists(
-    disconnectx
-    "sys/socket.h"
-    HAVE_DISCONNECTX)
-
 set(CMAKE_REQUIRED_FLAGS "-Werror -Wsign-conversion")
 check_c_source_compiles(
      "
