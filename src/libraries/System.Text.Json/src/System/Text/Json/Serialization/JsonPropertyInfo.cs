@@ -241,10 +241,11 @@ namespace System.Text.Json
 
         public abstract Type GetConcreteType(Type type);
 
-        private static void GetOriginalValues(ref Utf8JsonReader reader, out JsonTokenType tokenType, out int depth)
+        private static void GetOriginalValues(ref Utf8JsonReader reader, out JsonTokenType tokenType, out int depth, out long bytesConsumed)
         {
             tokenType = reader.TokenType;
             depth = reader.CurrentDepth;
+            bytesConsumed = reader.BytesConsumed;
         }
 
         public virtual void GetPolicies()
@@ -335,13 +336,13 @@ namespace System.Text.Json
             {
                 // Forward the setter to the value-based JsonPropertyInfo.
                 JsonPropertyInfo propertyInfo = ElementClassInfo.GetPolicyProperty();
-                propertyInfo.OnReadEnumerable(tokenType, ref state, ref reader);
+                propertyInfo.ReadEnumerable(tokenType, ref state, ref reader);
             }
             else
             {
-                GetOriginalValues(ref reader, out JsonTokenType originalTokenType, out int originalDepth);
+                GetOriginalValues(ref reader, out JsonTokenType originalTokenType, out int originalDepth, out long bytesConsumed);
                 OnRead(tokenType, ref state, ref reader);
-                VerifyRead(originalTokenType, originalDepth, ref state, ref reader);
+                VerifyRead(originalTokenType, originalDepth, bytesConsumed, ref state, ref reader);
             }
         }
 
@@ -349,9 +350,9 @@ namespace System.Text.Json
         {
             Debug.Assert(ShouldDeserialize);
 
-            GetOriginalValues(ref reader, out JsonTokenType originalTokenType, out int originalDepth);
+            GetOriginalValues(ref reader, out JsonTokenType originalTokenType, out int originalDepth, out long bytesConsumed);
             OnReadEnumerable(tokenType, ref state, ref reader);
-            VerifyRead(originalTokenType, originalDepth, ref state, ref reader);
+            VerifyRead(originalTokenType, originalDepth, bytesConsumed, ref state, ref reader);
         }
 
         public JsonClassInfo RuntimeClassInfo
@@ -374,9 +375,8 @@ namespace System.Text.Json
         public bool ShouldSerialize { get; private set; }
         public bool ShouldDeserialize { get; private set; }
 
-        private void VerifyRead(JsonTokenType originalTokenType, int originalDepth, ref ReadStack state, ref Utf8JsonReader reader)
+        private void VerifyRead(JsonTokenType originalTokenType, int originalDepth, long bytesConsumed, ref ReadStack state, ref Utf8JsonReader reader)
         {
-            // We don't have a single call to ThrowHelper since the line number captured during throw may be useful for diagnostics.
             switch (originalTokenType)
             {
                 case JsonTokenType.StartArray:
@@ -397,9 +397,8 @@ namespace System.Text.Json
 
                 default:
                     // Reading a single property value.
-                    if (reader.TokenType != originalTokenType)
+                    if (reader.TokenType != originalTokenType || reader.BytesConsumed != bytesConsumed)
                     {
-                        // todo issue #38550 blocking this: originalDepth != reader.CurrentDepth + 1
                         ThrowHelper.ThrowJsonException_SerializationConverterRead(reader, state.JsonPath, ConverterBase.ToString());
                     }
 
@@ -424,7 +423,7 @@ namespace System.Text.Json
             {
                 // Forward the setter to the value-based JsonPropertyInfo.
                 JsonPropertyInfo propertyInfo = ElementClassInfo.GetPolicyProperty();
-                propertyInfo.OnWriteEnumerable(ref state.Current, writer);
+                propertyInfo.WriteEnumerable(ref state, writer);
             }
             else
             {

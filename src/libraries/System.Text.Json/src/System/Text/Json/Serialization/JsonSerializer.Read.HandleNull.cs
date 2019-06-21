@@ -37,7 +37,7 @@ namespace System.Text.Json
 
             if (state.Current.IsEnumerableProperty || state.Current.IsDictionaryProperty || state.Current.IsIDictionaryConstructibleProperty)
             {
-                bool setPropertyToNull = !state.Current.PropertyInitialized;
+                bool setPropertyToNull = !state.Current.CollectionPropertyInitialized;
                 ApplyObjectToEnumerable(null, ref state, ref reader, setPropertyDirectly: setPropertyToNull);
                 return false;
             }

@@ -161,8 +161,8 @@ namespace System.Text.Json.Serialization.Tests
             }
             catch (JsonException ex)
             {
-                Assert.Contains("$.Level2.Level3s[0]", ex.ToString());
-                Assert.Equal(ex.Path, "$.Level2.Level3s[0]");
+                Assert.Contains("$.Level2.Level3s[1]", ex.ToString());
+                Assert.Equal(ex.Path, "$.Level2.Level3s[1]");
             }
         }
 

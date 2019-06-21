@@ -64,6 +64,10 @@ namespace System.Text.Json.Serialization.Tests
 
             obj = JsonSerializer.Parse<object>(@"null");
             Assert.Null(obj);
+
+            obj = JsonSerializer.Parse<object>(@"[]");
+            element = (JsonElement)obj;
+            Assert.Equal(JsonValueType.Array, element.Type);
         }
 
         [Fact]
