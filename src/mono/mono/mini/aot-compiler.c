@@ -1123,8 +1123,12 @@ arch_init (MonoAotCompile *acfg)
 		if (!(acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "thumb")))
 			g_string_append (acfg->llc_args, " -march=arm");
 
-		if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "ios"))
+		if (acfg->aot_opts.mtriple && strstr (acfg->aot_opts.mtriple, "ios")) {
 			g_string_append (acfg->llc_args, " -mattr=+v7");
+#ifdef LLVM_API_VERSION > 100
+			g_string_append (acfg->llc_args, " -exception-model=dwarf");
+#endif
+		}
 
 #if defined(ARM_FPU_VFP_HARD)
 		g_string_append (acfg->llc_args, " -mattr=+vfp2,-neon,+d16 -float-abi=hard");
