@@ -69,11 +69,11 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void Ctor_LargeSkipFrames_GetFramesReturnsNull()
+        public void Ctor_LargeSkipFrames_GetFramesReturnsEmtpy()
         {
             var stackTrace = new StackTrace(int.MaxValue);
             Assert.Equal(0, stackTrace.FrameCount);
-            Assert.Null(stackTrace.GetFrames());
+            Assert.Empty(stackTrace.GetFrames());
         }
 
         [Theory]
@@ -96,11 +96,11 @@ namespace System.Diagnostics.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public void Ctor_LargeSkipFramesFNeedFileInfo_GetFramesReturnsNull(bool fNeedFileInfo)
+        public void Ctor_LargeSkipFramesFNeedFileInfo_GetFramesReturnsEmpty(bool fNeedFileInfo)
         {
             var stackTrace = new StackTrace(int.MaxValue, fNeedFileInfo);
             Assert.Equal(0, stackTrace.FrameCount);
-            Assert.Null(stackTrace.GetFrames());
+            Assert.Empty(stackTrace.GetFrames());
         }
 
         [Fact]
@@ -111,12 +111,12 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void Ctor_EmptyException_GetFramesReturnsNull()
+        public void Ctor_EmptyException_GetFramesReturnsEmpty()
         {
             var exception = new Exception();
             var stackTrace = new StackTrace(exception);
             Assert.Equal(0, stackTrace.FrameCount);
-            Assert.Null(stackTrace.GetFrames());
+            Assert.Empty(stackTrace.GetFrames());
             Assert.Null(stackTrace.GetFrame(0));
         }
 
@@ -137,7 +137,7 @@ namespace System.Diagnostics.Tests
             var exception = new Exception();
             var stackTrace = new StackTrace(exception, fNeedFileInfo);
             Assert.Equal(0, stackTrace.FrameCount);
-            Assert.Null(stackTrace.GetFrames());
+            Assert.Empty(stackTrace.GetFrames());
             Assert.Null(stackTrace.GetFrame(0));
         }
 
@@ -167,7 +167,7 @@ namespace System.Diagnostics.Tests
         {
             var stackTrace = new StackTrace(InvokeException(), int.MaxValue);
             Assert.Equal(0, stackTrace.FrameCount);
-            Assert.Null(stackTrace.GetFrames());
+            Assert.Empty(stackTrace.GetFrames());
         }
 
         [Fact]
@@ -175,7 +175,7 @@ namespace System.Diagnostics.Tests
         {
             var stackTrace = new StackTrace(new Exception(), 0);
             Assert.Equal(0, stackTrace.FrameCount);
-            Assert.Null(stackTrace.GetFrames());
+            Assert.Empty(stackTrace.GetFrames());
             Assert.Null(stackTrace.GetFrame(0));
         }
 
@@ -208,7 +208,7 @@ namespace System.Diagnostics.Tests
         {
             var stackTrace = new StackTrace(InvokeException(), int.MaxValue);
             Assert.Equal(0, stackTrace.FrameCount);
-            Assert.Null(stackTrace.GetFrames());
+            Assert.Empty(stackTrace.GetFrames());
         }
 
         [Theory]
@@ -218,7 +218,7 @@ namespace System.Diagnostics.Tests
         {
             var stackTrace = new StackTrace(new Exception(), 0, fNeedFileInfo);
             Assert.Equal(0, stackTrace.FrameCount);
-            Assert.Null(stackTrace.GetFrames());
+            Assert.Empty(stackTrace.GetFrames());
             Assert.Null(stackTrace.GetFrame(0));
         }
 
