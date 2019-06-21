@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{C38217EF-88F4-4D56-9F58-780BE1DDAFF6}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Diagnostics.StackTrace.cs" />
