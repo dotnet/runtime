@@ -23,12 +23,12 @@ namespace System.Text.Json
             Debug.Assert(jsonPropertyInfo != null);
 
             // A nested object or dictionary so push new frame.
-            if (state.Current.PropertyInitialized)
+            if (state.Current.CollectionPropertyInitialized)
             {
                 state.Push();
                 state.Current.JsonClassInfo = jsonPropertyInfo.ElementClassInfo;
                 state.Current.InitializeJsonPropertyInfo();
-                state.Current.PropertyInitialized = true;
+                state.Current.CollectionPropertyInitialized = true;
 
                 ClassType classType = state.Current.JsonClassInfo.ClassType;
                 if (classType == ClassType.Value &&
@@ -56,7 +56,7 @@ namespace System.Text.Json
                 return;
             }
 
-            state.Current.PropertyInitialized = true;
+            state.Current.CollectionPropertyInitialized = true;
 
             if (state.Current.IsProcessingIDictionaryConstructible)
             {

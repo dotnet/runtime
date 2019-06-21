@@ -149,16 +149,28 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializer.Parse<EmptyClass>(SimpleTestClassWithNulls.s_json);
         }
 
-        [Fact]
-        public static void ReadObjectFail()
+        [Theory]
+        [InlineData("blah", true)]
+        [InlineData("null.", true)]
+        [InlineData("{{}", true)]
+        [InlineData("{", true)]
+        [InlineData("}", true)]
+        [InlineData("", true)]
+        [InlineData("true", false)]
+        [InlineData("[]", false)]
+        [InlineData("[{}]", false)]
+        public static void ReadObjectFail(string json, bool failsOnObject)
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>("blah"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<object>("blah"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>("true"));
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>("null."));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<object>("null."));
+            if (failsOnObject)
+            {
+                Assert.Throws<JsonException>(() => JsonSerializer.Parse<object>(json));
+            }
+            else
+            {
+                Assert.IsType<JsonElement>(JsonSerializer.Parse<object>(json));
+            }
         }
 
         [Fact]
@@ -178,14 +190,6 @@ namespace System.Text.Json.Serialization.Tests
             {
                 get { return _name; }
             }
-        }
-
-        [Fact]
-        public static void ParseUntyped()
-        {
-            // Not supported until we are able to deserialize into JsonElement.
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>("[]"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<object>("[]"));
         }
 
         [Fact]

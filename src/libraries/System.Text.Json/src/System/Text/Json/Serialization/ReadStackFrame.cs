@@ -29,7 +29,7 @@ namespace System.Text.Json
         public IList TempEnumerableValues;
 
         // Has an array or dictionary property been initialized.
-        public bool PropertyInitialized;
+        public bool CollectionPropertyInitialized;
 
         // Support IDictionary constructible types, i.e. types that we
         // support by passing and IDictionary to their constructors:
@@ -42,6 +42,9 @@ namespace System.Text.Json
 
         // The current JSON data for a property does not match a given POCO, so ignore the property (recursively).
         public bool Drain;
+
+        public bool IsCollectionForClass => IsEnumerable || IsDictionary || IsIDictionaryConstructible;
+        public bool IsCollectionForProperty => IsEnumerableProperty || IsDictionaryProperty || IsIDictionaryConstructibleProperty;
 
         public bool IsIDictionaryConstructible => JsonClassInfo.ClassType == ClassType.IDictionaryConstructible;
         public bool IsDictionary => JsonClassInfo.ClassType == ClassType.Dictionary;
@@ -69,35 +72,40 @@ namespace System.Text.Json
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (JsonPropertyInfo == null || SkipProperty)
+                if (SkipProperty)
                 {
                     return false;
                 }
 
-                if (PropertyInitialized)
+                if (CollectionPropertyInitialized)
                 {
-                    if ((IsEnumerable || IsDictionary || IsIDictionaryConstructible) &&
-                        JsonClassInfo.ElementClassInfo.ClassType == ClassType.Unknown)
+                    ClassType elementType;
+
+                    if (IsCollectionForProperty)
                     {
-                        return true;
+                        elementType = JsonPropertyInfo.ElementClassInfo.ClassType;
                     }
-                    else if ((IsEnumerableProperty || IsDictionaryProperty || IsIDictionaryConstructibleProperty) &&
-                        JsonPropertyInfo.ElementClassInfo.ClassType == ClassType.Unknown)
+                    else
                     {
-                        return true;
+                        Debug.Assert(IsCollectionForClass);
+                        elementType = JsonClassInfo.ElementClassInfo.ClassType;
                     }
+
+                    return (elementType == ClassType.Value || elementType == ClassType.Unknown);
                 }
 
-                // We've got a property info. If we're a Value or polymorphic Value
-                // (ClassType.Unknown), return true.
-                ClassType type = JsonPropertyInfo.ClassType;
-                return type == ClassType.Value || type == ClassType.Unknown ||
-                    KeyName != null  && (
-                    (IsDictionary && JsonClassInfo.ElementClassInfo.ClassType == ClassType.Unknown) ||
-                    (IsDictionaryProperty && JsonPropertyInfo.ElementClassInfo.ClassType == ClassType.Unknown) ||
-                    (IsIDictionaryConstructible && JsonClassInfo.ElementClassInfo.ClassType == ClassType.Unknown) ||
-                    (IsIDictionaryConstructibleProperty && JsonPropertyInfo.ElementClassInfo.ClassType == ClassType.Unknown)
-                    );
+                ClassType type;
+                if (JsonPropertyInfo == null)
+                {
+                    type = JsonClassInfo.ClassType;
+                }
+                else
+                {
+                    type = JsonPropertyInfo.ClassType;
+                }
+
+                // If we're a Value or polymorphic Value (ClassType.Unknown), return true.
+                return type == ClassType.Value || type == ClassType.Unknown;
             }
         }
 
@@ -130,7 +138,7 @@ namespace System.Text.Json
 
         public void ResetProperty()
         {
-            PropertyInitialized = false;
+            CollectionPropertyInitialized = false;
             JsonPropertyInfo = null;
             TempEnumerableValues = null;
             TempDictionaryValues = null;
@@ -183,12 +191,12 @@ namespace System.Text.Json
 
         public Type GetElementType()
         {
-            if (IsEnumerableProperty || IsDictionaryProperty || IsIDictionaryConstructibleProperty)
+            if (IsCollectionForProperty)
             {
                 return JsonPropertyInfo.ElementClassInfo.Type;
             }
 
-            if (IsEnumerable || IsDictionary || IsIDictionaryConstructible)
+            if (IsCollectionForClass)
             {
                 return JsonClassInfo.ElementClassInfo.Type;
             }

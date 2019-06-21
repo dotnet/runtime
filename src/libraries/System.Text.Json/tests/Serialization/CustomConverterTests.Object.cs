@@ -11,7 +11,7 @@ namespace System.Text.Json.Serialization.Tests
         /// <summary>
         /// A converter that uses Object as it's type.
         /// </summary>
-        private class ObjectConverter : JsonConverter<object>
+        private class ObjectToCustomerOrIntConverter : JsonConverter<object>
         {
             public override bool CanConvert(Type typeToConvert)
             {
@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void CustomObjectConverter()
         {
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new ObjectConverter());
+            options.Converters.Add(new ObjectToCustomerOrIntConverter());
 
             {
                 var customer = new Customer();
@@ -70,13 +70,83 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
-                Customer obj = JsonSerializer.Parse<Customer>("{}", options);
-                Assert.Equal("HelloWorld", obj.Name);
+                object obj = JsonSerializer.Parse<Customer>("{}", options);
+                Assert.IsType<Customer>(obj);
+                Assert.Equal("HelloWorld", ((Customer)obj).Name);
+            }
+
+            {
+                // The converter doesn't handle object.
+                object obj = JsonSerializer.Parse<object>("{}", options);
+                Assert.IsType<JsonElement>(obj);
             }
 
             {
                 int obj = JsonSerializer.Parse<int>("0", options);
                 Assert.Equal(42, obj);
+            }
+        }
+
+        /// <summary>
+        /// A converter that converters True and False to a bool.
+        /// </summary>
+        private class ObjectToBoolConverter : JsonConverter<object>
+        {
+            public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType == JsonTokenType.True)
+                {
+                    return true;
+                }
+
+                if (reader.TokenType == JsonTokenType.False)
+                {
+                    return false;
+                }
+
+                // Use JsonElement as fallback.
+                var converter = options.GetConverter(typeof(JsonElement)) as JsonConverter<JsonElement>;
+                if (converter != null)
+                {
+                    return converter.Read(ref reader, typeToConvert, options);
+                }
+
+                // Shouldn't get here.
+                throw new JsonException();
+            }
+
+            public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
+            {
+                throw new InvalidOperationException("Directly writing object not supported");
+            }
+
+            public override void Write(Utf8JsonWriter writer, object value, JsonEncodedText propertyName, JsonSerializerOptions options)
+            {
+                throw new InvalidOperationException("Directly writing object not supported");
+            }
+        }
+
+        [Fact]
+        public static void CustomObjectBoolConverter()
+        {
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new ObjectToBoolConverter());
+
+            {
+                object obj = JsonSerializer.Parse<object>("true", options);
+                Assert.IsType<bool>(obj);
+                Assert.True((bool)obj);
+            }
+
+            {
+                object obj = JsonSerializer.Parse<object>("false", options);
+                Assert.IsType<bool>(obj);
+                Assert.False((bool)obj);
+            }
+
+            {
+                object obj = JsonSerializer.Parse<object>("{}", options);
+                Assert.IsType<JsonElement>(obj);
             }
         }
     }
