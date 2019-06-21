@@ -1,21 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="..\Directory.Build.props" />
+<Project>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
 
   <PropertyGroup>
-    <TestDir>$(ProjectDir)/src/test</TestDir>
-    <TestAssetsDir>$(TestDir)/Assets</TestAssetsDir>
+    <TestDir>$(ProjectDir)src\test\</TestDir>
+    <TestAssetsDir>$(TestDir)Assets\</TestAssetsDir>
+    <TestRestorePackagesPath>$(ObjDir)TestPackageCache\</TestRestorePackagesPath>
   </PropertyGroup>
 
-  <ItemGroup>
-    <TestProjects Include="$(TestDir)/HostActivation.Tests/HostActivation.Tests.csproj" />
-    <TestProjects Include="$(TestDir)/Microsoft.Extensions.DependencyModel.Tests/Microsoft.Extensions.DependencyModel.Tests.csproj" />
-    <TestProjects Include="$(TestDir)/BundleTests/Microsoft.NET.HostModel.Bundle.Tests/Microsoft.NET.HostModel.Bundle.Tests.csproj" />
-    <TestProjects Include="$(TestDir)/BundleTests/AppHost.Bundle.Tests/AppHost.Bundle.Tests.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <RestoreTestFallbackSource Include="$(CoreHostOutputDir.TrimEnd('/').TrimEnd('\'))" />
-    <RestoreTestFallbackSource Include="$(PackagesBasePath)packages" />
-    <RestoreTestSource Include="@(DotnetSourceList)" />
-  </ItemGroup>
 </Project>

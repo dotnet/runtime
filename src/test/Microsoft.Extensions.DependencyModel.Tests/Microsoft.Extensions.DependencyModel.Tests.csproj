@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <Description>Microsoft.DotNet.Tools.Tests.Utilities Class Library</Description>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
     <AssemblyName>Microsoft.Extensions.DependencyModel.Tests</AssemblyName>
-    <AssemblyOriginatorKeyFile>../../../tools-local/setuptools/Key.snk</AssemblyOriginatorKeyFile>
+    <StrongNameKeyId>MicrosoftAspNetCore</StrongNameKeyId>
     <SignAssembly>true</SignAssembly>
     <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
     <PackageId>Microsoft.Extensions.DependencyModel.Tests</PackageId>
@@ -12,9 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0" />
-    <PackageReference Include="xunit" Version="2.2.0" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />
     <PackageReference Include="Microsoft.DotNet.InternalAbstractions" Version="1.0.0" />
     <PackageReference Include="FluentAssertions" Version="4.19.4" />
     <PackageReference Include="Moq" Version="4.7.142" />
@@ -23,5 +20,16 @@
     <ProjectReference Include="..\..\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
     <ProjectReference Include="..\..\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
   </ItemGroup>
+
+  <!--
+    This test project gets internals from the implementation project, which uses the
+    System.Text.Json source package. This results in duplicate types. Resolve this by removing the
+    reference to System.Text.Json here in the test project.
+  -->
+  <Target Name="RemoveSystemTextJsonRef" AfterTargets="ResolveTargetingPacks">
+    <ItemGroup>
+      <Reference Remove="@(Reference)" Condition="'%(Reference.Filename)' == 'System.Text.Json'" />
+    </ItemGroup>
+  </Target>
 
 </Project>
