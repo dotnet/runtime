@@ -1140,21 +1140,7 @@ namespace System.Reflection.Emit
 
         public override Type MakeArrayType(int rank)
         {
-            if (rank <= 0)
-                throw new IndexOutOfRangeException();
-
-            string szrank = "";
-            if (rank == 1)
-            {
-                szrank = "*";
-            }
-            else
-            {
-                for (int i = 1; i < rank; i++)
-                    szrank += ",";
-            }
-
-            string s = string.Format(CultureInfo.InvariantCulture, "[{0}]", szrank); // [,,]
+            string s = GetRankString(rank);
             return SymbolType.FormCompoundType(s, this, 0)!;
         }
 
