@@ -5,6 +5,7 @@
     <!-- CS0067: unused event, reference assembly does not care -->
     <NoWarn>$(NoWarn);0067</NoWarn>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Diagnostics.Tracing.cs" />
