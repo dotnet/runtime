@@ -193,7 +193,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         public void WritesRuntimeLibrariesToRuntimeTarget()
         {
             var group = new RuntimeAssetGroup("win7-x64", "Banana.Win7-x64.dll");
-            WritesRuntimeLibrariesToRuntimeTarget(group);
+            WritesRuntimeLibrariesToRuntimeTargetCore(group);
         }
 
         [Fact]
@@ -202,12 +202,12 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             RuntimeFile[] runtimeFile = { new RuntimeFile("Banana.Win7-x64.dll", "1.2.3", "7.8.9") };
             var group = new RuntimeAssetGroup("win7-x64", runtimeFile);
 
-            var runtimeAssembly = WritesRuntimeLibrariesToRuntimeTarget(group);
+            var runtimeAssembly = WritesRuntimeLibrariesToRuntimeTargetCore(group);
             runtimeAssembly.Should().HavePropertyValue("assemblyVersion", "1.2.3");
             runtimeAssembly.Should().HavePropertyValue("fileVersion", "7.8.9");
         }
 
-        private JObject WritesRuntimeLibrariesToRuntimeTarget(RuntimeAssetGroup group)
+        private JObject WritesRuntimeLibrariesToRuntimeTargetCore(RuntimeAssetGroup group)
         {
             var result = Save(Create(
                             "Target",
