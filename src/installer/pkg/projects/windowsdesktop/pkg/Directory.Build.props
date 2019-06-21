@@ -6,7 +6,7 @@
     <ProductBrandPrefix>Microsoft Windows Desktop</ProductBrandPrefix>
   </PropertyGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., dir.props))\dir.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
 
   <PropertyGroup>
     <FrameworkListName>Windows Desktop $(NETCoreAppFrameworkVersion)</FrameworkListName>

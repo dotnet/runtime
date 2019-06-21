@@ -114,5 +114,5 @@
            Condition="'@(_MissingBlobNames)' != ''" />
   </Target>
 
-  <Import Project="..\dir.targets" />
+  <Import Project="..\Directory.Build.targets" />
 </Project>

@@ -4,7 +4,7 @@
     <ExcludeDepprojReference>true</ExcludeDepprojReference>
   </PropertyGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
 
   <PropertyGroup>
     <!-- Exclude runtime.json from the package. -->
@@ -20,7 +20,7 @@
     <GenerateRuntimeGraph>true</GenerateRuntimeGraph>
 
     <!--
-      Make sure the installer file is generated with the name from /dir.props. This allows the
+      Make sure the installer file is generated with the name from /Directory.Build.props. This allows the
       existing infra to bundle it without any changes.
     -->
     <InstallerFile>$(SharedFrameworkInstallerFile)</InstallerFile>
@@ -37,7 +37,7 @@
     <Dependency Include="Microsoft.NETCore.Platforms" Version="$(MicrosoftNETCorePlatformsPackageVersion)" />
   </ItemGroup>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
 
   <!--
     Use the internal package to generate the shared framework. Allows the shared framework to
