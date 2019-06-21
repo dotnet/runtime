@@ -20,23 +20,23 @@ namespace System.Reflection.Emit
         Return = 7,
         Throw = 8,
     }
-    public readonly partial struct OpCode : IEquatable<System.Reflection.Emit.OpCode>
+    public readonly partial struct OpCode : System.IEquatable<System.Reflection.Emit.OpCode>
     {
-        private readonly object _dummy;
+        private readonly int _dummyPrimitive;
         public System.Reflection.Emit.FlowControl FlowControl { get { throw null; } }
-        public string Name { get { throw null; } }
+        public string? Name { get { throw null; } }
         public System.Reflection.Emit.OpCodeType OpCodeType { get { throw null; } }
         public System.Reflection.Emit.OperandType OperandType { get { throw null; } }
         public int Size { get { throw null; } }
         public System.Reflection.Emit.StackBehaviour StackBehaviourPop { get { throw null; } }
         public System.Reflection.Emit.StackBehaviour StackBehaviourPush { get { throw null; } }
         public short Value { get { throw null; } }
-        public override bool Equals(object obj) { throw null; }
+        public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.Reflection.Emit.OpCode obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Reflection.Emit.OpCode a, System.Reflection.Emit.OpCode b) { throw null; }
         public static bool operator !=(System.Reflection.Emit.OpCode a, System.Reflection.Emit.OpCode b) { throw null; }
-        public override string ToString() { throw null; }
+        public override string? ToString() { throw null; }
     }
     public partial class OpCodes
     {
