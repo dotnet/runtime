@@ -2350,9 +2350,16 @@ void * MAPMapPEFile(HANDLE hFile)
 
     if (loadedBase == NULL)
     {
+        void *usedBaseAddr = NULL;
+#ifdef FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
+        if (g_useDefaultBaseAddr)
+        {
+            usedBaseAddr = (void*) preferredBase;
+        }
+#endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
         // MAC64 requires we pass MAP_SHARED (or MAP_PRIVATE) flags - otherwise, the call is failed.
         // Refer to mmap documentation at http://www.manpagez.com/man/2/mmap/ for details.
-        loadedBase = mmap(NULL, virtualSize, PROT_NONE, MAP_ANON|MAP_PRIVATE, -1, 0);
+        loadedBase = mmap(usedBaseAddr, virtualSize, PROT_NONE, MAP_ANON|MAP_PRIVATE, -1, 0);
     }
 
     if (MAP_FAILED == loadedBase)
