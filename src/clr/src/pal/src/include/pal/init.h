@@ -41,6 +41,8 @@ extern Volatile<INT> init_count;
 
 extern SIZE_T g_defaultStackSize;
 
+extern BOOL g_useDefaultBaseAddr;
+
 /*++
 MACRO:
   PALIsInitialized

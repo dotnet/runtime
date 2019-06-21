@@ -1282,6 +1282,12 @@ void ZapImage::CalculateZapBaseAddress()
         }
     }
 
+    if (m_zapper->GetCustomBaseAddress() != 0)
+    {
+        //set baseAddress here from crossgen options
+        baseAddress = m_zapper->GetCustomBaseAddress();
+    }
+
     // Round to a multiple of 64K
     // 64K is the allocation granularity of VirtualAlloc. (Officially this number is not a constant -
     // we should be querying the system for its allocation granularity, but we do this all over the place
