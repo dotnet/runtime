@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{F24D3391-2928-4E83-AADE-B34423498750}</ProjectGuid>
     <!-- To allow this library to work on V4.5 runtimes and other old platforms
@@ -62,6 +62,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
+    <Reference Include="System.Resources.ResourceManager" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'net45' OR '$(TargetGroup)' == 'net46' OR '$(TargetGroup)' == 'netfx'">
     <Compile Include="AssemblyInfo.netfx.cs" />
