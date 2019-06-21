@@ -122,3 +122,13 @@
 
 # requires corefx test updates: https://github.com/dotnet/corefx/pull/38692
 -nomethod System.Tests.StringTests.CasingAsSpan_NullCulture_ThrowsArgumentNullException
+
+# requires corefx test updates: https://github.com/dotnet/corefx/pull/38747
+-nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_EmptyException_FNeedFileInfo
+-nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_EmptyException_GetFramesReturnsNull
+-nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_EmptyException_SkipFrames
+-nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_EmptyException_SkipFrames_FNeedFileInfo
+-nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_LargeSkipFrames
+-nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_LargeSkipFrames_FNeedFileInfo
+-nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_LargeSkipFrames_GetFramesReturnsNull
+-nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_LargeSkipFramesFNeedFileInfo_GetFramesReturnsNull
