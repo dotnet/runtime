@@ -312,6 +312,7 @@ HANDLES(ENUM_7, "get_value", ves_icall_System_Enum_get_value, MonoObject, 1, (Mo
 
 ICALL_TYPE(ENV, "System.Environment", ENV_1)
 NOHANDLES(ICALL(ENV_1, "Exit", ves_icall_System_Environment_Exit))
+HANDLES(ENV_1a, "FailFast", ves_icall_System_Environment_FailFast, void, 3, (MonoString, MonoException, MonoString))
 HANDLES(ENV_2, "GetCommandLineArgs", ves_icall_System_Environment_GetCommandLineArgs, MonoArray, 0, ())
 ICALL(ENV_3, "GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvironmentVariableNames)
 NOHANDLES(ICALL(ENV_31, "GetIs64BitOperatingSystem", ves_icall_System_Environment_GetIs64BitOperatingSystem))

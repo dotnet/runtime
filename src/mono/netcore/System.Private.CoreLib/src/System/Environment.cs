@@ -54,18 +54,16 @@ namespace System
 
 		public static void FailFast (string message)
 		{
-			throw new NotImplementedException ();
+			FailFast (message, null, null);
 		}
 
 		public static void FailFast(string message, Exception exception)
 		{
-			throw new NotImplementedException ();
+			FailFast (message, exception, null);
 		}
 
-		public static void FailFast (string message, Exception exception, string errorMessage)
-		{
-			throw new NotImplementedException ();
-		}
+		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		public extern static void FailFast (string message, Exception exception, string errorSource);
 	}
 
 #region referencesource dependencies - to be removed

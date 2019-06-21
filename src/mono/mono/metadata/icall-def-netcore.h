@@ -78,6 +78,7 @@ HANDLES(ENUM_5, "InternalHasFlag", ves_icall_System_Enum_InternalHasFlag, MonoBo
 
 ICALL_TYPE(ENV, "System.Environment", ENV_1)
 NOHANDLES(ICALL(ENV_1, "Exit", ves_icall_System_Environment_Exit))
+HANDLES(ENV_1a, "FailFast", ves_icall_System_Environment_FailFast, void, 3, (MonoString, MonoException, MonoString))
 HANDLES(ENV_2, "GetCommandLineArgs", ves_icall_System_Environment_GetCommandLineArgs, MonoArray, 0, ())
 ICALL(ENV_3, "GetEnvironmentVariableNames", ves_icall_System_Environment_GetEnvironmentVariableNames)
 HANDLES(ENV_8, "InternalSetEnvironmentVariable", ves_icall_System_Environment_InternalSetEnvironmentVariable, void, 4, (const_gunichar2_ptr, gint32, const_gunichar2_ptr, gint32))

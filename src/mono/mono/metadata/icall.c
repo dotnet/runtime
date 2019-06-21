@@ -7391,6 +7391,29 @@ ves_icall_System_Environment_Exit (int result)
 	exit (result);
 }
 
+void
+ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHandle exception, MonoStringHandle errorSource, MonoError *error)
+{
+	if (MONO_HANDLE_IS_NULL (message)) {
+		g_warning ("CLR: Managed code called FailFast without specifying a reason.");
+	} else {
+		char *msg = mono_string_handle_to_utf8 (message, error);
+		g_warning ("CLR: Managed code called FailFast, saying \"%s\"", msg);
+		g_free (msg);
+	}
+
+	if (!MONO_HANDLE_IS_NULL (exception)) {
+		mono_print_unhandled_exception_internal ((MonoObject *) MONO_HANDLE_RAW (exception));
+	}
+
+	// NOTE: While this does trigger WER on Windows it doesn't quite provide all the
+	// information in the error dump that CoreCLR would. On Windows 7+ we should call
+	// RaiseFailFastException directly instead of relying on the C runtime doing it
+	// for us and pass it as much information as possible. On Windows 8+ we can also
+	// use the __fastfail intrinsic.
+	abort ();
+}
+
 MonoStringHandle
 ves_icall_System_Environment_GetGacPath (MonoError *error)
 {
