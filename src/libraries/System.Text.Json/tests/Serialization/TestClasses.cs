@@ -90,6 +90,41 @@ namespace System.Text.Json.Serialization.Tests
         Max = ulong.MaxValue
     }
 
+    public struct SimpleStruct
+    {
+        public int One { get; set; }
+        public double Two { get; set; }
+    }
+    
+    public struct SimpleStructWithSimpleClass: ITestClass
+    {
+        public short MyInt32 { get; set; }
+        public SimpleTestClass MySimpleClass { get; set; }
+        public int[] MyInt32Array { get; set; }
+
+        public static readonly string s_json =
+            @"{" +
+                @"""MySimpleClass"" : {""MyString"" : ""Hello"", ""MyDouble"" : 3.14}," +
+                @"""MyInt32"" : 32," +
+                @"""MyInt32Array"" : [32]" +
+            @"}";
+
+        public void Initialize()
+        {
+            MySimpleClass = new SimpleTestClass { MyString = "Hello", MyDouble = 3.14 };
+            MyInt32 = 32;
+            MyInt32Array = new int[] { 32 };
+        }
+
+        public void Verify()
+        {
+            Assert.Equal(32, MyInt32);
+            Assert.Equal(32, MyInt32Array[0]);
+            Assert.Equal("Hello", MySimpleClass.MyString);
+            Assert.Equal(3.14, MySimpleClass.MyDouble);
+        }
+    }
+
     public class TestClassWithNull
     {
         public string MyString { get; set; }
@@ -595,6 +630,31 @@ namespace System.Text.Json.Serialization.Tests
                 obj.Verify();
             }
         }
+    }
+
+    public class TestClassWithInitializedArray
+    {
+        public int[] Values { get; set; }
+
+        public TestClassWithInitializedArray()
+        {
+            Values = Array.Empty<int>();
+        }
+    }
+
+    public class SimpleClassWithDictionary
+    {
+        public int MyInt { get; set; }
+        public Dictionary<string, string> MyDictionary { get; set; }
+    }
+    public class OuterClassHavingPropertiesDefinedAfterClassWithDictionary
+    {
+        public double MyDouble { get; set; }
+        public SimpleClassWithDictionary MyInnerTestClass { get; set; }
+        public int MyInt { get; set; }
+        public string MyString { get; set; }
+        public List<string> MyList { get; set; }
+        public int[] MyIntArray { get; set; }
     }
 
     public class TestClassWithStringArray : ITestClass
