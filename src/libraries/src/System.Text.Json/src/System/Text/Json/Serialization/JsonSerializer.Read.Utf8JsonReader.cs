@@ -41,10 +41,11 @@ namespace System.Text.Json
         ///     This method makes a copy of the data the reader acted on, so there is no caller
         ///     requirement to maintain data integrity beyond the return of this method.
         ///   </para>
-        /// </remarks>
-        /// <remarks>
-        /// The <see cref="JsonReaderOptions"/> used to create the instance of the <see cref="Utf8JsonReader"/> take precedence over the <see cref="JsonSerializerOptions"/> when they conflict.
-        /// Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
+        ///   
+        ///   <para>
+        ///     The <see cref="JsonReaderOptions"/> used to create the instance of the <see cref="Utf8JsonReader"/> take precedence over the <see cref="JsonSerializerOptions"/> when they conflict.
+        ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
+        ///   </para>
         /// </remarks>
         public static TValue ReadValue<TValue>(ref Utf8JsonReader reader, JsonSerializerOptions options = null)
         {
@@ -87,10 +88,10 @@ namespace System.Text.Json
         ///     This method makes a copy of the data the reader acted on, so there is no caller
         ///     requirement to maintain data integrity beyond the return of this method.
         ///   </para>
-        /// </remarks>
-        /// <remarks>
-        /// The <see cref="JsonReaderOptions"/> used to create the instance of the <see cref="Utf8JsonReader"/> take precedence over the <see cref="JsonSerializerOptions"/> when they conflict.
-        /// Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
+        ///   <para>
+        ///     The <see cref="JsonReaderOptions"/> used to create the instance of the <see cref="Utf8JsonReader"/> take precedence over the <see cref="JsonSerializerOptions"/> when they conflict.
+        ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
+        ///   </para>
         /// </remarks>
         public static object ReadValue(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions options = null)
         {
