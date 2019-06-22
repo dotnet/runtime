@@ -272,29 +272,6 @@ mono_tls_get_tls_offset (MonoTlsKey key)
 	return tls_offsets [key];
 }
 
-/*
- * Returns the getter (gpointer (*)(void)) for the mono tls key.
- * Managed code will always get the value by calling this getter.
- */
-MonoTlsGetter
-mono_tls_get_tls_getter (MonoTlsKey key)
-{
-	switch (key) {
-	case TLS_KEY_THREAD:
-		return (MonoTlsGetter)mono_tls_get_thread;
-	case TLS_KEY_JIT_TLS:
-		return (MonoTlsGetter)mono_tls_get_jit_tls;
-	case TLS_KEY_DOMAIN:
-		return (MonoTlsGetter)mono_tls_get_domain;
-	case TLS_KEY_SGEN_THREAD_INFO:
-		return (MonoTlsGetter)mono_tls_get_sgen_thread_info;
-	case TLS_KEY_LMF_ADDR:
-		return (MonoTlsGetter)mono_tls_get_lmf_addr;
-	}
-	g_assert_not_reached ();
-	return NULL;
-}
-
 // Casts on getters are for the !MONO_KEYWORD_THREAD case.
 
 /* Getters for each tls key */
