@@ -212,7 +212,7 @@ namespace Internal.Cryptography
 
     internal static class DictionaryStringHelper
     {
-        internal static string ReadDirectoryOrIA5String(this AsnReader tavReader)
+        internal static string ReadAnyAsnString(this AsnReader tavReader)
         {
             Asn1Tag tag = tavReader.PeekTag();
 
@@ -225,6 +225,7 @@ namespace Internal.Cryptography
             {
                 case UniversalTagNumber.BMPString:
                 case UniversalTagNumber.IA5String:
+                case UniversalTagNumber.NumericString:
                 case UniversalTagNumber.PrintableString:
                 case UniversalTagNumber.UTF8String:
                 case UniversalTagNumber.T61String:
