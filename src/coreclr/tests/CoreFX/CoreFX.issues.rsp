@@ -44,11 +44,6 @@
 # https://github.com/dotnet/corefx/issues/37886
 -nomethod System.Security.Cryptography.Rsa.Tests.RSAXml.FromNonsenseXml
 
-# requires corefx test updates
--nomethod System.Diagnostics.Tests.DebugTestsNoListeners.Print
--nomethod System.Diagnostics.Tests.DebugTestsUsingListeners.Print
--nomethod System.Tests.ArrayTests.Copy_SourceAndDestinationNeverConvertible_ThrowsArrayTypeMismatchException
-
 # System.Net.Tests are known for their instability
 -nonamespace System.Net.Http.Functional.Tests
 -nonamespace System.Net.Sockets.Tests
@@ -99,6 +94,10 @@
 
 # Assert: https://github.com/dotnet/coreclr/issues/25050
 -nonamespace System.Data.Common.Tests
+
+# Test failure: https://github.com/dotnet/corefx/issues/38768
+-nomethod System.Globalization.Tests.CurrentCultureTests.CurrentCulture_DefaultWithNoLang
+-nomethod  System.Globalization.Tests.CurrentCultureTests.CurrentCulture_BasedOnLangEnvVar
 
 # requires corefx test updates
 -nomethod System.Data.Tests.Common.DbConnectionStringBuilderTest.Add_Keyword_Invalid
