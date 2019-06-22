@@ -14,6 +14,7 @@ namespace System.Security.Cryptography.Asn1
         private static readonly Text.Encoding s_bmpEncoding = new BMPEncoding();
         private static readonly Text.Encoding s_ia5Encoding = new IA5Encoding();
         private static readonly Text.Encoding s_visibleStringEncoding = new VisibleStringEncoding();
+        private static readonly Text.Encoding s_numericStringEncoding = new NumericStringEncoding();
         private static readonly Text.Encoding s_printableStringEncoding = new PrintableStringEncoding();
         private static readonly Text.Encoding s_t61Encoding = new T61Encoding();
 
@@ -23,6 +24,8 @@ namespace System.Security.Cryptography.Asn1
             {
                 case UniversalTagNumber.UTF8String:
                     return s_utf8Encoding;
+                case UniversalTagNumber.NumericString:
+                    return s_numericStringEncoding;
                 case UniversalTagNumber.PrintableString:
                     return s_printableStringEncoding;
                 case UniversalTagNumber.IA5String:
@@ -149,6 +152,16 @@ namespace System.Security.Cryptography.Asn1
         // Space is ASCII 0x20.
         internal VisibleStringEncoding()
             : base(0x20, 0x7E)
+        {
+        }
+    }
+
+    internal class NumericStringEncoding : RestrictedAsciiStringEncoding
+    {
+        // T-REC-X.680-201508 sec 41.2 (Table 9)
+        // 0, 1, ... 9 + space
+        internal NumericStringEncoding()
+            : base("0123456789 ")
         {
         }
     }
