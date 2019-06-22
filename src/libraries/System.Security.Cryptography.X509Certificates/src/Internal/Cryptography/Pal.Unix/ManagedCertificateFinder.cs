@@ -136,7 +136,7 @@ namespace Internal.Cryptography.Pal
                     {
                         // Try a V1 template structure, just a string:
                         AsnReader reader = new AsnReader(ext.RawData, AsnEncodingRules.DER);
-                        string decodedName = reader.ReadDirectoryOrIA5String();
+                        string decodedName = reader.ReadAnyAsnString();
                         reader.ThrowIfNotEmpty();
 
                         // If this doesn't match, maybe a V2 template will

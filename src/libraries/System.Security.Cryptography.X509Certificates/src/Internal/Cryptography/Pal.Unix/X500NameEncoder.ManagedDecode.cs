@@ -91,7 +91,7 @@ namespace Internal.Cryptography.Pal
                 {
                     AsnReader tavReader = rdnReader.ReadSequence();
                     string oid = tavReader.ReadObjectIdentifierAsString();
-                    string attributeValue = tavReader.ReadDirectoryOrIA5String();
+                    string attributeValue = tavReader.ReadAnyAsnString();
 
                     tavReader.ThrowIfNotEmpty();
 
