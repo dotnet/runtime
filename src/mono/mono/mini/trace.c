@@ -342,6 +342,7 @@ mono_trace_leave_method (MonoMethod *method, MonoProfilerCallContext *ctx)
 		printf ("result=%d", res);
 		break;
 	}
+	case MONO_TYPE_PTR:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U: {
 		gpointer res = *arg_in_stack_slot (buf, gpointer);
