@@ -92,8 +92,6 @@ namespace System.Text.Json
         /// </summary>
         /// <remarks>
         /// For JSON strings (including property names), this points to before the start quote.
-        /// </remarks>
-        /// <remarks>
         /// For comments, this points to before the first comment delimiter (i.e. '/').
         /// </remarks>
         public long TokenStartIndex { get; private set; }
@@ -333,17 +331,19 @@ namespace System.Text.Json
         /// or if the current depth exceeds the recursive limit set by the max depth.
         /// </exception>
         /// <remarks>
-        /// If the reader did not have enough data to completely skip the children of the current token,
-        /// it will be reset to the state it was in before the method was called.
-        /// </remarks>
-        /// <remarks>
-        /// When <see cref="TokenType"/> is <see cref="JsonTokenType.PropertyName" />, the reader first moves to the property value.
-        /// When <see cref="TokenType"/> (originally, or after advancing) is <see cref="JsonTokenType.StartObject" /> or 
-        /// <see cref="JsonTokenType.StartArray" />, the reader advances to the matching
-        /// <see cref="JsonTokenType.EndObject" /> or <see cref="JsonTokenType.EndArray" />.
+        ///   <para>
+        ///     If the reader did not have enough data to completely skip the children of the current token,
+        ///     it will be reset to the state it was in before the method was called.
+        ///   </para>
+        ///   <para>
+        ///     When <see cref="TokenType"/> is <see cref="JsonTokenType.PropertyName" />, the reader first moves to the property value.
+        ///     When <see cref="TokenType"/> (originally, or after advancing) is <see cref="JsonTokenType.StartObject" /> or 
+        ///     <see cref="JsonTokenType.StartArray" />, the reader advances to the matching
+        ///     <see cref="JsonTokenType.EndObject" /> or <see cref="JsonTokenType.EndArray" />.
         /// 
-        /// For all other token types, the reader does not move. After the next call to <see cref="Read"/>, the reader will be at
-        /// the next value (when in an array), the next property name (when in an object), or the end array/object token.
+        ///     For all other token types, the reader does not move. After the next call to <see cref="Read"/>, the reader will be at
+        ///     the next value (when in an array), the next property name (when in an object), or the end array/object token.
+        ///   </para>
         /// </remarks>
         public bool TrySkip()
         {
@@ -401,12 +401,14 @@ namespace System.Text.Json
         /// <seealso cref="TokenType" />
         /// </exception>
         /// <remarks>
-        /// If the look up text is invalid UTF-8 text, the method will return false since you cannot have 
-        /// invalid UTF-8 within the JSON payload.
-        /// </remarks>
-        /// <remarks>
-        /// The comparison of the JSON token value in the source and the look up text is done by first unescaping the JSON value in source,
-        /// if required. The look up text is matched as is, without any modifications to it.
+        ///   <para>
+        ///     If the look up text is invalid UTF-8 text, the method will return false since you cannot have 
+        ///     invalid UTF-8 within the JSON payload.
+        ///   </para>
+        ///   <para>
+        ///     The comparison of the JSON token value in the source and the look up text is done by first unescaping the JSON value in source,
+        ///     if required. The look up text is matched as is, without any modifications to it.
+        ///   </para>
         /// </remarks>
         public bool ValueTextEquals(ReadOnlySpan<byte> utf8Text)
         {
@@ -428,12 +430,14 @@ namespace System.Text.Json
         /// <seealso cref="TokenType" />
         /// </exception>
         /// <remarks>
-        /// If the look up text is invalid UTF-8 text, the method will return false since you cannot have 
-        /// invalid UTF-8 within the JSON payload.
-        /// </remarks>
-        /// <remarks>
-        /// The comparison of the JSON token value in the source and the look up text is done by first unescaping the JSON value in source,
-        /// if required. The look up text is matched as is, without any modifications to it.
+        ///   <para>
+        ///     If the look up text is invalid UTF-8 text, the method will return false since you cannot have 
+        ///     invalid UTF-8 within the JSON payload.
+        ///   </para>
+        ///   <para>
+        ///     The comparison of the JSON token value in the source and the look up text is done by first unescaping the JSON value in source,
+        ///     if required. The look up text is matched as is, without any modifications to it.
+        ///   </para>
         /// </remarks>
         public bool ValueTextEquals(string utf8Text)
         {
@@ -467,12 +471,14 @@ namespace System.Text.Json
         /// <seealso cref="TokenType" />
         /// </exception>
         /// <remarks>
-        /// If the look up text is invalid or incomplete UTF-16 text (i.e. unpaired surrogates), the method will return false
-        /// since you cannot have invalid UTF-16 within the JSON payload.
-        /// </remarks>
-        /// <remarks>
-        /// The comparison of the JSON token value in the source and the look up text is done by first unescaping the JSON value in source,
-        /// if required. The look up text is matched as is, without any modifications to it.
+        ///   <para>
+        ///     If the look up text is invalid or incomplete UTF-16 text (i.e. unpaired surrogates), the method will return false
+        ///     since you cannot have invalid UTF-16 within the JSON payload.
+        ///   </para>
+        ///   <para>
+        ///     The comparison of the JSON token value in the source and the look up text is done by first unescaping the JSON value in source,
+        ///     if required. The look up text is matched as is, without any modifications to it.
+        ///   </para>
         /// </remarks>
         public bool ValueTextEquals(ReadOnlySpan<char> text)
         {
