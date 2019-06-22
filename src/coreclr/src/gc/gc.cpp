@@ -2168,6 +2168,12 @@ uint8_t* gc_heap::pad_for_alignment_large (uint8_t* newAlloc, int requiredAlignm
 // This is always power of 2.
 const size_t min_segment_size_hard_limit = 1024*1024*16;
 
+inline
+size_t align_on_segment_hard_limit (size_t add)
+{
+    return ((size_t)(add + (min_segment_size_hard_limit - 1)) & ~(min_segment_size_hard_limit - 1));
+}
+
 #ifdef SERVER_GC
 
 #ifdef BIT64
@@ -9854,7 +9860,7 @@ FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_confi
 size_t gc_heap::get_segment_size_hard_limit (uint32_t* num_heaps, bool should_adjust_num_heaps)
 {
     assert (heap_hard_limit);
-    size_t aligned_hard_limit = ((heap_hard_limit + min_segment_size_hard_limit - 1) & ~(min_segment_size_hard_limit - 1));
+    size_t aligned_hard_limit =  align_on_segment_hard_limit (heap_hard_limit);
     if (should_adjust_num_heaps)
     {
         uint32_t max_num_heaps = (uint32_t)(aligned_hard_limit / min_segment_size_hard_limit);
@@ -9865,14 +9871,14 @@ size_t gc_heap::get_segment_size_hard_limit (uint32_t* num_heaps, bool should_ad
     }
 
     size_t seg_size = aligned_hard_limit / *num_heaps;
-    size_t aligned_seg_size = round_up_power2 (seg_size);
+    size_t aligned_seg_size = (use_large_pages_p ? align_on_segment_hard_limit (seg_size) : round_up_power2 (seg_size));
 
     assert (g_theGCHeap->IsValidSegmentSize (aligned_seg_size));
 
     size_t seg_size_from_config = (size_t)GCConfig::GetSegmentSize();
     if (seg_size_from_config)
     {
-        size_t aligned_seg_size_config = round_up_power2 (seg_size_from_config);
+        size_t aligned_seg_size_config = (use_large_pages_p ? align_on_segment_hard_limit (seg_size) : round_up_power2 (seg_size_from_config));
 
         aligned_seg_size = max (aligned_seg_size, aligned_seg_size_config);
     }
@@ -34226,10 +34232,13 @@ HRESULT GCHeap::Initialize()
 
     if (gc_heap::heap_hard_limit)
     {
+        gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
         seg_size = gc_heap::get_segment_size_hard_limit (&nhp, (nhp_from_config == 0));
         gc_heap::soh_segment_size = seg_size;
-        gc_heap::use_large_pages_p = GCConfig::GetGCLargePages();
         large_seg_size = gc_heap::use_large_pages_p ? seg_size : seg_size * 2;
+        
+        if (gc_heap::use_large_pages_p)
+            gc_heap::min_segment_size = min_segment_size_hard_limit;
     }
     else
     {
@@ -34244,8 +34253,11 @@ HRESULT GCHeap::Initialize()
         (large_seg_size / 1024 / 1024)));
 
     gc_heap::min_loh_segment_size = large_seg_size;
-    gc_heap::min_segment_size = min (seg_size, large_seg_size);
 #ifdef SEG_MAPPING_TABLE
+    if (gc_heap::min_segment_size == 0)
+    {
+        gc_heap::min_segment_size = min (seg_size, large_seg_size);
+    }
     gc_heap::min_segment_size_shr = index_of_highest_set_bit (gc_heap::min_segment_size);
 #endif //SEG_MAPPING_TABLE
 
