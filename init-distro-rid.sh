@@ -56,7 +56,13 @@ initNonPortableDistroRid()
                     VERSION_ID=${VERSION_ID%.*}
                 fi
 
-                nonPortableBuildID="${ID}.${VERSION_ID}-${buildArch}"
+                if [ -z ${VERSION_ID+x} ]; then
+                        # Rolling release distros do not set VERSION_ID, so omit
+                        # it here to be consistent with everything else.
+                        nonPortableBuildID="${ID}-${buildArch}"
+                else
+                        nonPortableBuildID="${ID}.${VERSION_ID}-${buildArch}"
+                fi
             fi
             
         elif [ -e "${rootfsDir}/etc/redhat-release" ]; then
