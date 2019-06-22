@@ -14,14 +14,15 @@
     </CodeAnalysisDependentAssemblyPaths>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\src\System\Text\Encodings\Web\HexUtil.cs" Link="HexUtil.cs" />
-    <Compile Include="..\src\System\Text\Internal\AllowedCharactersBitmap.cs" Link="AllowedCharactersBitmap.cs" />
-    <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.cs" Link="UnicodeHelpers.cs" />
-    <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.generated.cs" Link="UnicodeHelpers.generated.cs" />
+    <Compile Include="..\src\Common\TextEncoderExtensions.cs" />
+    <Compile Include="..\src\System\Text\Encodings\Web\HexUtil.cs" />
+    <Compile Include="..\src\System\Text\Internal\AllowedCharactersBitmap.cs" />
+    <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.cs" />
+    <Compile Include="..\src\System\Text\Unicode\UnicodeHelpers.generated.cs" />
     <Compile Include="AllowedCharsBitmapTests.cs" />
     <Compile Include="TextEncoderTests.cs" />
+    <Compile Include="ConfigurableScalarTextEncoder.cs" />
     <Compile Include="ScalarTestEncoder.cs" />
-    <Compile Include="CommonTestEncoder.cs" />
     <Compile Include="EncoderCommon.cs" />
     <Compile Include="EncoderCommonTests.cs" />
     <Compile Include="EncoderExtensionsTests.cs" />
@@ -45,6 +46,12 @@
     <Compile Include="UrlEncoderTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\UnicodeDebug.cs">
+      <Link>System\Text\UnicodeDebug.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\CoreLib\System\Text\UnicodeUtility.cs">
+      <Link>System\Text\UnicodeUtility.cs</Link>
+    </Compile>
     <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.12.1.txt">
       <LogicalName>UnicodeData.12.1.txt</LogicalName>
     </EmbeddedResource>
