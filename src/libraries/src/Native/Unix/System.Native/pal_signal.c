@@ -239,6 +239,37 @@ static void InstallSignalHandler(int sig, bool skipWhenSigIgn)
     assert(rv == 0);
 }
 
+static bool CreateSignalHandlerThread(int* readFdPtr)
+{
+    pthread_attr_t attr;
+    if (pthread_attr_init(&attr) != 0)
+    {
+        return false;
+    }
+
+    bool success = false;
+#ifdef DEBUG
+    // Set the thread stack size to 512kB. This is to fix a problem on Alpine
+    // Linux where the default secondary thread stack size is just about 85kB
+    // and our testing have hit cases when that was not enough in debug
+    // and checked builds due to some large frames in JIT code.
+    if (pthread_attr_setstacksize(&attr, 512 * 1024) == 0)
+#endif
+    {
+        pthread_t handlerThread;
+        if (pthread_create(&handlerThread, &attr, SignalHandlerLoop, readFdPtr) == 0)
+        {
+            success = true;
+        }
+    }
+
+    int err = errno;
+    pthread_attr_destroy(&attr);
+    errno = err;
+
+    return success;
+}
+
 int32_t InitializeSignalHandlingCore()
 {
     // Create a pipe we'll use to communicate with our worker
@@ -263,8 +294,8 @@ int32_t InitializeSignalHandlingCore()
     *readFdPtr = g_signalPipe[0];
 
     // The pipe is created.  Create the worker thread.
-    pthread_t handlerThread;
-    if (pthread_create(&handlerThread, NULL, SignalHandlerLoop, readFdPtr) != 0)
+
+    if (!CreateSignalHandlerThread(readFdPtr))
     {
         int err = errno;
         free(readFdPtr);
