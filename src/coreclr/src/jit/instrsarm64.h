@@ -459,7 +459,7 @@ INST2(fmin,    "fmin",   0, 0, IF_EN2G,   0x0EA0F400,  0x1E205800)
                                    //  fmin    Vd,Vn,Vm             DV_3B  0Q0011101X1mmmmm 111101nnnnnddddd   0EA0 F400   Vd,Vn,Vm  (vector)
                                    //  fmin    Vd,Vn,Vm             DV_3D  000111100X1mmmmm 010110nnnnnddddd   1E20 5800   Vd,Vn,Vm  (scalar)
 
-INST2(fabd,    "fabd",   0, 0, IF_EN2G,   0x0EA0F400,  0x1E205800)
+INST2(fabd,    "fabd",   0, 0, IF_EN2G,   0x2EA0D400,  0x7EA0D400)
                                    //  fabd    Vd,Vn,Vm             DV_3B  0Q1011101X1mmmmm 110101nnnnnddddd   2EA0 D400   Vd,Vn,Vm  (vector)
                                    //  fabd    Vd,Vn,Vm             DV_3D  011111101X1mmmmm 110101nnnnnddddd   7EA0 D400   Vd,Vn,Vm  (scalar)
 
