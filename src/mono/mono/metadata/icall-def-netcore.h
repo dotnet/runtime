@@ -337,12 +337,7 @@ HANDLES(GCH_2, "InternalFree", ves_icall_System_GCHandle_InternalFree, void, 1, 
 HANDLES(GCH_3, "InternalGet", ves_icall_System_GCHandle_InternalGet, MonoObject, 1, (gpointer))
 HANDLES(GCH_4, "InternalSet", ves_icall_System_GCHandle_InternalSet, void, 2, (gpointer, MonoObject))
 
-#if !defined(DISABLE_COM) || defined (HOST_WIN32)
-ICALL_TYPE(MARSHAL, "System.Runtime.InteropServices.Marshal", MARSHAL_1)
-NOHANDLES(ICALL(MARSHAL_1, "AddRefInternal", ves_icall_System_Runtime_InteropServices_Marshal_AddRefInternal))
-#else
 ICALL_TYPE(MARSHAL, "System.Runtime.InteropServices.Marshal", MARSHAL_2)
-#endif
 HANDLES(MARSHAL_2, "AllocCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMem, gpointer,  1, (int))
 HANDLES(MARSHAL_51,"AllocCoTaskMemSize(uintptr)", ves_icall_System_Runtime_InteropServices_Marshal_AllocCoTaskMemSize, gpointer, 1, (gsize))
 HANDLES(MARSHAL_3, "AllocHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal, gpointer, 1, (gsize))
@@ -352,24 +347,9 @@ NOHANDLES(ICALL(MARSHAL_5, "FreeBSTR", ves_icall_System_Runtime_InteropServices_
 NOHANDLES(ICALL(MARSHAL_6, "FreeCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_FreeCoTaskMem))
 NOHANDLES(ICALL(MARSHAL_7, "FreeHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_FreeHGlobal))
 HANDLES(MARSHAL_7a, "GetArrayElementSize", ves_icall_System_Runtime_InteropServices_Marshal_GetArrayElementSize, int, 1, (MonoReflectionType))
-#ifndef DISABLE_COM
-HANDLES(MARSHAL_44, "GetCCW", ves_icall_System_Runtime_InteropServices_Marshal_GetCCW, gpointer, 2, (MonoObject, MonoReflectionType))
-HANDLES(MARSHAL_8, "GetComSlotForMethodInfoInternal", ves_icall_System_Runtime_InteropServices_Marshal_GetComSlotForMethodInfoInternal, guint32, 1, (MonoReflectionMethod))
-#endif
 HANDLES(MARSHAL_9, "GetDelegateForFunctionPointerInternal", ves_icall_System_Runtime_InteropServices_Marshal_GetDelegateForFunctionPointerInternal, MonoDelegate, 2, (gpointer, MonoReflectionType))
 HANDLES(MARSHAL_10, "GetFunctionPointerForDelegateInternal", ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateInternal, gpointer, 1, (MonoDelegate))
-#ifndef DISABLE_COM
-HANDLES(MARSHAL_52, "GetHRForException_WinRT", ves_icall_System_Runtime_InteropServices_Marshal_GetHRForException_WinRT, int, 1, (MonoException))
-HANDLES(MARSHAL_45, "GetIDispatchForObjectInternal", ves_icall_System_Runtime_InteropServices_Marshal_GetIDispatchForObjectInternal, gpointer, 1, (MonoObject))
-HANDLES(MARSHAL_46, "GetIUnknownForObjectInternal", ves_icall_System_Runtime_InteropServices_Marshal_GetIUnknownForObjectInternal, gpointer, 1, (MonoObject))
-#endif
 ICALL(MARSHAL_11, "GetLastWin32Error", ves_icall_System_Runtime_InteropServices_Marshal_GetLastWin32Error)
-#ifndef DISABLE_COM
-HANDLES(MARSHAL_53, "GetNativeActivationFactory", ves_icall_System_Runtime_InteropServices_Marshal_GetNativeActivationFactory, MonoObject, 1, (MonoObject))
-HANDLES(MARSHAL_47, "GetObjectForCCW", ves_icall_System_Runtime_InteropServices_Marshal_GetObjectForCCW, MonoObject, 1, (gpointer))
-HANDLES(MARSHAL_54, "GetRawIUnknownForComObjectNoAddRef", ves_icall_System_Runtime_InteropServices_Marshal_GetRawIUnknownForComObjectNoAddRef, gpointer, 1, (MonoObject))
-HANDLES(MARSHAL_48, "IsComObject", ves_icall_System_Runtime_InteropServices_Marshal_IsComObject, MonoBoolean, 1, (MonoObject))
-#endif
 HANDLES(MARSHAL_48a, "IsPinnableType", ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType, MonoBoolean, 1, (MonoReflectionType))
 HANDLES(MARSHAL_12, "OffsetOf", ves_icall_System_Runtime_InteropServices_Marshal_OffsetOf, int, 2, (MonoReflectionType, MonoString))
 HANDLES(MARSHAL_14, "PrelinkAll", ves_icall_System_Runtime_InteropServices_Marshal_PrelinkAll, void, 1, (MonoReflectionType))
@@ -380,17 +360,8 @@ HANDLES(MARSHAL_17, "PtrToStringBSTR", ves_icall_System_Runtime_InteropServices_
 HANDLES(MARSHAL_18, "PtrToStringUni(intptr)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni, MonoString, 1, (const_gunichar2_ptr))
 HANDLES(MARSHAL_19, "PtrToStringUni(intptr,int)", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStringUni_len, MonoString, 2, (const_gunichar2_ptr, gint32))
 HANDLES(MARSHAL_20, "PtrToStructureInternal", ves_icall_System_Runtime_InteropServices_Marshal_PtrToStructureInternal, void, 3, (gconstpointer, MonoObject, MonoBoolean))
-#if !defined (DISABLE_COM) || defined (HOST_WIN32)
-NOHANDLES(ICALL(MARSHAL_22, "QueryInterfaceInternal", ves_icall_System_Runtime_InteropServices_Marshal_QueryInterfaceInternal))
-#endif
 HANDLES(MARSHAL_43, "ReAllocCoTaskMem", ves_icall_System_Runtime_InteropServices_Marshal_ReAllocCoTaskMem, gpointer, 2, (gpointer, int))
 HANDLES(MARSHAL_23, "ReAllocHGlobal", ves_icall_System_Runtime_InteropServices_Marshal_ReAllocHGlobal, gpointer, 2, (gpointer, gsize))
-#ifndef DISABLE_COM
-HANDLES(MARSHAL_49, "ReleaseComObjectInternal", ves_icall_System_Runtime_InteropServices_Marshal_ReleaseComObjectInternal, gint32, 1, (MonoObject))
-#endif
-#if !defined (DISABLE_COM) || defined (HOST_WIN32)
-NOHANDLES(ICALL(MARSHAL_29, "ReleaseInternal", ves_icall_System_Runtime_InteropServices_Marshal_ReleaseInternal))
-#endif
 HANDLES(MARSHAL_30, "SizeOf", ves_icall_System_Runtime_InteropServices_Marshal_SizeOf, guint32, 1, (MonoReflectionType))
 HANDLES(MARSHAL_31, "SizeOfHelper", ves_icall_System_Runtime_InteropServices_Marshal_SizeOfHelper, guint32, 2, (MonoReflectionType, MonoBoolean))
 HANDLES(MARSHAL_32, "StringToHGlobalAnsi", ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi, char_ptr, 2, (const_gunichar2_ptr, int))
@@ -556,39 +527,6 @@ HANDLES(THREADP_12, "RequestWorkerThread", ves_icall_System_Threading_ThreadPool
 HANDLES(THREADP_13, "SetMaxThreadsNative", ves_icall_System_Threading_ThreadPool_SetMaxThreadsNative, MonoBoolean, 2, (gint32, gint32))
 HANDLES(THREADP_14, "SetMinThreadsNative", ves_icall_System_Threading_ThreadPool_SetMinThreadsNative, MonoBoolean, 2, (gint32, gint32))
 
-ICALL_TYPE(TTIMER, "System.Threading.Timer", TTIMER_1)
-NOHANDLES(ICALL(TTIMER_1, "GetTimeMonotonic", ves_icall_System_Threading_Timer_GetTimeMonotonic))
-
-ICALL_TYPE(VOLATILE, "System.Threading.Volatile", VOLATILE_28)
-ICALL(VOLATILE_28, "Read(T&)", ves_icall_System_Threading_Volatile_Read_T)
-NOHANDLES(ICALL(VOLATILE_1, "Read(bool&)", ves_icall_System_Threading_Volatile_Read1))
-NOHANDLES(ICALL(VOLATILE_2, "Read(byte&)", ves_icall_System_Threading_Volatile_Read1))
-NOHANDLES(ICALL(VOLATILE_3, "Read(double&)", ves_icall_System_Threading_Volatile_ReadDouble))
-NOHANDLES(ICALL(VOLATILE_4, "Read(int&)", ves_icall_System_Threading_Volatile_Read4))
-NOHANDLES(ICALL(VOLATILE_5, "Read(int16&)", ves_icall_System_Threading_Volatile_Read2))
-NOHANDLES(ICALL(VOLATILE_6, "Read(intptr&)", ves_icall_System_Threading_Volatile_ReadIntPtr))
-NOHANDLES(ICALL(VOLATILE_7, "Read(long&)", ves_icall_System_Threading_Volatile_Read8))
-NOHANDLES(ICALL(VOLATILE_8, "Read(sbyte&)", ves_icall_System_Threading_Volatile_Read1))
-NOHANDLES(ICALL(VOLATILE_9, "Read(single&)", ves_icall_System_Threading_Volatile_ReadFloat))
-NOHANDLES(ICALL(VOLATILE_10, "Read(uint&)", ves_icall_System_Threading_Volatile_Read4))
-NOHANDLES(ICALL(VOLATILE_11, "Read(uint16&)", ves_icall_System_Threading_Volatile_Read2))
-NOHANDLES(ICALL(VOLATILE_12, "Read(uintptr&)", ves_icall_System_Threading_Volatile_ReadIntPtr))
-NOHANDLES(ICALL(VOLATILE_13, "Read(ulong&)", ves_icall_System_Threading_Volatile_Read8))
-ICALL(VOLATILE_27, "Write(T&,T)", ves_icall_System_Threading_Volatile_Write_T)
-NOHANDLES(ICALL(VOLATILE_14, "Write(bool&,bool)", ves_icall_System_Threading_Volatile_Write1))
-NOHANDLES(ICALL(VOLATILE_15, "Write(byte&,byte)", ves_icall_System_Threading_Volatile_Write1))
-NOHANDLES(ICALL(VOLATILE_16, "Write(double&,double)", ves_icall_System_Threading_Volatile_WriteDouble))
-NOHANDLES(ICALL(VOLATILE_17, "Write(int&,int)", ves_icall_System_Threading_Volatile_Write4))
-NOHANDLES(ICALL(VOLATILE_18, "Write(int16&,int16)", ves_icall_System_Threading_Volatile_Write2))
-NOHANDLES(ICALL(VOLATILE_19, "Write(intptr&,intptr)", ves_icall_System_Threading_Volatile_WriteIntPtr))
-NOHANDLES(ICALL(VOLATILE_20, "Write(long&,long)", ves_icall_System_Threading_Volatile_Write8))
-NOHANDLES(ICALL(VOLATILE_21, "Write(sbyte&,sbyte)", ves_icall_System_Threading_Volatile_Write1))
-NOHANDLES(ICALL(VOLATILE_22, "Write(single&,single)", ves_icall_System_Threading_Volatile_WriteFloat))
-NOHANDLES(ICALL(VOLATILE_23, "Write(uint&,uint)", ves_icall_System_Threading_Volatile_Write4))
-NOHANDLES(ICALL(VOLATILE_24, "Write(uint16&,uint16)", ves_icall_System_Threading_Volatile_Write2))
-NOHANDLES(ICALL(VOLATILE_25, "Write(uintptr&,uintptr)", ves_icall_System_Threading_Volatile_WriteIntPtr))
-NOHANDLES(ICALL(VOLATILE_26, "Write(ulong&,ulong)", ves_icall_System_Threading_Volatile_Write8))
-
 ICALL_TYPE(WAITH, "System.Threading.WaitHandle", WAITH_1)
 HANDLES(WAITH_1, "SignalAndWait_Internal", ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal, gint32, 3, (gpointer, gpointer, gint32))
 HANDLES(WAITH_2, "Wait_internal", ves_icall_System_Threading_WaitHandle_Wait_internal, gint32, 4, (gpointer_ptr, gint32, MonoBoolean, gint32))
@@ -603,10 +541,3 @@ HANDLES(TYPEDR_2, "InternalToObject", ves_icall_System_TypedReference_ToObject, 
 ICALL_TYPE(VALUET, "System.ValueType", VALUET_1)
 ICALL(VALUET_1, "InternalEquals", ves_icall_System_ValueType_Equals)
 ICALL(VALUET_2, "InternalGetHashCode", ves_icall_System_ValueType_InternalGetHashCode)
-
-#ifndef DISABLE_COM
-ICALL_TYPE(COMOBJ, "System.__ComObject", COMOBJ_1)
-HANDLES(COMOBJ_1, "CreateRCW", ves_icall_System_ComObject_CreateRCW, MonoObject, 1, (MonoReflectionType))
-HANDLES(COMOBJ_2, "GetInterfaceInternal", ves_icall_System_ComObject_GetInterfaceInternal, gpointer, 3, (MonoComObject, MonoReflectionType, MonoBoolean))
-HANDLES(COMOBJ_3, "ReleaseInterfaces", ves_icall_System_ComObject_ReleaseInterfaces, void, 1, (MonoComObject))
-#endif
