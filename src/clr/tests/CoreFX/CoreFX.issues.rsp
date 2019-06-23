@@ -131,3 +131,9 @@
 -nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_LargeSkipFrames_FNeedFileInfo
 -nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_LargeSkipFrames_GetFramesReturnsNull
 -nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_LargeSkipFramesFNeedFileInfo_GetFramesReturnsNull
+
+# requires corefx test updates
+-nomethod System.Tests.StringTests.SameSpanToLower
+-nomethod System.Tests.StringTests.ToLowerOverlapping
+-nomethod System.Tests.StringTests.SameSpanToUpper
+-nomethod System.Tests.StringTests.ToUpperOverlapping
