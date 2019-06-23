@@ -155,17 +155,25 @@ namespace System.Net.Test.Common
 
             if (content == null)
             {
-                await connection.SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers).ConfigureAwait(false);
+                await connection.SendResponseHeadersAsync(streamId, endStream: true, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
             }
             else
             {
-                await connection.SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, headers).ConfigureAwait(false);
+                await connection.SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, headers : headers).ConfigureAwait(false);
                 await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes(content)).ConfigureAwait(false);
             }
 
             await connection.WaitForConnectionShutdownAsync().ConfigureAwait(false);
 
             return requestData;
+        }
+
+        public override async Task AcceptConnectionAsync(Func<GenericLoopbackConnection, Task> funcAsync)
+        {
+            using (Http2LoopbackConnection connection = await EstablishConnectionAsync().ConfigureAwait(false))
+            {
+                await funcAsync(connection).ConfigureAwait(false);
+            }
         }
 
         public async static Task CreateClientAndServerAsync(Func<Uri, Task> clientFunc, Func<Http2LoopbackServer, Task> serverFunc, int timeout = 60_000)

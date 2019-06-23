@@ -40,6 +40,7 @@ namespace System.Net.Http.Functional.Tests
             private byte[] _buffer;
             private long _position;
             private bool _rewindable;
+            internal Exception _failException;
 
             public CustomStream(byte[] buffer, bool rewindable)
             {
@@ -106,6 +107,11 @@ namespace System.Net.Http.Functional.Tests
             {
                 int bytesRead = 0;
 
+                if (_failException != null)
+                {
+                    throw _failException;
+                }
+
                 for (int i = 0; i < count; i++)
                 {
                     if (_position >= _buffer.Length)
@@ -156,6 +162,11 @@ namespace System.Net.Http.Functional.Tests
             public override void Write(byte[] buffer, int offset, int count)
             {
                 throw new NotSupportedException("CustomStream.Write");
+            }
+
+            public void SetException(Exception e)
+            {
+                _failException = e;
             }
         }
     }
