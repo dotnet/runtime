@@ -1,0 +1,9 @@
+<linker>
+  <assembly fullname="System.Text.Encodings.Web">
+    <type fullname="System.Text.Encodings.Web.TextEncoder">
+      <!-- Not exposed via ref asm, but needed by JSON project and tests -->
+      <method name="EncodeUtf8Shim" />
+      <method name="FindFirstCharacterToEncodeUtf8Shim" />
+    </type>
+  </assembly>
+</linker>
