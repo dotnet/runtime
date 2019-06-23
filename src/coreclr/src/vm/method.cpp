@@ -1282,7 +1282,7 @@ ReturnKind MethodDesc::ParseReturnKindFromSig(INDEBUG(bool supportStringConstruc
                         }
 #endif // UNIX_AMD64_ABI
 
-                        if (pReturnTypeMT->ContainsPointers())
+                        if (pReturnTypeMT->ContainsPointers() || pReturnTypeMT->IsByRefLike())
                         {
                             if (pReturnTypeMT->GetNumInstanceFields() == 1)
                             {
