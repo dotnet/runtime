@@ -15,7 +15,6 @@ MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.RemoveRa
 MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.ReplaceItemsRange(System.Int32, System.Int32, System.Collections.Generic.IEnumerable<T>)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.Collections.ObjectModel.Collection<T>.ReplaceRange(System.Int32, System.Int32, System.Collections.Generic.IEnumerable<T>)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.Reflection.Module.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
-CannotRemoveBaseTypeOrInterface : Type 'System.Runtime.Serialization.DeserializationBlockedException' does not inherit from base type 'System.Runtime.Serialization.SerializationException' in the reference but it does in the implementation.
 MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.DeserializationInProgress.get()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.StartDeserialization()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'System.Runtime.Serialization.SerializationInfo.ThrowIfDeserializationInProgress()' does not exist in the reference but it does exist in the implementation.

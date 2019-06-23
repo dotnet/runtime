@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{F55047F8-E47B-46E3-B221-C23595AFE168}</ProjectGuid>
@@ -37,6 +37,9 @@
     <Compile Include="System\Diagnostics\ThreadWaitReason.cs" />
     <Compile Include="System\Diagnostics\MonitoringDescriptionAttribute.cs" />
     <Compile Include="System\Collections\Specialized\StringDictionaryWrapper.cs" />
+    <Compile Include="$(CommonPath)\System\Runtime\Serialization\SerializationGuard.cs">
+      <Link>Common\System\Runtime\Serialization\SerializationGuard.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\CoreLib\System\PasteArguments.cs">
       <Link>Common\CoreLib\System\PasteArguments.cs</Link>
     </Compile>
