@@ -773,17 +773,8 @@ namespace System.Runtime.Serialization
             {
                 throw new SerializationException(SR.Format(SR.Serialization_ConstructorNotFound, t), e);
             }
-            try
-            {
-                constInfo.Invoke(obj, new object[] { info, context });
-            }
-            // This will only throw TargetInvocationExceptions, but to provide a better exception for dangerous deserialization, unwrap that
-            // and re-wrap it in a DeserializationBlockedException (while preserving its stack)
-            catch (TargetInvocationException outerException) when (outerException.InnerException is DeserializationBlockedException)
-            {
-                throw new DeserializationBlockedException(outerException.InnerException);
-            }
 
+            constInfo.Invoke(obj, new object[] { info, context });
         }
 
         internal static ConstructorInfo GetDeserializationConstructor(Type t)
