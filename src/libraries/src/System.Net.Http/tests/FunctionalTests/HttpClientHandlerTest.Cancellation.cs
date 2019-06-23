@@ -32,8 +32,14 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (LoopbackServerFactory.IsHttp2 && chunkedTransfer)
+            {
+                // There is no chunked encoding in HTTP/2
+                return;
+            }
+
             var serverRelease = new TaskCompletionSource<bool>();
-            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 try
                 {
@@ -59,7 +65,14 @@ namespace System.Net.Http.Functional.Tests
                 {
                     serverRelease.SetResult(true);
                 }
-            }, server => server.AcceptConnectionAsync(connection => serverRelease.Task));
+            }, async server =>
+            {
+                try
+                {
+                    await server.AcceptConnectionAsync(connection => serverRelease.Task);
+                }
+                catch { };  // Ignore any closing errors since we did not really process anything.
+            });
         }
 
         [Theory]

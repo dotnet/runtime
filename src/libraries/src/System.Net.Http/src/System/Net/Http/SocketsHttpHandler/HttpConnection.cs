@@ -149,28 +149,9 @@ namespace System.Net.Http
                     ValueTask<int>? readAheadTask = ConsumeReadAheadTask();
                     if (readAheadTask != null)
                     {
-                        _ = IgnoreExceptionsAsync(readAheadTask.GetValueOrDefault());
+                        IgnoreExceptions(readAheadTask.GetValueOrDefault());
                     }
                 }
-            }
-        }
-
-        /// <summary>Awaits a task, ignoring any resulting exceptions.</summary>
-        private static async Task IgnoreExceptionsAsync(ValueTask<int> task)
-        {
-            try { await task.ConfigureAwait(false); } catch { }
-        }
-
-        /// <summary>Awaits a task, logging any resulting exceptions (which are otherwise ignored).</summary>
-        private async Task LogExceptionsAsync(Task task)
-        {
-            try
-            {
-                await task.ConfigureAwait(false);
-            }
-            catch (Exception e)
-            {
-                if (NetEventSource.IsEnabled) Trace($"Exception from asynchronous processing: {e}");
             }
         }
 
@@ -721,7 +702,7 @@ namespace System.Net.Http
                 // hook up a continuation that will log it.
                 if (sendRequestContentTask != null && !sendRequestContentTask.IsCompletedSuccessfully)
                 {
-                    _ = LogExceptionsAsync(sendRequestContentTask);
+                    LogExceptions(sendRequestContentTask);
                 }
 
                 // Now clean up the connection.
