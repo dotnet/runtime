@@ -110,7 +110,7 @@ namespace System.MemoryTests
         }
 
         [Theory]
-        [MemberData(nameof(TestHelpers.StringSliceTestData), MemberType = typeof(TestHelpers))]
+        [MemberData(nameof(MemoryTestHelpers.StringSliceTestData), MemberType = typeof(MemoryTestHelpers))]
         public static unsafe void AsMemory_StartAndLength(string text, int start, int length)
         {
             ReadOnlyMemory<char> m;
@@ -144,14 +144,14 @@ namespace System.MemoryTests
         }
 
         [Theory]
-        [MemberData(nameof(TestHelpers.StringSlice2ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
+        [MemberData(nameof(MemoryTestHelpers.StringSlice2ArgTestOutOfRangeData), MemberType = typeof(MemoryTestHelpers))]
         public static unsafe void AsMemory_2Arg_OutOfRange(string text, int start)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsMemory(start));
         }
 
         [Theory]
-        [MemberData(nameof(TestHelpers.StringSlice3ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
+        [MemberData(nameof(MemoryTestHelpers.StringSlice3ArgTestOutOfRangeData), MemberType = typeof(MemoryTestHelpers))]
         public static unsafe void AsMemory_3Arg_OutOfRange(string text, int start, int length)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsMemory(start, length));

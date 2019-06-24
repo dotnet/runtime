@@ -21,7 +21,7 @@ namespace System.SpanTests
 
             var array = new byte[100];
             Array.Fill<byte>(array, 0x42);
-            ref TestHelpers.TestStructExplicit asStruct = ref MemoryMarshal.AsRef<TestHelpers.TestStructExplicit>(new Span<byte>(array));
+            ref MemoryTestHelpers.TestStructExplicit asStruct = ref MemoryMarshal.AsRef<MemoryTestHelpers.TestStructExplicit>(new Span<byte>(array));
 
             Assert.Equal(asStruct.UI1, (uint)0x42424242);
         }
@@ -30,9 +30,9 @@ namespace System.SpanTests
         public static void AsRefFail()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => MemoryMarshal.AsRef<uint>(new Span<byte>(new byte[] { 1 })));
-            Assert.Throws<ArgumentOutOfRangeException>(() => MemoryMarshal.AsRef<TestHelpers.TestStructExplicit>(new Span<byte>(new byte[] { 1 })));
+            Assert.Throws<ArgumentOutOfRangeException>(() => MemoryMarshal.AsRef<MemoryTestHelpers.TestStructExplicit>(new Span<byte>(new byte[] { 1 })));
 
-            Assert.Throws<ArgumentException>(() => MemoryMarshal.AsRef<TestHelpers.StructWithReferences>(new Span<byte>(new byte[100])));
+            Assert.Throws<ArgumentException>(() => MemoryMarshal.AsRef<MemoryTestHelpers.StructWithReferences>(new Span<byte>(new byte[100])));
         }
     }
 }

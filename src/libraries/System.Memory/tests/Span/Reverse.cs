@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using static System.TestHelpers;
+using static System.MemoryTestHelpers;
 
 namespace System.SpanTests
 {

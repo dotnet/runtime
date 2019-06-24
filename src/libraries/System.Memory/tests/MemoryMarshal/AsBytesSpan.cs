@@ -24,8 +24,8 @@ namespace System.SpanTests
         [Fact]
         public static void Span_AsBytesContainsReferences()
         {
-            Span<TestHelpers.StructWithReferences> span = new Span<TestHelpers.StructWithReferences>(Array.Empty<TestHelpers.StructWithReferences>());
-            TestHelpers.AssertThrows<ArgumentException, TestHelpers.StructWithReferences>(span, (_span) => MemoryMarshal.AsBytes(_span).DontBox());
+            Span<MemoryTestHelpers.StructWithReferences> span = new Span<MemoryTestHelpers.StructWithReferences>(Array.Empty<MemoryTestHelpers.StructWithReferences>());
+            MemoryTestHelpers.AssertThrows<ArgumentException, MemoryTestHelpers.StructWithReferences>(span, (_span) => MemoryMarshal.AsBytes(_span).DontBox());
         }
     }
 }

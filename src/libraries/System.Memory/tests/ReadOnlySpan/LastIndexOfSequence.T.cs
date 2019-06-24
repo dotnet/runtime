@@ -243,7 +243,7 @@ namespace System.SpanTests
         }
 
         [Theory]
-        [MemberData(nameof(TestHelpers.LastIndexOfNullSequenceData), MemberType = typeof(TestHelpers))]
+        [MemberData(nameof(MemoryTestHelpers.LastIndexOfNullSequenceData), MemberType = typeof(MemoryTestHelpers))]
         public static void LastIndexOfNullSequence_String(string[] spanInput, string[] searchInput, int expected)
         {
             ReadOnlySpan<string> theStrings = spanInput;
