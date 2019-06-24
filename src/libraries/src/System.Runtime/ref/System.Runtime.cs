@@ -217,7 +217,9 @@ namespace System
         public static int FindLastIndex<T>(T[] array, int startIndex, int count, System.Predicate<T> match) { throw null; }
         public static int FindLastIndex<T>(T[] array, int startIndex, System.Predicate<T> match) { throw null; }
         public static int FindLastIndex<T>(T[] array, System.Predicate<T> match) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public static T FindLast<T>(T[] array, System.Predicate<T> match) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public static T Find<T>(T[] array, System.Predicate<T> match) { throw null; }
         public static void ForEach<T>(T[] array, System.Action<T> action) { }
         public System.Collections.IEnumerator GetEnumerator() { throw null; }
@@ -246,7 +248,7 @@ namespace System
         public static int LastIndexOf<T>(T[] array, T value) { throw null; }
         public static int LastIndexOf<T>(T[] array, T value, int startIndex) { throw null; }
         public static int LastIndexOf<T>(T[] array, T value, int startIndex, int count) { throw null; }
-        public static void Resize<T>(ref T[]? array, int newSize) { }
+        public static void Resize<T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T[]? array, int newSize) { }
         public static void Reverse(System.Array array) { }
         public static void Reverse(System.Array array, int index, int length) { }
         public static void Reverse<T>(T[] array) { }
@@ -1008,6 +1010,8 @@ namespace System
         public System.Reflection.MethodInfo Method { get { throw null; } }
         public object? Target { get { throw null; } }
         public virtual object Clone() { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("a")]
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("b")]
         public static System.Delegate? Combine(System.Delegate? a, System.Delegate? b) { throw null; }
         public static System.Delegate? Combine(params System.Delegate?[]? delegates) { throw null; }
         protected virtual System.Delegate CombineImpl(System.Delegate? d) { throw null; }
@@ -1417,7 +1421,7 @@ namespace System
     }
     public partial interface IComparable<in T>
     {
-        int CompareTo(T other);
+        int CompareTo([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T other);
     }
     [System.CLSCompliantAttribute(false)]
     public partial interface IConvertible
@@ -1450,7 +1454,7 @@ namespace System
     }
     public partial interface IEquatable<T>
     {
-        bool Equals(T other);
+        bool Equals([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T other);
     }
     public partial interface IFormatProvider
     {
@@ -1903,7 +1907,7 @@ namespace System
     }
     public partial struct Nullable<T> where T : struct
     {
-        internal T value;
+        private T value;
         private int _dummyPrimitive;
         public Nullable(T value) { throw null; }
         public bool HasValue { get { throw null; } }
@@ -2381,8 +2385,8 @@ namespace System
         public static System.String? IsInterned(System.String str) { throw null; }
         public bool IsNormalized() { throw null; }
         public bool IsNormalized(System.Text.NormalizationForm normalizationForm) { throw null; }
-        public static bool IsNullOrEmpty(System.String? value) { throw null; }
-        public static bool IsNullOrWhiteSpace(System.String? value) { throw null; }
+        public static bool IsNullOrEmpty([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(false)] System.String? value) { throw null; }
+        public static bool IsNullOrWhiteSpace([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(false)] System.String? value) { throw null; }
         public static System.String Join(char separator, params object?[] values) { throw null; }
         public static System.String Join(char separator, params string?[] value) { throw null; }
         public static System.String Join(char separator, string?[] value, int startIndex, int count) { throw null; }
@@ -3475,9 +3479,9 @@ namespace System
         protected virtual void Parse() { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public override string ToString() { throw null; }
-        public static bool TryCreate(string? uriString, System.UriKind uriKind, out System.Uri? result) { throw null; }
-        public static bool TryCreate(System.Uri? baseUri, string? relativeUri, out System.Uri? result) { throw null; }
-        public static bool TryCreate(System.Uri? baseUri, System.Uri? relativeUri, out System.Uri? result) { throw null; }
+        public static bool TryCreate(string? uriString, System.UriKind uriKind, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
+        public static bool TryCreate(System.Uri? baseUri, string? relativeUri, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
+        public static bool TryCreate(System.Uri? baseUri, System.Uri? relativeUri, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Uri? result) { throw null; }
         [System.ObsoleteAttribute("The method has been deprecated. Please use GetComponents() or static UnescapeDataString() to unescape a Uri component or a string. https://go.microsoft.com/fwlink/?linkid=14202")]
         protected virtual string Unescape(string path) { throw null; }
         public static string UnescapeDataString(string stringToUnescape) { throw null; }
@@ -3771,8 +3775,8 @@ namespace System
         public string ToString(int fieldCount) { throw null; }
         public bool TryFormat(System.Span<char> destination, int fieldCount, out int charsWritten) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> input, out System.Version? result) { throw null; }
-        public static bool TryParse(string? input, out System.Version? result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version? result) { throw null; }
+        public static bool TryParse(string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Version? result) { throw null; }
     }
     public partial struct Void
     {
@@ -3795,7 +3799,7 @@ namespace System
         ~WeakReference() { }
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public void SetTarget(T target) { }
-        public bool TryGetTarget(out T target) { throw null; }
+        public bool TryGetTarget([System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false), System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out T target) { throw null; }
     }
 }
 namespace System.Buffers
@@ -3868,6 +3872,7 @@ namespace System.Collections
     {
         bool IsFixedSize { get; }
         bool IsReadOnly { get; }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         object? this[object key] { get; set; }
         System.Collections.ICollection Keys { get; }
         System.Collections.ICollection Values { get; }
@@ -3944,7 +3949,7 @@ namespace System.Collections.Generic
     }
     public partial interface IComparer<in T>
     {
-        int Compare(T x, T y);
+        int Compare([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
     }
     public partial interface IDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.IEnumerable where TKey : notnull
     {
@@ -3954,7 +3959,7 @@ namespace System.Collections.Generic
         void Add(TKey key, TValue value);
         bool ContainsKey(TKey key);
         bool Remove(TKey key);
-        bool TryGetValue(TKey key, out TValue value);
+        bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value);
     }
     public partial interface IEnumerable<out T> : System.Collections.IEnumerable
     {
@@ -3966,8 +3971,8 @@ namespace System.Collections.Generic
     }
     public partial interface IEqualityComparer<in T>
     {
-        bool Equals(T x, T y);
-        int GetHashCode(T obj);
+        bool Equals([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
+        int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);
     }
     public partial interface IList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.IEnumerable
     {
@@ -3986,7 +3991,7 @@ namespace System.Collections.Generic
         System.Collections.Generic.IEnumerable<TKey> Keys { get; }
         System.Collections.Generic.IEnumerable<TValue> Values { get; }
         bool ContainsKey(TKey key);
-        bool TryGetValue(TKey key, out TValue value);
+        bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value);
     }
     public partial interface IReadOnlyList<out T> : System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.IEnumerable
     {
@@ -6626,7 +6631,7 @@ namespace System.Runtime.CompilerServices
         public bool Remove(TKey key) { throw null; }
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>.GetEnumerator() { throw null; }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
-        public bool TryGetValue(TKey key, out TValue value) { throw null; }
+        public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute(false)] out TValue value) { throw null; }
         public delegate TValue CreateValueCallback(TKey key);
     }
     public readonly partial struct ConfiguredTaskAwaitable
@@ -6871,6 +6876,7 @@ namespace System.Runtime.CompilerServices
         public static new bool Equals(object? o1, object? o2) { throw null; }
         public static void ExecuteCodeWithGuaranteedCleanup(System.Runtime.CompilerServices.RuntimeHelpers.TryCode code, System.Runtime.CompilerServices.RuntimeHelpers.CleanupCode backoutCode, object? userData) { }
         public static int GetHashCode(object o) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("obj")]
         public static object? GetObjectValue(object? obj) { throw null; }
         public static T[] GetSubArray<T>(T[] array, System.Range range) { throw null; }
         public static object GetUninitializedObject(System.Type type) { throw null; }
@@ -6913,6 +6919,7 @@ namespace System.Runtime.CompilerServices
     }
     public partial class StrongBox<T> : System.Runtime.CompilerServices.IStrongBox
     {
+        [System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         public T Value;
         public StrongBox() { }
         public StrongBox(T value) { }
@@ -7031,7 +7038,9 @@ namespace System.Runtime.ExceptionServices
         internal ExceptionDispatchInfo() { }
         public System.Exception SourceException { get { throw null; } }
         public static System.Runtime.ExceptionServices.ExceptionDispatchInfo Capture(System.Exception source) { throw null; }
+        [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         public void Throw() { }
+        [System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute]
         public static void Throw(System.Exception source) { }
     }
     public partial class FirstChanceExceptionEventArgs : System.EventArgs
@@ -7979,6 +7988,7 @@ namespace System.Threading
         protected WaitHandle() { }
         [System.ObsoleteAttribute("Use the SafeWaitHandle property instead.")]
         public virtual System.IntPtr Handle { get { throw null; } set { } }
+        [System.Diagnostics.CodeAnalysis.AllowNullAttribute]
         public Microsoft.Win32.SafeHandles.SafeWaitHandle SafeWaitHandle { get { throw null; } set { } }
         public virtual void Close() { }
         public void Dispose() { }
@@ -8355,7 +8365,7 @@ namespace System.Threading.Tasks
     [System.Runtime.CompilerServices.AsyncMethodBuilderAttribute(typeof(System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder<>))]
     public readonly partial struct ValueTask<TResult> : System.IEquatable<System.Threading.Tasks.ValueTask<TResult>>
     {
-        internal readonly TResult _result;
+        private readonly TResult _result;
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public ValueTask(System.Threading.Tasks.Sources.IValueTaskSource<TResult> source, short token) { throw null; }
