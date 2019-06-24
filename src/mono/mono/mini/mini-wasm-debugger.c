@@ -27,7 +27,7 @@ EMSCRIPTEN_KEEPALIVE int mono_wasm_set_breakpoint (const char *assembly_name, in
 EMSCRIPTEN_KEEPALIVE int mono_wasm_remove_breakpoint (int bp_id);
 EMSCRIPTEN_KEEPALIVE int mono_wasm_current_bp_id (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_enum_frames (void);
-EMSCRIPTEN_KEEPALIVE void mono_wasm_get_var_info (int scope, int pos);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_get_var_info (int scope, int* pos, int len);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_clear_all_breakpoints (void);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_setup_single_step (int kind);
 EMSCRIPTEN_KEEPALIVE void mono_wasm_get_object_properties (int object_id);
@@ -670,7 +670,7 @@ static gboolean describe_value(MonoType * type, gpointer addr)
 }
 
 static gboolean 
-describe_object_properties (guint64 objectId)
+describe_object_properties (guint64 objectId, gboolean isAsyncLocalThis)
 {
 	MonoClassField *f;
 	MonoProperty *p;
@@ -694,6 +694,9 @@ describe_object_properties (guint64 objectId)
 
 	while (obj && (f = mono_class_get_fields_internal (obj->vtable->klass, &iter))) {
 		DEBUG_PRINTF (2, "mono_class_get_fields_internal - %s - %x\n", f->name, f->type->type);
+		if (isAsyncLocalThis &&  (f->name[0] != '<' || (f->name[0] == '<' &&  f->name[1] == '>'))) {
+			continue;
+		}
 		if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 			continue;
 		if (mono_field_is_deleted (f))
@@ -708,6 +711,9 @@ describe_object_properties (guint64 objectId)
 	while ((p = mono_class_get_properties (obj->vtable->klass, &iter))) {
 		DEBUG_PRINTF (2, "mono_class_get_properties - %s - %s\n", p->name, p->get->name);
 		if (p->get->name) { //if get doesn't have name means that doesn't have a getter implemented and we don't want to show value, like VS debug
+			if (isAsyncLocalThis &&  (p->name[0] != '<' || (p->name[0] == '<' &&  p->name[1] == '>'))) {
+				continue;
+			}
 			mono_wasm_add_properties_var(p->name); 
 			sig = mono_method_signature_internal (p->get);
 			res = mono_runtime_try_invoke (p->get, obj, NULL, &exc, error);
@@ -744,6 +750,35 @@ describe_array_values (guint64 objectId)
 		mono_wasm_add_array_item(i);
 		elem = (gpointer*)((char*)arr->vector + (i * esize));
 		describe_value(m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass)), elem);
+	}
+	return TRUE;
+}
+
+static gboolean
+describe_async_method_locals (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
+{
+	//Async methods are special in the way that local variables can be lifted to generated class fields 
+	FrameDescData *data = (FrameDescData*)ud;
+
+	//skip wrappers
+	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP) {
+		return FALSE;
+	}
+
+	if (data->cur_frame < data->target_frame) {
+		++data->cur_frame;
+		return FALSE;
+	}
+
+	InterpFrame *frame = (InterpFrame*)info->interp_frame;
+	g_assert (frame);
+	MonoMethod *method = frame->imethod->method;
+	g_assert (method);
+	gpointer addr = NULL;
+	if (mono_debug_lookup_method_async_debug_info (method)) {
+		addr = mini_get_interp_callbacks ()->frame_get_this (frame);
+		MonoObject *obj = *(MonoObject**)addr;
+		describe_object_properties(get_object_id(obj), TRUE);		
 	}
 	return TRUE;
 }
@@ -797,16 +832,18 @@ describe_variable (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
 
 //FIXME this doesn't support getting the return value pseudo-var
 EMSCRIPTEN_KEEPALIVE void
-mono_wasm_get_var_info (int scope, int pos)
+mono_wasm_get_var_info (int scope, int* pos, int len)
 {
-	DEBUG_PRINTF (2, "getting var %d of scope %d\n", pos, scope);
-
 	FrameDescData data;
 	data.cur_frame = 0;
 	data.target_frame = scope;
-	data.variable = pos;
-
-	mono_walk_stack_with_ctx (describe_variable, NULL, MONO_UNWIND_NONE, &data);
+	for (int i = 0; i < len; i++)
+	{
+		DEBUG_PRINTF (2, "getting var %d of scope %d - %d\n", pos[i], scope, len);
+		data.variable = pos[i];
+		mono_walk_stack_with_ctx (describe_variable, NULL, MONO_UNWIND_NONE, &data);
+	}
+	mono_walk_stack_with_ctx (describe_async_method_locals, NULL, MONO_UNWIND_NONE, &data);
 }
 
 EMSCRIPTEN_KEEPALIVE void
@@ -814,7 +851,7 @@ mono_wasm_get_object_properties (int object_id)
 {
 	DEBUG_PRINTF (2, "getting properties of object %d\n", object_id);
 
-	describe_object_properties(object_id);
+	describe_object_properties(object_id, FALSE);
 }
 
 EMSCRIPTEN_KEEPALIVE void
