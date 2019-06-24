@@ -234,12 +234,12 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
-        public void SurroundColors_Null_ThrowsArgumentNullException()
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        public void SurroundColors_Null_ThrowsNullReferenceException()
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<ArgumentNullException>(null, () => brush.SurroundColors = null);
+                AssertExtensions.Throws<NullReferenceException>(() => brush.SurroundColors = null);
             }
         }
 

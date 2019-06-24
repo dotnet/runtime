@@ -1634,7 +1634,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void ScaleTransform_ZeroZero_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))

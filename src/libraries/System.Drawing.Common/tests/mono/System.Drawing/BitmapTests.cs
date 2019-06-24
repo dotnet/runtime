@@ -504,67 +504,48 @@ namespace MonoTests.System.Drawing
 
         // Rotate 1- and 4-bit bitmaps in different ways and check the
         // resulting pixels using MD5
-        [ConditionalFact(Helpers.RecentGdiplusIsAvailable)]
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [InlineData("1bit.png", RotateFlipType.RotateNoneFlipNone, "A4DAF507C92BDE10626BC7B34FEFE5")]
+        [InlineData("1bit.png", RotateFlipType.Rotate180FlipXY, "A4DAF507C92BDE10626BC7B34FEFE5")]
+        [InlineData("1bit.png", RotateFlipType.Rotate90FlipNone, "C0975EAFD2FC1CC9CC7AF20B92FC9F")]
+        [InlineData("1bit.png", RotateFlipType.Rotate270FlipXY, "C0975EAFD2FC1CC9CC7AF20B92FC9F")]
+        [InlineData("1bit.png", RotateFlipType.Rotate180FlipNone, "64AE60858A02228F7B1B18C7812FB6")]
+        [InlineData("1bit.png", RotateFlipType.RotateNoneFlipXY, "64AE60858A02228F7B1B18C7812FB6")]
+        [InlineData("1bit.png", RotateFlipType.Rotate270FlipNone, "E96D3390938350F9DE2608C4364424")]
+        [InlineData("1bit.png", RotateFlipType.Rotate90FlipXY, "E96D3390938350F9DE2608C4364424")]
+        [InlineData("1bit.png", RotateFlipType.RotateNoneFlipX, "23947CE822C1DDE6BEA69C01F8D0D9")]
+        [InlineData("1bit.png", RotateFlipType.Rotate180FlipY, "23947CE822C1DDE6BEA69C01F8D0D9")]
+        [InlineData("1bit.png", RotateFlipType.Rotate90FlipX, "BE45F685BDEBD7079AA1B2CBA46723")]
+        [InlineData("1bit.png", RotateFlipType.Rotate270FlipY, "BE45F685BDEBD7079AA1B2CBA46723")]
+        [InlineData("1bit.png", RotateFlipType.Rotate180FlipX, "353E937CFF31B1BF6C3DD0A031ACB5")]
+        [InlineData("1bit.png", RotateFlipType.RotateNoneFlipY, "353E937CFF31B1BF6C3DD0A031ACB5")]
+        [InlineData("1bit.png", RotateFlipType.Rotate270FlipX, "AEA18A770A845E25B6A8CE28DD6DCB")]
+        [InlineData("1bit.png", RotateFlipType.Rotate90FlipY, "AEA18A770A845E25B6A8CE28DD6DCB")]
+        [InlineData("4bit.png", RotateFlipType.RotateNoneFlipNone, "3CC874B571902366AACED5D619E87D")]
+        [InlineData("4bit.png", RotateFlipType.Rotate180FlipXY, "3CC874B571902366AACED5D619E87D")]
+        [InlineData("4bit.png", RotateFlipType.Rotate90FlipNone, "8DE25C7E1BE4A3B535DB5D83198D83")]
+        [InlineData("4bit.png", RotateFlipType.Rotate270FlipXY, "8DE25C7E1BE4A3B535DB5D83198D83")]
+        [InlineData("4bit.png", RotateFlipType.Rotate180FlipNone, "27CF5E9CE70BE9EBC47FB996721B95")]
+        [InlineData("4bit.png", RotateFlipType.RotateNoneFlipXY, "27CF5E9CE70BE9EBC47FB996721B95")]
+        [InlineData("4bit.png", RotateFlipType.Rotate270FlipNone, "A919CCB8F97CAD7DC1F01026D11A5D")]
+        [InlineData("4bit.png", RotateFlipType.Rotate90FlipXY, "A919CCB8F97CAD7DC1F01026D11A5D")]
+        [InlineData("4bit.png", RotateFlipType.RotateNoneFlipX, "545876C99ACF833E69FBFFBF436034")]
+        [InlineData("4bit.png", RotateFlipType.Rotate180FlipY, "545876C99ACF833E69FBFFBF436034")]
+        [InlineData("4bit.png", RotateFlipType.Rotate90FlipX, "5DB56687757CDEFC52D89C77CA9223")]
+        [InlineData("4bit.png", RotateFlipType.Rotate270FlipY, "5DB56687757CDEFC52D89C77CA9223")]
+        [InlineData("4bit.png", RotateFlipType.Rotate180FlipX, "05A77EDDCDF20D5B0AC0169E95D7D7")]
+        [InlineData("4bit.png", RotateFlipType.RotateNoneFlipY, "05A77EDDCDF20D5B0AC0169E95D7D7")]
+        [InlineData("4bit.png", RotateFlipType.Rotate270FlipX, "B6B6245796C836923ABAABDF368B29")]
+        [InlineData("4bit.png", RotateFlipType.Rotate90FlipY, "B6B6245796C836923ABAABDF368B29")]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        public void Rotate1bit4bit()
+        public void Rotate1bit4bit(string file, RotateFlipType type, string md5)
         {
-            string[] files = {
-                               Helpers.GetTestBitmapPath ("1bit.png"),
-                               Helpers.GetTestBitmapPath ("4bit.png")
-                             };
-
             StringBuilder md5s = new StringBuilder();
 
-            foreach (string file in files)
+            using (Bitmap bmp = new Bitmap(Helpers.GetTestBitmapPath(file)))
             {
-                using (Bitmap bmp = new Bitmap(file))
-                {
-                    foreach (RotateFlipType type in Enum.GetValues(typeof(RotateFlipType)))
-                    {
-                        md5s.Append(RotateIndexedBmp(bmp, type));
-                    }
-                }
+                Assert.Equal(md5, RotateIndexedBmp(bmp, type));
             }
-
-            using (StreamWriter writer = new StreamWriter("/tmp/md5s.txt"))
-            {
-                writer.WriteLine(md5s);
-            }
-
-            Assert.Equal(
-                "A4DAF507C92BDE10626BC7B34FEFE5" + // 1-bit RotateNoneFlipNone
-                "A4DAF507C92BDE10626BC7B34FEFE5" + // 1-bit Rotate180FlipXY
-                "C0975EAFD2FC1CC9CC7AF20B92FC9F" + // 1-bit Rotate90FlipNone
-                "C0975EAFD2FC1CC9CC7AF20B92FC9F" + // 1-bit Rotate270FlipXY
-                "64AE60858A02228F7B1B18C7812FB6" + // 1-bit Rotate180FlipNone
-                "64AE60858A02228F7B1B18C7812FB6" + // 1-bit RotateNoneFlipXY
-                "E96D3390938350F9DE2608C4364424" + // 1-bit Rotate270FlipNone
-                "E96D3390938350F9DE2608C4364424" + // 1-bit Rotate90FlipXY
-                "23947CE822C1DDE6BEA69C01F8D0D9" + // 1-bit RotateNoneFlipX
-                "23947CE822C1DDE6BEA69C01F8D0D9" + // 1-bit Rotate180FlipY
-                "BE45F685BDEBD7079AA1B2CBA46723" + // 1-bit Rotate90FlipX
-                "BE45F685BDEBD7079AA1B2CBA46723" + // 1-bit Rotate270FlipY
-                "353E937CFF31B1BF6C3DD0A031ACB5" + // 1-bit Rotate180FlipX
-                "353E937CFF31B1BF6C3DD0A031ACB5" + // 1-bit RotateNoneFlipY
-                "AEA18A770A845E25B6A8CE28DD6DCB" + // 1-bit Rotate270FlipX
-                "AEA18A770A845E25B6A8CE28DD6DCB" + // 1-bit Rotate90FlipY
-                "3CC874B571902366AACED5D619E87D" + // 4-bit RotateNoneFlipNone
-                "3CC874B571902366AACED5D619E87D" + // 4-bit Rotate180FlipXY
-                "8DE25C7E1BE4A3B535DB5D83198D83" + // 4-bit Rotate90FlipNone
-                "8DE25C7E1BE4A3B535DB5D83198D83" + // 4-bit Rotate270FlipXY
-                "27CF5E9CE70BE9EBC47FB996721B95" + // 4-bit Rotate180FlipNone
-                "27CF5E9CE70BE9EBC47FB996721B95" + // 4-bit RotateNoneFlipXY
-                "A919CCB8F97CAD7DC1F01026D11A5D" + // 4-bit Rotate270FlipNone
-                "A919CCB8F97CAD7DC1F01026D11A5D" + // 4-bit Rotate90FlipXY
-                "545876C99ACF833E69FBFFBF436034" + // 4-bit RotateNoneFlipX
-                "545876C99ACF833E69FBFFBF436034" + // 4-bit Rotate180FlipY
-                "5DB56687757CDEFC52D89C77CA9223" + // 4-bit Rotate90FlipX
-                "5DB56687757CDEFC52D89C77CA9223" + // 4-bit Rotate270FlipY
-                "05A77EDDCDF20D5B0AC0169E95D7D7" + // 4-bit Rotate180FlipX
-                "05A77EDDCDF20D5B0AC0169E95D7D7" + // 4-bit RotateNoneFlipY
-                "B6B6245796C836923ABAABDF368B29" + // 4-bit Rotate270FlipX
-                "B6B6245796C836923ABAABDF368B29",  // 4-bit Rotate90FlipY
-                md5s.ToString());
         }
 
         private Bitmap CreateBitmap(int width, int height, PixelFormat fmt)

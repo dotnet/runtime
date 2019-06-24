@@ -258,37 +258,41 @@ namespace MonoTests.System.Drawing
             RectangleF[] rects;
             using (Bitmap bmp = new Bitmap(200, 200))
             {
-                Graphics g = Graphics.FromImage(bmp);
-                // Region
-                g.SetClip(new Region(new Rectangle(50, 40, 210, 220)), CombineMode.Replace);
-                rects = g.Clip.GetRegionScans(new Matrix());
-                Assert.Equal(1, rects.Length);
-                Assert.Equal(50, rects[0].X);
-                Assert.Equal(40, rects[0].Y);
-                Assert.Equal(210, rects[0].Width);
-                Assert.Equal(220, rects[0].Height);
-                g.Dispose();
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    // Region
+                    g.SetClip(new Region(new Rectangle(50, 40, 210, 220)), CombineMode.Replace);
+                    rects = g.Clip.GetRegionScans(new Matrix());
+                    Assert.Equal(1, rects.Length);
+                    Assert.Equal(50, rects[0].X);
+                    Assert.Equal(40, rects[0].Y);
+                    Assert.Equal(210, rects[0].Width);
+                    Assert.Equal(220, rects[0].Height);
+                }
 
                 // RectangleF
-                g = Graphics.FromImage(bmp);
-                g.SetClip(new RectangleF(50, 40, 210, 220));
-                rects = g.Clip.GetRegionScans(new Matrix());
-                Assert.Equal(1, rects.Length);
-                Assert.Equal(50, rects[0].X);
-                Assert.Equal(40, rects[0].Y);
-                Assert.Equal(210, rects[0].Width);
-                Assert.Equal(220, rects[0].Height);
-                g.Dispose();
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.SetClip(new RectangleF(50, 40, 210, 220));
+                    rects = g.Clip.GetRegionScans(new Matrix());
+                    Assert.Equal(1, rects.Length);
+                    Assert.Equal(50, rects[0].X);
+                    Assert.Equal(40, rects[0].Y);
+                    Assert.Equal(210, rects[0].Width);
+                    Assert.Equal(220, rects[0].Height);
+                }
 
                 // Rectangle
-                g = Graphics.FromImage(bmp);
-                g.SetClip(new Rectangle(50, 40, 210, 220));
-                rects = g.Clip.GetRegionScans(new Matrix());
-                Assert.Equal(1, rects.Length);
-                Assert.Equal(50, rects[0].X);
-                Assert.Equal(40, rects[0].Y);
-                Assert.Equal(210, rects[0].Width);
-                Assert.Equal(220, rects[0].Height);
+                using (Graphics g = Graphics.FromImage(bmp))
+                {
+                    g.SetClip(new Rectangle(50, 40, 210, 220));
+                    rects = g.Clip.GetRegionScans(new Matrix());
+                    Assert.Equal(1, rects.Length);
+                    Assert.Equal(50, rects[0].X);
+                    Assert.Equal(40, rects[0].Y);
+                    Assert.Equal(210, rects[0].Width);
+                    Assert.Equal(220, rects[0].Height);
+                }
             }
         }
 
@@ -369,7 +373,7 @@ namespace MonoTests.System.Drawing
                 Assert.Equal(PixelFormat.Format4bppIndexed, img.PixelFormat);
                 Exception exception = AssertExtensions.Throws<ArgumentException, Exception>(() => Graphics.FromImage(img));
                 if (exception is ArgumentException argumentException)
-                    Assert.Equal("image", argumentException.ParamName);                
+                    Assert.Equal("image", argumentException.ParamName);
             }
         }
 
@@ -444,11 +448,11 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Transform_NonInvertibleMatrix()
         {
-            Matrix matrix = new Matrix(123, 24, 82, 16, 47, 30);
-            Assert.False(matrix.IsInvertible);
-
+            using (Matrix matrix = new Matrix(123, 24, 82, 16, 47, 30))
             using (var b = new BitmapAndGraphics(16, 16))
             {
+                Assert.False(matrix.IsInvertible);
+
                 var g = b.Graphics;
                 Assert.Throws<ArgumentException>(() => g.Transform = matrix);
             }
@@ -458,10 +462,11 @@ namespace MonoTests.System.Drawing
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Multiply_NonInvertibleMatrix()
         {
-            Matrix matrix = new Matrix(123, 24, 82, 16, 47, 30);
-            Assert.False(matrix.IsInvertible);
+            using (Matrix matrix = new Matrix(123, 24, 82, 16, 47, 30))
             using (var b = new BitmapAndGraphics(16, 16))
             {
+                Assert.False(matrix.IsInvertible);
+
                 var g = b.Graphics;
                 Assert.Throws<ArgumentException>(() => g.MultiplyTransform(matrix));
             }
@@ -532,14 +537,16 @@ namespace MonoTests.System.Drawing
             {
                 var g = b.Graphics;
                 g.Clip = new Region(new Rectangle(0, 0, 8, 8));
-                Region clone = g.Clip.Clone();
-                g.TranslateTransform(8, 8);
-                CheckBounds("translate.ClipBounds", g.ClipBounds, -8, -8, 8, 8);
-                CheckBounds("translate.Clip.GetBounds", g.Clip.GetBounds(g), -8, -8, 8, 8);
+                using (Region clone = g.Clip.Clone())
+                {
+                    g.TranslateTransform(8, 8);
+                    CheckBounds("translate.ClipBounds", g.ClipBounds, -8, -8, 8, 8);
+                    CheckBounds("translate.Clip.GetBounds", g.Clip.GetBounds(g), -8, -8, 8, 8);
 
-                g.SetClip(clone, CombineMode.Replace);
-                CheckBounds("setclip.ClipBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
-                CheckBounds("setclip.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                    g.SetClip(clone, CombineMode.Replace);
+                    CheckBounds("setclip.ClipBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                    CheckBounds("setclip.Clip.GetBounds", g.Clip.GetBounds(g), 0, 0, 8, 8);
+                }
             }
         }
 
@@ -1050,7 +1057,6 @@ namespace MonoTests.System.Drawing
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
             {
-
                 CheckDefaultProperties("default", g);
                 Assert.Equal(new Point(0, 0), g.RenderingOrigin);
 
@@ -1784,8 +1790,8 @@ namespace MonoTests.System.Drawing
         public void MeasureString_StringFormat_Alignment()
         {
             string text = "Hello Mono::";
-            StringFormat string_format = new StringFormat();
 
+            using (StringFormat string_format = new StringFormat())
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
             {
@@ -1810,12 +1816,12 @@ namespace MonoTests.System.Drawing
         public void MeasureString_StringFormat_Alignment_DirectionVertical()
         {
             string text = "Hello Mono::";
-            StringFormat string_format = new StringFormat();
-            string_format.FormatFlags = StringFormatFlags.DirectionVertical;
-
+            using (StringFormat string_format = new StringFormat())
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
             {
+                string_format.FormatFlags = StringFormatFlags.DirectionVertical;
+
                 string_format.Alignment = StringAlignment.Near;
                 SizeF near = g.MeasureString(text, font, int.MaxValue, string_format);
 
@@ -1837,8 +1843,7 @@ namespace MonoTests.System.Drawing
         public void MeasureString_StringFormat_LineAlignment()
         {
             string text = "Hello Mono::";
-            StringFormat string_format = new StringFormat();
-
+            using (StringFormat string_format = new StringFormat())
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
             {
@@ -1863,12 +1868,12 @@ namespace MonoTests.System.Drawing
         public void MeasureString_StringFormat_LineAlignment_DirectionVertical()
         {
             string text = "Hello Mono::";
-            StringFormat string_format = new StringFormat();
-            string_format.FormatFlags = StringFormatFlags.DirectionVertical;
-
+            using (StringFormat string_format = new StringFormat())
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
             {
+                string_format.FormatFlags = StringFormatFlags.DirectionVertical;
+
                 string_format.LineAlignment = StringAlignment.Near;
                 SizeF near = g.MeasureString(text, font, int.MaxValue, string_format);
 
@@ -1891,9 +1896,8 @@ namespace MonoTests.System.Drawing
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
+            using (StringFormat string_format = new StringFormat())
             {
-                StringFormat string_format = new StringFormat();
-
                 string text1 = "Test\nTest123\nTest 456\nTest 1,2,3,4,5...";
                 string text2 = "Test 1,2,3,4,5...";
 
@@ -2020,13 +2024,13 @@ namespace MonoTests.System.Drawing
             ranges[0] = new CharacterRange(0, 5);
             ranges[1] = new CharacterRange(5, 9);
 
-            StringFormat string_format = new StringFormat();
-            string_format.FormatFlags = StringFormatFlags.NoClip;
-            string_format.SetMeasurableCharacterRanges(ranges);
-
+            using (StringFormat string_format = new StringFormat())
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
             {
+                string_format.FormatFlags = StringFormatFlags.NoClip;
+                string_format.SetMeasurableCharacterRanges(ranges);
+
                 SizeF size = g.MeasureString(text, font, new Point(0, 0), string_format);
                 RectangleF layout_rect = new RectangleF(0.0f, 0.0f, size.Width, size.Height);
                 Region[] regions = g.MeasureCharacterRanges(text, font, layout_rect, string_format);
@@ -2041,13 +2045,13 @@ namespace MonoTests.System.Drawing
             CharacterRange[] ranges = new CharacterRange[1];
             ranges[0] = new CharacterRange(first, length);
 
-            StringFormat string_format = new StringFormat();
-            string_format.FormatFlags = StringFormatFlags.NoClip;
-            string_format.SetMeasurableCharacterRanges(ranges);
-
+            using (StringFormat string_format = new StringFormat())
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
             {
+                string_format.FormatFlags = StringFormatFlags.NoClip;
+                string_format.SetMeasurableCharacterRanges(ranges);
+
                 SizeF size = g.MeasureString(text, font, new Point(0, 0), string_format);
                 RectangleF layout_rect = new RectangleF(0.0f, 0.0f, size.Width, size.Height);
                 g.MeasureCharacterRanges(text, font, layout_rect, string_format);
@@ -2075,12 +2079,12 @@ namespace MonoTests.System.Drawing
             CharacterRange[] ranges = new CharacterRange[1];
             ranges[0] = new CharacterRange(5, 4);
 
-            StringFormat string_format = new StringFormat();
-            string_format.SetMeasurableCharacterRanges(ranges);
-
+            using (StringFormat string_format = new StringFormat())
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
             {
+                string_format.SetMeasurableCharacterRanges(ranges);
+
                 SizeF size = g.MeasureString(text, font, new Point(0, 0), string_format);
                 RectangleF layout_rect = new RectangleF(0.0f, 0.0f, size.Width, size.Height);
 
@@ -2200,11 +2204,11 @@ namespace MonoTests.System.Drawing
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
+            using (StringFormat fmt = new StringFormat())
             {
                 Rectangle rect = Rectangle.Empty;
                 rect.Location = new Point(10, 10);
                 rect.Size = new Size(1, 20);
-                StringFormat fmt = new StringFormat();
                 fmt.Alignment = StringAlignment.Center;
                 fmt.LineAlignment = StringAlignment.Center;
                 fmt.FormatFlags = StringFormatFlags.NoWrap;
@@ -2218,11 +2222,11 @@ namespace MonoTests.System.Drawing
         {
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
+            using (StringFormat fmt = new StringFormat())
             {
                 Rectangle rect = Rectangle.Empty;
                 rect.Location = new Point(10, 10);
                 rect.Size = new Size(1, 20);
-                StringFormat fmt = new StringFormat();
                 fmt.Alignment = StringAlignment.Center;
                 fmt.LineAlignment = StringAlignment.Center;
                 fmt.Trimming = StringTrimming.EllipsisWord;
@@ -2236,14 +2240,12 @@ namespace MonoTests.System.Drawing
             string text = "this is really long text........................................... with a lot o periods.";
             using (Bitmap bitmap = new Bitmap(20, 20))
             using (Graphics g = Graphics.FromImage(bitmap))
+            using (StringFormat format = new StringFormat())
             {
-                using (StringFormat format = new StringFormat())
-                {
-                    format.Alignment = StringAlignment.Center;
-                    SizeF sz = g.MeasureString(text, font, 80, format);
-                    Assert.True(sz.Width <= 80);
-                    Assert.True(sz.Height > font.Height * 2);
-                }
+                format.Alignment = StringAlignment.Center;
+                SizeF sz = g.MeasureString(text, font, 80, format);
+                Assert.True(sz.Width <= 80);
+                Assert.True(sz.Height > font.Height * 2);
             }
         }
 
@@ -2988,8 +2990,8 @@ namespace MonoTests.System.Drawing
             Rectangle r = new Rectangle(1, 2, 3, 4);
             using (Bitmap bmp = new Bitmap(40, 40))
             using (Graphics g = Graphics.FromImage(bmp))
+            using (ImageAttributes ia = new ImageAttributes())
             {
-                ImageAttributes ia = new ImageAttributes();
                 g.DrawImage(bmp, pts, r, GraphicsUnit.Pixel, ia);
             }
         }
@@ -3200,7 +3202,7 @@ namespace MonoTests.System.Drawing
                 Assert.Equal(-12156236, bmp.GetPixel(1, 9).ToArgb());
             }
         }
-        
+
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TransformPoints()
