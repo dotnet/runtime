@@ -89,10 +89,12 @@ namespace System.Text.Json
             var readerState = new JsonReaderState(options.GetReaderOptions());
 
             // todo: switch to ArrayBuffer implementation to handle and simplify the allocs?
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(options.DefaultBufferSize);
+            int utf8BomLength = JsonConstants.Utf8Bom.Length;
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(Math.Max(options.DefaultBufferSize, utf8BomLength));
             int bytesInBuffer = 0;
             long totalBytesRead = 0;
             int clearMax = 0;
+            bool firstIteration = true;
 
             try
             {
@@ -132,11 +134,24 @@ namespace System.Text.Json
                         clearMax = bytesInBuffer;
                     }
 
+                    int start = 0;
+                    if (firstIteration)
+                    {
+                        firstIteration = false;
+                        // Handle the UTF-8 BOM if present
+                        Debug.Assert(buffer.Length >= JsonConstants.Utf8Bom.Length);
+                        if (buffer.AsSpan().StartsWith(JsonConstants.Utf8Bom))
+                        {
+                            start += utf8BomLength;
+                            bytesInBuffer -= utf8BomLength;
+                        }
+                    }
+
                     // Process the data available
                     ReadCore(
                         ref readerState,
                         isFinalBlock,
-                        new Span<byte>(buffer, 0, bytesInBuffer),
+                        new ReadOnlySpan<byte>(buffer, start, bytesInBuffer),
                         options,
                         ref readStack);
 
@@ -155,9 +170,9 @@ namespace System.Text.Json
                     {
                         // We have less than half the buffer available, double the buffer size.
                         byte[] dest = ArrayPool<byte>.Shared.Rent((buffer.Length < (int.MaxValue / 2)) ? buffer.Length * 2 : int.MaxValue);
-                        
+
                         // Copy the unprocessed data to the new buffer while shifting the processed bytes.
-                        Buffer.BlockCopy(buffer, bytesConsumed, dest, 0, bytesInBuffer);
+                        Buffer.BlockCopy(buffer, bytesConsumed + start, dest, 0, bytesInBuffer);
 
                         new Span<byte>(buffer, 0, clearMax).Clear();
                         ArrayPool<byte>.Shared.Return(buffer);
@@ -190,7 +205,7 @@ namespace System.Text.Json
         private static void ReadCore(
             ref JsonReaderState readerState,
             bool isFinalBlock,
-            Span<byte> buffer,
+            ReadOnlySpan<byte> buffer,
             JsonSerializerOptions options,
             ref ReadStack readStack)
         {
