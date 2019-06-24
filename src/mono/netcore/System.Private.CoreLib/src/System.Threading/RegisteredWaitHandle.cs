@@ -70,8 +70,10 @@ namespace System.Threading
 			} finally {
 				lock (this) {
 					_callsInProcess--;
-					if (_unregistered && _callsInProcess == 0 && _finalEvent != null)
+					if (_unregistered && _callsInProcess == 0 && _finalEvent != null) {
 						EventWaitHandle.Set (_finalEvent.SafeWaitHandle);
+						_finalEvent = null;
+					}
 				}
 			}
 		}
