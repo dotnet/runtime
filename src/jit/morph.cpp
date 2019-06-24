@@ -6655,7 +6655,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 #endif
 
         // We expect 'addr' to be an address at this point.
-        assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL);
+        assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
 
         // Since we don't make a constant zero to attach the field sequence to, associate it with the "addr" node.
         FieldSeqNode* fieldSeq =
@@ -18724,7 +18724,7 @@ private:
 void Compiler::fgAddFieldSeqForZeroOffset(GenTree* addr, FieldSeqNode* fieldSeqZero)
 {
     // We expect 'addr' to be an address at this point.
-    assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL);
+    assert(addr->TypeGet() == TYP_BYREF || addr->TypeGet() == TYP_I_IMPL || addr->TypeGet() == TYP_REF);
 
     FieldSeqNode* fieldSeqUpdate   = fieldSeqZero;
     GenTree*      fieldSeqNode     = addr;
