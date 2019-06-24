@@ -64,13 +64,6 @@
 -nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.NewArrayBounds
 -nonamespace System.Linq.Expressions.Tests
 
-# Assertion in System.Number.FormatDouble
-# https://github.com/dotnet/coreclr/issues/25081
--nomethod System.Tests.RealFormatterTestsBase.TestFormatterSingle_F20
--noclass System.Tests.RealFormatterTestsBase
--noclass System.Tests.RealFormatterTests
--noclass System.Buffers.Text.Tests.RealFormatterTests
-
 # Timeout in System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.SerializeHugeObjectGraphs: https://github.com/dotnet/coreclr/issues/20246
 -nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.SerializeHugeObjectGraphs
 
