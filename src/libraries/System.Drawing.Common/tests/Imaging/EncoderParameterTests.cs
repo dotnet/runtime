@@ -44,8 +44,10 @@ namespace System.Drawing.Imaging.Tests
         [MemberData(nameof(Ctor_Encoder_Byte_TestData))]
         public void Ctor_Encoder_Byte(Encoder encoder, byte value)
         {
-            EncoderParameter ep = new EncoderParameter(encoder, value);
-            CheckEncoderParameter(ep, encoder, EncoderParameterValueType.ValueTypeByte, 1);
+            using (EncoderParameter ep = new EncoderParameter(encoder, value))
+            {
+                CheckEncoderParameter(ep, encoder, EncoderParameterValueType.ValueTypeByte, 1);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -63,8 +65,10 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(short.MaxValue)]
         public void Ctor_Encoder_Short(short value)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value);
-            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeShort, 1);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, value))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeShort, 1);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -73,8 +77,10 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(long.MaxValue)]
         public void Ctor_Encoder_Long(long value)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value);
-            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLong, 1);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, value))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLong, 1);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -83,8 +89,10 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(-10, -5)]
         public void Ctor_Encoder_Numerator_Denominator(int numerator, int denominator)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, numerator, denominator);
-            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRational, 1);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, numerator, denominator))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRational, 1);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -92,8 +100,10 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(1, 2, 3, 4)]
         public void Ctor_Encoder_Numerator1_Denominator1_Numerator2_Denominator2(int numerator1, int denominator1, int numerator2, int denominator2)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, numerator1, denominator1, numerator2, denominator2);
-            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRationalRange, 1);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, numerator1, denominator1, numerator2, denominator2))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRationalRange, 1);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -101,8 +111,10 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(1, 2)]
         public void Ctor_Encoder_RangeBegin_RangeEnd(long rangeBegin, long rangeEnd)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, rangeBegin, rangeEnd);
-            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLongRange, 1);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, rangeBegin, rangeEnd))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLongRange, 1);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -110,8 +122,10 @@ namespace System.Drawing.Imaging.Tests
         [InlineData("")]
         public void Ctor_Encoder_String(string value)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value);
-            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeAscii, value.Length);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, value))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeAscii, value.Length);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -119,8 +133,10 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(new byte[] { 0, 1, 2, 3 })]
         public void Ctor_Encoder_ByteArray(byte[] value)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value);
-            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeByte, value.Length);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, value))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeByte, value.Length);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -128,8 +144,10 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(new byte[] { 1, 2 }, true, EncoderParameterValueType.ValueTypeUndefined)]
         public void Ctor_Encoder_ByteArray_Bool(byte[] value, bool undefined, EncoderParameterValueType expected)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value, undefined);
-            CheckEncoderParameter(ep, s_anyEncoder, expected, value.Length);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, value, undefined))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, expected, value.Length);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -137,8 +155,10 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(new short[] { 0, 1, 2, 3 })]
         public void Ctor_Encoder_ShortArray(short[] value)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value);
-            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeShort, value.Length);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, value))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeShort, value.Length);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
@@ -146,32 +166,40 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(new long[] { 0, 1, 2, 3 })]
         public void Ctor_Encoder_LongArray(long[] value)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value);
-            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLong, value.Length);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, value))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLong, value.Length);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(new int[] { 0, 1, 2, 3 }, new int[] { 5, 6, 7, 8 })]
         public void Ctor_Encoder_NumeratorArray_DenominatorArray(int[] numerator, int[] denominator)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, numerator, denominator);
-            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRational, numerator.Length);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, numerator, denominator))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRational, numerator.Length);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(new long[] { 0, 1, 2, 3 }, new long[] { 5, 6, 7, 8 })]
         public void Ctor_Encoder_RangeBeginArray_RangeEndArray(long[] rangeBegin, long[] rangeEnd)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, rangeBegin, rangeEnd);
-            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLongRange, rangeBegin.Length);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, rangeBegin, rangeEnd))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLongRange, rangeBegin.Length);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(new int[] { 0, 1, 2, 3 }, new int[] { 4, 5, 6, 7 }, new int[] { 8, 9, 10, 11 }, new int[] { 12, 13, 14, 15 })]
         public void Ctor_Encoder_Numerator1Array_Denominator1Array_Numerator2Array_Denominator2Array(int[] numerator1, int[] denominator1, int[] numerator2, int[] denominator2)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, numerator1, denominator1, numerator2, denominator2);
-            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRationalRange, numerator1.Length);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, numerator1, denominator1, numerator2, denominator2))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRationalRange, numerator1.Length);
+            }
         }
 
         public static IEnumerable<object[]> Encoder_NumberOfValues_TestData
@@ -194,18 +222,23 @@ namespace System.Drawing.Imaging.Tests
         [MemberData(nameof(Encoder_NumberOfValues_TestData))]
         public void Ctor_Encoder_NumberOfValues_Type_Value(int numberOfValues, EncoderParameterValueType type, IntPtr value)
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, numberOfValues, type, value);
-            CheckEncoderParameter(ep, s_anyEncoder, type, numberOfValues);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, numberOfValues, type, value))
+            {
+                CheckEncoderParameter(ep, s_anyEncoder, type, numberOfValues);
+            }
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Encoder_ReturnsExpecetd()
         {
             Encoder encoder = new Encoder(Guid.NewGuid());
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, 0);
-            ep.Encoder = encoder;
-
-            Assert.Equal(encoder.Guid, ep.Encoder.Guid);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, 0)
+            {
+                Encoder = encoder
+            })
+            {
+                Assert.Equal(encoder.Guid, ep.Encoder.Guid);
+            }
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]
@@ -229,8 +262,10 @@ namespace System.Drawing.Imaging.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Encoder_Null_ThrowsNullReferenceException()
         {
-            EncoderParameter ep = new EncoderParameter(s_anyEncoder, 0);
-            Assert.Throws<NullReferenceException>(() => ep.Encoder = null);
+            using (EncoderParameter ep = new EncoderParameter(s_anyEncoder, 0))
+            {
+                Assert.Throws<NullReferenceException>(() => ep.Encoder = null);
+            }
         }
 
         [ConditionalTheory(Helpers.IsDrawingSupported)]
