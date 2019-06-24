@@ -163,9 +163,9 @@ namespace System.SpanTests
         {
             char[] a = { '4', '5', '6' };
             var span = new ReadOnlySpan<char>(a);
-            TestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Equals(_span, StringComparison.CurrentCulture - 1));
-            TestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Equals(_span, StringComparison.OrdinalIgnoreCase + 1));
-            TestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Equals(_span, (StringComparison)6));
+            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Equals(_span, StringComparison.CurrentCulture - 1));
+            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Equals(_span, StringComparison.OrdinalIgnoreCase + 1));
+            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Equals(_span, (StringComparison)6));
         }
       
     }

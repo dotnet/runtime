@@ -96,7 +96,7 @@ namespace System.MemoryTests
         [Fact]
         public static void ToStringMemoryOverFullStringReturnsOriginal()
         {
-            string original = TestHelpers.BuildString(10, 42);
+            string original = MemoryTestHelpers.BuildString(10, 42);
 
             ReadOnlyMemory<char> readOnlyMemory = original.AsMemory();
             Memory<char> memory = MemoryMarshal.AsMemory(readOnlyMemory);

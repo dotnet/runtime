@@ -5,7 +5,7 @@
 using Xunit;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using static System.TestHelpers;
+using static System.MemoryTestHelpers;
 
 namespace System.SpanTests
 {
