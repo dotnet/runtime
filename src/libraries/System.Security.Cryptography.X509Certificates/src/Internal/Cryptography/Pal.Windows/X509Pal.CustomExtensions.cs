@@ -50,9 +50,21 @@ namespace Internal.Cryptography.Pal
                         Debug.Assert(cbDecoded >= sizeof(CRYPT_BIT_BLOB));
                         CRYPT_BIT_BLOB* pBlob = (CRYPT_BIT_BLOB*)pvDecoded;
                         keyUsagesAsUint = 0;
-                        if (pBlob->pbData != null)
+                        byte* pbData = pBlob->pbData;
+
+                        if (pbData != null)
                         {
-                            keyUsagesAsUint = *(uint*)(pBlob->pbData);
+                            Debug.Assert((uint)pBlob->cbData < 3, "Unexpected length for X509_KEY_USAGE data");
+
+                            switch (pBlob->cbData)
+                            {
+                                case 1:
+                                    keyUsagesAsUint = *pbData;
+                                    break;
+                                case 2:
+                                    keyUsagesAsUint = *(ushort*)(pbData);
+                                    break;
+                            }
                         }
                     }
                 );
