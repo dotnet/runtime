@@ -115,7 +115,7 @@ namespace System.Net.Test.Common
         public async Task<Frame> ReadFrameAsync(TimeSpan timeout)
         {
             using CancellationTokenSource timeoutCts = new CancellationTokenSource(timeout);
-            return await ReadFrameAsync(timeoutCts.Token);
+            return await ReadFrameAsync(timeoutCts.Token).ConfigureAwait(false);
         }
 
         private async Task<Frame> ReadFrameAsync(CancellationToken cancellationToken)
@@ -241,8 +241,8 @@ namespace System.Net.Test.Common
         {
             try
             {
-                await SendGoAway(lastStreamId);
-                await WaitForConnectionShutdownAsync();
+                await SendGoAway(lastStreamId).ConfigureAwait(false);
+                await WaitForConnectionShutdownAsync().ConfigureAwait(false);
             }
             catch (IOException)
             {
@@ -545,7 +545,7 @@ namespace System.Net.Test.Common
             if (readBody && (frame.Flags & FrameFlags.EndStream) == 0)
             {
                 // Read body until end of stream if needed.
-                requestData.Body = await ReadBodyAsync();
+                requestData.Body = await ReadBodyAsync().ConfigureAwait(false);
             }
 
             return (streamId, requestData);

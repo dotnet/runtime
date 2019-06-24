@@ -32,7 +32,7 @@ namespace System.Net.Test.Common
         {
             try
             {
-                return await testCode();
+                return await testCode().ConfigureAwait(false);
             }
             catch (Exception actualException)
             {
@@ -49,7 +49,7 @@ namespace System.Net.Test.Common
         {
             try
             {
-                await testCode();
+                await testCode().ConfigureAwait(false);
             }
             catch (Exception actualException)
             {

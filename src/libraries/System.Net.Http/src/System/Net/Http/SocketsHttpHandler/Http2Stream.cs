@@ -17,17 +17,6 @@ namespace System.Net.Http
     {
         private sealed class Http2Stream : IValueTaskSource, IDisposable
         {
-            private enum StreamState : byte
-            {
-                ExpectingStatus,
-                ExpectingIgnoredHeaders,
-                ExpectingHeaders,
-                ExpectingData,
-                ExpectingTrailingHeaders,
-                Complete,
-                Aborted
-            }
-
             private const int InitialStreamBufferSize =
 #if DEBUG
                 10;
@@ -48,11 +37,26 @@ namespace System.Net.Http
             private bool _disposed;
             private Exception _abortException;
 
-            /// <summary>The core logic for the IValueTaskSource implementation.</summary>
+            /// <summary>
+            /// The core logic for the IValueTaskSource implementation.
+            /// 
+            /// Thread-safety:
+            /// _waitSource is used to coordinate between a producer indicating that something is available to process (either the connection's event loop
+            /// or a cancellation request) and a consumer doing that processing.  There must only ever be a single consumer, namely this stream reading
+            /// data associated with the response.  Because there is only ever at most one consumer, producers can trust that if _hasWaiter is true,
+            /// until the _waitSource is then set, no consumer will attempt to reset the _waitSource.  A producer must still take SyncObj in order to
+            /// coordinate with other producers (e.g. a race between data arriving from the event loop and cancellation being requested), but while holding
+            /// the lock it can check whether _hasWaiter is true, and if it is, set _hasWaiter to false, exit the lock, and then set the _waitSource. Another
+            /// producer coming along will then see _hasWaiter as false and will not attempt to concurrently set _waitSource (which would violate _waitSource's
+            /// thread-safety), and no other consumer could come along in the interim, because _hasWaiter being true means that a consumer is already waiting
+            /// for _waitSource to be set, and legally there can only be one consumer.  Once this producer sets _waitSource, the consumer could quickly loop
+            /// around to wait again, but invariants have all been maintained in the interim, and the consumer would need to take the SyncObj lock in order to
+            /// Reset _waitSource.
+            /// </summary>
             private ManualResetValueTaskSourceCore<bool> _waitSource = new ManualResetValueTaskSourceCore<bool> { RunContinuationsAsynchronously = true }; // mutable struct, do not make this readonly
             /// <summary>
             /// Whether code has requested or is about to request a wait be performed and thus requires a call to SetResult to complete it.
-            /// This is read and written while holding the lock so that most operations on _waitSourceCore don't need to be.
+            /// This is read and written while holding the lock so that most operations on _waitSource don't need to be.
             /// </summary>
             private bool _hasWaiter;
 
@@ -98,9 +102,19 @@ namespace System.Net.Http
                     {
                         using (Http2WriteStream writeStream = new Http2WriteStream(this))
                         {
-                            // TODO: until #9071 is fixed, cancellation on content.CopyToAsync does not work.
-                            // To work around it, register delegate and set _abortException as needed.
-                            using (cancellationToken.UnsafeRegister(stream => { if (((Http2Stream)stream)._abortException == null) ((Http2Stream)stream)._abortException = new OperationCanceledException(); }, this))
+                            // TODO: until #9071 is fixed, cancellation on content.CopyToAsync does not apply for most content types,
+                            // because most content types aren't passed the token given to this internal overload of CopyToAsync.
+                            // To work around it, we register to set _abortException as needed; this won't preempt reads issued to
+                            // the source content, but it will at least enable the writes then performed on our write stream to see
+                            // that cancellation was requested and abort, rather than waiting for the whole copy to complete.
+                            using (cancellationToken.UnsafeRegister(stream =>
+                            {
+                                var thisRef = (Http2Stream)stream;
+                                if (thisRef._abortException == null)
+                                {
+                                    Interlocked.CompareExchange(ref thisRef._abortException, new OperationCanceledException(), null);
+                                }
+                            }, this))
                             {
                                 await _request.Content.CopyToAsync(writeStream, null, cancellationToken).ConfigureAwait(false);
                             }
@@ -122,9 +136,9 @@ namespace System.Net.Http
 
                         if (_abortException == null)
                         {
-                            // If we are still the response after receiving response headers, this will give us a chance to propagate exception up.
-                            // Since we failed while Copying stream, wrap it as IOException if needed.
-                            _abortException = e;
+                            // If we are still processing the response after receiving response headers,
+                            // this will give us a chance to propagate exception up.
+                            Interlocked.CompareExchange(ref _abortException, e, null);
                         }
 
                         throw;
@@ -145,8 +159,8 @@ namespace System.Net.Http
                 Task response = ReadResponseHeadersAsync(cancellationToken);
 
                 using (var expect100Timer = new Timer(
-                            s => ((TaskCompletionSource<bool>)s).TrySetResult(true),
-                            allowExpect100ToContinue, _connection._pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan))
+                    s => ((TaskCompletionSource<bool>)s).TrySetResult(true),
+                    allowExpect100ToContinue, _connection._pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan))
                 {
                     // By now, either we got response from server or timer expired.
                     sendRequestContent = await allowExpect100ToContinue.Task.ConfigureAwait(false);
@@ -244,7 +258,7 @@ namespace System.Net.Http
                         }
                         else
                         {
-                            if (NetEventSource.IsEnabled) _connection.Trace("Invalid response pseudo-header '{System.Text.Encoding.ASCII.GetString(name)}'.");
+                            if (NetEventSource.IsEnabled) _connection.Trace($"Invalid response pseudo-header '{Encoding.ASCII.GetString(name)}'.");
                             throw new Http2ProtocolException(SR.net_http_invalid_response);
                         }
                     }
@@ -258,7 +272,7 @@ namespace System.Net.Http
 
                         if (_state != StreamState.ExpectingHeaders && _state != StreamState.ExpectingTrailingHeaders)
                         {
-                            if (NetEventSource.IsEnabled) _connection.Trace($"Received header before status.");
+                            if (NetEventSource.IsEnabled) _connection.Trace("Received header before status.");
                             throw new Http2ProtocolException(SR.net_http_invalid_response);
                         }
 
@@ -410,7 +424,7 @@ namespace System.Net.Http
                         return;
                     }
 
-                    _abortException = abortException;
+                    Interlocked.CompareExchange(ref _abortException, abortException, null);
                     _state = StreamState.Aborted;
 
                     signalWaiter = _hasWaiter;
@@ -466,6 +480,7 @@ namespace System.Net.Http
                 (wait, emptyResponse) = TryEnsureHeaders();
                 if (wait)
                 {
+                    Debug.Assert(_hasWaiter, $"{nameof(TryEnsureHeaders)} should have set _hasWaiter to true.");
                     await GetWaiterTask(cancellationToken).ConfigureAwait(false);
 
                     (wait, emptyResponse) = TryEnsureHeaders();
@@ -557,7 +572,8 @@ namespace System.Net.Http
                 {
                     // Synchronously block waiting for data to be produced.
                     Debug.Assert(bytesRead == 0);
-                    GetWaiterTask(cancellationToken).GetAwaiter().GetResult();
+                    Debug.Assert(_hasWaiter, $"{nameof(TryReadFromBuffer)} should have set _hasWaiter to true.");
+                    GetWaiterTask(cancellationToken).AsTask().GetAwaiter().GetResult();
                     CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
                     (wait, bytesRead) = TryReadFromBuffer(buffer);
                     Debug.Assert(!wait);
@@ -583,6 +599,7 @@ namespace System.Net.Http
                 if (wait)
                 {
                     Debug.Assert(bytesRead == 0);
+                    Debug.Assert(_hasWaiter, $"{nameof(TryReadFromBuffer)} should have set _hasWaiter to true.");
                     await GetWaiterTask(cancellationToken).ConfigureAwait(false);
                     (wait, bytesRead) = TryReadFromBuffer(buffer.Span);
                     Debug.Assert(!wait);
@@ -634,7 +651,7 @@ namespace System.Net.Http
                 lock (SyncObject)
                 {
                     IgnoreExceptions(_connection.SendRstStreamAsync(_streamId, Http2ProtocolErrorCode.Cancel));
-                    _abortException = new OperationCanceledException();
+                    Interlocked.CompareExchange(ref _abortException, new OperationCanceledException(), null);
                     _state = StreamState.Aborted;
 
                     signalWaiter = _hasWaiter;
@@ -654,26 +671,61 @@ namespace System.Net.Http
             ValueTaskSourceStatus IValueTaskSource.GetStatus(short token) => _waitSource.GetStatus(token);
             void IValueTaskSource.OnCompleted(Action<object> continuation, object state, short token, ValueTaskSourceOnCompletedFlags flags) => _waitSource.OnCompleted(continuation, state, token, flags);
             void IValueTaskSource.GetResult(short token) => _waitSource.GetResult(token);
-            private async Task GetWaiterTask(CancellationToken cancellationToken)
+            private ValueTask GetWaiterTask(CancellationToken cancellationToken)
             {
-                var vt = new ValueTask(this, _waitSource.Version).AsTask();
-                using (cancellationToken.Register(s =>
+                // No locking is required here to access _waitSource.  To be here, we've already updated _hasWaiter (while holding the lock)
+                // to indicate that we would be creating this waiter, and at that point the only code that could be await'ing _waitSource or
+                // Reset'ing it is this code here.  It's possible for this to race with the _waitSource being completed, but that's ok and is
+                // handled by _waitSource as one of its primary purposes.
+                Debug.Assert(_hasWaiter, $"This should only be called after we've transitioned _hasWaiter to true to enable this {nameof(GetWaiterTask)} call.");
+
+                // With HttpClient, the supplied cancellation token will always be cancelable, as HttpClient supplies a token that
+                // will have cancellation requested if CancelPendingRequests is called (or when a non-infinite Timeout expires).
+                // However, this could still be non-cancelable if HttpMessageInvoker was used, at which point this will only be
+                // cancelable if the caller's token was cancelable.  To avoid the extra allocation here in such a case, we make
+                // this pay-for-play: if the token isn't cancelable, return a ValueTask wrapping this object directly, and only
+                // if it is cancelable, then register for the cancellation callback, allocate a task for the asynchronously
+                // completing case, etc.
+                return cancellationToken.CanBeCanceled ?
+                    new ValueTask(GetWaiterTaskCore()) :
+                    new ValueTask(this, _waitSource.Version);
+
+                async Task GetWaiterTaskCore()
                 {
-                    Http2Stream stream = (Http2Stream)s;
-                    bool signalWaiter;
-                    lock (stream.SyncObject)
+                    using (cancellationToken.UnsafeRegister(s =>
                     {
-                        signalWaiter = stream._hasWaiter;
-                        stream._hasWaiter = false;
+                        var thisRef = (Http2Stream)s;
+
+                        bool signalWaiter;
+                        lock (thisRef.SyncObject)
+                        {
+                            signalWaiter = thisRef._hasWaiter;
+                            thisRef._hasWaiter = false;
+                        }
+
+                        if (signalWaiter)
+                        {
+                            // Wake up the wait.  It will then immediately check whether cancellation was requested and throw if it was.
+                            thisRef._waitSource.SetResult(true);
+                        }
+                    }, this))
+                    {
+                        await new ValueTask(this, _waitSource.Version).ConfigureAwait(false);
                     }
-                    if (signalWaiter) stream._waitSource.SetException(new OperationCanceledException());
-                }, this))
-                {
 
-                    await vt.ConfigureAwait(false);
+                    CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
                 }
+            }
 
-                CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
+            private enum StreamState : byte
+            {
+                ExpectingStatus,
+                ExpectingIgnoredHeaders,
+                ExpectingHeaders,
+                ExpectingData,
+                ExpectingTrailingHeaders,
+                Complete,
+                Aborted
             }
 
             private sealed class Http2ReadStream : HttpBaseStream
@@ -716,7 +768,7 @@ namespace System.Net.Http
                     Http2Stream http2Stream = _http2Stream ?? throw new ObjectDisposedException(nameof(Http2ReadStream));
                     if (http2Stream._abortException != null)
                     {
-                        ExceptionDispatchInfo.Throw(new IOException(SR.net_http_client_execution_error, http2Stream._abortException));
+                        throw new IOException(SR.net_http_client_execution_error, http2Stream._abortException);
                     }
 
                     return http2Stream.ReadData(destination, CancellationToken.None);

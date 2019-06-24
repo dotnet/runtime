@@ -162,7 +162,7 @@ namespace System.Net.Test.Common
             await AcceptConnectionAsync(async connection =>
             {
                 lines = await connection.ReadRequestHeaderAndSendCustomResponseAsync(response).ConfigureAwait(false);
-            });
+            }).ConfigureAwait(false);
 
             return lines;
         }
@@ -176,7 +176,7 @@ namespace System.Net.Test.Common
             await AcceptConnectionAsync(async connection =>
             {
                 lines = await connection.ReadRequestHeaderAndSendCustomResponseAsync(response).ConfigureAwait(false);
-            });
+            }).ConfigureAwait(false);
 
             return lines;
         }
@@ -190,7 +190,7 @@ namespace System.Net.Test.Common
             await AcceptConnectionAsync(async connection =>
             {
                 lines = await connection.ReadRequestHeaderAndSendResponseAsync(statusCode, additionalHeaders + "Connection: close\r\n", content).ConfigureAwait(false);
-            });
+            }).ConfigureAwait(false);
 
             return lines;
         }
@@ -700,7 +700,7 @@ namespace System.Net.Test.Common
 
                 if (readBody)
                 {
-                    requestData.Body = await ReadRequestBodyAsync();
+                    requestData.Body = await ReadRequestBodyAsync().ConfigureAwait(false);
                     _bodyRead = true;
                 }
 
@@ -789,22 +789,22 @@ namespace System.Net.Test.Common
                     headerString = GetHttpResponseHeaders(statusCode, headerString, contentLength, connectionClose : true);
                 }
 
-                await SendResponseAsync(headerString);
-                await SendResponseAsync(content);
+                await SendResponseAsync(headerString).ConfigureAwait(false);
+                await SendResponseAsync(content).ConfigureAwait(false);
             }
 
             public override async Task SendResponseBodyAsync(byte[] body, bool isFinal = true, int requestId = 0)
             {
-                await SendResponseAsync(Encoding.UTF8.GetString(body));
+                await SendResponseAsync(Encoding.UTF8.GetString(body)).ConfigureAwait(false);
             }
         }
 
         public override async Task<HttpRequestData> HandleRequestAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string content = null)
         {
-            using (Connection connection = await EstablishConnectionAsync())
+            using (Connection connection = await EstablishConnectionAsync().ConfigureAwait(false))
             {
-                HttpRequestData requestData = await connection.ReadRequestDataAsync();
-                await connection.SendResponseAsync(statusCode, headers, content : content);
+                HttpRequestData requestData = await connection.ReadRequestDataAsync().ConfigureAwait(false);
+                await connection.SendResponseAsync(statusCode, headers, content: content).ConfigureAwait(false);
 
                 return requestData;
             }
