@@ -190,6 +190,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void KeyUsageExtension_KeyAgreementAndDecipherOnly()
+        {
+            TestKeyUsageExtension(
+                X509KeyUsageFlags.KeyAgreement | X509KeyUsageFlags.DecipherOnly,
+                false,
+                "0303070880".HexToByteArray());
+        }
+
+        [Fact]
         public static void KeyUsageExtension_BER()
         {
             // Extensions encoded inside PKCS#8 on Windows may use BER encoding that would be invalid DER.
