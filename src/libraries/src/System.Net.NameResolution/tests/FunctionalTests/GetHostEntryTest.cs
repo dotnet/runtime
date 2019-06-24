@@ -35,23 +35,36 @@ namespace System.Net.NameResolution.Tests
             {
                 // Additional data for debugging sporadic CI failures #24355
                 string actualHostName = Dns.GetHostName();
-                bool getHostEntrySuccess = false;
                 string etcHosts = "";
+                Exception getHostEntryException = null;
+                Exception etcHostsException = null;
+
                 try
                 {
                     Dns.GetHostEntry(actualHostName);
-                    getHostEntrySuccess = true;
+                }
+                catch (Exception e2)
+                {
+                    getHostEntryException = e2;
+                }
+
+                try
+                {
                     if (Environment.OSVersion.Platform != PlatformID.Win32NT)
                     {
                         etcHosts = File.ReadAllText("/etc/hosts");
                     }
                 }
-                catch { }
+                catch (Exception e2)
+                {
+                    etcHostsException = e2;
+                }
 
                 throw new Exception(
                     $"Failed for empty hostname.{Environment.NewLine}" +
                     $"Dns.GetHostName() == {actualHostName}{Environment.NewLine}" +
-                    $"{nameof(getHostEntrySuccess)}=={getHostEntrySuccess}{Environment.NewLine}" +
+                    $"{nameof(getHostEntryException)}=={getHostEntryException}{Environment.NewLine}" +
+                    $"{nameof(etcHostsException)}=={etcHostsException}{Environment.NewLine}" +
                     $"/etc/host =={Environment.NewLine}{etcHosts}",
                     ex);
             }
