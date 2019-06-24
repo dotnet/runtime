@@ -939,7 +939,7 @@ bool EventPipeBufferManager::TryConvertBufferToReadOnly(EventPipeBuffer* pNewRea
     {
         EventPipeThread* pThread = pNewReadBuffer->GetWriterThread();
         SpinLockHolder _slh(pThread->GetLock());
-        EventPipeThreadSessionState* pSessionState = pThread->GetSessionState(m_pSession);
+        EventPipeThreadSessionState *const pSessionState = pThread->GetSessionState(m_pSession);
         if (pSessionState->GetWriteBuffer() == pNewReadBuffer)
         {
             pSessionState->SetWriteBuffer(nullptr);
@@ -957,7 +957,7 @@ bool EventPipeBufferManager::TryConvertBufferToReadOnly(EventPipeBuffer* pNewRea
     return pNewReadBuffer->GetVolatileState() == EventPipeBufferState::READ_ONLY;
 }
 
-void EventPipeBufferManager::SuspendWriteEvent(EventPipeSessionID sessionId)
+void EventPipeBufferManager::SuspendWriteEvent(uint32_t sessionIndex)
 {
     CONTRACTL
     {
@@ -1000,7 +1000,7 @@ void EventPipeBufferManager::SuspendWriteEvent(EventPipeSessionID sessionId)
         EventPipeThread *pThread = threadList[i];
         {
             SpinLockHolder _slh(pThread->GetLock());
-            EventPipeThreadSessionState* pSessionState = pThread->GetSessionState(m_pSession);
+            EventPipeThreadSessionState *const pSessionState = pThread->GetSessionState(m_pSession);
             pSessionState->SetWriteBuffer(nullptr);
             // From this point until m_writeEventSuspending is reset to FALSE it is impossible
             // for this thread to set the write buffer to a non-null value which in turn means
@@ -1028,7 +1028,7 @@ void EventPipeBufferManager::SuspendWriteEvent(EventPipeSessionID sessionId)
                 EventPipeThread *const pEventPipeThread = pBufferList->GetThread();
                 if (pEventPipeThread != nullptr)
                 {
-                    YIELD_WHILE(pEventPipeThread->GetSessionWriteInProgress() == sessionId);
+                    YIELD_WHILE(pEventPipeThread->GetSessionWriteInProgress() == sessionIndex);
                     // It still guarantees that the thread has returned its buffer, but it also now guarantees that
                     // that the thread has returned from Session::WriteEvent() and has relinquished the session pointer
                     // This yield is guaranteed to eventually finish because threads will eventually exit WriteEvent()

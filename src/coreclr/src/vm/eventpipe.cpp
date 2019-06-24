@@ -29,20 +29,20 @@
 #ifdef FEATURE_PERFTRACING
 
 CrstStatic EventPipe::s_configCrst;
-Volatile<bool> EventPipe::s_tracingInitialized = false;
+Volatile<bool> EventPipe::s_tracingInitialized(false);
 EventPipeConfiguration EventPipe::s_config;
 EventPipeEventSource *EventPipe::s_pEventSource = nullptr;
 VolatilePtr<EventPipeSession> EventPipe::s_pSessions[MaxNumberOfSessions];
 #ifndef FEATURE_PAL
 unsigned int * EventPipe::s_pProcGroupOffsets = nullptr;
 #endif
+uint32_t EventPipe::s_numberOfSessions = 0;
 
-#ifdef FEATURE_PAL
 // This function is auto-generated from /src/scripts/genEventPipe.py
-extern "C" void InitProvidersAndEvents();
-#else
-void InitProvidersAndEvents();
+#ifdef FEATURE_PAL
+extern "C"
 #endif
+void InitProvidersAndEvents();
 
 void EventPipe::Initialize()
 {
@@ -189,7 +189,12 @@ EventPipeSessionID EventPipe::Enable(
         if (!s_tracingInitialized)
             return;
 
-        EventPipeSession *const pSession = s_config.CreateSession(
+        const uint32_t SessionIndex = GenerateSessionIndex();
+        if (SessionIndex >= EventPipe::MaxNumberOfSessions)
+            return;
+
+        EventPipeSession *const pSession = new EventPipeSession(
+            SessionIndex,
             strOutputPath,
             pStream,
             sessionType,
@@ -198,25 +203,17 @@ EventPipeSessionID EventPipe::Enable(
             pProviders,
             numProviders);
 
-        if (pSession == nullptr)
-            return;
-        sessionId = EnableInternal(pSession, pEventPipeProviderCallbackDataQueue);
-        if (sessionId == 0)
+        const bool fSuccess = EnableInternal(pSession, pEventPipeProviderCallbackDataQueue);
+        if (fSuccess)
+            sessionId = reinterpret_cast<EventPipeSessionID>(pSession);
+        else
             delete pSession;
     });
 
     return sessionId;
 }
 
-static uint64_t GetArrayIndex(EventPipeSessionID mask)
-{
-    for (uint64_t i = 0; i < 64; ++i)
-        if ((1ULL << i) & mask)
-            return i;
-    return UINT64_MAX;
-}
-
-EventPipeSessionID EventPipe::EnableInternal(
+bool EventPipe::EnableInternal(
     EventPipeSession *const pSession,
     EventPipeProviderCallbackDataQueue* pEventPipeProviderCallbackDataQueue)
 {
@@ -232,14 +229,19 @@ EventPipeSessionID EventPipe::EnableInternal(
     CONTRACTL_END;
 
     if (pSession == nullptr || !pSession->IsValid())
-        return 0;
+        return false;
 
     // Return if the index is invalid.
-    const uint64_t index = GetArrayIndex(pSession->GetId());
-    if (index >= 64)
+    if (pSession->GetIndex() >= MaxNumberOfSessions)
     {
-        _ASSERTE(!"Computed index was out of range.");
-        return 0;
+        _ASSERTE(!"Session index was out of range.");
+        return false;
+    }
+
+    if (s_numberOfSessions > MaxNumberOfSessions)
+    {
+        _ASSERTE(!"Max number of sessions reached.");
+        return false;
     }
 
     // Register the SampleProfiler the very first time.
@@ -249,12 +251,13 @@ EventPipeSessionID EventPipe::EnableInternal(
     s_pEventSource->Enable(pSession);
 
     // Save the session.
-    if (s_pSessions[index].LoadWithoutBarrier() != nullptr)
+    if (s_pSessions[pSession->GetIndex()].LoadWithoutBarrier() != nullptr)
     {
         _ASSERTE(!"Attempting to override an existing session.");
-        return 0;
+        return false;
     }
-    s_pSessions[index].Store(pSession);
+    s_pSessions[pSession->GetIndex()].Store(pSession);
+    ++s_numberOfSessions;
 
     // Enable tracing.
     s_config.Enable(*pSession, pEventPipeProviderCallbackDataQueue);
@@ -265,8 +268,7 @@ EventPipeSessionID EventPipe::EnableInternal(
     // Enable the session.
     pSession->Enable();
 
-    // Return the session ID.
-    return pSession->GetId();
+    return true;
 }
 
 void EventPipe::Disable(EventPipeSessionID id)
@@ -288,7 +290,8 @@ void EventPipe::Disable(EventPipeSessionID id)
     GCX_PREEMP();
 
     RunWithCallbackPostponed([&](EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue) {
-        DisableInternal(id, pEventPipeProviderCallbackDataQueue);
+        if (s_numberOfSessions > 0)
+            DisableInternal(id, pEventPipeProviderCallbackDataQueue);
     });
 }
 
@@ -315,25 +318,17 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
+        PRECONDITION(id != 0);
+        PRECONDITION(s_numberOfSessions > 0);
         PRECONDITION(IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
 
-    if (!s_config.Enabled() || !s_config.IsSessionIdValid(id))
+    if (!Enabled() || !IsSessionIdInCollection(id))
         return;
-
-    // Get the specified session ID.
-    const uint64_t index = GetArrayIndex(id);
-    if (index >= 64)
-    {
-        _ASSERTE(!"Computed index was out of range.");
-        return;
-    }
 
     // If the session was not found, then there is nothing else to do.
-    EventPipeSession *const pSession = s_pSessions[index];
-    if (pSession == nullptr)
-        return;
+    EventPipeSession *const pSession = reinterpret_cast<EventPipeSession *>(id);
 
     // Disable the profiler.
     SampleProfiler::Disable();
@@ -346,7 +341,10 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
 
     // At this point, we should not be writing events to this session anymore
     // This is a good time to remove the session from the array.
-    s_pSessions[index].Store(nullptr);
+    _ASSERTE(s_pSessions[pSession->GetIndex()] == pSession);
+
+    // Remove the session from the array, and mask.
+    s_pSessions[pSession->GetIndex()].Store(nullptr);
 
     pSession->Disable(); // Suspend EventPipeBufferManager, and remove providers.
 
@@ -359,7 +357,9 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
         pEventPipeThread->SetAsRundownThread(pSession);
         {
             s_config.Enable(*pSession, pEventPipeProviderCallbackDataQueue);
-            pSession->ExecuteRundown();
+            {
+                pSession->ExecuteRundown();
+            }
             s_config.Disable(*pSession, pEventPipeProviderCallbackDataQueue);
         }
         pEventPipeThread->SetAsRundownThread(nullptr);
@@ -370,14 +370,14 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
         return;
     }
 
+    --s_numberOfSessions;
+
     // Write a final sequence point to the file now that all events have
-    // been emitted
+    // been emitted.
     pSession->WriteSequencePointUnbuffered();
 
-    // Remove the session.
-    s_config.DeleteSession(pSession);
+    delete pSession;
 
-    // Delete deferred providers.
     // Providers can't be deleted during tracing because they may be needed when serializing the file.
     s_config.DeleteDeferredProviders();
 }
@@ -395,22 +395,9 @@ EventPipeSession *EventPipe::GetSession(EventPipeSessionID id)
             return nullptr;
         }
 
-        // Attempt to get the specified session ID.
-        const uint64_t index = GetArrayIndex(id);
-        if (index >= 64)
-        {
-            _ASSERTE(!"Computed index was out of range.");
-            return nullptr;
-        }
-
-        return s_pSessions[index];
+        return IsSessionIdInCollection(id) ?
+            reinterpret_cast<EventPipeSession*>(id) : nullptr;
     }
-}
-
-bool EventPipe::Enabled()
-{
-    LIMITED_METHOD_CONTRACT;
-    return s_tracingInitialized && s_config.Enabled();
 }
 
 EventPipeProvider *EventPipe::CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData)
@@ -623,7 +610,7 @@ void EventPipe::WriteEventInternal(
     }
     else
     {
-        for (uint64_t i = 0; i < MaxNumberOfSessions; ++i)
+        for (uint32_t i = 0; i < MaxNumberOfSessions; ++i)
         {
             // This read is OK because we aren't derefencing the pointer and if we observe a value that
             // isn't up-to-date (whether null or non-null) that is just the natural race timing of trying to
@@ -655,7 +642,7 @@ void EventPipe::WriteEventInternal(
             }
             // Do not reference pSession past this point, we are signaling Disable() that it is safe to
             // delete it
-            pEventPipeThread->SetSessionWriteInProgress(UINT64_MAX);
+            pEventPipeThread->SetSessionWriteInProgress(UINT32_MAX);
         }
     }
 }
@@ -754,6 +741,35 @@ StackWalkAction EventPipe::StackWalkCallback(CrawlFrame *pCf, StackContents *pDa
 
     // Continue the stack walk.
     return SWA_CONTINUE;
+}
+
+uint32_t EventPipe::GenerateSessionIndex()
+{
+    LIMITED_METHOD_CONTRACT;
+    PRECONDITION(IsLockOwnedByCurrentThread());
+
+    for (uint32_t i = 0; i < MaxNumberOfSessions; ++i)
+        if (s_pSessions[i].LoadWithoutBarrier() == nullptr)
+            return i;
+    return MaxNumberOfSessions;
+}
+
+bool EventPipe::IsSessionIdInCollection(EventPipeSessionID id)
+{
+    LIMITED_METHOD_CONTRACT;
+    PRECONDITION(id != 0);
+    PRECONDITION(IsLockOwnedByCurrentThread());
+
+    const EventPipeSession *const pSession = reinterpret_cast<EventPipeSession *>(id);
+    for (uint32_t i = 0; i < MaxNumberOfSessions; ++i)
+    {
+        if (s_pSessions[i] == pSession)
+        {
+            _ASSERTE(i == pSession->GetIndex());
+            return true;
+        }
+    }
+    return false;
 }
 
 EventPipeEventInstance *EventPipe::GetNextEvent(EventPipeSessionID sessionID)

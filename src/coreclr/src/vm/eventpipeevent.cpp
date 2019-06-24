@@ -159,11 +159,11 @@ void EventPipeEvent::RefreshState()
     m_enabled = m_pProvider->EventEnabled(m_keywords, m_level);
 }
 
-bool EventPipeEvent::IsEnabled(uint64_t sessionId) const
+bool EventPipeEvent::IsEnabled(uint64_t sessionMask) const
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERT(m_pProvider != nullptr);
-    const bool IsProviderEnabled = m_pProvider->IsEnabled(sessionId);
+    const bool IsProviderEnabled = m_pProvider->IsEnabled(sessionMask);
     const bool IsEventEnabled = m_pProvider->EventEnabled(m_keywords, m_level);
     return (IsProviderEnabled && IsEventEnabled);
 }

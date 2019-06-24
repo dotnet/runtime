@@ -29,7 +29,7 @@ class EventPipeThreadSessionState
     // immutable
     EventPipeSession* m_pSession;
 
-    // The buffer this thread is allowed to write to if non-null, it must 
+    // The buffer this thread is allowed to write to if non-null, it must
     // match the tail of m_bufferList
     // protected by m_pThread::GetLock()
     EventPipeBuffer* m_pWriteBuffer;
@@ -116,7 +116,7 @@ class EventPipeThread
     // If this is set to a valid id before the corresponding entry of s_pSessions is set to null,
     // that pointer will be protected from deletion. See EventPipe::DisableInternal() and
     // EventPipe::WriteInternal for more detail.
-    Volatile<EventPipeSessionID> m_writingEventInProgress;
+    Volatile<uint32_t> m_writingEventInProgress;
 
     //
     EventPipeSession *m_pRundownSession = nullptr;
@@ -156,13 +156,13 @@ public:
         return m_pRundownSession;
     }
 
-    void SetSessionWriteInProgress(uint64_t index)
+    void SetSessionWriteInProgress(uint32_t sessionIndex)
     {
         LIMITED_METHOD_CONTRACT;
-        m_writingEventInProgress.Store((index < 64) ? (1ULL << index) : UINT64_MAX);
+        m_writingEventInProgress.Store(sessionIndex);
     }
 
-    EventPipeSessionID GetSessionWriteInProgress() const
+    uint32_t GetSessionWriteInProgress() const
     {
         LIMITED_METHOD_CONTRACT;
         return m_writingEventInProgress.Load();

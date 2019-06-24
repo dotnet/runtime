@@ -188,33 +188,30 @@ void EventPipeThread::Release()
     }
 }
 
-EventPipeThreadSessionState* EventPipeThread::GetOrCreateSessionState(EventPipeSession* pSession)
+EventPipeThreadSessionState *EventPipeThread::GetOrCreateSessionState(EventPipeSession *pSession)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(pSession != nullptr);
-    _ASSERTE(IsLockOwnedByCurrentThread());
+    PRECONDITION(pSession != nullptr);
+    PRECONDITION(pSession->GetIndex() < EventPipe::MaxNumberOfSessions);
+    PRECONDITION(IsLockOwnedByCurrentThread());
 
-    unsigned int index = pSession->GetIndex();
-    _ASSERTE(index < EventPipe::MaxNumberOfSessions);
-    EventPipeThreadSessionState* pState = m_sessionState[index];
+    EventPipeThreadSessionState *pState = m_sessionState[pSession->GetIndex()];
     if (pState == nullptr)
     {
         pState = new (nothrow) EventPipeThreadSessionState(this, pSession DEBUG_ARG(pSession->GetBufferManager()));
-        m_sessionState[index] = pState;
+        m_sessionState[pSession->GetIndex()] = pState;
     }
     return pState;
 }
 
-EventPipeThreadSessionState* EventPipeThread::GetSessionState(EventPipeSession* pSession)
+EventPipeThreadSessionState *EventPipeThread::GetSessionState(EventPipeSession *pSession)
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERTE(pSession != nullptr);
-    _ASSERTE(IsLockOwnedByCurrentThread());
+    PRECONDITION(pSession != nullptr);
+    PRECONDITION(pSession->GetIndex() < EventPipe::MaxNumberOfSessions);
+    PRECONDITION(IsLockOwnedByCurrentThread());
 
-    unsigned int index = pSession->GetIndex();
-    _ASSERTE(index < EventPipe::MaxNumberOfSessions);
-    EventPipeThreadSessionState* pState = m_sessionState[index];
-
+    EventPipeThreadSessionState *const pState = m_sessionState[pSession->GetIndex()];
     _ASSERTE(pState != nullptr);
     return pState;
 }
