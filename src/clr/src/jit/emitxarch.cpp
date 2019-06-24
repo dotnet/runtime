@@ -7057,7 +7057,7 @@ void emitter::emitIns_Call(EmitCallType          callType,
 
     if (isJump)
     {
-        assert(callType == EC_FUNC_TOKEN || callType == EC_INDIR_ARD);
+        assert(callType == EC_FUNC_TOKEN || callType == EC_FUNC_TOKEN_INDIR || callType == EC_INDIR_ARD);
         if (callType == EC_FUNC_TOKEN)
         {
             ins = INS_l_jmp;
