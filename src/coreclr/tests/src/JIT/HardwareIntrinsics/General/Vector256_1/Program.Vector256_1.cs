@@ -89,6 +89,16 @@ namespace JIT.HardwareIntrinsics.General
                 ["ToScalar.UInt16"] = ToScalarUInt16,
                 ["ToScalar.UInt32"] = ToScalarUInt32,
                 ["ToScalar.UInt64"] = ToScalarUInt64,
+                ["ToString.Byte"] = ToStringByte,
+                ["ToString.SByte"] = ToStringSByte,
+                ["ToString.Int16"] = ToStringInt16,
+                ["ToString.UInt16"] = ToStringUInt16,
+                ["ToString.Int32"] = ToStringInt32,
+                ["ToString.UInt32"] = ToStringUInt32,
+                ["ToString.Single"] = ToStringSingle,
+                ["ToString.Double"] = ToStringDouble,
+                ["ToString.Int64"] = ToStringInt64,
+                ["ToString.UInt64"] = ToStringUInt64,
             };
         }
     }

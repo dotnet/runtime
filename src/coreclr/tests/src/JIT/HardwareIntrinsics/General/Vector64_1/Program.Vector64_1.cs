@@ -69,6 +69,16 @@ namespace JIT.HardwareIntrinsics.General
                 ["ToVector128.UInt16"] = ToVector128UInt16,
                 ["ToVector128.UInt32"] = ToVector128UInt32,
                 ["ToVector128.UInt64"] = ToVector128UInt64,
+                ["ToString.Byte"] = ToStringByte,
+                ["ToString.SByte"] = ToStringSByte,
+                ["ToString.Int16"] = ToStringInt16,
+                ["ToString.UInt16"] = ToStringUInt16,
+                ["ToString.Int32"] = ToStringInt32,
+                ["ToString.UInt32"] = ToStringUInt32,
+                ["ToString.Single"] = ToStringSingle,
+                ["ToString.Double"] = ToStringDouble,
+                ["ToString.Int64"] = ToStringInt64,
+                ["ToString.UInt64"] = ToStringUInt64,
             };
         }
     }

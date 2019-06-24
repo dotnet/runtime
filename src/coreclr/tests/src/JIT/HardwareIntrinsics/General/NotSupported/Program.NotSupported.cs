@@ -53,6 +53,7 @@ namespace JIT.HardwareIntrinsics.General
                 ["Vector64ToScalar"] = Vector64ToScalar,
                 ["Vector64ToVector128"] = Vector64ToVector128,
                 ["Vector64ToVector128Unsafe"] = Vector64ToVector128Unsafe,
+                ["Vector64ToString"] = Vector64ToString,
                 ["Vector128Zero"] = Vector128Zero,
                 ["Vector128BooleanAsGeneric_Boolean"] = Vector128BooleanAsGeneric_Boolean,
                 ["Vector128ByteAsGeneric_Boolean"] = Vector128ByteAsGeneric_Boolean,
@@ -98,6 +99,7 @@ namespace JIT.HardwareIntrinsics.General
                 ["Vector128ToScalar"] = Vector128ToScalar,
                 ["Vector128ToVector256"] = Vector128ToVector256,
                 ["Vector128ToVector256Unsafe"] = Vector128ToVector256Unsafe,
+                ["Vector128ToString"] = Vector128ToString,
                 ["Vector256Zero"] = Vector256Zero,
                 ["Vector256BooleanAsGeneric_Boolean"] = Vector256BooleanAsGeneric_Boolean,
                 ["Vector256ByteAsGeneric_Boolean"] = Vector256ByteAsGeneric_Boolean,
@@ -141,6 +143,7 @@ namespace JIT.HardwareIntrinsics.General
                 ["Vector256GetUpper"] = Vector256GetUpper,
                 ["Vector256WithUpper"] = Vector256WithUpper,
                 ["Vector256ToScalar"] = Vector256ToScalar,
+                ["Vector256ToString"] = Vector256ToString,
             };
         }
     }
