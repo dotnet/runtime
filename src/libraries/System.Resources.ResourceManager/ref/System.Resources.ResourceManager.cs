@@ -17,17 +17,17 @@ namespace System.Resources
     {
         public MissingManifestResourceException() { }
         protected MissingManifestResourceException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public MissingManifestResourceException(string message) { }
-        public MissingManifestResourceException(string message, System.Exception inner) { }
+        public MissingManifestResourceException(string? message) { }
+        public MissingManifestResourceException(string? message, System.Exception? inner) { }
     }
     public partial class MissingSatelliteAssemblyException : System.SystemException
     {
         public MissingSatelliteAssemblyException() { }
         protected MissingSatelliteAssemblyException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
-        public MissingSatelliteAssemblyException(string message) { }
-        public MissingSatelliteAssemblyException(string message, System.Exception inner) { }
-        public MissingSatelliteAssemblyException(string message, string cultureName) { }
-        public string CultureName { get { throw null; } }
+        public MissingSatelliteAssemblyException(string? message) { }
+        public MissingSatelliteAssemblyException(string? message, System.Exception? inner) { }
+        public MissingSatelliteAssemblyException(string? message, string? cultureName) { }
+        public string? CultureName { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Assembly, AllowMultiple=false)]
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -43,27 +43,27 @@ namespace System.Resources
     {
         public static readonly int HeaderVersionNumber;
         public static readonly int MagicNumber;
-        protected System.Reflection.Assembly MainAssembly;
+        protected System.Reflection.Assembly? MainAssembly;
         protected ResourceManager() { }
         public ResourceManager(string baseName, System.Reflection.Assembly assembly) { }
-        public ResourceManager(string baseName, System.Reflection.Assembly assembly, System.Type usingResourceSet) { }
+        public ResourceManager(string baseName, System.Reflection.Assembly assembly, System.Type? usingResourceSet) { }
         public ResourceManager(System.Type resourceSource) { }
         public virtual string BaseName { get { throw null; } }
         protected System.Resources.UltimateResourceFallbackLocation FallbackLocation { get { throw null; } set { } }
         public virtual bool IgnoreCase { get { throw null; } set { } }
         public virtual System.Type ResourceSetType { get { throw null; } }
-        public static System.Resources.ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir, System.Type usingResourceSet) { throw null; }
+        public static System.Resources.ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir, System.Type? usingResourceSet) { throw null; }
         protected static System.Globalization.CultureInfo GetNeutralResourcesLanguage(System.Reflection.Assembly a) { throw null; }
-        public virtual object GetObject(string name) { throw null; }
-        public virtual object GetObject(string name, System.Globalization.CultureInfo culture) { throw null; }
+        public virtual object? GetObject(string name) { throw null; }
+        public virtual object? GetObject(string name, System.Globalization.CultureInfo? culture) { throw null; }
         protected virtual string GetResourceFileName(System.Globalization.CultureInfo culture) { throw null; }
-        public virtual System.Resources.ResourceSet GetResourceSet(System.Globalization.CultureInfo culture, bool createIfNotExists, bool tryParents) { throw null; }
-        protected static System.Version GetSatelliteContractVersion(System.Reflection.Assembly a) { throw null; }
-        public System.IO.UnmanagedMemoryStream GetStream(string name) { throw null; }
-        public System.IO.UnmanagedMemoryStream GetStream(string name, System.Globalization.CultureInfo culture) { throw null; }
-        public virtual string GetString(string name) { throw null; }
-        public virtual string GetString(string name, System.Globalization.CultureInfo culture) { throw null; }
-        protected virtual System.Resources.ResourceSet InternalGetResourceSet(System.Globalization.CultureInfo culture, bool createIfNotExists, bool tryParents) { throw null; }
+        public virtual System.Resources.ResourceSet? GetResourceSet(System.Globalization.CultureInfo culture, bool createIfNotExists, bool tryParents) { throw null; }
+        protected static System.Version? GetSatelliteContractVersion(System.Reflection.Assembly a) { throw null; }
+        public System.IO.UnmanagedMemoryStream? GetStream(string name) { throw null; }
+        public System.IO.UnmanagedMemoryStream? GetStream(string name, System.Globalization.CultureInfo? culture) { throw null; }
+        public virtual string? GetString(string name) { throw null; }
+        public virtual string? GetString(string name, System.Globalization.CultureInfo? culture) { throw null; }
+        protected virtual System.Resources.ResourceSet? InternalGetResourceSet(System.Globalization.CultureInfo culture, bool createIfNotExists, bool tryParents) { throw null; }
         public virtual void ReleaseAllResources() { }
     }
     public sealed partial class ResourceReader : System.Collections.IEnumerable, System.IDisposable, System.Resources.IResourceReader
@@ -88,10 +88,10 @@ namespace System.Resources
         public virtual System.Type GetDefaultReader() { throw null; }
         public virtual System.Type GetDefaultWriter() { throw null; }
         public virtual System.Collections.IDictionaryEnumerator GetEnumerator() { throw null; }
-        public virtual object GetObject(string name) { throw null; }
-        public virtual object GetObject(string name, bool ignoreCase) { throw null; }
-        public virtual string GetString(string name) { throw null; }
-        public virtual string GetString(string name, bool ignoreCase) { throw null; }
+        public virtual object? GetObject(string name) { throw null; }
+        public virtual object? GetObject(string name, bool ignoreCase) { throw null; }
+        public virtual string? GetString(string name) { throw null; }
+        public virtual string? GetString(string name, bool ignoreCase) { throw null; }
         protected virtual void ReadResources() { }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
     }

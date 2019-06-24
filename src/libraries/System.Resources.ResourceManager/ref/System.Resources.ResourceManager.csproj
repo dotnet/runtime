@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{97CFE337-C57E-4B2E-B495-65B917E1282E}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Resources.ResourceManager.cs" />
