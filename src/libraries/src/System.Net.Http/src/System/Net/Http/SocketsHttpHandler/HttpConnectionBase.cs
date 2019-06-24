@@ -63,7 +63,7 @@ namespace System.Net.Http
                     if (NetEventSource.IsEnabled) Trace($"Exception from asynchronous processing: {e}");
                 }
             }
-    }
+        }
 
     }
 }

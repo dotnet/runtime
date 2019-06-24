@@ -185,7 +185,7 @@ namespace System.Net.Http
             {
                 if (initialFrame && NetEventSource.IsEnabled)
                 {
-                    string response = System.Text.Encoding.ASCII.GetString(_incomingBuffer.ActiveSpan.Slice(0, Math.Min(20, _incomingBuffer.ActiveSpan.Length)));
+                    string response = Encoding.ASCII.GetString(_incomingBuffer.ActiveSpan.Slice(0, Math.Min(20, _incomingBuffer.ActiveSpan.Length)));
                     Trace($"HTTP/2 handshake failed. Server returned {response}");
                 }
 
@@ -261,7 +261,7 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                if (NetEventSource.IsEnabled) Trace($"ProcessIncomingFramesAsync: {e.Message}");
+                if (NetEventSource.IsEnabled) Trace($"{nameof(ProcessIncomingFramesAsync)}: {e.Message}");
 
                 if (!_disposed)
                 {
@@ -1384,41 +1384,45 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    // Send request body, if any
-                    Task bodyTask = http2Stream.SendRequestBodyAsync(cancellationToken);
-                    // read response headers.
+                    // Send request body, if any, and read response headers.
+                    Task requestBodyTask = http2Stream.SendRequestBodyAsync(cancellationToken);
                     Task responseHeadersTask = http2Stream.ReadResponseHeadersAsync(cancellationToken);
 
-                    if (bodyTask == await Task.WhenAny(bodyTask, responseHeadersTask).ConfigureAwait(false) ||
-                        bodyTask.IsCompleted)
+                    // Wait for either task to complete.  The best and most common case is when the request body completes
+                    // before the response headers, in which case we can fully process the sending of the request and then
+                    // fully process the sending of the response.  WhenAny is not free, so we do a fast-path check to see
+                    // if the request body completed synchronously, only progressing to do the WhenAny if it didn't. Then
+                    // if the WhenAny completes and either the WhenAny indicated that the request body completed or
+                    // both tasks completed, we can proceed to handle the request body as if it completed first.
+                    if (requestBodyTask.IsCompleted ||
+                        requestBodyTask == await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) ||
+                        requestBodyTask.IsCompleted)
                     {
                         // The sending of the request body completed before receiving all of the request headers.
-                        Task t = bodyTask;
-                        bodyTask = null;
+                        // This is the common and desirable case.
                         try
                         {
-                            await t.ConfigureAwait(false);
+                            await requestBodyTask.ConfigureAwait(false);
                         }
                         catch (Exception e)
                         {
-                            if (NetEventSource.IsEnabled) Trace($"SendRequestBody Task failed. {e}");
-                            // Observe exception (if any) on responseHeadersTask.
-                            LogExceptions(responseHeadersTask);
+                            if (NetEventSource.IsEnabled) Trace($"{nameof(http2Stream.SendRequestBodyAsync)} failed. {e}");
+                            LogExceptions(responseHeadersTask); // Observe exception (if any) on responseHeadersTask.
                             throw;
                         }
-
-                        await responseHeadersTask.ConfigureAwait(false);
                     }
                     else
                     {
-                        // We received the response headers but the request body hasn't yet finished.
-                        // If the connection is aborted or if we get RST or GOAWAY from server, exception will be
-                        // stored in stream._abortException and propagated to up to caller if possible while processing response.
-                        LogExceptions(bodyTask);
-                        bodyTask = null;
-                        // Pick up any exceptions from the header Task.
-                        await responseHeadersTask.ConfigureAwait(false);
+                        // We received the response headers but the request body hasn't yet finished; this most commonly happens
+                        // when the protocol is being used to enable duplex communication. If the connection is aborted or if we
+                        // get RST or GOAWAY from server, exception will be stored in stream._abortException and propagated up
+                        // to caller if possible while processing response, but make sure that we log any exceptions from this task
+                        // completing asynchronously).
+                        LogExceptions(requestBodyTask);
                     }
+
+                    // Wait for the response headers to complete if they haven't already, propagating any exceptions.
+                    await responseHeadersTask.ConfigureAwait(false);
                 }
             }
             catch (Exception e)
@@ -1439,7 +1443,7 @@ namespace System.Net.Http
                         http2Stream.Cancel();
                     }
 
-                    if (oce.CancellationToken != cancellationToken)
+                    if (cancellationToken.IsCancellationRequested && oce.CancellationToken != cancellationToken)
                     {
                         replacementException = new OperationCanceledException(oce.Message, oce, cancellationToken);
                     }
