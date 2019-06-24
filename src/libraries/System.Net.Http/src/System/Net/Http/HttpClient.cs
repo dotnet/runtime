@@ -553,7 +553,7 @@ namespace System.Net.Http
             // cancellation (e.g. WebException when reading from canceled response stream).
             if (cts.IsCancellationRequested && e is HttpRequestException)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Error(this, $"Canceled");
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, "Canceled");
                 throw new OperationCanceledException(cts.Token);
             }
         }
