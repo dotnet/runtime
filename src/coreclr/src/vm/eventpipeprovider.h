@@ -66,10 +66,10 @@ public:
         return (m_sessions != 0);
     }
 
-    bool IsEnabled(uint64_t sessionId) const
+    bool IsEnabled(uint64_t sessionMask) const
     {
         LIMITED_METHOD_CONTRACT;
-        return ((m_sessions & sessionId) != 0);
+        return ((m_sessions & sessionMask) != 0);
     }
 
     // Determine if the specified keywords are enabled.
@@ -89,7 +89,7 @@ private:
     // Set the provider configuration (enable sets of events).
     // This is called by EventPipeConfiguration.
     EventPipeProviderCallbackData SetConfiguration(
-        uint64_t sessionId,
+        uint64_t sessionMask,
         INT64 keywords,
         EventPipeEventLevel providerLevel,
         LPCWSTR pFilterData);
@@ -97,14 +97,14 @@ private:
     // Unset the provider configuration for the specified session (disable sets of events).
     // This is called by EventPipeConfiguration.
     EventPipeProviderCallbackData UnsetConfiguration(
-        uint64_t sessionId,
+        uint64_t sessionMask,
         INT64 keywords,
         EventPipeEventLevel providerLevel,
         LPCWSTR pFilterData);
 
     // Refresh the runtime state of all events.
     void RefreshAllEvents(
-        uint64_t sessionId,
+        uint64_t sessionMask,
         INT64 keywords,
         EventPipeEventLevel providerLevel);
 

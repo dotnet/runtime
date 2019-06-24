@@ -107,7 +107,7 @@ bool EventPipeProvider::EventEnabled(INT64 keywords, EventPipeEventLevel eventLe
 }
 
 EventPipeProviderCallbackData EventPipeProvider::SetConfiguration(
-    uint64_t sessionId,
+    uint64_t sessionMask,
     INT64 keywords,
     EventPipeEventLevel providerLevel,
     LPCWSTR pFilterData)
@@ -117,12 +117,12 @@ EventPipeProviderCallbackData EventPipeProvider::SetConfiguration(
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(sessionId != 0);
+        PRECONDITION((m_sessions & sessionMask) == 0);
         PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
 
-    m_sessions |= sessionId;
+    m_sessions |= sessionMask;
 
     // Set Keywords to be the union of all keywords
     m_keywords |= keywords;
@@ -130,12 +130,12 @@ EventPipeProviderCallbackData EventPipeProvider::SetConfiguration(
     // Set the provider level to "Log Always" or the biggest verbosity.
     m_providerLevel = (providerLevel < m_providerLevel) ? m_providerLevel : providerLevel;
 
-    RefreshAllEvents(sessionId, keywords, providerLevel);
+    RefreshAllEvents(sessionMask, keywords, providerLevel);
     return PrepareCallbackData(keywords, providerLevel, pFilterData);
 }
 
 EventPipeProviderCallbackData EventPipeProvider::UnsetConfiguration(
-        uint64_t sessionId,
+        uint64_t sessionMask,
         INT64 keywords,
         EventPipeEventLevel providerLevel,
         LPCWSTR pFilterData)
@@ -145,13 +145,13 @@ EventPipeProviderCallbackData EventPipeProvider::UnsetConfiguration(
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION((m_sessions & sessionId) != 0);
+        PRECONDITION((m_sessions & sessionMask) != 0);
         PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
     }
     CONTRACTL_END;
 
-    if (m_sessions & sessionId)
-        m_sessions &= ~sessionId;
+    if (m_sessions & sessionMask)
+        m_sessions &= ~sessionMask;
     return PrepareCallbackData(keywords, providerLevel, pFilterData);
 }
 
@@ -294,7 +294,7 @@ void EventPipeProvider::SetDeleteDeferred()
 }
 
 void EventPipeProvider::RefreshAllEvents(
-    uint64_t sessionId,
+    uint64_t sessionMask,
     INT64 keywords,
     EventPipeEventLevel providerLevel)
 {
