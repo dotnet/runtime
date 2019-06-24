@@ -67,8 +67,10 @@ namespace System.Drawing.Tests
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_NoSuchFontNameInCollection_ThrowsArgumentException()
         {
-            var fontCollection = new PrivateFontCollection();
-            Assert.Throws<ArgumentException>(null, () => new FontFamily("Times New Roman", fontCollection));
+            using (var fontCollection = new PrivateFontCollection())
+            {
+                Assert.Throws<ArgumentException>(null, () => new FontFamily("Times New Roman", fontCollection));
+            }
         }
 
         public static IEnumerable<object[]> Equals_TestData()

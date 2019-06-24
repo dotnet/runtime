@@ -176,11 +176,13 @@ namespace System.Drawing.Tests
         [InlineData(5, 15)]
         public void Ctor_Width_Height(int width, int height)
         {
-            var bitmap = new Bitmap(width, height);
-            Assert.Equal(width, bitmap.Width);
-            Assert.Equal(height, bitmap.Height);
-            Assert.Equal(PixelFormat.Format32bppArgb, bitmap.PixelFormat);
-            Assert.Equal(ImageFormat.MemoryBmp, bitmap.RawFormat);
+            using (var bitmap = new Bitmap(width, height))
+            {
+                Assert.Equal(width, bitmap.Width);
+                Assert.Equal(height, bitmap.Height);
+                Assert.Equal(PixelFormat.Format32bppArgb, bitmap.PixelFormat);
+                Assert.Equal(ImageFormat.MemoryBmp, bitmap.RawFormat);
+            }
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]

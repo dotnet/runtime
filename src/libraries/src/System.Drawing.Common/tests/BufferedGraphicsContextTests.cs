@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Drawing.Tests
@@ -249,12 +250,18 @@ namespace System.Drawing.Tests
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void AllocateBufferedGraphicsContext() => new BufferedGraphicsContext();
+
+
         [Fact]
         public void Finalize_Invoke_Success()
         {
-            // Don't allocate anything as this would leak memory.
             // This makes sure than finalization doesn't cause any errors or debug assertions.
-            var context = new BufferedGraphicsContext();
+            AllocateBufferedGraphicsContext();
+
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
