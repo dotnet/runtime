@@ -49,59 +49,13 @@ public:
         const EventPipeSession &session,
         EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue);
 
-    // Get the status of the event pipe.
-    bool Enabled() const
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_activeSessions != 0);
-    }
-
     // Get the event used to write metadata to the event stream.
     EventPipeEventInstance *BuildEventMetadataEvent(EventPipeEventInstance &sourceInstance, unsigned int metdataId);
 
     // Delete deferred providers.
     void DeleteDeferredProviders();
 
-    // Create a new session.
-    EventPipeSession *CreateSession(
-        LPCWSTR strOutputPath,
-        IpcStream *const pStream,
-        EventPipeSessionType sessionType,
-        EventPipeSerializationFormat format,
-        unsigned int circularBufferSizeInMB,
-        const EventPipeProviderConfiguration *pProviders,
-        uint32_t numProviders,
-        bool rundownEnabled = false);
-
-    // Delete a session.
-    void DeleteSession(EventPipeSession *pSession);
-
-    // Check that a single bit is set.
-    static bool IsValidId(EventPipeSessionID id)
-    {
-        return (id > 0) && ((id & (id - 1)) == 0);
-    }
-
-    // Check that a session Id is enabled.
-    bool IsSessionIdValid(EventPipeSessionID id)
-    {
-        return IsValidId(id) && (m_activeSessions & id);
-    }
-
 private:
-    // Helper function used to locate a free index in the range 0 - EventPipe::MaxNumberOfSessions
-    // Returns EventPipe::MaxNumberOfSessions if there are no free indexes
-    unsigned int GenerateSessionIndex() const
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        uint64_t id = 1;
-        for (unsigned int i = 0; i < 64; ++i, id <<= i)
-            if ((m_activeSessions & id) == 0)
-                return i;
-        return EventPipe::MaxNumberOfSessions;
-    }
-
     // Get the provider without taking the lock.
     EventPipeProvider *GetProviderNoLock(const SString &providerID);
 
@@ -120,9 +74,6 @@ private:
     // The provider name for the configuration event pipe provider.
     // This provider is used to emit configuration events.
     const static WCHAR *s_configurationProviderName;
-
-    // Bitmask tracking EventPipe active sessions.
-    uint64_t m_activeSessions = 0;
 };
 
 #endif // FEATURE_PERFTRACING

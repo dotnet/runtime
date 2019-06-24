@@ -79,7 +79,7 @@ public:
 
     unsigned int GetMetadataLength() const;
 
-    bool IsEnabled(uint64_t sessionId) const;
+    bool IsEnabled(uint64_t sessionMask) const;
 
 private:
     // used when Metadata is not provided

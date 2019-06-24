@@ -13,16 +13,15 @@
 #ifdef FEATURE_PERFTRACING
 
 EventPipeSession::EventPipeSession(
-    unsigned int index,
+    uint32_t index,
     LPCWSTR strOutputPath,
     IpcStream *const pStream,
     EventPipeSessionType sessionType,
     EventPipeSerializationFormat format,
-    unsigned int circularBufferSizeInMB,
+    uint32_t circularBufferSizeInMB,
     const EventPipeProviderConfiguration *pProviders,
     uint32_t numProviders,
-    bool rundownEnabled) : m_Id((EventPipeSessionID)1 << index),
-                           m_index(index),
+    bool rundownEnabled) : m_index(index),
                            m_pProviderList(new EventPipeSessionProviderList(pProviders, numProviders)),
                            m_rundownEnabled(rundownEnabled),
                            m_SessionType(sessionType),
@@ -64,7 +63,7 @@ EventPipeSession::EventPipeSession(
         break;
 
     case EventPipeSessionType::IpcStream:
-        m_pFile = new EventPipeFile(new IpcStreamWriter(m_Id, pStream), format);
+        m_pFile = new EventPipeFile(new IpcStreamWriter(reinterpret_cast<uint64_t>(this), pStream), format);
         break;
 
     default:
@@ -83,10 +82,10 @@ EventPipeSession::~EventPipeSession()
         NOTHROW;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
+        PRECONDITION(!m_ipcStreamingEnabled);
     }
     CONTRACTL_END;
 
-    // TODO: Stop streaming thread? Review synchronization.
     delete m_pProviderList;
     delete m_pBufferManager;
     delete m_pFile;
@@ -117,21 +116,6 @@ void EventPipeSession::SetThreadShutdownEvent()
 
     // Signal Disable() that the thread has been destroyed.
     m_threadShutdownEvent.Set();
-}
-
-void EventPipeSession::DestroyIpcStreamingThread()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    if (m_pIpcStreamingThread != nullptr)
-        ::DestroyThread(m_pIpcStreamingThread);
-    m_pIpcStreamingThread = nullptr;
 }
 
 static void PlatformSleep()
@@ -176,11 +160,13 @@ DWORD WINAPI EventPipeSession::ThreadProc(void *args)
     if (!pEventPipeSession->HasIpcStreamingStarted())
         return 1;
 
+    Thread *const pThisThread = pEventPipeSession->GetIpcStreamingThread();
+    bool fSuccess = true;
+
     {
         GCX_PREEMP();
         EX_TRY
         {
-            bool fSuccess = true;
             while (pEventPipeSession->IsIpcStreamingEnabled())
             {
                 if (!pEventPipeSession->WriteAllBuffersToFile())
@@ -194,14 +180,6 @@ DWORD WINAPI EventPipeSession::ThreadProc(void *args)
             }
 
             pEventPipeSession->SetThreadShutdownEvent();
-
-            if (!fSuccess)
-            {
-                // TODO: Notify `EventPipe::Disable` instead, this would disable the session, and remove it from the active list.
-                EventPipe::RunWithCallbackPostponed([pEventPipeSession](EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue) {
-                    pEventPipeSession->Disable();
-                });
-            }
         }
         EX_CATCH
         {
@@ -212,7 +190,20 @@ DWORD WINAPI EventPipeSession::ThreadProc(void *args)
         EX_END_CATCH(SwallowAllExceptions);
     }
 
-    pEventPipeSession->DestroyIpcStreamingThread();
+    EX_TRY
+    {
+        if (!fSuccess)
+            EventPipe::Disable(reinterpret_cast<EventPipeSessionID>(pEventPipeSession));
+    }
+    EX_CATCH
+    {
+        // TODO: STRESS_LOG ?
+    }
+    EX_END_CATCH(SwallowAllExceptions);
+
+    if (pThisThread != nullptr)
+        ::DestroyThread(pThisThread);
+
     return 0;
 }
 
@@ -241,7 +232,7 @@ void EventPipeSession::CreateIpcStreamingThread()
     m_threadShutdownEvent.CreateManualEvent(FALSE);
 }
 
-bool EventPipeSession::IsValid()
+bool EventPipeSession::IsValid() const
 {
     CONTRACTL
     {
@@ -321,7 +312,7 @@ bool EventPipeSession::WriteEventBuffered(
     CONTRACTL_END;
 
     // Filter events specific to "this" session based on precomputed flag on provider/events.
-    return event.IsEnabled(GetId()) ?
+    return event.IsEnabled(GetMask()) ?
         m_pBufferManager->WriteEvent(pThread, *this, event, payload, pActivityId, pRelatedActivityId, pEventThread, pStack) :
         false;
 }
@@ -338,16 +329,13 @@ void EventPipeSession::WriteEventUnbuffered(EventPipeEventInstance &instance, Ev
 
     if (m_pFile == nullptr)
         return;
-    EventPipeThreadSessionState* pState = nullptr;
     ULONGLONG captureThreadId;
-    unsigned int sequenceNumber;
+    uint32_t sequenceNumber;
     {
         SpinLockHolder _slh(pThread->GetLock());
-        pState = pThread->GetSessionState(this);
+        EventPipeThreadSessionState *const pState = pThread->GetOrCreateSessionState(this);
         if (pState == nullptr)
-        {
             return;
-        }
         captureThreadId = pThread->GetOSThreadId();
         sequenceNumber = pState->GetSequenceNumber();
         pState->IncrementSequenceNumber();
@@ -455,21 +443,20 @@ void EventPipeSession::DisableIpcStreamingThread()
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
+        PRECONDITION(m_SessionType == EventPipeSessionType::IpcStream);
+        PRECONDITION(m_ipcStreamingEnabled);
     }
     CONTRACTL_END;
 
-    if ((m_SessionType == EventPipeSessionType::IpcStream) && m_ipcStreamingEnabled)
-    {
-        _ASSERTE(!g_fProcessDetach);
+    _ASSERTE(!g_fProcessDetach);
 
-        // The IPC streaming thread will watch this value and exit
-        // when profiling is disabled.
-        m_ipcStreamingEnabled = false;
+    // The IPC streaming thread will watch this value and exit
+    // when profiling is disabled.
+    m_ipcStreamingEnabled = false;
 
-        // Wait for the sampling thread to clean itself up.
-        m_threadShutdownEvent.Wait(INFINITE, FALSE /* bAlertable */);
-        m_threadShutdownEvent.CloseEvent();
-    }
+    // Wait for the sampling thread to clean itself up.
+    m_threadShutdownEvent.Wait(INFINITE, FALSE /* bAlertable */);
+    m_threadShutdownEvent.CloseEvent();
 }
 
 void EventPipeSession::Disable()
@@ -482,11 +469,12 @@ void EventPipeSession::Disable()
     }
     CONTRACTL_END;
 
-    DisableIpcStreamingThread();
+    if ((m_SessionType == EventPipeSessionType::IpcStream) && m_ipcStreamingEnabled)
+        DisableIpcStreamingThread();
 
     // Force all in-progress writes to either finish or cancel
     // This is required to ensure we can safely flush and delete the buffers
-    m_pBufferManager->SuspendWriteEvent(GetId());
+    m_pBufferManager->SuspendWriteEvent(GetIndex());
     WriteAllBuffersToFile();
     m_pProviderList->Clear();
 }
