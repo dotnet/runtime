@@ -256,7 +256,7 @@ namespace System
         // In order to support more digits, we would need to update ParseFormatSpecifier to pre-parse
         // the format and determine exactly how many digits are being requested and whether they
         // represent "significant digits" or "digits after the decimal point".
-        private const int SinglePrecisionCustomFormat = 6;
+        private const int SinglePrecisionCustomFormat = 7;
         private const int DoublePrecisionCustomFormat = 15;
 
         private const int DefaultPrecisionExponentialFormat = 6;
@@ -1607,6 +1607,7 @@ namespace System
         internal static unsafe void NumberToString(ref ValueStringBuilder sb, ref NumberBuffer number, char format, int nMaxDigits, NumberFormatInfo info)
         {
             number.CheckConsistency();
+            bool isCorrectlyRounded = (number.Kind == NumberBufferKind.FloatingPoint);
 
             switch (format)
             {
@@ -1616,7 +1617,7 @@ namespace System
                     if (nMaxDigits < 0)
                         nMaxDigits = info.CurrencyDecimalDigits;
 
-                    RoundNumber(ref number, number.Scale + nMaxDigits); // Don't change this line to use digPos since digCount could have its sign changed.
+                    RoundNumber(ref number, number.Scale + nMaxDigits, isCorrectlyRounded); // Don't change this line to use digPos since digCount could have its sign changed.
 
                     FormatCurrency(ref sb, ref number, nMaxDigits, info);
 
@@ -1629,7 +1630,7 @@ namespace System
                     if (nMaxDigits < 0)
                         nMaxDigits = info.NumberDecimalDigits;
 
-                    RoundNumber(ref number, number.Scale + nMaxDigits);
+                    RoundNumber(ref number, number.Scale + nMaxDigits, isCorrectlyRounded);
 
                     if (number.IsNegative)
                         sb.Append(info.NegativeSign);
@@ -1645,7 +1646,7 @@ namespace System
                     if (nMaxDigits < 0)
                         nMaxDigits = info.NumberDecimalDigits; // Since we are using digits in our calculation
 
-                    RoundNumber(ref number, number.Scale + nMaxDigits);
+                    RoundNumber(ref number, number.Scale + nMaxDigits, isCorrectlyRounded);
 
                     FormatNumber(ref sb, ref number, nMaxDigits, info);
 
@@ -1659,7 +1660,7 @@ namespace System
                         nMaxDigits = DefaultPrecisionExponentialFormat;
                     nMaxDigits++;
 
-                    RoundNumber(ref number, nMaxDigits);
+                    RoundNumber(ref number, nMaxDigits, isCorrectlyRounded);
 
                     if (number.IsNegative)
                         sb.Append(info.NegativeSign);
@@ -1694,7 +1695,7 @@ namespace System
                         }
                     }
 
-                    RoundNumber(ref number, nMaxDigits);
+                    RoundNumber(ref number, nMaxDigits, isCorrectlyRounded);
 
                 SkipRounding:
                     if (number.IsNegative)
@@ -1713,7 +1714,7 @@ namespace System
                         nMaxDigits = info.PercentDecimalDigits;
                     number.Scale += 2;
 
-                    RoundNumber(ref number, number.Scale + nMaxDigits);
+                    RoundNumber(ref number, number.Scale + nMaxDigits, isCorrectlyRounded);
 
                     FormatPercent(ref sb, ref number, nMaxDigits, info);
 
@@ -1852,7 +1853,7 @@ namespace System
                 {
                     number.Scale += scaleAdjust;
                     int pos = scientific ? digitCount : number.Scale + digitCount - decimalPos;
-                    RoundNumber(ref number, pos);
+                    RoundNumber(ref number, pos, isCorrectlyRounded: false);
                     if (dig[0] == 0)
                     {
                         src = FindSection(format, 2);
@@ -2368,15 +2369,15 @@ namespace System
             }
         }
 
-        internal static unsafe void RoundNumber(ref NumberBuffer number, int pos)
+        internal static unsafe void RoundNumber(ref NumberBuffer number, int pos, bool isCorrectlyRounded)
         {
             byte* dig = number.GetDigitsPointer();
 
             int i = 0;
-            while (i < pos && dig[i] != 0)
+            while (i < pos && dig[i] != '\0')
                 i++;
 
-            if (i == pos && dig[i] >= '5')
+            if ((i == pos) && ShouldRoundUp(dig, i, number.Kind, isCorrectlyRounded))
             {
                 while (i > 0 && dig[i - 1] == '9')
                     i--;
@@ -2397,6 +2398,7 @@ namespace System
                 while (i > 0 && dig[i - 1] == '0')
                     i--;
             }
+
             if (i == 0)
             {
                 if (number.Kind != NumberBufferKind.FloatingPoint)
@@ -2410,6 +2412,51 @@ namespace System
             dig[i] = (byte)('\0');
             number.DigitsCount = i;
             number.CheckConsistency();
+
+            bool ShouldRoundUp(byte* dig, int i, NumberBufferKind numberKind, bool isCorrectlyRounded)
+            {
+                // We only want to round up if the digit is greater than or equal to 5 and we are
+                // not rounding a floating-point number. If we are rounding a floating-point number
+                // we have one of two cases.
+                //
+                // In the case of a standard numeric-format specifier, the exact and correctly rounded
+                // string will have been produced. In this scenario, pos will have pointed to the
+                // terminating null for the buffer and so this will return false.
+                //
+                // However, in the case of a custom numeric-format specifier, we currently fall back
+                // to generating Single/DoublePrecisionCustomFormat digits and then rely on this
+                // function to round correctly instead. This can unfortunately lead to double-rounding
+                // bugs but is the best we have right now due to back-compat concerns.
+
+                var digit = dig[i];
+
+                if ((digit == '\0') || isCorrectlyRounded)
+                {
+                    // Fast path for the common case with no rounding
+                    return false;
+                }
+
+                if (digit > '5')
+                {
+                    // Values greater than 5 always round up
+                    return true;
+                }
+
+                if (digit != '5')
+                {
+                    // Values less than 5 always round down
+                    return false;
+                }
+
+                if (numberKind != NumberBufferKind.FloatingPoint)
+                {
+                    // Non floating-point values always round up for 5
+                    return true;
+                }
+
+                // Floating-point values round up if there is a non-zero tail
+                return (dig[i + 1] != '\0');
+            }
         }
 
         private static unsafe int FindSection(ReadOnlySpan<char> format, int section)
