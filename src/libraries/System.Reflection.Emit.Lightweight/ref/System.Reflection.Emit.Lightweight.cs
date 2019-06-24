@@ -9,14 +9,14 @@ namespace System.Reflection.Emit
 {
     public sealed partial class DynamicMethod : System.Reflection.MethodInfo
     {
-        public DynamicMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type returnType, System.Type[] parameterTypes, System.Reflection.Module m, bool skipVisibility) { }
-        public DynamicMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type returnType, System.Type[] parameterTypes, System.Type owner, bool skipVisibility) { }
-        public DynamicMethod(string name, System.Type returnType, System.Type[] parameterTypes) { }
-        public DynamicMethod(string name, System.Type returnType, System.Type[] parameterTypes, bool restrictedSkipVisibility) { }
-        public DynamicMethod(string name, System.Type returnType, System.Type[] parameterTypes, System.Reflection.Module m) { }
-        public DynamicMethod(string name, System.Type returnType, System.Type[] parameterTypes, System.Reflection.Module m, bool skipVisibility) { }
-        public DynamicMethod(string name, System.Type returnType, System.Type[] parameterTypes, System.Type owner) { }
-        public DynamicMethod(string name, System.Type returnType, System.Type[] parameterTypes, System.Type owner, bool skipVisibility) { }
+        public DynamicMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Reflection.Module m, bool skipVisibility) { }
+        public DynamicMethod(string name, System.Reflection.MethodAttributes attributes, System.Reflection.CallingConventions callingConvention, System.Type? returnType, System.Type[]? parameterTypes, System.Type owner, bool skipVisibility) { }
+        public DynamicMethod(string name, System.Type? returnType, System.Type[]? parameterTypes) { }
+        public DynamicMethod(string name, System.Type? returnType, System.Type[]? parameterTypes, bool restrictedSkipVisibility) { }
+        public DynamicMethod(string name, System.Type? returnType, System.Type[]? parameterTypes, System.Reflection.Module m) { }
+        public DynamicMethod(string name, System.Type? returnType, System.Type[]? parameterTypes, System.Reflection.Module m, bool skipVisibility) { }
+        public DynamicMethod(string name, System.Type? returnType, System.Type[]? parameterTypes, System.Type owner) { }
+        public DynamicMethod(string name, System.Type? returnType, System.Type[]? parameterTypes, System.Type owner, bool skipVisibility) { }
         public override System.Reflection.MethodAttributes Attributes { get { throw null; } }
         public override System.Reflection.CallingConventions CallingConvention { get { throw null; } }
         public override System.Type? DeclaringType { get { throw null; } }
