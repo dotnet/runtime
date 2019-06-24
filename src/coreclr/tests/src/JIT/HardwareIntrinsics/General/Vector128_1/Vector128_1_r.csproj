@@ -85,6 +85,16 @@
     <Compile Include="ToScalar.UInt16.cs" />
     <Compile Include="ToScalar.UInt32.cs" />
     <Compile Include="ToScalar.UInt64.cs" />
+    <Compile Include="ToString.Byte.cs" />
+    <Compile Include="ToString.Double.cs" />
+    <Compile Include="ToString.Int16.cs" />
+    <Compile Include="ToString.Int32.cs" />
+    <Compile Include="ToString.Int64.cs" />
+    <Compile Include="ToString.SByte.cs" />
+    <Compile Include="ToString.Single.cs" />
+    <Compile Include="ToString.UInt16.cs" />
+    <Compile Include="ToString.UInt32.cs" />
+    <Compile Include="ToString.UInt64.cs" />
     <Compile Include="ToVector256.Byte.cs" />
     <Compile Include="ToVector256.Double.cs" />
     <Compile Include="ToVector256.Int16.cs" />

@@ -66,6 +66,7 @@
     <Compile Include="Vector64WithElement0.cs" />
     <Compile Include="Vector64WithElementMaxValue.cs" />
     <Compile Include="Vector64ToScalar.cs" />
+    <Compile Include="Vector64ToString.cs" />
     <Compile Include="Vector64ToVector128.cs" />
     <Compile Include="Vector64ToVector128Unsafe.cs" />
     <Compile Include="Vector128Zero.cs" />
@@ -111,6 +112,7 @@
     <Compile Include="Vector128GetUpper.cs" />
     <Compile Include="Vector128WithUpper.cs" />
     <Compile Include="Vector128ToScalar.cs" />
+    <Compile Include="Vector128ToString.cs" />
     <Compile Include="Vector128ToVector256.cs" />
     <Compile Include="Vector128ToVector256Unsafe.cs" />
     <Compile Include="Vector256Zero.cs" />
@@ -156,6 +158,7 @@
     <Compile Include="Vector256GetUpper.cs" />
     <Compile Include="Vector256WithUpper.cs" />
     <Compile Include="Vector256ToScalar.cs" />
+    <Compile Include="Vector256ToString.cs" />
     <Compile Include="Program.NotSupported.cs" />
     <Compile Include="..\Shared\Program.cs" />
   </ItemGroup>
