@@ -28,7 +28,6 @@
       https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
       https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/index.json;
       https://dotnetfeed.blob.core.windows.net/dotnet-windowsdesktop/index.json;
-      https://www.myget.org/F/nugetbuild/api/v3/index.json;
       https://api.nuget.org/v3/index.json;
       $(RestoreSources);
     </RestoreSources>
@@ -83,7 +82,7 @@
     <MicrosoftBuildTasksCorePackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildTasksCorePackageVersion>
     <MicrosoftBuildUtilitiesCorePackageVersion>$(MicrosoftBuildPackageVersion)</MicrosoftBuildUtilitiesCorePackageVersion>
     <MicrosoftDotNetPlatformAbstractionsPackageVersion>1.1.1</MicrosoftDotNetPlatformAbstractionsPackageVersion>
-    <NugetProjectModelPackageVersion>4.3.0-preview2-4095</NugetProjectModelPackageVersion>
+    <NugetProjectModelPackageVersion>4.9.4</NugetProjectModelPackageVersion>
     <MicrosoftTargetingPackPrivateWinRTPackageVersion>1.0.5</MicrosoftTargetingPackPrivateWinRTPackageVersion>
     <MicrosoftDiaSymReaderNativePackageVersion>1.7.0</MicrosoftDiaSymReaderNativePackageVersion>
     <!-- Infrastructure and test-only. -->
