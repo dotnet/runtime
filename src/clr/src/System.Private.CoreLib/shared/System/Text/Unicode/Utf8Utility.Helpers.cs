@@ -64,7 +64,7 @@ namespace System.Text.Unicode
         /// Given a machine-endian DWORD which four bytes of UTF-8 data, interprets the input as a
         /// four-byte UTF-8 sequence and returns the machine-endian DWORD of the UTF-16 representation.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint ExtractCharsFromFourByteSequence(uint value)
         {
             if (BitConverter.IsLittleEndian)
@@ -760,7 +760,7 @@ namespace System.Text.Unicode
         /// Given a DWORD which represents a buffer of 4 ASCII bytes, widen each byte to a 16-bit WORD
         /// and writes the resulting QWORD into the destination with machine endianness.
         /// </summary>
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Widen4AsciiBytesToCharsAndWrite(ref char outputBuffer, uint value)
         {
             if (Bmi2.X64.IsSupported)
