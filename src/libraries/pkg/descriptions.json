@@ -1995,20 +1995,13 @@
   },
   {
     "Name": "System.Text.Json",
-    "Description": "Provides a fast, non-cached, forward-only way to read UTF-8 encoded JavaScript Object Notation (JSON) text.",
+    "Description": "Provides high-performance and low-allocating types that serialize objects to JavaScript Object Notation (JSON) text and deserialize JSON text to objects, with UTF-8 support built-in. Also provides types to read and write JSON text encoded as UTF-8, and to create an in-memory document object model (DOM), that is read-only, for random access of the JSON elements within a structured view of the data.",
     "CommonTypes": [
-      "System.Text.Json.Utf8JsonReader",
+      "System.Text.Json.JsonSerializer",
+      "System.Text.Json.JsonDocument",
+      "System.Text.Json.JsonElement",
       "System.Text.Json.Utf8JsonWriter",
-      "System.Text.Json.JsonDocument"
-    ]
-  },
-  {
-    "Name": "Microsoft.Bcl.Json.Sources",
-    "Description": "Provides the source code implementation of System.Text.Json as internal types. This package is only required for projects targeting .NET Framework 4.6.1+ or .NET Core 2.x; and is not for projects that can target .NET Core 3.0 and higher. For guidance on consuming the source pacakge, visit: https://aka.ms/json-source-package-guide.",
-    "CommonTypes": [
-      "System.Text.Json.Utf8JsonReader",
-      "System.Text.Json.Utf8JsonWriter",
-      "System.Text.Json.JsonDocument"
+      "System.Text.Json.Utf8JsonReader"
     ]
   },
   {
