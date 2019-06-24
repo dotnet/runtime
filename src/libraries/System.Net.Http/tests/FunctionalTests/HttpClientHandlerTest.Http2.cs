@@ -914,6 +914,7 @@ namespace System.Net.Http.Functional.Tests
             return bytesReceived;
         }
 
+        [ActiveIssue(38799)]
         [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_FlowControl_ClientDoesNotExceedWindows()
