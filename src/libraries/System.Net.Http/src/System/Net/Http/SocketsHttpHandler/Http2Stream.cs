@@ -480,7 +480,6 @@ namespace System.Net.Http
                 (wait, emptyResponse) = TryEnsureHeaders();
                 if (wait)
                 {
-                    Debug.Assert(_hasWaiter, $"{nameof(TryEnsureHeaders)} should have set _hasWaiter to true.");
                     await GetWaiterTask(cancellationToken).ConfigureAwait(false);
 
                     (wait, emptyResponse) = TryEnsureHeaders();
@@ -572,7 +571,6 @@ namespace System.Net.Http
                 {
                     // Synchronously block waiting for data to be produced.
                     Debug.Assert(bytesRead == 0);
-                    Debug.Assert(_hasWaiter, $"{nameof(TryReadFromBuffer)} should have set _hasWaiter to true.");
                     GetWaiterTask(cancellationToken).AsTask().GetAwaiter().GetResult();
                     CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
                     (wait, bytesRead) = TryReadFromBuffer(buffer);
@@ -599,7 +597,6 @@ namespace System.Net.Http
                 if (wait)
                 {
                     Debug.Assert(bytesRead == 0);
-                    Debug.Assert(_hasWaiter, $"{nameof(TryReadFromBuffer)} should have set _hasWaiter to true.");
                     await GetWaiterTask(cancellationToken).ConfigureAwait(false);
                     (wait, bytesRead) = TryReadFromBuffer(buffer.Span);
                     Debug.Assert(!wait);
@@ -676,8 +673,8 @@ namespace System.Net.Http
                 // No locking is required here to access _waitSource.  To be here, we've already updated _hasWaiter (while holding the lock)
                 // to indicate that we would be creating this waiter, and at that point the only code that could be await'ing _waitSource or
                 // Reset'ing it is this code here.  It's possible for this to race with the _waitSource being completed, but that's ok and is
-                // handled by _waitSource as one of its primary purposes.
-                Debug.Assert(_hasWaiter, $"This should only be called after we've transitioned _hasWaiter to true to enable this {nameof(GetWaiterTask)} call.");
+                // handled by _waitSource as one of its primary purposes.  We can't assert _hasWaiter here, though, as once we released the
+                // lock, a producer could have seen _hasWaiter as true and both set it to false and signaled _waitSource.
 
                 // With HttpClient, the supplied cancellation token will always be cancelable, as HttpClient supplies a token that
                 // will have cancellation requested if CancelPendingRequests is called (or when a non-infinite Timeout expires).
