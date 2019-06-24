@@ -35,6 +35,7 @@ namespace System.Text.Json.Serialization.Tests
         public SampleEnumByte MyByteEnum { get; set; }
         public SampleEnum MyEnum { get; set; }
         public SampleEnumInt16 MyInt16Enum { get; set; }
+        public SampleEnumInt32 MyInt32Enum { get; set; }
         public SampleEnumInt64 MyInt64Enum { get; set; }
         public SampleEnumUInt16 MyUInt16Enum { get; set; }
         public SampleEnumUInt32 MyUInt32Enum { get; set; }

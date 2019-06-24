@@ -2,57 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
     public static class EnumTests
     {
-        private static readonly string s_jsonStringEnum =
-                @"{" +
-                @"""MyEnum"" : ""Two""" +
-                @"}";
-
-        private static readonly string s_jsonIntEnum =
-                @"{" +
-                @"""MyEnum"" : 2" +
-                @"}";
-
-        private static readonly string s_jsonInt16Enum =
-                @"{" +
-                @"""MyInt16Enum"" : 2" +
-                @"}";
-
-        private static readonly string s_jsonInt64EnumMin =
-                @"{" +
-                @"""MyInt64Enum"" : " + long.MinValue +
-                @"}";
-
-        private static readonly string s_jsonInt64EnumMax =
-                @"{" +
-                @"""MyInt64Enum"" : " + long.MaxValue +
-                @"}";
-
-        private static readonly string s_jsonUInt64EnumMax =
-                @"{" +
-                @"""MyUInt64Enum"" : " + ulong.MaxValue +
-                @"}";
-
-        private static readonly string s_jsonUInt16EnumMax =
-                @"{" +
-                @"""MyUInt16Enum"" : " + ushort.MaxValue +
-                @"}";
-
-        private static readonly string s_jsonByteEnum =
-                @"{" +
-                @"""MyByteEnum"" : " + byte.MaxValue +
-                @"}";
-
-        private static readonly string s_jsonSByteEnum =
-        @"{" +
-        @"""MySByteEnum"" : " + sbyte.MaxValue +
-        @"}";
-
         private const string UInt64MaxPlus1 = "18446744073709551616"; // ulong.MaxValue + 1;
         private const string MinusUInt64MaxMinus1 = "-18446744073709551616"; // -ulong.MaxValue - 1
 
@@ -68,410 +24,314 @@ namespace System.Text.Json.Serialization.Tests
         private const string UInt16MaxPlus1 = "65536"; // ushort.MaxValue + 1;
         private const string MinusUInt16MaxMinus1 = "-65536"; // -ushort.MaxValue - 1
 
-        private const string Int16MaxPlus1 = "32768"; // int.MaxValue + 1;
-        private const string Int16MinMinus1 = "-32769"; // int.MinValue - 1
+        private const string Int16MaxPlus1 = "32768"; // short.MaxValue + 1;
+        private const string Int16MinMinus1 = "-32769"; // short.MinValue - 1
 
         private const string ByteMaxPlus1 = "256"; // byte.MaxValue + 1;
         private const string MinusByteMaxMinus1 = "-257"; // -byte.MaxValue - 1
 
-        [Fact]
-        public static void Parse_MinusByteMaxMinus1_Throws()
-        {
-            Assert.Equal(int.Parse(MinusByteMaxMinus1), (int)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {MinusByteMaxMinus1} }}").MyEnum);
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {MinusByteMaxMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {MinusByteMaxMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {MinusByteMaxMinus1} }}"));
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{MinusByteMaxMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{MinusByteMaxMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{MinusByteMaxMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{MinusByteMaxMinus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_ByteMaxPlus1_Throws()
-        {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {ByteMaxPlus1} }}"));
-            Assert.Equal(int.Parse(ByteMaxPlus1), (int)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {ByteMaxPlus1} }}").MyEnum);
-            Assert.Equal(int.Parse(ByteMaxPlus1), (int)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {ByteMaxPlus1} }}").MyUInt32Enum);
-            Assert.Equal(int.Parse(ByteMaxPlus1), (int)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {ByteMaxPlus1} }}").MyUInt64Enum);
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{ByteMaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{ByteMaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{ByteMaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{ByteMaxPlus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_Int16MinMinus1_Throws()
-        {
-            Assert.Equal(int.Parse(Int16MinMinus1), (int)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {Int16MinMinus1} }}").MyEnum);
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {Int16MinMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {Int16MinMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {Int16MinMinus1} }}"));
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{Int16MinMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{Int16MinMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{Int16MinMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{Int16MinMinus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_Int16MaxPlus1_Throws()
-        {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {Int16MaxPlus1} }}"));
-            Assert.Equal(int.Parse(Int16MaxPlus1), (int)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {Int16MaxPlus1} }}").MyEnum);
-            Assert.Equal(int.Parse(Int16MaxPlus1), (int)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {Int16MaxPlus1} }}").MyUInt32Enum);
-            Assert.Equal(int.Parse(Int16MaxPlus1), (int)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {Int16MaxPlus1} }}").MyUInt64Enum);
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{Int16MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{Int16MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{Int16MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{Int16MaxPlus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_MinusUInt16MaxMinus1_Throws()
-        {
-            Assert.Equal(int.Parse(MinusUInt16MaxMinus1), (int)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {MinusUInt16MaxMinus1} }}").MyEnum);
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {MinusUInt16MaxMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {MinusUInt16MaxMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {MinusUInt16MaxMinus1} }}"));
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{MinusUInt16MaxMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{MinusUInt16MaxMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{MinusUInt16MaxMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{MinusUInt16MaxMinus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_UInt16MaxPlus1_Throws()
-        {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {UInt16MaxPlus1} }}"));
-            Assert.Equal(int.Parse(UInt16MaxPlus1), (int)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {UInt16MaxPlus1} }}").MyEnum);
-            Assert.Equal(int.Parse(UInt16MaxPlus1), (int)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {UInt16MaxPlus1} }}").MyUInt32Enum);
-            Assert.Equal(int.Parse(UInt16MaxPlus1), (int)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {UInt16MaxPlus1} }}").MyUInt64Enum);
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{UInt16MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{UInt16MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{UInt16MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{UInt16MaxPlus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_Int32MinMinus1_Throws()
-        {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {Int32MinMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {Int32MinMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {Int32MinMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {Int32MinMinus1} }}"));
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{Int32MinMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{Int32MinMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{Int32MinMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{Int32MinMinus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_Int32MaxPlus1_Throws()
-        {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {Int32MaxPlus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {Int32MaxPlus1} }}"));
-            Assert.Equal(ulong.Parse(Int32MaxPlus1), (ulong)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {Int32MaxPlus1} }}").MyUInt32Enum);
-            Assert.Equal(ulong.Parse(Int32MaxPlus1), (ulong)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {Int32MaxPlus1} }}").MyUInt64Enum);
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{Int32MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{Int32MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{Int32MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{Int32MaxPlus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_MinusUInt32MaxMinus1_Throws()
-        {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {MinusUInt32MaxMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {MinusUInt32MaxMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {MinusUInt32MaxMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {MinusUInt32MaxMinus1} }}"));
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{Int64MinMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{Int64MinMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{Int64MinMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{Int64MinMinus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_UInt32MaxPlus1_Throws()
-        {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {UInt32MaxPlus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {UInt32MaxPlus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {UInt32MaxPlus1} }}"));
-            Assert.Equal(ulong.Parse(UInt32MaxPlus1), (ulong)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {UInt32MaxPlus1} }}").MyUInt64Enum);
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{UInt32MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{UInt32MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{UInt32MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{UInt32MaxPlus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_Int64MinMinus1_Throws()
-        {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {Int64MinMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {Int64MinMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {Int64MinMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {Int64MinMinus1} }}"));
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{Int64MinMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{Int64MinMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{Int64MinMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{Int64MinMinus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_Int64MaxPlus1_Throws()
-        {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {Int64MaxPlus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {Int64MaxPlus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {Int64MaxPlus1} }}"));
-            Assert.Equal(ulong.Parse(Int64MaxPlus1), (ulong)JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {Int64MaxPlus1} }}").MyUInt64Enum);
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{Int64MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{Int64MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{Int64MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{Int64MaxPlus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_MinusUInt64MaxMinus1_Throws()
-        {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {MinusUInt64MaxMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {MinusUInt64MaxMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {MinusUInt64MaxMinus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {MinusUInt64MaxMinus1} }}"));
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{MinusUInt64MaxMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{MinusUInt64MaxMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{MinusUInt64MaxMinus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{MinusUInt64MaxMinus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_UInt64MaxPlus1_Throws()
-        {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {UInt64MaxPlus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {UInt64MaxPlus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {UInt64MaxPlus1} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : {UInt64MaxPlus1} }}"));
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{UInt64MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{UInt64MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{UInt64MaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt64Enum\" : \"{UInt64MaxPlus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_MaxValues_QuotedVsNotQuoted_QuotedThrows()
-        {
-            string json = $"{{ \"MyByteEnum\" : {byte.MaxValue}, \"MyUInt32Enum\" : {UInt32.MaxValue}, \"MyUInt64Enum\" : {ulong.MaxValue} }}";
-            SimpleTestClass result = JsonSerializer.Parse<SimpleTestClass>(json);
-            Assert.Equal((SampleEnumByte)byte.MaxValue, result.MyByteEnum);
-            Assert.Equal((SampleEnumUInt32)UInt32.MaxValue, result.MyUInt32Enum);
-            Assert.Equal((SampleEnumUInt64)ulong.MaxValue, result.MyUInt64Enum);
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : {ulong.MaxValue} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {ulong.MaxValue} }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : {ulong.MaxValue} }}"));
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{ulong.MaxValue}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{ulong.MaxValue}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{ulong.MaxValue}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_MaxValuePlus1_QuotedVsNotQuoted_Throws()
-        {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : {ByteMaxPlus1}, \"MyUInt32Enum\" : {UInt32MaxPlus1} }}"));
-
-            // Quoted throws
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{ByteMaxPlus1}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyUInt32Enum\" : \"{UInt32MaxPlus1}\" }}"));
-        }
-
-        [Fact]
-        public static void Parse_Negative1_QuotedVsUnquoted_QuotedThrows()
-        {
-            string json = "{ \"MyByteEnum\" : -1, \"MyUInt32Enum\" : -1 }";
-
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
-            
-            // Quoted throws
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>("{ \"MyByteEnum\" : \"-1\" }"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>("{ \"MyUInt32Enum\" : \"-1\" }"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>("{ \"MyUInt64Enum\" : \"-1\" }"));
-        }
-
-        [Theory]
-        [InlineData("{ \"MyUInt64Enum\" : -1 }")]
-        [InlineData("{ \"MyUInt64Enum\" : -1, \"MyUInt32Enum\" : -1 }")]
-        [InlineData("{ \"MyUInt64Enum\" : -1, \"MyUInt32Enum\" : -1, \"MyByteEnum\" : -1 }")]
-        public static void Parse_Negative1ForUInt64Enum_Throw(string json)
-        {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
-        }
-
-        [Theory]
-        [InlineData((ulong)byte.MaxValue + 1, (ulong)UInt32.MaxValue + 1, (SampleEnumByte)0, (SampleEnumUInt32)0)]
-        [InlineData((ulong)byte.MaxValue + 2, (ulong)UInt32.MaxValue + 2, (SampleEnumByte)1, (SampleEnumUInt32)1)]
-        [InlineData((ulong)byte.MaxValue + 13, (ulong)UInt32.MaxValue + 13, (SampleEnumByte)12, (SampleEnumUInt32)12)]
-        [InlineData((ulong)byte.MaxValue * 2, (ulong)UInt32.MaxValue * 2, (SampleEnumByte)byte.MaxValue - 1, (SampleEnumUInt32)UInt32.MaxValue - 1)]
-        public static void Parse_Ulong_InvalidNumber_Throw(ulong i, ulong j, SampleEnumByte e1, SampleEnumUInt32 e2)
-        {
-            string json = $"{{ \"MyByteEnum\" : {i}, \"MyUInt32Enum\" : {j} }}";
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyEnum\" : \"{i}\" }}"));
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>($"{{ \"MyByteEnum\" : \"{j}\" }}"));
-        }
+        private const string SByteMaxPlus1 = "128"; // sbyte.MaxValue + 1;
+        private const string MinusSByteMaxMinus1 = "-129"; // -sbyte.MaxValue - 1
 
         [Fact]
         public static void EnumAsStringFail()
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(s_jsonStringEnum));
-        }
-
-        [Fact]
-        public static void EnumAsInt()
-        {
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(s_jsonIntEnum);
-            Assert.Equal(SampleEnum.Two, obj.MyEnum);
-        }
-
-        [Fact]
-        public static void EnumAsInt16()
-        {
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(s_jsonInt16Enum);
-            Assert.Equal(SampleEnumInt16.Two, obj.MyInt16Enum);
-        }
-
-        [Fact]
-        public static void EnumAsInt64Min()
-        {
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(s_jsonInt64EnumMin);
-            Assert.Equal(SampleEnumInt64.MinNegative, obj.MyInt64Enum);
-        }
-
-        [Fact]
-        public static void EnumAsInt64Max()
-        {
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(s_jsonInt64EnumMax);
-            Assert.Equal(SampleEnumInt64.Max, obj.MyInt64Enum);
-        }
-
-        [Fact]
-        public static void EnumAsUInt64Max()
-        {
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(s_jsonUInt64EnumMax);
-            Assert.Equal(SampleEnumUInt64.Max, obj.MyUInt64Enum);
-        }
-
-        [Fact]
-        public static void EnumAsUInt16Max()
-        {
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(s_jsonUInt16EnumMax);
-            Assert.Equal(SampleEnumUInt16.Max, obj.MyUInt16Enum);
-        }
-
-        [Fact]
-        public static void EnumAsByteMax()
-        {
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(s_jsonByteEnum);
-            Assert.Equal(SampleEnumByte.Max, obj.MyByteEnum);
-        }
-
-        [Fact]
-        public static void EnumAsSByteMax()
-        {
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(s_jsonSByteEnum);
-            Assert.Equal(SampleEnumSByte.Max, obj.MySByteEnum);
+            string json = @"{ ""MyEnum"" : ""Two"" }";
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
         }
 
         [Theory]
-        [InlineData(sbyte.MinValue, SampleEnumSByte.MinNegative)]
-        [InlineData(short.MinValue, SampleEnumInt16.MinNegative)]
-        [InlineData(int.MinValue, SampleEnumInt32.MinNegative)]
-        [InlineData(long.MinValue, SampleEnumInt64.MinNegative)]
-        [InlineData(0, SampleEnum.MinZero)]
-        [InlineData(0, SampleEnumByte.MinZero)]
-        [InlineData(0, SampleEnumUInt16.MinZero)]
-        [InlineData(0, SampleEnumUInt32.MinZero)]
-        [InlineData(0, SampleEnumUInt64.MinZero)]
-        [InlineData(0, SampleEnumSByte.Zero)]
-        [InlineData(0, SampleEnumInt16.Zero)]
-        [InlineData(0, SampleEnumInt32.Zero)]
-        [InlineData(0, SampleEnumInt64.Zero)]
-        [InlineData(1, SampleEnum.One)]
-        [InlineData(1, SampleEnumByte.One)]
-        [InlineData(1, SampleEnumSByte.One)]
-        [InlineData(1, SampleEnumInt16.One)]
-        [InlineData(1, SampleEnumUInt16.One)]
-        [InlineData(1, SampleEnumInt32.One)]
-        [InlineData(1, SampleEnumUInt32.One)]
-        [InlineData(1, SampleEnumInt64.One)]
-        [InlineData(1, SampleEnumUInt64.One)]
-        [InlineData(2, SampleEnum.Two)]
-        [InlineData(2, SampleEnumByte.Two)]
-        [InlineData(2, SampleEnumSByte.Two)]
-        [InlineData(2, SampleEnumInt16.Two)]
-        [InlineData(2, SampleEnumUInt16.Two)]
-        [InlineData(2, SampleEnumInt32.Two)]
-        [InlineData(2, SampleEnumUInt32.Two)]
-        [InlineData(2, SampleEnumInt64.Two)]
-        [InlineData(2, SampleEnumUInt64.Two)]
-        [InlineData(byte.MaxValue, SampleEnumByte.Max)]
-        [InlineData(sbyte.MaxValue, SampleEnumSByte.Max)]
-        [InlineData(short.MaxValue, SampleEnumInt16.Max)]
-        [InlineData(ushort.MaxValue, SampleEnumUInt16.Max)]
-        [InlineData(int.MaxValue, SampleEnumInt32.Max)]
-        [InlineData(uint.MaxValue, SampleEnumUInt32.Max)]
-        [InlineData(long.MaxValue, SampleEnumInt64.Max)]
-        [InlineData(ulong.MaxValue, SampleEnumUInt64.Max)]
-        public static void ToString_Max(object expected, object enumValue)
+        [MemberData(nameof(Parse_OutOfRange))]
+        public static void Parse_OutOfRange_Throws(object value, string name)
+        {
+            string json = $"{{ \"{ name }\" : { value } }}";
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+            json = $"{{ \"{ name }\" : \"{ value }\" }}";
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_WithinRange_SignedAsString))]
+        public static void Parse_WithinRange_Signed_ReturnsWithCorrectType(Type expectedType, string value, string name)
+        {
+            string json = $"{{ \"{ name }\" : { value } }}";
+            SimpleTestClass result = JsonSerializer.Parse<SimpleTestClass>(json);
+            object expected = Enum.ToObject(expectedType, long.Parse(value));
+            Assert.Equal(expected, GetProperty(result, name));
+
+            json = $"{{ \"{ name }\" : \"{ value }\" }}";
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_WithinRange_Signed))]
+        public static void Parse_WithinRange_ReturnsExpected(object expected, long value, string name)
+        {
+            string json = $"{{ \"{ name }\" : { value } }}";
+            SimpleTestClass result = JsonSerializer.Parse<SimpleTestClass>(json);
+            Assert.Equal(expected, GetProperty(result, name));
+
+            json = $"{{ \"{ name }\" : \"{ value }\" }}";
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_WithinRange_UnsignedAsString))]
+        public static void Parse_WithinRange_Unsigned_ReturnsWithCorrectType(Type expectedType, string value, string name)
+        {
+            string json = $"{{ \"{ name }\" : { value } }}";
+            SimpleTestClass result = JsonSerializer.Parse<SimpleTestClass>(json);
+            object expected = Enum.ToObject(expectedType, ulong.Parse(value));
+            Assert.Equal(expected, GetProperty(result, name));
+
+            json = $"{{ \"{ name }\" : \"{ value }\" }}";
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_WithinRange_Unsigned))]
+        public static void Parse_WithinRange_ReturnsExpected(object expected, ulong value, string name)
+        {
+            string json = $"{{ \"{ name }\" : { value } }}";
+            SimpleTestClass result = JsonSerializer.Parse<SimpleTestClass>(json);
+            Assert.Equal(expected, GetProperty(result, name));
+
+            json = $"{{ \"{ name }\" : \"{ value }\" }}";
+            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+        }
+
+        private static object GetProperty(SimpleTestClass testClass, string propertyName) 
+            => testClass.GetType().GetProperty(propertyName).GetValue(testClass, null);
+
+        [Theory]
+        [MemberData(nameof(ToString_WithinRange))]
+        public static void ToString_WithinRange_ReturnsSameValue(object expected, object enumValue)
         {
             string json = JsonSerializer.ToString(enumValue);
             Assert.Equal(expected.ToString(), json);
         }
 
         [Theory]
-        [InlineData(1, (long)byte.MaxValue + 1, typeof(SampleEnumByte), SampleEnumByte.MinZero)]
-        [InlineData(2, (long)byte.MaxValue + 1, typeof(SampleEnumByte), SampleEnumByte.MinZero)]
-        [InlineData(3, (long)byte.MaxValue + 1, typeof(SampleEnumByte), SampleEnumByte.MinZero)]
-        [InlineData(4, (long)byte.MaxValue + 1, typeof(SampleEnumByte), SampleEnumByte.MinZero)]
-        [InlineData(1, (long)UInt16.MaxValue + 1, typeof(SampleEnumUInt16), SampleEnumUInt16.MinZero)]
-        [InlineData(2, (long)UInt16.MaxValue + 1, typeof(SampleEnumUInt16), SampleEnumUInt16.MinZero)]
-        [InlineData(3, (long)UInt16.MaxValue + 1, typeof(SampleEnumUInt16), SampleEnumUInt16.MinZero)]
-        [InlineData(4, (long)UInt16.MaxValue + 1, typeof(SampleEnumUInt16), SampleEnumUInt16.MinZero)]
-        [InlineData(1, (long)UInt32.MaxValue + 1, typeof(SampleEnumUInt32), SampleEnumUInt32.MinZero)]
-        [InlineData(2, (long)UInt32.MaxValue + 1, typeof(SampleEnumUInt32), SampleEnumUInt32.MinZero)]
-        [InlineData(3, (long)UInt32.MaxValue + 1, typeof(SampleEnumUInt32), SampleEnumUInt32.MinZero)]
-        [InlineData(4, (long)UInt32.MaxValue + 1, typeof(SampleEnumUInt32), SampleEnumUInt32.MinZero)]
-        [InlineData(1, (long)sbyte.MaxValue + 1, typeof(SampleEnumSByte), SampleEnumSByte.MinNegative)]
-        [InlineData(2, (long)sbyte.MaxValue + 1, typeof(SampleEnumSByte), SampleEnumSByte.Zero)]
-        [InlineData(3, (long)sbyte.MaxValue + 1, typeof(SampleEnumSByte), SampleEnumSByte.MinNegative)]
-        [InlineData(4, (long)sbyte.MaxValue + 1, typeof(SampleEnumSByte), SampleEnumSByte.Zero)]
-        [InlineData(1, (long)Int16.MaxValue + 1, typeof(SampleEnumInt16), SampleEnumInt16.MinNegative)]
-        [InlineData(2, (long)Int16.MaxValue + 1, typeof(SampleEnumInt16), SampleEnumInt16.Zero)]
-        [InlineData(3, (long)Int16.MaxValue + 1, typeof(SampleEnumInt16), SampleEnumInt16.MinNegative)]
-        [InlineData(4, (long)Int16.MaxValue + 1, typeof(SampleEnumInt16), SampleEnumInt16.Zero)]
-        [InlineData(1, (long)Int32.MaxValue + 1, typeof(SampleEnumInt32), SampleEnumInt32.MinNegative)]
-        [InlineData(2, (long)Int32.MaxValue + 1, typeof(SampleEnumInt32), SampleEnumInt32.Zero)]
-        [InlineData(3, (long)Int32.MaxValue + 1, typeof(SampleEnumInt32), SampleEnumInt32.MinNegative)]
-        [InlineData(4, (long)Int32.MaxValue + 1, typeof(SampleEnumInt32), SampleEnumInt32.Zero)]
-        public static void ToString_ExceedMaxCapacity_ResetsBackToMinimum(int timesOverflow, long maxCapacity, Type type, long expected)
+        [MemberData(nameof(ToString_ExceedMaxCapacity))]
+        public static void ToString_ExceedMaxCapacity_ResetsBackToMinimum(int timesOverflow, string maxCapacity, Type type, long expected)
         {
-            object enumValue = Enum.ToObject(type, maxCapacity * timesOverflow);
+            object enumValue = Enum.ToObject(type, long.Parse(maxCapacity) * timesOverflow);
             string json = JsonSerializer.ToString(enumValue);
-            string expectedString = expected.ToString();
-            Assert.Equal(expectedString, json);
+            Assert.Equal(expected.ToString(), json);
+        }
+
+        public static IEnumerable<object[]> Parse_OutOfRange
+        {
+            get
+            {
+                yield return new object[] { -1, "MyByteEnum" };
+                yield return new object[] { -1, "MyUInt32Enum" };
+                yield return new object[] { -1, "MyUInt64Enum" };
+                yield return new object[] { UInt32.MaxValue, "MyByteEnum" };
+                yield return new object[] { UInt32.MaxValue, "MyEnum" };
+                yield return new object[] { UInt64.MaxValue, "MyByteEnum" };
+                yield return new object[] { UInt64.MaxValue, "MyEnum" };
+                yield return new object[] { UInt64.MaxValue, "MyUInt32Enum" };
+                yield return new object[] { SByteMaxPlus1, "MySByteEnum" };
+                yield return new object[] { Int16MaxPlus1, "MyInt16Enum" };
+                yield return new object[] { Int32MaxPlus1, "MyInt32Enum" };
+                yield return new object[] { Int32MaxPlus1, "MyEnum" };
+                yield return new object[] { Int32MaxPlus1, "MyByteEnum" };
+                yield return new object[] { Int64MaxPlus1, "MyEnum" };
+                yield return new object[] { Int64MaxPlus1, "MyByteEnum" };
+                yield return new object[] { Int64MaxPlus1, "MyUInt32Enum" };
+                yield return new object[] { ByteMaxPlus1, "MyByteEnum" };
+                yield return new object[] { UInt32MaxPlus1, "MyEnum" };
+                yield return new object[] { UInt32MaxPlus1, "MyByteEnum" };
+                yield return new object[] { UInt32MaxPlus1, "MyUInt32Enum" };
+                yield return new object[] { UInt64MaxPlus1, "MyEnum" };
+                yield return new object[] { UInt64MaxPlus1, "MyByteEnum" };
+                yield return new object[] { UInt64MaxPlus1, "MyUInt32Enum" };
+                yield return new object[] { UInt64MaxPlus1, "MyUInt64Enum" };
+                yield return new object[] { UInt16MaxPlus1, "MyByteEnum" };
+                yield return new object[] { UInt16MaxPlus1, "MyUInt16Enum" };
+                yield return new object[] { Int16MinMinus1, "MyByteEnum" };
+                yield return new object[] { Int16MinMinus1, "MyUInt32Enum" };
+                yield return new object[] { Int16MinMinus1, "MyUInt64Enum" };
+                yield return new object[] { Int32MinMinus1, "MyEnum" };
+                yield return new object[] { Int32MinMinus1, "MyByteEnum" };
+                yield return new object[] { Int32MinMinus1, "MyUInt32Enum" };
+                yield return new object[] { Int32MinMinus1, "MyUInt64Enum" };
+                yield return new object[] { Int64MinMinus1, "MyEnum" };
+                yield return new object[] { Int64MinMinus1, "MyByteEnum" };
+                yield return new object[] { Int64MinMinus1, "MyUInt32Enum" };
+                yield return new object[] { Int64MinMinus1, "MyUInt64Enum" };
+                yield return new object[] { MinusByteMaxMinus1, "MyByteEnum" };
+                yield return new object[] { MinusByteMaxMinus1, "MyUInt32Enum" };
+                yield return new object[] { MinusByteMaxMinus1, "MyUInt64Enum" };
+                yield return new object[] { MinusUInt16MaxMinus1, "MyByteEnum" };
+                yield return new object[] { MinusUInt16MaxMinus1, "MyUInt32Enum" };
+                yield return new object[] { MinusUInt16MaxMinus1, "MyUInt64Enum" };
+                yield return new object[] { MinusUInt32MaxMinus1, "MyEnum" };
+                yield return new object[] { MinusUInt32MaxMinus1, "MyByteEnum" };
+                yield return new object[] { MinusUInt32MaxMinus1, "MyUInt32Enum" };
+                yield return new object[] { MinusUInt32MaxMinus1, "MyUInt64Enum" };
+                yield return new object[] { MinusUInt64MaxMinus1, "MyEnum" };
+                yield return new object[] { MinusUInt64MaxMinus1, "MyByteEnum" };
+                yield return new object[] { MinusUInt64MaxMinus1, "MyUInt32Enum" };
+                yield return new object[] { MinusUInt64MaxMinus1, "MyUInt64Enum" };
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_WithinRange_SignedAsString
+        {
+            get
+            {
+                yield return new object[] { typeof(SampleEnum), ByteMaxPlus1, "MyEnum" };
+                yield return new object[] { typeof(SampleEnum), Int16MaxPlus1, "MyEnum" };
+                yield return new object[] { typeof(SampleEnum), UInt16MaxPlus1, "MyEnum" };
+                yield return new object[] { typeof(SampleEnum), MinusByteMaxMinus1, "MyEnum" };
+                yield return new object[] { typeof(SampleEnum), MinusUInt16MaxMinus1, "MyEnum" };
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_WithinRange_Signed
+        {
+            get
+            {
+                yield return new object[] { SampleEnumSByte.MinNegative, sbyte.MinValue, "MySByteEnum" };
+                yield return new object[] { SampleEnumInt16.MinNegative, short.MinValue, "MyInt16Enum" };
+                yield return new object[] { SampleEnumInt32.MinNegative, int.MinValue, "MyInt32Enum" };
+                yield return new object[] { SampleEnumInt64.MinNegative, long.MinValue, "MyInt64Enum" };
+                yield return new object[] { SampleEnumSByte.Max, sbyte.MaxValue, "MySByteEnum" };
+                yield return new object[] { SampleEnumInt16.Max, short.MaxValue, "MyInt16Enum" };
+                yield return new object[] { SampleEnumInt32.Max, int.MaxValue, "MyInt32Enum" };
+                yield return new object[] { SampleEnumInt64.Max, long.MaxValue, "MyInt64Enum" };
+                yield return new object[] { SampleEnumSByte.Zero, 0, "MySByteEnum" };
+                yield return new object[] { SampleEnumInt16.Zero, 0, "MyInt16Enum" };
+                yield return new object[] { SampleEnumInt32.Zero, 0, "MyInt32Enum" };
+                yield return new object[] { SampleEnumInt64.Zero, 0, "MyInt64Enum" };
+                yield return new object[] { SampleEnum.MinZero, 0, "MyEnum" };
+                yield return new object[] { SampleEnumSByte.One, 1, "MySByteEnum" };
+                yield return new object[] { SampleEnumInt16.One, 1, "MyInt16Enum" };
+                yield return new object[] { SampleEnumInt32.One, 1, "MyInt32Enum" };
+                yield return new object[] { SampleEnumInt64.One, 1, "MyInt64Enum" };
+                yield return new object[] { SampleEnum.One, 1, "MyEnum" };
+                yield return new object[] { SampleEnumSByte.Two, 2, "MySByteEnum" };
+                yield return new object[] { SampleEnumInt16.Two, 2, "MyInt16Enum" };
+                yield return new object[] { SampleEnumInt32.Two, 2, "MyInt32Enum" };
+                yield return new object[] { SampleEnumInt64.Two, 2, "MyInt64Enum" };
+                yield return new object[] { SampleEnum.Two, 2, "MyEnum" };
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_WithinRange_UnsignedAsString
+        {
+            get
+            {
+                yield return new object[] { typeof(SampleEnumUInt32), ByteMaxPlus1, "MyUInt32Enum" };
+                yield return new object[] { typeof(SampleEnumUInt32), Int16MaxPlus1, "MyUInt32Enum" };
+                yield return new object[] { typeof(SampleEnumUInt32), Int32MaxPlus1, "MyUInt32Enum" };
+                yield return new object[] { typeof(SampleEnumUInt32), UInt16MaxPlus1, "MyUInt32Enum" };
+                yield return new object[] { typeof(SampleEnumUInt64), ByteMaxPlus1, "MyUInt64Enum" };
+                yield return new object[] { typeof(SampleEnumUInt64), Int16MaxPlus1, "MyUInt64Enum" };
+                yield return new object[] { typeof(SampleEnumUInt64), Int32MaxPlus1, "MyUInt64Enum" };
+                yield return new object[] { typeof(SampleEnumUInt64), Int64MaxPlus1, "MyUInt64Enum" };
+                yield return new object[] { typeof(SampleEnumUInt64), UInt16MaxPlus1, "MyUInt64Enum" };
+                yield return new object[] { typeof(SampleEnumUInt64), UInt32MaxPlus1, "MyUInt64Enum" };
+            }
+        }
+
+        public static IEnumerable<object[]> Parse_WithinRange_Unsigned
+        {
+            get
+            {
+                yield return new object[] { SampleEnumByte.MinZero, byte.MinValue, "MyByteEnum" };
+                yield return new object[] { SampleEnumUInt16.MinZero, ushort.MinValue, "MyUInt16Enum" };
+                yield return new object[] { SampleEnumUInt32.MinZero, uint.MinValue, "MyUInt32Enum" };
+                yield return new object[] { SampleEnumUInt64.MinZero, ulong.MinValue, "MyUInt64Enum" };
+                yield return new object[] { SampleEnumByte.Max, byte.MaxValue, "MyByteEnum" };
+                yield return new object[] { SampleEnumUInt16.Max, ushort.MaxValue, "MyUInt16Enum" };
+                yield return new object[] { SampleEnumUInt32.Max, uint.MaxValue, "MyUInt32Enum" };
+                yield return new object[] { SampleEnumUInt64.Max, ulong.MaxValue, "MyUInt64Enum" };
+                yield return new object[] { SampleEnumByte.MinZero, 0, "MyByteEnum" };
+                yield return new object[] { SampleEnumUInt16.MinZero, 0, "MyUInt16Enum" };
+                yield return new object[] { SampleEnumUInt32.MinZero, 0, "MyUInt32Enum" };
+                yield return new object[] { SampleEnumUInt64.MinZero, 0, "MyUInt64Enum" };
+                yield return new object[] { SampleEnumByte.One, 1, "MyByteEnum" };
+                yield return new object[] { SampleEnumUInt16.One, 1, "MyUInt16Enum" };
+                yield return new object[] { SampleEnumUInt32.One, 1, "MyUInt32Enum" };
+                yield return new object[] { SampleEnumUInt64.One, 1, "MyUInt64Enum" };
+                yield return new object[] { SampleEnumByte.Two, 2, "MyByteEnum" };
+                yield return new object[] { SampleEnumUInt16.Two, 2, "MyUInt16Enum" };
+                yield return new object[] { SampleEnumUInt32.Two, 2, "MyUInt32Enum" };
+                yield return new object[] { SampleEnumUInt64.Two, 2, "MyUInt64Enum" };
+            }
+        }
+
+        public static IEnumerable<object[]> ToString_WithinRange
+        {
+            get
+            {
+                yield return new object[] { sbyte.MinValue, SampleEnumSByte.MinNegative };
+                yield return new object[] { short.MinValue, SampleEnumInt16.MinNegative };
+                yield return new object[] { int.MinValue, SampleEnumInt32.MinNegative };
+                yield return new object[] { long.MinValue, SampleEnumInt64.MinNegative };
+                yield return new object[] { 0, SampleEnum.MinZero };
+                yield return new object[] { 0, SampleEnumByte.MinZero };
+                yield return new object[] { 0, SampleEnumUInt16.MinZero };
+                yield return new object[] { 0, SampleEnumUInt32.MinZero };
+                yield return new object[] { 0, SampleEnumUInt64.MinZero };
+                yield return new object[] { 0, SampleEnumSByte.Zero };
+                yield return new object[] { 0, SampleEnumInt16.Zero };
+                yield return new object[] { 0, SampleEnumInt32.Zero };
+                yield return new object[] { 0, SampleEnumInt64.Zero };
+                yield return new object[] { 2, SampleEnum.Two };
+                yield return new object[] { 2, SampleEnumByte.Two };
+                yield return new object[] { 2, SampleEnumSByte.Two };
+                yield return new object[] { 2, SampleEnumInt16.Two };
+                yield return new object[] { 2, SampleEnumUInt16.Two };
+                yield return new object[] { 2, SampleEnumInt32.Two };
+                yield return new object[] { 2, SampleEnumUInt32.Two };
+                yield return new object[] { 2, SampleEnumInt64.Two };
+                yield return new object[] { 2, SampleEnumUInt64.Two };
+                yield return new object[] { byte.MaxValue, SampleEnumByte.Max };
+                yield return new object[] { sbyte.MaxValue, SampleEnumSByte.Max };
+                yield return new object[] { short.MaxValue, SampleEnumInt16.Max };
+                yield return new object[] { ushort.MaxValue, SampleEnumUInt16.Max };
+                yield return new object[] { int.MaxValue, SampleEnumInt32.Max };
+                yield return new object[] { uint.MaxValue, SampleEnumUInt32.Max };
+                yield return new object[] { long.MaxValue, SampleEnumInt64.Max };
+                yield return new object[] { ulong.MaxValue, SampleEnumUInt64.Max };
+            }
+        }
+
+        public static IEnumerable<object[]> ToString_ExceedMaxCapacity
+        {
+            get
+            {
+                // The rationale for setting macCapacity: 
+                // e.g. for byte, including 0, we have byte.MaxValue + 1 numbers that can be represented by byte
+                yield return new object[] { 1, ByteMaxPlus1, typeof(SampleEnumByte), SampleEnumByte.MinZero };
+                yield return new object[] { 2, ByteMaxPlus1, typeof(SampleEnumByte), SampleEnumByte.MinZero };
+                yield return new object[] { 3, ByteMaxPlus1, typeof(SampleEnumByte), SampleEnumByte.MinZero };
+                yield return new object[] { 4, ByteMaxPlus1, typeof(SampleEnumByte), SampleEnumByte.MinZero };
+                yield return new object[] { 1, UInt16MaxPlus1, typeof(SampleEnumUInt16), SampleEnumUInt16.MinZero };
+                yield return new object[] { 2, UInt16MaxPlus1, typeof(SampleEnumUInt16), SampleEnumUInt16.MinZero };
+                yield return new object[] { 3, UInt16MaxPlus1, typeof(SampleEnumUInt16), SampleEnumUInt16.MinZero };
+                yield return new object[] { 4, UInt16MaxPlus1, typeof(SampleEnumUInt16), SampleEnumUInt16.MinZero };
+                yield return new object[] { 1, UInt32MaxPlus1, typeof(SampleEnumUInt32), SampleEnumUInt32.MinZero };
+                yield return new object[] { 2, UInt32MaxPlus1, typeof(SampleEnumUInt32), SampleEnumUInt32.MinZero };
+                yield return new object[] { 3, UInt32MaxPlus1, typeof(SampleEnumUInt32), SampleEnumUInt32.MinZero };
+                yield return new object[] { 4, UInt32MaxPlus1, typeof(SampleEnumUInt32), SampleEnumUInt32.MinZero };
+                yield return new object[] { 1, SByteMaxPlus1, typeof(SampleEnumSByte), SampleEnumSByte.MinNegative };
+                yield return new object[] { 2, SByteMaxPlus1, typeof(SampleEnumSByte), SampleEnumSByte.Zero };
+                yield return new object[] { 3, SByteMaxPlus1, typeof(SampleEnumSByte), SampleEnumSByte.MinNegative };
+                yield return new object[] { 4, SByteMaxPlus1, typeof(SampleEnumSByte), SampleEnumSByte.Zero };
+                yield return new object[] { 1, Int16MaxPlus1, typeof(SampleEnumInt16), SampleEnumInt16.MinNegative };
+                yield return new object[] { 2, Int16MaxPlus1, typeof(SampleEnumInt16), SampleEnumInt16.Zero };
+                yield return new object[] { 3, Int16MaxPlus1, typeof(SampleEnumInt16), SampleEnumInt16.MinNegative };
+                yield return new object[] { 4, Int16MaxPlus1, typeof(SampleEnumInt16), SampleEnumInt16.Zero };
+                yield return new object[] { 1, Int32MaxPlus1, typeof(SampleEnumInt32), SampleEnumInt32.MinNegative };
+                yield return new object[] { 2, Int32MaxPlus1, typeof(SampleEnumInt32), SampleEnumInt32.Zero };
+                yield return new object[] { 3, Int32MaxPlus1, typeof(SampleEnumInt32), SampleEnumInt32.MinNegative };
+                yield return new object[] { 4, Int32MaxPlus1, typeof(SampleEnumInt32), SampleEnumInt32.Zero };
+            }
         }
     }
 }
