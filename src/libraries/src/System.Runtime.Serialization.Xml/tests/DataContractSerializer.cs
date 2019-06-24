@@ -4092,6 +4092,20 @@ public static partial class DataContractSerializerTests
         });
     }
 
+    [Fact]
+    public static void DCS_ReadObject_XmlDictionaryReaderMaxStringContentLengthExceedsQuota()
+    {
+        DataContractSerializer dcs = new DataContractSerializer(typeof(TypeA));
+        int maxStringContentLength = 1024;
+        var type = new TypeA { Name = "BOOM!".PadLeft(maxStringContentLength + 1, ' ') };
+        MemoryStream ms = new MemoryStream();
+        dcs.WriteObject(ms, type);
+        ms.Position = 0;
+        XmlDictionaryReader reader = XmlDictionaryReader.CreateTextReader(ms, new System.Xml.XmlDictionaryReaderQuotas() { MaxStringContentLength = maxStringContentLength });
+
+        Assert.Throws<System.Runtime.Serialization.SerializationException>(() => { dcs.ReadObject(reader); });
+    }
+
     private static T DeserializeString<T>(string stringToDeserialize, bool shouldReportDeserializationExceptions = true, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null)
     {
         DataContractSerializer dcs;
