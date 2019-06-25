@@ -779,3 +779,30 @@ mono_threads_exit_no_safepoints_region (const char *func)
 	MONO_REQ_GC_UNSAFE_MODE;
 	mono_threads_transition_end_no_safepoints (mono_thread_info_current (), func);
 }
+
+void
+mono_thread_set_coop_aware (void)
+{
+	MONO_ENTER_GC_UNSAFE;
+	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	if (info)
+		/* NOTE, this flag should only be changed while in unsafe mode. */
+		/* It will make sure we won't get an async preemptive suspend */
+		/* request against this thread while in the process of changing the flag */
+		/* affecting the threads suspend/resume behavior. */
+		mono_atomic_store_i32 (&(info->coop_aware_thread), TRUE);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+mono_bool
+mono_thread_get_coop_aware (void)
+{
+	mono_bool result = FALSE;
+	MONO_ENTER_GC_UNSAFE;
+	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	if (info)
+		result = (mono_bool)mono_atomic_load_i32 (&(info->coop_aware_thread));
+	MONO_EXIT_GC_UNSAFE;
+
+	return result;
+}

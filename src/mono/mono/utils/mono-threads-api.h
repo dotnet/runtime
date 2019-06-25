@@ -156,4 +156,10 @@ mono_threads_exit_no_safepoints_region (const char *func);
 			mono_threads_exit_no_safepoints_region (__func__);	\
 	} while (0)
 
+MONO_API MONO_RT_EXTERNAL_ONLY void
+mono_thread_set_coop_aware (void);
+
+MONO_API MONO_RT_EXTERNAL_ONLY mono_bool
+mono_thread_get_coop_aware (void);
+
 #endif /* __MONO_LOGGER_H__ */

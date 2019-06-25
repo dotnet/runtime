@@ -272,6 +272,15 @@ typedef struct _MonoThreadInfo {
 	gpointer win32_apc_info_io_handle;
 #endif
 
+	/* When running hybrid suspend mode, a thread can explicitly flag */
+	/* itself to be cooperative suspend aware. If it does, it won't */
+	/* be preemptive suspended, so will behave as a cooperative suspended */
+	/* thread, continue to run when in safe mode. NOTE, threads setting */
+	/* this flag needs to correctly follow cooperative suspend rules. */
+	/* Flag can only be toggled for hybrid/cooperative suspend mode */
+	/* and is a onetime switch, FALSE -> TRUE. */
+	gboolean coop_aware_thread;
+
 	/*
 	 * This is where we store tools tls data so it follows our lifecycle and doesn't depends on posix tls cleanup ordering
 	 *

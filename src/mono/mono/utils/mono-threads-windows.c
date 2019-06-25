@@ -485,6 +485,12 @@ mono_threads_platform_init (void)
 #endif
 }
 
+static gboolean
+thread_is_cooperative_suspend_aware (MonoThreadInfo *info)
+{
+	return (mono_threads_is_cooperative_suspension_enabled () || mono_atomic_load_i32 (&(info->coop_aware_thread)));
+}
+
 /*
  * When running x86 process under x64 system syscalls are done through WoW64. This
  * needs to do a transition from x86 mode to x64 so it can syscall into the x64 system.
@@ -500,7 +506,7 @@ mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info)
 #if SIZEOF_VOID_P == 4 && HAVE_API_SUPPORT_WIN32_OPEN_THREAD
 /* FIXME On cygwin these are not defined */
 #if defined(CONTEXT_EXCEPTION_REQUEST) && defined(CONTEXT_EXCEPTION_REPORTING) && defined(CONTEXT_EXCEPTION_ACTIVE)
-	if (is_wow64 && mono_threads_is_cooperative_suspension_enabled ()) {
+	if (is_wow64 && thread_is_cooperative_suspend_aware (info)) {
 		/* Cooperative suspended threads will block at well-defined locations. */
 		return FALSE;
 	} else if (is_wow64 && mono_threads_is_hybrid_suspension_enabled ()) {
