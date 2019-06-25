@@ -97,7 +97,7 @@ namespace System.Text.Json.Serialization.Converters
 
             // Create a delegate which will point to the CreateRange method.
             object createRangeDelegate;
-            createRangeDelegate = options.ClassMaterializerStrategy.ImmutableCollectionCreateRange(constructingType, elementType);
+            createRangeDelegate = options.MemberAccessorStrategy.ImmutableCollectionCreateRange(constructingType, elementType);
 
             // Cache the delegate
             options.TryAddCreateRangeDelegate(delegateKey, createRangeDelegate);
