@@ -1,0 +1,84 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - release/3.0
+
+pr: none
+
+schedules:
+- cron: "0 13 * * *"
+  displayName: Mon through Sun at 5:00 AM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+- cron: "0 1 * * *"
+  displayName: Mon through Sun at 5:00 PM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+#
+# Release builds
+#
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: release
+    platformGroup: all
+    jobParameters:
+      # Publishing packages to blob feeds sometimes takes a long time
+      # due to waiting for an exclusive lock on the feed.
+      # See https://github.com/dotnet/arcade/blob/master/Documentation/CorePackages/AsyncPublishing.md
+      timeoutInMinutes: 120
+
+#
+# Release test builds
+#
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: release
+    platformGroup: all
+    helixQueueGroup: all
+    jobParameters:
+      testGroup: outerloop
+
+#
+# ReadyToRun test jobs
+#
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: release
+    platformGroup: all
+    helixQueueGroup: all
+    jobParameters:
+      testGroup: outerloop
+      readyToRun: true
+      displayNameArgs: R2R
+
+# Publish build information to Build Assets Registry
+
+# This job gathers build assets from the pipeline (from each official
+# product build job), and publishes them to the build assets
+# registry. Its dependencies should be updated to include all of the
+# official builds if we add more platform/arch combinations.
+
+- template: /eng/finalize-publish.yml
+  parameters:
+    dependsOn:
+    - build_Linux_arm_release
+    - build_Linux_arm64_release
+    - build_Linux_musl_x64_release
+    - build_Linux_musl_arm64_release
+    - build_Linux_rhel6_x64_release
+    - build_Linux_x64_release
+    - build_OSX_x64_release
+    - build_Windows_NT_x64_release
+    - build_Windows_NT_x86_release
+    - build_Windows_NT_arm_release
+    - build_Windows_NT_arm64_release
