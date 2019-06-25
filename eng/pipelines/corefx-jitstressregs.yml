@@ -1,0 +1,33 @@
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 12 * * *"
+  displayName: Mon through Sun at 4:00 AM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_x64
+    - Windows_NT_x64
+
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_x64
+    - Windows_NT_x64
+    helixQueueGroup: pr
+    jobParameters:
+      testGroup: jitstressregs
+      corefxTests: true
+      displayNameArgs: CoreFX
