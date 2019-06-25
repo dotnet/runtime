@@ -35,13 +35,13 @@
       <Uri>https://github.com/dotnet/core-setup</Uri>
       <Sha>08e144c8651632da7bf1fbab409d27787ce6aa4a</Sha>
     </Dependency>
-    <Dependency Name="optimization.IBC.CoreCLR" Version="99.99.99-master-20190624.1">
+    <Dependency Name="optimization.IBC.CoreCLR" Version="99.99.99-master-20190624.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>0b84ddb755af6f6d0ed61fb201ba06cff7f738ca</Sha>
+      <Sha>df112e87bd15ae6b936768585bf536d9f362abdd</Sha>
     </Dependency>
-    <Dependency Name="optimization.PGO.CoreCLR" Version="99.99.99-master-20190624.1">
+    <Dependency Name="optimization.PGO.CoreCLR" Version="99.99.99-master-20190624.3">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>0b84ddb755af6f6d0ed61fb201ba06cff7f738ca</Sha>
+      <Sha>df112e87bd15ae6b936768585bf536d9f362abdd</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
