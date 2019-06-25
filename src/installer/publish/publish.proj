@@ -60,8 +60,11 @@
 
   <Target Name="GatherShippingPackages">
     <ItemGroup>
-      <PackagesToShip Include="$(DownloadDirectory)*.nupkg" Exclude="$(DownloadDirectory)*.symbols.nupkg" />
-      <PackagesToShip Remove="%(PackagesToShip.Identity)" Condition="$([System.String]::Copy('%(PackagesToShip.Identity)').Contains('latest'))" />
+      <PackagesToShip Include="$(DownloadDirectory)*.nupkg"
+                      Exclude="$(DownloadDirectory)*.symbols.nupkg;
+                               $(DownloadDirectory)VS.Redist.Common.*.nupkg" />
+      <PackagesToShip Remove="%(PackagesToShip.Identity)"
+                      Condition="$([System.String]::Copy('%(PackagesToShip.Identity)').Contains('latest'))" />
       <ShippedNuGetPackage Include="@(PackagesToShip)" />
     </ItemGroup>
   </Target>
