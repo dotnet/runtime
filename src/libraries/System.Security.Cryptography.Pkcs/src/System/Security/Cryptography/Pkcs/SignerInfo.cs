@@ -734,7 +734,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private HashAlgorithmName GetDigestAlgorithm()
         {
-            return PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm.Value);
+            return PkcsHelpers.GetDigestAlgorithm(DigestAlgorithm.Value, forVerification: true);
         }
 
         internal static CryptographicAttributeObjectCollection MakeAttributeCollection(AttributeAsn[] attributes)

@@ -200,6 +200,104 @@ namespace System.Security.Cryptography.Pkcs.Tests
         }
 
         [Fact]
+        public static void CheckSignature_MD5WithRSA()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.MD5WithRSADigestAlgorithm);
+            SignerInfo signer = cms.SignerInfos[0];
+
+            Assert.Equal(Oids.RsaPkcs1Md5, signer.DigestAlgorithm.Value);
+            Assert.Equal(Oids.Rsa, signer.SignatureAlgorithm.Value);
+
+            //Assert.NotThrows
+            signer.CheckSignature(true);
+        }
+
+        [Fact]
+        public static void CheckSignature_SHA1WithRSA()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.SHA1WithRSADigestAlgorithm);
+            SignerInfo signer = cms.SignerInfos[0];
+
+            Assert.Equal(Oids.RsaPkcs1Sha1, signer.DigestAlgorithm.Value);
+            Assert.Equal(Oids.Rsa, signer.SignatureAlgorithm.Value);
+
+            //Assert.NotThrows
+            signer.CheckSignature(true);
+        }
+
+        [Fact]
+        public static void CheckSignature_SHA256WithRSA()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.SHA256WithRSADigestAlgorithm);
+            SignerInfo signer = cms.SignerInfos[0];
+
+            Assert.Equal(Oids.RsaPkcs1Sha256, signer.DigestAlgorithm.Value);
+            Assert.Equal(Oids.Rsa, signer.SignatureAlgorithm.Value);
+
+            //Assert.NotThrows
+            signer.CheckSignature(true);
+        }
+
+        [Fact]
+        public static void CheckSignature_SHA384WithRSA()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.SHA384WithRSADigestAlgorithm);
+            SignerInfo signer = cms.SignerInfos[0];
+
+            Assert.Equal(Oids.RsaPkcs1Sha384, signer.DigestAlgorithm.Value);
+            Assert.Equal(Oids.Rsa, signer.SignatureAlgorithm.Value);
+
+            //Assert.NotThrows
+            signer.CheckSignature(true);
+        }
+
+        [Fact]
+        public static void CheckSignature_SHA512WithRSA()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.SHA512WithRSADigestAlgorithm);
+            SignerInfo signer = cms.SignerInfos[0];
+
+            Assert.Equal(Oids.RsaPkcs1Sha512, signer.DigestAlgorithm.Value);
+            Assert.Equal(Oids.Rsa, signer.SignatureAlgorithm.Value);
+
+            //Assert.NotThrows
+            signer.CheckSignature(true);
+        }
+
+        [Fact]
+        public static void CheckSignature_SHA256WithRSADigest_And_RSA256WithRSASignature()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.SHA256withRSADigestAndSHA256WithRSASignatureAlgorithm);
+            SignerInfo signer = cms.SignerInfos[0];
+
+            Assert.Equal(Oids.RsaPkcs1Sha256, signer.DigestAlgorithm.Value);
+            Assert.Equal(Oids.RsaPkcs1Sha256, signer.SignatureAlgorithm.Value);
+
+            //Assert.NotThrows
+            signer.CheckSignature(true);
+        }
+
+        [Fact]
+        public static void CheckSignature_ECDSA256SignedWithRSASha256HashIdentifier()
+        {
+            SignedCms cms = new SignedCms();
+            cms.Decode(SignedDocuments.SHA256ECDSAWithRsaSha256DigestIdentifier);
+            SignerInfo signer = cms.SignerInfos[0];
+
+            Assert.Equal(Oids.RsaPkcs1Sha256, signer.DigestAlgorithm.Value);
+            Assert.Equal(Oids.EcdsaSha256, signer.SignatureAlgorithm.Value);
+
+            // Assert.NotThrows
+            signer.CheckSignature(true);
+        }
+
+        [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFx bug in matching logic")]
         public static void RemoveCounterSignature_MatchesIssuerAndSerialNumber()
         {

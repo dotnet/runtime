@@ -458,6 +458,22 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
+        [Fact]
+        public static void CreateSignature_DigestAlgorithmWithSignatureOid_Prohibited()
+        {
+            ContentInfo content = new ContentInfo(new byte[] { 1, 2, 3 });
+            SignedCms cms = new SignedCms(content);
+            using (X509Certificate2 cert = Certificates.RSAKeyTransferCapi1.TryGetCertificateWithPrivateKey())
+            {
+                CmsSigner signer = new CmsSigner(cert);
+                signer.DigestAlgorithm = new Oid(Oids.RsaPkcs1Sha256);
+
+                Assert.Throws<CryptographicException>(() => {
+                    cms.ComputeSignature(signer);
+                });
+            }
+        }
+
         private static void VerifyWithExplicitPrivateKey(X509Certificate2 cert, AsymmetricAlgorithm key)
         {
             using (var pubCert = new X509Certificate2(cert.RawData))
