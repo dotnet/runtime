@@ -6124,9 +6124,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		MonoMethod *nm = NULL;
-		mono_os_mutex_lock (&calc_section);
 		if (imethod->transformed) {
-			mono_os_mutex_unlock (&calc_section);
 			MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
 			return;
 		}
@@ -6160,16 +6158,17 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 				g_assert_not_reached ();
 		}
 		if (nm == NULL) {
+			mono_os_mutex_lock (&calc_section);
 			imethod->stack_size = sizeof (stackval); /* for tracing */
 			imethod->alloca_size = imethod->stack_size;
+			mono_memory_barrier ();
 			imethod->transformed = TRUE;
-			mono_os_mutex_unlock(&calc_section);
+			mono_os_mutex_unlock (&calc_section);
 			MONO_PROFILER_RAISE (jit_done, (method, NULL));
 			return;
 		}
 		method = nm;
 		header = interp_method_get_header (nm, error);
-		mono_os_mutex_unlock (&calc_section);
 		return_if_nok (error);
 	}
 
