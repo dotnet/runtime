@@ -233,10 +233,12 @@ mono_thread_execute_interruption (MonoExceptionHandle *pexc);
 
 static void ref_stack_destroy (gpointer rs);
 
-/* Spin lock for InterlockedXXX 64 bit functions */
+#if SIZEOF_VOID_P == 4
+/* Spin lock for unaligned InterlockedXXX 64 bit functions on 32bit platforms. */
 #define mono_interlocked_lock() mono_os_mutex_lock (&interlocked_mutex)
 #define mono_interlocked_unlock() mono_os_mutex_unlock (&interlocked_mutex)
 static mono_mutex_t interlocked_mutex;
+#endif
 
 /* global count of thread interruptions requested */
 static gint32 thread_interruption_requested = 0;
@@ -3347,9 +3349,11 @@ void mono_thread_init (MonoThreadStartCB start_cb,
 {
 	mono_coop_mutex_init_recursive (&threads_mutex);
 
-	mono_os_mutex_init_recursive(&interlocked_mutex);
+#if SIZEOF_VOID_P == 4
+	mono_os_mutex_init (&interlocked_mutex);
+#endif
 	mono_coop_mutex_init_recursive(&joinable_threads_mutex);
-	
+
 	mono_os_event_init (&background_change_event, FALSE);
 	
 	mono_coop_cond_init (&pending_native_thread_join_calls_event);
