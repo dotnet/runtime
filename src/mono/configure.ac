@@ -1238,7 +1238,7 @@ AC_ARG_WITH(unreal,              [  --with-unreal=yes,no                If you w
 AC_ARG_WITH(wasm,                [  --with-wasm=yes,no                  If you want to build the WebAssembly (defaults to no)], [], [with_wasm=default])
 
 
-AC_ARG_WITH(runtime-preset, [  --with-runtime-preset=net_4_x,all,aot,aot_llvm,hybridaot,hybridaot_llvm,fullaot,fullaot_llvm,winaot,winaotinterp,winaot_llvm,bitcode,bitcodeinterp,unreal,fullaotinterp,fullaotinterp_llvm  Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
+AC_ARG_WITH(runtime-preset, [  --with-runtime-preset=net_4_x,all,aot,aot_llvm,hybridaot,hybridaot_llvm,fullaot,fullaot_llvm,winaot,winaotinterp,winaot_llvm,winaotinterp_llvm,bitcode,bitcodeinterp,unreal,fullaotinterp,fullaotinterp_llvm  Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
 AC_ARG_WITH(spectre-mitigation,             [  --with-spectre-mitigation=yes,no   If you want to build the runtime with compiler flags that enable Spectre mitigation (defaults to no)], [], [with_spectre_mitigation=default])
 AC_ARG_WITH(spectre-indirect-branch-choice,   [  --with-spectre-indirect-branch-choice=keep,thunk,inline,extern   Convert indirect branches to the specified kind of thunk (defaults to inline)], [], [with_spectre_indirect_branch_choice=inline])
 AC_ARG_WITH(spectre-function-return-choice, [  --with-spectre-function-return-choice=keep,thunk,inline,extern   Convert function return instructions to the specified kind of thunk (defaults to inline)], [], [with_spectre_function_return_choice=inline])
@@ -1489,6 +1489,18 @@ elif test x$with_runtime_preset = xwinaotinterp; then
    mono_feature_disable_appdomains='yes'
 
    AOT_BUILD_FLAGS="--aot=full,interp,$INVARIANT_AOT_OPTIONS"
+   AOT_RUN_FLAGS="--full-aot-interp"
+elif test x$with_runtime_preset = xwinaotinterp_llvm; then
+   DISABLE_MCS_DOCS_default=yes
+   with_testing_winaot_interp_default=yes
+   TEST_PROFILE=testing_winaot_interp
+
+   mono_feature_disable_com='yes'
+   mono_feature_disable_remoting='yes'
+   mono_feature_disable_appdomains='yes'
+
+   INVARIANT_AOT_OPTIONS="llvmllc=-mattr=sse4.1,$INVARIANT_AOT_OPTIONS"
+   AOT_BUILD_FLAGS="-O=gsharedvt --llvm --aot=full,interp,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--full-aot-interp"
 elif test x$with_runtime_preset = xwinaot_llvm; then
    DISABLE_MCS_DOCS_default=yes
