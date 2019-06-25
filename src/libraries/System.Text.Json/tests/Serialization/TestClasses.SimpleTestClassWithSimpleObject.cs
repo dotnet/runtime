@@ -90,7 +90,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.IsType<JsonElement>(MyInt16);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MyInt16).Type);
-            Assert.Equal(1, ((JsonElement)MyInt16).GetInt32());
+            Assert.Equal(1, ((JsonElement)MyInt16).GetInt16());
             Assert.IsType<JsonElement>(MyInt32);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MyInt32).Type);
             Assert.Equal(2, ((JsonElement)MyInt32).GetInt32());
@@ -99,19 +99,19 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(3L, ((JsonElement)MyInt64).GetInt64());
             Assert.IsType<JsonElement>(MyUInt16);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MyUInt16).Type);
-            Assert.Equal(4u, ((JsonElement)MyUInt16).GetUInt32());
+            Assert.Equal(4u, ((JsonElement)MyUInt16).GetUInt16());
             Assert.IsType<JsonElement>(MyUInt32);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MyUInt32).Type);
             Assert.Equal(5u, ((JsonElement)MyUInt32).GetUInt32());
             Assert.IsType<JsonElement>(MyUInt64);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MyUInt64).Type);
-            Assert.Equal(6UL, ((JsonElement)MyUInt64).GetUInt32());
+            Assert.Equal(6UL, ((JsonElement)MyUInt64).GetUInt64());
             Assert.IsType<JsonElement>(MyByte);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MyByte).Type);
-            Assert.Equal(7, ((JsonElement)MyByte).GetInt32());
+            Assert.Equal(7, ((JsonElement)MyByte).GetByte());
             Assert.IsType<JsonElement>(MySByte);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MySByte).Type);
-            Assert.Equal((byte)8, ((JsonElement)MySByte).GetUInt32());
+            Assert.Equal(8, ((JsonElement)MySByte).GetSByte());
             Assert.IsType<JsonElement>(MyChar);
             Assert.Equal(JsonValueType.String, ((JsonElement)MyChar).Type);
             Assert.Equal("a", ((JsonElement)MyChar).GetString());

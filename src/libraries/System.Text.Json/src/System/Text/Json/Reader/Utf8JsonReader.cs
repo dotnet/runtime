@@ -422,7 +422,7 @@ namespace System.Text.Json
         /// <summary>
         /// Compares the string text to the unescaped JSON token value in the source and returns true if they match.
         /// </summary>
-        /// <param name="utf8Text">The text to compare against.</param>
+        /// <param name="text">The text to compare against.</param>
         /// <returns>True if the JSON token value in the source matches the look up text.</returns>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to find a text match on a JSON token that is not a string
@@ -439,9 +439,9 @@ namespace System.Text.Json
         ///     if required. The look up text is matched as is, without any modifications to it.
         ///   </para>
         /// </remarks>
-        public bool ValueTextEquals(string utf8Text)
+        public bool ValueTextEquals(string text)
         {
-            return ValueTextEquals(utf8Text.AsSpan());
+            return ValueTextEquals(text.AsSpan());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
