@@ -63,7 +63,7 @@ public:
     static bool Enabled()
     {
         LIMITED_METHOD_CONTRACT;
-        return s_tracingInitialized && (s_numberOfSessions > 0);
+        return s_tracingInitialized && (s_numberOfSessions.LoadWithoutBarrier() > 0);
     }
 
     // Create a provider.
@@ -206,7 +206,7 @@ private:
 #ifndef FEATURE_PAL
     static unsigned int * s_pProcGroupOffsets;
 #endif
-    static uint32_t s_numberOfSessions;
+    static Volatile<uint32_t> s_numberOfSessions;
 };
 
 static_assert(EventPipe::MaxNumberOfSessions == 64, "Maximum number of EventPipe sessions is not 64.");
