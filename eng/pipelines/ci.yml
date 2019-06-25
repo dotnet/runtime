@@ -1,0 +1,92 @@
+trigger:
+- master
+
+pr: none
+
+jobs:
+#
+# Debug builds
+#
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: debug
+    platforms:
+    - Linux_arm
+    - Linux_arm64
+    - Linux_musl_arm64
+    - Linux_musl_x64
+    - Linux_rhel6_x64
+    - Linux_x64
+    - OSX_x64
+    - Windows_NT_arm
+    - Windows_NT_arm64
+
+#
+# Checked builds
+#
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: checked
+    platformGroup: all
+
+#
+# Release builds
+#
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: release
+    platforms:
+    - Linux_arm
+    - Linux_musl_arm64
+    - Linux_x64
+    - OSX_x64
+    - Windows_NT_x86
+
+#
+# Checked test builds
+#
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: checked
+    platformGroup: all
+    helixQueueGroup: ci
+    jobParameters:
+      testGroup: outerloop
+
+#
+# ReadyToRun test jobs
+#
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_arm64
+    - Linux_musl_x64
+    - Linux_musl_arm64
+    - Linux_rhel6_x64
+    - Linux_x64
+    - OSX_x64
+    - Windows_NT_x64
+    - Windows_NT_x86
+    - Windows_NT_arm
+    - Windows_NT_arm64
+    helixQueueGroup: ci
+    jobParameters:
+      testGroup: outerloop
+      readyToRun: true
+      displayNameArgs: R2R
+
+#
+# Formatting
+#
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: format-job.yml
+    platforms:
+    - Linux_x64
+    - Windows_NT_x64
