@@ -439,7 +439,6 @@ namespace System.Text.Json.Tests
             Assert.Equal(2, stream.Position);
         }
 
-#if !netfx
         [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -469,7 +468,6 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writeToStream.BytesCommitted);
             Assert.Equal(2, stream.Position);
         }
-#endif
 
         [Theory]
         [InlineData(true, true)]
@@ -517,7 +515,6 @@ namespace System.Text.Json.Tests
             Assert.Throws<ObjectDisposedException>(() => jsonUtf8.Reset(output));
         }
 
-#if !netfx
         [Theory]
         [InlineData(true, true)]
         [InlineData(true, false)]
@@ -563,7 +560,6 @@ namespace System.Text.Json.Tests
 
             Assert.Throws<ObjectDisposedException>(() => jsonUtf8.Reset(output));
         }
-#endif
 
         [Theory]
         [InlineData(true, true)]
@@ -602,10 +598,7 @@ namespace System.Text.Json.Tests
         {
             const int SyncWriteThreshold = 25_000;
 
-#if !netfx
-            await
-#endif
-                using var jsonUtf8 = new Utf8JsonWriter(stream, options);
+            await using var jsonUtf8 = new Utf8JsonWriter(stream, options);
 
             byte[] utf8String = Encoding.UTF8.GetBytes("some string 1234");
 
@@ -978,6 +971,17 @@ namespace System.Text.Json.Tests
             }
 
             jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStartObject();
+            if (skipValidation)
+            {
+                jsonUtf8.WriteStartArray();
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStartArray());
+            }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
             jsonUtf8.WriteStartArray();
             jsonUtf8.WriteStartArray();
             jsonUtf8.WriteEndArray();
@@ -1075,6 +1079,81 @@ namespace System.Text.Json.Tests
             else
             {
                 Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteEndArray());
+            }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            if (skipValidation)
+            {
+                jsonUtf8.WritePropertyName("test name");
+                jsonUtf8.WritePropertyName(JsonEncodedText.Encode("test name"));
+                jsonUtf8.WritePropertyName("test name".AsSpan());
+                jsonUtf8.WritePropertyName(Encoding.UTF8.GetBytes("test name"));
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WritePropertyName("test name"));
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WritePropertyName(JsonEncodedText.Encode("test name")));
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WritePropertyName("test name".AsSpan()));
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WritePropertyName(Encoding.UTF8.GetBytes("test name")));
+            }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStartArray();
+            if (skipValidation)
+            {
+                jsonUtf8.WritePropertyName("test name");
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WritePropertyName("test name"));
+            }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStartObject();
+            jsonUtf8.WritePropertyName("first name");
+            if (skipValidation)
+            {
+                jsonUtf8.WritePropertyName("test name");
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WritePropertyName("test name"));
+            }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStartObject();
+            jsonUtf8.WritePropertyName("first name");
+            if (skipValidation)
+            {
+                jsonUtf8.WriteStartArray("test name");
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStartArray("test name"));
+            }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStartObject();
+            jsonUtf8.WritePropertyName("first name");
+            if (skipValidation)
+            {
+                jsonUtf8.WriteStartObject("test name");
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteStartObject("test name"));
+            }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStartObject();
+            jsonUtf8.WritePropertyName("first name");
+            if (skipValidation)
+            {
+                jsonUtf8.WriteEndObject();
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteEndObject());
             }
         }
 
@@ -1228,6 +1307,50 @@ namespace System.Text.Json.Tests
             {
                 Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteEndObject());
             }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteNumberValue(12345);
+            if (skipValidation)
+            {
+                jsonUtf8.WritePropertyName("test name");
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WritePropertyName("test name"));
+            }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteBooleanValue(true);
+            if (skipValidation)
+            {
+                jsonUtf8.WritePropertyName("test name");
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WritePropertyName("test name"));
+            }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteNullValue();
+            if (skipValidation)
+            {
+                jsonUtf8.WritePropertyName("test name");
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WritePropertyName("test name"));
+            }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStringValue("some string");
+            if (skipValidation)
+            {
+                jsonUtf8.WritePropertyName("test name");
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WritePropertyName("test name"));
+            }
         }
 
         [Theory]
@@ -1314,6 +1437,58 @@ namespace System.Text.Json.Tests
             sb.Append("[]");
 
             AssertContents(sb.ToString(), output);
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public void WriteSeparateProperties(bool formatted, bool skipValidation)
+        {
+            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+            var output = new ArrayBufferWriter<byte>(1024);
+
+            var stringWriter = new StringWriter();
+            var json = new JsonTextWriter(stringWriter)
+            {
+                Formatting = formatted ? Formatting.Indented : Formatting.None,
+            };
+
+            json.WriteStartObject();
+            json.WritePropertyName("foo1");
+            json.WriteValue("bar1");
+            json.WritePropertyName("foo2");
+            json.WriteValue("bar2");
+            json.WritePropertyName("foo3");
+            json.WriteValue("bar3");
+            json.WritePropertyName("foo4");
+            json.WriteValue("bar4");
+            json.WritePropertyName("array");
+            json.WriteStartArray();
+            json.WriteEndArray();
+            json.WriteEnd();
+
+            json.Flush();
+
+            string expectedStr = stringWriter.ToString();
+
+            var jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStartObject();
+            jsonUtf8.WritePropertyName(Encoding.UTF8.GetBytes("foo1"));
+            jsonUtf8.WriteStringValue("bar1");
+            jsonUtf8.WritePropertyName("foo2");
+            jsonUtf8.WriteStringValue("bar2");
+            jsonUtf8.WritePropertyName(JsonEncodedText.Encode("foo3"));
+            jsonUtf8.WriteStringValue("bar3");
+            jsonUtf8.WritePropertyName("foo4".AsSpan());
+            jsonUtf8.WriteStringValue("bar4");
+            jsonUtf8.WritePropertyName("array");
+            jsonUtf8.WriteStartArray();
+            jsonUtf8.WriteEndArray();
+            jsonUtf8.WriteEndObject();
+            jsonUtf8.Flush();
+            Assert.Equal(expectedStr, Encoding.UTF8.GetString(output.WrittenMemory.ToArray()));
         }
 
         [Theory]
@@ -1414,6 +1589,42 @@ namespace System.Text.Json.Tests
         [InlineData(true, false)]
         [InlineData(false, true)]
         [InlineData(false, false)]
+        public void WritingTooLargePropertyStandalone(bool formatted, bool skipValidation)
+        {
+            byte[] key;
+            char[] keyChars;
+
+            try
+            {
+                key = new byte[1_000_000_000];
+                keyChars = new char[1_000_000_000];
+            }
+            catch (OutOfMemoryException)
+            {
+                return;
+            }
+
+            key.AsSpan().Fill((byte)'a');
+            keyChars.AsSpan().Fill('a');
+
+            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+            var output = new ArrayBufferWriter<byte>(1024);
+
+            var jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStartObject();
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(keyChars));
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStartObject();
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(key));
+        }
+
+        [ConditionalTheory(nameof(IsX64))]
+        [OuterLoop]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
         public void WritingTooLargeBase64Bytes(bool formatted, bool skipValidation)
         {
             byte[] value;
@@ -1492,7 +1703,7 @@ namespace System.Text.Json.Tests
 
             var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
 
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < 32; i++)
             {
                 var output = new ArrayBufferWriter<byte>(32);
                 var jsonUtf8 = new Utf8JsonWriter(output, options);
@@ -1564,6 +1775,102 @@ namespace System.Text.Json.Tests
                     case 15:
                         jsonUtf8.WriteString(utf8PropertyName, encodedValue);
                         jsonUtf8.WriteString(utf8PropertyName, encodedValue);
+                        break;
+                    case 16:
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 17:
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        break;
+                    case 18:
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(utf8Value);
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(utf8Value);
+                        break;
+                    case 19:
+                        jsonUtf8.WritePropertyName(propertyName.AsSpan());
+                        jsonUtf8.WriteStringValue(value);
+                        jsonUtf8.WritePropertyName(propertyName.AsSpan());
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 20:
+                        jsonUtf8.WritePropertyName(propertyName.AsSpan());
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        jsonUtf8.WritePropertyName(propertyName.AsSpan());
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        break;
+                    case 21:
+                        jsonUtf8.WritePropertyName(propertyName.AsSpan());
+                        jsonUtf8.WriteStringValue(utf8Value);
+                        jsonUtf8.WritePropertyName(propertyName.AsSpan());
+                        jsonUtf8.WriteStringValue(utf8Value);
+                        break;
+                    case 22:
+                        jsonUtf8.WritePropertyName(utf8PropertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        jsonUtf8.WritePropertyName(utf8PropertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 23:
+                        jsonUtf8.WritePropertyName(utf8PropertyName);
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        jsonUtf8.WritePropertyName(utf8PropertyName);
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        break;
+                    case 24:
+                        jsonUtf8.WritePropertyName(utf8PropertyName);
+                        jsonUtf8.WriteStringValue(utf8Value);
+                        jsonUtf8.WritePropertyName(utf8PropertyName);
+                        jsonUtf8.WriteStringValue(utf8Value);
+                        break;
+                    case 25:
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 26:
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        break;
+                    case 27:
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(utf8Value);
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(utf8Value);
+                        break;
+                    case 28:
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        break;
+                    case 29:
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        break;
+                    case 30:
+                        jsonUtf8.WritePropertyName(propertyName.AsSpan());
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        jsonUtf8.WritePropertyName(propertyName.AsSpan());
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        break;
+                    case 31:
+                        jsonUtf8.WritePropertyName(utf8PropertyName);
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        jsonUtf8.WritePropertyName(utf8PropertyName);
+                        jsonUtf8.WriteStringValue(encodedValue);
                         break;
                 }
 
@@ -1595,7 +1902,7 @@ namespace System.Text.Json.Tests
             JsonEncodedText encodedPropertyName = JsonEncodedText.Encode(propertyName);
             JsonEncodedText encodedValue = JsonEncodedText.Encode(value);
 
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < 32; i++)
             {
                 var output = new ArrayBufferWriter<byte>(32);
                 var jsonUtf8 = new Utf8JsonWriter(output, options);
@@ -1667,6 +1974,102 @@ namespace System.Text.Json.Tests
                     case 15:
                         jsonUtf8.WriteString(propertyNameSpanUtf8, encodedValue);
                         jsonUtf8.WriteString(propertyNameSpanUtf8, encodedValue);
+                        break;
+                    case 16:
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 17:
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(valueSpan);
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(valueSpan);
+                        break;
+                    case 18:
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(valueSpanUtf8);
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(valueSpanUtf8);
+                        break;
+                    case 19:
+                        jsonUtf8.WritePropertyName(propertyNameSpan);
+                        jsonUtf8.WriteStringValue(value);
+                        jsonUtf8.WritePropertyName(propertyNameSpan);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 20:
+                        jsonUtf8.WritePropertyName(propertyNameSpan);
+                        jsonUtf8.WriteStringValue(valueSpan);
+                        jsonUtf8.WritePropertyName(propertyNameSpan);
+                        jsonUtf8.WriteStringValue(valueSpan);
+                        break;
+                    case 21:
+                        jsonUtf8.WritePropertyName(propertyNameSpan);
+                        jsonUtf8.WriteStringValue(valueSpanUtf8);
+                        jsonUtf8.WritePropertyName(propertyNameSpan);
+                        jsonUtf8.WriteStringValue(valueSpanUtf8);
+                        break;
+                    case 22:
+                        jsonUtf8.WritePropertyName(propertyNameSpanUtf8);
+                        jsonUtf8.WriteStringValue(value);
+                        jsonUtf8.WritePropertyName(propertyNameSpanUtf8);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 23:
+                        jsonUtf8.WritePropertyName(propertyNameSpanUtf8);
+                        jsonUtf8.WriteStringValue(valueSpan);
+                        jsonUtf8.WritePropertyName(propertyNameSpanUtf8);
+                        jsonUtf8.WriteStringValue(valueSpan);
+                        break;
+                    case 24:
+                        jsonUtf8.WritePropertyName(propertyNameSpanUtf8);
+                        jsonUtf8.WriteStringValue(valueSpanUtf8);
+                        jsonUtf8.WritePropertyName(propertyNameSpanUtf8);
+                        jsonUtf8.WriteStringValue(valueSpanUtf8);
+                        break;
+                    case 25:
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 26:
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        break;
+                    case 27:
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(valueSpanUtf8);
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(valueSpanUtf8);
+                        break;
+                    case 28:
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        jsonUtf8.WritePropertyName(encodedPropertyName);
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        break;
+                    case 29:
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        break;
+                    case 30:
+                        jsonUtf8.WritePropertyName(propertyName.AsSpan());
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        jsonUtf8.WritePropertyName(propertyName.AsSpan());
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        break;
+                    case 31:
+                        jsonUtf8.WritePropertyName(propertyNameSpanUtf8);
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        jsonUtf8.WritePropertyName(propertyNameSpanUtf8);
+                        jsonUtf8.WriteStringValue(encodedValue);
                         break;
                 }
 
@@ -2322,7 +2725,7 @@ namespace System.Text.Json.Tests
             JsonEncodedText encodedKey = JsonEncodedText.Encode(key);
             JsonEncodedText encodedValue = JsonEncodedText.Encode(value);
 
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < 32; i++)
             {
                 var output = new ArrayBufferWriter<byte>(1024);
                 var jsonUtf8 = new Utf8JsonWriter(output, options);
@@ -2379,6 +2782,70 @@ namespace System.Text.Json.Tests
                     case 15:
                         jsonUtf8.WriteString(keyUtf8, encodedValue);
                         break;
+                    case 16:
+                        jsonUtf8.WritePropertyName(key);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 17:
+                        jsonUtf8.WritePropertyName(key);
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        break;
+                    case 18:
+                        jsonUtf8.WritePropertyName(key);
+                        jsonUtf8.WriteStringValue(valueUtf8);
+                        break;
+                    case 19:
+                        jsonUtf8.WritePropertyName(key.AsSpan());
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 20:
+                        jsonUtf8.WritePropertyName(key.AsSpan());
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        break;
+                    case 21:
+                        jsonUtf8.WritePropertyName(key.AsSpan());
+                        jsonUtf8.WriteStringValue(valueUtf8);
+                        break;
+                    case 22:
+                        jsonUtf8.WritePropertyName(keyUtf8);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 23:
+                        jsonUtf8.WritePropertyName(keyUtf8);
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        break;
+                    case 24:
+                        jsonUtf8.WritePropertyName(keyUtf8);
+                        jsonUtf8.WriteStringValue(valueUtf8);
+                        break;
+                    case 25:
+                        jsonUtf8.WritePropertyName(encodedKey);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 26:
+                        jsonUtf8.WritePropertyName(encodedKey);
+                        jsonUtf8.WriteStringValue(value.AsSpan());
+                        break;
+                    case 27:
+                        jsonUtf8.WritePropertyName(encodedKey);
+                        jsonUtf8.WriteStringValue(valueUtf8);
+                        break;
+                    case 28:
+                        jsonUtf8.WritePropertyName(encodedKey);
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        break;
+                    case 29:
+                        jsonUtf8.WritePropertyName(key);
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        break;
+                    case 30:
+                        jsonUtf8.WritePropertyName(key.AsSpan());
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        break;
+                    case 31:
+                        jsonUtf8.WritePropertyName(keyUtf8);
+                        jsonUtf8.WriteStringValue(encodedValue);
+                        break;
                 }
 
                 jsonUtf8.WriteEndObject();
@@ -2416,7 +2883,7 @@ namespace System.Text.Json.Tests
             string expectedStr = GetEscapedExpectedString(prettyPrint: formatted, propertyName, value, StringEscapeHandling.EscapeHtml);
 
             var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 6; i++)
             {
                 var output = new ArrayBufferWriter<byte>(1024);
                 var jsonUtf8 = new Utf8JsonWriter(output, options);
@@ -2433,6 +2900,18 @@ namespace System.Text.Json.Tests
                         break;
                     case 2:
                         jsonUtf8.WriteString(JsonEncodedText.Encode(propertyName), JsonEncodedText.Encode(value));
+                        break;
+                    case 3:
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 4:
+                        jsonUtf8.WritePropertyName(Encoding.UTF8.GetBytes(propertyName));
+                        jsonUtf8.WriteStringValue(Encoding.UTF8.GetBytes(value));
+                        break;
+                    case 5:
+                        jsonUtf8.WritePropertyName(JsonEncodedText.Encode(propertyName));
+                        jsonUtf8.WriteStringValue(JsonEncodedText.Encode(value));
                         break;
                 }
 
@@ -2467,7 +2946,7 @@ namespace System.Text.Json.Tests
             string expectedStr = GetEscapedExpectedString(prettyPrint: formatted, propertyName, value, StringEscapeHandling.EscapeNonAscii);
 
             var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 6; i++)
             {
                 var output = new ArrayBufferWriter<byte>(1024);
                 var jsonUtf8 = new Utf8JsonWriter(output, options);
@@ -2484,6 +2963,18 @@ namespace System.Text.Json.Tests
                         break;
                     case 2:
                         jsonUtf8.WriteString(JsonEncodedText.Encode(propertyName), JsonEncodedText.Encode(value));
+                        break;
+                    case 3:
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 4:
+                        jsonUtf8.WritePropertyName(Encoding.UTF8.GetBytes(propertyName));
+                        jsonUtf8.WriteStringValue(Encoding.UTF8.GetBytes(value));
+                        break;
+                    case 5:
+                        jsonUtf8.WritePropertyName(JsonEncodedText.Encode(propertyName));
+                        jsonUtf8.WriteStringValue(JsonEncodedText.Encode(value));
                         break;
                 }
 
@@ -2509,7 +3000,7 @@ namespace System.Text.Json.Tests
             string expectedStr = GetEscapedExpectedString(prettyPrint: formatted, propertyName, value, StringEscapeHandling.EscapeNonAscii);
 
             var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 6; i++)
             {
                 var output = new ArrayBufferWriter<byte>(1024);
                 var jsonUtf8 = new Utf8JsonWriter(output, options);
@@ -2526,6 +3017,18 @@ namespace System.Text.Json.Tests
                         break;
                     case 2:
                         jsonUtf8.WriteString(JsonEncodedText.Encode(propertyName), JsonEncodedText.Encode(value));
+                        break;
+                    case 3:
+                        jsonUtf8.WritePropertyName(propertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 4:
+                        jsonUtf8.WritePropertyName(Encoding.UTF8.GetBytes(propertyName));
+                        jsonUtf8.WriteStringValue(Encoding.UTF8.GetBytes(value));
+                        break;
+                    case 5:
+                        jsonUtf8.WritePropertyName(JsonEncodedText.Encode(propertyName));
+                        jsonUtf8.WriteStringValue(JsonEncodedText.Encode(value));
                         break;
                 }
 
@@ -2552,7 +3055,7 @@ namespace System.Text.Json.Tests
             var invalidUtf8 = new byte[2] { 0xc3, 0x28 };
 
             jsonUtf8.WriteStartObject();
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 6; i++)
             {
                 switch (i)
                 {
@@ -2567,6 +3070,18 @@ namespace System.Text.Json.Tests
                         break;
                     case 3:
                         jsonUtf8.WriteString(validUtf8, validUtf8);
+                        break;
+                    case 4:
+                        Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(invalidUtf8));
+                        break;
+                    case 5:
+                        jsonUtf8.WritePropertyName(validUtf8);
+                        Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStringValue(invalidUtf8));
+                        jsonUtf8.WriteStringValue(validUtf8);
+                        break;
+                    case 6:
+                        jsonUtf8.WritePropertyName(validUtf8);
+                        jsonUtf8.WriteStringValue(validUtf8);
                         break;
                 }
             }
@@ -2590,7 +3105,7 @@ namespace System.Text.Json.Tests
             var invalidUtf16 = new char[2] { (char)0xD801, 'a' };
 
             jsonUtf8.WriteStartObject();
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < 7; i++)
             {
                 switch (i)
                 {
@@ -2605,6 +3120,18 @@ namespace System.Text.Json.Tests
                         break;
                     case 3:
                         jsonUtf8.WriteString(validUtf16, validUtf16);
+                        break;
+                    case 4:
+                        Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(invalidUtf16));
+                        break;
+                    case 5:
+                        jsonUtf8.WritePropertyName(validUtf16);
+                        Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStringValue(invalidUtf16));
+                        jsonUtf8.WriteStringValue(validUtf16);
+                        break;
+                    case 6:
+                        jsonUtf8.WritePropertyName(validUtf16);
+                        jsonUtf8.WriteStringValue(validUtf16);
                         break;
                 }
             }
@@ -2943,7 +3470,7 @@ namespace System.Text.Json.Tests
 
             var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 4; i++)
             {
                 var output = new ArrayBufferWriter<byte>(1024);
                 var jsonUtf8 = new Utf8JsonWriter(output, options);
@@ -2960,6 +3487,10 @@ namespace System.Text.Json.Tests
                         break;
                     case 2:
                         jsonUtf8.WriteBoolean(Encoding.UTF8.GetBytes(keyString), value);
+                        break;
+                    case 3:
+                        jsonUtf8.WritePropertyName(keyString);
+                        jsonUtf8.WriteBooleanValue(value);
                         break;
                 }
 
@@ -2996,7 +3527,7 @@ namespace System.Text.Json.Tests
 
             var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 4; i++)
             {
                 var output = new ArrayBufferWriter<byte>(16);
                 var jsonUtf8 = new Utf8JsonWriter(output, options);
@@ -3016,6 +3547,12 @@ namespace System.Text.Json.Tests
                     case 2:
                         jsonUtf8.WriteNull(Encoding.UTF8.GetBytes(keyString));
                         jsonUtf8.WriteNull(Encoding.UTF8.GetBytes(keyString));
+                        break;
+                    case 3:
+                        jsonUtf8.WritePropertyName(keyString);
+                        jsonUtf8.WriteNullValue();
+                        jsonUtf8.WritePropertyName(keyString);
+                        jsonUtf8.WriteNullValue();
                         break;
                 }
 
@@ -3062,7 +3599,7 @@ namespace System.Text.Json.Tests
 
             var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 4; i++)
             {
                 var output = new ArrayBufferWriter<byte>(1024);
                 var jsonUtf8 = new Utf8JsonWriter(output, options);
@@ -3079,6 +3616,10 @@ namespace System.Text.Json.Tests
                         break;
                     case 2:
                         jsonUtf8.WriteNumber(Encoding.UTF8.GetBytes("message"), value);
+                        break;
+                    case 3:
+                        jsonUtf8.WritePropertyName("message");
+                        jsonUtf8.WriteNumberValue(value);
                         break;
                 }
 
@@ -4207,6 +4748,7 @@ namespace System.Text.Json.Tests
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(bytesTooLarge, (ulong)12345678901));
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBoolean(bytesTooLarge, true));
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNull(bytesTooLarge));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(bytesTooLarge));
 
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStartObject(charsTooLarge));
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(charsTooLarge, chars));
@@ -4225,6 +4767,7 @@ namespace System.Text.Json.Tests
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNumber(charsTooLarge, (ulong)12345678901));
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteBoolean(charsTooLarge, true));
             Assert.Throws<ArgumentException>(() => jsonUtf8.WriteNull(charsTooLarge));
+            Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(charsTooLarge));
 
             jsonUtf8.Flush();
             Assert.Equal(1, jsonUtf8.BytesCommitted);

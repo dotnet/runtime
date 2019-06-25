@@ -17,11 +17,15 @@ namespace System.Text.Json
             {
                 if (_inObject)
                 {
-                    Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteValueWithinObject, currentDepth: default, token: default, _tokenType);
+                    if (_tokenType != JsonTokenType.PropertyName)
+                    {
+                        Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
+                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteValueWithinObject, currentDepth: default, token: default, _tokenType);
+                    }
                 }
                 else
                 {
+                    Debug.Assert(_tokenType != JsonTokenType.PropertyName);
                     if (!_isNotPrimitive && _tokenType != JsonTokenType.None)
                     {
                         ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteValueAfterPrimitive, currentDepth: default, token: default, _tokenType);

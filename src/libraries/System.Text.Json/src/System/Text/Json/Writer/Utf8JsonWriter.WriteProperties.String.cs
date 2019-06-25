@@ -10,6 +10,353 @@ namespace System.Text.Json
     public sealed partial class Utf8JsonWriter
     {
         /// <summary>
+        /// Writes the pre-encoded property name (as a JSON string) as the first part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="propertyName">The JSON encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <remarks>
+        /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created.
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// </exception>
+        public void WritePropertyName(JsonEncodedText propertyName)
+            => WritePropertyNameHelper(propertyName.EncodedUtf8Bytes);
+
+        private void WritePropertyNameHelper(ReadOnlySpan<byte> utf8PropertyName)
+        {
+            Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxTokenSize);
+
+            WriteStringByOptionsPropertyName(utf8PropertyName);
+
+            _currentDepth &= JsonConstants.RemoveFlagsBitMask;
+            _tokenType = JsonTokenType.PropertyName;
+        }
+
+        /// <summary>
+        /// Writes the property name (as a JSON string) as the first part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the specified property name is too large.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// </exception>
+        public void WritePropertyName(string propertyName)
+            => WritePropertyName(propertyName.AsSpan());
+
+        /// <summary>
+        /// Writes the property name (as a JSON string) as the first part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the specified property name is too large.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// </exception>
+        public void WritePropertyName(ReadOnlySpan<char> propertyName)
+        {
+            JsonWriterHelper.ValidateProperty(propertyName);
+
+            int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName);
+
+            Debug.Assert(propertyIdx >= -1 && propertyIdx < propertyName.Length && propertyIdx < int.MaxValue / 2);
+
+            if (propertyIdx != -1)
+            {
+                WriteStringEscapeProperty(propertyName, propertyIdx);
+            }
+            else
+            {
+                WriteStringByOptionsPropertyName(propertyName);
+            }
+            _currentDepth &= JsonConstants.RemoveFlagsBitMask;
+            _tokenType = JsonTokenType.PropertyName;
+        }
+
+        private void WriteStringEscapeProperty(ReadOnlySpan<char> propertyName, int firstEscapeIndexProp)
+        {
+            Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= propertyName.Length);
+
+            char[] propertyArray = null;
+
+            if (firstEscapeIndexProp != -1)
+            {
+                int length = JsonWriterHelper.GetMaxEscapedLength(propertyName.Length, firstEscapeIndexProp);
+
+                Span<char> escapedPropertyName;
+                if (length > JsonConstants.StackallocThreshold)
+                {
+                    propertyArray = ArrayPool<char>.Shared.Rent(length);
+                    escapedPropertyName = propertyArray;
+                }
+                else
+                {
+                    // Cannot create a span directly since it gets assigned to parameter and passed down.
+                    unsafe
+                    {
+                        char* ptr = stackalloc char[length];
+                        escapedPropertyName = new Span<char>(ptr, length);
+                    }
+                }
+
+                JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndexProp, out int written);
+                propertyName = escapedPropertyName.Slice(0, written);
+            }
+
+            WriteStringByOptionsPropertyName(propertyName);
+
+            if (propertyArray != null)
+            {
+                ArrayPool<char>.Shared.Return(propertyArray);
+            }
+        }
+
+        private void WriteStringByOptionsPropertyName(ReadOnlySpan<char> propertyName)
+        {
+            ValidateWritingProperty();
+            if (Options.Indented)
+            {
+                WriteStringIndentedPropertyName(propertyName);
+            }
+            else
+            {
+                WriteStringMinimizedPropertyName(propertyName);
+            }
+        }
+
+        private void WriteStringMinimizedPropertyName(ReadOnlySpan<char> escapedPropertyName)
+        {
+            Debug.Assert(escapedPropertyName.Length <= JsonConstants.MaxTokenSize);
+            Debug.Assert(escapedPropertyName.Length < (int.MaxValue - 4) / JsonConstants.MaxExpansionFactorWhileTranscoding);
+
+            // All ASCII, 2 quotes for property name, and 1 colon => escapedPropertyName.Length + 3
+            // Optionally, 1 list separator, and up to 3x growth when transcoding
+            int maxRequired = (escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) + 4;
+
+            if (_memory.Length - BytesPending < maxRequired)
+            {
+                Grow(maxRequired);
+            }
+
+            Span<byte> output = _memory.Span;
+
+            if (_currentDepth < 0)
+            {
+                output[BytesPending++] = JsonConstants.ListSeparator;
+            }
+            output[BytesPending++] = JsonConstants.Quote;
+
+            TranscodeAndWrite(escapedPropertyName, output);
+
+            output[BytesPending++] = JsonConstants.Quote;
+            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+        }
+
+        private void WriteStringIndentedPropertyName(ReadOnlySpan<char> escapedPropertyName)
+        {
+            int indent = Indentation;
+            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+
+            Debug.Assert(escapedPropertyName.Length <= JsonConstants.MaxTokenSize);
+            Debug.Assert(escapedPropertyName.Length < (int.MaxValue - 5 - indent - s_newLineLength) / JsonConstants.MaxExpansionFactorWhileTranscoding);
+
+            // All ASCII, 2 quotes for property name, 1 colon, and 1 space => escapedPropertyName.Length + 4
+            // Optionally, 1 list separator, 1-2 bytes for new line, and up to 3x growth when transcoding
+            int maxRequired = indent + (escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) + 5 + s_newLineLength;
+
+            if (_memory.Length - BytesPending < maxRequired)
+            {
+                Grow(maxRequired);
+            }
+
+            Span<byte> output = _memory.Span;
+
+            if (_currentDepth < 0)
+            {
+                output[BytesPending++] = JsonConstants.ListSeparator;
+            }
+
+            if (_tokenType != JsonTokenType.None)
+            {
+                WriteNewLine(output);
+            }
+
+            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            BytesPending += indent;
+
+            output[BytesPending++] = JsonConstants.Quote;
+
+            TranscodeAndWrite(escapedPropertyName, output);
+
+            output[BytesPending++] = JsonConstants.Quote;
+            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.Space;
+        }
+
+        /// <summary>
+        /// Writes the UTF-8 property name (as a JSON string) as the first part of a name/value pair of a JSON object.
+        /// </summary>
+        /// <param name="utf8PropertyName">The UTF-8 encoded property name of the JSON object to be written.</param>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the specified property name is too large.
+        /// </exception>
+        /// <exception cref="InvalidOperationException">
+        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// </exception>
+        public void WritePropertyName(ReadOnlySpan<byte> utf8PropertyName)
+        {
+            JsonWriterHelper.ValidateProperty(utf8PropertyName);
+
+            int propertyIdx = JsonWriterHelper.NeedsEscaping(utf8PropertyName);
+
+            Debug.Assert(propertyIdx >= -1 && propertyIdx < utf8PropertyName.Length && propertyIdx < int.MaxValue / 2);
+
+            if (propertyIdx != -1)
+            {
+                WriteStringEscapeProperty(utf8PropertyName, propertyIdx);
+            }
+            else
+            {
+                WriteStringByOptionsPropertyName(utf8PropertyName);
+            }
+            _currentDepth &= JsonConstants.RemoveFlagsBitMask;
+            _tokenType = JsonTokenType.PropertyName;
+        }
+
+        private void WriteStringEscapeProperty(ReadOnlySpan<byte> utf8PropertyName, int firstEscapeIndexProp)
+        {
+            Debug.Assert(int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping >= utf8PropertyName.Length);
+
+            byte[] propertyArray = null;
+
+            if (firstEscapeIndexProp != -1)
+            {
+                int length = JsonWriterHelper.GetMaxEscapedLength(utf8PropertyName.Length, firstEscapeIndexProp);
+
+                Span<byte> escapedPropertyName;
+                if (length > JsonConstants.StackallocThreshold)
+                {
+                    propertyArray = ArrayPool<byte>.Shared.Rent(length);
+                    escapedPropertyName = propertyArray;
+                }
+                else
+                {
+                    // Cannot create a span directly since it gets assigned to parameter and passed down.
+                    unsafe
+                    {
+                        byte* ptr = stackalloc byte[length];
+                        escapedPropertyName = new Span<byte>(ptr, length);
+                    }
+                }
+
+                JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, out int written);
+                utf8PropertyName = escapedPropertyName.Slice(0, written);
+            }
+
+            WriteStringByOptionsPropertyName(utf8PropertyName);
+
+            if (propertyArray != null)
+            {
+                ArrayPool<byte>.Shared.Return(propertyArray);
+            }
+        }
+
+        private void WriteStringByOptionsPropertyName(ReadOnlySpan<byte> utf8PropertyName)
+        {
+            ValidateWritingProperty();
+            if (Options.Indented)
+            {
+                WriteStringIndentedPropertyName(utf8PropertyName);
+            }
+            else
+            {
+                WriteStringMinimizedPropertyName(utf8PropertyName);
+            }
+        }
+
+        private void WriteStringMinimizedPropertyName(ReadOnlySpan<byte> escapedPropertyName)
+        {
+            Debug.Assert(escapedPropertyName.Length <= JsonConstants.MaxTokenSize);
+            Debug.Assert(escapedPropertyName.Length < int.MaxValue - 4);
+
+            int minRequired = escapedPropertyName.Length + 3; // 2 quotes for property name, and 1 colon
+            int maxRequired = minRequired + 1; // Optionally, 1 list separator
+
+            if (_memory.Length - BytesPending < maxRequired)
+            {
+                Grow(maxRequired);
+            }
+
+            Span<byte> output = _memory.Span;
+
+            if (_currentDepth < 0)
+            {
+                output[BytesPending++] = JsonConstants.ListSeparator;
+            }
+            output[BytesPending++] = JsonConstants.Quote;
+
+            escapedPropertyName.CopyTo(output.Slice(BytesPending));
+            BytesPending += escapedPropertyName.Length;
+
+            output[BytesPending++] = JsonConstants.Quote;
+            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+        }
+
+        private void WriteStringIndentedPropertyName(ReadOnlySpan<byte> escapedPropertyName)
+        {
+            int indent = Indentation;
+            Debug.Assert(indent <= 2 * JsonConstants.MaxWriterDepth);
+
+            Debug.Assert(escapedPropertyName.Length <= JsonConstants.MaxTokenSize);
+            Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - 5 - s_newLineLength);
+
+            int minRequired = indent + escapedPropertyName.Length + 4; // 2 quotes for property name, 1 colon, and 1 space
+            int maxRequired = minRequired + 1 + s_newLineLength; // Optionally, 1 list separator and 1-2 bytes for new line
+
+            if (_memory.Length - BytesPending < maxRequired)
+            {
+                Grow(maxRequired);
+            }
+
+            Span<byte> output = _memory.Span;
+
+            if (_currentDepth < 0)
+            {
+                output[BytesPending++] = JsonConstants.ListSeparator;
+            }
+
+            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
+
+            if (_tokenType != JsonTokenType.None)
+            {
+                WriteNewLine(output);
+            }
+
+            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+            BytesPending += indent;
+
+            output[BytesPending++] = JsonConstants.Quote;
+
+            escapedPropertyName.CopyTo(output.Slice(BytesPending));
+            BytesPending += escapedPropertyName.Length;
+
+            output[BytesPending++] = JsonConstants.Quote;
+            output[BytesPending++] = JsonConstants.KeyValueSeperator;
+            output[BytesPending++] = JsonConstants.Space;
+        }
+
+        /// <summary>
         /// Writes the pre-encoded property name and pre-encoded value (as a JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
         /// <param name="propertyName">The JSON encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
@@ -1072,6 +1419,8 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
+            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
+
             if (_tokenType != JsonTokenType.None)
             {
                 WriteNewLine(output);
@@ -1118,6 +1467,8 @@ namespace System.Text.Json
             {
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
+
+            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
 
             if (_tokenType != JsonTokenType.None)
             {
@@ -1169,6 +1520,8 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
+            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
+
             if (_tokenType != JsonTokenType.None)
             {
                 WriteNewLine(output);
@@ -1217,6 +1570,8 @@ namespace System.Text.Json
             {
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
+
+            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
 
             if (_tokenType != JsonTokenType.None)
             {

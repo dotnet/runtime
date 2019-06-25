@@ -472,7 +472,9 @@ namespace System.Text.Json
             {
                 case ExceptionResource.MismatchedObjectArray:
                     Debug.Assert(token == JsonConstants.CloseBracket || token == JsonConstants.CloseBrace);
-                    message = SR.Format(SR.MismatchedObjectArray, (char)token);
+                    message = (tokenType == JsonTokenType.PropertyName) ?
+                        SR.Format(SR.CannotWriteEndAfterProperty, (char)token) :
+                        SR.Format(SR.MismatchedObjectArray, (char)token);
                     break;
                 case ExceptionResource.DepthTooLarge:
                     message = SR.Format(SR.DepthTooLarge, currentDepth & JsonConstants.RemoveFlagsBitMask, JsonConstants.MaxWriterDepth);
@@ -487,7 +489,9 @@ namespace System.Text.Json
                     message = SR.Format(SR.CannotWriteValueWithinObject, tokenType);
                     break;
                 case ExceptionResource.CannotWritePropertyWithinArray:
-                    message = SR.Format(SR.CannotWritePropertyWithinArray, tokenType);
+                    message = (tokenType == JsonTokenType.PropertyName) ?
+                        SR.Format(SR.CannotWritePropertyAfterProperty) :
+                        SR.Format(SR.CannotWritePropertyWithinArray, tokenType);
                     break;
                 case ExceptionResource.CannotWriteValueAfterPrimitive:
                     message = SR.Format(SR.CannotWriteValueAfterPrimitive, tokenType);
