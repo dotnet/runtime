@@ -36,7 +36,7 @@ VolatilePtr<EventPipeSession> EventPipe::s_pSessions[MaxNumberOfSessions];
 #ifndef FEATURE_PAL
 unsigned int * EventPipe::s_pProcGroupOffsets = nullptr;
 #endif
-uint32_t EventPipe::s_numberOfSessions = 0;
+Volatile<uint32_t> EventPipe::s_numberOfSessions(0);
 
 // This function is auto-generated from /src/scripts/genEventPipe.py
 #ifdef FEATURE_PAL
@@ -238,7 +238,7 @@ bool EventPipe::EnableInternal(
         return false;
     }
 
-    if (s_numberOfSessions > MaxNumberOfSessions)
+    if (s_numberOfSessions >= MaxNumberOfSessions)
     {
         _ASSERTE(!"Max number of sessions reached.");
         return false;
