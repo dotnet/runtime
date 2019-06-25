@@ -369,6 +369,8 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
+            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
+
             if (_tokenType != JsonTokenType.None)
             {
                 WriteNewLine(output);
@@ -411,6 +413,8 @@ namespace System.Text.Json
             {
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
+
+            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
 
             if (_tokenType != JsonTokenType.None)
             {

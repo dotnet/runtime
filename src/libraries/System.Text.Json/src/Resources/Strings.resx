@@ -152,6 +152,9 @@
   <data name="CannotWritePropertyWithinArray" xml:space="preserve">
     <value>Cannot write a JSON property within an array or as the first JSON token. Current token type is '{0}'.</value>
   </data>
+  <data name="CannotWritePropertyAfterProperty" xml:space="preserve">
+    <value>Cannot write a JSON property name following another property name. A JSON value is missing.</value>
+  </data>
   <data name="CannotWriteValueAfterPrimitive" xml:space="preserve">
     <value>Cannot write a JSON value after a single JSON value. Current token type is '{0}'.</value>
   </data>
@@ -244,6 +247,9 @@
   </data>
   <data name="MismatchedObjectArray" xml:space="preserve">
     <value>'{0}' is invalid without a matching open.</value>
+  </data>
+  <data name="CannotWriteEndAfterProperty" xml:space="preserve">
+    <value>'{0}' is invalid following a property name.</value>
   </data>
   <data name="ObjectDepthTooLarge" xml:space="preserve">
     <value>The maximum configured depth of {0} has been exceeded. Cannot read next JSON object.</value>
