@@ -21,7 +21,7 @@ namespace System.Text.Json
         private readonly ConcurrentDictionary<Type, JsonClassInfo> _classes = new ConcurrentDictionary<Type, JsonClassInfo>();
         private readonly ConcurrentDictionary<Type, JsonPropertyInfo> _objectJsonProperties = new ConcurrentDictionary<Type, JsonPropertyInfo>();
         private static ConcurrentDictionary<string, object> s_createRangeDelegates = new ConcurrentDictionary<string, object>();
-        private ClassMaterializer _classMaterializerStrategy;
+        private MemberAccessor _memberAccessorStrategy;
         private JsonNamingPolicy _dictionayKeyPolicy;
         private JsonNamingPolicy _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
@@ -263,21 +263,21 @@ namespace System.Text.Json
             }
         }
 
-        internal ClassMaterializer ClassMaterializerStrategy
+        internal MemberAccessor MemberAccessorStrategy
         {
             get
             {
-                if (_classMaterializerStrategy == null)
+                if (_memberAccessorStrategy == null)
                 {
 #if BUILDING_INBOX_LIBRARY
-                    _classMaterializerStrategy = new ReflectionEmitMaterializer();
+                    _memberAccessorStrategy = new ReflectionEmitMemberAccessor();
 #else
                     // todo: should we attempt to detect here, or at least have a #define like #SUPPORTS_IL_EMIT
-                    _classMaterializerStrategy = new ReflectionMaterializer();
+                    _memberAccessorStrategy = new ReflectionMemberAccessor();
 #endif
                 }
 
-                return _classMaterializerStrategy;
+                return _memberAccessorStrategy;
             }
         }
 

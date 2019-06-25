@@ -76,7 +76,7 @@ namespace System.Text.Json
             Type = type;
             ClassType = GetClassType(type, options);
 
-            CreateObject = options.ClassMaterializerStrategy.CreateConstructor(type);
+            CreateObject = options.MemberAccessorStrategy.CreateConstructor(type);
 
             // Ignore properties on enumerable.
             switch (ClassType)
@@ -121,7 +121,7 @@ namespace System.Text.Json
                         JsonPropertyInfo policyProperty = AddPolicyProperty(type, options);
 
                         // Use the type from the property policy to get any late-bound concrete types (from an interface like IDictionary).
-                        CreateObject = options.ClassMaterializerStrategy.CreateConstructor(policyProperty.RuntimePropertyType);
+                        CreateObject = options.MemberAccessorStrategy.CreateConstructor(policyProperty.RuntimePropertyType);
 
                         // Create a ClassInfo that maps to the element type which is used for (de)serialization and policies.
                         Type elementType = GetElementType(type, parentType: null, memberInfo: null, options: options);
@@ -135,7 +135,7 @@ namespace System.Text.Json
 
                         Type elementType = GetElementType(type, parentType: null, memberInfo: null, options: options);
 
-                        CreateObject = options.ClassMaterializerStrategy.CreateConstructor(
+                        CreateObject = options.MemberAccessorStrategy.CreateConstructor(
                             typeof(Dictionary<,>).MakeGenericType(typeof(string), elementType));
 
                         // Create a ClassInfo that maps to the element type which is used for (de)serialization and policies.
