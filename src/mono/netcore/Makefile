@@ -1,3 +1,5 @@
+ifneq ($(wildcard config.make),)
+
 include config.make
 
 #
@@ -170,5 +172,7 @@ build-test-corefx-%:
 	cd $(COREFX_ROOT)/src/$*/tests && $(DOTNET) msbuild /p:OutputPath=tmp
 	cp $(COREFX_ROOT)/src/$*/tests/tmp/$*.Tests.{dll,pdb} $(CURDIR)/corefx/tests/extracted/$*.Tests/
 	rm -rf $(COREFX_ROOT)/src/$*/tests/tmp
+
+endif
 
 distdir:

@@ -62,7 +62,7 @@ MONO_VERSION_BUILD=`echo $VERSION | cut -d . -f 3`
 # This line is parsed by tools besides autoconf, such as msvc/mono.winconfig.targets.
 # It should remain in the format they expect.
 #
-MONO_CORLIB_VERSION=62731146-81CF-4D61-826D-9A8DDED14432
+MONO_CORLIB_VERSION=a3d6fce2-2790-4089-9543-34eb239e2b04
 
 #
 # Put a quoted #define in config.h.
