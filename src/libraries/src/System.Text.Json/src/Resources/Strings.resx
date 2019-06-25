@@ -1,4 +1,3 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -253,22 +252,22 @@
     <value>The JSON value is either too large or too small for a Decimal.</value>
   </data>
   <data name="FormatDouble" xml:space="preserve">
-    <value>The JSON value is either too large or too small for a Double.</value>
+    <value>Either the JSON value is not in a supported format, or is out of bounds for a Double.</value>
   </data>
   <data name="FormatInt32" xml:space="preserve">
-    <value>The JSON value is either of incorrect numeric format, or too large or too small for an Int32.</value>
+    <value>Either the JSON value is not in a supported format, or is out of bounds for an Int32.</value>
   </data>
   <data name="FormatInt64" xml:space="preserve">
-    <value>The JSON value is either of incorrect numeric format, or too large or too small for an Int64.</value>
+    <value>Either the JSON value is not in a supported format, or is out of bounds for an Int64.</value>
   </data>
   <data name="FormatSingle" xml:space="preserve">
-    <value>The JSON value is either too large or too small for a Single.</value>
+    <value>Either the JSON value is not in a supported format, or is out of bounds for a Single.</value>
   </data>
   <data name="FormatUInt32" xml:space="preserve">
-    <value>The JSON value is either of incorrect numeric format, or too large or too small for a UInt32.</value>
+    <value>Either the JSON value is not in a supported format, or is out of bounds for a UInt32.</value>
   </data>
   <data name="FormatUInt64" xml:space="preserve">
-    <value>The JSON value is either of incorrect numeric format, or too large or too small for a UInt64.</value>
+    <value>Either the JSON value is not in a supported format, or is out of bounds for a UInt64.</value>
   </data>
   <data name="RequiredDigitNotFoundAfterDecimal" xml:space="preserve">
     <value>'{0}' is invalid within a number, immediately after a decimal point ('.'). Expected a digit ('0'-'9').</value>
@@ -398,5 +397,17 @@
   </data>
   <data name="SerializeUnableToSerialize" xml:space="preserve">
     <value>The object or value could not be serialized. Path: {0}.</value>
+  </data>
+  <data name="FormatByte" xml:space="preserve">
+    <value>Either the JSON value is not in a supported format, or is out of bounds for an unsigned byte.</value>
+  </data>
+  <data name="FormatInt16" xml:space="preserve">
+    <value>Either the JSON value is not in a supported format, or is out of bounds for an Int16.</value>
+  </data>
+  <data name="FormatSByte" xml:space="preserve">
+    <value>Either the JSON value is not in a supported format, or is out of bounds for a signed byte.</value>
+  </data>
+  <data name="FormatUInt16" xml:space="preserve">
+    <value>Either the JSON value is not in a supported format, or is out of bounds for a UInt16.</value>
   </data>
 </root>

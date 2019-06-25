@@ -373,6 +373,94 @@ namespace System.Text.Json
             return JsonReaderHelper.TryDecodeBase64(segment, out value);
         }
 
+        internal bool TryGetValue(int index, out sbyte value)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.Number, row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            if (Utf8Parser.TryParse(segment, out sbyte tmp, out int consumed) &&
+                consumed == segment.Length)
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = 0;
+            return false;
+        }
+
+        internal bool TryGetValue(int index, out byte value)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.Number, row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            if (Utf8Parser.TryParse(segment, out byte tmp, out int consumed) &&
+                consumed == segment.Length)
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = 0;
+            return false;
+        }
+
+        internal bool TryGetValue(int index, out short value)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.Number, row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            if (Utf8Parser.TryParse(segment, out short tmp, out int consumed) &&
+                consumed == segment.Length)
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = 0;
+            return false;
+        }
+
+        internal bool TryGetValue(int index, out ushort value)
+        {
+            CheckNotDisposed();
+
+            DbRow row = _parsedData.Get(index);
+
+            CheckExpectedType(JsonTokenType.Number, row.TokenType);
+
+            ReadOnlySpan<byte> data = _utf8Json.Span;
+            ReadOnlySpan<byte> segment = data.Slice(row.Location, row.SizeOrLength);
+
+            if (Utf8Parser.TryParse(segment, out ushort tmp, out int consumed) &&
+                consumed == segment.Length)
+            {
+                value = tmp;
+                return true;
+            }
+
+            value = 0;
+            return false;
+        }
+
         internal bool TryGetValue(int index, out int value)
         {
             CheckNotDisposed();
