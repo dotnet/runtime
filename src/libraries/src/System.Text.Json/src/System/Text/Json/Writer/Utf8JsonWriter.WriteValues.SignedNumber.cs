@@ -89,13 +89,15 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
-            if (_tokenType != JsonTokenType.None)
+            if (_tokenType != JsonTokenType.PropertyName)
             {
-                WriteNewLine(output);
+                if (_tokenType != JsonTokenType.None)
+                {
+                    WriteNewLine(output);
+                }
+                JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+                BytesPending += indent;
             }
-
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
-            BytesPending += indent;
 
             bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
             Debug.Assert(result);

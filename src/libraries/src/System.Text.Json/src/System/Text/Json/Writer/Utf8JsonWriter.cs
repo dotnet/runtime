@@ -506,11 +506,15 @@ namespace System.Text.Json
         {
             if (_inObject)
             {
-                Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayWithoutProperty, currentDepth: default, token: default, _tokenType);
+                if (_tokenType != JsonTokenType.PropertyName)
+                {
+                    Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotStartObjectArrayWithoutProperty, currentDepth: default, token: default, _tokenType);
+                }
             }
             else
             {
+                Debug.Assert(_tokenType != JsonTokenType.PropertyName);
                 Debug.Assert(_tokenType != JsonTokenType.StartObject);
                 if (_tokenType != JsonTokenType.None && (!_isNotPrimitive || CurrentDepth == 0))
                 {
@@ -539,13 +543,15 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
-            if (_tokenType != JsonTokenType.None)
+            if (_tokenType != JsonTokenType.PropertyName)
             {
-                WriteNewLine(output);
+                if (_tokenType != JsonTokenType.None)
+                {
+                    WriteNewLine(output);
+                }
+                JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
+                BytesPending += indent;
             }
-
-            JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
-            BytesPending += indent;
 
             output[BytesPending++] = token;
         }
@@ -917,15 +923,15 @@ namespace System.Text.Json
 
         private void ValidateEnd(byte token)
         {
-            if (_bitStack.CurrentDepth <= 0)
-                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, token, tokenType: default);
+            if (_bitStack.CurrentDepth <= 0 || _tokenType == JsonTokenType.PropertyName)
+                ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, token, _tokenType);
 
             if (token == JsonConstants.CloseBracket)
             {
                 if (_inObject)
                 {
                     Debug.Assert(_tokenType != JsonTokenType.None);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, token, tokenType: default);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, token, _tokenType);
                 }
             }
             else
@@ -934,7 +940,7 @@ namespace System.Text.Json
 
                 if (!_inObject)
                 {
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, token, tokenType: default);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.MismatchedObjectArray, currentDepth: default, token, _tokenType);
                 }
             }
 
