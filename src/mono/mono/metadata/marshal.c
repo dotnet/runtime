@@ -758,11 +758,33 @@ mono_string_builder_new (int starting_string_length, MonoError *error)
 static void
 mono_string_utf16_to_builder_copy (MonoStringBuilderHandle sb, const gunichar2 *text, size_t string_len, MonoError *error)
 {
-	MonoArrayHandle chunkChars = MONO_HANDLE_NEW_GET (MonoArray, sb, chunkChars);
-	gchandle_t gchandle = 0;
-	memcpy (MONO_ARRAY_HANDLE_PIN (chunkChars, gunichar2, 0, &gchandle), text, sizeof (gunichar2) * string_len);
-	mono_gchandle_free_internal (gchandle);
-	MONO_HANDLE_SETVAL (sb, chunkLength, int, string_len);
+	MonoArrayHandle chunkChars = MONO_HANDLE_NEW (MonoArray, NULL);
+	MonoStringBuilderHandle chunk = MONO_HANDLE_NEW (MonoStringBuilder, MONO_HANDLE_RAW (sb));
+
+	guint capacity = mono_string_builder_capacity (sb);
+
+	g_assert (capacity >= string_len);
+
+	MONO_ENTER_NO_SAFEPOINTS;
+
+	do {
+		MONO_HANDLE_GET (chunkChars, chunk, chunkChars);
+		const int maxLength = MONO_HANDLE_GETVAL (chunkChars, max_length);
+		g_assert (maxLength >= 0);
+		const int chunkOffset = MONO_HANDLE_GETVAL (chunk, chunkOffset);
+		g_assert (chunkOffset >= 0);
+		if (maxLength > 0 && chunkOffset < string_len) {
+			// Check that we will not overrun our boundaries.
+			int charsToCopy = MIN (string_len - chunkOffset, maxLength);
+			memcpy (MONO_HANDLE_RAW (chunkChars)->vector, text + chunkOffset, charsToCopy * sizeof (gunichar2));
+			MONO_HANDLE_SETVAL (chunk, chunkLength, int, charsToCopy);
+		} else {
+			MONO_HANDLE_SETVAL (chunk, chunkLength, int, 0);
+		}
+		MONO_HANDLE_GET (chunk, chunk, chunkPrevious);
+	} while (MONO_HANDLE_BOOL (chunk));
+
+	MONO_EXIT_NO_SAFEPOINTS;
 }
 
 MonoStringBuilderHandle
@@ -915,16 +937,17 @@ mono_string_builder_to_utf16_impl (MonoStringBuilderHandle sb, MonoError *error)
 
 	g_assert (MONO_HANDLE_GET_BOOL (sb, chunkChars));
 
-	guint len = mono_string_builder_capacity (sb);
+	guint capacity = mono_string_builder_capacity (sb);
+	guint length = mono_string_builder_string_length (sb);
 
-	if (len == 0)
-		len = 1; // Why?
+	// Follow CoreCLR and double NULL terminate the buffer so we have more protection
+	// against native code putting garbage in there.
 
-	gunichar2 *str = (gunichar2 *)mono_marshal_alloc ((len + 1) * sizeof (gunichar2), error);
+	gunichar2 *str = (gunichar2 *)mono_marshal_alloc ((capacity + 2) * sizeof (gunichar2), error);
 	return_val_if_nok (error, NULL);
 
-	str [len] = 0;
-	str [0] = 0; // Cover the case when original len == 0.
+	str [capacity] = 0;
+	str [capacity + 1] = 0;
 
 	MonoArrayHandle chunkChars = MONO_HANDLE_NEW (MonoArray, NULL);
 	MonoStringBuilderHandle chunk = MONO_HANDLE_NEW (MonoStringBuilder, MONO_HANDLE_RAW (sb));
@@ -940,11 +963,13 @@ mono_string_builder_to_utf16_impl (MonoStringBuilderHandle sb, MonoError *error)
 			const int chunkOffset = MONO_HANDLE_GETVAL (chunk, chunkOffset);
 			g_assert (chunkOffset >= 0);
 			g_assertf ((chunkOffset + chunkLength) >= chunkLength, "integer overflow");
-			g_assertf ((chunkOffset + chunkLength) <= len, "A chunk in the StringBuilder had a length longer than expected from the offset.");
+			g_assertf ((chunkOffset + chunkLength) <= capacity, "A chunk in the StringBuilder had a length longer than expected from the offset.");
 			memcpy (str + chunkOffset, MONO_HANDLE_RAW (chunkChars)->vector, chunkLength * sizeof (gunichar2));
 		}
 		MONO_HANDLE_GET (chunk, chunk, chunkPrevious);
 	} while (MONO_HANDLE_BOOL (chunk));
+
+	str [length] = 0;
 
 	MONO_EXIT_NO_SAFEPOINTS;
 
@@ -1358,11 +1383,6 @@ mono_marshal_get_ptr_to_stringbuilder_conv (MonoMethodPInvoke *piinfo, MonoMarsh
 
 	switch (encoding) {
 	case MONO_NATIVE_LPWSTR:
-		/* 
-		 * mono_string_builder_to_utf16 does not allocate a 
-		 * new buffer, so no need to free it.
-		 */
-		*need_free = FALSE;
 		return MONO_MARSHAL_CONV_LPWSTR_SB;
 	case MONO_NATIVE_UTF8STR:
 		return MONO_MARSHAL_CONV_UTF8STR_SB;
