@@ -39,6 +39,13 @@ namespace System.Text.Json
             {
                 bool setPropertyToNull = !state.Current.CollectionPropertyInitialized;
                 ApplyObjectToEnumerable(null, ref state, ref reader, setPropertyDirectly: setPropertyToNull);
+
+                if (setPropertyToNull)
+                {
+                    // The property itself was set to null, in which case we should
+                    // reset so that `Is*Property` no longer returns true
+                    state.Current.ResetProperty();
+                }
                 return false;
             }
 

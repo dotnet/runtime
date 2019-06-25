@@ -25,8 +25,12 @@ namespace System.Text.Json
                 enumerable = (IEnumerable)jsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
                 if (enumerable == null)
                 {
-                    // Write a null object or enumerable.
-                    state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer, writeNull: true);
+                    if (!state.Current.JsonPropertyInfo.IgnoreNullValues)
+                    {
+                        // Write a null object or enumerable.
+                        state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer, writeNull: true);
+                    }
+
                     return true;
                 }
 
