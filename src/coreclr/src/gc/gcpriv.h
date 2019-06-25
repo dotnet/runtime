@@ -127,7 +127,6 @@ inline void FATAL_GC_ERROR()
 
 //#define SHORT_PLUGS           //keep plug short
 
-#define FFIND_OBJECT        //faster find_object, slower allocation
 #define FFIND_DECAY  7      //Number of GC for which fast find will be active
 
 #ifndef MAX_LONGPATH
@@ -3676,10 +3675,8 @@ protected:
 
     PER_HEAP
     BOOL gen0_bricks_cleared;
-#ifdef FFIND_OBJECT
     PER_HEAP
     int gen0_must_clear_bricks;
-#endif //FFIND_OBJECT
     
     PER_HEAP_ISOLATED
     bool maxgen_size_inc_p; 
