@@ -146,12 +146,15 @@ void EventPipe::Shutdown()
                     Disable(static_cast<EventPipeSessionID>(1ULL << i));
             }
 
-            // Remove EventPipeEventSource first since it tries to use the data structures that we remove below.
-            // We need to do this after disabling sessions since those try to write to EventPipeEventSource.
-            delete s_pEventSource;
-            s_pEventSource = nullptr;
+            // dotnet/coreclr: issue 24850: EventPipe shutdown race conditions
+            // Deallocating providers/events here might cause AV if a WriteEvent
+            // was to occur. Thus, we are not doing this cleanup.
 
-            s_config.Shutdown();
+            // // Remove EventPipeEventSource first since it tries to use the data structures that we remove below.
+            // // We need to do this after disabling sessions since those try to write to EventPipeEventSource.
+            // delete s_pEventSource;
+            // s_pEventSource = nullptr;
+            // s_config.Shutdown();
         }
     }
     EX_CATCH {}
