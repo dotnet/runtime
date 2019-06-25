@@ -140,7 +140,7 @@ cgt: dest:c len:8
 cgt_un: dest:c len:8
 clt: dest:c len:8
 clt_un: dest:c len:8
-localloc: dest:i src1:i len:96
+localloc: dest:i src1:i len:120
 compare: src1:i src2:i len:3
 lcompare: src1:i src2:i len:3
 icompare: src1:i src2:i len:3
@@ -592,7 +592,7 @@ vcall2_membase: src1:b len:64 clob:c
 
 dyn_call: src1:i src2:i len:192 clob:c
 
-localloc_imm: dest:i len:96
+localloc_imm: dest:i len:120
 
 load_mem: dest:i len:16
 loadi8_mem: dest:i len:16
