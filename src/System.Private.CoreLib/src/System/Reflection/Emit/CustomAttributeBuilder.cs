@@ -24,7 +24,7 @@ namespace System.Reflection.Emit
     {
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs)
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs)
         {
             InitCustomAttributeBuilder(con, constructorArgs,
                                        new PropertyInfo[] { }, new object[] { },
@@ -33,7 +33,7 @@ namespace System.Reflection.Emit
 
         // public constructor to form the custom attribute with constructor, constructor
         // parameters and named properties.
-        public CustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs,
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
                                       PropertyInfo[] namedProperties, object[] propertyValues)
         {
             InitCustomAttributeBuilder(con, constructorArgs, namedProperties,
@@ -42,7 +42,7 @@ namespace System.Reflection.Emit
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs,
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
                                       FieldInfo[] namedFields, object[] fieldValues)
         {
             InitCustomAttributeBuilder(con, constructorArgs, new PropertyInfo[] { },
@@ -51,7 +51,7 @@ namespace System.Reflection.Emit
 
         // public constructor to form the custom attribute with constructor and constructor
         // parameters.
-        public CustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs,
+        public CustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
                                       PropertyInfo[] namedProperties, object[] propertyValues,
                                       FieldInfo[] namedFields, object[] fieldValues)
         {
@@ -96,7 +96,7 @@ namespace System.Reflection.Emit
             return t == typeof(object);
         }
 
-        internal void InitCustomAttributeBuilder(ConstructorInfo con, object[] constructorArgs,
+        internal void InitCustomAttributeBuilder(ConstructorInfo con, object?[] constructorArgs,
                                                  PropertyInfo[] namedProperties, object[] propertyValues,
                                                  FieldInfo[] namedFields, object[] fieldValues)
         {
@@ -126,7 +126,7 @@ namespace System.Reflection.Emit
 
             // Cache information used elsewhere.
             m_con = con;
-            m_constructorArgs = new object[constructorArgs.Length];
+            m_constructorArgs = new object?[constructorArgs.Length];
             Array.Copy(constructorArgs, 0, m_constructorArgs, 0, constructorArgs.Length);
 
             Type[] paramTypes;
@@ -147,7 +147,7 @@ namespace System.Reflection.Emit
             // Now verify that the types of the actual parameters are compatible with the types of the formal parameters.
             for (i = 0; i < paramTypes.Length; i++)
             {
-                object constructorArg = constructorArgs[i];
+                object? constructorArg = constructorArgs[i];
                 if (constructorArg == null)
                 {
                     if (paramTypes[i].IsValueType)
@@ -551,7 +551,7 @@ namespace System.Reflection.Emit
         }
 
         internal ConstructorInfo m_con = null!;
-        internal object[] m_constructorArgs = null!;
+        internal object?[] m_constructorArgs = null!;
         internal byte[] m_blob = null!;
     }
 }

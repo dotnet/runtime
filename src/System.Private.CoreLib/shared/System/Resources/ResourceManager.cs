@@ -98,7 +98,7 @@ namespace System.Resources
             public ResourceSet? lastResourceSet;
         }
 
-        protected string? BaseNameField;
+        protected string BaseNameField;
         protected Assembly? MainAssembly;    // Need the assembly manifest sometimes.
 
         private Dictionary<string, ResourceSet>? _resourceSets;
@@ -155,6 +155,7 @@ namespace System.Resources
             _lastUsedResourceCache = new CultureNameResourceSetPair();
             ResourceManagerMediator mediator = new ResourceManagerMediator(this);
             _resourceGroveler = new ManifestBasedResourceGroveler(mediator);
+            BaseNameField = string.Empty;
         }
 
         // Constructs a Resource Manager for files beginning with 
@@ -256,7 +257,7 @@ namespace System.Resources
         }
 
         // Gets the base name for the ResourceManager.
-        public virtual string? BaseName
+        public virtual string BaseName
         {
             get { return BaseNameField; }
         }
@@ -310,7 +311,7 @@ namespace System.Resources
             }
         }
 
-        public static ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir, Type usingResourceSet)
+        public static ResourceManager CreateFileBasedResourceManager(string baseName, string resourceDir, Type? usingResourceSet)
         {
             return new ResourceManager(baseName, resourceDir, usingResourceSet);
         }
@@ -595,7 +596,7 @@ namespace System.Resources
         // 
         public virtual string? GetString(string name)
         {
-            return GetString(name, (CultureInfo?)null);
+            return GetString(name, null);
         }
 
         // Looks up a resource value for a particular name.  Looks in the 
@@ -670,13 +671,13 @@ namespace System.Resources
         // 
         public virtual object? GetObject(string name)
         {
-            return GetObject(name, (CultureInfo?)null, true);
+            return GetObject(name, null, true);
         }
 
         // Looks up a resource value for a particular name.  Looks in the 
         // specified CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
-        public virtual object? GetObject(string name, CultureInfo culture)
+        public virtual object? GetObject(string name, CultureInfo? culture)
         {
             return GetObject(name, culture, true);
         }
@@ -746,7 +747,7 @@ namespace System.Resources
 
         public UnmanagedMemoryStream? GetStream(string name)
         {
-            return GetStream(name, (CultureInfo?)null);
+            return GetStream(name, null);
         }
 
         public UnmanagedMemoryStream? GetStream(string name, CultureInfo? culture)
@@ -835,7 +836,7 @@ namespace System.Resources
 
             // this is weird because we have BaseNameField accessor above, but we're sticking
             // with it for compat.
-            internal string? BaseName
+            internal string BaseName
             {
                 get { return _rm.BaseName; }
             }
