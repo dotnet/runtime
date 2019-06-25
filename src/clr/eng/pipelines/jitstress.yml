@@ -1,0 +1,27 @@
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 4 * * *"
+  displayName: Mon through Sun at 8:00 PM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: checked
+    platformGroup: all
+
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: checked
+    platformGroup: all
+    helixQueueGroup: ci
+    jobParameters:
+      testGroup: jitstress
