@@ -248,6 +248,10 @@ namespace System.Net.Test.Common
             {
                 // Ignore connection errors
             }
+            catch (SocketException)
+            {
+                // Ignore connection errors
+            }
         }
 
         public async Task<int> ReadRequestHeaderAsync()
