@@ -55,15 +55,6 @@
     <IgnoredReference Condition="'$(PackageTargetRuntime)' == ''" Include="DirectWriteForwarder" />
   </ItemGroup>
 
-  <!--
-    Wait for Microsoft.NETCore.App pkgprojs to be done with netcoreapp.depproj, but don't take any
-    dependency on the assets. ResolveAssemblyReference tasks running in parallel may try to write to
-    netcoreapp.depprojAssemblyReference.cache, hit the other's lock, and fail.
-  -->
-  <ItemGroup>
-    <WaitOnlyProjectReference Include="..\..\netcoreapp\pkg\legacy\*.pkgproj" />
-  </ItemGroup>
-
   <Target Name="GetNETCoreAppIgnoredReference" BeforeTargets="VerifyClosure">
     <MSBuild
       Projects="../../netcoreapp/src/netcoreapp.depproj"

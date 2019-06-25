@@ -27,6 +27,17 @@
     <RestoreOutputPath>$(BaseIntermediateOutputPath)</RestoreOutputPath>
     <ProjectAssetsFile>$(RestoreOutputPath)\project.assets.json</ProjectAssetsFile>
 
+    <!--
+      Disable ResolveAssemblyReference cache. The packaging projects run in parallel and use MSBuild
+      tasks calling various targets, many of which use ResolveReferences. The parallel writes to the
+      cache conflict and cause build failures. Disable the cache to avoid this.
+
+      In the long term, the "base" project build (depproj as of writing) should lay out the files or
+      metadata in a way the other projects can consume. Gathering the information ahead of time
+      removes the benefit of a cache.
+    -->
+    <DisableRarCache>true</DisableRarCache>
+
     <RestoreAllBuildRids>true</RestoreAllBuildRids>
   </PropertyGroup>
 
