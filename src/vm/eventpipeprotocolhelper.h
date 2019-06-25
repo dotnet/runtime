@@ -30,7 +30,7 @@ struct EventPipeCollectTracingCommandPayload
 
     // The protocol buffer is defined as:
     // X, Y, Z means encode bytes for X followed by bytes for Y followed by bytes for Z
-    // message = uint circularBufferMB, uint format, string outputPath, array<provider_config> providers
+    // message = uint circularBufferMB, uint format, array<provider_config> providers
     // uint = 4 little endian bytes
     // wchar = 2 little endian bytes, UTF16 encoding
     // array<T> = uint length, length # of Ts
@@ -38,7 +38,6 @@ struct EventPipeCollectTracingCommandPayload
     // provider_config = ulong keywords, uint logLevel, string provider_name, string filter_data
     uint32_t circularBufferSizeInMB;
     EventPipeSerializationFormat serializationFormat;
-    LPCWSTR outputPath;
     CQuickArray<EventPipeProviderConfiguration> providerConfigs;
     static const EventPipeCollectTracingCommandPayload* TryParse(BYTE* lpBuffer, uint16_t& BufferSize);
 };
