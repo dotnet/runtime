@@ -1545,28 +1545,32 @@ BOOL StackFrameIterator::IsValid(void)
         // Try to ensure that the frame chain did not change underneath us.
         // In particular, is thread's starting frame the same as it was when
         // we started?
-        //DevDiv 168789: In GCStress >= 4 two threads could race on triggering GC;
-        //  if the one that just made p/invoke call is second and hits the trap instruction
-        //  before call to syncronize with GC, it will push a frame [ResumableFrame on Unix 
-        //  and RedirectedThreadFrame on Windows] concurrently with GC stackwalking.
-        //  In normal case (no GCStress), after p/invoke, IL_STUB will check if GC is in progress and syncronize.
-        BOOL bRedirectedPinvoke = FALSE;
+        BOOL bIsRealStartFrameUnchanged = 
+            (m_pStartFrame != NULL) ||
+            (m_flags & POPFRAMES) ||
+            (m_pRealStartFrame == m_pThread->GetFrame());
 
 #ifdef FEATURE_HIJACK
-        bRedirectedPinvoke = ((GCStress<cfg_instr>::IsEnabled()) && 
-                              (m_pRealStartFrame != NULL) &&
-                              (m_pRealStartFrame != FRAME_TOP) &&
-                              (m_pRealStartFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr()) && 
-                              (m_pThread->GetFrame() != NULL) &&
-                              (m_pThread->GetFrame() != FRAME_TOP) &&
-                              ((m_pThread->GetFrame()->GetVTablePtr() == ResumableFrame::GetMethodFrameVPtr()) ||
-                               (m_pThread->GetFrame()->GetVTablePtr() == RedirectedThreadFrame::GetMethodFrameVPtr())));
+        // In GCStress >= 4 two threads could race on triggering GC;
+        // if the one that just made p/invoke call is second and hits the trap instruction
+        // before call to synchronize with GC, it will push a frame [ResumableFrame on Unix
+        // and RedirectedThreadFrame on Windows] concurrently with GC stackwalking.
+        // In normal case (no GCStress), after p/invoke, IL_STUB will check if GC is in progress and synchronize.
+        // NOTE: This condition needs to be evaluated after the previous one to prevent a subtle race condition
+        // (https://github.com/dotnet/coreclr/issues/21581)
+        bIsRealStartFrameUnchanged = bIsRealStartFrameUnchanged ||
+            ((GCStress<cfg_instr>::IsEnabled()) &&
+            (m_pRealStartFrame != NULL) &&
+            (m_pRealStartFrame != FRAME_TOP) &&
+            (m_pRealStartFrame->GetVTablePtr() == InlinedCallFrame::GetMethodFrameVPtr()) &&
+            (m_pThread->GetFrame() != NULL) &&
+            (m_pThread->GetFrame() != FRAME_TOP) &&
+            ((m_pThread->GetFrame()->GetVTablePtr() == ResumableFrame::GetMethodFrameVPtr()) ||
+            (m_pThread->GetFrame()->GetVTablePtr() == RedirectedThreadFrame::GetMethodFrameVPtr())));
 #endif // FEATURE_HIJACK
 
-        _ASSERTE( (m_pStartFrame != NULL) ||
-                  (m_flags & POPFRAMES) ||
-                  (m_pRealStartFrame == m_pThread->GetFrame()) ||
-                  (bRedirectedPinvoke));
+        _ASSERTE(bIsRealStartFrameUnchanged);
+
 #endif //_DEBUG
 
         return FALSE;
