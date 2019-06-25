@@ -36,19 +36,24 @@ namespace Internal.Cryptography
             return GetDigestAlgorithm(oid.Value);
         }
 
-        internal static HashAlgorithmName GetDigestAlgorithm(string oidValue)
+        internal static HashAlgorithmName GetDigestAlgorithm(string oidValue, bool forVerification = false)
         {
             switch (oidValue)
             {
                 case Oids.Md5:
+                case Oids.RsaPkcs1Md5 when forVerification:
                     return HashAlgorithmName.MD5;
                 case Oids.Sha1:
+                case Oids.RsaPkcs1Sha1 when forVerification:
                     return HashAlgorithmName.SHA1;
                 case Oids.Sha256:
+                case Oids.RsaPkcs1Sha256 when forVerification:
                     return HashAlgorithmName.SHA256;
                 case Oids.Sha384:
+                case Oids.RsaPkcs1Sha384 when forVerification:
                     return HashAlgorithmName.SHA384;
                 case Oids.Sha512:
+                case Oids.RsaPkcs1Sha512 when forVerification:
                     return HashAlgorithmName.SHA512;
                 default:
                     throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, oidValue);
