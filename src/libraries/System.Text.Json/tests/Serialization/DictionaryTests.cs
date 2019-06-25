@@ -862,6 +862,49 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Parse<IImmutableDictionaryWrapper>(json));
         }
 
+        [Fact]
+        public static void Regression38643_Serialize()
+        {
+            // Arrange
+            var value = new Regression38643_Parent()
+            {
+                Child = new Dictionary<string, Regression38643_Child>()
+                {
+                    ["1"] = new Regression38643_Child()
+                    {
+                        A = "1",
+                        B = string.Empty,
+                        C = Array.Empty<string>(),
+                        D = Array.Empty<string>(),
+                        F = Array.Empty<string>(),
+                        K = Array.Empty<string>(),
+                    }
+                }
+            };
+
+            var actual = JsonSerializer.ToString(value, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+
+            // Assert
+            Assert.NotNull(actual);
+            Assert.NotEmpty(actual);
+        }
+
+        [Fact]
+        public static void Regression38643_Deserialize()
+        {
+            // Arrange
+            string json = "{\"child\":{\"1\":{\"a\":\"1\",\"b\":\"\",\"c\":[],\"d\":[],\"e\":null,\"f\":[],\"g\":null,\"h\":null,\"i\":null,\"j\":null,\"k\":[]}}}";
+
+            var actual = JsonSerializer.Parse<Regression38643_Parent>(json, new JsonSerializerOptions() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+
+            // Assert
+            Assert.NotNull(actual);
+            Assert.NotNull(actual.Child);
+            Assert.Equal(1, actual.Child.Count);
+            Assert.True(actual.Child.ContainsKey("1"));
+            Assert.Equal("1", actual.Child["1"].A);
+        }
+
         public class ClassWithDictionaryButNoSetter
         {
             public Dictionary<string, string> MyDictionary { get; } = new Dictionary<string, string>();
@@ -875,6 +918,26 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithNotSupportedDictionaryButIgnored
         {
             [JsonIgnore] public Dictionary<int, int> MyDictionary { get; set; }
+        }
+
+        public class Regression38643_Parent
+        {
+            public IDictionary<string, Regression38643_Child> Child { get; set; }
+        }
+
+        public class Regression38643_Child
+        {
+            public string A { get; set; }
+            public string B { get; set; }
+            public string[] C { get; set; }
+            public string[] D { get; set; }
+            public bool? E { get; set; }
+            public string[] F { get; set; }
+            public DateTimeOffset? G { get; set; }
+            public DateTimeOffset? H { get; set; }
+            public int? I { get; set; }
+            public int? J { get; set; }
+            public string[] K { get; set; }
         }
     }
 }
