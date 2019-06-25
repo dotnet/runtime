@@ -85,6 +85,7 @@
     <Compile Include="Serialization\Value.WriteTests.GenericCollections.cs" />
     <Compile Include="Serialization\Value.WriteTests.ImmutableCollections.cs" />
     <Compile Include="Serialization\Value.WriteTests.NonGenericCollections.cs" />
+    <Compile Include="Serialization\WriteValueTests.cs" />
     <Compile Include="TestCaseType.cs" />
     <Compile Include="TestClasses.ClassWithComplexObjects.cs" />
     <Compile Include="Utf8JsonReaderTests.cs" />
