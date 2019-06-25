@@ -61,7 +61,6 @@ const EventPipeCollectTracingCommandPayload* EventPipeCollectTracingCommandPaylo
     uint32_t bufferLen = BufferSize;
     if (!TryParseCircularBufferSize(pBufferCursor, bufferLen, payload->circularBufferSizeInMB) ||
         !TryParseSerializationFormat(pBufferCursor, bufferLen, payload->serializationFormat) ||
-        !TryParseString(pBufferCursor, bufferLen, payload->outputPath) ||
         !EventPipeProtocolHelper::TryParseProviderConfiguration(pBufferCursor, bufferLen, payload->providerConfigs))
     {
         delete payload;
