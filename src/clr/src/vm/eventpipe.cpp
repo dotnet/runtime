@@ -342,13 +342,6 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
     // Disable pSession tracing.
     s_config.Disable(*pSession, pEventPipeProviderCallbackDataQueue);
 
-    // At this point, we should not be writing events to this session anymore
-    // This is a good time to remove the session from the array.
-    _ASSERTE(s_pSessions[pSession->GetIndex()] == pSession);
-
-    // Remove the session from the array, and mask.
-    s_pSessions[pSession->GetIndex()].Store(nullptr);
-
     pSession->Disable(); // Suspend EventPipeBufferManager, and remove providers.
 
     // Do rundown before fully stopping the session.
@@ -374,6 +367,13 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
     }
 
     --s_numberOfSessions;
+
+    // At this point, we should not be writing events to this session anymore
+    // This is a good time to remove the session from the array.
+    _ASSERTE(s_pSessions[pSession->GetIndex()] == pSession);
+
+    // Remove the session from the array, and mask.
+    s_pSessions[pSession->GetIndex()].Store(nullptr);
 
     // Write a final sequence point to the file now that all events have
     // been emitted.
