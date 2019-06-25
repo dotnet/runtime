@@ -19,6 +19,7 @@ namespace System.Text.Json
             ref WriteStack state)
         {
             bool finishedSerializing;
+            int currentDepth = writer.CurrentDepth;
 
             try
             {
@@ -52,7 +53,7 @@ namespace System.Text.Json
 
                     if (finishedSerializing)
                     {
-                        if (writer.CurrentDepth == 0)
+                        if (writer.CurrentDepth == 0 || writer.CurrentDepth == currentDepth)
                         {
                             break;
                         }
