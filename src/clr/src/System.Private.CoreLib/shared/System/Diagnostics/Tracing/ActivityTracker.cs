@@ -273,11 +273,19 @@ namespace System.Diagnostics.Tracing
 
             if (activityName.EndsWith(EventSource.s_ActivityStartSuffix, StringComparison.Ordinal))
             {
+#if ES_BUILD_STANDALONE
+                return string.Concat(providerName, activityName.Substring(0, activityName.Length - EventSource.s_ActivityStartSuffix.Length));
+#else
                 return string.Concat(providerName, activityName.AsSpan(0, activityName.Length - EventSource.s_ActivityStartSuffix.Length));
+#endif
             }
             else if (activityName.EndsWith(EventSource.s_ActivityStopSuffix, StringComparison.Ordinal))
             {
+#if ES_BUILD_STANDALONE
+                return string.Concat(providerName, activityName.Substring(0, activityName.Length - EventSource.s_ActivityStopSuffix.Length));
+#else
                 return string.Concat(providerName, activityName.AsSpan(0, activityName.Length - EventSource.s_ActivityStopSuffix.Length));
+#endif
             }
             else if (task != 0)
             {
