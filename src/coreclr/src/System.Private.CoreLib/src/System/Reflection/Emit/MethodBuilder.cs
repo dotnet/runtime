@@ -741,7 +741,7 @@ namespace System.Reflection.Emit
             return m_tkMethod;
         }
 
-        public void SetParameters(params Type[]? parameterTypes)
+        public void SetParameters(params Type[] parameterTypes)
         {
             CheckContext(parameterTypes);
 
