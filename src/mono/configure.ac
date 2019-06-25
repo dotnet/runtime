@@ -2131,22 +2131,27 @@ if test x$host_win32 = xno; then
 		LIBS="$LIBS $DL_LIB"
 		AC_DEFINE(HAVE_DL_LOADER,1,[dlopen-based dynamic loader available])
 		dnl from glib's configure.ac
-		AC_CACHE_CHECK([for preceeding underscore in symbols],
-			mono_cv_uscore,[
-			AC_TRY_RUN([#include <dlfcn.h>
-			int mono_underscore_test (void) { return 42; }
-			int main() {
-			  void *f1 = (void*)0, *f2 = (void*)0, *handle;
-			  handle = dlopen ((void*)0, 0);
-			  if (handle) {
-			    f1 = dlsym (handle, "mono_underscore_test");
-			    f2 = dlsym (handle, "_mono_underscore_test");
-			  } return (!f2 || f1);
-			}],
+		if test "x$cross_compiling" = "xyes"; then
+		   AC_MSG_RESULT(cross compiling, assuming no)
+		   mono_cv_uscore=no
+		else
+			AC_CACHE_CHECK([for preceeding underscore in symbols],
+			  mono_cv_uscore,[
+			  AC_TRY_RUN([#include <dlfcn.h>
+			  int mono_underscore_test (void) { return 42; }
+			  int main() {
+			    void *f1 = (void*)0, *f2 = (void*)0, *handle;
+			    handle = dlopen ((void*)0, 0);
+			    if (handle) {
+			      f1 = dlsym (handle, "mono_underscore_test");
+			      f2 = dlsym (handle, "_mono_underscore_test");
+			    } return (!f2 || f1);
+			  }],
 				[mono_cv_uscore=yes],
 				[mono_cv_uscore=no],
-			[])
-		])
+			  [])
+		  ])
+		fi
 		if test "x$mono_cv_uscore" = "xyes"; then
 			MONO_DL_NEED_USCORE=1
 		else
