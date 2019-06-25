@@ -503,11 +503,23 @@ namespace System.Text.Json
 
             switch (numericType)
             {
+                case NumericType.Byte:
+                    message = SR.FormatByte;
+                    break;
+                case NumericType.SByte:
+                    message = SR.FormatSByte;
+                    break;
+                case NumericType.Int16:
+                    message = SR.FormatInt16;
+                    break;
                 case NumericType.Int32:
                     message = SR.FormatInt32;
                     break;
                 case NumericType.Int64:
                     message = SR.FormatInt64;
+                    break;
+                case NumericType.UInt16:
+                    message = SR.FormatUInt16;
                     break;
                 case NumericType.UInt32:
                     message = SR.FormatUInt32;
@@ -606,8 +618,12 @@ namespace System.Text.Json
 
     internal enum NumericType
     {
+        Byte,
+        SByte,
+        Int16,
         Int32,
         Int64,
+        UInt16,
         UInt32,
         UInt64,
         Single,

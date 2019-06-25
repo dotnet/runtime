@@ -91,7 +91,7 @@ namespace System.Text.Json.Serialization.Tests
 
             Assert.IsType<JsonElement>(MyInt16[0]);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MyInt16[0]).Type);
-            Assert.Equal(1, ((JsonElement)MyInt16[0]).GetInt32());
+            Assert.Equal(1, ((JsonElement)MyInt16[0]).GetInt16());
             Assert.IsType<JsonElement>(MyInt32[0]);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MyInt32[0]).Type);
             Assert.Equal(2, ((JsonElement)MyInt32[0]).GetInt32());
@@ -100,19 +100,19 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(3L, ((JsonElement)MyInt64[0]).GetInt64());
             Assert.IsType<JsonElement>(MyUInt16[0]);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MyUInt16[0]).Type);
-            Assert.Equal(4u, ((JsonElement)MyUInt16[0]).GetUInt32());
+            Assert.Equal(4u, ((JsonElement)MyUInt16[0]).GetUInt16());
             Assert.IsType<JsonElement>(MyUInt32[0]);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MyUInt32[0]).Type);
             Assert.Equal(5u, ((JsonElement)MyUInt32[0]).GetUInt32());
             Assert.IsType<JsonElement>(MyUInt64[0]);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MyUInt64[0]).Type);
-            Assert.Equal(6UL, ((JsonElement)MyUInt64[0]).GetUInt32());
+            Assert.Equal(6UL, ((JsonElement)MyUInt64[0]).GetUInt64());
             Assert.IsType<JsonElement>(MyByte[0]);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MyByte[0]).Type);
-            Assert.Equal(7, ((JsonElement)MyByte[0]).GetInt32());
+            Assert.Equal(7, ((JsonElement)MyByte[0]).GetByte());
             Assert.IsType<JsonElement>(MySByte[0]);
             Assert.Equal(JsonValueType.Number, ((JsonElement)MySByte[0]).Type);
-            Assert.Equal((byte)8, ((JsonElement)MySByte[0]).GetUInt32());
+            Assert.Equal(8, ((JsonElement)MySByte[0]).GetSByte());
             Assert.IsType<JsonElement>(MyChar[0]);
             Assert.Equal(JsonValueType.String, ((JsonElement)MyChar[0]).Type);
             Assert.Equal("a", ((JsonElement)MyChar[0]).GetString());
