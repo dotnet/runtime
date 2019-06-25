@@ -117,9 +117,9 @@ namespace System.Globalization
         private static volatile CultureInfo? s_DefaultThreadCurrentCulture;
 
         [ThreadStatic]
-        private static CultureInfo s_currentThreadCulture;
+        private static CultureInfo? s_currentThreadCulture;
         [ThreadStatic]
-        private static CultureInfo s_currentThreadUICulture;
+        private static CultureInfo? s_currentThreadUICulture;
 
         private static AsyncLocal<CultureInfo>? s_asyncLocalCurrentCulture;
         private static AsyncLocal<CultureInfo>? s_asyncLocalCurrentUICulture;
