@@ -47,24 +47,24 @@ namespace System.SpanTests
         [Fact]
         public static unsafe void CastSpanOverflow()
         {
-            Span<MemoryTestHelpers.TestStructExplicit> span = new Span<MemoryTestHelpers.TestStructExplicit>(null, int.MaxValue);
+            Span<TestHelpers.TestStructExplicit> span = new Span<TestHelpers.TestStructExplicit>(null, int.MaxValue);
 
-            MemoryTestHelpers.AssertThrows<OverflowException, MemoryTestHelpers.TestStructExplicit>(span, (_span) => MemoryMarshal.Cast<MemoryTestHelpers.TestStructExplicit, byte>(_span).DontBox());
-            MemoryTestHelpers.AssertThrows<OverflowException, MemoryTestHelpers.TestStructExplicit>(span, (_span) => MemoryMarshal.Cast<MemoryTestHelpers.TestStructExplicit, ulong>(_span).DontBox());
+            TestHelpers.AssertThrows<OverflowException, TestHelpers.TestStructExplicit>(span, (_span) => MemoryMarshal.Cast<TestHelpers.TestStructExplicit, byte>(_span).DontBox());
+            TestHelpers.AssertThrows<OverflowException, TestHelpers.TestStructExplicit>(span, (_span) => MemoryMarshal.Cast<TestHelpers.TestStructExplicit, ulong>(_span).DontBox());
         }
 
         [Fact]
         public static void CastSpanToTypeContainsReferences()
         {
             Span<uint> span = new Span<uint>(Array.Empty<uint>());
-            MemoryTestHelpers.AssertThrows<ArgumentException, uint>(span, (_span) => MemoryMarshal.Cast<uint, MemoryTestHelpers.StructWithReferences>(_span).DontBox());
+            TestHelpers.AssertThrows<ArgumentException, uint>(span, (_span) => MemoryMarshal.Cast<uint, TestHelpers.StructWithReferences>(_span).DontBox());
         }
 
         [Fact]
         public static void CastSpanFromTypeContainsReferences()
         {
-            Span<MemoryTestHelpers.StructWithReferences> span = new Span<MemoryTestHelpers.StructWithReferences>(Array.Empty<MemoryTestHelpers.StructWithReferences>());
-            MemoryTestHelpers.AssertThrows<ArgumentException, MemoryTestHelpers.StructWithReferences>(span, (_span) => MemoryMarshal.Cast<MemoryTestHelpers.StructWithReferences, uint>(_span).DontBox());
+            Span<TestHelpers.StructWithReferences> span = new Span<TestHelpers.StructWithReferences>(Array.Empty<TestHelpers.StructWithReferences>());
+            TestHelpers.AssertThrows<ArgumentException, TestHelpers.StructWithReferences>(span, (_span) => MemoryMarshal.Cast<TestHelpers.StructWithReferences, uint>(_span).DontBox());
         }
     }
 }

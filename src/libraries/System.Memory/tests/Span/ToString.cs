@@ -59,7 +59,7 @@ namespace System.SpanTests
         [Fact]
         public static void ToStringSpanOverFullStringDoesNotReturnOriginal()
         {
-            string original = MemoryTestHelpers.BuildString(10, 42);
+            string original = TestHelpers.BuildString(10, 42);
 
             ReadOnlyMemory<char> readOnlyMemory = original.AsMemory();
             Memory<char> memory = MemoryMarshal.AsMemory(readOnlyMemory);

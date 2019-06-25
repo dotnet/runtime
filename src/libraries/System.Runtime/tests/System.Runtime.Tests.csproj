@@ -14,9 +14,6 @@
     <Compile Include="$(CommonTestPath)\System\MockType.cs">
       <Link>Common\System\MockType.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\MemoryTestHelpers.cs">
-      <Link>System\MemoryTestHelpers.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Collections\CollectionAsserts.cs">
       <Link>Common\System\Collections\CollectionAsserts.cs</Link>
     </Compile>

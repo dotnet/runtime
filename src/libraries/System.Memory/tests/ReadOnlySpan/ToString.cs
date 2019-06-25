@@ -63,7 +63,7 @@ namespace System.SpanTests
         [Fact]
         public static void ToStringSpanOverSubstringDoesNotReturnOriginal()
         {
-            string original = MemoryTestHelpers.BuildString(10, 42);
+            string original = TestHelpers.BuildString(10, 42);
             ReadOnlySpan<char> span = original.AsSpan();
 
             string returnedString = span.ToString();

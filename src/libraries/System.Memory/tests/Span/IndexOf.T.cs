@@ -187,7 +187,7 @@ namespace System.SpanTests
         }
 
         [Theory]
-        [MemberData(nameof(MemoryTestHelpers.IndexOfNullData), MemberType = typeof(MemoryTestHelpers))]
+        [MemberData(nameof(TestHelpers.IndexOfNullData), MemberType = typeof(TestHelpers))]
         public static void IndexOfNull_String(string[] spanInput, int expected)
         {
             Span<string> theStrings = spanInput;
