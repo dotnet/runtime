@@ -140,10 +140,10 @@ namespace System.MemoryTests
         {
             ReadOnlyMemory<int> memory;
 
-            memory = MemoryTestHelpers.DangerousCreateReadOnlyMemory<int>(new int[4], 0, 5);
+            memory = TestHelpers.DangerousCreateReadOnlyMemory<int>(new int[4], 0, 5);
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Span.DontBox());
 
-            memory = MemoryTestHelpers.DangerousCreateReadOnlyMemory<int>(new int[4], 3, 2);
+            memory = TestHelpers.DangerousCreateReadOnlyMemory<int>(new int[4], 3, 2);
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Span.DontBox());
         }
 
@@ -152,10 +152,10 @@ namespace System.MemoryTests
         {
             ReadOnlyMemory<char> memory;
 
-            memory = MemoryTestHelpers.DangerousCreateReadOnlyMemory<char>("1234", 0, 5);
+            memory = TestHelpers.DangerousCreateReadOnlyMemory<char>("1234", 0, 5);
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Span.DontBox());
 
-            memory = MemoryTestHelpers.DangerousCreateReadOnlyMemory<char>("1234", 3, 2);
+            memory = TestHelpers.DangerousCreateReadOnlyMemory<char>("1234", 3, 2);
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Span.DontBox());
         }
     }

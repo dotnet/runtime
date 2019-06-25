@@ -13,7 +13,7 @@ using System.Reflection;
 
 namespace System
 {
-    public static class MemoryTestHelpers
+    public static class TestHelpers
     {
         public static void Validate<T>(this Span<T> span, params T[] expected) where T : struct, IEquatable<T>
         {

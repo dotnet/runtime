@@ -21,7 +21,7 @@ namespace System.SpanTests
 
             var array = new byte[100];
             Array.Fill<byte>(array, 0x42);
-            ref readonly MemoryTestHelpers.TestStructExplicit asStruct = ref MemoryMarshal.AsRef<MemoryTestHelpers.TestStructExplicit>(new ReadOnlySpan<byte>(array));
+            ref readonly TestHelpers.TestStructExplicit asStruct = ref MemoryMarshal.AsRef<TestHelpers.TestStructExplicit>(new ReadOnlySpan<byte>(array));
 
             Assert.Equal(asStruct.UI1, (uint)0x42424242);
         }
@@ -30,9 +30,9 @@ namespace System.SpanTests
         public static void AsReadOnlyRefFail()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => MemoryMarshal.AsRef<uint>(new ReadOnlySpan<byte>(new byte[] { 1 })));
-            Assert.Throws<ArgumentOutOfRangeException>(() => MemoryMarshal.AsRef<MemoryTestHelpers.TestStructExplicit>(new ReadOnlySpan<byte>(new byte[] { 1 })));
+            Assert.Throws<ArgumentOutOfRangeException>(() => MemoryMarshal.AsRef<TestHelpers.TestStructExplicit>(new ReadOnlySpan<byte>(new byte[] { 1 })));
 
-            Assert.Throws<ArgumentException>(() => MemoryMarshal.AsRef<MemoryTestHelpers.StructWithReferences>(new ReadOnlySpan<byte>(new byte[100])));
+            Assert.Throws<ArgumentException>(() => MemoryMarshal.AsRef<TestHelpers.StructWithReferences>(new ReadOnlySpan<byte>(new byte[100])));
         }
     }
 }

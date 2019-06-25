@@ -58,7 +58,7 @@ namespace System.SpanTests
                 new ReadOnlySpan<int>((void*)null, 0);
                 new ReadOnlySpan<int?>((void*)null, 0);
                 AssertExtensions.Throws<ArgumentException>(null, () => new ReadOnlySpan<object>((void*)null, 0).DontBox());
-                AssertExtensions.Throws<ArgumentException>(null, () => new ReadOnlySpan<MemoryTestHelpers.StructWithReferences>((void*)null, 0).DontBox());
+                AssertExtensions.Throws<ArgumentException>(null, () => new ReadOnlySpan<TestHelpers.StructWithReferences>((void*)null, 0).DontBox());
             }
         }
     }

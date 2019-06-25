@@ -1019,9 +1019,9 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(() => string.Compare(value, value, (StringComparison)6));
             
             ReadOnlySpan<char> span = value.AsSpan();
-            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.CompareTo(_span, StringComparison.CurrentCulture - 1));
-            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.CompareTo(_span, StringComparison.OrdinalIgnoreCase + 1));
-            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.CompareTo(_span, (StringComparison)6));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.CompareTo(_span, StringComparison.CurrentCulture - 1));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.CompareTo(_span, StringComparison.OrdinalIgnoreCase + 1));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.CompareTo(_span, (StringComparison)6));
         }
         
         [Fact]
@@ -1314,9 +1314,9 @@ namespace System.Tests
         public static void ContainsUnknownComparisonType_StringComparison()
         {                        
             ReadOnlySpan<char> span = "456".AsSpan();
-            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Contains(_span, StringComparison.CurrentCulture - 1));
-            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Contains(_span, StringComparison.OrdinalIgnoreCase + 1));
-            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Contains(_span, (StringComparison)6));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Contains(_span, StringComparison.CurrentCulture - 1));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Contains(_span, StringComparison.OrdinalIgnoreCase + 1));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.Contains(_span, (StringComparison)6));
         }
 
         [Fact]
@@ -2149,9 +2149,9 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(() => value.EndsWith(value, (StringComparison)6));
 
             ReadOnlySpan<char> span = value.AsSpan();
-            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.EndsWith(_span, StringComparison.CurrentCulture - 1));
-            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.EndsWith(_span, StringComparison.OrdinalIgnoreCase + 1));
-            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.EndsWith(_span, (StringComparison)6));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.EndsWith(_span, StringComparison.CurrentCulture - 1));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.EndsWith(_span, StringComparison.OrdinalIgnoreCase + 1));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.EndsWith(_span, (StringComparison)6));
         }
 
         [Fact]
@@ -5152,7 +5152,7 @@ namespace System.Tests
             Assert.Equal(expected, s1.ToLower(CultureInfo.CurrentCulture).ToArray());
             Assert.Equal(expected, s1.ToLowerInvariant().ToArray());
             {
-                MemoryTestHelpers.AssertThrows<InvalidOperationException, char>(a, a => 
+                SpanTestHelpers.AssertThrows<InvalidOperationException, char>(a, a => 
                 {
                     ReadOnlySpan<char> source = a;
                     Span<char> destination = a;
@@ -5161,7 +5161,7 @@ namespace System.Tests
                 });
             }
             {
-                MemoryTestHelpers.AssertThrows<InvalidOperationException, char>(a, a =>
+                SpanTestHelpers.AssertThrows<InvalidOperationException, char>(a, a =>
                 {
                     ReadOnlySpan<char> source = a;
                     Span<char> destination = a;
@@ -5184,7 +5184,7 @@ namespace System.Tests
 
                 var source = new ReadOnlySpan<char>(a, 1, 3);
 
-                MemoryTestHelpers.AssertThrows<InvalidOperationException,char>(source, source =>
+                SpanTestHelpers.AssertThrows<InvalidOperationException,char>(source, source =>
                 { 
                     var destination = new Span<char>(a, 3, 3);
                     source.ToLower(destination, CultureInfo.CurrentCulture);
@@ -5198,7 +5198,7 @@ namespace System.Tests
 
                 var source = new ReadOnlySpan<char>(a, 1, 3);
 
-                MemoryTestHelpers.AssertThrows<InvalidOperationException, char>(source, source =>
+                SpanTestHelpers.AssertThrows<InvalidOperationException, char>(source, source =>
                 {
                     var destination = new Span<char>(a, 3, 3);
                     source.ToLowerInvariant(destination);
@@ -5365,7 +5365,7 @@ namespace System.Tests
             Assert.Equal(expected, s1.ToUpper(CultureInfo.CurrentCulture).ToArray());
             Assert.Equal(expected, s1.ToUpperInvariant().ToArray());
             {
-                MemoryTestHelpers.AssertThrows<InvalidOperationException, char>(a, a =>
+                SpanTestHelpers.AssertThrows<InvalidOperationException, char>(a, a =>
                 {
                     ReadOnlySpan<char> source = a;
                     Span<char> destination = a;
@@ -5374,7 +5374,7 @@ namespace System.Tests
                 });
             }
             {
-                MemoryTestHelpers.AssertThrows<InvalidOperationException, char>(a, a =>
+                SpanTestHelpers.AssertThrows<InvalidOperationException, char>(a, a =>
                 {
                     ReadOnlySpan<char> source = a;
                     Span<char> destination = a;
@@ -5397,7 +5397,7 @@ namespace System.Tests
 
                 var source = new ReadOnlySpan<char>(a, 1, 3);
 
-                MemoryTestHelpers.AssertThrows<InvalidOperationException, char>(source, source =>
+                SpanTestHelpers.AssertThrows<InvalidOperationException, char>(source, source =>
                 {
                     var destination = new Span<char>(a, 3, 3);
                     source.ToUpper(destination, CultureInfo.CurrentCulture);
@@ -5410,7 +5410,7 @@ namespace System.Tests
                 Assert.Equal(expectedDestination, s1.ToUpperInvariant().ToArray());
 
                 var source = new ReadOnlySpan<char>(a, 1, 3);
-                MemoryTestHelpers.AssertThrows<InvalidOperationException, char>(source, source =>
+                SpanTestHelpers.AssertThrows<InvalidOperationException, char>(source, source =>
                 {
                     var destination = new Span<char>(a, 3, 3);
                     source.ToUpperInvariant(destination);
@@ -6984,9 +6984,9 @@ namespace System.Tests
             Assert.Throws<ArgumentException>(() => s1.StartsWith(s1, (StringComparison)6));
 
             ReadOnlySpan<char> span = s1.AsSpan();
-            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.StartsWith(_span, StringComparison.CurrentCulture - 1));
-            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.StartsWith(_span, StringComparison.OrdinalIgnoreCase + 1));
-            MemoryTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.StartsWith(_span, (StringComparison)6));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.StartsWith(_span, StringComparison.CurrentCulture - 1));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.StartsWith(_span, StringComparison.OrdinalIgnoreCase + 1));
+            SpanTestHelpers.AssertThrows<ArgumentException, char>(span, (_span) => _span.StartsWith(_span, (StringComparison)6));
         }
 
         [Fact]

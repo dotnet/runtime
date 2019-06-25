@@ -10,8 +10,26 @@ namespace System.Tests
     {
         public delegate void AssertThrowsActionReadOnly<T>(ReadOnlySpan<T> span);
 
+        public delegate void AssertThrowsAction<T>(Span<T> span);
+
         // Cannot use standard Assert.Throws() when testing Span - Span and closures don't get along.
         public static void AssertThrows<E, T>(ReadOnlySpan<T> span, AssertThrowsActionReadOnly<T> action) where E : Exception
+        {
+            try
+            {
+                action(span);
+                Assert.False(true, "Expected exception: " + typeof(E).GetType());
+            }
+            catch (E)
+            {
+            }
+            catch (Exception wrongException)
+            {
+                Assert.False(true, "Wrong exception thrown: Expected " + typeof(E).GetType() + ": Actual: " + wrongException.GetType());
+            }
+        }
+
+        public static void AssertThrows<E, T>(Span<T> span, AssertThrowsAction<T> action) where E : Exception
         {
             try
             {
