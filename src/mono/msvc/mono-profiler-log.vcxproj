@@ -154,6 +154,7 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\mono\profiler\helper.c" />
     <ClCompile Include="..\mono\profiler\log-args.c" />
     <ClCompile Include="..\mono\profiler\log.c" />
   </ItemGroup>

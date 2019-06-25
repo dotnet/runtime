@@ -48,6 +48,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/os-event.h>
 #include "log.h"
+#include "helper.h"
 
 #ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
@@ -2902,16 +2903,6 @@ cleanup_reusable_samples (void)
 }
 
 static void
-close_socket_fd (int fd)
-{
-#ifdef HOST_WIN32
-	closesocket (fd);
-#else
-	close (fd);
-#endif
-}
-
-static void
 signal_helper_thread (char c)
 {
 #ifdef HAVE_COMMAND_PIPES
@@ -3215,26 +3206,6 @@ profiler_thread_check_detach (MonoProfilerThread *thread)
 	}
 }
 
-static void
-add_to_fd_set (fd_set *set, int fd, int *max_fd)
-{
-	/*
-	 * This should only trigger for the basic FDs (server socket, pipes) at
-	 * startup if for some mysterious reason they're too large. In this case,
-	 * the profiler really can't function, and we're better off printing an
-	 * error and exiting.
-	 */
-	if (fd >= FD_SETSIZE) {
-		mono_profiler_printf_err ("File descriptor is out of bounds for fd_set: %d", fd);
-		exit (1);
-	}
-
-	FD_SET (fd, set);
-
-	if (*max_fd < fd)
-		*max_fd = fd;
-}
-
 static void *
 helper_thread (void *arg)
 {
@@ -3360,41 +3331,7 @@ start_helper_thread (void)
 	}
 #endif
 
-	log_profiler.server_socket = socket (PF_INET, SOCK_STREAM, 0);
-
-	if (log_profiler.server_socket == -1) {
-		mono_profiler_printf_err ("Could not create log profiler server socket: %s", g_strerror (errno));
-		exit (1);
-	}
-
-	struct sockaddr_in server_address;
-
-	memset (&server_address, 0, sizeof (server_address));
-	server_address.sin_family = AF_INET;
-	server_address.sin_addr.s_addr = INADDR_ANY;
-	server_address.sin_port = htons (log_profiler.command_port);
-
-	if (bind (log_profiler.server_socket, (struct sockaddr *) &server_address, sizeof (server_address)) == -1) {
-		mono_profiler_printf_err ("Could not bind log profiler server socket on port %d: %s", log_profiler.command_port, g_strerror (errno));
-		close_socket_fd (log_profiler.server_socket);
-		exit (1);
-	}
-
-	if (listen (log_profiler.server_socket, 1) == -1) {
-		mono_profiler_printf_err ("Could not listen on log profiler server socket: %s", g_strerror (errno));
-		close_socket_fd (log_profiler.server_socket);
-		exit (1);
-	}
-
-	socklen_t slen = sizeof (server_address);
-
-	if (getsockname (log_profiler.server_socket, (struct sockaddr *) &server_address, &slen)) {
-		mono_profiler_printf_err ("Could not retrieve assigned port for log profiler server socket: %s", g_strerror (errno));
-		close_socket_fd (log_profiler.server_socket);
-		exit (1);
-	}
-
-	log_profiler.command_port = ntohs (server_address.sin_port);
+	setup_command_server (&log_profiler.server_socket, &log_profiler.command_port, "log");
 
 	if (!mono_native_thread_create (&log_profiler.helper_thread, helper_thread, NULL)) {
 		mono_profiler_printf_err ("Could not start log profiler helper thread");

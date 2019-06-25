@@ -12,6 +12,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\mono\profiler\helper.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\mono\profiler\log.c">
       <Filter>Source Files</Filter>
     </ClCompile>
