@@ -30,7 +30,7 @@ jobs:
               _BuildConfig: Debug
               _architecture: x64
               _framework: netcoreapp
-              _helixQueues: $(netcoreappWindowsQueues)+$(nanoQueues)
+              _helixQueues: $(netcoreappWindowsQueues) # Temporarily disable Nano for issue 38858: +$(nanoQueues)
 
             x86_Release:
               _BuildConfig: Release
