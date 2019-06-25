@@ -419,7 +419,10 @@ struct _MonoDomain {
 
 	/* Information maintained by the JIT engine */
 	gpointer runtime_info;
-	
+
+	/* Information maintained by mono-debug.c */
+	gpointer debug_info;
+
 	/* Contains the compiled runtime invoke wrapper used by finalizers */
 	gpointer            finalize_runtime_invoke;
 
