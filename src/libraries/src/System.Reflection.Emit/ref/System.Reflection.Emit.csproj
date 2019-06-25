@@ -2,6 +2,7 @@
   <PropertyGroup>
     <ProjectGuid>{4FBD1556-7B96-414E-9EA4-85281956D60E}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;netstandard-Debug;netstandard-Release;uap-Debug;uap-Release</Configurations>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Reflection.Emit.cs" />
