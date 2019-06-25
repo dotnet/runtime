@@ -239,7 +239,8 @@ typedef struct IMAGE_COR20_HEADER
     IMAGE_DATA_DIRECTORY    VTableFixups;
     IMAGE_DATA_DIRECTORY    ExportAddressTableJumps;
 
-	// null for ordinary IL images.  NGEN images it points at a code:CORCOMPILE_HEADER structure
+	// null for ordinary IL images. In NGEN images it points at a code:CORCOMPILE_HEADER structure.
+	// In Ready2Run images it points to a READYTORUN_HEADER.
     IMAGE_DATA_DIRECTORY    ManagedNativeHeader;
     
 } IMAGE_COR20_HEADER, *PIMAGE_COR20_HEADER;
