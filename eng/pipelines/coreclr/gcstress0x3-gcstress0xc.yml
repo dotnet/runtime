@@ -1,0 +1,27 @@
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 13 * * 6,0"
+  displayName: Sat and Sun at 5:00 AM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: build-job.yml
+    buildConfig: checked
+    platformGroup: gcstress
+
+- template: /eng/platform-matrix.yml
+  parameters:
+    jobTemplate: test-job.yml
+    buildConfig: checked
+    platformGroup: gcstress
+    helixQueueGroup: ci
+    jobParameters:
+      testGroup: gcstress0x3-gcstress0xc
