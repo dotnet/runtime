@@ -697,6 +697,14 @@ namespace System.Globalization
                 return cd;
             }
 
+            if (cultureName.Length == 1 && (cultureName[0] == 'C' || cultureName[0] == 'c'))
+            {
+                // Always map the "C" locale to Invariant to avoid mapping it to en_US_POSIX on Linux because POSIX
+                // locale collation doesn't support case insensitive comparisons.
+                // We do the same mapping on Windows for the sake of consistency. 
+                return CultureData.Invariant;
+            }
+
             CultureData culture = new CultureData();
             culture._bUseOverrides = useUserOverride;
             culture._sRealName = cultureName;
