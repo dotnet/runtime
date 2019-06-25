@@ -160,15 +160,19 @@ namespace System.Text.Json
         /// <exception cref="InvalidOperationException">
         /// Thrown if this property is set after serialization or deserialization has occurred.
         /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when the max depth is set to a negative value.
+        /// </exception>
         public int MaxDepth
         {
-            get
-            {
-                return _maxDepth;
-            }
+            get => _maxDepth;
             set
             {
                 VerifyMutable();
+
+                if (value < 0)
+                    throw ThrowHelper.GetArgumentOutOfRangeException_MaxDepthMustBePositive(nameof(value));
+
                 _maxDepth = value;
                 EffectiveMaxDepth = (value == 0 ? JsonReaderOptions.DefaultMaxDepth : value);
             }
@@ -224,6 +228,9 @@ namespace System.Text.Json
         /// <exception cref="InvalidOperationException">
         /// Thrown if this property is set after serialization or deserialization has occurred.
         /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when the comment handling enum is set to a value that is not supported (or not within the <see cref="JsonCommentHandling"/> enum range).
+        /// </exception>
         public JsonCommentHandling ReadCommentHandling
         {
             get
@@ -233,10 +240,10 @@ namespace System.Text.Json
             set
             {
                 VerifyMutable();
-                if (value == JsonCommentHandling.Allow)
-                {
-                    throw new ArgumentException(SR.JsonSerializerDoesNotSupportComments, nameof(value));
-                }
+
+                Debug.Assert(value >= 0);
+                if (value > JsonCommentHandling.Skip)
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.JsonSerializerDoesNotSupportComments);
 
                 _readCommentHandling = value;
             }
