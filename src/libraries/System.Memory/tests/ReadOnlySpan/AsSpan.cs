@@ -59,7 +59,7 @@ namespace System.SpanTests
         }
 
         [Theory]
-        [MemberData(nameof(MemoryTestHelpers.StringSliceTestData), MemberType = typeof(MemoryTestHelpers))]
+        [MemberData(nameof(TestHelpers.StringSliceTestData), MemberType = typeof(TestHelpers))]
         public static unsafe void AsSpan_StartAndLength(string text, int start, int length)
         {
             ReadOnlySpan<char> span;
@@ -90,14 +90,14 @@ namespace System.SpanTests
         }
 
         [Theory]
-        [MemberData(nameof(MemoryTestHelpers.StringSlice2ArgTestOutOfRangeData), MemberType = typeof(MemoryTestHelpers))]
+        [MemberData(nameof(TestHelpers.StringSlice2ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
         public static unsafe void AsSpan_2Arg_OutOfRange(string text, int start)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsSpan(start).DontBox());
         }
 
         [Theory]
-        [MemberData(nameof(MemoryTestHelpers.StringSlice3ArgTestOutOfRangeData), MemberType = typeof(MemoryTestHelpers))]
+        [MemberData(nameof(TestHelpers.StringSlice3ArgTestOutOfRangeData), MemberType = typeof(TestHelpers))]
         public static unsafe void AsSpan_3Arg_OutOfRange(string text, int start, int length)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("start", () => text.AsSpan(start, length).DontBox());

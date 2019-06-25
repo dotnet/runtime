@@ -20,51 +20,51 @@ namespace System.Buffers.Binary.Tests
 
             byte byteValue = 0x11;
             MemoryMarshal.Write<byte>(span, ref byteValue);
-            MemoryTestHelpers.Validate<byte>(span, byteValue);
+            TestHelpers.Validate<byte>(span, byteValue);
             Assert.True(MemoryMarshal.TryWrite<byte>(span, ref byteValue));
-            MemoryTestHelpers.Validate<byte>(span, byteValue);
+            TestHelpers.Validate<byte>(span, byteValue);
 
             sbyte sbyteValue = 0x11;
             MemoryMarshal.Write<sbyte>(span, ref sbyteValue);
-            MemoryTestHelpers.Validate<sbyte>(span, sbyteValue);
+            TestHelpers.Validate<sbyte>(span, sbyteValue);
             Assert.True(MemoryMarshal.TryWrite<sbyte>(span, ref sbyteValue));
-            MemoryTestHelpers.Validate<sbyte>(span, sbyteValue);
+            TestHelpers.Validate<sbyte>(span, sbyteValue);
 
             ushort ushortValue = 0x1122;
             MemoryMarshal.Write<ushort>(span, ref ushortValue);
-            MemoryTestHelpers.Validate<ushort>(span, ushortValue);
+            TestHelpers.Validate<ushort>(span, ushortValue);
             Assert.True(MemoryMarshal.TryWrite<ushort>(span, ref ushortValue));
-            MemoryTestHelpers.Validate<ushort>(span, ushortValue);
+            TestHelpers.Validate<ushort>(span, ushortValue);
 
             uint uintValue = 0x11223344;
             MemoryMarshal.Write<uint>(span, ref uintValue);
-            MemoryTestHelpers.Validate<uint>(span, uintValue);
+            TestHelpers.Validate<uint>(span, uintValue);
             Assert.True(MemoryMarshal.TryWrite<uint>(span, ref uintValue));
-            MemoryTestHelpers.Validate<uint>(span, uintValue);
+            TestHelpers.Validate<uint>(span, uintValue);
 
             ulong ulongValue = 0x1122334455667788;
             MemoryMarshal.Write<ulong>(span, ref ulongValue);
-            MemoryTestHelpers.Validate<ulong>(span, ulongValue);
+            TestHelpers.Validate<ulong>(span, ulongValue);
             Assert.True(MemoryMarshal.TryWrite<ulong>(span, ref ulongValue));
-            MemoryTestHelpers.Validate<ulong>(span, ulongValue);
+            TestHelpers.Validate<ulong>(span, ulongValue);
 
             short shortValue = 0x1122;
             MemoryMarshal.Write<short>(span, ref shortValue);
-            MemoryTestHelpers.Validate<short>(span, shortValue);
+            TestHelpers.Validate<short>(span, shortValue);
             Assert.True(MemoryMarshal.TryWrite<short>(span, ref shortValue));
-            MemoryTestHelpers.Validate<short>(span, shortValue);
+            TestHelpers.Validate<short>(span, shortValue);
 
             int intValue = 0x11223344;
             MemoryMarshal.Write<int>(span, ref intValue);
-            MemoryTestHelpers.Validate<int>(span, intValue);
+            TestHelpers.Validate<int>(span, intValue);
             Assert.True(MemoryMarshal.TryWrite<int>(span, ref intValue));
-            MemoryTestHelpers.Validate<int>(span, intValue);
+            TestHelpers.Validate<int>(span, intValue);
 
             long longValue = 0x1122334455667788;
             MemoryMarshal.Write<long>(span, ref longValue);
-            MemoryTestHelpers.Validate<long>(span, longValue);
+            TestHelpers.Validate<long>(span, longValue);
             Assert.True(MemoryMarshal.TryWrite<long>(span, ref longValue));
-            MemoryTestHelpers.Validate<long>(span, longValue);
+            TestHelpers.Validate<long>(span, longValue);
         }
 
         [Theory]
@@ -289,23 +289,23 @@ namespace System.Buffers.Binary.Tests
             readSbyte = MemoryMarshal.Read<sbyte>(span);
             Assert.Equal<sbyte>(sbyteValue, readSbyte);
 
-            MemoryTestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<short>(_span, ref shortValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<short>(_span, ref shortValue));
             Assert.False(MemoryMarshal.TryWrite<short>(span, ref shortValue));
-            MemoryTestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<int>(_span, ref intValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<int>(_span, ref intValue));
             Assert.False(MemoryMarshal.TryWrite<int>(span, ref intValue));
-            MemoryTestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<long>(_span, ref longValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<long>(_span, ref longValue));
             Assert.False(MemoryMarshal.TryWrite<long>(span, ref longValue));
 
-            MemoryTestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<ushort>(_span, ref ushortValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<ushort>(_span, ref ushortValue));
             Assert.False(MemoryMarshal.TryWrite<ushort>(span, ref ushortValue));
-            MemoryTestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<uint>(_span, ref uintValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<uint>(_span, ref uintValue));
             Assert.False(MemoryMarshal.TryWrite<uint>(span, ref uintValue));
-            MemoryTestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<ulong>(_span, ref ulongValue));
+            TestHelpers.AssertThrows<ArgumentOutOfRangeException, byte>(span, (_span) => MemoryMarshal.Write<ulong>(_span, ref ulongValue));
             Assert.False(MemoryMarshal.TryWrite<ulong>(span, ref ulongValue));
 
-            var structValue = new MemoryTestHelpers.TestValueTypeWithReference { I = 1, S = "1" };
-            MemoryTestHelpers.AssertThrows<ArgumentException, byte>(span, (_span) => MemoryMarshal.Write<MemoryTestHelpers.TestValueTypeWithReference>(_span, ref structValue));
-            MemoryTestHelpers.AssertThrows<ArgumentException, byte>(span, (_span) => MemoryMarshal.TryWrite<MemoryTestHelpers.TestValueTypeWithReference>(_span, ref structValue));
+            var structValue = new TestHelpers.TestValueTypeWithReference { I = 1, S = "1" };
+            TestHelpers.AssertThrows<ArgumentException, byte>(span, (_span) => MemoryMarshal.Write<TestHelpers.TestValueTypeWithReference>(_span, ref structValue));
+            TestHelpers.AssertThrows<ArgumentException, byte>(span, (_span) => MemoryMarshal.TryWrite<TestHelpers.TestValueTypeWithReference>(_span, ref structValue));
         }
     }
 }

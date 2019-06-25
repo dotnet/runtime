@@ -4,7 +4,7 @@
 
 using System.Runtime.InteropServices;
 using Xunit;
-using static System.MemoryTestHelpers;
+using static System.TestHelpers;
 
 namespace System.SpanTests
 {

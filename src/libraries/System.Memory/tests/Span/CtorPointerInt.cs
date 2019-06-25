@@ -58,7 +58,7 @@ namespace System.SpanTests
                 new Span<int>((void*)null, 0);
                 new Span<int?>((void*)null, 0);
                 AssertExtensions.Throws<ArgumentException>(null, () => new Span<object>((void*)null, 0).DontBox());
-                AssertExtensions.Throws<ArgumentException>(null, () => new Span<MemoryTestHelpers.StructWithReferences>((void*)null, 0).DontBox());
+                AssertExtensions.Throws<ArgumentException>(null, () => new Span<TestHelpers.StructWithReferences>((void*)null, 0).DontBox());
             }
         }
     }

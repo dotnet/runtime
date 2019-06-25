@@ -141,10 +141,10 @@ namespace System.MemoryTests
         {
             Memory<int> memory;
 
-            memory = MemoryTestHelpers.DangerousCreateMemory<int>(new int[4], 0, 5);
+            memory = TestHelpers.DangerousCreateMemory<int>(new int[4], 0, 5);
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Span.DontBox());
 
-            memory = MemoryTestHelpers.DangerousCreateMemory<int>(new int[4], 3, 2);
+            memory = TestHelpers.DangerousCreateMemory<int>(new int[4], 3, 2);
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Span.DontBox());
         }
 
@@ -153,10 +153,10 @@ namespace System.MemoryTests
         {
             Memory<char> memory;
 
-            memory = MemoryTestHelpers.DangerousCreateMemory<char>("1234", 0, 5);
+            memory = TestHelpers.DangerousCreateMemory<char>("1234", 0, 5);
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Span.DontBox());
 
-            memory = MemoryTestHelpers.DangerousCreateMemory<char>("1234", 3, 2);
+            memory = TestHelpers.DangerousCreateMemory<char>("1234", 3, 2);
             Assert.Throws<ArgumentOutOfRangeException>(() => memory.Span.DontBox());
         }
     }
