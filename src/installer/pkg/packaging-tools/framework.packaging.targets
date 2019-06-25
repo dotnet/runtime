@@ -186,7 +186,7 @@
       this itself because it would miss the cache of finished builds.
     -->
     <MSBuild
-      Projects="@(ProjectReference);@(WaitOnlyProjectReference)"
+      Projects="@(ProjectReference)"
       Targets="Build" />
 
     <MSBuild
