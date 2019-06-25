@@ -10,8 +10,8 @@ namespace System.Text.Json
     public enum JsonCommentHandling : byte
     {
         Disallow = (byte)0,
-        Allow = (byte)1,
-        Skip = (byte)2,
+        Skip = (byte)1,
+        Allow = (byte)2,
     }
     public sealed partial class JsonDocument : System.IDisposable
     {

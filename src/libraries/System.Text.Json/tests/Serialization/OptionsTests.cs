@@ -199,12 +199,26 @@ namespace System.Text.Json.Serialization.Tests
             int value = JsonSerializer.Parse<int>("1 /* commment */", options);
         }
 
-        [Fact]
-        public static void ReadCommentHandlingDoesNotSupportAllow()
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(JsonCommentHandling.Allow)]
+        [InlineData(3)]
+        [InlineData(byte.MaxValue)]
+        [InlineData(byte.MaxValue + 3)] // Other values, like byte.MaxValue + 1 overflows to 0 (i.e. JsonCommentHandling.Disallow), which is valid.
+        [InlineData(byte.MaxValue + 4)]
+        public static void ReadCommentHandlingDoesNotSupportAllow(int enumValue)
         {
             var options = new JsonSerializerOptions();
 
-            Assert.Throws<ArgumentException>(() => options.ReadCommentHandling = JsonCommentHandling.Allow);
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.ReadCommentHandling = (JsonCommentHandling)enumValue);
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        public static void TestDepthInvalid(int depth)
+        {
+            var options = new JsonSerializerOptions();
+            Assert.Throws<ArgumentOutOfRangeException>("value", () => options.MaxDepth = depth);
         }
 
         [Fact]
