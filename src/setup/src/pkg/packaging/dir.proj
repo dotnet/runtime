@@ -15,7 +15,7 @@
 
   <Target Name="Build" DependsOnTargets="BuildInstallers;BuildCombinedInstallers" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
   <Target Name="BuildInstallers" DependsOnTargets="$(PackageTargets)" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
-  <Target Name="BuildCombinedInstallers" DependsOnTargets="GenerateCombinedInstallers" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
+  <Target Name="BuildCombinedInstallers" DependsOnTargets="GenerateCombinedInstallers;GenerateVSNugetPackages" Condition="'$(DOTNET_BUILD_SKIP_PACKAGING)' != 'true'" />
 
   <Target Name="InitPackage">
     <ItemGroup>
@@ -214,4 +214,83 @@
           Condition="'@(PackageProjects)' != ''" />
   </Target>
 
-</Project>
+  <Target Name="GenerateVSNugetPackages"
+          Condition="'$(OS)' == 'Windows_NT' AND '$(TargetArchitecture)' != 'arm' AND '$(TargetArchitecture)' != 'arm64'"
+          DependsOnTargets="SetupVSNugetPackages;GenerateInstallers;GenerateProjectInstallers;GenerateCombinedInstallers"
+          Inputs="@(SdkMsiComponent->'%(MsiInstallerFile)');
+                    $(NuSpecFile);
+                    $(GenerateNupkgPowershellScript)"
+          Outputs="@(SdkMsiComponent->'$(PackageOutputPath)%(ComponentId).%(ComponentVersion).nupkg')">
+
+    <Exec Command="powershell -NoProfile -NoLogo $(GenerateNupkgPowershellScript) ^
+                      '%(SdkMsiComponent.MsiInstallerFile)' ^
+                      '@(SdkMsiComponent->'%(ComponentVersion)')' ^
+                      '$(NuSpecFile)' ^
+                      '@(SdkMsiComponent->'$(PackageOutputPath)%(ComponentId).%(ComponentVersion).nupkg')' ^
+                      '$(TargetArchitecture)' ^
+                      '@(SdkMsiComponent->'%(ComponentId)')' ^
+                      '@(SdkMsiComponent->'%(ComponentFriendlyName)')' ^
+                      '$(ProjectUrl)' ^
+                      '$(BinDir)'" />
+  </Target>
+  
+  <Target Name="SetupVSNugetPackages">
+      <PropertyGroup>
+        <NuSpecFile>$(MSBuildThisFileDirectory)windows/vscomponents/VS.Redist.Common.Component.nuspec</NuSpecFile>
+        <GenerateNupkgPowershellScript>$(MSBuildThisFileDirectory)windows/vscomponents/generatenupkg.ps1</GenerateNupkgPowershellScript>
+        <ProjectUrl>https://github.com/dotnet/core-setup</ProjectUrl>
+      </PropertyGroup>
+
+      <ItemGroup>
+        <SdkMsiComponent Include="HostFxrMsiNupkg">
+          <MsiInstallerFile>$(HostFxrInstallerFile)</MsiInstallerFile>
+          <ComponentId>VS.Redist.Common.NetCore.HostFXR.$(TargetArchitecture).$(NETCoreAppFrameworkVersion)</ComponentId>
+          <ComponentVersion>$(SharedFrameworkNugetVersion)</ComponentVersion>
+          <ComponentFriendlyName>$(NETCoreAppFrameworkVersion) .NET Core HostFX Resolver</ComponentFriendlyName>
+        </SdkMsiComponent>
+        <SdkMsiComponent Include="AppHostPackMsiNupkg">
+          <MsiInstallerFile>$(AppHostPackInstallerFile)</MsiInstallerFile>
+          <ComponentId>VS.Redist.Common.NetCore.AppHostPack.$(TargetArchitecture).$(NETCoreAppFrameworkVersion)</ComponentId>
+          <ComponentVersion>$(SharedFrameworkNugetVersion)</ComponentVersion>
+          <ComponentFriendlyName>$(NETCoreAppFrameworkVersion) .NET Core AppHost Pack</ComponentFriendlyName>
+        </SdkMsiComponent>
+        <SdkMsiComponent Include="SharedFrameworkMsiNupkg">
+          <MsiInstallerFile>$(SharedFrameworkInstallerFile)</MsiInstallerFile>
+          <ComponentId>VS.Redist.Common.NetCore.SharedFramework.$(TargetArchitecture).$(NETCoreAppFrameworkVersion)</ComponentId>
+          <ComponentVersion>$(SharedFrameworkNugetVersion)</ComponentVersion>
+          <ComponentFriendlyName>$(NETCoreAppFrameworkVersion) .NET Core SharedFramework</ComponentFriendlyName>
+        </SdkMsiComponent>
+        <SdkMsiComponent Include="SharedHostMsiNupkg">
+          <MsiInstallerFile>$(SharedHostInstallerFile)</MsiInstallerFile>
+          <ComponentId>VS.Redist.Common.NetCore.SharedHost.$(TargetArchitecture).$(NETCoreAppFrameworkVersion)</ComponentId>
+          <ComponentVersion>$(SharedFrameworkNugetVersion)</ComponentVersion>
+          <ComponentFriendlyName>$(NETCoreAppFrameworkVersion) .NET Core SharedHost</ComponentFriendlyName>
+        </SdkMsiComponent>
+        <SdkMsiComponent Include="NetStandardTargetingPackMsiNupkg">
+          <MsiInstallerFile>$(NetStandardTargetingPackInstallerFile)</MsiInstallerFile>
+          <ComponentId>VS.Redist.Common.NetStandard.TargetingPack.$(TargetArchitecture).$(NetStandardProductBandVersion)</ComponentId>
+          <ComponentVersion>$(NetStandardProductBandVersion).$(PatchVersion)$(ProductVersionSuffix)</ComponentVersion>
+          <ComponentFriendlyName>$(NetStandardProductBandVersion) .NET Standard TargetingPack</ComponentFriendlyName>
+        </SdkMsiComponent>
+        <SdkMsiComponent Include="NetCoreTargetingPackMsiNupkg">
+          <MsiInstallerFile>$(TargetingPackInstallerFile)</MsiInstallerFile>
+          <ComponentId>VS.Redist.Common.NetCore.TargetingPack.$(TargetArchitecture).$(NETCoreAppFrameworkVersion)</ComponentId>
+          <ComponentVersion>$(SharedFrameworkNugetVersion)</ComponentVersion>
+          <ComponentFriendlyName>$(NETCoreAppFrameworkVersion) .NET Core TargetingPack</ComponentFriendlyName>
+        </SdkMsiComponent>
+        <SdkMsiComponent Include="WindowsDesktopMsiNupkg">
+          <MsiInstallerFile>$(WindowsDesktopSharedFrameworkInstallerFile)</MsiInstallerFile>
+          <ComponentId>VS.Redist.Common.WindowsDesktop.SharedFramework.$(TargetArchitecture).$(NETCoreAppFrameworkVersion)</ComponentId>
+          <ComponentVersion>$(SharedFrameworkNugetVersion)</ComponentVersion>
+          <ComponentFriendlyName>$(NETCoreAppFrameworkVersion) WindowsDesktop SharedFramework</ComponentFriendlyName>
+        </SdkMsiComponent>
+        <SdkMsiComponent Include="WindowsDesktopTargetingPackMsiNupkg">
+          <MsiInstallerFile>$(WindowsDesktopTargetingPackInstallerFile)</MsiInstallerFile>
+          <ComponentId>VS.Redist.Common.WindowsDesktop.TargetingPack.$(TargetArchitecture).$(NETCoreAppFrameworkVersion)</ComponentId>
+          <ComponentVersion>$(SharedFrameworkNugetVersion)</ComponentVersion>
+          <ComponentFriendlyName>$(NETCoreAppFrameworkVersion) WindowsDesktop TargetingPack</ComponentFriendlyName>
+        </SdkMsiComponent>
+      </ItemGroup>
+    </Target>
+
+  </Project>
