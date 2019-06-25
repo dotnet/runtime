@@ -2,92 +2,64 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
 {
-    internal static class MemberAccessor
+    internal abstract class MemberAccessor
     {
-        private delegate TProperty GetProperty<TClass, TProperty>(TClass obj);
-        private delegate TProperty GetPropertyByRef<TClass, TProperty>(ref TClass obj);
+        public abstract JsonClassInfo.ConstructorDelegate CreateConstructor(Type classType);
 
-        private delegate void SetProperty<TClass, TProperty>(TClass obj, TProperty value);
-        private delegate void SetPropertyByRef<TClass, TProperty>(ref TClass obj, TProperty value);
+        public abstract object ImmutableCollectionCreateRange(Type constructingType, Type elementType);
 
-        private delegate Func<object, TProperty> GetPropertyByRefFactory<TClass, TProperty>(GetPropertyByRef<TClass, TProperty> set);
-        private delegate Action<object, TProperty> SetPropertyByRefFactory<TClass, TProperty>(SetPropertyByRef<TClass, TProperty> set);
+        public abstract object ImmutableDictionaryCreateRange(Type constructingType, Type elementType);
 
-        private static readonly MethodInfo s_createStructPropertyGetterMethod = new GetPropertyByRefFactory<int, int>(CreateStructPropertyGetter)
-            .Method.GetGenericMethodDefinition();
-
-        private static readonly MethodInfo s_createStructPropertySetterMethod = new SetPropertyByRefFactory<int, int>(CreateStructPropertySetter)
-            .Method.GetGenericMethodDefinition();
-
-        internal static Func<object, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo)
+        protected MethodInfo ImmutableCollectionCreateRangeMethod(Type constructingType, Type elementType)
         {
-            MethodInfo getMethodInfo = propertyInfo.GetGetMethod();
+            MethodInfo createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
 
-            if (typeof(TClass).IsValueType)
+            if (createRangeMethod == null)
             {
-                var factory = CreateDelegate<GetPropertyByRefFactory<TClass, TProperty>>(s_createStructPropertyGetterMethod.MakeGenericMethod(typeof(TClass), typeof(TProperty)));
-                var propertyGetter = CreateDelegate<GetPropertyByRef<TClass, TProperty>>(getMethodInfo);
-
-                return factory(propertyGetter);
+                return null;
             }
-            else
+
+            return createRangeMethod.MakeGenericMethod(elementType);
+        }
+
+        protected MethodInfo ImmutableDictionaryCreateRangeMethod(Type constructingType, Type elementType)
+        {
+            MethodInfo createRangeMethod = FindImmutableCreateRangeMethod(constructingType);
+
+            if (createRangeMethod == null)
             {
-                var propertyGetter = CreateDelegate<GetProperty<TClass, TProperty>>(getMethodInfo);
-                return delegate (object obj)
+                return null;
+            }
+
+            return createRangeMethod.MakeGenericMethod(typeof(string), elementType);
+        }
+
+        private MethodInfo FindImmutableCreateRangeMethod(Type constructingType)
+        {
+            MethodInfo[] constructingTypeMethods = constructingType.GetMethods();
+
+            foreach (MethodInfo method in constructingTypeMethods)
+            {
+                if (method.Name == "CreateRange" && method.GetParameters().Length == 1)
                 {
-                    return propertyGetter((TClass)obj);
-                };
+                    return method;
+                }
             }
+
+            // This shouldn't happen because constructingType should be an immutable type with
+            // a CreateRange method. `null` being returned here will cause a JsonException to be
+            // thrown when the desired CreateRange delegate is about to be invoked.
+            Debug.Fail("Could not create the appropriate CreateRange method.");
+            return null;
         }
 
-        internal static Action<object, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo)
-        {
-            MethodInfo setMethodInfo = propertyInfo.GetSetMethod();
+        public abstract Func<object, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo);
 
-            if (typeof(TClass).IsValueType)
-            {
-                var factory = CreateDelegate<SetPropertyByRefFactory<TClass, TProperty>>(s_createStructPropertySetterMethod.MakeGenericMethod(typeof(TClass), typeof(TProperty)));
-                var propertySetter = CreateDelegate<SetPropertyByRef<TClass, TProperty>>(setMethodInfo);
-
-                return factory(propertySetter);
-            }
-            else
-            {
-                var propertySetter = CreateDelegate<SetProperty<TClass, TProperty>>(setMethodInfo);
-                return delegate (object obj, TProperty value)
-                {
-                    propertySetter((TClass)obj, value);
-                };
-            }
-        }
-
-        private static TDelegate CreateDelegate<TDelegate>(MethodInfo methodInfo)
-            where TDelegate : Delegate
-        {
-            return (TDelegate)Delegate.CreateDelegate(typeof(TDelegate), methodInfo);
-        }
-
-        private static Func<object, TProperty> CreateStructPropertyGetter<TClass, TProperty>(GetPropertyByRef<TClass, TProperty> get)
-            where TClass : struct
-        {
-            return delegate (object obj)
-            {
-                return get(ref Unsafe.Unbox<TClass>(obj));
-            };
-        }
-
-        private static Action<object, TProperty> CreateStructPropertySetter<TClass, TProperty>(SetPropertyByRef<TClass, TProperty> set)
-            where TClass : struct
-        {
-            return delegate (object obj, TProperty value)
-            {
-                set(ref Unsafe.Unbox<TClass>(obj), value);
-            };
-        }
+        public abstract Action<object, TProperty> CreatePropertySetter<TClass, TProperty>(PropertyInfo propertyInfo);
     }
 }
