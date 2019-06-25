@@ -137,7 +137,7 @@
 
   <Target Name="GenerateReferenceSource">
     <PropertyGroup>
-      <_RefSourceFileOutputPath>$(MSBuildProjectDirectory)/../ref/$(AssemblyName).cs</_RefSourceFileOutputPath>
+      <_RefSourceFileOutputPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</_RefSourceFileOutputPath>
       <_ExcludeAPIList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</_ExcludeAPIList>
       <_LicenseHeaderTxtPath>$(RepositoryEngineeringDir)LicenseHeader.txt</_LicenseHeaderTxtPath>
     </PropertyGroup>
@@ -145,7 +145,7 @@
     <PropertyGroup>
       <_GenAPICmd>$(_GenAPICommand)</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) "@(IntermediateAssembly)"</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) --lib-path "$(RefPath)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --lib-path "$(RefPath.Trim('\/'))"</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) --out "$(_RefSourceFileOutputPath)"</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) --exclude-attributes-list "$(_ExcludeAPIList)"</_GenAPICmd>
       <_GenAPICmd>$(_GenAPICmd) --header-file "$(_LicenseHeaderTxtPath)"</_GenAPICmd>
