@@ -79,14 +79,14 @@ enum EtwThreadFlags
 // if the fields in the event are not cheap to calculate
 //
 #define ETW_EVENT_ENABLED(Context, EventDescriptor) \
-    ((MCGEN_ENABLE_CHECK(Context.EtwProvider, EventDescriptor)) || EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword))
+    ((Context.EtwProvider->IsEnabled && McGenEventXplatEnabled(Context.EtwProvider, &EventDescriptor)) || EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword))
 
 //
 // Use this macro to check if a category of events is enabled
 //
 
 #define ETW_CATEGORY_ENABLED(Context, Level, Keyword) \
-    ((Context.EtwProvider.IsEnabled && McGenEventProviderEnabled(&(Context.EtwProvider), Level, Keyword)) || EventPipeHelper::IsEnabled(Context, Level, Keyword))
+    ((Context.EtwProvider->IsEnabled && McGenEventProviderEnabled(Context.EtwProvider, Level, Keyword)) || EventPipeHelper::IsEnabled(Context, Level, Keyword))
 
 
 // This macro only checks if a provider is enabled
@@ -178,7 +178,7 @@ struct ProfilingScanContext;
 // Use this macro to check if ETW is initialized and the event is enabled
 //
 #define ETW_TRACING_ENABLED(Context, EventDescriptor) \
-    ((Context.EtwProvider.IsEnabled && ETW_TRACING_INITIALIZED(Context.EtwProvider.RegistrationHandle) && ETW_EVENT_ENABLED(Context, EventDescriptor))|| \
+    ((Context.EtwProvider->IsEnabled && ETW_TRACING_INITIALIZED(Context.EtwProvider->RegistrationHandle) && ETW_EVENT_ENABLED(Context, EventDescriptor))|| \
         EventPipeHelper::IsEnabled(Context, EventDescriptor.Level, EventDescriptor.Keyword))
 
 //
@@ -190,7 +190,7 @@ struct ProfilingScanContext;
 // Use this macro to check if ETW is initialized and the category is enabled
 //
 #define ETW_TRACING_CATEGORY_ENABLED(Context, Level, Keyword) \
-    (ETW_TRACING_INITIALIZED(Context.EtwProvider.RegistrationHandle) && ETW_CATEGORY_ENABLED(Context, Level, Keyword))
+    (ETW_TRACING_INITIALIZED(Context.EtwProvider->RegistrationHandle) && ETW_CATEGORY_ENABLED(Context, Level, Keyword))
 
 #define ETWOnStartup(StartEventName, EndEventName) \
     ETWTraceStartup trace##StartEventName##(Microsoft_Windows_DotNETRuntimePrivateHandle, &StartEventName, &StartupId, &EndEventName, &StartupId);
