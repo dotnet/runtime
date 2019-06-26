@@ -69,6 +69,17 @@ namespace System.Text.Json
             _tokenType = JsonTokenType.Number;
         }
 
+        internal void WriteNumber(JsonEncodedText propertyName, ReadOnlySpan<byte> utf8FormattedNumber)
+        {
+            JsonWriterHelper.ValidateValue(utf8FormattedNumber);
+            JsonWriterHelper.ValidateNumber(utf8FormattedNumber);
+
+            WriteNumberByOptions(propertyName.EncodedUtf8Bytes, utf8FormattedNumber);
+
+            SetFlagToAddListSeparatorBeforeNextItem();
+            _tokenType = JsonTokenType.Number;
+        }
+
         private void WriteNumberEscape(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> value)
         {
             int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName);
