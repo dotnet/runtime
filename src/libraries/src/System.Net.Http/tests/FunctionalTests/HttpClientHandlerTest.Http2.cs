@@ -601,8 +601,10 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task CompletedResponse_FrameReceived_ConnectionError()
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task CompletedResponse_FrameReceived_Ignored(bool sendDataFrame)
         {
             using (var server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
@@ -622,19 +624,20 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 // Send a frame on the now-closed stream.
-                DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, streamId);
+                Frame invalidFrame = ConstructInvalidFrameForClosedStream(streamId, sendDataFrame);
                 await connection.WriteFrameAsync(invalidFrame);
 
-                if (!IsWinHttpHandler)
-                {
-                    // The client should close the connection as this is a fatal connection level error.
-                    Assert.Null(await connection.ReadFrameAsync(TimeSpan.FromSeconds(30)));
-                }
+                // Pingpong to ensure the frame is processed and ignored
+                await connection.PingPong();
+
+                await ValidateConnection(client, server.Address, connection);
             }
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task EmptyResponse_FrameReceived_ConnectionError()
+        [ConditionalTheory(nameof(SupportsAlpn))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task EmptyResponse_FrameReceived_Ignored(bool sendDataFrame)
         {
             using (var server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
@@ -651,14 +654,13 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
                 // Send a frame on the now-closed stream.
-                DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, streamId);
+                Frame invalidFrame = ConstructInvalidFrameForClosedStream(streamId, sendDataFrame);
                 await connection.WriteFrameAsync(invalidFrame);
 
-                if (!IsWinHttpHandler)
-                {
-                    // The client should close the connection as this is a fatal connection level error.
-                    Assert.Null(await connection.ReadFrameAsync(TimeSpan.FromSeconds(30)));
-                }
+                // Pingpong to ensure the frame is processed and ignored
+                await connection.PingPong();
+
+                await ValidateConnection(client, server.Address, connection);
             }
         }
 
@@ -688,15 +690,51 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        private static Frame ConstructInvalidFrameForClosedStream(int streamId, bool dataFrame)
+        {
+            if (dataFrame)
+            {
+                return new DataFrame(new byte[10], FrameFlags.None, 0, streamId);
+            }
+            else
+            {
+                byte[] headers = new byte[] { 0x88 };   // Encoding for ":status: 200"
+                return new HeadersFrame(headers, FrameFlags.EndHeaders, 0, 0, 0, streamId);
+            }
+        }
+
+        // Validate that connection is still usable, by sending a request and receiving a response
+        private static async Task<int> ValidateConnection(HttpClient client, Uri serverAddress, Http2LoopbackConnection connection)
+        {
+            Task<HttpResponseMessage> sendTask = client.GetAsync(serverAddress);
+
+            int streamId = await connection.ReadRequestHeaderAsync();
+            await connection.SendDefaultResponseAsync(streamId);
+
+            HttpResponseMessage response = await sendTask;
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            return streamId;
+        }
+
         public static IEnumerable<object[]> ValidAndInvalidProtocolErrors() =>
             Enum.GetValues(typeof(ProtocolErrors))
             .Cast<ProtocolErrors>()
             .Concat(new[] { (ProtocolErrors)12345 })
             .Select(p => new object[] { p });
 
+        public static IEnumerable<object[]> ValidAndInvalidProtocolErrorsAndBool()
+        {
+            foreach (object[] args in ValidAndInvalidProtocolErrors())
+            {
+                yield return args.Append(true).ToArray();
+                yield return args.Append(false).ToArray();
+            }
+        }
+
         [ConditionalTheory(nameof(SupportsAlpn))]
-        [MemberData(nameof(ValidAndInvalidProtocolErrors))]
-        public async Task ResetResponseStream_FrameReceived_ConnectionError(ProtocolErrors error)
+        [MemberData(nameof(ValidAndInvalidProtocolErrorsAndBool))]
+        public async Task ResetResponseStream_FrameReceived_Ignored(ProtocolErrors error, bool dataFrame)
         {
             using (var server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
@@ -714,14 +752,13 @@ namespace System.Net.Http.Functional.Tests
                 await AssertProtocolErrorAsync(sendTask, error);
 
                 // Send a frame on the now-closed stream.
-                DataFrame invalidFrame = new DataFrame(new byte[10], FrameFlags.None, 0, streamId);
+                Frame invalidFrame = ConstructInvalidFrameForClosedStream(streamId, dataFrame);
                 await connection.WriteFrameAsync(invalidFrame);
 
-                if (!IsWinHttpHandler)
-                {
-                    // The client should close the connection as this is a fatal connection level error.
-                    Assert.Null(await connection.ReadFrameAsync(TimeSpan.FromSeconds(30)));
-                }
+                // Pingpong to ensure the frame is processed and ignored
+                await connection.PingPong();
+
+                await ValidateConnection(client, server.Address, connection);
             }
         }
 
