@@ -196,6 +196,8 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
 	if (!GetThreadContext (handle, &context)) {
 		THREADS_SUSPEND_DEBUG ("SUSPEND FAILED (GetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (id), GetLastError ());
+		result = ResumeThread (handle);
+		g_assert (result == 1);
 		return FALSE;
 	}
 
