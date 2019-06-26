@@ -12,6 +12,7 @@
 
 #if defined(FEATURE_APPHOST)
 #include "cli/apphost/bundle/bundle_runner.h"
+#include "cli/apphost/bundle/marker.h"
 
 #define CURHOST_TYPE    _X("apphost")
 #define CUREXE_PKG_VER  COMMON_HOST_PKG_VER
@@ -41,7 +42,7 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     constexpr int EMBED_SZ = sizeof(EMBED_HASH_FULL_UTF8) / sizeof(EMBED_HASH_FULL_UTF8[0]);
     constexpr int EMBED_MAX = (EMBED_SZ > 1025 ? EMBED_SZ : 1025); // 1024 DLL name length, 1 NUL
 
-    // Contains the embed hash value at compile time or the managed DLL name replaced by "dotnet build".
+    // Contains the EMBED_HASH_FULL_UTF8 value at compile time or the managed DLL name replaced by "dotnet build".
     // Must not be 'const' because std::string(&embed[0]) below would bind to a const string ctor plus length
     // where length is determined at compile time (=64) instead of the actual length of the string at runtime.
     static char embed[EMBED_MAX] = EMBED_HASH_FULL_UTF8;     // series of NULs followed by embed hash string
@@ -72,6 +73,7 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     trace::info(_X("The managed DLL bound to this executable is: '%s'"), app_dll->c_str());
     return true;
 }
+
 #elif !defined(FEATURE_LIBHOST)
 #define CURHOST_TYPE    _X("dotnet")
 #define CUREXE_PKG_VER  HOST_PKG_VER
@@ -112,23 +114,22 @@ int exe_start(const int argc, const pal::char_t* argv[])
         requires_v2_hostfxr_interface = true;
     }
 
-    bundle::bundle_runner_t extractor(host_path);
-    StatusCode bundle_status = extractor.extract();
-
-    switch (bundle_status)
+    if (bundle::marker_t::is_bundle())
     {
-    case StatusCode::Success:
+        bundle::bundle_runner_t extractor(host_path);
+        StatusCode bundle_status = extractor.extract();
+
+        if (bundle_status != StatusCode::Success)
+        {
+            trace::error(_X("A fatal error was encountered. Could not extract contents of the bundle"));
+            return bundle_status;
+        }
+
         app_path.assign(extractor.get_extraction_dir());
-        break;
-
-    case StatusCode::AppHostExeNotBundle:
+    }
+    else
+    {
         app_path.assign(get_directory(host_path));
-        break;
-
-    case StatusCode::BundleExtractionFailure:
-    default:
-        trace::error(_X("A fatal error was encountered. Could not extract contents of the bundle"));
-        return StatusCode::AppHostExeNotBoundFailure;
     }
 
     append_path(&app_path, embedded_app_name.c_str());
@@ -253,21 +254,10 @@ pal::string_t g_buffered_errors;
 
 void buffering_trace_writer(const pal::char_t* message)
 {
+    // Add to buffer for later use.
     g_buffered_errors.append(message).append(_X("\n"));
-}
-
-// Determines if the current module (should be the apphost.exe) is marked as Windows GUI application
-// in case it's not a GUI application (so should be CUI) or in case of any error the function returns false.
-bool get_windows_graphical_user_interface_bit()
-{
-    HMODULE module = ::GetModuleHandleW(NULL);
-    BYTE *bytes = (BYTE *)module;
-
-    // https://en.wikipedia.org/wiki/Portable_Executable
-    UINT32 pe_header_offset = ((IMAGE_DOS_HEADER *)bytes)->e_lfanew;
-    UINT16 subsystem = ((IMAGE_NT_HEADERS *)(bytes + pe_header_offset))->OptionalHeader.Subsystem;
-
-    return subsystem == IMAGE_SUBSYSTEM_WINDOWS_GUI;
+    // Also write to stderr immediately
+    pal::err_fputs(message);
 }
 
 #endif
@@ -291,28 +281,9 @@ int main(const int argc, const pal::char_t* argv[])
     }
 
 #if defined(_WIN32) && defined(FEATURE_APPHOST)
-    if (get_windows_graphical_user_interface_bit())
-    {
-        pal::string_t env_value;
-        bool gui_errors_disabled = false;
-
-        if (pal::getenv(_X("DOTNET_DISABLE_GUI_ERRORS"), &env_value))
-        {
-            gui_errors_disabled = pal::xtoi(env_value.c_str()) == 1;
-        }
-
-        if (!gui_errors_disabled)
-        {
-            trace::verbose(_X("Redirecting errors to custom writer."));
-            // If this is a GUI application, buffer errors to display them later. Without this any errors are effectively lost
-            // unless the caller explicitly redirects stderr. This leads to bad experience of running the GUI app and nothing happening.
-            trace::set_error_writer(buffering_trace_writer);
-        }
-        else
-        {
-            trace::verbose(_X("Gui errors disabled, keeping errors in stderr."));
-        }
-    }
+    trace::verbose(_X("Redirecting errors to custom writer."));
+    // Buffer errors to use them later.
+    trace::set_error_writer(buffering_trace_writer);
 #endif
 
     int exit_code = exe_start(argc, argv);
@@ -324,19 +295,25 @@ int main(const int argc, const pal::char_t* argv[])
     // No need to unregister the error writer since we're exiting anyway.
     if (!g_buffered_errors.empty())
     {
-        // If there are errors buffered, display them as a dialog. We only buffer if there's no console attached.
+        // If there are errors buffered, write them to the Windows Event Log.
+        pal::string_t executable_path;
         pal::string_t executable_name;
-        if (pal::get_own_executable_path(&executable_name))
+        if (pal::get_own_executable_path(&executable_path))
         {
-            executable_name = get_filename(executable_name);
+            executable_name = get_filename(executable_path);
         }
 
-        trace::verbose(_X("Creating a GUI message box with title: '%s' and message: '%s;."), executable_name.c_str(), g_buffered_errors.c_str());
+        auto eventSource = ::RegisterEventSourceW(nullptr, _X(".NET Runtime"));
+        const DWORD traceErrorID = 1023; // Matches CoreCLR ERT_UnmanagedFailFast
+        pal::string_t message;
+        message.append(_X("Description: A .NET Core application failed.\n"));
+        message.append(_X("Application: ")).append(executable_name).append(_X("\n"));
+        message.append(_X("Path: ")).append(executable_path).append(_X("\n"));
+        message.append(_X("Message: ")).append(g_buffered_errors).append(_X("\n"));
 
-        // Flush here so that when the dialog is up, the traces are up to date (specifically when they are redirected to a file).
-        trace::flush();
-
-        ::MessageBoxW(NULL, g_buffered_errors.c_str(), executable_name.c_str(), MB_OK);
+        LPCWSTR messages[] = {message.c_str()};
+        ::ReportEventW(eventSource, EVENTLOG_ERROR_TYPE, 0, traceErrorID, nullptr, 1, 0, messages, nullptr);
+        ::DeregisterEventSource(eventSource);
     }
 #endif
 

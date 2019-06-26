@@ -2,6 +2,9 @@ parameters:
   enableSourceLinkValidation: true
   enableSigningValidation: true
   enableSymbolValidation: true
+  SDLValidationParameters:
+    enable: false
+    params: ''
 
 stages:
 - stage: validate
@@ -52,8 +55,17 @@ stages:
               -GHCommit $(Build.SourceVersion)
               -SourcelinkCliVersion $(SourceLinkCLIVersion)
 
+  - ${{ if eq(parameters.SDLValidationParameters.enable, 'true') }}:
+    - template: /eng/common/templates/job/execute-sdl.yml
+      parameters:
+        additionalParameters: ${{ parameters.SDLValidationParameters.params }}
+
 - template: \eng\common\templates\post-build\channels\public-dev-release.yml
   parameters:
     enableSymbolValidation: ${{ parameters.enableSymbolValidation }}
 
 - template: \eng\common\templates\post-build\channels\public-validation-release.yml
+
+- template: \eng\common\templates\post-build\channels\public-release.yml
+
+- template: \eng\common\templates\post-build\channels\internal-servicing.yml

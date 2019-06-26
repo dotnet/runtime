@@ -1,123 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview7.19320.1">
+    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Targets" Version="3.0.0-preview7.19320.1">
+    <Dependency Name="Microsoft.NETCore.Targets" Version="3.0.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Win32.Registry" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="Microsoft.Win32.Registry" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Win32.SystemEvents" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="Microsoft.Win32.SystemEvents" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Windows.Compatibility" Version="3.0.0-preview7.19320.1">
+    <Dependency Name="Microsoft.Windows.Compatibility" Version="3.0.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.CodeDom" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.CodeDom" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.Configuration.ConfigurationManager" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.Configuration.ConfigurationManager" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.Diagnostics.EventLog" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.Diagnostics.EventLog" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.DirectoryServices" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.DirectoryServices" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.Drawing.Common" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.Drawing.Common" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.IO.FileSystem.AccessControl" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.IO.FileSystem.AccessControl" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.Resources.Extensions" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.Resources.Extensions" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.IO.Packaging" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.IO.Packaging" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.Security.AccessControl" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.Security.AccessControl" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.Security.Cryptography.Cng" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.Security.Cryptography.Cng" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.Security.Cryptography.Pkcs" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.Security.Cryptography.Pkcs" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.Security.Cryptography.ProtectedData" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.Security.Cryptography.ProtectedData" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.Security.Cryptography.Xml" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.Security.Cryptography.Xml" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.Security.Permissions" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.Security.Permissions" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.Security.Principal.Windows" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.Security.Principal.Windows" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.Threading.AccessControl" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.Text.Json" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="System.Windows.Extensions" Version="4.6.0-preview7.19320.1">
+    <Dependency Name="System.Threading.AccessControl" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>468355e66daf9eaeb1978703fa6365cd1e37e644</Sha>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
-    <Dependency Name="NETStandard.Library" Version="2.1.0-prerelease.19321.2">
+    <Dependency Name="System.Windows.Extensions" Version="4.6.0-preview7.19326.2">
+      <Uri>https://github.com/dotnet/corefx</Uri>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
+    </Dependency>
+    <Dependency Name="NETStandard.Library" Version="2.1.0-prerelease.19326.2">
       <Uri>https://github.com/dotnet/standard</Uri>
-      <Sha>7dcfa2f4eb1c6dcef754e0a50db91087c8efbe4d</Sha>
+      <Sha>9433587da16e06a5ad19a72c2985b7fad746aea4</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview7.19321.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.CoreCLR" Version="3.0.0-preview7.19326.1">
       <Uri>https://github.com/dotnet/coreclr</Uri>
-      <Sha>e999f37a83583768aa68ad9fda805088ac9df6b8</Sha>
+      <Sha>d9d31e6b03758abdd1621cf9da6fdd35b778a6fa</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.Private.Winforms" Version="4.8.0-preview7.19319.7" CoherentParentDependency="Microsoft.DotNet.Wpf.DncEng">
+    <Dependency Name="Microsoft.Private.Winforms" Version="4.8.0-preview7.19323.8" CoherentParentDependency="Microsoft.DotNet.Wpf.DncEng">
       <Uri>https://github.com/dotnet/winforms</Uri>
-      <Sha>470d73665c119e8bfcfacf991a95a94bf11c2bdb</Sha>
+      <Sha>4c20bc21ee3538341b1dc863eec6c33e3e528eaf</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Wpf.GitHub" Version="4.8.0-preview7.19319.12" CoherentParentDependency="Microsoft.DotNet.Wpf.DncEng">
+    <Dependency Name="Microsoft.DotNet.Wpf.GitHub" Version="4.8.0-preview7.19324.12" CoherentParentDependency="Microsoft.DotNet.Wpf.DncEng">
       <Uri>https://github.com/dotnet/wpf</Uri>
-      <Sha>3c74b6006fbaf364363cc7be128319e4b1717915</Sha>
+      <Sha>f207fe697fe2a72cc27a2cb745393fd5b24ed9c7</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Wpf.DncEng" Version="4.8.0-preview7.19320.5">
+    <Dependency Name="Microsoft.DotNet.Wpf.DncEng" Version="4.8.0-preview7.19325.4">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-wpf-int</Uri>
-      <Sha>ba91f397a2baed0b423997422af8dfde12e1915f</Sha>
+      <Sha>914f5f71a797720a04c0808e4dd3e50b1fb2f4b6</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="1.0.0-beta.19319.25">
+    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="1.0.0-beta.19326.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>bd50b2bcc787a8c62e2e114fb54704b645cc1c3a</Sha>
+      <Sha>4b3d46cc75969c4e2de5786ec2b10a430b26dd9f</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
