@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace System.Text.Json
@@ -81,6 +82,24 @@ namespace System.Text.Json
                         .ToArray()
 #endif
                 );
+        }
+
+        /// <summary>
+        /// Emulates Dictionary.TryAdd on netstandard.
+        /// </summary>
+        internal static bool TryAdd<TKey, TValue>(Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
+        {
+#if netstandard
+            if (!dictionary.ContainsKey(key))
+            {
+                dictionary[key] = value;
+                return true;
+            }
+
+            return false;
+#else
+            return dictionary.TryAdd(key, value);
+#endif
         }
     }
 }
