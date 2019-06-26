@@ -212,6 +212,12 @@ namespace System.Net.Http
 
                 lock (SyncObject)
                 {
+                    if (_state == StreamState.Aborted)
+                    {
+                        // We could have aborted while processing the header block.
+                        return;
+                    }
+
                     if (name[0] == (byte)':')
                     {
                         if (_state != StreamState.ExpectingHeaders && _state != StreamState.ExpectingStatus)
@@ -317,6 +323,11 @@ namespace System.Net.Http
             {
                 lock (SyncObject)
                 {
+                    if (_state == StreamState.Aborted)
+                    {
+                        return;
+                    }
+
                     if (_state != StreamState.ExpectingStatus && _state != StreamState.ExpectingData)
                     {
                         throw new Http2ProtocolException(SR.Format(SR.net_http_http2_protocol_state, "headers", _state));
@@ -334,6 +345,11 @@ namespace System.Net.Http
                 bool signalWaiter;
                 lock (SyncObject)
                 {
+                    if (_state == StreamState.Aborted)
+                    {
+                        return;
+                    }
+
                     if (_state != StreamState.ExpectingHeaders && _state != StreamState.ExpectingTrailingHeaders && _state != StreamState.ExpectingIgnoredHeaders)
                     {
                         throw new Http2ProtocolException(SR.Format(SR.net_http_http2_protocol_state, "headers", _state));
@@ -386,6 +402,11 @@ namespace System.Net.Http
                 lock (SyncObject)
                 {
                     if (_disposed)
+                    {
+                        return;
+                    }
+
+                    if (_state == StreamState.Aborted)
                     {
                         return;
                     }
@@ -616,7 +637,6 @@ namespace System.Net.Http
                 if (bytesRead != 0)
                 {
                     ExtendWindow(bytesRead);
-                    _connection.ExtendWindow(bytesRead);
                 }
 
                 return bytesRead;
