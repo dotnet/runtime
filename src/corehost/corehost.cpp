@@ -292,7 +292,7 @@ int main(const int argc, const pal::char_t* argv[])
 
 #if defined(_WIN32) && defined(FEATURE_APPHOST)
     // No need to unregister the error writer since we're exiting anyway.
-    if (exit_code != 0)
+    if (!g_buffered_errors.empty())
     {
         // If there are errors buffered, write them to the Windows Event Log.
         pal::string_t executable_path;
@@ -305,7 +305,7 @@ int main(const int argc, const pal::char_t* argv[])
         auto eventSource = ::RegisterEventSourceW(nullptr, _X(".NET Runtime"));
         const DWORD traceErrorID = 1023; // Matches CoreCLR ERT_UnmanagedFailFast
         pal::string_t message;
-        message.append(_X("Description: A .NET Application failed.\n"));
+        message.append(_X("Description: A .NET Core application failed.\n"));
         message.append(_X("Application: ")).append(executable_name).append(_X("\n"));
         message.append(_X("Path: ")).append(executable_path).append(_X("\n"));
         message.append(_X("Message: ")).append(g_buffered_errors).append(_X("\n"));
