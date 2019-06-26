@@ -181,6 +181,7 @@ check-local: $(check_targets)
 EXTRA_DIST = \
 	log.h \
 	aot.h \
+	helper.h \
 	$(PLOG_TESTS_SRC) \
 	ptestrunner.pl \
 	$(suppression_DATA)
