@@ -409,6 +409,7 @@
     <Compile Include="Headers\WarningHeaderValueTest.cs" />
     <Compile Include="HPack\HPackDecoderTest.cs" />
     <Compile Include="HPack\HPackIntegerTest.cs" />
+    <Compile Include="HPack\HuffmanDecodingTests.cs" />
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpRuleParserTest.cs" />
     <Compile Include="MockContent.cs" />

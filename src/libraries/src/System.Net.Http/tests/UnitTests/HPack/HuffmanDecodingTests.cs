@@ -3,31 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Xunit;
+using System.Net.Http.HPack;
 
-namespace System.Net.Http.Functional.Tests
+namespace System.Net.Http.Unit.Tests.HPack
 {
     public class HuffmanDecodingTests
     {
-        delegate int DecodeDelegate(ReadOnlySpan<byte> src, ref byte[] dst);
-
-        private static readonly DecodeDelegate s_decodeDelegate = GetDecodeDelegate();
-
-        private static DecodeDelegate GetDecodeDelegate()
-        {
-            Assembly assembly = typeof(HttpClient).Assembly;
-            Type huffmanType = assembly.GetType("System.Net.Http.HPack.Huffman");
-            MethodInfo decodeMethod = huffmanType.GetMethod("Decode", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-            return (DecodeDelegate)Delegate.CreateDelegate(typeof(DecodeDelegate), decodeMethod);
-        }
-
-        private static int Decode(ReadOnlySpan<byte> source, ref byte[] destination)
-        {
-            return s_decodeDelegate(source, ref destination);
-        }
-
         private static readonly (uint code, int bitLength)[] s_encodingTable = new (uint code, int bitLength)[]
         {
             (0b11111111_11000000_00000000_00000000, 13),
@@ -347,7 +332,7 @@ namespace System.Net.Http.Functional.Tests
             // Worst case decoding is an output byte per 5 input bits, so make the decoded buffer 2 times as big
             byte[] decoded = new byte[encoded.Length * 2];
 
-            int decodedByteCount = Decode(new ReadOnlySpan<byte>(encoded, 0, encodedByteCount), ref decoded);
+            int decodedByteCount = Huffman.Decode(new ReadOnlySpan<byte>(encoded, 0, encodedByteCount), ref decoded);
 
             Assert.Equal(input.Length, decodedByteCount);
             Assert.Equal(input, decoded.Take(decodedByteCount));
@@ -362,7 +347,7 @@ namespace System.Net.Http.Functional.Tests
             // Worst case decoding is an output byte per 5 input bits, so make the decoded buffer 2 times as big
             byte[] decoded = new byte[encoded.Length * 2];
 
-            Assert.Throws(s_huffmanDecodingExceptionType, () => Decode(encoded, ref decoded));
+            Assert.Throws(s_huffmanDecodingExceptionType, () => Huffman.Decode(encoded, ref decoded));
         }
 
         // This input sequence will encode to 17 bits, thus offsetting the next character to encode

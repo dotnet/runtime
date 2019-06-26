@@ -70,12 +70,14 @@ namespace System.Net.Test.Common
     {
         public string Name { get; }
         public string Value { get; }
+        public bool HuffmanEncoded { get; }
         public byte[] Raw { get; }
 
-        public HttpHeaderData(string name, string value, byte[] raw = null)
+        public HttpHeaderData(string name, string value, bool huffmanEncoded = false, byte[] raw = null)
         {
             Name = name;
             Value = value;
+            HuffmanEncoded = huffmanEncoded;
             Raw = raw;
         }
 
