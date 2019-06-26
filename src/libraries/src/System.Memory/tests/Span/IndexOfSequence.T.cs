@@ -238,6 +238,7 @@ namespace System.SpanTests
         {
             Span<string> theStrings = spanInput;
             Assert.Equal(expected, theStrings.IndexOf(searchInput));
+            Assert.Equal(expected, theStrings.IndexOf((ReadOnlySpan<string>)searchInput));
         }
     }
 }

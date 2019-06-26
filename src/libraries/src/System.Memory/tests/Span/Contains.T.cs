@@ -7,12 +7,12 @@ using Xunit;
 namespace System.SpanTests
 {
     // Adapted from IndexOf.T.cs
-    public static partial class ReadOnlySpanTests // .Contains<T>
+    public static partial class SpanTests // .Contains<T>
     {
         [Fact]
         public static void ZeroLengthContains()
         {
-            ReadOnlySpan<int> span = new ReadOnlySpan<int>(Array.Empty<int>());
+            Span<int> span = new Span<int>(Array.Empty<int>());
 
             bool found = span.Contains(0);
             Assert.False(found);
@@ -28,7 +28,7 @@ namespace System.SpanTests
                 {
                     a[i] = 10 * (i + 1);
                 }
-                ReadOnlySpan<int> span = new ReadOnlySpan<int>(a);
+                Span<int> span = new Span<int>(a);
 
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
@@ -53,7 +53,7 @@ namespace System.SpanTests
                 a[length - 1] = 5555;
                 a[length - 2] = 5555;
 
-                ReadOnlySpan<int> span = new ReadOnlySpan<int>(a);
+                Span<int> span = new Span<int>(a);
                 bool found = span.Contains(5555);
                 Assert.True(found);
             }
@@ -71,7 +71,7 @@ namespace System.SpanTests
                 {
                     a[i] = new TInt(10 * (i + 1), log);
                 }
-                ReadOnlySpan<TInt> span = new ReadOnlySpan<TInt>(a);
+                Span<TInt> span = new Span<TInt>(a);
                 bool found = span.Contains(new TInt(9999, log));
                 Assert.False(found);
 
@@ -112,7 +112,7 @@ namespace System.SpanTests
                     a[GuardLength + i] = new TInt(10 * (i + 1), checkForOutOfRangeAccess);
                 }
 
-                ReadOnlySpan<TInt> span = new ReadOnlySpan<TInt>(a, GuardLength, length);
+                Span<TInt> span = new Span<TInt>(a, GuardLength, length);
                 bool found = span.Contains(new TInt(9999, checkForOutOfRangeAccess));
                 Assert.False(found);
             }
@@ -121,7 +121,7 @@ namespace System.SpanTests
         [Fact]
         public static void ZeroLengthContains_String()
         {
-            ReadOnlySpan<string> span = new ReadOnlySpan<string>(Array.Empty<string>());
+            Span<string> span = new Span<string>(Array.Empty<string>());
             bool found = span.Contains("a");
             Assert.False(found);
         }
@@ -136,7 +136,7 @@ namespace System.SpanTests
                 {
                     a[i] = (10 * (i + 1)).ToString();
                 }
-                ReadOnlySpan<string> span = new ReadOnlySpan<string>(a);
+                Span<string> span = new Span<string>(a);
 
                 for (int targetIndex = 0; targetIndex < length; targetIndex++)
                 {
@@ -160,7 +160,7 @@ namespace System.SpanTests
                     string val = (i + 1).ToString();
                     a[i] = val == target ? (target + 1) : val;
                 }
-                ReadOnlySpan<string> span = new ReadOnlySpan<string>(a);
+                Span<string> span = new Span<string>(a);
 
                 bool found = span.Contains(target);
                 Assert.False(found);
@@ -181,7 +181,7 @@ namespace System.SpanTests
                 a[length - 1] = "5555";
                 a[length - 2] = "5555";
 
-                ReadOnlySpan<string> span = new ReadOnlySpan<string>(a);
+                Span<string> span = new Span<string>(a);
                 bool found = span.Contains("5555");
                 Assert.True(found);
             }
@@ -191,7 +191,7 @@ namespace System.SpanTests
         [MemberData(nameof(TestHelpers.ContainsNullData), MemberType = typeof(TestHelpers))]
         public static void ContainsNull_String(string[] spanInput, bool expected)
         {
-            ReadOnlySpan<string> theStrings = spanInput;
+            Span<string> theStrings = spanInput;
             Assert.Equal(expected, theStrings.Contains(null));
         }
     }
