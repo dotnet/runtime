@@ -44,7 +44,7 @@ The #Pdb stream has the following structure:
 
 #### #~ stream 
 
-"#~" stream shall only contain debugging information tables defined above and a copy of the Module table from the type system metadata but no other type system metadata table. The Module table effectively links the debugging metadata to the corresponding type system metadata.
+"#~" stream shall only contain debugging information tables defined above.
  
 References to heaps (strings, blobs, guids) are references to heaps of the debugging metadata. The sizes of references to type system tables are determined using the algorithm described in ECMA-335-II Chapter 24.2.6, except their respective row counts are found in _TypeSystemTableRows_ field of the #Pdb stream.
 
