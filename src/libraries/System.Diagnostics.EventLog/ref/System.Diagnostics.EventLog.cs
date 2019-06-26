@@ -229,9 +229,11 @@ namespace System.Diagnostics.Eventing.Reader
     {
         public EventLogException() { }
         protected EventLogException(int errorCode) { }
+        protected EventLogException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public EventLogException(string message) { }
         public EventLogException(string message, System.Exception innerException) { }
         public override string Message { get { throw null; } }
+        public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
     public sealed partial class EventLogInformation
     {
@@ -248,6 +250,7 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogInvalidDataException : System.Diagnostics.Eventing.Reader.EventLogException
     {
         public EventLogInvalidDataException() { }
+        protected EventLogInvalidDataException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public EventLogInvalidDataException(string message) { }
         public EventLogInvalidDataException(string message, System.Exception innerException) { }
     }
@@ -273,6 +276,7 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogNotFoundException : System.Diagnostics.Eventing.Reader.EventLogException
     {
         public EventLogNotFoundException() { }
+        protected EventLogNotFoundException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public EventLogNotFoundException(string message) { }
         public EventLogNotFoundException(string message, System.Exception innerException) { }
     }
@@ -285,6 +289,7 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogProviderDisabledException : System.Diagnostics.Eventing.Reader.EventLogException
     {
         public EventLogProviderDisabledException() { }
+        protected EventLogProviderDisabledException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public EventLogProviderDisabledException(string message) { }
         public EventLogProviderDisabledException(string message, System.Exception innerException) { }
     }
@@ -316,6 +321,7 @@ namespace System.Diagnostics.Eventing.Reader
     public partial class EventLogReadingException : System.Diagnostics.Eventing.Reader.EventLogException
     {
         public EventLogReadingException() { }
+        protected EventLogReadingException(System.Runtime.Serialization.SerializationInfo serializationInfo, System.Runtime.Serialization.StreamingContext streamingContext) { }
         public EventLogReadingException(string message) { }
         public EventLogReadingException(string message, System.Exception innerException) { }
     }

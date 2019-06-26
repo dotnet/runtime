@@ -6,14 +6,20 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System.Net.Http
 {
+    [Serializable]
     internal class WinHttpException : Win32Exception
     {
         public WinHttpException(int error, string message) : base(error, message)
         {
             this.HResult = ConvertErrorCodeToHR(error);
+        }
+
+        public WinHttpException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
         }
 
         public WinHttpException(int error, string message, Exception innerException) : base(message, innerException)

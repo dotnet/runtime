@@ -7,6 +7,7 @@ using System.Text;
 
 namespace System.Xml.Xsl.XPath
 {
+    [Serializable]
     internal class XPathCompileException : XslLoadException
     {
         public string queryString;
@@ -24,6 +25,22 @@ namespace System.Xml.Xsl.XPath
         internal XPathCompileException(string resId, params string[] args)
             : base(resId, args)
         { } // queryString will be set later
+
+        internal XPathCompileException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
+        {
+            queryString = (string)info.GetValue("QueryString", typeof(string));
+            startChar = (int)info.GetValue("StartChar", typeof(int));
+            endChar = (int)info.GetValue("EndChar", typeof(int));
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("QueryString", queryString);
+            info.AddValue("StartChar", startChar);
+            info.AddValue("EndChar", endChar);
+        }
 
         private enum TrimType
         {
