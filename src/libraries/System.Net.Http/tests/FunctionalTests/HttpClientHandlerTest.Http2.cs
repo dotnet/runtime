@@ -1954,5 +1954,91 @@ namespace System.Net.Http.Functional.Tests
                     }
                 });
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task MaxResponseHeadersLength_Exact_Success(bool huffmanEncode)
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    HttpClientHandler handler = CreateHttpClientHandler();
+                    handler.MaxResponseHeadersLength = 1;
+
+                    using HttpClient client = CreateHttpClient(handler);
+                    using HttpResponseMessage response = await client.GetAsync(uri);
+                },
+                async server =>
+                {
+                    Http2LoopbackConnection con = await server.EstablishConnectionAsync();
+                    int streamId = await con.ReadRequestHeaderAsync();
+
+                    await con.SendResponseHeadersAsync(streamId, isTrailingHeader: true, headers: new[]
+                    {
+                        // 1000 + other strings = 1024
+                        new HttpHeaderData(":status", "200", huffmanEncoded: huffmanEncode),
+                        new HttpHeaderData("padding-header", new string(' ', 1000), huffmanEncoded: huffmanEncode)
+                    });
+
+                    await con.ShutdownIgnoringErrorsAsync(streamId);
+                });
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task MaxResponseHeadersLength_Exceeded_Throws(bool huffmanEncode)
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    HttpClientHandler handler = CreateHttpClientHandler();
+                    handler.MaxResponseHeadersLength = 1;
+
+                    using HttpClient client = CreateHttpClient(handler);
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                },
+                async server =>
+                {
+                    Http2LoopbackConnection con = await server.EstablishConnectionAsync();
+                    int streamId = await con.ReadRequestHeaderAsync();
+
+                    await con.SendResponseHeadersAsync(streamId, isTrailingHeader: true, headers: new[]
+                    {
+                        // 1001 + other strings = 1025
+                        new HttpHeaderData(":status", "200", huffmanEncoded: huffmanEncode),
+                        new HttpHeaderData("padding-header", new string(' ', 1001), huffmanEncoded: huffmanEncode)
+                    });
+
+                    await con.ShutdownIgnoringErrorsAsync(streamId);
+                });
+        }
+
+        [Fact]
+        public async Task MaxResponseHeadersLength_Malicious_Throws()
+        {
+            await Http2LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    HttpClientHandler handler = CreateHttpClientHandler();
+                    handler.MaxResponseHeadersLength = 1;
+
+                    using HttpClient client = CreateHttpClient(handler);
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                },
+                async server =>
+                {
+                    Http2LoopbackConnection con = await server.EstablishConnectionAsync();
+                    int streamId = await con.ReadRequestHeaderAsync();
+
+                    // A small malicious/corrupt payload that expands into two 1GB strings. We don't want HPackDecoder to allocate buffers when they exceed MaxResponseHeadersLength.
+                    byte[] headerData = new byte[] { 0x88, 0x00, 0x7F, 0x81, 0xFF, 0xFF, 0xFF, 0x03, 0x70, 0x6C, 0x61, 0x69, 0x6E, 0x2D, 0x74, 0x65, 0x78, 0x74, 0x7F, 0x81, 0xFF, 0xFF, 0xFF, 0x03, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61, 0x61 };
+                    HeadersFrame frame = new HeadersFrame(headerData, FrameFlags.EndHeaders | FrameFlags.EndStream, 0, 0, 0, streamId);
+
+                    await con.WriteFrameAsync(frame);
+                    await con.ShutdownIgnoringErrorsAsync(streamId);
+                });
+        }
     }
 }

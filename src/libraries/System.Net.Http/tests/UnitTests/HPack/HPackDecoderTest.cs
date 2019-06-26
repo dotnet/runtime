@@ -97,7 +97,7 @@ namespace System.Net.Http.Unit.Tests.HPack
         public HPackDecoderTest()
         {
             _dynamicTable = new DynamicTable(DynamicTableInitialMaxSize);
-            _decoder = new HPackDecoder(DynamicTableInitialMaxSize, _dynamicTable);
+            _decoder = new HPackDecoder(DynamicTableInitialMaxSize, maxResponseHeadersLength: 4096, dynamicTable: _dynamicTable);
         }
 
         void OnHeader(object state, ReadOnlySpan<byte> headerName, ReadOnlySpan<byte> headerValue)
