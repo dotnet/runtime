@@ -43,7 +43,9 @@ namespace System.Text.Json
                 case JsonTokenType.True:
                 case JsonTokenType.False:
                 case JsonTokenType.Null:
-                    return (JsonValueKind)((byte)tokenType - 3);
+                    // This is the offset between the set of literals within JsonValueType and JsonTokenType
+                    // Essentially: JsonTokenType.Null - JsonValueType.Null
+                    return (JsonValueKind)((byte)tokenType - 4);
                 default:
                     Debug.Fail($"No mapping for token type {tokenType}");
                     return JsonValueKind.Undefined;
