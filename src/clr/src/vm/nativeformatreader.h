@@ -42,7 +42,9 @@
 namespace NativeFormat
 {
     class NativeReader;
-    typedef DPTR(NativeReader) PTR_NativeReader;
+    class NativeHashtable;
+    typedef DPTR(NativeReader)      PTR_NativeReader;
+    typedef DPTR(NativeHashtable)   PTR_NativeHashtable;
 
     class NativeReader
     {
@@ -275,6 +277,8 @@ namespace NativeFormat
             _offset = offset;
         }
 
+        bool IsNull() { return _pReader == NULL; }
+
         NativeReader * GetNativeReader() { return _pReader; }
 
         uint GetOffset() { return _offset; }
@@ -481,6 +485,60 @@ namespace NativeFormat
         }
 
         bool IsNull() { return _pReader == NULL; }
+
+        class AllEntriesEnumerator
+        {
+            PTR_NativeHashtable _table;
+            NativeParser        _parser;
+            uint                _currentBucket;
+            uint                _endOffset;
+
+        public:
+            AllEntriesEnumerator() :
+                _table(dac_cast<PTR_NativeHashtable>(nullptr)),
+                _parser(),
+                _currentBucket(0),
+                _endOffset(0)
+            {
+
+            }
+
+            AllEntriesEnumerator(PTR_NativeHashtable table)
+            {
+                _table = table;
+                _currentBucket = 0;
+                if (_table != NULL)
+                {
+                    _parser = _table->GetParserForBucket(_currentBucket, &_endOffset);
+                }
+            }
+
+            NativeParser GetNext()
+            {
+                if (_table == NULL)
+                {
+                    return NativeParser();
+                }
+
+                for (; ; )
+                {
+                    if (_parser.GetOffset() < _endOffset)
+                    {
+                        // Skip hashcode to get to the offset
+                        _parser.GetUInt8();
+                        return _parser.GetParserFromRelativeOffset();
+                    }
+
+                    if (_currentBucket >= _table->_bucketMask)
+                    {
+                        return NativeParser();
+                    }
+
+                    _currentBucket++;
+                    _parser = _table->GetParserForBucket(_currentBucket, &_endOffset);
+                }
+            }
+        };
 
         //
         // The enumerator does not conform to the regular C# enumerator pattern to avoid paying 
