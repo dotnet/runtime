@@ -29,6 +29,8 @@ namespace System.Text.Json
 
         private long _lineNumber;
         private long _bytePositionInLine;
+
+        // bytes consumed in the current segment (not token)
         private int _consumed;
         private bool _inObject;
         private bool _isNotPrimitive;
@@ -2307,7 +2309,7 @@ namespace System.Text.Json
 
         private bool SkipSingleLineComment(ReadOnlySpan<byte> localBuffer, out int idx)
         {
-            idx = localBuffer.IndexOfAny(JsonConstants.LineFeed, JsonConstants.CarriageReturn);
+            idx = FindLineSeparator(localBuffer);
             int toConsume = 0;
             if (idx != -1)
             {
@@ -2324,11 +2326,23 @@ namespace System.Text.Json
                 {
                     if (localBuffer[idx + 1] == JsonConstants.LineFeed)
                     {
-                        toConsume = idx + 1;
+                        toConsume++;
                     }
+
                     goto EndOfComment;
                 }
+
+                if (IsLastSpan)
+                {
+                    goto EndOfComment;
+                }
+                else
+                {
+                    // there might be LF in the next segment
+                    return false;
+                }
             }
+
             if (IsLastSpan)
             {
                 idx = localBuffer.Length;
@@ -2343,13 +2357,58 @@ namespace System.Text.Json
             }
 
         EndOfComment:
-            toConsume += 1;
+            toConsume++;
             _bytePositionInLine = 0;
             _lineNumber++;
 
         Done:
             _consumed += 2 + toConsume;
             return true;
+        }
+
+        private int FindLineSeparator(ReadOnlySpan<byte> localBuffer)
+        {
+            int totalIdx = 0;
+            while (true)
+            {
+                int idx = localBuffer.IndexOfAny(JsonConstants.LineFeed, JsonConstants.CarriageReturn, JsonConstants.StartingByteOfNonStandardSeparator);
+
+                if (idx == -1)
+                {
+                    return -1;
+                }
+
+                totalIdx += idx;
+
+                if (localBuffer[idx] != JsonConstants.StartingByteOfNonStandardSeparator)
+                {
+                    return totalIdx;
+                }
+
+                totalIdx++;
+                localBuffer = localBuffer.Slice(idx + 1);
+
+                ThrowOnDangerousLineSeparator(localBuffer);
+            }
+        }
+
+        // assumes first byte (JsonConstants.StartingByteOfNonStandardSeparator) is already read
+        private void ThrowOnDangerousLineSeparator(ReadOnlySpan<byte> localBuffer)
+        {
+            // \u2028 and \u2029 are considered respectively line and paragraph separators
+            // UTF-8 representation for them is E2, 80, A8/A9
+            // we have already read E2, we need to check for remaining 2 bytes
+
+            if (localBuffer.Length < 2)
+            {
+                return;
+            }
+
+            byte next = localBuffer[1];
+            if (localBuffer[0] == 0x80 && (next == 0xA8 || next == 0xA9))
+            {
+                ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.UnexpectedEndOfLineSeparator);
+            }
         }
 
         private bool SkipMultiLineComment(ReadOnlySpan<byte> localBuffer, out int idx)
