@@ -34,8 +34,8 @@ private:
     // True if a call stack should be captured when writing the event.
     const bool m_needStack;
 
-    // True if the event is current enabled.
-    Volatile<bool> m_enabled;
+    // The ith bit is 1 iff the event is enabled for the ith session
+    Volatile<INT64> m_enabledMask;
 
     // Metadata
     BYTE *m_pMetadata;

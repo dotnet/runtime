@@ -72,11 +72,8 @@ public:
         return ((m_sessions & sessionMask) != 0);
     }
 
-    // Determine if the specified keywords are enabled.
-    bool EventEnabled(INT64 keywords) const;
-
-    // Determine if the specified keywords and level match the configuration.
-    bool EventEnabled(INT64 keywords, EventPipeEventLevel eventLevel) const;
+    // Compute the enabled bit mask, the ith bit is 1 iff an event with the given (provider, keywords, eventLevel) is enabled for the ith session.
+    INT64 ComputeEventEnabledMask(INT64 keywords, EventPipeEventLevel eventLevel) const;
 
     // Create a new event.
     EventPipeEvent* AddEvent(unsigned int eventID, INT64 keywords, unsigned int eventVersion, EventPipeEventLevel level, bool needStack, BYTE *pMetadata = NULL, unsigned int metadataLength = 0);

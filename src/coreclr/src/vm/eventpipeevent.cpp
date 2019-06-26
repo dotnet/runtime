@@ -22,7 +22,7 @@ EventPipeEvent::EventPipeEvent(
                                    m_eventVersion(eventVersion),
                                    m_level(level),
                                    m_needStack(needStack),
-                                   m_enabled(false),
+                                   m_enabledMask(0),
                                    m_pMetadata(nullptr)
 {
     CONTRACTL
@@ -138,7 +138,7 @@ bool EventPipeEvent::NeedStack() const
 bool EventPipeEvent::IsEnabled() const
 {
     LIMITED_METHOD_CONTRACT;
-    return m_enabled;
+    return m_enabledMask != 0;
 }
 
 BYTE *EventPipeEvent::GetMetadata() const
@@ -156,16 +156,15 @@ unsigned int EventPipeEvent::GetMetadataLength() const
 void EventPipeEvent::RefreshState()
 {
     LIMITED_METHOD_CONTRACT;
-    m_enabled = m_pProvider->EventEnabled(m_keywords, m_level);
+    _ASSERTE(EventPipe::IsLockOwnedByCurrentThread());
+    m_enabledMask = m_pProvider->ComputeEventEnabledMask(m_keywords, m_level);
 }
 
 bool EventPipeEvent::IsEnabled(uint64_t sessionMask) const
 {
     LIMITED_METHOD_CONTRACT;
-    _ASSERT(m_pProvider != nullptr);
-    const bool IsProviderEnabled = m_pProvider->IsEnabled(sessionMask);
-    const bool IsEventEnabled = m_pProvider->EventEnabled(m_keywords, m_level);
-    return (IsProviderEnabled && IsEventEnabled);
+    _ASSERTE(m_pProvider != nullptr);
+    return (m_pProvider->IsEnabled(sessionMask) && (m_enabledMask & sessionMask) != 0);
 }
 
 #endif // FEATURE_PERFTRACING
