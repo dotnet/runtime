@@ -21,19 +21,22 @@ namespace System.IO.Compression
         private int _windowBits;                            // The WindowBits parameter passed to Inflater construction
         private ZLibNative.ZLibStreamHandle _zlibStream;    // The handle to the primary underlying zlib stream
         private GCHandle _inputBufferHandle;                // The handle to the buffer that provides input to _zlibStream
+        private readonly long _uncompressedSize;
+        private long _currentInflatedCount;
 
         private object SyncLock => this;                    // Used to make writing to unmanaged structures atomic
 
         /// <summary>
         /// Initialized the Inflater with the given windowBits size
         /// </summary>
-        internal Inflater(int windowBits)
+        internal Inflater(int windowBits, long uncompressedSize = -1)
         {
             Debug.Assert(windowBits >= MinWindowBits && windowBits <= MaxWindowBits);
             _finished = false;
             _isDisposed = false;
             _windowBits = windowBits;
             InflateInit(windowBits);
+            _uncompressedSize = uncompressedSize;
         }
 
         public int AvailableOutput => (int)_zlibStream.AvailOut;
@@ -83,16 +86,23 @@ namespace System.IO.Compression
             // State is valid; attempt inflation
             try
             {
-                int bytesRead;
-                if (ReadInflateOutput(bufPtr, length, ZLibNative.FlushCode.NoFlush, out bytesRead) == ZLibNative.ErrorCode.StreamEnd)
+                int bytesRead = 0;
+                if (_uncompressedSize == -1)
                 {
-                    if (!NeedsInput() && IsGzipStream() && _inputBufferHandle.IsAllocated)
+                    ReadOutput(bufPtr, length, out bytesRead);
+                }
+                else
+                {
+                    if (_uncompressedSize > _currentInflatedCount)
                     {
-                        _finished = ResetStreamForLeftoverInput();
+                        length = Math.Min(length, (int)(_uncompressedSize - _currentInflatedCount));
+                        ReadOutput(bufPtr, length, out bytesRead);
+                        _currentInflatedCount += bytesRead;
                     }
                     else
                     {
                         _finished = true;
+                        _zlibStream.AvailIn = 0;
                     }
                 }
                 return bytesRead;
@@ -103,6 +113,21 @@ namespace System.IO.Compression
                 if (0 == _zlibStream.AvailIn && _inputBufferHandle.IsAllocated)
                 {
                     DeallocateInputBufferHandle();
+                }
+            }
+        }
+
+        private unsafe void ReadOutput(byte* bufPtr, int length, out int bytesRead)
+        {
+            if (ReadInflateOutput(bufPtr, length, ZLibNative.FlushCode.NoFlush, out bytesRead) == ZLibNative.ErrorCode.StreamEnd)
+            {
+                if (!NeedsInput() && IsGzipStream() && _inputBufferHandle.IsAllocated)
+                {
+                    _finished = ResetStreamForLeftoverInput();
+                }
+                else
+                {
+                    _finished = true;
                 }
             }
         }
