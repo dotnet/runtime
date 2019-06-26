@@ -2,15 +2,19 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 <Import Project='package.props' />
 
-  <UsingTask TaskName="ReplaceFileContents" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
-  <UsingTask TaskName="BuildFPMToolPreReqs" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+  <UsingTask TaskName="ReplaceFileContents" AssemblyFile="$(LocalBuildToolsTaskFile)"/>
+  <UsingTask TaskName="BuildFPMToolPreReqs" AssemblyFile="$(LocalBuildToolsTaskFile)"/>
 
   <Target Name="GenerateRpms"
           DependsOnTargets="TestFPMTool;BuildRpms;"
           Condition="'$(BuildRpmPackage)'=='true'" />
   
   <Target Name="GenerateRuntimeRpms" 
-          DependsOnTargets="GenerateSharedHostRpm;GenerateHostFxrRpm;GenerateSharedFrameworkRpm"
+          DependsOnTargets="
+            GetInstallerBrandingNames;
+            GenerateSharedHostRpm;
+            GenerateHostFxrRpm;
+            GenerateSharedFrameworkRpm"
           Condition="'$(BuildRuntimeRpms)' == 'true'" />
 
   <Target Name="BuildRpms"

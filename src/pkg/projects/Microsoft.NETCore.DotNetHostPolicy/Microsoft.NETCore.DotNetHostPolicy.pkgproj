@@ -1,18 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Version>$(HostPolicyVersion)</Version>
-  </PropertyGroup>   
+    <VersionProp>HostPolicyVersion</VersionProp>
+  </PropertyGroup>
 
   <ItemGroup>
-    <Dependency Include="Microsoft.NETCore.DotNetHostResolver">
-      <Version>$(HostResolverVersion)</Version>
-    </Dependency>
-  </ItemGroup>   
+    <Dependency Include="Microsoft.NETCore.DotNetHostResolver" VersionProp="HostResolverVersion" />
+  </ItemGroup>
 
   <Import Project="$(MSBuildProjectName).props" />
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

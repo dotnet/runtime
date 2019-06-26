@@ -1,0 +1,18 @@
+<Project>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+
+  <PropertyGroup>
+    <LibPrefix Condition="'$(OSGroup)' != 'Windows_NT'">lib</LibPrefix>
+    <LibSuffix>.so</LibSuffix> 
+    <LibSuffix Condition="'$(OSGroup)' == 'Windows_NT'">.dll</LibSuffix>
+    <LibSuffix Condition="'$(OSGroup)' == 'OSX'">.dylib</LibSuffix>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CrossGenSymbolExtension>.map</CrossGenSymbolExtension>
+    <CrossGenSymbolExtension Condition="'$(OSGroup)' == 'Windows_NT'">.ni.pdb</CrossGenSymbolExtension>
+    <!-- OSX doesn't have crossgen symbols, yet -->
+    <CrossGenSymbolExtension Condition="'$(OSGroup)' == 'OSX'"></CrossGenSymbolExtension>
+  </PropertyGroup>
+
+</Project>

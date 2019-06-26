@@ -1,0 +1,22 @@
+<Project>
+  <PropertyGroup>
+    <IsFrameworkPackage>true</IsFrameworkPackage>
+    <ShortFrameworkName>dotnet</ShortFrameworkName>
+  </PropertyGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+
+  <PropertyGroup>
+    <FrameworkListName>$(NETCoreAppFrameworkBrandName)</FrameworkListName>
+    <FrameworkListTargetFrameworkIdentifier>$(NETCoreAppFrameworkIdentifier)</FrameworkListTargetFrameworkIdentifier>
+    <FrameworkListTargetFrameworkVersion>$(NETCoreAppFrameworkVersion)</FrameworkListTargetFrameworkVersion>
+    <FrameworkListFrameworkName>$(SharedFrameworkName)</FrameworkListFrameworkName>
+  </PropertyGroup>
+
+  <!-- Redistribute package content from other nuget packages. -->
+  <ItemGroup Condition="'$(FrameworkPackType)' != 'apphost' AND '$(ExcludeDepprojReference)' != 'true'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\src\netcoreapp.depproj">
+      <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
+    </ProjectReference>
+  </ItemGroup>
+</Project>
