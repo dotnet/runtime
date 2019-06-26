@@ -10,6 +10,8 @@ using Xunit;
 
 namespace System.ComponentModel.TypeConverterTests
 {
+    // On IoT: "Unable to find an entry point named 'CreateIconFromResourceEx'"
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsIoTCore))]
     public class IconConverterTest
     {
         private readonly Icon _icon = null;
