@@ -309,6 +309,39 @@ void EventPipeConfiguration::ComputeKeywordAndLevel(const EventPipeProvider& pro
     });
 }
 
+INT64 EventPipeConfiguration::ComputeEventEnabledMask(const EventPipeProvider& provider, INT64 keywords, EventPipeEventLevel eventLevel) const
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+        PRECONDITION(EventPipe::IsLockOwnedByCurrentThread());
+    }
+    CONTRACTL_END;
+    INT64 result = 0;
+    EventPipe::ForEachSession([&](EventPipeSession &session) {
+        EventPipeSessionProvider *pSessionProvider = GetSessionProvider(session, &provider);
+        if (pSessionProvider != nullptr)
+        {
+            INT64 sessionKeyword = pSessionProvider->GetKeywords();
+            EventPipeEventLevel sessionLevel = pSessionProvider->GetLevel();
+            // The event is enabled if:
+            //  - The provider is enabled.
+            //  - The event keywords are unspecified in the manifest (== 0) or when masked with the enabled config are != 0.
+            //  - The event level is LogAlways or the provider's verbosity level is set to greater than the event's verbosity level in the manifest.
+            bool providerEnabled = provider.Enabled();
+            bool keywordEnabled = (keywords == 0) || ((sessionKeyword & keywords) != 0);
+            bool levelEnabled = ((eventLevel == EventPipeEventLevel::LogAlways) || (sessionLevel >= eventLevel));
+            if (providerEnabled && keywordEnabled && levelEnabled)
+            {
+                result = result | session.GetMask();
+            }
+        }
+    });
+    return result;
+}
+
 void EventPipeConfiguration::Enable(EventPipeSession &session, EventPipeProviderCallbackDataQueue *pEventPipeProviderCallbackDataQueue)
 {
     CONTRACTL
