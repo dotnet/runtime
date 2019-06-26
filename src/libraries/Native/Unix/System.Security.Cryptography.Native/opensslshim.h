@@ -60,6 +60,7 @@
 #undef EVP_MD_CTX_create
 #undef EVP_MD_CTX_init
 #undef EVP_MD_CTX_destroy
+#undef RSA_PKCS1_SSLeay
 #undef SSLv23_method
 #endif
 
@@ -143,6 +144,7 @@ void RSA_get0_crt_params(const RSA* rsa, const BIGNUM** dmp1, const BIGNUM** dmq
 void RSA_get0_factors(const RSA* rsa, const BIGNUM** p, const BIGNUM** q);
 void RSA_get0_key(const RSA* rsa, const BIGNUM** n, const BIGNUM** e, const BIGNUM** d);
 int32_t RSA_meth_get_flags(const RSA_METHOD* meth);
+const RSA_METHOD* RSA_PKCS1_OpenSSL(void);
 int32_t RSA_set0_crt_params(RSA* rsa, BIGNUM* dmp1, BIGNUM* dmq1, BIGNUM* iqmp);
 int32_t RSA_set0_factors(RSA* rsa, BIGNUM* p, BIGNUM* q);
 int32_t RSA_set0_key(RSA* rsa, BIGNUM* n, BIGNUM* e, BIGNUM* d);
@@ -224,6 +226,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(BN_bin2bn) \
     REQUIRED_FUNCTION(BN_bn2bin) \
     REQUIRED_FUNCTION(BN_clear_free) \
+    REQUIRED_FUNCTION(BN_dup) \
     REQUIRED_FUNCTION(BN_free) \
     REQUIRED_FUNCTION(BN_new) \
     REQUIRED_FUNCTION(BN_num_bits) \
@@ -421,6 +424,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(PKCS7_free) \
     REQUIRED_FUNCTION(RAND_bytes) \
     REQUIRED_FUNCTION(RAND_poll) \
+    REQUIRED_FUNCTION(RSA_check_key) \
     REQUIRED_FUNCTION(RSA_free) \
     REQUIRED_FUNCTION(RSA_generate_key_ex) \
     REQUIRED_FUNCTION(RSA_get_method) \
@@ -429,6 +433,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     FALLBACK_FUNCTION(RSA_get0_key) \
     FALLBACK_FUNCTION(RSA_meth_get_flags) \
     REQUIRED_FUNCTION(RSA_new) \
+    RENAMED_FUNCTION(RSA_PKCS1_OpenSSL, RSA_PKCS1_SSLeay) \
     REQUIRED_FUNCTION(RSA_private_decrypt) \
     REQUIRED_FUNCTION(RSA_private_encrypt) \
     REQUIRED_FUNCTION(RSA_public_decrypt) \
@@ -436,6 +441,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     FALLBACK_FUNCTION(RSA_set0_crt_params) \
     FALLBACK_FUNCTION(RSA_set0_factors) \
     FALLBACK_FUNCTION(RSA_set0_key) \
+    REQUIRED_FUNCTION(RSA_set_method) \
     REQUIRED_FUNCTION(RSA_sign) \
     REQUIRED_FUNCTION(RSA_size) \
     REQUIRED_FUNCTION(RSA_up_ref) \
@@ -608,6 +614,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define BN_bin2bn BN_bin2bn_ptr
 #define BN_bn2bin BN_bn2bin_ptr
 #define BN_clear_free BN_clear_free_ptr
+#define BN_dup BN_dup_ptr
 #define BN_free BN_free_ptr
 #define BN_new BN_new_ptr
 #define BN_num_bits BN_num_bits_ptr
@@ -805,6 +812,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define PKCS7_free PKCS7_free_ptr
 #define RAND_bytes RAND_bytes_ptr
 #define RAND_poll RAND_poll_ptr
+#define RSA_check_key RSA_check_key_ptr
 #define RSA_free RSA_free_ptr
 #define RSA_generate_key_ex RSA_generate_key_ex_ptr
 #define RSA_get0_crt_params RSA_get0_crt_params_ptr
@@ -813,6 +821,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_get_method RSA_get_method_ptr
 #define RSA_meth_get_flags RSA_meth_get_flags_ptr
 #define RSA_new RSA_new_ptr
+#define RSA_PKCS1_OpenSSL RSA_PKCS1_OpenSSL_ptr
 #define RSA_private_decrypt RSA_private_decrypt_ptr
 #define RSA_private_encrypt RSA_private_encrypt_ptr
 #define RSA_public_decrypt RSA_public_decrypt_ptr
@@ -820,6 +829,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define RSA_set0_crt_params RSA_set0_crt_params_ptr
 #define RSA_set0_factors RSA_set0_factors_ptr
 #define RSA_set0_key RSA_set0_key_ptr
+#define RSA_set_method RSA_set_method_ptr
 #define RSA_sign RSA_sign_ptr
 #define RSA_size RSA_size_ptr
 #define RSA_up_ref RSA_up_ref_ptr
@@ -1049,6 +1059,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 // Restore the old names for RENAMED_FUNCTION functions.
 #define EVP_MD_CTX_free EVP_MD_CTX_destroy
 #define EVP_MD_CTX_new EVP_MD_CTX_create
+#define RSA_PKCS1_OpenSSL RSA_PKCS1_SSLeay
 #define OPENSSL_sk_free sk_free
 #define OPENSSL_sk_new_null sk_new_null
 #define OPENSSL_sk_num sk_num
