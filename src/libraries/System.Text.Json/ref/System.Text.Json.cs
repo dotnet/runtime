@@ -181,9 +181,7 @@ namespace System.Text.Json
         private object _dummy;
         private int _dummyPrimitive;
         public JsonReaderState(System.Text.Json.JsonReaderOptions options = default(System.Text.Json.JsonReaderOptions)) { throw null; }
-        public long BytesConsumed { get { throw null; } }
         public System.Text.Json.JsonReaderOptions Options { get { throw null; } }
-        public System.SequencePosition Position { get { throw null; } }
     }
     public static partial class JsonSerializer
     {

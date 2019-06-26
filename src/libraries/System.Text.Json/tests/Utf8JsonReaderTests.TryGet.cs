@@ -157,7 +157,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Fact]
@@ -300,7 +299,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -340,7 +338,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -380,7 +377,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -420,7 +416,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -460,7 +455,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -499,7 +493,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -539,7 +532,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -579,7 +571,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -618,7 +609,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -645,7 +635,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -669,7 +658,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -704,7 +692,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Fact]
@@ -983,7 +970,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -1058,7 +1044,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -1359,7 +1344,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -1383,7 +1367,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -1407,7 +1390,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -1431,7 +1413,6 @@ namespace System.Text.Json.Tests
             }
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
@@ -1499,7 +1480,6 @@ namespace System.Text.Json.Tests
             Assert.Equal(expected, json.GetGuid());
 
             Assert.Equal(dataUtf8.Length, json.BytesConsumed);
-            Assert.Equal(json.BytesConsumed, json.CurrentState.BytesConsumed);
         }
 
         [Theory]
