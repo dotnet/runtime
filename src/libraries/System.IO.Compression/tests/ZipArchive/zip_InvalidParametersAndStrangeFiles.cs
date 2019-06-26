@@ -3,14 +3,19 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.IO.Compression.Tests
 {
     public class zip_InvalidParametersAndStrangeFiles : ZipFileTestBase
     {
+        private static readonly int s_bufferSize = 10240;
+        private static readonly string s_tamperedFileName = "binary.wmv";
         private static void ConstructorThrows<TException>(Func<ZipArchive> constructor, string Message) where TException : Exception
         {
             try
@@ -124,6 +129,425 @@ namespace System.IO.Compression.Tests
                 Assert.Equal(compressedLength, e.CompressedLength); //"CompressedLength isn't the same"
                 Assert.Throws<InvalidDataException>(() => e.Open()); //"Should throw on open"
             }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for full framework.")]
+        public static async Task ZipArchiveEntry_CorruptedStream_ReadMode_CopyTo_UpToUncompressedSize()
+        {
+            MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
+
+            int nameOffset = PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
+            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too
+
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+                using (MemoryStream ms = new MemoryStream())
+                using (Stream source = e.Open())
+                {
+                    source.CopyTo(ms);
+                    Assert.Equal(e.Length, ms.Length);     // Only allow to decompress up to uncompressed size
+                    byte[] buffer = new byte[s_bufferSize];
+                    Assert.Equal(0, source.Read(buffer, 0, buffer.Length)); // shouldn't be able read more                        
+                    ms.Seek(0, SeekOrigin.Begin);
+                    int read;
+                    while ((read = ms.Read(buffer, 0, buffer.Length)) != 0)
+                    { // No need to do anything, just making sure all bytes readable
+                    }
+                    Assert.Equal(ms.Position, ms.Length); // all bytes must be read
+                }
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for full framework.")]
+        public static async Task ZipArchiveEntry_CorruptedStream_ReadMode_Read_UpToUncompressedSize()
+        {
+            MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
+
+            int nameOffset = PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
+            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too
+
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+                using (MemoryStream ms = new MemoryStream())
+                using (Stream source = e.Open())
+                {
+                    byte[] buffer = new byte[s_bufferSize];
+                    int read;
+                    while ((read = source.Read(buffer, 0, buffer.Length)) != 0)
+                    {
+                        ms.Write(buffer, 0, read);
+                    }
+                    Assert.Equal(e.Length, ms.Length);     // Only allow to decompress up to uncompressed size
+                    Assert.Equal(0, source.Read(buffer, 0, s_bufferSize)); // shouldn't be able read more 
+                    ms.Seek(0, SeekOrigin.Begin);
+                    while ((read = ms.Read(buffer, 0, buffer.Length)) != 0)
+                    { // No need to do anything, just making sure all bytes readable from output stream
+                    }
+                    Assert.Equal(ms.Position, ms.Length); // all bytes must be read
+                }
+            }
+        }
+
+        [Fact]
+
+        public static void ZipArchiveEntry_CorruptedStream_EnsureNoExtraBytesReadOrOverWritten()
+        {
+            MemoryStream stream = populateStream().Result;
+
+            int nameOffset = PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
+            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too
+
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+                using (Stream source = e.Open())
+                {
+                    byte[] buffer = new byte[e.Length + 20];
+                    Array.Fill<byte>(buffer, 0xDE);
+                    int read;
+                    int offset = 0;
+                    int length = buffer.Length;
+
+                    while ((read = source.Read(buffer, offset, length)) != 0)
+                    {
+                        offset += read;
+                        length -= read;
+                    }
+                    for (int i = offset; i < buffer.Length; i++)
+                    {
+                        Assert.Equal(0xDE, buffer[i]);
+                    }
+                }
+            }
+        }
+
+        private static async Task<MemoryStream> populateStream()
+        {
+            return await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Deflate64 zip support is a netcore feature not available on full framework.")]
+        public static async Task Zip64ArchiveEntry_CorruptedStream_CopyTo_UpToUncompressedSize()
+        {
+            MemoryStream stream = await LocalMemoryStream.readAppFileAsync(compat("deflate64.zip"));
+
+            int nameOffset = PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
+            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too
+
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+                using (var ms = new MemoryStream())
+                using (Stream source = e.Open())
+                {
+                    source.CopyTo(ms);
+                    Assert.Equal(e.Length, ms.Length);     // Only allow to decompress up to uncompressed size
+                    ms.Seek(0, SeekOrigin.Begin);
+                    int read;
+                    byte[] buffer = new byte[s_bufferSize];
+                    while ((read = ms.Read(buffer, 0, buffer.Length)) != 0)
+                    { // No need to do anything, just making sure all bytes readable
+                    }
+                    Assert.Equal(ms.Position, ms.Length); // all bytes must be read
+                }
+            }
+        }
+
+        [Fact]
+        public static async Task ZipArchiveEntry_CorruptedStream_UnCompressedSizeBiggerThanExpected_NothingShouldBreak()
+        {
+            MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
+
+            int nameOffset = PatchDataRelativeToFileNameFillBytes(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
+            PatchDataRelativeToFileNameFillBytes(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too
+
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+                using (MemoryStream ms = new MemoryStream())
+                using (Stream source = e.Open())
+                {
+                    source.CopyTo(ms);
+                    Assert.True(e.Length > ms.Length);           // Even uncompressed size is bigger than decompressed size there should be no error
+                    Assert.True(e.CompressedLength < ms.Length);
+                }
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Deflate64 zip support is a netcore feature not available on full framework.")]
+        public static async Task Zip64ArchiveEntry_CorruptedFile_Read_UpToUncompressedSize()
+        {
+            MemoryStream stream = await LocalMemoryStream.readAppFileAsync(compat("deflate64.zip"));
+
+            int nameOffset = PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
+            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too
+
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+                using (var ms = new MemoryStream())
+                using (Stream source = e.Open())
+                {
+                    byte[] buffer = new byte[s_bufferSize];
+                    int read;
+                    while ((read = source.Read(buffer, 0, buffer.Length)) != 0)
+                    {
+                        ms.Write(buffer, 0, read);
+                    }
+                    Assert.Equal(e.Length, ms.Length);     // Only allow to decompress up to uncompressed size
+                    Assert.Equal(0, source.Read(buffer, 0, buffer.Length)); // Shouldn't be readable more
+                }
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for full framework.")]
+        public static async Task ZipArchive_CorruptedLocalHeader_UncompressedSize_NotMatchWithCentralDirectory()
+        {
+            MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
+
+            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
+
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+                Assert.Throws<InvalidDataException>(() => e.Open());
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for full framework.")]
+        public static async Task ZipArchive_CorruptedLocalHeader_CompressedSize_NotMatchWithCentralDirectory()
+        {
+            MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
+
+            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 12);  // patch compressed size in file header
+
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+                Assert.Throws<InvalidDataException>(() => e.Open());
+            }
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full Framework does not allow unseekable streams.")]
+        public static async Task ZipArchive_Unseekable_Corrupted_FileDescriptor_NotMatchWithCentralDirectory()
+        {
+            using (var s = new MemoryStream())
+            {
+                var testStream = new WrappedStream(s, false, true, false, null);
+                await CreateFromDir(zfolder("normal"), testStream, ZipArchiveMode.Create);
+              
+                PatchDataDescriptorRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), s, 8);  // patch uncompressed size in file descriptor
+
+                using (ZipArchive archive = new ZipArchive(s, ZipArchiveMode.Read))
+                {
+                    ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+                    Assert.Throws<InvalidDataException>(() => e.Open());
+                }
+            }
+        }
+
+        [Fact]
+        public static async Task UpdateZipArchive_AppendTo_CorruptedFileEntry()
+        {
+            MemoryStream stream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            int updatedUncompressedLength = 1310976;
+            string append = "\r\n\r\nThe answer my friend, is blowin' in the wind.";
+            byte[] data = Encoding.ASCII.GetBytes(append);
+            long oldCompressedSize = 0;
+
+            int nameOffset = PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
+            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too
+
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Update, true))
+            {
+                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+                oldCompressedSize = e.CompressedLength;
+                using (Stream s = e.Open())
+                {
+                    Assert.Equal(updatedUncompressedLength, s.Length);
+                    s.Seek(0, SeekOrigin.End);                  
+                    s.Write(data, 0, data.Length);
+                    Assert.Equal(updatedUncompressedLength + data.Length, s.Length);
+                }
+            }
+
+            using (ZipArchive modifiedArchive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = modifiedArchive.GetEntry(s_tamperedFileName);
+                using (Stream s = e.Open())
+                using (var ms = new MemoryStream())
+                {
+                    await s.CopyToAsync(ms, s_bufferSize);
+                    Assert.Equal(updatedUncompressedLength + data.Length, ms.Length);
+                    ms.Seek(updatedUncompressedLength, SeekOrigin.Begin);
+                    byte[] read = new byte[data.Length];
+                    ms.Read(read, 0, data.Length);
+                    Assert.Equal(append, Encoding.ASCII.GetString(read));
+                }
+                Assert.True(oldCompressedSize > e.CompressedLength); // old compressed size must be reduced by Uncomressed size limit
+            }
+        }
+
+        [Fact]
+        public static async Task UpdateZipArchive_OverwriteCorruptedEntry()
+        {
+            MemoryStream stream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            int updatedUncompressedLength = 1310976;
+            string overwrite = "\r\n\r\nThe answer my friend, is blowin' in the wind.";
+            byte[] data = Encoding.ASCII.GetBytes(overwrite);
+
+            int nameOffset = PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
+            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too
+
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Update, true))
+            {
+                ZipArchiveEntry e = archive.GetEntry(s_tamperedFileName);
+                string fileName = zmodified(Path.Combine("overwrite", "first.txt"));
+                var file = FileData.GetFile(fileName);
+
+                using (var s = new MemoryStream(data))
+                using (Stream es = e.Open())
+                {
+                    Assert.Equal(updatedUncompressedLength, es.Length);
+                    es.SetLength(0);
+                    await s.CopyToAsync(es, s_bufferSize);
+                    Assert.Equal(data.Length, es.Length);
+                }
+            }
+
+            using (ZipArchive modifiedArchive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = modifiedArchive.GetEntry(s_tamperedFileName);
+                using (Stream s = e.Open())
+                using (var ms = new MemoryStream())
+                {
+                    await s.CopyToAsync(ms, s_bufferSize);
+                    Assert.Equal(data.Length, ms.Length);
+                    Assert.Equal(overwrite, Encoding.ASCII.GetString(ms.GetBuffer(), 0, data.Length));
+                }
+            }
+        }
+
+        [Fact]
+        public static async Task UpdateZipArchive_AddFileTo_ZipWithCorruptedFile()
+        {
+            string addingFile = "added.txt";
+            MemoryStream stream = await StreamHelpers.CreateTempCopyStream(zfile("normal.zip"));
+            MemoryStream file = await StreamHelpers.CreateTempCopyStream(zmodified(Path.Combine("addFile", addingFile)));
+
+            int nameOffset = PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 8);  // patch uncompressed size in file header
+            PatchDataRelativeToFileName(Encoding.ASCII.GetBytes(s_tamperedFileName), stream, 22, nameOffset + s_tamperedFileName.Length); // patch in central directory too          
+
+            using (ZipArchive archive = new ZipArchive(stream, ZipArchiveMode.Update, true))
+            {
+                ZipArchiveEntry e = archive.CreateEntry(addingFile);
+                using (Stream es = e.Open())
+                {
+                    file.CopyTo(es);
+                }
+            }
+
+            using (ZipArchive modifiedArchive = new ZipArchive(stream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry e = modifiedArchive.GetEntry(s_tamperedFileName);
+                using (Stream s = e.Open())
+                using (var ms = new MemoryStream())
+                {
+                    await s.CopyToAsync(ms, s_bufferSize);
+                    Assert.Equal(e.Length, ms.Length);  // tampered file should read up to uncompressed size
+                }
+
+                ZipArchiveEntry addedEntry = modifiedArchive.GetEntry(addingFile);
+                Assert.NotNull(addedEntry);
+                Assert.Equal(addedEntry.Length, file.Length);
+
+                using (Stream s = addedEntry.Open())
+                { // Make sure file content added correctly
+                    int read = 0;
+                    byte[] buffer1 = new byte[1024];
+                    byte[] buffer2 = new byte[1024];
+                    file.Seek(0, SeekOrigin.Begin);
+
+                    while ((read = s.Read(buffer1, 0, buffer1.Length)) != 0 )
+                    {
+                        file.Read(buffer2, 0, buffer2.Length);
+                        Assert.Equal(buffer1, buffer2);
+                    }
+                }     
+            }
+        }
+
+        private static int PatchDataDescriptorRelativeToFileName(byte[] fileNameInBytes, MemoryStream packageStream, int distance, int start = 0)
+        {
+            byte[] dataDescriptorSignature = BitConverter.GetBytes(0x08074B50);
+            byte[] buffer = packageStream.GetBuffer();
+            int startOfName = FindSequenceIndex(fileNameInBytes, buffer, start);
+            int startOfDataDescriptor = FindSequenceIndex(dataDescriptorSignature, buffer, startOfName);
+            var startOfUpdatingData = startOfDataDescriptor + distance;
+
+            // updating 4 byte data
+            buffer[startOfUpdatingData] = 0;
+            buffer[startOfUpdatingData + 1] = 1;
+            buffer[startOfUpdatingData + 2] = 20;
+            buffer[startOfUpdatingData + 3] = 0;
+
+            return startOfName;
+        }
+
+        private static int PatchDataRelativeToFileName(byte[] fileNameInBytes, MemoryStream packageStream, int distance, int start = 0)
+        {
+            var buffer = packageStream.GetBuffer();
+            var startOfName = FindSequenceIndex(fileNameInBytes, buffer, start);
+            var startOfUpdatingData = startOfName - distance;
+
+            // updating 4 byte data
+            buffer[startOfUpdatingData] = 0;
+            buffer[startOfUpdatingData + 1] = 1;
+            buffer[startOfUpdatingData + 2] = 20;
+            buffer[startOfUpdatingData + 3] = 0;
+
+            return startOfName;
+        }
+
+        private static int PatchDataRelativeToFileNameFillBytes(byte[] fileNameInBytes, MemoryStream packageStream, int distance, int start = 0)
+        {
+            var buffer = packageStream.GetBuffer();
+            var startOfName = FindSequenceIndex(fileNameInBytes, buffer, start);
+            var startOfUpdatingData = startOfName - distance;
+
+            // updating 4 byte data
+            buffer[startOfUpdatingData] = 255;
+            buffer[startOfUpdatingData + 1] = 255;
+            buffer[startOfUpdatingData + 2] = 255;
+            buffer[startOfUpdatingData + 3] = 0;
+
+            return startOfName;
+        }
+
+        private static int FindSequenceIndex(byte[] searchItem, byte[] whereToSearch, int startIndex = 0)
+        {
+            for (int start = startIndex; start < whereToSearch.Length - searchItem.Length; ++start)
+            {
+                int searchIndex = 0;
+                while (searchIndex < searchItem.Length && searchItem[searchIndex] == whereToSearch[start + searchIndex])
+                {
+                    ++searchIndex;
+                }
+                if (searchIndex == searchItem.Length)
+                {
+                    return start;
+                }
+            }
+            return -1;
         }
 
         [Theory]

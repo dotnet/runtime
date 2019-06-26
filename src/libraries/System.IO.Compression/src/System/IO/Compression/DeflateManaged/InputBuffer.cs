@@ -176,11 +176,13 @@ namespace System.IO.Compression
             Debug.Assert(offset >= 0);
             Debug.Assert(length >= 0);
             Debug.Assert(offset <= buffer.Length - length);
-            Debug.Assert(_start == _end);
 
-            _buffer = buffer;
-            _start = offset;
-            _end = offset + length;
+            if (_start == _end)
+            {
+                _buffer = buffer;
+                _start = offset;
+                _end = offset + length;
+            }
         }
 
         /// <summary>Skip n bits in the buffer.</summary>
