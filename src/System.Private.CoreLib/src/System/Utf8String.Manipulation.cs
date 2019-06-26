@@ -82,8 +82,6 @@ namespace System
         [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)]
         public Utf8String Slice(int startIndex, int length) => Substring(startIndex, length);
 
-
-        [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ValidateStartIndexAndLength(int startIndex, int length)
         {
