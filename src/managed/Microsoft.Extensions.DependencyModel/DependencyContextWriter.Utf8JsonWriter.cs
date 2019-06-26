@@ -22,8 +22,8 @@ namespace Microsoft.Extensions.DependencyModel
             }
             using (var bufferWriter = new ArrayBufferWriter())
             {
-                var state = new JsonWriterState(options: new JsonWriterOptions { Indented = true });
-                var jsonWriter = new Utf8JsonWriter(bufferWriter, state);
+                var options = new JsonWriterOptions { Indented = true };
+                var jsonWriter = new Utf8JsonWriter(bufferWriter, options);
                 WriteCore(context, new UnifiedJsonWriter(jsonWriter));
                 bufferWriter.CopyTo(stream);
             }

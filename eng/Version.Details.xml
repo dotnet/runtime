@@ -85,6 +85,10 @@
       <Uri>https://github.com/dotnet/corefx</Uri>
       <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
     </Dependency>
+    <Dependency Name="System.Text.Json" Version="4.6.0-preview7.19326.2">
+      <Uri>https://github.com/dotnet/corefx</Uri>
+      <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
+    </Dependency>
     <Dependency Name="System.Threading.AccessControl" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
       <Sha>219b67118e3a2d539afc1ff3bb2c10e1bc7b03d2</Sha>
