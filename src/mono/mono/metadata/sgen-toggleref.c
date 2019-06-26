@@ -169,6 +169,8 @@ mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
 	if (!toggleref_callback)
 		return;
 
+	MONO_ENTER_GC_UNSAFE;
+
 	SGEN_LOG (4, "Adding toggleref %p %d", object, strong_ref);
 
 	sgen_gc_lock ();
@@ -179,6 +181,8 @@ mono_gc_toggleref_add (MonoObject *object, mono_bool strong_ref)
 	++toggleref_array_size;
 
 	sgen_gc_unlock ();
+
+	MONO_EXIT_GC_UNSAFE;
 }
 
 /**
@@ -203,7 +207,7 @@ test_toggleref_callback (MonoObject *obj)
 	MonoToggleRefStatus status = MONO_TOGGLE_REF_DROP;
 
 	if (!mono_toggleref_test_field) {
-		mono_toggleref_test_field = mono_class_get_field_from_name_full (mono_object_get_class (obj), "__test", NULL);
+		mono_toggleref_test_field = mono_class_get_field_from_name_full (mono_object_class (obj), "__test", NULL);
 		g_assert (mono_toggleref_test_field);
 	}
 

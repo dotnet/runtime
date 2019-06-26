@@ -30,7 +30,9 @@ typedef struct {
 
 
 MONO_API MonoDl*     mono_dl_open       (const char *name, int flags, char **error_msg) MONO_LLVM_INTERNAL;
+MONO_EXTERN_C
 char*       mono_dl_symbol     (MonoDl *module, const char *name, void **symbol) MONO_LLVM_INTERNAL;
+MONO_EXTERN_C
 void        mono_dl_close      (MonoDl *module) MONO_LLVM_INTERNAL;
 
 char*       mono_dl_build_path (const char *directory, const char *name, void **iter);

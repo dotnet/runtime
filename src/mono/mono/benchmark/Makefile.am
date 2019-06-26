@@ -3,8 +3,9 @@ include $(top_srcdir)/mk/common.mk
 TEST_PROG=../mini/mono
 RUNTIME_ARGS="-O=all"
 
-CSC=mcs
-
+TOOLS_RUNTIME = MONO_PATH=$(mcs_topdir)/class/lib/build $(top_builddir)/runtime/mono-wrapper --aot-path=$(mcs_topdir)/class/lib/build
+MCS = $(TOOLS_RUNTIME) $(CSC) -noconfig -nologo -debug:portable -target:library $(PROFILE_MCS_FLAGS)
+ILASM = $(TOOLS_RUNTIME) $(mcs_topdir)/class/lib/build/ilasm.exe
 
 TESTSRC=			\
 	fib.cs 			\
@@ -52,12 +53,14 @@ TESTSI=$(TESTSI_TMP:.il=.exe)
 EXTRA_DIST=test-driver $(TESTSRC)
 
 %.exe: %.il
-	ilasm $< /OUTPUT=$@
+	$(ILASM) $< /OUTPUT=$@
 
 %.exe: %.cs
-	$(CSC) $<
+	$(MCS) $< -out:$@
 
-test: $(TEST_PROG) $(TESTSI)
+test-local: $(TEST_PROG) $(TESTSI)
+
+run-test: $(TEST_PROG) $(TESTSI)
 	@failed=0; \
 	passed=0; \
 	for i in $(TESTSI); do	\

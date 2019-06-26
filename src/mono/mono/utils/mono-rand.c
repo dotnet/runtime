@@ -210,7 +210,8 @@ mono_rand_open (void)
 	}
 
 #ifdef NAME_DEV_URANDOM
-	file = open (NAME_DEV_URANDOM, O_RDONLY);
+	if (file < 0)
+		file = open (NAME_DEV_URANDOM, O_RDONLY);
 #endif
 #ifdef NAME_DEV_RANDOM
 	if (file < 0)
@@ -228,7 +229,7 @@ gpointer
 mono_rand_init (const guchar *seed, gssize seed_size)
 {
 	// file < 0 is expected in the egd case
-	return (!use_egd && file < 0) ? NULL : GINT_TO_POINTER (file);
+	return (!use_egd && file < 0) ? (gpointer)NULL : GINT_TO_POINTER (file);
 }
 
 gboolean
@@ -325,7 +326,7 @@ mono_rand_try_get_bytes (gpointer *handle, guchar *buffer, gssize buffer_size, M
 
 	error_init (error);
 
-	g_assert (RAND_MAX >= 0xFF); // FIXME static_assert when compilers catch up.
+	g_static_assert (RAND_MAX >= 0xFF);
 	
 	while (buffer_size > 0) {
 		int const i = rand ();

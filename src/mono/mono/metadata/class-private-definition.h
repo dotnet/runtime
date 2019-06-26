@@ -22,7 +22,10 @@ struct _MonoClass {
 	guint16     idepth;
 
 	/* array dimension */
-	guint8     rank;          
+	guint8     rank;
+
+	/* One of the values from MonoTypeKind */
+	guint8     class_kind;
 
 	int        instance_size; /* object instance size */
 
@@ -31,7 +34,7 @@ struct _MonoClass {
 	/* A class contains static and non static data. Static data can be
 	 * of the same type as the class itselfs, but it does not influence
 	 * the instance size of the class. To avoid cyclic calls to 
-	 * mono_class_init (from mono_class_instance_size ()) we first 
+	 * mono_class_init_internal (from mono_class_instance_size ()) we first
 	 * initialise all non static fields. After that we set size_inited 
 	 * to 1, because we know the instance size now. After that we 
 	 * initialise all static fields.
@@ -45,6 +48,7 @@ struct _MonoClass {
 	guint unicode         : 1; /* class uses unicode char when marshalled */
 	guint wastypebuilder  : 1; /* class was created at runtime from a TypeBuilder */
 	guint is_array_special_interface : 1; /* gtd or ginst of once of the magic interfaces that arrays implement */
+	guint is_byreflike    : 1; /* class is a valuetype and has System.Runtime.CompilerServices.IsByRefLikeAttribute */
 
 	/* next byte */
 	guint8 min_align;
@@ -73,7 +77,6 @@ struct _MonoClass {
 	guint nested_classes_inited : 1; /* Whenever nested_class is initialized */
 
 	/* next byte*/
-	guint class_kind : 3; /* One of the values from MonoTypeKind */
 	guint interfaces_inited : 1; /* interfaces is initialized */
 	guint simd_type : 1; /* class is a simd intrinsic type */
 	guint has_finalize_inited    : 1; /* has_finalize is initialized */

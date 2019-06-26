@@ -326,6 +326,24 @@ class Tests
 		return (int)res;
 	}
 
+	struct Struct7 {
+		public string value;
+	}
+
+	class Foo7 {
+		public static string vtypeonstack_align (string s1, string s2, string s3, string s4, string s5, string s6, string s7, string s8, bool b, Struct7 s) {
+			return s.value;
+		}
+	}
+
+	[Category ("DYNCALL")]
+	static int test_0_arm64_ios_dyncall_vtypeonstack_align () {
+		var m = typeof (Foo7).GetMethod ("vtypeonstack_align");
+
+		string s = (string)m.Invoke (null, new object [] { null, null, null, null, null, null, null, null, true, new Struct7 () { value = "ABC" } });
+		return s == "ABC" ? 0 : 1;
+	}
+
 	class Foo6 {
 		public T reg_stack_split_inner<T> (int i, int j, T l) {
 			return l;
@@ -368,8 +386,22 @@ class Tests
 		}
 
 		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static int NullableMany(long? i1, long? i2, long? i3, long? i4, long? i5, long? i6, long? i7, long? i8,
+										long? i11, long? i12, long? i13, long? i14, long? i15, long? i16, long? i17, long? i18,
+										long? i21, long? i22, long? i23, long? i24, long? i25, long? i26, long? i27, long? i28,
+										long? i31, long? i32, long? i33, long? i34, long? i35, long? i36, long? i37, long? i38) {
+			return (int)((i1 + i8 + i11 + i18 + i21 + i28 + i31 + i38).Value);
+		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
 		public static Nullable<T> GetNull<T>() where T : struct {
 			return null;
+		}
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public static bool GetHasValueManyArgs<T>(int i1, int i2, int i3, int i4, int i5, int i6, int i7, int i8, T? value) where T : struct
+		{
+			return value.HasValue;
 		}
 	}
 
@@ -400,6 +432,28 @@ class Tests
 		res2 = (int?)typeof (NullableMethods).GetMethod ("GetNull").MakeGenericMethod (new Type [] { typeof (int) }).Invoke (null, new object [] { });
 		if (res2.HasValue)
 			return 5;
+
+		NullableMethods.NullableMany (1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8);
+		res2 = (int?)typeof (NullableMethods).GetMethod ("NullableMany").Invoke (null, new object [] { 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L });
+		if (res2 != 36)
+			return 6;
+		return 0;
+	}
+
+	[Category ("DYNCALL")]
+	public static int test_0_arm64_dyncall_vtypebyrefonstack () {
+		var s = new LargeStruct () { a = 1, b = 2, c = 3, d = 4 };
+
+		NullableMethods.GetHasValueManyArgs<LargeStruct> (1, 2, 3, 4, 5, 6, 7, 8, s);
+
+		Type type = typeof (LargeStruct?).GetGenericArguments () [0];
+		var m = typeof(NullableMethods).GetMethod("GetHasValueManyArgs", BindingFlags.Static | BindingFlags.Public);
+		bool b1 = (bool)m.MakeGenericMethod (new Type[] {type}).Invoke (null, new object[] { 1, 2, 3, 4, 5, 6, 7, 8, s });
+		if (!b1)
+			return 1;
+		bool b2 = (bool)m.MakeGenericMethod (new Type[] {type}).Invoke (null, new object[] { 1, 2, 3, 4, 5, 6, 7, 8, null });
+		if (b2)
+			return 2;
 		return 0;
 	}
 
@@ -527,13 +581,9 @@ class Tests
 	public static int test_0_large_nullable_invoke () {
 		var s = new LargeStruct () { a = 1, b = 2, c = 3, d = 4 };
 
-		GetHasValue<LargeStruct> (s);
+		NullableMethods.GetHasValue<LargeStruct> (s);
 
-#if __MOBILE__
-		var m = typeof(AotTests).GetMethod("GetHasValue", BindingFlags.Static | BindingFlags.Public);
-#else
-		var m = typeof(Tests).GetMethod("GetHasValue", BindingFlags.Static | BindingFlags.Public);
-#endif
+		var m = typeof(NullableMethods).GetMethod("GetHasValue", BindingFlags.Static | BindingFlags.Public);
 
 		Type type = typeof (LargeStruct?).GetGenericArguments () [0];
 		bool b1 = (bool)m.MakeGenericMethod (new Type[] {type}).Invoke (null, new object[] { s });

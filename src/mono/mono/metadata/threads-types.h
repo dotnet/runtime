@@ -15,6 +15,7 @@
 
 #include <glib.h>
 
+#include <mono/utils/mono-forward-internal.h>
 #include <mono/metadata/object.h>
 #include "mono/metadata/handle.h"
 #include "mono/utils/mono-compiler.h"
@@ -34,7 +35,9 @@ typedef enum {
 	ThreadState_Suspended = 0x00000040,
 	ThreadState_AbortRequested = 0x00000080,
 	ThreadState_Aborted = 0x00000100
-} MonoThreadState; 
+} MonoThreadState;
+
+G_ENUM_FUNCTIONS (MonoThreadState)
 
 /* This is a copy of System.Threading.ApartmentState */
 typedef enum {
@@ -44,6 +47,8 @@ typedef enum {
 } MonoThreadApartmentState;
 
 typedef enum {
+// These values match System.Threading.ThreadPriority.
+// These values match System.Diagnostics.ThreadPriorityLevel and Windows, but are offset by 2.
 	MONO_THREAD_PRIORITY_LOWEST       = 0,
 	MONO_THREAD_PRIORITY_BELOW_NORMAL = 1,
 	MONO_THREAD_PRIORITY_NORMAL       = 2,
@@ -54,8 +59,6 @@ typedef enum {
 #define SPECIAL_STATIC_NONE 0
 #define SPECIAL_STATIC_THREAD 1
 #define SPECIAL_STATIC_CONTEXT 2
-
-typedef struct _MonoInternalThread MonoInternalThread;
 
 /* It's safe to access System.Threading.InternalThread from native code via a
  * raw pointer because all instances should be pinned.  But for uniformity of
@@ -78,46 +81,49 @@ typedef enum {
 	MONO_THREAD_CREATE_FLAGS_SMALL_STACK  = 0x8,
 } MonoThreadCreateFlags;
 
+// FIXME func should be MonoThreadStart and remove the template
 MonoInternalThread*
 mono_thread_create_internal (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
+
+#ifdef __cplusplus
+template <typename T>
+inline MonoInternalThread*
+mono_thread_create_internal (MonoDomain *domain, T func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
+{
+	return mono_thread_create_internal(domain, (gpointer)func, arg, flags, error);
+}
+#endif
+
+MonoInternalThreadHandle
+mono_thread_create_internal_handle (MonoDomain *domain, gpointer func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error);
+
+#ifdef __cplusplus
+template <typename T>
+inline MonoInternalThreadHandle
+mono_thread_create_internal_handle (MonoDomain *domain, T func, gpointer arg, MonoThreadCreateFlags flags, MonoError *error)
+{
+	return mono_thread_create_internal_handle(domain, (gpointer)func, arg, flags, error);
+}
+#endif
+
+/* Data owned by a MonoInternalThread that must live until both the finalizer
+ * for MonoInternalThread has run, and the underlying machine thread has
+ * detached.
+ *
+ * Normally a thread is first detached and then the InternalThread object is
+ * finalized and collected.  However during shutdown, when the root domain is
+ * finalized, all the InternalThread objects are finalized first and the
+ * machine threads are detached later.
+ */
+typedef struct {
+  MonoRefCount ref;
+  MonoCoopMutex *synch_cs;
+} MonoLongLivedThreadData;
 
 void mono_threads_install_cleanup (MonoThreadCleanupFunc func);
 
 ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_ConstructInternalThread (MonoThreadObjectHandle this_obj, MonoError *error);
-
-ICALL_EXPORT
-MonoBoolean
-ves_icall_System_Threading_Thread_Thread_internal (MonoThreadObjectHandle this_obj, MonoObjectHandle start, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_InternalThread_Thread_free_internal (MonoInternalThreadHandle this_obj, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_Sleep_internal (gint32 ms, MonoError *error);
-
-ICALL_EXPORT
-gboolean
-ves_icall_System_Threading_Thread_Join_internal (MonoThreadObjectHandle thread_handle, int ms, MonoError *error);
-
-ICALL_EXPORT
-gint32
-ves_icall_System_Threading_Thread_GetDomainID (MonoError *error);
-
-ICALL_EXPORT
-MonoStringHandle ves_icall_System_Threading_Thread_GetName_internal (MonoInternalThreadHandle this_obj, MonoError *error);
-
-ICALL_EXPORT
 void ves_icall_System_Threading_Thread_SetName_internal (MonoInternalThread *this_obj, MonoString *name);
-
-ICALL_EXPORT
-int ves_icall_System_Threading_Thread_GetPriority (MonoThreadObjectHandle this_obj, MonoError *error);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_SetPriority (MonoThreadObjectHandle this_obj, int priority, MonoError *error);
 
 ICALL_EXPORT
 MonoObject* ves_icall_System_Threading_Thread_GetCachedCurrentCulture (MonoInternalThread *this_obj);
@@ -130,21 +136,6 @@ MonoObject* ves_icall_System_Threading_Thread_GetCachedCurrentUICulture (MonoInt
 
 ICALL_EXPORT
 void ves_icall_System_Threading_Thread_SetCachedCurrentUICulture (MonoThread *this_obj, MonoObject *culture);
-
-ICALL_EXPORT
-MonoThreadObjectHandle ves_icall_System_Threading_Thread_GetCurrentThread (MonoError *error);
-
-ICALL_EXPORT
-gint32 ves_icall_System_Threading_WaitHandle_Wait_internal(gpointer *handles, gint32 numhandles, MonoBoolean waitall, gint32 ms, MonoError *error);
-
-ICALL_EXPORT
-gint32 ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (gpointer toSignal, gpointer toWait, gint32 ms, MonoError *error);
-
-ICALL_EXPORT
-MonoArrayHandle ves_icall_System_Threading_Thread_ByteArrayToRootDomain (MonoArrayHandle arr, MonoError *error);
-
-ICALL_EXPORT
-MonoArrayHandle ves_icall_System_Threading_Thread_ByteArrayToCurrentDomain (MonoArrayHandle arr, MonoError *error);
 
 ICALL_EXPORT
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int(gint32 *location);
@@ -225,33 +216,7 @@ ICALL_EXPORT
 gint64 ves_icall_System_Threading_Interlocked_Decrement_Long(gint64 * location);
 
 ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_Abort (MonoInternalThreadHandle thread_handle, MonoObjectHandle state, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_ResetAbort (MonoThreadObjectHandle this_obj, MonoError *error);
-
-ICALL_EXPORT
-MonoObjectHandle
-ves_icall_System_Threading_Thread_GetAbortExceptionState (MonoThreadObjectHandle thread, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_Suspend (MonoThreadObjectHandle this_obj, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_Resume (MonoThreadObjectHandle thread_handle, MonoError *error);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_ClrState (MonoInternalThreadHandle thread, guint32 state, MonoError *error);
-
-ICALL_EXPORT
-void ves_icall_System_Threading_Thread_SetState (MonoInternalThreadHandle thread_handle, guint32 state, MonoError *error);
-
-ICALL_EXPORT
-guint32 ves_icall_System_Threading_Thread_GetState (MonoInternalThreadHandle thread_handle, MonoError *error);
+void ves_icall_System_Threading_Interlocked_MemoryBarrierProcessWide (void);
 
 ICALL_EXPORT
 gint8 ves_icall_System_Threading_Thread_VolatileRead1 (void *ptr);
@@ -314,6 +279,9 @@ ICALL_EXPORT
 gint64 ves_icall_System_Threading_Volatile_Read8 (void *ptr);
 
 ICALL_EXPORT
+guint64 ves_icall_System_Threading_Volatile_ReadU8 (void *ptr);
+
+ICALL_EXPORT
 void * ves_icall_System_Threading_Volatile_ReadIntPtr (void *ptr);
 
 ICALL_EXPORT
@@ -338,6 +306,9 @@ ICALL_EXPORT
 void ves_icall_System_Threading_Volatile_Write8 (void *ptr, gint64);
 
 ICALL_EXPORT
+void ves_icall_System_Threading_Volatile_WriteU8 (void *ptr, guint64);
+
+ICALL_EXPORT
 void ves_icall_System_Threading_Volatile_WriteIntPtr (void *ptr, void *);
 
 ICALL_EXPORT
@@ -352,26 +323,15 @@ void ves_icall_System_Threading_Volatile_Write_T (void *ptr, MonoObject *value);
 ICALL_EXPORT
 void ves_icall_System_Threading_Thread_MemoryBarrier (void);
 
-ICALL_EXPORT
 void
-ves_icall_System_Threading_Thread_Interrupt_internal (MonoThreadObjectHandle thread_handle, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_Thread_SpinWait_nop (MonoError *error);
-
-void
-mono_threads_register_app_context (MonoAppContext* ctx, MonoError *error);
+mono_threads_register_app_context (MonoAppContextHandle ctx, MonoError *error);
 void
 mono_threads_release_app_context (MonoAppContext* ctx, MonoError *error);
 
-ICALL_EXPORT
-void ves_icall_System_Runtime_Remoting_Contexts_Context_RegisterContext (MonoAppContextHandle ctx, MonoError *error);
-
-ICALL_EXPORT
-void ves_icall_System_Runtime_Remoting_Contexts_Context_ReleaseContext (MonoAppContextHandle ctx, MonoError *error);
-
 MONO_PROFILER_API MonoInternalThread *mono_thread_internal_current (void);
+
+MonoInternalThreadHandle
+mono_thread_internal_current_handle (void);
 
 void mono_thread_internal_abort (MonoInternalThread *thread, gboolean appdomain_unload);
 void mono_thread_internal_suspend_for_shutdown (MonoInternalThread *thread);
@@ -437,8 +397,18 @@ void
 mono_thread_resume_interruption (gboolean exec);
 void mono_threads_perform_thread_dump (void);
 
+// FIXME Correct the type of func and remove the template.
 gboolean
 mono_thread_create_checked (MonoDomain *domain, gpointer func, gpointer arg, MonoError *error);
+
+#ifdef __cplusplus
+template <typename T>
+inline gboolean
+mono_thread_create_checked (MonoDomain *domain, T func, gpointer arg, MonoError *error)
+{
+	return mono_thread_create_checked (domain, (gpointer)func, arg, error);
+}
+#endif
 
 void mono_threads_add_joinable_runtime_thread (MonoThreadInfo *thread_info);
 void mono_threads_add_joinable_thread (gpointer tid);
@@ -475,6 +445,9 @@ mono_thread_internal_is_current (MonoInternalThread *internal);
 gboolean
 mono_threads_is_current_thread_in_protected_block (void);
 
+gboolean
+mono_threads_is_critical_method (MonoMethod *method);
+
 gpointer
 mono_threads_enter_gc_unsafe_region_unbalanced_internal (MonoStackData *stackdata);
 
@@ -495,8 +468,10 @@ MONO_COLD void
 mono_set_pending_exception_handle (MonoExceptionHandle exc);
 
 #define MONO_MAX_SUMMARY_NAME_LEN 140
+#define MONO_MAX_THREAD_NAME_LEN 140
 #define MONO_MAX_SUMMARY_THREADS 32
-#define MONO_MAX_SUMMARY_FRAMES 40
+#define MONO_MAX_SUMMARY_FRAMES 80
+#define MONO_MAX_SUMMARY_EXCEPTIONS 15
 
 typedef struct {
 	gboolean is_managed;
@@ -506,26 +481,59 @@ typedef struct {
 		int il_offset;
 		int native_offset;
 		const char *guid;
+
+#ifndef MONO_PRIVATE_CRASHES
+		// We use ifdef to make it a compile-time error to store this 
+		// symbolicated string on release builds
+		const char *name;
+#endif
+		const char *filename;
+		guint32 image_size;
+		guint32 time_date_stamp;
 	} managed_data;
 	struct {
 		intptr_t ip;
+		gint32 offset;
+		const char *module;
 		gboolean is_trampoline;
 		gboolean has_name;
 	} unmanaged_data;
 } MonoFrameSummary;
 
 typedef struct {
-	intptr_t offset_free_hash;
-	intptr_t offset_rich_hash;
+	MonoClass *managed_exc_type;
+
+	int num_managed_frames;
+	MonoFrameSummary managed_frames [MONO_MAX_SUMMARY_FRAMES];
+} MonoExcSummary;
+
+typedef struct {
+	guint64 offset_free_hash;
+	guint64 offset_rich_hash;
 } MonoStackHash;
 
 typedef struct {
+	gboolean done; // Needed because cond wait can have spurious wakeups
+	MonoSemType done_wait; // Readers are finished with this
+
+	// For managed stack walking
+
+	MonoDomain *domain;
+	MonoJitTlsData *jit_tls;
+	MonoLMF *lmf;
+
+	// Emitted attributes
+
 	gboolean is_managed;
 
-	const char *name;
-	intptr_t managed_thread_ptr;
+	char name [MONO_MAX_THREAD_NAME_LEN];
+
 	intptr_t info_addr;
 	intptr_t native_thread_id;
+
+	// Print reason we don't have a complete
+	// managed trace
+	const char *error_msg;
 
 	int num_managed_frames;
 	MonoFrameSummary managed_frames [MONO_MAX_SUMMARY_FRAMES];
@@ -533,10 +541,22 @@ typedef struct {
 	int num_unmanaged_frames;
 	MonoFrameSummary unmanaged_frames [MONO_MAX_SUMMARY_FRAMES];
 
+	int num_exceptions;
+	MonoExcSummary exceptions [MONO_MAX_SUMMARY_EXCEPTIONS];
+
 	MonoStackHash hashes;
+
+	MonoContext *ctx;
+	MonoContext ctx_mem;
 } MonoThreadSummary;
 
 gboolean
-mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes);
+mono_threads_summarize (MonoContext *ctx, gchar **out, MonoStackHash *hashes, gboolean silent, gboolean signal_handler_controller, gchar *mem, size_t provided_size);
+
+gboolean
+mono_threads_summarize_execute (MonoContext *ctx, gchar **out, MonoStackHash *hashes, gboolean silent, gchar *mem, size_t provided_size);
+
+gboolean
+mono_threads_summarize_one (MonoThreadSummary *out, MonoContext *ctx);
 
 #endif /* _MONO_METADATA_THREADS_TYPES_H_ */

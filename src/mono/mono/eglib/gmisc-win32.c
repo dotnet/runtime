@@ -133,7 +133,12 @@ g_get_known_folder_path (void)
 {
 	gchar *folder_path = NULL;
 	PWSTR profile_path = NULL;
-	HRESULT hr = SHGetKnownFolderPath (&FOLDERID_Profile, KF_FLAG_DEFAULT, NULL, &profile_path);
+#ifdef __cplusplus
+	REFGUID folderid = FOLDERID_Profile;
+#else
+	REFGUID folderid = &FOLDERID_Profile;
+#endif
+	HRESULT hr = SHGetKnownFolderPath (folderid, KF_FLAG_DEFAULT, NULL, &profile_path);
 	if (SUCCEEDED(hr)) {
 		folder_path = u16to8 (profile_path);
 		CoTaskMemFree (profile_path);
@@ -170,14 +175,14 @@ g_get_home_dir (void)
 				sprintf (home_dir, "%s%s", drive, path);
 			}
 		}
-		g_free (drive);
-		g_free (path);
+		g_free ((void*)drive);
+		g_free ((void*)path);
 	}
 
 	return home_dir;
 }
 
-const char *
+const gchar *
 g_get_user_name (void)
 {
 	const char * retName = g_getenv ("USER");

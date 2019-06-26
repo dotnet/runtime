@@ -165,7 +165,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\mono\tests\libtest.c" />
+    <ClCompile Include="..\mono\tests\libtest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="eglib.vcxproj">

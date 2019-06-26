@@ -45,12 +45,10 @@
 
 #elif defined(TARGET_ARM64)
 
-#ifdef __linux__
-#define REDZONE_SIZE    0
-#elif defined(__APPLE__)
+#if defined(__APPLE__)
 #define REDZONE_SIZE	128
 #else
-#error "Not implemented."
+#define REDZONE_SIZE 0
 #endif
 
 #elif defined(__mips__)
@@ -64,6 +62,10 @@
 #elif defined(__sparc__)
 
 #define REDZONE_SIZE	0
+
+#elif defined (TARGET_RISCV)
+
+#define REDZONE_SIZE (0)
 
 #elif defined (TARGET_WASM)
 

@@ -22,12 +22,16 @@ struct _MonoMethodBuilder {
 	GList *locals_list;
 	gint locals;
 	gboolean dynamic;
-	gboolean skip_visibility, init_locals;
-	guint32 code_size, pos;
+	gboolean skip_visibility;
+	gboolean init_locals;
+	guint32 code_size;
+	guint32 pos;
 	guchar *code;
 	gint num_clauses;
 	MonoExceptionClause *clauses;
 	const gchar **param_names;
+	MonoBitSet *volatile_args;
+	MonoBitSet *volatile_locals;
 };
 
 #endif

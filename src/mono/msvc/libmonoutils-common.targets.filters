@@ -85,7 +85,7 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-filemap.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClCompile>
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-math.c">
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-math-c.c">
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-mmap.c">
@@ -149,6 +149,9 @@
       <Filter>Source Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-time.h">
+      <Filter>Header Files$(MonoUtilsFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\strenc-internals.h">
       <Filter>Header Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\strenc.h">

@@ -12,6 +12,7 @@
 #include "interp/interp.h"
 #include "ir-emit.h"
 #include "mini.h"
+#include "trace.h"
 
 #ifndef DISABLE_JIT
 
@@ -20,7 +21,7 @@ emit_fill_call_ctx (MonoCompile *cfg, MonoInst *method, MonoInst *ret)
 {
 	cfg->flags |= MONO_CFG_HAS_ALLOCA;
 
-	MonoInst *alloc, *size, *fill_ctx;
+	MonoInst *alloc, *size;
 
 	EMIT_NEW_ICONST (cfg, size, sizeof (MonoProfilerCallContext));
 	MONO_INST_NEW (cfg, alloc, OP_LOCALLOC);
@@ -28,13 +29,30 @@ emit_fill_call_ctx (MonoCompile *cfg, MonoInst *method, MonoInst *ret)
 	alloc->sreg1 = size->dreg;
 	alloc->flags |= MONO_INST_INIT;
 	MONO_ADD_INS (cfg->cbb, alloc);
-	MONO_INST_NEW (cfg, fill_ctx, OP_FILL_PROF_CALL_CTX);
-	fill_ctx->sreg1 = alloc->dreg;
-	MONO_ADD_INS (cfg->cbb, fill_ctx);
+
+	MonoInst *args_alloc, *ins;
+	MonoMethodSignature *sig;
+
+	sig = mono_method_signature_internal (cfg->method);
+
+	MONO_INST_NEW (cfg, args_alloc, OP_LOCALLOC_IMM);
+	args_alloc->dreg = alloc_preg (cfg);
+	args_alloc->inst_imm = (sig->param_count + sig->hasthis) * TARGET_SIZEOF_VOID_P;
+	args_alloc->flags |= MONO_INST_INIT;
+	MONO_ADD_INS (cfg->cbb, args_alloc);
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, alloc->dreg, MONO_STRUCT_OFFSET (MonoProfilerCallContext, args), args_alloc->dreg);
+
+	for (int i = 0; i < sig->hasthis + sig->param_count; ++i) {
+		NEW_VARLOADA (cfg, ins, cfg->args [i], cfg->args [i]->inst_vtype);
+		MONO_ADD_INS (cfg->cbb, ins);
+
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, args_alloc->dreg, i * TARGET_SIZEOF_VOID_P, ins->dreg);
+	}
+
 	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, alloc->dreg, MONO_STRUCT_OFFSET (MonoProfilerCallContext, method), method->dreg);
 
 	if (ret) {
-		MonoInst *var = mono_compile_create_var (cfg, mono_method_signature (cfg->method)->ret, OP_LOCAL);
+		MonoInst *var = mono_compile_create_var (cfg, mono_method_signature_internal (cfg->method)->ret, OP_LOCAL);
 
 		MonoInst *store, *addr;
 
@@ -46,48 +64,72 @@ emit_fill_call_ctx (MonoCompile *cfg, MonoInst *method, MonoInst *ret)
 	return alloc;
 }
 
+static gboolean
+can_encode_method_ref (MonoMethod *method)
+{
+	/* Return whenever the AOT compiler can encode references to this method */
+	if (!method->wrapper_type)
+		return TRUE;
+	return (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD);
+}
+
 void
 mini_profiler_emit_enter (MonoCompile *cfg)
 {
-	if (!MONO_CFG_PROFILE (cfg, ENTER) || cfg->current_method != cfg->method)
+	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
+
+	if ((!MONO_CFG_PROFILE (cfg, ENTER) || cfg->current_method != cfg->method || (cfg->compile_aot && !can_encode_method_ref (cfg->method))) && !trace)
+		return;
+
+	if (cfg->current_method != cfg->method)
 		return;
 
 	MonoInst *iargs [2];
 
 	EMIT_NEW_METHODCONST (cfg, iargs [0], cfg->method);
 
-	if (MONO_CFG_PROFILE (cfg, ENTER_CONTEXT) && !cfg->llvm_only)
+	if (MONO_CFG_PROFILE (cfg, ENTER_CONTEXT))
 		iargs [1] = emit_fill_call_ctx (cfg, iargs [0], NULL);
 	else
 		EMIT_NEW_PCONST (cfg, iargs [1], NULL);
 
 	/* void mono_profiler_raise_method_enter (MonoMethod *method, MonoProfilerCallContext *ctx) */
-	mono_emit_jit_icall (cfg, mono_profiler_raise_method_enter, iargs);
+	if (trace)
+		mono_emit_jit_icall (cfg, mono_trace_enter_method, iargs);
+	else
+		mono_emit_jit_icall (cfg, mono_profiler_raise_method_enter, iargs);
 }
 
 void
 mini_profiler_emit_leave (MonoCompile *cfg, MonoInst *ret)
 {
-	if (!MONO_CFG_PROFILE (cfg, LEAVE) || cfg->current_method != cfg->method)
+	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
+
+	if (!MONO_CFG_PROFILE (cfg, LEAVE) || cfg->current_method != cfg->method || (cfg->compile_aot && !can_encode_method_ref (cfg->method)))
 		return;
 
 	MonoInst *iargs [2];
 
 	EMIT_NEW_METHODCONST (cfg, iargs [0], cfg->method);
 
-	if (MONO_CFG_PROFILE (cfg, LEAVE_CONTEXT) && !cfg->llvm_only)
+	if (MONO_CFG_PROFILE (cfg, LEAVE_CONTEXT))
 		iargs [1] = emit_fill_call_ctx (cfg, iargs [0], ret);
 	else
 		EMIT_NEW_PCONST (cfg, iargs [1], NULL);
 
 	/* void mono_profiler_raise_method_leave (MonoMethod *method, MonoProfilerCallContext *ctx) */
-	mono_emit_jit_icall (cfg, mono_profiler_raise_method_leave, iargs);
+	if (trace)
+		mono_emit_jit_icall (cfg, mono_trace_leave_method, iargs);
+	else
+		mono_emit_jit_icall (cfg, mono_profiler_raise_method_leave, iargs);
 }
 
 void
 mini_profiler_emit_tail_call (MonoCompile *cfg, MonoMethod *target)
 {
-	if (!MONO_CFG_PROFILE (cfg, TAIL_CALL) || cfg->current_method != cfg->method)
+	gboolean trace = mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method);
+
+	if ((!MONO_CFG_PROFILE (cfg, TAIL_CALL) || cfg->current_method != cfg->method) && !trace)
 		return;
 
 	g_assert (cfg->current_method == cfg->method);
@@ -102,7 +144,10 @@ mini_profiler_emit_tail_call (MonoCompile *cfg, MonoMethod *target)
 		EMIT_NEW_PCONST (cfg, iargs [1], NULL);
 
 	/* void mono_profiler_raise_method_tail_call (MonoMethod *method, MonoMethod *target) */
-	mono_emit_jit_icall (cfg, mono_profiler_raise_method_tail_call, iargs);
+	if (trace)
+		mono_emit_jit_icall (cfg, mono_trace_leave_method, iargs);
+	else
+		mono_emit_jit_icall (cfg, mono_profiler_raise_method_tail_call, iargs);
 }
 
 void
@@ -179,7 +224,7 @@ memdup_with_type (gpointer data, MonoType *t)
 static guint8 *
 get_int_reg (MonoContext *ctx, guint32 reg)
 {
-	return (guint8 *) mono_arch_context_get_int_reg (ctx, reg);
+	return (guint8 *)(gsize)mono_arch_context_get_int_reg (ctx, reg);
 }
 
 static gpointer
@@ -193,9 +238,9 @@ get_variable_buffer (MonoDebugMethodJitInfo *jit, MonoDebugVarInfo *var, MonoCon
 		/*
 		 * This is kind of a special case: All other address modes ultimately
 		 * produce an address to where the actual value is located, but this
-		 * address mode gets us the value itself as an mgreg_t value.
+		 * address mode gets us the value itself as an host_mgreg_t value.
 		 */
-		mgreg_t value = (mgreg_t) get_int_reg (ctx, reg);
+		host_mgreg_t value = (host_mgreg_t) get_int_reg (ctx, reg);
 
 		return memdup_with_type (&value, var->type);
 	}
@@ -254,24 +299,19 @@ get_variable_buffer (MonoDebugMethodJitInfo *jit, MonoDebugVarInfo *var, MonoCon
 gpointer
 mini_profiler_context_get_this (MonoProfilerCallContext *ctx)
 {
-	if (!mono_method_signature (ctx->method)->hasthis)
+	if (!mono_method_signature_internal (ctx->method)->hasthis)
 		return NULL;
 
 	if (ctx->interp_frame)
 		return memdup_with_type (mini_get_interp_callbacks ()->frame_get_this (ctx->interp_frame), m_class_get_this_arg (ctx->method->klass));
-
-	MonoDebugMethodJitInfo *info = mono_debug_find_method (ctx->method, mono_domain_get ());
-
-	if (!info)
-		return NULL;
-
-	return get_variable_buffer (info, info->this_var, &ctx->context);
+	else
+		return memdup_with_type (ctx->args [0], m_class_get_this_arg (ctx->method->klass));
 }
 
 gpointer
 mini_profiler_context_get_argument (MonoProfilerCallContext *ctx, guint32 pos)
 {
-	MonoMethodSignature *sig = mono_method_signature (ctx->method);
+	MonoMethodSignature *sig = mono_method_signature_internal (ctx->method);
 
 	if (pos >= sig->param_count)
 		return NULL;
@@ -279,12 +319,7 @@ mini_profiler_context_get_argument (MonoProfilerCallContext *ctx, guint32 pos)
 	if (ctx->interp_frame)
 		return memdup_with_type (mini_get_interp_callbacks ()->frame_get_arg (ctx->interp_frame, pos), sig->params [pos]);
 
-	MonoDebugMethodJitInfo *info = mono_debug_find_method (ctx->method, mono_domain_get ());
-
-	if (!info)
-		return NULL;
-
-	return get_variable_buffer (info, &info->params [pos], &ctx->context);
+	return memdup_with_type (ctx->args [sig->hasthis + pos], sig->params [pos]);
 }
 
 gpointer
@@ -317,10 +352,15 @@ mini_profiler_context_get_local (MonoProfilerCallContext *ctx, guint32 pos)
 gpointer
 mini_profiler_context_get_result (MonoProfilerCallContext *ctx)
 {
+	MonoType *ret = mono_method_signature_internal (ctx->method)->ret;
+
+	if (ctx->interp_frame)
+		ctx->return_value = mini_get_interp_callbacks ()->frame_get_res (ctx->interp_frame);
+
 	if (!ctx->return_value)
 		return NULL;
 
-	return memdup_with_type (ctx->return_value, mono_method_signature (ctx->method)->ret);
+	return memdup_with_type (ctx->return_value, ret);
 }
 
 void

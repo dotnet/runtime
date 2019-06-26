@@ -715,11 +715,7 @@ sgen_los_update_cardtable_mod_union (void)
 LOSObject*
 sgen_los_header_for_object (GCObject *data)
 {
-#if _MSC_VER
-	return (LOSObject*)((char*)data - (int)(&(((LOSObject*)0)->data)));
-#else
-	return (LOSObject*)((char*)data - sizeof (LOSObject));
-#endif
+	return (LOSObject*)((char*)data - offsetof(LOSObject, data));
 }
 
 void

@@ -136,7 +136,7 @@ static inline gchar *mono_portability_find_file_internal (const gchar *pathname,
 	}
 	
 	/* First turn '\' into '/' and strip any drive letters */
-	g_strdelimit (new_pathname, "\\", '/');
+	g_strdelimit (new_pathname, '\\', '/');
 
 #ifdef DEBUG
 	g_message ("%s: Fixed slashes, now have [%s]\n", __func__,

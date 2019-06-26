@@ -25,6 +25,8 @@ typedef enum {
 	MONO_CHECK_MODE_UNKNOWN = 0x8
 } MonoCheckMode;
 
+G_ENUM_FUNCTIONS (MonoCheckMode)
+
 mono_bool mono_check_mode_enabled (MonoCheckMode query);
 
 // This is for metadata writes which we have chosen not to check at the current time.

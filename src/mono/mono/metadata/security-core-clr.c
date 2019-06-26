@@ -15,6 +15,7 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/security-manager.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/assembly-internals.h>
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/object.h>
@@ -79,10 +80,10 @@ default_platform_check (const char *image_name)
 		return (strcmp (mono_defaults.corlib->name, image_name) == 0);
 	} else {
 		/* this can get called even before we load corlib (e.g. the EXE itself) */
-		const char *corlib = "mscorlib.dll";
+		const char *corlib = MONO_ASSEMBLY_CORLIB_NAME ".dll";
 		int ilen = strlen (image_name);
 		int clen = strlen (corlib);
-		return ((ilen >= clen) && (strcmp ("mscorlib.dll", image_name + ilen - clen) == 0));
+		return ((ilen >= clen) && (strcmp (corlib, image_name + ilen - clen) == 0));
 	}
 }
 
@@ -223,7 +224,7 @@ get_default_ctor (MonoClass *klass)
 			continue;
 		if ((method->name[0] != '.') || strcmp (".ctor", method->name))
 			continue;
-		sig = mono_method_signature (method);
+		sig = mono_method_signature_internal (method);
 		if (sig && (sig->param_count == 0))
 			return method;
 	}
@@ -727,10 +728,10 @@ can_avoid_corlib_reflection_delegate_optimization (MonoMethod *method)
 	if (strcmp (m_class_get_name_space (method->klass), "System.Reflection") != 0)
 		return FALSE;
 
-	if (strcmp (m_class_get_name (method->klass), "MonoProperty") == 0) {
+	if (strcmp (m_class_get_name (method->klass), "RuntimePropertyInfo") == 0) {
 		if ((strcmp (method->name, "GetterAdapterFrame") == 0) || strcmp (method->name, "StaticGetterAdapterFrame") == 0)
 			return TRUE;
-	} else if (strcmp (m_class_get_name (method->klass), "EventInfo") == 0) {
+	} else if (strcmp (m_class_get_name (method->klass), "RuntimeEventInfo") == 0) {
 		if ((strcmp (method->name, "AddEventFrame") == 0) || strcmp (method->name, "StaticAddEventAdapterFrame") == 0)
 			return TRUE;
 	}

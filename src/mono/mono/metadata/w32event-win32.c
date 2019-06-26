@@ -14,6 +14,7 @@
 #include <winbase.h>
 #include <mono/metadata/handle.h>
 #include <mono/utils/mono-error-internals.h>
+#include "icall-decl.h"
 
 void
 mono_w32event_init (void)
@@ -45,22 +46,15 @@ mono_w32event_reset (gpointer handle)
 }
 
 gpointer
-ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoStringHandle name, gint32 *err, MonoError *error)
+ves_icall_System_Threading_Events_CreateEvent_icall (MonoBoolean manual, MonoBoolean initial,
+	const gunichar2 *name, gint32 name_length, gint32 *win32error, MonoError *error)
 {
 	gpointer event;
-
-	error_init (error);
 	
-	uint32_t gchandle = 0;
-	gunichar2 *uniname = NULL;
-	if (!MONO_HANDLE_IS_NULL (name))
-		uniname = mono_string_handle_pin_chars (name, &gchandle);
 	MONO_ENTER_GC_SAFE;
-	event = CreateEvent (NULL, manual, initial, uniname);
-	*err = GetLastError ();
+	event = CreateEventW (NULL, manual, initial, name);
+	*win32error = GetLastError ();
 	MONO_EXIT_GC_SAFE;
-	if (gchandle)
-		mono_gchandle_free (gchandle);
 
 	return event;
 }
@@ -84,28 +78,18 @@ ves_icall_System_Threading_Events_CloseEvent_internal (gpointer handle)
 }
 
 gpointer
-ves_icall_System_Threading_Events_OpenEvent_internal (MonoStringHandle name, gint32 rights, gint32 *err, MonoError *error)
+ves_icall_System_Threading_Events_OpenEvent_icall (const gunichar2 *name, gint32 name_length,
+	gint32 rights, gint32 *win32error, MonoError *error)
 {
 	gpointer handle;
 
-	error_init (error);
-
-	*err = ERROR_SUCCESS;
-
-	uint32_t gchandle = 0;
-	gunichar2 *uniname = NULL;
-
-	if (!MONO_HANDLE_IS_NULL (name))
-		uniname = mono_string_handle_pin_chars (name, &gchandle);
+	*win32error = ERROR_SUCCESS;
 
 	MONO_ENTER_GC_SAFE;
-	handle = OpenEvent (rights, FALSE, uniname);
+	handle = OpenEventW (rights, FALSE, name);
 	if (!handle)
-		*err = GetLastError ();
+		*win32error = GetLastError ();
 	MONO_EXIT_GC_SAFE;
-
-	if (gchandle)
-		mono_gchandle_free (gchandle);
 
 	return handle;
 }

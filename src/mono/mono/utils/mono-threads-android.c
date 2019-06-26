@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include "glib.h"
+#include <mono/utils/mono-threads.h>
 
 static void
 slow_get_thread_bounds (guint8 *current, guint8 **staddr, size_t *stsize)

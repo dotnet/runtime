@@ -1,2 +1,2 @@
-/csproj.tmpl -crlf
-/mcs.pre -crlf
+/csproj.tmpl crlf
+/*.pre crlf

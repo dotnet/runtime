@@ -19,8 +19,6 @@
 #include <mono/metadata/opcodes.h>
 #include <mono/metadata/reflection.h>
 
-G_BEGIN_DECLS
-
 typedef struct _MonoMethodBuilder MonoMethodBuilder;
 
 #define MONO_METHOD_BUILDER_CALLBACKS_VERSION 1
@@ -47,10 +45,10 @@ mono_mb_create_method (MonoMethodBuilder *mb, MonoMethodSignature *signature, in
 guint32
 mono_mb_add_data (MonoMethodBuilder *mb, gpointer data);
 
+char*
+mono_mb_strdup (MonoMethodBuilder *mb, const char *s);
+
 void
 mono_install_method_builder_callbacks (MonoMethodBuilderCallbacks *cb);
 
-G_END_DECLS
-
 #endif /* __MONO_METHOD_BUILDER_H__ */
-

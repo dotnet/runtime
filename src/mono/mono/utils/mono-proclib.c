@@ -8,6 +8,7 @@
 #include "config.h"
 #include "utils/mono-proclib.h"
 #include "utils/mono-time.h"
+#include "utils/mono-errno.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -20,11 +21,20 @@
 #include <sched.h>
 #endif
 
+#include <utils/mono-mmap.h>
+#include <utils/strenc-internals.h>
+#include <utils/strenc.h>
+#include <utils/mono-error-internals.h>
+#include <utils/mono-io-portability.h>
+#include <utils/mono-logger-internals.h>
+
 #if defined(_POSIX_VERSION)
 #ifdef HAVE_SYS_ERRNO_H
 #include <sys/errno.h>
 #endif
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <errno.h>
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -959,13 +969,141 @@ mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error)
 int
 mono_atexit (void (*func)(void))
 {
-#ifdef HOST_ANDROID
+#if defined(HOST_ANDROID) || !defined(HAVE_ATEXIT)
 	/* Some versions of android libc doesn't define atexit () */
 	return 0;
 #else
 	return atexit (func);
 #endif
 }
+
+#ifndef HOST_WIN32
+
+gboolean
+mono_pe_file_time_date_stamp (gunichar2 *filename, guint32 *out)
+{
+	void *map_handle;
+	gint32 map_size;
+	gpointer file_map = mono_pe_file_map (filename, &map_size, &map_handle);
+	if (!file_map)
+		return FALSE;
+
+	/* Figure this out when we support 64bit PE files */
+	if (1) {
+		IMAGE_DOS_HEADER *dos_header = (IMAGE_DOS_HEADER *)file_map;
+		if (dos_header->e_magic != IMAGE_DOS_SIGNATURE) {
+			mono_pe_file_unmap (file_map, map_handle);
+			return FALSE;
+		}
+
+		IMAGE_NT_HEADERS32 *nt_headers = (IMAGE_NT_HEADERS32 *)((guint8 *)file_map + GUINT32_FROM_LE (dos_header->e_lfanew));
+		if (nt_headers->Signature != IMAGE_NT_SIGNATURE) {
+			mono_pe_file_unmap (file_map, map_handle);
+			return FALSE;
+		}
+
+		*out = nt_headers->FileHeader.TimeDateStamp;
+	} else {
+		g_assert_not_reached ();
+	}
+
+	mono_pe_file_unmap (file_map, map_handle);
+	return TRUE;
+}
+
+gpointer
+mono_pe_file_map (gunichar2 *filename, gint32 *map_size, void **handle)
+{
+	gchar *filename_ext = NULL;
+	gchar *located_filename = NULL;
+	int fd = -1;
+	struct stat statbuf;
+	gpointer file_map = NULL;
+	ERROR_DECL (error);
+
+	/* According to the MSDN docs, a search path is applied to
+	 * filename.  FIXME: implement this, for now just pass it
+	 * straight to open
+	 */
+
+	filename_ext = mono_unicode_to_external_checked (filename, error);
+	// This block was added to diagnose https://github.com/mono/mono/issues/14730, remove after resolved
+	if (G_UNLIKELY (filename_ext == NULL)) {
+		GString *raw_bytes = g_string_new (NULL);
+		char *p = (char*)filename;
+		while (*p != 0) {
+			g_string_append_printf (raw_bytes, "%02X ", (int)*p);
+			p++;
+		}
+		g_assertf (filename_ext != NULL, "%s: unicode conversion returned NULL; %s; input was: %s", __func__, mono_error_get_message (error), raw_bytes->str);
+		g_string_free (raw_bytes, TRUE);
+	}
+	if (filename_ext == NULL) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL; %s", __func__, mono_error_get_message (error));
+		mono_error_cleanup (error);
+		goto exit;
+	}
+
+	fd = open (filename_ext, O_RDONLY, 0);
+	if (fd == -1 && (errno == ENOENT || errno == ENOTDIR) && IS_PORTABILITY_SET) {
+		gint saved_errno = errno;
+
+		located_filename = mono_portability_find_file (filename_ext, TRUE);
+		if (!located_filename) {
+			mono_set_errno (saved_errno);
+
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
+			goto exit;
+		}
+
+		fd = open (located_filename, O_RDONLY, 0);
+		if (fd == -1) {
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
+			goto exit;
+		}
+	}
+	else if (fd == -1) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
+		goto exit;
+	}
+
+	if (fstat (fd, &statbuf) == -1) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error stat()ing file %s: %s", __func__, filename_ext, strerror (errno));
+		goto exit;
+	}
+	*map_size = statbuf.st_size;
+
+	/* Check basic file size */
+	if (statbuf.st_size < sizeof(IMAGE_DOS_HEADER)) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: File %s is too small: %lld", __func__, filename_ext, (long long) statbuf.st_size);
+
+		goto exit;
+	}
+
+	file_map = mono_file_map (statbuf.st_size, MONO_MMAP_READ | MONO_MMAP_PRIVATE, fd, 0, handle);
+	if (file_map == NULL) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error mmap()int file %s: %s", __func__, filename_ext, strerror (errno));
+		goto exit;
+	}
+exit:
+	if (fd != -1)
+		close (fd);
+	g_free (located_filename);
+	g_free (filename_ext);
+	return file_map;
+}
+
+void
+mono_pe_file_unmap (gpointer file_map, void *handle)
+{
+	gint res;
+
+	res = mono_file_unmap (file_map, handle);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: mono_file_unmap failed, error: \"%s\" (%d)", __func__, g_strerror (errno), errno);
+}
+
+#endif /* HOST_WIN32 */
 
 /*
  * This function returns the cpu usage in percentage,

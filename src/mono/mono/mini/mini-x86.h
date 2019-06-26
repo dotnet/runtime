@@ -16,7 +16,7 @@
 #include <signal.h>
 #endif
 
-typedef void (* MonoW32ExceptionHandler) (int _dummy, EXCEPTION_POINTERS *info, void *context);
+typedef void MONO_SIG_HANDLER_SIGNATURE ((*MonoW32ExceptionHandler));
 
 void win32_seh_init(void);
 void win32_seh_cleanup(void);
@@ -155,9 +155,9 @@ typedef struct {
 	gboolean need_stack_frame_inited;
 	gboolean need_stack_frame;
 	int sp_fp_offset, param_area_size;
-	gpointer cinfo;
-	gpointer ss_tramp_var;
-	gpointer bp_tramp_var;
+	CallInfo *cinfo;
+	MonoInst *ss_tramp_var;
+	MonoInst *bp_tramp_var;
 } MonoCompileArch;
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->eax = (gsize)exc; } while (0)
@@ -166,7 +166,6 @@ typedef struct {
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx, start_func) do { \
     unsigned int stackptr; \
-	mono_arch_flush_register_windows (); \
     { \
 	   __asm mov stackptr, ebp \
     } \
@@ -178,7 +177,6 @@ typedef struct {
 #else
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
-		mono_arch_flush_register_windows ();	\
 		MONO_CONTEXT_SET_IP ((ctx), (start_func));	\
 		MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (0));	\
 		MONO_CONTEXT_SET_SP ((ctx), __builtin_frame_address (0));	\
@@ -199,7 +197,6 @@ typedef struct {
 #define MONO_ARCH_VTABLE_REG X86_EDX
 #define MONO_ARCH_RGCTX_REG MONO_ARCH_IMT_REG
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_TRAMPOLINE 1
-#define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
 #define MONO_ARCH_HAVE_FULL_AOT_TRAMPOLINES 1
 #define MONO_ARCH_GOT_REG X86_EBX
 #define MONO_ARCH_HAVE_GET_TRAMPOLINES 1
@@ -216,7 +213,12 @@ typedef struct {
 #define MONO_ARCH_AOT_SUPPORTED 1
 
 #define MONO_ARCH_GSHARED_SUPPORTED 1
+
 #define MONO_ARCH_LLVM_SUPPORTED 1
+#if defined(HOST_WIN32) && defined(TARGET_WIN32)
+// Only supported for Windows cross compiler builds, host == Win32, target != Win32.
+#undef MONO_ARCH_LLVM_SUPPORTED
+#endif
 
 #define MONO_ARCH_SOFT_DEBUG_SUPPORTED 1
 
@@ -232,6 +234,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_OP_TAILCALL_REG 1
 #define MONO_ARCH_HAVE_SDB_TRAMPOLINES 1
 #define MONO_ARCH_HAVE_PATCH_CODE_NEW 1
+#define MONO_ARCH_LLVM_TARGET_LAYOUT "e-p:32:32-n32-S128"
 
 /* Used for optimization, not complete */
 #define MONO_ARCH_IS_OP_MEMBASE(opcode) ((opcode) == OP_X86_PUSH_MEMBASE)
@@ -309,7 +312,7 @@ typedef struct {
 	guint8 pass_empty_struct : 1; // Set in scenarios when empty structs needs to be represented as argument.
 } ArgInfo;
 
-typedef struct {
+struct CallInfo {
 	int nargs;
 	guint32 stack_usage;
 	guint32 reg_usage;
@@ -325,18 +328,18 @@ typedef struct {
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
-} CallInfo;
+};
 
 guint32
 mono_x86_get_this_arg_offset (MonoMethodSignature *sig);
 
 void
-mono_x86_throw_exception (mgreg_t *regs, MonoObject *exc, 
-						  mgreg_t eip, gboolean rethrow);
+mono_x86_throw_exception (host_mgreg_t *regs, MonoObject *exc,
+						  host_mgreg_t eip, gboolean rethrow, gboolean preserve_ips);
 
 void
-mono_x86_throw_corlib_exception (mgreg_t *regs, guint32 ex_token_index, 
-								 mgreg_t eip, gint32 pc_offset);
+mono_x86_throw_corlib_exception (host_mgreg_t *regs, guint32 ex_token_index,
+								 host_mgreg_t eip, gint32 pc_offset);
 
 void 
 mono_x86_patch (unsigned char* code, gpointer target);

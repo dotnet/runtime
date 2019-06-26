@@ -52,7 +52,7 @@ struct MonoLMF {
 	gulong     eip;
 	/* Add a dummy field to force iregs to be aligned when cross compiling from x86 */
 	gulong     dummy;
-	mgreg_t    iregs [MONO_SAVED_GREGS]; /* 13..31 */
+	host_mgreg_t iregs [MONO_SAVED_GREGS]; /* 13..31 */
 	gdouble    fregs [MONO_SAVED_FREGS]; /* 14..31 */
 };
 
@@ -68,7 +68,7 @@ typedef struct MonoCompileArch {
  * To support this, code needs to follow the following conventions:
  * - for the size of a pointer use sizeof (gpointer)
  * - for the size of a register/stack slot use SIZEOF_REGISTER.
- * - for variables which contain values of registers, use mgreg_t.
+ * - for variables which contain values of registers, use host_mgreg_t or target_mgreg_t.
  * - for loading/saving pointers/ints, use the normal ppc_load_reg/ppc_save_reg ()
  *   macros.
  * - for loading/saving register sized quantities, use the ppc_ldr/ppc_str 
@@ -240,7 +240,6 @@ typedef struct MonoCompileArch {
 #define MONO_ARCH_VTABLE_REG	ppc_r11
 #define MONO_ARCH_RGCTX_REG	MONO_ARCH_IMT_REG
 
-#define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX 1
 
 #define MONO_ARCH_NO_IOV_CHECK 1
@@ -287,7 +286,7 @@ typedef struct {
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) g_assert_not_reached ()
 
-#elif defined(__APPLE__)
+#elif defined (__APPLE__)
 
 typedef struct {
 	unsigned long sp;
@@ -305,11 +304,11 @@ typedef struct {
 #else
 
 typedef struct {
-	mgreg_t sp;
+	host_mgreg_t sp;
 #ifdef __mono_ppc64__
-	mgreg_t cr;
+	host_mgreg_t cr;
 #endif
-	mgreg_t lr;
+	host_mgreg_t lr;
 } MonoPPCStackFrame;
 
 #ifdef G_COMPILER_CODEWARRIOR
@@ -384,7 +383,7 @@ void
 mono_ppc_patch (guchar *code, const guchar *target);
 
 void
-mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, mgreg_t *int_regs, gdouble *fp_regs, gboolean rethrow);
+mono_ppc_throw_exception (MonoObject *exc, unsigned long eip, unsigned long esp, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean rethrow, gboolean preserve_ips);
 
 #ifdef __mono_ppc64__
 #define MONO_PPC_32_64_CASE(c32,c64)	c64
@@ -394,9 +393,6 @@ extern void mono_ppc_emitted (guint8 *code, gint64 length, const char *format, .
 #endif
 
 gboolean mono_ppc_is_direct_call_sequence (guint32 *code);
-
-void mono_ppc_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr);
-
 
 // Debugging macros for ELF ABI v2
 #ifdef DEBUG_ELFABIV2

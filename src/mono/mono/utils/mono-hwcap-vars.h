@@ -27,9 +27,26 @@ MONO_HWCAP_VAR(arm_has_thumb2)
 
 MONO_HWCAP_VAR(ppc_has_icache_snoop)
 MONO_HWCAP_VAR(ppc_is_isa_2x)
+MONO_HWCAP_VAR(ppc_is_isa_2_03)
 MONO_HWCAP_VAR(ppc_is_isa_64)
 MONO_HWCAP_VAR(ppc_has_move_fpr_gpr)
 MONO_HWCAP_VAR(ppc_has_multiple_ls_units)
+
+#elif defined (TARGET_RISCV)
+
+MONO_HWCAP_VAR(riscv_has_stdext_a)
+MONO_HWCAP_VAR(riscv_has_stdext_b)
+MONO_HWCAP_VAR(riscv_has_stdext_c)
+MONO_HWCAP_VAR(riscv_has_stdext_d)
+MONO_HWCAP_VAR(riscv_has_stdext_f)
+MONO_HWCAP_VAR(riscv_has_stdext_j)
+MONO_HWCAP_VAR(riscv_has_stdext_l)
+MONO_HWCAP_VAR(riscv_has_stdext_m)
+MONO_HWCAP_VAR(riscv_has_stdext_n)
+MONO_HWCAP_VAR(riscv_has_stdext_p)
+MONO_HWCAP_VAR(riscv_has_stdext_q)
+MONO_HWCAP_VAR(riscv_has_stdext_t)
+MONO_HWCAP_VAR(riscv_has_stdext_v)
 
 #elif defined (TARGET_S390X)
 

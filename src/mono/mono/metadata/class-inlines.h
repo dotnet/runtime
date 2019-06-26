@@ -118,4 +118,74 @@ mono_class_has_static_metadata (MonoClass *klass)
 	return m_class_get_type_token (klass) && !m_class_get_image (klass)->dynamic && !mono_class_is_ginst (klass);
 }
 
+static inline gboolean
+m_class_is_abstract (MonoClass *klass)
+{
+	return (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_ABSTRACT) != 0;
+}
+
+static inline gboolean
+m_class_is_interface (MonoClass *klass)
+{
+	return MONO_CLASS_IS_INTERFACE_INTERNAL (klass);
+}
+
+static inline gboolean
+m_class_is_gtd (MonoClass *klass)
+{
+	return mono_class_is_gtd (klass);
+}
+
+static inline gboolean
+m_class_is_string (MonoClass *klass)
+{
+	return klass == mono_defaults.string_class;
+}
+
+static inline gboolean
+m_class_is_primitive (MonoClass *klass)
+{
+	return mono_type_is_primitive (m_class_get_byval_arg (klass));
+}
+
+static inline gboolean
+m_class_is_native_pointer (MonoClass *klass)
+{
+	MonoType *t = m_class_get_byval_arg (klass);
+
+	return t->type == MONO_TYPE_PTR || t->type == MONO_TYPE_FNPTR;
+}
+
+static inline gboolean
+m_class_is_nullable (MonoClass *klass)
+{
+	return mono_class_is_nullable (klass);
+}
+
+static inline MonoClass*
+m_class_get_nullable_elem_class (MonoClass *klass)
+{
+	return m_class_get_cast_class (klass);
+}
+
+static inline gboolean
+m_class_is_runtime_type (MonoClass *klass)
+{
+	return klass == mono_defaults.runtimetype_class;
+}
+
+static inline gboolean
+m_class_is_auto_layout (MonoClass *klass)
+{
+	guint32 layout = (mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK);
+
+	return layout == TYPE_ATTRIBUTE_AUTO_LAYOUT;
+}
+
+static inline gboolean
+m_class_is_ginst (MonoClass *klass)
+{
+	return mono_class_is_ginst (klass);
+}
+
 #endif

@@ -18,6 +18,11 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="build-init.vcxproj">
+      <Project>{92ae7622-5f58-4234-9a26-9ec71876b3f4}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C36612BD-22D3-4B95-85E2-7FDC4FC5D740}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -157,6 +162,11 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(MONO_COMPILE_AS_CPP)'=='true'">
+    <ClCompile>
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="libgcmonosgen.targets" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

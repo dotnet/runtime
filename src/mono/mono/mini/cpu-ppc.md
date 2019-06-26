@@ -70,16 +70,16 @@ start_handler: len:32
 endfinally: len:28
 ceq: dest:i len:12
 cgt: dest:i len:12
-cgt.un: dest:i len:12
+cgt_un: dest:i len:12
 clt: dest:i len:12
-clt.un: dest:i len:12
+clt_un: dest:i len:12
 localloc: dest:i src1:i len:60
 compare: src1:i src2:i len:4
 compare_imm: src1:i len:12
 fcompare: src1:f src2:f len:12
-oparglist: src1:i len:12
+arglist: src1:i len:12
 setlret: src1:i src2:i len:12
-checkthis: src1:b len:4
+check_this: src1:b len:4
 voidcall: len:16 clob:c
 voidcall_reg: src1:i len:16 clob:c
 voidcall_membase: src1:b len:16 clob:c
@@ -206,10 +206,16 @@ float_cge: dest:i src1:f src2:f len:16
 float_cle: dest:i src1:f src2:f len:16
 call_handler: len:12 clob:c
 endfilter: src1:i len:32
-aot_const: dest:i len:8
+aotconst: dest:i len:8
 load_gotaddr: dest:i len:32
 got_entry: dest:i src1:b len:32
+abs: dest:f src1:f len:4
 sqrt: dest:f src1:f len:4
+sqrtf: dest:f src1:f len:4
+round: dest:f src1:f len:4
+ppc_trunc: dest:f src1:f len:4
+ppc_ceil: dest:f src1:f len:4
+ppc_floor: dest:f src1:f len:4
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4
 subcc: dest:i src1:i src2:i len:4
@@ -322,6 +328,16 @@ icompare: src1:i src2:i len:4
 icompare_imm: src1:i len:12
 
 long_conv_to_ovf_i4_2: dest:i src1:i src2:i len:32
+
+# shouldn't use long stuff on ppc32
+#long_min: dest:i src1:i src2:i len:8 clob:1
+#long_min_un: dest:i src1:i src2:i len:8 clob:1
+#long_max: dest:i src1:i src2:i len:8 clob:1
+#long_max_un: dest:i src1:i src2:i len:8 clob:1
+int_min: dest:i src1:i src2:i len:8 clob:1
+int_max: dest:i src1:i src2:i len:8 clob:1
+int_min_un: dest:i src1:i src2:i len:8 clob:1
+int_max_un: dest:i src1:i src2:i len:8 clob:1
 
 vcall2: len:20 clob:c
 vcall2_reg: src1:i len:8 clob:c

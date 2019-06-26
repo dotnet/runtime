@@ -475,7 +475,7 @@ sgen_get_card_table_configuration (int *shift_bits, gpointer *mask)
 }
 
 guint8*
-sgen_get_target_card_table_configuration (int *shift_bits, gpointer *mask)
+sgen_get_target_card_table_configuration (int *shift_bits, target_mgreg_t *mask)
 {
 #ifndef MANAGED_WBARRIER
 	return NULL;
@@ -485,9 +485,9 @@ sgen_get_target_card_table_configuration (int *shift_bits, gpointer *mask)
 
 	*shift_bits = CARD_BITS;
 #ifdef SGEN_TARGET_HAVE_OVERLAPPING_CARDS
-	*mask = (gpointer)CARD_MASK;
+	*mask = CARD_MASK;
 #else
-	*mask = NULL;
+	*mask = 0;
 #endif
 
 	return sgen_cardtable;
@@ -524,9 +524,9 @@ static inline int
 find_card_offset (mword card)
 {
 /*XXX Use assembly as this generates some pretty bad code */
-#if (defined(__i386__) || defined(__arm__)) && defined(__GNUC__)
+#if (defined(__i386__) || defined(__arm__) || (defined (__riscv) && __riscv_xlen == 32)) && defined(__GNUC__)
 	return  (__builtin_ffs (card) - 1) / 8;
-#elif (defined(__x86_64__) || defined(__aarch64__)) && defined(__GNUC__)
+#elif (defined(__x86_64__) || defined(__aarch64__) || (defined (__riscv) && __riscv_xlen == 64)) && defined(__GNUC__)
 	return (__builtin_ffsll (card) - 1) / 8;
 #elif defined(__s390x__)
 	return (__builtin_ffsll (GUINT64_TO_LE(card)) - 1) / 8;

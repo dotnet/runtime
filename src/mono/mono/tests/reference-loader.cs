@@ -52,9 +52,11 @@ public class Tests {
 		return 1;
 	}
 
-	public static int test_0_load_reference_asm_via_reference ()
+	public static int test_0_load_reference_asm_via_reference_parent ()
 	{
-		// Check that loading an assembly that references a reference assembly doesn't succeed.
+		// Check that loading an assembly that references a reference
+		// assembly and then using a type derived from a reference
+		// assembly type doesn't succeed.
 		var an = new AssemblyName ("TestingReferenceReferenceAssembly");
 		try {
 			var a = Assembly.Load (an);
@@ -63,6 +65,20 @@ public class Tests {
 			return 0;
 		}
 		return 1;
+	}
+
+	public static int test_0_load_reference_asm_via_reference_field ()
+	{
+		// Check that loading an assembly that references a reference
+		// assembly and then using a type that has a field from the
+		// reference assembly is okay as long as we don't instantiate
+		// the type.
+		var an = new AssemblyName ("TestingReferenceReferenceAssembly");
+		var a = Assembly.Load (an);
+		var t = a.GetType ("HasFieldFromReferenceAssembly");
+		t.IsSubclassOf (typeof (int));
+		return 0;
+		
 	}
 
 	public static int test_0_reflection_load_reference_asm_via_reference ()

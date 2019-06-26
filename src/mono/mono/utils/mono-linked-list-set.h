@@ -102,8 +102,8 @@ mono_lls_filter_accept_all (gpointer elem, gpointer dummy)
 		MonoLinkedListSet *list__ = (list); \
 		MonoThreadHazardPointers *hp__ = mono_hazard_pointer_get (); \
 		gboolean progress__ = FALSE; \
-		uintptr_t hkey__; \
-		gboolean restart__; \
+		uintptr_t hkey__ = 0; \
+		gboolean restart__ = FALSE; \
 		do { \
 			restart__ = FALSE; \
 			MonoLinkedListSetNode **prev__ = &list__->head; \

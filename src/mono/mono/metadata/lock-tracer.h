@@ -11,8 +11,6 @@
 #include "mono/utils/mono-os-mutex.h"
 #include "mono/utils/mono-coop-mutex.h"
 
-G_BEGIN_DECLS
-
 typedef enum {
 	InvalidLock = 0,
 	LoaderLock,
@@ -67,7 +65,5 @@ void mono_locks_lock_released (RuntimeLocks kind, gpointer lock);
 		mono_locks_lock_released (NAME, LOCK);	\
 		mono_coop_mutex_unlock (LOCK);	\
 	} while (0)
-
-G_END_DECLS
 
 #endif /* __MONO_METADATA_LOCK_TRACER_H__ */

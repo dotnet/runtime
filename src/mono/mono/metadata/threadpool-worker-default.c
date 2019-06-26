@@ -974,10 +974,10 @@ hill_climbing_update (gint16 current_thread_count, guint32 sample_duration, gint
 			 * throughput). Our "error" estimate (the amount of noise that might be present in the
 			 * frequency band we're really interested in) is the average of the adjacent bands. */
 			throughput_wave_component = mono_double_complex_scalar_div (hill_climbing_get_wave_component (hc->samples, sample_count, hc->wave_period), average_throughput);
-			throughput_error_estimate = cabs (mono_double_complex_scalar_div (hill_climbing_get_wave_component (hc->samples, sample_count, adjacent_period_1), average_throughput));
+			throughput_error_estimate = mono_cabs (mono_double_complex_scalar_div (hill_climbing_get_wave_component (hc->samples, sample_count, adjacent_period_1), average_throughput));
 
 			if (adjacent_period_2 <= sample_count) {
-				throughput_error_estimate = MAX (throughput_error_estimate, cabs (mono_double_complex_scalar_div (hill_climbing_get_wave_component (
+				throughput_error_estimate = MAX (throughput_error_estimate, mono_cabs (mono_double_complex_scalar_div (hill_climbing_get_wave_component (
 					hc->samples, sample_count, adjacent_period_2), average_throughput)));
 			}
 
@@ -994,7 +994,7 @@ hill_climbing_update (gint16 current_thread_count, guint32 sample_duration, gint
 					+ ((1.0 + hc->throughput_error_smoothing_factor) * hc->average_throughput_noise);
 			}
 
-			if (cabs (thread_wave_component) > 0) {
+			if (mono_cabs (thread_wave_component) > 0) {
 				/* Adjust the throughput wave so it's centered around the target wave,
 				 * and then calculate the adjusted throughput/thread ratio. */
 				ratio = mono_double_complex_div (mono_double_complex_sub (throughput_wave_component, mono_double_complex_scalar_mul(thread_wave_component, hc->target_throughput_ratio)), thread_wave_component);
@@ -1006,7 +1006,7 @@ hill_climbing_update (gint16 current_thread_count, guint32 sample_duration, gint
 
 			noise_for_confidence = MAX (hc->average_throughput_noise, throughput_error_estimate);
 			if (noise_for_confidence > 0) {
-				confidence = cabs (thread_wave_component) / noise_for_confidence / hc->target_signal_to_noise_ratio;
+				confidence = mono_cabs (thread_wave_component) / noise_for_confidence / hc->target_signal_to_noise_ratio;
 			} else {
 				/* there is no noise! */
 				confidence = 1.0;
@@ -1020,7 +1020,7 @@ hill_climbing_update (gint16 current_thread_count, guint32 sample_duration, gint
 	 * backward (because this indicates that our changes are having the opposite of the intended effect).
 	 * If they're 90 degrees out of phase, we won't move at all, because we can't tell wether we're
 	 * having a negative or positive effect on throughput. */
-	move = creal (ratio);
+	move = mono_creal (ratio);
 	move = CLAMP (move, -1.0, 1.0);
 
 	/* Apply our confidence multiplier. */
@@ -1058,8 +1058,8 @@ hill_climbing_update (gint16 current_thread_count, guint32 sample_duration, gint
 	if (new_thread_count != current_thread_count)
 		hill_climbing_change_thread_count (new_thread_count, transition);
 
-	if (creal (ratio) < 0.0 && new_thread_count == worker.limit_worker_min)
-		*adjustment_interval = (gint)(0.5 + hc->current_sample_interval * (10.0 * MAX (-1.0 * creal (ratio), 1.0)));
+	if (mono_creal (ratio) < 0.0 && new_thread_count == worker.limit_worker_min)
+		*adjustment_interval = (gint)(0.5 + hc->current_sample_interval * (10.0 * MAX (-1.0 * mono_creal (ratio), 1.0)));
 	else
 		*adjustment_interval = hc->current_sample_interval;
 

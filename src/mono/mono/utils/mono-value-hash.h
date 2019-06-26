@@ -15,8 +15,6 @@
 #include <glib.h>
 #include "mono-compiler.h"
 
-G_BEGIN_DECLS
-
 /*
  * This is a hash table with the following features/restrictions:
  * - Keys are not stored in the table, instead a function must be supplied which 
@@ -52,7 +50,5 @@ mono_value_hash_table_lookup (MonoValueHashTable *table, gconstpointer key);
 void
 mono_value_hash_table_insert (MonoValueHashTable *table,
 				 gpointer key, gpointer value);
-
-G_END_DECLS
 
 #endif

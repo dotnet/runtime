@@ -33,7 +33,8 @@ typedef enum {
 	EVENT_KIND_EXCEPTION = 13,
 	EVENT_KIND_KEEPALIVE = 14,
 	EVENT_KIND_USER_BREAK = 15,
-	EVENT_KIND_USER_LOG = 16
+	EVENT_KIND_USER_LOG = 16,
+	EVENT_KIND_CRASH = 17
 } EventKind;
 
 typedef enum {
@@ -187,6 +188,26 @@ typedef struct {
 	DbgEngineStackFrame **frames;
 	int nframes;
 } SingleStepArgs;
+
+/*
+ * OBJECT IDS
+ */
+
+/*
+ * Represents an object accessible by the debugger client.
+ */
+typedef struct {
+	/* Unique id used in the wire protocol to refer to objects */
+	int id;
+	/*
+	 * A weakref gc handle pointing to the object. The gc handle is used to 
+	 * detect if the object was garbage collected.
+	 */
+	guint32 handle;
+} ObjRef;
+
+
+void mono_debugger_free_objref (gpointer value);
 
 typedef int DbgEngineErrorCode;
 #define DE_ERR_NONE 0

@@ -36,6 +36,7 @@
 #include "utils/mono-threads-coop.h"
 #include "utils/mono-threads.h"
 #include "metadata/w32handle.h"
+#include "icall-signatures.h"
 
 #ifdef HEAVY_STATISTICS
 static guint64 stat_wbarrier_set_arrayref = 0;
@@ -99,12 +100,12 @@ scan_object_for_binary_protocol_copy_wbarrier (gpointer dest, char *start, mword
 #endif
 
 void
-mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *klass)
+mono_gc_wbarrier_value_copy_internal (gpointer dest, gpointer src, int count, MonoClass *klass)
 {
 	HEAVY_STAT (++stat_wbarrier_value_copy);
 	g_assert (m_class_is_valuetype (klass));
 
-	SGEN_LOG (8, "Adding value remset at %p, count %d, descr %p for class %s (%p)", dest, count, (gpointer)m_class_get_gc_descr (klass), m_class_get_name (klass), klass);
+	SGEN_LOG (8, "Adding value remset at %p, count %d, descr %p for class %s (%p)", dest, count, (gpointer)(uintptr_t)m_class_get_gc_descr (klass), m_class_get_name (klass), klass);
 
 	if (sgen_ptr_in_nursery (dest) || ptr_on_stack (dest) || !sgen_gc_descr_has_references ((mword)m_class_get_gc_descr (klass))) {
 		size_t element_size = mono_class_value_size (klass, NULL);
@@ -129,12 +130,12 @@ mono_gc_wbarrier_value_copy (gpointer dest, gpointer src, int count, MonoClass *
 }
 
 /**
- * mono_gc_wbarrier_object_copy:
+ * mono_gc_wbarrier_object_copy_internal:
  *
  * Write barrier to call when \p obj is the result of a clone or copy of an object.
  */
 void
-mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
+mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src)
 {
 	int size;
 
@@ -157,10 +158,10 @@ mono_gc_wbarrier_object_copy (MonoObject* obj, MonoObject *src)
 }
 
 /**
- * mono_gc_wbarrier_set_arrayref:
+ * mono_gc_wbarrier_set_arrayref_internal:
  */
 void
-mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
+mono_gc_wbarrier_set_arrayref_internal (MonoArray *arr, gpointer slot_ptr, MonoObject* value)
 {
 	HEAVY_STAT (++stat_wbarrier_set_arrayref);
 	if (sgen_ptr_in_nursery (slot_ptr)) {
@@ -175,12 +176,12 @@ mono_gc_wbarrier_set_arrayref (MonoArray *arr, gpointer slot_ptr, MonoObject* va
 }
 
 /**
- * mono_gc_wbarrier_set_field:
+ * mono_gc_wbarrier_set_field_internal:
  */
 void
-mono_gc_wbarrier_set_field (MonoObject *obj, gpointer field_ptr, MonoObject* value)
+mono_gc_wbarrier_set_field_internal (MonoObject *obj, gpointer field_ptr, MonoObject* value)
 {
-	mono_gc_wbarrier_set_arrayref ((MonoArray*)obj, field_ptr, value);
+	mono_gc_wbarrier_set_arrayref_internal ((MonoArray*)obj, field_ptr, value);
 }
 
 void
@@ -225,7 +226,12 @@ sgen_has_critical_method (void)
 gboolean
 mono_gc_is_critical_method (MonoMethod *method)
 {
+#ifdef HOST_WASM
+	//methods can't be critical under wasm due to the single thread'ness of it
+	return FALSE;
+#else
 	return sgen_is_critical_method (method);
+#endif
 }
 
 static void
@@ -250,6 +256,8 @@ emit_managed_allocater_noilgen (MonoMethodBuilder *mb, gboolean slowpath, gboole
 {
 }
 
+#if !ENABLE_ILGEN
+
 static void
 install_noilgen (void)
 {
@@ -259,6 +267,8 @@ install_noilgen (void)
 	cb.emit_managed_allocater = emit_managed_allocater_noilgen;
 	mono_install_sgen_mono_callbacks (&cb);
 }
+
+#endif
 
 static MonoSgenMonoCallbacks *
 get_sgen_mono_cb (void)
@@ -610,8 +620,8 @@ sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx)
 
 		SGEN_LOG (5, "Clearing unreachable entries for ephemeron array at %p", array);
 
-		cur = mono_array_addr (array, Ephemeron, 0);
-		array_end = cur + mono_array_length_fast (array);
+		cur = mono_array_addr_internal (array, Ephemeron, 0);
+		array_end = cur + mono_array_length_internal (array);
 		tombstone = SGEN_LOAD_VTABLE ((GCObject*)array)->domain->ephemeron_tombstone;
 
 		for (; cur < array_end; ++cur) {
@@ -620,7 +630,7 @@ sgen_client_clear_unreachable_ephemerons (ScanCopyContext ctx)
 			if (!key || key == tombstone)
 				continue;
 
-			SGEN_LOG (5, "[%zd] key %p (%s) value %p (%s)", cur - mono_array_addr (array, Ephemeron, 0),
+			SGEN_LOG (5, "[%zd] key %p (%s) value %p (%s)", cur - mono_array_addr_internal (array, Ephemeron, 0),
 				key, sgen_is_object_alive_for_current_gen (key) ? "reachable" : "unreachable",
 				cur->value, cur->value && sgen_is_object_alive_for_current_gen (cur->value) ? "reachable" : "unreachable");
 
@@ -662,8 +672,8 @@ sgen_client_mark_ephemerons (ScanCopyContext ctx)
 
 		copy_func ((GCObject**)&array, queue);
 
-		cur = mono_array_addr (array, Ephemeron, 0);
-		array_end = cur + mono_array_length_fast (array);
+		cur = mono_array_addr_internal (array, Ephemeron, 0);
+		array_end = cur + mono_array_length_internal (array);
 		tombstone = SGEN_LOAD_VTABLE ((GCObject*)array)->domain->ephemeron_tombstone;
 
 		for (; cur < array_end; ++cur) {
@@ -672,7 +682,7 @@ sgen_client_mark_ephemerons (ScanCopyContext ctx)
 			if (!key || key == tombstone)
 				continue;
 
-			SGEN_LOG (5, "[%zd] key %p (%s) value %p (%s)", cur - mono_array_addr (array, Ephemeron, 0),
+			SGEN_LOG (5, "[%zd] key %p (%s) value %p (%s)", cur - mono_array_addr_internal (array, Ephemeron, 0),
 				key, sgen_is_object_alive_for_current_gen (key) ? "reachable" : "unreachable",
 				cur->value, cur->value && sgen_is_object_alive_for_current_gen (cur->value) ? "reachable" : "unreachable");
 
@@ -681,8 +691,10 @@ sgen_client_mark_ephemerons (ScanCopyContext ctx)
 
 				copy_func (&cur->key, queue);
 				if (value) {
-					if (!sgen_is_object_alive_for_current_gen (value))
+					if (!sgen_is_object_alive_for_current_gen (value)) {
 						nothing_marked = FALSE;
+						sgen_binary_protocol_ephemeron_ref (current, key, value);
+					}
 					copy_func (&cur->value, queue);
 				}
 			}
@@ -763,7 +775,7 @@ clear_domain_process_object (GCObject *obj, MonoDomain *domain)
 	if (remove && obj->synchronisation) {
 		guint32 dislink = mono_monitor_get_object_monitor_gchandle (obj);
 		if (dislink)
-			mono_gchandle_free (dislink);
+			mono_gchandle_free_internal (dislink);
 	}
 
 	return remove;
@@ -836,7 +848,7 @@ mono_gc_clear_domain (MonoDomain * domain)
 	sgen_clear_nursery_fragments ();
 
 	FOREACH_THREAD_ALL (info) {
-		mono_handle_stack_free_domain ((HandleStack*)info->client_info.info.handle_stack, domain);
+		mono_handle_stack_free_domain (info->client_info.info.handle_stack, domain);
 	} FOREACH_THREAD_END
 
 	if (sgen_mono_xdomain_checks && domain != mono_get_root_domain ()) {
@@ -953,6 +965,12 @@ mono_gc_alloc_fixed (size_t size, MonoGCDescriptor descr, MonoGCRootSource sourc
 	return (MonoObject*)res;
 }
 
+MonoObject*
+mono_gc_alloc_fixed_no_descriptor (size_t size, MonoGCRootSource source, void *key, const char *msg)
+{
+	return mono_gc_alloc_fixed (size, 0, source, key, msg);
+}
+
 /**
  * mono_gc_free_fixed:
  */
@@ -974,7 +992,7 @@ static gboolean use_managed_allocator = TRUE;
 
 #ifdef MANAGED_ALLOCATION
 /* FIXME: Do this in the JIT, where specialized allocation sequences can be created
- * for each class. This is currently not easy to do, as it is hard to generate basic 
+ * for each class. This is currently not easy to do, as it is hard to generate basic
  * blocks + branches, but it is easy with the linear IL codebase.
  *
  * For this to work we'd need to solve the TLAB race, first.  Now we
@@ -989,18 +1007,9 @@ create_allocator (int atype, ManagedAllocatorVariant variant)
 	MonoMethodBuilder *mb;
 	MonoMethod *res;
 	MonoMethodSignature *csig;
-	static gboolean registered = FALSE;
 	const char *name = NULL;
 	WrapperInfo *info;
 	int num_params, i;
-
-	if (!registered) {
-		mono_register_jit_icall (mono_gc_alloc_obj, "mono_gc_alloc_obj", mono_create_icall_signature ("object ptr int"), FALSE);
-		mono_register_jit_icall (mono_gc_alloc_vector, "mono_gc_alloc_vector", mono_create_icall_signature ("object ptr int int"), FALSE);
-		mono_register_jit_icall (mono_gc_alloc_string, "mono_gc_alloc_string", mono_create_icall_signature ("object ptr int int32"), FALSE);
-		mono_register_jit_icall (mono_profiler_raise_gc_allocation, "mono_profiler_raise_gc_allocation", mono_create_icall_signature ("void object"), FALSE);
-		registered = TRUE;
-	}
 
 	if (atype == ATYPE_SMALL) {
 		name = slowpath ? "SlowAllocSmall" : (profiler ? "ProfilerAllocSmall" : "AllocSmall");
@@ -1444,9 +1453,9 @@ mono_gc_set_string_length (MonoString *str, gint32 new_length)
  */
 
 #define GC_ROOT_NUM 32
-#define SPECIAL_ADDRESS_FIN_QUEUE ((void*)1)
-#define SPECIAL_ADDRESS_CRIT_FIN_QUEUE ((void*)2)
-#define SPECIAL_ADDRESS_EPHEMERON ((void*)3)
+#define SPECIAL_ADDRESS_FIN_QUEUE ((mono_byte*)1)
+#define SPECIAL_ADDRESS_CRIT_FIN_QUEUE ((mono_byte*)2)
+#define SPECIAL_ADDRESS_EPHEMERON ((mono_byte*)3)
 
 typedef struct {
 	int count;		/* must be the first field */
@@ -1476,7 +1485,7 @@ report_gc_root (GCRootReport *report, void *address, void *object)
 static void
 single_arg_report_root (MonoObject **obj, void *gc_data)
 {
-	GCRootReport *report = gc_data;
+	GCRootReport *report = (GCRootReport*)gc_data;
 	if (*obj)
 		report_gc_root (report, obj, *obj);
 }
@@ -1484,7 +1493,7 @@ single_arg_report_root (MonoObject **obj, void *gc_data)
 static void
 two_args_report_root (void *address, MonoObject *obj, void *gc_data)
 {
-	GCRootReport *report = gc_data;
+	GCRootReport *report = (GCRootReport*)gc_data;
 	if (obj)
 		report_gc_root (report, address, obj);
 }
@@ -1568,12 +1577,12 @@ find_pinned_obj (char *addr)
 
 	if (idx != pinned_objects.next_slot) {
 		if (pinned_objects.data [idx] == addr)
-			return pinned_objects.data [idx];
+			return (GCObject*)pinned_objects.data [idx];
 		if (idx == 0)
 			return NULL;
 	}
 
-	GCObject *obj = pinned_objects.data [idx - 1];
+	GCObject *obj = (GCObject*)pinned_objects.data [idx - 1];
 	if (addr > (char*)obj && addr < ((char*)obj + sgen_safe_object_get_size (obj)))
 		return obj;
 	return NULL;
@@ -1584,7 +1593,7 @@ find_pinned_obj (char *addr)
  * We pass @root_report_address so register are properly accounted towards their thread
 */
 static void
-report_conservative_roots (GCRootReport *report, char *root_report_address, void **start, void **end)
+report_conservative_roots (GCRootReport *report, void *root_report_address, void **start, void **end)
 {
 	while (start < end) {
 		mword addr = (mword)*start;
@@ -1611,7 +1620,7 @@ typedef struct {
 static void
 report_handle_stack_root (gpointer *ptr, gpointer user_data)
 {
-	ReportHandleStackRoot *ud = user_data;
+	ReportHandleStackRoot *ud = (ReportHandleStackRoot*)user_data;
 	GCRootReport *report = ud->report;
 	gpointer addr = ud->info->client_info.info.handle_stack;
 
@@ -1631,7 +1640,7 @@ report_handle_stack_roots (GCRootReport *report, SgenThreadInfo *info, gboolean 
 	ud.report = report;
 	ud.info = info;
 
-	mono_handle_stack_scan ((HandleStack *) info->client_info.info.handle_stack, report_handle_stack_root, &ud, ud.precise, FALSE);
+	mono_handle_stack_scan (info->client_info.info.handle_stack, report_handle_stack_root, &ud, ud.precise, FALSE);
 }
 
 static void
@@ -1691,7 +1700,7 @@ report_pin_queue (void)
 	sgen_pointer_queue_sort_uniq (&pinned_objects);
 
 	for (int i = 0; i < pinned_objects.next_slot; ++i) {
-		GCObject *obj = pinned_objects.data [i];
+		GCObject *obj = (GCObject*)pinned_objects.data [i];
 		ssize_t size = sgen_safe_object_get_size (obj);
 
 		ssize_t addr = (ssize_t)obj;
@@ -1727,7 +1736,7 @@ report_registered_roots_by_type (int root_type)
 	RootRecord *root;
 	report.count = 0;
 	SGEN_HASH_TABLE_FOREACH (&sgen_roots_hash [root_type], void **, start_root, RootRecord *, root) {
-		SGEN_LOG (6, "Profiler root scan %p-%p (desc: %p)", start_root, root->end_root, (void*)root->root_desc);
+		SGEN_LOG (6, "Profiler root scan %p-%p (desc: %p)", start_root, root->end_root, (void*)(intptr_t)root->root_desc);
 		if (root_type == ROOT_TYPE_PINNED)
 			report_pinning_roots (&report, start_root, (void**)root->end_root);
 		else
@@ -1757,8 +1766,8 @@ report_ephemeron_roots (void)
                 if (!sgen_is_object_alive_for_current_gen ((GCObject*)array))
                         continue;
 
-                cur = mono_array_addr (array, Ephemeron, 0);
-                array_end = cur + mono_array_length_fast (array);
+                cur = mono_array_addr_internal (array, Ephemeron, 0);
+                array_end = cur + mono_array_length_internal (array);
                 tombstone = SGEN_LOAD_VTABLE ((GCObject*)array)->domain->ephemeron_tombstone;
 
                 for (; cur < array_end; ++cur) {
@@ -2058,7 +2067,7 @@ sgen_client_thread_detach_with_lock (SgenThreadInfo *p)
 	sgen_binary_protocol_thread_unregister ((gpointer)tid);
 	SGEN_LOG (3, "unregister thread %p (%p)", p, (gpointer)tid);
 
-	HandleStack *handles = (HandleStack*) p->client_info.info.handle_stack;
+	HandleStack *handles = p->client_info.info.handle_stack;
 	p->client_info.info.handle_stack = NULL;
 	mono_handle_stack_free (handles);
 }
@@ -2247,13 +2256,13 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 			  beginning of the object.
 			*/
 			if (precise)
-				mono_handle_stack_scan ((HandleStack*)info->client_info.info.handle_stack, (GcScanFunc)ctx.ops->copy_or_mark_object, ctx.queue, precise, TRUE);
+				mono_handle_stack_scan (info->client_info.info.handle_stack, (GcScanFunc)ctx.ops->copy_or_mark_object, ctx.queue, precise, TRUE);
 			else {
 				PinHandleStackInteriorPtrData ud;
 				memset (&ud, 0, sizeof (ud));
 				ud.start_nursery = (void**)start_nursery;
 				ud.end_nursery = (void**)end_nursery;
-				mono_handle_stack_scan ((HandleStack*)info->client_info.info.handle_stack, pin_handle_stack_interior_ptrs, &ud, precise, FALSE);
+				mono_handle_stack_scan (info->client_info.info.handle_stack, pin_handle_stack_interior_ptrs, &ud, precise, FALSE);
 			}
 		}
 	} FOREACH_THREAD_END
@@ -2262,7 +2271,7 @@ sgen_client_scan_thread_data (void *start_nursery, void *end_nursery, gboolean p
 /*
  * mono_gc_set_stack_end:
  *
- *   Set the end of the current threads stack to STACK_END. The stack space between 
+ *   Set the end of the current threads stack to STACK_END. The stack space between
  * STACK_END and the real end of the threads stack will not be scanned during collections.
  */
 void
@@ -2464,7 +2473,7 @@ mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
 void
 mono_gc_register_obj_with_weak_fields (void *obj)
 {
-	return sgen_register_obj_with_weak_fields (obj);
+	return sgen_register_obj_with_weak_fields ((MonoObject*)obj);
 }
 
 void*
@@ -2481,6 +2490,16 @@ mono_gc_get_los_limit (void)
 	return SGEN_MAX_SMALL_OBJ_SIZE;
 }
 
+guint64
+mono_gc_get_allocated_bytes_for_current_thread (void)
+{
+	SgenThreadInfo* info;
+	info = mono_thread_info_current ();
+
+	/*There are some more allocated bytes in the current tlab that have not been recorded yet */
+	return info->total_bytes_allocated + info->tlab_next - info->tlab_start;
+}
+
 gpointer
 sgen_client_default_metadata (void)
 {
@@ -2494,49 +2513,49 @@ sgen_client_metadata_for_object (GCObject *obj)
 }
 
 /**
- * mono_gchandle_new:
+ * mono_gchandle_new_internal:
  * \param obj managed object to get a handle for
  * \param pinned whether the object should be pinned
  * This returns a handle that wraps the object, this is used to keep a
  * reference to a managed object from the unmanaged world and preventing the
  * object from being disposed.
- * 
+ *
  * If \p pinned is false the address of the object can not be obtained, if it is
  * true the address of the object can be obtained.  This will also pin the
  * object so it will not be possible by a moving garbage collector to move the
- * object. 
- * 
+ * object.
+ *
  * \returns a handle that can be used to access the object from unmanaged code.
  */
 guint32
-mono_gchandle_new (MonoObject *obj, gboolean pinned)
+mono_gchandle_new_internal (MonoObject *obj, gboolean pinned)
 {
 	return sgen_gchandle_new (obj, pinned);
 }
 
 /**
- * mono_gchandle_new_weakref:
+ * mono_gchandle_new_weakref_internal:
  * \param obj managed object to get a handle for
  * \param track_resurrection Determines how long to track the object, if this is set to TRUE, the object is tracked after finalization, if FALSE, the object is only tracked up until the point of finalization.
  *
  * This returns a weak handle that wraps the object, this is used to
  * keep a reference to a managed object from the unmanaged world.
- * Unlike the \c mono_gchandle_new the object can be reclaimed by the
+ * Unlike the \c mono_gchandle_new_internal the object can be reclaimed by the
  * garbage collector.  In this case the value of the GCHandle will be
  * set to zero.
- * 
+ *
  * If \p track_resurrection is TRUE the object will be tracked through
  * finalization and if the object is resurrected during the execution
  * of the finalizer, then the returned weakref will continue to hold
  * a reference to the object.   If \p track_resurrection is FALSE, then
  * the weak reference's target will become NULL as soon as the object
  * is passed on to the finalizer.
- * 
+ *
  * \returns a handle that can be used to access the object from
  * unmanaged code.
  */
 guint32
-mono_gchandle_new_weakref (GCObject *obj, gboolean track_resurrection)
+mono_gchandle_new_weakref_internal (GCObject *obj, gboolean track_resurrection)
 {
 	return sgen_gchandle_new_weakref (obj, track_resurrection);
 }
@@ -2555,15 +2574,15 @@ mono_gchandle_is_in_domain (guint32 gchandle, MonoDomain *domain)
 }
 
 /**
- * mono_gchandle_free:
+ * mono_gchandle_free_internal:
  * \param gchandle a GCHandle's handle.
  *
  * Frees the \p gchandle handle.  If there are no outstanding
  * references, the garbage collector can reclaim the memory of the
- * object wrapped. 
+ * object wrapped.
  */
 void
-mono_gchandle_free (guint32 gchandle)
+mono_gchandle_free_internal (guint32 gchandle)
 {
 	sgen_gchandle_free (gchandle);
 }
@@ -2581,17 +2600,17 @@ mono_gchandle_free_domain (MonoDomain *unloading)
 }
 
 /**
- * mono_gchandle_get_target:
+ * mono_gchandle_get_target_internal:
  * \param gchandle a GCHandle's handle.
  *
- * The handle was previously created by calling \c mono_gchandle_new or
- * \c mono_gchandle_new_weakref. 
+ * The handle was previously created by calling \c mono_gchandle_new_internal or
+ * \c mono_gchandle_new_weakref.
  *
  * \returns a pointer to the \c MonoObject* represented by the handle or
  * NULL for a collected object if using a weakref handle.
  */
 MonoObject*
-mono_gchandle_get_target (guint32 gchandle)
+mono_gchandle_get_target_internal (guint32 gchandle)
 {
 	return sgen_gchandle_get_target (gchandle);
 }
@@ -2634,7 +2653,7 @@ sgen_client_gchandle_created (int handle_type, GCObject *obj, guint32 handle)
 	mono_atomic_inc_i32 (&mono_perfcounters->gc_num_handles);
 #endif
 
-	MONO_PROFILER_RAISE (gc_handle_created, (handle, handle_type, obj));
+	MONO_PROFILER_RAISE (gc_handle_created, (handle, (MonoGCHandleType)handle_type, obj));
 }
 
 void
@@ -2644,7 +2663,7 @@ sgen_client_gchandle_destroyed (int handle_type, guint32 handle)
 	mono_atomic_dec_i32 (&mono_perfcounters->gc_num_handles);
 #endif
 
-	MONO_PROFILER_RAISE (gc_handle_deleted, (handle, handle_type));
+	MONO_PROFILER_RAISE (gc_handle_deleted, (handle, (MonoGCHandleType)handle_type));
 }
 
 void
@@ -2688,7 +2707,7 @@ mono_gc_get_card_table (int *shift_bits, gpointer *mask)
 }
 
 guint8*
-mono_gc_get_target_card_table (int *shift_bits, gpointer *mask)
+mono_gc_get_target_card_table (int *shift_bits, target_mgreg_t *mask)
 {
 	return sgen_get_target_card_table_configuration (shift_bits, mask);
 }
@@ -2794,6 +2813,15 @@ sgen_client_init (void)
 	mono_tls_init_gc_keys ();
 
 	mono_thread_info_attach ();
+}
+
+void
+mono_gc_init_icalls (void)
+{
+	mono_register_jit_icall (mono_gc_alloc_obj, mono_icall_sig_object_ptr_int, FALSE);
+	mono_register_jit_icall (mono_gc_alloc_vector, mono_icall_sig_object_ptr_int_int, FALSE);
+	mono_register_jit_icall (mono_gc_alloc_string, mono_icall_sig_object_ptr_int_int32, FALSE);
+	mono_register_jit_icall (mono_profiler_raise_gc_allocation, mono_icall_sig_void_object, FALSE);
 }
 
 gboolean

@@ -1,9 +1,9 @@
-#!/bin/sh
+#!/bin/sh -e
 
 TESTRESULT_FILE=TestResult-op_il_seq_point.tmp
-TOTAL=$(grep -c "<test-case" $TESTRESULT_FILE)
-FAILURES=$(grep -c "<failure>" $TESTRESULT_FILE)
-if [ "$FAILURES" -eq "0" ]
+TOTAL=$(grep -c "<test-case" $TESTRESULT_FILE || true)
+FAILURES=$(grep -c "<failure>" $TESTRESULT_FILE || true)
+if [ "$FAILURES" -eq "0" ] && [ "$TOTAL" -ne "0" ]
 then
 	PASS="True"
 else

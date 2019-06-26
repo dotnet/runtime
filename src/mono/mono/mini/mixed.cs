@@ -75,6 +75,12 @@ class InterpClass
 	}
 
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static int entry_deep_generic_vt (int i, decimal? b) {
+		return i;
+	}
+
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public static StackTrace get_stacktrace_interp () {
 		var o = new object ();
 		return new StackTrace (true);
@@ -134,6 +140,9 @@ class JitClass
 		var ptr2 = InterpClass.entry_intptr_intptr (ptr);
 		if (ptr != ptr2)
 			return 10;
+		var edgvt_ret = InterpClass.entry_deep_generic_vt (1337, 2m);
+		if (edgvt_ret != 1337)
+			return 11;
 		return 0;
 	}
 
@@ -283,4 +292,24 @@ class Tests
 			return 5;
 		return 0;
 	}
+
+	// Finally exception will be thrown from this stack : interp -> jit -> eh -> interp
+	// Test that we propagate the finally exception over the jitted frames
+	public static int test_0_finex () {
+		bool called_finally = false;
+		try {
+			try {
+				JitClass.throw_ex ();
+				return 3;
+			} finally {
+				called_finally = true;
+				throw new Exception ("E2");
+			}
+		} catch (Exception) {
+			if (!called_finally)
+				return 1;
+			return 0;
+		}
+		return 2;
+        }
 }

@@ -14,7 +14,7 @@
 #include <winbase.h>
 #include <mono/metadata/handle.h>
 #include <mono/utils/mono-error-internals.h>
-
+#include "icall-decl.h"
 
 void
 mono_w32mutex_init (void)
@@ -22,11 +22,10 @@ mono_w32mutex_init (void)
 }
 
 gpointer
-ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoStringHandle name, MonoBoolean *created, MonoError *error)
+ves_icall_System_Threading_Mutex_CreateMutex_icall (MonoBoolean owned, const gunichar2 *name,
+	gint32 name_length, MonoBoolean *created, MonoError *error)
 {
 	HANDLE mutex;
-
-	error_init (error);
 
 	*created = TRUE;
 
@@ -35,21 +34,11 @@ ves_icall_System_Threading_Mutex_CreateMutex_internal (MonoBoolean owned, MonoSt
 	 * was freshly created */
 	SetLastError (ERROR_SUCCESS);
 
-	if (MONO_HANDLE_IS_NULL (name)) {
-		MONO_ENTER_GC_SAFE;
-		mutex = CreateMutex (NULL, owned, NULL);
-		MONO_EXIT_GC_SAFE;
-	} else {
-		uint32_t gchandle;
-		gunichar2 *uniname = mono_string_handle_pin_chars (name, &gchandle);
-		MONO_ENTER_GC_SAFE;
-		mutex = CreateMutex (NULL, owned, uniname);
-
-		if (GetLastError () == ERROR_ALREADY_EXISTS)
-			*created = FALSE;
-		MONO_EXIT_GC_SAFE;
-		mono_gchandle_free (gchandle);
-	}
+	MONO_ENTER_GC_SAFE;
+	mutex = CreateMutexW (NULL, owned, name);
+	if (name && GetLastError () == ERROR_ALREADY_EXISTS)
+		*created = FALSE;
+	MONO_EXIT_GC_SAFE;
 
 	return mutex;
 }
@@ -61,23 +50,18 @@ ves_icall_System_Threading_Mutex_ReleaseMutex_internal (gpointer handle)
 }
 
 gpointer
-ves_icall_System_Threading_Mutex_OpenMutex_internal (MonoStringHandle name, gint32 rights, gint32 *err, MonoError *error)
+ves_icall_System_Threading_Mutex_OpenMutex_icall (const gunichar2 *name, gint32 name_length,
+	gint32 rights, gint32 *win32error, MonoError *error)
 {
 	HANDLE ret;
 
-	*err = ERROR_SUCCESS;
+	*win32error = ERROR_SUCCESS;
 
-	uint32_t gchandle = 0;
-	gunichar2 *uniname = NULL;
-	if (!MONO_HANDLE_IS_NULL (name))
-		uniname = mono_string_handle_pin_chars (name, &gchandle);
 	MONO_ENTER_GC_SAFE;
-	ret = OpenMutex (rights, FALSE, uniname);
+	ret = OpenMutexW (rights, FALSE, name);
 	if (!ret)
-		*err = GetLastError ();
+		*win32error = GetLastError ();
 	MONO_EXIT_GC_SAFE;
-	if (gchandle != 0)
-		mono_gchandle_free (gchandle);
 
 	return ret;
 }

@@ -19,6 +19,7 @@ struct MonoBtlsSslCtx {
 	void *instance;
 	MonoBtlsVerifyFunc verify_func;
 	MonoBtlsSelectFunc select_func;
+	MonoBtlsServerNameFunc server_name_func;
 };
 
 #define debug_print(ptr,message) \
@@ -31,13 +32,13 @@ do { if (mono_btls_ssl_ctx_is_debug_enabled(ptr)) \
 mono_btls_ssl_ctx_debug_printf (ptr, "%s:%d:%s(): " fmt, __FILE__, __LINE__, \
 	__func__, __VA_ARGS__); } while (0)
 
-MONO_API int
+int
 mono_btls_ssl_ctx_is_debug_enabled (MonoBtlsSslCtx *ctx)
 {
 	return ctx->debug_bio != NULL;
 }
 
-MONO_API int
+int
 mono_btls_ssl_ctx_debug_printf (MonoBtlsSslCtx *ctx, const char *format, ...)
 {
 	va_list args;
@@ -52,7 +53,7 @@ mono_btls_ssl_ctx_debug_printf (MonoBtlsSslCtx *ctx, const char *format, ...)
 	return ret;
 }
 
-MONO_API MonoBtlsSslCtx *
+MonoBtlsSslCtx *
 mono_btls_ssl_ctx_new (void)
 {
 	MonoBtlsSslCtx *ctx;
@@ -76,14 +77,14 @@ mono_btls_ssl_ctx_new (void)
 	return ctx;
 }
 
-MONO_API MonoBtlsSslCtx *
+MonoBtlsSslCtx *
 mono_btls_ssl_ctx_up_ref (MonoBtlsSslCtx *ctx)
 {
 	CRYPTO_refcount_inc (&ctx->references);
 	return ctx;
 }
 
-MONO_API int
+int
 mono_btls_ssl_ctx_free (MonoBtlsSslCtx *ctx)
 {
 	if (!CRYPTO_refcount_dec_and_test_zero (&ctx->references))
@@ -94,13 +95,13 @@ mono_btls_ssl_ctx_free (MonoBtlsSslCtx *ctx)
 	return 1;
 }
 
-MONO_API SSL_CTX *
+SSL_CTX *
 mono_btls_ssl_ctx_get_ctx (MonoBtlsSslCtx *ctx)
 {
 	return ctx->ctx;
 }
 
-MONO_API void
+void
 mono_btls_ssl_ctx_set_debug_bio (MonoBtlsSslCtx *ctx, BIO *debug_bio)
 {
 	if (debug_bio)
@@ -109,7 +110,7 @@ mono_btls_ssl_ctx_set_debug_bio (MonoBtlsSslCtx *ctx, BIO *debug_bio)
 		ctx->debug_bio = NULL;
 }
 
-MONO_API void
+void
 mono_btls_ssl_ctx_initialize (MonoBtlsSslCtx *ctx, void *instance)
 {
 	ctx->instance = instance;
@@ -131,7 +132,7 @@ cert_verify_callback (X509_STORE_CTX *storeCtx, void *arg)
 	return ret;
 }
 
-MONO_API void
+void
 mono_btls_ssl_ctx_set_cert_verify_callback (MonoBtlsSslCtx *ptr, MonoBtlsVerifyFunc func, int cert_required)
 {
 	int mode;
@@ -162,7 +163,7 @@ cert_select_callback (SSL *ssl, void *arg)
 	// SSL_get_client_CA_list() may only be called during this callback.
 	ca_list = SSL_get_client_CA_list (ssl);
 	if (ca_list) {
-		count = sk_X509_NAME_num (ca_list);
+		count = (int)sk_X509_NAME_num (ca_list);
 		cadata = OPENSSL_malloc (sizeof (void *) * (count + 1));
 		sizes = OPENSSL_malloc (sizeof (int) * (count + 1));
 		if (!cadata || !sizes) {
@@ -172,7 +173,7 @@ cert_select_callback (SSL *ssl, void *arg)
 		for (i = 0; i < count; i++) {
 			X509_NAME *name = sk_X509_NAME_value (ca_list, i);
 			cadata[i] = name->bytes->data;
-			sizes[i] = name->bytes->length;
+			sizes[i] = (int)name->bytes->length;
 		}
 	}
 
@@ -191,32 +192,32 @@ out:
 	return ret;
 }
 
-MONO_API void
+void
 mono_btls_ssl_ctx_set_cert_select_callback (MonoBtlsSslCtx *ptr, MonoBtlsSelectFunc func)
 {
 	ptr->select_func = func;
 	SSL_CTX_set_cert_cb (ptr->ctx, cert_select_callback, ptr);
 }
 
-MONO_API X509_STORE *
+X509_STORE *
 mono_btls_ssl_ctx_peek_store (MonoBtlsSslCtx *ctx)
 {
 	return SSL_CTX_get_cert_store (ctx->ctx);
 }
 
-MONO_API void
+void
 mono_btls_ssl_ctx_set_min_version (MonoBtlsSslCtx *ctx, int version)
 {
 	SSL_CTX_set_min_version (ctx->ctx, version);
 }
 
-MONO_API void
+void
 mono_btls_ssl_ctx_set_max_version (MonoBtlsSslCtx *ctx, int version)
 {
 	SSL_CTX_set_max_version (ctx->ctx, version);
 }
 
-MONO_API int
+int
 mono_btls_ssl_ctx_is_cipher_supported (MonoBtlsSslCtx *ctx, uint16_t value)
 {
 	const SSL_CIPHER *cipher;
@@ -225,7 +226,7 @@ mono_btls_ssl_ctx_is_cipher_supported (MonoBtlsSslCtx *ctx, uint16_t value)
 	return cipher != NULL;
 }
 
-MONO_API int
+int
 mono_btls_ssl_ctx_set_ciphers (MonoBtlsSslCtx *ctx, int count, const uint16_t *data,
 				   int allow_unsupported)
 {
@@ -263,13 +264,13 @@ err:
 	return ret;
 }
 
-MONO_API int
+int
 mono_btls_ssl_ctx_set_verify_param (MonoBtlsSslCtx *ctx, const MonoBtlsX509VerifyParam *param)
 {
 	return SSL_CTX_set1_param (ctx->ctx, mono_btls_x509_verify_param_peek_param (param));
 }
 
-MONO_API int
+int
 mono_btls_ssl_ctx_set_client_ca_list (MonoBtlsSslCtx *ctx, int count, int *sizes, const void **data)
 {
 	STACK_OF(X509_NAME) *name_list;
@@ -294,4 +295,25 @@ mono_btls_ssl_ctx_set_client_ca_list (MonoBtlsSslCtx *ctx, int count, int *sizes
 	// Takes ownership of the list.
 	SSL_CTX_set_client_CA_list (ctx->ctx, name_list);
 	return 1;
+}
+
+static int
+server_name_callback (SSL *ssl, int *out_alert, void *arg)
+{
+	MonoBtlsSslCtx *ctx = (MonoBtlsSslCtx *)arg;
+
+	if (ctx->server_name_func (ctx->instance) == 1)
+		return SSL_TLSEXT_ERR_OK;
+
+	*out_alert = SSL_AD_USER_CANCELLED;
+	return SSL_TLSEXT_ERR_ALERT_FATAL;
+}
+
+void
+mono_btls_ssl_ctx_set_server_name_callback (MonoBtlsSslCtx *ptr, MonoBtlsServerNameFunc func)
+{
+	ptr->server_name_func = func;
+
+	SSL_CTX_set_tlsext_servername_callback (ptr->ctx, server_name_callback);
+	SSL_CTX_set_tlsext_servername_arg (ptr->ctx, ptr);
 }

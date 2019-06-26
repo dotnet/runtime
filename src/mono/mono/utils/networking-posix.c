@@ -127,7 +127,24 @@ mono_get_address_info (const char *hostname, int port, int flags, MonoAddressInf
 
 #endif
 
-#ifdef HAVE_GETPROTOBYNAME
+#if defined(__linux__) && defined(HAVE_GETPROTOBYNAME_R)
+
+static int
+fetch_protocol (const char *proto_name, int *cache, int *proto, int default_val)
+{
+	if (!*cache) {
+		struct protoent protoent_buf = { 0 };
+		struct protoent *pent = NULL;
+		char buf[1024];
+
+		getprotobyname_r (proto_name, &protoent_buf, buf, 1024, &pent);
+		*proto = pent ? pent->p_proto : default_val;
+		*cache = 1;
+	}
+	return *proto;
+}
+
+#elif HAVE_GETPROTOBYNAME
 
 static int
 fetch_protocol (const char *proto_name, int *cache, int *proto, int default_val)
@@ -141,6 +158,8 @@ fetch_protocol (const char *proto_name, int *cache, int *proto, int default_val)
 	}
 	return *proto;
 }
+
+#endif
 
 int
 mono_networking_get_tcp_protocol (void)
@@ -162,8 +181,6 @@ mono_networking_get_ipv6_protocol (void)
 	static int cache, proto;
 	return fetch_protocol ("ipv6", &cache, &proto, 41); //41 is SOL_IPV6 on linux
 }
-
-#endif
 
 #if defined (HAVE_SIOCGIFCONF)
 

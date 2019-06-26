@@ -13,7 +13,7 @@ struct MonoBtlsX509Chain {
 	CRYPTO_refcount_t references;
 };
 
-MONO_API MonoBtlsX509Chain *
+MonoBtlsX509Chain *
 mono_btls_x509_chain_new (void)
 {
 	MonoBtlsX509Chain *chain = (MonoBtlsX509Chain *)OPENSSL_malloc (sizeof (MonoBtlsX509Chain));
@@ -26,7 +26,7 @@ mono_btls_x509_chain_new (void)
 	return chain;
 }
 
-MONO_API MonoBtlsX509Chain *
+MonoBtlsX509Chain *
 mono_btls_x509_chain_from_certs (STACK_OF(X509) *certs)
 {
 	MonoBtlsX509Chain *chain = (MonoBtlsX509Chain *)OPENSSL_malloc (sizeof (MonoBtlsX509Chain));
@@ -39,19 +39,19 @@ mono_btls_x509_chain_from_certs (STACK_OF(X509) *certs)
 	return chain;
 }
 
-MONO_API STACK_OF(X509) *
+STACK_OF(X509) *
 mono_btls_x509_chain_peek_certs (MonoBtlsX509Chain *chain)
 {
 	return chain->certs;
 }
 
-MONO_API int
+int
 mono_btls_x509_chain_get_count (MonoBtlsX509Chain *chain)
 {
 	return (int)sk_X509_num(chain->certs);
 }
 
-MONO_API X509 *
+X509 *
 mono_btls_x509_chain_get_cert (MonoBtlsX509Chain *chain, int index)
 {
 	X509 *cert;
@@ -64,13 +64,13 @@ mono_btls_x509_chain_get_cert (MonoBtlsX509Chain *chain, int index)
 	return cert;
 }
 
-MONO_API STACK_OF(X509) *
+STACK_OF(X509) *
 mono_btls_x509_chain_get_certs (MonoBtlsX509Chain *chain)
 {
 	return chain->certs;
 }
 
-MONO_API int
+int
 mono_btls_x509_chain_free (MonoBtlsX509Chain *chain)
 {
 	if (!CRYPTO_refcount_dec_and_test_zero(&chain->references))
@@ -81,14 +81,14 @@ mono_btls_x509_chain_free (MonoBtlsX509Chain *chain)
 	return 1;
 }
 
-MONO_API MonoBtlsX509Chain *
+MonoBtlsX509Chain *
 mono_btls_x509_chain_up_ref (MonoBtlsX509Chain *chain)
 {
 	CRYPTO_refcount_inc(&chain->references);
 	return chain;
 }
 
-MONO_API void
+void
 mono_btls_x509_chain_add_cert (MonoBtlsX509Chain *chain, X509 *x509)
 {
 	X509_up_ref(x509);

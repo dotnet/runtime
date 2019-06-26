@@ -9,6 +9,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/mono-config-dirs.h>
 #include <mono/metadata/mono-debug.h>
+#include <mono/metadata/profiler-legacy.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/utils/mono-dl.h>
@@ -30,7 +31,7 @@ load_profiler (MonoDl *module, const char *name, const char *desc)
 	char *err, *old_name = g_strdup_printf (OLD_INITIALIZER_NAME);
 	MonoProfilerInitializer func;
 
-	if (!(err = mono_dl_symbol (module, old_name, (gpointer) &func))) {
+	if (!(err = mono_dl_symbol (module, old_name, (gpointer*) &func))) {
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_PROFILER, "Found old-style startup symbol '%s' for the '%s' profiler; it has not been migrated to the new API.", old_name, name);
 		g_free (old_name);
 		return FALSE;
@@ -142,7 +143,8 @@ load_profiler_from_installation (const char *libname, const char *name, const ch
 void
 mono_profiler_load (const char *desc)
 {
-	char *col, *mname, *libname;
+	const char *col;
+	char *mname, *libname;
 
 	mname = libname = NULL;
 
@@ -319,7 +321,7 @@ mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, 
 
 	coverage_lock ();
 
-	MonoProfilerCoverageInfo *info = g_hash_table_lookup (mono_profiler_state.coverage_hash, method);
+	MonoProfilerCoverageInfo *info = (MonoProfilerCoverageInfo*)g_hash_table_lookup (mono_profiler_state.coverage_hash, method);
 
 	coverage_unlock ();
 
@@ -414,7 +416,7 @@ mono_profiler_coverage_instrumentation_enabled (MonoMethod *method)
 	gboolean cover = FALSE;
 
 	for (MonoProfilerHandle handle = mono_profiler_state.profilers; handle; handle = handle->next) {
-		MonoProfilerCoverageFilterCallback cb = handle->coverage_filter;
+		MonoProfilerCoverageFilterCallback cb = (MonoProfilerCoverageFilterCallback)handle->coverage_filter;
 
 		if (cb)
 			cover |= cb (handle->prof, method);
@@ -634,13 +636,6 @@ mono_profiler_set_call_instrumentation_filter_callback (MonoProfilerHandle handl
  * introspection was enabled, or \c FALSE if the function was called too late for
  * this to be possible.
  *
- * Please note: Mono's LLVM backend does not support this feature. This means
- * that methods with call context instrumentation will be handled by Mono's
- * JIT even in LLVM mode. There is also a special case when Mono is compiling
- * in LLVM-only mode: Since LLVM does not provide a way to implement call
- * contexts, a \c NULL context will always be passed to enter/leave events even
- * though this method returns \c TRUE.
- *
  * This function is \b not async safe.
  *
  * This function may \b only be called from a profiler's init function or prior
@@ -770,13 +765,15 @@ mono_profiler_call_context_free_buffer (void *buffer)
 	mono_profiler_state.context_free_buffer (buffer);
 }
 
+G_ENUM_FUNCTIONS (MonoProfilerCallInstrumentationFlags)
+
 MonoProfilerCallInstrumentationFlags
 mono_profiler_get_call_instrumentation_flags (MonoMethod *method)
 {
 	MonoProfilerCallInstrumentationFlags flags = MONO_PROFILER_CALL_INSTRUMENTATION_NONE;
 
 	for (MonoProfilerHandle handle = mono_profiler_state.profilers; handle; handle = handle->next) {
-		MonoProfilerCallInstrumentationFilterCallback cb = handle->call_instrumentation_filter;
+		MonoProfilerCallInstrumentationFilterCallback cb = (MonoProfilerCallInstrumentationFilterCallback)handle->call_instrumentation_filter;
 
 		if (cb)
 			flags |= cb (handle->prof, method);
@@ -846,7 +843,7 @@ mono_profiler_cleanup (void)
 	MonoProfilerHandle head = mono_profiler_state.profilers;
 
 	while (head) {
-		MonoProfilerCleanupCallback cb = head->cleanup_callback;
+		MonoProfilerCleanupCallback cb = (MonoProfilerCleanupCallback)head->cleanup_callback;
 
 		if (cb)
 			cb (head->prof);
@@ -934,7 +931,7 @@ update_callback (volatile gpointer *location, gpointer new_, volatile gint32 *co
 	{ \
 		if (!mono_profiler_state.startup_done) return;	\
 		for (MonoProfilerHandle h = mono_profiler_state.profilers; h; h = h->next) { \
-			MonoProfiler ## type ## Callback cb = h->name ## _cb; \
+			MonoProfiler ## type ## Callback cb = (MonoProfiler ## type ## Callback)h->name ## _cb; \
 			if (cb) \
 				cb args; \
 		} \
@@ -960,25 +957,6 @@ update_callback (volatile gpointer *location, gpointer new_, volatile gint32 *co
 #undef MONO_PROFILER_EVENT_5
 #undef _MONO_PROFILER_EVENT
 
-/*
- * The following code is here to maintain compatibility with a few profiler API
- * functions used by Xamarin.{Android,iOS,Mac} so that they keep working
- * regardless of which system Mono version is used.
- *
- * TODO: Remove this some day if we're OK with breaking compatibility.
- */
-
-typedef void *MonoLegacyProfiler;
-
-typedef void (*MonoLegacyProfileFunc) (MonoLegacyProfiler *prof);
-typedef void (*MonoLegacyProfileThreadFunc) (MonoLegacyProfiler *prof, uintptr_t tid);
-typedef void (*MonoLegacyProfileGCFunc) (MonoLegacyProfiler *prof, MonoProfilerGCEvent event, int generation);
-typedef void (*MonoLegacyProfileGCResizeFunc) (MonoLegacyProfiler *prof, int64_t new_size);
-typedef void (*MonoLegacyProfileJitResult) (MonoLegacyProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo, int result);
-typedef void (*MonoLegacyProfileAllocFunc) (MonoLegacyProfiler *prof, MonoObject *obj, MonoClass *klass);
-typedef void (*MonoLegacyProfileMethodFunc) (MonoLegacyProfiler *prof, MonoMethod *method);
-typedef void (*MonoLegacyProfileExceptionFunc) (MonoLegacyProfiler *prof, MonoObject *object);
-typedef void (*MonoLegacyProfileExceptionClauseFunc) (MonoLegacyProfiler *prof, MonoMethod *method, int clause_type, int clause_num);
 
 struct _MonoProfiler {
 	MonoProfilerHandle handle;
@@ -997,15 +975,6 @@ struct _MonoProfiler {
 };
 
 static MonoProfiler *current;
-
-MONO_API void mono_profiler_install (MonoLegacyProfiler *prof, MonoLegacyProfileFunc callback);
-MONO_API void mono_profiler_install_thread (MonoLegacyProfileThreadFunc start, MonoLegacyProfileThreadFunc end);
-MONO_API void mono_profiler_install_gc (MonoLegacyProfileGCFunc callback, MonoLegacyProfileGCResizeFunc heap_resize_callback);
-MONO_API void mono_profiler_install_jit_end (MonoLegacyProfileJitResult end);
-MONO_API void mono_profiler_set_events (int flags);
-MONO_API void mono_profiler_install_allocation (MonoLegacyProfileAllocFunc callback);
-MONO_API void mono_profiler_install_enter_leave (MonoLegacyProfileMethodFunc enter, MonoLegacyProfileMethodFunc fleave);
-MONO_API void mono_profiler_install_exception (MonoLegacyProfileExceptionFunc throw_callback, MonoLegacyProfileMethodFunc exc_method_leave, MonoLegacyProfileExceptionClauseFunc clause_callback);
 
 static void
 shutdown_cb (MonoProfiler *prof)

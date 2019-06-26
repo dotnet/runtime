@@ -94,7 +94,7 @@ free_handle_chunk (HandleChunk *chunk)
 	g_free (chunk);
 }
 
-const MonoObjectHandle mono_null_value_handle;
+const MonoObjectHandle mono_null_value_handle = { 0 };
 
 #define THIS_IS_AN_OK_NUMBER_OF_HANDLES 100
 
@@ -104,40 +104,6 @@ chunk_element (HandleChunk *chunk, int idx)
 	return &chunk->elems[idx];
 }
 
-static HandleChunkElem*
-handle_to_chunk_element (MonoObjectHandle o)
-{
-#if MONO_TYPE_SAFE_HANDLES
-	return (HandleChunkElem*)o.__raw;
-#else
-	return (HandleChunkElem*)o;
-#endif
-}
-
-/* Given a HandleChunkElem* search through the current handle stack to find its chunk and offset. */
-static HandleChunk*
-chunk_element_to_chunk_idx (HandleStack *stack, HandleChunkElem *elem, int *out_idx)
-{
-	HandleChunk *top = stack->top;
-	HandleChunk *cur = stack->bottom;
-
-	*out_idx = 0;
-
-	while (cur != NULL) {
-		HandleChunkElem *front = &cur->elems [0];
-		HandleChunkElem *back = &cur->elems [cur->size];
-
-		if (front <= elem && elem < back) {
-			*out_idx = (int)(elem - front);
-			return cur;
-		}
-
-		if (cur == top)
-			break; /* didn't find it. */
-		cur = cur->next;
-	}
-	return NULL;
-}
 
 #ifdef MONO_HANDLE_TRACK_OWNER
 #ifdef HAVE_BACKTRACE_SYMBOLS
@@ -189,16 +155,23 @@ mono_handle_chunk_leak_check (HandleStack *handles) {
 }
 #endif
 
+// There are deliberately locals and a constant NULL global with this same name.
+#ifdef __cplusplus
+extern MonoThreadInfo * const mono_thread_info_current_var = NULL;
+#else
+MonoThreadInfo * const mono_thread_info_current_var = NULL;
+#endif
+
 /* Actual handles implementation */
 MonoRawHandle
 #ifndef MONO_HANDLE_TRACK_OWNER
-mono_handle_new (MonoObject *obj)
+mono_handle_new (MonoObject *obj, MonoThreadInfo *info)
 #else
-mono_handle_new (MonoObject *obj, const char *owner)
+mono_handle_new (MonoObject *obj, MonoThreadInfo *info, const char *owner)
 #endif
 {
-	MonoThreadInfo *info = mono_thread_info_current ();
-	HandleStack *handles = (HandleStack *)info->handle_stack;
+	info = info ? info : mono_thread_info_current ();
+	HandleStack *handles = info->handle_stack;
 	HandleChunk *top = handles->top;
 #ifdef MONO_HANDLE_TRACK_SP
 	mono_handle_chunk_leak_check (handles);
@@ -244,54 +217,16 @@ retry:
 	goto retry;
 }
 
-gpointer
-#ifndef MONO_HANDLE_TRACK_OWNER
-mono_handle_new_interior (gpointer rawptr)
-#else
-mono_handle_new_interior (gpointer rawptr, const char *owner)
-#endif
-{
-	MonoThreadInfo *info = mono_thread_info_current ();
-	HandleStack *handles = (HandleStack *)info->handle_stack;
-	HandleChunk *top = handles->interior;
-#ifdef MONO_HANDLE_TRACK_SP
-	mono_handle_chunk_leak_check (handles);
-#endif
-
-	g_assert (top);
-
-	/*
-	 * Don't extend the chunk now, interior handles are
-	 * only used for icall arguments, they shouldn't
-	 * overflow.
-	 */
-	g_assert (top->size < OBJECTS_PER_HANDLES_CHUNK);
-	int idx = top->size;
-	gpointer *objslot = &top->elems [idx].o;
-	*objslot = NULL;
-	mono_memory_write_barrier ();
-	top->size++;
-	mono_memory_write_barrier ();
-	*objslot = rawptr;
-	SET_OWNER (top,idx);
-	SET_SP (handles, top, idx);
-	return objslot;
-}
-
 HandleStack*
 mono_handle_stack_alloc (void)
 {
 	HandleStack *stack = new_handle_stack ();
 	HandleChunk *chunk = new_handle_chunk ();
-	HandleChunk *interior = new_handle_chunk ();
 
 	chunk->prev = chunk->next = NULL;
 	chunk->size = 0;
-	interior->prev = interior->next = NULL;
-	interior->size = 0;
 	mono_memory_write_barrier ();
 	stack->top = stack->bottom = chunk;
-	stack->interior = interior;
 #ifdef MONO_HANDLE_TRACK_SP
 	stack->stackmark_sp = NULL;
 #endif
@@ -312,7 +247,6 @@ mono_handle_stack_free (HandleStack *stack)
 		c = next;
 	}
 	free_handle_chunk (c);
-	free_handle_chunk (stack->interior);
 	free_handle_stack (stack);
 }
 
@@ -344,10 +278,6 @@ mono_handle_stack_free_domain (HandleStack *stack, MonoDomain *domain)
 			break;
 		cur = cur->next;
 	}
-	/* We don't examine the interior pointers here because the GC treats
-	 * them conservatively and anyway we don't have enough information here to
-	 * find the object's vtable.
-	 */
 }
 
 static void
@@ -389,46 +319,36 @@ mono_handle_stack_scan (HandleStack *stack, GcScanFunc func, gpointer gc_data, g
 		check_handle_stack_monotonic (stack);
 
 	/*
-	  We're called twice - on the imprecise pass we call func to pin the
-	  objects where the handle points to its interior.  On the precise
-	  pass, we scan all the objects where the handles point to the start of
+	  We're called twice - on the imprecise pass we do nothing.
+	  Interior pointers are retained in managed frames.
+	  On the precise pass, we scan all the objects where the handles point to the start of
 	  the object.
 
 	  Note that if we're running, we know the world is stopped.
 	*/
-	if (precise) {
-		HandleChunk *cur = stack->bottom;
-		HandleChunk *last = stack->top;
+	if (!precise)
+		return;
 
-		while (cur) {
-			for (int i = 0; i < cur->size; ++i) {
-				HandleChunkElem* elem = chunk_element (cur, i);
-				gpointer* obj_slot = &elem->o;
-				if (*obj_slot != NULL)
-					func (obj_slot, gc_data);
-			}
-			if (cur == last)
-				break;
-			cur = cur->next;
-		}
-	} else {
-		HandleChunk *cur = stack->interior;
+	HandleChunk *cur = stack->bottom;
+	HandleChunk *last = stack->top;
 
-		if (!cur)
-			return;
+	while (cur) {
 		for (int i = 0; i < cur->size; ++i) {
 			HandleChunkElem* elem = chunk_element (cur, i);
-			gpointer* ptr_slot = &elem->o;
-			if (*ptr_slot != NULL)
-				func (ptr_slot, gc_data);
+			gpointer* obj_slot = &elem->o;
+			if (*obj_slot != NULL)
+				func (obj_slot, gc_data);
 		}
+		if (cur == last)
+			break;
+		cur = cur->next;
 	}
 }
 
 void
 mono_stack_mark_record_size (MonoThreadInfo *info, HandleStackMark *stackmark, const char *func_name)
 {
-	HandleStack *handles = (HandleStack *)info->handle_stack;
+	HandleStack *handles = info->handle_stack;
 	HandleChunk *cur = stackmark->chunk;
 	int size = -stackmark->size; //discard the starting point of the stack
 	while (cur) {
@@ -453,9 +373,9 @@ mono_stack_mark_pop_value (MonoThreadInfo *info, HandleStackMark *stackmark, Mon
 	MonoObject *obj = value ? *((MonoObject**)value) : NULL;
 	mono_stack_mark_pop (info, stackmark);
 #ifndef MONO_HANDLE_TRACK_OWNER
-	return mono_handle_new (obj);
+	return mono_handle_new (obj, info);
 #else
-	return mono_handle_new (obj, "<mono_stack_mark_pop_value>");
+	return mono_handle_new (obj, info, "<mono_stack_mark_pop_value>");
 #endif
 }
 
@@ -490,22 +410,19 @@ mono_array_handle_length (MonoArrayHandle arr)
 uint32_t
 mono_gchandle_from_handle (MonoObjectHandle handle, mono_bool pinned)
 {
-	/* FIXME: chunk_element_to_chunk_idx does a linear search through the
-	 * chunks and we only need it for the assert */
-	MonoThreadInfo *info = mono_thread_info_current ();
-	HandleStack *stack = (HandleStack*) info->handle_stack;
-	HandleChunkElem* elem = handle_to_chunk_element (handle);
-	int elem_idx = 0;
-	HandleChunk *chunk = chunk_element_to_chunk_idx (stack, elem, &elem_idx);
-	/* gchandles cannot deal with interior pointers */
-	g_assert (chunk != NULL);
-	return mono_gchandle_new (MONO_HANDLE_RAW (handle), pinned);
+	// FIXME This used to check for out of scope handles.
+	// Stack-based handles coming from icall wrappers do not
+	// work with that. This functionality can be largely restored
+	// by introducing a tag bit in handles -- 0 for managed stack-based,
+	// 1 for native TLS-based, having MONO_HANDLE_RAW clear it, and only
+	// doing the former checking for native TLS-based handles.
+	return mono_gchandle_new_internal (MONO_HANDLE_RAW (handle), pinned);
 }
 
 MonoObjectHandle
 mono_gchandle_get_target_handle (uint32_t gchandle)
 {
-	return MONO_HANDLE_NEW (MonoObject, mono_gchandle_get_target (gchandle));
+	return MONO_HANDLE_NEW (MonoObject, mono_gchandle_get_target_internal (gchandle));
 }
 
 gpointer
@@ -514,7 +431,7 @@ mono_array_handle_pin_with_size (MonoArrayHandle handle, int size, uintptr_t idx
 	g_assert (gchandle != NULL);
 	*gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST(MonoObject,handle), TRUE);
 	MonoArray *raw = MONO_HANDLE_RAW (handle);
-	return mono_array_addr_with_size (raw, size, idx);
+	return mono_array_addr_with_size_internal (raw, size, idx);
 }
 
 gunichar2*
@@ -523,7 +440,7 @@ mono_string_handle_pin_chars (MonoStringHandle handle, uint32_t *gchandle)
 	g_assert (gchandle != NULL);
 	*gchandle = mono_gchandle_from_handle (MONO_HANDLE_CAST (MonoObject, handle), TRUE);
 	MonoString *raw = MONO_HANDLE_RAW (handle);
-	return mono_string_chars (raw);
+	return mono_string_chars_internal (raw);
 }
 
 gpointer
@@ -533,13 +450,14 @@ mono_object_handle_pin_unbox (MonoObjectHandle obj, uint32_t *gchandle)
 	MonoClass *klass = mono_handle_class (obj);
 	g_assert (m_class_is_valuetype (klass));
 	*gchandle = mono_gchandle_from_handle (obj, TRUE);
-	return mono_object_unbox (MONO_HANDLE_RAW (obj));
+	return mono_object_unbox_internal (MONO_HANDLE_RAW (obj));
 }
 
+//FIXME inline
 void
 mono_array_handle_memcpy_refs (MonoArrayHandle dest, uintptr_t dest_idx, MonoArrayHandle src, uintptr_t src_idx, uintptr_t len)
 {
-	mono_array_memcpy_refs (MONO_HANDLE_RAW (dest), dest_idx, MONO_HANDLE_RAW (src), src_idx, len);
+	mono_array_memcpy_refs_internal (MONO_HANDLE_RAW (dest), dest_idx, MONO_HANDLE_RAW (src), src_idx, len);
 }
 
 gboolean
@@ -548,8 +466,59 @@ mono_handle_stack_is_empty (HandleStack *stack)
 	return stack->top == stack->bottom && stack->top->size == 0;
 }
 
+//FIXME inline
+gboolean
+mono_gchandle_target_equal (uint32_t gchandle, MonoObjectHandle equal)
+{
+	// This function serves to reduce coop handle creation.
+	MONO_HANDLE_SUPPRESS_SCOPE (1);
+	return mono_gchandle_get_target_internal (gchandle) == MONO_HANDLE_RAW (equal);
+}
+
+//FIXME inline
+void
+mono_gchandle_target_is_null_or_equal (uint32_t gchandle, MonoObjectHandle equal, gboolean *is_null,
+	gboolean *is_equal)
+{
+	// This function serves to reduce coop handle creation.
+	MONO_HANDLE_SUPPRESS_SCOPE (1);
+	MonoObject *target = mono_gchandle_get_target_internal (gchandle);
+	*is_null = target == NULL;
+	*is_equal = target == MONO_HANDLE_RAW (equal);
+}
+
+//FIXME inline
 void
 mono_gchandle_set_target_handle (guint32 gchandle, MonoObjectHandle obj)
 {
 	mono_gchandle_set_target (gchandle, MONO_HANDLE_RAW (obj));
+}
+
+//FIXME inline
+guint32
+mono_gchandle_new_weakref_from_handle (MonoObjectHandle handle)
+{
+	return mono_gchandle_new_weakref_internal (MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle)), FALSE);
+}
+
+//FIXME inline
+int
+mono_handle_hash (MonoObjectHandle object)
+{
+	return mono_object_hash_internal (MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (object)));
+}
+
+//FIXME inline
+guint32
+mono_gchandle_new_weakref_from_handle_track_resurrection (MonoObjectHandle handle)
+{
+	return mono_gchandle_new_weakref_internal (MONO_HANDLE_SUPPRESS (MONO_HANDLE_RAW (handle)), TRUE);
+}
+
+//FIXME inline
+void
+mono_handle_array_getref (MonoObjectHandleOut dest, MonoArrayHandle array, uintptr_t index)
+{
+	MONO_HANDLE_SUPPRESS (g_assert (dest.__raw));
+	MONO_HANDLE_SUPPRESS (*dest.__raw = (MonoObject*)mono_array_get_internal (MONO_HANDLE_RAW (array), gpointer, index));
 }

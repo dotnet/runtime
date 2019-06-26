@@ -102,7 +102,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 }
 
 void
-mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *addr)
+mono_arch_patch_plt_entry (guint8 *code, gpointer *got, host_mgreg_t *regs, guint8 *addr)
 {
 	g_assert_not_reached ();
 }
@@ -134,7 +134,7 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 guchar*
 mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInfo **info, gboolean aot)
 {
-	char *tramp_name;
+	const char *tramp_name;
 	guint8 *buf, *tramp, *code = NULL;
 	int i, lmf;
 	GSList *unwind_ops = NULL;
@@ -273,7 +273,6 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	g_assert (info);
 	tramp_name = mono_get_generic_trampoline_name (tramp_type);
 	*info = mono_tramp_info_create (tramp_name, buf, code - buf, ji, unwind_ops);
-	g_free (tramp_name);
 
 	return buf;
 }
@@ -353,7 +352,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	mrgctx = MONO_RGCTX_SLOT_IS_MRGCTX (slot);
 	index = MONO_RGCTX_SLOT_INDEX (slot);
 	if (mrgctx)
-		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (gpointer);
+		index += MONO_SIZEOF_METHOD_RUNTIME_GENERIC_CONTEXT / sizeof (target_mgreg_t);
 	for (depth = 0; ; ++depth) {
 		int size = mono_class_rgctx_get_array_size (depth, mrgctx);
 
@@ -403,8 +402,8 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	}
 
 	/* fetch slot */
-	g_assert (mips_is_imm16 (sizeof (gpointer) * (index + 1)));
-	mips_lw (code, mips_a1, mips_a1, sizeof (gpointer) * (index + 1));
+	g_assert (mips_is_imm16 (sizeof (target_mgreg_t) * (index + 1)));
+	mips_lw (code, mips_a1, mips_a1, sizeof (target_mgreg_t) * (index + 1));
 	/* is the slot null? */
 	/* if yes, jump to actual trampoline */
 	rgctx_null_jumps [njumps ++] = code;
@@ -426,12 +425,12 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	/* The vtable/mrgctx is still in a0 */
 
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, g_strdup_printf ("specific_trampoline_lazy_fetch_%u", slot));
+		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR, GUINT_TO_POINTER (slot));
 		mips_load (code, mips_at, 0);
 		mips_jr (code, mips_at);
 		mips_nop (code);
 	} else {
-		tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), &code_len);
+		tramp = (guint8*)mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot), MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), &code_len);
 		mips_load (code, mips_at, tramp);
 		mips_jr (code, mips_at);
 		mips_nop (code);

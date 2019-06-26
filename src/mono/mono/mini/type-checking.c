@@ -123,7 +123,7 @@ mini_emit_isninst_cast_inst (MonoCompile *cfg, int klass_reg, MonoClass *klass, 
 		MONO_EMIT_NEW_CLASSCONST (cfg, const_reg, klass);
 		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, stype, const_reg);
 	} else {
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, stype, klass);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, stype, (gsize)klass);
 	}
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, true_target);
 }
@@ -240,7 +240,7 @@ mini_emit_class_check_branch (MonoCompile *cfg, int klass_reg, MonoClass *klass,
 		MONO_EMIT_NEW_CLASSCONST (cfg, const_reg, klass);
 		MONO_EMIT_NEW_BIALU (cfg, OP_COMPARE, -1, klass_reg, const_reg);
 	} else {
-		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, klass);
+		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, (gsize)klass);
 	}
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, branch_op, target);
 }
@@ -357,9 +357,8 @@ mini_emit_castclass (MonoCompile *cfg, int obj_reg, int klass_reg, MonoClass *kl
 }
 
 static void
-emit_special_array_iface_check (MonoCompile *cfg, MonoInst *src, MonoClass* klass, int vtable_reg, MonoBasicBlock *true_bb, int context_used)
+emit_special_array_iface_check (MonoCompile *cfg, MonoInst *src, MonoClass* klass, int vtable_reg, MonoBasicBlock *not_an_array, MonoBasicBlock *true_bb, int context_used)
 {
-	MonoBasicBlock *not_an_array;
 	int rank_reg;
 
 	if (!m_class_is_array_special_interface (klass))
@@ -367,16 +366,15 @@ emit_special_array_iface_check (MonoCompile *cfg, MonoInst *src, MonoClass* klas
 
 	rank_reg = alloc_ireg (cfg);
 
-	NEW_BBLOCK (cfg, not_an_array);
 	MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, rank_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, rank));
 	MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, rank_reg, 1);
-	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, not_an_array);
+	if (not_an_array)
+		MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_IBNE_UN, not_an_array);
+	else
+		MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");
 
 	emit_castclass_with_cache_no_details (cfg, src, klass, context_used);
 	MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, true_bb);
-
-	MONO_START_BB (cfg, not_an_array);
-
 }
 
 /*
@@ -411,9 +409,11 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 		int tmp_reg = alloc_preg (cfg);
 #ifndef DISABLE_REMOTING
 		MonoBasicBlock *interface_fail_bb;
+		MonoBasicBlock *array_fail_bb;
 		int klass_reg = alloc_preg (cfg);
 
 		NEW_BBLOCK (cfg, interface_fail_bb);
+		NEW_BBLOCK (cfg, array_fail_bb);
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, tmp_reg, obj_reg, MONO_STRUCT_OFFSET (MonoObject, vtable));
 		mini_emit_iface_cast (cfg, tmp_reg, klass, interface_fail_bb, is_null_bb);
@@ -422,7 +422,10 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 		MONO_START_BB (cfg, interface_fail_bb);
 
 		//Check if it's a rank zero array and emit fallback casting
-		emit_special_array_iface_check (cfg, src, klass, tmp_reg, is_null_bb, context_used);
+		emit_special_array_iface_check (cfg, src, klass, tmp_reg, array_fail_bb, is_null_bb, context_used);
+
+		// array check failed
+		MONO_START_BB (cfg, array_fail_bb);
 
 		MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, tmp_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
 
@@ -451,7 +454,7 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 			MONO_START_BB (cfg, interface_fail_bb);
 
 			//Check if it's a rank zero array and emit fallback casting
-			emit_special_array_iface_check (cfg, src, klass, tmp_reg, is_null_bb, context_used);
+			emit_special_array_iface_check (cfg, src, klass, tmp_reg, NULL, is_null_bb, context_used);
 		} else {
 			mini_emit_iface_cast (cfg, tmp_reg, klass, NULL, NULL);
 			MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
@@ -511,10 +514,10 @@ handle_castclass (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context
 					mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 					return NULL;
 				}
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, vt);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, (gsize)vt);
 			} else {
 				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, klass);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, (gsize)klass);
 			}
 			MONO_EMIT_NEW_COND_EXC (cfg, NE_UN, "InvalidCastException");
 		} else {
@@ -682,11 +685,28 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 				EMIT_NEW_UNALU (cfg, move, OP_MOVE, res_reg, res_inst->dreg);
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, end_bb);
 			} else if (m_class_get_cast_class (klass) == mono_defaults.object_class) {
-				int parent_reg = alloc_preg (cfg);
+				int parent_reg, class_kind_reg;
+				MonoBasicBlock *pointer_check_bb;
+
+				NEW_BBLOCK (cfg, pointer_check_bb);
+
+				parent_reg = alloc_preg (cfg);
+				class_kind_reg = alloc_preg (cfg);
 				MONO_EMIT_NEW_LOAD_MEMBASE (cfg, parent_reg, eclass_reg, m_class_offsetof_parent ());
-				mini_emit_class_check_branch (cfg, parent_reg, m_class_get_parent (mono_defaults.enum_class), OP_PBNE_UN, is_null_bb);
+				MONO_EMIT_NEW_LOAD_MEMBASE_OP (cfg, OP_LOADU1_MEMBASE, class_kind_reg, eclass_reg, m_class_offsetof_class_kind ());
+
+				// Check if the parent class of the element is not System.ValueType
+				mini_emit_class_check_branch (cfg, parent_reg, m_class_get_parent (mono_defaults.enum_class), OP_PBNE_UN, pointer_check_bb);
 				mini_emit_class_check_branch (cfg, eclass_reg, mono_defaults.enum_class, OP_PBEQ, is_null_bb);
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, false_bb);
+
+				MONO_START_BB (cfg, pointer_check_bb);
+				// Check if the parent class of the element is non-null, else manually check the type
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, parent_reg, NULL);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, is_null_bb);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, class_kind_reg, MONO_CLASS_POINTER);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, false_bb);
+				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);
 			} else if (m_class_get_cast_class (klass) == m_class_get_parent (mono_defaults.enum_class)) {
 				mini_emit_class_check_branch (cfg, eclass_reg, m_class_get_parent (mono_defaults.enum_class), OP_PBEQ, is_null_bb);
 				mini_emit_class_check_branch (cfg, eclass_reg, mono_defaults.enum_class, OP_PBEQ, is_null_bb);				
@@ -715,10 +735,10 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 						mono_cfg_set_exception (cfg, MONO_EXCEPTION_MONO_ERROR);
 						return NULL;
 					}
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, vt);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, vtable_reg, (gsize)vt);
 				} else {
 					MONO_EMIT_NEW_LOAD_MEMBASE (cfg, klass_reg, vtable_reg, MONO_STRUCT_OFFSET (MonoVTable, klass));
-					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, klass);
+					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, klass_reg, (gsize)klass);
 				}
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, false_bb);
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_BR, is_null_bb);

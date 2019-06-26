@@ -25,12 +25,12 @@
 #ifndef MALLOC_280_H
 #define MALLOC_280_H
 
+#include <stddef.h>   /* for size_t */
+#include <mono/utils/mono-compiler.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stddef.h>   /* for size_t */
-#include <mono/utils/mono-compiler.h>
 
 #if !ONLY_MSPACES
 

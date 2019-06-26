@@ -450,15 +450,18 @@ typedef union {
 	} while (0)
 
 
-#define amd64_lea_membase_body(inst,reg,basereg,disp)	\
+#define amd64_lea_membase_body(inst,reg,basereg,disp,width)	\
 	do {	\
-		amd64_emit_rex(inst, 8, (reg), 0, (basereg)); \
+		amd64_emit_rex(inst, width, (reg), 0, (basereg)); \
 		*(inst)++ = (unsigned char)0x8d;	\
 		amd64_membase_emit ((inst), (reg), (basereg), (disp));	\
 	} while (0)
 
+#define amd64_lea4_membase(inst,reg,basereg,disp) \
+	amd64_lea_membase_body((inst), (reg), (basereg), (disp), 4)
+
 #define amd64_lea_membase(inst,reg,basereg,disp) \
-	amd64_lea_membase_body((inst), (reg), (basereg), (disp))
+	amd64_lea_membase_body((inst), (reg), (basereg), (disp), 8)
 
 /* Instruction are implicitly 64-bits so don't generate REX for just the size. */
 #define amd64_push_reg(inst,reg)	\
@@ -767,6 +770,13 @@ typedef union {
 
 #define emit_sse_reg_reg_op4(inst,dreg,reg,op1,op2,op3,op4) emit_sse_reg_reg_op4_size ((inst), (dreg), (reg), (op1), (op2), (op3), (op4), 0)
 
+#define emit_sse_reg_reg_op4_imm(inst,dreg,reg,op1,op2,op3,op4,imm) do { \
+    amd64_codegen_pre(inst); \
+    emit_sse_reg_reg_op4 ((inst), (dreg), (reg), (op1), (op2), (op3), (op4)); \
+    x86_imm_emit8 ((inst), (imm)); \
+    amd64_codegen_post(inst); \
+} while (0)
+
 /* specific SSE opcode defines */
  
 #define amd64_sse_xorpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg ((inst),(dreg),(reg), 0x66, 0x0f, 0x57)
@@ -885,6 +895,7 @@ typedef union {
 
 #define amd64_sse_shufpd_reg_reg_imm(inst,dreg,reg,imm) emit_sse_reg_reg_imm((inst), (dreg), (reg), 0x66, 0x0f, 0xC6, (imm))
 
+#define amd64_sse_roundpd_reg_reg_imm(inst, dreg, reg, imm) emit_sse_reg_reg_op4_imm((inst), (dreg), (reg), 0x66, 0x0f, 0x3a, 0x09, (imm))
 
 #define amd64_sse_addpd_reg_reg(inst,dreg,reg) emit_sse_reg_reg((inst), (dreg), (reg), 0x66, 0x0f, 0x58)
 
@@ -1139,7 +1150,6 @@ typedef union {
 #define amd64_movlhps_reg_reg(inst,dreg,sreg) emit_sse_reg_reg_op2((inst), (dreg), (sreg), 0x0f, 0x16)
 
 #define amd64_movhlps_reg_reg(inst,dreg,sreg) emit_sse_reg_reg_op2((inst), (dreg), (sreg), 0x0f, 0x12)
-
 
 #define amd64_sse_movups_membase_reg(inst, basereg, disp, reg) emit_sse_membase_reg_op2((inst), (basereg), (disp), (reg), 0x0f, 0x11)
 

@@ -42,7 +42,10 @@ static void mono_analyze_liveness2 (MonoCompile *cfg);
 
 typedef struct {
 	int capacity;
-	gpointer data [INLINE_SIZE];
+	union {
+		gpointer data [INLINE_SIZE];
+		GHashTable *hashtable;
+	};
 } MonoPtrSet;
 
 static void
@@ -55,7 +58,7 @@ static void
 mono_ptrset_destroy (MonoPtrSet *set)
 {
 	if (set->capacity > INLINE_SIZE)
-		g_hash_table_destroy (set->data [0]);
+		g_hash_table_destroy (set->hashtable);
 }
 
 static void
@@ -66,12 +69,12 @@ mono_ptrset_add (MonoPtrSet *set, gpointer val)
 		GHashTable *tmp = g_hash_table_new (NULL, NULL);
 		for (int i = 0; i < INLINE_SIZE; ++i)
 			g_hash_table_insert (tmp, set->data [i], set->data [i]);
-		set->data [0] = tmp;
+		set->hashtable = tmp;
 		++set->capacity;
 	}
 
 	if (set->capacity > INLINE_SIZE) {
-		g_hash_table_insert (set->data [0], val, val);
+		g_hash_table_insert (set->hashtable, val, val);
 	} else {
 		set->data [set->capacity] = val;
 		++set->capacity;
@@ -89,7 +92,7 @@ mono_ptrset_contains (MonoPtrSet *set, gpointer val)
 		return FALSE;
 	}
 
-	return g_hash_table_lookup (set->data [0], val) != NULL;
+	return g_hash_table_lookup (set->hashtable, val) != NULL;
 }
 
 
@@ -599,7 +602,7 @@ mono_analyze_liveness (MonoCompile *cfg)
 				 * VOLATILE, since that would prevent it from being allocated to
 				 * registers.
 				 */
-				 if (!cfg->disable_deadce_vars && !(cfg->gshared && mono_method_signature (cfg->method)->hasthis && cfg->varinfo [vi->idx] == cfg->args [0]))
+				 if (!cfg->disable_deadce_vars && !(cfg->gshared && mono_method_signature_internal (cfg->method)->hasthis && cfg->varinfo [vi->idx] == cfg->args [0]))
 					 cfg->varinfo [vi->idx]->flags |= MONO_INST_IS_DEAD;
 			}
 			vi->range.first_use.abs_pos = 0;

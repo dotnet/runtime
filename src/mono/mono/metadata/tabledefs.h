@@ -190,6 +190,8 @@ enum {
 #define METHOD_ATTRIBUTE_PINVOKE_IMPL              0x2000
 #define METHOD_ATTRIBUTE_UNMANAGED_EXPORT          0x0008
 
+#define METHOD_ATTRIBUTE_REQSECOBJ                 0x8000
+
 /*
  * For runtime use only
  */

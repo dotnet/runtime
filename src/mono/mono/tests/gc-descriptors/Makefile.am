@@ -13,7 +13,7 @@ else
 
 check-local: test
 
-test : descriptor-tests.exe
+test-local : descriptor-tests.exe
 
 descriptor-tests.exe : descriptor-tests.cs
 	$(MCS) -Warn:0 descriptor-tests.cs

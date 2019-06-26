@@ -69,7 +69,7 @@ mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 			int nslots = (src >> 8) & 0xff;
 			int src_slot = src & 0xff;
 			int j;
-			gpointer *addr = caller [src_slot];
+			gpointer *addr = (gpointer*)caller [src_slot];
 
 			for (j = 0; j < nslots; ++j)
 				callee [dst + j] = addr [j];
@@ -77,28 +77,28 @@ mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 		}
 		case GSHAREDVT_ARG_BYREF_TO_BYVAL_I1: {
 			int src_slot = src & 0xff;
-			gpointer *addr = caller [src_slot];
+			gpointer *addr = (gpointer*)caller [src_slot];
 
 			callee [dst] = GINT_TO_POINTER ((int)*(gint8*)addr);
 			break;
 		}
 		case GSHAREDVT_ARG_BYREF_TO_BYVAL_I2: {
 			int src_slot = src & 0xff;
-			gpointer *addr = caller [src_slot];
+			gpointer *addr = (gpointer*)caller [src_slot];
 
 			callee [dst] = GINT_TO_POINTER ((int)*(gint16*)addr);
 			break;
 		}
 		case GSHAREDVT_ARG_BYREF_TO_BYVAL_U1: {
 			int src_slot = src & 0xff;
-			gpointer *addr = caller [src_slot];
+			gpointer *addr = (gpointer*)caller [src_slot];
 
 			callee [dst] = GUINT_TO_POINTER ((guint)*(guint8*)addr);
 			break;
 		}
 		case GSHAREDVT_ARG_BYREF_TO_BYVAL_U2: {
 			int src_slot = src & 0xff;
-			gpointer *addr = caller [src_slot];
+			gpointer *addr = (gpointer*)caller [src_slot];
 
 			callee [dst] = GUINT_TO_POINTER ((guint)*(guint16*)addr);
 			break;
@@ -170,7 +170,7 @@ mono_arm_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 	}
 
 	if (info->vcall_offset != -1) {
-		MonoObject *this_obj = caller [0];
+		MonoObject *this_obj = (MonoObject*)caller [0];
 
 		if (G_UNLIKELY (!this_obj))
 			return NULL;
@@ -282,7 +282,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	ARM_STR_IMM (code, ARMREG_IP, ARMREG_SP, 4);
 	/* Make the call */
 	if (aot) {
-		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_arm_start_gsharedvt_call");
+		ji = mono_patch_info_list_prepend (ji, code - buf, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arm_start_gsharedvt_call));
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		*(gpointer*)code = NULL;
@@ -291,7 +291,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	} else {
 		ARM_LDR_IMM (code, ARMREG_IP, ARMREG_PC, 0);
 		ARM_B (code, 0);
-		*(gpointer*)code = mono_arm_start_gsharedvt_call;
+		*(gpointer*)code = (gpointer)mono_arm_start_gsharedvt_call;
 		code += 4;
 	}
 	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_PC);

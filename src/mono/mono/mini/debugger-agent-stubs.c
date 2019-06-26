@@ -91,6 +91,11 @@ stub_debugger_agent_breakpoint_from_context (MonoContext *ctx)
 	g_assert_not_reached ();
 }
 
+static void
+stub_debugger_agent_send_crash (char *json_dump, MonoStackHash *hashes, int pause)
+{
+}
+
 void
 mono_debugger_agent_stub_init (void)
 {
@@ -112,6 +117,7 @@ mono_debugger_agent_stub_init (void)
 	cbs.user_break = stub_debugger_agent_user_break;
 	cbs.debug_log = stub_debugger_agent_debug_log;
 	cbs.debug_log_is_enabled = stub_debugger_agent_debug_log_is_enabled;
+	cbs.send_crash = stub_debugger_agent_send_crash;
 
 	mini_install_dbg_callbacks (&cbs);
 }

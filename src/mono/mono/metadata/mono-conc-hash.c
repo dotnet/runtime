@@ -111,7 +111,7 @@ set_key (conc_table *table, int slot, gpointer key)
 {
 	gpointer *key_addr = &table->keys [slot];
 	if (table->gc_type & MONO_HASH_KEY_GC)
-		mono_gc_wbarrier_generic_store (key_addr, key);
+		mono_gc_wbarrier_generic_store_internal (key_addr, (MonoObject*)key);
 	else
 		*key_addr = key;
 }
@@ -121,7 +121,7 @@ set_key_to_tombstone (conc_table *table, int slot)
 {
 	gpointer *key_addr = &table->keys [slot];
 	if (table->gc_type & MONO_HASH_KEY_GC)
-		mono_gc_wbarrier_generic_store (key_addr, mono_domain_get()->ephemeron_tombstone);
+		mono_gc_wbarrier_generic_store_internal (key_addr, mono_domain_get()->ephemeron_tombstone);
 	else
 		*key_addr = PTR_TOMBSTONE;
 }
@@ -131,7 +131,7 @@ set_value (conc_table *table, int slot, gpointer value)
 {
 	gpointer *value_addr = &table->values [slot];
 	if (table->gc_type & MONO_HASH_VALUE_GC)
-		mono_gc_wbarrier_generic_store (value_addr, value);
+		mono_gc_wbarrier_generic_store_internal (value_addr, (MonoObject*)value);
 	else
 		*value_addr = value;
 }
@@ -165,6 +165,8 @@ rehash_table (MonoConcGHashTable *hash_table, int multiplier)
 	mono_memory_barrier ();
 	hash_table->table = new_table;
 	hash_table->overflow_count = (int)(new_table->table_size * LOAD_FACTOR);
+	hash_table->element_count -= hash_table->tombstone_count;
+	hash_table->tombstone_count = 0;
 	conc_table_lf_free (old_table);	
 }
 

@@ -36,9 +36,7 @@ suppression_DATA = mono-profiler-coverage.suppression
 #
 # See: https://bugzilla.xamarin.com/show_bug.cgi?id=57011
 if !ENABLE_COOP_SUSPEND
-if !ENABLE_HYBRID_SUSPEND
-check_targets = testlog
-endif
+check_targets = run-test
 endif
 
 endif
@@ -99,11 +97,15 @@ endif
 endif
 endif
 
+if HAVE_STATIC_ZLIB
+zlib_dep = $(STATIC_ZLIB_PATH)
+else
 if HAVE_ZLIB
 # The log profiler uses zlib for output compression when available.
 zlib_dep = -lz
 else
 zlib_dep =
+endif
 endif
 
 # We build a separate, static version of each profiler for use on targets
@@ -111,16 +113,16 @@ endif
 # the shared version on those targets since it's useful for e.g. simulator
 # builds.
 
-libmono_profiler_aot_la_SOURCES = aot.c
+libmono_profiler_aot_la_SOURCES = aot.c helper.c
 libmono_profiler_aot_la_LIBADD =  $(libmono_dep) $(glib_libs)
 libmono_profiler_aot_la_LDFLAGS = $(prof_ldflags)
-libmono_profiler_aot_static_la_SOURCES = aot.c
+libmono_profiler_aot_static_la_SOURCES = aot.c helper.c
 libmono_profiler_aot_static_la_LDFLAGS = -static
 
-libmono_profiler_log_la_SOURCES = log.c log-args.c
+libmono_profiler_log_la_SOURCES = log.c log-args.c helper.c
 libmono_profiler_log_la_LIBADD = $(libmono_dep) $(glib_libs) $(zlib_dep)
 libmono_profiler_log_la_LDFLAGS = $(prof_ldflags)
-libmono_profiler_log_static_la_SOURCES = log.c log-args.c
+libmono_profiler_log_static_la_SOURCES = log.c log-args.c helper.c
 libmono_profiler_log_static_la_LDFLAGS = -static
 
 libmono_profiler_coverage_la_SOURCES = coverage.c
@@ -142,6 +144,7 @@ endif
 
 mprof_report_SOURCES = mprof-report.c
 mprof_report_LDADD = $(glib_libs) $(zlib_dep)
+mprof_report_LDFLAGS = -no-undefined
 
 PLOG_TESTS_SRC = \
 	test-alloc.cs \
@@ -160,8 +163,18 @@ MCS = $(TOOLS_RUNTIME) $(CSC) -lib:$(CLASS) -unsafe -nologo -noconfig -nowarn:01
 %.exe: %.cs
 	$(MCS) -out:$@ $<
 
-testlog: $(PLOG_TESTS)
-	MONO_PATH=$(CLASS) perl $(srcdir)/ptestrunner.pl $(top_builddir)
+test-local: $(PLOG_TESTS)
+
+test-bundle-local:
+	mkdir -p $(TEST_BUNDLE_PATH)/tests/profiler/
+	cp -L .libs/libmono-profiler-log$(libsuffix) $(TEST_BUNDLE_PATH)/
+	cp -L $(PLOG_TESTS) $(TEST_BUNDLE_PATH)/tests/profiler/
+	cp -L ptestrunner.pl $(TEST_BUNDLE_PATH)/tests/profiler/
+	cp -L mprof-report $(TEST_BUNDLE_PATH)/
+	chmod +x $(TEST_BUNDLE_PATH)/mprof-report
+
+run-test: test
+	MONO_PATH=$(CLASS) perl $(srcdir)/ptestrunner.pl $(top_builddir) nunit TestResult-profiler.xml
 
 check-local: $(check_targets)
 

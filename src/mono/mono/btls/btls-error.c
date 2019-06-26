@@ -7,46 +7,45 @@
 //
 
 #include "btls-error.h"
-#include "btls-util.h"
 #include <assert.h>
 
-MONO_API int
+int
 mono_btls_error_peek_error (void)
 {
 	return ERR_peek_error ();
 }
 
-MONO_API int
+int
 mono_btls_error_get_error (void)
 {
 	return ERR_get_error ();
 }
 
-MONO_API int
+int
 mono_btls_error_peek_error_line (const char **file, int *line)
 {
 	return ERR_peek_error_line (file, line);
 }
 
-MONO_API int
+int
 mono_btls_error_get_error_line (const char **file, int *line)
 {
 	return ERR_get_error_line (file, line);
 }
 
-MONO_API void
+void
 mono_btls_error_clear_error (void)
 {
 	ERR_clear_error ();
 }
 
-MONO_API void
+void
 mono_btls_error_get_error_string_n (int error, char *buf, int len)
 {
 	ERR_error_string_n (error, buf, len);
 }
 
-MONO_API int
+int
 mono_btls_error_get_reason (int error)
 {
     const uint32_t lib = ERR_GET_LIB (error);

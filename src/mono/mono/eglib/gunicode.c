@@ -60,7 +60,7 @@ g_unichar_type (gunichar c)
 			continue;
 		if (unicode_category_ranges [i].end <= cp)
 			continue;
-		return unicode_category [i] [cp - unicode_category_ranges [i].start];
+		return (GUnicodeType)(unicode_category [i] [cp - unicode_category_ranges [i].start]);
 	}
 
 	/*
@@ -86,7 +86,7 @@ g_unichar_type (gunichar c)
 	/* since the argument is UTF-16, we cannot check beyond FFFF */
 
 	/* It should match any of above */
-	return 0;
+	return (GUnicodeType)0; // G_UNICODE_CONTROL
 }
 
 GUnicodeBreakType

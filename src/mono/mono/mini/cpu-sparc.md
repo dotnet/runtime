@@ -60,9 +60,9 @@ endfilter: src1:i len:64
 ckfinite: dest:f src1:f len:40
 ceq: dest:i len:64
 cgt: dest:i len:64
-cgt.un: dest:i len:64
+cgt_un: dest:i len:64
 clt: dest:i len:64
-clt.un: dest:i len:64
+clt_un: dest:i len:64
 localloc: dest:i src1:i len:64
 localloc_imm: dest:i len:64
 compare: src1:i src2:i len:4
@@ -72,8 +72,8 @@ icompare_imm: src1:i len:64
 fcompare: src1:f src2:f len:64
 lcompare: src1:i src2:i len:4
 setfret: dest:f src1:f len:8
-checkthis: src1:b len:4
-oparglist: src1:i len:64
+check_this: src1:b len:4
+arglist: src1:i len:64
 call: dest:o clob:c len:40
 call_reg: dest:o src1:i len:64 clob:c
 call_membase: dest:o src1:b len:64 clob:c
@@ -182,7 +182,7 @@ float_clt: dest:i src1:f src2:f len:64
 float_clt_un: dest:i src1:f src2:f len:64
 float_conv_to_u: dest:i src1:f len:64
 call_handler: len:64 clob:c
-aot_const: dest:i len:64
+aotconst: dest:i len:64
 adc: dest:i src1:i src2:i len:4
 addcc: dest:i src1:i src2:i len:4
 subcc: dest:i src1:i src2:i len:4

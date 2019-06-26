@@ -9,7 +9,7 @@ public class M4 {
 
 		// Expecting failure
 		try {
-			var DLL = Assembly.LoadFile(@"test-multi-netmodule-3-dll2.dll");
+			var DLL = Assembly.LoadFile(System.IO.Path.GetFullPath ("test-multi-netmodule-3-dll2.dll"));
 	        var m3Type = DLL.GetType("M3");
 	        var m3 = Activator.CreateInstance(m3Type);
 	        var m3m1Field = m3Type.GetField("m1");

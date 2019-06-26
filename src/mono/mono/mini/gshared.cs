@@ -1348,8 +1348,8 @@ public class Tests
 		}
 	}
 
-	// FIXME: The runtime-invoke wrapper used by BeginInvoke is not found
-	[Category ("!FULLAOT")]
+	// FIXME: Wasm is single threaded and can't handle blocking waits
+	[Category ("!WASM")]
 	public static int test_0_begin_end_invoke () {
 		IFace6 o = new Class6 ();
 		var arr1 = o.Del (1);
@@ -1701,6 +1701,8 @@ public class Tests
 				   uint i1, uint i2, uint i3, uint i4);
 		int Structs (T t, int dummy1, int a2, int a3, int a4, int a5, int a6, int a7, int dummy8,
 					 BStruct s);
+		int Floats (T t, double d1, double d2, double d3, double d4, double d5, double d6, double d7, double d8,
+					double d9, double d10, float s11, float s12);
 		void Generic<T2> (T t, T2[] arr, int dummy1, int a2, int a3, int a4, int a5, int a6, int a7, int dummy8,
 						  T2 i1, T2 i2, T2 i3, T2 i4);
 	}
@@ -1734,7 +1736,10 @@ public class Tests
 							BStruct s) {
 			return s.a + s.b + s.c + s.d;
 		}
-
+		public int Floats (T t, double d1, double d2, double d3, double d4, double d5, double d6, double d7, double d8,
+						   double d9, double d10, float s11, float s12) {
+			return (int)d9 + (int)d10 + (int)s11 + (int)s12;
+		}
 		public void Generic<T2> (T t, T2[] arr, int a1, int a2, int a3, int a4, int a5, int a6, int a7, int a8, T2 i1, T2 i2, T2 i3, T2 i4) {
 			arr [0] = i1;
 			arr [1] = i2;
@@ -1764,10 +1769,13 @@ public class Tests
 		int res6 = o.UInts (new EmptyStruct (), 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4);
 		if (res6 != 10)
 			return 6;
+		int res7 = o.Floats (new EmptyStruct (), 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 10.0, 20.0, 30.0f, 40.0f);
+		if (res7 != 100)
+			return 7;
 		int[] arr = new int [4];
 		o.Generic<int> (new EmptyStruct (), arr, 1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4);
 		if (arr [0] != 1 || arr [1] != 2 || arr [2] != 3 || arr [3] != 4)
-			return 7;
+			return 8;
 		return 0;
 	}
 
@@ -1810,6 +1818,17 @@ public class Tests
 
 	struct AStruct {
 		public int a, b;
+
+		public override int GetHashCode () {
+			return 0;
+		}
+
+		public override bool Equals (object o) {
+			if (!(o is AStruct))
+				return false;
+			AStruct s = (AStruct)o;
+			return a == s.a && b == s.b;
+		}
 	}
 
 	public static int test_0_multi_dim_arrays_2 () {
@@ -2057,6 +2076,42 @@ public class Tests
 	public static int test_1_59956_regress () {
 		IFace59956 iface = new Impl59956 ();
 		return iface.foo<int> ();
+	}
+
+	interface IFaceSpan {
+		int foo<T> (T t);
+	}
+
+	class ImplSpan : IFaceSpan {
+		public int foo<T> (T t) {
+			var arr = new T[10];
+			var arr2 = new T[10];
+			var s = new Span<T> (arr);
+
+			s [0] = t;
+			T t2 = s [0];
+			if (!t.Equals (t2))
+				return 1;
+
+			var s2 = new Span<T> (arr2);
+			s.CopyTo (s2);
+			t2 = s2 [0];
+			if (!t.Equals (t2))
+				return 2;
+
+			s.Clear ();
+			t2 = s [0];
+			if (!t2.Equals (default(T)))
+				return 3;
+
+			return 0;
+		}
+	}
+
+	public static int test_0_span () {
+		IFaceSpan iface = new ImplSpan ();
+		var s = new AStruct () { a = 1, b = 2 };
+		return iface.foo<AStruct> (s);
 	}
 }
 

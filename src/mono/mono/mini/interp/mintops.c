@@ -45,7 +45,7 @@ mono_interp_dis_mintop_len (const guint16 *ip)
 		g_assert_not_reached ();
 	} else if (len == 0) { /* SWITCH */
 		int n = READ32 (ip + 1);
-		len = 3 + n * 2;
+		len = MINT_SWITCH_LEN (n);
 	}
 
 	return ip + len;
@@ -58,7 +58,7 @@ mono_interp_dis_mintop(const guint16 *base, const guint16 *ip)
 	guint32 token;
 	int target;
 
-	g_string_append_printf (str, "IL_%04x: %-10s", ip - base, mono_interp_opname [*ip]);
+	g_string_append_printf (str, "IL_%04x: %-10s", (int)(ip - base), mono_interp_opname [*ip]);
 	switch (mono_interp_opargtype [*ip]) {
 	case MintOpNoArgs:
 		break;
@@ -84,7 +84,7 @@ mono_interp_dis_mintop(const guint16 *base, const guint16 *ip)
 		g_string_append_printf (str, " %d", (gint32)READ32 (ip + 1));
 		break;
 	case MintOpLongInt:
-		g_string_append_printf (str, " %lld", (gint64)READ64 (ip + 1));
+		g_string_append_printf (str, " %lld", (long long)READ64 (ip + 1));
 		break;
 	case MintOpFloat: {
 		gint32 tmp = READ32 (ip + 1);
@@ -115,7 +115,7 @@ mono_interp_dis_mintop(const guint16 *base, const guint16 *ip)
 			if (i > 0)
 				g_string_append_printf (str, ", ");
 			offset = (gint32)READ32 (p);
-			g_string_append_printf (str, "IL_%04x", p + offset - base);
+			g_string_append_printf (str, "IL_%04x", (int)(p + offset - base));
 			p += 2;
 		}
 		g_string_append_printf (str, ")");

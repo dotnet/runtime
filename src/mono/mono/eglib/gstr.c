@@ -724,9 +724,9 @@ decode (char p)
 	if (p >= '0' && p <= '9')
 		return p - '0';
 	if (p >= 'A' && p <= 'F')
-		return p - 'A';
+		return (p - 'A') + 10;
 	if (p >= 'a' && p <= 'f')
-		return p - 'a';
+		return (p - 'a') + 10;
 	g_assert_not_reached ();
 	return 0;
 }
@@ -914,22 +914,17 @@ g_utf16_asciiz_equal (const gunichar2 *utf16, const char *ascii)
 	}
 }
 
-gchar *
-g_strdelimit (gchar *string, const gchar *delimiters, gchar new_delimiter)
+void
+g_strdelimit (gchar *string, gchar delimiter, gchar new_delimiter)
 {
 	gchar *ptr;
 
-	g_return_val_if_fail (string != NULL, NULL);
-
-	if (delimiters == NULL)
-		delimiters = G_STR_DELIMITERS;
+	g_return_if_fail (string != NULL);
 
 	for (ptr = string; *ptr; ptr++) {
-		if (strchr (delimiters, *ptr))
+		if (delimiter == *ptr)
 			*ptr = new_delimiter;
 	}
-	
-	return string;
 }
 
 gsize 
@@ -1060,4 +1055,17 @@ g_strnfill (gsize length, gchar fill_char)
 	memset (ret, fill_char, length);
 	ret [length] = 0;
 	return ret;
+}
+
+size_t
+g_utf16_len (const gunichar2 *a)
+{
+#ifdef G_OS_WIN32
+	return wcslen (a);
+#else
+	size_t length = 0;
+	while (a [length])
+		++length;
+	return length;
+#endif
 }

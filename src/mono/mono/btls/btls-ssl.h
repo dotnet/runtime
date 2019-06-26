@@ -11,79 +11,79 @@
 
 #include "btls-ssl-ctx.h"
 
-MonoBtlsSsl *
+MONO_API MonoBtlsSsl *
 mono_btls_ssl_new (MonoBtlsSslCtx *ctx);
 
-int
+MONO_API int
 mono_btls_ssl_use_certificate (MonoBtlsSsl *ptr, X509 *x509);
 
-int
+MONO_API int
 mono_btls_ssl_use_private_key (MonoBtlsSsl *ptr, EVP_PKEY *key);
 
-int
+MONO_API int
 mono_btls_ssl_add_chain_certificate (MonoBtlsSsl *ptr, X509 *x509);
 
-int
+MONO_API int
 mono_btls_ssl_accept (MonoBtlsSsl *ptr);
 
-int
+MONO_API int
 mono_btls_ssl_connect (MonoBtlsSsl *ptr);
 
-int
+MONO_API int
 mono_btls_ssl_handshake (MonoBtlsSsl *ptr);
 
-void
+MONO_API void
 mono_btls_ssl_print_errors_cb (ERR_print_errors_callback_t callback, void *ctx);
 
-void
+MONO_API void
 mono_btls_ssl_set_bio (MonoBtlsSsl *ptr, BIO *bio);
 
-int
+MONO_API int
 mono_btls_ssl_read (MonoBtlsSsl *ptr, void *buf, int count);
 
-int
+MONO_API int
 mono_btls_ssl_write (MonoBtlsSsl *ptr, void *buf, int count);
 
-int
+MONO_API int
 mono_btls_ssl_get_version (MonoBtlsSsl *ptr);
 
-void
+MONO_API void
 mono_btls_ssl_set_min_version (MonoBtlsSsl *ptr, int version);
 
-void
+MONO_API void
 mono_btls_ssl_set_max_version (MonoBtlsSsl *ptr, int version);
 
-int
+MONO_API int
 mono_btls_ssl_get_cipher (MonoBtlsSsl *ptr);
 
-int
+MONO_API int
 mono_btls_ssl_set_cipher_list (MonoBtlsSsl *ptr, const char *str);
 
-int
+MONO_API int
 mono_btls_ssl_get_ciphers (MonoBtlsSsl *ptr, uint16_t **data);
 
-X509 *
+MONO_API X509 *
 mono_btls_ssl_get_peer_certificate (MonoBtlsSsl *ptr);
 
-void
+MONO_API void
 mono_btls_ssl_close (MonoBtlsSsl *ptr);
 
-int
+MONO_API int
 mono_btls_ssl_shutdown (MonoBtlsSsl *ptr);
 
 MONO_API void
 mono_btls_ssl_set_quiet_shutdown (MonoBtlsSsl *ptr, int mode);
 
-int
+MONO_API int
 mono_btls_ssl_get_error (MonoBtlsSsl *ptr, int ret_code);
 
-int
+MONO_API int
 mono_btls_ssl_set_verify_param (MonoBtlsSsl *ptr, const MonoBtlsX509VerifyParam *param);
 
-int
+MONO_API int
 mono_btls_ssl_set_server_name (MonoBtlsSsl *ptr, const char *name);
 
-const char *
+MONO_API const char *
 mono_btls_ssl_get_server_name (MonoBtlsSsl *ptr);
 
 typedef enum {
@@ -93,13 +93,13 @@ typedef enum {
     MONO_BTLS_SSL_RENEGOTIATE_IGNORE
 } MonoBtlsSslRenegotiateMode;
 
-void
+MONO_API void
 mono_btls_ssl_set_renegotiate_mode (MonoBtlsSsl *ptr, MonoBtlsSslRenegotiateMode mode);
 
-int
+MONO_API int
 mono_btls_ssl_renegotiate_pending (MonoBtlsSsl *ptr);
 
-void
+MONO_API void
 mono_btls_ssl_destroy (MonoBtlsSsl *ptr);
 
 #endif /* defined(__btls__btls_ssl__) */

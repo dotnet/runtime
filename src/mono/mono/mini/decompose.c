@@ -18,6 +18,8 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/utils/mono-compiler.h>
+#define MONO_MATH_DECLARE_ALL 1
+#include <mono/utils/mono-math.h>
 
 #ifndef DISABLE_JIT
 
@@ -1369,7 +1371,7 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 
 						/* Save the result */
 						if (dest_var->backend.is_pinvoke)
-							size = mono_class_native_size (mono_class_from_mono_type (dest_var->inst_vtype), NULL);
+							size = mono_class_native_size (mono_class_from_mono_type_internal (dest_var->inst_vtype), NULL);
 						else
 							size = mono_type_size (dest_var->inst_vtype, NULL);
 						switch (size) {
@@ -1564,11 +1566,11 @@ mono_decompose_array_access_opts (MonoCompile *cfg)
 						dest->dreg = ins->dreg;
 					} else {
 						MonoClass *array_class = mono_class_create_array (ins->inst_newa_class, 1);
-						ERROR_DECL_VALUE (vt_error);
-						MonoVTable *vtable = mono_class_vtable_checked (cfg->domain, array_class, &vt_error);
+						ERROR_DECL (vt_error);
+						MonoVTable *vtable = mono_class_vtable_checked (cfg->domain, array_class, vt_error);
 						MonoMethod *managed_alloc = mono_gc_get_managed_array_allocator (array_class);
 
-						mono_error_assert_ok (&vt_error); /*This shall not fail since we check for this condition on OP_NEWARR creation*/
+						mono_error_assert_ok (vt_error); /*This shall not fail since we check for this condition on OP_NEWARR creation*/
 						NEW_VTABLECONST (cfg, iargs [0], vtable);
 						MONO_ADD_INS (cfg->cbb, iargs [0]);
 						MONO_INST_NEW (cfg, iargs [1], OP_MOVE);
@@ -1809,7 +1811,7 @@ mono_decompose_soft_float (MonoCompile *cfg)
 					MONO_INST_NEW (cfg, iargs [1], OP_ARG);
 					iargs [1]->dreg = ins->sreg2;
 
-					call = mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, iargs);
+					call = mono_emit_jit_icall_id (cfg, mono_jit_icall_info_id (info), iargs);
 
 					MONO_INST_NEW (cfg, cmp, OP_ICOMPARE_IMM);
 					cmp->sreg1 = call->dreg;
@@ -1849,7 +1851,7 @@ mono_decompose_soft_float (MonoCompile *cfg)
 					MONO_INST_NEW (cfg, iargs [1], OP_ARG);
 					iargs [1]->dreg = ins->sreg2;
 
-					call = mono_emit_native_call (cfg, mono_icall_get_wrapper (info), info->sig, iargs);
+					call = mono_emit_jit_icall_id (cfg, mono_jit_icall_info_id (info), iargs);
 
 					MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ICOMPARE_IMM, -1, call->dreg, 1);
 					MONO_EMIT_NEW_UNALU (cfg, OP_ICEQ, ins->dreg, -1);
@@ -1868,7 +1870,7 @@ mono_decompose_soft_float (MonoCompile *cfg)
 					MONO_INST_NEW (cfg, iargs [0], OP_ARG);
 					iargs [0]->dreg = ins->sreg1;
 
-					call = mono_emit_jit_icall (cfg, mono_isfinite, iargs);
+					call = mono_emit_jit_icall (cfg, mono_isfinite_double, iargs);
 
 					MONO_INST_NEW (cfg, cmp, OP_ICOMPARE_IMM);
 					cmp->sreg1 = call->dreg;
@@ -1983,6 +1985,13 @@ mono_local_emulate_ops (MonoCompile *cfg)
 					first_bb->code = first_bb->last_ins = NULL;
 					first_bb->in_count = first_bb->out_count = 0;
 					cfg->cbb = first_bb;
+
+					if (!saved_prev) {
+						/* first instruction of basic block got replaced, so create
+						 * dummy inst that points to start of basic block */
+						MONO_INST_NEW (cfg, saved_prev, OP_NOP);
+						saved_prev = bb->code;
+					}
 
 					/* ins is hanging, continue scanning the emitted code */
 					ins = saved_prev;

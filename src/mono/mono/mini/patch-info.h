@@ -3,10 +3,9 @@ PATCH_INFO(ABS, "abs")
 PATCH_INFO(LABEL, "label")
 PATCH_INFO(METHOD, "method")
 PATCH_INFO(METHOD_JUMP, "method_jump")
-PATCH_INFO(METHOD_REL, "method_rel")
 PATCH_INFO(METHODCONST, "methodconst")
-/* Either the address of a C function implementing a JIT icall, or a wrapper around it */
-PATCH_INFO(INTERNAL_METHOD, "internal_method")
+// Either the address of a C function implementing a JIT icall, or a wrapper around it
+PATCH_INFO(JIT_ICALL_ID, "jit_icall_id") // replaced MONO_PATCH_INFO_JIT_ICALL, using enum instead of string
 PATCH_INFO(SWITCH, "switch")
 PATCH_INFO(EXC, "exc")
 PATCH_INFO(EXC_NAME, "exc_name")
@@ -56,8 +55,6 @@ PATCH_INFO(GC_NURSERY_BITS, "gc_nursery_bits")
 PATCH_INFO(GSHAREDVT_IN_WRAPPER, "gsharedvt_in_wrapper")
 PATCH_INFO(ICALL_ADDR_CALL, "icall_addr_call")
 PATCH_INFO(GET_TLS_TRAMP, "get_tls_tramp")
-PATCH_INFO(JIT_THREAD_ATTACH, "jit_thread_attach")
-PATCH_INFO(SET_TLS_TRAMP, "set_tls_tramp")
 /*
  * The address of a C function implementing a JIT icall.
  * Same as JIT_ICALL_ADDR, but not treated as a call.
@@ -65,3 +62,11 @@ PATCH_INFO(SET_TLS_TRAMP, "set_tls_tramp")
 PATCH_INFO(JIT_ICALL_ADDR_NOCALL, "jit_icall_addr_nocall")
 PATCH_INFO(PROFILER_ALLOCATION_COUNT, "profiler_allocation_count")
 PATCH_INFO(PROFILER_CLAUSE_COUNT, "profiler_clause_count")
+/*
+ * A MonoFtnDesc for calling amethod.
+ * This either points to native code or to an interp entry
+ * function.
+ */
+PATCH_INFO(METHOD_FTNDESC, "method_ftndesc")
+
+PATCH_INFO(SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR, "specific_trampoline_lazy_fetch_addr")

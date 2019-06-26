@@ -39,7 +39,7 @@ alloc_reflected_entry (MonoDomain *domain)
 		return (ReflectedEntry *)mono_mempool_alloc (domain->mp, sizeof (ReflectedEntry));
 }
 
-static void
+static inline void
 free_reflected_entry (ReflectedEntry *entry)
 {
 	if (!mono_gc_is_moving ())
@@ -82,7 +82,7 @@ cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoOb
 	if (!domain->refobject_hash)
 		domain->refobject_hash = mono_conc_g_hash_table_new_type (mono_reflected_hash, mono_reflected_equal, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_DOMAIN, domain, "Domain Reflection Object Table");
 
-	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_conc_g_hash_table_lookup (domain->refobject_hash, &pe));
+	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, (MonoObject*)mono_conc_g_hash_table_lookup (domain->refobject_hash, &pe));
 	if (MONO_HANDLE_IS_NULL (obj)) {
 		ReflectedEntry *e = alloc_reflected_entry (domain);
 		e->item = item;
@@ -107,7 +107,7 @@ check_object_handle (MonoDomain* domain, MonoClass *klass, gpointer item)
 	if (!hash)
 		return MONO_HANDLE_NEW (MonoObject, NULL);
 
-	return MONO_HANDLE_NEW (MonoObject, mono_conc_g_hash_table_lookup (hash, &e));
+	return MONO_HANDLE_NEW (MonoObject, (MonoObject*)mono_conc_g_hash_table_lookup (hash, &e));
 }
 
 

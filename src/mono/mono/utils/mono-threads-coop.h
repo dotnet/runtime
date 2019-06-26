@@ -18,8 +18,6 @@
 #include "mono-threads.h"
 #include "mono-threads-api.h"
 
-G_BEGIN_DECLS
-
 /* JIT specific interface */
 extern volatile size_t mono_polling_required;
 
@@ -28,11 +26,60 @@ extern volatile size_t mono_polling_required;
 void
 mono_threads_state_poll (void);
 
-const char*
-mono_threads_suspend_policy_name (void);
+// 0 also used internally for uninitialized
+typedef enum {
+	MONO_THREADS_SUSPEND_FULL_PREEMPTIVE = 1,
+	MONO_THREADS_SUSPEND_FULL_COOP       = 2,
+	MONO_THREADS_SUSPEND_HYBRID          = 3,
+} MonoThreadsSuspendPolicy;
+
+static inline gboolean
+mono_threads_suspend_policy_is_blocking_transition_enabled (MonoThreadsSuspendPolicy p)
+{
+	switch (p) {
+	case MONO_THREADS_SUSPEND_FULL_COOP:
+	case MONO_THREADS_SUSPEND_HYBRID:
+		return TRUE;
+	case MONO_THREADS_SUSPEND_FULL_PREEMPTIVE:
+		return FALSE;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static inline gboolean
+mono_threads_suspend_policy_are_safepoints_enabled (MonoThreadsSuspendPolicy p)
+{
+	switch (p) {
+	case MONO_THREADS_SUSPEND_FULL_COOP:
+	case MONO_THREADS_SUSPEND_HYBRID:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static inline gboolean
+mono_threads_suspend_policy_is_multiphase_stw_enabled (MonoThreadsSuspendPolicy p)
+{
+	/* So far, hybrid suspend is the only one using a multi-phase STW */
+	return p == MONO_THREADS_SUSPEND_HYBRID;
+}
 
 gboolean
-mono_threads_is_blocking_transition_enabled (void);
+mono_threads_suspend_policy_is_blocking_transition_enabled (MonoThreadsSuspendPolicy p);
+
+MonoThreadsSuspendPolicy
+mono_threads_suspend_policy (void) MONO_LLVM_INTERNAL;
+
+const char*
+mono_threads_suspend_policy_name (MonoThreadsSuspendPolicy p);
+
+static inline gboolean
+mono_threads_is_blocking_transition_enabled (void)
+{
+	return mono_threads_suspend_policy_is_blocking_transition_enabled (mono_threads_suspend_policy ());
+}
 
 gboolean
 mono_threads_is_cooperative_suspension_enabled (void);
@@ -43,7 +90,13 @@ mono_threads_is_hybrid_suspension_enabled (void);
 static inline gboolean
 mono_threads_are_safepoints_enabled (void)
 {
-	return mono_threads_is_cooperative_suspension_enabled () || mono_threads_is_hybrid_suspension_enabled ();
+	return mono_threads_suspend_policy_are_safepoints_enabled (mono_threads_suspend_policy ());
+}
+
+static inline gboolean
+mono_threads_is_multiphase_stw_enabled (void)
+{
+	return mono_threads_suspend_policy_is_multiphase_stw_enabled (mono_threads_suspend_policy ());
 }
 
 static inline void
@@ -53,16 +106,8 @@ mono_threads_safepoint (void)
 		mono_threads_state_poll ();
 }
 
-// 0 also used internally for uninitialized
-typedef enum {
-	MONO_THREADS_SUSPEND_FULL_PREEMPTIVE = 1,
-	MONO_THREADS_SUSPEND_FULL_COOP,
-	MONO_THREADS_SUSPEND_HYBRID
-} MonoThreadsSuspendPolicy;
-
 /* Don't use this. */
 void mono_threads_suspend_override_policy (MonoThreadsSuspendPolicy new_policy);
-
 
 /*
  * The following are used when detaching a thread. We need to pass the MonoThreadInfo*
@@ -71,9 +116,7 @@ void mono_threads_suspend_override_policy (MonoThreadsSuspendPolicy new_policy);
  * runtime assertion error when trying to switch the state of the current thread.
  */
 
-gpointer
-mono_threads_enter_gc_safe_region_with_info (THREAD_INFO_TYPE *info, MonoStackData *stackdata);
-
+MONO_PROFILER_API
 gpointer
 mono_threads_enter_gc_safe_region_with_info (THREAD_INFO_TYPE *info, MonoStackData *stackdata);
 
@@ -84,9 +127,11 @@ mono_threads_enter_gc_safe_region_with_info (THREAD_INFO_TYPE *info, MonoStackDa
 
 #define MONO_EXIT_GC_SAFE_WITH_INFO	MONO_EXIT_GC_SAFE
 
+G_EXTERN_C // due to THREAD_INFO_TYPE varying
 gpointer
 mono_threads_enter_gc_unsafe_region_with_info (THREAD_INFO_TYPE *, MonoStackData *stackdata);
 
+G_EXTERN_C // due to THREAD_INFO_TYPE varying
 gpointer
 mono_threads_enter_gc_unsafe_region_with_info (THREAD_INFO_TYPE *, MonoStackData *stackdata);
 
@@ -97,9 +142,8 @@ mono_threads_enter_gc_unsafe_region_with_info (THREAD_INFO_TYPE *, MonoStackData
 
 #define MONO_EXIT_GC_UNSAFE_WITH_INFO	MONO_EXIT_GC_UNSAFE
 
+G_EXTERN_C // due to THREAD_INFO_TYPE varying
 gpointer
 mono_threads_enter_gc_unsafe_region_unbalanced_with_info (THREAD_INFO_TYPE *info, MonoStackData *stackdata);
-
-G_END_DECLS
 
 #endif

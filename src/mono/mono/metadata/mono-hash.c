@@ -30,8 +30,11 @@
 #include <stdio.h>
 #include <math.h>
 #include <glib.h>
+
 #include "mono-hash.h"
+#include "mono-hash-internals.h"
 #include "metadata/gc-internals.h"
+
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/unlocked.h>
@@ -52,9 +55,6 @@ struct _MonoGHashTable {
 	void *key;
 	const char *msg;
 };
-
-MonoGHashTable *
-mono_g_hash_table_new_type_internal (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, void *key, const char *msg);
 
 #if UNUSED
 static gboolean
@@ -95,7 +95,7 @@ static inline void mono_g_hash_table_key_store (MonoGHashTable *hash, int slot, 
 {
 	MonoObject **key_addr = &hash->keys [slot];
 	if (hash->gc_type & MONO_HASH_KEY_GC)
-		mono_gc_wbarrier_generic_store (key_addr, key);
+		mono_gc_wbarrier_generic_store_internal (key_addr, key);
 	else
 		*key_addr = key;
 }
@@ -104,7 +104,7 @@ static inline void mono_g_hash_table_value_store (MonoGHashTable *hash, int slot
 {
 	MonoObject **value_addr = &hash->values [slot];
 	if (hash->gc_type & MONO_HASH_VALUE_GC)
-		mono_gc_wbarrier_generic_store (value_addr, value);
+		mono_gc_wbarrier_generic_store_internal (value_addr, value);
 	else
 		*value_addr = value;
 }
@@ -139,18 +139,6 @@ static inline int mono_g_hash_table_find_slot (MonoGHashTable *hash, const MonoO
 
 	return i;
 }
-
-
-MonoGHashTable *
-mono_g_hash_table_new_type (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, void *key, const char *msg)
-{
-	MonoGHashTable *result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_g_hash_table_new_type_internal (hash_func, key_equal_func, type, source, key, msg);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
-}
-
 
 MonoGHashTable *
 mono_g_hash_table_new_type_internal (GHashFunc hash_func, GEqualFunc key_equal_func, MonoGHashGCType type, MonoGCRootSource source, void *key, const char *msg)
@@ -293,7 +281,7 @@ mono_g_hash_table_lookup_extended (MonoGHashTable *hash, gconstpointer key, gpoi
 
 	g_return_val_if_fail (hash != NULL, FALSE);
 
-	slot = mono_g_hash_table_find_slot (hash, key);
+	slot = mono_g_hash_table_find_slot (hash, (MonoObject*)key);
 
 	if (hash->keys [slot]) {
 		if (orig_key)
@@ -347,7 +335,7 @@ mono_g_hash_table_remove (MonoGHashTable *hash, gconstpointer key)
 	int slot, last_clear_slot;
 
 	g_return_val_if_fail (hash != NULL, FALSE);
-	slot = mono_g_hash_table_find_slot (hash, key);
+	slot = mono_g_hash_table_find_slot (hash, (MonoObject*)key);
 
 	if (!hash->keys [slot])
 		return FALSE;
@@ -456,7 +444,7 @@ mono_g_hash_table_insert_replace (MonoGHashTable *hash, gpointer key, gpointer v
 	if (hash->in_use > (hash->table_size * HASH_TABLE_MAX_LOAD_FACTOR))
 		rehash (hash);
 
-	slot = mono_g_hash_table_find_slot (hash, key);
+	slot = mono_g_hash_table_find_slot (hash, (MonoObject*)key);
 
 	if (hash->keys [slot]) {
 		if (replace) {
@@ -481,8 +469,15 @@ void
 mono_g_hash_table_insert (MonoGHashTable *h, gpointer k, gpointer v)
 {
 	MONO_ENTER_GC_UNSAFE;
-	mono_g_hash_table_insert_replace (h, k, v, FALSE);
+	mono_g_hash_table_insert_internal (h, k, v);
 	MONO_EXIT_GC_UNSAFE;
+}
+
+void
+mono_g_hash_table_insert_internal (MonoGHashTable *h, gpointer k, gpointer v)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	mono_g_hash_table_insert_replace (h, k, v, FALSE);
 }
 
 /**

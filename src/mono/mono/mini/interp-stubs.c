@@ -64,6 +64,13 @@ stub_frame_get_parent (MonoInterpFrameHandle frame)
 	return NULL;
 }
 
+static gpointer
+stub_frame_get_res (MonoInterpFrameHandle frame)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 static void
 stub_start_single_stepping (void)
 {
@@ -81,13 +88,13 @@ stub_set_resume_state (MonoJitTlsData *jit_tls, MonoException *ex, MonoJitExcept
 }
 
 static gboolean
-stub_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip)
+stub_run_finally (StackFrameInfo *frame, int clause_index, gpointer handler_ip, gpointer handler_ip_end)
 {
 	g_assert_not_reached ();
 }
 
 static gboolean
-stub_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, gpointer handler_ip)
+stub_run_filter (StackFrameInfo *frame, MonoException *ex, int clause_index, gpointer handler_ip, gpointer handler_ip_end)
 {
 	g_assert_not_reached ();
 	return FALSE;
@@ -113,6 +120,13 @@ stub_create_method_pointer (MonoMethod *method, gboolean compile, MonoError *err
 	return NULL;
 }
 
+static MonoFtnDesc*
+stub_create_method_pointer_llvmonly (MonoMethod *method, gboolean compile, MonoError *error)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
 static MonoObject*
 stub_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **exc, MonoError *error)
 {
@@ -121,22 +135,16 @@ stub_runtime_invoke (MonoMethod *method, void *obj, void **params, MonoObject **
 }
 
 static void
-stub_init_delegate (MonoDelegate *del)
+stub_init_delegate (MonoDelegate *del, MonoError *error)
 {
 	g_assert_not_reached ();
 }
 
 static gpointer
-stub_get_remoting_invoke (gpointer imethod, MonoError *error)
+stub_get_remoting_invoke (MonoMethod *method, gpointer imethod, MonoError *error)
 {
 	g_assert_not_reached ();
 	return NULL;
-}
-
-static void
-stub_walk_stack_with_ctx (MonoInternalStackWalk func, MonoContext *ctx, MonoUnwindOptions options, void *user_data)
-{
-	g_assert_not_reached ();
 }
 
 static void
@@ -145,34 +153,56 @@ stub_delegate_ctor (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer
 	g_assert_not_reached ();
 }
 
+static void
+stub_entry_from_trampoline (gpointer ccontext, gpointer imethod)
+{
+	g_assert_not_reached ();
+}
+
+static void
+stub_to_native_trampoline (gpointer addr, gpointer ccontext)
+{
+	g_assert_not_reached ();
+}
+
+static void
+stub_frame_arg_to_data (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gpointer data)
+{
+g_assert_not_reached ();
+}
+
+static void
+stub_data_to_frame_arg (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gpointer data)
+{
+	g_assert_not_reached ();
+}
+
+static gpointer
+stub_frame_arg_to_storage (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+static void
+stub_frame_arg_set_storage (MonoInterpFrameHandle frame, MonoMethodSignature *sig, int index, gpointer storage)
+{
+	g_assert_not_reached ();
+}
+
+#undef MONO_EE_CALLBACK
+#define MONO_EE_CALLBACK(ret, name, sig) stub_ ## name,
+
+static const MonoEECallbacks mono_interp_stub_callbacks = {
+	MONO_EE_CALLBACKS
+};
+
 void
 mono_interp_stub_init (void)
 {
-	if (mini_get_interp_callbacks ()->create_method_pointer)
+	if (mini_get_interp_callbacks ())
 		/* already initialized */
 		return;
 
-	MonoEECallbacks c;
-	c.create_method_pointer = stub_create_method_pointer;
-	c.runtime_invoke = stub_runtime_invoke;
-	c.init_delegate = stub_init_delegate;
-	c.get_remoting_invoke = stub_get_remoting_invoke;
-	c.set_resume_state = stub_set_resume_state;
-	c.run_finally = stub_run_finally;
-	c.run_filter = stub_run_filter;
-	c.frame_iter_init = stub_frame_iter_init;
-	c.frame_iter_next = stub_frame_iter_next;
-	c.find_jit_info = stub_find_jit_info;
-	c.set_breakpoint = stub_set_breakpoint;
-	c.clear_breakpoint = stub_clear_breakpoint;
-	c.frame_get_jit_info = stub_frame_get_jit_info;
-	c.frame_get_ip = stub_frame_get_ip;
-	c.frame_get_arg = stub_frame_get_arg;
-	c.frame_get_local = stub_frame_get_local;
-	c.frame_get_this = stub_frame_get_this;
-	c.frame_get_parent = stub_frame_get_parent;
-	c.start_single_stepping = stub_start_single_stepping;
-	c.stop_single_stepping = stub_stop_single_stepping;
-	c.delegate_ctor = stub_delegate_ctor;
-	mini_install_interp_callbacks (&c);
+	mini_install_interp_callbacks (&mono_interp_stub_callbacks);
 }

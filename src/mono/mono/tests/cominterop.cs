@@ -255,6 +255,9 @@ public class Tests
 	public static extern int mono_test_marshal_array_ccw_itest (int count, [MarshalAs (UnmanagedType.LPArray, SizeParamIndex=0)] ITest[] ppUnk);
 
 	[DllImport("libtest")]
+	public static extern int mono_test_cominterop_ccw_queryinterface ([MarshalAs (UnmanagedType.Interface)] IOtherTest itest);
+
+	[DllImport("libtest")]
 	public static extern int mono_test_marshal_safearray_out_1dim_vt_bstr_empty ([MarshalAs (UnmanagedType.SafeArray, SafeArraySubType = VarEnum.VT_VARIANT)]out Array array);
 
 	[DllImport("libtest")]
@@ -537,18 +540,17 @@ public class Tests
 				return 174;
 
 			if (TestIfaceNoIcall (itest as ITestPresSig) != 0)
-				return 201;
+				return 175;
 
 			itest = new TestClass ();
 
 			if (TestITest (itest) != 0)
-				return 175;
+				return 176;
 
 			itest = (ITest)System.Activator.CreateInstance (typeof(TestActivatorClass));
 
 			if (TestITest (itest) != 0)
-				return 176;
-
+				return 177;
 
 #endif
 
@@ -572,10 +574,14 @@ public class Tests
 			if (mono_test_marshal_array_ccw_itest (1, tests) != 0)
 				return 201;
 
+			var otherTest = new OtherTest ();
+			if (mono_test_cominterop_ccw_queryinterface (otherTest) != 0)
+				return 202;
+
 			#endregion // COM Callable Wrapper Tests
 
 			#region SAFEARRAY tests
-			
+
 			if (isWindows) {
 
 				/* out */
@@ -742,7 +748,7 @@ public class Tests
 			TestVisible test_vis = new TestVisible();
 			IntPtr pDisp = Marshal.GetIDispatchForObject(test_vis);
 			if (pDisp == IntPtr.Zero)
-				return 200;
+				return 300;
 			#endregion 
 		}
 
@@ -1121,6 +1127,15 @@ public class Tests
 		{
 			return 99;
 		}
+	}
+
+	[ComVisible (true)]
+	public interface IOtherTest
+	{
+	}
+
+	public class OtherTest: IOtherTest
+	{
 	}
 
 	public static int mono_test_marshal_variant_in_callback (VarEnum vt, object obj)

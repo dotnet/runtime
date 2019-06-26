@@ -27,110 +27,144 @@
 typedef guint16 stridx_t;
 
 typedef struct {
-	const stridx_t month_day_pattern;
-	const stridx_t am_designator;
-	const stridx_t pm_designator;
+	stridx_t month_day_pattern;
+	stridx_t am_designator;
+	stridx_t pm_designator;
 
-	const stridx_t day_names [NUM_DAYS]; 
-	const stridx_t abbreviated_day_names [NUM_DAYS];
-	const stridx_t shortest_day_names [NUM_DAYS];
-	const stridx_t month_names [NUM_MONTHS];
-	const stridx_t month_genitive_names [NUM_MONTHS];
-	const stridx_t abbreviated_month_names [NUM_MONTHS];
-	const stridx_t abbreviated_month_genitive_names [NUM_MONTHS];
+	stridx_t day_names [NUM_DAYS];
+	stridx_t abbreviated_day_names [NUM_DAYS];
+	stridx_t shortest_day_names [NUM_DAYS];
+	stridx_t month_names [NUM_MONTHS];
+	stridx_t month_genitive_names [NUM_MONTHS];
+	stridx_t abbreviated_month_names [NUM_MONTHS];
+	stridx_t abbreviated_month_genitive_names [NUM_MONTHS];
 
-	const gint8 calendar_week_rule;
-	const gint8 first_day_of_week;
+	gint8 calendar_week_rule;
+	gint8 first_day_of_week;
 
-	const stridx_t date_separator;
-	const stridx_t time_separator;	
+	stridx_t date_separator;
+	stridx_t time_separator;
 
-	const stridx_t short_date_patterns [NUM_SHORT_DATE_PATTERNS];
-	const stridx_t long_date_patterns [NUM_LONG_DATE_PATTERNS];
-	const stridx_t short_time_patterns [NUM_SHORT_TIME_PATTERNS];
-	const stridx_t long_time_patterns [NUM_LONG_TIME_PATTERNS];
-	const stridx_t year_month_patterns [NUM_YEAR_MONTH_PATTERNS];
+	stridx_t short_date_patterns [NUM_SHORT_DATE_PATTERNS];
+	stridx_t long_date_patterns [NUM_LONG_DATE_PATTERNS];
+	stridx_t short_time_patterns [NUM_SHORT_TIME_PATTERNS];
+	stridx_t long_time_patterns [NUM_LONG_TIME_PATTERNS];
+	stridx_t year_month_patterns [NUM_YEAR_MONTH_PATTERNS];
 } DateTimeFormatEntry;
 
 typedef struct {
-	const stridx_t currency_decimal_separator;
-	const stridx_t currency_group_separator;
-	const stridx_t number_decimal_separator;
-	const stridx_t number_group_separator;
+	// 12x ushort -- 6 ints
+	stridx_t currency_decimal_separator;
+	stridx_t currency_group_separator;
+	stridx_t number_decimal_separator;
+	stridx_t number_group_separator;
 
-	const stridx_t currency_symbol;
-	const stridx_t percent_symbol;
-	const stridx_t nan_symbol;
-	const stridx_t per_mille_symbol;
-	const stridx_t negative_infinity_symbol;
-	const stridx_t positive_infinity_symbol;
+	stridx_t currency_symbol;
+	stridx_t percent_symbol;
+	stridx_t nan_symbol;
+	stridx_t per_mille_symbol;
+	stridx_t negative_infinity_symbol;
+	stridx_t positive_infinity_symbol;
 
-	const stridx_t negative_sign;
-	const stridx_t positive_sign;
+	stridx_t negative_sign;
+	stridx_t positive_sign;
 
-	const gint8 currency_negative_pattern;
-	const gint8 currency_positive_pattern;
-	const gint8 percent_negative_pattern;
-	const gint8 percent_positive_pattern;
-	const gint8 number_negative_pattern;
+	// 7x gint8 -- FIXME expand to 8, or sort by size.
+	// For this reason, copy the data to a simpler "managed" form.
+	gint8 currency_negative_pattern;
+	gint8 currency_positive_pattern;
+	gint8 percent_negative_pattern;
+	gint8 percent_positive_pattern;
+	gint8 number_negative_pattern;
 
-	const gint8 currency_decimal_digits;
-	const gint8 number_decimal_digits;
+	gint8 currency_decimal_digits;
+	gint8 number_decimal_digits;
 
-	const gint currency_group_sizes [GROUP_SIZE];
-	const gint number_group_sizes [GROUP_SIZE];	
+	gint currency_group_sizes [2];
+	gint number_group_sizes [2];
 } NumberFormatEntry;
 
+// Due to the questionable layout of NumberFormatEntry, in particular
+// 7x byte, make something more guaranteed to match between native and managed.
+// mono/metadta/culture-info.h NumberFormatEntryManaged must match
+// mcs/class/corlib/ReferenceSources/CultureData.cs NumberFormatEntryManaged.
+// This is sorted alphabetically.
+struct NumberFormatEntryManaged {
+	gint32 currency_decimal_digits;
+	gint32 currency_decimal_separator;
+	gint32 currency_group_separator;
+	gint32 currency_group_sizes0;
+	gint32 currency_group_sizes1;
+	gint32 currency_negative_pattern;
+	gint32 currency_positive_pattern;
+	gint32 currency_symbol;
+	gint32 nan_symbol;
+	gint32 negative_infinity_symbol;
+	gint32 negative_sign;
+	gint32 number_decimal_digits;
+	gint32 number_decimal_separator;
+	gint32 number_group_separator;
+	gint32 number_group_sizes0;
+	gint32 number_group_sizes1;
+	gint32 number_negative_pattern;
+	gint32 per_mille_symbol;
+	gint32 percent_negative_pattern;
+	gint32 percent_positive_pattern;
+	gint32 percent_symbol;
+	gint32 positive_infinity_symbol;
+	gint32 positive_sign;
+};
+
 typedef struct {
-	const gint ansi;
-	const gint ebcdic;
-	const gint mac;
-	const gint oem;
-	const MonoBoolean is_right_to_left;
-	const char list_sep;
+	gint ansi;
+	gint ebcdic;
+	gint mac;
+	gint oem;
+	MonoBoolean is_right_to_left;
+	char list_sep;
 } TextInfoEntry;
 
 typedef struct {
-	const gint16 lcid;
-	const gint16 parent_lcid;
-	const gint16 calendar_type;
-	const gint16 region_entry_index;
-	const stridx_t name;
-	const stridx_t englishname;
-	const stridx_t nativename;
-	const stridx_t win3lang;
-	const stridx_t iso3lang;
-	const stridx_t iso2lang;
-	const stridx_t territory;
-	const stridx_t native_calendar_names [NUM_CALENDARS];
+	gint16 lcid;
+	gint16 parent_lcid;
+	gint16 calendar_type;
+	gint16 region_entry_index;
+	stridx_t name;
+	stridx_t englishname;
+	stridx_t nativename;
+	stridx_t win3lang;
+	stridx_t iso3lang;
+	stridx_t iso2lang;
+	stridx_t territory;
+	stridx_t native_calendar_names [NUM_CALENDARS];
 
-	const gint16 datetime_format_index;
-	const gint16 number_format_index;
-	
-	const TextInfoEntry text_info;
+	gint16 datetime_format_index;
+	gint16 number_format_index;
+
+	TextInfoEntry text_info;
 } CultureInfoEntry;
 
 typedef struct {
-	const stridx_t name;
-	const gint16 culture_entry_index;
+	stridx_t name;
+	gint16 culture_entry_index;
 } CultureInfoNameEntry;
 
 typedef struct {
-	const gint16 geo_id;
-	const stridx_t iso2name;
-	const stridx_t iso3name;
-	const stridx_t win3name;
-	const stridx_t english_name;
-	const stridx_t native_name;
-	const stridx_t currency_symbol;
-	const stridx_t iso_currency_symbol;
-	const stridx_t currency_english_name;
-	const stridx_t currency_native_name;
+	gint16 geo_id;
+	stridx_t iso2name;
+	stridx_t iso3name;
+	stridx_t win3name;
+	stridx_t english_name;
+	stridx_t native_name;
+	stridx_t currency_symbol;
+	stridx_t iso_currency_symbol;
+	stridx_t currency_english_name;
+	stridx_t currency_native_name;
 } RegionInfoEntry;
 
 typedef struct {
-	const stridx_t name;
-	const gint16 region_entry_index;
+	stridx_t name;
+	gint16 region_entry_index;
 } RegionInfoNameEntry;
 
 #endif

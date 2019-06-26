@@ -82,7 +82,6 @@ typedef struct MonoCompileArch {
 } MonoCompileArch;
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
-		mono_arch_flush_register_windows ();	\
 		MONO_CONTEXT_SET_IP ((ctx), (start_func));	\
 		MONO_CONTEXT_SET_BP ((ctx), __builtin_frame_address (0));	\
 		MONO_CONTEXT_SET_SP ((ctx), __builtin_frame_address (0));	\
@@ -163,8 +162,6 @@ static void * __builtin_frame_address(int depth)
 #endif
 
 gboolean mono_sparc_is_virtual_call (guint32 *code);
-
-gpointer* mono_sparc_get_vcall_slot_addr (guint32 *code, mgreg_t *regs);
 
 void mono_sparc_flushw (void);
 

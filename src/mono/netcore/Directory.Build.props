@@ -1,0 +1,61 @@
+<Project TreatAsLocalProperty="ExcludeRestorePackageImports">
+
+  <PropertyGroup>
+    <!--
+    For non-SDK projects that import this file and then import Microsoft.Common.props,
+    tell Microsoft.Common.props not to import Directory.Build.props again
+    -->
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+
+    <!-- We use the compiler toolset that comes from NuGet Packages rather than the SDK built-in.
+    This one sets UseSharedCompilation to false by default. -->
+    <UseSharedCompilation>true</UseSharedCompilation>
+
+    <ToolSetCommonDirectory>$(MSBuildThisFileDirectory)artifacts\toolset\Common\</ToolSetCommonDirectory>
+    <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
+      https://dotnetfeed.blob.core.windows.net/dotnet-core/index.json;
+      https://dotnetfeed.blob.core.windows.net/dotnet-coreclr/index.json;
+      https://api.nuget.org/v3/index.json;
+      $(OverridePackageSource);
+      $(RestoreSources)
+    </RestoreSources>
+  </PropertyGroup>
+
+  <!-- Informs build tools to apply .NET Framework metadata if not a test project -->
+  <PropertyGroup>
+    <IsDotNetFrameworkProductAssembly>true</IsDotNetFrameworkProductAssembly>
+  </PropertyGroup>
+
+  <!-- Indicates this is not an officially supported release. Release branches should set this to false. -->
+  <PropertyGroup>
+    <IsPrerelease>true</IsPrerelease>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+  <PropertyGroup Condition="'$(CopyrightNetFoundation)' != ''">
+    <Copyright>$(CopyrightNetFoundation)</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+
+
+  <!-- Language configuration -->
+  <PropertyGroup>
+    <!-- default to allowing all language features -->
+    <LangVersion>preview</LangVersion>
+    <!-- Enables Strict mode for Roslyn compiler -->
+    <Features>strict</Features>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+
+    <!-- Suppress preview message as we are usually using preview SDK versions. -->
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+
+    <GenFacadesIgnoreBuildAndRevisionMismatch>true</GenFacadesIgnoreBuildAndRevisionMismatch>
+  </PropertyGroup>
+</Project>

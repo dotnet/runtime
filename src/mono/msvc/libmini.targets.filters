@@ -6,6 +6,7 @@
   <Import Project="$(MSBuildThisFileDirectory)libmini-arch.targets.filters" />
   <Import Project="$(MSBuildThisFileDirectory)libmini-interp.targets.filters" />
   <Import Project="$(MSBuildThisFileDirectory)libmini-llvm.targets.filters" />
+  <Import Project="$(MSBuildThisFileDirectory)libmini-netcore.targets.filters" />
   <ItemGroup Condition="'$(MonoMiniFilterSubFolder)'!=''">
     <Filter Include="Header Files$(MonoMiniFilterSubFolder)">
       <UniqueIdentifier>{b64924de-7e02-416b-9779-4cc7fe0270e6}</UniqueIdentifier>

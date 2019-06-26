@@ -71,12 +71,15 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\arch-stubs.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\llvm-runtime.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\type-checking.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\calls.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\lldb.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\lldb.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\memory-access.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\intrinsics.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-profiler.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp-stubs.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\llvmonly-runtime.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\llvmonly-runtime.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="$(MonoSourceLocation)\mono\mini\Makefile.am.in" />

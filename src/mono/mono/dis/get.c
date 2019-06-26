@@ -22,6 +22,7 @@
 #include <mono/metadata/class.h>
 #include <mono/metadata/marshal.h>
 #include <mono/metadata/metadata-internals.h>
+#include <mono/utils/mono-math.h>
 
 extern gboolean substitute_with_mscorlib_p;
 
@@ -437,10 +438,13 @@ get_custom_mod (MonoImage *m, const char *ptr, char **return_value)
 		ptr++;
 		ptr = get_encoded_typedef_or_ref (m, ptr, &s);
 
+		/* cmods are encoded in reverse order from how we want to print them.
+		 * "int32 modopt (Foo) modopt (Bar)" is encoded as "cmod_opt [typedef_or_ref "Bar"] cmod_opt [typedef_or_ref "Foo"] I4"
+		 */
 		if (*return_value == NULL)
 			*return_value = g_strconcat (" ", mod, " (", s, ")", NULL);
 		else
-			*return_value = g_strconcat (*return_value, " ", mod, " (", s, ")", NULL);
+			*return_value = g_strconcat (mod, " (", s, ") ", *return_value, NULL);
 		g_free (s);
 	}
 	return ptr;
@@ -1139,7 +1143,7 @@ dis_stringify_object_with_class (MonoImage *m, MonoClass *c, gboolean prefix, gb
 static char *
 dis_stringify_object (MonoImage *m, MonoType *type, gboolean is_def)
 {
-	MonoClass *c = mono_class_from_mono_type (type);
+	MonoClass *c = mono_class_from_mono_type_internal (type);
 	return dis_stringify_object_with_class (m, c, TRUE, is_def);
 }
 
@@ -1946,7 +1950,7 @@ get_method_core (MonoImage *m, guint32 token, gboolean fullsig, MonoGenericConta
 
 	mh = mono_get_method_checked (m, token, NULL, (MonoGenericContext *) container, error);
 	if (mh) {
-		if (mono_method_signature (mh)->is_inflated)
+		if (mono_method_signature_internal (mh)->is_inflated)
 			container = mono_method_get_generic_container (((MonoMethodInflated *) mh)->declaring);
 		esname = get_escaped_name (mh->name);
 		sig = dis_stringify_type (m, m_class_get_byval_arg (mh->klass), TRUE);
@@ -2351,17 +2355,10 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 		return g_strdup_printf ("int64(0x%08x%08x)", high, low);
 	}
 	case MONO_TYPE_R4: {
-		gboolean normal;
 		float r;
 		readr4 (ptr, &r);
 
-		/* Crazy solaris systems doesn't have isnormal */
-#ifdef HAVE_ISFINITE
-		normal = isfinite (r);
-#else
-		normal = !dis_isinf (r) && !dis_isnan (r);
-#endif
-		if (!normal) {
+		if (!mono_isfinite (r)) {
 			return g_strdup_printf ("float32(0x%08x)", read32 (ptr));
 		} else {
 			char *str = stringify_double ((double) r);
@@ -2371,17 +2368,10 @@ get_constant (MonoImage *m, MonoTypeEnum t, guint32 blob_index)
 		}
 	}	
 	case MONO_TYPE_R8: {
-		gboolean normal;
 		double r;
 		readr8 (ptr, &r);
 
-		/* Crazy solaris systems doesn't have isnormal */
-#ifdef HAVE_ISFINITE
-		normal = isfinite (r);
-#else
-		normal = isnormal (r);
-#endif
-		if (!normal) {
+		if (!mono_isfinite (r)) {
 			guint32 low, high;
 			low = read32 (ptr);
 			high = read32 (ptr + 4);

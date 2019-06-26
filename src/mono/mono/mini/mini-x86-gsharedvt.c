@@ -99,8 +99,8 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 		 * This handles the case when the method returns a normal vtype, and when it returns a type arg, and its instantiated
 		 * with a vtype.
 		 */		
-		g_ptr_array_add (map, GUINT_TO_POINTER (caller_cinfo->vret_arg_offset / sizeof (gpointer)));
-		g_ptr_array_add (map, GUINT_TO_POINTER (callee_cinfo->vret_arg_offset / sizeof (gpointer)));
+		g_ptr_array_add (map, GUINT_TO_POINTER (caller_cinfo->vret_arg_offset / sizeof (target_mgreg_t)));
+		g_ptr_array_add (map, GUINT_TO_POINTER (callee_cinfo->vret_arg_offset / sizeof (target_mgreg_t)));
 	}
 
 	for (i = 0; i < cinfo->nargs; ++i) {
@@ -114,11 +114,11 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 				nslots = callee_cinfo->args [i].nslots;
 				if (!nslots)
 					nslots = 1;
-				g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo->offset / sizeof (gpointer)) + (1 << 16) + (nslots << 18)));
-				g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo2->offset / sizeof (gpointer))));
+				g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo->offset / sizeof (target_mgreg_t)) + (1 << 16) + (nslots << 18)));
+				g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo2->offset / sizeof (target_mgreg_t))));
 			} else {
-				g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo->offset / sizeof (gpointer))));
-				g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo2->offset / sizeof (gpointer))));
+				g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo->offset / sizeof (target_mgreg_t))));
+				g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo2->offset / sizeof (target_mgreg_t))));
 			}
 			break;
 		default:
@@ -127,13 +127,13 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 				if (!nslots)
 					nslots = 1;
 				for (j = 0; j < nslots; ++j) {
-					g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo->offset / sizeof (gpointer)) + j));
-					g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo2->offset / sizeof (gpointer)) + j));
+					g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo->offset / sizeof (target_mgreg_t)) + j));
+					g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo2->offset / sizeof (target_mgreg_t)) + j));
 				}
 			} else {
 				g_assert (ainfo2->storage == ArgGSharedVt);
-				g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo->offset / sizeof (gpointer)) + (2 << 16)));
-				g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo2->offset / sizeof (gpointer))));
+				g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo->offset / sizeof (target_mgreg_t)) + (2 << 16)));
+				g_ptr_array_add (map, GUINT_TO_POINTER ((ainfo2->offset / sizeof (target_mgreg_t))));
 			}
 			break;
 		}
@@ -147,7 +147,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 	info->vret_slot = -1;
 	info->calli = calli ? 1 : 0;
 	if (var_ret)
-		info->vret_arg_slot = gcinfo->vret_arg_offset / sizeof (gpointer);
+		info->vret_arg_slot = gcinfo->vret_arg_offset / sizeof (target_mgreg_t);
 	else
 		info->vret_arg_slot = -1;
 	info->vcall_offset = vcall_offset;
@@ -194,9 +194,9 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 
 	if (gsharedvt_in && var_ret && !caller_cinfo->vtype_retaddr) {
 		/* Allocate stack space for the return value */
-		info->vret_slot = info->stack_usage / sizeof (gpointer);
+		info->vret_slot = info->stack_usage / sizeof (target_mgreg_t);
 		// FIXME:
-		info->stack_usage += sizeof (gpointer) * 3;
+		info->stack_usage += sizeof (target_mgreg_t) * 3;
 	}
 
 	info->stack_usage = ALIGN_TO (info->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);

@@ -24,8 +24,16 @@ class Driver
 		};
 
 		Thread t1 = new Thread (() => {
+			ProcessStartInfo psi = new ProcessStartInfo () {
+				FileName = "echo",
+				Arguments = "hello",
+				RedirectStandardOutput = true,
+				UseShellExecute = false
+			};
+
 			Parallel.ForEach (UntilTimeout (15 * 1000), options, _ => {
-				using (Process p = Process.Start ("cat", "/dev/null")) {
+				using (Process p = Process.Start (psi)) {
+					p.BeginOutputReadLine ();
 					p.WaitForExit ();
 				}
 

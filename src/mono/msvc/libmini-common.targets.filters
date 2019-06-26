@@ -211,6 +211,9 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\type-checking.c">
       <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\calls.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\mini\lldb.h">
       <Filter>Header Files$(MonoMiniFilterSubFolder)\common</Filter>
     </ClInclude>
@@ -227,6 +230,12 @@
       <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\interp-stubs.c">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\mini\llvmonly-runtime.h">
+      <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\mini\llvmonly-runtime.c">
       <Filter>Source Files$(MonoMiniFilterSubFolder)\common</Filter>
     </ClCompile>
   </ItemGroup>

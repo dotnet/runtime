@@ -220,7 +220,7 @@ sgen_pin_stats_report (void)
 		int i;
 		mono_gc_printf (sgen_gc_debug_file, "%-50s", name);
 		for (i = 0; i < PIN_TYPE_MAX; ++i)
-			mono_gc_printf (sgen_gc_debug_file, "  %10ld", pinned_entry->num_pins [i]);
+			mono_gc_printf (sgen_gc_debug_file, "  %10ld", (long)pinned_entry->num_pins [i]);
 		mono_gc_printf (sgen_gc_debug_file, "\n");
 	} SGEN_HASH_TABLE_FOREACH_END;
 
@@ -230,9 +230,9 @@ sgen_pin_stats_report (void)
 	} SGEN_HASH_TABLE_FOREACH_END;
 
 	mono_gc_printf (sgen_gc_debug_file, "\nTotal bytes pinned from stack: %ld  static: %ld  other: %ld\n",
-			pinned_byte_counts [PIN_TYPE_STACK],
-			pinned_byte_counts [PIN_TYPE_STATIC_DATA],
-			pinned_byte_counts [PIN_TYPE_OTHER]);
+			(long)pinned_byte_counts [PIN_TYPE_STACK],
+			(long)pinned_byte_counts [PIN_TYPE_STATIC_DATA],
+			(long)pinned_byte_counts [PIN_TYPE_OTHER]);
 }
 
 size_t

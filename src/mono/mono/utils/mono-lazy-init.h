@@ -43,7 +43,7 @@
  *  - not be called concurrently (either 2+ initialize or 2+ cleanup, either initialize and cleanup)
  */
 
-typedef gint32 mono_lazy_init_t;
+typedef volatile gint32 mono_lazy_init_t;
 
 enum {
 	MONO_LAZY_INIT_STATUS_NOT_INITIALIZED,
@@ -62,21 +62,64 @@ mono_lazy_initialize (mono_lazy_init_t *lazy_init, void (*initialize) (void))
 
 	status = *lazy_init;
 
+	// This barrier might be redundant with volatile.
+	//
+	// Without either, code in our caller can
+	// read state ahead of the call to mono_lazy_initialize,
+	// and ahead of the call to initialize.
+	//
+	// Recall that barriers come in pairs.
+	// One barrier is in mono_atomic_cas_i32 below.
+	// This is the other.
+	//
+	// A common case of initializing a pointer, that
+	// the reader dereferences, is ok,
+	// on most architectures (not Alpha), due to "data dependency".
+	//
+	// But if the caller is merely reading globals, that initialize writes,
+	// then those reads can run ahead of initialize and be incorrect.
+	//
+	// On-demand initialization is much tricker than generally understood.
+	//
+	// Strongly consider adapting:
+	//   http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2008/n2660.htm
+	//
+	// At the very bottom. After making it coop-friendly.
+	//
+	// In particular, it eliminates the barriers from the fast path.
+	// At the cost of a thread local access.
+	//
+	// The thread local access should be "gamed" (forced to initialize
+	// early on platforms that do on-demand initialization), by inserting
+	// an extra use early in runtime initialization. i.e. so it does not
+	// take any locks, and become coop-unfriendly.
+	//
+	mono_memory_read_barrier ();
+
 	if (status >= MONO_LAZY_INIT_STATUS_INITIALIZED)
 		return status == MONO_LAZY_INIT_STATUS_INITIALIZED;
+
 	if (status == MONO_LAZY_INIT_STATUS_INITIALIZING
 	     || mono_atomic_cas_i32 (lazy_init, MONO_LAZY_INIT_STATUS_INITIALIZING, MONO_LAZY_INIT_STATUS_NOT_INITIALIZED)
 	         != MONO_LAZY_INIT_STATUS_NOT_INITIALIZED
 	) {
+		// FIXME: This is not coop-friendly.
 		while (*lazy_init == MONO_LAZY_INIT_STATUS_INITIALIZING)
 			mono_thread_info_yield ();
+
 		g_assert (mono_atomic_load_i32 (lazy_init) >= MONO_LAZY_INIT_STATUS_INITIALIZED);
-		return status == MONO_LAZY_INIT_STATUS_INITIALIZED;
+
+		// This result is transient. Another thread can proceed to cleanup.
+		// Perhaps cleanup should not be attempted, just on-demand initialization.
+		return *lazy_init == MONO_LAZY_INIT_STATUS_INITIALIZED;
 	}
 
 	initialize ();
 
 	mono_atomic_store_release (lazy_init, MONO_LAZY_INIT_STATUS_INITIALIZED);
+
+	// This result is transient. Another thread can proceed to cleanup.
+	// Perhaps cleanup should not be attempted, just on-demand initialization.
 	return TRUE;
 }
 

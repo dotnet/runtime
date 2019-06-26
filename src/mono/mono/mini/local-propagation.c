@@ -666,16 +666,18 @@ mono_local_cprop (MonoCompile *cfg)
 					opcode2 = mono_op_to_op_imm (ins->opcode);
 					if ((opcode2 != -1) && mono_arch_is_inst_imm (ins->opcode, opcode2, def->inst_c0) && ((srcindex == 1) || (ins->sreg2 == -1))) {
 						ins->opcode = opcode2;
-						if ((def->opcode == OP_I8CONST) && (sizeof (gpointer) == 4)) {
+						if ((def->opcode == OP_I8CONST) && TARGET_SIZEOF_VOID_P == 4)
 							ins->inst_l = def->inst_l;
-						} else {
+						else if (regtype == 'l' && TARGET_SIZEOF_VOID_P == 4)
+							/* This can happen if the def was a result of an iconst+conv.i8, which is transformed into just an iconst */
+							ins->inst_l = def->inst_c0;
+						else
 							ins->inst_imm = def->inst_c0;
-						}
 						sregs [srcindex] = -1;
 						mono_inst_set_src_registers (ins, sregs);
 
 						if ((opcode2 == OP_VOIDCALL) || (opcode2 == OP_CALL) || (opcode2 == OP_LCALL) || (opcode2 == OP_FCALL))
-							((MonoCallInst*)ins)->fptr = (gpointer)ins->inst_imm;
+							((MonoCallInst*)ins)->fptr = (gpointer)(uintptr_t)ins->inst_imm;
 
 						/* Allow further iterations */
 						srcindex = -1;
@@ -778,6 +780,12 @@ mono_local_cprop (MonoCompile *cfg)
 				bb_opt->in_count = bb_opt->out_count = 0;
 				cfg->cbb = bb_opt;
 
+				if (!saved_prev) {
+					/* first instruction of basic block got replaced, so create
+					 * dummy inst that points to start of basic block */
+					MONO_INST_NEW (cfg, saved_prev, OP_NOP);
+					saved_prev = bb->code;
+				}
 				/* ins is hanging, continue scanning the emitted code */
 				ins = saved_prev;
 				continue;

@@ -39,7 +39,7 @@ realloc_queue (SgenPointerQueue *queue)
 	sgen_free_internal_dynamic (queue->data, sizeof (void*) * queue->size, queue->mem_type);
 	queue->data = new_data;
 	queue->size = new_size;
-	SGEN_LOG (4, "Reallocated pointer queue to size: %lu", new_size);
+	SGEN_LOG (4, "Reallocated pointer queue to size: %lu", (unsigned long)new_size);
 }
 
 gboolean
@@ -107,7 +107,7 @@ sgen_pointer_queue_sort_uniq (SgenPointerQueue *queue)
 	void **start, **cur, **end;
 	/* sort and uniq pin_queue: we just sort and we let the rest discard multiple values */
 	/* it may be better to keep ranges of pinned memory instead of individually pinning objects */
-	SGEN_LOG (5, "Sorting pointer queue, size: %lu", queue->next_slot);
+	SGEN_LOG (5, "Sorting pointer queue, size: %lu", (unsigned long)queue->next_slot);
 	if (queue->next_slot > 1)
 		sgen_sort_addresses (queue->data, queue->next_slot);
 	start = cur = queue->data;
@@ -119,7 +119,7 @@ sgen_pointer_queue_sort_uniq (SgenPointerQueue *queue)
 		start++;
 	};
 	queue->next_slot = start - queue->data;
-	SGEN_LOG (5, "Pointer queue reduced to size: %lu", queue->next_slot);
+	SGEN_LOG (5, "Pointer queue reduced to size: %lu", (unsigned long)queue->next_slot);
 }
 
 /*

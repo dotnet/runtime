@@ -260,7 +260,7 @@ get_next_size (MonoMemPool *pool, int size)
  * \returns the address of a newly allocated memory block.
  */
 gpointer
-mono_mempool_alloc (MonoMemPool *pool, guint size)
+(mono_mempool_alloc) (MonoMemPool *pool, guint size)
 {
 	gpointer rval = pool->pos; // Return value
 
@@ -318,26 +318,12 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
  * same as \c mono_mempool_alloc, but fills memory with zero.
  */
 gpointer
-mono_mempool_alloc0 (MonoMemPool *pool, guint size)
+(mono_mempool_alloc0) (MonoMemPool *pool, guint size)
 {
-	gpointer rval;
-
-	// For the fast path, repeat the first few lines of mono_mempool_alloc
 	size = ALIGN_SIZE (size);
-	rval = pool->pos;
-	pool->pos = (guint8*)rval + size;
-
-	// If that doesn't work fall back on mono_mempool_alloc to handle new chunk allocation
-	if (G_UNLIKELY (pool->pos >= pool->end)) {
-		rval = mono_mempool_alloc (pool, size);
-	}
-#ifdef TRACE_ALLOCATIONS
-	else if (pool == mono_get_corlib ()->mempool) {
-		mono_backtrace (size);
-	}
-#endif
-
-	memset (rval, 0, size);
+	const gpointer rval = mono_mempool_alloc (pool, size);
+	if (rval)
+		memset (rval, 0, size);
 	return rval;
 }
 

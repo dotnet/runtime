@@ -26,6 +26,7 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/utils/unlocked.h>
+#include <mono/utils/mono-math.h>
 
 #ifdef ENABLE_LLVM
 #include "mini-llvm-cpp.h"
@@ -72,7 +73,7 @@ ldvirtfn_internal (MonoObject *obj, MonoMethod *method, gboolean gshared)
 		return NULL;
 	}
 
-	res = mono_object_get_virtual_method (obj, method);
+	res = mono_object_get_virtual_method_internal (obj, method);
 
 	if (gshared && method->is_inflated && mono_method_get_context (method)->method_inst) {
 		MonoGenericContext context = { NULL, NULL };
@@ -666,17 +667,6 @@ mono_fclt_un (double a, double b)
 	return isunordered (a, b) || a < b;
 }
 
-gboolean
-mono_isfinite (double a)
-{
-#ifdef HAVE_ISFINITE
-	return isfinite (a);
-#else
-	g_assert_not_reached ();
-	return TRUE;
-#endif
-}
-
 double
 mono_fload_r4 (float *ptr)
 {
@@ -700,198 +690,91 @@ mono_fload_r4_arg (double val)
 #endif
 
 MonoArray *
-mono_array_new_va (MonoMethod *cm, ...)
+mono_array_new_n_icall (MonoMethod *cm, gint32 pcount, intptr_t *params)
 {
 	ERROR_DECL (error);
-	MonoArray *arr;
-	MonoDomain *domain = mono_domain_get ();
-	va_list ap;
-	uintptr_t *lengths;
-	intptr_t *lower_bounds;
-	int pcount;
-	int rank;
-	int i, d;
+	g_assert (cm);
+	g_assert (pcount);
+	g_assert (params);
+	intptr_t *lower_bounds = NULL;
 
-	pcount = mono_method_signature (cm)->param_count;
-	rank = m_class_get_rank (cm->klass);
+	const int pcount_sig = mono_method_signature_internal (cm)->param_count;
+	const int rank = m_class_get_rank (cm->klass);
+	g_assert (pcount == pcount_sig);
+	g_assert (rank == pcount || rank * 2 == pcount);
 
-	va_start (ap, cm);
-	
-	lengths = g_newa (uintptr_t, pcount);
-	for (i = 0; i < pcount; ++i)
-		lengths [i] = d = va_arg(ap, int);
+	uintptr_t *lengths = (uintptr_t*)params;
 
 	if (rank == pcount) {
 		/* Only lengths provided. */
 		if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
 			lower_bounds = g_newa (intptr_t, rank);
 			memset (lower_bounds, 0, sizeof (intptr_t) * rank);
-		} else {
-			lower_bounds = NULL;
 		}
 	} else {
 		g_assert (pcount == (rank * 2));
 		/* lower bounds are first. */
-		lower_bounds = (intptr_t*)lengths;
+		lower_bounds = params;
 		lengths += rank;
 	}
-	va_end(ap);
 
-	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, error);
+	MonoArray *arr = mono_array_new_full_checked (mono_domain_get (),
+		cm->klass, lengths, lower_bounds, error);
 
-	if (!mono_error_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
+	return mono_error_set_pending_exception (error) ? NULL : arr;
+}
 
-	return arr;
+static MonoArray *
+mono_array_new_n (MonoMethod *cm, int n, uintptr_t lengths [], intptr_t lower_bounds [])
+{
+	ERROR_DECL (error);
+	intptr_t *plower_bounds = NULL;
+	const int pcount = mono_method_signature_internal (cm)->param_count;
+	const int rank = m_class_get_rank (cm->klass);
+
+	g_assert (rank == pcount);
+	g_assert (rank == n);
+
+	if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY)
+		plower_bounds = lower_bounds;
+
+	MonoArray *arr = mono_array_new_full_checked (mono_domain_get (),
+		cm->klass, lengths, plower_bounds, error);
+
+	return mono_error_set_pending_exception (error) ? NULL : arr;
 }
 
 /* Specialized version of mono_array_new_va () which avoids varargs */
 MonoArray *
 mono_array_new_1 (MonoMethod *cm, guint32 length)
 {
-	ERROR_DECL (error);
-	MonoArray *arr;
-	MonoDomain *domain = mono_domain_get ();
-	uintptr_t lengths [1];
-	intptr_t *lower_bounds;
-	int pcount;
-	int rank;
-
-	pcount = mono_method_signature (cm)->param_count;
-	rank = m_class_get_rank (cm->klass);
-
-	lengths [0] = length;
-
-	g_assert (rank == pcount);
-
-	if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
-		lower_bounds = g_newa (intptr_t, rank);
-		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
-	} else {
-		lower_bounds = NULL;
-	}
-
-	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, error);
-
-	if (!mono_error_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
-
-	return arr;
+	uintptr_t lengths [ ] = {length};
+	intptr_t lower_bounds [G_N_ELEMENTS (lengths)] = {0};
+	return mono_array_new_n (cm, G_N_ELEMENTS (lengths), lengths, lower_bounds);
 }
 
 MonoArray *
 mono_array_new_2 (MonoMethod *cm, guint32 length1, guint32 length2)
 {
-	ERROR_DECL (error);
-	MonoArray *arr;
-	MonoDomain *domain = mono_domain_get ();
-	uintptr_t lengths [2];
-	intptr_t *lower_bounds;
-	int pcount;
-	int rank;
-
-	pcount = mono_method_signature (cm)->param_count;
-	rank = m_class_get_rank (cm->klass);
-
-	lengths [0] = length1;
-	lengths [1] = length2;
-
-	g_assert (rank == pcount);
-
-	if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
-		lower_bounds = g_newa (intptr_t, rank);
-		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
-	} else {
-		lower_bounds = NULL;
-	}
-
-	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, error);
-
-	if (!mono_error_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
-
-	return arr;
+	uintptr_t lengths [ ] = {length1, length2};
+	intptr_t lower_bounds [G_N_ELEMENTS (lengths)] = {0};
+	return mono_array_new_n (cm, G_N_ELEMENTS (lengths), lengths, lower_bounds);
 }
 
 MonoArray *
 mono_array_new_3 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 length3)
 {
-	ERROR_DECL (error);
-	MonoArray *arr;
-	MonoDomain *domain = mono_domain_get ();
-	uintptr_t lengths [3];
-	intptr_t *lower_bounds;
-	int pcount;
-	int rank;
-
-	pcount = mono_method_signature (cm)->param_count;
-	rank = m_class_get_rank (cm->klass);
-
-	lengths [0] = length1;
-	lengths [1] = length2;
-	lengths [2] = length3;
-
-	g_assert (rank == pcount);
-
-	if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
-		lower_bounds = g_newa (intptr_t, rank);
-		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
-	} else {
-		lower_bounds = NULL;
-	}
-
-	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, error);
-
-	if (!mono_error_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
-
-	return arr;
+	uintptr_t lengths [ ] = {length1, length2, length3};
+	intptr_t lower_bounds [G_N_ELEMENTS (lengths)] = {0};
+	return mono_array_new_n (cm, G_N_ELEMENTS (lengths), lengths, lower_bounds);
 }
 
 MonoArray *
 mono_array_new_4 (MonoMethod *cm, guint32 length1, guint32 length2, guint32 length3, guint32 length4)
 {
-	ERROR_DECL (error);
-	MonoArray *arr;
-	MonoDomain *domain = mono_domain_get ();
-	uintptr_t lengths [4];
-	intptr_t *lower_bounds;
-	int pcount;
-	int rank;
-
-	pcount = mono_method_signature (cm)->param_count;
-	rank = m_class_get_rank (cm->klass);
-
-	lengths [0] = length1;
-	lengths [1] = length2;
-	lengths [2] = length3;
-	lengths [3] = length4;
-
-	g_assert (rank == pcount);
-
-	if (m_class_get_byval_arg (cm->klass)->type == MONO_TYPE_ARRAY) {
-		lower_bounds = g_newa (intptr_t, rank);
-		memset (lower_bounds, 0, sizeof (intptr_t) * rank);
-	} else {
-		lower_bounds = NULL;
-	}
-
-	arr = mono_array_new_full_checked (domain, cm->klass, lengths, lower_bounds, error);
-
-	if (!mono_error_ok (error)) {
-		mono_error_set_pending_exception (error);
-		return NULL;
-	}
-
-	return arr;
+	uintptr_t lengths [ ] = {length1, length2, length3, length4};
+	intptr_t lower_bounds [G_N_ELEMENTS (lengths)] = {0};
+	return mono_array_new_n (cm, G_N_ELEMENTS (lengths), lengths, lower_bounds);
 }
 
 gpointer
@@ -903,7 +786,7 @@ mono_class_static_field_address (MonoDomain *domain, MonoClassField *field)
 	
 	//printf ("SFLDA0 %s.%s::%s %d\n", field->parent->name_space, field->parent->name, field->name, field->offset, field->parent->inited);
 
-	mono_class_init (field->parent);
+	mono_class_init_internal (field->parent);
 
 	vtable = mono_class_vtable_checked (domain, field->parent, error);
 	if (!is_ok (error)) {
@@ -944,7 +827,7 @@ mono_ldtoken_wrapper (MonoImage *image, int token, MonoGenericContext *context)
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
-	mono_class_init (handle_class);
+	mono_class_init_internal (handle_class);
 
 	return res;
 }
@@ -952,7 +835,7 @@ mono_ldtoken_wrapper (MonoImage *image, int token, MonoGenericContext *context)
 gpointer
 mono_ldtoken_wrapper_generic_shared (MonoImage *image, int token, MonoMethod *method)
 {
-	MonoMethodSignature *sig = mono_method_signature (method);
+	MonoMethodSignature *sig = mono_method_signature_internal (method);
 	MonoGenericContext *generic_context;
 
 	if (sig->is_inflated) {
@@ -973,6 +856,17 @@ mono_fconv_u8 (double v)
 }
 
 guint64
+mono_fconv_u8_2 (double v)
+{
+	// Separate from mono_fconv_u8 to avoid duplicate JIT icall.
+	//
+	// When there are duplicates, there is single instancing
+	// against function address that breaks stuff. For example,
+	// wrappers are only produced for one of them, breaking FullAOT.
+	return mono_fconv_u8 (v);
+}
+
+guint64
 mono_rconv_u8 (float v)
 {
 	return (guint64)v;
@@ -990,31 +884,28 @@ guint32
 mono_fconv_u4 (double v)
 {
 	/* MS.NET behaves like this for some reason */
-#ifdef HAVE_ISINF
-	if (isinf (v) || isnan (v))
+	if (mono_isinf (v) || mono_isnan (v))
 		return 0;
-#endif
-
 	return (guint32)v;
 }
 
-#ifndef HAVE_TRUNC
-/* Solaris doesn't have trunc */
-#ifdef HAVE_AINTL
-extern long double aintl (long double);
-#define trunc aintl
-#else
-/* FIXME: This means we will never throw overflow exceptions */
-#define trunc(v) res
-#endif
-#endif /* HAVE_TRUNC */
+guint32
+mono_fconv_u4_2 (double v)
+{
+	// Separate from mono_fconv_u4 to avoid duplicate JIT icall.
+	//
+	// When there are duplicates, there is single instancing
+	// against function address that breaks stuff. For example,
+	// wrappers are only produced for one of them, breaking FullAOT.
+	return mono_fconv_u4 (v);
+}
 
 gint64
 mono_fconv_ovf_i8 (double v)
 {
 	const gint64 res = (gint64)v;
 
-	if (isnan(v) || trunc (v) != res) {
+	if (mono_isnan (v) || mono_trunc (v) != res) {
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
 		mono_error_set_pending_exception (error);
@@ -1038,7 +929,7 @@ mono_fconv_ovf_u8 (double v)
  * To work around this issue we test for value boundaries instead. 
  */
 #if defined(__arm__) && defined(MONO_ARCH_SOFT_FLOAT_FALLBACK)
-	if (isnan (v) || !(v >= -0.5 && v <= ULLONG_MAX+0.5)) {
+	if (mono_isnan (v) || !(v >= -0.5 && v <= ULLONG_MAX+0.5)) {
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
 		mono_error_set_pending_exception (error);
@@ -1047,7 +938,7 @@ mono_fconv_ovf_u8 (double v)
 	res = (guint64)v;
 #else
 	res = (guint64)v;
-	if (isnan(v) || trunc (v) != res) {
+	if (mono_isnan (v) || mono_trunc (v) != res) {
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
 		mono_error_set_pending_exception (error);
@@ -1070,7 +961,7 @@ mono_rconv_ovf_i8 (float v)
 {
 	const gint64 res = (gint64)v;
 
-	if (isnan(v) || trunc (v) != res) {
+	if (mono_isnan (v) || mono_trunc (v) != res) {
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
 		mono_error_set_pending_exception (error);
@@ -1085,7 +976,7 @@ mono_rconv_ovf_u8 (float v)
 	guint64 res;
 
 	res = (guint64)v;
-	if (isnan(v) || trunc (v) != res) {
+	if (mono_isnan (v) || mono_trunc (v) != res) {
 		ERROR_DECL (error);
 		mono_error_set_overflow (error);
 		mono_error_set_pending_exception (error);
@@ -1126,6 +1017,15 @@ mono_lconv_to_r8_un (guint64 a)
 }
 #endif
 
+#ifdef MONO_ARCH_EMULATE_FREM
+// Wrapper to avoid taking address of overloaded function.
+double
+mono_fmod (double a, double b)
+{
+	return fmod (a, b);
+}
+#endif
+
 gpointer
 mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointer *this_arg)
 {
@@ -1141,7 +1041,7 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 		mono_error_set_pending_exception (error);
 		return NULL;
 	}
-	vmethod = mono_object_get_virtual_method (obj, method);
+	vmethod = mono_object_get_virtual_method_internal (obj, method);
 	g_assert (!mono_class_is_gtd (vmethod->klass));
 	g_assert (!mono_class_is_ginst (vmethod->klass) || !mono_class_get_generic_class (vmethod->klass)->context.class_inst->is_open);
 	g_assert (!context->method_inst || !context->method_inst->is_open);
@@ -1149,12 +1049,13 @@ mono_helper_compile_generic_method (MonoObject *obj, MonoMethod *method, gpointe
 	addr = mono_compile_method_checked (vmethod, error);
 	if (mono_error_set_pending_exception (error))
 		return NULL;
+	g_assert (addr);
 
 	addr = mini_add_method_trampoline (vmethod, addr, mono_method_needs_static_rgctx_invoke (vmethod, FALSE), FALSE);
 
 	/* Since this is a virtual call, have to unbox vtypes */
 	if (m_class_is_valuetype (obj->vtable->klass))
-		*this_arg = mono_object_unbox (obj);
+		*this_arg = mono_object_unbox_internal (obj);
 	else
 		*this_arg = obj;
 
@@ -1254,7 +1155,7 @@ mono_object_castclass_unbox (MonoObject *obj, MonoClass *klass)
 	MonoClass *oklass;
 
 	if (mini_get_debug_options ()->better_cast_details) {
-		jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
+		jit_tls = mono_tls_get_jit_tls ();
 		jit_tls->class_cast_from = NULL;
 	}
 
@@ -1288,7 +1189,7 @@ mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *c
 	gpointer cached_vtable, obj_vtable;
 
 	if (mini_get_debug_options ()->better_cast_details) {
-		jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
+		jit_tls = mono_tls_get_jit_tls ();
 		jit_tls->class_cast_from = NULL;
 	}
 
@@ -1360,8 +1261,15 @@ mono_get_native_calli_wrapper (MonoImage *image, MonoMethodSignature *sig, gpoin
 
 	m = mono_marshal_get_native_func_wrapper (image, sig, &piinfo, mspecs, func);
 
+	for (int i = sig->param_count; i >= 0; i--)
+		if (mspecs [i])
+			mono_metadata_free_marshal_spec (mspecs [i]);
+	g_free (mspecs);
+
 	gpointer compiled_ptr = mono_compile_method_checked (m, error);
 	mono_error_set_pending_exception (error);
+	g_assert (compiled_ptr);
+
 	return compiled_ptr;
 }
 
@@ -1386,7 +1294,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 		klass = this_obj->vtable->klass;
 	}
 
-	if (mono_method_signature (cmethod)->pinvoke) {
+	if (mono_method_signature_internal (cmethod)->pinvoke) {
 		/* Object.GetType () */
 		m = mono_marshal_get_native_wrapper (cmethod, TRUE, FALSE);
 	} else {
@@ -1419,7 +1327,7 @@ constrained_gsharedvt_call_setup (gpointer mp, MonoMethod *cmethod, MonoClass *k
 			*/
 			MonoObject *this_obj = *(MonoObject**)mp;
 
-			*this_arg = mono_object_unbox (this_obj);
+			*this_arg = mono_object_unbox_internal (this_obj);
 		} else {
 			/*
 			 * Calling a vtype method with a vtype receiver
@@ -1483,9 +1391,9 @@ void
 mono_gsharedvt_value_copy (gpointer dest, gpointer src, MonoClass *klass)
 {
 	if (m_class_is_valuetype (klass))
-		mono_value_copy (dest, src, klass);
+		mono_value_copy_internal (dest, src, klass);
 	else
-        mono_gc_wbarrier_generic_store (dest, *(MonoObject**)src);
+        mono_gc_wbarrier_generic_store_internal (dest, *(MonoObject**)src);
 }
 
 void
@@ -1514,8 +1422,16 @@ ves_icall_mono_delegate_ctor (MonoObject *this_obj_raw, MonoObject *target_raw, 
 	ERROR_DECL (error);
 	MONO_HANDLE_DCL (MonoObject, this_obj);
 	MONO_HANDLE_DCL (MonoObject, target);
+
+	if (!addr) {
+		mono_error_set_argument_null (error, "method", "");
+		mono_error_set_pending_exception (error);
+		goto leave;
+	}
 	mono_delegate_ctor (this_obj, target, addr, error);
 	mono_error_set_pending_exception (error);
+
+leave:
 	HANDLE_FUNCTION_RETURN ();
 }
 
@@ -1527,8 +1443,15 @@ ves_icall_mono_delegate_ctor_interp (MonoObject *this_obj_raw, MonoObject *targe
 	MONO_HANDLE_DCL (MonoObject, this_obj);
 	MONO_HANDLE_DCL (MonoObject, target);
 
+	if (!addr) {
+		mono_error_set_argument_null (error, "method", "");
+		mono_error_set_pending_exception (error);
+		goto leave;
+	}
 	mini_get_interp_callbacks ()->delegate_ctor (this_obj, target, addr, error);
 	mono_error_set_pending_exception (error);
+
+leave:
 	HANDLE_FUNCTION_RETURN ();
 }
 
@@ -1560,383 +1483,6 @@ mono_fill_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, int index)
 	return res;
 }
 
-/*
- * resolve_iface_call:
- *
- *   Return the executable code for the iface method IMT_METHOD called on THIS.
- * This function is called on a slowpath, so it doesn't need to be fast.
- * This returns an ftnptr by returning the address part, and the arg in the OUT_ARG
- * out parameter.
- */
-static gpointer
-resolve_iface_call (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg, gboolean caller_gsharedvt, MonoError *error)
-{
-	MonoVTable *vt;
-	gpointer *imt, *vtable_slot;
-	MonoMethod *impl_method, *generic_virtual = NULL, *variant_iface = NULL;
-	gpointer addr, compiled_method, aot_addr;
-	gboolean need_rgctx_tramp = FALSE, need_unbox_tramp = FALSE;
-
-	error_init (error);
-	if (!this_obj)
-		/* The caller will handle it */
-		return NULL;
-
-	vt = this_obj->vtable;
-	imt = (gpointer*)vt - MONO_IMT_SIZE;
-
-	vtable_slot = mini_resolve_imt_method (vt, imt + imt_slot, imt_method, &impl_method, &aot_addr, &need_rgctx_tramp, &variant_iface, error);
-	return_val_if_nok (error, NULL);
-
-	// FIXME: This can throw exceptions
-	addr = compiled_method = mono_compile_method_checked (impl_method, error);
-	mono_error_assert_ok (error);
-	g_assert (addr);
-
-	if (imt_method->is_inflated && ((MonoMethodInflated*)imt_method)->context.method_inst)
-		generic_virtual = imt_method;
-
-	if (generic_virtual || variant_iface) {
-		if (m_class_is_valuetype (vt->klass)) /*FIXME is this required variant iface?*/
-			need_unbox_tramp = TRUE;
-	} else {
-		if (m_class_is_valuetype (impl_method->klass))
-			need_unbox_tramp = TRUE;
-	}
-
-	addr = mini_add_method_wrappers_llvmonly (impl_method, addr, caller_gsharedvt, need_unbox_tramp, out_arg);
-
-	if (generic_virtual || variant_iface) {
-		MonoMethod *target = generic_virtual ? generic_virtual : variant_iface;
-
-		mono_method_add_generic_virtual_invocation (mono_domain_get (),
-													vt, imt + imt_slot,
-													target, addr);
-	}
-
-	return addr;
-}
-
-gpointer
-mono_resolve_iface_call_gsharedvt (MonoObject *this_obj, int imt_slot, MonoMethod *imt_method, gpointer *out_arg)
-{
-	ERROR_DECL (error);
-	gpointer res = resolve_iface_call (this_obj, imt_slot, imt_method, out_arg, TRUE, error);
-	if (!is_ok (error)) {
-		MonoException *ex = mono_error_convert_to_exception (error);
-		mono_llvm_throw_exception ((MonoObject*)ex);
-	}
-	return res;
-}
-
-static gboolean
-is_generic_method_definition (MonoMethod *m)
-{
-	MonoGenericContext *context;
-	if (m->is_generic)
-		return TRUE;
-	if (!m->is_inflated)
-		return FALSE;
-
-	context = mono_method_get_context (m);
-	if (!context->method_inst)
-		return FALSE;
-	if (context->method_inst == mono_method_get_generic_container (((MonoMethodInflated*)m)->declaring)->context.method_inst)
-		return TRUE;
-	return FALSE;
-}
-
-/*
- * resolve_vcall:
- *
- *   Return the executable code for calling vt->vtable [slot].
- * This function is called on a slowpath, so it doesn't need to be fast.
- * This returns an ftnptr by returning the address part, and the arg in the OUT_ARG
- * out parameter.
- */
-static gpointer
-resolve_vcall (MonoVTable *vt, int slot, MonoMethod *imt_method, gpointer *out_arg, gboolean gsharedvt, MonoError *error)
-{
-	MonoMethod *m, *generic_virtual = NULL;
-	gpointer addr, compiled_method;
-	gboolean need_unbox_tramp = FALSE;
-
-	error_init (error);
-	/* Same as in common_call_trampoline () */
-
-	/* Avoid loading metadata or creating a generic vtable if possible */
-	addr = mono_aot_get_method_from_vt_slot (mono_domain_get (), vt, slot, error);
-	return_val_if_nok (error, NULL);
-	if (addr && !m_class_is_valuetype (vt->klass))
-		return mono_create_ftnptr (mono_domain_get (), addr);
-
-	m = mono_class_get_vtable_entry (vt->klass, slot);
-
-	if (is_generic_method_definition (m)) {
-		MonoGenericContext context = { NULL, NULL };
-		MonoMethod *declaring;
-
-		if (m->is_inflated)
-			declaring = mono_method_get_declaring_generic_method (m);
-		else
-			declaring = m;
-
-		if (mono_class_is_ginst (m->klass))
-			context.class_inst = mono_class_get_generic_class (m->klass)->context.class_inst;
-		else
-			g_assert (!mono_class_is_gtd (m->klass));
-
-		generic_virtual = imt_method;
-		g_assert (generic_virtual);
-		g_assert (generic_virtual->is_inflated);
-		context.method_inst = ((MonoMethodInflated*)generic_virtual)->context.method_inst;
-
-		m = mono_class_inflate_generic_method_checked (declaring, &context, error);
-		mono_error_assert_ok (error); /* FIXME don't swallow the error */
-	}
-
-	if (generic_virtual) {
-		if (m_class_is_valuetype (vt->klass))
-			need_unbox_tramp = TRUE;
-	} else {
-		if (m_class_is_valuetype (m->klass))
-			need_unbox_tramp = TRUE;
-	}
-
-	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		m = mono_marshal_get_synchronized_wrapper (m);
-
-	// FIXME: This can throw exceptions
-	addr = compiled_method = mono_compile_method_checked (m, error);
-	mono_error_assert_ok (error);
-	g_assert (addr);
-
-	addr = mini_add_method_wrappers_llvmonly (m, addr, gsharedvt, need_unbox_tramp, out_arg);
-
-	if (!gsharedvt && generic_virtual) {
-		// FIXME: This wastes memory since add_generic_virtual_invocation ignores it in a lot of cases
-		MonoFtnDesc *ftndesc = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, out_arg);
-
-		mono_method_add_generic_virtual_invocation (mono_domain_get (),
-													vt, vt->vtable + slot,
-													generic_virtual, ftndesc);
-	}
-
-	return addr;
-}
-
-gpointer
-mono_resolve_vcall_gsharedvt (MonoObject *this_obj, int slot, MonoMethod *imt_method, gpointer *out_arg)
-{
-	g_assert (this_obj);
-
-	ERROR_DECL (error);
-	gpointer result = resolve_vcall (this_obj->vtable, slot, imt_method, out_arg, TRUE, error);
-	if (!is_ok (error)) {
-		MonoException *ex = mono_error_convert_to_exception (error);
-		mono_llvm_throw_exception ((MonoObject*)ex);
-	}
-	return result;
-}
-
-/*
- * mono_resolve_generic_virtual_call:
- *
- *   Resolve a generic virtual call.
- * This function is called on a slowpath, so it doesn't need to be fast.
- */
-MonoFtnDesc*
-mono_resolve_generic_virtual_call (MonoVTable *vt, int slot, MonoMethod *generic_virtual)
-{
-	MonoMethod *m;
-	gpointer addr, compiled_method;
-	gboolean need_unbox_tramp = FALSE;
-	ERROR_DECL (error);
-	MonoGenericContext context = { NULL, NULL };
-	MonoMethod *declaring;
-	gpointer arg = NULL;
-
-	m = mono_class_get_vtable_entry (vt->klass, slot);
-
-	g_assert (is_generic_method_definition (m));
-
-	if (m->is_inflated)
-		declaring = mono_method_get_declaring_generic_method (m);
-	else
-		declaring = m;
-
-	if (mono_class_is_ginst (m->klass))
-		context.class_inst = mono_class_get_generic_class (m->klass)->context.class_inst;
-	else
-		g_assert (!mono_class_is_gtd (m->klass));
-
-	g_assert (generic_virtual->is_inflated);
-	context.method_inst = ((MonoMethodInflated*)generic_virtual)->context.method_inst;
-
-	m = mono_class_inflate_generic_method_checked (declaring, &context, error);
-	g_assert (mono_error_ok (error));
-
-	if (m_class_is_valuetype (vt->klass))
-		need_unbox_tramp = TRUE;
-
-	// FIXME: This can throw exceptions
-	addr = compiled_method = mono_compile_method_checked (m, error);
-	mono_error_assert_ok (error);
-	g_assert (addr);
-
-	addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, need_unbox_tramp, &arg);
-
-	/*
-	 * This wastes memory but the memory usage is bounded since
-	 * mono_method_add_generic_virtual_invocation () eventually builds an imt trampoline for
-	 * this vtable slot so we are not called any more for this instantiation.
-	 */
-	MonoFtnDesc *ftndesc = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, arg);
-
-	mono_method_add_generic_virtual_invocation (mono_domain_get (),
-												vt, vt->vtable + slot,
-												generic_virtual, ftndesc);
-	return ftndesc;
-}
-
-/*
- * mono_resolve_generic_virtual_call:
- *
- *   Resolve a generic virtual/variant iface call on interfaces.
- * This function is called on a slowpath, so it doesn't need to be fast.
- */
-MonoFtnDesc*
-mono_resolve_generic_virtual_iface_call (MonoVTable *vt, int imt_slot, MonoMethod *generic_virtual)
-{
-	ERROR_DECL (error);
-	MonoMethod *m, *variant_iface;
-	gpointer addr, aot_addr, compiled_method;
-	gboolean need_unbox_tramp = FALSE;
-	gboolean need_rgctx_tramp;
-	gpointer arg = NULL;
-	gpointer *imt;
-
-	imt = (gpointer*)vt - MONO_IMT_SIZE;
-
-	mini_resolve_imt_method (vt, imt + imt_slot, generic_virtual, &m, &aot_addr, &need_rgctx_tramp, &variant_iface, error);
-	if (!is_ok (error)) {
-		MonoException *ex = mono_error_convert_to_exception (error);
-		mono_llvm_throw_exception ((MonoObject*)ex);
-	}
-
-	if (m_class_is_valuetype (vt->klass))
-		need_unbox_tramp = TRUE;
-
-	if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		m = mono_marshal_get_synchronized_wrapper (m);
-
-	addr = compiled_method = mono_compile_method_checked (m, error);
-	if (!is_ok (error))
-		mono_llvm_raise_exception (mono_error_convert_to_exception (error));
-	g_assert (addr);
-
-	addr = mini_add_method_wrappers_llvmonly (m, addr, FALSE, need_unbox_tramp, &arg);
-
-	/*
-	 * This wastes memory but the memory usage is bounded since
-	 * mono_method_add_generic_virtual_invocation () eventually builds an imt trampoline for
-	 * this vtable slot so we are not called any more for this instantiation.
-	 */
-	MonoFtnDesc *ftndesc = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, arg);
-
-	mono_method_add_generic_virtual_invocation (mono_domain_get (),
-												vt, imt + imt_slot,
-												variant_iface ? variant_iface : generic_virtual, ftndesc);
-	return ftndesc;
-}
-
-/*
- * mono_init_vtable_slot:
- *
- *   Initialize slot SLOT of VTABLE.
- * Return the contents of the vtable slot.
- */
-gpointer
-mono_init_vtable_slot (MonoVTable *vtable, int slot)
-{
-	ERROR_DECL (error);
-	gpointer arg = NULL;
-	gpointer addr;
-	gpointer *ftnptr;
-
-	addr = resolve_vcall (vtable, slot, NULL, &arg, FALSE, error);
-	if (mono_error_set_pending_exception (error))
-		return NULL;
-	ftnptr = mono_domain_alloc0 (vtable->domain, 2 * sizeof (gpointer));
-	ftnptr [0] = addr;
-	ftnptr [1] = arg;
-	mono_memory_barrier ();
-
-	vtable->vtable [slot] = ftnptr;
-
-	return ftnptr;
-}
-
-/*
- * mono_llvmonly_init_delegate:
- *
- *   Initialize a MonoDelegate object.
- * Similar to mono_delegate_ctor ().
- */
-void
-mono_llvmonly_init_delegate (MonoDelegate *del)
-{
-	ERROR_DECL (error);
-	MonoFtnDesc *ftndesc = *(MonoFtnDesc**)del->method_code;
-
-	/*
-	 * We store a MonoFtnDesc in del->method_code.
-	 * It would be better to store an ftndesc in del->method_ptr too,
-	 * but we don't have a a structure which could own its memory.
-	 */
-	if (G_UNLIKELY (!ftndesc)) {
-		MonoMethod *m = del->method;
-		if (m->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-			m = mono_marshal_get_synchronized_wrapper (m);
-
-		gpointer addr = mono_compile_method_checked (m, error);
-		if (mono_error_set_pending_exception (error))
-			return;
-
-		if (m_class_is_valuetype (m->klass) && mono_method_signature (m)->hasthis)
-		    addr = mono_aot_get_unbox_trampoline (m);
-
-		gpointer arg = mini_get_delegate_arg (del->method, addr);
-
-		ftndesc = mini_create_llvmonly_ftndesc (mono_domain_get (), addr, arg);
-		mono_memory_barrier ();
-		*del->method_code = (gpointer)ftndesc;
-	}
-	del->method_ptr = ftndesc->addr;
-	del->extra_arg = ftndesc->arg;
-}
-
-void
-mono_llvmonly_init_delegate_virtual (MonoDelegate *del, MonoObject *target, MonoMethod *method)
-{
-	ERROR_DECL (error);
-
-	g_assert (target);
-
-	method = mono_object_get_virtual_method (target, method);
-
-	if (method->iflags & METHOD_IMPL_ATTRIBUTE_SYNCHRONIZED)
-		method = mono_marshal_get_synchronized_wrapper (method);
-
-	del->method = method;
-	del->method_ptr = mono_compile_method_checked (method, error);
-	if (mono_error_set_pending_exception (error))
-		return;
-	if (m_class_is_valuetype (method->klass))
-		del->method_ptr = mono_aot_get_unbox_trampoline (method);
-	del->extra_arg = mini_get_delegate_arg (del->method, del->method_ptr);
-}
-
 MonoObject*
 mono_get_assembly_object (MonoImage *image)
 {
@@ -1958,7 +1504,7 @@ mono_get_method_object (MonoMethod *method)
 double
 mono_ckfinite (double d)
 {
-	if (isinf (d) || isnan (d))
+	if (mono_isinf (d) || mono_isnan (d))
 		mono_set_pending_exception (mono_get_exception_arithmetic ());
 	return d;
 }

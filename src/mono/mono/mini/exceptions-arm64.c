@@ -96,7 +96,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 	fregs_offset = offset;
 	offset += num_fregs * 8;
 	ctx_offset = offset;
-	ctx_offset += 8;
+	offset += 8;
 	frame_size = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
 
 	/*
@@ -161,7 +161,7 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 }
 
 static gpointer 
-get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm, gboolean resume_unwind, const char *tramp_name, MonoTrampInfo **info, gboolean aot)
+get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm, gboolean resume_unwind, const char *tramp_name, MonoTrampInfo **info, gboolean aot, gboolean preserve_ips)
 {
 	guint8 *start, *code;
 	MonoJumpInfo *ji = NULL;
@@ -223,23 +223,28 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	arm_movzx (code, ARMREG_R4, corlib ? 1 : 0, 0);
 	/* Arg 6 = rethrow */
 	arm_movzx (code, ARMREG_R5, rethrow ? 1 : 0, 0);
+	if (!resume_unwind) {
+		/* Arg 7 = preserve_ips */
+		arm_movzx (code, ARMREG_R6, preserve_ips ? 1 : 0, 0);
+	}
+
 	/* Call the function */
 	if (aot) {
-		const char *icall_name;
+		MonoJitICallId icall_id;
 
 		if (resume_unwind)
-			icall_name = "mono_arm_resume_unwind";
+			icall_id = MONO_JIT_ICALL_mono_arm_resume_unwind;
 		else
-			icall_name = "mono_arm_throw_exception";
+			icall_id = MONO_JIT_ICALL_mono_arm_throw_exception;
 
-		code = mono_arm_emit_aotconst (&ji, code, start, ARMREG_LR, MONO_PATCH_INFO_JIT_ICALL_ADDR, icall_name);
+		code = mono_arm_emit_aotconst (&ji, code, start, ARMREG_LR, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (icall_id));
 	} else {
 		gpointer icall_func;
 
 		if (resume_unwind)
-			icall_func = mono_arm_resume_unwind;
+			icall_func = (gpointer)mono_arm_resume_unwind;
 		else
-			icall_func = mono_arm_throw_exception;
+			icall_func = (gpointer)mono_arm_throw_exception;
 
 		code = mono_arm_emit_imm64 (code, ARMREG_LR, (guint64)icall_func);
 	}
@@ -260,19 +265,25 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 gpointer 
 mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (256, FALSE, FALSE, FALSE, FALSE, "throw_exception", info, aot);
+	return get_throw_trampoline (256, FALSE, FALSE, FALSE, FALSE, "throw_exception", info, aot, FALSE);
 }
 
 gpointer
 mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (256, FALSE, TRUE, FALSE, FALSE, "rethrow_exception", info, aot);
+	return get_throw_trampoline (256, FALSE, TRUE, FALSE, FALSE, "rethrow_exception", info, aot, FALSE);
+}
+
+gpointer
+mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
+{
+	return get_throw_trampoline (256, FALSE, TRUE, FALSE, FALSE, "rethrow_preserve_exception", info, aot, TRUE);
 }
 
 gpointer 
 mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
 {
-	return get_throw_trampoline (256, TRUE, FALSE, FALSE, FALSE, "throw_corlib_exception", info, aot);
+	return get_throw_trampoline (256, TRUE, FALSE, FALSE, FALSE, "throw_corlib_exception", info, aot, FALSE);
 }
 
 GSList*
@@ -281,55 +292,25 @@ mono_arm_get_exception_trampolines (gboolean aot)
 	MonoTrampInfo *info;
 	GSList *tramps = NULL;
 
+	// FIXME Macroize.
+
 	/* LLVM uses the normal trampolines, but with a different name */
-	get_throw_trampoline (256, TRUE, FALSE, FALSE, FALSE, "llvm_throw_corlib_exception_trampoline", &info, aot);
-	tramps = g_slist_prepend (tramps, info);
-	
-	get_throw_trampoline (256, TRUE, FALSE, TRUE, FALSE, "llvm_throw_corlib_exception_abs_trampoline", &info, aot);
+	get_throw_trampoline (256, TRUE, FALSE, FALSE, FALSE, "llvm_throw_corlib_exception_trampoline", &info, aot, FALSE);
+	info->jit_icall_info = &mono_get_jit_icall_info ()->mono_llvm_throw_corlib_exception_trampoline;
 	tramps = g_slist_prepend (tramps, info);
 
-	get_throw_trampoline (256, FALSE, FALSE, FALSE, TRUE, "llvm_resume_unwind_trampoline", &info, aot);
+	get_throw_trampoline (256, TRUE, FALSE, TRUE, FALSE, "llvm_throw_corlib_exception_abs_trampoline", &info, aot, FALSE);
+	info->jit_icall_info = &mono_get_jit_icall_info ()->mono_llvm_throw_corlib_exception_abs_trampoline;
+	tramps = g_slist_prepend (tramps, info);
+
+	get_throw_trampoline (256, FALSE, FALSE, FALSE, TRUE, "llvm_resume_unwind_trampoline", &info, aot, FALSE);
+	info->jit_icall_info = &mono_get_jit_icall_info ()->mono_llvm_resume_unwind_trampoline;
 	tramps = g_slist_prepend (tramps, info);
 
 	return tramps;
 }
 
-#else /* DISABLE_JIT */
-
-gpointer
-mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-gpointer
-mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-gpointer 
-mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-gpointer
-mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-gpointer 
-mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
-{
-	g_assert_not_reached ();
-	return NULL;
-}	
+#else
 
 GSList*
 mono_arm_get_exception_trampolines (gboolean aot)
@@ -338,27 +319,32 @@ mono_arm_get_exception_trampolines (gboolean aot)
 	return NULL;
 }
 
-#endif /* !DISABLE_JIT */
+#endif /* DISABLE_JIT */
 
 void
 mono_arch_exceptions_init (void)
 {
-	guint8 *tramp;
+	gpointer tramp;
 	GSList *tramps, *l;
 
 	if (mono_aot_only) {
+
+		// FIXME Macroize.
+
 		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_trampoline");
-		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_trampoline", NULL, TRUE);
+		mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_llvm_throw_corlib_exception_trampoline, tramp, "llvm_throw_corlib_exception_trampoline", NULL, TRUE, NULL);
+
 		tramp = mono_aot_get_trampoline ("llvm_throw_corlib_exception_abs_trampoline");
-		mono_register_jit_icall (tramp, "llvm_throw_corlib_exception_abs_trampoline", NULL, TRUE);
+		mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_llvm_throw_corlib_exception_abs_trampoline, tramp, "llvm_throw_corlib_exception_abs_trampoline", NULL, TRUE, NULL);
+
 		tramp = mono_aot_get_trampoline ("llvm_resume_unwind_trampoline");
-		mono_register_jit_icall (tramp, "llvm_resume_unwind_trampoline", NULL, TRUE);
+		mono_register_jit_icall_info (&mono_get_jit_icall_info ()->mono_llvm_resume_unwind_trampoline, tramp, "llvm_resume_unwind_trampoline", NULL, TRUE, NULL);
+
 	} else {
 		tramps = mono_arm_get_exception_trampolines (FALSE);
 		for (l = tramps; l; l = l->next) {
-			MonoTrampInfo *info = l->data;
-
-			mono_register_jit_icall (info->code, g_strdup (info->name), NULL, TRUE);
+			MonoTrampInfo *info = (MonoTrampInfo*)l->data;
+			mono_register_jit_icall_info (info->jit_icall_info, info->code, g_strdup (info->name), NULL, TRUE, NULL);
 			mono_tramp_info_register (info, NULL);
 		}
 		g_slist_free (tramps);
@@ -372,7 +358,7 @@ mono_arch_exceptions_init (void)
  * FP_REGS points to the 8 callee saved fp regs.
  */
 void
-mono_arm_throw_exception (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow)
+mono_arm_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow, gboolean preserve_ips)
 {
 	ERROR_DECL (error);
 	MonoContext ctx;
@@ -380,7 +366,7 @@ mono_arm_throw_exception (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *
 	guint32 ex_token_index, ex_token;
 
 	if (!corlib)
-		exc = arg;
+		exc = (MonoObject*)arg;
 	else {
 		ex_token_index = (guint64)arg;
 		ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
@@ -392,7 +378,7 @@ mono_arm_throw_exception (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *
 
 	/* Initialize a ctx based on the arguments */
 	memset (&ctx, 0, sizeof (MonoContext));
-	memcpy (&(ctx.regs [0]), int_regs, sizeof (mgreg_t) * 32);
+	memcpy (&(ctx.regs [0]), int_regs, sizeof (host_mgreg_t) * 32);
 	for (int i = 0; i < 8; i++)
 		*((gdouble*)&ctx.fregs [ARMREG_D8 + i]) = fp_regs [i];
 	ctx.has_fregs = 1;
@@ -403,6 +389,8 @@ mono_arm_throw_exception (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *
 		if (!rethrow) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
+		} else if (preserve_ips) {
+			mono_ex->caught_in_unmanaged = TRUE;
 		}
 	}
 	mono_error_assert_ok (error);
@@ -413,7 +401,7 @@ mono_arm_throw_exception (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *
 }
 
 void
-mono_arm_resume_unwind (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow)
+mono_arm_resume_unwind (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow)
 {
 	MonoContext ctx;
 
@@ -422,7 +410,7 @@ mono_arm_resume_unwind (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *fp
 
 	/* Initialize a ctx based on the arguments */
 	memset (&ctx, 0, sizeof (MonoContext));
-	memcpy (&(ctx.regs [0]), int_regs, sizeof (mgreg_t) * 32);
+	memcpy (&(ctx.regs [0]), int_regs, sizeof (host_mgreg_t) * 32);
 	for (int i = 0; i < 8; i++)
 		*((gdouble*)&ctx.fregs [ARMREG_D8 + i]) = fp_regs [i];
 	ctx.has_fregs = 1;
@@ -440,7 +428,7 @@ gboolean
 mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls, 
 							 MonoJitInfo *ji, MonoContext *ctx, 
 							 MonoContext *new_ctx, MonoLMF **lmf,
-							 mgreg_t **save_locations,
+							 host_mgreg_t **save_locations,
 							 StackFrameInfo *frame)
 {
 	gpointer ip = MONO_CONTEXT_GET_IP (ctx);
@@ -451,7 +439,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 	*new_ctx = *ctx;
 
 	if (ji != NULL) {
-		mgreg_t regs [MONO_MAX_IREGS + 8 + 1];
+		host_mgreg_t regs [MONO_MAX_IREGS + 8 + 1];
 		guint8 *cfa;
 		guint32 unwind_info_len;
 		guint8 *unwind_info;
@@ -464,26 +452,29 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 
 		unwind_info = mono_jinfo_get_unwind_info (ji, &unwind_info_len);
 
-		memcpy (regs, &new_ctx->regs, sizeof (mgreg_t) * 32);
+		memcpy (regs, &new_ctx->regs, sizeof (host_mgreg_t) * 32);
 		/* v8..v15 are callee saved */
 		for (int i = 0; i < 8; i++)
-			(regs + MONO_MAX_IREGS) [i] = *((mgreg_t*)&new_ctx->fregs [8 + i]);
+			(regs + MONO_MAX_IREGS) [i] = *((host_mgreg_t*)&new_ctx->fregs [8 + i]);
 
-		mono_unwind_frame (unwind_info, unwind_info_len, ji->code_start, 
+		gboolean success = mono_unwind_frame (unwind_info, unwind_info_len, (guint8*)ji->code_start,
 						   (guint8*)ji->code_start + ji->code_size,
-						   ip, NULL, regs, MONO_MAX_IREGS + 8,
-						   save_locations, MONO_MAX_IREGS, &cfa);
+						   (guint8*)ip, NULL, regs, MONO_MAX_IREGS + 8,
+						   save_locations, MONO_MAX_IREGS, (guint8**)&cfa);
 
-		memcpy (&new_ctx->regs, regs, sizeof (mgreg_t) * 32);
+		if (!success)
+			return FALSE;
+
+		memcpy (&new_ctx->regs, regs, sizeof (host_mgreg_t) * 32);
 		for (int i = 0; i < 8; i++)
-			*((mgreg_t*)&new_ctx->fregs [8 + i]) = (regs + MONO_MAX_IREGS) [i];
+			*((host_mgreg_t*)&new_ctx->fregs [8 + i]) = (regs + MONO_MAX_IREGS) [i];
 
 		new_ctx->pc = regs [ARMREG_LR];
-		new_ctx->regs [ARMREG_SP] = (mgreg_t)cfa;
+		new_ctx->regs [ARMREG_SP] = (host_mgreg_t)(gsize)cfa;
 
 		if (*lmf && (*lmf)->gregs [MONO_ARCH_LMF_REG_SP] && (MONO_CONTEXT_GET_SP (ctx) >= (gpointer)(*lmf)->gregs [MONO_ARCH_LMF_REG_SP])) {
 			/* remove any unused lmf */
-			*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
+			*lmf = (MonoLMF*)(((gsize)(*lmf)->previous_lmf) & ~3);
 		}
 
 		/* we substract 1, so that the IP points into the call instruction */
@@ -500,7 +491,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 			return FALSE;
 
 		g_assert (MONO_ARCH_LMF_REGS == ((0x3ff << 19) | (1 << ARMREG_FP) | (1 << ARMREG_SP)));
-		memcpy (&new_ctx->regs [ARMREG_R19], &(*lmf)->gregs [0], sizeof (mgreg_t) * 10);
+		memcpy (&new_ctx->regs [ARMREG_R19], &(*lmf)->gregs [0], sizeof (host_mgreg_t) * 10);
 		new_ctx->regs [ARMREG_FP] = (*lmf)->gregs [MONO_ARCH_LMF_REG_FP];
 		new_ctx->regs [ARMREG_SP] = (*lmf)->gregs [MONO_ARCH_LMF_REG_SP];
 		new_ctx->pc = (*lmf)->pc;
@@ -508,7 +499,7 @@ mono_arch_unwind_frame (MonoDomain *domain, MonoJitTlsData *jit_tls,
 		/* we substract 1, so that the IP points into the call instruction */
 		new_ctx->pc--;
 
-		*lmf = (gpointer)(((gsize)(*lmf)->previous_lmf) & ~3);
+		*lmf = (MonoLMF*)(((gsize)(*lmf)->previous_lmf) & ~3);
 
 		return TRUE;
 	}
@@ -529,7 +520,7 @@ handle_signal_exception (gpointer obj)
 
 	memcpy (&ctx, &jit_tls->ex_ctx, sizeof (MonoContext));
 
-	mono_handle_exception (&ctx, obj);
+	mono_handle_exception (&ctx, (MonoObject*)obj);
 
 	mono_restore_context (&ctx);
 }
@@ -577,7 +568,7 @@ mono_arch_ip_from_context (void *sigctx)
 void
 mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), gpointer user_data)
 {
-	mgreg_t sp = (mgreg_t)MONO_CONTEXT_GET_SP (ctx);
+	host_mgreg_t sp = (host_mgreg_t)MONO_CONTEXT_GET_SP (ctx);
 
 	// FIXME:
 	g_assert (!user_data);
@@ -586,7 +577,7 @@ mono_arch_setup_async_callback (MonoContext *ctx, void (*async_cb)(void *fun), g
 	sp -= 32;
 	MONO_CONTEXT_SET_SP (ctx, sp);
 
-	mono_arch_setup_resume_sighandler_ctx (ctx, async_cb);
+	mono_arch_setup_resume_sighandler_ctx (ctx, (gpointer)async_cb);
 }
 
 /*
@@ -604,4 +595,10 @@ void
 mono_arch_undo_ip_adjustment (MonoContext *ctx)
 {
 	ctx->pc++;
+}
+
+void
+mono_arch_do_ip_adjustment (MonoContext *ctx)
+{
+	ctx->pc--;
 }

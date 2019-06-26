@@ -323,9 +323,14 @@ thread_state_init (MonoThreadUnwindState *ctx)
 {
 }
 
+#ifdef __cplusplus
+extern "C"
+#endif
+int
+test_conc_hashtable_main (void);
 
 int
-main (void)
+test_conc_hashtable_main (void)
 {
 	MonoThreadInfoRuntimeCallbacks ticallbacks;
 	int res = 0;

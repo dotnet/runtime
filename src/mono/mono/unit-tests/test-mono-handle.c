@@ -19,8 +19,14 @@ test2_arena_push_pop (void)
 	mono_handle_stack_free (h);
 }
 
+#ifdef __cplusplus
+extern "C"
+#endif
 int
-main (int argc, const char* argv[])
+test_mono_handle_main (void);
+
+int
+test_mono_handle_main (void)
 {
 	test2_arena_push_pop ();
 

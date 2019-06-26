@@ -440,7 +440,7 @@ new_codechunk (CodeChunk *last, int dynamic, int size)
  * \returns the pointer to the allocated memory or NULL on failure
  */
 void*
-mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
+(mono_code_manager_reserve_align) (MonoCodeManager *cman, int size, int alignment)
 {
 	CodeChunk *chunk, *prev;
 	void *ptr;
@@ -514,7 +514,7 @@ mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment)
  * \returns the pointer to the allocated memory or NULL on failure
  */
 void*
-mono_code_manager_reserve (MonoCodeManager *cman, int size)
+(mono_code_manager_reserve) (MonoCodeManager *cman, int size)
 {
 	return mono_code_manager_reserve_align (cman, size, MIN_ALIGN);
 }

@@ -10,6 +10,7 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 #include "config.h"
+#include "mono/utils/mono-compiler.h"
 #include "mono/utils/mono-dl.h"
 #include "mono/utils/mono-embed.h"
 #include "mono/utils/mono-path.h"
@@ -29,6 +30,34 @@ struct MonoDlFallbackHandler {
 };
 
 static GSList *fallback_handlers;
+
+#if defined (_AIX)
+#include <ar.h>
+#include <fcntl.h>
+
+/**
+ * On AIX/PASE, a shared library can be contained inside of an ar format
+ * archive. Determine if the file is an ar archive or not.
+ */
+static gboolean
+is_library_ar_archive (char *path)
+{
+	int lfd, readret;
+	char magic [SAIAMAG];
+	lfd = open (path, O_RDONLY);
+
+	/* don't assume it's an archive on error */
+	if (lfd == -1)
+		return FALSE;
+
+	readret = read (lfd, magic, SAIAMAG);
+	close (lfd);
+	/* check for equality with either version of header */
+	return readret == SAIAMAG &&
+		(memcmp (magic, AIAMAG, SAIAMAG) == 0 ||
+		 memcmp (magic, AIAMAGBIG, SAIAMAG) == 0);
+}
+#endif
 
 /*
  * read a value string from line with any of the following formats:
@@ -149,6 +178,7 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 	}
 	module->main_module = name == NULL? TRUE: FALSE;
 
+	// No GC safe transition because this is called early in main.c
 	lib = mono_dl_open_file (name, lflags);
 
 	if (!lib) {
@@ -188,6 +218,23 @@ mono_dl_open (const char *name, int flags, char **error_msg)
 		g_free (lname);
 		if (llname) {
 			lib = mono_dl_open_file (llname, lflags);
+#if defined (_AIX)
+			/*
+			 * HACK: deal with AIX archive members because libtool
+			 * underspecifies when using --with-aix-soname=svr4 -
+			 * without this check, Mono can't find System.Native
+			 * at build time.
+			 * XXX: Does this also need to be in other places?
+			 */
+			if (!lib && is_library_ar_archive (llname)) {
+				/* try common suffix */
+				char *llaixname;
+				llaixname = g_strconcat (llname, "(shr_64.o)", NULL);
+				lib = mono_dl_open_file (llaixname, lflags);
+				/* XXX: try another suffix like (shr.o)? */
+				g_free (llaixname);
+			}
+#endif
 			g_free (llname);
 		}
 		if (!lib) {
@@ -284,10 +331,11 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 	int idx;
 	const char *prefix;
 	const char *suffix;
-	gboolean first_call;
+	gboolean need_prefix = TRUE, need_suffix = TRUE;
 	int prlen;
 	int suffixlen;
 	char *res;
+	int iteration;
 
 	if (!iter)
 		return NULL;
@@ -301,37 +349,52 @@ mono_dl_build_path (const char *directory, const char *name, void **iter)
 	  libsomething.so.1.1 or libsomething.so - testing it algorithmically would be an overkill
 	  here.
 	 */
-	idx = GPOINTER_TO_UINT (*iter);
+	iteration = GPOINTER_TO_UINT (*iter);
+	idx = iteration;
 	if (idx == 0) {
-		first_call = TRUE;
+		/* Name */
+		need_prefix = FALSE;
+		need_suffix = FALSE;
 		suffix = "";
-		suffixlen = 0;
-	} else {
-		idx--;
-		if (mono_dl_get_so_suffixes () [idx][0] == '\0')
-			return NULL;
-		first_call = FALSE;
-		suffix = mono_dl_get_so_suffixes () [idx];
+	} else if (idx == 1) {
+#ifdef ENABLE_NETCORE
+		/* netcore system libs have a suffix but no prefix */
+		need_prefix = FALSE;
+		need_suffix = TRUE;
+		suffix = mono_dl_get_so_suffixes () [0];
 		suffixlen = strlen (suffix);
+#else
+		suffix = mono_dl_get_so_suffixes () [idx - 1];
+		if (suffix [0] == '\0')
+			return NULL;
+#endif
+	} else {
+		/* Prefix.Name.suffix */
+		suffix = mono_dl_get_so_suffixes () [idx - 2];
+		if (suffix [0] == '\0')
+			return NULL;
 	}
 
-	prlen = strlen (mono_dl_get_so_prefix ());
-	if (prlen && strncmp (name, mono_dl_get_so_prefix (), prlen) != 0)
-		prefix = mono_dl_get_so_prefix ();
-	else
+	if (need_prefix) {
+		prlen = strlen (mono_dl_get_so_prefix ());
+		if (prlen && strncmp (name, mono_dl_get_so_prefix (), prlen) != 0)
+			prefix = mono_dl_get_so_prefix ();
+		else
+			prefix = "";
+	} else {
 		prefix = "";
+	}
 
-	if (first_call || (suffixlen && strstr (name, suffix) == (name + strlen (name) - suffixlen)))
+	suffixlen = strlen (suffix);
+	if (need_suffix && (suffixlen && strstr (name, suffix) == (name + strlen (name) - suffixlen)))
 		suffix = "";
 
 	if (directory && *directory)
 		res = g_strconcat (directory, G_DIR_SEPARATOR_S, prefix, name, suffix, NULL);
 	else
 		res = g_strconcat (prefix, name, suffix, NULL);
-	++idx;
-	if (!first_call)
-		idx++;
-	*iter = GUINT_TO_POINTER (idx);
+	++iteration;
+	*iter = GUINT_TO_POINTER (iteration);
 	return res;
 }
 
@@ -339,7 +402,6 @@ MonoDlFallbackHandler *
 mono_dl_fallback_register (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol symbol_func, MonoDlFallbackClose close_func, void *user_data)
 {
 	MonoDlFallbackHandler *handler = NULL;
-	MONO_ENTER_GC_UNSAFE;
 	if (load_func == NULL || symbol_func == NULL)
 		goto leave;
 
@@ -352,7 +414,6 @@ mono_dl_fallback_register (MonoDlFallbackLoad load_func, MonoDlFallbackSymbol sy
 	fallback_handlers = g_slist_prepend (fallback_handlers, handler);
 	
 leave:
-	MONO_EXIT_GC_UNSAFE;
 	return handler;
 }
 

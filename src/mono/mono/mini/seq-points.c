@@ -37,7 +37,7 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 	GHashTable *seen = g_hash_table_new_full (g_direct_hash, NULL, NULL, NULL);
 
 	// Insert/remove sentinel into the memoize table to detect loops containing bb
-	bb->pred_seq_points = MONO_SEQ_SEEN_LOOP;
+	bb->pred_seq_points = (MonoInst**)MONO_SEQ_SEEN_LOOP;
 
 	for (int i = 0; i < bb->in_count; ++i) {
 		MonoBasicBlock *in_bb = bb->in_bb [i];
@@ -78,7 +78,7 @@ recursively_make_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb)
 		bb->num_pred_seq_points = predecessors->len;
 
 		for (int newer = 0; newer < bb->num_pred_seq_points; newer++) {
-			bb->pred_seq_points [newer] = g_array_index(predecessors, gpointer, newer);
+			bb->pred_seq_points [newer] = g_array_index(predecessors, MonoInst*, newer);
 		}
 	} 
 
@@ -99,7 +99,7 @@ collect_pred_seq_points (MonoCompile *cfg, MonoBasicBlock *bb, MonoInst *ins, GS
 }
 
 void
-mono_save_seq_point_info (MonoCompile *cfg)
+mono_save_seq_point_info (MonoCompile *cfg, MonoJitInfo *jinfo)
 {
 	MonoBasicBlock *bb;
 	GSList *bb_seq_points, *l;
@@ -124,7 +124,8 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		sp->native_offset = ins->inst_offset;
 		if (ins->flags & MONO_INST_NONEMPTY_STACK)
 			sp->flags |= MONO_SEQ_POINT_FLAG_NONEMPTY_STACK;
-
+		if (ins->flags & MONO_INST_NESTED_CALL)
+			sp->flags |= MONO_SEQ_POINT_FLAG_NESTED_CALL;
 		/* Used below */
 		ins->backend.size = i;
 	}
@@ -244,6 +245,9 @@ mono_save_seq_point_info (MonoCompile *cfg)
 		else
 			mono_seq_point_info_free (cfg->seq_point_info);
 		mono_domain_unlock (domain);
+
+		g_assert (jinfo);
+		jinfo->seq_points = cfg->seq_point_info;
 	}
 
 	g_ptr_array_free (cfg->seq_points, TRUE);

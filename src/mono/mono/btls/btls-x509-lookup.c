@@ -32,7 +32,7 @@ get_lookup_method (MonoBtlsX509LookupType type)
 	}
 }
 
-MONO_API MonoBtlsX509Lookup *
+MonoBtlsX509Lookup *
 mono_btls_x509_lookup_new (MonoBtlsX509Store *store, MonoBtlsX509LookupType type)
 {
 	MonoBtlsX509Lookup *lookup;
@@ -63,26 +63,26 @@ mono_btls_x509_lookup_new (MonoBtlsX509Store *store, MonoBtlsX509LookupType type
 	return lookup;
 }
 
-MONO_API int
+int
 mono_btls_x509_lookup_load_file (MonoBtlsX509Lookup *lookup, const char *file, MonoBtlsX509FileType type)
 {
 	return X509_LOOKUP_load_file (lookup->lookup, file, type);
 }
 
-MONO_API int
+int
 mono_btls_x509_lookup_add_dir (MonoBtlsX509Lookup *lookup, const char *dir, MonoBtlsX509FileType type)
 {
 	return X509_LOOKUP_add_dir (lookup->lookup, dir, type);
 }
 
-MONO_API MonoBtlsX509Lookup *
+MonoBtlsX509Lookup *
 mono_btls_x509_lookup_up_ref (MonoBtlsX509Lookup *lookup)
 {
 	CRYPTO_refcount_inc (&lookup->references);
 	return lookup;
 }
 
-MONO_API int
+int
 mono_btls_x509_lookup_free (MonoBtlsX509Lookup *lookup)
 {
 	if (!CRYPTO_refcount_dec_and_test_zero (&lookup->references))
@@ -103,31 +103,31 @@ mono_btls_x509_lookup_free (MonoBtlsX509Lookup *lookup)
 	return 1;
 }
 
-MONO_API int
+int
 mono_btls_x509_lookup_init (MonoBtlsX509Lookup *lookup)
 {
 	return X509_LOOKUP_init (lookup->lookup);
 }
 
-MONO_API int
+int
 mono_btls_x509_lookup_shutdown (MonoBtlsX509Lookup *lookup)
 {
 	return X509_LOOKUP_shutdown (lookup->lookup);
 }
 
-MONO_API MonoBtlsX509LookupType
+MonoBtlsX509LookupType
 mono_btls_x509_lookup_get_type (MonoBtlsX509Lookup *lookup)
 {
 	return lookup->type;
 }
 
-MONO_API X509_LOOKUP *
+X509_LOOKUP *
 mono_btls_x509_lookup_peek_lookup (MonoBtlsX509Lookup *lookup)
 {
 	return lookup->lookup;
 }
 
-MONO_API X509 *
+X509 *
 mono_btls_x509_lookup_by_subject (MonoBtlsX509Lookup *lookup, MonoBtlsX509Name *name)
 {
 	X509_OBJECT obj;
@@ -144,7 +144,7 @@ mono_btls_x509_lookup_by_subject (MonoBtlsX509Lookup *lookup, MonoBtlsX509Name *
 	return x509;
 }
 
-MONO_API X509 *
+X509 *
 mono_btls_x509_lookup_by_fingerprint (MonoBtlsX509Lookup *lookup, unsigned char *bytes, int len)
 {
 	X509_OBJECT obj;

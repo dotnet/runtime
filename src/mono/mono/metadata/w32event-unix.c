@@ -17,11 +17,12 @@
 #include "mono/metadata/handle.h"
 #include "mono/metadata/object-internals.h"
 #include "mono/metadata/w32handle.h"
+#include "icall-decl.h"
 
 #define MAX_PATH 260
 
 static gpointer
-mono_w32event_create_full (MonoBoolean manual, MonoBoolean initial, const gchar *name, gint32 *err);
+mono_w32event_create_full (MonoBoolean manual, MonoBoolean initial, const char *name, gsize name_length, gint32 *win32error);
 
 static gpointer
 mono_w32event_open (const gchar *utf8_name, gint32 rights G_GNUC_UNUSED, gint32 *error);
@@ -36,7 +37,7 @@ struct MonoW32HandleNamedEvent {
 	MonoW32HandleNamespace sharedns;
 };
 
-static void event_handle_signal (MonoW32Handle *handle_data)
+static gint32 event_handle_signal (MonoW32Handle *handle_data)
 {
 	MonoW32HandleEvent *event_handle;
 
@@ -51,6 +52,7 @@ static void event_handle_signal (MonoW32Handle *handle_data)
 	} else {
 		mono_w32handle_set_signal_state (handle_data, TRUE, TRUE);
 	}
+	return MONO_W32HANDLE_WAIT_RET_SUCCESS_0;
 }
 
 static gboolean event_handle_own (MonoW32Handle *handle_data, gboolean *abandoned)
@@ -148,12 +150,10 @@ mono_w32event_init (void)
 gpointer
 mono_w32event_create (gboolean manual, gboolean initial)
 {
-	gpointer handle;
-	gint32 error;
+	gint32 win32error = ERROR_SUCCESS;
 
-	handle = mono_w32event_create_full (manual, initial, NULL, &error);
-	if (error != ERROR_SUCCESS)
-		g_assert (!handle);
+	gpointer handle = mono_w32event_create_full (manual, initial, NULL, 0, &win32error);
+	g_assert ((win32error != ERROR_SUCCESS) == !handle);
 
 	return handle;
 }
@@ -221,19 +221,17 @@ static gpointer event_create (gboolean manual, gboolean initial)
 	return event_handle_create (&event_handle, MONO_W32TYPE_EVENT, manual, initial);
 }
 
-static gpointer namedevent_create (gboolean manual, gboolean initial, const gchar *utf8_name G_GNUC_UNUSED)
+static gpointer
+namedevent_create (gboolean manual, gboolean initial, const char *utf8_name, gsize utf8_len)
 {
-	gpointer handle;
-
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_EVENT, "%s: creating %s handle",
 		__func__, mono_w32handle_get_typename (MONO_W32TYPE_NAMEDEVENT));
 
-	/* w32 seems to guarantee that opening named objects can't race each other */
+	// Opening named objects does not race.
 	mono_w32handle_namespace_lock ();
 
-	glong utf8_len = strlen (utf8_name);
+	gpointer handle = mono_w32handle_namespace_search_handle (MONO_W32TYPE_NAMEDEVENT, utf8_name);
 
-	handle = mono_w32handle_namespace_search_handle (MONO_W32TYPE_NAMEDEVENT, utf8_name);
 	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different object. */
 		handle = NULL;
@@ -246,6 +244,8 @@ static gpointer namedevent_create (gboolean manual, gboolean initial, const gcha
 	} else {
 		/* A new named event */
 		MonoW32HandleNamedEvent namedevent_handle;
+
+		// FIXME Silent truncation.
 
 		size_t len = utf8_len < MAX_PATH ? utf8_len : MAX_PATH;
 		memcpy (&namedevent_handle.sharedns.name [0], utf8_name, len);
@@ -260,29 +260,29 @@ static gpointer namedevent_create (gboolean manual, gboolean initial, const gcha
 }
 
 gpointer
-mono_w32event_create_full (MonoBoolean manual, MonoBoolean initial, const gchar *name, gint32 *error)
+mono_w32event_create_full (MonoBoolean manual, MonoBoolean initial, const char *name, gsize name_length, gint32 *win32error)
 {
-	gpointer event;
-
 	/* Need to blow away any old errors here, because code tests
 	 * for ERROR_ALREADY_EXISTS on success (!) to see if an event
 	 * was freshly created */
 	mono_w32error_set_last (ERROR_SUCCESS);
 
-	event = name ? namedevent_create (manual, initial, name) : event_create (manual, initial);
+	gpointer event = name ? namedevent_create (manual, initial, name, name_length) : event_create (manual, initial);
 
-	*error = mono_w32error_get_last ();
+	*win32error = mono_w32error_get_last ();
 
 	return event;
 }
 
 gpointer
-ves_icall_System_Threading_Events_CreateEvent_internal (MonoBoolean manual, MonoBoolean initial, MonoStringHandle name, gint32 *err, MonoError *error)
+ves_icall_System_Threading_Events_CreateEvent_icall (MonoBoolean manual, MonoBoolean initial,
+	const gunichar2* name, gint32 name_length, gint32 *win32error, MonoError *error)
 {
-	error_init (error);
-	gchar *utf8_name = mono_string_handle_to_utf8 (name, error);
+	*win32error = ERROR_SUCCESS;
+	gsize utf8_name_length = 0;
+	char *utf8_name = mono_utf16_to_utf8len (name, name_length, &utf8_name_length, error);
 	return_val_if_nok (error, NULL);
-	gpointer result = mono_w32event_create_full (manual, initial, utf8_name, err);
+	gpointer result = mono_w32event_create_full (manual, initial, utf8_name, utf8_name_length, win32error);
 	g_free (utf8_name);
 	return result;
 }
@@ -379,42 +379,42 @@ ves_icall_System_Threading_Events_CloseEvent_internal (gpointer handle)
 }
 
 gpointer
-ves_icall_System_Threading_Events_OpenEvent_internal (MonoStringHandle name, gint32 rights G_GNUC_UNUSED, gint32 *err, MonoError *error)
+ves_icall_System_Threading_Events_OpenEvent_icall (const gunichar2 *name, gint32 name_length,
+	gint32 rights, gint32 *win32error, MonoError *error)
 {
-	error_init (error);
-	gchar *utf8_name = mono_string_handle_to_utf8 (name, error);
+	*win32error = ERROR_SUCCESS;
+	char *utf8_name = mono_utf16_to_utf8 (name, name_length, error);
 	return_val_if_nok (error, NULL);
-	gpointer handle = mono_w32event_open (utf8_name, rights, err);
+	gpointer handle = mono_w32event_open (utf8_name, rights, win32error);
 	g_free (utf8_name);
 	return handle;
 }
 
 gpointer
-mono_w32event_open (const gchar *utf8_name, gint32 rights G_GNUC_UNUSED, gint32 *error)
+mono_w32event_open (const gchar *utf8_name, gint32 rights G_GNUC_UNUSED, gint32 *win32error)
 {
-	gpointer handle;
-	*error = ERROR_SUCCESS;
-
-	/* w32 seems to guarantee that opening named objects can't race each other */
-	mono_w32handle_namespace_lock ();
+	*win32error = ERROR_SUCCESS;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_EVENT, "%s: Opening named event [%s]", __func__, utf8_name);
 
-	handle = mono_w32handle_namespace_search_handle (MONO_W32TYPE_NAMEDEVENT, utf8_name);
+	// Opening named objects does not race.
+	mono_w32handle_namespace_lock ();
+
+	gpointer handle = mono_w32handle_namespace_search_handle (MONO_W32TYPE_NAMEDEVENT, utf8_name);
+
+	mono_w32handle_namespace_unlock ();
+
 	if (handle == INVALID_HANDLE_VALUE) {
 		/* The name has already been used for a different object. */
-		*error = ERROR_INVALID_HANDLE;
-		goto cleanup;
+		*win32error = ERROR_INVALID_HANDLE;
+		return handle;
 	} else if (!handle) {
 		/* This name doesn't exist */
-		*error = ERROR_FILE_NOT_FOUND;
-		goto cleanup;
+		*win32error = ERROR_FILE_NOT_FOUND;
+		return handle;
 	}
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_EVENT, "%s: returning named event handle %p", __func__, handle);
-
-cleanup:
-	mono_w32handle_namespace_unlock ();
 
 	return handle;
 }

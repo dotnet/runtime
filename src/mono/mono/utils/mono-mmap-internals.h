@@ -27,8 +27,4 @@ mono_valloc_can_alloc (size_t size);
 void
 mono_valloc_set_limit (size_t size);
 
-int
-mono_pages_not_faulted (void *addr, size_t length);
-
 #endif /* __MONO_UTILS_MMAP_INTERNAL_H__ */
-

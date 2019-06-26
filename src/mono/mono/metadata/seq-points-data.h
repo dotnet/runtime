@@ -11,6 +11,7 @@
 
 #define MONO_SEQ_POINT_FLAG_NONEMPTY_STACK 1
 #define MONO_SEQ_POINT_FLAG_EXIT_IL 2
+#define MONO_SEQ_POINT_FLAG_NESTED_CALL 4
 
 /* IL offsets used to mark the sequence points belonging to method entry/exit events */
 #define METHOD_ENTRY_IL_OFFSET -1

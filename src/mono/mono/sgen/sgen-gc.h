@@ -17,7 +17,7 @@
 
 #ifdef HAVE_SGEN_GC
 
-typedef struct _SgenThreadInfo SgenThreadInfo;
+#include <mono/utils/mono-forward-internal.h>
 #undef THREAD_INFO_TYPE
 #define THREAD_INFO_TYPE SgenThreadInfo
 
@@ -123,7 +123,7 @@ extern guint64 stat_objects_copied_major;
 		struct tm tod;									\
 		time(&t);									\
 		localtime_r(&t, &tod);								\
-		strftime(logTime, sizeof(logTime), "%Y-%m-%d %H:%M:%S", &tod);			\
+		strftime(logTime, sizeof(logTime), MONO_STRFTIME_F " " MONO_STRFTIME_T, &tod);	\
 	} while (0)
 #else
 # define LOG_TIMESTAMP  \
@@ -132,7 +132,7 @@ extern guint64 stat_objects_copied_major;
 		struct tm *tod;									\
 		time(&t);									\
 		tod = localtime(&t);								\
-		strftime(logTime, sizeof(logTime), "%F %T", tod);				\
+		strftime(logTime, sizeof(logTime), MONO_STRFTIME_F " " MONO_STRFTIME_T, tod);	\
 	} while (0)
 #endif
 
@@ -394,7 +394,7 @@ enum {
 
 extern SgenHashTable sgen_roots_hash [ROOT_TYPE_NUM];
 
-int sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type, int source, void *key, const char *msg)
+int sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type, MonoGCRootSource source, void *key, const char *msg)
 	MONO_PERMIT (need (sgen_lock_gc));
 void sgen_deregister_root (char* addr)
 	MONO_PERMIT (need (sgen_lock_gc));
@@ -414,6 +414,9 @@ struct _SgenThreadInfo {
 	char *tlab_next;
 	char *tlab_temp_end;
 	char *tlab_real_end;
+
+	/* Total bytes allocated by this thread in its lifetime so far. */
+	gint64 total_bytes_allocated;
 };
 
 gboolean sgen_is_worker_thread (MonoNativeThreadId thread);
@@ -440,7 +443,14 @@ typedef struct
 	SgenGrayQueue *queue;
 } ScanCopyContext;
 
-#define CONTEXT_FROM_OBJECT_OPERATIONS(ops, queue) ((ScanCopyContext) { (ops), (queue) })
+// error C4576: a parenthesized type followed by an initializer list is a non-standard explicit type conversion
+// An inline function or constructor would work here too.
+#ifdef _MSC_VER
+#define MONO_MSC_WARNING_SUPPRESS(warn, body) __pragma (warning (suppress:warn)) body
+#else
+#define MONO_MSC_WARNING_SUPPRESS(warn, body) body
+#endif
+#define CONTEXT_FROM_OBJECT_OPERATIONS(ops, queue) MONO_MSC_WARNING_SUPPRESS (4576, ((ScanCopyContext) { (ops), (queue) }))
 
 void sgen_report_internal_mem_usage (void);
 void sgen_dump_internal_mem_usage (FILE *heap_dump_file);
@@ -1104,7 +1114,7 @@ void sgen_env_var_error (const char *env_var, const char *fallback, const char *
 
 /* Utilities */
 
-void sgen_qsort (void *array, size_t count, size_t element_size, int (*compare) (const void*, const void*));
+void sgen_qsort (void *const array, const size_t count, const size_t element_size, int (*compare) (const void*, const void*));
 gint64 sgen_timestamp (void);
 
 /*
@@ -1129,32 +1139,11 @@ gboolean sgen_nursery_canaries_enabled (void);
 
 #define CANARY_VALID(addr) (strncmp ((char*) (addr), CANARY_STRING, CANARY_SIZE) == 0)
 
-#define CHECK_CANARY_FOR_OBJECT(addr,fail) if (sgen_nursery_canaries_enabled ()) {	\
-				guint size = sgen_safe_object_get_size_unaligned ((GCObject *) (addr)); \
-				char* canary_ptr = (char*) (addr) + size;	\
-				if (!CANARY_VALID(canary_ptr)) {	\
-					char *window_start, *window_end; \
-					window_start = (char*)(addr) - 128; \
-					if (!sgen_ptr_in_nursery (window_start)) \
-						window_start = sgen_get_nursery_start (); \
-					window_end = (char*)(addr) + 128; \
-					if (!sgen_ptr_in_nursery (window_end)) \
-						window_end = sgen_get_nursery_end (); \
-					fprintf (stderr, "\nCANARY ERROR - Type:%s Size:%d Address:%p Data:\n", sgen_client_vtable_get_name (SGEN_LOAD_VTABLE ((addr))), size,  (char*) addr); \
-					fwrite (addr, sizeof (char), size, stderr); \
-					fprintf (stderr, "\nCanary zone (next 12 chars):\n"); \
-					fwrite (canary_ptr, sizeof (char), 12, stderr); \
-					fprintf (stderr, "\nOriginal canary string:\n"); \
-					fwrite (CANARY_STRING, sizeof (char), 8, stderr); \
-					for (int x = -8; x <= 8; x++) { \
-						if (canary_ptr + x < (char*) addr); \
-							continue; \
-						if (CANARY_VALID(canary_ptr +x)) \
-							fprintf (stderr, "\nCANARY ERROR - canary found at offset %d\n", x); \
-					} \
-					fprintf (stderr, "\nSurrounding nursery (%p - %p):\n", window_start, window_end); \
-					fwrite (window_start, sizeof (char), window_end - window_start, stderr); \
-				} }
+void
+sgen_check_canary_for_object (gpointer addr);
+
+#define CHECK_CANARY_FOR_OBJECT(addr, ignored) \
+	(sgen_nursery_canaries_enabled () ? sgen_check_canary_for_object (addr) : (void)0)
 
 /*
  * This causes the compile to extend the liveness of 'v' till the call to dummy_use

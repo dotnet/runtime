@@ -11,6 +11,7 @@
 
 #include <config.h>
 #include <glib.h>
+#include "attach.h"
 
 #ifdef HOST_WIN32
 #define DISABLE_ATTACH
@@ -39,7 +40,6 @@
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/utils/mono-threads.h>
-#include "attach.h"
 
 #include <mono/utils/w32api.h>
 
@@ -276,7 +276,9 @@ mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject 
 	gpointer pa [1];
 	MonoImageOpenStatus open_status;
 
-	agent_assembly = mono_assembly_open_predicate (agent, MONO_ASMCTX_DEFAULT, NULL, NULL, NULL, &open_status);
+	MonoAssemblyOpenRequest req;
+	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+	agent_assembly = mono_assembly_request_open (agent, &req, &open_status);
 	if (!agent_assembly) {
 		fprintf (stderr, "Cannot open agent assembly '%s': %s.\n", agent, mono_image_strerror (open_status));
 		g_free (agent);
@@ -320,7 +322,7 @@ mono_attach_load_agent (MonoDomain *domain, char *agent, char *args, MonoObject 
 			g_free (agent);
 			return 1;
 		}
-		mono_array_set (main_args, MonoString*, 0, args_str);
+		mono_array_set_internal (main_args, MonoString*, 0, args_str);
 	}
 
 

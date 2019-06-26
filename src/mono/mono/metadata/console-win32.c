@@ -17,20 +17,18 @@
 #include <errno.h>
 #include <signal.h>
 #include <sys/types.h>
-
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
-
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/domain-internals.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/metadata.h>
-
 #include <mono/metadata/console-io.h>
 #include <mono/metadata/exception.h>
+#include "icall-decl.h"
 
 void
 mono_console_init (void)

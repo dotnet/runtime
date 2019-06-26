@@ -178,6 +178,11 @@
       <SubSystem>Console</SubSystem>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(MONO_COMPILE_AS_CPP)'=='true'">
+    <ClCompile>
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\tools\pedump\pedump.c" />
   </ItemGroup>

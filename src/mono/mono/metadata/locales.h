@@ -16,6 +16,8 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/icalls.h>
 
+#if !ENABLE_NETCORE
+
 /* This is a copy of System.Globalization.CompareOptions */
 typedef enum {
 	CompareOptions_None=0x00,
@@ -34,17 +36,17 @@ MonoBoolean ves_icall_System_Globalization_CalendarData_fill_calendar_data (Mono
 ICALL_EXPORT
 void ves_icall_System_Globalization_CultureData_fill_culture_data (MonoCultureData *this_obj, gint32 datetime_index);
 
+typedef struct NumberFormatEntryManaged NumberFormatEntryManaged;
+
 ICALL_EXPORT
-void ves_icall_System_Globalization_CultureData_fill_number_data (MonoNumberFormatInfo* number, gint32 number_index);
+gconstpointer
+ves_icall_System_Globalization_CultureData_fill_number_data (gint32 number_index, NumberFormatEntryManaged *managed);
 
 ICALL_EXPORT
 void ves_icall_System_Globalization_CultureInfo_construct_internal_locale (MonoCultureInfo *this_obj, MonoString *locale);
 
 ICALL_EXPORT
-MonoStringHandle ves_icall_System_Globalization_CultureInfo_get_current_locale_name (MonoError *error);
-
-ICALL_EXPORT
-MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid (MonoCultureInfo *this_obj, gint lcid);
+MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_lcid (MonoCultureInfo *this_obj, gint32 lcid);
 
 ICALL_EXPORT
 MonoBoolean ves_icall_System_Globalization_CultureInfo_construct_internal_locale_from_name (MonoCultureInfo *this_obj, MonoString *name);
@@ -55,47 +57,24 @@ MonoArray *ves_icall_System_Globalization_CultureInfo_internal_get_cultures (Mon
 ICALL_EXPORT
 void ves_icall_System_Globalization_CompareInfo_construct_compareinfo (MonoCompareInfo *comp, MonoString *locale);
 
-ICALL_EXPORT
-int ves_icall_System_Globalization_CompareInfo_internal_compare (MonoCompareInfo *this_obj, MonoString *str1, gint32 off1, gint32 len1, MonoString *str2, gint32 off2, gint32 len2, gint32 options);
+ICALL_EXPORT gint32
+ves_icall_System_Globalization_CompareInfo_internal_compare (const gunichar2 *str1, gint32 len1,
+	const gunichar2 *str2, gint32 len2, gint32 options);
 
 ICALL_EXPORT
 void ves_icall_System_Globalization_CompareInfo_free_internal_collator (MonoCompareInfo *this_obj);
 
 ICALL_EXPORT
 MonoBoolean
-ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_lcid (MonoRegionInfo *this_obj, gint lcid);
-
-ICALL_EXPORT
-MonoBoolean
 ves_icall_System_Globalization_RegionInfo_construct_internal_region_from_name (MonoRegionInfo *this_obj,
  MonoString *name);
 
-ICALL_EXPORT
-void ves_icall_System_Globalization_CompareInfo_assign_sortkey (MonoCompareInfo *this_obj, MonoSortKey *key, MonoString *source, gint32 options);
+ICALL_EXPORT gint32
+ves_icall_System_Globalization_CompareInfo_internal_index (const gunichar2 *source, gint32 sindex,
+	gint32 count, const gunichar2 *value, gint32 value_length, MonoBoolean first);
 
-ICALL_EXPORT
-int ves_icall_System_Globalization_CompareInfo_internal_index (MonoCompareInfo *this_obj, MonoString *source, gint32 sindex, gint32 count, MonoString *value, gint32 options, MonoBoolean first);
+#endif /* !ENABLE_NETCORE */
 
-ICALL_EXPORT
-int ves_icall_System_Globalization_CompareInfo_internal_index_char (MonoCompareInfo *this_obj, MonoString *source, gint32 sindex, gint32 count, gunichar2 value, gint32 options, MonoBoolean first);
-
-ICALL_EXPORT
-int
-ves_icall_System_Threading_Thread_current_lcid (void);
-
-ICALL_EXPORT
-MonoString *ves_icall_System_String_InternalToLower_Comp (MonoString *this_obj, MonoCultureInfo *cult);
-
-ICALL_EXPORT
-MonoString *ves_icall_System_String_InternalToUpper_Comp (MonoString *this_obj, MonoCultureInfo *cult);
-
-ICALL_EXPORT
-gunichar2 ves_icall_System_Char_InternalToUpper_Comp (gunichar2 c, MonoCultureInfo *cult);
-
-ICALL_EXPORT
-gunichar2 ves_icall_System_Char_InternalToLower_Comp (gunichar2 c, MonoCultureInfo *cult);
-
-ICALL_EXPORT
-void ves_icall_System_Text_Normalization_load_normalization_resource (guint8 **argProps, guint8** argMappedChars, guint8** argCharMapIndex, guint8** argHelperIndex, guint8** argMapIdxToComposite, guint8** argCombiningClass, MonoError *error);
+#define MONO_LOCALE_INVARIANT (0x007F)
 
 #endif /* _MONO_METADATA_FILEIO_H_ */

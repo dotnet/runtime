@@ -26,7 +26,7 @@
 #undef MINI_OP3
 #endif
 
-#ifdef HAVE_ARRAY_ELEM_INIT
+// This, instead of an array of pointers, to optimize away a pointer and a relocation per string.
 #define MSGSTRFIELD(line) MSGSTRFIELD1(line)
 #define MSGSTRFIELD1(line) str##line
 static const struct msgstr_t {
@@ -43,26 +43,12 @@ static const struct msgstr_t {
 #undef MINI_OP3
 };
 static const gint16 opidx [] = {
-#define MINI_OP(a,b,dest,src1,src2) [a - OP_LOAD] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
-#define MINI_OP3(a,b,dest,src1,src2,src3) [a - OP_LOAD] = offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#define MINI_OP(a,b,dest,src1,src2)       offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
+#define MINI_OP3(a,b,dest,src1,src2,src3) offsetof (struct msgstr_t, MSGSTRFIELD(__LINE__)),
 #include "mini-ops.h"
 #undef MINI_OP
 #undef MINI_OP3
 };
-
-#else
-
-#define MINI_OP(a,b,dest,src1,src2) b,
-#define MINI_OP3(a,b,dest,src1,src2,src3) b,
-/* keep in sync with the enum in mini.h */
-static const char* const
-opnames[] = {
-#include "mini-ops.h"
-};
-#undef MINI_OP
-#undef MINI_OP3
-
-#endif
 
 #endif /* DISABLE_LOGGING */
 
@@ -79,7 +65,7 @@ opnames[] = {
 /*This enables us to use the right tooling when building the cross compiler for iOS.*/
 #if defined (__APPLE__) && defined (TARGET_ARM) && (defined(__i386__) || defined(__x86_64__))
 
-#define ARCH_PREFIX "/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/"
+//#define ARCH_PREFIX "/Developer/Platforms/iPhoneOS.platform/Developer/usr/bin/"
 
 #endif
 
@@ -90,11 +76,7 @@ const char*
 mono_inst_name (int op) {
 #ifndef DISABLE_LOGGING
 	if (op >= OP_LOAD && op <= OP_LAST)
-#ifdef HAVE_ARRAY_ELEM_INIT
 		return (const char*)&opstr + opidx [op - OP_LOAD];
-#else
-		return opnames [op - OP_LOAD];
-#endif
 	if (op < OP_LOAD)
 		return mono_opcode_name (op);
 	g_error ("unknown opcode name for %d", op);
@@ -257,6 +239,10 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 #define AS_CMD "as -arch ppc64"
 #elif defined(__powerpc64__)
 #define AS_CMD "as -mppc64"
+#elif defined (TARGET_RISCV64)
+#define AS_CMD "as -march=rv64ima"
+#elif defined (TARGET_RISCV32)
+#define AS_CMD "as -march=rv32ima"
 #else
 #define AS_CMD "as"
 #endif
@@ -282,7 +268,7 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	 * The arm assembler inserts ELF directives instructing objdump to display 
 	 * everything as data.
 	 */
-	cmd = g_strdup_printf (ARCH_PREFIX "strip -x %s", o_file);
+	cmd = g_strdup_printf (ARCH_PREFIX "strip -s %s", o_file);
 	unused = system (cmd);
 	g_free (cmd);
 #endif

@@ -78,25 +78,25 @@
  */
 
 #ifdef HOST_WIN32
-#define MONO_SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, EXCEPTION_POINTERS *_info, void *context)
-#define MONO_SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, EXCEPTION_POINTERS *_info, void *context))
-#define MONO_SIG_HANDLER_PARAMS _dummy, _info, context
-#define MONO_SIG_HANDLER_GET_SIGNO() (_dummy)
-#define MONO_SIG_HANDLER_GET_INFO() (_info)
-#define MONO_SIG_HANDLER_INFO_TYPE EXCEPTION_POINTERS
+#define MONO_SIG_HANDLER_INFO_TYPE MonoWindowsSigHandlerInfo
+typedef struct {
+	/* Set to FALSE to indicate chained signal handler needs run.
+	 * With vectored exceptions Windows does that for us by returning
+	 * EXCEPTION_CONTINUE_SEARCH from handler */
+	gboolean handled;
+	EXCEPTION_POINTERS* ep;
+} MonoWindowsSigHandlerInfo;
 /* seh_vectored_exception_handler () passes in a CONTEXT* */
-#define MONO_SIG_HANDLER_GET_CONTEXT \
-    void *ctx = context;
 #else
 /* sigaction */
-#define MONO_SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, siginfo_t *_info, void *context)
-#define MONO_SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, siginfo_t *_info, void *context))
+#define MONO_SIG_HANDLER_INFO_TYPE siginfo_t
+#endif
+
+#define MONO_SIG_HANDLER_SIGNATURE(ftn) ftn (int _dummy, MONO_SIG_HANDLER_INFO_TYPE *_info, void *context)
+#define MONO_SIG_HANDLER_FUNC(access, ftn) MONO_SIGNAL_HANDLER_FUNC (access, ftn, (int _dummy, MONO_SIG_HANDLER_INFO_TYPE *_info, void *context))
 #define MONO_SIG_HANDLER_PARAMS _dummy, _info, context
 #define MONO_SIG_HANDLER_GET_SIGNO() (_dummy)
 #define MONO_SIG_HANDLER_GET_INFO() (_info)
-#define MONO_SIG_HANDLER_INFO_TYPE siginfo_t
-#define MONO_SIG_HANDLER_GET_CONTEXT \
-    void *ctx = context;
-#endif
+#define MONO_SIG_HANDLER_GET_CONTEXT void *ctx = context;
 
-#endif
+#endif // __MONO_SIGNAL_HANDLER_H__

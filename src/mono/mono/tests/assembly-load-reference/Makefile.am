@@ -33,7 +33,12 @@ endif
 TEST_RUNNER = ../test-runner.exe
 
 if HOST_WIN32
-TEST_RUNNER += --config tests-config --runtime "$(if $(MONO_EXECUTABLE),$(shell cygpath -w -a $(MONO_EXECUTABLE) | sed 's/\\/\\\\/g'),$(top_builddir)/runtime/mono-wrapper)"
+if ENABLE_MSVC
+	DEFAULT_WIN32_RUNTIME=$(shell cygpath -w -a $(top_builddir)/@mono_runtime@ | sed 's/\\/\\\\/g')
+else
+	DEFAULT_WIN32_RUNTIME=$(top_builddir)/runtime/mono-wrapper)
+endif
+TEST_RUNNER += --config tests-config --runtime "$(if $(MONO_EXECUTABLE),$(shell cygpath -w -a $(MONO_EXECUTABLE) | sed 's/\\/\\\\/g'),$(DEFAULT_WIN32_RUNTIME))"
 else
 TEST_RUNNER += --config tests-config --runtime "$(if $(MONO_EXECUTABLE),$(MONO_EXECUTABLE),$(top_builddir)/runtime/mono-wrapper)"
 endif
@@ -66,7 +71,7 @@ EXTRA_DIST= README $(SIGNING_KEY) $(GACTESTLIB_SRCS)
 
 ### Test cases
 
-.PHONY: runtest compile-tests
+.PHONY: run-test test-local
 
 TESTS_CS = \
 	samedir/LoadFromMain.cs \
@@ -113,16 +118,17 @@ DISABLED_TESTS+= \
 	separatedir/LoadFileMain.exe
 endif
 
-runtest:
+run-test:
 	true
 	$(MAKE) run-assembly-load-reference-tests
 
 
-compile-tests: compile-samedir compile-separatedir compile-mainanddep
+test-local: compile-samedir compile-separatedir compile-mainanddep
 
 compile-samedir: samedir/LoadFromMain.exe samedir/LoadFileMain.exe samedir/Dep.dll samedir/Mid.dll
 
 samedir/%.dll: src/%.dll
+	mkdir -p $(@D)
 	cp $< $@
 
 compile-separatedir: separatedir/LoadFromMain.exe separatedir/LoadFileMain.exe separatedir/middle/Dep.dll separatedir/middle/Mid.dll
@@ -134,6 +140,7 @@ separatedir/middle/%.dll: src/%.dll
 compile-mainanddep: mainanddep/LoadFromMain.exe mainanddep/LoadFileMain.exe mainanddep/Dep.dll mainanddep/middle/Mid.dll
 
 mainanddep/Dep.dll: src/Dep.dll
+	mkdir -p $(@D)
 	cp $< $@
 
 mainanddep/middle/Mid.dll: src/Mid.dll
@@ -141,15 +148,18 @@ mainanddep/middle/Mid.dll: src/Mid.dll
 	cp $< $@
 
 src/Dep.dll: src/Dep.cs
+	mkdir -p $(@D)
 	$(MCS) -out:$@ $< -target:library
 
 src/Mid.dll: src/Mid.cs src/Dep.dll
 	$(MCS) -out:$@ $< -r:src/Dep.dll -target:library
 
 %/LoadFromMain.exe: %/LoadFromMain.cs
+	mkdir -p $(@D)
 	$(MCS) -out:$@ $< -target:exe
 
 %/LoadFileMain.exe: %/LoadFileMain.cs
+	mkdir -p $(@D)
 	$(MCS) -out:$@ $< -target:exe
 
 %/LoadFromMain.exe$(PLATFORM_AOT_SUFFIX): %/LoadFromMain.exe

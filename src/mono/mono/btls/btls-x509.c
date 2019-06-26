@@ -10,7 +10,7 @@
 #include <openssl/x509v3.h>
 #include <openssl/pkcs12.h>
 
-MONO_API X509 *
+X509 *
 mono_btls_x509_from_data (const void *buf, int len, MonoBtlsX509Format format)
 {
 	BIO *bio;
@@ -29,52 +29,52 @@ mono_btls_x509_from_data (const void *buf, int len, MonoBtlsX509Format format)
 	return cert;
 }
 
-MONO_API X509 *
+X509 *
 mono_btls_x509_up_ref (X509 *x509)
 {
 	X509_up_ref (x509);
 	return x509;
 }
 
-MONO_API void
+void
 mono_btls_x509_free (X509 *x509)
 {
 	X509_free (x509);
 }
 
-MONO_API X509 *
+X509 *
 mono_btls_x509_dup (X509 *x509)
 {
 	return X509_dup (x509);
 }
 
-MONO_API MonoBtlsX509Name *
+MonoBtlsX509Name *
 mono_btls_x509_get_subject_name (X509 *x509)
 {
 	return mono_btls_x509_name_copy (X509_get_subject_name (x509));
 }
 
-MONO_API MonoBtlsX509Name *
+MonoBtlsX509Name *
 mono_btls_x509_get_issuer_name (X509 *x509)
 {
 	return mono_btls_x509_name_copy (X509_get_issuer_name (x509));
 }
 
-MONO_API int
+int
 mono_btls_x509_get_subject_name_string (X509 *name, char *buffer, int size)
 {
 	*buffer = 0;
 	return X509_NAME_oneline (X509_get_subject_name (name), buffer, size) != NULL;
 }
 
-MONO_API int
+int
 mono_btls_x509_get_issuer_name_string (X509 *name, char *buffer, int size)
 {
 	*buffer = 0;
 	return X509_NAME_oneline (X509_get_issuer_name (name), buffer, size) != NULL;
 }
 
-MONO_API int
+int
 mono_btls_x509_get_raw_data (X509 *x509, BIO *bio, MonoBtlsX509Format format)
 {
 	switch (format) {
@@ -87,13 +87,13 @@ mono_btls_x509_get_raw_data (X509 *x509, BIO *bio, MonoBtlsX509Format format)
 	}
 }
 
-MONO_API int
+int
 mono_btls_x509_cmp (const X509 *a, const X509 *b)
 {
 	return X509_cmp (a, b);
 }
 
-MONO_API int
+int
 mono_btls_x509_get_hash (X509 *x509, const void **data)
 {
 	X509_check_purpose (x509, -1, 0);
@@ -101,24 +101,23 @@ mono_btls_x509_get_hash (X509 *x509, const void **data)
 	return SHA_DIGEST_LENGTH;
 }
 
-MONO_API int64_t
+int64_t
 mono_btls_x509_get_not_before (X509 *x509)
 {
 	return mono_btls_util_asn1_time_to_ticks (X509_get_notBefore (x509));
 }
 
-MONO_API int64_t
+int64_t
 mono_btls_x509_get_not_after (X509 *x509)
 {
 	return mono_btls_util_asn1_time_to_ticks (X509_get_notAfter (x509));
 }
 
-MONO_API int
+int
 mono_btls_x509_get_public_key (X509 *x509, BIO *bio)
 {
 	ASN1_BIT_STRING *pkey;
-	const unsigned char *data;
-	int ret, data_length;
+	int ret;
 
 	if (!x509 || !x509->cert_info || !x509->cert_info->key)
 		return -1;
@@ -134,12 +133,12 @@ mono_btls_x509_get_public_key (X509 *x509, BIO *bio)
 	return ret;
 }
 
-MONO_API int
+int
 mono_btls_x509_get_serial_number (X509 *x509, char *buffer, int size, int mono_style)
 {
 	ASN1_INTEGER *serial;
 	unsigned char *temp, *p;
-	int len, idx;
+	int len;
 
 	serial = X509_get_serialNumber (x509);
 	if (serial->length == 0 || serial->length+1 > size)
@@ -169,7 +168,7 @@ mono_btls_x509_get_serial_number (X509 *x509, char *buffer, int size, int mono_s
 	return len;
 }
 
-MONO_API int
+int
 mono_btls_x509_get_public_key_algorithm (X509 *x509, char *buffer, int size)
 {
 	X509_PUBKEY *pkey;
@@ -188,13 +187,13 @@ mono_btls_x509_get_public_key_algorithm (X509 *x509, char *buffer, int size)
 	return OBJ_obj2txt (buffer, size, ppkalg, 1);
 }
 
-MONO_API int
+int
 mono_btls_x509_get_version (X509 *x509)
 {
 	return (int)X509_get_version (x509) + 1;
 }
 
-MONO_API int
+int
 mono_btls_x509_get_signature_algorithm (X509 *x509, char *buffer, int size)
 {
 	const ASN1_OBJECT *obj;
@@ -211,7 +210,7 @@ mono_btls_x509_get_signature_algorithm (X509 *x509, char *buffer, int size)
 	return OBJ_obj2txt (buffer, size, obj, 1);
 }
 
-MONO_API int
+int
 mono_btls_x509_get_public_key_asn1 (X509 *x509, char *out_oid, int oid_len, uint8_t **buffer, int *size)
 {
 	X509_PUBKEY *pkey;
@@ -248,7 +247,7 @@ mono_btls_x509_get_public_key_asn1 (X509 *x509, char *out_oid, int oid_len, uint
 
 }
 
-MONO_API int
+int
 mono_btls_x509_get_public_key_parameters (X509 *x509, char *out_oid, int oid_len, uint8_t **buffer, int *size)
 {
 	X509_PUBKEY *pkey;
@@ -307,13 +306,13 @@ mono_btls_x509_get_public_key_parameters (X509 *x509, char *out_oid, int oid_len
 	}
 }
 
-MONO_API EVP_PKEY *
+EVP_PKEY *
 mono_btls_x509_get_pubkey (X509 *x509)
 {
 	return X509_get_pubkey (x509);
 }
 
-MONO_API int
+int
 mono_btls_x509_get_subject_key_identifier (X509 *x509, uint8_t **buffer, int *size)
 {
 	ASN1_OCTET_STRING *skid;
@@ -337,7 +336,7 @@ mono_btls_x509_get_subject_key_identifier (X509 *x509, uint8_t **buffer, int *si
 	return 1;
 }
 
-MONO_API int
+int
 mono_btls_x509_print (X509 *x509, BIO *bio)
 {
 	return X509_print_ex (bio, x509, XN_FLAG_COMPAT, X509_FLAG_COMPAT);
@@ -356,7 +355,7 @@ get_trust_nid (MonoBtlsX509Purpose purpose)
 	}
 }
 
-MONO_API int
+int
 mono_btls_x509_add_trust_object (X509 *x509, MonoBtlsX509Purpose purpose)
 {
 	ASN1_OBJECT *trust;
@@ -374,7 +373,7 @@ mono_btls_x509_add_trust_object (X509 *x509, MonoBtlsX509Purpose purpose)
 	return X509_add1_trust_object (x509, trust);
 }
 
-MONO_API int
+int
 mono_btls_x509_add_reject_object (X509 *x509, MonoBtlsX509Purpose purpose)
 {
 	ASN1_OBJECT *reject;
@@ -392,7 +391,7 @@ mono_btls_x509_add_reject_object (X509 *x509, MonoBtlsX509Purpose purpose)
 	return X509_add1_reject_object (x509, reject);
 }
 
-MONO_API int
+int
 mono_btls_x509_add_explicit_trust (X509 *x509, MonoBtlsX509TrustKind kind)
 {
 	int ret = 0;

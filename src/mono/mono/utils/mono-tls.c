@@ -119,15 +119,14 @@
 #  if !defined(__PIE__)
 // This only works if libmono is linked into the application
 #   define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  				\
-						__asm__ ("basr  %%r1,0\n\t"			\
-							 "j     0f\n\t"				\
-							 ".quad " #var "@TLSGD\n"		\
-							 "0:\n\t"				\
-							 "lg    %%r2,4(%%r1)\n\t"		\
-							 "brasl	%%r14,__tls_get_offset@PLT:tls_gdcall:"#var"\n\t" \
-							 "lgr	%0,%%r2\n\t"			\
-							: "=r" (foo) : 				\
-							: "1", "2", "14", "cc");		\
+						void *x = &var;					\
+						__asm__ ("ear   %%r1,%%a0\n"			\
+							 "sllg  %%r1,%%r1,32\n"			\
+							 "ear   %%r1,%%a1\n"			\
+							 "lgr   %0,%1\n"			\
+							 "sgr   %0,%%r1\n"			\
+							: "=r" (foo) : "r" (x)			\
+							: "1", "cc");				\
 						offset = foo; } while (0)
 #  elif __PIE__ == 1
 #   define MONO_THREAD_VAR_OFFSET(var,offset) do { guint64 foo;  					\
@@ -152,20 +151,42 @@
 							: "=r" (foo) : : "1");		\
 						offset = foo; } while (0)
 # endif
+
+#elif defined (TARGET_RISCV) && !defined (PIC)
+
+#define MONO_THREAD_VAR_OFFSET(var, offset) \
+	do { \
+		guint32 temp; \
+		__asm__ ( \
+			"lui %0, %%tprel_hi(" #var ")\n" \
+			"add %0, %0, tp, %%tprel_add(" #var ")\n" \
+			"addi %0, %0, %%tprel_lo(" #var ")\n" \
+			: "=r" (temp) \
+		); \
+		offset = temp; \
+	} while (0)
+
 #else
 
 #define MONO_THREAD_VAR_OFFSET(var,offset) (offset) = -1
 
 #endif
 
-/* Tls variables for each MonoTlsKey */
+#ifdef __cplusplus
+// static and anonymous namespace both fail to link otherwise; Linux/amd64/gcc.
+#define MONO_TLS_STATIC /* nothing */
+#else
+#define MONO_TLS_STATIC static
+#endif
 
-static MONO_KEYWORD_THREAD gpointer mono_tls_thread MONO_TLS_FAST;
-static MONO_KEYWORD_THREAD gpointer mono_tls_jit_tls MONO_TLS_FAST;
-static MONO_KEYWORD_THREAD gpointer mono_tls_domain MONO_TLS_FAST;
-static MONO_KEYWORD_THREAD gpointer mono_tls_lmf MONO_TLS_FAST;
-static MONO_KEYWORD_THREAD gpointer mono_tls_sgen_thread_info MONO_TLS_FAST;
-static MONO_KEYWORD_THREAD gpointer mono_tls_lmf_addr MONO_TLS_FAST;
+/* Tls variables for each MonoTlsKey */
+MONO_TLS_STATIC MONO_KEYWORD_THREAD MonoInternalThread *mono_tls_thread MONO_TLS_FAST;
+MONO_TLS_STATIC MONO_KEYWORD_THREAD MonoJitTlsData     *mono_tls_jit_tls MONO_TLS_FAST;
+MONO_TLS_STATIC MONO_KEYWORD_THREAD MonoDomain         *mono_tls_domain MONO_TLS_FAST;
+MONO_TLS_STATIC MONO_KEYWORD_THREAD SgenThreadInfo     *mono_tls_sgen_thread_info MONO_TLS_FAST;
+MONO_TLS_STATIC MONO_KEYWORD_THREAD MonoLMF           **mono_tls_lmf_addr MONO_TLS_FAST;
+
+#undef MONO_TLS_STATIC // no further uses
 
 #else
 
@@ -255,93 +276,75 @@ mono_tls_get_tls_offset (MonoTlsKey key)
  * Returns the getter (gpointer (*)(void)) for the mono tls key.
  * Managed code will always get the value by calling this getter.
  */
-gpointer
-mono_tls_get_tls_getter (MonoTlsKey key, gboolean name)
+MonoTlsGetter
+mono_tls_get_tls_getter (MonoTlsKey key)
 {
 	switch (key) {
 	case TLS_KEY_THREAD:
-		return name ? (gpointer)"mono_tls_get_thread" : (gpointer)mono_tls_get_thread;
+		return (MonoTlsGetter)mono_tls_get_thread;
 	case TLS_KEY_JIT_TLS:
-		return name ? (gpointer)"mono_tls_get_jit_tls" : (gpointer)mono_tls_get_jit_tls;
+		return (MonoTlsGetter)mono_tls_get_jit_tls;
 	case TLS_KEY_DOMAIN:
-		return name ? (gpointer)"mono_tls_get_domain" : (gpointer)mono_tls_get_domain;
+		return (MonoTlsGetter)mono_tls_get_domain;
 	case TLS_KEY_SGEN_THREAD_INFO:
-		return name ? (gpointer)"mono_tls_get_sgen_thread_info" : (gpointer)mono_tls_get_sgen_thread_info;
+		return (MonoTlsGetter)mono_tls_get_sgen_thread_info;
 	case TLS_KEY_LMF_ADDR:
-		return name ? (gpointer)"mono_tls_get_lmf_addr" : (gpointer)mono_tls_get_lmf_addr;
+		return (MonoTlsGetter)mono_tls_get_lmf_addr;
 	}
 	g_assert_not_reached ();
 	return NULL;
 }
 
-/* Returns the setter (void (*)(gpointer)) for the mono tls key */
-gpointer
-mono_tls_get_tls_setter (MonoTlsKey key, gboolean name)
-{
-	switch (key) {
-	case TLS_KEY_THREAD:
-		return name ? (gpointer)"mono_tls_set_thread" : (gpointer)mono_tls_set_thread;
-	case TLS_KEY_JIT_TLS:
-		return name ? (gpointer)"mono_tls_set_jit_tls" : (gpointer)mono_tls_set_jit_tls;
-	case TLS_KEY_DOMAIN:
-		return name ? (gpointer)"mono_tls_set_domain" : (gpointer)mono_tls_set_domain;
-	case TLS_KEY_SGEN_THREAD_INFO:
-		return name ? (gpointer)"mono_tls_set_sgen_thread_info" : (gpointer)mono_tls_set_sgen_thread_info;
-	case TLS_KEY_LMF_ADDR:
-		return name ? (gpointer)"mono_tls_set_lmf_addr" : (gpointer)mono_tls_set_lmf_addr;
-	}
-	g_assert_not_reached ();
-	return NULL;
-}
+// Casts on getters are for the !MONO_KEYWORD_THREAD case.
 
 /* Getters for each tls key */
-gpointer mono_tls_get_thread (void)
+MonoInternalThread *mono_tls_get_thread (void)
 {
-	return MONO_TLS_GET_VALUE (mono_tls_thread, mono_tls_key_thread);
+	return (MonoInternalThread*)MONO_TLS_GET_VALUE (mono_tls_thread, mono_tls_key_thread);
 }
 
-gpointer mono_tls_get_jit_tls (void)
+MonoJitTlsData *mono_tls_get_jit_tls (void)
 {
-	return MONO_TLS_GET_VALUE (mono_tls_jit_tls, mono_tls_key_jit_tls);
+	return (MonoJitTlsData*)MONO_TLS_GET_VALUE (mono_tls_jit_tls, mono_tls_key_jit_tls);
 }
 
-gpointer mono_tls_get_domain (void)
+MonoDomain *mono_tls_get_domain (void)
 {
-	return MONO_TLS_GET_VALUE (mono_tls_domain, mono_tls_key_domain);
+	return (MonoDomain*)MONO_TLS_GET_VALUE (mono_tls_domain, mono_tls_key_domain);
 }
 
-gpointer mono_tls_get_sgen_thread_info (void)
+SgenThreadInfo *mono_tls_get_sgen_thread_info (void)
 {
-	return MONO_TLS_GET_VALUE (mono_tls_sgen_thread_info, mono_tls_key_sgen_thread_info);
+	return (SgenThreadInfo*)MONO_TLS_GET_VALUE (mono_tls_sgen_thread_info, mono_tls_key_sgen_thread_info);
 }
 
-gpointer mono_tls_get_lmf_addr (void)
+MonoLMF **mono_tls_get_lmf_addr (void)
 {
-	return MONO_TLS_GET_VALUE (mono_tls_lmf_addr, mono_tls_key_lmf_addr);
+	return (MonoLMF**)MONO_TLS_GET_VALUE (mono_tls_lmf_addr, mono_tls_key_lmf_addr);
 }
 
 /* Setters for each tls key */
-void mono_tls_set_thread (gpointer value)
+void mono_tls_set_thread (MonoInternalThread *value)
 {
 	MONO_TLS_SET_VALUE (mono_tls_thread, mono_tls_key_thread, value);
 }
 
-void mono_tls_set_jit_tls (gpointer value)
+void mono_tls_set_jit_tls (MonoJitTlsData *value)
 {
 	MONO_TLS_SET_VALUE (mono_tls_jit_tls, mono_tls_key_jit_tls, value);
 }
 
-void mono_tls_set_domain (gpointer value)
+void mono_tls_set_domain (MonoDomain *value)
 {
 	MONO_TLS_SET_VALUE (mono_tls_domain, mono_tls_key_domain, value);
 }
 
-void mono_tls_set_sgen_thread_info (gpointer value)
+void mono_tls_set_sgen_thread_info (SgenThreadInfo *value)
 {
 	MONO_TLS_SET_VALUE (mono_tls_sgen_thread_info, mono_tls_key_sgen_thread_info, value);
 }
 
-void mono_tls_set_lmf_addr (gpointer value)
+void mono_tls_set_lmf_addr (MonoLMF **value)
 {
 	MONO_TLS_SET_VALUE (mono_tls_lmf_addr, mono_tls_key_lmf_addr, value);
 }

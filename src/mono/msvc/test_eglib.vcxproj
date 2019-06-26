@@ -170,6 +170,7 @@
     <ClCompile Include="..\mono\eglib\test\dir.c" />
     <ClCompile Include="..\mono\eglib\test\driver.c" />
     <ClCompile Include="..\mono\eglib\test\endian.c" />
+    <ClCompile Include="..\mono\eglib\test\enum.cpp" />
     <ClCompile Include="..\mono\eglib\test\fake.c" />
     <ClCompile Include="..\mono\eglib\test\file.c" />
     <ClCompile Include="getopt.c" />

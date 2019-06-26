@@ -7,18 +7,24 @@
   <ItemGroup Label="llvm_sources">
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-llvm-loaded.c">
       <ExcludedFromBuild>$(ExcludeLLVMFromWindowsBuild)</ExcludedFromBuild>
+      <_MonoLLVMSourceFile>true</_MonoLLVMSourceFile>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-llvm.c">
       <ExcludedFromBuild>$(ExcludeLLVMFromWindowsBuild)</ExcludedFromBuild>
+      <_MonoLLVMSourceFile>true</_MonoLLVMSourceFile>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\llvm-runtime.cpp">
       <ExcludedFromBuild>$(ExcludeLLVMFromWindowsBuild)</ExcludedFromBuild>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
+      <_MonoLLVMSourceFile>true</_MonoLLVMSourceFile>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\mini-llvm-cpp.cpp">
       <ExcludedFromBuild>$(ExcludeLLVMFromWindowsBuild)</ExcludedFromBuild>
+      <_MonoLLVMSourceFile>true</_MonoLLVMSourceFile>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\mini\llvm-jit.cpp">
       <ExcludedFromBuild>$(ExcludeLLVMFromWindowsBuild)</ExcludedFromBuild>
+      <_MonoLLVMSourceFile>true</_MonoLLVMSourceFile>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -13,6 +13,9 @@
     <ClCompile Include="..\mono\eglib\test\endian.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\mono\eglib\test\enum.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\mono\eglib\test\fake.c">
       <Filter>Source Files</Filter>
     </ClCompile>

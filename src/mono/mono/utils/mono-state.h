@@ -16,21 +16,109 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-context.h>
 #include <mono/metadata/threads-types.h>
+#include <mono/utils/json.h>
 
-#define MONO_NATIVE_STATE_PROTOCOL_VERSION "0.0.1"
+#define MONO_NATIVE_STATE_PROTOCOL_VERSION "0.0.4"
+
+typedef enum {
+	MonoSummaryNone,
+	MonoSummarySetup,
+	MonoSummarySuspendHandshake,
+	MonoSummaryUnmanagedStacks,
+	MonoSummaryManagedStacks,
+	MonoSummaryStateWriter,
+	MonoSummaryStateWriterDone,
+	MonoSummaryMerpWriter,
+	MonoSummaryMerpInvoke,
+	MonoSummaryCleanup,
+	MonoSummaryDone,
+
+	MonoSummaryDoubleFault
+} MonoSummaryStage;
+
+typedef struct {
+	char *output_str;
+	int len;
+	int allocated_len;
+	int indent;
+} MonoStateWriter;
+
+typedef struct {
+	gpointer *mem;
+	gsize size;
+
+	// File Information
+	gint handle;
+	gint64 tag;
+} MonoStateMem;
 
 MONO_BEGIN_DECLS
 
+// Logging
+gboolean
+mono_summarize_set_timeline_dir (const char *directory);
+
 void
-mono_summarize_native_state_begin (void);
+mono_summarize_timeline_start (void);
+
+void
+mono_summarize_timeline_phase_log (MonoSummaryStage stage);
+
+void
+mono_summarize_double_fault_log (void);
+
+MonoSummaryStage
+mono_summarize_timeline_read_level (const char *directory, gboolean clear);
+
+// Enable checked-build assertions on summary workflow
+// Turns all potential hangs into instant faults
+void
+mono_summarize_toggle_assertions (gboolean enable);
+
+// Json State Writer
+
+/*
+ * These use static memory, can only be called once
+ */
+
+void
+mono_summarize_native_state_begin (MonoStateWriter *writer, gchar *mem, int size);
 
 char *
-mono_summarize_native_state_end (void);
+mono_summarize_native_state_end (MonoStateWriter *writer);
 
 void
-mono_summarize_native_state_add_thread (MonoThreadSummary *thread, MonoContext *ctx);
+mono_summarize_native_state_add_thread (MonoStateWriter *writer, MonoThreadSummary *thread, MonoContext *ctx, gboolean crashing_thread);
+
+/*
+ * These use memory from the caller
+ */
+void
+mono_state_writer_init (MonoStateWriter *writer, gchar *output_str, int len);
+
+void
+mono_native_state_init (MonoStateWriter *writer);
+
+char *
+mono_native_state_emit (MonoStateWriter *writer);
+
+char *
+mono_native_state_free (MonoStateWriter *writer, gboolean free_data);
+
+void
+mono_native_state_add_thread (MonoStateWriter *writer, MonoThreadSummary *thread, MonoContext *ctx, gboolean first_thread, gboolean crashing_thread);
+
+void
+mono_crash_dump (const char *jsonFile, MonoStackHash *hashes);
+
+// Signal-safe file allocators
+
+gboolean
+mono_state_alloc_mem (MonoStateMem *mem, long tag, size_t size);
+
+void
+mono_state_free_mem (MonoStateMem *mem);
 
 MONO_END_DECLS
 #endif // DISABLE_CRASH_REPORTING
-
 #endif // MONO_UTILS_NATIVE_STATE

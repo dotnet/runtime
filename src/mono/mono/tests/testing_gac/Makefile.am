@@ -28,7 +28,12 @@ TOOLS_RUNTIME= MONO_PATH=$(mcs_topdir)/class/lib/build $(RUNTIME)
 TEST_RUNNER = ../test-runner.exe --runtime $(RUNTIME) --runtime-args "--assembly-loader=strict"
 
 if HOST_WIN32
-TEST_RUNNER_ARGS=--runtime $(if $(MONO_EXECUTABLE),$(shell cygpath -w -a $(MONO_EXECUTABLE) | sed 's/\\/\\\\/g'),mono)
+if ENABLE_MSVC
+	DEFAULT_WIN32_RUNTIME=$(shell cygpath -w -a $(top_builddir)/@mono_runtime@ | sed 's/\\/\\\\/g')
+else
+	DEFAULT_WIN32_RUNTIME=$(top_builddir)/runtime/mono-wrapper)
+endif
+TEST_RUNNER_ARGS=--runtime $(if $(MONO_EXECUTABLE),$(shell cygpath -w -a $(MONO_EXECUTABLE) | sed 's/\\/\\\\/g'),$(DEFAULT_WIN32_RUNTIME))
 else
 TEST_RUNNER_ARGS=--runtime $(if $(MONO_EXECUTABLE),$(MONO_EXECUTABLE),mono)
 endif
@@ -96,9 +101,9 @@ EXTRA_DIST= README $(SIGNING_KEY) $(GACTESTLIB_SRCS)
 
 ### Test cases
 
-.PHONY: runtest compile-tests prereqs
+.PHONY: run-test test-local prereqs
 
-runtest:
+run-test:
 	true
 if !FULL_AOT_TESTS
 if !HYBRID_AOT_TESTS
@@ -111,7 +116,7 @@ if !HYBRID_AOT_TESTS
 endif
 endif
 
-compile-tests: prereqs $(APP_SIGNED_V1_EXE) $(APP_BOTH_EXE) $(APP_SIGNED_V1_AOT)
+test-local: prereqs $(APP_SIGNED_V1_EXE) $(APP_BOTH_EXE) $(APP_SIGNED_V1_AOT)
 
 prereqs: $(GACTESTLIB_DLLS) $(GACTESTLIB_DLLS_AOT)
 	$(MAKE) gacinstall

@@ -73,7 +73,9 @@ void            mono_debugger_lock                          (void);
 void            mono_debugger_unlock                        (void);
 
 void
-mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file, GPtrArray **source_file_list, int **source_files, MonoSymSeqPoint **seq_points, int *n_seq_points);
+mono_debug_get_seq_points (MonoDebugMethodInfo *minfo, char **source_file,
+			   GPtrArray **source_file_list, int **source_files,
+			   MonoSymSeqPoint **seq_points, int *n_seq_points) MONO_LLVM_INTERNAL;
 
 MONO_API void
 mono_debug_free_locals (MonoDebugLocalsInfo *info);
@@ -86,5 +88,8 @@ mono_debug_image_has_debug_info (MonoImage *image);
 
 MonoDebugSourceLocation *
 mono_debug_lookup_source_location_by_il (MonoMethod *method, guint32 il_offset, MonoDomain *domain);
+
+char*
+mono_debug_image_get_sourcelink (MonoImage *image);
 
 #endif /* __DEBUG_INTERNALS_H__ */

@@ -34,14 +34,24 @@
 #include <mono/utils/mach-support.h>
 #endif
 
+/* On platforms that doesn't have full context support (or doesn't do conservative stack scan), use copy stack data */
+/* when entering safe/unsafe GC regions. For platforms with full context support (doing conservative stack scan), */
+/* there is already logic in place to take context before getting in a state where thread could be conservative */
+/* scanned by GC. Avoiding doing additional stack copy will increse performance when entering safe/unsafe regions */
+/* when running in hybrid/cooperative supspend mode. */
+#if defined (ENABLE_COPY_STACK_DATA)
 #ifdef _MSC_VER
-// TODO: Find MSVC replacement for __builtin_unwind_init
-#define SAVE_REGS_ON_STACK g_assert_not_reached ();
+// __builtin_unwind_init not available under MSVC but equivalent implementation is done using
+// copy_stack_data_internal_win32_wrapper.
+#define SAVE_REGS_ON_STACK do {} while (0)
 #elif defined (HOST_WASM)
 //TODO: figure out wasm stack scanning
 #define SAVE_REGS_ON_STACK do {} while (0)
 #else 
 #define SAVE_REGS_ON_STACK __builtin_unwind_init ();
+#endif
+#else
+#define SAVE_REGS_ON_STACK do {} while (0)
 #endif
 
 volatile size_t mono_polling_required;
@@ -58,7 +68,7 @@ coop_tls_push (gpointer cookie)
 {
 	GArray *stack;
 
-	stack = mono_native_tls_get_value (coop_reset_count_stack_key);
+	stack = (GArray*)mono_native_tls_get_value (coop_reset_count_stack_key);
 	if (!stack) {
 		stack = g_array_new (FALSE, FALSE, sizeof(gpointer));
 		mono_native_tls_set_value (coop_reset_count_stack_key, stack);
@@ -73,7 +83,7 @@ coop_tls_pop (gpointer received_cookie)
 	GArray *stack;
 	gpointer expected_cookie;
 
-	stack = mono_native_tls_get_value (coop_reset_count_stack_key);
+	stack = (GArray*)mono_native_tls_get_value (coop_reset_count_stack_key);
 	if (!stack || 0 == stack->len)
 		mono_fatal_with_history ("Received cookie %p but found no stack at all\n", received_cookie);
 
@@ -129,6 +139,9 @@ mono_threads_state_poll_with_info (MonoThreadInfo *info)
 
 	THREADS_SUSPEND_DEBUG ("FINISH SELF SUSPEND OF %p\n", mono_thread_info_get_tid (info));
 
+	/* Fast fail if no_safepoints is set */
+	g_assert (!(info->thread_state & THREAD_SUSPEND_NO_SAFEPOINTS_MASK));
+
 	/* Fast check for pending suspend requests */
 	if (!(info->thread_state & STATE_ASYNC_SUSPEND_REQUESTED))
 		return;
@@ -164,7 +177,7 @@ return_stack_ptr (gpointer *i)
 }
 
 static void
-copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
+copy_stack_data_internal (MonoThreadInfo *info, MonoStackData *stackdata_begin, gconstpointer wrapper_data1, gconstpointer wrapper_data2)
 {
 	MonoThreadUnwindState *state;
 	int stackdata_size;
@@ -193,6 +206,64 @@ copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
 
 	state->gc_stackdata_size = stackdata_size;
 }
+
+#if defined (ENABLE_COPY_STACK_DATA)
+#ifdef _MSC_VER
+typedef void (*CopyStackDataFunc)(MonoThreadInfo *, MonoStackData *, gconstpointer, gconstpointer);
+
+#ifdef TARGET_AMD64
+// Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo.
+typedef struct {
+	__m128d fregs [10];
+	host_mgreg_t gregs [8];
+} MonoBuiltinUnwindInfo;
+
+// Defined in win64.asm
+G_EXTERN_C void
+copy_stack_data_internal_win32_wrapper (MonoThreadInfo *, MonoStackData *, MonoBuiltinUnwindInfo *, CopyStackDataFunc);
+#else
+// Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo.
+typedef struct {
+	host_mgreg_t gregs [4];
+} MonoBuiltinUnwindInfo;
+
+// Implementation of __builtin_unwind_init under MSVC, dumping nonvolatile registers into MonoBuiltinUnwindInfo *.
+__declspec(naked) void __cdecl
+copy_stack_data_internal_win32_wrapper (MonoThreadInfo *info, MonoStackData *stackdata_begin, MonoBuiltinUnwindInfo *unwind_info_data, CopyStackDataFunc func)
+{
+	__asm {
+		mov edx, dword ptr [esp + 0Ch]
+		mov dword ptr [edx + 00h], ebx
+		mov dword ptr [edx + 04h], esi
+		mov dword ptr [edx + 08h], edi
+		mov dword ptr [edx + 0Ch], ebp
+
+		// tailcall, all parameters passed through to CopyStackDataFunc.
+		mov edx, dword ptr [esp + 10h]
+		jmp edx
+	};
+}
+#endif
+
+static void
+copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
+{
+	MonoBuiltinUnwindInfo unwind_info_data;
+	copy_stack_data_internal_win32_wrapper (info, stackdata_begin, &unwind_info_data, copy_stack_data_internal);
+}
+#else
+static void
+copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
+{
+	copy_stack_data_internal (info, stackdata_begin, NULL, NULL);
+}
+#endif
+#else
+static void
+copy_stack_data (MonoThreadInfo *info, MonoStackData *stackdata_begin)
+{
+}
+#endif
 
 static gpointer
 mono_threads_enter_gc_safe_region_unbalanced_with_info (MonoThreadInfo *info, MonoStackData *stackdata);
@@ -279,8 +350,10 @@ mono_threads_exit_gc_safe_region_internal (gpointer cookie, MonoStackData *stack
 		return;
 
 #ifdef ENABLE_CHECKED_BUILD_GC
+	W32_DEFINE_LAST_ERROR_RESTORE_POINT;
 	if (mono_check_mode_enabled (MONO_CHECK_MODE_GC))
 		coop_tls_pop (cookie);
+	W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
 #endif
 
 	mono_threads_exit_gc_safe_region_unbalanced_internal (cookie, stackdata);
@@ -301,6 +374,11 @@ mono_threads_exit_gc_safe_region_unbalanced_internal (gpointer cookie, MonoStack
 
 	if (!mono_threads_is_blocking_transition_enabled ())
 		return;
+
+	/* Common to use enter/exit gc safe around OS API's affecting last error. */
+	/* This method can call OS API's that will reset last error on some platforms. */
+	/* To reduce errors, we need to restore last error before exit gc safe. */
+	W32_DEFINE_LAST_ERROR_RESTORE_POINT;
 
 	info = (MonoThreadInfo *)cookie;
 
@@ -332,6 +410,8 @@ mono_threads_exit_gc_safe_region_unbalanced_internal (gpointer cookie, MonoStack
 		info->async_target = NULL;
 		info->user_data = NULL;
 	}
+
+	W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
 }
 
 void
@@ -574,7 +654,7 @@ threads_suspend_policy_getenv (void)
 
 static char threads_suspend_policy;
 
-static MonoThreadsSuspendPolicy
+MonoThreadsSuspendPolicy
 mono_threads_suspend_policy (void)
 {
 	int policy = threads_suspend_policy;
@@ -584,10 +664,16 @@ mono_threads_suspend_policy (void)
 		// otherwise if there's a compiled-in default, use it.
 		// otherwise if one of the old environment variables is set, use that.
 		// otherwise use full preemptive suspend.
+
+		W32_DEFINE_LAST_ERROR_RESTORE_POINT;
+
 		   (policy = threads_suspend_policy_getenv ())
 		|| (policy = threads_suspend_policy_default ())
 		|| (policy = threads_suspend_policy_getenv_compat ())
 		|| (policy = MONO_THREADS_SUSPEND_FULL_PREEMPTIVE);
+
+		W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT;
+
 		g_assert (policy);
 		threads_suspend_policy = (char)policy;
 	}
@@ -618,13 +704,12 @@ void
 mono_threads_suspend_override_policy (MonoThreadsSuspendPolicy new_policy)
 {
 	threads_suspend_policy = (char)mono_threads_suspend_validate_policy (new_policy);
-	g_warning ("Overriding suspend policy.  Using %s suspend.", mono_threads_suspend_policy_name ());
+	g_warning ("Overriding suspend policy.  Using %s suspend.", mono_threads_suspend_policy_name (mono_threads_suspend_policy ()));
 }
 
 const char*
-mono_threads_suspend_policy_name (void)
+mono_threads_suspend_policy_name (MonoThreadsSuspendPolicy policy)
 {
-	MonoThreadsSuspendPolicy policy = mono_threads_suspend_policy ();
 	switch (policy) {
 	case MONO_THREADS_SUSPEND_FULL_COOP:
 		return "cooperative";
@@ -641,30 +726,6 @@ gboolean
 mono_threads_is_cooperative_suspension_enabled (void)
 {
 	return (mono_threads_suspend_policy () == MONO_THREADS_SUSPEND_FULL_COOP);
-}
-
-gboolean
-mono_threads_is_blocking_transition_enabled (void)
-{
-	static int is_blocking_transition_enabled = -1;
-	if (G_UNLIKELY (is_blocking_transition_enabled == -1)) {
-		if (g_hasenv ("MONO_ENABLE_BLOCKING_TRANSITION"))
-			is_blocking_transition_enabled = 1;
-		else {
-			switch (mono_threads_suspend_policy ()) {
-			case MONO_THREADS_SUSPEND_FULL_COOP:
-			case MONO_THREADS_SUSPEND_HYBRID:
-				is_blocking_transition_enabled = 1;
-				break;
-			case MONO_THREADS_SUSPEND_FULL_PREEMPTIVE:
-				is_blocking_transition_enabled = 0;
-				break;
-			default:
-				g_assert_not_reached ();
-			}
-		}
-	}
-	return is_blocking_transition_enabled == 1;
 }
 
 gboolean
@@ -703,4 +764,45 @@ mono_threads_coop_end_global_suspend (void)
 {
 	if (mono_threads_are_safepoints_enabled ())
 		mono_polling_required = 0;
+}
+
+void
+mono_threads_enter_no_safepoints_region (const char *func)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	mono_threads_transition_begin_no_safepoints (mono_thread_info_current (), func);
+}
+
+void
+mono_threads_exit_no_safepoints_region (const char *func)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+	mono_threads_transition_end_no_safepoints (mono_thread_info_current (), func);
+}
+
+void
+mono_thread_set_coop_aware (void)
+{
+	MONO_ENTER_GC_UNSAFE;
+	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	if (info)
+		/* NOTE, this flag should only be changed while in unsafe mode. */
+		/* It will make sure we won't get an async preemptive suspend */
+		/* request against this thread while in the process of changing the flag */
+		/* affecting the threads suspend/resume behavior. */
+		mono_atomic_store_i32 (&(info->coop_aware_thread), TRUE);
+	MONO_EXIT_GC_UNSAFE;
+}
+
+mono_bool
+mono_thread_get_coop_aware (void)
+{
+	mono_bool result = FALSE;
+	MONO_ENTER_GC_UNSAFE;
+	MonoThreadInfo *info = mono_thread_info_current_unchecked ();
+	if (info)
+		result = (mono_bool)mono_atomic_load_i32 (&(info->coop_aware_thread));
+	MONO_EXIT_GC_UNSAFE;
+
+	return result;
 }

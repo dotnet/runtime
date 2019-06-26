@@ -226,7 +226,7 @@ write_all (int fd, const void *vbuf, size_t n)
 	return nwritten;
 }
 
-#ifndef G_OS_WIN32
+#if !defined(G_OS_WIN32) && defined(HAVE_GETDTABLESIZE)
 int
 eg_getdtablesize (void)
 {

@@ -16,6 +16,7 @@
 #if defined(USE_POSIX_BACKEND)
 
 #include <errno.h>
+#include <mono/utils/mono-errno.h>
 #include <signal.h>
 
 #ifdef HAVE_ANDROID_LEGACY_SIGNAL_INLINES_H
@@ -125,7 +126,7 @@ restart_signal_handler (int _dummy, siginfo_t *_info, void *context)
 
 	info = mono_thread_info_current ();
 	info->signal = restart_signal_num;
-	errno = old_errno;
+	mono_set_errno (old_errno);
 }
 
 static void
@@ -219,7 +220,7 @@ suspend_signal_handler (int _dummy, siginfo_t *info, void *context)
 
 done:
 	mono_hazard_pointer_restore_for_signal_handler (hp_save_index);
-	errno = old_errno;
+	mono_set_errno (old_errno);
 }
 
 void

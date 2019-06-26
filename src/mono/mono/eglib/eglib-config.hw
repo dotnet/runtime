@@ -45,8 +45,10 @@ typedef int pid_t;
 #define F_SETFD 1
 #define FD_CLOEXEC 1
 
+#ifndef __cplusplus
 #undef inline
 #define inline __inline
+#endif
 
 #define strtok_r strtok_s
 

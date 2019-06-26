@@ -9,6 +9,8 @@
 
 #include "mono-compiler.h"
 #include "mono-logger-internals.h"
+#include <mono/utils/mono-threads-debug.h>
+
 
 typedef struct {
 	GLogLevelFlags	level;
@@ -526,4 +528,45 @@ mono_trace_set_printerr_handler (MonoPrintCallback callback)
 	g_assert (callback);
 	printerr_callback = callback;
 	g_set_printerr_handler (printerr_handler);
+}
+
+static gchar
+conv_ascii_char (gchar s)
+{
+	if (s < 0x20)
+		return '.';
+	if (s > 0x7e)
+		return '.';
+	return s;
+}
+
+/* No memfree because only called during crash */
+void
+mono_dump_mem (gpointer d, int len)
+{
+	guint8 *data = (guint8 *) d;
+
+	for (int off = 0; off < len; off += 0x10) {
+		g_async_safe_printf("%p  ", data + off);
+
+		for (int i = 0; i < 0x10; i++) {
+			if ((i + off) >= len) {
+				g_async_safe_printf("%s", "   ");
+			} else {
+				g_async_safe_printf("%02x ", data [off + i]);
+			}
+		}
+
+		g_async_safe_printf(" ");
+
+		for (int i = 0; i < 0x10; i++) {
+			if ((i + off) >= len) {
+				g_async_safe_printf("%s", " ");
+			} else {
+				g_async_safe_printf("%c", conv_ascii_char (data [off + i]));
+			}
+		}
+
+		g_async_safe_printf ("\n");
+	}
 }

@@ -32,6 +32,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/loader.h>
+#include <mono/metadata/loader-internals.h>
 #include <mono/metadata/class-init.h>
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
@@ -75,6 +76,11 @@ static gint32 signatures_size;
  */
 static MonoNativeTlsKey loader_lock_nest_id;
 
+#if ENABLE_NETCORE
+static int pinvoke_search_directories_count;
+static char **pinvoke_search_directories;
+#endif
+
 static void dllmap_cleanup (void);
 static void cached_module_cleanup(void);
 
@@ -84,6 +90,7 @@ static void dllmap_insert_image (MonoImage *assembly, const char *dll, const cha
 
 /* Class lazy loading functions */
 GENERATE_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppDomainUnloadedException")
+GENERATE_TRY_GET_CLASS_WITH_CACHE (appdomain_unloaded_exception, "System", "AppDomainUnloadedException")
 
 static void
 global_loader_data_lock (void)
@@ -239,17 +246,17 @@ field_from_memberref (MonoImage *image, guint32 token, MonoClass **retklass,
 	 */
 	sig_type = (MonoType *)find_cached_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE]);
 	if (!sig_type) {
-		ERROR_DECL_VALUE (inner_error);
-		sig_type = mono_metadata_parse_type_checked (image, NULL, 0, FALSE, ptr, &ptr, &inner_error);
+		ERROR_DECL (inner_error);
+		sig_type = mono_metadata_parse_type_checked (image, NULL, 0, FALSE, ptr, &ptr, inner_error);
 		if (sig_type == NULL) {
-			mono_error_set_field_missing (error, klass, fname, NULL, "Could not parse field signature %08x due to: %s", token, mono_error_get_message (&inner_error));
-			mono_error_cleanup (&inner_error);
+			mono_error_set_field_missing (error, klass, fname, NULL, "Could not parse field signature %08x due to: %s", token, mono_error_get_message (inner_error));
+			mono_error_cleanup (inner_error);
 			return NULL;
 		}
 		sig_type = (MonoType *)cache_memberref_sig (image, cols [MONO_MEMBERREF_SIGNATURE], sig_type);
 	}
 
-	mono_class_init (klass); /*FIXME is this really necessary?*/
+	mono_class_init_internal (klass); /*FIXME is this really necessary?*/
 	if (retklass)
 		*retklass = klass;
 	field = mono_class_get_field_from_name_full (klass, fname, sig_type);
@@ -289,9 +296,9 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 		MonoClass *handle_class;
 
 		*retklass = NULL;
-		ERROR_DECL_VALUE (inner_error);
-		result = (MonoClassField *)mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context, &inner_error);
-		mono_error_cleanup (&inner_error);
+		ERROR_DECL (inner_error);
+		result = (MonoClassField *)mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context, inner_error);
+		mono_error_cleanup (inner_error);
 		// This checks the memberref type as well
 		if (!result || handle_class != mono_defaults.fieldhandle_class) {
 			mono_error_set_bad_image (error, image, "Bad field token 0x%08x", token);
@@ -318,15 +325,14 @@ mono_field_from_token_checked (MonoImage *image, guint32 token, MonoClass **retk
 		if (!k)
 			return NULL;
 
-		mono_class_init (k);
+		mono_class_init_internal (k);
 		if (retklass)
 			*retklass = k;
 		if (mono_class_has_failure (k)) {
-			ERROR_DECL_VALUE (causedby_error);
-			error_init (&causedby_error);
-			mono_error_set_for_class_failure (&causedby_error, k);
-			mono_error_set_bad_image (error, image, "Could not resolve field token 0x%08x, due to: %s", token, mono_error_get_message (&causedby_error));
-			mono_error_cleanup (&causedby_error);
+			ERROR_DECL (causedby_error);
+			mono_error_set_for_class_failure (causedby_error, k);
+			mono_error_set_bad_image (error, image, "Could not resolve field token 0x%08x, due to: %s", token, mono_error_get_message (causedby_error));
+			mono_error_cleanup (causedby_error);
 		} else {
 			field = mono_class_get_field (k, token);
 			if (!field) {
@@ -469,7 +475,7 @@ find_method (MonoClass *in_class, MonoClass *ic, const char* name, MonoMethodSig
 	MonoClass *initial_class = in_class;
 
 	error_init (error);
-	is_interface = MONO_CLASS_IS_INTERFACE (in_class);
+	is_interface = MONO_CLASS_IS_INTERFACE_INTERNAL (in_class);
 
 	if (ic) {
 		class_name = mono_type_get_name_full (m_class_get_byval_arg (ic), MONO_TYPE_NAME_FORMAT_IL);
@@ -842,7 +848,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 	}
 
 	g_assert (klass);
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 
 	sig_idx = cols [MONO_MEMBERREF_SIGNATURE];
 
@@ -878,7 +884,7 @@ method_from_memberref (MonoImage *image, guint32 idx, MonoGenericContext *typesp
 			break;
 		}
 
-		/* we're an array and we created these methods already in klass in mono_class_init () */
+		/* we're an array and we created these methods already in klass in mono_class_init_internal () */
 		method = mono_method_search_in_array_class (klass, mname, sig);
 		break;
 	}
@@ -1187,11 +1193,114 @@ is_absolute_path (const char *path)
 	return g_path_is_absolute (path);
 }
 
+typedef enum {
+	LOOKUP_PINVOKE_ERR_OK = 0, /* No error */
+	LOOKUP_PINVOKE_ERR_NO_LIB, /* DllNotFoundException */
+	LOOKUP_PINVOKE_ERR_NO_SYM, /* EntryPointNotFoundException */
+} MonoLookupPInvokeErr;
+
+/* We should just use a MonoError, but mono_lookup_pinvoke_call has this legacy
+ * error reporting mechanism where it returns an exception class and a string
+ * message.  So instead we return an error code and message, and for internal
+ * callers convert it to a MonoError.
+ *
+ * Don't expose this type to the runtime.  It's just an implementation
+ * detail for backward compatability.
+ */
+typedef struct MonoLookupPInvokeStatus {
+	MonoLookupPInvokeErr err_code;
+	char *err_arg;
+} MonoLookupPInvokeStatus;
+
+static gpointer
+lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_out);
+
+static void
+pinvoke_probe_convert_status_for_api (MonoLookupPInvokeStatus *status, const char **exc_class, const char **exc_arg)
+{
+	if (!exc_class)
+		return;
+	switch (status->err_code) {
+	case LOOKUP_PINVOKE_ERR_OK:
+		*exc_class = NULL;
+		*exc_arg = NULL;
+		break;
+	case LOOKUP_PINVOKE_ERR_NO_LIB:
+		*exc_class = "DllNotFoundException";
+		*exc_arg = status->err_arg;
+		status->err_arg = NULL;
+		break;
+	case LOOKUP_PINVOKE_ERR_NO_SYM:
+		*exc_class = "EntryPointNotFoundException";
+		*exc_arg = status->err_arg;
+		status->err_arg = NULL;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
+static void
+pinvoke_probe_convert_status_to_error (MonoLookupPInvokeStatus *status, MonoError *error)
+{
+	/* Note: this has to return a MONO_ERROR_GENERIC because mono_mb_emit_exception_for_error only knows how to decode generic errors. */
+	switch (status->err_code) {
+	case LOOKUP_PINVOKE_ERR_OK:
+		return;
+	case LOOKUP_PINVOKE_ERR_NO_LIB:
+		mono_error_set_generic_error (error, "System", "DllNotFoundException", "%s", status->err_arg);
+		g_free (status->err_arg);
+		status->err_arg = NULL;
+		break;
+	case LOOKUP_PINVOKE_ERR_NO_SYM:
+		mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%s", status->err_arg);
+		g_free (status->err_arg);
+		status->err_arg = NULL;
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+}
+
 /**
  * mono_lookup_pinvoke_call:
  */
 gpointer
 mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char **exc_arg)
+{
+	gpointer result;
+	MONO_ENTER_GC_UNSAFE;
+	MonoLookupPInvokeStatus status;
+	memset (&status, 0, sizeof (status));
+	result = lookup_pinvoke_call_impl (method, &status);
+	pinvoke_probe_convert_status_for_api (&status, exc_class, exc_arg);
+	MONO_EXIT_GC_UNSAFE;
+	return result;
+}
+
+static MonoDl*
+pinvoke_probe_for_module (MonoImage *image, const char*new_scope, const char *import, char **found_name_out, char **error_msg_out);
+
+static MonoDl*
+pinvoke_probe_for_module_relative_directories (MonoImage *image, const char *file_name, char **found_name_out);
+
+static gpointer
+pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char *import, char **error_msg_out);
+
+gpointer
+mono_lookup_pinvoke_call_internal (MonoMethod *method, MonoError *error)
+{
+	gpointer result;
+	MonoLookupPInvokeStatus status;
+	memset (&status, 0, sizeof (status));
+	result = lookup_pinvoke_call_impl (method, &status);
+	if (status.err_code)
+		pinvoke_probe_convert_status_to_error (&status, error);
+	return result;
+}
+
+gpointer
+lookup_pinvoke_call_impl (MonoMethod *method, MonoLookupPInvokeStatus *status_out)
 {
 	MonoImage *image = m_class_get_image (method->klass);
 	MonoMethodPInvoke *piinfo = (MonoMethodPInvoke *)method;
@@ -1204,18 +1313,14 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	const char *orig_scope;
 	const char *new_scope;
 	char *error_msg;
-	char *full_name, *file_name, *found_name = NULL;
-	int i,j;
+	char *found_name = NULL;
 	MonoDl *module = NULL;
 	gboolean cached = FALSE;
 	gpointer addr = NULL;
 
 	g_assert (method->flags & METHOD_ATTRIBUTE_PINVOKE_IMPL);
 
-	if (exc_class) {
-		*exc_class = NULL;
-		*exc_arg = NULL;
-	}
+	g_assert (status_out);
 
 	if (piinfo->addr)
 		return piinfo->addr;
@@ -1245,7 +1350,15 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		orig_scope = mono_metadata_string_heap (image, scope_token);
 	}
 
+#ifndef ENABLE_NETCORE
+	// FIXME: The dllmap remaps System.Native to mono-native
 	mono_dllmap_lookup (image, orig_scope, import, &new_scope, &import);
+#else
+	/* AK: FIXME: dllmap, above doesn't strdup the results, so these leak
+	 * since there's no free() */
+	new_scope = g_strdup (orig_scope);
+	import = g_strdup (import);
+#endif
 
 	if (!module) {
 		mono_image_lock (image);
@@ -1261,6 +1374,138 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		if (found_name)
 			found_name = g_strdup (found_name);
 	}
+
+	if (!module)
+		module = pinvoke_probe_for_module (image, new_scope, import, &found_name, &error_msg);
+
+	if (!module) {
+		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DLLIMPORT,
+				"DllImport unable to load library '%s'.",
+				error_msg);
+		g_free (error_msg);
+
+		status_out->err_code = LOOKUP_PINVOKE_ERR_NO_LIB;
+		status_out->err_arg = g_strdup (new_scope);
+		return NULL;
+	}
+
+	if (!cached) {
+		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+					"DllImport loaded library '%s'.", found_name);
+		mono_image_lock (image);
+		if (!g_hash_table_lookup (image->pinvoke_scopes, new_scope)) {
+			g_hash_table_insert (image->pinvoke_scopes, g_strdup (new_scope), module);
+			g_hash_table_insert (image->pinvoke_scope_filenames, g_strdup (new_scope), g_strdup (found_name));
+		}
+		mono_image_unlock (image);
+	}
+
+	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
+				"DllImport searching in: '%s' ('%s').", new_scope, found_name);
+	g_free (found_name);
+
+	addr = pinvoke_probe_for_symbol (module, piinfo, import, &error_msg);
+
+	if (!addr) {
+		g_free (error_msg);
+		status_out->err_code = LOOKUP_PINVOKE_ERR_NO_SYM;
+		status_out->err_arg = g_strdup (import);
+		return NULL;
+	}
+	piinfo->addr = addr;
+	return addr;
+}
+
+/**
+ * pinvoke_probe_transform_path:
+ *
+ * Try transforming the library path given in \p new_scope in different ways
+ * depending on \p phase
+ *
+ * \returns \c TRUE if a transformation was applied and the transformed path
+ * components are written to the out arguments, or \c FALSE if a transformation
+ * did not apply.
+ */
+static gboolean
+pinvoke_probe_transform_path (const char *new_scope, int phase, char **file_name_out, char **base_name_out, char **dir_name_out, gboolean *is_absolute_out)
+{
+	char *file_name = NULL, *base_name = NULL, *dir_name = NULL;
+	gboolean changed = FALSE;
+	gboolean is_absolute = is_absolute_path (new_scope);
+	switch (phase) {
+	case 0:
+		/* Try the original name */
+		file_name = g_strdup (new_scope);
+		changed = TRUE;
+		break;
+	case 1:
+		/* Try trimming the .dll extension */
+		if (strstr (new_scope, ".dll") == (new_scope + strlen (new_scope) - 4)) {
+			file_name = g_strdup (new_scope);
+			file_name [strlen (new_scope) - 4] = '\0';
+			changed = TRUE;
+		}
+		break;
+	case 2:
+		if (is_absolute) {
+			dir_name = g_path_get_dirname (new_scope);
+			base_name = g_path_get_basename (new_scope);
+			if (strstr (base_name, "lib") != base_name) {
+				char *tmp = g_strdup_printf ("lib%s", base_name);       
+				g_free (base_name);
+				base_name = tmp;
+				file_name = g_strdup_printf ("%s%s%s", dir_name, G_DIR_SEPARATOR_S, base_name);
+				changed = TRUE;
+			}
+		} else if (strstr (new_scope, "lib") != new_scope) {
+			file_name = g_strdup_printf ("lib%s", new_scope);
+			changed = TRUE;
+		}
+		break;
+	case 3:
+		if (!is_absolute && mono_dl_get_system_dir ()) {
+			dir_name = (char*)mono_dl_get_system_dir ();
+			file_name = g_path_get_basename (new_scope);
+			base_name = NULL;
+			changed = TRUE;
+		}
+		break;
+	default:
+#ifndef TARGET_WIN32
+		if (!g_ascii_strcasecmp ("user32.dll", new_scope) ||
+		    !g_ascii_strcasecmp ("kernel32.dll", new_scope) ||
+		    !g_ascii_strcasecmp ("user32", new_scope) ||
+		    !g_ascii_strcasecmp ("kernel", new_scope)) {
+			file_name = g_strdup ("libMonoSupportW.so");
+			changed = TRUE;
+		}
+#endif
+		break;
+	}
+	if (changed && is_absolute) {
+		if (!dir_name)
+			dir_name = g_path_get_dirname (file_name);
+		if (!base_name)
+			base_name = g_path_get_basename (file_name);
+	}
+	*file_name_out = file_name;
+	*base_name_out = base_name;
+	*dir_name_out = dir_name;
+	*is_absolute_out = is_absolute;
+	return changed;
+}
+
+static MonoDl*
+pinvoke_probe_for_module (MonoImage *image, const char*new_scope, const char *import, char **found_name_out, char **error_msg_out)
+{
+	char *full_name, *file_name;
+	char *error_msg = NULL;
+	char *found_name = NULL;
+	int i;
+	MonoDl *module = NULL;
+
+	g_assert (found_name_out);
+	g_assert (error_msg_out);
 
 	if (!module) {
 		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
@@ -1279,67 +1524,11 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	 */
 	for (i = 0; i < 5; ++i) {
 		char *base_name = NULL, *dir_name = NULL;
-		gboolean is_absolute = is_absolute_path (new_scope);
-		
-		switch (i) {
-		case 0:
-			/* Try the original name */
-			file_name = g_strdup (new_scope);
-			break;
-		case 1:
-			/* Try trimming the .dll extension */
-			if (strstr (new_scope, ".dll") == (new_scope + strlen (new_scope) - 4)) {
-				file_name = g_strdup (new_scope);
-				file_name [strlen (new_scope) - 4] = '\0';
-			}
-			else
-				continue;
-			break;
-		case 2:
-			if (is_absolute) {
-				dir_name = g_path_get_dirname (new_scope);
-				base_name = g_path_get_basename (new_scope);
-				if (strstr (base_name, "lib") != base_name) {
-					char *tmp = g_strdup_printf ("lib%s", base_name);       
-					g_free (base_name);
-					base_name = tmp;
-					file_name = g_strdup_printf ("%s%s%s", dir_name, G_DIR_SEPARATOR_S, base_name);
-					break;
-				}
-			} else if (strstr (new_scope, "lib") != new_scope) {
-				file_name = g_strdup_printf ("lib%s", new_scope);
-				break;
-			}
+		gboolean is_absolute;
+
+		gboolean changed = pinvoke_probe_transform_path (new_scope, i, &file_name, &base_name, &dir_name, &is_absolute);
+		if (!changed)
 			continue;
-		case 3:
-			if (!is_absolute && mono_dl_get_system_dir ()) {
-				dir_name = (char*)mono_dl_get_system_dir ();
-				file_name = g_path_get_basename (new_scope);
-				base_name = NULL;
-			} else
-				continue;
-			break;
-		default:
-#ifndef TARGET_WIN32
-			if (!g_ascii_strcasecmp ("user32.dll", new_scope) ||
-			    !g_ascii_strcasecmp ("kernel32.dll", new_scope) ||
-			    !g_ascii_strcasecmp ("user32", new_scope) ||
-			    !g_ascii_strcasecmp ("kernel", new_scope)) {
-				file_name = g_strdup ("libMonoSupportW.so");
-			} else
-#endif
-				    continue;
-#ifndef TARGET_WIN32
-			break;
-#endif
-		}
-		
-		if (is_absolute) {
-			if (!dir_name)
-				dir_name = g_path_get_dirname (file_name);
-			if (!base_name)
-				base_name = g_path_get_basename (file_name);
-		}
 		
 		if (!module && is_absolute) {
 			module = cached_module_load (file_name, MONO_DL_LAZY, &error_msg);
@@ -1354,85 +1543,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		}
 
 		if (!module && !is_absolute) {
-			void *iter;
-			char *mdirname;
-
-			for (j = 0; j < 3; ++j) {
-				iter = NULL;
-				mdirname = NULL;
-				switch (j) {
-					case 0:
-						mdirname = g_path_get_dirname (image->name);
-						break;
-					case 1: /* @executable_path@/../lib */
-					{
-						char buf [4096];
-						int binl;
-						binl = mono_dl_get_executable_path (buf, sizeof (buf));
-						if (binl != -1) {
-							char *base, *newbase;
-							char *resolvedname;
-							buf [binl] = 0;
-							resolvedname = mono_path_resolve_symlinks (buf);
-
-							base = g_path_get_dirname (resolvedname);
-							newbase = g_path_get_dirname(base);
-							mdirname = g_strdup_printf ("%s/lib", newbase);
-
-							g_free (resolvedname);
-							g_free (base);
-							g_free (newbase);
-						}
-						break;
-					}
-#ifdef __MACH__
-					case 2: /* @executable_path@/../Libraries */
-					{
-						char buf [4096];
-						int binl;
-						binl = mono_dl_get_executable_path (buf, sizeof (buf));
-						if (binl != -1) {
-							char *base, *newbase;
-							char *resolvedname;
-							buf [binl] = 0;
-							resolvedname = mono_path_resolve_symlinks (buf);
-
-							base = g_path_get_dirname (resolvedname);
-							newbase = g_path_get_dirname(base);
-							mdirname = g_strdup_printf ("%s/Libraries", newbase);
-
-							g_free (resolvedname);
-							g_free (base);
-							g_free (newbase);
-						}
-						break;
-					}
-#endif
-				}
-
-				if (!mdirname)
-					continue;
-
-				while ((full_name = mono_dl_build_path (mdirname, file_name, &iter))) {
-					module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
-					if (!module) {
-						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-							"DllImport error loading library '%s': '%s'.",
-									full_name, error_msg);
-						g_free (error_msg);
-					} else {
-						found_name = g_strdup (full_name);
-					}
-					g_free (full_name);
-					if (module)
-						break;
-
-				}
-				g_free (mdirname);
-				if (module)
-					break;
-			}
-
+			module = pinvoke_probe_for_module_relative_directories (image, file_name, &found_name);
 		}
 
 		if (!module) {
@@ -1475,35 +1586,156 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 			break;
 	}
 
-	if (!module) {
-		mono_trace (G_LOG_LEVEL_WARNING, MONO_TRACE_DLLIMPORT,
-				"DllImport unable to load library '%s'.",
-				error_msg);
-		g_free (error_msg);
+	*found_name_out = found_name;
+	*error_msg_out = error_msg;
+	return module;
+}
 
-		if (exc_class) {
-			*exc_class = "DllNotFoundException";
-			*exc_arg = new_scope;
+#if ENABLE_NETCORE
+void
+mono_set_pinvoke_search_directories (int dir_count, char **dirs)
+{
+	pinvoke_search_directories_count = dir_count;
+	pinvoke_search_directories = dirs;
+}
+#endif
+
+static MonoDl*
+pinvoke_probe_for_module_in_directory (const char *mdirname, const char *file_name, char **found_name_out)
+{
+	void *iter = NULL;
+	char *full_name;
+	MonoDl* module = NULL;
+
+	while ((full_name = mono_dl_build_path (mdirname, file_name, &iter)) && module == NULL) {
+		char *error_msg;
+		module = cached_module_load (full_name, MONO_DL_LAZY, &error_msg);
+		if (!module) {
+			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT, "DllImport error loading library '%s': '%s'.", full_name, error_msg);
+			g_free (error_msg);
+		} else {
+			*found_name_out = g_strdup (full_name);
 		}
-		return NULL;
+		g_free (full_name);
+	}
+	g_free (full_name);
+
+	return module;
+}
+
+static MonoDl*
+pinvoke_probe_for_module_relative_directories (MonoImage *image, const char *file_name, char **found_name_out)
+{
+	char *found_name = NULL;
+	MonoDl* module = NULL;
+
+	g_assert (found_name_out);
+
+#if ENABLE_NETCORE
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DLLIMPORT, "netcore DllImport handler: wanted '%s'", file_name);
+
+	// Search in predefined directories first
+	for (int j = 0; j < pinvoke_search_directories_count && module == NULL; ++j) {
+		module = pinvoke_probe_for_module_in_directory (pinvoke_search_directories[j], file_name, &found_name);
 	}
 
-	if (!cached) {
-		mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-					"DllImport loaded library '%s'.", found_name);
-		mono_image_lock (image);
-		if (!g_hash_table_lookup (image->pinvoke_scopes, new_scope)) {
-			g_hash_table_insert (image->pinvoke_scopes, g_strdup (new_scope), module);
-			g_hash_table_insert (image->pinvoke_scope_filenames, g_strdup (new_scope), g_strdup (found_name));
-		}
-		mono_image_unlock (image);
+	// Fallback to image directory
+	if (module == NULL) {
+		// TODO: Check DefaultDllImportSearchPathsAttribute, NativeLibrary callback
+		char *mdirname = g_path_get_dirname (image->name);
+		if (mdirname)
+			module = pinvoke_probe_for_module_in_directory (mdirname, file_name, &found_name);
+		g_free (mdirname);
 	}
+#else
+			for (int j = 0; j < 3; ++j) {
+				char *mdirname = NULL;
+				switch (j) {
+					case 0:
+						mdirname = g_path_get_dirname (image->name);
+						break;
+					case 1: /* @executable_path@/../lib */
+					{
+						char buf [4096];
+						int binl;
+						binl = mono_dl_get_executable_path (buf, sizeof (buf));
+						if (binl != -1) {
+							char *base, *newbase;
+							char *resolvedname;
+							buf [binl] = 0;
+							resolvedname = mono_path_resolve_symlinks (buf);
 
-	mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-				"DllImport searching in: '%s' ('%s').", new_scope, found_name);
-	g_free (found_name);
+							base = g_path_get_dirname (resolvedname);
+							newbase = g_path_get_dirname(base);
 
-#ifdef TARGET_WIN32
+							// On Android the executable for the application is going to be /system/bin/app_process{32,64} depending on
+							// the application's architecture. However, libraries for the different architectures live in different
+							// subdirectories of `/system`: `lib` for 32-bit apps and `lib64` for 64-bit ones. Thus appending `/lib` below
+							// will fail to load the DSO for a 64-bit app, even if it exists there, because it will have a different
+							// architecture. This is the cause of https://github.com/xamarin/xamarin-android/issues/2780 and the ifdef
+							// below is the fix.
+							mdirname = g_strdup_printf (
+#if defined(TARGET_ANDROID) && (defined(TARGET_ARM64) || defined(TARGET_AMD64))
+									"%s/lib64",
+#else
+									"%s/lib",
+#endif
+									newbase);
+							g_free (resolvedname);
+							g_free (base);
+							g_free (newbase);
+						}
+						break;
+					}
+#ifdef __MACH__
+					case 2: /* @executable_path@/../Libraries */
+					{
+						char buf [4096];
+						int binl;
+						binl = mono_dl_get_executable_path (buf, sizeof (buf));
+						if (binl != -1) {
+							char *base, *newbase;
+							char *resolvedname;
+							buf [binl] = 0;
+							resolvedname = mono_path_resolve_symlinks (buf);
+
+							base = g_path_get_dirname (resolvedname);
+							newbase = g_path_get_dirname(base);
+							mdirname = g_strdup_printf ("%s/Libraries", newbase);
+
+							g_free (resolvedname);
+							g_free (base);
+							g_free (newbase);
+						}
+						break;
+					}
+#endif
+				}
+
+				if (!mdirname)
+					continue;
+
+				module = pinvoke_probe_for_module_in_directory (mdirname, file_name, &found_name);
+				g_free (mdirname);
+				if (module)
+					break;
+			}
+#endif
+
+	*found_name_out = found_name;
+	return module;
+}
+
+
+static gpointer
+pinvoke_probe_for_symbol (MonoDl *module, MonoMethodPInvoke *piinfo, const char *import, char **error_msg_out)
+{
+	char *error_msg = NULL;
+	gpointer addr = NULL;
+
+	g_assert (error_msg_out);
+
+#ifdef HOST_WIN32
 	if (import && import [0] == '#' && isdigit (import [1])) {
 		char *end;
 		long id;
@@ -1519,30 +1751,19 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 	if (piinfo->piflags & PINVOKE_ATTRIBUTE_NO_MANGLE) {
 		error_msg = mono_dl_symbol (module, import, &addr); 
 	} else {
-		char *mangled_name = NULL, *mangled_name2 = NULL;
-		int mangle_charset;
-		int mangle_stdcall;
-		int mangle_param_count;
-#ifdef TARGET_WIN32
-		int param_count;
-#endif
-
 		/*
 		 * Search using a variety of mangled names
 		 */
-		for (mangle_charset = 0; mangle_charset <= 1; mangle_charset ++) {
-			for (mangle_stdcall = 0; mangle_stdcall <= 1; mangle_stdcall ++) {
-				gboolean need_param_count = FALSE;
-#ifdef TARGET_WIN32
-				if (mangle_stdcall > 0)
-					need_param_count = TRUE;
+		for (int mangle_stdcall = 0; mangle_stdcall <= 1 && addr == NULL; mangle_stdcall++) {
+#if HOST_WIN32 && HOST_X86
+			const int max_managle_param_count = (mangle_stdcall == 0) ? 0 : 256;
+#else
+			const int max_managle_param_count = 0;
 #endif
-				for (mangle_param_count = 0; mangle_param_count <= (need_param_count ? 256 : 0); mangle_param_count += 4) {
+			for (int mangle_charset = 0; mangle_charset <= 1 && addr == NULL; mangle_charset ++) {
+				for (int mangle_param_count = 0; mangle_param_count <= max_managle_param_count && addr == NULL; mangle_param_count += 4) {
 
-					if (addr)
-						continue;
-
-					mangled_name = (char*)import;
+					char *mangled_name = (char*)import;
 					switch (piinfo->piflags & PINVOKE_ATTRIBUTE_CHAR_SET_MASK) {
 					case PINVOKE_ATTRIBUTE_CHAR_SET_UNICODE:
 						/* Try the mangled name first */
@@ -1550,7 +1771,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 							mangled_name = g_strconcat (import, "W", NULL);
 						break;
 					case PINVOKE_ATTRIBUTE_CHAR_SET_AUTO:
-#ifdef TARGET_WIN32
+#ifdef HOST_WIN32
 						if (mangle_charset == 0)
 							mangled_name = g_strconcat (import, "W", NULL);
 #else
@@ -1567,43 +1788,44 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 						break;
 					}
 
-#ifdef TARGET_WIN32
-					if (mangle_param_count == 0)
-						param_count = mono_method_signature (method)->param_count * sizeof (gpointer);
-					else
-						/* Try brute force, since it would be very hard to compute the stack usage correctly */
-						param_count = mangle_param_count;
-
+#if HOST_WIN32 && HOST_X86
 					/* Try the stdcall mangled name */
 					/* 
 					 * gcc under windows creates mangled names without the underscore, but MS.NET
 					 * doesn't support it, so we doesn't support it either.
 					 */
-					if (mangle_stdcall == 1)
-						mangled_name2 = g_strdup_printf ("_%s@%d", mangled_name, param_count);
-					else
-						mangled_name2 = mangled_name;
-#else
-					mangled_name2 = mangled_name;
+					if (mangle_stdcall == 1) {
+						MonoMethod *method = &piinfo->method;
+						int param_count;
+						if (mangle_param_count == 0)
+							param_count = mono_method_signature_internal (method)->param_count * sizeof (gpointer);
+						else
+							/* Try brute force, since it would be very hard to compute the stack usage correctly */
+							param_count = mangle_param_count;
+
+						char *mangled_stdcall_name = g_strdup_printf ("_%s@%d", mangled_name, param_count);
+
+						if (mangled_name != import)
+							g_free (mangled_name);
+
+						mangled_name = mangled_stdcall_name;
+					}
 #endif
-
 					mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-								"Probing '%s'.", mangled_name2);
+								"Probing '%s'.", mangled_name);
 
-					error_msg = mono_dl_symbol (module, mangled_name2, &addr);
+					error_msg = mono_dl_symbol (module, mangled_name, &addr);
 
 					if (addr)
 						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-									"Found as '%s'.", mangled_name2);
+									"Found as '%s'.", mangled_name);
 					else
 						mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_DLLIMPORT,
-									"Could not find '%s' due to '%s'.", mangled_name2, error_msg);
+									"Could not find '%s' due to '%s'.", mangled_name, error_msg);
 
 					g_free (error_msg);
 					error_msg = NULL;
 
-					if (mangled_name != mangled_name2)
-						g_free (mangled_name2);
 					if (mangled_name != import)
 						g_free (mangled_name);
 				}
@@ -1611,15 +1833,7 @@ mono_lookup_pinvoke_call (MonoMethod *method, const char **exc_class, const char
 		}
 	}
 
-	if (!addr) {
-		g_free (error_msg);
-		if (exc_class) {
-			*exc_class = "EntryPointNotFoundException";
-			*exc_arg = import;
-		}
-		return NULL;
-	}
-	piinfo->addr = addr;
+	*error_msg_out = error_msg;
 	return addr;
 }
 
@@ -1644,7 +1858,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		MonoClass *handle_class;
 
 		result = (MonoMethod *)mono_lookup_dynamic_token_class (image, token, TRUE, &handle_class, context, error);
-		mono_error_assert_ok (error);
+		return_val_if_nok (error, NULL);
 
 		// This checks the memberref type as well
 		if (result && handle_class != mono_defaults.methodhandle_class) {
@@ -1703,6 +1917,14 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 	result->token = token;
 	result->name = mono_metadata_string_heap (image, cols [3]);
 
+	/* If a method is abstract and marked as an icall, silently ignore the
+	 * icall attribute so that we don't later emit a warning that the icall
+	 * can't be found.
+	 */
+	if ((result->flags & METHOD_ATTRIBUTE_ABSTRACT) &&
+	    (result->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL))
+		result->iflags &= ~METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL;
+
 	if (!sig) /* already taken from the methodref */
 		sig = mono_metadata_blob_heap (image, cols [4]);
 	/* size = */ mono_metadata_decode_blob_size (sig, &sig);
@@ -1733,7 +1955,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 
 #ifdef TARGET_WIN32
 		/* IJW is P/Invoke with a predefined function pointer. */
-		if (image->is_module_handle && (cols [1] & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
+		if (m_image_is_module_handle (image) && (cols [1] & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
 			piinfo->addr = mono_image_rva_map (image, cols [0]);
 			g_assert (piinfo->addr);
 		}
@@ -1838,7 +2060,7 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 
 	error_init (error);
 
-	if (!mono_class_is_assignable_from (base_class, constrained_class)) {
+	if (!mono_class_is_assignable_from_internal (base_class, constrained_class)) {
 		char *base_class_name = mono_type_get_full_name (base_class);
 		char *constrained_class_name = mono_type_get_full_name (constrained_class);
 		mono_error_set_invalid_operation (error, "constrained call: %s is not assignable from %s", base_class_name, constrained_class_name);
@@ -1850,7 +2072,7 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 	/* If the constraining class is actually an interface, we don't learn
 	 * anything new by constraining.
 	 */
-	if (MONO_CLASS_IS_INTERFACE (constrained_class))
+	if (MONO_CLASS_IS_INTERFACE_INTERNAL (constrained_class))
 		return method;
 
 	mono_class_setup_vtable (base_class);
@@ -1879,7 +2101,7 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 		}
 	}
 	int vtable_slot = 0;
-	if (!MONO_CLASS_IS_INTERFACE (base_class)) {
+	if (!MONO_CLASS_IS_INTERFACE_INTERNAL (base_class)) {
 		/*if the base class isn't an interface and the method isn't
 		 * virtual, there's nothing to do, we're already on the method
 		 * we want to call. */
@@ -1896,6 +2118,8 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 			return NULL;
 		}
 	} else {
+		if ((method->flags & METHOD_ATTRIBUTE_VIRTUAL) == 0)
+			return method;
 		mono_class_setup_vtable (constrained_class);
 		if (mono_class_has_failure (constrained_class)) {
 			mono_error_set_for_class_failure (error, constrained_class);
@@ -1919,7 +2143,7 @@ get_method_constrained (MonoImage *image, MonoMethod *method, MonoClass *constra
 	}
 	g_assert (res != NULL);
 	if (inflated_generic_method) {
-		g_assert (res->is_generic);
+		g_assert (res->is_generic || res->is_inflated);
 		res = mono_class_inflate_generic_method_checked (res, &inflated_method_ctx, error);
 		return_val_if_nok (error, NULL);
 	}
@@ -2023,7 +2247,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	if (method->is_inflated)
 		method = ((MonoMethodInflated *) method)->declaring;
 
-	signature = mono_method_signature (method);
+	signature = mono_method_signature_internal (method);
 	/*FIXME this check is somewhat redundant since the caller usally will have to get the signature to figure out the
 	  number of arguments and allocate a properly sized array. */
 	if (signature == NULL)
@@ -2039,7 +2263,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 	if (m_class_get_rank (klass))
 		return;
 
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 
 	MonoImage *klass_image = m_class_get_image (klass);
 	if (image_is_dynamic (klass_image)) {
@@ -2047,7 +2271,7 @@ mono_method_get_param_names (MonoMethod *method, const char **names)
 			(MonoReflectionMethodAux *)g_hash_table_lookup (
 				((MonoDynamicImage*)m_class_get_image (method->klass))->method_aux_hash, method);
 		if (method_aux && method_aux->param_names) {
-			for (i = 0; i < mono_method_signature (method)->param_count; ++i)
+			for (i = 0; i < mono_method_signature_internal (method)->param_count; ++i)
 				if (method_aux->param_names [i + 1])
 					names [i] = method_aux->param_names [i + 1];
 		}
@@ -2100,7 +2324,7 @@ mono_method_get_param_token (MonoMethod *method, int index)
 	MonoTableInfo *methodt;
 	guint32 idx;
 
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 
 	MonoImage *klass_image = m_class_get_image (klass);
 	g_assert (!image_is_dynamic (klass_image));
@@ -2133,7 +2357,7 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	MonoMethodSignature *signature;
 	guint32 idx;
 
-	signature = mono_method_signature (method);
+	signature = mono_method_signature_internal (method);
 	g_assert (signature); /*FIXME there is no way to signal error from this function*/
 
 	for (i = 0; i < signature->param_count + 1; ++i)
@@ -2160,7 +2384,7 @@ mono_method_get_marshal_info (MonoMethod *method, MonoMarshalSpec **mspecs)
 	if (method->dynamic)
 		return;
 
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 
 	MonoImage *klass_image = m_class_get_image (klass);
 	methodt = &klass_image->tables [MONO_TABLE_METHOD];
@@ -2208,14 +2432,14 @@ mono_method_has_marshal_info (MonoMethod *method)
 				((MonoDynamicImage*)m_class_get_image (method->klass))->method_aux_hash, method);
 		MonoMarshalSpec **dyn_specs = method_aux->param_marshall;
 		if (dyn_specs) {
-			for (i = 0; i < mono_method_signature (method)->param_count + 1; ++i)
+			for (i = 0; i < mono_method_signature_internal (method)->param_count + 1; ++i)
 				if (dyn_specs [i])
 					return TRUE;
 		}
 		return FALSE;
 	}
 
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 
 	methodt = &m_class_get_image (klass)->tables [MONO_TABLE_METHOD];
 	paramt = &m_class_get_image (klass)->tables [MONO_TABLE_PARAM];
@@ -2268,6 +2492,7 @@ stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer data)
 	case FRAME_TYPE_MANAGED_TO_NATIVE:
 	case FRAME_TYPE_TRAMPOLINE:
 	case FRAME_TYPE_INTERP_TO_MANAGED:
+	case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
 	case FRAME_TYPE_INTERP:
@@ -2313,6 +2538,7 @@ async_stack_walk_adapter (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer 
 	case FRAME_TYPE_MANAGED_TO_NATIVE:
 	case FRAME_TYPE_TRAMPOLINE:
 	case FRAME_TYPE_INTERP_TO_MANAGED:
+	case FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX:
 		return FALSE;
 	case FRAME_TYPE_MANAGED:
 	case FRAME_TYPE_INTERP:
@@ -2468,7 +2694,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 	if (m->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) m;
 		/* the lock is recursive */
-		signature = mono_method_signature (imethod->declaring);
+		signature = mono_method_signature_internal (imethod->declaring);
 		signature = inflate_generic_signature_checked (m_class_get_image (imethod->declaring->klass), signature, mono_method_get_context (m), error);
 		if (!mono_error_ok (error))
 			return NULL;
@@ -2600,22 +2826,33 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 }
 
 /**
+ * mono_method_signature_internal:
+ * \returns the signature of the method \p m. On failure, returns NULL.
+ */
+MonoMethodSignature*
+mono_method_signature_internal (MonoMethod *m)
+{
+	ERROR_DECL (error);
+	MonoMethodSignature *sig = mono_method_signature_checked (m, error);
+	if (sig)
+		return sig;
+	char *type_name = mono_type_get_full_name (m->klass);
+	g_warning ("Could not load signature of %s:%s due to: %s", type_name, m->name, mono_error_get_message (error));
+	g_free (type_name);
+	mono_error_cleanup (error);
+	return NULL;
+}
+
+/**
  * mono_method_signature:
  * \returns the signature of the method \p m. On failure, returns NULL.
  */
 MonoMethodSignature*
 mono_method_signature (MonoMethod *m)
 {
-	ERROR_DECL (error);
 	MonoMethodSignature *sig;
 	MONO_ENTER_GC_UNSAFE;
-	sig = mono_method_signature_checked (m, error);
-	if (!sig) {
-		char *type_name = mono_type_get_full_name (m->klass);
-		g_warning ("Could not load signature of %s:%s due to: %s", type_name, m->name, mono_error_get_message (error));
-		g_free (type_name);
-		mono_error_cleanup (error);
-	}
+	sig = mono_method_signature_internal (m);
 	MONO_EXIT_GC_UNSAFE;
 	return sig;
 }
@@ -2673,7 +2910,10 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	// FIXME: for internal callers maybe it makes sense to do this check at the call site, not
 	// here?
 	if (mono_method_has_no_body (method)) {
-		mono_error_set_bad_image (error, img, "Method has no body");
+		if (method->is_reabstracted == 1)
+			mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%s", method->name);
+		else
+			mono_error_set_bad_image (error, img, "Method has no body");
 		return NULL;
 	}
 

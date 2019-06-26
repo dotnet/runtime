@@ -18,18 +18,19 @@
 #include <mono/metadata/environment.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/exception-internals.h>
-
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/appdomain.h>
+#include <mono/metadata/domain-internals.h>
 #include <mono/metadata/mono-debug.h>
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <string.h>
-
 #ifdef HAVE_EXECINFO_H
 #include <execinfo.h>
 #endif
+#include "class-init.h"
+#include "icall-decl.h"
 
 static MonoUnhandledExceptionFunc unhandled_exception_hook = NULL;
 static gpointer unhandled_exception_hook_data = NULL;
@@ -102,14 +103,14 @@ mono_exception_new_by_name_domain (MonoDomain *domain, MonoImage *image,
 	goto_if_nok (error, return_null);
 
 	if (domain != caller_domain)
-		mono_domain_set_internal (domain);
+		mono_domain_set_internal_with_options (domain, TRUE);
 
 	mono_runtime_object_init_handle (o, error);
 	mono_error_assert_ok (error);
 
 	// Restore domain in success and error path.
 	if (domain != caller_domain)
-		mono_domain_set_internal (caller_domain);
+		mono_domain_set_internal_with_options (caller_domain, TRUE);
 
 	goto_if_ok (error, exit);
 return_null:
@@ -188,7 +189,7 @@ create_exception_two_strings (MonoClass *klass, MonoStringHandle a1, MonoStringH
 		
 		if (strcmp (".ctor", mono_method_get_name (m)))
 			continue;
-		sig = mono_method_signature (m);
+		sig = mono_method_signature_internal (m);
 		if (sig->param_count != count)
 			continue;
 
@@ -202,7 +203,7 @@ create_exception_two_strings (MonoClass *klass, MonoStringHandle a1, MonoStringH
 
 	gpointer args [ ] = { MONO_HANDLE_RAW (a1), MONO_HANDLE_RAW (a2) };
 
-	mono_runtime_invoke_handle (method, o, args, error);
+	mono_runtime_invoke_handle_void (method, o, args, error);
 	if (!is_ok (error))
 		o = mono_new_null ();
 
@@ -660,7 +661,11 @@ mono_get_exception_argument_internal (const char *type, const char *arg, const c
 MonoException*
 mono_get_exception_argument_null (const char *arg)
 {
-	return mono_get_exception_argument_internal ("ArgumentNullException", arg, NULL);
+	MonoException *ex;
+	MONO_ENTER_GC_UNSAFE;
+	ex = mono_get_exception_argument_internal ("ArgumentNullException", arg, NULL);
+	MONO_EXIT_GC_UNSAFE;
+	return ex;
 }
 
 /**
@@ -674,11 +679,22 @@ mono_get_exception_argument (const char *arg, const char *msg)
 	return mono_get_exception_argument_internal ("ArgumentException", arg, msg);
 }
 
+#ifndef ENABLE_NETCORE
 TYPED_HANDLE_DECL (MonoArgumentException);
+#endif
 
 static MonoExceptionHandle
 mono_exception_new_argument_internal (const char *type, const char *arg, const char *msg, MonoError *error)
 {
+#ifdef ENABLE_NETCORE
+	MonoStringHandle arg_str = arg ? mono_string_new_handle (mono_domain_get (), arg, error) : NULL_HANDLE_STRING;
+	MonoStringHandle msg_str = msg ? mono_string_new_handle (mono_domain_get (), msg, error) : NULL_HANDLE_STRING;
+
+	if (!strcmp (type, "ArgumentException"))
+		return mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System", type, msg_str, arg_str, error);
+	else
+		return mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System", type, arg_str, msg_str, error);
+#else
 	MonoExceptionHandle ex = mono_exception_new_by_name_msg (mono_get_corlib (), "System", type, msg, error);
 
 	if (arg && !MONO_HANDLE_IS_NULL (ex)) {
@@ -686,8 +702,8 @@ mono_exception_new_argument_internal (const char *type, const char *arg, const c
 		MonoStringHandle arg_str = mono_string_new_handle (MONO_HANDLE_DOMAIN (ex), arg, error);
 		MONO_HANDLE_SET (argex, param_name, arg_str);
 	}
-
 	return ex;
+#endif
 }
 
 MonoExceptionHandle
@@ -700,6 +716,12 @@ MonoExceptionHandle
 mono_exception_new_argument_null (const char *arg, MonoError *error)
 {
 	return mono_exception_new_argument_internal ("ArgumentNullException", arg, NULL, error);
+}
+
+MonoExceptionHandle
+mono_exception_new_argument_out_of_range(const char *arg, const char *msg, MonoError *error)
+{
+	return mono_exception_new_argument_internal ("ArgumentOutOfRangeException", arg, msg, error);
 }
 
 MonoExceptionHandle
@@ -719,12 +741,6 @@ MonoException *
 mono_get_exception_argument_out_of_range (const char *arg)
 {
 	return mono_get_exception_argument_internal ("ArgumentOutOfRangeException", arg, NULL);
-}
-
-static MonoExceptionHandle
-mono_new_exception_argument_out_of_range (const char *arg, MonoError *error)
-{
-	return mono_exception_new_argument_internal ("ArgumentOutOfRangeException", arg, NULL, error);
 }
 
 /**
@@ -822,14 +838,14 @@ mono_get_exception_type_initialization_handle (const gchar *type_name, MonoExcep
 
 	klass = mono_class_load_from_name (mono_get_corlib (), "System", "TypeInitializationException");
 
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		if (!strcmp (".ctor", mono_method_get_name (method))) {
-			MonoMethodSignature *sig = mono_method_signature (method);
+			MonoMethodSignature *sig = mono_method_signature_internal (method);
 
-			if (sig->param_count == 2 && sig->params [0]->type == MONO_TYPE_STRING && mono_class_from_mono_type (sig->params [1]) == mono_defaults.exception_class)
+			if (sig->param_count == 2 && sig->params [0]->type == MONO_TYPE_STRING && mono_class_from_mono_type_internal (sig->params [1]) == mono_defaults.exception_class)
 				break;
 		}
 		method = NULL;
@@ -844,7 +860,7 @@ mono_get_exception_type_initialization_handle (const gchar *type_name, MonoExcep
 	MonoObjectHandle exc = mono_object_new_handle (domain, klass, error);
 	mono_error_assert_ok (error);
 
-	mono_runtime_invoke_handle (method, exc, args, error);
+	mono_runtime_invoke_handle_void (method, exc, args, error);
 	goto_if_nok (error, return_null);
 	goto exit;
 return_null:
@@ -1022,13 +1038,13 @@ mono_get_exception_reflection_type_load_checked (MonoArrayHandle types, MonoArra
 
 	klass = mono_class_load_from_name (mono_get_corlib (), "System.Reflection", "ReflectionTypeLoadException");
 
-	mono_class_init (klass);
+	mono_class_init_internal (klass);
 
 	/* Find the Type[], Exception[] ctor */
 	iter = NULL;
 	while ((method = mono_class_get_methods (klass, &iter))) {
 		if (!strcmp (".ctor", mono_method_get_name (method))) {
-			MonoMethodSignature *sig = mono_method_signature (method);
+			MonoMethodSignature *sig = mono_method_signature_internal (method);
 
 			if (sig->param_count == 2 && sig->params [0]->type == MONO_TYPE_SZARRAY && sig->params [1]->type == MONO_TYPE_SZARRAY)
 				break;
@@ -1088,7 +1104,7 @@ mono_get_exception_runtime_wrapped_handle (MonoObjectHandle wrapped_exception, M
 
 	gpointer args [ ] = { MONO_HANDLE_RAW (wrapped_exception) };
 
-	mono_runtime_invoke_handle (method, o, args, error);
+	mono_runtime_invoke_handle_void (method, o, args, error);
 	goto_if_nok (error, return_null);
 	goto exit;
 return_null:
@@ -1109,7 +1125,7 @@ append_frame_and_continue (MonoMethod *method, gpointer ip, size_t native_offset
 		g_string_append_printf (text, "%s\n", msg);
 		g_free (msg);
 	} else {
-		g_string_append_printf (text, "<unknown native frame 0x%x>\n", ip);
+		g_string_append_printf (text, "<unknown native frame 0x%p>\n", ip);
 	}
 	MONO_EXIT_GC_UNSAFE;
 	return FALSE;
@@ -1146,11 +1162,11 @@ mono_exception_handle_get_native_backtrace (MonoExceptionHandle exc)
 	len = mono_array_handle_length (arr);
 	text = g_string_new_len (NULL, len * 20);
 	uint32_t gchandle;
-	void *addr = MONO_ARRAY_HANDLE_PIN (arr, gpointer, 0, &gchandle);
+	gpointer *addr = MONO_ARRAY_HANDLE_PIN (arr, gpointer, 0, &gchandle);
 	MONO_ENTER_GC_SAFE;
 	messages = backtrace_symbols (addr, len);
 	MONO_EXIT_GC_SAFE;
-	mono_gchandle_free (gchandle);
+	mono_gchandle_free_internal (gchandle);
 
 	for (i = 0; i < len; ++i) {
 		gpointer ip;
@@ -1209,7 +1225,7 @@ mono_error_raise_exception_deprecated (MonoError *target_error)
 }
 
 /**
- * mono_error_set_pending_exception:
+ * mono_error_set_pending_exception_slow:
  * \param error The error
  * If \p error is set, convert it to an exception and set the pending exception for the current icall.
  * \returns TRUE if \p error was set, or FALSE otherwise, so that you can write:
@@ -1218,8 +1234,9 @@ mono_error_raise_exception_deprecated (MonoError *target_error)
  *      return;
  *    }
  */
+// For efficiency, call mono_error_set_pending_exception instead of mono_error_set_pending_exception_slow.
 gboolean
-mono_error_set_pending_exception (MonoError *error)
+mono_error_set_pending_exception_slow (MonoError *error)
 {
 	if (is_ok (error))
 		return FALSE;
@@ -1247,16 +1264,16 @@ mono_invoke_unhandled_exception_hook (MonoObject *exc)
 	if (unhandled_exception_hook) {
 		unhandled_exception_hook (exc, unhandled_exception_hook_data);
 	} else {
-		ERROR_DECL_VALUE (inner_error);
+		ERROR_DECL (inner_error);
 		MonoObject *other = NULL;
-		MonoString *str = mono_object_try_to_string (exc, &other, &inner_error);
+		MonoString *str = mono_object_try_to_string (exc, &other, inner_error);
 		char *msg = NULL;
 		
-		if (str && is_ok (&inner_error)) {
-			msg = mono_string_to_utf8_checked (str, &inner_error);
-			if (!is_ok (&inner_error)) {
+		if (str && is_ok (inner_error)) {
+			msg = mono_string_to_utf8_checked_internal (str, inner_error);
+			if (!is_ok (inner_error)) {
 				msg = g_strdup_printf ("Nested exception while formatting original exception");
-				mono_error_cleanup (&inner_error);
+				mono_error_cleanup (inner_error);
 			}
 		} else if (other) {
 			char *original_backtrace = mono_exception_get_managed_backtrace ((MonoException*)exc);
@@ -1475,11 +1492,13 @@ mono_error_set_simple_file_not_found (MonoError *error, const char *file_name, g
 }
 
 void
-mono_error_set_argument_out_of_range (MonoError *error, const char *name)
+mono_error_set_argument_out_of_range (MonoError *error, const char *param_name, const char *msg_format, ...)
 {
-	ERROR_DECL (error_creating_exception);
-	mono_error_set_exception_handle (error, mono_new_exception_argument_out_of_range (name, error_creating_exception));
-	mono_error_cleanup (error_creating_exception);
+	char *str;
+	SET_ERROR_MSG (str, msg_format);
+	mono_error_set_specific (error, MONO_ERROR_ARGUMENT_OUT_OF_RANGE, str);
+	if (param_name)
+		mono_error_set_first_argument (error, param_name);
 }
 
 MonoExceptionHandle

@@ -29,6 +29,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <glib.h>
+#include <eglib-remap.h> // Remove the cast macros and restore the rename macros.
+#undef malloc
+#undef realloc
+#undef free
+#undef calloc
 
 #if defined (ENABLE_OVERRIDABLE_ALLOCATORS)
 
@@ -43,11 +48,23 @@ g_mem_set_vtable (GMemVTable* vtable)
 	sGMemVTable.free = vtable->free ? vtable->free : free;
 }
 
+void
+g_mem_get_vtable (GMemVTable* vtable)
+{
+	*vtable = sGMemVTable;
+}
+
 #define G_FREE_INTERNAL sGMemVTable.free
 #define G_REALLOC_INTERNAL sGMemVTable.realloc
 #define G_CALLOC_INTERNAL sGMemVTable.calloc
 #define G_MALLOC_INTERNAL sGMemVTable.malloc
 #else
+
+void
+g_mem_get_vtable (GMemVTable* vtable)
+{
+	memset (vtable, 0, sizeof (*vtable));
+}
 
 void
 g_mem_set_vtable (GMemVTable* vtable)
@@ -111,7 +128,7 @@ gpointer g_calloc (gsize n, gsize x)
 	gpointer ptr;
 	if (!x || !n)
 		return 0;
-		ptr = G_CALLOC_INTERNAL (n, x);
+	ptr = G_CALLOC_INTERNAL (n, x);
 	if (ptr)
 		return ptr;
 	g_error ("Could not allocate %i (%i * %i) bytes", x*n, n, x);

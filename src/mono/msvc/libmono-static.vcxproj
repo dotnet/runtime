@@ -194,6 +194,11 @@
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
     </ProjectReference>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(MONO_COMPILE_AS_CPP)'=='true'">
+    <ClCompile>
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ProjectReference Include="eglib.vcxproj">
       <Project>{158073ed-99ae-4196-9edc-ddb2344f8466}</Project>

@@ -64,7 +64,9 @@ mapSyslogLevel(GLogLevelFlags level)
 void
 mono_log_open_syslog(const char *ident, void *userData)
 {
+#ifdef HAVE_OPENLOG
 	openlog("mono", LOG_PID, LOG_USER);
+#endif
 	logUserData = userData;
 }
 
@@ -82,7 +84,7 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
 	syslog (mapSyslogLevel(level), "%s", message);
 
 	if (level & G_LOG_LEVEL_ERROR)
-		abort();
+		g_assert_abort ();
 }
 
 /**
@@ -92,6 +94,8 @@ mono_log_write_syslog(const char *domain, GLogLevelFlags level, mono_bool hdr, c
 void
 mono_log_close_syslog()
 {
+#ifdef HAVE_CLOSELOG
 	closelog();
+#endif
 }
 #endif

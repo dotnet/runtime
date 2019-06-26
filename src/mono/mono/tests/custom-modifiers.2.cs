@@ -30,6 +30,16 @@ public class Tests {
 		if (arr [0] != typeof (System.Runtime.CompilerServices.IsVolatile))
 			return 6;
 		
+
+		/* Check that if there's more than one modifier, we get them in the expected order. */
+		arr = typeof (CustomModifiers).GetField ("field_3").GetOptionalCustomModifiers ();
+		if (arr.Length != 2)
+			return 7;
+		if (arr [0] != typeof (System.Runtime.CompilerServices.IsLong))
+			return 8;
+		if (arr [1] != typeof (System.Runtime.CompilerServices.IsConst))
+			return 9;
+
 		return 0;
 	}
 }

@@ -133,6 +133,10 @@ struct _MonoProfilerCallContext {
 	 * is set to NULL.
 	 */
 	gpointer return_value;
+	/*
+	 * Points to an array of addresses of stack slots holding the arguments.
+	 */
+	gpointer *args;
 };
 
 MonoProfilerCallInstrumentationFlags mono_profiler_get_call_instrumentation_flags (MonoMethod *method);

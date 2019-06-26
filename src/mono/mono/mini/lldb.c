@@ -119,11 +119,13 @@ static GHashTable *codegen_regions;
 static DebugEntry *last_entry;
 static mono_mutex_t mutex;
 static GHashTable *dyn_codegen_regions;
-static gdouble register_time;
+static gint64 register_time;
 static int num_entries;
 
 #define lldb_lock() mono_os_mutex_lock (&mutex)
 #define lldb_unlock() mono_os_mutex_unlock (&mutex)
+
+G_BEGIN_DECLS
 
 void MONO_NEVER_INLINE __mono_jit_debug_register_code (void);
 
@@ -136,6 +138,8 @@ __mono_jit_debug_register_code (void)
 	asm ("");
 #endif
 }
+
+G_END_DECLS
 
 /*
  * Functions to encode protocol data
@@ -257,7 +261,7 @@ typedef struct {
 static int
 find_code_region (void *data, int csize, int size, void *user_data)
 {
-	UserData *ud = user_data;
+	UserData *ud = (UserData*)user_data;
 
 	if ((char*)ud->code >= (char*)data && (char*)ud->code < (char*)data + csize) {
 		ud->region_start = data;
@@ -304,9 +308,9 @@ add_entry (EntryType type, Buffer *buf)
 	__mono_jit_debug_descriptor.addr = entry->addr;
 	mono_memory_barrier ();
 
-	GTimer *timer = mono_time_track_start ();
+	gint64 start = mono_time_track_start ();
 	__mono_jit_debug_register_code ();
-	mono_time_track_end (&register_time, timer);
+	mono_time_track_end (&register_time, start);
 	num_entries ++;
 	//printf ("%lf %d %d\n", register_time, num_entries, entry->type);
 
@@ -373,7 +377,7 @@ emit_unwind_info (GSList *unwind_ops, Buffer *buf)
 	/* We use the unencoded version of the unwind info to make it easier to decode */
 	nunwind_ops = 0;
 	for (l = unwind_ops; l; l = l->next) {
-		MonoUnwindOp *op = l->data;
+		MonoUnwindOp *op = (MonoUnwindOp*)l->data;
 
 		/* lldb can't handle these */
 		if (op->op == DW_CFA_mono_advance_loc)
@@ -384,7 +388,7 @@ emit_unwind_info (GSList *unwind_ops, Buffer *buf)
 	buffer_add_byte (buf, ret_reg);
 	buffer_add_int (buf, nunwind_ops);
 	for (l = unwind_ops; l; l = l->next) {
-		MonoUnwindOp *op = l->data;
+		MonoUnwindOp *op = (MonoUnwindOp*)l->data;
 
 		if (op->op == DW_CFA_mono_advance_loc)
 			break;
@@ -413,7 +417,7 @@ mono_lldb_init (const char *options)
 	enabled = TRUE;
 	mono_os_mutex_init_recursive (&mutex);
 
-	mono_counters_register ("Time spent in LLDB", MONO_COUNTER_JIT | MONO_COUNTER_DOUBLE, &register_time);
+	mono_counters_register ("Time spent in LLDB", MONO_COUNTER_JIT | MONO_COUNTER_LONG | MONO_COUNTER_TIME, &register_time);
 }
 
 typedef struct
@@ -425,8 +429,8 @@ typedef struct
 static int
 compare_by_addr (const void *arg1, const void *arg2)
 {
-	const FullSeqPoint *sp1 = arg1;
-	const FullSeqPoint *sp2 = arg2;
+	const FullSeqPoint *sp1 = (const FullSeqPoint *)arg1;
+	const FullSeqPoint *sp2 = (const FullSeqPoint *)arg2;
 
 	return sp1->native_offset - sp2->native_offset;
 }
@@ -518,12 +522,6 @@ mono_lldb_save_method_info (MonoCompile *cfg)
 		buffer_add_int (buf, n_il_offsets);
 		for (i = 0; i < n_il_offsets; ++i) {
 			MonoSymSeqPoint *sp = &locs [i].sp;
-			const char *srcfile = "";
-
-			if (source_files [i] != -1) {
-				MonoDebugSourceInfo *sinfo = (MonoDebugSourceInfo *)g_ptr_array_index (source_file_list, source_files [i]);
-				srcfile = sinfo->source_file;
-			}
 
 			//printf ("%s %x %d %d\n", cfg->method->name, locs [i].native_offset, sp->il_offset, sp->line);
 			buffer_add_int (buf, locs [i].native_offset);

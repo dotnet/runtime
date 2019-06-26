@@ -10,10 +10,11 @@
 
 /*Keep in sync with MonoError*/
 typedef struct {
-	unsigned short error_code;
-    unsigned short flags;
+	guint16 error_code;
+	guint16 flags;
 
 	/*These name are suggestions of their content. MonoError internals might use them for something else.*/
+	// type_name must be right after error_code and flags, see mono_error_init_deferred.
 	const char *type_name;
 	const char *assembly_name;
 	const char *member_name;
@@ -53,10 +54,6 @@ ERROR_DECL (error)
 	pointing to an initialized MonoError (named "error_value",
 	using token pasting).
 
-ERROR_DECL_VALUE (foo)
-	Declare and initialize a local variable, named "foo";
-	no pointer is produced for it.
-
 MONO_API_ERROR_INIT
 	This is used for MonoError in/out parameter on a public interface,
 	which must be presumed uninitialized. These are often
@@ -64,6 +61,7 @@ MONO_API_ERROR_INIT
 	Tnis includes functions called from dis, profiler, pedump, and driver.
 	dis, profiler, and pedump make sense, these are actually external and
 	uninitialized. Driver less so.
+	Presently this is unused and error_init is used instead.
 
 error_init
 	Initialize a MonoError. These are historical and usually
@@ -88,8 +86,7 @@ new0, calloc, static
 All initialization is actually bottlenecked to error_init_internal.
 Different names indicate different scenarios, but the same code.
 */
-#define ERROR_DECL_VALUE(x) 		MonoError x; error_init_internal (&x)
-#define ERROR_DECL(x) 			ERROR_DECL_VALUE (x##_value); MonoError * const x = &x##_value
+#define ERROR_DECL(x) 			MonoError x ## _value; error_init_internal (& x ## _value); MonoError * const x = &x ## _value
 #define error_init_internal(error) 	((void)((error)->init = 0))
 #define MONO_API_ERROR_INIT(error) 	error_init_internal (error)
 #define error_init_reuse(error) 	error_init_internal (error)
@@ -173,6 +170,9 @@ void
 mono_error_set_argument_null (MonoError *oerror, const char *argument, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
 
 void
+mono_error_set_argument_out_of_range (MonoError *error, const char *name, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
+
+void
 mono_error_set_not_verifiable (MonoError *oerror, MonoMethod *method, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(3,4);
 
 void
@@ -186,6 +186,9 @@ mono_error_set_not_implemented (MonoError *error, const char *msg_format, ...) M
 
 void
 mono_error_set_not_supported (MonoError *error, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
+
+void 
+mono_error_set_ambiguous_implementation (MonoError *error, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 
 void
 mono_error_set_invalid_operation (MonoError *error, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
@@ -244,8 +247,18 @@ mono_error_set_null_reference (MonoError *error)
 	mono_error_set_generic_error (error, "System", "NullReferenceException", "");
 }
 
-void
-mono_error_set_argument_out_of_range (MonoError *error, const char *name);
+static inline void
+mono_error_set_duplicate_wait_object (MonoError *error)
+{
+	mono_error_set_generic_error (error, "System", "DuplicateWaitObjectException", "Duplicate objects in argument.");
+}
+
+static inline void
+mono_error_set_cannot_unload_appdomain (MonoError *error, const char *message)
+{
+	mono_error_set_generic_error (error, "System", "CannotUnloadAppDomainException", "%s", message);
+}
+
 
 MonoException*
 mono_error_prepare_exception (MonoError *error, MonoError *error_out);

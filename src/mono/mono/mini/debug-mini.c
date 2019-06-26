@@ -72,7 +72,7 @@ mono_debug_open_method (MonoCompile *cfg)
 	if (!info)
 		return;
 
-	mono_class_init (cfg->method->klass);
+	mono_class_init_internal (cfg->method->klass);
 
 	header = cfg->header;
 	g_assert (header);
@@ -236,7 +236,7 @@ mono_debug_close_method (MonoCompile *cfg)
 
 	method = cfg->method;
 	header = cfg->header;
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 
 	jit = info->jit;
 	jit->code_start = cfg->native_code;
@@ -465,6 +465,8 @@ mono_debug_serialize_debug_info (MonoCompile *cfg, guint8 **out_buf, guint32 *bu
 	encode_value (jit->has_var_info, p, &p);
 
 	if (jit->has_var_info) {
+		encode_value (jit->num_locals, p, &p);
+
 		for (i = 0; i < jit->num_params; ++i)
 			serialize_variable (&jit->params [i], p, &p);
 
@@ -531,15 +533,10 @@ deserialize_variable (MonoDebugVarInfo *var, guint8 *p, guint8 **endbuf)
 static MonoDebugMethodJitInfo *
 deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, guint32 buf_len)
 {
-	ERROR_DECL (error);
-	MonoMethodHeader *header;
 	gint32 offset, native_offset, prev_offset, prev_native_offset;
 	MonoDebugMethodJitInfo *jit;
 	guint8 *p;
 	int i;
-
-	header = mono_method_get_header_checked (method, error);
-	mono_error_assert_ok (error); /* FIXME don't swallow the error */
 
 	jit = g_new0 (MonoDebugMethodJitInfo, 1);
 	jit->code_start = code_start;
@@ -551,15 +548,16 @@ deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, gui
 	jit->has_var_info = decode_value (p, &p);
 
 	if (jit->has_var_info) {
-		jit->num_locals = header->num_locals;
-		jit->num_params = mono_method_signature (method)->param_count;
+		jit->num_locals = decode_value (p, &p);
+
+		jit->num_params = mono_method_signature_internal (method)->param_count;
 		jit->params = g_new0 (MonoDebugVarInfo, jit->num_params);
 		jit->locals = g_new0 (MonoDebugVarInfo, jit->num_locals);
 
 		for (i = 0; i < jit->num_params; ++i)
 			deserialize_variable (&jit->params [i], p, &p);
 
-		if (mono_method_signature (method)->hasthis) {
+		if (mono_method_signature_internal (method)->hasthis) {
 			jit->this_var = g_new0 (MonoDebugVarInfo, 1);
 			deserialize_variable (jit->this_var, p, &p);
 		}
@@ -593,7 +591,6 @@ deserialize_debug_info (MonoMethod *method, guint8 *code_start, guint8 *buf, gui
 		prev_native_offset = native_offset;
 	}
 
-	mono_metadata_free_mh (header);
 	return jit;
 }
 

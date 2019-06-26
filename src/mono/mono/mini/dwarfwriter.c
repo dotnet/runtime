@@ -967,7 +967,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	g_hash_table_insert (cache, klass, die);
 
 	if (m_class_is_enumtype (klass)) {
-		int size = mono_class_value_size (mono_class_from_mono_type (mono_class_enum_basetype (klass)), NULL);
+		int size = mono_class_value_size (mono_class_from_mono_type_internal (mono_class_enum_basetype_internal (klass)), NULL);
 
 		emit_label (w, die);
 
@@ -975,7 +975,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 		emit_string (w, full_name);
 		emit_uleb128 (w, size);
 		for (k = 0; k < G_N_ELEMENTS (basic_types); ++k)
-			if (basic_types [k].type == mono_class_enum_basetype (klass)->type)
+			if (basic_types [k].type == mono_class_enum_basetype_internal (klass)->type)
 				break;
 		g_assert (k < G_N_ELEMENTS (basic_types));
 		emit_symbol_diff (w, basic_types [k].die_name, ".Ldebug_info_start", 0);
@@ -996,7 +996,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 
 			p = mono_class_get_field_default_value (field, &def_type);
 			/* len = */ mono_metadata_decode_blob_size (p, &p);
-			switch (mono_class_enum_basetype (klass)->type) {
+			switch (mono_class_enum_basetype_internal (klass)->type) {
 			case MONO_TYPE_U1:
 			case MONO_TYPE_I1:
 			case MONO_TYPE_BOOLEAN:
@@ -1129,7 +1129,7 @@ static gboolean base_types_emitted [64];
 static const char*
 get_type_die (MonoDwarfWriter *w, MonoType *t)
 {
-	MonoClass *klass = mono_class_from_mono_type (t);
+	MonoClass *klass = mono_class_from_mono_type_internal (t);
 	int j;
 	const char *tdie;
 
@@ -1188,7 +1188,7 @@ get_type_die (MonoDwarfWriter *w, MonoType *t)
 static void
 emit_type (MonoDwarfWriter *w, MonoType *t)
 {
-	MonoClass *klass = mono_class_from_mono_type (t);
+	MonoClass *klass = mono_class_from_mono_type_internal (t);
 	int j;
 	const char *tdie;
 
@@ -1397,13 +1397,7 @@ disasm_ins (MonoMethod *method, const guchar *ip, const guint8 **endip)
 
 		switch (ip [1]) {
 		case CEE_MONO_ICALL: {
-			MonoJitICallInfo *info;
-
-			token = read32 (ip + 2);
-			data = mono_method_get_wrapper_data (method, token);
-			info = mono_find_jit_icall_by_addr (data);
-			g_assert (info);
-
+			MonoJitICallInfo const * const info = mono_find_jit_icall_info ((MonoJitICallId)read32 (ip + 2));
 			dis = g_strdup_printf ("IL_%04x: mono_icall <%s>", (int)(ip - header->code), info->name);
 			ip += 6;
 			break;
@@ -1770,7 +1764,7 @@ mono_dwarf_writer_emit_method (MonoDwarfWriter *w, MonoCompile *cfg, MonoMethod 
 
 	emit_section_change (w, ".debug_info", 0);
 
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	header = mono_method_get_header_checked (method, error);
 	mono_error_assert_ok (error); /* FIXME don't swallow the error */
 

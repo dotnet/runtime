@@ -31,57 +31,61 @@ typedef struct MonoBtlsSslCtx MonoBtlsSslCtx;
 
 typedef int (* MonoBtlsVerifyFunc) (void *instance, int preverify_ok, X509_STORE_CTX *ctx);
 typedef int (* MonoBtlsSelectFunc) (void *instance, int countIssuers, const int *sizes, void **issuerData);
+typedef int (* MonoBtlsServerNameFunc) (void *instance);
 
-MonoBtlsSslCtx *
+MONO_API MonoBtlsSslCtx *
 mono_btls_ssl_ctx_new (void);
 
-MonoBtlsSslCtx *
+MONO_API MonoBtlsSslCtx *
 mono_btls_ssl_ctx_up_ref (MonoBtlsSslCtx *ctx);
 
-int
+MONO_API int
 mono_btls_ssl_ctx_free (MonoBtlsSslCtx *ctx);
 
-void
+MONO_API void
 mono_btls_ssl_ctx_initialize (MonoBtlsSslCtx *ctx, void *instance);
 
-SSL_CTX *
+MONO_API SSL_CTX *
 mono_btls_ssl_ctx_get_ctx (MonoBtlsSslCtx *ctx);
 
-int
+MONO_API int
 mono_btls_ssl_ctx_debug_printf (MonoBtlsSslCtx *ctx, const char *format, ...);
 
-int
+MONO_API int
 mono_btls_ssl_ctx_is_debug_enabled (MonoBtlsSslCtx *ctx);
 
-void
+MONO_API void
 mono_btls_ssl_ctx_set_cert_verify_callback (MonoBtlsSslCtx *ptr, MonoBtlsVerifyFunc func, int cert_required);
 
-void
+MONO_API void
 mono_btls_ssl_ctx_set_cert_select_callback (MonoBtlsSslCtx *ptr, MonoBtlsSelectFunc func);
 
-void
+MONO_API void
 mono_btls_ssl_ctx_set_debug_bio (MonoBtlsSslCtx *ctx, BIO *debug_bio);
 
-X509_STORE *
+MONO_API X509_STORE *
 mono_btls_ssl_ctx_peek_store (MonoBtlsSslCtx *ctx);
 
-void
+MONO_API void
 mono_btls_ssl_ctx_set_min_version (MonoBtlsSslCtx *ctx, int version);
 
-void
+MONO_API void
 mono_btls_ssl_ctx_set_max_version (MonoBtlsSslCtx *ctx, int version);
 
-int
+MONO_API int
 mono_btls_ssl_ctx_is_cipher_supported (MonoBtlsSslCtx *ctx, uint16_t value);
 
-int
+MONO_API int
 mono_btls_ssl_ctx_set_ciphers (MonoBtlsSslCtx *ctx, int count, const uint16_t *data,
 				   int allow_unsupported);
 
-int
+MONO_API int
 mono_btls_ssl_ctx_set_verify_param (MonoBtlsSslCtx *ctx, const MonoBtlsX509VerifyParam *param);
 
-int
+MONO_API int
 mono_btls_ssl_ctx_set_client_ca_list (MonoBtlsSslCtx *ctx, int count, int *sizes, const void **data);
+
+MONO_API void
+mono_btls_ssl_ctx_set_server_name_callback (MonoBtlsSslCtx *ctx, MonoBtlsServerNameFunc func);
 
 #endif /* __btls_ssl_ctx__btls_ssl_ctx__ */

@@ -16,6 +16,7 @@
 #include "mono/metadata/assembly.h"
 #include "mono/metadata/loader.h"
 #include "mono/metadata/mono-config.h"
+#include "mono/metadata/mono-config-internals.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/object-internals.h"
 #include "mono/utils/mono-logger-internals.h"
@@ -84,6 +85,12 @@
 #elif defined(mips) || defined(__mips) || defined(_mips)
 #define CONFIG_CPU "mips"
 #define CONFIG_WORDSIZE "32"
+#elif defined (TARGET_RISCV32)
+#define CONFIG_CPU "riscv32"
+#define CONFIG_WORDSIZE "32"
+#elif defined (TARGET_RISCV64)
+#define CONFIG_CPU "riscv64"
+#define CONFIG_WORDSIZE "64"
 #elif defined(TARGET_WASM)
 #define CONFIG_CPU "wasm"
 #define CONFIG_WORDSIZE "32"
@@ -92,8 +99,6 @@
 #define CONFIG_CPU "unknownCPU"
 #endif
 #endif
-
-static void mono_config_for_assembly_internal (MonoImage *assembly);
 
 /**
  * mono_config_get_os:
@@ -315,7 +320,7 @@ dllmap_start (gpointer user_data,
 			if (strcmp (attribute_names [i], "dll") == 0)
 				info->dll = g_strdup (attribute_values [i]);
 			else if (strcmp (attribute_names [i], "target") == 0){
-				char *p = strstr (attribute_values [i], "$mono_libdir");
+				const char* p = strstr (attribute_values [i], "$mono_libdir");
 				if (p != NULL){
 					char *libdir = mono_native_getrootdir ();
 					size_t libdir_len = strlen (libdir);
@@ -602,17 +607,6 @@ mono_config_string_for_assembly_file (const char *filename)
 	return NULL;
 }
 
-/**
- * mono_config_for_assembly:
- */
-void 
-mono_config_for_assembly (MonoImage *assembly)
-{
-	MONO_ENTER_GC_UNSAFE;
-	mono_config_for_assembly_internal (assembly);
-	MONO_EXIT_GC_UNSAFE;
-}
-
 void
 mono_config_for_assembly_internal (MonoImage *assembly)
 {
@@ -636,9 +630,14 @@ mono_config_for_assembly_internal (MonoImage *assembly)
 	g_free (cfg_name);
 
 	cfg_name = g_strdup_printf ("%s.config", mono_image_get_name (assembly));
+	const char *cfg_dir = mono_get_config_dir ();
+	if (!cfg_dir) {
+		g_free (cfg_name);
+		return;
+	}
 
 	for (i = 0; (aname = get_assembly_filename (assembly, i)) != NULL; ++i) {
-		cfg = g_build_filename (mono_get_config_dir (), "mono", "assemblies", aname, cfg_name, NULL);
+		cfg = g_build_filename (cfg_dir, "mono", "assemblies", aname, cfg_name, NULL);
 		got_it += mono_config_parse_file_with_context (&state, cfg);
 		g_free (cfg);
 
@@ -681,9 +680,12 @@ mono_config_parse (const char *filename) {
 		return;
 	}
 
-	mono_cfg = g_build_filename (mono_get_config_dir (), "mono", "config", NULL);
-	mono_config_parse_file (mono_cfg);
-	g_free (mono_cfg);
+	const char *cfg_dir = mono_get_config_dir ();
+	if (cfg_dir) {
+		mono_cfg = g_build_filename (cfg_dir, "mono", "config", NULL);
+		mono_config_parse_file (mono_cfg);
+		g_free (mono_cfg);
+	}
 
 #if !defined(TARGET_WIN32)
 	home = g_get_home_dir ();
@@ -705,6 +707,8 @@ mono_set_config_dir (const char *dir)
 	if (env_mono_cfg_dir == NULL && dir != NULL)
 		env_mono_cfg_dir = g_strdup (dir);
 
+	if (mono_cfg_dir)
+		g_free (mono_cfg_dir);
 	mono_cfg_dir = env_mono_cfg_dir;
 }
 

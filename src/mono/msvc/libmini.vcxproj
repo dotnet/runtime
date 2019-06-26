@@ -100,7 +100,7 @@
     <ClCompile>
       <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -113,9 +113,7 @@
       <SubSystem>Windows</SubSystem>
     </Link>
     <PostBuildEvent />
-    <Lib>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Lib>
+    <Lib />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PreBuildEvent>
@@ -125,7 +123,7 @@
     <ClCompile>
       <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;WIN64;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -138,9 +136,7 @@
       <SubSystem>Windows</SubSystem>
     </Link>
     <PostBuildEvent />
-    <Lib>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Lib>
+    <Lib />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <PreBuildEvent>
@@ -150,7 +146,7 @@
     <ClCompile>
       <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -164,9 +160,7 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent />
-    <Lib>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Lib>
+    <Lib />
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <PreBuildEvent>
@@ -176,7 +170,7 @@
     <ClCompile>
       <AdditionalOptions>/D /NODEFAULTLIB:LIBCD" " %(AdditionalOptions)</AdditionalOptions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);$(MONO_LLVM_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(MONO_DIR);$(MONO_INCLUDE_DIR);$(LIBGC_CPPFLAGS_INCLUDE);$(GLIB_CFLAGS_INCLUDE);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;WIN32_LEAN_AND_MEAN;WIN64;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -190,12 +184,49 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent />
-    <Lib>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Lib>
+    <Lib />
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(MONO_COMPILE_AS_CPP)'=='true'">
+    <ClCompile>
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
   </ItemDefinitionGroup>
   <Import Project="libmini.targets" />
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="mono.external.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <Target Name="_SetupMonoLLVMCompileItems" Condition="$(MONO_ENABLE_LLVM)=='true'">
+    <ItemGroup>
+      <ClCompile>
+        <AdditionalIncludeDirectories>$(MONO_LLVM_INCLUDE_DIR);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        <PreprocessorDefinitions>LLVM_API_VERSION=$(MONO_LLVM_API_VERSION);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      </ClCompile>
+    </ItemGroup>
+    <ItemGroup>
+      <ClCompile Condition="'%(ClCompile._MonoLLVMSourceFile)' == 'true'">
+        <ExcludedFromBuild>false</ExcludedFromBuild>
+      </ClCompile>
+    </ItemGroup>
+  </Target>
+  <Target Name="_SetupMonoLLVMLinkItems" Condition="$(MONO_ENABLE_LLVM)=='true'">
+    <ItemGroup>
+      <Lib>
+        <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(Lib.AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+        <AdditionalDependencies>$(MONO_LLVM_LIBS);%(Lib.AdditionalDependencies)</AdditionalDependencies>
+      </Lib>
+    </ItemGroup>
+  </Target>
+  <Target Name="_ConfigureExternalCompileDependency" DependsOnTargets="_ConfigureExternalMonoBuildEnvironment;_SetupMonoLLVMBuildProperties;_SetupMonoLLVMCompileItems" />
+  <Target Name="_ConfigureExternalLinkDependency" DependsOnTargets="_ConfigureExternalMonoBuildEnvironment;_SetupMonoLLVMBuildProperties;_SetupMonoLLVMLinkItems" />
+  <PropertyGroup>
+    <PrepareForBuildDependsOn>
+      _ConfigureExternalCompileDependency;
+      $(PrepareForBuildDependsOn);
+    </PrepareForBuildDependsOn>
+    <ComputeLibInputsTargets>
+      $(ComputeLibInputsTargets);
+      _ConfigureExternalLinkDependency;
+    </ComputeLibInputsTargets>
+  </PropertyGroup>
 </Project>

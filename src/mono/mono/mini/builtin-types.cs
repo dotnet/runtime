@@ -1,11 +1,18 @@
 // #define ARCH_32
-#define NINT_JIT_OPTIMIZED
+
+/* This is _NOT_ set by Xamarin.iOS. We can enable it in order to make sure
+ * methods are intrinsified (by throwing NotImplementedException), but some
+ * methods aren't intrinsified by JIT/interp. For example, conversion to
+ * decimal. Therefore JIT/interp should fall back to managed implementation.
+ */
+// #define NINT_JIT_OPTIMIZED
 
 using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 
 public class BuiltinTests {
@@ -27,6 +34,7 @@ public class BuiltinTests {
 	{
 		var x = (nint)10;
 		var y = (nint)20L;
+		int z = 30;
 
 		if ((int)x != 10)
 			return 1;
@@ -36,6 +44,8 @@ public class BuiltinTests {
 			return 3;
 		if ((long)y != 20L)
 			return 4;
+		if ((nint)z != 30)
+			return 5;
 		return 0;
 	}
 
@@ -239,14 +249,78 @@ public class BuiltinTests {
 		return 0;
 	}
 
-	// static int test_0_nint_call_boxed_equals ()
-	// {
-	// 	object x = new nint (10);
-	// 	object y = new nint (10);
-	// 	if (!x.Equals (y))
-	// 		return 1;
-	// 	return 0;
-	// }
+	static int test_0_nint_compareto ()
+	{
+		if (((nint) 0).CompareTo ((nint) 0) != 0)
+			return 1;
+		if (((nint) 0).CompareTo ((nint) 1) != -1)
+			return 2;
+		if (((nint) 1).CompareTo ((nint) 0) != 1)
+			return 3;
+
+		if (((nint) 0).CompareTo ((object)(nint) 0) != 0)
+			return 4;
+		if (((nint) 0).CompareTo ((object)(nint) 1) != -1)
+			return 5;
+		if (((nint) 1).CompareTo ((object)(nint) 0) != 1)
+			return 6;
+
+		if (((nint) 1).CompareTo (null) != 1)
+			return 7;
+
+		return 0;
+	}
+
+	static int test_0_nint_call_boxed_equals ()
+	{
+		object x = new nint (10);
+		object y = new nint (10);
+		if (!x.Equals (y))
+			return 1;
+		return 0;
+	}
+
+	static int test_0_nint_equals ()
+	{
+		if (!((nint) 0).Equals ((nint) 0))
+			return 1;
+		if (!((nint) 0).Equals ((object) (nint) 0))
+			return 2;
+		if (((nint) 0).Equals (null))
+			return 3;
+		return 0;
+	}
+
+	private sealed class MyGenericEqualityComparer<T> : EqualityComparer<T> where T : IEquatable<T>
+	{
+		public sealed override bool Equals(T x, T y) {
+			if (x != null) {
+				if (y != null)
+					return x.Equals (y);
+				return false;
+			}
+			if (y != null)
+				return false;
+			return true;
+		}
+
+		public sealed override int GetHashCode(T obj)
+		{
+			if (obj == null)
+				return 0;
+			return obj.GetHashCode ();
+		}
+	}
+
+	static int test_0_nint_genequals ()
+	{
+		MyGenericEqualityComparer<nint> cmp = new MyGenericEqualityComparer<nint> ();
+		if (cmp.Equals ((nint) 1, (nint) 2))
+			return 1;
+		if (!cmp.Equals ((nint) 4, (nint) 4))
+			return 2;
+		return 0;
+	}
 
 	static int test_0_nint_call_boxed_funs ()
 	{
@@ -259,7 +333,46 @@ public class BuiltinTests {
 		return 0;
 	}
 
-	public int test_0_nint_unboxed_member_calls ()
+	static int test_0_nint_tostring ()
+	{
+		int x = 1337;
+		if (((nint) x).ToString () != "1337")
+			return 1;
+		x = -1337;
+		if (((nint) x).ToString () != "-1337")
+			return 2;
+
+		return 0;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	static bool decimal_cmp (decimal a, decimal b)
+	{
+		return a == b;
+	}
+
+	static bool decimal_cmp_can_inline (decimal a, decimal b)
+	{
+		return a == b;
+	}
+
+	static int test_0_nint_implicit_decimal ()
+	{
+		nint a = new nint (10);
+		nint b = new nint (9);
+		if (decimal_cmp (a, b))
+			return 1;
+		b++;
+		if (!decimal_cmp (a, b))
+			return 2;
+		if (!decimal_cmp ((nint) 10, b))
+			return 3;
+		if (!decimal_cmp (a, (nint) 10))
+			return 4;
+		return 0;
+	}
+
+	static int test_0_nint_unboxed_member_calls ()
 	{
 		var x = (nint)10;
 #if FALSE
@@ -270,6 +383,99 @@ public class BuiltinTests {
 			return 2;
 		return 0;
 	}
+
+	struct SomeNativeStructWithNint {
+		public nint a;
+		public static nint b;
+
+		public SomeNativeStructWithNint (nint a)
+		{
+			this.a = a;
+			b = a + 1;
+		}
+
+		public static nint GetAStatic (SomeNativeStructWithNint x)
+		{
+			return x.a;
+		}
+
+		public nint GetA ()
+		{
+			return a;
+		}
+	}
+
+	class SomeClassWithNint {
+		public nint a;
+
+		public SomeClassWithNint (nint a)
+		{
+			this.a = a;
+		}
+
+		public virtual nint GetAVirtual ()
+		{
+			return a;
+		}
+	}
+
+	static int test_0_nint_fieldload ()
+	{
+		var x = new SomeNativeStructWithNint ((nint) 20f);
+
+		if ((float) x.a != 20f)
+			return 1;
+
+		if ((int) x.a != 20)
+			return 2;
+
+		if ((float) SomeNativeStructWithNint.GetAStatic (x) != 20f)
+			return 3;
+
+		if ((float) x.GetA () != 20f)
+			return 4;
+
+		if ((int) SomeNativeStructWithNint.GetAStatic (x) != 20)
+			return 5;
+
+		if ((int) x.GetA () != 20)
+			return 6;
+
+		if ((float) SomeNativeStructWithNint.b != 21f)
+			return 7;
+
+		if ((int) SomeNativeStructWithNint.b != 21)
+			return 8;
+
+		SomeClassWithNint y = new SomeClassWithNint ((nint) 30f);
+
+		if ((int) y.GetAVirtual () != 30)
+			return 9;
+
+		if ((float) y.GetAVirtual () != 30f)
+			return 10;
+
+		return 0;
+	}
+
+	static int NuintConstructor (nuint cap)
+	{
+		if (cap > (ulong) nint.MaxValue)
+			return 1;
+		return 0;
+	}
+
+	/* resembles https://github.com/xamarin/xamarin-macios/blob/bc492585d137d8c3d3a2ffc827db3cdaae3cc869/tests/monotouch-test/Foundation/MutableDataTest.cs#L62-L89 */
+	static int test_0_nint_maxintcmp ()
+	{
+		/* does not work on 32bit */
+		if (IntPtr.Size == 4)
+			return 0;
+
+		uint cap = (uint) Int32.MaxValue + 2;
+		return NuintConstructor (cap);
+	}
+
 
 	static int test_0_nuint_ctor ()
 	{
@@ -289,6 +495,7 @@ public class BuiltinTests {
 	{
 		var x = (nuint)10;
 		var y = (nuint)20L;
+		int z = 30;
 
 		if ((uint)x != 10)
 			return 1;
@@ -298,6 +505,8 @@ public class BuiltinTests {
 			return 3;
 		if ((ulong)y != 20L)
 			return 4;
+		if ((nuint)z != 30)
+			return 5;
 		return 0;
 	}
 
@@ -501,14 +710,47 @@ public class BuiltinTests {
 		return 0;
 	}
 
-	// static int test_0_nuint_call_boxed_equals ()
-	// {
-	// 	object x = new nuint (10);
-	// 	object y = new nuint (10);
-	// 	if (!x.Equals (y))
-	// 		return 1;
-	// 	return 0;
-	// }
+	static int test_0_nuint_compareto ()
+	{
+		if (((nuint) 0).CompareTo ((nuint) 0) != 0)
+			return 1;
+		if (((nuint) 0).CompareTo ((nuint) 1) != -1)
+			return 2;
+		if (((nuint) 1).CompareTo ((nuint) 0) != 1)
+			return 3;
+
+		if (((nuint) 0).CompareTo ((object)(nuint) 0) != 0)
+			return 4;
+		if (((nuint) 0).CompareTo ((object)(nuint) 1) != -1)
+			return 5;
+		if (((nuint) 1).CompareTo ((object)(nuint) 0) != 1)
+			return 6;
+
+		if (((nuint) 1).CompareTo (null) != 1)
+			return 7;
+
+		return 0;
+	}
+
+	static int test_0_nuint_call_boxed_equals ()
+	{
+		object x = new nuint (10);
+		object y = new nuint (10);
+		if (!x.Equals (y))
+			return 1;
+		return 0;
+	}
+
+	static int test_0_nuint_equals ()
+	{
+		if (!((nuint) 0).Equals ((nuint) 0))
+			return 1;
+		if (!((nuint) 0).Equals ((object) (nuint) 0))
+			return 2;
+		if (((nuint) 0).Equals (null))
+			return 3;
+		return 0;
+	}
 
 	static int test_0_nuint_call_boxed_funs ()
 	{
@@ -521,7 +763,35 @@ public class BuiltinTests {
 		return 0;
 	}
 
-	public int test_0_nuint_unboxed_member_calls ()
+	static int test_0_nuint_tostring ()
+	{
+		int x = 1337;
+		if (((nuint) x).ToString () != "1337")
+			return 1;
+		x = -1337;
+		if (((nuint) x).ToString () == "-1337")
+			return 2;
+
+		return 0;
+	}
+
+	static int test_0_nuint_implicit_decimal ()
+	{
+		nuint a = new nuint (10);
+		nuint b = new nuint (9);
+		if (decimal_cmp (a, b))
+			return 1;
+		b++;
+		if (!decimal_cmp (a, b))
+			return 2;
+		if (!decimal_cmp ((nuint) 10, b))
+			return 3;
+		if (!decimal_cmp (a, (nuint) 10))
+			return 4;
+		return 0;
+	}
+
+	static int test_0_nuint_unboxed_member_calls ()
 	{
 		var x = (nuint)10;
 #if FALSE
@@ -530,6 +800,83 @@ public class BuiltinTests {
 #endif
 		if (x != nuint.Parse ("10"))
 			return 2;
+		return 0;
+	}
+
+	struct SomeNativeStructWithNuint {
+		public nuint a;
+		public static nuint b;
+
+		public SomeNativeStructWithNuint (nuint a)
+		{
+			this.a = a;
+			b = a + 1;
+		}
+
+		public static nuint GetAStatic (SomeNativeStructWithNuint x)
+		{
+			return x.a;
+		}
+
+		public nuint GetA ()
+		{
+			return a;
+		}
+	}
+
+	class SomeClassWithNuint {
+		public nuint a;
+
+		public SomeClassWithNuint (nuint a)
+		{
+			this.a = a;
+		}
+
+		public virtual nuint GetAVirtual ()
+		{
+			return a;
+		}
+	}
+
+	static int test_0_nuint_fieldload ()
+	{
+		var x = new SomeNativeStructWithNuint ((nuint) 20f);
+
+		if ((float) x.a != 20f)
+			return 1;
+
+		if ((int) x.a != 20)
+			return 2;
+
+		if ((float) SomeNativeStructWithNuint.GetAStatic (x) != 20f)
+			return 3;
+
+		if ((float) x.GetA () != 20f)
+			return 4;
+
+		if ((int) SomeNativeStructWithNuint.GetAStatic (x) != 20)
+			return 5;
+
+		if ((int) x.GetA () != 20)
+			return 6;
+
+		if (!decimal_cmp_can_inline ((int) x.GetA (), 20))
+			return 66;
+
+		if ((float) SomeNativeStructWithNuint.b != 21f)
+			return 7;
+
+		if ((int) SomeNativeStructWithNuint.b != 21)
+			return 8;
+
+		SomeClassWithNuint y = new SomeClassWithNuint ((nuint) 30f);
+
+		if ((int) y.GetAVirtual () != 30)
+			return 9;
+
+		if ((float) y.GetAVirtual () != 30f)
+			return 10;
+
 		return 0;
 	}
 
@@ -562,6 +909,12 @@ public class BuiltinTests {
 		if ((double)y != 20)
 			return 4;
 #endif
+		int z = 30;
+		if ((nfloat) z != 30f)
+			return 5;
+
+		if ((int) x != 10)
+			return 6;
 		return 0;
 	}
 
@@ -754,14 +1107,137 @@ public class BuiltinTests {
 		return 0;
 	}
 
-	// static int test_0_nfloat_call_boxed_equals ()
-	// {
-	// 	object x = new nfloat (10f);
-	// 	object y = new nfloat (10f);
-	// 	if (!x.Equals (y))
-	// 		return 1;
-	// 	return 0;
-	// }
+	static int test_0_nfloat_isinfinity ()
+	{
+		var x = (nfloat) float.NaN;
+		if (nfloat.IsInfinity (x))
+			return 1;
+		if (nfloat.IsInfinity (12))
+			return 2;
+		if (!nfloat.IsInfinity (nfloat.PositiveInfinity))
+			return 3;
+		if (!nfloat.IsInfinity (nfloat.NegativeInfinity))
+			return 4;
+
+		return 0;
+	}
+
+	static int test_0_nfloat_isnegativeinfinity ()
+	{
+		var x = (nfloat) float.NaN;
+		if (nfloat.IsNegativeInfinity (x))
+			return 1;
+		if (nfloat.IsNegativeInfinity (12))
+			return 2;
+		if (nfloat.IsNegativeInfinity (nfloat.PositiveInfinity))
+			return 3;
+		if (!nfloat.IsNegativeInfinity (nfloat.NegativeInfinity))
+			return 4;
+
+		float f = float.NegativeInfinity;
+		nfloat n = (nfloat) f;
+		if (!nfloat.IsNegativeInfinity (n))
+			return 5;
+
+		double d = double.NegativeInfinity;
+		n = (nfloat) d;
+		if (!nfloat.IsNegativeInfinity (n))
+			return 6;
+
+		return 0;
+	}
+
+	static int test_0_nfloat_ispositiveinfinity ()
+	{
+		var x = (nfloat) float.NaN;
+		if (nfloat.IsPositiveInfinity (x))
+			return 1;
+		if (nfloat.IsPositiveInfinity (12))
+			return 2;
+		if (!nfloat.IsPositiveInfinity (nfloat.PositiveInfinity))
+			return 3;
+		if (nfloat.IsPositiveInfinity (nfloat.NegativeInfinity))
+			return 4;
+
+		float f = float.PositiveInfinity;
+		nfloat n = (nfloat) f;
+		if (!nfloat.IsPositiveInfinity (n))
+			return 5;
+
+		double d = double.PositiveInfinity;
+		n = (nfloat) d;
+		if (!nfloat.IsPositiveInfinity (n))
+			return 6;
+
+		return 0;
+	}
+
+	static int test_0_nfloat_isnan ()
+	{
+		var x = (nfloat) float.NaN;
+		if (!nfloat.IsNaN (x))
+			return 1;
+		if (nfloat.IsNaN (12))
+			return 2;
+		if (nfloat.IsNaN (nfloat.PositiveInfinity))
+			return 3;
+		if (nfloat.IsNaN (nfloat.NegativeInfinity))
+			return 4;
+
+		float f = float.NaN;
+		nfloat n = (nfloat) f;
+		if (!nfloat.IsNaN (n))
+			return 5;
+
+		double d = double.NaN;
+		n = (nfloat) d;
+		if (!nfloat.IsNaN (n))
+			return 6;
+
+		return 0;
+	}
+
+	static int test_0_nfloat_compareto ()
+	{
+		if (((nfloat) 0).CompareTo ((nfloat) 0) != 0)
+			return 1;
+		if (((nfloat) 0).CompareTo ((nfloat) 1) != -1)
+			return 2;
+		if (((nfloat) 1).CompareTo ((nfloat) 0) != 1)
+			return 3;
+
+		if (((nfloat) 0).CompareTo ((object)(nfloat) 0) != 0)
+			return 4;
+		if (((nfloat) 0).CompareTo ((object)(nfloat) 1) != -1)
+			return 5;
+		if (((nfloat) 1).CompareTo ((object)(nfloat) 0) != 1)
+			return 6;
+
+		if (((nfloat) 1).CompareTo (null) != 1)
+			return 7;
+
+		return 0;
+	}
+
+	static int test_0_nfloat_call_boxed_equals ()
+	{
+		object x = new nfloat (10f);
+		object y = new nfloat (10f);
+		if (!x.Equals (y))
+			return 1;
+		return 0;
+	}
+
+	static int test_0_nfloat_equals ()
+	{
+		if (!((nfloat) 0).Equals ((nfloat) 0))
+			return 1;
+		if (!((nfloat) 0).Equals ((object) (nfloat) 0))
+			return 2;
+		if (((nfloat) 0).Equals (null))
+			return 3;
+		return 0;
+	}
 
 	static int test_0_nfloat_call_boxed_funs ()
 	{
@@ -774,7 +1250,36 @@ public class BuiltinTests {
 		return 0;
 	}
 
-	public int test_0_nfloat_unboxed_member_calls ()
+	static int test_0_nfloat_tostring ()
+	{
+		float x = 1337.0f;
+		nfloat y = (nfloat) x;
+		if (y.ToString () != "1337")
+			return 1;
+		x = -1337.0f;
+		if (((nfloat) x).ToString () != "-1337")
+			return 2;
+
+		return 0;
+	}
+
+	static int test_0_nfloat_explicit_decimal ()
+	{
+		nfloat a = new nfloat (10);
+		nfloat b = new nfloat (9);
+		if (decimal_cmp ((decimal) a, (decimal) b))
+			return 1;
+		b += 1.0f;
+		if (!decimal_cmp ((decimal) a, (decimal) b))
+			return 2;
+		if (!decimal_cmp ((decimal) (nfloat) 10.0f, (decimal) b))
+			return 3;
+		if (!decimal_cmp ((decimal) a, (decimal) (nfloat) 10.0f))
+			return 4;
+		return 0;
+	}
+
+	static int test_0_nfloat_unboxed_member_calls ()
 	{
 		var x = (nfloat)10f;
 #if FALSE
@@ -783,6 +1288,107 @@ public class BuiltinTests {
 #endif
 		if (x != nfloat.Parse ("10"))
 			return 2;
+		return 0;
+	}
+
+	struct SomeNativeStructWithNfloat {
+		public nfloat a;
+		public static nfloat b;
+
+		public SomeNativeStructWithNfloat (nfloat a)
+		{
+			this.a = a;
+			b = a + 1;
+		}
+
+		public static nfloat GetAStatic (SomeNativeStructWithNfloat x)
+		{
+			return x.a;
+		}
+
+		public nfloat GetA ()
+		{
+			return a;
+		}
+	}
+
+	class SomeClassWithNfloat {
+		public nfloat a;
+
+		public SomeClassWithNfloat (nfloat a)
+		{
+			this.a = a;
+		}
+
+		public virtual nfloat GetAVirtual ()
+		{
+			return a;
+		}
+	}
+
+	static int test_0_nfloat_fieldload ()
+	{
+		var x = new SomeNativeStructWithNfloat ((nfloat) 20f);
+
+		if ((float) x.a != 20f)
+			return 1;
+
+		if ((int) x.a != 20)
+			return 2;
+
+		if ((float) SomeNativeStructWithNfloat.GetAStatic (x) != 20f)
+			return 3;
+
+		if ((float) x.GetA () != 20f)
+			return 4;
+
+		if ((int) SomeNativeStructWithNfloat.GetAStatic (x) != 20)
+			return 5;
+
+		if ((int) x.GetA () != 20)
+			return 6;
+
+		if ((float) SomeNativeStructWithNfloat.b != 21f)
+			return 7;
+
+		if ((int) SomeNativeStructWithNfloat.b != 21)
+			return 8;
+
+		SomeClassWithNfloat y = new SomeClassWithNfloat ((nfloat) 30f);
+
+		if ((int) y.GetAVirtual () != 30)
+			return 9;
+
+		if ((float) y.GetAVirtual () != 30f)
+			return 10;
+
+		return 0;
+	}
+
+	static int test_0_much_casting ()
+	{
+		var notOof = (int)(float)1;
+		if (notOof != 1)
+			return 1;
+
+		var notOof2 = (nint)(float)(nfloat)1;
+		if (notOof2 != 1)
+			return 2;
+
+		var notOof3 = (nint)(int)(nfloat)1;
+		if (notOof3 != 1)
+			return 3;
+
+		var oof = (nint)(nfloat)1;
+		var oof2 = (int) oof - 1;
+		if (oof2 != 0)
+			return 4;
+
+		var noof = (nfloat)(nint)1;
+		var noof2 = (float) noof - 1;
+		if (noof2 > 0.1)
+			return 5;
+
 		return 0;
 	}
 

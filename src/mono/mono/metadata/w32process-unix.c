@@ -47,6 +47,17 @@
 #include <utime.h>
 #endif
 
+// For close_my_fds
+#if defined (_AIX)
+#include <procinfo.h>
+#elif defined (__FreeBSD__)
+#include <sys/sysctl.h>
+#include <sys/user.h>
+#include <libutil.h>
+#elif defined(__linux__)
+#include <dirent.h>
+#endif
+
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/w32process.h>
 #include <mono/metadata/w32process-internals.h>
@@ -62,6 +73,7 @@
 #include <mono/metadata/w32file.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/strenc-internals.h>
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-proclib.h>
 #include <mono/utils/mono-path.h>
@@ -72,6 +84,10 @@
 #include <mono/utils/strenc.h>
 #include <mono/utils/mono-io-portability.h>
 #include <mono/utils/w32api.h>
+#include <mono/utils/mono-errno.h>
+#include <mono/utils/mono-error-internals.h>
+#include "object-internals.h"
+#include "icall-decl.h"
 
 #ifndef MAXPATHLEN
 #define MAXPATHLEN 242
@@ -83,6 +99,7 @@
 /* define LOGDEBUG(...) g_message(__VA_ARGS__)  */
 
 /* The process' environment strings */
+#if defined (HAVE_FORK) && defined (HAVE_EXECVE)
 #if defined(__APPLE__)
 #if defined (TARGET_OSX)
 /* Apple defines this in crt_externs.h but doesn't provide that header for 
@@ -101,6 +118,7 @@ static char *mono_environ[1] = { NULL };
 G_BEGIN_DECLS
 extern char **environ;
 G_END_DECLS
+#endif
 #endif
 
 typedef enum {
@@ -239,245 +257,6 @@ typedef struct {
 #define VS_FFI_SIGNATURE	0xfeef04bd
 #define VS_FFI_STRUCVERSION	0x00010000
 #endif
-
-#define IMAGE_NUMBEROF_DIRECTORY_ENTRIES 16
-
-#define IMAGE_DIRECTORY_ENTRY_EXPORT	0
-#define IMAGE_DIRECTORY_ENTRY_IMPORT	1
-#define IMAGE_DIRECTORY_ENTRY_RESOURCE	2
-
-#define IMAGE_SIZEOF_SHORT_NAME	8
-
-#if G_BYTE_ORDER != G_LITTLE_ENDIAN
-#define IMAGE_DOS_SIGNATURE	0x4d5a
-#define IMAGE_NT_SIGNATURE	0x50450000
-#define IMAGE_NT_OPTIONAL_HDR32_MAGIC	0xb10
-#define IMAGE_NT_OPTIONAL_HDR64_MAGIC	0xb20
-#else
-#define IMAGE_DOS_SIGNATURE	0x5a4d
-#define IMAGE_NT_SIGNATURE	0x00004550
-#define IMAGE_NT_OPTIONAL_HDR32_MAGIC	0x10b
-#define IMAGE_NT_OPTIONAL_HDR64_MAGIC	0x20b
-#endif
-
-typedef struct {
-	guint16 e_magic;
-	guint16 e_cblp;
-	guint16 e_cp;
-	guint16 e_crlc;
-	guint16 e_cparhdr;
-	guint16 e_minalloc;
-	guint16 e_maxalloc;
-	guint16 e_ss;
-	guint16 e_sp;
-	guint16 e_csum;
-	guint16 e_ip;
-	guint16 e_cs;
-	guint16 e_lfarlc;
-	guint16 e_ovno;
-	guint16 e_res[4];
-	guint16 e_oemid;
-	guint16 e_oeminfo;
-	guint16 e_res2[10];
-	guint32 e_lfanew;
-} IMAGE_DOS_HEADER;
-
-typedef struct {
-	guint16 Machine;
-	guint16 NumberOfSections;
-	guint32 TimeDateStamp;
-	guint32 PointerToSymbolTable;
-	guint32 NumberOfSymbols;
-	guint16 SizeOfOptionalHeader;
-	guint16 Characteristics;
-} IMAGE_FILE_HEADER;
-
-typedef struct {
-	guint32 VirtualAddress;
-	guint32 Size;
-} IMAGE_DATA_DIRECTORY;
-
-typedef struct {
-	guint16 Magic;
-	guint8 MajorLinkerVersion;
-	guint8 MinorLinkerVersion;
-	guint32 SizeOfCode;
-	guint32 SizeOfInitializedData;
-	guint32 SizeOfUninitializedData;
-	guint32 AddressOfEntryPoint;
-	guint32 BaseOfCode;
-	guint32 BaseOfData;
-	guint32 ImageBase;
-	guint32 SectionAlignment;
-	guint32 FileAlignment;
-	guint16 MajorOperatingSystemVersion;
-	guint16 MinorOperatingSystemVersion;
-	guint16 MajorImageVersion;
-	guint16 MinorImageVersion;
-	guint16 MajorSubsystemVersion;
-	guint16 MinorSubsystemVersion;
-	guint32 Win32VersionValue;
-	guint32 SizeOfImage;
-	guint32 SizeOfHeaders;
-	guint32 CheckSum;
-	guint16 Subsystem;
-	guint16 DllCharacteristics;
-	guint32 SizeOfStackReserve;
-	guint32 SizeOfStackCommit;
-	guint32 SizeOfHeapReserve;
-	guint32 SizeOfHeapCommit;
-	guint32 LoaderFlags;
-	guint32 NumberOfRvaAndSizes;
-	IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
-} IMAGE_OPTIONAL_HEADER32;
-
-typedef struct {
-	guint16 Magic;
-	guint8 MajorLinkerVersion;
-	guint8 MinorLinkerVersion;
-	guint32 SizeOfCode;
-	guint32 SizeOfInitializedData;
-	guint32 SizeOfUninitializedData;
-	guint32 AddressOfEntryPoint;
-	guint32 BaseOfCode;
-	guint64 ImageBase;
-	guint32 SectionAlignment;
-	guint32 FileAlignment;
-	guint16 MajorOperatingSystemVersion;
-	guint16 MinorOperatingSystemVersion;
-	guint16 MajorImageVersion;
-	guint16 MinorImageVersion;
-	guint16 MajorSubsystemVersion;
-	guint16 MinorSubsystemVersion;
-	guint32 Win32VersionValue;
-	guint32 SizeOfImage;
-	guint32 SizeOfHeaders;
-	guint32 CheckSum;
-	guint16 Subsystem;
-	guint16 DllCharacteristics;
-	guint64 SizeOfStackReserve;
-	guint64 SizeOfStackCommit;
-	guint64 SizeOfHeapReserve;
-	guint64 SizeOfHeapCommit;
-	guint32 LoaderFlags;
-	guint32 NumberOfRvaAndSizes;
-	IMAGE_DATA_DIRECTORY DataDirectory[IMAGE_NUMBEROF_DIRECTORY_ENTRIES];
-} IMAGE_OPTIONAL_HEADER64;
-
-#if SIZEOF_VOID_P == 8
-typedef IMAGE_OPTIONAL_HEADER64 IMAGE_OPTIONAL_HEADER;
-#else
-typedef IMAGE_OPTIONAL_HEADER32 IMAGE_OPTIONAL_HEADER;
-#endif
-
-typedef struct {
-	guint32 Signature;
-	IMAGE_FILE_HEADER FileHeader;
-	IMAGE_OPTIONAL_HEADER32 OptionalHeader;
-} IMAGE_NT_HEADERS32;
-
-typedef struct {
-	guint32 Signature;
-	IMAGE_FILE_HEADER FileHeader;
-	IMAGE_OPTIONAL_HEADER64 OptionalHeader;
-} IMAGE_NT_HEADERS64;
-
-#if SIZEOF_VOID_P == 8
-typedef IMAGE_NT_HEADERS64 IMAGE_NT_HEADERS;
-#else
-typedef IMAGE_NT_HEADERS32 IMAGE_NT_HEADERS;
-#endif
-
-typedef struct {
-	guint8 Name[IMAGE_SIZEOF_SHORT_NAME];
-	union {
-		guint32 PhysicalAddress;
-		guint32 VirtualSize;
-	} Misc;
-	guint32 VirtualAddress;
-	guint32 SizeOfRawData;
-	guint32 PointerToRawData;
-	guint32 PointerToRelocations;
-	guint32 PointerToLinenumbers;
-	guint16 NumberOfRelocations;
-	guint16 NumberOfLinenumbers;
-	guint32 Characteristics;
-} IMAGE_SECTION_HEADER;
-
-#define IMAGE_FIRST_SECTION32(header) ((IMAGE_SECTION_HEADER *)((gsize)(header) + G_STRUCT_OFFSET (IMAGE_NT_HEADERS32, OptionalHeader) + GUINT16_FROM_LE (((IMAGE_NT_HEADERS32 *)(header))->FileHeader.SizeOfOptionalHeader)))
-
-#define RT_CURSOR	0x01
-#define RT_BITMAP	0x02
-#define RT_ICON		0x03
-#define RT_MENU		0x04
-#define RT_DIALOG	0x05
-#define RT_STRING	0x06
-#define RT_FONTDIR	0x07
-#define RT_FONT		0x08
-#define RT_ACCELERATOR	0x09
-#define RT_RCDATA	0x0a
-#define RT_MESSAGETABLE	0x0b
-#define RT_GROUP_CURSOR	0x0c
-#define RT_GROUP_ICON	0x0e
-#define RT_VERSION	0x10
-#define RT_DLGINCLUDE	0x11
-#define RT_PLUGPLAY	0x13
-#define RT_VXD		0x14
-#define RT_ANICURSOR	0x15
-#define RT_ANIICON	0x16
-#define RT_HTML		0x17
-#define RT_MANIFEST	0x18
-
-typedef struct {
-	guint32 Characteristics;
-	guint32 TimeDateStamp;
-	guint16 MajorVersion;
-	guint16 MinorVersion;
-	guint16 NumberOfNamedEntries;
-	guint16 NumberOfIdEntries;
-} IMAGE_RESOURCE_DIRECTORY;
-
-typedef struct {
-	union {
-		struct {
-#if G_BYTE_ORDER == G_BIG_ENDIAN
-			guint32 NameIsString:1;
-			guint32 NameOffset:31;
-#else
-			guint32 NameOffset:31;
-			guint32 NameIsString:1;
-#endif
-		};
-		guint32 Name;
-#if G_BYTE_ORDER == G_BIG_ENDIAN
-		struct {
-			guint16 __wapi_big_endian_padding;
-			guint16 Id;
-		};
-#else
-		guint16 Id;
-#endif
-	};
-	union {
-		guint32 OffsetToData;
-		struct {
-#if G_BYTE_ORDER == G_BIG_ENDIAN
-			guint32 DataIsDirectory:1;
-			guint32 OffsetToDirectory:31;
-#else
-			guint32 OffsetToDirectory:31;
-			guint32 DataIsDirectory:1;
-#endif
-		};
-	};
-} IMAGE_RESOURCE_DIRECTORY_ENTRY;
-
-typedef struct {
-	guint32 OffsetToData;
-	guint32 Size;
-	guint32 CodePage;
-	guint32 Reserved;
-} IMAGE_RESOURCE_DATA_ENTRY;
 
 #define VOS_UNKNOWN		0x00000000
 #define VOS_DOS			0x00010000
@@ -1381,7 +1160,7 @@ MONO_SIGNAL_HANDLER_FUNC (static, mono_sigchld_signal_handler, (int _dummy, sigi
 
 	mono_gc_finalize_notify ();
 
-	errno = old_errno;
+	mono_set_errno (old_errno);
 }
 
 static void
@@ -1487,7 +1266,7 @@ is_managed_binary (const char *filename)
 	 * probably wouldn't be able to open it anyway.
 	 */
 	if (file < 0) {
-		errno = original_errno;
+		mono_set_errno (original_errno);
 		return FALSE;
 	}
 
@@ -1590,8 +1369,127 @@ is_managed_binary (const char *filename)
 
 leave:
 	close (file);
-	errno = original_errno;
+	mono_set_errno (original_errno);
 	return managed;
+}
+
+/**
+ * Gets the biggest numbered file descriptor for the current process; failing
+ * that, the system's file descriptor limit. This is called by the fork child
+ * in close_my_fds.
+ */
+static inline guint32
+max_fd_count (void)
+{
+#if defined (_AIX)
+	struct procentry64 pe;
+	pid_t p;
+	p = getpid ();
+	if (getprocs64 (&pe, sizeof (pe), NULL, 0, &p, 1) != -1) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS,
+			   "%s: maximum returned fd in child is %u",
+			   __func__, pe.pi_maxofile);
+		return pe.pi_maxofile; // biggest + 1
+	}
+#endif
+	// fallback to user/system limit if unsupported/error
+	return eg_getdtablesize ();
+}
+
+/**
+ * Closes all of the process' opened file descriptors, applying a strategy
+ * appropriate for the target system. This is called by the fork child in
+ * process_create.
+ */
+static void
+close_my_fds (void)
+{
+// TODO: Other platforms.
+//       * On macOS, use proc_pidinfo + PROC_PIDLISTFDS? See:
+//         http://blog.palominolabs.com/2012/06/19/getting-the-files-being-used-by-a-process-on-mac-os-x/
+//         (I have no idea how this plays out on i/watch/tvOS.)
+//       * On the other BSDs, there's likely a sysctl for this.
+//       * On Solaris, there exists posix_spawn_file_actions_addclosefrom_np,
+//         but that assumes we're using posix_spawn; we aren't, as we do some
+//         complex stuff between fork and exec. There's likely a way to get
+//         the FD list/count though (maybe look at addclosefrom source in
+//         illumos?) or just walk /proc/pid/fd like Linux?
+#if defined (__linux__)
+	/* Walk the file descriptors in /proc/self/fd/. Linux has no other API,
+	 * as far as I'm aware. Opening a directory won't create an FD. */
+	struct dirent *dp;
+	DIR *d;
+	int fd;
+	d = opendir ("/proc/self/fd/");
+	if (d) {
+		while ((dp = readdir (d)) != NULL) {
+			if (dp->d_name [0] == '.')
+				continue;
+			fd = atoi (dp->d_name);
+			if (fd > 2)
+				close (fd);
+		}
+		closedir (d);
+		return;
+	} else {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS,
+			   "%s: opening fd dir failed, using fallback",
+			   __func__);
+	}
+#elif defined (__FreeBSD__)
+	/* FreeBSD lets us get a list of FDs. There's a MIB to access them
+	 * directly, but it uses a lot of nasty variable length structures. The
+	 * system library libutil provides a nicer way to get a fixed length
+	 * version instead. */
+	struct kinfo_file *kif;
+	int count, i;
+	/* this is malloced but we won't need to free once we exec/exit */
+	kif = kinfo_getfile (getpid (), &count);
+	if (kif) {
+		for (i = 0; i < count; i++) {
+			/* negative FDs look to be used by the OS */
+			if (kif [i].kf_fd > 2) /* no neg + no stdio */
+				close (kif [i].kf_fd);
+		}
+		return;
+	} else {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS,
+			   "%s: kinfo_getfile failed, using fallback",
+			   __func__);
+	}
+#elif defined (_AIX)
+	struct procentry64 pe;
+	/* this array struct is 1 MB, we're NOT putting it on the stack.
+	 * likewise no need to free; getprocs will fail if we use the smalller
+	 * versions if we have a lot of FDs (is it worth it?)
+	 */
+	struct fdsinfo_100K *fds;
+	pid_t p;
+	p = getpid ();
+	fds = (struct fdsinfo_100K *) g_malloc0 (sizeof (struct fdsinfo_100K));
+	if (!fds) {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS,
+			   "%s: fdsinfo alloc failed, using fallback",
+			   __func__);
+		goto fallback;
+	}
+
+	if (getprocs64 (&pe, sizeof (pe), fds, sizeof (struct fdsinfo_100K), &p, 1) != -1) {
+		for (int i = 3; i < pe.pi_maxofile; i++) {
+			if (fds->pi_ufd [i].fp != 0)
+				close (fds->pi_ufd [i].fp);
+		}
+		return;
+	} else {
+		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS,
+			   "%s: getprocs64 failed, using fallback",
+			   __func__);
+	}
+fallback:
+#endif
+	/* Fallback: Close FDs blindly, according to an FD limit */
+	for (guint32 i = max_fd_count () - 1; i > 2; i--)
+		close (i);
 }
 
 static gboolean
@@ -1610,6 +1508,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	int startup_pipe [2] = {-1, -1};
 	int dummy;
 	Process *process;
+	ERROR_DECL (error);
 
 #if HAVE_SIGACTION
 	mono_lazy_initialize (&process_sig_chld_once, process_add_sigchld_handler);
@@ -1642,11 +1541,12 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	 * so crap, with an API like this :-(
 	 */
 	if (appname != NULL) {
-		cmd = mono_unicode_to_external (appname);
+		cmd = mono_unicode_to_external_checked (appname, error);
 		if (cmd == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL",
-				   __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL; %s",
+				   __func__, mono_error_get_message (error));
 
+			mono_error_cleanup (error);
 			mono_w32error_set_last (ERROR_PATH_NOT_FOUND);
 			goto free_strings;
 		}
@@ -1655,20 +1555,22 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 	}
 
 	if (cmdline != NULL) {
-		args = mono_unicode_to_external (cmdline);
+		args = mono_unicode_to_external_checked (cmdline, error);
 		if (args == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL; %s", __func__, mono_error_get_message (error));
 
+			mono_error_cleanup (error);
 			mono_w32error_set_last (ERROR_PATH_NOT_FOUND);
 			goto free_strings;
 		}
 	}
 
 	if (cwd != NULL) {
-		dir = mono_unicode_to_external (cwd);
+		dir = mono_unicode_to_external_checked (cwd, error);
 		if (dir == NULL) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL", __func__);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL; %s", __func__, mono_error_get_message (error));
 
+			mono_error_cleanup (error);
 			mono_w32error_set_last (ERROR_PATH_NOT_FOUND);
 			goto free_strings;
 		}
@@ -1928,7 +1830,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 			MONO_HANDLE_ARRAY_GETREF (var, array, i);
 			gchandle_t gchandle = 0;
 			env_strings [i] = mono_unicode_to_external (mono_string_handle_pin_chars (var, &gchandle));
-			mono_gchandle_free (gchandle);
+			mono_gchandle_free_internal (gchandle);
 		}
 	} else {
 		gsize env_count = 0;
@@ -1975,9 +1877,8 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		dup2 (out_fd, 1);
 		dup2 (err_fd, 2);
 
-		/* Close all file descriptors */
-		for (i = eg_getdtablesize() - 1; i > 2; i--)
-			close (i);
+		/* Close this child's file handles. */
+		close_my_fds ();
 
 #ifdef DEBUG_ENABLED
 		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: exec()ing [%s] in dir [%s]", __func__, cmd,
@@ -2129,6 +2030,12 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 		goto done;
 
 	if (!ret) {
+
+#if defined(TARGET_IOS) || defined(TARGET_ANDROID)
+		// don't try the "open" handlers on iOS/Android, they don't exist there anyway
+		goto done;
+#endif
+
 		static char *handler;
 		static gunichar2 *handler_utf16;
 
@@ -2145,6 +2052,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 		 * On Linux, try: xdg-open, the FreeDesktop standard way of doing it,
 		 * if that fails, try to use gnome-open, then kfmclient
 		 */
+		MONO_ENTER_GC_SAFE;
 		handler = g_find_program_in_path ("xdg-open");
 		if (handler != NULL)
 			handler_needswait = TRUE;
@@ -2155,7 +2063,6 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 				if (handler == NULL){
 					handler_utf16 = (gunichar2 *) -1;
 					ret = FALSE;
-					goto done;
 				} else {
 					/* kfmclient needs exec argument */
 					char *old = handler;
@@ -2164,6 +2071,10 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 					g_free (old);
 				}
 			}
+		}
+		MONO_EXIT_GC_SAFE;
+		if (ret == FALSE){
+			goto done;
 		}
 #endif
 		handler_utf16 = g_utf8_to_utf16 (handler, -1, NULL, NULL, NULL);
@@ -2320,7 +2231,9 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 	gpointer *pidarray;
 	int i, count;
 
+	MONO_ENTER_GC_SAFE;
 	pidarray = mono_process_list (&count);
+	MONO_EXIT_GC_SAFE;
 	if (!pidarray) {
 		mono_error_set_not_supported (error, "This system does not support EnumProcesses");
 		mono_error_set_pending_exception (error);
@@ -2332,10 +2245,10 @@ ves_icall_System_Diagnostics_Process_GetProcesses_internal (void)
 		return NULL;
 	}
 	if (sizeof (guint32) == sizeof (gpointer)) {
-		memcpy (mono_array_addr (procs, guint32, 0), pidarray, count * sizeof (gint32));
+		memcpy (mono_array_addr_internal (procs, guint32, 0), pidarray, count * sizeof (gint32));
 	} else {
 		for (i = 0; i < count; ++i)
-			*(mono_array_addr (procs, guint32, i)) = GPOINTER_TO_UINT (pidarray [i]);
+			*(mono_array_addr_internal (procs, guint32, i)) = GPOINTER_TO_UINT (pidarray [i]);
 	}
 	g_free (pidarray);
 
@@ -2546,7 +2459,7 @@ ves_icall_Microsoft_Win32_NativeMethods_GetPriorityClass (gpointer handle, MonoE
 
 	pid = ((MonoW32HandleProcess*) handle_data->specific)->pid;
 
-	errno = 0;
+	mono_set_errno (0);
 	res = getpriority (PRIO_PROCESS, pid);
 	if (res == -1 && errno != 0) {
 		switch (errno) {
@@ -3009,91 +2922,6 @@ find_pe_file_resources (gpointer file_map, guint32 map_size, guint32 res_id, gui
 	}
 }
 
-static gpointer
-map_pe_file (gunichar2 *filename, gint32 *map_size, void **handle)
-{
-	gchar *filename_ext = NULL;
-	gchar *located_filename = NULL;
-	int fd = -1;
-	struct stat statbuf;
-	gpointer file_map = NULL;
-
-	/* According to the MSDN docs, a search path is applied to
-	 * filename.  FIXME: implement this, for now just pass it
-	 * straight to open
-	 */
-
-	filename_ext = mono_unicode_to_external (filename);
-	if (filename_ext == NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: unicode conversion returned NULL", __func__);
-
-		mono_w32error_set_last (ERROR_INVALID_NAME);
-		goto exit;
-	}
-
-	fd = open (filename_ext, O_RDONLY, 0);
-	if (fd == -1 && (errno == ENOENT || errno == ENOTDIR) && IS_PORTABILITY_SET) {
-		gint saved_errno = errno;
-
-		located_filename = mono_portability_find_file (filename_ext, TRUE);
-		if (!located_filename) {
-			errno = saved_errno;
-
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (1): %s", __func__, filename_ext, strerror (errno));
-			goto error;
-		}
-
-		fd = open (located_filename, O_RDONLY, 0);
-		if (fd == -1) {
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (2): %s", __func__, filename_ext, strerror (errno));
-			goto error;
-		}
-	}
-	else if (fd == -1) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error opening file %s (3): %s", __func__, filename_ext, strerror (errno));
-		goto error;
-	}
-
-	if (fstat (fd, &statbuf) == -1) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error stat()ing file %s: %s", __func__, filename_ext, strerror (errno));
-		goto error;
-	}
-	*map_size = statbuf.st_size;
-
-	/* Check basic file size */
-	if (statbuf.st_size < sizeof(IMAGE_DOS_HEADER)) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: File %s is too small: %lld", __func__, filename_ext, (long long) statbuf.st_size);
-
-		mono_w32error_set_last (ERROR_BAD_LENGTH);
-		goto exit;
-	}
-
-	file_map = mono_file_map (statbuf.st_size, MONO_MMAP_READ | MONO_MMAP_PRIVATE, fd, 0, handle);
-	if (file_map == NULL) {
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER_PROCESS, "%s: Error mmap()int file %s: %s", __func__, filename_ext, strerror (errno));
-		goto error;
-	}
-exit:
-	if (fd != -1)
-		close (fd);
-	g_free (located_filename);
-	g_free (filename_ext);
-	return file_map;
-error:
-	mono_w32error_set_last (mono_w32error_unix_to_win32 (errno));
-	goto exit;
-}
-
-static void
-unmap_pe_file (gpointer file_map, void *handle)
-{
-	gint res;
-
-	res = mono_file_unmap (file_map, handle);
-	if (G_UNLIKELY (res != 0))
-		g_error ("%s: mono_file_unmap failed, error: \"%s\" (%d)", __func__, g_strerror (errno), errno);
-}
-
 static guint32
 unicode_chars (const gunichar2 *str)
 {
@@ -3525,13 +3353,13 @@ mono_w32process_get_fileversion_info (gunichar2 *filename, gpointer *data)
 	g_assert (data);
 	*data = NULL;
 
-	file_map = map_pe_file (filename, &map_size, &map_handle);
+	file_map = mono_pe_file_map (filename, &map_size, &map_handle);
 	if (!file_map)
 		return FALSE;
 
 	versioninfo = find_pe_file_resources (file_map, map_size, RT_VERSION, 0, &datasize);
 	if (!versioninfo) {
-		unmap_pe_file (file_map, map_handle);
+		mono_pe_file_unmap (file_map, map_handle);
 		return FALSE;
 	}
 
@@ -3545,7 +3373,7 @@ mono_w32process_get_fileversion_info (gunichar2 *filename, gpointer *data)
 	big_up (*data, datasize);
 #endif
 
-	unmap_pe_file (file_map, map_handle);
+	mono_pe_file_unmap (file_map, map_handle);
 
 	return TRUE;
 }

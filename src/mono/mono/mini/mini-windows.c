@@ -245,6 +245,18 @@ mono_runtime_cleanup_handlers (void)
 #endif
 }
 
+void
+mono_init_native_crash_info (void)
+{
+	return;
+}
+
+void
+mono_cleanup_native_crash_info (void)
+{
+	return;
+}
+
 #if G_HAVE_API_SUPPORT (HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
 /* mono_chain_signal:
  *
@@ -255,20 +267,20 @@ mono_runtime_cleanup_handlers (void)
 gboolean
 MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 {
-	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-	jit_tls->mono_win_chained_exception_needs_run = TRUE;
+	/* Set to FALSE to indicate that vectored exception handling should continue to look for handler */
+	MONO_SIG_HANDLER_GET_INFO ()->handled = FALSE;
 	return TRUE;
 }
 
 #ifndef MONO_CROSS_COMPILE
 void
-mono_dump_native_crash_info (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info)
+mono_dump_native_crash_info (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info)
 {
 	//TBD
 }
 
 void
-mono_post_native_crash_handler (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining)
+mono_post_native_crash_handler (const char *signal, MonoContext *mctx, MONO_SIG_HANDLER_INFO_TYPE *info, gboolean crash_chaining)
 {
 	if (!crash_chaining)
 		abort ();
@@ -391,11 +403,6 @@ mono_setup_thread_context(DWORD thread_id, MonoContext *mono_context)
 gboolean
 mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo *info, void *sigctx)
 {
-	MonoJitTlsData *jit_tls;
-	void *domain;
-	MonoLMF *lmf = NULL;
-	gpointer *addr;
-
 	tctx->valid = FALSE;
 	tctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = NULL;
 	tctx->unwind_data [MONO_UNWIND_DATA_LMF] = NULL;
@@ -411,9 +418,9 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	}
 
 	/* mono_set_jit_tls () sets this */
-	jit_tls = mono_thread_info_tls_get (info, TLS_KEY_JIT_TLS);
+	void *jit_tls = mono_thread_info_tls_get (info, TLS_KEY_JIT_TLS);
 	/* SET_APPDOMAIN () sets this */
-	domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
+	void *domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
 
 	/*Thread already started to cleanup, can no longer capture unwind state*/
 	if (!jit_tls || !domain)
@@ -425,7 +432,8 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	 * can be accessed through MonoThreadInfo.
 	 */
 	/* mono_set_lmf_addr () sets this */
-	addr = mono_thread_info_tls_get (info, TLS_KEY_LMF_ADDR);
+	MonoLMF *lmf = NULL;
+	MonoLMF **addr = (MonoLMF**)mono_thread_info_tls_get (info, TLS_KEY_LMF_ADDR);
 	if (addr)
 		lmf = *addr;
 

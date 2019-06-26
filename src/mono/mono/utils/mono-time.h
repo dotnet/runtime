@@ -59,5 +59,8 @@ mono_stopwatch_elapsed_ms (MonoStopwatch *w)
 	return (mono_stopwatch_elapsed (w) + 500) / 1000;
 }
 
-#endif /* __UTILS_MONO_TIME_H__ */
+// Expand non-portable strftime shorthands.
+#define MONO_STRFTIME_F "%Y-%m-%d" // %F in some systems, but this works on all.
+#define MONO_STRFTIME_T "%H:%M:%S" // %T in some systems, but this works on all.
 
+#endif /* __UTILS_MONO_TIME_H__ */

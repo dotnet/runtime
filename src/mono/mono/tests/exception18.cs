@@ -46,8 +46,8 @@ class C
 			}
 		} catch (Exception ex) {
 			int frames = FrameCount (ex);
-			if (frames != 3)
-				throw new Exception (String.Format("Exception carried {0} frames along with it when it should have reported three.", frames));
+			if (frames != 4)
+				throw new Exception (String.Format("Exception carried {0} frames along with it when it should have reported four.", frames));
 		}
 
 		try {

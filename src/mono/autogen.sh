@@ -120,7 +120,7 @@ for PARAM; do
 done
 
 if test x$has_ext_mod = xtrue; then
-	pushd ../mono-extensions/scripts
+	pushd $top_srcdir../mono-extensions/scripts
 	sh ./prepare-repo.sh $ext_mod_args || exit 1
 	popd
 else

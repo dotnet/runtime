@@ -22,6 +22,8 @@ runtime_lib=	\
 	$(top_builddir)/mono/utils/libmonoutils.la \
 	$(glib_libs)
 
+noinst_LIBRARIES = libmonodis.a
+
 if DISABLE_EXECUTABLES
 bin_PROGRAMS =
 else
@@ -29,10 +31,13 @@ if DISABLE_LIBRARIES
 bin_PROGRAMS =
 else
 bin_PROGRAMS = monodis
+noinst_LIBRARIES += libmonodismain.a
 endif
 endif
 
-noinst_LIBRARIES = libmonodis.a
+CFLAGS := $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@)
+libmonodis_a_CFLAGS = $(CFLAGS) @CXX_ADD_CFLAGS@
+libmonodismain_a_CFLAGS = $(CFLAGS) @CXX_ADD_CFLAGS@
 
 libmonodis_a_SOURCES =	\
 	get.c		\
@@ -42,7 +47,7 @@ libmonodis_a_SOURCES =	\
 	util.c		\
 	util.h
 
-monodis_SOURCES =	\
+libmonodismain_a_SOURCES =	\
 	dump.c		\
 	dump.h		\
 	main.c		\
@@ -50,7 +55,12 @@ monodis_SOURCES =	\
 	declsec.c	\
 	declsec.h
 
+monodis_SOURCES =
+
 monodis_LDADD = 			\
+	libmonodismain_a-dump.$(OBJEXT)	\
+	libmonodismain_a-main.$(OBJEXT)	\
+	libmonodismain_a-declsec.$(OBJEXT) \
 	libmonodis.a			\
 	$(runtime_lib)			\
 	$(LLVM_LIBS)			\

@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\config.h" />
+    <ClInclude Include="..\winconfig.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{92AE7622-5F58-4234-9A26-9EC71876B3F4}</ProjectGuid>
@@ -148,31 +149,43 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="mono.external.targets" />
+  <Import Project="mono.winconfig.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
-  <PropertyGroup Label="LLVMProperties" Condition="$(MONO_ENABLE_LLVM)=='true'">
-    <LLVMConfig>$(MONO_LLVM_BIN_DIR)/llvm-config.exe</LLVMConfig>
-  </PropertyGroup>
+
   <Target Name="AfterBuildWinSetup">
-    <Exec Command="winsetup.bat">
-      <Output TaskParameter="ExitCode" PropertyName="WinSetupExitCode" />
-    </Exec>
-    <Error Text="Failed running winsetup.bat" Condition="$(WinSetupExitCode) != 0" />
+    <PropertyGroup>
+      <_EnableDefines Condition="'$(MONO_ENABLE_LLVM)' == 'true'">$(_EnableDefines);ENABLE_LLVM;ENABLE_LLVM_RUNTIME</_EnableDefines>
+      <_EnableDefines Condition="'$(MONO_ENABLE_NETCORE)' == 'true'">$(_EnableDefines);ENABLE_NETCORE</_EnableDefines>
+      <_HaveDefines Condition="'$(MONO_ENABLE_BTLS)' == 'true'">$(_HaveDefines);HAVE_BTLS</_HaveDefines>
+      <_EnableDefines>$(_EnableDefines.Trim(';'))</_EnableDefines>
+      <_HaveDefines>$(_HaveDefines.Trim(';'))</_HaveDefines>
+    </PropertyGroup>
+    <WinConfigSetup ConfigFileRoot="$(MSBuildThisFileDirectory)..\"
+                    DisableDefines=""
+                    EnableDefines="$(_EnableDefines)"
+                    HaveDefines="$(_HaveDefines)"/>
   </Target>
-  <Target Name="AfterBuildLLVMSetup" Condition="$(MONO_ENABLE_LLVM)=='true'">
-    <Message Importance="high" Text="Validating LLVM configuration..." />
-    <Error Text="LLVM executable $(LLVMConfig) not found." Condition="!Exists($(LLVMConfig))" />
-    <Message Importance="high" Text="LLVM Version:" />
-    <Exec Command="$(MONO_LLVM_BIN_DIR)/llvm-config.exe --version" ConsoleToMSBuild="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="MonoLLVMVersion" />
-    </Exec>
-    <Message Importance="high" Text="LLVM API Version:" />
-    <Exec Command="$(MONO_LLVM_BIN_DIR)/llvm-config.exe --mono-api-version" ConsoleToMSBuild="true" EchoOff="true">
-      <Output TaskParameter="ConsoleOutput" PropertyName="MonoLLVMAPIVersion" />
-    </Exec>
-    <Error Text="Compiling with stock LLVM is not supported, please use the Mono LLVM repo at https://github.com/mono/llvm." Condition="!$(MonoLLVMVersion.Contains('mono'))" />
-    <Error Text="Expected llvm version 4, but llvm-config --version returned $(MonoLLVMAPIVersion)." Condition="$(MonoLLVMAPIVersion) != '4'" />
-    <Message Importance="high" Text="Successfully validated LLVM configuration." />
+
+  <Target Name="AfterBuild" DependsOnTargets="AfterBuildWinSetup" />
+
+  <Target Name="_BackupConfigFile" Condition="'$(_MonoConfigFileBackupExists)' != 'true' and Exists('$(MONO_DIR)/config.h')">
+    <Copy SourceFiles="$(MONO_DIR)/config.h" DestinationFiles="$(MONO_DIR)/cygconfig.h" />
   </Target>
-  <Target Name="AfterBuild" DependsOnTargets="AfterBuildWinSetup;AfterBuildLLVMSetup" />
+
+  <Target Name="_CheckConfigFile">
+    <_CheckConfigurationProperty ConfFile="$(MONO_DIR)/config.h" ConfRegEx="#include.*cygconfig.h.*">
+      <Output TaskParameter="ConfPropertyFoundMatch" PropertyName="_MonoConfigFileBackupExists" />
+    </_CheckConfigurationProperty>
+  </Target>
+
+  <PropertyGroup>
+    <PrepareForBuildDependsOn>
+      _CheckConfigFile;
+      _BackupConfigFile;
+      $(PrepareForBuildDependsOn);
+    </PrepareForBuildDependsOn>
+  </PropertyGroup>
+
 </Project>

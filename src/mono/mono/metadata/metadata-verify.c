@@ -338,7 +338,7 @@ bounds_check_virtual_address (VerifyContext *ctx, guint32 rva, guint32 size)
 		return FALSE;
 
 	if (ctx->stage > STAGE_PE) {
-		MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)ctx->image->image_info;
+		MonoCLIImageInfo *iinfo = ctx->image->image_info;
 		const int top = iinfo->cli_section_count;
 		MonoSectionTable *tables = iinfo->cli_section_tables;
 		int i;
@@ -700,7 +700,7 @@ verify_resources_table (VerifyContext *ctx)
 static DataDirectory
 get_data_dir (VerifyContext *ctx, int idx)
 {
-	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)ctx->image->image_info;
+	MonoCLIImageInfo *iinfo = ctx->image->image_info;
 	MonoPEDirEntry *entry= &iinfo->cli_header.datadir.pe_export_table;
 	DataDirectory res;
 
@@ -1738,12 +1738,12 @@ is_valid_cattr_type (MonoType *type)
 		return TRUE;
 
 	if (type->type == MONO_TYPE_VALUETYPE) {
-		klass = mono_class_from_mono_type (type);
+		klass = mono_class_from_mono_type_internal (type);
 		return klass && m_class_is_enumtype (klass);
 	}
 
 	if (type->type == MONO_TYPE_CLASS)
-		return mono_class_from_mono_type (type) == mono_defaults.systemtype_class;
+		return mono_class_from_mono_type_internal (type) == mono_defaults.systemtype_class;
 
 	return FALSE;
 }
@@ -1760,11 +1760,13 @@ is_valid_ser_string_full (VerifyContext *ctx, const char **str_start, guint32 *s
 	if (ptr >= end)
 		FAIL (ctx, g_strdup ("CustomAttribute: Not enough room for string size"));
 
+MONO_DISABLE_WARNING (4310) // cast truncates constant value
 	/*NULL string*/
 	if (*ptr == (char)0xFF) {
 		*_ptr = ptr + 1;
 		return TRUE;
 	}
+MONO_RESTORE_WARNING
 
 	if (!safe_read_cint (size, ptr, end))
 		FAIL (ctx, g_strdup ("CustomAttribute: Not enough room for string size"));
@@ -1818,7 +1820,7 @@ get_enum_by_encoded_name (VerifyContext *ctx, const char **_ptr, const char *end
 	}
 	g_free (enum_name);
 
-	klass = mono_class_from_mono_type (type);
+	klass = mono_class_from_mono_type_internal (type);
 	if (!klass || !m_class_is_enumtype (klass)) {
 		ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("CustomAttribute:Class %s::%s is not an enum", m_class_get_name_space (klass), m_class_get_name (klass)));
 		return NULL;
@@ -1903,7 +1905,7 @@ handle_enum:
 				klass = mono_defaults.systemtype_class;
 			} else if ((etype >= MONO_TYPE_BOOLEAN && etype <= MONO_TYPE_STRING) || etype == 0x51) {
 				simple_type.type = etype == 0x51 ? MONO_TYPE_OBJECT : (MonoTypeEnum)etype;
-				klass = mono_class_from_mono_type (&simple_type);
+				klass = mono_class_from_mono_type_internal (&simple_type);
 			} else
 				FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid array element type %x", etype));
 
@@ -2037,7 +2039,7 @@ is_valid_cattr_content (VerifyContext *ctx, MonoMethod *ctor, const char *ptr, g
 				klass = mono_defaults.systemtype_class;
 			} else if ((etype >= MONO_TYPE_BOOLEAN && etype <= MONO_TYPE_STRING) || etype == 0x51) {
 				simple_type.type = etype == 0x51 ? MONO_TYPE_OBJECT : (MonoTypeEnum)etype;
-				klass = mono_class_from_mono_type (&simple_type);
+				klass = mono_class_from_mono_type_internal (&simple_type);
 			} else
 				FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid array element type %x", etype));
 
@@ -3522,7 +3524,7 @@ verify_exportedtype_table (VerifyContext *ctx)
 static void
 verify_manifest_resource_table (VerifyContext *ctx)
 {
-	MonoCLIImageInfo *iinfo = (MonoCLIImageInfo *)ctx->image->image_info;
+	MonoCLIImageInfo *iinfo = ctx->image->image_info;
 	MonoCLIHeader *ch = &iinfo->cli_cli_header;
 	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_MANIFESTRESOURCE];
 	guint32 data [MONO_MANIFEST_SIZE], impl_table, token, resources_size;
@@ -3813,7 +3815,7 @@ verify_methodimpl_table_global_constraints (VerifyContext *ctx)
 		impl->method_declaration = data [MONO_METHODIMPL_DECLARATION];
 
 		if (g_hash_table_lookup (unique_impls, impl)) {
-			ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("MethodImpl table row %d has duplicate for tuple (0x%x, 0x%x)", impl->klass, impl->method_declaration));
+			ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("MethodImpl table row %d has duplicate for tuple (0x%x, 0x%x)", i, impl->klass, impl->method_declaration));
 			g_hash_table_destroy (unique_impls);
 			g_free (impl);
 			return;
@@ -4317,7 +4319,7 @@ mono_verifier_is_sig_compatible (MonoImage *image, MonoMethod *method, MonoMetho
 	if (!mono_verifier_is_enabled_for_image (image))
 		return TRUE;
 
-	original_sig = mono_method_signature (method);
+	original_sig = mono_method_signature_internal (method);
 	if (original_sig->call_convention == MONO_CALL_VARARG) {
 		if (original_sig->hasthis != signature->hasthis)
 			return FALSE;

@@ -46,10 +46,9 @@ MonoDynamicImage*
 mono_dynamic_image_create (MonoDynamicAssembly *assembly, char *assembly_name, char *module_name);
 
 guint32
-mono_dynamic_image_add_to_blob_cached (MonoDynamicImage *assembly, char *b1, int s1, char *b2, int s2);
+mono_dynamic_image_add_to_blob_cached (MonoDynamicImage *assembly, gconstpointer b1, int s1, gconstpointer b2, int s2);
 
 void
 mono_dynimage_alloc_table (MonoDynamicTable *table, guint nrows);
 
 #endif  /* __MONO_METADATA_DYNAMIC_IMAGE_INTERNALS_H__ */
-

@@ -143,7 +143,7 @@ mono_log_write_recorder (const char *log_domain, GLogLevelFlags level, mono_bool
 
 	LogQueueEntry entry;
 	entry.command = MONO_FLIGHT_RECORDER_APPEND;
-	g_snprintf ((gchar *) &entry.message.message, MAX_RECORDER_MSG_LEN, message);
+	g_snprintf ((gchar *) &entry.message.message, MAX_RECORDER_MSG_LEN, "%s", message);
 	mono_utility_thread_send (logger_thread, &entry);
 }
 

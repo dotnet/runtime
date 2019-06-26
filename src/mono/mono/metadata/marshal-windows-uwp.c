@@ -14,9 +14,12 @@
 #include "mono/metadata/marshal-windows-internals.h"
 
 void *
-mono_marshal_alloc_hglobal (size_t size)
+mono_marshal_alloc_hglobal (size_t size, MonoError *error)
 {
-	return HeapAlloc (GetProcessHeap (), 0, size);
+	void* p = HeapAlloc (GetProcessHeap (), 0, size);
+	if (!p)
+		mono_error_set_out_of_memory (error, "");
+	return p;
 }
 
 gpointer
@@ -29,7 +32,6 @@ void
 mono_marshal_free_hglobal (gpointer ptr)
 {
 	HeapFree (GetProcessHeap (), 0, ptr);
-	return;
 }
 
 #else /* G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT) */

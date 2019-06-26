@@ -53,6 +53,7 @@ MONO_API void mono_lock_free_allocator_init_size_class (MonoLockFreeAllocSizeCla
 MONO_API void mono_lock_free_allocator_init_allocator (MonoLockFreeAllocator *heap, MonoLockFreeAllocSizeClass *sc, MonoMemAccountType account_type);
 
 MONO_API gpointer mono_lock_free_alloc (MonoLockFreeAllocator *heap);
+
 MONO_API void mono_lock_free_free (gpointer ptr, size_t block_size);
 
 MONO_API gboolean mono_lock_free_allocator_check_consistency (MonoLockFreeAllocator *heap);

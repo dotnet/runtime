@@ -110,7 +110,7 @@ MONO_API void              mono_assembly_name_free            (MonoAssemblyName 
 typedef struct {
 	const char *name;
 	const unsigned char *data;
-	const unsigned int size;
+	unsigned int size;
 } MonoBundledAssembly;
 
 MONO_API void          mono_register_bundled_assemblies (const MonoBundledAssembly **assemblies);

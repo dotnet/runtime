@@ -1448,6 +1448,20 @@ class Tests
 		var res = builder.Caller (ref awaiter);
 		return res == typeof (bool) ? 0 : 1;
 	}
+
+	struct OneThing<T1> {
+		public T1 Item1;
+	}
+
+	[MethodImpl (MethodImplOptions.NoInlining)]
+	static T FromResult<T> (T result) {
+		return result;
+	}
+
+	public static int test_42_llvm_gsharedvt_small_vtype_in_regs () {
+		var t = FromResult<OneThing<int>>(new OneThing<int> {Item1 = 42});
+		return t.Item1;
+	}
 }
 
 #if !__MOBILE__

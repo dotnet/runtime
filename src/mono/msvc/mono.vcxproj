@@ -103,15 +103,22 @@
     </ClCompile>
     <ProjectReference />
     <Link>
-      <AdditionalDependencies>$(MONO_LIBMONO_LIB);$(MONO_LLVM_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
+      <StackReserveSize>0x800000</StackReserveSize>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
+    <PostBuildEvent>
+      <Command>xcopy "$(SolutionDir)mono-sgen-msvc.sh" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+
+xcopy "$(SolutionDir)mono-sgen-msvc.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+xcopy "$(SolutionDir)setup-windows-env.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+xcopy "$(SolutionDir)setup-vs-msvcbuild-env.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Midl>
@@ -131,12 +138,19 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>$(MONO_LIBMONO_LIB);$(MONO_LLVM_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <ShowProgress>
       </ShowProgress>
+      <StackReserveSize>0x800000</StackReserveSize>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy "$(SolutionDir)mono-sgen-msvc.sh" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+
+xcopy "$(SolutionDir)mono-sgen-msvc.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+xcopy "$(SolutionDir)setup-windows-env.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+xcopy "$(SolutionDir)setup-vs-msvcbuild-env.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -152,12 +166,19 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>$(MONO_LIBMONO_LIB);$(MONO_LLVM_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
+      <StackReserveSize>0x180000</StackReserveSize>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy "$(SolutionDir)mono-sgen-msvc.sh" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+
+xcopy "$(SolutionDir)mono-sgen-msvc.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+xcopy "$(SolutionDir)setup-windows-env.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+xcopy "$(SolutionDir)setup-vs-msvcbuild-env.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
@@ -176,10 +197,22 @@
       <LinkLibraryDependencies>false</LinkLibraryDependencies>
     </ProjectReference>
     <Link>
-      <AdditionalDependencies>$(MONO_LIBMONO_LIB);$(MONO_LLVM_LIBS);%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>$(MONO_LIBMONO_LIB);%(AdditionalDependencies)</AdditionalDependencies>
       <SubSystem>Console</SubSystem>
+      <StackReserveSize>0x180000</StackReserveSize>
     </Link>
+    <PostBuildEvent>
+      <Command>xcopy "$(SolutionDir)mono-sgen-msvc.sh" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+
+xcopy "$(SolutionDir)mono-sgen-msvc.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+xcopy "$(SolutionDir)setup-windows-env.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1
+xcopy "$(SolutionDir)setup-vs-msvcbuild-env.bat" "$(OutDir)" /q /y &gt;nul 2&gt;&amp;1</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(MONO_COMPILE_AS_CPP)'=='true'">
+    <ClCompile>
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\mono\mini\main.c" />
@@ -193,6 +226,22 @@
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <Import Project="mono.external.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
+  <Target Name="_SetupMonoLLVMLinkItems" Condition="$(MONO_ENABLE_LLVM)=='true'">
+    <ItemGroup>
+      <Link>
+        <AdditionalLibraryDirectories>$(MONO_LLVM_LIB_DIR);%(Lib.AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+        <AdditionalDependencies>$(MONO_LLVM_LIBS);%(Lib.AdditionalDependencies)</AdditionalDependencies>
+      </Link>
+    </ItemGroup>
+  </Target>
+  <Target Name="_ConfigureExternalLinkDependency" DependsOnTargets="_ConfigureExternalMonoBuildEnvironment;_SetupMonoLLVMBuildProperties;_SetupMonoLLVMLinkItems" />
+  <PropertyGroup>
+    <ComputeLibInputsTargets>
+      $(ComputeLibInputsTargets);
+      _ConfigureExternalLinkDependency;
+    </ComputeLibInputsTargets>
+  </PropertyGroup>
 </Project>

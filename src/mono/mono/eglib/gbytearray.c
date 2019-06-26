@@ -25,12 +25,12 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
+#include "config.h"
 #include <stdlib.h>
 #include <glib.h>
 
 GByteArray *
-g_byte_array_new ()
+g_byte_array_new (void)
 {
 	return (GByteArray *) g_array_new (FALSE, TRUE, 1);
 }

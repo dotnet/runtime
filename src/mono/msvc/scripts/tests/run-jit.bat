@@ -1,15 +1,16 @@
 @ECHO OFF
+SETLOCAL
 
 SET TEMP_PATH=%PATH%
 SET MONO_RESULT=1
 
-CALL setup-env.bat
+CALL %~dp0setup-env.bat
 IF NOT ERRORLEVEL == 0 (
 	ECHO Failed to setup mono paths.
 	GOTO ON_ERROR
 )
 
-CALL setup-toolchain.bat
+CALL %~dp0setup-toolchain.bat
 IF NOT ERRORLEVEL == 0 (
 	ECHO Failed to setup toolchain.
 	GOTO ON_ERROR

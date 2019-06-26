@@ -55,9 +55,23 @@ static void
 fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 {
 	ERROR_DECL (error);
+	MonoObject *exc;
+
+#if ENABLE_NETCORE
+	MonoClass *appcontext_class;
+	MonoMethod *procexit_method;
+
+	appcontext_class = mono_class_try_load_from_name (mono_defaults.corlib, "System", "AppContext");
+	g_assert (appcontext_class);
+	
+	procexit_method = mono_class_get_method_from_name_checked (appcontext_class, "OnProcessExit", 0, 0, error);
+	g_assert (procexit_method);
+	
+	mono_runtime_try_invoke (procexit_method, NULL, NULL, &exc, error);
+#else
 	MonoClassField *field;
 	gpointer pa [2];
-	MonoObject *delegate, *exc;
+	MonoObject *delegate;
 
 	field = mono_class_get_field_from_name_full (mono_defaults.appdomain_class, "ProcessExit", NULL);
 	g_assert (field);
@@ -70,6 +84,7 @@ fire_process_exit_event (MonoDomain *domain, gpointer user_data)
 	pa [1] = NULL;
 	mono_runtime_delegate_try_invoke (delegate, pa, &exc, error);
 	mono_error_cleanup (error);
+#endif
 }
 
 static void
@@ -124,8 +139,8 @@ mono_runtime_init_tls (void)
 	mono_marshal_init_tls ();
 }
 
-char*
-mono_runtime_get_aotid (void)
+guint8*
+mono_runtime_get_aotid_arr (void)
 {
 	int i;
 	guint8 aotid_sum = 0;
@@ -135,12 +150,22 @@ mono_runtime_get_aotid (void)
 		return NULL;
 
 	guint8 (*aotid)[16] = &domain->entry_assembly->image->aotid;
-
 	for (i = 0; i < 16; ++i)
 		aotid_sum |= (*aotid)[i];
 
 	if (aotid_sum == 0)
 		return NULL;
 
-	return mono_guid_to_string ((guint8*) aotid);
+	return (guint8*)aotid;
+}
+
+char*
+mono_runtime_get_aotid (void)
+{
+	guint8 *aotid = mono_runtime_get_aotid_arr ();
+
+	if (!aotid)
+		return NULL;
+
+	return mono_guid_to_string (aotid);
 }

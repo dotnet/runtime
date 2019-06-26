@@ -21,8 +21,10 @@ MONO_API void             mono_code_manager_invalidate (MonoCodeManager *cman);
 MONO_API void             mono_code_manager_set_read_only (MonoCodeManager *cman);
 
 MONO_API void*            mono_code_manager_reserve_align (MonoCodeManager *cman, int size, int alignment);
+#define mono_code_manager_reserve_align(cman, size, align) (g_cast (mono_code_manager_reserve_align ((cman), (size), (align))))
 
 MONO_API void*            mono_code_manager_reserve (MonoCodeManager *cman, int size);
+#define mono_code_manager_reserve(cman, size) (g_cast (mono_code_manager_reserve ((cman), (size))))
 MONO_API void             mono_code_manager_commit  (MonoCodeManager *cman, void *data, int size, int newsize);
 MONO_API int              mono_code_manager_size    (MonoCodeManager *cman, int *used_size);
 MONO_API void             mono_code_manager_init (void);

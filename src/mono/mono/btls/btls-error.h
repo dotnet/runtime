@@ -13,26 +13,27 @@
 #include <stdlib.h>
 #include <string.h>
 #include <openssl/ssl.h>
+#include "btls-util.h"
 
-int
+MONO_API int
 mono_btls_error_peek_error (void);
 
-int
+MONO_API int
 mono_btls_error_get_error (void);
 
-void
+MONO_API void
 mono_btls_error_clear_error (void);
 
-int
+MONO_API int
 mono_btls_error_peek_error_line (const char **file, int *line);
 
-int
+MONO_API int
 mono_btls_error_get_error_line (const char **file, int *line);
 
-void
+MONO_API void
 mono_btls_error_get_error_string_n (int error, char *buf, int len);
 
-int
+MONO_API int
 mono_btls_error_get_reason (int error);
 
 #endif /* __btls__btls_error__ */

@@ -841,6 +841,48 @@ class Tests {
 		return 0;
 	}
 
+	public static unsafe int test_0_pointer_array() {
+		int*[] ipa = new int* [0];
+		Array a = ipa;
+
+		
+		if (a is object[])
+			return 1;
+		if (!(a is int*[]))
+			return 2;
+		if (a is ValueType[])
+			return 3;
+		if (a is Enum[])
+			return 4;
+		if (a is char*[])
+			return 5;
+
+		return 0;
+	}
+
+	public static string[] StringValues = { "Val1", "Val2", "Val3" };
+
+	public static IEnumerable<string> GetStringValues ()
+	{
+		foreach (string val in StringValues)
+			yield return val;
+	}
+
+	public static int test_0_cast_special_iface () {
+		try {
+			IEnumerable<string> strings = GetStringValues ();
+			IList<string> stringIList = (IList<string>) strings;
+
+			// No exception thrown. Maybe it's an actual IList ?
+			// Make sure it's not bluffing
+			if (!"Val2".Equals (stringIList [1]))
+				return 1;
+		} catch (InvalidCastException) {
+		}
+
+		return 0;
+	}
+
 	private static int[] daysmonthleap = { 0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
 	private static int AbsoluteDays (int year, int month, int day)
@@ -1389,6 +1431,7 @@ ncells ) {
 		return 1.4e-45f;
 	}
 
+#if !NO_BITCODE
 	[Category ("!BITCODE")] // bug #59953
 	public static int test_0_float_return_spill () {
 		// The return value of return_float () is spilled because of the
@@ -1397,6 +1440,7 @@ ncells ) {
 		float f = return_float ();
 		return (float)o == f ? 0 : 1;
 	}
+#endif
 
 	class R4Holder {
 		public static float pi = 3.14f;
@@ -1963,6 +2007,48 @@ ncells ) {
 
 	public static int test_0_dup_vtype () {
 		return new SimpleContainer ().SetFields ();
+	}
+
+	public struct Vec3 {
+		public int X, Y, Z;
+
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+			public Vec3(int x, int y, int z) {
+			X = x;
+			Y = y;
+			Z = z;
+		}
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static int gh_11378_inner_1 (Vec3 p1, Vec3 p2) {
+		p1.X -= p2.X;
+		p1.Y -= p2.Y;
+		p1.Z -= p2.Z;
+
+		return (int)p2.Y;
+	}
+
+	[MethodImplAttribute (MethodImplOptions.NoInlining)]
+	public static int gh_11378_inner_2 (Vec3 c, Vec3 pos) {
+		return gh_11378_inner_1 (pos, c);
+	}
+
+	static int gh_11378_inner_3 (Vec3 c) {
+		var c2 = c;
+		return gh_11378_inner_2 (c, c2);
+	}
+
+	public static int test_2_gh_11378 () {
+		return gh_11378_inner_3 (new Vec3(0, 2, -20));
+	}
+
+	static int variable_with_constant_address;
+
+	public static int test_0_cfold_with_non_constant_ternary_op () {
+		variable_with_constant_address = 0;
+		var old = System.Threading.Interlocked.CompareExchange(ref variable_with_constant_address, 1, 0);
+		return old == 0 && variable_with_constant_address == 1 ? 0 : 1;
 	}
 }
 

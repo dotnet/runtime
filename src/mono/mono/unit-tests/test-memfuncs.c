@@ -26,8 +26,14 @@
 #define MEMMOVE_SIZES			256
 #define MEMMOVE_NONOVERLAP_START	1024
 
+#ifdef __cplusplus
+extern "C"
+#endif
 int
-main (void)
+test_memfuncs_main (void);
+
+int
+test_memfuncs_main (void)
 {
 	unsigned char *random_mem = (unsigned char *)malloc (POOL_SIZE);
 	unsigned char *reference = (unsigned char *)malloc (POOL_SIZE);

@@ -11,10 +11,10 @@
 
 #include <config.h>
 #include "security-manager.h"
+#include "class-init.h"
 
 /* Class lazy loading functions */
 static GENERATE_GET_CLASS_WITH_CACHE (security_manager, "System.Security", "SecurityManager")
-static GENERATE_TRY_GET_CLASS_WITH_CACHE (execution_context, "System.Threading", "ExecutionContext")
 
 static MonoSecurityMode mono_security_mode = MONO_SECURITY_MODE_NONE;
 
@@ -44,7 +44,7 @@ mono_security_manager_get_methods (void)
 	/* Initialize */
 	secman.securitymanager = mono_class_get_security_manager_class ();
 	if (!m_class_is_inited (secman.securitymanager))
-		mono_class_init (secman.securitymanager);
+		mono_class_init_internal (secman.securitymanager);
 
 	return &secman;
 }
@@ -82,35 +82,6 @@ mono_is_ecma_key (const char *publickey, int size)
 	}
 	return TRUE;
 }
-
-/*
- * Context propagation is required when:
- * (a) the security manager is active (1.x and later)
- * (b) other contexts needs to be propagated (2.x and later)
- *
- * returns NULL if no context propagation is required, else the returns the
- * MonoMethod to call to Capture the ExecutionContext.
- */
-MonoMethod*
-mono_get_context_capture_method (void)
-{
-	static MonoMethod *method = NULL;
-
-	if (mono_image_get_assembly (mono_defaults.corlib)->aname.major < 2)
-		return NULL;
-
-	/* older corlib revisions won't have the class (nor the method) */
-	MonoClass *execution_context = mono_class_try_get_execution_context_class ();
-	if (execution_context && !method) {
-		ERROR_DECL (error);
-		mono_class_init (execution_context);
-		method = mono_class_get_method_from_name_checked (execution_context, "Capture", 0, 0, error);
-		mono_error_assert_ok (error);
-	}
-
-	return method;
-}
-
 
 /* System.Security icalls */
 

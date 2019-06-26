@@ -11,15 +11,29 @@ else
 tools_dir = tools
 endif
 
-SUBDIRS = mk po $(libgc_dir) llvm mono $(ikvm_native_dir) support data runtime scripts man samples $(tools_dir) msvc $(docs_dir) acceptance-tests
+if ENABLE_MSVC
+build_with_msvc = msvc
+build_without_msvc =
+else
+build_with_msvc =
+build_without_msvc = msvc
+endif
+
+if ENABLE_NETCORE
+update_submodules = 
+SUBDIRS = mk llvm mono runtime netcore
+else
+update_submodules = update_submodules
+SUBDIRS = $(build_with_msvc) mk po $(libgc_dir) llvm mono $(ikvm_native_dir) support data runtime scripts man samples $(tools_dir) $(build_without_msvc) $(docs_dir) acceptance-tests
+endif
+
 # Keep in sync with SUBDIRS
-DIST_SUBDIRS = m4 mk po $(libgc_dir) llvm mono ikvm-native support data runtime scripts man samples tools msvc docs acceptance-tests
+DIST_SUBDIRS = $(build_with_msvc) m4 mk po $(libgc_dir) llvm mono ikvm-native support data runtime scripts man samples tools $(build_without_msvc) docs acceptance-tests netcore
 
-all: update_submodules
+all: $(update_submodules)
 
-SUBMODULE_ERROR='Could not recursively update all git submodules. You may experience compilation problems if some submodules are out of date'
 update_submodules:
-	@$(srcdir)/scripts/update_submodules.sh
+	@cd $(srcdir) && scripts/update_submodules.sh
 
 .PHONY: update_submodules
 
@@ -42,9 +56,16 @@ dist-hook:
 	test -d $(distdir)/mcs || mkdir $(distdir)/mcs
 	d=`cd $(distdir)/mcs && pwd`; cd $(mcs_topdir) && $(MAKE) distdir=$$d dist-recursive
 	rm -rf `find $(top_distdir)/external -path '*\.git'`
+	rm -rf `find $(top_distdir)/external -path '*\.libs'`
+	rm -rf `find $(top_distdir)/external -path '*\.deps'`
+	rm -f `find $(top_distdir)/external -path '*\.o'`
+	rm -f `find $(top_distdir)/external -path '*\.so'`
+	rm -f `find $(top_distdir)/external -path '*\.lo'`
+	rm -f `find $(top_distdir)/external -path '*\.Plo'`
+	rm -f `find $(top_distdir)/external -name '\.dirstamp'`
 	rm -f `find $(top_distdir)/external -path '*\.exe' -not -path '*/roslyn-binaries/*'`
-	rm -f `find $(top_distdir)/external -path '*\.dll' -not -path '*/binary-reference-assemblies/*' -not -path '*/roslyn-binaries/*'`
-	rm -rf "$(top_distdir)/external/linker/linker/Tests"
+	rm -f `find $(top_distdir)/external -path '*\.dll' -not -path '*/binary-reference-assemblies/*' -not -path '*/roslyn-binaries/*' -not -path '*/helix-binaries/*'`
+	rm -rf "$(top_distdir)/external/linker/test"
 
 pkgconfigdir = $(libdir)/pkgconfig
 noinst_DATA = mono-uninstalled.pc
@@ -59,9 +80,15 @@ if BITCODE
 BITCODE_CHECK=yes
 endif
 
+if DEFAULT_TESTS
+CI_TEST_SCRIPT=$(srcdir)/scripts/ci/run-test-default.sh
+else
+CI_TEST_SCRIPT=$(srcdir)/scripts/ci/run-test-$(TEST_PROFILE).sh
+endif
+
 .PHONY: check-ci
 check-ci:
-	MONO_LLVMONLY=$(BITCODE_CHECK) $(srcdir)/scripts/ci/run-test-$(TEST_PROFILE).sh
+	MONO_LLVMONLY=$(BITCODE_CHECK) $(CI_TEST_SCRIPT)
 
 .PHONY: validate do-build-mono-mcs mcs-do-clean mcs-do-tests
 validate: do-build-mono-mcs

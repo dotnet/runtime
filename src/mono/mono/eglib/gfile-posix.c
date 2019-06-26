@@ -94,10 +94,21 @@ g_file_get_contents (const gchar *filename, gchar **contents, gsize *length, GEr
 	} while ((nread > 0 && offset < st.st_size) || (nread == -1 && errno == EINTR));
 
 	close (fd);
+
+#ifdef G_OS_WIN32
+	// Windows defaults to O_TEXT for opened files, meaning that st_size can be larger than
+	// what's actually read into str due to new line conversion.
+	g_assert (offset <= st.st_size);
+	str [offset] = '\0';
+	if (length)
+		*length = offset;
+#else
 	str [st.st_size] = '\0';
 	if (length) {
 		*length = st.st_size;
 	}
+#endif
+
 	*contents = str;
 	return TRUE;
 }

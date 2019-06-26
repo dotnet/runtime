@@ -5,7 +5,6 @@
  * Copyright (C) 2015 Xamarin Inc
  *
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
- * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
 #ifndef __MONO_UTILS_MEMFUNCS_H__

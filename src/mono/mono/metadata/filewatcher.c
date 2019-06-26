@@ -9,9 +9,9 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-#ifdef HAVE_CONFIG_H
 #include <config.h>
-#endif
+
+#if !ENABLE_NETCORE
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -56,6 +56,10 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 
 static int (*FAMNextEvent) (gpointer, gpointer);
 
+#if defined(HAVE_SYS_INOTIFY_H)
+#include <sys/inotify.h>
+#endif
+
 gint
 ves_icall_System_IO_FSW_SupportsFSW (void)
 {
@@ -64,23 +68,18 @@ ves_icall_System_IO_FSW_SupportsFSW (void)
 		return 3; /* kqueue */
 	else
 		return 6; /* CoreFX */
-#elif defined(HAVE_SYS_INOTIFY_H) && !defined(TARGET_ANDROID)
+#elif defined(HAVE_SYS_INOTIFY_H)
+	int inotify_instance = inotify_init ();
+	if (inotify_instance == -1)
+		return  0; /* DefaultWatcher */
+	close (inotify_instance);
 	return 6; /* CoreFX */
 #elif HAVE_KQUEUE
 	return 3; /* kqueue */
 #else
 	MonoDl *fam_module;
 	int lib_used = 4; /* gamin */
-	int inotify_instance;
 	char *err;
-
-#if defined (TARGET_ANDROID)
-	inotify_instance = ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ();
-	if (inotify_instance != -1) {
-		close (inotify_instance);
-		return 5; /* inotify */
-	}
-#endif
 
 	fam_module = mono_dl_open ("libgamin-1.so", MONO_DL_LAZY, NULL);
 	if (fam_module == NULL) {
@@ -136,96 +135,12 @@ ves_icall_System_IO_FAMW_InternalFAMNextEvent (gpointer conn,
 }
 #endif
 
-#if defined(TARGET_ANDROID)
-#ifndef HAVE_SYS_INOTIFY_H
-int ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ()
-{
-	return -1;
-}
-
-int ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *directory, gint32 mask)
-{
-	return -1;
-}
-
-int ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor)
-{
-	return -1;
-}
-#else
-#include <sys/inotify.h>
-#include <errno.h>
-
-int
-ves_icall_System_IO_InotifyWatcher_GetInotifyInstance ()
-{
-	return inotify_init ();
-}
-
-int
-ves_icall_System_IO_InotifyWatcher_AddWatch (int fd, MonoString *name, gint32 mask)
-{
-	ERROR_DECL (error);
-	char *str, *path;
-	int retval;
-
-	if (name == NULL)
-		return -1;
-
-	str = mono_string_to_utf8_checked (name, error);
-	if (mono_error_set_pending_exception (error))
-		return -1;
-	path = mono_portability_find_file (str, TRUE);
-	if (!path)
-		path = str;
-
-	retval = inotify_add_watch (fd, path, mask);
-	if (retval < 0) {
-		switch (errno) {
-		case EACCES:
-			errno = ERROR_ACCESS_DENIED;
-			break;
-		case EBADF:
-			errno = ERROR_INVALID_HANDLE;
-			break;
-		case EFAULT:
-			errno = ERROR_INVALID_ACCESS;
-			break;
-		case EINVAL:
-			errno = ERROR_INVALID_DATA;
-			break;
-		case ENOMEM:
-			errno = ERROR_NOT_ENOUGH_MEMORY;
-			break;
-		case ENOSPC:
-			errno = ERROR_TOO_MANY_OPEN_FILES;
-			break;
-		default:
-			errno = ERROR_GEN_FAILURE;
-			break;
-		}
-		mono_marshal_set_last_error ();
-	}
-	if (path != str)
-		g_free (path);
-	g_free (str);
-	return retval;
-}
-
-int
-ves_icall_System_IO_InotifyWatcher_RemoveWatch (int fd, gint32 watch_descriptor)
-{
-	return inotify_rm_watch (fd, watch_descriptor);
-}
-#endif
-#endif
-
 #if HAVE_KQUEUE
 
 static void
 interrupt_kevent (gpointer data)
 {
-	int *kq_ptr = data;
+	int *kq_ptr = (int*)data;
 
 	/* Interrupt the kevent () call by closing the fd */
 	close (*kq_ptr);
@@ -252,7 +167,7 @@ ves_icall_System_IO_KqueueMonitor_kevent_notimeout (int *kq_ptr, gpointer change
 	}
 
 	MONO_ENTER_GC_SAFE;
-	res = kevent (*kq_ptr, changelist, nchanges, eventlist, nevents, NULL);
+	res = kevent (*kq_ptr, (const struct kevent*)changelist, nchanges, (struct kevent*)eventlist, nevents, NULL);
 	MONO_EXIT_GC_SAFE;
 
 	mono_thread_info_uninstall_interrupt (&interrupted);
@@ -271,17 +186,4 @@ ves_icall_System_IO_KqueueMonitor_kevent_notimeout (int *kq_ptr, gpointer change
 
 #endif /* #if HAVE_KQUEUE */
 
-#ifdef HOST_IOS
-
-MONO_API char* SystemNative_RealPath(const char* path)
-{
-    g_assert(path != NULL);
-    return realpath(path, NULL);
-}
-
-MONO_API void SystemNative_Sync(void)
-{
-    sync();
-}
-
-#endif // HOST_IOS
+#endif /* !ENABLE_NETCORE */

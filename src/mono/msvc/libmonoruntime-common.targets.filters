@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="common_sources">
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\abi.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\appdomain.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
@@ -97,6 +100,12 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\exception-internals.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\external-only.c">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\external-only.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\w32file.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
@@ -136,12 +145,18 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\image-internals.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\jit-icall-reg.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\jit-info.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loader.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loader-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\locales.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
@@ -211,6 +226,9 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-basic-block.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-config-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-config.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
@@ -224,6 +242,9 @@
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-endian.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-hash-internals.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\mono-hash.c">
@@ -352,9 +373,6 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\string-icalls.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\sysmath.h">
-      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
-    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\sysmath.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
@@ -446,6 +464,9 @@
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\handle.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\handle-decl.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\w32mutex.h">
@@ -649,6 +670,9 @@
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common\public</Filter>
     </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\profiler-events.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common\public</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\profiler-legacy.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common\public</Filter>
     </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\reflection.h">

@@ -81,6 +81,12 @@ mono_arch_undo_ip_adjustment (MonoContext *context)
 	g_assert_not_reached ();
 }
 
+void
+mono_arch_do_ip_adjustment (MonoContext *context)
+{
+	g_assert_not_reached ();
+}
+
 #endif
 
 #ifndef MONO_ARCH_HAVE_EXCEPTIONS_INIT
@@ -91,3 +97,48 @@ mono_arch_exceptions_init (void)
 }
 
 #endif
+
+#if defined (DISABLE_JIT) && !defined (HOST_WASM)
+gpointer
+mono_arch_get_restore_context (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_throw_exception (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_rethrow_exception (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer
+mono_arch_get_rethrow_preserve_exception (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+gpointer 
+mono_arch_get_throw_corlib_exception (MonoTrampInfo **info, gboolean aot)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
+
+#endif /* DISABLE_JIT */

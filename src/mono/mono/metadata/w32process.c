@@ -15,6 +15,7 @@
 #include "image.h"
 #include "utils/mono-proclib.h"
 #include "utils/w32api.h"
+#include "icall-decl.h"
 
 #define LOGDEBUG(...)
 /* define LOGDEBUG(...) g_message(__VA_ARGS__)  */
@@ -36,23 +37,23 @@ mono_w32process_try_get_modules (gpointer process, HMODULE *modules, guint32 siz
 static guint32
 mono_w32process_module_get_name (gpointer process, gpointer module, gunichar2 *basename, guint32 size)
 {
-	return GetModuleBaseName (process, module, basename, size);
+	return GetModuleBaseName (process, (HMODULE)module, basename, size);
 }
 
 static guint32
 mono_w32process_module_get_filename (gpointer process, gpointer module, gunichar2 *basename, guint32 size)
 {
-	return GetModuleFileNameEx (process, module, basename, size);
+	return GetModuleFileNameEx (process, (HMODULE)module, basename, size);
 }
 
 static gboolean
 mono_w32process_module_get_information (gpointer process, gpointer module, MODULEINFO *modinfo, guint32 size)
 {
-	return GetModuleInformation (process, module, modinfo, size);
+	return GetModuleInformation (process, (HMODULE)module, modinfo, size);
 }
 
 static gboolean
-mono_w32process_get_fileversion_info (gunichar2 *filename, gpointer *data)
+mono_w32process_get_fileversion_info (const gunichar2 *filename, gpointer *data)
 {
 	DWORD handle;
 	gsize datasize;
@@ -145,7 +146,7 @@ process_set_field_object (MonoObject *obj, const gchar *fieldname, MonoObject *d
 	field = mono_class_get_field_from_name_full (klass, fieldname, NULL);
 	g_assert (field);
 
-	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, data);
+	mono_gc_wbarrier_generic_store_internal (((char *)obj) + field->offset, data);
 }
 
 static void
@@ -172,7 +173,7 @@ process_set_field_string (MonoObject *obj, const gchar *fieldname, const gunicha
 	string = mono_string_new_utf16_checked (domain, val, len, error);
 	return_if_nok (error);
 
-	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, (MonoObject*)string);
+	mono_gc_wbarrier_generic_store_internal (((char *)obj) + field->offset, (MonoObject*)string);
 }
 
 static void
@@ -198,7 +199,7 @@ process_set_field_string_char (MonoObject *obj, const gchar *fieldname, const gc
 	string = mono_string_new_checked (domain, val, error);
 	return_if_nok (error);
 
-	mono_gc_wbarrier_generic_store (((char *)obj) + field->offset, (MonoObject*)string);
+	mono_gc_wbarrier_generic_store_internal (((char *)obj) + field->offset, (MonoObject*)string);
 }
 
 static void
@@ -432,13 +433,13 @@ ves_icall_System_Diagnostics_FileVersionInfo_GetVersionInfo_internal (MonoObject
 
 	stash_system_image (m_class_get_image (mono_object_class (this_obj)));
 
-	mono_w32process_get_fileversion (this_obj, mono_string_chars (filename), error);
+	mono_w32process_get_fileversion (this_obj, mono_string_chars_internal (filename), error);
 	if (!mono_error_ok (error)) {
 		mono_error_set_pending_exception (error);
 		return;
 	}
 
-	process_set_field_string (this_obj, "filename", mono_string_chars (filename), mono_string_length (filename), error);
+	process_set_field_string (this_obj, "filename", mono_string_chars_internal (filename), mono_string_length_internal (filename), error);
 	if (!mono_error_ok (error)) {
 		mono_error_set_pending_exception (error);
 	}
@@ -460,7 +461,7 @@ get_domain_assemblies (MonoDomain *domain)
 	mono_domain_assemblies_lock (domain);
 	for (tmp = domain->domain_assemblies; tmp; tmp = tmp->next) {
 		MonoAssembly *ass = (MonoAssembly *)tmp->data;
-		if (ass->image->fileio_used)
+		if (m_image_is_fileio_used (ass->image))
 			continue;
 		g_ptr_array_add (assemblies, ass);
 	}
@@ -523,7 +524,7 @@ process_get_module (MonoAssembly *assembly, MonoClass *proc_class, MonoError *er
 {
 	MonoObject *item, *filever;
 	MonoDomain *domain;
-	gchar *filename;
+	char *filename = NULL;
 	const gchar *modulename;
 
 	error_init (error);
@@ -534,27 +535,30 @@ process_get_module (MonoAssembly *assembly, MonoClass *proc_class, MonoError *er
 
 	/* Build a System.Diagnostics.ProcessModule with the data. */
 	item = mono_object_new_checked (domain, proc_class, error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
 
 	filever = mono_object_new_checked (domain, get_file_version_info_class (), error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
 
 	filename = g_strdup_printf ("[In Memory] %s", modulename);
 
 	process_get_assembly_fileversion (filever, assembly);
 	process_set_field_string_char (filever, "filename", filename, error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
 	process_set_field_object (item, "version_info", filever);
 
 	process_set_field_intptr (item, "baseaddr", assembly->image->raw_data);
 	process_set_field_int (item, "memory_size", assembly->image->raw_data_len);
 	process_set_field_string_char (item, "filename", filename, error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
 	process_set_field_string_char (item, "modulename", modulename, error);
-	return_val_if_nok (error, NULL);
+	goto_if_nok (error, return_null);
 
+	goto exit;
+return_null:
+	item = NULL;
+exit:
 	g_free (filename);
-
 	return item;
 }
 
@@ -597,7 +601,7 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 				mono_error_set_pending_exception (error);
 				return NULL;
 			}
-			mono_array_setref (temp_arr, num_added++, module);
+			mono_array_setref_internal (temp_arr, num_added++, module);
 		}
 	}
 
@@ -609,7 +613,7 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 				mono_error_set_pending_exception (error);
 				return NULL;
 			}
-			mono_array_setref (temp_arr, num_added++, module);
+			mono_array_setref_internal (temp_arr, num_added++, module);
 		}
 		g_ptr_array_free (assemblies, TRUE);
 	}
@@ -623,7 +627,7 @@ ves_icall_System_Diagnostics_Process_GetModules_internal (MonoObject *this_obj, 
 			return NULL;
 
 		for (i = 0; i < num_added; i++)
-			mono_array_setref (arr, i, mono_array_get (temp_arr, MonoObject*, i));
+			mono_array_setref_internal (arr, i, mono_array_get_internal (temp_arr, MonoObject*, i));
 	}
 
 	return arr;
@@ -706,7 +710,7 @@ static void
 mono_unpin_array (gchandle_t *gchandles, gsize count)
 {
 	for (gsize i = 0; i < count; ++i) {
-		mono_gchandle_free (gchandles [i]);
+		mono_gchandle_free_internal (gchandles [i]);
 		gchandles [i] = 0;
 	}
 }

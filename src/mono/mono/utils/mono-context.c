@@ -414,12 +414,12 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	/* Why are we only copying 16 registers?! There are 32! */
 	memcpy (&mctx->fregs, &context->D, sizeof (double) * 16);
 #else
-	arm_ucontext *my_uc = sigctx;
+	arm_ucontext *my_uc = (arm_ucontext*)sigctx;
 
 	mctx->pc = UCONTEXT_REG_PC (my_uc);
 	mctx->regs [ARMREG_SP] = UCONTEXT_REG_SP (my_uc);
 	mctx->cpsr = UCONTEXT_REG_CPSR (my_uc);
-	memcpy (&mctx->regs, &UCONTEXT_REG_R0 (my_uc), sizeof (mgreg_t) * 16);
+	memcpy (&mctx->regs, &UCONTEXT_REG_R0 (my_uc), sizeof (host_mgreg_t) * 16);
 #ifdef UCONTEXT_REG_VFPREGS
 	memcpy (&mctx->fregs, UCONTEXT_REG_VFPREGS (my_uc), sizeof (double) * 16);
 #endif
@@ -441,13 +441,13 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *ctx)
 	/* Why are we only copying 16 registers?! There are 32! */
 	memcpy (&context->D, &mctx->fregs, sizeof (double) * 16);
 #else
-	arm_ucontext *my_uc = ctx;
+	arm_ucontext *my_uc = (arm_ucontext*)ctx;
 
 	UCONTEXT_REG_PC (my_uc) = mctx->pc;
 	UCONTEXT_REG_SP (my_uc) = mctx->regs [ARMREG_SP];
 	UCONTEXT_REG_CPSR (my_uc) = mctx->cpsr;
 	/* The upper registers are not guaranteed to be valid */
-	memcpy (&UCONTEXT_REG_R0 (my_uc), &mctx->regs, sizeof (mgreg_t) * 12);
+	memcpy (&UCONTEXT_REG_R0 (my_uc), &mctx->regs, sizeof (host_mgreg_t) * 12);
 #ifdef UCONTEXT_REG_VFPREGS
 	memcpy (UCONTEXT_REG_VFPREGS (my_uc), &mctx->fregs, sizeof (double) * 16);
 #endif
@@ -464,7 +464,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 #ifdef MONO_CROSS_COMPILE
 	g_assert_not_reached ();
 #else
-	memcpy (mctx->regs, UCONTEXT_GREGS (sigctx), sizeof (mgreg_t) * 31);
+	memcpy (mctx->regs, UCONTEXT_GREGS (sigctx), sizeof (host_mgreg_t) * 31);
 	mctx->pc = UCONTEXT_REG_PC (sigctx);
 	mctx->regs [ARMREG_SP] = UCONTEXT_REG_SP (sigctx);
 #ifdef __linux__
@@ -485,7 +485,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 #ifdef MONO_CROSS_COMPILE
 	g_assert_not_reached ();
 #else
-	memcpy (UCONTEXT_GREGS (sigctx), mctx->regs, sizeof (mgreg_t) * 31);
+	memcpy (UCONTEXT_GREGS (sigctx), mctx->regs, sizeof (host_mgreg_t) * 31);
 	UCONTEXT_REG_PC (sigctx) = mctx->pc;
 	UCONTEXT_REG_SP (sigctx) = mctx->regs [ARMREG_SP];
 #endif
@@ -533,7 +533,7 @@ mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
 	mctx->sc_ir = UCONTEXT_REG_NIP(uc);
 	mctx->sc_sp = UCONTEXT_REG_Rn(uc, 1);
 
-	memcpy (&mctx->regs, &UCONTEXT_REG_Rn(uc, 0), sizeof (mgreg_t) * MONO_MAX_IREGS);
+	memcpy (&mctx->regs, &UCONTEXT_REG_Rn(uc, 0), sizeof (host_mgreg_t) * MONO_MAX_IREGS);
 	memcpy (&mctx->fregs, &UCONTEXT_REG_FPRn(uc, 0), sizeof (double) * MONO_MAX_FREGS);
 }
 
@@ -542,7 +542,7 @@ mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
 	os_ucontext *uc = sigctx;
 
-	memcpy (&UCONTEXT_REG_Rn(uc, 0), &mctx->regs, sizeof (mgreg_t) * MONO_MAX_IREGS);
+	memcpy (&UCONTEXT_REG_Rn(uc, 0), &mctx->regs, sizeof (host_mgreg_t) * MONO_MAX_IREGS);
 	memcpy (&UCONTEXT_REG_FPRn(uc, 0), &mctx->fregs, sizeof (double) * MONO_MAX_FREGS);
 
 	/* The valid values for pc and sp are stored here and not in regs array */
@@ -564,6 +564,36 @@ void
 mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
 {
 	g_error ("MonoContext not supported");
+}
+
+#elif ((defined (HOST_RISCV) || defined (HOST_RISCV64)) && !defined (MONO_CROSS_COMPILE)) || defined (TARGET_RISCV)
+
+#include <mono/utils/mono-context.h>
+
+void
+mono_sigctx_to_monoctx (void *sigctx, MonoContext *mctx)
+{
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#else
+	ucontext_t *uctx = sigctx;
+
+	memcpy (&mctx->gregs, &uctx->uc_mcontext.gregs, sizeof (host_mgreg_t) * G_N_ELEMENTS (mctx->gregs));
+	memcpy (&mctx->fregs, &uctx->uc_mcontext.fpregs, sizeof (double) * G_N_ELEMENTS (mctx->fregs));
+#endif
+}
+
+void
+mono_monoctx_to_sigctx (MonoContext *mctx, void *sigctx)
+{
+#ifdef MONO_CROSS_COMPILE
+	g_assert_not_reached ();
+#else
+	ucontext_t *uctx = sigctx;
+
+	memcpy (&uctx->uc_mcontext.gregs, &mctx->gregs, sizeof (host_mgreg_t) * G_N_ELEMENTS (mctx->gregs));
+	memcpy (&uctx->uc_mcontext.fpregs, &mctx->fregs, sizeof (double) * G_N_ELEMENTS (mctx->fregs));
+#endif
 }
 
 #endif /* #if defined(__i386__) */

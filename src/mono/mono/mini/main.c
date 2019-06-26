@@ -145,7 +145,7 @@ delete_bundled_libraries (void)
 	GSList *list;
 
 	for (list = bundle_library_paths; list != NULL; list = list->next){
-		unlink (list->data);
+		unlink ((const char*)list->data);
 	}
 	rmdir (bundled_dylibrary_directory);
 }
@@ -159,7 +159,9 @@ bundle_save_library_initialize (void)
 	g_free (path);
 	if (bundled_dylibrary_directory == NULL)
 		return;
+#ifdef HAVE_ATEXIT
 	atexit (delete_bundled_libraries);
+#endif
 }
 
 static void
@@ -287,7 +289,8 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 	for (i = 0; i < items; i++){
 		char *kind;
 		int strsize = STREAM_INT (p);
-		uint64_t offset, item_size;
+		uint64_t offset;
+		uint32_t item_size;
 		kind = p+4;
 		p += 4 + strsize;
 		offset = STREAM_LONG(p);
@@ -297,7 +300,7 @@ probe_embedded (const char *program, int *ref_argc, char **ref_argv [])
 		
 		if (mapaddress == NULL) {
 			char *error_message = NULL;
-			mapaddress = mono_file_map_error (directory_location - offset, MONO_MMAP_READ | MONO_MMAP_PRIVATE,
+			mapaddress = (guchar*)mono_file_map_error (directory_location - offset, MONO_MMAP_READ | MONO_MMAP_PRIVATE,
 				fd, offset, &maphandle, program, &error_message);
 			if (mapaddress == NULL) {
 				if (error_message)

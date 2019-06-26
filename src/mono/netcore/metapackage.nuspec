@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>Microsoft.NETCore.Runtime.Mono</id>
+        <version>$VERSION$</version>
+        <description>Internal implementation package not meant for direct consumption.  Please do not reference directly. 
+The Mono runtime, and the base library, called mscorlib. It includes the garbage collector, JIT compiler, base .NET data types and many low-level classes.</description>
+        <authors>Microsoft</authors>
+        <projectUrl>https://www.mono-project.com/</projectUrl>
+        <dependencies>
+            <dependency id="runtime.win-x64.Microsoft.NETCore.Runtime.Mono" version="$VERSION$" />
+            <dependency id="runtime.osx-x64.Microsoft.NETCore.Runtime.Mono" version="$VERSION$" />
+            <dependency id="runtime.linux-x64.Microsoft.NETCore.Runtime.Mono" version="$VERSION$" />
+        </dependencies>
+    </metadata>
+    <files>
+    </files>
+</package>

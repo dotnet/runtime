@@ -11,8 +11,6 @@
 #include "mono-os-mutex.h"
 #include "mono-threads-api.h"
 
-G_BEGIN_DECLS
-
 /* We put the OS sync primitives in struct, so the compiler will warn us if
  * we use mono_os_(mutex|cond|sem)_... on MonoCoop(Mutex|Cond|Sem) structures */
 
@@ -131,7 +129,5 @@ mono_coop_cond_broadcast (MonoCoopCond *cond)
 	mono_os_cond_broadcast (&cond->c);
 	MONO_EXIT_GC_SAFE;
 }
-
-G_END_DECLS
 
 #endif /* __MONO_COOP_MUTEX_H__ */

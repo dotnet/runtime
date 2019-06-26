@@ -309,8 +309,8 @@
 <opcode name="mono_icall_addr" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x0E" flow="next" />
 <opcode name="mono_dyn_call" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x0F" flow="next" />
 <opcode name="mono_memory_barrier" input="Pop0" output="Push0" args="InlineI" o1="0xF0" o2="0x10" flow="next" />
-<opcode name="mono_jit_attach" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x11" flow="next" />
-<opcode name="mono_jit_detach" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x12" flow="next" />
+<opcode name="unused71" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x11" flow="next" />
+<opcode name="unused72" input="Pop0" output="Push0" args="InlineNone" o1="0xF0" o2="0x12" flow="next" />
 <opcode name="mono_jit_icall_addr" input="Pop0" output="PushI" args="InlineI" o1="0xF0" o2="0x13" flow="next" />
 <opcode name="mono_ldptr_int_req_flag" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x14" flow="next" />
 <opcode name="mono_ldptr_card_table" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x15" flow="next" />
@@ -323,4 +323,5 @@
 <opcode name="mono_get_rgctx_arg" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x1C" flow="next" />
 <opcode name="mono_ldptr_profiler_allocation_count" input="Pop0" output="PushI" args="InlineNone" o1="0xF0" o2="0x1D" flow="next" />
 <opcode name="mono_ld_delegate_method_ptr" input="Pop1" output="PushI" args="InlineNone" o1="0xF0" o2="0x1E" flow="next" />
+<opcode name="mono_rethrow" input="PopRef" output="Push0" args="InlineNone" o1="0xF0" o2="0x1F" flow="throw" type="Objmodel" />
 </opdesc>

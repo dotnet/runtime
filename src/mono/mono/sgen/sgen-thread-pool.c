@@ -237,7 +237,7 @@ thread_func (void *data)
 		}
 	}
 
-	return (mono_native_thread_return_t)0;
+	return 0;
 }
 
 int

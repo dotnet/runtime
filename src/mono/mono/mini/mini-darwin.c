@@ -101,10 +101,6 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	kern_return_t ret;
 	mach_msg_type_number_t num_state, num_fpstate;
 	thread_state_t state, fpstate;
-	MonoJitTlsData *jit_tls;
-	void *domain;
-	MonoLMF *lmf = NULL;
-	gpointer *addr;
 
 	g_assert (info);
 	/*Zero enough state to make sure the caller doesn't confuse itself*/
@@ -125,9 +121,9 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	mono_mach_arch_thread_states_to_mono_context (state, fpstate, &tctx->ctx);
 
 	/* mono_set_jit_tls () sets this */
-	jit_tls = mono_thread_info_tls_get (info, TLS_KEY_JIT_TLS);
+	void *jit_tls = mono_thread_info_tls_get (info, TLS_KEY_JIT_TLS);
 	/* SET_APPDOMAIN () sets this */
-	domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
+	void *domain = mono_thread_info_tls_get (info, TLS_KEY_DOMAIN);
 
 	/*Thread already started to cleanup, can no longer capture unwind state*/
 	if (!jit_tls || !domain)
@@ -139,10 +135,10 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	 * can be accessed through MonoThreadInfo.
 	 */
 	/* mono_set_lmf_addr () sets this */
-	addr = mono_thread_info_tls_get (info, TLS_KEY_LMF_ADDR);
+	MonoLMF *lmf = NULL;
+	MonoLMF **addr = (MonoLMF**)mono_thread_info_tls_get (info, TLS_KEY_LMF_ADDR);
 	if (addr)
 		lmf = *addr;
-
 
 	tctx->unwind_data [MONO_UNWIND_DATA_DOMAIN] = domain;
 	tctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = jit_tls;

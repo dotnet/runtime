@@ -1249,7 +1249,7 @@ scan_from_registered_roots (char *addr_start, char *addr_end, int root_type, Sca
 	void **start_root;
 	RootRecord *root;
 	SGEN_HASH_TABLE_FOREACH (&sgen_roots_hash [root_type], void **, start_root, RootRecord *, root) {
-		SGEN_LOG (6, "Precise root scan %p-%p (desc: %p)", start_root, root->end_root, (void*)root->root_desc);
+		SGEN_LOG (6, "Precise root scan %p-%p (desc: %p)", start_root, root->end_root, (void*)(uintptr_t)root->root_desc);
 		precisely_scan_objects_from (start_root, (void**)root->end_root, addr_start, addr_end, root->root_desc, ctx);
 	} SGEN_HASH_TABLE_FOREACH_END;
 }
@@ -2476,19 +2476,20 @@ sgen_ensure_free_space (size_t size, int generation)
 {
 	int generation_to_collect = -1;
 	const char *reason = NULL;
+	gboolean forced = FALSE;
 
 	if (generation == GENERATION_OLD) {
-		if (sgen_need_major_collection (size)) {
+		if (sgen_need_major_collection (size, &forced)) {
 			reason = "LOS overflow";
 			generation_to_collect = GENERATION_OLD;
 		}
 	} else {
 		if (sgen_degraded_mode) {
-			if (sgen_need_major_collection (size)) {
+			if (sgen_need_major_collection (size, &forced)) {
 				reason = "Degraded mode overflow";
 				generation_to_collect = GENERATION_OLD;
 			}
-		} else if (sgen_need_major_collection (size)) {
+		} else if (sgen_need_major_collection (size, &forced)) {
 			reason = sgen_concurrent_collection_in_progress ? "Forced finish concurrent collection" : "Minor allowance";
 			generation_to_collect = GENERATION_OLD;
 		} else {
@@ -2506,7 +2507,7 @@ sgen_ensure_free_space (size_t size, int generation)
 
 	if (generation_to_collect == -1)
 		return;
-	sgen_perform_collection (size, generation_to_collect, reason, FALSE, TRUE);
+	sgen_perform_collection (size, generation_to_collect, reason, forced, TRUE);
 }
 
 /*
@@ -2791,7 +2792,7 @@ sgen_have_pending_finalizers (void)
  * We do not coalesce roots.
  */
 int
-sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type, int source, void *key, const char *msg)
+sgen_register_root (char *start, size_t size, SgenDescriptor descr, int root_type, MonoGCRootSource source, void *key, const char *msg)
 {
 	RootRecord new_root;
 	int i;
@@ -2866,7 +2867,7 @@ sgen_wbroot_scan_card_table (void** start_root, mword size,  ScanCopyContext ctx
 	mword card_count = sgen_card_table_number_of_cards_in_range ((mword)start_root, size);
 	guint8 *card_data_end = card_data + card_count;
 	mword extra_idx = 0;
-	char *obj_start = sgen_card_table_align_pointer (start_root);
+	char *obj_start = (char*)sgen_card_table_align_pointer (start_root);
 	char *obj_end = (char*)start_root + size;
 #ifdef SGEN_HAVE_OVERLAPPING_CARDS
 	guint8 *overflow_scan_end = NULL;
@@ -2976,10 +2977,10 @@ sgen_thread_detach_with_lock (SgenThreadInfo *p)
  */
 
 /**
- * mono_gc_wbarrier_arrayref_copy:
+ * mono_gc_wbarrier_arrayref_copy_internal:
  */
 void
-mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
+mono_gc_wbarrier_arrayref_copy_internal (gpointer dest_ptr, gpointer src_ptr, int count)
 {
 	HEAVY_STAT (++stat_wbarrier_arrayref_copy);
 	/*This check can be done without taking a lock since dest_ptr array is pinned*/
@@ -3004,10 +3005,10 @@ mono_gc_wbarrier_arrayref_copy (gpointer dest_ptr, gpointer src_ptr, int count)
 }
 
 /**
- * mono_gc_wbarrier_generic_nostore:
+ * mono_gc_wbarrier_generic_nostore_internal:
  */
 void
-mono_gc_wbarrier_generic_nostore (gpointer ptr)
+mono_gc_wbarrier_generic_nostore_internal (gpointer ptr)
 {
 	gpointer obj;
 
@@ -3034,25 +3035,25 @@ mono_gc_wbarrier_generic_nostore (gpointer ptr)
 }
 
 /**
- * mono_gc_wbarrier_generic_store:
+ * mono_gc_wbarrier_generic_store_internal:
  */
 void
-mono_gc_wbarrier_generic_store (gpointer ptr, GCObject* value)
+mono_gc_wbarrier_generic_store_internal (gpointer ptr, GCObject* value)
 {
 	SGEN_LOG (8, "Wbarrier store at %p to %p (%s)", ptr, value, value ? sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (value)) : "null");
 	SGEN_UPDATE_REFERENCE_ALLOW_NULL (ptr, value);
 	if (ptr_in_nursery (value) || sgen_concurrent_collection_in_progress)
-		mono_gc_wbarrier_generic_nostore (ptr);
+		mono_gc_wbarrier_generic_nostore_internal (ptr);
 	sgen_dummy_use (value);
 }
 
 /**
- * mono_gc_wbarrier_generic_store_atomic:
+ * mono_gc_wbarrier_generic_store_atomic_internal:
  * Same as \c mono_gc_wbarrier_generic_store but performs the store
  * as an atomic operation with release semantics.
  */
 void
-mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value)
+mono_gc_wbarrier_generic_store_atomic_internal (gpointer ptr, GCObject *value)
 {
 	HEAVY_STAT (++stat_wbarrier_generic_store_atomic);
 
@@ -3061,7 +3062,7 @@ mono_gc_wbarrier_generic_store_atomic (gpointer ptr, GCObject *value)
 	mono_atomic_store_ptr ((volatile gpointer *)ptr, value);
 
 	if (ptr_in_nursery (value) || sgen_concurrent_collection_in_progress)
-		mono_gc_wbarrier_generic_nostore (ptr);
+		mono_gc_wbarrier_generic_nostore_internal (ptr);
 
 	sgen_dummy_use (value);
 }
@@ -3081,13 +3082,15 @@ sgen_wbarrier_range_copy (gpointer _dest, gconstpointer _src, int size)
 void
 sgen_gc_collect (int generation)
 {
+	gboolean forced;
+
 	LOCK_GC;
 	if (generation > 1)
 		generation = 1;
 	sgen_perform_collection (0, generation, "user request", TRUE, TRUE);
 	/* Make sure we don't exceed heap size allowance by promoting */
-	if (generation == GENERATION_NURSERY && sgen_need_major_collection (0))
-		sgen_perform_collection (0, GENERATION_OLD, "Minor allowance", FALSE, TRUE);
+	if (generation == GENERATION_NURSERY && sgen_need_major_collection (0, &forced))
+		sgen_perform_collection (0, GENERATION_OLD, "Minor allowance", forced, TRUE);
 	UNLOCK_GC;
 }
 
@@ -3873,6 +3876,38 @@ sgen_timestamp (void)
 	SGEN_TV_DECLARE (timestamp);
 	SGEN_TV_GETTIME (timestamp);
 	return SGEN_TV_ELAPSED (sgen_init_timestamp, timestamp);
+}
+
+void
+sgen_check_canary_for_object (gpointer addr)
+{
+	if (sgen_nursery_canaries_enabled ()) {
+		guint size = sgen_safe_object_get_size_unaligned ((GCObject *) (addr));
+		char* canary_ptr = (char*) (addr) + size;
+		if (!CANARY_VALID(canary_ptr)) {
+			char *window_start, *window_end;
+			window_start = (char*)(addr) - 128;
+			if (!sgen_ptr_in_nursery (window_start))
+				window_start = sgen_get_nursery_start ();
+			window_end = (char*)(addr) + 128;
+			if (!sgen_ptr_in_nursery (window_end))
+				window_end = sgen_get_nursery_end ();
+			fprintf (stderr, "\nCANARY ERROR - Type:%s Size:%d Address:%p Data:\n", sgen_client_vtable_get_name (SGEN_LOAD_VTABLE ((addr))), size,  (char*) addr);
+			fwrite (addr, sizeof (char), size, stderr);
+			fprintf (stderr, "\nCanary zone (next 12 chars):\n");
+			fwrite (canary_ptr, sizeof (char), 12, stderr);
+			fprintf (stderr, "\nOriginal canary string:\n");
+			fwrite (CANARY_STRING, sizeof (char), 8, stderr);
+			for (int x = -8; x <= 8; x++) {
+				if (canary_ptr + x < (char*) addr)
+					continue;
+				if (CANARY_VALID(canary_ptr +x))
+					fprintf (stderr, "\nCANARY ERROR - canary found at offset %d\n", x);
+			}
+			fprintf (stderr, "\nSurrounding nursery (%p - %p):\n", window_start, window_end);
+			fwrite (window_start, sizeof (char), window_end - window_start, stderr);
+		}
+	}
 }
 
 #endif /* HAVE_SGEN_GC */

@@ -15,25 +15,45 @@
 #include <openssl/ssl.h>
 
 #ifndef MONO_API
+
+#if !defined(MONO_DLL_IMPORT) && !defined(MONO_DLL_EXPORT)
+#define MONO_DLL_EXPORT
+#endif
+
 #if defined(_MSC_VER)
 
-// MONO_API is not used consistently and therefore errors.
-// .def file is preferred.
-//#define MONO_API __declspec(dllexport)
-#define MONO_API /* nothing */
+#define MONO_API_EXPORT __declspec(dllexport)
+#define MONO_API_IMPORT __declspec(dllimport)
 
 #else
 
-#ifdef __GNUC__
-#define MONO_API __attribute__ ((__visibility__ ("default")))
+#if defined (__clang__) || defined (__GNUC__)
+#define MONO_API_EXPORT __attribute__ ((__visibility__ ("default")))
 #else
-#define MONO_API
+#define MONO_API_EXPORT
 #endif
+#define MONO_API_IMPORT
 
 #endif
+
+#ifdef __cplusplus
+#define MONO_EXTERN_C extern "C"
+#else
+#define MONO_EXTERN_C /* nothing */
 #endif
 
-void
+#if defined(MONO_DLL_EXPORT)
+#define MONO_API_NO_EXTERN_C MONO_API_EXPORT
+#elif defined(MONO_DLL_IMPORT)
+#define MONO_API_NO_EXTERN_C MONO_API_IMPORT
+#else
+#define MONO_API_NO_EXTERN_C /* nothing  */
+#endif
+
+#define MONO_API MONO_EXTERN_C MONO_API_NO_EXTERN_C
+#endif
+
+MONO_API void
 mono_btls_free (void *data);
 
 int64_t

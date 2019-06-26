@@ -25,6 +25,7 @@
  * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+#include "config.h"
 #include <stdio.h>
 #include <glib.h>
 
@@ -61,7 +62,7 @@ split_cmdline (const gchar *cmdline, GPtrArray *array, GError **gerror)
 					g_ptr_array_add (array, g_string_free (str, FALSE));
 					str = g_string_new ("");
 				}
-			} else if (c == '\\'){
+			} else if (c == '\\' && quote_char == '\"'){
 				escaped = TRUE;
 			} else 
 				g_string_append_c (str, c);

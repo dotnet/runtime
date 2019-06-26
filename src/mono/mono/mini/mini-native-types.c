@@ -24,9 +24,15 @@ typedef struct {
 
 typedef struct {
 	short op_index;
+#ifdef __cplusplus
+	MonoStackType big_stack_type : 16;
+	MonoStackType small_stack_type : 16;
+	MonoStackType stack_type : 16;
+#else
 	short big_stack_type;
 	short small_stack_type;
 	short stack_type;
+#endif
 	short conv_4_to_8;
 	short conv_8_to_4;
 	short move;
@@ -127,14 +133,14 @@ static const MagicTypeInfo type_info[] = {
 };
 
 
-static inline gboolean
-type_size (MonoCompile *cfg, MonoType *type)
+gsize
+mini_magic_type_size (MonoCompile *cfg, MonoType *type)
 {
 	if (type->type == MONO_TYPE_I4 || type->type == MONO_TYPE_U4)
 		return 4;
 	else if (type->type == MONO_TYPE_I8 || type->type == MONO_TYPE_U8)
 		return 8;
-	else if (type->type == MONO_TYPE_R4 && !type->byref && cfg->r4fp)
+	else if (type->type == MONO_TYPE_R4 && !type->byref && (!cfg || cfg->r4fp))
 		return 4;
 	else if (type->type == MONO_TYPE_R8 && !type->byref)
 		return 8;
@@ -142,9 +148,6 @@ type_size (MonoCompile *cfg, MonoType *type)
 }
 
 #ifndef DISABLE_JIT
-
-static gboolean is_int_type (MonoType *t);
-static gboolean is_float_type (MonoType *t);
 
 static MonoInst*
 emit_narrow (MonoCompile *cfg, const MagicTypeInfo *info, int sreg)
@@ -157,7 +160,7 @@ emit_narrow (MonoCompile *cfg, const MagicTypeInfo *info, int sreg)
 		ins->type = cfg->r4_stack_type;
 	else
 		ins->type = info->small_stack_type;
-	ins->dreg = alloc_dreg (cfg, ins->type);
+	ins->dreg = alloc_dreg (cfg, (MonoStackType)ins->type);
 	MONO_ADD_INS (cfg->cbb, ins);
 	return mono_decompose_opcode (cfg, ins);
 }
@@ -184,7 +187,8 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	int i = 0;
 	const char *name = cmethod->name;
 	MonoInst *ins;
-	int type_index, stack_type;
+	int type_index;
+	MonoStackType stack_type;
 
 	if (info->op_index == 2 && cfg->r4fp && TARGET_SIZEOF_VOID_P == 4) {
 		type_index = 3;
@@ -195,16 +199,16 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	}
 
 	if (!strcmp ("op_Implicit", name) || !strcmp ("op_Explicit", name)) {
-		int source_size = type_size (cfg, fsig->params [0]);
-		int dest_size = type_size (cfg, fsig->ret);
+		int source_size = mini_magic_type_size (cfg, fsig->params [0]);
+		int dest_size = mini_magic_type_size (cfg, fsig->ret);
 
 		switch (info->big_stack_type) {
 		case STACK_I8:
-			if (!is_int_type (fsig->params [0]) || !is_int_type (fsig->ret))
+			if (!mini_magic_is_int_type (fsig->params [0]) || !mini_magic_is_int_type (fsig->ret))
 				return NULL;
 			break;
 		case STACK_R8:
-			if (!is_float_type (fsig->params [0]) || !is_float_type (fsig->ret))
+			if (!mini_magic_is_float_type (fsig->params [0]) || !mini_magic_is_float_type (fsig->ret))
 				return NULL;
 			break;
 		default:
@@ -226,7 +230,7 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	if (!strcmp (".ctor", name)) {
 		gboolean is_ldaddr = args [0]->opcode == OP_LDADDR;
 		int arg0 = args [1]->dreg;
-		int arg_size = type_size (cfg, fsig->params [0]);
+		int arg_size = mini_magic_type_size (cfg, fsig->params [0]);
 
 		if (arg_size > TARGET_SIZEOF_VOID_P) //8 -> 4
 			arg0 = emit_narrow (cfg, info, arg0)->dreg;
@@ -253,7 +257,7 @@ emit_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 
 		/* We have IR for inc/dec */
 		MONO_INST_NEW (cfg, ins, inc ? info->inc_op : info->dec_op);
-		ins->dreg = alloc_dreg (cfg, info->stack_type);
+		ins->dreg = alloc_dreg (cfg, (MonoStackType)info->stack_type);
 		ins->sreg1 = args [0]->dreg;
 		ins->inst_imm = 1;
 		ins->type = info->stack_type;
@@ -440,7 +444,7 @@ mono_class_is_magic_float (MonoClass *klass)
 		/* Assert that we are using the matching assembly */
 		MonoClassField *value_field = mono_class_get_field_from_name_full (klass, "v", NULL);
 		g_assert (value_field);
-		MonoType *t = mono_field_get_type (value_field);
+		MonoType *t = mono_field_get_type_internal (value_field);
 		MonoType *native = mini_native_type_replace_type (m_class_get_byval_arg (klass));
 		if (t->type != native->type)
 			g_error ("Assembly used for native types '%s' doesn't match this runtime, %s is mapped to %s, expecting %s.\n", m_class_get_image (klass)->name, m_class_get_name (klass), mono_type_full_name (t), mono_type_full_name (native));
@@ -449,18 +453,18 @@ mono_class_is_magic_float (MonoClass *klass)
 	return FALSE;
 }
 
-static gboolean
-is_int_type (MonoType *t)
+gboolean
+mini_magic_is_int_type (MonoType *t)
 {
-	if (t->type != MONO_TYPE_I4 && t->type != MONO_TYPE_I8 && t->type != MONO_TYPE_U4 && t->type != MONO_TYPE_U8 && !mono_class_is_magic_int (mono_class_from_mono_type (t)))
+	if (t->type != MONO_TYPE_I && t->type != MONO_TYPE_I4 && t->type != MONO_TYPE_I8 && t->type != MONO_TYPE_U4 && t->type != MONO_TYPE_U8 && !mono_class_is_magic_int (mono_class_from_mono_type_internal (t)))
 		return FALSE;
 	return TRUE;
 }
 
-static gboolean
-is_float_type (MonoType *t)
+gboolean
+mini_magic_is_float_type (MonoType *t)
 {
-	if (t->type != MONO_TYPE_R4 && t->type != MONO_TYPE_R8 && !mono_class_is_magic_float (mono_class_from_mono_type (t)))
+	if (t->type != MONO_TYPE_R4 && t->type != MONO_TYPE_R8 && !mono_class_is_magic_float (mono_class_from_mono_type_internal (t)))
 		return FALSE;
 	return TRUE;
 }

@@ -12,6 +12,7 @@
 #if G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
 #include <windows.h>
 #include "mono/metadata/console-win32-internals.h"
+#include "icall-decl.h"
 
 MonoBoolean
 ves_icall_System_ConsoleDriver_Isatty (HANDLE handle, MonoError* error)

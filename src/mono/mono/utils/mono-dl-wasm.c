@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <glib.h>
+#include <dlfcn.h>
 
 const char *
 mono_dl_get_so_prefix (void)
@@ -58,19 +59,25 @@ mono_dl_current_error_string (void)
 int
 mono_dl_convert_flags (int flags)
 {
-	return flags;
+	int lflags = flags & MONO_DL_LOCAL ? 0 : RTLD_GLOBAL;
+
+	if (flags & MONO_DL_LAZY)
+		lflags |= RTLD_LAZY;
+	else
+		lflags |= RTLD_NOW;
+	return lflags;
 }
 
 void *
 mono_dl_open_file (const char *file, int flags)
 {
+	// Actual dlopen is done in driver.c:wasm_dl_load()
 	return NULL;
 }
 
 void
 mono_dl_close_handle (MonoDl *module)
 {
-	//nothing to do
 }
 
 #endif

@@ -54,7 +54,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
 		if (MONO_OFFSET_IN_CLAUSE (clause, bb->real_offset)) {
-			if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE && clause->data.catch_class && mono_class_is_assignable_from (clause->data.catch_class, exclass)) {
+			if (clause->flags == MONO_EXCEPTION_CLAUSE_NONE && clause->data.catch_class && mono_class_is_assignable_from_internal (clause->data.catch_class, exclass)) {
 				MonoBasicBlock *tbb;
 
 				/* get the basic block for the handler and 
@@ -114,6 +114,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 	return NULL;
 }
 
+#ifdef MONO_ARCH_HAVE_CMOV_OPS
 static const int int_cmov_opcodes [] = {
 	OP_CMOV_IEQ,
 	OP_CMOV_INE_UN,
@@ -140,7 +141,7 @@ static const int long_cmov_opcodes [] = {
 	OP_CMOV_LGT_UN
 };
 
-static G_GNUC_UNUSED int
+static int
 br_to_br_un (int opcode)
 {
 	switch (opcode) {
@@ -161,6 +162,7 @@ br_to_br_un (int opcode)
 		return -1;
 	}
 }
+#endif
 
 /**
  * mono_replace_ins:

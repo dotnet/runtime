@@ -60,7 +60,7 @@ mono_x86_start_gsharedvt_call (GSharedVtCallInfo *info, gpointer *caller, gpoint
 	}
 
 	if (info->vcall_offset != -1) {
-		MonoObject *this_obj = caller [0];
+		MonoObject *this_obj = (MonoObject*)caller [0];
 
 		if (G_UNLIKELY (!this_obj))
 			return NULL;
@@ -109,11 +109,11 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	 * FIXME: Optimize this.
 	 */
 
-	cfa_offset = sizeof (gpointer);
+	cfa_offset = sizeof (target_mgreg_t);
 	mono_add_unwind_op_def_cfa (unwind_ops, code, buf, X86_ESP, cfa_offset);
 	mono_add_unwind_op_offset (unwind_ops, code, buf, X86_NREG, -cfa_offset);
 	x86_push_reg (code, X86_EBP);
-	cfa_offset += sizeof (gpointer);
+	cfa_offset += sizeof (target_mgreg_t);
 	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
 	mono_add_unwind_op_offset (unwind_ops, code, buf, X86_EBP, - cfa_offset);
 	x86_mov_reg_reg (code, X86_EBP, X86_ESP);
@@ -129,7 +129,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	x86_mov_membase_reg (code, X86_EBP, mrgctx_offset, MONO_ARCH_RGCTX_REG, 4);
 
 	/* Allocate stack area used to pass arguments to the method */
-	x86_mov_reg_membase (code, X86_EAX, X86_EAX, MONO_STRUCT_OFFSET (GSharedVtCallInfo, stack_usage), sizeof (gpointer));
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, MONO_STRUCT_OFFSET (GSharedVtCallInfo, stack_usage), sizeof (target_mgreg_t));
 	x86_alu_reg_reg (code, X86_SUB, X86_ESP, X86_EAX);
 
 #if 0
@@ -157,7 +157,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	/* Arg1 */
 	x86_push_membase (code, X86_EBP, info_offset);
 	if (aot) {
-		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_x86_start_gsharedvt_call");
+		code = mono_arch_emit_load_aotconst (buf, code, &ji, MONO_PATCH_INFO_JIT_ICALL_ADDR, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_x86_start_gsharedvt_call));
 		x86_call_reg (code, X86_EAX);
 	} else {
 		x86_call_code (code, mono_x86_start_gsharedvt_call);
@@ -168,7 +168,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	/* Load info struct */
 	x86_mov_reg_membase (code, X86_ECX, X86_EBP, info_offset, 4);
 	/* Load rgctx */
-	x86_mov_reg_membase (code, MONO_ARCH_RGCTX_REG, X86_EBP, mrgctx_offset, sizeof (gpointer));
+	x86_mov_reg_membase (code, MONO_ARCH_RGCTX_REG, X86_EBP, mrgctx_offset, sizeof (target_mgreg_t));
 	/* Make the call */
 	x86_call_reg (code, X86_EAX);
 	/* The return value is either in registers, or stored to an area beginning at sp [info->vret_slot] */
@@ -205,7 +205,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	x86_shift_reg_imm (code, X86_SHL, X86_EAX, 2);
 	x86_alu_reg_reg (code, X86_ADD, X86_EAX, X86_ESP);
 	/* The callee does a ret $4, so sp is off by 4 */
-	x86_alu_reg_imm (code, X86_SUB, X86_EAX, sizeof (gpointer));
+	x86_alu_reg_imm (code, X86_SUB, X86_EAX, sizeof (target_mgreg_t));
 
 	/* Branch to specific marshalling code */
 	// FIXME: Move the I4 case to the top */
@@ -232,8 +232,8 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	x86_branch8 (code, X86_CC_E, 0, TRUE);
 	/* IREGS case */
 	/* Load both eax and edx for simplicity */
-	x86_mov_reg_membase (code, X86_EDX, X86_EAX, sizeof (gpointer), sizeof (gpointer));
-	x86_mov_reg_membase (code, X86_EAX, X86_EAX, 0, sizeof (gpointer));
+	x86_mov_reg_membase (code, X86_EDX, X86_EAX, sizeof (target_mgreg_t), sizeof (target_mgreg_t));
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, 0, sizeof (target_mgreg_t));
 	x86_leave (code);
 	x86_ret (code);
 	/* DOUBLE_FPSTACK case */
@@ -302,7 +302,7 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	x86_shift_reg_imm (code, X86_SHL, X86_EAX, 2);
 	x86_alu_reg_reg (code, X86_ADD, X86_EAX, X86_EBP);
 	x86_alu_reg_imm (code, X86_ADD, X86_EAX, 8);
-	x86_mov_reg_membase (code, X86_EAX, X86_EAX, 0, sizeof (gpointer));
+	x86_mov_reg_membase (code, X86_EAX, X86_EAX, 0, sizeof (target_mgreg_t));
 
 	/* Branch to specific marshalling code */
 	x86_alu_reg_imm (code, X86_CMP, X86_ECX, GSHAREDVT_RET_DOUBLE_FPSTACK);
@@ -320,15 +320,15 @@ mono_arch_get_gsharedvt_trampoline (MonoTrampInfo **info, gboolean aot)
 	/* IREG case */
 	x86_mov_reg_reg (code, X86_ECX, X86_EAX);
 	x86_pop_reg (code, X86_EAX);
-	x86_mov_membase_reg (code, X86_ECX, 0, X86_EAX, sizeof (gpointer));
+	x86_mov_membase_reg (code, X86_ECX, 0, X86_EAX, sizeof (target_mgreg_t));
 	x86_leave (code);
 	x86_ret_imm (code, 4);
 	/* IREGS case */
 	x86_patch (br [4], code);
 	x86_mov_reg_reg (code, X86_ECX, X86_EAX);
 	x86_pop_reg (code, X86_EAX);
-	x86_mov_membase_reg (code, X86_ECX, sizeof (gpointer), X86_EDX, sizeof (gpointer));
-	x86_mov_membase_reg (code, X86_ECX, 0, X86_EAX, sizeof (gpointer));
+	x86_mov_membase_reg (code, X86_ECX, sizeof (target_mgreg_t), X86_EDX, sizeof (target_mgreg_t));
+	x86_mov_membase_reg (code, X86_ECX, 0, X86_EAX, sizeof (target_mgreg_t));
 	x86_leave (code);
 	x86_ret_imm (code, 4);
 	/* DOUBLE_FPSTACK case */

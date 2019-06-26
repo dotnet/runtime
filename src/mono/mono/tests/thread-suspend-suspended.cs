@@ -5,10 +5,12 @@ using System.Threading;
 
 class Driver
 {
+
 	public static void Main ()
 	{
 		bool finished = false;
-		int can_gc = 0;
+		AutoResetEvent start_gc = new AutoResetEvent (false);
+		AutoResetEvent finished_gc = new AutoResetEvent (false);
 
 		Thread t1 = new Thread (() => {
 			while (!finished) {}
@@ -16,9 +18,11 @@ class Driver
 
 		Thread t2 = new Thread (() => {
 			while (!finished) {
-				int local_can_gc = can_gc;
-				if (local_can_gc > 0 && Interlocked.CompareExchange (ref can_gc, local_can_gc - 1, local_can_gc) == local_can_gc)
+				if (start_gc.WaitOne (0)) {
 					GC.Collect ();
+					finished_gc.Set ();
+				}
+
 				Thread.Yield ();
 			}
 		});
@@ -30,9 +34,10 @@ class Driver
 
 		for (int i = 0; i < 50 * 40 * 5; ++i) {
 			t1.Suspend ();
-			Interlocked.Increment (ref can_gc);
-			Thread.Yield ();
+			start_gc.Set ();
+			finished_gc.WaitOne ();
 			t1.Resume ();
+
 			if ((i + 1) % (50) == 0)
 				Console.Write (".");
 			if ((i + 1) % (50 * 40) == 0)

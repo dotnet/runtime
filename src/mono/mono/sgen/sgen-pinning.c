@@ -210,7 +210,7 @@ sgen_dump_pin_queue (void)
 
 	for (i = 0; i < last_num_pinned; ++i) {
 		GCObject *ptr = (GCObject *)pin_queue.data [i];
-		SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %zd", ptr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (ptr)), sgen_safe_object_get_size (ptr));
+		SGEN_LOG (3, "Bastard pinning obj %p (%s), size: %ld", ptr, sgen_client_vtable_get_name (SGEN_LOAD_VTABLE (ptr)), (long)sgen_safe_object_get_size (ptr));
 	}
 }
 
@@ -334,7 +334,7 @@ sgen_cement_lookup_or_register (GCObject *obj)
 
 	if (!hash [i].obj) {
 		GCObject *old_obj;
-		old_obj = mono_atomic_cas_ptr ((gpointer*)&hash [i].obj, obj, NULL);
+		old_obj = (GCObject*)mono_atomic_cas_ptr ((gpointer*)&hash [i].obj, obj, NULL);
 		/* Check if the slot was occupied by some other object */
 		if (old_obj != NULL && old_obj != obj)
 			return FALSE;

@@ -14,6 +14,7 @@
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/freebsd-dwarf.h>
 #include <mono/utils/hazard-pointer.h>
+#include <mono/utils/mono-logger-internals.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/mono-endian.h>
 
@@ -83,7 +84,7 @@ static int map_hw_reg_to_dwarf_reg [ppc_lr + 1] = { 0, 1, 2, 3, 4, 5, 6, 7, 8,
 										  9, 10, 11, 12, 13, 14, 15, 16,
 										  17, 18, 19, 20, 21, 22, 23, 24,
 										  25, 26, 27, 28, 29, 30, 31 };
-#define DWARF_DATA_ALIGN (-(gint32)sizeof (mgreg_t))
+#define DWARF_DATA_ALIGN (-(gint32)sizeof (target_mgreg_t))
 #if _CALL_ELF == 2
 #define DWARF_PC_REG 65
 #else
@@ -111,12 +112,32 @@ static int map_hw_reg_to_dwarf_reg [32] = {
 	24, 25, 26, 27, 28, 29, 30, 31
 };
 #define NUM_DWARF_REGS 32
-#define DWARF_DATA_ALIGN (-(gint32)sizeof (mgreg_t))
+#define DWARF_DATA_ALIGN (-(gint32)sizeof (target_mgreg_t))
 #define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (mips_ra))
+#elif defined(TARGET_RISCV)
+
+/*
+ * These values have not currently been formalized in the RISC-V psABI. See
+ * instead gcc/config/riscv/riscv.h in the GCC source tree.
+ */
+
+#define NUM_DWARF_REGS (RISCV_N_GREGS + RISCV_N_FREGS)
+#define DWARF_DATA_ALIGN (-4)
+#define DWARF_PC_REG (mono_hw_reg_to_dwarf_reg (RISCV_RA))
+
+static int map_hw_reg_to_dwarf_reg [NUM_DWARF_REGS] = {
+	// x0..x31
+	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+	16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+	// f0..f31
+	32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47,
+	48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+};
+
 #else
 static int map_hw_reg_to_dwarf_reg [16];
 #define NUM_DWARF_REGS 16
-#define DWARF_DATA_ALIGN 0
+#define DWARF_DATA_ALIGN 1
 #define DWARF_PC_REG -1
 #endif
 
@@ -328,10 +349,6 @@ mono_print_unwind_info (guint8 *unwind_info, int unwind_info_len)
 				reg = decode_uleb128 (p, &p);
 				printf ("CFA: [%x] same_value: %s\n", pos, mono_arch_regname (mono_dwarf_reg_to_hw_reg (reg)));
 				break;
-			case DW_CFA_advance_loc4:
-				pos += read32 (p);
-				p += 4;
-				break;
 			case DW_CFA_remember_state:
 				printf ("CFA: [%x] remember_state\n", pos);
 				break;
@@ -340,6 +357,21 @@ mono_print_unwind_info (guint8 *unwind_info, int unwind_info_len)
 				break;
 			case DW_CFA_mono_advance_loc:
 				printf ("CFA: [%x] mono_advance_loc\n", pos);
+				break;
+			case DW_CFA_advance_loc1:
+				printf ("CFA: [%x] advance_loc1\n", pos);
+				pos += *p;
+				p += 1;
+				break;
+			case DW_CFA_advance_loc2:
+				printf ("CFA: [%x] advance_loc2\n", pos);
+				pos += read16 (p);
+				p += 2;
+				break;
+			case DW_CFA_advance_loc4:
+				printf ("CFA: [%x] advance_loc4\n", pos);
+				pos += read32 (p);
+				p += 4;
 				break;
 			default:
 				g_assert_not_reached ();
@@ -515,12 +547,14 @@ typedef struct {
  * N was saved, or NULL, if it was not saved by this frame.
  * MARK_LOCATIONS should contain the locations marked by mono_emit_unwind_op_mark_loc (), if any.
  * This function is signal safe.
+ *
+ * It returns FALSE on failure
  */
-void
+gboolean
 mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
 				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, guint8 **mark_locations,
 				   mono_unwind_reg_t *regs, int nregs,
-				   mgreg_t **save_locations, int save_locations_len,
+				   host_mgreg_t **save_locations, int save_locations_len,
 				   guint8 **out_cfa)
 {
 	Loc locations [NUM_HW_REGS];
@@ -574,7 +608,10 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				reg = decode_uleb128 (p, &p);
 				hwreg = mono_dwarf_reg_to_hw_reg (reg);
 				offset = decode_sleb128 (p, &p);
-				g_assert (reg < NUM_DWARF_REGS);
+				if (reg >= NUM_DWARF_REGS) {
+					mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
+					return FALSE;
+				}
 				reg_saved [hwreg] = TRUE;
 				locations [hwreg].loc_type = LOC_OFFSET;
 				locations [hwreg].offset = offset * DWARF_DATA_ALIGN;
@@ -583,7 +620,10 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				reg = decode_uleb128 (p, &p);
 				hwreg = mono_dwarf_reg_to_hw_reg (reg);
 				offset = decode_uleb128 (p, &p);
-				g_assert (reg < NUM_DWARF_REGS);
+				if (reg >= NUM_DWARF_REGS) {
+					mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
+					return FALSE;
+				}
 				reg_saved [hwreg] = TRUE;
 				locations [hwreg].loc_type = LOC_OFFSET;
 				locations [hwreg].offset = offset * DWARF_DATA_ALIGN;
@@ -605,7 +645,10 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				p += 4;
 				break;
 			case DW_CFA_remember_state:
-				g_assert (state_stack_pos == 0);
+				if (state_stack_pos != 0) {
+					mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
+					return FALSE;
+				}
 				memcpy (&state_stack [0].locations, &locations, sizeof (locations));
 				memcpy (&state_stack [0].reg_saved, &reg_saved, sizeof (reg_saved));
 				state_stack [0].cfa_reg = cfa_reg;
@@ -613,7 +656,10 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				state_stack_pos ++;
 				break;
 			case DW_CFA_restore_state:
-				g_assert (state_stack_pos == 1);
+				if (state_stack_pos != 1) {
+					mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
+					return FALSE;
+				}
 				state_stack_pos --;
 				memcpy (&locations, &state_stack [0].locations, sizeof (locations));
 				memcpy (&reg_saved, &state_stack [0].reg_saved, sizeof (reg_saved));
@@ -621,38 +667,53 @@ mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len,
 				cfa_offset = state_stack [0].cfa_offset;
 				break;
 			case DW_CFA_mono_advance_loc:
-				g_assert (mark_locations [0]);
+				if (!mark_locations [0]) {
+					mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
+					return FALSE;
+				}
 				pos = mark_locations [0] - start_ip;
 				break;
 			default:
-				g_assert_not_reached ();
+				mono_runtime_printf_err ("Unwind failure. Illegal value for switch statement, assertion at %s %d\n.", __FILE__, __LINE__);
+				return FALSE;
 			}
 			break;
 		}
 		default:
-			g_assert_not_reached ();
+			mono_runtime_printf_err ("Unwind failure. Illegal value for switch statement, assertion at %s %d\n.", __FILE__, __LINE__);
+			return FALSE;
 		}
 	}
 
 	if (save_locations)
-		memset (save_locations, 0, save_locations_len * sizeof (mgreg_t*));
+		memset (save_locations, 0, save_locations_len * sizeof (host_mgreg_t*));
 
-	g_assert (cfa_reg != -1);
+	if (cfa_reg == -1) {
+		mono_runtime_printf_err ("Unset cfa_reg in method %s. Memory around ip (%p):", mono_get_method_from_ip (ip), ip);
+		mono_dump_mem (ip - 0x10, 0x40);
+		return FALSE;
+	}
 	cfa_val = (guint8*)regs [mono_dwarf_reg_to_hw_reg (cfa_reg)] + cfa_offset;
 	for (hwreg = 0; hwreg < NUM_HW_REGS; ++hwreg) {
 		if (reg_saved [hwreg] && locations [hwreg].loc_type == LOC_OFFSET) {
 			int dwarfreg = mono_hw_reg_to_dwarf_reg (hwreg);
-			g_assert (hwreg < nregs);
+			if (hwreg >= nregs) {
+				mono_runtime_printf_err ("Unwind failure. Assertion at %s %d\n.", __FILE__, __LINE__);
+				return FALSE;
+			}
 			if (IS_DOUBLE_REG (dwarfreg))
 				regs [hwreg] = *(guint64*)(cfa_val + locations [hwreg].offset);
 			else
-				regs [hwreg] = *(mgreg_t*)(cfa_val + locations [hwreg].offset);
+				regs [hwreg] = *(host_mgreg_t*)(cfa_val + locations [hwreg].offset);
 			if (save_locations && hwreg < save_locations_len)
-				save_locations [hwreg] = (mgreg_t*)(cfa_val + locations [hwreg].offset);
+				save_locations [hwreg] = (host_mgreg_t*)(cfa_val + locations [hwreg].offset);
 		}
 	}
 
 	*out_cfa = cfa_val;
+
+	// Success
+	return TRUE;
 }
 
 void
@@ -909,7 +970,7 @@ decode_lsda (guint8 *lsda, guint8 *code, MonoJitExceptionInfo *ex_info, gpointer
 		*this_offset = -1;
 	}
 	ncall_sites = decode_uleb128 (p, &p);
-	p = (guint8*)ALIGN_TO ((mgreg_t)p, 4);
+	p = (guint8*)ALIGN_TO ((gsize)p, 4);
 
 	if (ex_info_len)
 		*ex_info_len = ncall_sites;

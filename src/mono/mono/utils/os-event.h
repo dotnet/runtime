@@ -11,9 +11,7 @@
 #include <mono/utils/mono-publib.h>
 #include "mono-os-mutex.h"
 
-#ifndef MONO_INFINITE_WAIT
 #define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
-#endif
 
 #define MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS 64
 

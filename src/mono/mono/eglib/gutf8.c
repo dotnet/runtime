@@ -7,7 +7,7 @@
  * (C) 2006 Novell, Inc.
  * Copyright 2012 Xamarin Inc
  */
-
+#include "config.h"
 #include <stdio.h>
 #include <glib.h>
 
@@ -287,28 +287,6 @@ g_utf8_get_char (const gchar *src)
 }
 
 gchar *
-g_utf8_find_prev_char (const gchar *str, const gchar *p)
-{
-	while (p > str) {
-		p--;
-		if ((*p & 0xc0) != 0xb0)
-			return (gchar *)p;
-	}
-	return NULL;
-}
-
-gchar *
-g_utf8_prev_char (const gchar *str)
-{
-	const gchar *p = str;
-	do {
-		p--;
-	} while ((*p & 0xc0) == 0xb0);
-	
-	return (gchar *)p;
-}
-
-gchar *
 g_utf8_offset_to_pointer (const gchar *str, glong offset)
 {
 	const gchar *p = str;
@@ -328,7 +306,7 @@ g_utf8_offset_to_pointer (const gchar *str, glong offset)
 			
 			// if we land in the middle of a character
 			// walk to the beginning
-			while ((*jump & 0xc0) == 0xb0)
+			while ((*jump & 0xc0) == 0x80)
 				jump --;
 			
 			// count how many characters we've actually walked

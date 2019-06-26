@@ -18,8 +18,9 @@ EMSCRIPTEN_KEEPALIVE
 static int
 wasm_get_stack_base (void)
 {
+	// Return the bottom limit of the stack
 	return EM_ASM_INT ({
-		return STACK_BASE;
+		return STACK_MAX;
 	});
 }
 
@@ -31,7 +32,6 @@ wasm_get_stack_size (void)
 		return TOTAL_STACK;
 	});
 }
-
 
 int
 mono_thread_info_get_system_max_stack_size (void)
@@ -130,7 +130,7 @@ mono_threads_platform_yield (void)
 void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
-	*staddr = (void*)wasm_get_stack_base ();
+	*staddr = (guint8*)wasm_get_stack_base ();
 	*stsize = wasm_get_stack_size ();
 }
 
@@ -153,12 +153,12 @@ mono_threads_platform_exit (gsize exit_code)
 }
 
 gboolean
-mono_threads_platform_in_critical_region (MonoNativeThreadId tid)
+mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info)
 {
 	return FALSE;
 }
 
-
+G_EXTERN_C
 extern void schedule_background_exec (void);
 
 static GSList *jobs;
@@ -169,10 +169,11 @@ mono_threads_schedule_background_job (background_job_cb cb)
 	if (!jobs)
 		schedule_background_exec ();
 
-	if (!g_slist_find (jobs, cb))
-		jobs = g_slist_prepend (jobs, cb);
+	if (!g_slist_find (jobs, (gconstpointer)cb))
+		jobs = g_slist_prepend (jobs, (gpointer)cb);
 }
 
+G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
 mono_background_exec (void)
 {
@@ -184,6 +185,11 @@ mono_background_exec (void)
 		cb ();
 	}
 	g_slist_free (j);
+}
+
+void
+mono_memory_barrier_process_wide (void)
+{
 }
 
 #endif

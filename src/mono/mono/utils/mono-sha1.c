@@ -150,7 +150,11 @@ static void SHAPrintContext(MonoSHA1Context *context, char *msg){
 
 static void SHA1Transform(guint32 state[5], const guchar buffer[64])
 {
+#ifdef HOST_WASM
+volatile guint32 a, b, c, d, e;
+#else
 guint32 a, b, c, d, e;
+#endif
 typedef union {
     unsigned char c[64];
     guint32 l[16];

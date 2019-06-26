@@ -32,7 +32,7 @@ struct sigcontext {
 };
 #endif
 
-typedef void (* MonoW32ExceptionHandler) (int _dummy, EXCEPTION_POINTERS *info, void *context);
+typedef void MONO_SIG_HANDLER_SIGNATURE ((*MonoW32ExceptionHandler));
 void win32_seh_init(void);
 void win32_seh_cleanup(void);
 void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler);
@@ -209,17 +209,18 @@ typedef struct MonoCompileArch {
 	gint32 stack_alloc_size;
 	gint32 sp_fp_offset;
 	guint32 saved_iregs;
-	gboolean omit_fp, omit_fp_computed;
-	gpointer cinfo;
+	gboolean omit_fp;
+	gboolean omit_fp_computed;
+	CallInfo *cinfo;
 	gint32 async_point_count;
-	gpointer vret_addr_loc;
+	MonoInst *vret_addr_loc;
+	MonoInst *seq_point_info_var;
+	MonoInst *ss_tramp_var;
+	MonoInst *bp_tramp_var;
+	MonoInst *lmf_var;
 #ifdef HOST_WIN32
 	struct _UNWIND_INFO* unwindinfo;
 #endif
-	gpointer seq_point_info_var;
-	gpointer ss_tramp_var;
-	gpointer bp_tramp_var;
-	gpointer lmf_var;
 } MonoCompileArch;
 
 #ifdef TARGET_WIN32
@@ -275,20 +276,19 @@ typedef struct {
 } GSharedVtCallInfo;
 
 /* Structure used by the sequence points in AOTed code */
-typedef struct {
+struct SeqPointInfo {
 	gpointer ss_tramp_addr;
 	gpointer bp_addrs [MONO_ZERO_LEN_ARRAY];
-} SeqPointInfo;
+};
 
 typedef struct {
-	mgreg_t res;
+	host_mgreg_t res;
 	guint8 *ret;
 	double fregs [8];
-	mgreg_t has_fp;
-	mgreg_t nstack_args;
-	guint8 buffer [256];
+	host_mgreg_t has_fp;
+	host_mgreg_t nstack_args;
 	/* This should come last as the structure is dynamically extended */
-	mgreg_t regs [PARAM_REGS];
+	host_mgreg_t regs [PARAM_REGS];
 } DynCallArgs;
 
 typedef enum {
@@ -325,7 +325,7 @@ typedef struct {
 	guint8 pass_empty_struct : 1; // Set in scenarios when empty structs needs to be represented as argument.
 } ArgInfo;
 
-typedef struct {
+struct CallInfo {
 	int nargs;
 	guint32 stack_usage;
 	guint32 reg_usage;
@@ -337,16 +337,16 @@ typedef struct {
 	ArgInfo ret;
 	ArgInfo sig_cookie;
 	ArgInfo args [1];
-} CallInfo;
+};
 
 typedef struct {
 	/* General registers */
-	mgreg_t gregs [AMD64_NREG];
+	host_mgreg_t gregs [AMD64_NREG];
 	/* Floating registers */
 	double fregs [AMD64_XMM_NREG];
 	/* Stack usage, used for passing params on stack */
-	size_t stack_size;
-	gpointer *stack;
+	guint32 stack_size;
+	guint8 *stack;
 } CallContext;
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->gregs [AMD64_RAX] = (gsize)exc; } while (0)
@@ -358,7 +358,6 @@ typedef struct {
 
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx, start_func) do { \
     guint64 stackptr; \
-	mono_arch_flush_register_windows (); \
 	stackptr = ((guint64)_AddressOfReturnAddress () - sizeof (void*));\
 	MONO_CONTEXT_SET_IP ((ctx), (start_func)); \
 	MONO_CONTEXT_SET_BP ((ctx), stackptr); \
@@ -374,19 +373,12 @@ typedef struct {
 #define MONO_INIT_CONTEXT_FROM_FUNC(ctx,start_func) do {	\
         int tmp; \
         guint64 stackptr = (guint64)&tmp; \
-		mono_arch_flush_register_windows ();	\
 		MONO_CONTEXT_SET_IP ((ctx), (start_func));	\
 		MONO_CONTEXT_SET_BP ((ctx), stackptr);	\
 		MONO_CONTEXT_SET_SP ((ctx), stackptr);	\
 	} while (0)
 
 #endif
-
-/*
- * some icalls like mono_array_new_va needs to be called using a different 
- * calling convention.
- */
-#define MONO_ARCH_VARARG_ICALLS 1
 
 #if !defined( HOST_WIN32 ) && !defined(__HAIKU__) && defined (HAVE_SIGACTION)
 
@@ -436,7 +428,6 @@ typedef struct {
 #define MONO_ARCH_HAVE_CMOV_OPS 1
 #define MONO_ARCH_HAVE_EXCEPTIONS_INIT 1
 #define MONO_ARCH_HAVE_GENERALIZED_IMT_TRAMPOLINE 1
-#define MONO_ARCH_HAVE_SIGCTX_TO_MONOCTX 1
 #define MONO_ARCH_HAVE_GET_TRAMPOLINES 1
 
 #define MONO_ARCH_INTERPRETER_SUPPORTED 1
@@ -450,6 +441,12 @@ typedef struct {
 #define MONO_ARCH_DYN_CALL_PARAM_AREA 0
 
 #define MONO_ARCH_LLVM_SUPPORTED 1
+#if defined(HOST_WIN32) && defined(TARGET_WIN32) && !defined(_MSC_VER)
+// Only supported for Windows cross compiler builds, host == Win32, target != Win32
+// and only using MSVC for none cross compiler builds.
+#undef MONO_ARCH_LLVM_SUPPORTED
+#endif
+
 #define MONO_ARCH_HAVE_CARD_TABLE_WBARRIER 1
 #define MONO_ARCH_HAVE_SETUP_RESUME_FROM_SIGNAL_HANDLER_CTX 1
 #define MONO_ARCH_GC_MAPS_SUPPORTED 1
@@ -463,8 +460,10 @@ typedef struct {
 #define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT 1
 #define MONO_ARCH_HAVE_GENERAL_RGCTX_LAZY_FETCH_TRAMPOLINE 1
 #define MONO_ARCH_FLOAT32_SUPPORTED 1
+#define MONO_ARCH_LLVM_TARGET_LAYOUT "e-i64:64-i128:128-n8:16:32:64-S128"
 
 #define MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+#define MONO_ARCH_HAVE_INTERP_ENTRY_TRAMPOLINE 1
 #define MONO_ARCH_HAVE_INTERP_NATIVE_TO_MANAGED 1
 
 #if defined(TARGET_OSX) || defined(__linux__)
@@ -474,7 +473,7 @@ typedef struct {
 #define MONO_ARCH_GSHAREDVT_SUPPORTED 1
 
 
-#if defined(TARGET_APPLETVOS)
+#if defined(HOST_TVOS)
 /* No signals */
 #define MONO_ARCH_NEED_DIV_CHECK 1
 #endif
@@ -502,7 +501,7 @@ mono_amd64_patch (unsigned char* code, gpointer target);
 void
 mono_amd64_throw_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
 							guint64 dummy5, guint64 dummy6,
-							MonoContext *mctx, MonoObject *exc, gboolean rethrow);
+							MonoContext *mctx, MonoObject *exc, gboolean rethrow, gboolean preserve_ips);
 
 void
 mono_amd64_throw_corlib_exception (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint64 dummy4,
@@ -581,8 +580,11 @@ mono_arch_unwindinfo_get_size (guchar code_count)
 	// of unwind codes. Adding extra bytes to the total size will make sure we can properly align the RUNTIME_FUNCTION
 	// struct. Since our UNWIND_INFO follows RUNTIME_FUNCTION struct in memory, it will automatically be DWORD aligned
 	// as well. Also make sure to allocate room for a padding UNWIND_CODE, if needed.
-	return (sizeof (mgreg_t) + sizeof (UNWIND_INFO)) -
+	return (sizeof (target_mgreg_t) + sizeof (UNWIND_INFO)) -
 		(sizeof (UNWIND_CODE) * ((MONO_MAX_UNWIND_CODES - ((code_count + 1) & ~1))));
+/* FIXME Something simpler should work:
+	return sizeof (UNWIND_INFO) + sizeof (UNWIND_CODE) * (code_count + (code_count & 1));
+*/
 }
 
 guchar

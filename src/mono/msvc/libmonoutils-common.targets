@@ -44,7 +44,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-io-portability.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\monobitset.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-filemap.c" />
-    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-math.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-math-c.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-mmap.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-mmap-windows.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap.h" />
@@ -68,6 +68,7 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-string.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-time.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-time.h" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\utils\strenc-internals.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\strenc.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\strenc.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-uri.c" />

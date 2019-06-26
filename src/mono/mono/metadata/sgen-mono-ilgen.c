@@ -33,6 +33,7 @@
 #include "utils/mono-threads-coop.h"
 #include "utils/mono-threads.h"
 #include "metadata/w32handle.h"
+#include "icall-decl.h"
 
 #define OPDEF(a,b,c,d,e,f,g,h,i,j) \
 	a = i,
@@ -46,6 +47,7 @@ enum {
 
 #ifdef MANAGED_ALLOCATION
 // Cache the SgenThreadInfo pointer in a local 'var'.
+// This is the only live producer of CEE_MONO_TLS.
 #define EMIT_TLS_ACCESS_VAR(mb, var) \
 	do { \
 		var = mono_mb_add_local ((mb), mono_get_int_type ());	\
@@ -165,7 +167,7 @@ emit_nursery_check_ilgen (MonoMethodBuilder *mb, gboolean is_concurrent)
 	mono_mb_emit_byte (mb, CEE_RET);
 #else
 	mono_mb_emit_ldarg (mb, 0);
-	mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_nostore);
+	mono_mb_emit_icall (mb, mono_gc_wbarrier_generic_nostore_internal);
 	mono_mb_emit_byte (mb, CEE_RET);
 #endif
 }

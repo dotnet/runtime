@@ -5,13 +5,11 @@
     <MONO_BUILD_DIR_PREFIX>$(MSBuildProjectDirectory)/./build/</MONO_BUILD_DIR_PREFIX>
     <!-- Change this to custom distribution tree location to enable out of source tree distribution, example c:/mono-dist/ -->
     <MONO_INSTALL_DIR_PREFIX>$(MSBuildProjectDirectory)/./dist/</MONO_INSTALL_DIR_PREFIX>
-    <!-- Change this to custom install tree location to enable out of source tree builds, example c:/mono-llvm/ -->
-    <MONO_LLVM_INSTALL_DIR_PREFIX>$(MONO_INSTALL_DIR_PREFIX)llvm/</MONO_LLVM_INSTALL_DIR_PREFIX>
     <!-- GC in use, sgen or boehm, default is sgen. -->
     <MONO_TARGET_GC>sgen</MONO_TARGET_GC>
     <!-- When true, build targets will get a suffix based on used GC. Makes it possible to have builds using different GC's in same build folders, sharing common targets. -->
     <MONO_USE_TARGET_SUFFIX>true</MONO_USE_TARGET_SUFFIX>
-    <!-- When true, build will get a separate build folder based on used GC. Makes it possible separate builds into different output folders under the same build prefix. -->
+    <!-- When true, build will get a separate build folder based on various configuration parameters. Makes it possible separate builds into different output folders under the same build prefix. -->
     <MONO_USE_SEPARATE_BUILD_DIR>true</MONO_USE_SEPARATE_BUILD_DIR>
     <!-- When true, all binaries and libraries will link using static c-runtime. When false, all binaries and libraries will link using dynamic c-runtime.  -->
     <MONO_USE_STATIC_C_RUNTIME>false</MONO_USE_STATIC_C_RUNTIME>
@@ -19,6 +17,18 @@
     <MONO_USE_STATIC_LIBMONO>false</MONO_USE_STATIC_LIBMONO>
     <!-- When true, mono binaries will link and include llvm. When false, mono binaries will not link and include llvm.  -->
     <MONO_ENABLE_LLVM>false</MONO_ENABLE_LLVM>
+    <!-- When true, enable LLVM asserts for internal LLVM build. When false, disable LLVM asserts for internal LLVM build.  -->
+    <MONO_ENABLE_LLVM_ASSERTS>false</MONO_ENABLE_LLVM_ASSERTS>
+    <!-- When set, use an alternative LLVM source location for internal LLVM build.  -->
+    <MONO_INTERNAL_LLVM_SOURCE_DIR></MONO_INTERNAL_LLVM_SOURCE_DIR>
+    <!-- When set, use an external pre-build LLVM library instead of internal one.  -->
+    <MONO_EXTERNAL_LLVM_CONFIG></MONO_EXTERNAL_LLVM_CONFIG>
+    <!-- When true, ported mono projects will build using C++ instead of C compiler. When false, all project will be build using the default compiler.  -->
+    <MONO_COMPILE_AS_CPP>false</MONO_COMPILE_AS_CPP>
+    <!-- When true, mono binaries will link and include BTLS. When false, mono binaries will not link and include BTLS.  -->
+    <MONO_ENABLE_BTLS>false</MONO_ENABLE_BTLS>
+    <!-- When true, mono binaries will be compiled for use as a .NET Core runtime.  -->
+    <MONO_ENABLE_NETCORE>false</MONO_ENABLE_NETCORE>
   </PropertyGroup>
   <PropertyGroup Label="MonoDirectories">
     <MonoSourceLocation Condition="'$(MonoSourceLocation)' == '' ">..</MonoSourceLocation>
@@ -33,11 +43,6 @@
     <MONO_JIT_SOURCE_DIR>$(MONO_INCLUDE_DIR)/jit</MONO_JIT_SOURCE_DIR>
     <LIBGC_CPPFLAGS_INCLUDE>$(MONO_LIBGC_INCLUDE_DIR)</LIBGC_CPPFLAGS_INCLUDE>
     <GLIB_CFLAGS_INCLUDE>$(MONO_EGLIB_SOURCE_DIR)</GLIB_CFLAGS_INCLUDE>
-  </PropertyGroup>
-  <PropertyGroup Label="MonoLLVMDirectories">
-    <MONO_LLVM_INCLUDE_DIR>$(MONO_LLVM_INSTALL_DIR_PREFIX)include</MONO_LLVM_INCLUDE_DIR>
-    <MONO_LLVM_LIB_DIR>$(MONO_LLVM_INSTALL_DIR_PREFIX)lib</MONO_LLVM_LIB_DIR>
-    <MONO_LLVM_BIN_DIR>$(MONO_LLVM_INSTALL_DIR_PREFIX)bin</MONO_LLVM_BIN_DIR>
   </PropertyGroup>
   <PropertyGroup Label="Static-C-Runtime" Condition="$(MONO_USE_STATIC_C_RUNTIME)=='true'">
     <MONO_C_RUNTIME Condition="'$(Configuration)'=='Debug'">MultiThreadedDebug</MONO_C_RUNTIME>
@@ -75,21 +80,12 @@
   <PropertyGroup Label="MonoProfiler">
     <VTUNE_INCLUDE_DIR>$(ProgramFiles)/Intel/VTune Amplifier XE 2013/include</VTUNE_INCLUDE_DIR>
   </PropertyGroup>
-  <PropertyGroup Label="MONO_ENABLE_LLVM" Condition="$(MONO_ENABLE_LLVM)=='true'">
-    <MONO_LLVM_CODEGEN_LIBS>LLVMX86CodeGen.lib;LLVMX86Desc.lib;LLVMX86Info.lib;LLVMObject.lib;LLVMBitReader.lib;LLVMMCDisassembler.lib;LLVMX86AsmPrinter.lib;LLVMX86Utils.lib;LLVMSelectionDAG.lib;LLVMAsmPrinter.lib;LLVMMCParser.lib;LLVMCodeGen.lib;LLVMScalarOpts.lib;LLVMInstCombine.lib;LLVMTransformUtils.lib;LLVMipa.lib</MONO_LLVM_CODEGEN_LIBS>
-    <MONO_LLVM_JIT_LIBS>LLVMMCJIT.lib;LLVMRuntimeDyld.lib;LLVMObject.lib;LLVMMCParser.lib;LLVMBitReader.lib;LLVMJIT.lib;LLVMExecutionEngine.lib;LLVMCodeGen.lib;LLVMScalarOpts.lib;LLVMInstCombine.lib;LLVMTransformUtils.lib</MONO_LLVM_JIT_LIBS>
-    <MONO_LLVM_LIBS>$(MONO_LLVM_CODEGEN_LIBS);$(MONO_LLVM_JIT_LIBS);LLVMBitWriter.lib;LLVMAnalysis.lib;LLVMTarget.lib;LLVMMC.lib;LLVMCore.lib;LLVMSupport.lib</MONO_LLVM_LIBS>
-    <MONO_ADDITIONAL_PREPROCESSOR_DEFINITIONS>ENABLE_LLVM=1;$(MONO_ADDITIONAL_PREPROCESSOR_DEFINITIONS)</MONO_ADDITIONAL_PREPROCESSOR_DEFINITIONS>
-  </PropertyGroup>
   <ItemGroup>
     <BuildMacro Include="MONO_BUILD_DIR_PREFIX">
       <Value>$(MONO_BUILD_DIR_PREFIX)</Value>
     </BuildMacro>
     <BuildMacro Include="MONO_INSTALL_DIR_PREFIX">
       <Value>$(MONO_INSTALL_DIR_PREFIX)</Value>
-    </BuildMacro>
-    <BuildMacro Include="MONO_LLVM_INSTALL_DIR_PREFIX">
-      <Value>$(MONO_LLVM_INSTALL_DIR_PREFIX)</Value>
     </BuildMacro>
     <BuildMacro Include="MONO_TARGET_GC">
       <Value>$(MONO_TARGET_GC)</Value>
@@ -108,6 +104,18 @@
     </BuildMacro>
     <BuildMacro Include="MONO_ENABLE_LLVM">
       <Value>$(MONO_ENABLE_LLVM)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_EXTERNAL_LLVM_CONFIG">
+      <Value>$(MONO_EXTERNAL_LLVM_CONFIG)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_COMPILE_AS_CPP">
+      <Value>$(MONO_COMPILE_AS_CPP)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_ENABLE_BTLS">
+      <Value>$(MONO_ENABLE_BTLS)</Value>
+    </BuildMacro>
+    <BuildMacro Include="MONO_ENABLE_NETCORE">
+      <Value>$(MONO_ENABLE_NETCORE)</Value>
     </BuildMacro>
   </ItemGroup>
   <PropertyGroup Label="MonoDefaultPreprocessorDefinitions">

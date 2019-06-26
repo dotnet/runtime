@@ -20,61 +20,61 @@ typedef enum {
 	MONO_BTLS_X509_VERIFY_FLAGS_X509_STRICT	= 4
 } MonoBtlsX509VerifyFlags;
 
-MonoBtlsX509VerifyParam *
+MONO_API MonoBtlsX509VerifyParam *
 mono_btls_x509_verify_param_new (void);
 
-MonoBtlsX509VerifyParam *
+MONO_API MonoBtlsX509VerifyParam *
 mono_btls_x509_verify_param_from_store_ctx (MonoBtlsX509StoreCtx *ctx, X509_VERIFY_PARAM *param);
 
-MonoBtlsX509VerifyParam *
+MONO_API MonoBtlsX509VerifyParam *
 mono_btls_x509_verify_param_copy (const MonoBtlsX509VerifyParam *from);
 
-void
+MONO_API void
 mono_btls_x509_verify_param_free (MonoBtlsX509VerifyParam *param);
 
-const X509_VERIFY_PARAM *
+MONO_API const X509_VERIFY_PARAM *
 mono_btls_x509_verify_param_peek_param (const MonoBtlsX509VerifyParam *param);
 
-int
+MONO_API int
 mono_btls_x509_verify_param_can_modify (MonoBtlsX509VerifyParam *param);
 
-MonoBtlsX509VerifyParam *
+MONO_API MonoBtlsX509VerifyParam *
 mono_btls_x509_verify_param_lookup (const char *name);
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_name (MonoBtlsX509VerifyParam *param, const char *name);
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_host (MonoBtlsX509VerifyParam *param, const char *host, int namelen);
 
-int
+MONO_API int
 mono_btls_x509_verify_param_add_host (MonoBtlsX509VerifyParam *param, const char *host, int namelen);
 
-uint64_t
+MONO_API uint64_t
 mono_btls_x509_verify_param_get_flags (MonoBtlsX509VerifyParam *param);
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_flags (MonoBtlsX509VerifyParam *param, uint64_t flags);
 
-MonoBtlsX509VerifyFlags
+MONO_API MonoBtlsX509VerifyFlags
 mono_btls_x509_verify_param_get_mono_flags (MonoBtlsX509VerifyParam *param);
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_mono_flags (MonoBtlsX509VerifyParam *param, MonoBtlsX509VerifyFlags flags);
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_purpose (MonoBtlsX509VerifyParam *param, MonoBtlsX509Purpose purpose);
 
-int
+MONO_API int
 mono_btls_x509_verify_param_get_depth (MonoBtlsX509VerifyParam *param);
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_depth (MonoBtlsX509VerifyParam *param, int depth);
 
-int
+MONO_API int
 mono_btls_x509_verify_param_set_time (MonoBtlsX509VerifyParam *param, int64_t time);
 
-char *
+MONO_API char *
 mono_btls_x509_verify_param_get_peername (MonoBtlsX509VerifyParam *param);
 
 #endif /* defined(__btls__btls_x509_verify_param__) */

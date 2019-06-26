@@ -106,9 +106,9 @@ mono_os_event_wait_multiple (MonoOSEvent **events, gsize nevents, gboolean waita
 		handles [i] = events [i]->handle;
 	}
 
-	res = mono_win32_wait_for_multiple_objects_ex ((DWORD)nevents, handles, waitall, timeout, alertable);
+	res = mono_win32_wait_for_multiple_objects_ex ((DWORD)nevents, handles, waitall, timeout, alertable, NULL);
 	if (res >= WAIT_OBJECT_0 && res < WAIT_OBJECT_0 + MONO_OS_EVENT_WAIT_MAXIMUM_OBJECTS)
-		return MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + (res - WAIT_OBJECT_0);
+		return (MonoOSEventWaitRet)(MONO_OS_EVENT_WAIT_RET_SUCCESS_0 + (res - WAIT_OBJECT_0));
 	else if (res == WAIT_IO_COMPLETION)
 		return MONO_OS_EVENT_WAIT_RET_ALERTED;
 	else if (res == WAIT_TIMEOUT)

@@ -146,15 +146,15 @@ get_ex_obj: dest:a len:16
 ckfinite: dest:f src1:f len:32
 ceq: dest:y len:6
 cgt: dest:y len:6
-cgt.un: dest:y len:6
+cgt_un: dest:y len:6
 clt: dest:y len:6
-clt.un: dest:y len:6
+clt_un: dest:y len:6
 localloc: dest:i src1:i len:120
 compare: src1:i src2:i len:2
 compare_imm: src1:i len:6
 fcompare: src1:f src2:f clob:a len:9
-oparglist: src1:b len:10
-checkthis: src1:b len:3
+arglist: src1:b len:10
+check_this: src1:b len:3
 voidcall: len:17 clob:c
 voidcall_reg: src1:i len:11 clob:c
 voidcall_membase: src1:b len:16 clob:c
@@ -269,7 +269,7 @@ float_cge: dest:y src1:f src2:f len:37
 float_cle: dest:y src1:f src2:f len:37
 float_conv_to_u: dest:i src1:f len:36
 call_handler: len:11 clob:c
-aot_const: dest:i len:5
+aotconst: dest:i len:5
 load_gotaddr: dest:i len:64
 got_entry: dest:i src1:b len:7
 gc_safe_point: clob:c src1:i len:20
@@ -503,9 +503,9 @@ sqrtps: dest:x src1:x len:4
 rsqrtps: dest:x src1:x len:4
 rcpps: dest:x src1:x len:4
 
-pshufflew_high: dest:x src1:x len:5
-pshufflew_low: dest:x src1:x len:5
-pshuffled: dest:x src1:x len:5
+pshuflew_high: dest:x src1:x len:5
+pshuflew_low: dest:x src1:x len:5
+pshufled: dest:x src1:x len:5
 shufps: dest:x src1:x src2:x len:4 clob:1
 shufpd: dest:x src1:x src2:x len:5 clob:1
 
@@ -550,7 +550,7 @@ pcmpgtw: dest:x src1:x src2:x len:4 clob:1
 pcmpgtd: dest:x src1:x src2:x len:4 clob:1
 pcmpgtq: dest:x src1:x src2:x len:5 clob:1
 
-psumabsdiff: dest:x src1:x src2:x len:4 clob:1
+psum_abs_diff: dest:x src1:x src2:x len:4 clob:1
 
 unpack_lowb: dest:x src1:x src2:x len:4 clob:1
 unpack_loww: dest:x src1:x src2:x len:4 clob:1
@@ -588,8 +588,8 @@ pmulw: dest:x src1:x src2:x len:4 clob:1
 pmuld: dest:x src1:x src2:x len:5 clob:1
 pmulq: dest:x src1:x src2:x len:4 clob:1
 
-pmul_high_un: dest:x src1:x src2:x len:4 clob:1
-pmul_high: dest:x src1:x src2:x len:4 clob:1
+pmulw_high_un: dest:x src1:x src2:x len:4 clob:1
+pmulw_high: dest:x src1:x src2:x len:4 clob:1
 
 pshrw: dest:x src1:x len:5 clob:1
 pshrw_reg: dest:x src1:x src2:x len:4 clob:1

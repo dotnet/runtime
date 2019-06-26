@@ -78,6 +78,7 @@ struct _MonoMethod {
 	unsigned int is_inflated:1; /* whether we're a MonoMethodInflated */
 	unsigned int skip_visibility:1; /* whenever to skip JIT visibility checks */
 	unsigned int verification_success:1; /* whether this method has been verified successfully.*/
+	unsigned int is_reabstracted:1; /* whenever this is a reabstraction of another interface */
 	signed int slot : 16;
 
 	/*
@@ -248,7 +249,7 @@ typedef enum {
 	MONO_CLASS_GINST, /* generic instantiation */
 	MONO_CLASS_GPARAM, /* generic parameter */
 	MONO_CLASS_ARRAY, /* vector or array, bounded or not */
-	MONO_CLASS_POINTER, /* pointer of function pointer*/
+	MONO_CLASS_POINTER, /* pointer or function pointer*/
 } MonoTypeKind;
 
 typedef struct _MonoClassDef MonoClassDef;
@@ -329,6 +330,11 @@ int mono_class_interface_offset_with_variance (MonoClass *klass, MonoClass *itf,
 
 typedef gpointer MonoRuntimeGenericContext;
 
+typedef enum {
+	/* array or string */
+	MONO_VT_FLAG_ARRAY_OR_STRING = (1 << 0)
+} MonoVTableFlags;
+
 /* the interface_offsets array is stored in memory before this struct */
 struct MonoVTable {
 	MonoClass  *klass;
@@ -338,12 +344,14 @@ struct MonoVTable {
 	 */
 	MonoGCDescriptor gc_descr;
 	MonoDomain *domain;  /* each object/vtable belongs to exactly one domain */
-        gpointer    type; /* System.Type type for klass */
+	gpointer    type; /* System.Type type for klass */
 	guint8     *interface_bitmap;
 	guint32     max_interface_id;
 	guint8      rank;
 	/* Keep this a guint8, the jit depends on it */
 	guint8      initialized; /* cctor has been run */
+	/* Keep this a guint8, the jit depends on it */
+	guint8      flags; /* MonoVTableFlags */
 	guint remote          : 1; /* class is remotely activated */
 	guint init_failed     : 1; /* cctor execution failed */
 	guint has_static_fields : 1; /* pointer to the data stored at the end of the vtable array */
@@ -351,6 +359,8 @@ struct MonoVTable {
 
 	guint32     imt_collisions_bitmap;
 	MonoRuntimeGenericContext *runtime_generic_context;
+	/* interp virtual method table */
+	gpointer *interp_vtable;
 	/* do not add any fields after vtable, the structure is dynamically extended */
 	/* vtable contains function pointers to methods or their trampolines, at the
 	 end there may be a slot containing the pointer to the static fields */
@@ -567,6 +577,9 @@ typedef struct MonoCachedClassInfo {
 } MonoCachedClassInfo;
 
 typedef struct {
+	// Name and func fields double as "inited".
+	// That is, any initialized MonoJitICallInfo must
+	// have both of them to be non-NULL.
 	const char *name;
 	gconstpointer func;
 	gconstpointer wrapper;
@@ -805,6 +818,9 @@ mono_class_has_special_static_fields (MonoClass *klass);
 const char*
 mono_class_get_field_default_value (MonoClassField *field, MonoTypeEnum *def_type);
 
+MonoProperty* 
+mono_class_get_property_from_name_internal (MonoClass *klass, const char *name);
+
 const char*
 mono_class_get_property_default_value (MonoProperty *property, MonoTypeEnum *def_type);
 
@@ -831,6 +847,9 @@ mono_class_get_context (MonoClass *klass);
 
 MONO_PROFILER_API MonoMethodSignature*
 mono_method_signature_checked (MonoMethod *m, MonoError *err);
+
+MONO_PROFILER_API MonoMethodSignature*
+mono_method_signature_internal (MonoMethod *m);
 
 MonoGenericContext*
 mono_method_get_context_general (MonoMethod *method, gboolean uninflated);
@@ -901,7 +920,6 @@ typedef struct {
 	MonoClass *array_class;
 	MonoClass *delegate_class;
 	MonoClass *multicastdelegate_class;
-	MonoClass *asyncresult_class;
 	MonoClass *manualresetevent_class;
 	MonoClass *typehandle_class;
 	MonoClass *fieldhandle_class;
@@ -922,25 +940,18 @@ typedef struct {
 	MonoClass *appdomain_class;
 	MonoClass *field_info_class;
 	MonoClass *method_info_class;
-	MonoClass *stringbuilder_class;
-	MonoClass *math_class;
 	MonoClass *stack_frame_class;
-	MonoClass *stack_trace_class;
 	MonoClass *marshal_class;
 	MonoClass *typed_reference_class;
 	MonoClass *argumenthandle_class;
 	MonoClass *monitor_class;
 	MonoClass *generic_ilist_class;
 	MonoClass *generic_nullable_class;
-	MonoClass *handleref_class;
 	MonoClass *attribute_class;
-	MonoClass *customattribute_data_class;
 	MonoClass *critical_finalizer_object; /* MAYBE NULL */
 	MonoClass *generic_ireadonlylist_class;
 	MonoClass *generic_ienumerator_class;
-	MonoClass *threadpool_wait_callback_class;
 	MonoMethod *threadpool_perform_wait_callback_method;
-	MonoClass *console_class;
 } MonoDefaults;
 
 #ifdef DISABLE_REMOTING
@@ -1003,10 +1014,15 @@ GENERATE_GET_CLASS_WITH_CACHE_DECL (variant)
 
 #endif
 
+GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain)
+GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_setup)
+
 GENERATE_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
+GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL (appdomain_unloaded_exception)
 
 GENERATE_GET_CLASS_WITH_CACHE_DECL (valuetype)
 
+GENERATE_TRY_GET_CLASS_WITH_CACHE_DECL(handleref)
 /* If you need a MonoType, use one of the mono_get_*_type () functions in class-inlines.h */
 extern MonoDefaults mono_defaults;
 
@@ -1058,29 +1074,22 @@ MONO_API gboolean
 mono_metadata_load_generic_param_constraints_checked (MonoImage *image, guint32 token,
 					      MonoGenericContainer *container, MonoError *error);
 
-MonoMethodSignature*
-mono_create_icall_signature (const char *sigstr);
-
-MonoJitICallInfo *
-mono_register_jit_icall (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean is_save);
-
-MonoJitICallInfo *
-mono_register_jit_icall_full (gconstpointer func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol);
-
+// This is the "real" function for registering JIT icalls. All others are one line wrappers that call it,
+// i.e. filling in info or c_symbol.
 void
-mono_register_jit_icall_wrapper (MonoJitICallInfo *info, gconstpointer wrapper);
+mono_register_jit_icall_info (MonoJitICallInfo *info, gconstpointer func, const char *name,
+			      MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol);
 
-MonoJitICallInfo *
-mono_find_jit_icall_by_name (const char *name) MONO_LLVM_INTERNAL;
+#ifdef __cplusplus
+template <typename T>
+inline void
+mono_register_jit_icall_info (MonoJitICallInfo *info, T func, const char *name, MonoMethodSignature *sig, gboolean no_wrapper, const char *c_symbol)
+{
+	mono_register_jit_icall_info (info, (gconstpointer)func, name, sig, no_wrapper, c_symbol);
+}
+#endif // __cplusplus
 
-MonoJitICallInfo *
-mono_find_jit_icall_by_addr (gconstpointer addr) MONO_LLVM_INTERNAL;
-
-GHashTable*
-mono_get_jit_icall_info (void);
-
-const char*
-mono_lookup_jit_icall_symbol (const char *name);
+#define mono_register_jit_icall(func, sig, no_wrapper) (mono_register_jit_icall_info (&mono_get_jit_icall_info ()->func, func, #func, (sig), (no_wrapper), NULL))
 
 gboolean
 mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
@@ -1097,8 +1106,11 @@ mono_type_get_full_name (MonoClass *klass);
 char *
 mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret, MonoTypeNameFormat format);
 
-char *
+MONO_PROFILER_API char *
 mono_method_get_full_name (MonoMethod *method);
+
+const char*
+mono_wrapper_type_to_str (guint32 wrapper_type);
 
 MonoArrayType *mono_dup_array_type (MonoImage *image, MonoArrayType *a);
 MonoMethodSignature *mono_metadata_signature_deep_dup (MonoImage *image, MonoMethodSignature *sig);
@@ -1106,8 +1118,8 @@ MonoMethodSignature *mono_metadata_signature_deep_dup (MonoImage *image, MonoMet
 MONO_API void
 mono_image_init_name_cache (MonoImage *image);
 
-gboolean mono_class_is_nullable (MonoClass *klass);
-MonoClass *mono_class_get_nullable_param (MonoClass *klass);
+MonoClass*
+mono_class_get_nullable_param_internal (MonoClass *klass);
 
 /* object debugging functions, for use inside gdb */
 MONO_API void mono_object_describe        (MonoObject *obj);
@@ -1178,6 +1190,8 @@ mono_class_alloc (MonoClass *klass, int size);
 gpointer
 mono_class_alloc0 (MonoClass *klass, int size);
 
+#define mono_class_alloc0(klass, size) (g_cast (mono_class_alloc0 ((klass), (size))))
+
 void
 mono_class_setup_interfaces (MonoClass *klass, MonoError *error);
 
@@ -1199,10 +1213,19 @@ mono_class_has_variant_generic_params (MonoClass *klass);
 gboolean
 mono_class_is_variant_compatible (MonoClass *klass, MonoClass *oklass, gboolean check_for_reference_conv);
 
+gboolean 
+mono_class_is_subclass_of_internal (MonoClass *klass, MonoClass *klassc, gboolean check_interfaces);
+
+mono_bool
+mono_class_is_assignable_from_internal (MonoClass *klass, MonoClass *oklass);
+
 gboolean mono_is_corlib_image (MonoImage *image);
 
 MonoType*
 mono_field_get_type_checked (MonoClassField *field, MonoError *error);
+
+MonoType*
+mono_field_get_type_internal (MonoClassField *field);
 
 MonoClassField*
 mono_class_get_fields_internal (MonoClass* klass, gpointer *iter);
@@ -1240,6 +1263,9 @@ mono_class_from_name_checked (MonoImage *image, const char* name_space, const ch
 MonoClass *
 mono_class_from_name_case_checked (MonoImage *image, const char* name_space, const char *name, MonoError *error);
 
+MONO_PROFILER_API MonoClass *
+mono_class_from_mono_type_internal (MonoType *type);
+
 MonoClassField*
 mono_field_from_token_checked (MonoImage *image, uint32_t token, MonoClass **retklass, MonoGenericContext *context, MonoError *error);
 
@@ -1266,7 +1292,7 @@ mono_class_has_failure (const MonoClass *klass);
 
 /* Kind specific accessors */
 MonoGenericClass*
-mono_class_get_generic_class (MonoClass *klass);
+mono_class_get_generic_class (MonoClass *klass) MONO_LLVM_INTERNAL;
 
 MonoGenericClass*
 mono_class_try_get_generic_class (MonoClass *klass);
@@ -1429,6 +1455,12 @@ mono_class_contextbound_bit_offset (int* byte_offset_out, guint8* mask_out);
 
 gboolean
 mono_class_init_checked (MonoClass *klass, MonoError *error);
+
+MonoType*
+mono_class_enum_basetype_internal (MonoClass *klass) MONO_LLVM_INTERNAL;
+
+// Enum and static storage for JIT icalls.
+#include "jit-icall-reg.h"
 
 /*Now that everything has been defined, let's include the inline functions */
 #include <mono/metadata/class-inlines.h>

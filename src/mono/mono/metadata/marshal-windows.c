@@ -13,12 +13,16 @@
 #include <windows.h>
 #include <objbase.h>
 #include "mono/metadata/marshal-windows-internals.h"
+#include "icall-decl.h"
 
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 void*
-mono_marshal_alloc_hglobal (size_t size)
+mono_marshal_alloc_hglobal (size_t size, MonoError *error)
 {
-	return GlobalAlloc (GMEM_FIXED, size);
+	void* p = GlobalAlloc (GMEM_FIXED, size);
+	if (!p)
+		mono_error_set_out_of_memory (error, "");
+	return p;
 }
 
 gpointer
@@ -68,30 +72,15 @@ ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalAnsi (const guni
 	 * large.
 	 */
 	size_t len = MAX (strlen (tres) + 1, length);
-	char* ret = ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (len, error);
+	char* ret = (char*)ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (len, error);
 	if (ret)
 		memcpy (ret, tres, len);
 	g_free (tres);
 	return ret;
 }
 
-gunichar2*
-ves_icall_System_Runtime_InteropServices_Marshal_StringToHGlobalUni (const gunichar2 *s, int length, MonoError *error)
-{
-	if (!s)
-		return NULL;
-
-	gsize const len = ((gsize)length + 1) * 2;
-	gunichar2 *res = ves_icall_System_Runtime_InteropServices_Marshal_AllocHGlobal (len, error);
-	if (res) {
-		memcpy (res, s, length * 2);
-		res [length] = 0;
-	}
-	return res;
-}
-
 gpointer
-mono_string_to_utf8str_handle (MonoStringHandle s, MonoError *error)
+mono_string_to_utf8str_impl (MonoStringHandle s, MonoError *error)
 {
 	char *as, *tmp;
 	glong len;
@@ -101,7 +90,7 @@ mono_string_to_utf8str_handle (MonoStringHandle s, MonoError *error)
 		return NULL;
 
 	if (!mono_string_handle_length (s)) {
-		as = CoTaskMemAlloc (1);
+		as = (char*)CoTaskMemAlloc (1);
 		g_assert (as);
 		as [0] = '\0';
 		return as;
@@ -111,30 +100,18 @@ mono_string_to_utf8str_handle (MonoStringHandle s, MonoError *error)
 
 	uint32_t gchandle = 0;
 	tmp = g_utf16_to_utf8 (mono_string_handle_pin_chars (s, &gchandle), mono_string_handle_length (s), NULL, &len, &gerror);
-	mono_gchandle_free (gchandle);
+	mono_gchandle_free_internal (gchandle);
 	if (gerror) {
 		mono_error_set_argument (error, "string", gerror->message);
 		g_error_free (gerror);
 		return NULL;
 	} else {
-		as = CoTaskMemAlloc (len + 1);
+		as = (char*)CoTaskMemAlloc (len + 1);
 		g_assert (as);
 		memcpy (as, tmp, len + 1);
 		g_free (tmp);
 		return as;
 	}
-}
-
-/* This is a JIT icall, it sets the pending exception and returns NULL on error. */
-gpointer
-mono_string_to_utf8str (MonoString *s_raw)
-{
-	HANDLE_FUNCTION_ENTER ();
-	ERROR_DECL (error);
-	MONO_HANDLE_DCL (MonoString, s);
-	gpointer result = mono_string_to_utf8str_handle (s, error);
-	mono_error_set_pending_exception (error);
-	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
 #endif /* HOST_WIN32 */

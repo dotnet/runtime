@@ -61,8 +61,8 @@ struct _Group {
 	LoadGroupHandler handler;
 };
 
-gboolean run_group(Group *group, gint iterations, gboolean quiet, 
-	gboolean time, gchar *tests);
+gboolean run_group(const Group *group, gint iterations, gboolean quiet,
+	gboolean time, const char *tests);
 #undef FAILED
 RESULT FAILED(const gchar *format, ...);
 gdouble get_timestamp (void);
@@ -72,8 +72,8 @@ void eg_strfreev (gchar **str_array);
 #define OK NULL
 
 #define DEFINE_TEST_GROUP_INIT(name, table) \
-	Test * (name) (void); \
-	Test * (name) (void) { return table; }
+	const Test * (name) (void); \
+	const Test * (name) (void) { return table; }
 
 #define DEFINE_TEST_GROUP_INIT_H(name) \
 	Test * (name) (void);

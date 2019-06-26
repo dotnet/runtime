@@ -77,17 +77,17 @@ class Tests {
 		test.H (3);
 
 		if (d.Method.Name != "F")
-			return 1;
+			return 2;
 
 		if (d3.Method == null)
-			return 1;
+			return 3;
 		
 		object [] args = {3};
 		Console.WriteLine (d3.DynamicInvoke (args));
 
 		AnotherDelegate d4 = new AnotherDelegate (puts);
 		if (d4.Method == null)
-			return 1;
+			return 4;
 
 		Console.WriteLine (d4.Method);
 		Console.WriteLine (d4.Method.Name);

@@ -10,10 +10,10 @@
  */
 
 #include <config.h>
+#include <glib.h>
+#include <mono/metadata/threadpool-io.h>
 
 #ifndef DISABLE_SOCKETS
-
-#include <glib.h>
 
 #if defined(HOST_WIN32)
 #include <windows.h>
@@ -23,9 +23,9 @@
 #endif
 
 #include <mono/metadata/gc-internals.h>
+#include <mono/metadata/mono-hash-internals.h>
 #include <mono/metadata/mono-mlist.h>
 #include <mono/metadata/threadpool.h>
-#include <mono/metadata/threadpool-io.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-lazy-init.h>
@@ -198,7 +198,7 @@ selector_thread_wakeup_drain_pipes (void)
 			break;
 		if (received == SOCKET_ERROR) {
 			if (WSAGetLastError () != WSAEINTR && WSAGetLastError () != WSAEWOULDBLOCK)
-				g_warning ("selector_thread_wakeup_drain_pipes: recv () failed, error (%d) %s\n", WSAGetLastError ());
+				g_warning ("selector_thread_wakeup_drain_pipes: recv () failed, error (%d)\n", WSAGetLastError ());
 			break;
 		}
 #endif
@@ -338,7 +338,7 @@ selector_thread (gpointer data)
 		return 0;
 	}
 
-	states = mono_g_hash_table_new_type (g_direct_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_THREAD_POOL, NULL, "Thread Pool I/O State Table");
+	states = mono_g_hash_table_new_type_internal (g_direct_hash, NULL, MONO_HASH_VALUE_GC, MONO_ROOT_SOURCE_THREAD_POOL, NULL, "Thread Pool I/O State Table");
 
 	while (!mono_runtime_is_shutting_down ()) {
 		gint i, j;
@@ -658,7 +658,7 @@ mono_threadpool_io_remove_socket (int fd)
 
 	update = update_get_new ();
 	update->type = UPDATE_REMOVE_SOCKET;
-	update->data.add.fd = fd;
+	update->data.remove_socket.fd = fd;
 	mono_memory_barrier (); /* Ensure this is safely published before we wake up the selector */
 
 	selector_thread_wakeup ();

@@ -150,6 +150,30 @@ lower_store_imm (MonoCompile *cfg, MonoInst *store, MonoInst *ldaddr)
 	return TRUE;
 }
 
+static void
+kill_call_arg_alias (MonoCompile *cfg, GHashTable *addr_loads, GSList *l)
+{
+	for (; l; l = l->next) {
+		MonoInst *tmp;
+		guint32 regpair, reg;
+
+		regpair = (guint32)(gssize)(l->data);
+		reg = regpair & 0xffffff;
+
+		tmp = (MonoInst *)g_hash_table_lookup (addr_loads, GINT_TO_POINTER (reg));
+		if (tmp) {
+			// This call passes an alias as an argument. This means that the contents
+			// of the passed pointer can change. If the content is also an alias then
+			// we need to forget it as we do for moves.
+			if (g_hash_table_remove (addr_loads, GINT_TO_POINTER (((MonoInst*)tmp->inst_p0)->dreg))) {
+				if (cfg->verbose_level > 2)
+					printf ("Killed alias %d\n", ((MonoInst*)tmp->inst_p0)->dreg);
+			}
+
+		}
+	}
+}
+
 static gboolean
 lower_memory_access (MonoCompile *cfg)
 {
@@ -264,6 +288,17 @@ handle_instruction:
 					needs_dce = TRUE;
 				}
 				break;
+			default: {
+				if (MONO_IS_CALL (ins)) {
+					MonoCallInst *call = (MonoCallInst*)ins;
+
+					kill_call_arg_alias (cfg, addr_loads, call->out_ireg_args);
+				}
+				// FIXME Kill more aliases if used as dreg, since we are not in ssa form.
+				// This would need some optimizations so we don't lookup hash table for every
+				// instruction
+				break;
+			}
 			}
 		}
 	}

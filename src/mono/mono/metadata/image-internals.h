@@ -8,6 +8,9 @@
 
 #include <mono/metadata/image.h>
 
+MonoImage*
+mono_image_loaded_internal (const char *name, mono_bool refonly);
+
 MonoImage *
 mono_find_image_owner (void *ptr);
 
@@ -22,5 +25,8 @@ mono_image_open_a_lot (const char *fname, MonoImageOpenStatus *status, gboolean 
 
 gboolean
 mono_is_problematic_image (MonoImage *image);
+
+gboolean
+mono_is_problematic_file (const char *fname);
 
 #endif /* __MONO_METADATA_IMAGE_INTERNALS_H__ */

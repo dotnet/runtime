@@ -5,7 +5,69 @@
  */
 #include <config.h>
 
-#if defined(HOST_IOS)
+#if defined(HOST_WATCHOS) && (__WATCH_OS_VERSION_MIN_REQUIRED >= __WATCHOS_3_0)
+/* emitted by clang:
+ *   > /Users/lewurm/work/mono-watch4/mono/utils/mono-log-darwin.c:35:2: error: 'asl_log' is \
+ *   > deprecated: first deprecated in watchOS 3.0 - os_log(3) has replaced \
+ *   > asl(3) [-Werror,-Wdeprecated-declarations]
+ */
+
+/* untested stuff: */
+#include <os/log.h>
+#include "mono-logger-internals.h"
+void
+mono_log_open_asl (const char *path, void *userData)
+{
+}
+
+void
+mono_log_write_asl (const char *log_domain, GLogLevelFlags level, mono_bool hdr, const char *message)
+{
+	switch (level & G_LOG_LEVEL_MASK)
+	{
+		case G_LOG_LEVEL_MESSAGE:
+			os_log (OS_LOG_DEFAULT, "%s%s%s\n",
+				log_domain != NULL ? log_domain : "",
+				log_domain != NULL ? ": " : "",
+				message);
+			break;
+		case G_LOG_LEVEL_INFO:
+			os_log_info (OS_LOG_DEFAULT, "%s%s%s\n",
+				log_domain != NULL ? log_domain : "",
+				log_domain != NULL ? ": " : "",
+				message);
+			break;
+		case G_LOG_LEVEL_DEBUG:
+			os_log_debug (OS_LOG_DEFAULT, "%s%s%s\n",
+				log_domain != NULL ? log_domain : "",
+				log_domain != NULL ? ": " : "",
+				message);
+			break;
+		case G_LOG_LEVEL_ERROR:
+		case G_LOG_LEVEL_WARNING:
+			os_log_error (OS_LOG_DEFAULT, "%s%s%s\n",
+				log_domain != NULL ? log_domain : "",
+				log_domain != NULL ? ": " : "",
+				message);
+		case G_LOG_LEVEL_CRITICAL:
+		default:
+			os_log_fault (OS_LOG_DEFAULT, "%s%s%s\n",
+				log_domain != NULL ? log_domain : "",
+				log_domain != NULL ? ": " : "",
+				message);
+			break;
+	}
+
+	if (level & G_LOG_LEVEL_ERROR)
+		abort();
+}
+
+void
+mono_log_close_asl ()
+{
+}
+
+#elif defined(HOST_IOS)
 
 #include <asl.h>
 #include "mono-logger-internals.h"
@@ -38,7 +100,7 @@ mono_log_write_asl (const char *log_domain, GLogLevelFlags level, mono_bool hdr,
 		message);
 
 	if (level & G_LOG_LEVEL_ERROR)
-		abort();
+		g_assert_abort ();
 }
 
 void

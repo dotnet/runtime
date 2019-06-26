@@ -3,6 +3,7 @@ include $(top_srcdir)/mk/common.mk
 EXTRA_DIST = UTF-8.txt UTF-16BE.txt UTF-16LE.txt UTF-32BE.txt UTF-32LE.txt
 
 SOURCES = \
+	enum.cpp	\
 	test.c 		\
 	test.h 		\
 	tests.h 	\
@@ -33,13 +34,16 @@ SOURCES = \
 
 test_eglib_SOURCES = $(SOURCES)
 
-CFLAGS += -Wall -DEGLIB_TESTS=1 -D_FORTIFY_SOURCE=2 -I$(srcdir)/.. -I.. -DDRIVER_NAME=\"EGlib\"
+GLIB_TEST_FLAGS_COMMON = -Wall -DEGLIB_TESTS=1 -D_FORTIFY_SOURCE=2 -I$(srcdir)/.. -I.. -DDRIVER_NAME=\"EGlib\"
+CFLAGS += $(GLIB_TEST_FLAGS_COMMON)
+CXXFLAGS += $(GLIB_TEST_FLAGS_COMMON) @CXXFLAGS_COMMON@
+
 test_eglib_LDADD = ../libeglib.la $(LTLIBICONV)
 assertf_LDADD = ../libeglib.la $(LTLIBICONV)
 
 # Something amiss with subdirs ordering?
 ../libeglib.la: ../goutput.c # etc
-	make  -C .. $(@F)
+	$(MAKE)  -C .. $(@F)
 
 run-eglib: all
 	srcdir=`readlink -f $(srcdir)` ./test-eglib

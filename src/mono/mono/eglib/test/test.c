@@ -49,7 +49,7 @@ extern gint global_passed, global_tests;
 static gchar *last_result = NULL;
 
 static gboolean 
-run_test(Test *test, gchar **result_out)
+run_test(const Test *test, char **result_out)
 {
 	gchar *result; 
 
@@ -63,8 +63,8 @@ run_test(Test *test, gchar **result_out)
 }
 
 gboolean
-run_group(Group *group, gint iterations, gboolean quiet, 
-	gboolean time, gchar *tests_to_run_s)
+run_group(const Group *group, gint iterations, gboolean quiet,
+	gboolean time, const char *tests_to_run_s)
 {
 	Test *tests = group->handler();
 	gint i, j, passed = 0, total = 0;

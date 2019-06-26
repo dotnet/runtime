@@ -6,10 +6,14 @@
 #include "tasklets.h"
 #include "mono/metadata/exception.h"
 #include "mono/metadata/gc-internals.h"
+#include "mono/metadata/icall-internals.h"
 #include "mini.h"
 #include "mini-runtime.h"
+#include "mono/metadata/loader-internals.h"
 
 #if defined(MONO_SUPPORT_TASKLETS)
+
+#include "mono/metadata/loader-internals.h"
 
 static mono_mutex_t tasklets_mutex;
 #define tasklets_lock() mono_os_mutex_lock(&tasklets_mutex)
@@ -113,7 +117,7 @@ continuation_store (MonoContinuation *cont, int state, MonoException **e)
 			mono_gc_free_fixed (cont->saved_stack);
 		cont->stack_used_size = num_bytes;
 		cont->stack_alloc_size = num_bytes * 1.1;
-		cont->saved_stack = mono_gc_alloc_fixed (cont->stack_alloc_size, NULL, MONO_ROOT_SOURCE_THREADING, NULL, "Tasklet Saved Stack");
+		cont->saved_stack = mono_gc_alloc_fixed_no_descriptor (cont->stack_alloc_size, MONO_ROOT_SOURCE_THREADING, NULL, "Tasklet Saved Stack");
 		tasklets_unlock ();
 	}
 	memcpy (cont->saved_stack, cont->return_sp, num_bytes);
@@ -143,11 +147,11 @@ mono_tasklets_init (void)
 {
 	mono_os_mutex_init_recursive (&tasklets_mutex);
 
-	mono_add_internal_call ("Mono.Tasklets.Continuation::alloc", continuation_alloc);
-	mono_add_internal_call ("Mono.Tasklets.Continuation::free", continuation_free);
-	mono_add_internal_call ("Mono.Tasklets.Continuation::mark", continuation_mark_frame);
-	mono_add_internal_call ("Mono.Tasklets.Continuation::store", continuation_store);
-	mono_add_internal_call ("Mono.Tasklets.Continuation::restore", continuation_restore);
+	mono_add_internal_call_internal ("Mono.Tasklets.Continuation::alloc", continuation_alloc);
+	mono_add_internal_call_internal ("Mono.Tasklets.Continuation::free", continuation_free);
+	mono_add_internal_call_internal ("Mono.Tasklets.Continuation::mark", continuation_mark_frame);
+	mono_add_internal_call_internal ("Mono.Tasklets.Continuation::store", continuation_store);
+	mono_add_internal_call_internal ("Mono.Tasklets.Continuation::restore", continuation_restore);
 }
 
 void
@@ -201,11 +205,11 @@ continuation_restore (MonoContinuation *cont, int state)
 void
 mono_tasklets_init(void)
 {
-	mono_add_internal_call ("Mono.Tasklets.Continuation::alloc", continuation_alloc);
-	mono_add_internal_call ("Mono.Tasklets.Continuation::free", continuation_free);
-	mono_add_internal_call ("Mono.Tasklets.Continuation::mark", continuation_mark_frame);
-	mono_add_internal_call ("Mono.Tasklets.Continuation::store", continuation_store);
-	mono_add_internal_call ("Mono.Tasklets.Continuation::restore", continuation_restore);
+	mono_add_internal_call_internal ("Mono.Tasklets.Continuation::alloc", continuation_alloc);
+	mono_add_internal_call_internal ("Mono.Tasklets.Continuation::free", continuation_free);
+	mono_add_internal_call_internal ("Mono.Tasklets.Continuation::mark", continuation_mark_frame);
+	mono_add_internal_call_internal ("Mono.Tasklets.Continuation::store", continuation_store);
+	mono_add_internal_call_internal ("Mono.Tasklets.Continuation::restore", continuation_restore);
 
 }
 #endif

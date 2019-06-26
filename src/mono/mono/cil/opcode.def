@@ -309,8 +309,8 @@ OPDEF(CEE_MONO_TLS, "mono_tls", Pop0, PushI, InlineI, 0, 2, 0xF0, 0x0D, NEXT)
 OPDEF(CEE_MONO_ICALL_ADDR, "mono_icall_addr", Pop0, PushI, InlineI, 0, 2, 0xF0, 0x0E, NEXT)
 OPDEF(CEE_MONO_DYN_CALL, "mono_dyn_call", Pop0, PushI, InlineNone, 0, 2, 0xF0, 0x0F, NEXT)
 OPDEF(CEE_MONO_MEMORY_BARRIER, "mono_memory_barrier", Pop0, Push0, InlineI, 0, 2, 0xF0, 0x10, NEXT)
-OPDEF(CEE_MONO_JIT_ATTACH, "mono_jit_attach", Pop0, Push0, InlineNone, 0, 2, 0xF0, 0x11, NEXT)
-OPDEF(CEE_MONO_JIT_DETACH, "mono_jit_detach", Pop0, Push0, InlineNone, 0, 2, 0xF0, 0x12, NEXT)
+OPDEF(CEE_UNUSED71, "unused71", Pop0, Push0, InlineNone, 0, 2, 0xF0, 0x11, NEXT)
+OPDEF(CEE_UNUSED72, "unused72", Pop0, Push0, InlineNone, 0, 2, 0xF0, 0x12, NEXT)
 OPDEF(CEE_MONO_JIT_ICALL_ADDR, "mono_jit_icall_addr", Pop0, PushI, InlineI, 0, 2, 0xF0, 0x13, NEXT)
 OPDEF(CEE_MONO_LDPTR_INT_REQ_FLAG, "mono_ldptr_int_req_flag", Pop0, PushI, InlineNone, 0, 2, 0xF0, 0x14, NEXT)
 OPDEF(CEE_MONO_LDPTR_CARD_TABLE, "mono_ldptr_card_table", Pop0, PushI, InlineNone, 0, 2, 0xF0, 0x15, NEXT)
@@ -323,6 +323,7 @@ OPDEF(CEE_MONO_GET_LAST_ERROR, "mono_get_last_error", Pop0, PushI, InlineNone, 0
 OPDEF(CEE_MONO_GET_RGCTX_ARG, "mono_get_rgctx_arg", Pop0, PushI, InlineNone, 0, 2, 0xF0, 0x1C, NEXT)
 OPDEF(CEE_MONO_LDPTR_PROFILER_ALLOCATION_COUNT, "mono_ldptr_profiler_allocation_count", Pop0, PushI, InlineNone, 0, 2, 0xF0, 0x1D, NEXT)
 OPDEF(CEE_MONO_LD_DELEGATE_METHOD_PTR, "mono_ld_delegate_method_ptr", Pop1, PushI, InlineNone, 0, 2, 0xF0, 0x1E, NEXT)
+OPDEF(CEE_MONO_RETHROW, "mono_rethrow", PopRef, Push0, InlineNone, 0, 2, 0xF0, 0x1F, ERROR)
 #ifndef OPALIAS
 #define _MONO_CIL_OPALIAS_DEFINED_
 #define OPALIAS(a,s,r)

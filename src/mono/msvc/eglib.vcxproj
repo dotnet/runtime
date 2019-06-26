@@ -146,6 +146,11 @@
       <StringPooling>true</StringPooling>
     </ClCompile>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(MONO_COMPILE_AS_CPP)'=='true'">
+    <ClCompile>
+      <CompileAs>CompileAsCpp</CompileAs>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <Import Project="eglib.targets" />
   <ItemGroup>
     <ProjectReference Include="build-init.vcxproj">

@@ -12,7 +12,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\mono\tests\libtest.c">
+    <ClCompile Include="..\mono\tests\libtest.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -13,22 +13,22 @@
 #include "btls-ssl.h"
 #include "btls-x509-crl.h"
 
-MonoBtlsX509Revoked *
+MONO_API MonoBtlsX509Revoked *
 mono_btls_x509_revoked_new (MonoBtlsX509Crl *owner, X509_REVOKED *revoked);
 
-void
+MONO_API void
 mono_btls_x509_revoked_free (MonoBtlsX509Revoked *revoked);
 
-int
+MONO_API int
 mono_btls_x509_revoked_get_serial_number (MonoBtlsX509Revoked *revoked, char *buffer, int size);
 
-int64_t
+MONO_API int64_t
 mono_btls_x509_revoked_get_revocation_date (MonoBtlsX509Revoked *revoked);
 
-int
+MONO_API int
 mono_btls_x509_revoked_get_reason (MonoBtlsX509Revoked *revoked);
 
-int
+MONO_API int
 mono_btls_x509_revoked_get_sequence (MonoBtlsX509Revoked *revoked);
 
 #endif /* __btls__btls_x509_revoked__ */

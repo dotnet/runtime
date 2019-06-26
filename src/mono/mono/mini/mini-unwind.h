@@ -13,9 +13,9 @@
 
 #include "mini.h"
 
-/* This is the same as mgreg_t, except on 32 bit bit platforms with callee saved fp regs */
+/* This is the same as host_mgreg_t, except on 32 bit bit platforms with callee saved fp regs */
 #ifndef mono_unwind_reg_t
-#define mono_unwind_reg_t mgreg_t
+#define mono_unwind_reg_t host_mgreg_t
 #endif
 
 /*
@@ -177,11 +177,11 @@ mono_unwind_ops_encode_full (GSList *unwind_ops, guint32 *out_len, gboolean enab
 guint8*
 mono_unwind_ops_encode (GSList *unwind_ops, guint32 *out_len);
 
-void
+gboolean
 mono_unwind_frame (guint8 *unwind_info, guint32 unwind_info_len, 
 				   guint8 *start_ip, guint8 *end_ip, guint8 *ip, guint8 **mark_locations,
 				   mono_unwind_reg_t *regs, int nregs,
-				   mgreg_t **save_locations, int save_locations_len,
+				   host_mgreg_t **save_locations, int save_locations_len,
 				   guint8 **out_cfa);
 
 void mono_unwind_init (void);

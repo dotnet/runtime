@@ -7,7 +7,8 @@
 
 #include <glib.h>
 
-G_BEGIN_DECLS
+#define WAIT_TOO_MANY_POSTS      ((gint) 0x0000012A)
+#define WAIT_NOT_OWNED_BY_CALLER ((gint) 0x0000012B)
 
 #ifndef HOST_WIN32
 
@@ -56,7 +57,5 @@ typedef struct pollfd {
 #endif
 
 #endif /* HOST_WIN32 */
-
-G_END_DECLS
 
 #endif /* __MONO_UTILS_W32API_H__ */

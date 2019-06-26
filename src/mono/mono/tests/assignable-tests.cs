@@ -12,10 +12,13 @@ namespace Test {
 		public static int Main () {
 			Type int_type = typeof (int);
 			Type obj_type = typeof (object);
+			Type obj_arr_type = typeof (object[]);
 			Type vt_type = typeof (System.ValueType);
 			Type comp_type = typeof (System.IComparable);
 			Type a_type = typeof (A);
 			Type b_type = typeof (B);
+			Type ptr_type = typeof (int*);
+			Type ptr_arr_type = typeof (int*[]);
 			int error = 1;
 
 			if (!int_type.IsSubclassOf(vt_type))
@@ -61,6 +64,19 @@ namespace Test {
 				return error;
 			++error;
 			if (!a_type.IsAssignableFrom(b_type))
+				return error;
+			++error;
+
+			if (obj_type.IsAssignableFrom(ptr_type))
+				return error;
+			++error;
+			if (ptr_type.IsAssignableFrom(obj_type))
+				return error;
+			++error;
+			if (obj_arr_type.IsAssignableFrom(ptr_arr_type))
+				return error;
+			++error;
+			if (ptr_arr_type.IsAssignableFrom(obj_arr_type))
 				return error;
 			++error;
 			return 0;

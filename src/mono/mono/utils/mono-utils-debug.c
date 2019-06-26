@@ -25,12 +25,16 @@ mono_is_usermode_native_debugger_present (void)
 
 #include <unistd.h>
 #include <errno.h>
+#include <mono/utils/mono-errno.h>
 #include <fcntl.h>
 #if defined (__APPLE__)
 #include <sys/sysctl.h>
 #endif
 #if defined (__NetBSD__)
 #include <kvm.h>
+#endif
+#if defined (_AIX)
+#include <procinfo.h>
 #endif
 
 static gboolean
@@ -79,6 +83,14 @@ mono_is_usermode_native_debugger_present_slow (void)
 	kvm_close (kd);
 	return traced;
 
+#elif defined (_AIX)
+
+	struct procentry64 proc;
+	pid_t pid;
+	pid = getpid ();
+	getprocs64 (&proc, sizeof (proc), NULL, 0, &pid, 1);
+	return (proc.pi_flags & STRC) != 0; // SMPTRACE or SWTED might work too
+
 #else
 	return FALSE; // FIXME Other operating systems.
 #endif
@@ -93,7 +105,7 @@ mono_is_usermode_native_debugger_present (void)
 	if (mono_is_usermode_native_debugger_present_cache == 0) {
 		int er = errno;
 		mono_is_usermode_native_debugger_present_cache = mono_is_usermode_native_debugger_present_slow () ? 1 : 2;
-		errno = er;
+		mono_set_errno (er);
 	}
 	return mono_is_usermode_native_debugger_present_cache == 1;
 }

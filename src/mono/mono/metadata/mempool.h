@@ -7,8 +7,6 @@
 
 #include <mono/utils/mono-publib.h>
 
-MONO_BEGIN_DECLS
-
 typedef struct _MonoMemPool MonoMemPool;
 
 MONO_API MonoMemPool *
@@ -29,8 +27,12 @@ mono_mempool_stats         (MonoMemPool *pool);
 MONO_API void*
 mono_mempool_alloc         (MonoMemPool *pool, unsigned int size);
 
+#define mono_mempool_alloc(pool, size) (g_cast (mono_mempool_alloc ((pool), (size))))
+
 MONO_API void*
 mono_mempool_alloc0        (MonoMemPool *pool, unsigned int size);
+
+#define mono_mempool_alloc0(pool, size) (g_cast (mono_mempool_alloc0 ((pool), (size))))
 
 MONO_API mono_bool
 mono_mempool_contains_addr (MonoMemPool *pool, void* addr);
@@ -40,7 +42,5 @@ mono_mempool_strdup        (MonoMemPool *pool, const char *s);
 
 MONO_API uint32_t
 mono_mempool_get_allocated (MonoMemPool *pool);
-
-MONO_END_DECLS
 
 #endif

@@ -36,15 +36,9 @@
 
 #define MONO_HAS_SEMAPHORES 1
 
-#ifndef NSEC_PER_SEC
-#define NSEC_PER_SEC (1000 * 1000 * 1000)
-#endif
+#define MONO_NSEC_PER_SEC (1000 * 1000 * 1000)
 
-#ifndef MONO_INFINITE_WAIT
 #define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
-#endif
-
-G_BEGIN_DECLS
 
 typedef enum {
 	MONO_SEM_FLAGS_NONE      = 0,
@@ -110,8 +104,8 @@ mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 
 	ts.tv_sec = timeout_ms / 1000;
 	ts.tv_nsec = (timeout_ms % 1000) * 1000000;
-	while (ts.tv_nsec >= NSEC_PER_SEC) {
-		ts.tv_nsec -= NSEC_PER_SEC;
+	while (ts.tv_nsec >= MONO_NSEC_PER_SEC) {
+		ts.tv_nsec -= MONO_NSEC_PER_SEC;
 		ts.tv_sec++;
 	}
 
@@ -139,7 +133,7 @@ retry:
 				ts.tv_nsec = 0;
 			} else {
 				ts.tv_sec--;
-				ts.tv_nsec += NSEC_PER_SEC;
+				ts.tv_nsec += MONO_NSEC_PER_SEC;
 			}
 		}
 		if (ts.tv_sec < 0) {
@@ -247,8 +241,8 @@ mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
 
 	ts.tv_sec = timeout_ms / 1000 + t.tv_sec;
 	ts.tv_nsec = (timeout_ms % 1000) * 1000000 + t.tv_usec * 1000;
-	while (ts.tv_nsec >= NSEC_PER_SEC) {
-		ts.tv_nsec -= NSEC_PER_SEC;
+	while (ts.tv_nsec >= MONO_NSEC_PER_SEC) {
+		ts.tv_nsec -= MONO_NSEC_PER_SEC;
 		ts.tv_sec++;
 	}
 
@@ -286,6 +280,8 @@ mono_os_sem_post (MonoSemType *sem)
 
 #else
 
+#include <mono/utils/mono-compiler.h>
+
 typedef HANDLE MonoSemType;
 
 static inline void
@@ -311,30 +307,8 @@ mono_os_sem_destroy (MonoSemType *sem)
 		g_error ("%s: CloseHandle failed with error %d", __func__, GetLastError ());
 }
 
-static inline MonoSemTimedwaitRet
-mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags)
-{
-	BOOL res;
-
-retry:
-	res = mono_win32_wait_for_single_object_ex (*sem, timeout_ms, flags & MONO_SEM_FLAGS_ALERTABLE);
-	if (G_UNLIKELY (res != WAIT_OBJECT_0 && res != WAIT_IO_COMPLETION && res != WAIT_TIMEOUT))
-		g_error ("%s: mono_win32_wait_for_single_object_ex failed with error %d", __func__, GetLastError ());
-
-	if (res == WAIT_IO_COMPLETION && !(flags & MONO_SEM_FLAGS_ALERTABLE))
-		goto retry;
-
-	switch (res) {
-	case WAIT_OBJECT_0:
-		return MONO_SEM_TIMEDWAIT_RET_SUCCESS;
-	case WAIT_IO_COMPLETION:
-		return MONO_SEM_TIMEDWAIT_RET_ALERTED;
-	case WAIT_TIMEOUT:
-		return MONO_SEM_TIMEDWAIT_RET_TIMEDOUT;
-	default:
-		g_assert_not_reached ();
-	}
-}
+MONO_PROFILER_API MonoSemTimedwaitRet
+mono_os_sem_timedwait (MonoSemType *sem, guint32 timeout_ms, MonoSemFlags flags);
 
 static inline int
 mono_os_sem_wait (MonoSemType *sem, MonoSemFlags flags)
@@ -353,7 +327,5 @@ mono_os_sem_post (MonoSemType *sem)
 }
 
 #endif
-
-G_END_DECLS
 
 #endif /* _MONO_SEMAPHORE_H_ */

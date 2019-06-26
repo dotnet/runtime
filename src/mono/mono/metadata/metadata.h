@@ -7,6 +7,7 @@
 
 #include <mono/utils/mono-publib.h>
 
+#include <mono/utils/mono-forward.h>
 #include <mono/metadata/blob.h>
 #include <mono/metadata/row-indexes.h>
 #include <mono/metadata/image.h>
@@ -22,8 +23,6 @@ MONO_BEGIN_DECLS
 #define MONO_CLASS_IS_INTERFACE(c) ((mono_class_get_flags (c) & TYPE_ATTRIBUTE_INTERFACE) || mono_type_is_generic_parameter (mono_class_get_type (c)))
 
 #define MONO_CLASS_IS_IMPORT(c) ((mono_class_get_flags (c) & TYPE_ATTRIBUTE_IMPORT))
-
-typedef struct _MonoDomain MonoDomain;
 
 typedef enum {
 	MONO_EXCEPTION_CLAUSE_NONE,
@@ -366,7 +365,7 @@ MONO_API mono_bool mono_type_is_struct    (MonoType *type);
 MONO_API mono_bool mono_type_is_void      (MonoType *type);
 MONO_API mono_bool mono_type_is_pointer   (MonoType *type);
 MONO_API mono_bool mono_type_is_reference (MonoType *type);
-mono_bool mono_type_is_generic_parameter (MonoType *type);
+MONO_API mono_bool mono_type_is_generic_parameter (MonoType *type);
 
 MONO_API MonoType*
 mono_signature_get_return_type (MonoMethodSignature *sig);

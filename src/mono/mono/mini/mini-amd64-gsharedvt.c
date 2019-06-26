@@ -268,7 +268,7 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 	int aindex, i;
 	gboolean var_ret = FALSE;
 	CallInfo *cinfo, *gcinfo;
-	MonoMethodSignature *sig, *gsig;
+	MonoMethodSignature *sig;
 	GPtrArray *map;
 
 	if (gsharedvt_in) {
@@ -289,15 +289,13 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 	 * If GSHAREDVT_IN is false, its the other way around.
 	 */
 
-	/* sig/cinfo describes the normal call, while gsig/gcinfo describes the gsharedvt call */
+	/* sig/cinfo describes the normal call, while gcinfo describes the gsharedvt call */
 	if (gsharedvt_in) {
 		sig = caller_sig;
-		gsig = callee_sig;
 		cinfo = caller_cinfo;
 		gcinfo = callee_cinfo;
 	} else {
 		sig = callee_sig;
-		gsig = caller_sig;
 		cinfo = callee_cinfo;
 		gcinfo = caller_cinfo;
 	}
@@ -513,8 +511,8 @@ mono_arch_get_gsharedvt_call_info (gpointer addr, MonoMethodSignature *normal_si
 
 		if (gsharedvt_in && cinfo->ret.storage != ArgValuetypeAddrInIReg) {
 			/* Allocate stack space for the return value */
-			info->vret_slot = map_stack_slot (info->stack_usage / sizeof (gpointer));
-			info->stack_usage += mono_type_stack_size_internal (normal_sig->ret, NULL, FALSE) + sizeof (gpointer);
+			info->vret_slot = map_stack_slot (info->stack_usage / sizeof (target_mgreg_t));
+			info->stack_usage += mono_type_stack_size_internal (normal_sig->ret, NULL, FALSE) + sizeof (target_mgreg_t);
 		}
 		DEBUG_AMD64_GSHAREDVT_PRINT ("RET marshal is %s\n", ret_marshal_name [info->ret_marshal]);
 	}

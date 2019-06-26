@@ -12,8 +12,6 @@
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/icalls.h>
 
-typedef struct _MonoNativeOverlapped MonoNativeOverlapped;
-
 void
 mono_threadpool_cleanup (void);
 
@@ -29,62 +27,6 @@ void
 mono_threadpool_suspend (void);
 void
 mono_threadpool_resume (void);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_ThreadPool_GetAvailableThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_ThreadPool_GetMinThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_ThreadPool_GetMaxThreadsNative (gint32 *worker_threads, gint32 *completion_port_threads, MonoError *error);
-
-ICALL_EXPORT
-MonoBoolean
-ves_icall_System_Threading_ThreadPool_SetMinThreadsNative (gint32 worker_threads, gint32 completion_port_threads, MonoError *error);
-
-ICALL_EXPORT
-MonoBoolean
-ves_icall_System_Threading_ThreadPool_SetMaxThreadsNative (gint32 worker_threads, gint32 completion_port_threads, MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_ThreadPool_InitializeVMTp (MonoBoolean *enable_worker_tracking, MonoError *error);
-
-ICALL_EXPORT
-MonoBoolean
-ves_icall_System_Threading_ThreadPool_NotifyWorkItemComplete (MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_ThreadPool_NotifyWorkItemProgressNative (MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_ThreadPool_NotifyWorkItemQueued (MonoError *error);
-
-ICALL_EXPORT
-void
-ves_icall_System_Threading_ThreadPool_ReportThreadStatus (MonoBoolean is_working, MonoError *error);
-
-ICALL_EXPORT
-MonoBoolean
-ves_icall_System_Threading_ThreadPool_RequestWorkerThread (MonoError *error);
-
-ICALL_EXPORT
-MonoBoolean
-ves_icall_System_Threading_ThreadPool_PostQueuedCompletionStatus (MonoNativeOverlapped *native_overlapped, MonoError *error);
-
-ICALL_EXPORT
-MonoBoolean
-ves_icall_System_Threading_ThreadPool_BindIOCompletionCallbackNative (gpointer file_handle, MonoError *error);
-
-ICALL_EXPORT
-MonoBoolean
-ves_icall_System_Threading_ThreadPool_IsThreadPoolHosted (MonoError *error);
 
 /* Internals */
 

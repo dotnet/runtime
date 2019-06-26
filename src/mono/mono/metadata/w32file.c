@@ -38,6 +38,7 @@
 #include <mono/utils/mono-io-portability.h>
 #include <mono/metadata/w32handle.h>
 #include <mono/utils/w32api.h>
+#include "icall-decl.h"
 
 #undef DEBUG
 
@@ -185,6 +186,8 @@ static guint32 convert_attrs(MonoFileAttributes attrs)
 }
 
 /* System.IO.MonoIO internal calls */
+
+#if !ENABLE_NETCORE
 
 MonoBoolean
 ves_icall_System_IO_MonoIO_CreateDirectory (const gunichar2 *path, gint32 *error)
@@ -509,7 +512,7 @@ ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArrayHandle dest,
 				 gint32 *io_error,
 				 MonoError *error)
 {
-	guchar *buffer;
+	void *buffer;
 	gboolean result;
 	guint32 n;
 
@@ -525,7 +528,7 @@ ves_icall_System_IO_MonoIO_Read (HANDLE handle, MonoArrayHandle dest,
 	guint32 buffer_handle = 0;
 	buffer = MONO_ARRAY_HANDLE_PIN (dest, guchar, dest_offset, &buffer_handle);
 	result = mono_w32file_read (handle, buffer, count, &n, io_error);
-	mono_gchandle_free (buffer_handle);
+	mono_gchandle_free_internal (buffer_handle);
 
 	if (!result)
 		return -1;
@@ -539,7 +542,7 @@ ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArrayHandle src,
 				  gint32 *io_error,
 				  MonoError *error)
 {
-	guchar *buffer;
+	void *buffer;
 	gboolean result;
 	guint32 n;
 
@@ -555,7 +558,7 @@ ves_icall_System_IO_MonoIO_Write (HANDLE handle, MonoArrayHandle src,
 	guint32 src_handle = 0;
 	buffer = MONO_ARRAY_HANDLE_PIN (src, guchar, src_offset, &src_handle);
 	result = mono_w32file_write (handle, buffer, count, &n, io_error);
-	mono_gchandle_free (src_handle);
+	mono_gchandle_free_internal (src_handle);
 
 	if (!result)
 		return -1;
@@ -738,7 +741,7 @@ ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, HANDLE
 
 	*target_handle = mono_w32handle_duplicate (source_handle_data);
 
-	mono_w32handle_unref (source_handle);
+	mono_w32handle_unref ((MonoW32Handle*)source_handle);
 #else
 	gboolean ret;
 
@@ -838,6 +841,18 @@ void ves_icall_System_IO_MonoIO_Unlock (HANDLE handle, gint64 position,
 	mono_w32file_unlock (handle, position, length, error);
 }
 
+
+#ifndef HOST_WIN32
+void mono_w32handle_dump (void);
+
+void ves_icall_System_IO_MonoIO_DumpHandles (void)
+{
+	mono_w32handle_dump ();
+}
+#endif /* !HOST_WIN32 */
+
+#endif /* !ENABLE_NETCORE */
+
 //Support for io-layer free mmap'd files.
 
 #if defined (TARGET_IOS) || defined (TARGET_ANDROID)
@@ -848,7 +863,7 @@ mono_filesize_from_path (MonoString *string)
 	ERROR_DECL (error);
 	struct stat buf;
 	gint64 res;
-	char *path = mono_string_to_utf8_checked (string, error);
+	char *path = mono_string_to_utf8_checked_internal (string, error);
 	mono_error_raise_exception_deprecated (error); /* OK to throw, external only without a good alternative */
 
 	gint stat_res;
@@ -882,12 +897,3 @@ mono_filesize_from_fd (int fd)
 }
 
 #endif
-
-#ifndef HOST_WIN32
-void mono_w32handle_dump (void);
-
-void ves_icall_System_IO_MonoIO_DumpHandles (void)
-{
-	mono_w32handle_dump ();
-}
-#endif /* !HOST_WIN32 */

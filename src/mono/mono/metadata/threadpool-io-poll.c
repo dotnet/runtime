@@ -107,22 +107,22 @@ poll_remove_fd (gint fd)
 }
 
 static inline gint
-poll_mark_bad_fds (mono_pollfd *poll_fds, gint poll_fds_size)
+poll_mark_bad_fds (mono_pollfd *fds, gint size)
 {
 	gint i, ready = 0;
 
-	for (i = 0; i < poll_fds_size; i++) {
-		if (poll_fds [i].fd == -1)
+	for (i = 0; i < size; i++) {
+		if (fds [i].fd == -1)
 			continue;
 
-		switch (mono_poll (&poll_fds [i], 1, 0)) {
+		switch (mono_poll (&fds [i], 1, 0)) {
 		case 1:
 			ready++;
 			break;
 		case -1:
 			if (errno == EBADF)
 			{
-				poll_fds [i].revents |= MONO_POLLNVAL;
+				fds [i].revents |= MONO_POLLNVAL;
 				ready++;
 			}
 			break;

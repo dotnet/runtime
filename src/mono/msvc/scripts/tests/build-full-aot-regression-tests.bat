@@ -1,5 +1,6 @@
 @ECHO OFF
 
+SETLOCAL
 SETLOCAL ENABLEDELAYEDEXPANSION
 
 SET TEMP_PATH=%PATH%
@@ -12,13 +13,13 @@ IF NOT "" == "%BUILD_TARGET%" (
 	SET BUILD_TARGET=%BUILD_TARGET:"=%
 )
 
-CALL setup-env.bat
+CALL %~dp0setup-env.bat
 IF NOT ERRORLEVEL == 0 (
 	ECHO Failed to setup mono paths.
 	GOTO ON_ERROR
 )
 
-CALL setup-toolchain.bat
+CALL %~dp0setup-toolchain.bat
 IF NOT ERRORLEVEL == 0 (
 	ECHO Failed to setup toolchain.
 	GOTO ON_ERROR
@@ -129,26 +130,32 @@ IF "" == "%FULLAOT_LIBS%" (
 )
 
 FOR %%a IN (%FULLAOT_LIBS%) DO (
-
-	del "%FULLAOT_DIR%\%%a.dll" >nul 2>&1
-	ECHO Deleting "%FULLAOT_DIR%\%%a.dll".
-	del "%FULLAOT_DIR%\%%a.dll.lib" >nul 2>&1
-	ECHO Deleting "%FULLAOT_DIR%\%%a.dll.lib".
-	del "%FULLAOT_DIR%\%%a.dll.exp" >nul 2>&1
-	ECHO Deleting "%FULLAOT_DIR%\%%a.dll.exp".
-	del "%FULLAOT_DIR%\%%a.dll.pdb" >nul 2>&1
-	ECHO Deleting "%FULLAOT_DIR%\%%a.dll.pdb".
-	del "%FULLAOT_DIR%\%%a.obj" >nul 2>&1
-	ECHO Deleting "%FULLAOT_DIR%\%%a.obj".
-
 	IF EXIST %MONO_WINAOT_BCL_PATH%\%%a (
-		ECHO Copying %MONO_WINAOT_BCL_PATH%\%%a %FULLAOT_DIR%\%%a.
-		copy %MONO_WINAOT_BCL_PATH%\%%a %FULLAOT_DIR%\%%a >nul 2>&1
+		IF NOT "" == "%CLEAN%" (
+			CALL :DELETE_FULLAOT_LIB %FULLAOT_DIR% %%a
+		) ELSE (
+			fc.exe /B %MONO_WINAOT_BCL_PATH%\%%a %FULLAOT_DIR%\%%a >nul 2>&1 && (
+				ECHO %FULLAOT_DIR%\%%a already up to date.
+			) || (
+				CALL :DELETE_FULLAOT_LIB %FULLAOT_DIR% %%a
+				ECHO Copying %MONO_WINAOT_BCL_PATH%\%%a %FULLAOT_DIR%\%%a.
+				copy %MONO_WINAOT_BCL_PATH%\%%a %FULLAOT_DIR%\%%a >nul 2>&1
+			)
+		)
 	) ELSE (
-		SET FOUND_TEST_TARGET_PATH=
-		CALL :INNER_COPY_LOOP FOUND_TEST_TARGET_PATH %%a
-		ECHO Copying !FOUND_TEST_TARGET_PATH! %FULLAOT_DIR%\%%a.
-		copy !FOUND_TEST_TARGET_PATH! %FULLAOT_DIR%\%%a >nul 2>&1
+		IF NOT "" == "%CLEAN%" (
+			CALL :DELETE_FULLAOT_LIB %FULLAOT_DIR% %%a
+		) ELSE (
+			SET FOUND_TEST_TARGET_PATH=
+			CALL :INNER_COPY_LOOP FOUND_TEST_TARGET_PATH %%a
+			fc.exe /B !FOUND_TEST_TARGET_PATH! %FULLAOT_DIR%\%%a >nul 2>&1 && (
+				ECHO %FULLAOT_DIR%\%%a already up to date.
+			) || (
+				CALL :DELETE_FULLAOT_LIB %FULLAOT_DIR% %%a
+				ECHO Copying !FOUND_TEST_TARGET_PATH! %FULLAOT_DIR%\%%a.
+				copy !FOUND_TEST_TARGET_PATH! %FULLAOT_DIR%\%%a >nul 2>&1
+			)
+		)
 	)
 )
 
@@ -169,29 +176,72 @@ IF EXIST %MONO_RUNTIME_TEST_PATH%\%2 (
 :RETURN_INNER_COPY_LOOP
 GOTO :EOF
 
+:DELETE_FULLAOT_LIB
+
+ECHO Deleting "%1\%2.dll".
+del "%1\%2.dll" >nul 2>&1
+ECHO Deleting "%1\%2.dll.lib".
+del "%1\%2.dll.lib" >nul 2>&1
+ECHO Deleting "%1\%2.dll.exp".
+del "%1\%2.dll.exp" >nul 2>&1
+ECHO Deleting "%1\%2.dll.pdb".
+del "%1\%2.dll.pdb" >nul 2>&1
+ECHO Deleting "%1\%2.obj".
+del "%1\%2.obj" >nul 2>&1
+ECHO Deleting "%1\%2.s".
+del "%1\%2.s" >nul 2>&1
+ECHO Deleting "%1\%2-llvm.s".
+del "%1\%2.s.bc" >nul 2>&1
+ECHO Deleting "%1\%2-llvm.s.bc".
+del "%1\%2.s.opt.bc" >nul 2>&1
+ECHO Deleting "%1\%2-llvm.s.opt.bc".
+del "%1\%2-llvm.s" >nul 2>&1
+ECHO Deleting "%1\%2-llvm.obj".
+del "%1\%2-llvm.obj" >nul 2>&1
+
+GOTO :EOF
+
 :BUILD
 
 SET FULLAOT_TEMP_DIR=%FULLAOT_DIR%\%%a-build
-REM SET USE_LLVM=llvm
 
-SET MONO_FULL_AOT_COMPILE_ARGS_TEMPLATE=--aot=full,temp-path=%FULLAOT_TEMP_DIR%,print-skipped,%USE_LLVM%,outfile=%FULLAOT_DIR%\%%a.dll
-REM SET MONO_FULL_AOT_COMPILE_ARGS_TEMPLATE=--aot=full,temp-path=%FULLAOT_TEMP_DIR%,print-skipped,static,%USE_LLVM%,outfile=%FULLAOT_DIR%\%%a.obj,llvm-outfile=%FULLAOT_DIR%\%%a-llvm.obj
-REM SET MONO_FULL_AOT_COMPILE_ARGS_TEMPLATE=--aot=full,temp-path=%FULLAOT_TEMP_DIR%,print-skipped,asmonly,%USE_LLVM%,outfile=%FULLAOT_DIR%\%%a.s,llvm-outfile=%FULLAOT_DIR%\%%a-llvm.s
+IF "" == "%FULL_AOT_MODE%" (
+	SET FULL_AOT_MODE=dynamic
+)
+
+IF /i "yes" == "%USE_LLVM%" (
+	SET LLVM_ARG=llvm
+)
+
+IF /i "static" == "%FULL_AOT_MODE%" (
+	SET MONO_FULL_AOT_COMPILE_ARGS_TEMPLATE=--aot=full,temp-path=%FULLAOT_TEMP_DIR%,print-skipped,static,%LLVM_ARG%,outfile=%FULLAOT_DIR%\%%a.obj,llvm-outfile=%FULLAOT_DIR%\%%a-llvm.obj
+)
+
+IF /i "asmonly"  == "%FULL_AOT_MODE%" (
+	SET MONO_FULL_AOT_COMPILE_ARGS_TEMPLATE=--aot=full,temp-path=%FULLAOT_TEMP_DIR%,print-skipped,asmonly,%LLVM_ARG%,outfile=%FULLAOT_DIR%\%%a.s,llvm-outfile=%FULLAOT_DIR%\%%a-llvm.s
+)
+
+IF /i "dynamic"  == "%FULL_AOT_MODE%" (
+	SET MONO_FULL_AOT_COMPILE_ARGS_TEMPLATE=--aot=full,temp-path=%FULLAOT_TEMP_DIR%,print-skipped,%LLVM_ARG%,outfile=%FULLAOT_DIR%\%%a.dll
+)
 
 IF "" == "%CLEAN%" (
 
 	FOR %%a IN (%FULLAOT_LIBS%) DO (
 
-		mkdir %FULLAOT_TEMP_DIR% >nul 2>&1
+		IF NOT EXIST %FULLAOT_DIR%\%%a.obj (
 
-		ECHO %MONO_AOT_COMPILER_EXECUTABLE% %MONO_FULL_AOT_COMPILE_ARGS_TEMPLATE% %FULLAOT_DIR%\%%a.
-		%MONO_AOT_COMPILER_EXECUTABLE% %MONO_FULL_AOT_COMPILE_ARGS_TEMPLATE% %FULLAOT_DIR%\%%a
+			mkdir %FULLAOT_TEMP_DIR% >nul 2>&1
 
-		rmdir /S /Q %FULLAOT_TEMP_DIR%
+			ECHO %MONO_AOT_COMPILER_EXECUTABLE% %MONO_FULL_AOT_COMPILE_ARGS_TEMPLATE% %FULLAOT_DIR%\%%a.
+			%MONO_AOT_COMPILER_EXECUTABLE% %MONO_FULL_AOT_COMPILE_ARGS_TEMPLATE% %FULLAOT_DIR%\%%a
 
-		IF NOT ERRORLEVEL == 0 (
-			ECHO "Failed Full AOT compile of %FULLAOT_DIR%\%%a".
-			GOTO ON_ERROR
+			rmdir /S /Q %FULLAOT_TEMP_DIR%
+
+			IF NOT ERRORLEVEL == 0 (
+				ECHO "Failed Full AOT compile of %FULLAOT_DIR%\%%a".
+				GOTO ON_ERROR
+			)
 		)
 	)
 )

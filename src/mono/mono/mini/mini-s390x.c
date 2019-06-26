@@ -338,7 +338,6 @@ if (ins->inst_true_bb->native_offset) { 					\
 #include "support-s390x.h"
 #include "jit-icalls.h"
 #include "ir-emit.h"
-#include "trace.h"
 #include "mini-gc.h"
 #include "aot-runtime.h"
 #include "mini-runtime.h"
@@ -358,19 +357,6 @@ typedef struct {
 	      offStruct,
 	      retStruct;
 } size_data;	
-
-/*------------------------------------------------------------------*/
-/* Used by the instrument_emit_epilog 		                    */
-/*------------------------------------------------------------------*/
-
-enum {
-	SAVE_NONE,
-	SAVE_STRUCT,
-	SAVE_ONE,
-	SAVE_TWO,
-	SAVE_R4,
-	SAVE_R8
-};
 
 typedef struct InstList InstList;
 
@@ -401,7 +387,7 @@ typedef struct {
 	gint32  type;		/* Data type of argument */
 } ArgInfo;
 
-typedef struct {
+struct CallInfo {
 	int nargs;
 	int lastgr;
 	guint32 stack_usage;
@@ -412,7 +398,7 @@ typedef struct {
 	int vret_arg_index;
 	MonoMethodSignature *sig;
 	ArgInfo args [1];
-} CallInfo;
+};
 
 typedef struct {
 	gint64	gr[5];		/* R2-R6			    */
@@ -435,9 +421,6 @@ typedef struct {
 
 static void indent (int);
 static guint8 * backUpStackPtr(MonoCompile *, guint8 *);
-static void decodeParm (MonoType *, void *, int);
-static void enter_method (MonoMethod *, RegParm *, char *);
-static void leave_method (MonoMethod *, ...);
 static inline void add_general (guint *, size_data *, ArgInfo *);
 static inline void add_stackParm (guint *, size_data *, ArgInfo *, gint);
 static inline void add_float (guint *, size_data *, ArgInfo *, gboolean);
@@ -580,14 +563,14 @@ mono_arch_get_argument_info (MonoMethodSignature *csig,
 	int offset = 8;
 
 	if (MONO_TYPE_ISSTRUCT (csig->ret)) { 
-		frame_size += sizeof (gpointer);
+		frame_size += sizeof (target_mgreg_t);
 		offset += 8;
 	}
 
 	arg_info [0].offset = offset;
 
 	if (csig->hasthis) {
-		frame_size += sizeof (gpointer);
+		frame_size += sizeof (target_mgreg_t);
 		offset += 8;
 	}
 
@@ -814,563 +797,6 @@ cvtMonoType(MonoTypeEnum t)
       ;
     }
   return "unknown";
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- decodeParmString                                  */
-/*                                                                  */
-/* Function	- Decode a parameter string for the trace.          */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static void
-decodeParmString (MonoString *s)
-{
-	ERROR_DECL (error);
-	char *str = mono_string_to_utf8_checked(s, error);
-	if (is_ok (error))  {
-		fprintf (trFd, "[STRING:%p:%s], ", s, str);
-		g_free (str);
-	} else {
-		mono_error_cleanup (error);
-		fprintf (trFd, "[STRING:%p:], ", s);
-	}
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- decodeParm                                        */
-/*                                                                  */
-/* Function	- Decode a parameter for the trace.                 */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-
-static void 
-decodeParm(MonoType *type, void *curParm, int size)
-{
-	guint32 simpleType;
-
-	if (type->byref) {
-		fprintf (trFd, "[BYREF:%p], ", *((char **) curParm));
-	} else {
-		simpleType = mini_get_underlying_type(type)->type;
-enum_parmtype:
-		switch (simpleType) {
-			case MONO_TYPE_I :
-				fprintf (trFd, "[INTPTR:%p], ", *((int **) curParm));
-				break;
-			case MONO_TYPE_U :
-				fprintf (trFd, "[UINTPTR:%p], ", *((int **) curParm));
-				break;
-			case MONO_TYPE_BOOLEAN :
-				fprintf (trFd, "[BOOL:%ld], ", *((gint64 *) curParm));
-				break;
-			case MONO_TYPE_CHAR :
-				fprintf (trFd, "[CHAR:%c], ", *((int  *) curParm));
-				break;
-			case MONO_TYPE_I1 :
-				fprintf (trFd, "[INT1:%ld], ", *((gint64 *) curParm));
-				break; 
-			case MONO_TYPE_I2 :
-				fprintf (trFd, "[INT2:%ld], ", *((gint64 *) curParm));
-				break; 
-			case MONO_TYPE_I4 :
-				fprintf (trFd, "[INT4:%ld], ", *((gint64 *) curParm));
-				break; 
-			case MONO_TYPE_U1 :
-				fprintf (trFd, "[UINT1:%lu], ", *((guint64 *) curParm));
-				break; 
-			case MONO_TYPE_U2 :
-				fprintf (trFd, "[UINT2:%lu], ", *((guint64 *) curParm));
-				break; 
-			case MONO_TYPE_U4 :
-				fprintf (trFd, "[UINT4:%lu], ", *((guint64 *) curParm));
-				break; 
-			case MONO_TYPE_U8 :
-				fprintf (trFd, "[UINT8:%lu], ", *((guint64 *) curParm));
-				break; 
-			case MONO_TYPE_STRING : {
-				MonoString *s = *((MonoString **) curParm);
-				if (s) {
-					g_assert (((MonoObject *) s)->vtable->klass == mono_defaults.string_class);
-					decodeParmString (s);
-				} else {
-					fprintf (trFd, "[STRING:null], ");
-				}
-				break;
-			}
-			case MONO_TYPE_CLASS :
-			case MONO_TYPE_OBJECT : {
-				MonoObject *obj = *((MonoObject **) curParm);
-				MonoClass *klass;
-				if ((obj) && (obj->vtable)) {
-					fprintf (trFd, "[CLASS/OBJ:");
-					klass = obj->vtable->klass;
-					fprintf (trFd, "%p [%p] ",obj,curParm);
-					if (klass == mono_defaults.string_class) {
-						decodeParmString ((MonoString *)obj);
-					} else if (klass == mono_defaults.int32_class) { 
-						fprintf (trFd, "[INT32:%p:%d]", 
-							obj, *(gint32 *)((char *)obj + MONO_ABI_SIZEOF (MonoObject)));
-					} else
-						fprintf (trFd, "[%s.%s:%p]", 
-							m_class_get_name_space (klass), m_class_get_name (klass), obj);
-					fprintf (trFd, "], ");
-				} else {
-					fprintf (trFd, "[OBJECT:null], ");
-				}
-				break;
-			}
-			case MONO_TYPE_PTR :
-				fprintf (trFd, "[PTR:%p], ", *((gpointer **) (curParm)));
-				break;
-			case MONO_TYPE_FNPTR :
-				fprintf (trFd, "[FNPTR:%p], ", *((gpointer **) (curParm)));
-				break;
-			case MONO_TYPE_ARRAY :
-				fprintf (trFd, "[ARRAY:%p], ", *((gpointer **) (curParm)));
-				break;
-			case MONO_TYPE_SZARRAY :
-				fprintf (trFd, "[SZARRAY:%p], ", *((gpointer **) (curParm)));
-				break;
-			case MONO_TYPE_I8 :
-				fprintf (trFd, "[INT8:%ld], ", *((gint64 *) (curParm)));
-				break;
-			case MONO_TYPE_R4 :
-				fprintf (trFd, "[FLOAT4:%g], ", *((float *) (curParm)));
-				break;
-			case MONO_TYPE_R8 :
-				fprintf (trFd, "[FLOAT8:%g], ", *((double *) (curParm)));
-				break;
-			case MONO_TYPE_VALUETYPE : {
-				int i;
-				MonoMarshalType *info;
-
-				if (m_class_is_enumtype (type->data.klass)) {
-					simpleType = mono_class_enum_basetype (type->data.klass)->type;
-					fprintf (trFd, "{VALUETYPE} - ");
-					goto enum_parmtype;
-				}
-
-				info = mono_marshal_load_type_info (type->data.klass);
-
-				if ((info->native_size == sizeof(float)) &&
-				    (info->num_fields  == 1) &&
-				    (info->fields[0].field->type->type == MONO_TYPE_R4)) {
-						fprintf (trFd, "[FLOAT4:%f], ", *((float *) (curParm)));
-					break;
-				}
-
-				if ((info->native_size == sizeof(double)) &&
-				    (info->num_fields  == 1) &&
-				    (info->fields[0].field->type->type == MONO_TYPE_R8)) {
-					fprintf (trFd, "[FLOAT8:%g], ", *((double *) (curParm)));
-					break;
-				}
-
-				fprintf (trFd, "[VALUETYPE:");
-				for (i = 0; i < size; i++)
-					fprintf (trFd, "%02x,", *((guint8 *)curParm+i));
-				fprintf (trFd, "], ");
-				break;
-			}
-			case MONO_TYPE_TYPEDBYREF: {
-				int i;
-				fprintf (trFd, "[TYPEDBYREF:");
-				for (i = 0; i < size; i++)
-					fprintf (trFd, "%02x,", *((guint8 *)curParm+i));
-				fprintf (trFd, "]");
-				break;
-			}
-			default :
-				fprintf (trFd, "[%s], ",cvtMonoType(simpleType));
-		}
-	}
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- enter_method                                      */
-/*                                                                  */
-/* Function	- Perform tracing of the entry to the current       */
-/*		  method.                      			    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static void
-enter_method (MonoMethod *method, RegParm *rParm, char *sp)
-{
-	int i, oParm = 0, iParm = 0;
-	MonoClass *klass;
-	MonoObject *obj;
-	MonoMethodSignature *sig;
-	char *fname;
-	guint64 ip;
-	CallInfo *cinfo;
-	ArgInfo *ainfo;
-	void *curParm;
-
-	if (trFd == NULL) {
-		char buf[32];
-		sprintf(buf, "/tmp/mono.%d.trc.%d", getpid(), curThreadNo++);
-		trFd = fopen(buf, "w");
-	}
-	fname = mono_method_full_name (method, TRUE);
-	indent (1);
-	fprintf (trFd, "ENTER: %s ", fname);
-	g_free (fname);
-
-	ip  = (*(guint64 *) (sp+S390_RET_ADDR_OFFSET));
-	fprintf (trFd, "ip: %p sp: %p - ", (gpointer) ip, sp); 
-
-	if (rParm == NULL)
-		return;
-	
-	sig = mono_method_signature (method);
-	
-	cinfo = get_call_info (NULL, sig);
-
-	if (cinfo->struct_ret) {
-		fprintf (trFd, "[STRUCTRET:%p], ", (gpointer) rParm->gr[0]);
-		iParm = 1;
-	}
-
-	if (sig->hasthis) {
-		gpointer *this_arg = (gpointer *) rParm->gr[iParm];
-		obj = (MonoObject *) this_arg;
-		switch(m_class_get_this_arg (method->klass)->type) {
-		case MONO_TYPE_VALUETYPE:
-			if (obj) {
-				guint64 *value = (guint64 *) ((uintptr_t)this_arg + MONO_ABI_SIZEOF (MonoObject));
-				fprintf (trFd, "this:[value:%p:%016lx], ", this_arg, *value);
-			} else 
-				fprintf (trFd, "this:[NULL], ");
-			break;
-		case MONO_TYPE_STRING:
-			if (obj) {
-				if (obj->vtable) {
-					klass = obj->vtable->klass;
-					if (klass == mono_defaults.string_class) {
-						fprintf (trFd, "this:");
-						decodeParmString((MonoString *)obj);
-					} else {
-						fprintf (trFd, "this:%p[%s.%s], ", 
-							obj, m_class_get_name_space (klass), m_class_get_name (klass));
-					}
-				} else 
-					fprintf (trFd, "vtable:[NULL], ");
-			} else 
-				fprintf (trFd, "this:[NULL], ");
-			break;
-		default :
-			fprintf (trFd, "this[%s]: %p, ",cvtMonoType(m_class_get_this_arg (method->klass)->type),this_arg);
-		}
-		oParm++;
-	}
-					
-	for (i = 0; i < sig->param_count; ++i) {
-		ainfo = &cinfo->args[i + oParm];
-		switch (ainfo->regtype) {
-			case RegTypeGeneral :
-				decodeParm(sig->params[i], &(rParm->gr[ainfo->reg-2]), ainfo->size);
-				break;
-			case RegTypeFP :
-			case RegTypeFPR4 :
-				decodeParm(sig->params[i], &(rParm->fp[ainfo->reg]), ainfo->size);
-				break;
-			case RegTypeBase :
-				decodeParm(sig->params[i], sp+ainfo->offset, ainfo->size);
-				break;
-			case RegTypeStructByVal :
-				if (ainfo->reg != STK_BASE) {
-					int offset = sizeof(glong) - ainfo->size;
-					curParm = &(rParm->gr[ainfo->reg-2])+offset;
-				}
-				else
-					curParm = sp+ainfo->offset;
-
-				if (retFitsInReg (ainfo->vtsize)) 
-					decodeParm(sig->params[i], 
-				 	           curParm,
-					           ainfo->size);
-				else
-					decodeParm(sig->params[i], 
-				 	           *((char **) curParm),
-					           ainfo->vtsize);
-				break;
-			case RegTypeStructByAddr :
-				if (ainfo->reg != STK_BASE) 
-					curParm = &(rParm->gr[ainfo->reg-2]);
-				else
-					curParm = sp+ainfo->offset;
-
-				decodeParm(sig->params[i], 
-				           *((char **) curParm),
-				           ainfo->vtsize);
-				break;
-				
-			default :
-				fprintf (trFd, "???, ");
-		}
-	}	
-	fprintf (trFd, "\n");
-	g_free(cinfo);
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- leave_method                                      */
-/*                                                                  */
-/* Function	-                                                   */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-static void
-leave_method (MonoMethod *method, ...)
-{
-	MonoType *type;
-	char *fname;
-	guint64 ip;
-	va_list ap;
-
-	va_start(ap, method);
-
-	fname = mono_method_full_name (method, TRUE);
-	indent (-1);
-	fprintf (trFd, "LEAVE: %s", fname);
-	g_free (fname);
-
-	type = mono_method_signature (method)->ret;
-
-handle_enum:
-	switch (type->type) {
-	case MONO_TYPE_VOID:
-		break;
-	case MONO_TYPE_BOOLEAN: {
-		int val = va_arg (ap, int);
-		if (val)
-			fprintf (trFd, "[TRUE:%d]", val);
-		else 
-			fprintf (trFd, "[FALSE]");
-			
-		break;
-	}
-	case MONO_TYPE_CHAR: {
-		int val = va_arg (ap, int);
-		fprintf (trFd, "[CHAR:%d]", val);
-		break;
-	}
-	case MONO_TYPE_I1: {
-		int val = va_arg (ap, int);
-		fprintf (trFd, "[INT1:%d]", val);
-		break;
-	}
-	case MONO_TYPE_U1: {
-		int val = va_arg (ap, int);
-		fprintf (trFd, "[UINT1:%d]", val);
-		break;
-	}
-	case MONO_TYPE_I2: {
-		int val = va_arg (ap, int);
-		fprintf (trFd, "[INT2:%d]", val);
-		break;
-	}
-	case MONO_TYPE_U2: {
-		int val = va_arg (ap, int);
-		fprintf (trFd, "[UINT2:%d]", val);
-		break;
-	}
-	case MONO_TYPE_I4: {
-		int val = va_arg (ap, int);
-		fprintf (trFd, "[INT4:%d]", val);
-		break;
-	}
-	case MONO_TYPE_U4: {
-		int val = va_arg (ap, int);
-		fprintf (trFd, "[UINT4:%d]", val);
-		break;
-	}
-	case MONO_TYPE_I: {
-		gint64 val = va_arg (ap, gint64);
-		fprintf (trFd, "[INT:%ld]", val);
-		fprintf (trFd, "]");
-		break;
-	}
-	case MONO_TYPE_U: {
-		gint64 val = va_arg (ap, gint64);
-		fprintf (trFd, "[UINT:%lu]", val);
-		fprintf (trFd, "]");
-		break;
-	}
-	case MONO_TYPE_STRING: {
-		MonoString *s = va_arg (ap, MonoString *);
-;
-		if (s) {
-			g_assert (((MonoObject *)s)->vtable->klass == mono_defaults.string_class);
-			decodeParmString (s);
-		} else 
-			fprintf (trFd, "[STRING:null], ");
-		break;
-	}
-	case MONO_TYPE_CLASS: 
-	case MONO_TYPE_OBJECT: {
-		MonoObject *o = va_arg (ap, MonoObject *);
-
-		if ((o) && (o->vtable)) {
-			if (o->vtable->klass == mono_defaults.boolean_class) {
-				fprintf (trFd, "[BOOLEAN:%p:%d]", o, *((guint8 *)o + MONO_ABI_SIZEOF (MonoObject)));		
-			} else if  (o->vtable->klass == mono_defaults.int32_class) {
-				fprintf (trFd, "[INT32:%p:%d]", o, *((gint32 *)((char *)o + MONO_ABI_SIZEOF (MonoObject))));	
-			} else if  (o->vtable->klass == mono_defaults.int64_class) {
-				fprintf (trFd, "[INT64:%p:%ld]", o, *((gint64 *)((char *)o + MONO_ABI_SIZEOF (MonoObject))));	
-			} else
-				fprintf (trFd, "[%s.%s:%p]", m_class_get_name_space (o->vtable->klass), m_class_get_name (o->vtable->klass), o);
-		} else
-			fprintf (trFd, "[OBJECT:%p]", o);
-	       
-		break;
-	}
-	case MONO_TYPE_PTR:
-	case MONO_TYPE_FNPTR:
-	case MONO_TYPE_ARRAY:
-	case MONO_TYPE_SZARRAY: {
-		gpointer p = va_arg (ap, gpointer);
-		fprintf (trFd, "[result=%p]", p);
-		break;
-	}
-	case MONO_TYPE_I8: {
-		gint64 l =  va_arg (ap, gint64);
-		fprintf (trFd, "[LONG:%ld]", l);
-		break;
-	}
-	case MONO_TYPE_U8: {
-		guint64 l =  va_arg (ap, guint64);
-		fprintf (trFd, "[ULONG:%lu]", l);
-		break;
-	}
-	case MONO_TYPE_R4: {
-		double f = va_arg (ap, double);
-		fprintf (trFd, "[FLOAT4:%g]\n", f);
-		break;
-	}
-	case MONO_TYPE_R8: {
-		double f = va_arg (ap, double);
-		fprintf (trFd, "[FLOAT8:%g]\n", f);
-		break;
-	}
-	case MONO_TYPE_VALUETYPE: {
-		MonoMarshalType *info;
-		if (m_class_is_enumtype (type->data.klass)) {
-			type = mono_class_enum_basetype (type->data.klass);
-			goto handle_enum;
-		} else {
-			int size, align;
-
-			info = mono_marshal_load_type_info (type->data.klass);
-
-			if ((info->native_size == sizeof(float)) &&
-			    (info->num_fields  == 1) &&
-			    (info->fields[0].field->type->type == MONO_TYPE_R4)) {
-				double f = va_arg (ap, double);
-				fprintf (trFd, "[FLOAT4:%g]\n", (double) f);
-				break;
-			}
-
-			if ((info->native_size == sizeof(double)) &&
-			    (info->num_fields  == 1) &&
-			    (info->fields[0].field->type->type == MONO_TYPE_R8)) {
-				double f = va_arg (ap, double);
-				fprintf (trFd, "[FLOAT8:%g]\n", f);
-				break;
-			}
-
-			size = mono_type_size (type, &align);
-			switch (size) {
-				case 1: {
-					guint32 p = va_arg (ap, guint32);
-					fprintf (trFd, "[%02x]\n",p);
-					break;
-				}
-				case 2: {
-					guint32 p = va_arg (ap, guint32);
-					fprintf (trFd, "[%04x]\n",p);
-					break;
-				}
-				case 4: {
-					guint32 p = va_arg (ap, guint32);
-					fprintf (trFd, "[%08x]\n",p);
-					break;
-				}
-				case 8: {
-					guint64 p = va_arg (ap, guint64);
-					fprintf (trFd, "[%016lx]\n",p);
-					break;
-				}
-				default: {
-					gpointer p = va_arg (ap, gpointer);
-					fprintf (trFd, "[VALUETYPE] %p\n",p);
-				}
-			}
-		}
-		break;
-	}
-	case MONO_TYPE_TYPEDBYREF: {
-		guint8 *p = va_arg (ap, gpointer);
-		int j, size, align;
-		size = mono_type_size (type, &align);
-		switch (size) {
-		case 1:
-		case 2:
-		case 4:
-		case 8:
-			fprintf (trFd, "[");
-			for (j = 0; p && j < size; j++)
-				fprintf (trFd, "%02x,", p [j]);
-			fprintf (trFd, "]\n");
-			break;
-		default:
-			fprintf (trFd, "[TYPEDBYREF]\n");
-		}
-	}
-		break;
-	case MONO_TYPE_GENERICINST: {
-		fprintf (trFd, "[GENERICINST]\n");
-	}
-		break;
-	case MONO_TYPE_MVAR: {
-		fprintf (trFd, "[MVAR]\n");
-	}
-		break;
-	case MONO_TYPE_CMOD_REQD: {
-		fprintf (trFd, "[CMOD_REQD]\n");
-	}
-		break;
-	case MONO_TYPE_CMOD_OPT: {
-		fprintf (trFd, "[CMOD_OPT]\n");
-	}
-		break;
-	case MONO_TYPE_INTERNAL: {
-		fprintf (trFd, "[INTERNAL]\n");
-	}
-		break;
-	default:
-		fprintf (trFd, "(unknown return type %x)", 
-			mono_method_signature (method)->ret->type);
-	}
-
-	ip = ((gint64) __builtin_extract_return_addr (__builtin_return_address (0)));
-	fprintf (trFd, " ip: %p\n", (gpointer) ip);
-	va_end (ap);
 }
 
 /*========================= End of Function ========================*/
@@ -1613,10 +1039,10 @@ add_stackParm (guint *gr, size_data *sz, ArgInfo *ainfo, gint size)
 {
 	if (*gr > S390_LAST_ARG_REG) {
 		sz->stack_size  = S390_ALIGN(sz->stack_size, sizeof(long));
-		ainfo->reg	    = STK_BASE;
+		ainfo->reg	= STK_BASE;
 		ainfo->offset   = sz->stack_size;
 		ainfo->regtype  = RegTypeStructByAddrOnStack; 
-		sz->stack_size += sizeof (gpointer);
+		sz->stack_size += sizeof (target_mgreg_t);
 		sz->parm_size  += sizeof(gpointer);
 		sz->offStruct  += sizeof(gpointer);
 	} else {
@@ -1753,9 +1179,9 @@ enum_retvalue:
 			}
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE: {
-			MonoClass *klass = mono_class_from_mono_type (sig->ret);
+			MonoClass *klass = mono_class_from_mono_type_internal (sig->ret);
 			if (m_class_is_enumtype (klass)) {
-				simpleType = mono_class_enum_basetype (klass)->type;
+				simpleType = mono_class_enum_basetype_internal (klass)->type;
 				goto enum_retvalue;
 			}
 			size = mini_type_stack_size_full (m_class_get_byval_arg (klass), NULL, sig->pinvoke);
@@ -1766,7 +1192,7 @@ enum_retvalue:
                         break;
 		}
 		case MONO_TYPE_TYPEDBYREF:
-			size = sizeof (MonoTypedRef);
+			size = MONO_ABI_SIZEOF (MonoTypedRef);
 			cinfo->struct_ret = 1;
 			cinfo->ret.size   = size;
 			cinfo->ret.vtsize = size;
@@ -1791,10 +1217,10 @@ enum_retvalue:
              (sig->param_count > 0 && 
 	      MONO_TYPE_IS_REFERENCE (mini_get_underlying_type (sig->params [0]))))) {
 		if (sig->hasthis) {
-			cinfo->args[nParm].size = sizeof (gpointer);
+			cinfo->args[nParm].size = sizeof (target_mgreg_t);
 			add_general (&gr, sz, cinfo->args + nParm);
 		} else {
-			cinfo->args[nParm].size = sizeof (gpointer);
+			cinfo->args[nParm].size = sizeof (target_mgreg_t);
 			add_general (&gr, sz, &cinfo->args [sig->hasthis + nParm]);
 			pstart = 1;
 		}
@@ -1805,7 +1231,7 @@ enum_retvalue:
 	} else {
 		/* this */
 		if (sig->hasthis) {
-			cinfo->args[nParm].size = sizeof (gpointer);
+			cinfo->args[nParm].size = sizeof (target_mgreg_t);
 			add_general (&gr, sz, cinfo->args + nParm);
 			nParm ++;
 		}
@@ -1908,7 +1334,7 @@ enum_retvalue:
 			/* Fall through */
 		case MONO_TYPE_VALUETYPE: {
 			MonoMarshalType *info;
-			MonoClass *klass = mono_class_from_mono_type (ptype);
+			MonoClass *klass = mono_class_from_mono_type_internal (ptype);
 
 			if (sig->pinvoke)
 				size = mono_class_native_size(klass, NULL);
@@ -1964,7 +1390,7 @@ enum_retvalue:
 		}
 			break;
 		case MONO_TYPE_TYPEDBYREF: {
-			int size = sizeof (MonoTypedRef);
+			int size = MONO_ABI_SIZEOF (MonoTypedRef);
 
 			cinfo->args[nParm].vtsize  = 0;
 			cinfo->args[nParm].size    = 0;
@@ -2085,7 +1511,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	if (frame_reg != STK_BASE) 
 		cfg->used_int_regs |= (1LL << frame_reg);		
 
-	sig     = mono_method_signature (cfg->method);
+	sig     = mono_method_signature_internal (cfg->method);
 	
 	cinfo   = get_call_info (cfg->mempool, sig);
 
@@ -2133,7 +1559,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			inst->inst_basereg = frame_reg;
 			offset 		   = S390_ALIGN(offset, sizeof(gpointer));
 			inst->inst_offset  = offset;
-			offset 		  += sizeof (gpointer);
+			offset 		  += sizeof (target_mgreg_t);
 		}
 		curinst = sArg = 1;
 	} else {
@@ -2152,11 +1578,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			case RegTypeStructByAddr : {
 				MonoInst *indir;
 
-				size = sizeof (gpointer);
+				size = sizeof (target_mgreg_t);
 
 				inst->opcode       = OP_REGOFFSET;
 				inst->inst_basereg = frame_reg;
-				offset             = S390_ALIGN (offset, sizeof (gpointer));
+				offset             = S390_ALIGN (offset, sizeof (target_mgreg_t));
 				inst->inst_offset  = offset;
 
 				/* Add a level of indirection */
@@ -2169,7 +1595,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			case RegTypeStructByAddrOnStack : {
 				MonoInst *indir;
 
-				size = sizeof (gpointer);
+				size = sizeof (target_mgreg_t);
 
 				/* Similar to the == STK_BASE case below */
 				cfg->arch.bkchain_reg = s390_r12;
@@ -2242,11 +1668,11 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 
 		/*--------------------------------------------------*/
 		/* inst->backend.is_pinvoke indicates native sized  */
-		/* value typs this is used by the pinvoke wrappers  */
+		/* value types this is used by the pinvoke wrappers */
 		/* when they call functions returning structure     */
 		/*--------------------------------------------------*/
 		if (inst->backend.is_pinvoke && MONO_TYPE_ISSTRUCT (inst->inst_vtype))
-			size = mono_class_native_size (mono_class_from_mono_type(inst->inst_vtype), 
+			size = mono_class_native_size (mono_class_from_mono_type_internal (inst->inst_vtype), 
 						       (guint32 *) &align);
 		else
 			size = mono_type_size (inst->inst_vtype, &align);
@@ -2261,12 +1687,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 	}
 
 	cfg->locals_max_stack_offset = offset;
-
-	/*------------------------------------------------------*/
-	/* Allow space for the trace method stack area if needed*/
-	/*------------------------------------------------------*/
-	if ((mono_jit_trace_calls != NULL && mono_trace_eval (cfg->method)))
-		offset += S390_TRACE_STACK_SIZE;
 
 	/*------------------------------------------------------*/
 	/* Reserve space to save LMF and caller saved registers */
@@ -2306,7 +1726,7 @@ mono_arch_create_vars (MonoCompile *cfg)
 	MonoMethodSignature *sig;
 	CallInfo *cinfo;
 
-	sig = mono_method_signature (cfg->method);
+	sig = mono_method_signature_internal (cfg->method);
 
 	cinfo = get_call_info (cfg->mempool, sig);
 
@@ -2416,8 +1836,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	CallInfo *cinfo;
 	ArgInfo *ainfo = NULL;
 	int stackSize;    
-	MonoMethodHeader *header;
-	int frmReg;
 
 	sig = call->signature;
 	n = sig->param_count + sig->hasthis;
@@ -2439,12 +1857,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		MONO_ADD_INS (cfg->cbb, ins);
 		mono_call_inst_add_outarg_reg (cfg, call, ins->dreg, cinfo->ret.reg, FALSE);
 	}
-
-	header = cfg->header;
-	if ((cfg->flags & MONO_CFG_HAS_ALLOCA) || header->num_clauses)
-		frmReg = s390_r11;
-	else
-		frmReg = STK_BASE;
 
 	for (i = 0; i < n; ++i) {
 		MonoType *t;
@@ -2485,8 +1897,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			guint32 size;
 
 			if (sig->params [i - sig->hasthis]->type == MONO_TYPE_TYPEDBYREF) {
-				size = sizeof (MonoTypedRef);
-				align = sizeof (gpointer);
+				size = MONO_ABI_SIZEOF (MonoTypedRef);
+				align = sizeof (target_mgreg_t);
 			}
 			else
 				if (sig->pinvoke)
@@ -2515,30 +1927,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 
 			MONO_ADD_INS (cfg->cbb, ins);
 
-			if (ainfo->regtype == RegTypeStructByAddr) {
-				/* 
-				 * We use OP_OUTARG_VT to copy the valuetype to a stack location, then
-				 * use the normal OUTARG opcodes to pass the address of the location to
-				 * the callee.
-				 */
-				int treg = mono_alloc_preg (cfg);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADD_IMM, treg, 
-							 frmReg, ainfo->offparm);
-				mono_call_inst_add_outarg_reg (cfg, call, treg, ainfo->reg, FALSE);
-			} else if (ainfo->regtype == RegTypeStructByAddrOnStack) {
-				/* The address of the valuetype is passed on the stack */
-				int treg = mono_alloc_preg (cfg);
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_ADD_IMM, treg, 
-							 frmReg, ainfo->offparm);
-				MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG,
-							     ainfo->reg, ainfo->offset, treg);
-
-				if (cfg->compute_gc_maps) {
-					MonoInst *def;
-
-					EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, t);
-				}
-			}
 			break;
 		}
 		case RegTypeBase :
@@ -2571,6 +1959,17 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 	    (!sig->pinvoke) &&
 	    (i == sig->sentinelpos)) {
 		emit_sig_cookie (cfg, call, cinfo);
+	}
+
+	if (cinfo->struct_ret) {
+		MonoInst *vtarg;
+
+		MONO_INST_NEW (cfg, vtarg, OP_MOVE);
+		vtarg->sreg1 = call->vret_var->dreg;
+		vtarg->dreg = mono_alloc_preg (cfg);
+		MONO_ADD_INS (cfg->cbb, vtarg);
+
+		mono_call_inst_add_outarg_reg (cfg, call, vtarg->dreg, cinfo->struct_ret, FALSE);
 	}
 }
 
@@ -2619,7 +2018,21 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	} else {
 		ERROR_DECL (error);
 		MonoMethodHeader *header;
-		int srcReg;
+		MonoInst *vtcopy = mono_compile_create_var (cfg, m_class_get_byval_arg (src->klass), OP_LOCAL);
+		MonoInst *load;
+		int ovf_size = ainfo->vtsize,
+		    srcReg;
+		guint32 size;
+
+		/* FIXME: alignment? */
+		if (call->signature->pinvoke) {
+			size = mono_type_native_stack_size (m_class_get_byval_arg (src->klass), NULL);
+			vtcopy->backend.is_pinvoke = 1;
+		} else {
+			size = mini_type_stack_size (m_class_get_byval_arg (src->klass), NULL);
+		}
+		if (size > 0)
+			g_assert (ovf_size > 0);
 
 		header = mono_method_get_header_checked (cfg->method, error);
 		mono_error_assert_ok (error); /* FIXME don't swallow the error */
@@ -2628,14 +2041,19 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		else
 			srcReg = STK_BASE;
 
-		MONO_EMIT_NEW_MOVE (cfg, srcReg, ainfo->offparm,
-							 src->dreg, 0, size);
+		EMIT_NEW_VARLOADA (cfg, load, vtcopy, vtcopy->inst_vtype);
+		mini_emit_memcpy (cfg, load->dreg, 0, src->dreg, 0, size, TARGET_SIZEOF_VOID_P);
 
-		if (cfg->compute_gc_maps) {
-			MonoInst *def;
+		if (ainfo->reg == STK_BASE) {
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, srcReg, ainfo->offset, load->dreg);
 
-			EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, m_class_get_byval_arg (ins->klass));
-		}
+			if (cfg->compute_gc_maps) {
+				MonoInst *def;
+
+				EMIT_NEW_GC_PARAM_SLOT_LIVENESS_DEF (cfg, def, ainfo->offset, m_class_get_byval_arg (ins->klass));
+			}
+		} else
+			mono_call_inst_add_outarg_reg (cfg, call, load->dreg, ainfo->reg, FALSE);
 	}
 }
 
@@ -2650,7 +2068,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 void
 mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 {
-	MonoType *ret = mini_get_underlying_type (mono_method_signature (method)->ret);
+	MonoType *ret = mini_get_underlying_type (mono_method_signature_internal (method)->ret);
 
 	if (!ret->byref) {
 		if (ret->type == MONO_TYPE_R4) {
@@ -2663,163 +2081,6 @@ mono_arch_emit_setret (MonoCompile *cfg, MonoMethod *method, MonoInst *val)
 	}
 			
 	MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->ret->dreg, val->dreg);
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_instrument_prolog                       */
-/*                                                                  */
-/* Function	- Create an "instrumented" prolog.                  */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-void*
-mono_arch_instrument_prolog (MonoCompile *cfg, void *func, void *p, 
-			     gboolean enable_arguments)
-{
-	guchar 	*code = p;
-	int 	parmOffset, 
-	    	fpOffset,
-		baseReg;
-
-	parmOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE - cfg->arch.fpSize;
-	if (cfg->method->save_lmf)
-		parmOffset -= sizeof(MonoLMF);
-	fpOffset   = parmOffset + (5*sizeof(gpointer));
-	baseReg = STK_BASE;
-
-	s390_stmg (code, s390_r2, s390_r6, STK_BASE, parmOffset);
-	s390_stdy (code, s390_f0, 0, STK_BASE, fpOffset);
-	s390_stdy (code, s390_f2, 0, STK_BASE, fpOffset+sizeof(gdouble));
-	s390_stdy (code, s390_f4, 0, STK_BASE, fpOffset+2*sizeof(gdouble));
-	s390_stdy (code, s390_f6, 0, STK_BASE, fpOffset+3*sizeof(gdouble));
-	S390_SET  (code, s390_r1, func);
-	S390_SET  (code, s390_r2, cfg->method);
-	s390_lay  (code, s390_r3, 0, STK_BASE, parmOffset);
-	s390_lgr  (code, s390_r4, STK_BASE);
-	s390_aghi (code, s390_r4, cfg->stack_usage);
-	s390_basr (code, s390_r14, s390_r1);
-	s390_ldy  (code, s390_f6, 0, STK_BASE, fpOffset+3*sizeof(gdouble));
-	s390_ldy  (code, s390_f4, 0, STK_BASE, fpOffset+2*sizeof(gdouble));
-	s390_ldy  (code, s390_f2, 0, STK_BASE, fpOffset+sizeof(gdouble));
-	s390_ldy  (code, s390_f0, 0, STK_BASE, fpOffset);
-	s390_lmg  (code, s390_r2, s390_r6, STK_BASE, parmOffset);
-
-	return code;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_instrument_epilog                       */
-/*                                                                  */
-/* Function	- Create an epilog that will handle the returned    */
-/*		  values used in instrumentation.		    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-void*
-mono_arch_instrument_epilog (MonoCompile *cfg, void *func, void *p, gboolean enable_arguments)
-{
-	guchar 	   *code = p;
-	int   	   save_mode = SAVE_NONE,
-		   saveOffset;
-	MonoMethod *method = cfg->method;
-	int rtype = mini_get_underlying_type (mono_method_signature (method)->ret)->type;
-
-	set_code_cursor (cfg, code);
-	/*-----------------------------------------*/
-	/* We need about 128 bytes of instructions */
-	/*-----------------------------------------*/
-	code = realloc_code (cfg, 128);
-
-	saveOffset = cfg->stack_usage - S390_TRACE_STACK_SIZE - cfg->arch.fpSize;
-	if (method->save_lmf)
-		saveOffset -= sizeof(MonoLMF);
-
-handle_enum:
-	switch (rtype) {
-	case MONO_TYPE_VOID:
-		/* special case string .ctor icall */
-		if (strcmp (".ctor", method->name) && method->klass == mono_defaults.string_class)
-			save_mode = SAVE_ONE;
-		else
-			save_mode = SAVE_NONE;
-		break;
-	case MONO_TYPE_I8:
-	case MONO_TYPE_U8:
-		save_mode = SAVE_ONE;
-		break;
-	case MONO_TYPE_R4:
-		save_mode = SAVE_R4;
-		break;
-	case MONO_TYPE_R8:
-		save_mode = SAVE_R8;
-		break;
-	case MONO_TYPE_VALUETYPE:
-		if (m_class_is_enumtype (mono_method_signature (method)->ret->data.klass)) {
-			rtype = mono_class_enum_basetype (mono_method_signature (method)->ret->data.klass)->type;
-			goto handle_enum;
-		}
-		save_mode = SAVE_STRUCT;
-		break;
-	default:
-		save_mode = SAVE_ONE;
-		break;
-	}
-
-	switch (save_mode) {
-	case SAVE_ONE:
-		s390_stg (code, s390_r2, 0, cfg->frame_reg, saveOffset);
-		if (enable_arguments) {
-			s390_lgr (code, s390_r3, s390_r2);
-		}
-		break;
-	case SAVE_R4:
-		s390_std (code, s390_f0, 0, cfg->frame_reg, saveOffset);
-		if (enable_arguments) {
-			s390_ldebr (code, s390_f0, s390_f0);
-		}
-		break;
-	case SAVE_R8:
-		s390_std (code, s390_f0, 0, cfg->frame_reg, saveOffset);
-		break;
-	case SAVE_STRUCT:
-		s390_stg (code, s390_r2, 0, cfg->frame_reg, saveOffset);
-		if (enable_arguments) {
-			s390_lg (code, s390_r3, 0, cfg->frame_reg, 
-				 S390_MINIMAL_STACK_SIZE+cfg->param_area);
-		}
-		break;
-	case SAVE_NONE:
-	default:
-		break;
-	}
-
-	S390_SET  (code, s390_r1, func);
-	S390_SET  (code, s390_r2, cfg->method);
-	s390_basr (code, s390_r14, s390_r1);
-
-	switch (save_mode) {
-	case SAVE_ONE:
-		s390_lg  (code, s390_r2, 0, cfg->frame_reg, saveOffset);
-		break;
-	case SAVE_R4:
-	case SAVE_R8:
-		s390_ld  (code, s390_f0, 0, cfg->frame_reg, saveOffset);
-		break;
-	case SAVE_STRUCT:
-		s390_lg  (code, s390_r2, 0, cfg->frame_reg, saveOffset);
-		break;
-	case SAVE_NONE:
-	default:
-		break;
-	}
-
-	return code;
 }
 
 /*========================= End of Function ========================*/
@@ -3377,8 +2638,9 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 			break;
 		case OP_BREAK: {
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_ABS, 
-					     mono_break);
+			mono_add_patch_info (cfg, code - cfg->native_code,
+					     MONO_PATCH_INFO_JIT_ICALL_ID,
+					     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_break));
 			S390_CALL_TEMPLATE (code, s390_r14);
 		}
 			break;
@@ -4265,11 +3527,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_stg (code, ins->sreg1, s390_r13, s390_r1, 0);
 			}
 			break;
+		case OP_TAILCALL_PARAMETER :
+			// This opcode helps compute sizes, i.e.
+			// of the subsequent OP_TAILCALL, but contributes no code.
+			g_assert (ins->next);
+			break;
 		case OP_TAILCALL :
 		case OP_TAILCALL_MEMBASE : {
 			MonoCallInst *call = (MonoCallInst *) ins;
 			MonoMethod *method = call->method;
-			MonoMethodSignature *sig = mono_method_signature(method);
+			MonoMethodSignature *sig = mono_method_signature_internal (method);
 			CallInfo *cinfo = get_call_info (NULL, sig);
 			int32_t stackUsage = (cinfo->sz.stack_size - S390_MINIMAL_STACK_SIZE),
 				stackOffset = S390_MINIMAL_STACK_SIZE;
@@ -4318,9 +3585,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				s390_jcl (code, S390_CC_UN, 0);
 			}
 
-			if (mono_jit_trace_calls != NULL && mono_trace_eval(cfg->method)) 
-				indent_level--;
-
 			g_free (cinfo);
 		}
 			break;
@@ -4347,14 +3611,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_FCALL: {
 			call = (MonoCallInst*)ins;
-			if (ins->flags & MONO_INST_HAS_METHOD)
-				mono_add_patch_info (cfg, code-cfg->native_code,
-						     MONO_PATCH_INFO_METHOD, 
-						     call->method);
-			else
-				mono_add_patch_info (cfg, code-cfg->native_code,
-						     MONO_PATCH_INFO_ABS, 
-						     call->fptr);
+
+			mono_call_add_patch_info (cfg, call, code - cfg->native_code);
 			S390_CALL_TEMPLATE (code, s390_r14);
 			if (!cfg->r4fp && call->signature->ret->type == MONO_TYPE_R4)
 				s390_ldebr (code, s390_f0, s390_f0);
@@ -4367,14 +3625,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_RCALL:
 		case OP_CALL: {
 			call = (MonoCallInst*)ins;
-			if (ins->flags & MONO_INST_HAS_METHOD)
-				mono_add_patch_info (cfg, code-cfg->native_code,
-						     MONO_PATCH_INFO_METHOD, 
-						     call->method);
-			else
-				mono_add_patch_info (cfg, code-cfg->native_code,
-						     MONO_PATCH_INFO_ABS, 
-						     call->fptr);
+			mono_call_add_patch_info (cfg, call, code - cfg->native_code);
 			S390_CALL_TEMPLATE (code, s390_r14);
 		}
 			break;
@@ -4468,15 +3719,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_THROW: {
 			s390_lgr  (code, s390_r2, ins->sreg1);
-			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-					     (gpointer) "mono_arch_throw_exception");
+			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID,
+					     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_throw_exception));
 			S390_CALL_TEMPLATE(code, s390_r14);
 		}
 			break;
 		case OP_RETHROW: {
 			s390_lgr  (code, s390_r2, ins->sreg1);
-			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD, 
-					     (gpointer) "mono_arch_rethrow_exception");
+			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID,
+					     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_rethrow_exception));
 			S390_CALL_TEMPLATE(code, s390_r14);
 		}
 			break;
@@ -4582,8 +3833,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			s390_tm (code, ins->sreg1, byte_offset, bitmask);
 			s390_jo (code, 0); CODEPTR(code, jump);
 
-			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_INTERNAL_METHOD,
-						"mono_generic_class_init");
+			mono_add_patch_info (cfg, code-cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID,
+						GUINT_TO_POINTER (MONO_JIT_ICALL_mono_generic_class_init));
 			S390_CALL_TEMPLATE(code, s390_r14);
 
 			PTRSLOT (code, jump);
@@ -5376,12 +4627,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_GC_SAFE_POINT: {
 			short *br;
 
-			g_assert (mono_threads_are_safepoints_enabled ());
-
 			s390_ltg (code, s390_r0, 0, ins->sreg1, 0);	
 			s390_jz  (code, 0); CODEPTR(code, br);
-			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_ABS,
-					     mono_threads_state_poll);
+			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_JIT_ICALL_ID,
+					     GUINT_TO_POINTER (MONO_JIT_ICALL_mono_threads_state_poll));
 			S390_CALL_TEMPLATE (code, s390_r14);
 			PTRSLOT (code, br);
 			break;
@@ -6081,8 +5330,9 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain,
 			case MONO_PATCH_INFO_EXC:
 				s390_patch_addr (ip, (guint64) target);
 				continue;
+			case MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR:
 			case MONO_PATCH_INFO_METHOD:
-			case MONO_PATCH_INFO_INTERNAL_METHOD:
+			case MONO_PATCH_INFO_JIT_ICALL_ID:
 			case MONO_PATCH_INFO_JIT_ICALL_ADDR:
 			case MONO_PATCH_INFO_RGCTX_FETCH:
 			case MONO_PATCH_INFO_ABS: {
@@ -6108,7 +5358,6 @@ mono_arch_patch_code (MonoCompile *cfg, MonoMethod *method, MonoDomain *domain,
 				continue;
 			case MONO_PATCH_INFO_R4:
 			case MONO_PATCH_INFO_R8:
-			case MONO_PATCH_INFO_METHOD_REL:
 				g_assert_not_reached ();
 				continue;
 			default:
@@ -6141,19 +5390,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	guint8 *code;
 	guint32 size;
 	CallInfo *cinfo;
-	int tracing = 0,
-            argsClobbered = 0,
+	int argsClobbered = 0,
 	    lmfOffset,
-	    fpOffset = 0,
-	    traceSize = 0;
+	    fpOffset = 0;
 
 	cfg->code_size   = 512;
-
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
-		tracing   = 1;
-		traceSize = S390_TRACE_STACK_SIZE;
-		cfg->code_size += 256;
-	}
 
 	if (method->save_lmf)
 		cfg->code_size += 200;
@@ -6181,7 +5422,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 	cfg->arch.fpSize = fpOffset;
 
-	alloc_size = cfg->stack_offset + fpOffset + traceSize;
+	alloc_size = cfg->stack_offset + fpOffset;
 
 	cfg->stack_usage = cfa_offset = alloc_size;
 	s390_lgr  (code, s390_r11, STK_BASE);
@@ -6243,7 +5484,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	/* load arguments allocated to register from the stack */
-	sig = mono_method_signature (method);
+	sig = mono_method_signature_internal (method);
 	pos = 0;
 
 	cinfo = get_call_info (cfg->mempool, sig);
@@ -6317,7 +5558,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 				}
 
 				size = (method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE  
-					? mono_class_native_size(mono_class_from_mono_type(inst->inst_vtype), NULL)
+					? mono_class_native_size(mono_class_from_mono_type_internal (inst->inst_vtype), NULL)
 					: ainfo->size);
 
 				switch (size) {
@@ -6376,8 +5617,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		/* On return from this call r2 have the address of the &lmf	 */
 		/*---------------------------------------------------------------*/
 		mono_add_patch_info (cfg, code - cfg->native_code, 
-				MONO_PATCH_INFO_INTERNAL_METHOD, 
-				(gpointer)"mono_tls_get_lmf_addr");
+				MONO_PATCH_INFO_JIT_ICALL_ID,
+				GUINT_TO_POINTER (MONO_JIT_ICALL_mono_tls_get_lmf_addr));
 		S390_CALL_TEMPLATE(code, s390_r1);
 
 		/*---------------------------------------------------------------*/	
@@ -6455,11 +5696,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	if (cfg->method->save_lmf)
 		argsClobbered = TRUE;
-
-	if (tracing) {
-		argsClobbered = TRUE;
-		code = mono_arch_instrument_prolog (cfg, enter_method, code, TRUE);
-	}
 
 	/*
 	 * Optimize the common case of the first bblock making a call with the same
@@ -6551,7 +5787,6 @@ void
 mono_arch_emit_epilog (MonoCompile *cfg)
 {
 	MonoMethod *method = cfg->method;
-	int tracing = 0;
 	guint8 *code;
 	int max_epilog_size = 96;
 	int fpOffset = 0;
@@ -6559,16 +5794,8 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 	if (cfg->method->save_lmf)
 		max_epilog_size += 128;
 	
-	if (mono_jit_trace_calls != NULL)
-		max_epilog_size += 128;
-	
 	code = realloc_code (cfg, max_epilog_size);
 
-	if (mono_jit_trace_calls != NULL && mono_trace_eval (method)) {
-		code = mono_arch_instrument_epilog (cfg, leave_method, code, TRUE);
-		tracing = 1;
-	}
-	
 	if (method->save_lmf) 
 		restoreLMF(code, cfg->frame_reg, cfg->stack_usage);
 
@@ -6671,9 +5898,9 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				/*---------------------------------------------*/
 				/* Reuse the current patch to set the jump     */
 				/*---------------------------------------------*/
-				patch_info->type      = MONO_PATCH_INFO_INTERNAL_METHOD;
-				patch_info->data.name = "mono_arch_throw_corlib_exception";
-				patch_info->ip.i      = code - cfg->native_code;
+				patch_info->type              = MONO_PATCH_INFO_JIT_ICALL_ID;
+				patch_info->data.jit_icall_id = MONO_JIT_ICALL_mono_arch_throw_corlib_exception;
+				patch_info->ip.i	      = code - cfg->native_code;
 				S390_BR_TEMPLATE (code, s390_r1);
 			}
 			break;
@@ -6865,10 +6092,10 @@ mono_arch_get_patch_offset (guint8 *code)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-mgreg_t
+host_mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {
-	return ((mgreg_t) ctx->uc_mcontext.gregs[reg]);
+	return ctx->uc_mcontext.gregs[reg];
 }
 
 /*========================= End of Function ========================*/
@@ -6882,7 +6109,7 @@ mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 /*------------------------------------------------------------------*/
 
 void
-mono_arch_context_set_int_reg (MonoContext *ctx, int reg, mgreg_t val)
+mono_arch_context_set_int_reg (MonoContext *ctx, int reg, host_mgreg_t val)
 {
 	ctx->uc_mcontext.gregs[reg] = val;
 }
@@ -6898,7 +6125,7 @@ mono_arch_context_set_int_reg (MonoContext *ctx, int reg, mgreg_t val)
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
+mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
 {
 	return (gpointer) regs [s390_r2];
 }
@@ -6913,7 +6140,7 @@ mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
 /*		                               			    */
 /*------------------------------------------------------------------*/
 
-static gpointer
+static guint8*
 get_delegate_invoke_impl (MonoTrampInfo **info, gboolean has_target, guint32 param_count, gboolean aot)
 {
 	guint8 *code, *start;
@@ -7262,7 +6489,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain,
 /*------------------------------------------------------------------*/
 
 MonoMethod*
-mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
+mono_arch_find_imt_method (host_mgreg_t *regs, guint8 *code)
 {
 	return ((MonoMethod *) regs [MONO_ARCH_IMT_REG]);
 }
@@ -7278,11 +6505,9 @@ mono_arch_find_imt_method (mgreg_t *regs, guint8 *code)
 /*------------------------------------------------------------------*/
 
 MonoVTable*
-mono_arch_find_static_call_vtable (mgreg_t *regs, guint8 *code)
+mono_arch_find_static_call_vtable (host_mgreg_t *regs, guint8 *code)
 {
-	mgreg_t *r = (mgreg_t*)regs;
-
-	return (MonoVTable*)(gsize) r [MONO_ARCH_RGCTX_REG];
+	return (MonoVTable*)(gsize) regs [MONO_ARCH_RGCTX_REG];
 }
 
 /*========================= End of Function ========================*/
@@ -7478,7 +6703,7 @@ mono_arch_skip_single_step (MonoContext *ctx)
 /*		                               			    */
 /*------------------------------------------------------------------*/
 
-gpointer
+SeqPointInfo*
 mono_arch_get_seq_point_info (MonoDomain *domain, guint8 *code)
 {
 	NOT_IMPLEMENTED;
@@ -7549,7 +6774,7 @@ mono_arch_opcode_supported (int opcode)
 #ifndef DISABLE_JIT
 
 gboolean
-mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig)
+mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig, MonoMethodSignature *callee_sig, gboolean virtual_)
 {
 	g_assert (caller_sig);
 	g_assert (callee_sig);
@@ -7577,5 +6802,11 @@ mono_arch_tailcall_supported (MonoCompile *cfg, MonoMethodSignature *caller_sig,
 }
 
 #endif
+
+gpointer
+mono_arch_load_function (MonoJitICallId jit_icall_id)
+{
+	return NULL;
+}
 
 /*========================= End of Function ========================*/

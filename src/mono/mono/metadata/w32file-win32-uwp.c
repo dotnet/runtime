@@ -11,6 +11,7 @@
 #include <windows.h>
 #include "mono/metadata/w32file-win32-internals.h"
 #include "mono/metadata/w32subset.h"
+#include "icall-decl.h"
 
 #if !HAVE_API_SUPPORT_WIN32_MOVE_FILE && HAVE_API_SUPPORT_WIN32_MOVE_FILE_EX
 gboolean
@@ -19,7 +20,7 @@ mono_w32file_move (const gunichar2 *path, const gunichar2 *dest, gint32 *error)
 	gboolean result = FALSE;
 	MONO_ENTER_GC_SAFE;
 
-	result = MoveFileEx (path, dest, MOVEFILE_COPY_ALLOWED);
+	result = MoveFileExW (path, dest, MOVEFILE_COPY_ALLOWED);
 	if (result == FALSE) {
 		*error=GetLastError ();
 	}
@@ -55,13 +56,12 @@ mono_w32file_copy (const gunichar2 *path, const gunichar2 *dest, gboolean overwr
 HANDLE
 mono_w32file_get_console_output (void)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
+	ERROR_DECL (error);
 
 	g_unsupported_api ("GetStdHandle (STD_OUTPUT_HANDLE)");
 
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "GetStdHandle (STD_OUTPUT_HANDLE)");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetStdHandle (STD_OUTPUT_HANDLE)");
+	mono_error_set_pending_exception (error);
 
 	SetLastError (ERROR_NOT_SUPPORTED);
 
@@ -71,13 +71,12 @@ mono_w32file_get_console_output (void)
 HANDLE
 mono_w32file_get_console_input (void)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
+	ERROR_DECL (error);
 
 	g_unsupported_api ("GetStdHandle (STD_INPUT_HANDLE)");
 
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "GetStdHandle (STD_INPUT_HANDLE)");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetStdHandle (STD_INPUT_HANDLE)");
+	mono_error_set_pending_exception (error);
 
 	SetLastError (ERROR_NOT_SUPPORTED);
 
@@ -87,13 +86,12 @@ mono_w32file_get_console_input (void)
 HANDLE
 mono_w32file_get_console_error (void)
 {
-	ERROR_DECL_VALUE (mono_error);
-	error_init (&mono_error);
+	ERROR_DECL (error);
 
 	g_unsupported_api ("GetStdHandle (STD_ERROR_HANDLE)");
 
-	mono_error_set_not_supported (&mono_error, G_UNSUPPORTED_API, "GetStdHandle (STD_ERROR_HANDLE)");
-	mono_error_set_pending_exception (&mono_error);
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "GetStdHandle (STD_ERROR_HANDLE)");
+	mono_error_set_pending_exception (error);
 
 	SetLastError (ERROR_NOT_SUPPORTED);
 

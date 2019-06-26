@@ -42,8 +42,10 @@ MONO_API MONO_RT_EXTERNAL_ONLY
 MonoImage    *mono_image_open_from_data_with_name (char *data, uint32_t data_len, mono_bool need_copy,
                                                    MonoImageOpenStatus *status, mono_bool refonly, const char *name);
 MONO_API void          mono_image_fixup_vtable (MonoImage *image);
-MONO_API MonoImage    *mono_image_loaded   (const char *name);
-MONO_API MonoImage    *mono_image_loaded_full   (const char *name, mono_bool refonly);
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoImage             *mono_image_loaded   (const char *name);
+MONO_API MONO_RT_EXTERNAL_ONLY
+MonoImage             *mono_image_loaded_full   (const char *name, mono_bool refonly);
 MONO_API MonoImage    *mono_image_loaded_by_guid (const char *guid);
 MONO_API MonoImage    *mono_image_loaded_by_guid_full (const char *guid, mono_bool refonly);
 MONO_API void          mono_image_init     (MonoImage *image);

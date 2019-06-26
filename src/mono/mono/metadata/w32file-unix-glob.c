@@ -46,6 +46,7 @@
 #include <glib.h>
 #include <ctype.h>
 #include <errno.h>
+#include <mono/utils/mono-errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -276,13 +277,11 @@ globextend(const gchar *path, mono_w32file_unix_glob_t *pglob, size_t *limitp)
 
 	newsize = sizeof(*pathv) * (2 + pglob->gl_pathc + pglob->gl_offs);
 	/* FIXME: Can just use realloc(). */
-	pathv = (char **)(pglob->gl_pathv ? g_realloc ((char *)pglob->gl_pathv, newsize) :
-	    g_malloc (newsize));
+	pathv = pglob->gl_pathv ? (char**)g_realloc (pglob->gl_pathv, newsize) :
+	    (char**)g_malloc (newsize);
 	if (pathv == NULL) {
-		if (pglob->gl_pathv) {
-			g_free (pglob->gl_pathv);
-			pglob->gl_pathv = NULL;
-		}
+		g_free (pglob->gl_pathv);
+		pglob->gl_pathv = NULL;
 		return(W32FILE_UNIX_GLOB_NOSPACE);
 	}
 
@@ -311,7 +310,7 @@ globextend(const gchar *path, mono_w32file_unix_glob_t *pglob, size_t *limitp)
 	/* Broken on opensuse 11 */
 	if ((pglob->gl_flags & W32FILE_UNIX_GLOB_LIMIT) &&
 	    newsize + *limitp >= ARG_MAX) {
-		errno = 0;
+		mono_set_errno (0);
 		return(W32FILE_UNIX_GLOB_NOSPACE);
 	}
 #endif

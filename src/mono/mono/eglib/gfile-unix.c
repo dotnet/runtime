@@ -58,11 +58,13 @@ g_file_test (const gchar *filename, GFileTest test)
 		if (access (filename, X_OK) == 0)
 			return TRUE;
 	}
+#ifdef HAVE_LSTAT
 	if ((test & G_FILE_TEST_IS_SYMLINK) != 0) {
 		have_stat = (lstat (filename, &st) == 0);
 		if (have_stat && S_ISLNK (st.st_mode))
 			return TRUE;
 	}
+#endif
 
 	if ((test & G_FILE_TEST_IS_REGULAR) != 0) {
 		if (!have_stat)
@@ -80,7 +82,7 @@ g_file_test (const gchar *filename, GFileTest test)
 }
 
 gchar *
-g_mkdtemp (char *tmp_template)
+g_mkdtemp (char *temp)
 {
 /*
  * On systems without mkdtemp, use a reimplemented version
@@ -90,21 +92,14 @@ g_mkdtemp (char *tmp_template)
  * present without redefining it.
  */
 #if defined(HAVE_MKDTEMP) && !defined(_AIX)
-	char *template_copy = g_strdup (tmp_template);
-
-	return mkdtemp (template_copy);
+	return mkdtemp (g_strdup (temp));
 #else
-	char *template = g_strdup (tmp_template);
+	temp = mktemp (g_strdup (temp));
+	/* 0700 is the mode specified in specs */
+	if (temp && *temp && mkdir (temp, 0700) == 0)
+		return temp;
 
-	template = mktemp(template);
-	if (template && *template) {
-		/* 0700 is the mode specified in specs */
-		if (mkdir (template, 0700) == 0){
-			return template;
-		}
-	}
-
-	g_free (template);
+	g_free (temp);
 	return NULL;
 #endif
 }

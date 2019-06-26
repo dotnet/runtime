@@ -26,11 +26,12 @@
  *
  * (C) 2006 Novell, Inc.
  */
+#include "config.h"
 #include <stdio.h>
 #include <glib.h>
 
 GList*
-g_list_alloc ()
+g_list_alloc (void)
 {
 	return g_new0 (GList, 1);
 }

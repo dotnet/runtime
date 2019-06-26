@@ -1058,14 +1058,13 @@ add_non_null (MonoVariableRelationsEvaluationArea *area, MonoCompile *cfg, int r
  */
 static void
 process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvaluationArea *area) {
-	int inst_index;
 	MonoInst *ins;
 	MonoAdditionalVariableRelationsForBB additional_relations;
 	GSList *dominated_bb, *l;
 	GSList *check_relations = NULL;
 	
 	if (TRACE_ABC_REMOVAL) {
-		printf ("\nProcessing block %d [dfn %d]...\n", bb->block_num, bb->dfn);
+		printf ("\nABCREM BLOCK/2 %d [dfn %d]...\n", bb->block_num, bb->dfn);
 	}
 
 	if (bb->region != -1)
@@ -1087,21 +1086,14 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 	apply_change_to_evaluation_area (area, &(additional_relations.relation1));
 	apply_change_to_evaluation_area (area, &(additional_relations.relation2));
 
-	inst_index = 0;
 	for (ins = bb->code; ins; ins = ins->next) {
 		MonoAdditionalVariableRelation *rel;
 		int array_var, index_var;
 
-		if (TRACE_ABC_REMOVAL) {
-			printf ("Processing instruction %d\n", inst_index);
-			inst_index++;
-		}
+		if (TRACE_ABC_REMOVAL)
+			mono_print_ins (ins);
 
 		if (ins->opcode == OP_BOUNDS_CHECK) { /* Handle OP_LDELEMA2D, too */
-			if (TRACE_ABC_REMOVAL) {
-				printf ("Attempting check removal...\n");
-			}
-
 			array_var = ins->sreg1;
 			index_var = ins->sreg2;
 		
@@ -1142,6 +1134,15 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 
 		if (ins->opcode == OP_NOT_NULL)
 			add_non_null (area, cfg, ins->sreg1, &check_relations);
+
+		if (ins->opcode == OP_COMPARE_IMM && ins->inst_imm == 0 && ins->next && ins->next->opcode == OP_COND_EXC_EQ) {
+			if (eval_non_null (area, ins->sreg1)) {
+				if (REPORT_ABC_REMOVAL)
+					printf ("ARRAY-ACCESS: Removed null check.\n");
+				NULLIFY_INS (ins->next);
+				NULLIFY_INS (ins);
+			}
+		}
 
 		/* 
 		 * FIXME: abcrem equates an array with its length,
@@ -1186,10 +1187,6 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 			*/
 		}
 	}	
-	
-	if (TRACE_ABC_REMOVAL) {
-		printf ("Processing block %d [dfn %d] done.\n", bb->block_num, bb->dfn);
-	}
 	
 	for (dominated_bb = bb->dominated; dominated_bb != NULL; dominated_bb = dominated_bb->next) {
 		process_block (cfg, (MonoBasicBlock*) (dominated_bb->data), area);
@@ -1266,10 +1263,6 @@ mono_perform_abc_removal (MonoCompile *cfg)
 	int i;
 	
 	verbose_level = cfg->verbose_level;
-	
-	if (TRACE_ABC_REMOVAL) {
-		printf ("\nRemoving array bound checks in %s\n", mono_method_full_name (cfg->method, TRUE));
-	}
 
 	area.cfg = cfg;
 	area.relations = (MonoSummarizedValueRelation *)
@@ -1308,8 +1301,8 @@ mono_perform_abc_removal (MonoCompile *cfg)
 
 			MONO_INS_FOR_EACH_REG (ins, idx, reg) {
 				MonoInst *var = get_vreg_to_inst (cfg, *reg);
-				if (var && (!MONO_VARINFO (cfg, var->inst_c0)->def))
-						break;
+				if (var && (var->flags & (MONO_INST_VOLATILE|MONO_INST_INDIRECT)))
+					break;
 			}
 			if (idx < MONO_INST_LEN) {
 				if (TRACE_ABC_REMOVAL)

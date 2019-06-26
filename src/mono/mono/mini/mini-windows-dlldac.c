@@ -38,6 +38,7 @@ read_memory(PVOID user_context, LPCVOID base_address, PVOID buffer, SIZE_T size,
     return ReadProcessMemory ((HANDLE)user_context, base_address, buffer, size, read);
 }
 
+MONO_EXTERN_C
 MONO_API_EXPORT DWORD
 OutOfProcessFunctionTableCallbackEx (ReadMemoryFunction read_memory, PVOID user_context, PVOID table_address, PDWORD entries, PRUNTIME_FUNCTION *functions)
 {
@@ -50,7 +51,7 @@ OutOfProcessFunctionTableCallbackEx (ReadMemoryFunction read_memory, PVOID user_
 	if (read_memory (user_context, table_address, &func_table, sizeof (func_table), &reads)) {
 		if (func_table.Context != NULL && read_memory (user_context, func_table.Context, &func_table_entry, sizeof (func_table_entry), &reads)) {
 			if (func_table_entry.rt_funcs_current_count != 0) {
-				rt_funcs = HeapAlloc (GetProcessHeap (), HEAP_ZERO_MEMORY, func_table_entry.rt_funcs_current_count * sizeof (RUNTIME_FUNCTION));
+				rt_funcs = (PRUNTIME_FUNCTION)HeapAlloc (GetProcessHeap (), HEAP_ZERO_MEMORY, func_table_entry.rt_funcs_current_count * sizeof (RUNTIME_FUNCTION));
 				if (rt_funcs) {
 					if (read_memory (user_context, func_table_entry.rt_funcs, rt_funcs, func_table_entry.rt_funcs_current_count * sizeof (RUNTIME_FUNCTION), &reads)) {
 						*entries = func_table_entry.rt_funcs_current_count;
@@ -65,6 +66,7 @@ OutOfProcessFunctionTableCallbackEx (ReadMemoryFunction read_memory, PVOID user_
 	return result;
 }
 
+MONO_EXTERN_C
 MONO_API_EXPORT DWORD
 OutOfProcessFunctionTableCallback (HANDLE process, PVOID table_address, PDWORD entries, PRUNTIME_FUNCTION *functions)
 {
@@ -73,6 +75,7 @@ OutOfProcessFunctionTableCallback (HANDLE process, PVOID table_address, PDWORD e
 #endif /* defined(TARGET_AMD64) && !defined(DISABLE_JIT) */
 
 #ifdef _MSC_VER
+MONO_EXTERN_C
 BOOL APIENTRY
 DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 {

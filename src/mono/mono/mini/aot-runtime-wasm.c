@@ -48,7 +48,7 @@ handle_enum:
 		return 'V';
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (t->data.klass)) {
-			t = mono_class_enum_basetype (t->data.klass);
+			t = mono_class_enum_basetype_internal (t->data.klass);
 			goto handle_enum;
 		}
 

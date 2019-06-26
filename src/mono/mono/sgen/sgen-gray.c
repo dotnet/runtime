@@ -418,6 +418,8 @@ sgen_gray_object_queue_dispose (SgenGrayQueue *queue)
 	SGEN_ASSERT (0, !last_gray_queue_free_list, "Are we disposing two gray queues after another?");
 	last_gray_queue_free_list = queue->free_list;
 
+	mono_os_mutex_destroy (&queue->steal_mutex);
+
 	/* just to make sure */
 	memset (queue, 0, sizeof (SgenGrayQueue));
 }

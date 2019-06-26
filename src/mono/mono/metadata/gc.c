@@ -47,10 +47,11 @@
 #include <mono/utils/unlocked.h>
 #include <mono/utils/mono-os-wait.h>
 #include <mono/utils/mono-lazy-init.h>
-
 #ifndef HOST_WIN32
 #include <pthread.h>
 #endif
+#include "external-only.h"
+#include "icall-decl.h"
 
 typedef struct DomainFinalizationReq {
 	gint32 ref;
@@ -95,10 +96,6 @@ static void reference_queue_proccess_all (void);
 static void mono_reference_queue_cleanup (void);
 static void reference_queue_clear_for_domain (MonoDomain *domain);
 static void mono_runtime_do_background_work (void);
-
-static MonoReferenceQueue* mono_gc_reference_queue_new_internal (mono_reference_queue_callback callback);
-static gboolean mono_gc_reference_queue_add_internal (MonoReferenceQueue *queue, MonoObject *obj, void *user_data);
-
 
 static MonoThreadInfoWaitRet
 guarded_wait (MonoThreadHandle *thread_handle, guint32 timeout, gboolean alertable)
@@ -260,7 +257,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	/* g_print ("Finalize run on %p %s.%s\n", o, mono_object_class (o)->name_space, mono_object_class (o)->name); */
 
 	/* Use _internal here, since this thread can enter a doomed appdomain */
-	mono_domain_set_internal (mono_object_domain (o));
+	mono_domain_set_internal_with_options (mono_object_domain (o), TRUE);
 
 	/* delegates that have a native function pointer allocated are
 	 * registered for finalization, but they don't have a Finalize
@@ -270,7 +267,7 @@ mono_gc_run_finalize (void *obj, void *data)
 		MonoDelegate* del = (MonoDelegate*)o;
 		if (del->delegate_trampoline)
 			mono_delegate_free_ftnptr ((MonoDelegate*)o);
-		mono_domain_set_internal (caller_domain);
+		mono_domain_set_internal_with_options (caller_domain, TRUE);
 		return;
 	}
 
@@ -283,7 +280,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	 * of finalizer on object with CCW.
 	 */
 	if (mono_marshal_free_ccw (o) && !finalizer) {
-		mono_domain_set_internal (caller_domain);
+		mono_domain_set_internal_with_options (caller_domain, TRUE);
 		return;
 	}
 
@@ -312,7 +309,7 @@ mono_gc_run_finalize (void *obj, void *data)
 	goto_if_nok (error, unhandled_error);
 
 	if (G_UNLIKELY (MONO_GC_FINALIZE_INVOKE_ENABLED ())) {
-		MONO_GC_FINALIZE_INVOKE ((unsigned long)o, mono_object_get_size (o),
+		MONO_GC_FINALIZE_INVOKE ((unsigned long)o, mono_object_get_size_internal (o),
 				o_ns, o_name);
 	}
 
@@ -322,8 +319,11 @@ mono_gc_run_finalize (void *obj, void *data)
 	MONO_PROFILER_RAISE (gc_finalizing_object, (o));
 
 #ifdef HOST_WASM
-	gpointer params[] = { NULL };
-	mono_runtime_try_invoke (finalizer, o, params, &exc, error);
+	if (finalizer) { // null finalizers work fine when using the vcall invoke as Object has an empty one
+		gpointer params [1];
+		params [0] = NULL;
+		mono_runtime_try_invoke (finalizer, o, params, &exc, error);
+	}
 #else
 	runtime_invoke (o, NULL, &exc, NULL);
 #endif
@@ -339,7 +339,7 @@ unhandled_error:
 	if (exc)
 		mono_thread_internal_unhandled_exception (exc);
 
-	mono_domain_set_internal (caller_domain);
+	mono_domain_set_internal_with_options (caller_domain, TRUE);
 }
 
 /*
@@ -543,13 +543,13 @@ done:
 }
 
 void
-ves_icall_System_GC_InternalCollect (int generation, MonoError *error)
+ves_icall_System_GC_InternalCollect (int generation)
 {
 	mono_gc_collect (generation);
 }
 
 gint64
-ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection, MonoError *error)
+ves_icall_System_GC_GetTotalMemory (MonoBoolean forceCollection)
 {
 	if (forceCollection)
 		mono_gc_collect (mono_gc_max_generation ());
@@ -592,7 +592,7 @@ ves_icall_System_GC_SuppressFinalize (MonoObjectHandle obj, MonoError *error)
 }
 
 void
-ves_icall_System_GC_WaitForPendingFinalizers (MonoError *error)
+ves_icall_System_GC_WaitForPendingFinalizers (void)
 {
 	if (mono_gc_is_null ())
 		return;
@@ -615,9 +615,7 @@ ves_icall_System_GC_WaitForPendingFinalizers (MonoError *error)
 	ResetEvent (pending_done_event);
 	mono_gc_finalize_notify ();
 	/* g_print ("Waiting for pending finalizers....\n"); */
-	MONO_ENTER_GC_SAFE;
-	mono_win32_wait_for_single_object_ex (pending_done_event, INFINITE, TRUE);
-	MONO_EXIT_GC_SAFE;
+	mono_coop_win32_wait_for_single_object_ex (pending_done_event, INFINITE, TRUE);
 	/* g_print ("Done pending....\n"); */
 #else
 	gboolean alerted = FALSE;
@@ -637,7 +635,7 @@ void
 ves_icall_System_GC_register_ephemeron_array (MonoObjectHandle array, MonoError *error)
 {
 	if (!mono_gc_ephemeron_array_add (MONO_HANDLE_RAW (array)))
-		mono_error_set_exception_instance (error, MONO_HANDLE_DOMAIN (array)->out_of_memory_ex);
+		mono_error_set_out_of_memory (error, "");
 }
 
 MonoObjectHandle
@@ -645,6 +643,53 @@ ves_icall_System_GC_get_ephemeron_tombstone (MonoError *error)
 {
 	return MONO_HANDLE_NEW (MonoObject, mono_domain_get ()->ephemeron_tombstone);
 }
+
+#if ENABLE_NETCORE
+
+gpointer
+ves_icall_System_GCHandle_InternalAlloc (MonoObjectHandle obj, gint32 type, MonoError *error)
+{
+	guint32 handle = 0;
+
+	switch (type) {
+	case HANDLE_WEAK:
+		handle = mono_gchandle_new_weakref_from_handle (obj);
+		break;
+	case HANDLE_WEAK_TRACK:
+		handle = mono_gchandle_new_weakref_from_handle_track_resurrection (obj);
+		break;
+	case HANDLE_NORMAL:
+		handle = mono_gchandle_from_handle (obj, FALSE);
+		break;
+	case HANDLE_PINNED:
+		handle = mono_gchandle_from_handle (obj, TRUE);
+		break;
+	default:
+		g_assert_not_reached ();
+	}
+	/* The lowest bit is used to mark pinned handles by netcore's GCHandle class */
+	return GUINT_TO_POINTER (handle << 1);
+}
+
+void
+ves_icall_System_GCHandle_InternalFree (gpointer handle, MonoError *error)
+{
+	mono_gchandle_free_internal (GPOINTER_TO_UINT (handle) >> 1);
+}
+
+MonoObjectHandle
+ves_icall_System_GCHandle_InternalGet (gpointer handle, MonoError *error)
+{
+	return mono_gchandle_get_target_handle (GPOINTER_TO_UINT (handle) >> 1);
+}
+
+void
+ves_icall_System_GCHandle_InternalSet (gpointer handle, MonoObjectHandle obj, MonoError *error)
+{
+	mono_gchandle_set_target_handle (GPOINTER_TO_UINT (handle) >> 1, obj);
+}
+
+#else
 
 MonoObjectHandle
 ves_icall_System_GCHandle_GetTarget (guint32 handle, MonoError *error)
@@ -679,13 +724,13 @@ ves_icall_System_GCHandle_GetTargetHandle (MonoObjectHandle obj, guint32 handle,
 }
 
 void
-ves_icall_System_GCHandle_FreeHandle (guint32 handle, MonoError *error)
+ves_icall_System_GCHandle_FreeHandle (guint32 handle)
 {
-	mono_gchandle_free (handle);
+	mono_gchandle_free_internal (handle);
 }
 
 gpointer
-ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle, MonoError *error)
+ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle)
 {
 	// Handles seem to only be in the way here, and the object is pinned.
 
@@ -693,7 +738,7 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle, MonoError *erro
 
 	if (MONO_GC_HANDLE_TYPE (handle) != HANDLE_PINNED)
 		return (gpointer)-2;
-	obj = mono_gchandle_get_target (handle);
+	obj = mono_gchandle_get_target_internal (handle);
 	if (obj) {
 		MonoClass *klass = mono_object_class (obj);
 
@@ -702,9 +747,9 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle, MonoError *erro
 		// or klass->GetAddrOfPinnedObject(obj);
 
 		if (klass == mono_defaults.string_class) {
-			return mono_string_chars ((MonoString*)obj);
+			return mono_string_chars_internal ((MonoString*)obj);
 		} else if (m_class_get_rank (klass)) {
-			return mono_array_addr ((MonoArray*)obj, char, 0);
+			return mono_array_addr_internal ((MonoArray*)obj, char, 0);
 		} else {
 			/* the C# code will check and throw the exception */
 			/* FIXME: missing !klass->blittable test, see bug #61134 */
@@ -717,10 +762,12 @@ ves_icall_System_GCHandle_GetAddrOfPinnedObject (guint32 handle, MonoError *erro
 }
 
 MonoBoolean
-ves_icall_System_GCHandle_CheckCurrentDomain (guint32 gchandle, MonoError *error)
+ves_icall_System_GCHandle_CheckCurrentDomain (guint32 gchandle)
 {
 	return mono_gchandle_is_in_domain (gchandle, mono_domain_get ());
 }
+
+#endif
 
 static MonoCoopSem finalizer_sem;
 static volatile gboolean finished;
@@ -806,7 +853,7 @@ finalize_domain_objects (void)
 	DomainFinalizationReq *req = NULL;
 	MonoDomain *domain;
 
-	if (UnlockedReadPointer ((gpointer)&domains_to_finalize)) {
+	if (UnlockedReadPointer ((gpointer volatile*)&domains_to_finalize)) {
 		mono_finalizer_lock ();
 		if (domains_to_finalize) {
 			req = (DomainFinalizationReq *)domains_to_finalize->data;
@@ -1147,8 +1194,8 @@ reference_queue_proccess (MonoReferenceQueue *queue)
 	RefQueueEntry **iter = &queue->queue;
 	RefQueueEntry *entry;
 	while ((entry = *iter)) {
-		if (queue->should_be_deleted || !mono_gchandle_get_target (entry->gchandle)) {
-			mono_gchandle_free ((guint32)entry->gchandle);
+		if (queue->should_be_deleted || !mono_gchandle_get_target_internal (entry->gchandle)) {
+			mono_gchandle_free_internal ((guint32)entry->gchandle);
 			ref_list_remove_element (iter, entry);
 			queue->callback (entry->user_data);
 			g_free (entry);
@@ -1203,7 +1250,7 @@ reference_queue_clear_for_domain (MonoDomain *domain)
 		RefQueueEntry *entry;
 		while ((entry = *iter)) {
 			if (entry->domain == domain) {
-				mono_gchandle_free ((guint32)entry->gchandle);
+				mono_gchandle_free_internal ((guint32)entry->gchandle);
 				ref_list_remove_element (iter, entry);
 				queue->callback (entry->user_data);
 				g_free (entry);
@@ -1233,11 +1280,7 @@ reference_queue_clear_for_domain (MonoDomain *domain)
 MonoReferenceQueue*
 mono_gc_reference_queue_new (mono_reference_queue_callback callback)
 {
-	MonoReferenceQueue *result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_gc_reference_queue_new_internal (callback);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
+	MONO_EXTERNAL_ONLY_GC_UNSAFE (MonoReferenceQueue*, mono_gc_reference_queue_new_internal (callback));
 }
 
 MonoReferenceQueue*
@@ -1270,11 +1313,7 @@ mono_gc_reference_queue_new_internal (mono_reference_queue_callback callback)
 gboolean
 mono_gc_reference_queue_add (MonoReferenceQueue *queue, MonoObject *obj, void *user_data)
 {
-	gboolean result;
-	MONO_ENTER_GC_UNSAFE;
-	result = mono_gc_reference_queue_add_internal (queue, obj, user_data);
-	MONO_EXIT_GC_UNSAFE;
-	return result;
+	MONO_EXTERNAL_ONLY_GC_UNSAFE (gboolean, mono_gc_reference_queue_add_internal (queue, obj, user_data));
 }
 
 gboolean
@@ -1290,8 +1329,10 @@ mono_gc_reference_queue_add_internal (MonoReferenceQueue *queue, MonoObject *obj
 	entry->user_data = user_data;
 	entry->domain = mono_object_domain (obj);
 
-	entry->gchandle = mono_gchandle_new_weakref (obj, TRUE);
+	entry->gchandle = mono_gchandle_new_weakref_internal (obj, TRUE);
+#ifndef HAVE_SGEN_GC
 	mono_object_register_finalizer (obj);
+#endif
 
 	ref_list_push (&queue->queue, entry);
 	return TRUE;
@@ -1363,5 +1404,5 @@ mono_gc_register_object_with_weak_fields (MonoObjectHandle obj)
 void
 mono_gc_wbarrier_object_copy_handle (MonoObjectHandle obj, MonoObjectHandle src)
 {
-	mono_gc_wbarrier_object_copy (MONO_HANDLE_RAW (obj), MONO_HANDLE_RAW (src));
+	mono_gc_wbarrier_object_copy_internal (MONO_HANDLE_RAW (obj), MONO_HANDLE_RAW (src));
 }

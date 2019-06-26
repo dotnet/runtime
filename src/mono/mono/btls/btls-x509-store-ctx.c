@@ -16,7 +16,7 @@ struct MonoBtlsX509StoreCtx {
 	MonoBtlsX509Chain *chain;
 };
 
-MONO_API MonoBtlsX509StoreCtx *
+MonoBtlsX509StoreCtx *
 mono_btls_x509_store_ctx_from_ptr (X509_STORE_CTX *ptr)
 {
 	MonoBtlsX509StoreCtx *ctx;
@@ -31,7 +31,7 @@ mono_btls_x509_store_ctx_from_ptr (X509_STORE_CTX *ptr)
 	return ctx;
 }
 
-MONO_API MonoBtlsX509StoreCtx *
+MonoBtlsX509StoreCtx *
 mono_btls_x509_store_ctx_new (void)
 {
 	MonoBtlsX509StoreCtx *ctx;
@@ -47,14 +47,14 @@ mono_btls_x509_store_ctx_new (void)
 	return ctx;
 }
 
-MONO_API MonoBtlsX509StoreCtx *
+MonoBtlsX509StoreCtx *
 mono_btls_x509_store_ctx_up_ref (MonoBtlsX509StoreCtx *ctx)
 {
 	CRYPTO_refcount_inc (&ctx->references);
 	return ctx;
 }
 
-MONO_API int
+int
 mono_btls_x509_store_ctx_free (MonoBtlsX509StoreCtx *ctx)
 {
 	if (!CRYPTO_refcount_dec_and_test_zero (&ctx->references))
@@ -77,7 +77,7 @@ mono_btls_x509_store_ctx_free (MonoBtlsX509StoreCtx *ctx)
 	return 1;
 }
 
-MONO_API int
+int
 mono_btls_x509_store_ctx_get_error (MonoBtlsX509StoreCtx *ctx, const char **error_string)
 {
 	int error;
@@ -88,13 +88,13 @@ mono_btls_x509_store_ctx_get_error (MonoBtlsX509StoreCtx *ctx, const char **erro
 	return error;
 }
 
-MONO_API int
+int
 mono_btls_x509_store_ctx_get_error_depth (MonoBtlsX509StoreCtx *ctx)
 {
 	return X509_STORE_CTX_get_error_depth (ctx->ctx);
 }
 
-MONO_API MonoBtlsX509Chain *
+MonoBtlsX509Chain *
 mono_btls_x509_store_ctx_get_chain (MonoBtlsX509StoreCtx *ctx)
 {
 	STACK_OF(X509) *certs;
@@ -106,7 +106,7 @@ mono_btls_x509_store_ctx_get_chain (MonoBtlsX509StoreCtx *ctx)
 	return mono_btls_x509_chain_from_certs (certs);
 }
 
-MONO_API MonoBtlsX509Chain *
+MonoBtlsX509Chain *
 mono_btls_x509_store_ctx_get_untrusted (MonoBtlsX509StoreCtx *ctx)
 {
 	STACK_OF(X509) *untrusted;
@@ -124,7 +124,7 @@ mono_btls_x509_store_ctx_get_untrusted (MonoBtlsX509StoreCtx *ctx)
 	return mono_btls_x509_chain_from_certs (untrusted);
 }
 
-MONO_API int
+int
 mono_btls_x509_store_ctx_init (MonoBtlsX509StoreCtx *ctx,
 				   MonoBtlsX509Store *store, MonoBtlsX509Chain *chain)
 {
@@ -151,19 +151,19 @@ mono_btls_x509_store_ctx_init (MonoBtlsX509StoreCtx *ctx,
 	return 1;
 }
 
-MONO_API int
+int
 mono_btls_x509_store_ctx_set_param (MonoBtlsX509StoreCtx *ctx, MonoBtlsX509VerifyParam *param)
 {
 	return X509_VERIFY_PARAM_set1 (X509_STORE_CTX_get0_param (ctx->ctx), mono_btls_x509_verify_param_peek_param (param));
 }
 
-MONO_API int
+int
 mono_btls_x509_store_ctx_verify_cert (MonoBtlsX509StoreCtx *ctx)
 {
 	return X509_verify_cert (ctx->ctx);
 }
 
-MONO_API X509 *
+X509 *
 mono_btls_x509_store_ctx_get_by_subject (MonoBtlsX509StoreCtx *ctx, MonoBtlsX509Name *name)
 {
 	X509_OBJECT obj;
@@ -180,7 +180,7 @@ mono_btls_x509_store_ctx_get_by_subject (MonoBtlsX509StoreCtx *ctx, MonoBtlsX509
 	return x509;
 }
 
-MONO_API X509 *
+X509 *
 mono_btls_x509_store_ctx_get_current_cert (MonoBtlsX509StoreCtx *ctx)
 {
 	X509 *x509 = X509_STORE_CTX_get_current_cert (ctx->ctx);
@@ -189,7 +189,7 @@ mono_btls_x509_store_ctx_get_current_cert (MonoBtlsX509StoreCtx *ctx)
 	return X509_up_ref (x509);
 }
 
-MONO_API X509 *
+X509 *
 mono_btls_x509_store_ctx_get_current_issuer (MonoBtlsX509StoreCtx *ctx)
 {
 	X509 *x509 = X509_STORE_CTX_get0_current_issuer (ctx->ctx);
@@ -198,7 +198,7 @@ mono_btls_x509_store_ctx_get_current_issuer (MonoBtlsX509StoreCtx *ctx)
 	return X509_up_ref (x509);
 }
 
-MONO_API MonoBtlsX509VerifyParam *
+MonoBtlsX509VerifyParam *
 mono_btls_x509_store_ctx_get_verify_param (MonoBtlsX509StoreCtx *ctx)
 {
 	X509_VERIFY_PARAM *param;
@@ -210,7 +210,7 @@ mono_btls_x509_store_ctx_get_verify_param (MonoBtlsX509StoreCtx *ctx)
 	return mono_btls_x509_verify_param_from_store_ctx (ctx, param);
 }
 
-MONO_API int
+int
 mono_btls_x509_store_ctx_get_foo (MonoBtlsX509StoreCtx *ctx)
 {
 	return 0;
