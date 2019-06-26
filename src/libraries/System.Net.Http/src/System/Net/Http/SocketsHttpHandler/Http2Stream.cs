@@ -63,6 +63,8 @@ namespace System.Net.Http
             private TaskCompletionSource<bool> _shouldSendRequestBodyWaiter;
             private bool _shouldSendRequestBody;
 
+            private int _headerBudgetRemaining;
+
             private const int StreamWindowSize = DefaultInitialWindowSize;
 
             // See comment on ConnectionWindowThreshold.
@@ -85,6 +87,8 @@ namespace System.Net.Http
                 _pendingWindowUpdate = 0;
 
                 _streamWindow = new CreditManager(initialWindowSize);
+
+                _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
             }
 
             private object SyncObject => _streamWindow;
@@ -197,6 +201,13 @@ namespace System.Net.Http
             public void OnResponseHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
             {
                 Debug.Assert(name != null && name.Length > 0);
+
+                _headerBudgetRemaining -= name.Length + value.Length;
+                if (_headerBudgetRemaining < 0)
+                {
+                    throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings._maxResponseHeadersLength));
+                }
+
                 // TODO: ISSUE 31309: Optimize HPACK static table decoding
 
                 lock (SyncObject)
