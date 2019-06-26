@@ -14,11 +14,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             var obj = new ClassWithNoSetter();
 
-            string json = JsonSerializer.ToString(obj);
+            string json = JsonSerializer.Serialize(obj);
             Assert.Contains(@"""MyString"":""DefaultValue""", json);
             Assert.Contains(@"""MyInts"":[1,2]", json);
 
-            obj = JsonSerializer.Parse<ClassWithNoSetter>(@"{""MyString"":""IgnoreMe"",""MyInts"":[0]}");
+            obj = JsonSerializer.Deserialize<ClassWithNoSetter>(@"{""MyString"":""IgnoreMe"",""MyInts"":[0]}");
             Assert.Equal("DefaultValue", obj.MyString);
             Assert.Equal(2, obj.MyInts.Length);
         }
@@ -31,14 +31,14 @@ namespace System.Text.Json.Serialization.Tests
 
             var obj = new ClassWithNoSetter();
 
-            string json = JsonSerializer.ToString(obj, options);
+            string json = JsonSerializer.Serialize(obj, options);
             Assert.Equal(@"{}", json);
         }
 
         [Fact]
         public static void NoGetter()
         {
-            ClassWithNoGetter objWithNoGetter = JsonSerializer.Parse<ClassWithNoGetter>(
+            ClassWithNoGetter objWithNoGetter = JsonSerializer.Deserialize<ClassWithNoGetter>(
                 @"{""MyString"":""Hello"",""MyIntArray"":[0],""MyIntList"":[0]}");
 
             Assert.Equal("Hello", objWithNoGetter.GetMyString());
@@ -54,7 +54,7 @@ namespace System.Text.Json.Serialization.Tests
             var obj = new ClassWithPrivateSetterAndGetter();
             obj.SetMyString("Hello");
 
-            string json = JsonSerializer.ToString(obj);
+            string json = JsonSerializer.Serialize(obj);
             Assert.Equal(@"{}", json);
         }
 
@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = @"{""MyString"":""Hello""}";
 
-            ClassWithPrivateSetterAndGetter objCopy = JsonSerializer.Parse<ClassWithPrivateSetterAndGetter>(json);
+            ClassWithPrivateSetterAndGetter objCopy = JsonSerializer.Deserialize<ClassWithPrivateSetterAndGetter>(json);
             Assert.Null(objCopy.GetMyString());
         }
 
@@ -72,7 +72,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             // https://github.com/dotnet/corefx/issues/37567
             ClassWithPublicGetterAndPrivateSetter obj
-                = JsonSerializer.Parse<ClassWithPublicGetterAndPrivateSetter>(@"{ ""Class"": {} }");
+                = JsonSerializer.Deserialize<ClassWithPublicGetterAndPrivateSetter>(@"{ ""Class"": {} }");
 
             Assert.NotNull(obj);
             Assert.Null(obj.Class);
@@ -98,21 +98,21 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(1, obj.MyDictionaryWithIgnore["Key"]);
 
             // Verify serialize.
-            string json = JsonSerializer.ToString(obj);
+            string json = JsonSerializer.Serialize(obj);
             Assert.Contains(@"""MyString""", json);
             Assert.DoesNotContain(@"MyStringWithIgnore", json);
             Assert.DoesNotContain(@"MyStringsWithIgnore", json);
             Assert.DoesNotContain(@"MyDictionaryWithIgnore", json);
 
             // Verify deserialize default.
-            obj = JsonSerializer.Parse<ClassWithIgnoreAttributeProperty>(@"{}");
+            obj = JsonSerializer.Deserialize<ClassWithIgnoreAttributeProperty>(@"{}");
             Assert.Equal(@"MyString", obj.MyString);
             Assert.Equal(@"MyStringWithIgnore", obj.MyStringWithIgnore);
             Assert.Equal(2, obj.MyStringsWithIgnore.Length);
             Assert.Equal(1, obj.MyDictionaryWithIgnore["Key"]);
 
             // Verify deserialize ignores the json for MyStringWithIgnore and MyStringsWithIgnore.
-            obj = JsonSerializer.Parse<ClassWithIgnoreAttributeProperty>(
+            obj = JsonSerializer.Deserialize<ClassWithIgnoreAttributeProperty>(
                 @"{""MyString"":""Hello"", ""MyStringWithIgnore"":""IgnoreMe"", ""MyStringsWithIgnore"":[""IgnoreMe""], ""MyDictionaryWithIgnore"":{""Key"":9}}");
             Assert.Contains(@"Hello", obj.MyString);
             Assert.Equal(@"MyStringWithIgnore", obj.MyStringWithIgnore);

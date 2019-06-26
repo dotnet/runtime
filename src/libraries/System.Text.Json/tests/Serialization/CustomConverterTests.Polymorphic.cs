@@ -126,22 +126,22 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new PersonConverter());
 
             {
-                Person person = JsonSerializer.Parse<Person>(customerJson, options);
+                Person person = JsonSerializer.Deserialize<Person>(customerJson, options);
                 Assert.IsType<Customer>(person);
                 Assert.Equal(100, ((Customer)person).CreditLimit);
                 Assert.Equal("C", person.Name);
 
-                string json = JsonSerializer.ToString(person, options);
+                string json = JsonSerializer.Serialize(person, options);
                 Assert.Equal(customerJson, json);
             }
 
             {
-                Person person = JsonSerializer.Parse<Person>(employeeJson, options);
+                Person person = JsonSerializer.Deserialize<Person>(employeeJson, options);
                 Assert.IsType<Employee>(person);
                 Assert.Equal("77a", ((Employee)person).OfficeNumber);
                 Assert.Equal("E", person.Name);
 
-                string json = JsonSerializer.ToString(person, options);
+                string json = JsonSerializer.Serialize(person, options);
                 Assert.Equal(employeeJson, json);
             }
         }
@@ -152,7 +152,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new PersonConverter());
 
-            Person person = JsonSerializer.Parse<Person>("null");
+            Person person = JsonSerializer.Deserialize<Person>("null");
             Assert.Null(person);
         }
     }

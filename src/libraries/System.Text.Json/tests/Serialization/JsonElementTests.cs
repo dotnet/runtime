@@ -13,16 +13,16 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void SerializeJsonElement()
         {
-            JsonElementClass obj = JsonSerializer.Parse<JsonElementClass>(JsonElementClass.s_json);
+            JsonElementClass obj = JsonSerializer.Deserialize<JsonElementClass>(JsonElementClass.s_json);
             obj.Verify();
-            string reserialized = JsonSerializer.ToString(obj);
+            string reserialized = JsonSerializer.Serialize(obj);
 
             // Properties in the exported json will be in the order that they were reflected, doing a quick check to see that
             // we end up with the same length (i.e. same amount of data) to start.
             Assert.Equal(JsonElementClass.s_json.StripWhitespace().Length, reserialized.Length);
 
             // Shoving it back through the parser should validate round tripping.
-            obj = JsonSerializer.Parse<JsonElementClass>(reserialized);
+            obj = JsonSerializer.Deserialize<JsonElementClass>(reserialized);
             obj.Verify();
         }
 
@@ -91,16 +91,16 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public void SerializeJsonElementArray()
         {
-            JsonElementArrayClass obj = JsonSerializer.Parse<JsonElementArrayClass>(JsonElementArrayClass.s_json);
+            JsonElementArrayClass obj = JsonSerializer.Deserialize<JsonElementArrayClass>(JsonElementArrayClass.s_json);
             obj.Verify();
-            string reserialized = JsonSerializer.ToString(obj);
+            string reserialized = JsonSerializer.Serialize(obj);
 
             // Properties in the exported json will be in the order that they were reflected, doing a quick check to see that
             // we end up with the same length (i.e. same amount of data) to start.
             Assert.Equal(JsonElementArrayClass.s_json.StripWhitespace().Length, reserialized.Length);
 
             // Shoving it back through the parser should validate round tripping.
-            obj = JsonSerializer.Parse<JsonElementArrayClass>(reserialized);
+            obj = JsonSerializer.Deserialize<JsonElementArrayClass>(reserialized);
             obj.Verify();
         }
 
@@ -158,20 +158,20 @@ namespace System.Text.Json.Serialization.Tests
 
             byte[] data = Encoding.UTF8.GetBytes(@"{""Data"":[1,true,{""City"":""MyCity""},null,""foo""]}");
             MemoryStream stream = new MemoryStream(data);
-            JsonElement obj = JsonSerializer.ReadAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result;
+            JsonElement obj = JsonSerializer.DeserializeAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result;
 
             data = Encoding.UTF8.GetBytes(@"[1,true,{""City"":""MyCity""},null,""foo""]");
             stream = new MemoryStream(data);
-            obj = JsonSerializer.ReadAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result;
+            obj = JsonSerializer.DeserializeAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result;
 
             // Ensure we fail with incomplete data
             data = Encoding.UTF8.GetBytes(@"{""Data"":[1,true,{""City"":""MyCity""},null,""foo""]");
             stream = new MemoryStream(data);
-            Assert.Throws<JsonException>(() => JsonSerializer.ReadAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result);
+            Assert.Throws<JsonException>(() => JsonSerializer.DeserializeAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result);
 
             data = Encoding.UTF8.GetBytes(@"[1,true,{""City"":""MyCity""},null,""foo""");
             stream = new MemoryStream(data);
-            Assert.Throws<JsonException>(() => JsonSerializer.ReadAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result);
+            Assert.Throws<JsonException>(() => JsonSerializer.DeserializeAsync<JsonElement>(stream, new JsonSerializerOptions { DefaultBufferSize = defaultBufferSize }).Result);
         }
     }
 }

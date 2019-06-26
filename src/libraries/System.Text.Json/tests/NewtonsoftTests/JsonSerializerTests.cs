@@ -42,77 +42,77 @@ namespace System.Text.Json.Tests
         public void DeserializeBoolean_Null()
         {
             Assert.Throws<ArgumentNullException>(
-                () => JsonSerializer.Parse<IList<bool>>(@"[null]"));
+                () => JsonSerializer.Deserialize<IList<bool>>(@"[null]"));
         }
 
         [Fact]
         public void DeserializeBoolean_DateTime()
         {
             Assert.Throws<JsonException>(
-                () => JsonSerializer.Parse<IList<bool>>(@"['2000-12-20T10:55:55Z']"));
+                () => JsonSerializer.Deserialize<IList<bool>>(@"['2000-12-20T10:55:55Z']"));
         }
 
         [Fact]
         public void DeserializeBoolean_BadString()
         {
             Assert.Throws<JsonException>(
-                () => JsonSerializer.Parse<IList<bool>>(@"['pie']"));
+                () => JsonSerializer.Deserialize<IList<bool>>(@"['pie']"));
         }
 
         [Fact]
         public void DeserializeBoolean_EmptyString()
         {
             Assert.Throws<JsonException>(
-                () => JsonSerializer.Parse<IList<bool>>(@"['']"));
+                () => JsonSerializer.Deserialize<IList<bool>>(@"['']"));
         }
 
         [Fact]
         public void IncompleteContainers()
         {
-            JsonException e = Assert.Throws<JsonException>(() => JsonSerializer.Parse<IList<object>>("[1,"));
+            JsonException e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IList<object>>("[1,"));
             Assert.Equal(e.Message, "Expected start of a property name or value, but instead reached end of data. Path: $[1] | LineNumber: 0 | BytePositionInLine: 2.");
             
-            e = Assert.Throws<JsonException>(() => JsonSerializer.Parse<IList<int>>("[1,"));
+            e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IList<int>>("[1,"));
             Assert.Equal(e.Message, "Expected start of a property name or value, but instead reached end of data. Path: $[1] | LineNumber: 0 | BytePositionInLine: 2.");
 
-            e = Assert.Throws<JsonException>(() => JsonSerializer.Parse<IList<int>>("[1"));
+            e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IList<int>>("[1"));
             Assert.Equal(e.Message, "'1' is an invalid end of a number. Expected a delimiter. Path: $[0] | LineNumber: 0 | BytePositionInLine: 2.");
 
-            e = Assert.Throws<JsonException>(() => JsonSerializer.Parse<IDictionary<string, int>>("{\"key\":1,"));
+            e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IDictionary<string, int>>("{\"key\":1,"));
             Assert.Equal(e.Message, "Expected start of a property name or value, but instead reached end of data. Path: $.key | LineNumber: 0 | BytePositionInLine: 8.");
 
-            e = Assert.Throws<JsonException>(() => JsonSerializer.Parse<IDictionary<string, int>>("{\"key\":1"));
+            e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IDictionary<string, int>>("{\"key\":1"));
             Assert.Equal(e.Message, "'1' is an invalid end of a number. Expected a delimiter. Path: $.key | LineNumber: 0 | BytePositionInLine: 8.");
 
-            e = Assert.Throws<JsonException>(() => JsonSerializer.Parse<IncompleteTestClass>("{\"key\":1,"));
+            e = Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<IncompleteTestClass>("{\"key\":1,"));
             Assert.Equal(e.Message, "Expected start of a property name or value, but instead reached end of data. Path: $ | LineNumber: 0 | BytePositionInLine: 8.");
         }
 
         [Fact]
         public void NewProperty()
         {
-            Assert.Equal(@"{""IsTransient"":true}", JsonSerializer.ToString(new ChildClass { IsTransient = true }));
+            Assert.Equal(@"{""IsTransient"":true}", JsonSerializer.Serialize(new ChildClass { IsTransient = true }));
 
-            ChildClass childClass = JsonSerializer.Parse<ChildClass>(@"{""IsTransient"":true}");
+            ChildClass childClass = JsonSerializer.Deserialize<ChildClass>(@"{""IsTransient"":true}");
             Assert.Equal(true, childClass.IsTransient);
         }
 
         [Fact]
         public void NewPropertyVirtual()
         {
-            Assert.Equal(@"{""IsTransient"":true}", JsonSerializer.ToString(new ChildClassVirtual { IsTransient = true }));
+            Assert.Equal(@"{""IsTransient"":true}", JsonSerializer.Serialize(new ChildClassVirtual { IsTransient = true }));
 
-            ChildClassVirtual childClass = JsonSerializer.Parse<ChildClassVirtual>(@"{""IsTransient"":true}");
+            ChildClassVirtual childClass = JsonSerializer.Deserialize<ChildClassVirtual>(@"{""IsTransient"":true}");
             Assert.Equal(true, childClass.IsTransient);
         }
 
         [Fact]
         public void DeserializeCommentTestObjectWithComments()
         {
-            CommentTestObject o = JsonSerializer.Parse<CommentTestObject>(@"{/* Test */}", new JsonSerializerOptions { ReadCommentHandling = JsonCommentHandling.Skip });
+            CommentTestObject o = JsonSerializer.Deserialize<CommentTestObject>(@"{/* Test */}", new JsonSerializerOptions { ReadCommentHandling = JsonCommentHandling.Skip });
             Assert.Equal(false, o.A);
 
-            o = JsonSerializer.Parse<CommentTestObject>(@"{""A"": true/* Test */}", new JsonSerializerOptions { ReadCommentHandling = JsonCommentHandling.Skip });
+            o = JsonSerializer.Deserialize<CommentTestObject>(@"{""A"": true/* Test */}", new JsonSerializerOptions { ReadCommentHandling = JsonCommentHandling.Skip });
             Assert.Equal(true, o.A);
         }
 
@@ -130,7 +130,7 @@ namespace System.Text.Json.Tests
 
             p1.Spouse = p2;
             p2.Spouse = p1;
-            Assert.Throws<JsonException> (() => JsonSerializer.ToString(p1));
+            Assert.Throws<JsonException> (() => JsonSerializer.Serialize(p1));
         }
     }
 

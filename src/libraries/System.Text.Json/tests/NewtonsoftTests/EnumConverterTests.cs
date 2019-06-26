@@ -44,7 +44,7 @@ namespace System.Text.Json.Tests
                 NullableStoreColor2 = null
             };
 
-            string json = JsonSerializer.ToString(enumClass, new JsonSerializerOptions { WriteIndented = true });
+            string json = JsonSerializer.Serialize(enumClass, new JsonSerializerOptions { WriteIndented = true });
 
             Assert.Equal(@"{
   ""StoreColor"": 2,
@@ -63,7 +63,7 @@ namespace System.Text.Json.Tests
                 NullableStoreColor2 = null
             };
 
-            string json = JsonSerializer.ToString(enumClass, new JsonSerializerOptions { WriteIndented = true });
+            string json = JsonSerializer.Serialize(enumClass, new JsonSerializerOptions { WriteIndented = true });
 
             Assert.Equal(@"{
   ""StoreColor"": 1000,
@@ -82,7 +82,7 @@ namespace System.Text.Json.Tests
                 NullableStoreColor2 = StoreColor.Red | StoreColor.White | StoreColor.Black
             };
 
-            string json = JsonSerializer.ToString(enumClass, new JsonSerializerOptions { WriteIndented = true });
+            string json = JsonSerializer.Serialize(enumClass, new JsonSerializerOptions { WriteIndented = true });
 
             Assert.Equal(@"{
   ""StoreColor"": 10,
@@ -98,7 +98,7 @@ namespace System.Text.Json.Tests
             negativeEnumClass.Value1 = NegativeFlagsEnum.NegativeFour | NegativeFlagsEnum.NegativeTwo;
             negativeEnumClass.Value2 = NegativeFlagsEnum.Two | NegativeFlagsEnum.Four;
 
-            string json = JsonSerializer.ToString(negativeEnumClass, new JsonSerializerOptions { WriteIndented = true });
+            string json = JsonSerializer.Serialize(negativeEnumClass, new JsonSerializerOptions { WriteIndented = true });
 
             Assert.Equal(@"{
   ""Value1"": -2,
@@ -115,7 +115,7 @@ namespace System.Text.Json.Tests
                 Value2 = (NegativeEnum)int.MinValue
             };
 
-            string json = JsonSerializer.ToString(negativeEnumClass, new JsonSerializerOptions { WriteIndented = true });
+            string json = JsonSerializer.Serialize(negativeEnumClass, new JsonSerializerOptions { WriteIndented = true });
 
             Assert.Equal(@"{
   ""Value1"": -1,
@@ -137,7 +137,7 @@ namespace System.Text.Json.Tests
                     (Foo)int.MaxValue
                 };
 
-            string json1 = JsonSerializer.ToString(lfoo, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            string json1 = JsonSerializer.Serialize(lfoo, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
             Assert.Equal(@"[
   6,
@@ -148,7 +148,7 @@ namespace System.Text.Json.Tests
   2147483647
 ]", json1);
 
-            IList<Foo> foos = JsonSerializer.Parse<List<Foo>>(json1);
+            IList<Foo> foos = JsonSerializer.Deserialize<List<Foo>>(json1);
 
             Assert.Equal(6, foos.Count);
             Assert.Equal(Foo.Bat | Foo.SerializeAsBaz, foos[0]);
@@ -160,7 +160,7 @@ namespace System.Text.Json.Tests
 
             List<Bar> lbar = new List<Bar>() { Bar.FooBar, Bar.Bat, Bar.SerializeAsBaz };
 
-            string json2 = JsonSerializer.ToString(lbar, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            string json2 = JsonSerializer.Serialize(lbar, new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
 
             Assert.Equal(@"[
   0,
@@ -168,7 +168,7 @@ namespace System.Text.Json.Tests
   2
 ]", json2);
 
-            IList<Bar> bars = JsonSerializer.Parse<List<Bar>>(json2);
+            IList<Bar> bars = JsonSerializer.Deserialize<List<Bar>>(json2);
 
             Assert.Equal(3, bars.Count);
             Assert.Equal(Bar.FooBar, bars[0]);
@@ -179,7 +179,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void TestValidIntegerValue()
         {
-            StoreColor c = JsonSerializer.Parse<StoreColor>("1");
+            StoreColor c = JsonSerializer.Deserialize<StoreColor>("1");
             Assert.Equal(c, StoreColor.Black);
         }
 
@@ -187,7 +187,7 @@ namespace System.Text.Json.Tests
         public static void DuplicateNameEnumTest()
         {
             JsonException e = Assert.Throws<JsonException>(() =>
-                JsonSerializer.Parse<DuplicateNameEnum>("\"foo_bar\""));
+                JsonSerializer.Deserialize<DuplicateNameEnum>("\"foo_bar\""));
         }
 
         [Fact]
@@ -195,18 +195,18 @@ namespace System.Text.Json.Tests
         {
             JsonException ex = Assert.Throws<JsonException>(() =>
             {
-                StoreColor s = JsonSerializer.Parse<StoreColor>("\"1\"");
+                StoreColor s = JsonSerializer.Deserialize<StoreColor>("\"1\"");
             });
         }
 
         [Fact]
         public static void SerializeEnumWithDifferentCases()
         {
-            string json = JsonSerializer.ToString(EnumWithDifferentCases.M);
+            string json = JsonSerializer.Serialize(EnumWithDifferentCases.M);
 
             Assert.Equal("0", json);
 
-            json = JsonSerializer.ToString(EnumWithDifferentCases.m);
+            json = JsonSerializer.Serialize(EnumWithDifferentCases.m);
 
             Assert.Equal("1", json);
         }
@@ -214,21 +214,21 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void DeserializeEnumWithDifferentCases()
         {
-            EnumWithDifferentCases e = JsonSerializer.Parse<EnumWithDifferentCases>("0");
+            EnumWithDifferentCases e = JsonSerializer.Deserialize<EnumWithDifferentCases>("0");
             Assert.Equal(EnumWithDifferentCases.M, e);
 
-            e = JsonSerializer.Parse<EnumWithDifferentCases>("1");
+            e = JsonSerializer.Deserialize<EnumWithDifferentCases>("1");
             Assert.Equal(EnumWithDifferentCases.m, e);
         }
 
         [Fact]
         public static void SerializeEnumMemberWithDifferentCases()
         {
-            string json = JsonSerializer.ToString(EnumMemberWithDifferentCases.Month);
+            string json = JsonSerializer.Serialize(EnumMemberWithDifferentCases.Month);
 
             Assert.Equal("0", json);
 
-            json = JsonSerializer.ToString(EnumMemberWithDifferentCases.Minute);
+            json = JsonSerializer.Serialize(EnumMemberWithDifferentCases.Minute);
 
             Assert.Equal("1", json);
         }
@@ -238,7 +238,7 @@ namespace System.Text.Json.Tests
         {
             JsonException ex = Assert.Throws<JsonException>(() =>
             {
-                JsonSerializer.Parse<StoreColor>("\"-\"");
+                JsonSerializer.Deserialize<StoreColor>("\"-\"");
             });
         }
 
@@ -249,7 +249,7 @@ namespace System.Text.Json.Tests
   ""Value1"": -1,
   ""Value2"": -2147483648
 }";
-            NegativeEnumClass negativeEnumClass = JsonSerializer.Parse<NegativeEnumClass>(json);
+            NegativeEnumClass negativeEnumClass = JsonSerializer.Deserialize<NegativeEnumClass>(json);
             Assert.Equal(NegativeEnum.Negative, negativeEnumClass.Value1);
             Assert.Equal((NegativeEnum)int.MinValue, negativeEnumClass.Value2);
         }
@@ -262,7 +262,7 @@ namespace System.Text.Json.Tests
   ""NullableStoreColor1"": 8,
   ""NullableStoreColor2"": null
 }";
-            EnumClass enumClass = JsonSerializer.Parse<EnumClass>(json);
+            EnumClass enumClass = JsonSerializer.Deserialize<EnumClass>(json);
             Assert.Equal(StoreColor.Red, enumClass.StoreColor);
             Assert.Equal(StoreColor.White, enumClass.NullableStoreColor1);
             Assert.Equal(null, enumClass.NullableStoreColor2);
@@ -276,7 +276,7 @@ namespace System.Text.Json.Tests
   ""NullableStoreColor1"": 0,
   ""NullableStoreColor2"": 11
 }";
-            EnumClass enumClass = JsonSerializer.Parse<EnumClass>(json);
+            EnumClass enumClass = JsonSerializer.Deserialize<EnumClass>(json);
             Assert.Equal(StoreColor.Red | StoreColor.White, enumClass.StoreColor);
             Assert.Equal((StoreColor)0, enumClass.NullableStoreColor1);
             Assert.Equal(StoreColor.Red | StoreColor.White | StoreColor.Black, enumClass.NullableStoreColor2);

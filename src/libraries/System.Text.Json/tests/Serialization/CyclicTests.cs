@@ -16,7 +16,7 @@ namespace System.Text.Json.Serialization.Tests
             obj.Parent = obj;
 
             // We don't allow graph cycles; we throw JsonException instead of an unrecoverable StackOverflow.
-            Assert.Throws<JsonException>(() => JsonSerializer.ToString(obj));
+            Assert.Throws<JsonException>(() => JsonSerializer.Serialize(obj));
         }
 
         [Theory]
@@ -34,14 +34,14 @@ namespace System.Text.Json.Serialization.Tests
                 options.MaxDepth = depth + 1;
 
                 // No exception since depth was not passed.
-                string json = JsonSerializer.ToString(rootObj, options);
+                string json = JsonSerializer.Serialize(rootObj, options);
                 Assert.False(string.IsNullOrEmpty(json));
             }
 
             {
                 var options = new JsonSerializerOptions();
                 options.MaxDepth = depth;
-                Assert.Throws<JsonException>(() => JsonSerializer.ToString(rootObj, options));
+                Assert.Throws<JsonException>(() => JsonSerializer.Serialize(rootObj, options));
             }
         }
 
@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Tests
             TestClassWithArrayOfElementsOfTheSameClass obj = new TestClassWithArrayOfElementsOfTheSameClass();
 
             // A cycle in just Types (not data) is allowed.
-            string json = JsonSerializer.ToString(obj);
+            string json = JsonSerializer.Serialize(obj);
             Assert.Equal(@"{""Array"":null}", json);
         }
 
@@ -77,10 +77,10 @@ namespace System.Text.Json.Serialization.Tests
             root.Children.Add(new TestClassWithCycle("child2"));
 
             // A cycle in just Types (not data) is allowed.
-            string json = JsonSerializer.ToString(root);
+            string json = JsonSerializer.Serialize(root);
 
             // Round-trip the JSON.
-            TestClassWithCycle rootCopy = JsonSerializer.Parse<TestClassWithCycle>(json);
+            TestClassWithCycle rootCopy = JsonSerializer.Deserialize<TestClassWithCycle>(json);
             Assert.Equal("root", rootCopy.Name);
             Assert.Equal(2, rootCopy.Children.Count);
 

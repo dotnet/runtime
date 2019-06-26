@@ -17,13 +17,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             void DeserializeObjectFlipped()
             {
-                TestClassForCachingTest obj = JsonSerializer.Parse<TestClassForCachingTest>(SimpleTestClass.s_json_flipped);
+                TestClassForCachingTest obj = JsonSerializer.Deserialize<TestClassForCachingTest>(SimpleTestClass.s_json_flipped);
                 obj.Verify();
             };
 
             void DeserializeObjectNormal()
             {
-                TestClassForCachingTest obj = JsonSerializer.Parse<TestClassForCachingTest>(SimpleTestClass.s_json);
+                TestClassForCachingTest obj = JsonSerializer.Deserialize<TestClassForCachingTest>(SimpleTestClass.s_json);
                 obj.Verify();
             };
 
@@ -31,7 +31,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 var obj = new TestClassForCachingTest();
                 obj.Initialize();
-                JsonSerializer.ToString(obj);
+                JsonSerializer.Serialize(obj);
             };
 
             Task[] tasks = new Task[4 * 3];
@@ -56,14 +56,14 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
 
             string json = "{}";
-            JsonSerializer.Parse<SimpleTestClass>(json, options);
+            JsonSerializer.Deserialize<SimpleTestClass>(json, options);
 
             SimpleTestClass testObj = new SimpleTestClass();
             testObj.Initialize();
             testObj.Verify();
 
-            json = JsonSerializer.ToString(testObj, options);
-            testObj = JsonSerializer.Parse<SimpleTestClass>(json, options);
+            json = JsonSerializer.Serialize(testObj, options);
+            testObj = JsonSerializer.Deserialize<SimpleTestClass>(json, options);
             testObj.Verify();
         }
 
@@ -78,12 +78,12 @@ namespace System.Text.Json.Serialization.Tests
             testObj.Initialize();
             testObj.Verify();
 
-            string json = JsonSerializer.ToString(testObj, options);
-            testObj = JsonSerializer.Parse<SimpleTestClass>(json, options);
+            string json = JsonSerializer.Serialize(testObj, options);
+            testObj = JsonSerializer.Deserialize<SimpleTestClass>(json, options);
             testObj.Verify();
 
             json = "{}";
-            JsonSerializer.Parse<SimpleTestClass>(json, options);
+            JsonSerializer.Deserialize<SimpleTestClass>(json, options);
         }
     }
 }

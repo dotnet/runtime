@@ -57,32 +57,32 @@ namespace System.Text.Json.Serialization.Tests
 
             {
                 var customer = new Customer();
-                string json = JsonSerializer.ToString<object>(customer, options);
+                string json = JsonSerializer.Serialize<object>(customer, options);
                 Assert.Contains(typeof(Customer).ToString(), json);
 
-                json = JsonSerializer.ToString(customer, options);
+                json = JsonSerializer.Serialize(customer, options);
                 Assert.Contains(typeof(Customer).ToString(), json);
             }
 
             {
-                string json = JsonSerializer.ToString(42, options);
+                string json = JsonSerializer.Serialize(42, options);
                 Assert.Contains(typeof(int).ToString(), json);
             }
 
             {
-                object obj = JsonSerializer.Parse<Customer>("{}", options);
+                object obj = JsonSerializer.Deserialize<Customer>("{}", options);
                 Assert.IsType<Customer>(obj);
                 Assert.Equal("HelloWorld", ((Customer)obj).Name);
             }
 
             {
                 // The converter doesn't handle object.
-                object obj = JsonSerializer.Parse<object>("{}", options);
+                object obj = JsonSerializer.Deserialize<object>("{}", options);
                 Assert.IsType<JsonElement>(obj);
             }
 
             {
-                int obj = JsonSerializer.Parse<int>("0", options);
+                int obj = JsonSerializer.Deserialize<int>("0", options);
                 Assert.Equal(42, obj);
             }
         }
@@ -133,19 +133,19 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new ObjectToBoolConverter());
 
             {
-                object obj = JsonSerializer.Parse<object>("true", options);
+                object obj = JsonSerializer.Deserialize<object>("true", options);
                 Assert.IsType<bool>(obj);
                 Assert.True((bool)obj);
             }
 
             {
-                object obj = JsonSerializer.Parse<object>("false", options);
+                object obj = JsonSerializer.Deserialize<object>("false", options);
                 Assert.IsType<bool>(obj);
                 Assert.False((bool)obj);
             }
 
             {
-                object obj = JsonSerializer.Parse<object>("{}", options);
+                object obj = JsonSerializer.Deserialize<object>("{}", options);
                 Assert.IsType<JsonElement>(obj);
             }
         }

@@ -46,13 +46,13 @@ namespace System.Text.Json.Tests
             DateTime d = new DateTime(2000, 12, 15, 22, 11, 3, 55, DateTimeKind.Utc);
             string result;
 
-            result = JsonSerializer.ToString(d);
+            result = JsonSerializer.Serialize(d);
             Assert.Equal(@"""2000-12-15T22:11:03.055Z""", result);
 
-            Assert.Equal(d, JsonSerializer.Parse<DateTime>(result));
+            Assert.Equal(d, JsonSerializer.Deserialize<DateTime>(result));
 
             d = new DateTime(2000, 12, 15, 22, 11, 3, 55, DateTimeKind.Local);
-            result = JsonSerializer.ToString(d);
+            result = JsonSerializer.Serialize(d);
             Assert.Equal(@"""2000-12-15T22:11:03.055" + GetUtcOffsetText(d) + @"""", result);
         }
 
@@ -62,10 +62,10 @@ namespace System.Text.Json.Tests
             DateTimeOffset d = new DateTimeOffset(2000, 12, 15, 22, 11, 3, 55, TimeSpan.Zero);
             string result;
 
-            result = JsonSerializer.ToString(d);
+            result = JsonSerializer.Serialize(d);
             Assert.Equal(@"""2000-12-15T22:11:03.055+00:00""", result);
 
-            Assert.Equal(d, JsonSerializer.Parse<DateTimeOffset>(result));
+            Assert.Equal(d, JsonSerializer.Deserialize<DateTimeOffset>(result));
         }
 
         [Fact]
@@ -76,7 +76,7 @@ namespace System.Text.Json.Tests
             TimeSpan offset = new TimeSpan(2, 15, 0);
             DateTimeOffset dto = new DateTimeOffset(2014, 1, 1, 0, 0, 0, 0, offset);
 
-            DateTimeOffset test = JsonSerializer.Parse<DateTimeOffset>("\"2014-01-01T00:00:00+02:15\"");
+            DateTimeOffset test = JsonSerializer.Deserialize<DateTimeOffset>("\"2014-01-01T00:00:00+02:15\"");
 
             Assert.Equal(dto, test);
             Assert.Equal(dto.ToString("o"), test.ToString("o"));
@@ -90,9 +90,9 @@ namespace System.Text.Json.Tests
             c.DateTimeOffsetField = new DateTime(2008, 12, 12, 12, 12, 12, 0, DateTimeKind.Utc).ToLocalTime();
             c.PreField = "Pre";
             c.PostField = "Post";
-            string json = JsonSerializer.ToString(c);
+            string json = JsonSerializer.Serialize(c);
 
-            NullableDateTimeTestClass newOne = JsonSerializer.Parse<NullableDateTimeTestClass>(json);
+            NullableDateTimeTestClass newOne = JsonSerializer.Deserialize<NullableDateTimeTestClass>(json);
             Assert.Equal(newOne.DateTimeField, c.DateTimeField);
             Assert.Equal(newOne.DateTimeOffsetField, c.DateTimeOffsetField);
             Assert.Equal(newOne.PostField, c.PostField);
@@ -102,7 +102,7 @@ namespace System.Text.Json.Tests
             c.DateTimeOffsetField = null;
             c.PreField = "Pre";
             c.PostField = "Post";
-            json = JsonSerializer.ToString(c);
+            json = JsonSerializer.Serialize(c);
             Assert.Equal(@"{""PreField"":""Pre"",""DateTimeField"":null,""DateTimeOffsetField"":null,""PostField"":""Post""}", json);
         }
 
@@ -114,9 +114,9 @@ namespace System.Text.Json.Tests
             c.DateTimeOffsetField = new DateTime(2008, 12, 12, 12, 12, 12, 0, DateTimeKind.Utc).ToLocalTime();
             c.PreField = "Pre";
             c.PostField = "Post";
-            string json = JsonSerializer.ToString(c);
+            string json = JsonSerializer.Serialize(c);
             
-            NullableDateTimeTestClass newOne = JsonSerializer.Parse<NullableDateTimeTestClass>(json);
+            NullableDateTimeTestClass newOne = JsonSerializer.Deserialize<NullableDateTimeTestClass>(json);
             Assert.Equal(newOne.DateTimeField, c.DateTimeField);
             Assert.Equal(newOne.DateTimeOffsetField, c.DateTimeOffsetField);
             Assert.Equal(newOne.PostField, c.PostField);
@@ -127,9 +127,9 @@ namespace System.Text.Json.Tests
             c.DateTimeOffsetField = new DateTime(2008, 1, 1, 1, 1, 1, 0, DateTimeKind.Utc).ToLocalTime();
             c.PreField = "Pre";
             c.PostField = "Post";
-            json = JsonSerializer.ToString(c);
+            json = JsonSerializer.Serialize(c);
             
-            newOne = JsonSerializer.Parse<NullableDateTimeTestClass>(json);
+            newOne = JsonSerializer.Deserialize<NullableDateTimeTestClass>(json);
             Assert.Equal(newOne.DateTimeField, c.DateTimeField);
             Assert.Equal(newOne.DateTimeOffsetField, c.DateTimeOffsetField);
             Assert.Equal(newOne.PostField, c.PostField);
@@ -146,7 +146,7 @@ namespace System.Text.Json.Tests
                 LastModified = new DateTime(2009, 4, 12, 20, 44, 55),
             };
 
-            string jsonText = JsonSerializer.ToString(p, new JsonSerializerOptions { IgnoreNullValues = true});
+            string jsonText = JsonSerializer.Serialize(p, new JsonSerializerOptions { IgnoreNullValues = true});
 
             Assert.Equal(@"{""Name"":""Keith"",""BirthDate"":""1980-03-08T00:00:00"",""LastModified"":""2009-04-12T20:44:55""}", jsonText);
         }

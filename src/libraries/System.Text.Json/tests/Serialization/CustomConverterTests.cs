@@ -24,10 +24,10 @@ namespace System.Text.Json.Serialization.Tests
             MyBoolEnum myBoolEnum = MyBoolEnum.Unknown;
             MyBoolEnum? myNullBoolEnum = null;
 
-            string json = JsonSerializer.ToString(new object[] { myBoolEnum, customer, myNullBoolEnum }, options);
+            string json = JsonSerializer.Serialize(new object[] { myBoolEnum, customer, myNullBoolEnum }, options);
             Assert.Equal(expectedJson, json);
 
-            JsonElement jsonElement = JsonSerializer.Parse<JsonElement>(json, options);
+            JsonElement jsonElement = JsonSerializer.Deserialize<JsonElement>(json, options);
             string jsonElementString = jsonElement.ToString();
             Assert.Equal(expectedJson, jsonElementString);
         }

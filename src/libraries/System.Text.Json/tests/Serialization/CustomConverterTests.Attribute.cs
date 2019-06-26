@@ -42,11 +42,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             const string json = @"{""Point1"":""1,2""}";
 
-            ClassWithPointConverterAttribute obj = JsonSerializer.Parse<ClassWithPointConverterAttribute>(json);
+            ClassWithPointConverterAttribute obj = JsonSerializer.Deserialize<ClassWithPointConverterAttribute>(json);
             Assert.Equal(11, obj.Point1.X);
             Assert.Equal(12, obj.Point1.Y);
 
-            string jsonSerialized = JsonSerializer.ToString(obj);
+            string jsonSerialized = JsonSerializer.Serialize(obj);
             Assert.Equal(json, jsonSerialized);
         }
 
@@ -61,11 +61,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             const string json = @"{""Point1"":""1,2""}";
 
-            ClassWithJsonConverterAttribute obj = JsonSerializer.Parse<ClassWithJsonConverterAttribute>(json);
+            ClassWithJsonConverterAttribute obj = JsonSerializer.Deserialize<ClassWithJsonConverterAttribute>(json);
             Assert.Equal(1, obj.Point1.X);
             Assert.Equal(2, obj.Point1.Y);
 
-            string jsonSerialized = JsonSerializer.ToString(obj);
+            string jsonSerialized = JsonSerializer.Serialize(obj);
             Assert.Equal(json, jsonSerialized);
         }
 
@@ -135,11 +135,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             const string json = @"""1,2""";
 
-            AttributedPoint point = JsonSerializer.Parse<AttributedPoint>(json);
+            AttributedPoint point = JsonSerializer.Deserialize<AttributedPoint>(json);
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
 
-            string jsonSerialized = JsonSerializer.ToString(point);
+            string jsonSerialized = JsonSerializer.Serialize(point);
             Assert.Equal(json, jsonSerialized);
         }
 
@@ -174,13 +174,13 @@ namespace System.Text.Json.Serialization.Tests
         {
             const string json = @"{""Point1"":""1,2""}";
 
-            ClassWithJsonConverterAttributeOverride point = JsonSerializer.Parse<ClassWithJsonConverterAttributeOverride>(json);
+            ClassWithJsonConverterAttributeOverride point = JsonSerializer.Deserialize<ClassWithJsonConverterAttributeOverride>(json);
             
             // The property attribute overides the type attribute.
             Assert.Equal(101, point.Point1.X);
             Assert.Equal(102, point.Point1.Y);
 
-            string jsonSerialized = JsonSerializer.ToString(point);
+            string jsonSerialized = JsonSerializer.Serialize(point);
             Assert.Equal(json, jsonSerialized);
         }
 
@@ -192,13 +192,13 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new AttributedPointConverter(200));
 
-            ClassWithJsonConverterAttributeOverride point = JsonSerializer.Parse<ClassWithJsonConverterAttributeOverride>(json);
+            ClassWithJsonConverterAttributeOverride point = JsonSerializer.Deserialize<ClassWithJsonConverterAttributeOverride>(json);
 
             // The property attribute overides the runtime.
             Assert.Equal(101, point.Point1.X);
             Assert.Equal(102, point.Point1.Y);
 
-            string jsonSerialized = JsonSerializer.ToString(point);
+            string jsonSerialized = JsonSerializer.Serialize(point);
             Assert.Equal(json, jsonSerialized);
         }
 
@@ -208,22 +208,22 @@ namespace System.Text.Json.Serialization.Tests
             const string json = @"""1,2""";
 
             // Baseline
-            AttributedPoint point = JsonSerializer.Parse<AttributedPoint>(json);
+            AttributedPoint point = JsonSerializer.Deserialize<AttributedPoint>(json);
             Assert.Equal(1, point.X);
             Assert.Equal(2, point.Y);
-            Assert.Equal(json, JsonSerializer.ToString(point));
+            Assert.Equal(json, JsonSerializer.Serialize(point));
 
             // Now use options.
             var options = new JsonSerializerOptions();
             options.Converters.Add(new AttributedPointConverter(200));
 
-            point = JsonSerializer.Parse<AttributedPoint>(json, options);
+            point = JsonSerializer.Deserialize<AttributedPoint>(json, options);
 
             // The runtime overrides the type attribute.
             Assert.Equal(201, point.X);
             Assert.Equal(202, point.Y);
 
-            string jsonSerialized = JsonSerializer.ToString(point, options);
+            string jsonSerialized = JsonSerializer.Serialize(point, options);
             Assert.Equal(json, jsonSerialized);
         }
     }

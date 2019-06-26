@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<ArgumentNullException>(() => options.Converters[0] = null);
 
             // Perform serialization.
-            JsonSerializer.Parse<int>("1", options);
+            JsonSerializer.Deserialize<int>("1", options);
 
             // Verify defaults and ensure getters do not throw.
             Assert.False(options.AllowTrailingCommas);
@@ -105,12 +105,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void AllowTrailingCommas()
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<int[]>("[1,]"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int[]>("[1,]"));
 
             var options = new JsonSerializerOptions();
             options.AllowTrailingCommas = true;
 
-            int[] value = JsonSerializer.Parse<int[]>("[1,]", options);
+            int[] value = JsonSerializer.Deserialize<int[]>("[1,]", options);
             Assert.Equal(1, value[0]);
         }
 
@@ -121,18 +121,18 @@ namespace System.Text.Json.Serialization.Tests
             obj.Initialize();
 
             // Verify default value.
-            string json = JsonSerializer.ToString(obj);
+            string json = JsonSerializer.Serialize(obj);
             Assert.DoesNotContain(Environment.NewLine, json);
 
             // Verify default value on options.
             var options = new JsonSerializerOptions();
-            json = JsonSerializer.ToString(obj, options);
+            json = JsonSerializer.Serialize(obj, options);
             Assert.DoesNotContain(Environment.NewLine, json);
 
             // Change the value on options.
             options = new JsonSerializerOptions();
             options.WriteIndented = true;
-            json = JsonSerializer.ToString(obj, options);
+            json = JsonSerializer.Serialize(obj, options);
             Assert.Contains(Environment.NewLine, json);
         }
 
@@ -143,16 +143,16 @@ namespace System.Text.Json.Serialization.Tests
             const string json = @"{""MyIntMissing"":2,}";
 
             // Verify baseline without options.
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<ClassWithExtensionProperty>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithExtensionProperty>(json));
 
             // Verify baseline with options.
             var options = new JsonSerializerOptions();
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<ClassWithExtensionProperty>(json, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithExtensionProperty>(json, options));
 
             // Set AllowTrailingCommas to true.
             options = new JsonSerializerOptions();
             options.AllowTrailingCommas = true;
-            JsonSerializer.Parse<ClassWithExtensionProperty>(json, options);
+            JsonSerializer.Deserialize<ClassWithExtensionProperty>(json, options);
         }
 
         [Fact]
@@ -160,21 +160,21 @@ namespace System.Text.Json.Serialization.Tests
         {
             // We just verify whitespace.
 
-            ClassWithExtensionProperty obj = JsonSerializer.Parse<ClassWithExtensionProperty>(@"{""MyIntMissing"":2}");
+            ClassWithExtensionProperty obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(@"{""MyIntMissing"":2}");
 
             // Verify baseline without options.
-            string json = JsonSerializer.ToString(obj);
+            string json = JsonSerializer.Serialize(obj);
             Assert.False(HasNewLine());
 
             // Verify baseline with options.
             var options = new JsonSerializerOptions();
-            json = JsonSerializer.ToString(obj, options);
+            json = JsonSerializer.Serialize(obj, options);
             Assert.False(HasNewLine());
 
             // Set AllowTrailingCommas to true.
             options = new JsonSerializerOptions();
             options.WriteIndented = true;
-            json = JsonSerializer.ToString(obj, options);
+            json = JsonSerializer.Serialize(obj, options);
             Assert.True(HasNewLine());
 
             bool HasNewLine()
@@ -187,16 +187,16 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadCommentHandling()
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<object>("/* commment */"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<object>("/* commment */"));
 
             var options = new JsonSerializerOptions();
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<object>("/* commment */", options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<object>("/* commment */", options));
 
             options = new JsonSerializerOptions();
             options.ReadCommentHandling = JsonCommentHandling.Skip;
 
-            int value = JsonSerializer.Parse<int>("1 /* commment */", options);
+            int value = JsonSerializer.Deserialize<int>("1 /* commment */", options);
         }
 
         [Theory]
@@ -224,16 +224,16 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void MaxDepthRead()
         {
-            JsonSerializer.Parse<BasicCompany>(BasicCompany.s_data);
+            JsonSerializer.Deserialize<BasicCompany>(BasicCompany.s_data);
 
             var options = new JsonSerializerOptions();
 
-            JsonSerializer.Parse<BasicCompany>(BasicCompany.s_data, options);
+            JsonSerializer.Deserialize<BasicCompany>(BasicCompany.s_data, options);
 
             options = new JsonSerializerOptions();
             options.MaxDepth = 1;
 
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<BasicCompany>(BasicCompany.s_data, options));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BasicCompany>(BasicCompany.s_data, options));
         }
     }
 }
