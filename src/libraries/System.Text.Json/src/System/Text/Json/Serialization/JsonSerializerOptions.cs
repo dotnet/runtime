@@ -45,11 +45,13 @@ namespace System.Text.Json
         /// <summary>
         /// Defines whether an extra comma at the end of a list of JSON values in an object or array
         /// is allowed (and ignored) within the JSON payload being deserialized.
-        /// By default, it's set to false, and <exception cref="JsonException"/> is thrown if a trailing comma is encountered.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this property is set after serialization or deserialization has occurred.
         /// </exception>
+        /// <remarks>
+        /// By default, it's set to false, and <exception cref="JsonException"/> is thrown if a trailing comma is encountered.
+        /// </remarks>
         public bool AllowTrailingCommas
         {
             get
@@ -155,7 +157,6 @@ namespace System.Text.Json
 
         /// <summary>
         /// Gets or sets the maximum depth allowed when serializing or deserializing JSON, with the default (i.e. 0) indicating a max depth of 64.
-        /// Going past this depth will throw a <exception cref="JsonException"/>.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this property is set after serialization or deserialization has occurred.
@@ -163,6 +164,9 @@ namespace System.Text.Json
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the max depth is set to a negative value.
         /// </exception>
+        /// <remarks>
+        /// Going past this depth will throw a <exception cref="JsonException"/>.
+        /// </remarks>
         public int MaxDepth
         {
             get => _maxDepth;
@@ -223,7 +227,6 @@ namespace System.Text.Json
 
         /// <summary>
         /// Defines how the comments are handled during deserialization.
-        /// By default <exception cref="JsonException"/> is thrown if a comment is encountered.
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this property is set after serialization or deserialization has occurred.
@@ -231,6 +234,9 @@ namespace System.Text.Json
         /// <exception cref="ArgumentOutOfRangeException">
         /// Thrown when the comment handling enum is set to a value that is not supported (or not within the <see cref="JsonCommentHandling"/> enum range).
         /// </exception>
+        /// <remarks>
+        /// By default <exception cref="JsonException"/> is thrown if a comment is encountered.
+        /// </remarks>
         public JsonCommentHandling ReadCommentHandling
         {
             get

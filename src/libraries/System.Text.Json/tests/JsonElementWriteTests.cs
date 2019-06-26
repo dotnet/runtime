@@ -12,8 +12,8 @@ namespace System.Text.Json.Tests
         private const string CompiledNewline = @"
 ";
 
-        private static readonly JsonReaderOptions s_readerOptions =
-            new JsonReaderOptions
+        private static readonly JsonDocumentOptions s_options =
+            new JsonDocumentOptions
             {
                 CommentHandling = JsonCommentHandling.Skip,
             };
@@ -827,7 +827,7 @@ null,
         public static void WriteIncredibleDepth()
         {
             const int TargetDepth = 500;
-            JsonReaderOptions optionsCopy = s_readerOptions;
+            JsonDocumentOptions optionsCopy = s_options;
             optionsCopy.MaxDepth = TargetDepth + 1;
             const int SpacesPre = 12;
             const int SpacesSplit = 85;
@@ -863,7 +863,7 @@ null,
         public static void WritePropertyOutsideObject(bool skipValidation)
         {
             var buffer = new ArrayBufferWriter<byte>(1024);
-            using (var doc = JsonDocument.Parse("[ null, false, true, \"hi\", 5, {}, [] ]", s_readerOptions))
+            using (var doc = JsonDocument.Parse("[ null, false, true, \"hi\", 5, {}, [] ]", s_options))
             {
                 JsonElement root = doc.RootElement;
                 var options = new JsonWriterOptions
@@ -926,7 +926,7 @@ null,
         public static void WriteValueInsideObject(bool skipValidation)
         {
             var buffer = new ArrayBufferWriter<byte>(1024);
-            using (var doc = JsonDocument.Parse("[ null, false, true, \"hi\", 5, {}, [] ]", s_readerOptions))
+            using (var doc = JsonDocument.Parse("[ null, false, true, \"hi\", 5, {}, [] ]", s_options))
             {
                 JsonElement root = doc.RootElement;
                 var options = new JsonWriterOptions
@@ -971,7 +971,7 @@ null,
         private static void WriteSimpleValue(bool indented, string jsonIn, string jsonOut = null)
         {
             var buffer = new ArrayBufferWriter<byte>(1024);
-            using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_readerOptions))
+            using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_options))
             {
                 JsonElement target = doc.RootElement[0];
 
@@ -996,7 +996,7 @@ null,
             string expectedMinimal)
         {
             var buffer = new ArrayBufferWriter<byte>(1024);
-            using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_readerOptions))
+            using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_options))
             {
                 JsonElement target = doc.RootElement[0];
 
@@ -1059,7 +1059,7 @@ null,
         {
             var buffer = new ArrayBufferWriter<byte>(1024);
             string temp = $" [  {jsonIn}  ]";
-            using (JsonDocument doc = JsonDocument.Parse(temp, s_readerOptions))
+            using (JsonDocument doc = JsonDocument.Parse(temp, s_options))
             {
                 JsonElement target = doc.RootElement[0];
 
@@ -1094,7 +1094,7 @@ null,
             string expectedMinimal)
         {
             var buffer = new ArrayBufferWriter<byte>(1024);
-            using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_readerOptions))
+            using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_options))
             {
                 JsonElement target = doc.RootElement[0];
 
@@ -1129,7 +1129,7 @@ null,
             string expectedMinimal)
         {
             var buffer = new ArrayBufferWriter<byte>(1024);
-            using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_readerOptions))
+            using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_options))
             {
                 JsonElement target = doc.RootElement[0];
 

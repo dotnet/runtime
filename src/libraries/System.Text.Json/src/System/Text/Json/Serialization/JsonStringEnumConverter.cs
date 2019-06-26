@@ -47,16 +47,16 @@ namespace System.Text.Json.Serialization
         }
 
         /// <inheritdoc />
-        public override bool CanConvert(Type type)
+        public override bool CanConvert(Type typeToConvert)
         {
-            return type.IsEnum;
+            return typeToConvert.IsEnum;
         }
 
         /// <inheritdoc />
-        protected override JsonConverter CreateConverter(Type type)
+        protected override JsonConverter CreateConverter(Type typeToConvert)
         {
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(
-                typeof(JsonConverterEnum<>).MakeGenericType(type),
+                typeof(JsonConverterEnum<>).MakeGenericType(typeToConvert),
                 BindingFlags.Instance | BindingFlags.Public,
                 binder: null,
                 new object[] { _converterOptions, _namingPolicy },
