@@ -90,7 +90,7 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 RootRepo="$DIR/../.."
 
-__bin_dir="$RootRepo/bin"
+__bin_dir="$RootRepo/artifacts/bin"
 __build_arch=
 __host_ver=
 __apphost_ver=
@@ -102,7 +102,7 @@ __portableBuildArgs=
 __configuration=Debug
 __linkPortable=0
 __cmake_defines=
-__baseIntermediateOutputPath="$RootRepo/bin/obj"
+__baseIntermediateOutputPath="$RootRepo/artifacts/obj"
 __versionSourceFile="$__baseIntermediateOutputPath/version.cpp"
 __cmake_bin_prefix=
 

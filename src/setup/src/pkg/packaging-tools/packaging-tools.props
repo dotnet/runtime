@@ -1,7 +1,11 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
+  <Import Project="framework.sharedfx.props" Condition="'$(MSBuildProjectExtension)' == '.sfxproj'" />
+
   <PropertyGroup>
-    <InstallerSourceIntermediateOutputDir>$(BaseIntermediateOutputPath)$(InstallerSourceOSPlatformConfig)\$(MSBuildProjectName)\</InstallerSourceIntermediateOutputDir>
+    <InstallerSourceIntermediateOutputDir>$(ObjDir)$(InstallerSourceOSPlatformConfig)\$(MSBuildProjectName)\</InstallerSourceIntermediateOutputDir>
+
+    <CopyBuildOutputToOutputDirectory>false</CopyBuildOutputToOutputDirectory>
   </PropertyGroup>
 
   <!-- Detect framework pack suffix and apply defaults. -->
@@ -60,7 +64,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <SharedFrameworkLayoutDir>$(InstallerSourceIntermediateOutputDir)sharedFxLayout/</SharedFrameworkLayoutDir>
+    <SharedFrameworkLayoutDir Condition="'$(SharedFrameworkLayoutDir)' == ''">$(InstallerSourceIntermediateOutputDir)sharedFxLayout/</SharedFrameworkLayoutDir>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(IsFrameworkPackage)' == 'true'">
