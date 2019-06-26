@@ -10,7 +10,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
 {
     public class PrincipalContextTests
     {
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
         public void Ctor_ContextType()
         {
             var context = new PrincipalContext(ContextType.Machine);
@@ -288,7 +288,7 @@ namespace System.DirectoryServices.AccountManagement.Tests
             Assert.Throws<ObjectDisposedException>(() => context.UserName);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
         [InlineData(null, null, true)]
         [InlineData("", "", false)]
         public void ValidateCredentials_Invoke_ReturnsExpected(string userName, string password, bool expected)

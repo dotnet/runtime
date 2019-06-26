@@ -49,7 +49,8 @@ public class SecurityIdentifierTests
         Assert.All(ridParts, part => uint.TryParse(part, out uint _));
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsServerCore))]
+    // whoami.exe is not on all SKUs
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsServerCore), nameof(PlatformDetection.IsNotWindowsIoTCore))]
     public void ValidateToStringUsingWhoami()
     {
         string librarySid = null;

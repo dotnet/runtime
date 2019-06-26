@@ -36,7 +36,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
                 Assert.Throws<ActiveDirectoryOperationException>(() => Forest.GetForest(context));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
         [InlineData(DirectoryContextType.DirectoryServer, "\0")]
         [InlineData(DirectoryContextType.Forest, "server:port")]
         public void GetForest_NonNullNameAndNotRootedDomain_ThrowsActiveDirectoryObjectNotFoundException(DirectoryContextType type, string name)
