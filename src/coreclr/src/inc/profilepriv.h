@@ -146,6 +146,7 @@ GVAL_DECL(ProfControlBlock, g_profControlBlock);
 #define COR_PRF_CALLBACKSTATE_INCALLBACK                 0x1
 #define COR_PRF_CALLBACKSTATE_IN_TRIGGERS_SCOPE          0x2
 #define COR_PRF_CALLBACKSTATE_FORCEGC_WAS_CALLED         0x4
+#define COR_PRF_CALLBACKSTATE_REJIT_WAS_CALLED           0x8
 //
 //---------------------------------------------------------------
 
