@@ -1155,6 +1155,54 @@ namespace System.Text.Json.Tests
             {
                 Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteEndObject());
             }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStartObject();
+            jsonUtf8.WritePropertyName("first name");
+            if (skipValidation)
+            {
+                jsonUtf8.WriteString("another property name", "some value");
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteString("another property name", "some value"));
+            }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStartObject();
+            jsonUtf8.WritePropertyName("first name");
+            if (skipValidation)
+            {
+                jsonUtf8.WriteNumber("another property name", 12345);
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteNumber("another property name", 12345));
+            }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStartObject();
+            jsonUtf8.WritePropertyName("first name");
+            if (skipValidation)
+            {
+                jsonUtf8.WriteNull("another property name");
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteNull("another property name"));
+            }
+
+            jsonUtf8 = new Utf8JsonWriter(output, options);
+            jsonUtf8.WriteStartObject();
+            jsonUtf8.WritePropertyName("first name");
+            if (skipValidation)
+            {
+                jsonUtf8.WriteBoolean("another property name", true);
+            }
+            else
+            {
+                Assert.Throws<InvalidOperationException>(() => jsonUtf8.WriteBoolean("another property name", true));
+            }
         }
 
         [Theory]
