@@ -586,7 +586,11 @@ namespace System.Net.Test.Common
         {
             PingFrame ping = new PingFrame(new byte[8] { 1, 2, 3, 4, 50, 60, 70, 80 }, FrameFlags.None, 0);
             await WriteFrameAsync(ping).ConfigureAwait(false);
-            await ReadFrameAsync(Timeout).ConfigureAwait(false);
+            Frame pingAck = await ReadFrameAsync(Timeout).ConfigureAwait(false);
+            if (pingAck.Type != FrameType.Ping || !pingAck.AckFlag)
+            {
+                throw new Exception("Expected PING ACK");
+            }
         }
 
         public async Task SendDefaultResponseHeadersAsync(int streamId)
