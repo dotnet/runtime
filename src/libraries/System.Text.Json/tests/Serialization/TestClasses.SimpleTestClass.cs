@@ -76,8 +76,7 @@ namespace System.Text.Json.Serialization.Tests
         public IReadOnlyCollection<string> MyStringIReadOnlyCollectionT { get; set; }
         public IReadOnlyList<string> MyStringIReadOnlyListT { get; set; }
         public ISet<string> MyStringISetT { get; set; }
-        //todo: enable once we can write a custom converter for KeyValuePair:
-        // public KeyValuePair<string, string> MyStringToStringKeyValuePair { get; set; }
+        public KeyValuePair<string, string> MyStringToStringKeyValuePair { get; set; }
         public IDictionary MyStringToStringIDict { get; set; }
         public Dictionary<string, string> MyStringToStringGenericDict { get; set; }
         public IDictionary<string, string> MyStringToStringGenericIDict { get; set; }
@@ -127,7 +126,7 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyEnum"" : 2," + // int by default
                 @"""MyInt64Enum"" : -9223372036854775808," +
                 @"""MyUInt64Enum"" : 18446744073709551615," +
-                 //@"""MyStringToStringKeyValuePair"" : {""Key"" : ""myKey"", ""Value"" : ""myValue""}," +
+                @"""MyStringToStringKeyValuePair"" : {""Key"" : ""myKey"", ""Value"" : ""myValue""}," +
                 @"""MyStringToStringIDict"" : {""key"" : ""value""}," +
                 @"""MyStringToStringGenericDict"" : {""key"" : ""value""}," +
                 @"""MyStringToStringGenericIDict"" : {""key"" : ""value""}," +
@@ -277,7 +276,7 @@ namespace System.Text.Json.Serialization.Tests
             MyStringIReadOnlyListT = new string[] { "Hello" };
             MyStringISetT = new HashSet<string> { "Hello" };
 
-            //MyStringToStringKeyValuePair = new KeyValuePair<string, string>("myKey", "myValue");
+            MyStringToStringKeyValuePair = new KeyValuePair<string, string>("myKey", "myValue");
             MyStringToStringIDict = new Dictionary<string, string> { { "key", "value" } };
 
             MyStringToStringGenericDict = new Dictionary<string, string> { { "key", "value" } };
@@ -477,8 +476,8 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("value", MyStringToStringIImmutableDict["key"]);
             Assert.Equal("value", MyStringToStringImmutableSortedDict["key"]);
 
-            //Assert.Equal("myKey", MyStringToStringKeyValuePair.Key);
-            //Assert.Equal("myValue", MyStringToStringKeyValuePair.Value);
+            Assert.Equal("myKey", MyStringToStringKeyValuePair.Key);
+            Assert.Equal("myValue", MyStringToStringKeyValuePair.Value);
 
             Assert.Equal(2, MyStringStackT.Count);
             Assert.True(MyStringStackT.Contains("Hello"));
