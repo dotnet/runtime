@@ -348,7 +348,7 @@ namespace System
         private static extern IntPtr _RegisterFrozenSegment(IntPtr sectionAddress, IntPtr sectionSize);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern IntPtr _UnregisterFrozenSegment(IntPtr segmentHandle);
+        private static extern void _UnregisterFrozenSegment(IntPtr segmentHandle);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public static extern long GetAllocatedBytesForCurrentThread();
