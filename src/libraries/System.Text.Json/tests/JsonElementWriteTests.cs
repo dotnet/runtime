@@ -1176,7 +1176,7 @@ null,
             string expectedMinimal)
         {
             var buffer = new ArrayBufferWriter<byte>(1024);
-            using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_readerOptions))
+            using (JsonDocument doc = JsonDocument.Parse($" [  {jsonIn}  ]", s_options))
             {
                 JsonElement target = doc.RootElement[0];
 
