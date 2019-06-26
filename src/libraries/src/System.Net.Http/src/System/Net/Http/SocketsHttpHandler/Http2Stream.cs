@@ -626,7 +626,6 @@ namespace System.Net.Http
                 if (bytesRead != 0)
                 {
                     ExtendWindow(bytesRead);
-                    _connection.ExtendWindow(bytesRead);
                 }
 
                 return bytesRead;
