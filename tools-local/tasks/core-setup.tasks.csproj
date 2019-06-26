@@ -38,7 +38,7 @@
     <Reference Include="System.IO.Compression" />
   </ItemGroup>
 
-  <!-- Remove source that require BuildTools to compile. -->
+  <!-- TODO: (arcade) Add this back, needed for publishing. Removed because it requires BuildTools to compile. -->
   <ItemGroup>
     <Compile Remove="FinalizeBuild.cs" />
   </ItemGroup>
