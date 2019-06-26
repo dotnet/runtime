@@ -118,8 +118,9 @@ public:
         int m_methodDefIndex;
 
     public:
-        MethodIterator(ReadyToRunInfo * pInfo)
-            : m_pInfo(pInfo), m_methodDefIndex(-1)
+        MethodIterator(ReadyToRunInfo * pInfo) : 
+            m_pInfo(pInfo), 
+            m_methodDefIndex(-1)
         {
         }
 
@@ -128,6 +129,31 @@ public:
         MethodDesc * GetMethodDesc();
         MethodDesc * GetMethodDesc_NoRestore();
         PCODE GetMethodStartAddress();
+    };
+
+    class GenericMethodIterator
+    {
+        ReadyToRunInfo *m_pInfo;
+        NativeFormat::NativeHashtable::AllEntriesEnumerator m_enum;
+        NativeFormat::NativeParser m_current;
+
+    public:
+        GenericMethodIterator(ReadyToRunInfo *pInfo) :
+            m_pInfo(pInfo), 
+            m_enum(),
+            m_current()
+        {
+            NativeFormat::PTR_NativeHashtable pHash = NULL;
+            if (!pInfo->m_instMethodEntryPoints.IsNull())
+            {
+                pHash = NativeFormat::PTR_NativeHashtable(&pInfo->m_instMethodEntryPoints);
+            }
+
+            m_enum = NativeFormat::NativeHashtable::AllEntriesEnumerator(pHash);
+        }
+
+        BOOL Next();
+        MethodDesc * GetMethodDesc_NoRestore();
     };
 
     static DWORD GetFieldBaseOffset(MethodTable * pMT);
