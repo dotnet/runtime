@@ -62,7 +62,7 @@ namespace System.Text.Json.Serialization.Tests
             object obj = JsonSerializer.Deserialize(bytes, typeof(object));
             Assert.IsType<JsonElement>(obj);
             JsonElement element = (JsonElement)obj;
-            Assert.Equal(JsonValueType.Number, element.Type);
+            Assert.Equal(JsonValueKind.Number, element.ValueKind);
             Assert.Equal(42, element.GetInt32());
         }
 

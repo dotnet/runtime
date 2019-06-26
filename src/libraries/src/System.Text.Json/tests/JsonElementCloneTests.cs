@@ -60,31 +60,31 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void CloneAtInnerNumber()
         {
-            CloneAtInner("1.21e9", JsonValueType.Number);
+            CloneAtInner("1.21e9", JsonValueKind.Number);
         }
 
         [Fact]
         public static void CloneAtInnerString()
         {
-            CloneAtInner("\"  this  string  has  \\u0039 spaces\"", JsonValueType.String);
+            CloneAtInner("\"  this  string  has  \\u0039 spaces\"", JsonValueKind.String);
         }
 
         [Fact]
         public static void CloneAtInnerTrue()
         {
-            CloneAtInner("true", JsonValueType.True);
+            CloneAtInner("true", JsonValueKind.True);
         }
 
         [Fact]
         public static void CloneAtInnerFalse()
         {
-            CloneAtInner("false", JsonValueType.False);
+            CloneAtInner("false", JsonValueKind.False);
         }
 
         [Fact]
         public static void CloneAtInnerNull()
         {
-            CloneAtInner("null", JsonValueType.Null);
+            CloneAtInner("null", JsonValueKind.Null);
         }
 
         [Fact]
@@ -106,7 +106,7 @@ namespace System.Text.Json.Tests
     }
   ]
 }",
-                JsonValueType.Object);
+                JsonValueKind.Object);
         }
 
         [Fact]
@@ -142,10 +142,10 @@ false,
 
 null
 ]",
-                JsonValueType.Array);
+                JsonValueKind.Array);
         }
 
-        private static void CloneAtInner(string innerJson, JsonValueType valueType)
+        private static void CloneAtInner(string innerJson, JsonValueKind valueType)
         {
             string json = $"{{ \"obj\": [ {{ \"not target\": true, \"target\": {innerJson} }}, 5 ] }}";
 
@@ -154,7 +154,7 @@ null
             using (JsonDocument doc = JsonDocument.Parse(json))
             {
                 JsonElement target = doc.RootElement.GetProperty("obj")[0].GetProperty("target");
-                Assert.Equal(valueType, target.Type);
+                Assert.Equal(valueType, target.ValueKind);
                 clone = target.Clone();
             }
 

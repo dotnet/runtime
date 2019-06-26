@@ -146,7 +146,7 @@ namespace System.Text.Json.Serialization.Tests
                 Dictionary<string, object> obj = JsonSerializer.Deserialize<Dictionary<string, object>>(@"{""Key1"":1}");
                 Assert.Equal(1, obj.Count);
                 JsonElement element = (JsonElement)obj["Key1"];
-                Assert.Equal(JsonValueType.Number, element.Type);
+                Assert.Equal(JsonValueKind.Number, element.ValueKind);
                 Assert.Equal(1, element.GetInt32());
 
                 string json = JsonSerializer.Serialize(obj);
@@ -157,7 +157,7 @@ namespace System.Text.Json.Serialization.Tests
                 IDictionary<string, object> obj = JsonSerializer.Deserialize<IDictionary<string, object>>(@"{""Key1"":1}");
                 Assert.Equal(1, obj.Count);
                 JsonElement element = (JsonElement)obj["Key1"];
-                Assert.Equal(JsonValueType.Number, element.Type);
+                Assert.Equal(JsonValueKind.Number, element.ValueKind);
                 Assert.Equal(1, element.GetInt32());
 
                 string json = JsonSerializer.Serialize(obj);
