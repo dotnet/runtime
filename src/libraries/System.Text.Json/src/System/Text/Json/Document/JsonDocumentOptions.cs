@@ -7,9 +7,9 @@ using System.Diagnostics;
 namespace System.Text.Json
 {
     /// <summary>
-    /// Provides the ability for the user to define custom behavior when reading JSON.
+    /// Provides the ability for the user to define custom behavior when parsing JSON to create a <see cref="JsonDocument"/>.
     /// </summary>
-    public struct JsonReaderOptions
+    public struct JsonDocumentOptions
     {
         internal const int DefaultMaxDepth = 64;
 
@@ -20,19 +20,19 @@ namespace System.Text.Json
         /// Defines how the <see cref="Utf8JsonReader"/> should handle comments when reading through the JSON.
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// Thrown when the comment handling enum is set to a value that is not supported (i.e. not within the <see cref="JsonCommentHandling"/> enum range).
+        /// Thrown when the comment handling enum is set to a value that is not supported (or not within the <see cref="JsonCommentHandling"/> enum range).
         /// </exception>
         /// <remarks>
         /// By default <exception cref="JsonException"/> is thrown if a comment is encountered.
         /// </remarks>
         public JsonCommentHandling CommentHandling
         {
-            readonly get => _commentHandling;
+            readonly get =>  _commentHandling;
             set
             {
                 Debug.Assert(value >= 0);
-                if (value > JsonCommentHandling.Allow)
-                    throw ThrowHelper.GetArgumentOutOfRangeException_CommentEnumMustBeInRange(nameof(value));
+                if (value > JsonCommentHandling.Skip)
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.JsonDocumentDoesNotSupportComments);
 
                 _commentHandling = value;
             }
@@ -67,5 +67,15 @@ namespace System.Text.Json
         /// By default, it's set to false, and <exception cref="JsonException"/> is thrown if a trailing comma is encountered.
         /// </remarks>
         public bool AllowTrailingCommas { get; set; }
+
+        internal JsonReaderOptions GetReaderOptions()
+        {
+            return new JsonReaderOptions
+            {
+                AllowTrailingCommas = AllowTrailingCommas,
+                CommentHandling = CommentHandling,
+                MaxDepth = MaxDepth
+            };
+        }
     }
 }

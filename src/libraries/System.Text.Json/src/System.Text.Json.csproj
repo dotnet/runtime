@@ -35,6 +35,7 @@
     <Compile Include="System\Text\Json\Document\JsonDocument.StackRow.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.StackRowStack.cs" />
     <Compile Include="System\Text\Json\Document\JsonDocument.TryGetProperty.cs" />
+    <Compile Include="System\Text\Json\Document\JsonDocumentOptions.cs" />
     <Compile Include="System\Text\Json\Document\JsonElement.cs" />
     <Compile Include="System\Text\Json\Document\JsonElement.ArrayEnumerator.cs" />
     <Compile Include="System\Text\Json\Document\JsonElement.ObjectEnumerator.cs" />

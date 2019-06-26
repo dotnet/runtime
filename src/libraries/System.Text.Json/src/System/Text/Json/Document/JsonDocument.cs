@@ -1221,14 +1221,14 @@ namespace System.Text.Json
 
         private static void CheckSupportedOptions(
             JsonReaderOptions readerOptions,
-            string paramName = null)
+            string paramName)
         {
-            Debug.Assert(readerOptions.CommentHandling >= 0);
-            if (readerOptions.CommentHandling > JsonCommentHandling.Skip)
+            // Since these are coming from a valid instance of Utf8JsonReader, the JsonReaderOptions must already be valid
+            Debug.Assert(readerOptions.CommentHandling >= 0 && readerOptions.CommentHandling <= JsonCommentHandling.Allow);
+
+            if (readerOptions.CommentHandling == JsonCommentHandling.Allow)
             {
-                throw new ArgumentException(
-                    SR.JsonDocumentDoesNotSupportComments,
-                    paramName ?? nameof(readerOptions));
+                throw new ArgumentException(SR.JsonDocumentDoesNotSupportComments, paramName);
             }
         }
     }
