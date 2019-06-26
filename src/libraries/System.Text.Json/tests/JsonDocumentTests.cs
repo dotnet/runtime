@@ -1750,6 +1750,12 @@ namespace System.Text.Json.Tests
                     Utf8JsonWriter writer = default;
                     root.WriteProperty(ReadOnlySpan<byte>.Empty, writer);
                 });
+
+                Assert.Throws<ObjectDisposedException>(() =>
+                {
+                    Utf8JsonWriter writer = default;
+                    root.WriteProperty(JsonEncodedText.Encode(ReadOnlySpan<byte>.Empty), writer);
+                });
             }
         }
 
