@@ -19,7 +19,10 @@
     <!--
       Arcade specifies a default en-US NeutralLanguage, which creates a
       System.Resources.NeutralResourcesLanguageAttribute that doesn't compile with existing
-      references for PlatformAbstractions on netstandard1.3. Remove it for now.
+      references for PlatformAbstractions on netstandard1.3. Clearing NeutralLanguage removes it.
+
+      If this Arcade SDK feature is desired in the future, this will need to be worked through. No
+      issue tracks this as of writing.
     -->
     <NeutralLanguage></NeutralLanguage>
   </PropertyGroup>

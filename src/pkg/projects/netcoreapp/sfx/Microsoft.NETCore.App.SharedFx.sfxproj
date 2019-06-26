@@ -4,7 +4,10 @@
     <SfxIdentity>Microsoft.NETCore.App</SfxIdentity>
     <SfxPackageIdentity>$(SfxIdentity).Internal</SfxPackageIdentity>
 
-    <!-- Lay out the sfx in the legacy location for old packaging to keep working for now. -->
+    <!--
+      Lay out the sfx in the legacy location for old packaging to keep working for now. This can be
+      removed when the legacy infra is phased out.
+    -->
     <SharedFrameworkLayoutDir>$(SharedFrameworkPublishDir)</SharedFrameworkLayoutDir>
 
     <GenerateRuntimeGraph>true</GenerateRuntimeGraph>
@@ -22,7 +25,8 @@
 
   <!--
     Make sure the installer file is generated with the old infra's name and location. This allows
-    the existing infra to bundle it without any changes.
+    the existing infra to bundle it without any changes. This can be removed when the legacy infra
+    is phased out.
   -->
   <Target Name="PutSharedFrameworkMsiInLegacyLocation"
           DependsOnTargets="GetInstallerLocations"
