@@ -50,6 +50,11 @@ namespace System.Text.Json
         PropertyName,
 
         /// <summary>
+        ///   Indicates that the token type is the comment string.
+        /// </summary>
+        Comment,
+
+        /// <summary>
         ///   Indicates that the token type is a JSON string.
         /// </summary>
         String,
@@ -73,10 +78,5 @@ namespace System.Text.Json
         ///   Indicates that the token type is the JSON literal <c>null</c>.
         /// </summary>
         Null,
-
-        /// <summary>
-        ///   Indicates that the token type is the comment string.
-        /// </summary>
-        Comment,
     }
 }

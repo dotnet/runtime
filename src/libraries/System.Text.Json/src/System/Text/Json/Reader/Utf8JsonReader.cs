@@ -671,8 +671,10 @@ namespace System.Text.Json
 
         // Returns true if the TokenType is a primitive string "value", i.e. PropertyName or String
         // Otherwise, return false.
-        private static bool IsTokenTypeString(JsonTokenType tokenType) =>
-            (tokenType - JsonTokenType.PropertyName) <= (JsonTokenType.String - JsonTokenType.PropertyName);
+        private static bool IsTokenTypeString(JsonTokenType tokenType)
+        {
+            return tokenType == JsonTokenType.PropertyName || tokenType == JsonTokenType.String;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool MatchNotPossible(int charTextLength)
