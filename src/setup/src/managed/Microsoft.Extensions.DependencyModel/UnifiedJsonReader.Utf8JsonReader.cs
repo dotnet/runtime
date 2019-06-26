@@ -96,21 +96,7 @@ namespace Microsoft.Extensions.DependencyModel
             return items.ToArray();
         }
 
-        public void Skip()
-        {
-            if (IsTokenTypeProperty())
-            {
-                _reader.Read();
-            }
-
-            if (_reader.TokenType == JsonTokenType.StartObject || _reader.TokenType == JsonTokenType.StartArray)
-            {
-                int depth = _reader.CurrentDepth;
-                while (_reader.Read() && depth <= _reader.CurrentDepth)
-                {
-                }
-            }
-        }
+        public void Skip() => _reader.Skip();
 
         public string ReadAsString()
         {
@@ -160,8 +146,13 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static Exception CreateUnexpectedException(ref Utf8JsonReader reader, string expected)
         {
+            // Replace with public API once https://github.com/dotnet/corefx/issues/34768 is fixed
+            object boxedState = reader.CurrentState;
+            long lineNumber = (long)(typeof(JsonReaderState).GetField("_lineNumber")?.GetValue(boxedState) ?? -1);
+            long bytePositionInLine = (long)(typeof(JsonReaderState).GetField("_bytePositionInLine")?.GetValue(boxedState) ?? -1);
+
             return new FormatException($"Unexpected character encountered, excepted '{expected}' " +
-                                       $"at line {reader.CurrentState._lineNumber} position {reader.CurrentState._bytePositionInLine}");
+                                       $"at line {lineNumber} position {bytePositionInLine}");
         }
     }
 }
