@@ -101,6 +101,7 @@ class CordbRCEventThread;
 class CordbRegisterSet;
 class CordbNativeFrame;
 class CordbObjectValue;
+class CordbReferenceValue;
 class CordbEnCErrorInfo;
 class CordbEnCErrorInfoEnum;
 class Instantiation;
@@ -8755,6 +8756,9 @@ public:
     static ICorDebugValue* CreateHeapValue(CordbAppDomain* pAppDomain,
                                            VMPTR_Object vmObj);
 
+    // Creates a proper CordbReferenceValue instance based on the given remote heap object
+    static CordbReferenceValue* CreateHeapReferenceValue(CordbAppDomain* pAppDomain,
+                                                         VMPTR_Object vmObj);
 
     // Returns a pointer to the ValueHome field of this instance of CordbValue if one exists or NULL
     // otherwise. Therefore, this also tells us indirectly whether this instance of CordbValue is also an
@@ -9159,7 +9163,8 @@ class CordbObjectValue : public CordbValue,
                          public ICorDebugHeapValue2,
                          public ICorDebugHeapValue3,
                          public ICorDebugExceptionObjectValue,
-                         public ICorDebugComObjectValue
+                         public ICorDebugComObjectValue,
+                         public ICorDebugDelegateObjectValue
 {
 public:
     
@@ -9287,6 +9292,12 @@ public:
                         CORDB_ADDRESS * ptrs);
 
     //-----------------------------------------------------------
+    // ICorDebugComObjectValue
+    //-----------------------------------------------------------
+    COM_METHOD GetTarget(ICorDebugReferenceValue** ppObject);
+    COM_METHOD GetFunction(ICorDebugFunction** ppFunction);
+
+    //-----------------------------------------------------------
     // Non-COM methods
     //-----------------------------------------------------------
 
@@ -9324,6 +9335,12 @@ private:
     HRESULT IsRcw();
 
     BOOL                     m_fIsRcw;
+
+    HRESULT IsDelegate();
+    HRESULT GetFunctionHelper(ICorDebugFunction **ppFunction);
+    HRESULT GetTargetHelper(ICorDebugReferenceValue **ppTarget);
+
+    BOOL                     m_fIsDelegate;
 };
 
 /* ------------------------------------------------------------------------- *
