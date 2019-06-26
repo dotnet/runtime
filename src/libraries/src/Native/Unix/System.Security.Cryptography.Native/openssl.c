@@ -1313,6 +1313,11 @@ done:
 
 #ifdef NEED_OPENSSL_1_1
 
+// Only defined in OpenSSL 1.1.1+, has no effect on 1.1.0.
+#ifndef OPENSSL_INIT_NO_ATEXIT
+    #define OPENSSL_INIT_NO_ATEXIT 0x00080000L
+#endif
+
 static int32_t EnsureOpenSsl11Initialized()
 {
     // In OpenSSL 1.0 we call OPENSSL_add_all_algorithms_conf() and ERR_load_crypto_strings(),
@@ -1322,6 +1327,8 @@ static int32_t EnsureOpenSsl11Initialized()
             OPENSSL_INIT_ADD_ALL_CIPHERS |
             OPENSSL_INIT_ADD_ALL_DIGESTS |
             OPENSSL_INIT_LOAD_CONFIG |
+        // Do not unload on process exit, as the CLR may still have threads running
+            OPENSSL_INIT_NO_ATEXIT |
         // ERR_load_crypto_strings
             OPENSSL_INIT_LOAD_CRYPTO_STRINGS |
             OPENSSL_INIT_LOAD_SSL_STRINGS,
