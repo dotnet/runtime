@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Build.Framework;
-using Microsoft.Build.Utilities;
 using System.Runtime.InteropServices;
-using Microsoft.DotNet.PlatformAbstractions;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
