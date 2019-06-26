@@ -93,6 +93,7 @@ namespace System.Text.Json.Serialization.Converters
             T k;
             Type typeToConvert = typeof(T);
 
+            // Attempt to use existing converter first before re-entering through JsonSerializer.Read().
             JsonConverter<T> keyConverter = options.GetConverter(typeToConvert) as JsonConverter<T>;
             if (keyConverter == null)
             {
@@ -109,30 +110,23 @@ namespace System.Text.Json.Serialization.Converters
 
         private void WriteProperty<T>(Utf8JsonWriter writer, T value, JsonEncodedText name, JsonSerializerOptions options)
         {
+            writer.WritePropertyName(name);
+
+            // Attempt to use existing converter first before re-entering through JsonSerializer.Write().
             JsonConverter<T> keyConverter = options.GetConverter(typeof(T)) as JsonConverter<T>;
             if (keyConverter == null)
             {
-                // todo: set property name on writer once that functionality exists
-                // JsonSerializer.WriteValue<T>(writer, value, options);
-                throw new NotImplementedException();
+                JsonSerializer.Serialize<T>(writer, value, options);
             }
             else
             {
-                keyConverter.Write(writer, value, name, options);
+                keyConverter.Write(writer, value, options);
             }
         }
 
         public override void Write(Utf8JsonWriter writer, KeyValuePair<TKey, TValue> value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
-            WriteProperty(writer, value.Key, _keyName, options);
-            WriteProperty(writer, value.Value, _valueName, options);
-            writer.WriteEndObject();
-        }
-
-        public override void Write(Utf8JsonWriter writer, KeyValuePair<TKey, TValue> value, JsonEncodedText propertyName, JsonSerializerOptions options)
-        {
-            writer.WriteStartObject(propertyName);
             WriteProperty(writer, value.Key, _keyName, options);
             WriteProperty(writer, value.Value, _valueName, options);
             writer.WriteEndObject();

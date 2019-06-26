@@ -646,7 +646,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"[{""Key"":""123"",""Value"":123},{""Key"":""456"",""Value"":456}]", json);
         }
 
-        [Fact(Skip = "Disabled until writer enables property name to be set")]
+        [Fact]
         public static void WriteKeyValuePairOfList()
         {
             KeyValuePair<string, List<int>> input = new KeyValuePair<string, List<int>>("Key", new List<int> { 1, 2, 3 });

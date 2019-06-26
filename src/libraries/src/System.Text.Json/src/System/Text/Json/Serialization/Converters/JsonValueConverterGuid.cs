@@ -8,22 +8,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override Guid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType != JsonTokenType.String)
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
             return reader.GetGuid();
         }
 
         public override void Write(Utf8JsonWriter writer, Guid value, JsonSerializerOptions options)
         {
             writer.WriteStringValue(value);
-        }
-
-        public override void Write(Utf8JsonWriter writer, Guid value, JsonEncodedText propertyName, JsonSerializerOptions options)
-        {
-            writer.WriteString(propertyName, value);
         }
     }
 }

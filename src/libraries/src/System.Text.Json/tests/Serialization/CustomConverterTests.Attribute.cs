@@ -122,12 +122,6 @@ namespace System.Text.Json.Serialization.Tests
                 string stringValue = $"{value.X - _offset},{value.Y - _offset}";
                 writer.WriteStringValue(stringValue);
             }
-
-            public override void Write(Utf8JsonWriter writer, AttributedPoint value, JsonEncodedText propertyName, JsonSerializerOptions options)
-            {
-                string stringValue = $"{value.X - _offset},{value.Y - _offset}";
-                writer.WriteString(propertyName, stringValue);
-            }
         }
 
         [Fact]

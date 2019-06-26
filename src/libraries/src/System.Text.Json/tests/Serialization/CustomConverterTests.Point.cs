@@ -60,12 +60,6 @@ namespace System.Text.Json.Serialization.Tests
                 string stringValue = $"{value.X - _coordinateOffset},{value.Y - _coordinateOffset}";
                 writer.WriteStringValue(stringValue);
             }
-
-            public override void Write(Utf8JsonWriter writer, Point value, JsonEncodedText propertyName, JsonSerializerOptions options)
-            {
-                string stringValue = $"{value.X - _coordinateOffset},{value.Y - _coordinateOffset}";
-                writer.WriteString(propertyName, stringValue);
-            }
         }
 
         [Fact]
@@ -208,17 +202,6 @@ namespace System.Text.Json.Serialization.Tests
             public override void Write(Utf8JsonWriter writer, Point value, JsonSerializerOptions options)
             {
                 writer.WriteStartObject();
-
-                string stringValue = $"{value.X},{value.Y}";
-                writer.WriteString("COORD", stringValue);
-
-                writer.WriteEndObject();
-            }
-
-            // todo: remove this method once writer supports setting property name.
-            public override void Write(Utf8JsonWriter writer, Point value, JsonEncodedText propertyName, JsonSerializerOptions options)
-            {
-                writer.WriteStartObject(propertyName);
 
                 string stringValue = $"{value.X},{value.Y}";
                 writer.WriteString("COORD", stringValue);

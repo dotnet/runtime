@@ -18,10 +18,5 @@ namespace System.Text.Json.Serialization.Converters
         {
             throw new InvalidOperationException();
         }
-
-        public override void Write(Utf8JsonWriter writer, object value, JsonEncodedText propertyName, JsonSerializerOptions options)
-        {
-            throw new InvalidOperationException();
-        }
     }
 }
