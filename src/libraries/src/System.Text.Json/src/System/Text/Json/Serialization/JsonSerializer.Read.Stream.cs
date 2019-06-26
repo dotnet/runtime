@@ -27,7 +27,7 @@ namespace System.Text.Json
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
-        public static ValueTask<TValue> ReadAsync<TValue>(
+        public static ValueTask<TValue> DeserializeAsync<TValue>(
             Stream utf8Json,
             JsonSerializerOptions options = null,
             CancellationToken cancellationToken = default)
@@ -57,7 +57,7 @@ namespace System.Text.Json
         /// the <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
-        public static ValueTask<object> ReadAsync(
+        public static ValueTask<object> DeserializeAsync(
             Stream utf8Json,
             Type returnType,
             JsonSerializerOptions options = null,

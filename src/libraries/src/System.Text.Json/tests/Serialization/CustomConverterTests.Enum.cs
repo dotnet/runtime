@@ -65,21 +65,21 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new MyBoolEnumConverter());
 
             {
-                MyBoolEnum value = JsonSerializer.Parse<MyBoolEnum>(@"""TRUE""", options);
+                MyBoolEnum value = JsonSerializer.Deserialize<MyBoolEnum>(@"""TRUE""", options);
                 Assert.Equal(MyBoolEnum.True, value);
-                Assert.Equal(@"""TRUE""", JsonSerializer.ToString(value, options));
+                Assert.Equal(@"""TRUE""", JsonSerializer.Serialize(value, options));
             }
 
             {
-                MyBoolEnum value = JsonSerializer.Parse<MyBoolEnum>(@"""FALSE""", options);
+                MyBoolEnum value = JsonSerializer.Deserialize<MyBoolEnum>(@"""FALSE""", options);
                 Assert.Equal(MyBoolEnum.False, value);
-                Assert.Equal(@"""FALSE""", JsonSerializer.ToString(value, options));
+                Assert.Equal(@"""FALSE""", JsonSerializer.Serialize(value, options));
             }
 
             {
-                MyBoolEnum value = JsonSerializer.Parse<MyBoolEnum>(@"""?""", options);
+                MyBoolEnum value = JsonSerializer.Deserialize<MyBoolEnum>(@"""?""", options);
                 Assert.Equal(MyBoolEnum.Unknown, value);
-                Assert.Equal(@"""?""", JsonSerializer.ToString(value, options));
+                Assert.Equal(@"""?""", JsonSerializer.Serialize(value, options));
             }
         }
 
@@ -90,26 +90,26 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new MyBoolEnumConverter());
 
             {
-                MyBoolEnum? value = JsonSerializer.Parse<MyBoolEnum?>(@"null", options);
+                MyBoolEnum? value = JsonSerializer.Deserialize<MyBoolEnum?>(@"null", options);
                 Assert.Null(value);
             }
 
             {
-                MyBoolEnum? value = JsonSerializer.Parse<MyBoolEnum?>(@"""TRUE""", options);
+                MyBoolEnum? value = JsonSerializer.Deserialize<MyBoolEnum?>(@"""TRUE""", options);
                 Assert.Equal(MyBoolEnum.True, value);
-                Assert.Equal(@"""TRUE""", JsonSerializer.ToString(value, options));
+                Assert.Equal(@"""TRUE""", JsonSerializer.Serialize(value, options));
             }
 
             {
-                MyBoolEnum? value = JsonSerializer.Parse<MyBoolEnum?>(@"""FALSE""", options);
+                MyBoolEnum? value = JsonSerializer.Deserialize<MyBoolEnum?>(@"""FALSE""", options);
                 Assert.Equal(MyBoolEnum.False, value);
-                Assert.Equal(@"""FALSE""", JsonSerializer.ToString(value, options));
+                Assert.Equal(@"""FALSE""", JsonSerializer.Serialize(value, options));
             }
 
             {
-                MyBoolEnum? value = JsonSerializer.Parse<MyBoolEnum?>(@"""?""", options);
+                MyBoolEnum? value = JsonSerializer.Deserialize<MyBoolEnum?>(@"""?""", options);
                 Assert.Equal(MyBoolEnum.Unknown, value);
-                Assert.Equal(@"""?""", JsonSerializer.ToString(value, options));
+                Assert.Equal(@"""?""", JsonSerializer.Serialize(value, options));
             }
         }
     }

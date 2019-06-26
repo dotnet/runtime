@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void ExtensionPropertyNotUsed()
         {
             string json = @"{""MyNestedClass"":" + SimpleTestClass.s_json + "}";
-            ClassWithExtensionProperty obj = JsonSerializer.Parse<ClassWithExtensionProperty>(json);
+            ClassWithExtensionProperty obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(json);
             Assert.Null(obj.MyOverflow);
         }
 
@@ -25,14 +25,14 @@ namespace System.Text.Json.Serialization.Tests
 
             {
                 string json = @"{""MyIntMissing"":2, ""MyInt"":1, ""MyNestedClassMissing"":" + SimpleTestClass.s_json + "}";
-                obj = JsonSerializer.Parse<ClassWithExtensionProperty>(json);
+                obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(json);
                 Verify();
             }
 
             // Round-trip the json.
             {
-                string json = JsonSerializer.ToString(obj);
-                obj = JsonSerializer.Parse<ClassWithExtensionProperty>(json);
+                string json = JsonSerializer.Serialize(obj);
+                obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(json);
                 Verify();
             }
 
@@ -58,7 +58,7 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = @"{""MyIntMissing"":2}";
 
-            ClassWithExtensionProperty obj = JsonSerializer.Parse<ClassWithExtensionProperty>(json);
+            ClassWithExtensionProperty obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(json);
             Assert.Equal(2, obj.MyOverflow["MyIntMissing"].GetInt32());
         }
 
@@ -67,7 +67,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = @"{""MyIntMissing"":2}";
 
-            ClassWithExtensionPropertyAsObject obj = JsonSerializer.Parse<ClassWithExtensionPropertyAsObject>(json);
+            ClassWithExtensionPropertyAsObject obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(json);
             Assert.IsType<JsonElement>(obj.MyOverflow["MyIntMissing"]);
             Assert.Equal(2, ((JsonElement)obj.MyOverflow["MyIntMissing"]).GetInt32());
         }
@@ -83,9 +83,9 @@ namespace System.Text.Json.Serialization.Tests
 
             {
                 // Baseline Pascal-cased json + no casing option.
-                obj = JsonSerializer.Parse<ClassWithExtensionProperty>(jsonWithProperty);
+                obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(jsonWithProperty);
                 Assert.Equal(1, obj.MyOverflow["MyIntMissing"].GetInt32());
-                string json = JsonSerializer.ToString(obj);
+                string json = JsonSerializer.Serialize(obj);
                 Assert.Contains(@"""MyIntMissing"":1", json);
             }
 
@@ -95,17 +95,17 @@ namespace System.Text.Json.Serialization.Tests
                 options.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
                 options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
-                obj = JsonSerializer.Parse<ClassWithExtensionProperty>(jsonWithProperty, options);
+                obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(jsonWithProperty, options);
                 Assert.Equal(1, obj.MyOverflow["MyIntMissing"].GetInt32());
-                string json = JsonSerializer.ToString(obj);
+                string json = JsonSerializer.Serialize(obj);
                 Assert.Contains(@"""MyIntMissing"":1", json);
             }
 
             {
                 // Baseline camel-cased json + no casing option.
-                obj = JsonSerializer.Parse<ClassWithExtensionProperty>(jsonWithPropertyCamelCased);
+                obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(jsonWithPropertyCamelCased);
                 Assert.Equal(1, obj.MyOverflow["myIntMissing"].GetInt32());
-                string json = JsonSerializer.ToString(obj);
+                string json = JsonSerializer.Serialize(obj);
                 Assert.Contains(@"""myIntMissing"":1", json);
             }
 
@@ -115,9 +115,9 @@ namespace System.Text.Json.Serialization.Tests
                 options.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
                 options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
-                obj = JsonSerializer.Parse<ClassWithExtensionProperty>(jsonWithPropertyCamelCased, options);
+                obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(jsonWithPropertyCamelCased, options);
                 Assert.Equal(1, obj.MyOverflow["myIntMissing"].GetInt32());
-                string json = JsonSerializer.ToString(obj);
+                string json = JsonSerializer.Serialize(obj);
                 Assert.Contains(@"""myIntMissing"":1", json);
             }
         }
@@ -130,16 +130,16 @@ namespace System.Text.Json.Serialization.Tests
 
             {
                 // Baseline with no missing.
-                ClassWithExtensionProperty obj = JsonSerializer.Parse<ClassWithExtensionProperty>(json);
+                ClassWithExtensionProperty obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(json);
                 Assert.Null(obj.MyOverflow);
 
-                string outJson = JsonSerializer.ToString(obj);
+                string outJson = JsonSerializer.Serialize(obj);
                 Assert.Contains(@"""MyNestedClass"":null", outJson);
             }
 
             {
                 // Baseline with missing.
-                ClassWithExtensionProperty obj = JsonSerializer.Parse<ClassWithExtensionProperty>(jsonMissing);
+                ClassWithExtensionProperty obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(jsonMissing);
                 Assert.Equal(1, obj.MyOverflow.Count);
                 Assert.Equal(JsonValueType.Null, obj.MyOverflow["MyNestedClassMissing"].Type);
             }
@@ -148,7 +148,7 @@ namespace System.Text.Json.Serialization.Tests
                 JsonSerializerOptions options = new JsonSerializerOptions();
                 options.IgnoreNullValues = true;
 
-                ClassWithExtensionProperty obj = JsonSerializer.Parse<ClassWithExtensionProperty>(jsonMissing, options);
+                ClassWithExtensionProperty obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(jsonMissing, options);
 
                 // Currently we do not ignore nulls in the extension data. The JsonDocument would also need to support this mode
                 // for any lower-level nulls.
@@ -161,17 +161,17 @@ namespace System.Text.Json.Serialization.Tests
         public static void InvalidExtensionPropertyFail()
         {
             // Baseline
-            JsonSerializer.Parse<ClassWithExtensionProperty>(@"{}");
-            JsonSerializer.Parse<ClassWithExtensionPropertyAsObject>(@"{}");
+            JsonSerializer.Deserialize<ClassWithExtensionProperty>(@"{}");
+            JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(@"{}");
 
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Parse<ClassWithInvalidExtensionProperty>(@"{}"));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Parse<ClassWithTwoExtensionPropertys>(@"{}"));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithInvalidExtensionProperty>(@"{}"));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithTwoExtensionPropertys>(@"{}"));
         }
 
         [Fact]
         public static void IgnoredDataShouldNotBeExtensionData()
         {
-            ClassWithIgnoredData obj = JsonSerializer.Parse<ClassWithIgnoredData>(@"{""MyInt"":1}");
+            ClassWithIgnoredData obj = JsonSerializer.Deserialize<ClassWithIgnoredData>(@"{""MyInt"":1}");
 
             Assert.Equal(0, obj.MyInt);
             Assert.Null(obj.MyOverflow);
@@ -181,26 +181,26 @@ namespace System.Text.Json.Serialization.Tests
         public static void ExtensionPropertyObjectValue_Empty()
         {
             // Baseline
-            ClassWithExtensionPropertyAlreadyInstantiated obj = JsonSerializer.Parse<ClassWithExtensionPropertyAlreadyInstantiated>(@"{}");
-            Assert.Equal(@"{""MyOverflow"":{}}", JsonSerializer.ToString(obj));
+            ClassWithExtensionPropertyAlreadyInstantiated obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAlreadyInstantiated>(@"{}");
+            Assert.Equal(@"{""MyOverflow"":{}}", JsonSerializer.Serialize(obj));
         }
 
         [Fact]
         public static void ExtensionPropertyObjectValue()
         {
             // Baseline
-            ClassWithExtensionPropertyAlreadyInstantiated obj = JsonSerializer.Parse<ClassWithExtensionPropertyAlreadyInstantiated>(@"{}");
+            ClassWithExtensionPropertyAlreadyInstantiated obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAlreadyInstantiated>(@"{}");
             obj.MyOverflow.Add("test", new object());
             obj.MyOverflow.Add("test1", 1);
 
-            Assert.Equal(@"{""MyOverflow"":{""test"":{},""test1"":1}}", JsonSerializer.ToString(obj));
+            Assert.Equal(@"{""MyOverflow"":{""test"":{},""test1"":1}}", JsonSerializer.Serialize(obj));
         }
 
         [Fact]
         public static void ExtensionPropertyObjectValue_RoundTrip()
         {
             // Baseline
-            ClassWithExtensionPropertyAlreadyInstantiated obj = JsonSerializer.Parse<ClassWithExtensionPropertyAlreadyInstantiated>(@"{}");
+            ClassWithExtensionPropertyAlreadyInstantiated obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAlreadyInstantiated>(@"{}");
             obj.MyOverflow.Add("test", new object());
             obj.MyOverflow.Add("test1", 1);
             obj.MyOverflow.Add("test2", "text");
@@ -208,7 +208,7 @@ namespace System.Text.Json.Serialization.Tests
             obj.MyOverflow.Add("test4", new DummyStruct() { Prop = "StructProp" });
             obj.MyOverflow.Add("test5", new Dictionary<string, object>() { { "Key", "Value" }, { "Key1", "Value1" }, });
 
-            ClassWithExtensionPropertyAlreadyInstantiated roundTripObj = JsonSerializer.Parse<ClassWithExtensionPropertyAlreadyInstantiated>(JsonSerializer.ToString(obj));
+            ClassWithExtensionPropertyAlreadyInstantiated roundTripObj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAlreadyInstantiated>(JsonSerializer.Serialize(obj));
 
             Assert.Equal(6, roundTripObj.MyOverflow.Count);
 
@@ -242,7 +242,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string json = @"{""MyIntMissing"":2, ""MyReference"":{""MyIntMissingChild"":3}}";
 
-            ClassWithReference obj = JsonSerializer.Parse<ClassWithReference>(json);
+            ClassWithReference obj = JsonSerializer.Deserialize<ClassWithReference>(json);
             Assert.IsType<JsonElement>(obj.MyOverflow["MyIntMissing"]);
             Assert.Equal(1, obj.MyOverflow.Count);
             Assert.Equal(2, obj.MyOverflow["MyIntMissing"].GetInt32());
@@ -258,10 +258,10 @@ namespace System.Text.Json.Serialization.Tests
         public static void ExtensionProperty_InvalidDictionary()
         {
             ClassWithInvalidExtensionPropertyStringString obj1 = new ClassWithInvalidExtensionPropertyStringString();
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.ToString(obj1));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj1));
 
             ClassWithInvalidExtensionPropertyObjectString obj2 = new ClassWithInvalidExtensionPropertyObjectString();
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.ToString(obj2));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj2));
         }
 
         public class DummyObj

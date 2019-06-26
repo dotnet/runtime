@@ -13,14 +13,14 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadSimpleStruct()
         {
-            SimpleTestStruct obj = JsonSerializer.Parse<SimpleTestStruct>(SimpleTestStruct.s_json);
+            SimpleTestStruct obj = JsonSerializer.Deserialize<SimpleTestStruct>(SimpleTestStruct.s_json);
             obj.Verify();
         }
 
         [Fact]
         public static void ReadSimpleClass()
         {
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(SimpleTestClass.s_json);
+            SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(SimpleTestClass.s_json);
             obj.Verify();
         }
 
@@ -41,23 +41,23 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.ReadCommentHandling = JsonCommentHandling.Skip;
 
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(leadingTrivia + SimpleTestClass.s_json + trailingTrivia, options);
+            SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(leadingTrivia + SimpleTestClass.s_json + trailingTrivia, options);
             obj.Verify();
         }
 
         [Fact]
         public static void ReadSimpleClassWithObject()
         {
-            SimpleTestClassWithSimpleObject obj = JsonSerializer.Parse<SimpleTestClassWithSimpleObject>(SimpleTestClassWithSimpleObject.s_json);
+            SimpleTestClassWithSimpleObject obj = JsonSerializer.Deserialize<SimpleTestClassWithSimpleObject>(SimpleTestClassWithSimpleObject.s_json);
             obj.Verify();
-            string reserialized = JsonSerializer.ToString(obj);
+            string reserialized = JsonSerializer.Serialize(obj);
 
             // Properties in the exported json will be in the order that they were reflected, doing a quick check to see that
             // we end up with the same length (i.e. same amount of data) to start.
             Assert.Equal(SimpleTestClassWithSimpleObject.s_json.StripWhitespace().Length, reserialized.Length);
 
             // Shoving it back through the parser should validate round tripping.
-            obj = JsonSerializer.Parse<SimpleTestClassWithSimpleObject>(reserialized);
+            obj = JsonSerializer.Deserialize<SimpleTestClassWithSimpleObject>(reserialized);
             obj.Verify();
         }
 
@@ -70,29 +70,29 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("/* Multi\nLine\nComment */ ", "\t// trailing comment\n ")]
         public static void ReadClassWithCommentsThrowsIfDisallowed(string leadingTrivia, string trailingTrivia)
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<ClassWithComplexObjects>(leadingTrivia + ClassWithComplexObjects.s_json + trailingTrivia));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithComplexObjects>(leadingTrivia + ClassWithComplexObjects.s_json + trailingTrivia));
         }
 
         [Fact]
         public static void ReadSimpleClassWithObjectArray()
         {
-            SimpleTestClassWithObjectArrays obj = JsonSerializer.Parse<SimpleTestClassWithObjectArrays>(SimpleTestClassWithObjectArrays.s_json);
+            SimpleTestClassWithObjectArrays obj = JsonSerializer.Deserialize<SimpleTestClassWithObjectArrays>(SimpleTestClassWithObjectArrays.s_json);
             obj.Verify();
-            string reserialized = JsonSerializer.ToString(obj);
+            string reserialized = JsonSerializer.Serialize(obj);
 
             // Properties in the exported json will be in the order that they were reflected, doing a quick check to see that
             // we end up with the same length (i.e. same amount of data) to start.
             Assert.Equal(SimpleTestClassWithObjectArrays.s_json.StripWhitespace().Length, reserialized.Length);
 
             // Shoving it back through the parser should validate round tripping.
-            obj = JsonSerializer.Parse<SimpleTestClassWithObjectArrays>(reserialized);
+            obj = JsonSerializer.Deserialize<SimpleTestClassWithObjectArrays>(reserialized);
             obj.Verify();
         }
 
         [Fact]
         public static void ReadArrayInObjectArray()
         {
-            object[] array = JsonSerializer.Parse<object[]>(@"[[]]");
+            object[] array = JsonSerializer.Deserialize<object[]>(@"[[]]");
             Assert.Equal(1, array.Length);
             Assert.IsType<JsonElement>(array[0]);
             Assert.Equal(JsonValueType.Array, ((JsonElement)array[0]).Type);
@@ -101,13 +101,13 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadObjectInObjectArray()
         {
-            object[] array = JsonSerializer.Parse<object[]>(@"[{}]");
+            object[] array = JsonSerializer.Deserialize<object[]>(@"[{}]");
             Assert.Equal(1, array.Length);
             Assert.IsType<JsonElement>(array[0]);
             Assert.Equal(JsonValueType.Object, ((JsonElement)array[0]).Type);
 
             // Scenario described in https://github.com/dotnet/corefx/issues/36169
-            array = JsonSerializer.Parse<object[]>("[1, false]");
+            array = JsonSerializer.Deserialize<object[]>("[1, false]");
             Assert.Equal(2, array.Length);
             Assert.IsType<JsonElement>(array[0]);
             Assert.Equal(JsonValueType.Number, ((JsonElement)array[0]).Type);
@@ -115,7 +115,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonElement>(array[1]);
             Assert.Equal(JsonValueType.False, ((JsonElement)array[1]).Type);
 
-            array = JsonSerializer.Parse<object[]>(@"[1, false, { ""name"" : ""Person"" }]");
+            array = JsonSerializer.Deserialize<object[]>(@"[1, false, { ""name"" : ""Person"" }]");
             Assert.Equal(3, array.Length);
             Assert.IsType<JsonElement>(array[0]);
             Assert.Equal(JsonValueType.Number, ((JsonElement)array[0]).Type);
@@ -129,16 +129,16 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadClassWithComplexObjects()
         {
-            ClassWithComplexObjects obj = JsonSerializer.Parse<ClassWithComplexObjects>(ClassWithComplexObjects.s_json);
+            ClassWithComplexObjects obj = JsonSerializer.Deserialize<ClassWithComplexObjects>(ClassWithComplexObjects.s_json);
             obj.Verify();
-            string reserialized = JsonSerializer.ToString(obj);
+            string reserialized = JsonSerializer.Serialize(obj);
 
             // Properties in the exported json will be in the order that they were reflected, doing a quick check to see that
             // we end up with the same length (i.e. same amount of data) to start.
             Assert.Equal(ClassWithComplexObjects.s_json.StripWhitespace().Length, reserialized.Length);
 
             // Shoving it back through the parser should validate round tripping.
-            obj = JsonSerializer.Parse<ClassWithComplexObjects>(reserialized);
+            obj = JsonSerializer.Deserialize<ClassWithComplexObjects>(reserialized);
             obj.Verify();
         }
 
@@ -159,7 +159,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.ReadCommentHandling = JsonCommentHandling.Skip;
 
-            ClassWithComplexObjects obj = JsonSerializer.Parse<ClassWithComplexObjects>(leadingTrivia + ClassWithComplexObjects.s_json + trailingTrivia, options);
+            ClassWithComplexObjects obj = JsonSerializer.Deserialize<ClassWithComplexObjects>(leadingTrivia + ClassWithComplexObjects.s_json + trailingTrivia, options);
             obj.Verify();
         }
 
@@ -169,22 +169,22 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.ReadCommentHandling = JsonCommentHandling.Skip;
 
-            TestClassWithNestedObjectCommentsOuter obj = JsonSerializer.Parse<TestClassWithNestedObjectCommentsOuter>(TestClassWithNestedObjectCommentsOuter.s_data, options);
+            TestClassWithNestedObjectCommentsOuter obj = JsonSerializer.Deserialize<TestClassWithNestedObjectCommentsOuter>(TestClassWithNestedObjectCommentsOuter.s_data, options);
             obj.Verify();
         }
 
         [Fact]
         public static void ReadEmpty()
         {
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>("{}");
+            SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>("{}");
             Assert.NotNull(obj);
         }
 
         [Fact]
         public static void EmptyClassWithRandomData()
         {
-            JsonSerializer.Parse<EmptyClass>(SimpleTestClass.s_json);
-            JsonSerializer.Parse<EmptyClass>(SimpleTestClassWithNulls.s_json);
+            JsonSerializer.Deserialize<EmptyClass>(SimpleTestClass.s_json);
+            JsonSerializer.Deserialize<EmptyClass>(SimpleTestClassWithNulls.s_json);
         }
 
         [Theory]
@@ -199,22 +199,22 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("[{}]", false)]
         public static void ReadObjectFail(string json, bool failsOnObject)
         {
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(json));
 
             if (failsOnObject)
             {
-                Assert.Throws<JsonException>(() => JsonSerializer.Parse<object>(json));
+                Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<object>(json));
             }
             else
             {
-                Assert.IsType<JsonElement>(JsonSerializer.Parse<object>(json));
+                Assert.IsType<JsonElement>(JsonSerializer.Deserialize<object>(json));
             }
         }
 
         [Fact]
         public static void ReadObjectFail_ReferenceTypeMissingParameterlessConstructor()
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Parse<PublicParameterizedConstructorTestClass>(@"{""Name"":""Name!""}"));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<PublicParameterizedConstructorTestClass>(@"{""Name"":""Name!""}"));
         }
 
         class PublicParameterizedConstructorTestClass
@@ -233,7 +233,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadClassWithStringToPrimitiveDictionary()
         {
-            TestClassWithStringToPrimitiveDictionary obj = JsonSerializer.Parse<TestClassWithStringToPrimitiveDictionary>(TestClassWithStringToPrimitiveDictionary.s_data);
+            TestClassWithStringToPrimitiveDictionary obj = JsonSerializer.Deserialize<TestClassWithStringToPrimitiveDictionary>(TestClassWithStringToPrimitiveDictionary.s_data);
             obj.Verify();
         }
 
@@ -261,7 +261,7 @@ namespace System.Text.Json.Serialization.Tests
 
             try
             {
-                JsonSerializer.Parse<TestClassWithBadData>(data);
+                JsonSerializer.Deserialize<TestClassWithBadData>(data);
             }
             catch (JsonException exception)
             {
@@ -277,7 +277,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ReadObject_PublicIndexer()
         {
-            Indexer indexer = JsonSerializer.Parse<Indexer>(@"{""NonIndexerProp"":""Value""}");
+            Indexer indexer = JsonSerializer.Deserialize<Indexer>(@"{""NonIndexerProp"":""Value""}");
             Assert.Equal("Value", indexer.NonIndexerProp);
             Assert.Equal(-1, indexer[0]);
         }
@@ -288,8 +288,8 @@ namespace System.Text.Json.Serialization.Tests
             SimpleStructWithSimpleClass testObject = new SimpleStructWithSimpleClass();
             testObject.Initialize();
 
-            string json = JsonSerializer.ToString(testObject, testObject.GetType());
-            SimpleStructWithSimpleClass obj = JsonSerializer.Parse<SimpleStructWithSimpleClass>(json);
+            string json = JsonSerializer.Serialize(testObject, testObject.GetType());
+            SimpleStructWithSimpleClass obj = JsonSerializer.Deserialize<SimpleStructWithSimpleClass>(json);
             obj.Verify();
         }
 
@@ -298,11 +298,10 @@ namespace System.Text.Json.Serialization.Tests
         {
             SimpleTestStruct testObject = new SimpleTestStruct();
             testObject.Initialize();
-            testObject.MySimpleTestClass = new SimpleTestClass  { MyString = "Hello", MyDouble = 3.14 } ;
+            testObject.MySimpleTestClass = new SimpleTestClass { MyString = "Hello", MyDouble = 3.14 };
 
-            string json = JsonSerializer.ToString(testObject);
-            SimpleTestStruct parsedObject = JsonSerializer.Parse<SimpleTestStruct>(json);
-
+            string json = JsonSerializer.Serialize(testObject);
+            SimpleTestStruct parsedObject = JsonSerializer.Deserialize<SimpleTestStruct>(json);
             parsedObject.Verify();
             Assert.Equal(3.14, parsedObject.MySimpleTestClass.MyDouble);
             Assert.Equal("Hello", parsedObject.MySimpleTestClass.MyString);
@@ -314,10 +313,9 @@ namespace System.Text.Json.Serialization.Tests
             SimpleTestClass testObject = new SimpleTestClass();
             testObject.Initialize();
             testObject.MySimpleTestStruct = new SimpleTestStruct { MyInt64 = 64, MyString = "Hello", MyInt32Array = new int[] { 32 } };
-            
-            string json = JsonSerializer.ToString(testObject);
-            SimpleTestClass parsedObject = JsonSerializer.Parse<SimpleTestClass>(json);
 
+            string json = JsonSerializer.Serialize(testObject);
+            SimpleTestClass parsedObject = JsonSerializer.Deserialize<SimpleTestClass>(json);
             parsedObject.Verify();
             Assert.Equal(64, parsedObject.MySimpleTestStruct.MyInt64);
             Assert.Equal("Hello", parsedObject.MySimpleTestStruct.MyString);
@@ -327,11 +325,18 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void OuterClassHavingPropertiesDefinedAfterClassWithDictionaryTest()
         {
-            OuterClassHavingPropertiesDefinedAfterClassWithDictionary testObject = new OuterClassHavingPropertiesDefinedAfterClassWithDictionary { MyInt = 10, MyIntArray = new int[] { 3 },
-                MyDouble= 3.14, MyList = new List<string> { "Hello" }, MyString = "World",  MyInnerTestClass = new SimpleClassWithDictionary { MyInt = 2 } };
-            string json = JsonSerializer.ToString(testObject);
+            OuterClassHavingPropertiesDefinedAfterClassWithDictionary testObject = new OuterClassHavingPropertiesDefinedAfterClassWithDictionary
+            {
+                MyInt = 10,
+                MyIntArray = new int[] { 3 },
+                MyDouble = 3.14,
+                MyList = new List<string> { "Hello" },
+                MyString = "World",
+                MyInnerTestClass = new SimpleClassWithDictionary { MyInt = 2 }
+            };
+            string json = JsonSerializer.Serialize(testObject);
 
-            OuterClassHavingPropertiesDefinedAfterClassWithDictionary parsedObject = JsonSerializer.Parse<OuterClassHavingPropertiesDefinedAfterClassWithDictionary>(json);
+            OuterClassHavingPropertiesDefinedAfterClassWithDictionary parsedObject = JsonSerializer.Deserialize<OuterClassHavingPropertiesDefinedAfterClassWithDictionary>(json);
 
             Assert.Equal(3.14, parsedObject.MyDouble);
             Assert.Equal(10, parsedObject.MyInt);
@@ -345,7 +350,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void ReadStructWithSimpleClassArrayValueTest()
         {
             string json = "{\"MySimpleTestClass\":{\"MyInt32Array\":[1],\"MyStringToStringDict\":null,\"MyStringToStringIDict\":null},\"MyInt32Array\":[2]}";
-            SimpleTestStruct parsedObject = JsonSerializer.Parse<SimpleTestStruct>(json);
+            SimpleTestStruct parsedObject = JsonSerializer.Deserialize<SimpleTestStruct>(json);
 
             Assert.Equal(1, parsedObject.MySimpleTestClass.MyInt32Array[0]);
             Assert.Equal(2, parsedObject.MyInt32Array[0]);

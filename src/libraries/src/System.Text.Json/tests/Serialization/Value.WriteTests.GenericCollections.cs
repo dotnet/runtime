@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Tests
                 new List<int>() { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -32,7 +32,7 @@ namespace System.Text.Json.Serialization.Tests
                 new int[] { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization.Tests
             input[0] = new List<int>() { 1, 2 };
             input[1] = new List<int>() { 3, 4 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -52,7 +52,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var input = new List<int> { 1, 2 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
         }
 
@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization.Tests
                 new List<int>() { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -78,7 +78,7 @@ namespace System.Text.Json.Serialization.Tests
                 new int[] { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -89,7 +89,7 @@ namespace System.Text.Json.Serialization.Tests
             input[0] = new List<int>() { 1, 2 };
             input[1] = new List<int>() { 3, 4 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -98,7 +98,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             IEnumerable<int> input = new List<int> { 1, 2 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
         }
 
@@ -111,7 +111,7 @@ namespace System.Text.Json.Serialization.Tests
                 new List<int>() { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -124,7 +124,7 @@ namespace System.Text.Json.Serialization.Tests
                 new int[] { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -135,7 +135,7 @@ namespace System.Text.Json.Serialization.Tests
             input[0] = new List<int>() { 1, 2 };
             input[1] = new List<int>() { 3, 4 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -144,7 +144,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             IList<int> input = new List<int> { 1, 2 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
         }
 
@@ -157,7 +157,7 @@ namespace System.Text.Json.Serialization.Tests
                 new List<int>() { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -170,7 +170,7 @@ namespace System.Text.Json.Serialization.Tests
                 new int[] { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -181,7 +181,7 @@ namespace System.Text.Json.Serialization.Tests
             input[0] = new List<int>() { 1, 2 };
             input[1] = new List<int>() { 3, 4 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -190,7 +190,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             ICollection<int> input = new List<int> { 1, 2 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
         }
 
@@ -203,7 +203,7 @@ namespace System.Text.Json.Serialization.Tests
                 new List<int>() { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -216,7 +216,7 @@ namespace System.Text.Json.Serialization.Tests
                 new int[] { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -227,7 +227,7 @@ namespace System.Text.Json.Serialization.Tests
             input[0] = new List<int>() { 1, 2 };
             input[1] = new List<int>() { 3, 4 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -236,7 +236,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             IReadOnlyCollection<int> input = new List<int> { 1, 2 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
         }
 
@@ -249,7 +249,7 @@ namespace System.Text.Json.Serialization.Tests
                 new List<int>() { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -262,7 +262,7 @@ namespace System.Text.Json.Serialization.Tests
                 new int[] { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -273,7 +273,7 @@ namespace System.Text.Json.Serialization.Tests
             input[0] = new List<int>() { 1, 2 };
             input[1] = new List<int>() { 3, 4 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -282,7 +282,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             IReadOnlyList<int> input = new List<int> { 1, 2 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
         }
 
@@ -295,10 +295,10 @@ namespace System.Text.Json.Serialization.Tests
                 new HashSet<int>() { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
 
             // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
-            input = JsonSerializer.Parse<ISet<ISet<int>>>(json);
+            input = JsonSerializer.Deserialize<ISet<ISet<int>>>(json);
 
             if (input.First().Contains(1))
             {
@@ -321,10 +321,10 @@ namespace System.Text.Json.Serialization.Tests
                 new HashSet<int>() { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
 
             // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
-            input = JsonSerializer.Parse<ISet<HashSet<int>>>(json);
+            input = JsonSerializer.Deserialize<ISet<HashSet<int>>>(json);
 
             if (input.First().Contains(1))
             {
@@ -347,10 +347,10 @@ namespace System.Text.Json.Serialization.Tests
                 new HashSet<int>() { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
 
             // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
-            input = JsonSerializer.Parse<HashSet<ISet<int>>>(json);
+            input = JsonSerializer.Deserialize<HashSet<ISet<int>>>(json);
 
             if (input.First().Contains(1))
             {
@@ -373,7 +373,7 @@ namespace System.Text.Json.Serialization.Tests
                 new int[] { 3, 4 }
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.True(json.Contains("[1,2]"));
             Assert.True(json.Contains("[3,4]"));
         }
@@ -385,10 +385,10 @@ namespace System.Text.Json.Serialization.Tests
             input[0] = new HashSet<int>() { 1, 2 };
             input[1] = new HashSet<int>() { 3, 4 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
 
             // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
-            input = JsonSerializer.Parse<ISet<int>[]>(json);
+            input = JsonSerializer.Deserialize<ISet<int>[]>(json);
             Assert.Equal(new HashSet<int> { 1, 2 }, input.First());
             Assert.Equal(new HashSet<int> { 3, 4 }, input.Last());
         }
@@ -398,7 +398,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             ISet<int> input = new HashSet<int> { 1, 2 };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.True(json == "[1,2]" || json == "[2,1]");
         }
 
@@ -411,7 +411,7 @@ namespace System.Text.Json.Serialization.Tests
                 new Stack<int>(new List<int>() { 3, 4 })
             });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[4,3],[2,1]]", json);
         }
 
@@ -424,7 +424,7 @@ namespace System.Text.Json.Serialization.Tests
                 new int[] { 3, 4 }
             });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[3,4],[1,2]]", json);
         }
 
@@ -435,7 +435,7 @@ namespace System.Text.Json.Serialization.Tests
             input[0] = new Stack<int>(new List<int> { 1, 2 });
             input[1] = new Stack<int>(new List<int> { 3, 4 });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[2,1],[4,3]]", json);
         }
 
@@ -444,7 +444,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             Stack<int> input = new Stack<int>(new List<int> { 1, 2 });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[2,1]", json);
         }
 
@@ -457,7 +457,7 @@ namespace System.Text.Json.Serialization.Tests
                 new Queue<int>(new List<int>() { 3, 4 })
             });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -470,7 +470,7 @@ namespace System.Text.Json.Serialization.Tests
                 new int[] { 3, 4 }
             });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -481,7 +481,7 @@ namespace System.Text.Json.Serialization.Tests
             input[0] = new Queue<int>(new List<int> { 1, 2 });
             input[1] = new Queue<int>(new List<int> { 3, 4 });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -490,7 +490,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             Queue<int> input = new Queue<int>(new List<int> { 1, 2 });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
         }
 
@@ -503,10 +503,10 @@ namespace System.Text.Json.Serialization.Tests
                 new HashSet<int>(new List<int>() { 3, 4 })
             });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
 
             // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
-            input = JsonSerializer.Parse<HashSet<HashSet<int>>>(json);
+            input = JsonSerializer.Deserialize<HashSet<HashSet<int>>>(json);
 
             if (input.First().Contains(1))
             {
@@ -529,7 +529,7 @@ namespace System.Text.Json.Serialization.Tests
                 new int[] { 3, 4 }
             });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.True(json.Contains("[1,2]"));
             Assert.True(json.Contains("[3,4]"));
         }
@@ -541,10 +541,10 @@ namespace System.Text.Json.Serialization.Tests
             input[0] = new HashSet<int>(new List<int> { 1, 2 });
             input[1] = new HashSet<int>(new List<int> { 3, 4 });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
 
             // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
-            input = JsonSerializer.Parse<HashSet<int>[]>(json);
+            input = JsonSerializer.Deserialize<HashSet<int>[]>(json);
             Assert.Equal(new HashSet<int> { 1, 2 }, input.First());
             Assert.Equal(new HashSet<int> { 3, 4 }, input.Last());
         }
@@ -554,7 +554,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             HashSet<int> input = new HashSet<int>(new List<int> { 1, 2 });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.True(json == "[1,2]" || json == "[2,1]");
         }
 
@@ -567,7 +567,7 @@ namespace System.Text.Json.Serialization.Tests
                 new LinkedList<int>(new List<int>() { 3, 4 })
             });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -580,7 +580,7 @@ namespace System.Text.Json.Serialization.Tests
                 new int[] { 3, 4 }
             });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -591,7 +591,7 @@ namespace System.Text.Json.Serialization.Tests
             input[0] = new LinkedList<int>(new List<int> { 1, 2 });
             input[1] = new LinkedList<int>(new List<int> { 3, 4 });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -600,7 +600,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             LinkedList<int> input = new LinkedList<int>(new List<int> { 1, 2 });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
         }
 
@@ -611,7 +611,7 @@ namespace System.Text.Json.Serialization.Tests
             input[0] = new SortedSet<int>(new List<int> { 1, 2 });
             input[1] = new SortedSet<int>(new List<int> { 3, 4 });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
@@ -620,7 +620,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             SortedSet<int> input = new SortedSet<int>(new List<int> { 1, 2 });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
         }
 
@@ -629,7 +629,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             KeyValuePair<string, int> input = new KeyValuePair<string, int>("Key", 123) ;
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal(@"{""Key"":""Key"",""Value"":123}", json);
         }
 
@@ -642,7 +642,7 @@ namespace System.Text.Json.Serialization.Tests
                 new KeyValuePair<string, int>("456", 456)
             };
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal(@"[{""Key"":""123"",""Value"":123},{""Key"":""456"",""Value"":456}]", json);
         }
 
@@ -651,7 +651,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             KeyValuePair<string, List<int>> input = new KeyValuePair<string, List<int>>("Key", new List<int> { 1, 2, 3 });
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal(@"{""Key"":""Key"",""Value"":[1,2,3]}", json);
         }
 
@@ -661,7 +661,7 @@ namespace System.Text.Json.Serialization.Tests
             KeyValuePair<string, KeyValuePair<string, int>> input = new KeyValuePair<string, KeyValuePair<string, int>>(
                 "Key", new KeyValuePair<string, int>("Key", 1));
 
-            string json = JsonSerializer.ToString(input);
+            string json = JsonSerializer.Serialize(input);
             Assert.Equal(@"{""Key"":""Key"",""Value"":{""Key"":""Key"",""Value"":1}}", json);
         }
     }

@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.ThrowsAny<ArgumentNullException>(() =>
             {
                 Utf8JsonReader reader = default;
-                JsonSerializer.ReadValue(ref reader, null);
+                JsonSerializer.Deserialize(ref reader, null);
             });
         }
 
@@ -28,7 +28,7 @@ namespace System.Text.Json.Serialization.Tests
             byte[] utf8 = Encoding.UTF8.GetBytes(@"{""myint16"":1}");
             var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
 
-            SimpleTestClass obj = JsonSerializer.ReadValue<SimpleTestClass>(ref reader, options);
+            SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(ref reader, options);
             Assert.Equal(1, obj.MyInt16);
 
             Assert.Equal(JsonTokenType.EndObject, reader.TokenType);
@@ -54,7 +54,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() =>
             {
                 var reader = new Utf8JsonReader(utf8, isFinalBlock: false, state);
-                JsonSerializer.ReadValue(ref reader, typeof(int), serializerOptions);
+                JsonSerializer.Deserialize(ref reader, typeof(int), serializerOptions);
             });
         }
 
@@ -71,7 +71,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() =>
             {
                 var reader = new Utf8JsonReader(utf8, isFinalBlock: false, state: default);
-                JsonSerializer.ReadValue(ref reader, typeof(int), serializerOptions);
+                JsonSerializer.Deserialize(ref reader, typeof(int), serializerOptions);
             });
         }
 
@@ -88,7 +88,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() =>
             {
                 var reader = new Utf8JsonReader(utf8, isFinalBlock: false, state: default);
-                JsonSerializer.ReadValue(ref reader, typeof(int), serializerOptions);
+                JsonSerializer.Deserialize(ref reader, typeof(int), serializerOptions);
             });
         }
 
@@ -103,7 +103,7 @@ namespace System.Text.Json.Serialization.Tests
 
             try
             {
-                JsonSerializer.ReadValue(ref reader, typeof(int[]));
+                JsonSerializer.Deserialize(ref reader, typeof(int[]));
                 Assert.True(false, "Expected ReadValue to throw JsonException for invalid JSON.");
             }
             catch (JsonException) { }
@@ -120,7 +120,7 @@ namespace System.Text.Json.Serialization.Tests
             var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
             reader.Read();
 
-            SimpleType instance = JsonSerializer.ReadValue<SimpleType>(ref reader);
+            SimpleType instance = JsonSerializer.Deserialize<SimpleType>(ref reader);
             Assert.Equal("abc", instance.Foo);
 
             Assert.Equal(utf8.Length, reader.BytesConsumed);
@@ -144,14 +144,14 @@ namespace System.Text.Json.Serialization.Tests
 
             try
             {
-                JsonSerializer.ReadValue<SimpleTypeWithArray>(ref reader);
+                JsonSerializer.Deserialize<SimpleTypeWithArray>(ref reader);
                 Assert.True(false, "Expected ReadValue to throw JsonException for type mismatch.");
             }
             catch (JsonException) { }
 
             Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
 
-            int[] instance = JsonSerializer.ReadValue<int[]>(ref reader);
+            int[] instance = JsonSerializer.Deserialize<int[]>(ref reader);
             Assert.Equal(new int[] { 1, 2, 3 }, instance);
 
             Assert.Equal(utf8.Length - 1, reader.BytesConsumed);
@@ -177,7 +177,7 @@ namespace System.Text.Json.Serialization.Tests
             reader.Read();
             Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
 
-            SimpleTypeWithArray instance = JsonSerializer.ReadValue<SimpleTypeWithArray>(ref reader);
+            SimpleTypeWithArray instance = JsonSerializer.Deserialize<SimpleTypeWithArray>(ref reader);
 
             Assert.Equal(JsonTokenType.EndObject, reader.TokenType);
             Assert.Equal(new int[] { 1, 2, 3 }, instance.Foo);
@@ -202,7 +202,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 try
                 {
-                    JsonSerializer.ReadValue<SimpleTypeWithArray>(ref reader);
+                    JsonSerializer.Deserialize<SimpleTypeWithArray>(ref reader);
                     Assert.True(false, "Expected ReadValue to throw JsonException for not enough data.");
                 }
                 catch (JsonException) { }
@@ -222,7 +222,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 try
                 {
-                    JsonSerializer.ReadValue<SimpleTypeWithArray>(ref reader);
+                    JsonSerializer.Deserialize<SimpleTypeWithArray>(ref reader);
                     Assert.True(false, "Expected ReadValue to throw JsonException for not enough data.");
                 }
                 catch (JsonException) { }
@@ -245,7 +245,7 @@ namespace System.Text.Json.Serialization.Tests
 
             try
             {
-                JsonSerializer.ReadValue<SimpleTypeWithArray>(ref reader);
+                JsonSerializer.Deserialize<SimpleTypeWithArray>(ref reader);
                 Assert.True(false, "Expected ReadValue to throw JsonException for invalid token.");
             }
             catch (JsonException ex)
@@ -262,7 +262,7 @@ namespace System.Text.Json.Serialization.Tests
 
             try
             {
-                JsonSerializer.ReadValue<SimpleTypeWithArray>(ref reader);
+                JsonSerializer.Deserialize<SimpleTypeWithArray>(ref reader);
                 Assert.True(false, "Expected ReadValue to throw JsonException for invalid token.");
             }
             catch (JsonException ex)
@@ -293,7 +293,7 @@ namespace System.Text.Json.Serialization.Tests
             var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
             Assert.Equal(JsonTokenType.None, reader.TokenType);
 
-            object obj = JsonSerializer.ReadValue(ref reader, type);
+            object obj = JsonSerializer.Deserialize(ref reader, type);
             Assert.False(reader.HasValueSequence);
             Assert.Equal(utf8.Length, reader.BytesConsumed);
             Assert.Equal(expected, obj);
@@ -315,7 +315,7 @@ namespace System.Text.Json.Serialization.Tests
             var reader = new Utf8JsonReader(sequence, isFinalBlock: true, state: default);
             Assert.Equal(JsonTokenType.None, reader.TokenType);
 
-            object obj = JsonSerializer.ReadValue(ref reader, type);
+            object obj = JsonSerializer.Deserialize(ref reader, type);
             Assert.True(reader.HasValueSequence);
             Assert.Equal(utf8.Length, reader.BytesConsumed);
             Assert.Equal(expected, obj);
@@ -341,7 +341,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     var state = new JsonReaderState(options);
                     var reader = new Utf8JsonReader(utf8, isFinalBlock: false, state);
-                    JsonSerializer.ReadValue(ref reader, typeof(int));
+                    JsonSerializer.Deserialize(ref reader, typeof(int));
                 });
 
             AssertExtensions.Throws<ArgumentException>(
@@ -350,7 +350,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     var state = new JsonReaderState(options);
                     var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
-                    JsonSerializer.ReadValue(ref reader, typeof(int));
+                    JsonSerializer.Deserialize(ref reader, typeof(int));
                 });
 
             AssertExtensions.Throws<ArgumentException>(
@@ -359,7 +359,7 @@ namespace System.Text.Json.Serialization.Tests
                {
                    var state = new JsonReaderState(options);
                    var reader = new Utf8JsonReader(utf8, isFinalBlock: false, state);
-                   JsonSerializer.ReadValue<int>(ref reader);
+                   JsonSerializer.Deserialize<int>(ref reader);
                });
 
             AssertExtensions.Throws<ArgumentException>(
@@ -368,7 +368,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     var state = new JsonReaderState(options);
                     var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state);
-                    JsonSerializer.ReadValue<int>(ref reader);
+                    JsonSerializer.Deserialize<int>(ref reader);
                 });
         }
 
@@ -378,13 +378,13 @@ namespace System.Text.Json.Serialization.Tests
             Assert.ThrowsAny<JsonException>(() =>
             {
                 Utf8JsonReader reader = default;
-                JsonSerializer.ReadValue(ref reader, typeof(int));
+                JsonSerializer.Deserialize(ref reader, typeof(int));
             });
 
             Assert.ThrowsAny<JsonException>(() =>
             {
                 Utf8JsonReader reader = default;
-                JsonSerializer.ReadValue<int>(ref reader);
+                JsonSerializer.Deserialize<int>(ref reader);
             });
         }
 
@@ -393,11 +393,11 @@ namespace System.Text.Json.Serialization.Tests
         {
             byte[] utf8 = Encoding.UTF8.GetBytes(SimpleTestStruct.s_json);
             var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
-            SimpleTestStruct testStruct = JsonSerializer.ReadValue<SimpleTestStruct>(ref reader);
+            SimpleTestStruct testStruct = JsonSerializer.Deserialize<SimpleTestStruct>(ref reader);
             testStruct.Verify();
 
             reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
-            object obj = JsonSerializer.ReadValue(ref reader, typeof(SimpleTestStruct));
+            object obj = JsonSerializer.Deserialize(ref reader, typeof(SimpleTestStruct));
             ((SimpleTestStruct)obj).Verify();
         }
 
@@ -407,61 +407,61 @@ namespace System.Text.Json.Serialization.Tests
             {
                 byte[] utf8 = Encoding.UTF8.GetBytes(TestClassWithNestedObjectInner.s_json);
                 var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
-                TestClassWithNestedObjectInner testStruct = JsonSerializer.ReadValue<TestClassWithNestedObjectInner>(ref reader);
+                TestClassWithNestedObjectInner testStruct = JsonSerializer.Deserialize<TestClassWithNestedObjectInner>(ref reader);
                 testStruct.Verify();
 
                 reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
-                object obj = JsonSerializer.ReadValue(ref reader, typeof(TestClassWithNestedObjectInner));
+                object obj = JsonSerializer.Deserialize(ref reader, typeof(TestClassWithNestedObjectInner));
                 ((TestClassWithNestedObjectInner)obj).Verify();
             }
 
             {
                 var reader = new Utf8JsonReader(TestClassWithNestedObjectOuter.s_data, isFinalBlock: true, state: default);
-                TestClassWithNestedObjectOuter testStruct = JsonSerializer.ReadValue<TestClassWithNestedObjectOuter>(ref reader);
+                TestClassWithNestedObjectOuter testStruct = JsonSerializer.Deserialize<TestClassWithNestedObjectOuter>(ref reader);
                 testStruct.Verify();
 
                 reader = new Utf8JsonReader(TestClassWithNestedObjectOuter.s_data, isFinalBlock: true, state: default);
-                object obj = JsonSerializer.ReadValue(ref reader, typeof(TestClassWithNestedObjectOuter));
+                object obj = JsonSerializer.Deserialize(ref reader, typeof(TestClassWithNestedObjectOuter));
                 ((TestClassWithNestedObjectOuter)obj).Verify();
             }
 
             {
                 var reader = new Utf8JsonReader(TestClassWithObjectList.s_data, isFinalBlock: true, state: default);
-                TestClassWithObjectList testStruct = JsonSerializer.ReadValue<TestClassWithObjectList>(ref reader);
+                TestClassWithObjectList testStruct = JsonSerializer.Deserialize<TestClassWithObjectList>(ref reader);
                 testStruct.Verify();
 
                 reader = new Utf8JsonReader(TestClassWithObjectList.s_data, isFinalBlock: true, state: default);
-                object obj = JsonSerializer.ReadValue(ref reader, typeof(TestClassWithObjectList));
+                object obj = JsonSerializer.Deserialize(ref reader, typeof(TestClassWithObjectList));
                 ((TestClassWithObjectList)obj).Verify();
             }
 
             {
                 var reader = new Utf8JsonReader(TestClassWithObjectArray.s_data, isFinalBlock: true, state: default);
-                TestClassWithObjectArray testStruct = JsonSerializer.ReadValue<TestClassWithObjectArray>(ref reader);
+                TestClassWithObjectArray testStruct = JsonSerializer.Deserialize<TestClassWithObjectArray>(ref reader);
                 testStruct.Verify();
 
                 reader = new Utf8JsonReader(TestClassWithObjectArray.s_data, isFinalBlock: true, state: default);
-                object obj = JsonSerializer.ReadValue(ref reader, typeof(TestClassWithObjectArray));
+                object obj = JsonSerializer.Deserialize(ref reader, typeof(TestClassWithObjectArray));
                 ((TestClassWithObjectArray)obj).Verify();
             }
 
             {
                 var reader = new Utf8JsonReader(TestClassWithObjectIEnumerableT.s_data, isFinalBlock: true, state: default);
-                TestClassWithObjectIEnumerableT testStruct = JsonSerializer.ReadValue<TestClassWithObjectIEnumerableT>(ref reader);
+                TestClassWithObjectIEnumerableT testStruct = JsonSerializer.Deserialize<TestClassWithObjectIEnumerableT>(ref reader);
                 testStruct.Verify();
 
                 reader = new Utf8JsonReader(TestClassWithObjectIEnumerableT.s_data, isFinalBlock: true, state: default);
-                object obj = JsonSerializer.ReadValue(ref reader, typeof(TestClassWithObjectIEnumerableT));
+                object obj = JsonSerializer.Deserialize(ref reader, typeof(TestClassWithObjectIEnumerableT));
                 ((TestClassWithObjectIEnumerableT)obj).Verify();
             }
 
             {
                 var reader = new Utf8JsonReader(TestClassWithStringToPrimitiveDictionary.s_data, isFinalBlock: true, state: default);
-                TestClassWithStringToPrimitiveDictionary testStruct = JsonSerializer.ReadValue<TestClassWithStringToPrimitiveDictionary>(ref reader);
+                TestClassWithStringToPrimitiveDictionary testStruct = JsonSerializer.Deserialize<TestClassWithStringToPrimitiveDictionary>(ref reader);
                 testStruct.Verify();
 
                 reader = new Utf8JsonReader(TestClassWithStringToPrimitiveDictionary.s_data, isFinalBlock: true, state: default);
-                object obj = JsonSerializer.ReadValue(ref reader, typeof(TestClassWithStringToPrimitiveDictionary));
+                object obj = JsonSerializer.Deserialize(ref reader, typeof(TestClassWithStringToPrimitiveDictionary));
                 ((TestClassWithStringToPrimitiveDictionary)obj).Verify();
             }
         }
@@ -472,25 +472,25 @@ namespace System.Text.Json.Serialization.Tests
             byte[] utf8 = Encoding.UTF8.GetBytes("[1, 2, 3]");
             var reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
             reader.Read();
-            int[] array = JsonSerializer.ReadValue<int[]>(ref reader);
+            int[] array = JsonSerializer.Deserialize<int[]>(ref reader);
             var expected = new int[3] { 1, 2, 3 };
             Assert.Equal(expected, array);
 
             reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
             reader.Read();
-            object obj = JsonSerializer.ReadValue(ref reader, typeof(int[]));
+            object obj = JsonSerializer.Deserialize(ref reader, typeof(int[]));
             Assert.Equal(expected, obj);
 
             reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
             reader.Read();
             reader.Read();
-            int number = JsonSerializer.ReadValue<int>(ref reader);
+            int number = JsonSerializer.Deserialize<int>(ref reader);
             Assert.Equal(1, number);
 
             reader = new Utf8JsonReader(utf8, isFinalBlock: true, state: default);
             reader.Read();
             reader.Read();
-            obj = JsonSerializer.ReadValue(ref reader, typeof(int));
+            obj = JsonSerializer.Deserialize(ref reader, typeof(int));
             Assert.Equal(1, obj);
         }
     }

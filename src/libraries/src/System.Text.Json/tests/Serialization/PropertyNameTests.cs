@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(@"{""MyInt16"":1}", options);
+            SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(@"{""MyInt16"":1}", options);
 
             // This is 0 (default value) because the data does not match the property "MyInt16" that is assuming camel-casing of "myInt16".
             Assert.Equal(0, obj.MyInt16);
@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(@"{""myInt16"":1}", options);
+            SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(@"{""myInt16"":1}", options);
 
             // This is 1 because the data matches the property "MyInt16" that is assuming camel-casing of "myInt16".
             Assert.Equal(1, obj.MyInt16);
@@ -38,8 +38,8 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(@"{}", options);
-            string json = JsonSerializer.ToString(obj, options);
+            SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(@"{}", options);
+            string json = JsonSerializer.Serialize(obj, options);
             Assert.Contains(@"""myInt16"":0", json);
             Assert.Contains(@"""myInt32"":0", json);
         }
@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.PropertyNamingPolicy = new UppercaseNamingPolicy();
 
-            SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(@"{""MYINT16"":1}", options);
+            SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(@"{""MYINT16"":1}", options);
 
             // This is 1 because the data matches the property "MYINT16" that is uppercase of "myInt16".
             Assert.Equal(1, obj.MyInt16);
@@ -63,7 +63,7 @@ namespace System.Text.Json.Serialization.Tests
             options.PropertyNamingPolicy = new NullNamingPolicy();
 
             // A policy that returns null is not allowed.
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Parse<SimpleTestClass>(@"{}", options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<SimpleTestClass>(@"{}", options));
         }
 
         [Fact]
@@ -71,21 +71,21 @@ namespace System.Text.Json.Serialization.Tests
         {
             {
                 // A non-match scenario with no options (case-sensitive by default).
-                SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(@"{""myint16"":1}");
+                SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(@"{""myint16"":1}");
                 Assert.Equal(0, obj.MyInt16);
             }
 
             {
                 // A non-match scenario with default options (case-sensitive by default).
                 var options = new JsonSerializerOptions();
-                SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(@"{""myint16"":1}", options);
+                SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(@"{""myint16"":1}", options);
                 Assert.Equal(0, obj.MyInt16);
             }
 
             {
                 var options = new JsonSerializerOptions();
                 options.PropertyNameCaseInsensitive = true;
-                SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(@"{""myint16"":1}", options);
+                SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(@"{""myint16"":1}", options);
                 Assert.Equal(1, obj.MyInt16);
             }
         }
@@ -94,12 +94,12 @@ namespace System.Text.Json.Serialization.Tests
         public static void JsonPropertyNameAttribute()
         {
             {
-                OverridePropertyNameDesignTime_TestClass obj = JsonSerializer.Parse<OverridePropertyNameDesignTime_TestClass>(@"{""Blah"":1}");
+                OverridePropertyNameDesignTime_TestClass obj = JsonSerializer.Deserialize<OverridePropertyNameDesignTime_TestClass>(@"{""Blah"":1}");
                 Assert.Equal(1, obj.myInt);
 
                 obj.myObject = 2;
                 
-                string json = JsonSerializer.ToString(obj);
+                string json = JsonSerializer.Serialize(obj);
                 Assert.Contains(@"""Blah"":1", json);
                 Assert.Contains(@"""BlahObject"":2", json);
             }
@@ -110,10 +110,10 @@ namespace System.Text.Json.Serialization.Tests
                 options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
                 options.PropertyNameCaseInsensitive = true;
 
-                OverridePropertyNameDesignTime_TestClass obj = JsonSerializer.Parse<OverridePropertyNameDesignTime_TestClass>(@"{""Blah"":1}", options);
+                OverridePropertyNameDesignTime_TestClass obj = JsonSerializer.Deserialize<OverridePropertyNameDesignTime_TestClass>(@"{""Blah"":1}", options);
                 Assert.Equal(1, obj.myInt);
 
-                string json = JsonSerializer.ToString(obj);
+                string json = JsonSerializer.Serialize(obj);
                 Assert.Contains(@"""Blah"":1", json);
             }
         }
@@ -123,12 +123,12 @@ namespace System.Text.Json.Serialization.Tests
         {
             {
                 var options = new JsonSerializerOptions();
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Parse<DuplicatePropertyNameDesignTime_TestClass>("{}", options));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<DuplicatePropertyNameDesignTime_TestClass>("{}", options));
             }
 
             {
                 var options = new JsonSerializerOptions();
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.ToString(new DuplicatePropertyNameDesignTime_TestClass(), options));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new DuplicatePropertyNameDesignTime_TestClass(), options));
             }
         }
 
@@ -140,7 +140,7 @@ namespace System.Text.Json.Serialization.Tests
             options.PropertyNameCaseInsensitive = true;
 
             // A null name in JsonPropertyNameAttribute is not allowed.
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.ToString(new NullPropertyName_TestClass(), options));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new NullPropertyName_TestClass(), options));
         }
 
         [Fact]
@@ -148,30 +148,30 @@ namespace System.Text.Json.Serialization.Tests
         {
             {
                 // Baseline comparison - no options set.
-                IntPropertyNamesDifferentByCaseOnly_TestClass obj = JsonSerializer.Parse<IntPropertyNamesDifferentByCaseOnly_TestClass>("{}");
-                JsonSerializer.ToString(obj);
+                IntPropertyNamesDifferentByCaseOnly_TestClass obj = JsonSerializer.Deserialize<IntPropertyNamesDifferentByCaseOnly_TestClass>("{}");
+                JsonSerializer.Serialize(obj);
             }
 
             {
                 var options = new JsonSerializerOptions();
                 options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Parse<IntPropertyNamesDifferentByCaseOnly_TestClass>("{}", options));
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.ToString(new IntPropertyNamesDifferentByCaseOnly_TestClass(), options));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<IntPropertyNamesDifferentByCaseOnly_TestClass>("{}", options));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new IntPropertyNamesDifferentByCaseOnly_TestClass(), options));
             }
 
             {
                 // Baseline comparison - no options set.
-                ObjectPropertyNamesDifferentByCaseOnly_TestClass obj = JsonSerializer.Parse<ObjectPropertyNamesDifferentByCaseOnly_TestClass>("{}");
-                JsonSerializer.ToString(obj);
+                ObjectPropertyNamesDifferentByCaseOnly_TestClass obj = JsonSerializer.Deserialize<ObjectPropertyNamesDifferentByCaseOnly_TestClass>("{}");
+                JsonSerializer.Serialize(obj);
             }
 
             {
                 var options = new JsonSerializerOptions();
                 options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Parse<ObjectPropertyNamesDifferentByCaseOnly_TestClass>("{}", options));
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.ToString(new ObjectPropertyNamesDifferentByCaseOnly_TestClass(), options));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ObjectPropertyNamesDifferentByCaseOnly_TestClass>("{}", options));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new ObjectPropertyNamesDifferentByCaseOnly_TestClass(), options));
             }
         }
 
@@ -184,8 +184,8 @@ namespace System.Text.Json.Serialization.Tests
                 var options = new JsonSerializerOptions();
                 options.PropertyNameCaseInsensitive = true;
 
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Parse<IntPropertyNamesDifferentByCaseOnly_TestClass>(json, options));
-                Assert.Throws<InvalidOperationException>(() => JsonSerializer.ToString(new IntPropertyNamesDifferentByCaseOnly_TestClass(), options));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<IntPropertyNamesDifferentByCaseOnly_TestClass>(json, options));
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new IntPropertyNamesDifferentByCaseOnly_TestClass(), options));
             }
         }
 
@@ -194,7 +194,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             {
                 // Baseline.
-                string json = JsonSerializer.ToString(new SimpleTestClass());
+                string json = JsonSerializer.Serialize(new SimpleTestClass());
                 Assert.Contains(@"""MyInt16"":0", json);
             }
 
@@ -203,7 +203,7 @@ namespace System.Text.Json.Serialization.Tests
                 var options = new JsonSerializerOptions();
                 options.PropertyNameCaseInsensitive = true;
 
-                string json = JsonSerializer.ToString(new SimpleTestClass(), options);
+                string json = JsonSerializer.Serialize(new SimpleTestClass(), options);
                 Assert.Contains(@"""MyInt16"":0", json);
             }
         }
@@ -217,12 +217,12 @@ namespace System.Text.Json.Serialization.Tests
                 var obj = new EmptyPropertyName_TestClass();
                 obj.MyInt1 = 1;
 
-                string jsonOut = JsonSerializer.ToString(obj);
+                string jsonOut = JsonSerializer.Serialize(obj);
                 Assert.Equal(json, jsonOut);
             }
 
             {
-                EmptyPropertyName_TestClass obj = JsonSerializer.Parse<EmptyPropertyName_TestClass>(json);
+                EmptyPropertyName_TestClass obj = JsonSerializer.Deserialize<EmptyPropertyName_TestClass>(json);
                 Assert.Equal(1, obj.MyInt1);
             }
         }
@@ -231,29 +231,29 @@ namespace System.Text.Json.Serialization.Tests
         public static void UnicodePropertyNames()
         {
             {
-                ClassWithUnicodeProperty obj = JsonSerializer.Parse<ClassWithUnicodeProperty>(@"{""Aѧ"":1}");
+                ClassWithUnicodeProperty obj = JsonSerializer.Deserialize<ClassWithUnicodeProperty>(@"{""Aѧ"":1}");
                 Assert.Equal(1, obj.Aѧ);
 
                 // Verify the name is escaped after serialize.
-                string json = JsonSerializer.ToString(obj);
+                string json = JsonSerializer.Serialize(obj);
                 Assert.Contains(@"""A\u0467"":1", json);
 
                 // Verify the name is unescaped after deserialize.
-                obj = JsonSerializer.Parse<ClassWithUnicodeProperty>(json);
+                obj = JsonSerializer.Deserialize<ClassWithUnicodeProperty>(json);
                 Assert.Equal(1, obj.Aѧ);
             }
 
             {
                 // We want to go over StackallocThreshold=256 to force a pooled allocation, so this property is 400 chars and 401 bytes.
-                ClassWithUnicodeProperty obj = JsonSerializer.Parse<ClassWithUnicodeProperty>(@"{""Aѧ34567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"":1}");
+                ClassWithUnicodeProperty obj = JsonSerializer.Deserialize<ClassWithUnicodeProperty>(@"{""Aѧ34567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"":1}");
                 Assert.Equal(1, obj.Aѧ34567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890);
 
                 // Verify the name is escaped after serialize.
-                string json = JsonSerializer.ToString(obj);
+                string json = JsonSerializer.Serialize(obj);
                 Assert.Contains(@"""A\u046734567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890"":1", json);
 
                 // Verify the name is unescaped after deserialize.
-                obj = JsonSerializer.Parse<ClassWithUnicodeProperty>(json);
+                obj = JsonSerializer.Deserialize<ClassWithUnicodeProperty>(json);
                 Assert.Equal(1, obj.Aѧ34567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890);
             }
         }

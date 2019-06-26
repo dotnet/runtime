@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                int i2 = JsonSerializer.Parse<int>("12bad");
+                int i2 = JsonSerializer.Deserialize<int>("12bad");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                JsonSerializer.Parse<IDictionary<string, string>>(@"{""Key"":1}");
+                JsonSerializer.Deserialize<IDictionary<string, string>>(@"{""Key"":1}");
                 Assert.True(false, "Type Mismatch JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -58,7 +58,7 @@ namespace System.Text.Json.Serialization.Tests
 
             try
             {
-                JsonSerializer.Parse<BasicCompany>(json);
+                JsonSerializer.Deserialize<BasicCompany>(json);
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -84,7 +84,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                JsonSerializer.Parse<Dictionary<string, int>>(@"{""Key1"":1, ""Key2"":bad}");
+                JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""Key1"":1, ""Key2"":bad}");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -94,7 +94,7 @@ namespace System.Text.Json.Serialization.Tests
 
             try
             {
-                JsonSerializer.Parse<Dictionary<string, int>>(@"{""Key1"":1, ""Key2"":");
+                JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""Key1"":1, ""Key2"":");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -104,7 +104,7 @@ namespace System.Text.Json.Serialization.Tests
 
             try
             {
-                JsonSerializer.Parse<Dictionary<string, int>>(@"{""Key1"":1, ""Key2""");
+                JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""Key1"":1, ""Key2""");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -119,7 +119,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                JsonSerializer.Parse<int[]>(@"[1, bad]");
+                JsonSerializer.Deserialize<int[]>(@"[1, bad]");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -129,7 +129,7 @@ namespace System.Text.Json.Serialization.Tests
 
             try
             {
-                JsonSerializer.Parse<int[]>(@"[1,");
+                JsonSerializer.Deserialize<int[]>(@"[1,");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -139,7 +139,7 @@ namespace System.Text.Json.Serialization.Tests
 
             try
             {
-                JsonSerializer.Parse<int[]>(@"[1");
+                JsonSerializer.Deserialize<int[]>(@"[1");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -150,7 +150,7 @@ namespace System.Text.Json.Serialization.Tests
 
             try
             {
-                JsonSerializer.Parse<int[]>(@"[1 /* comment starts but doesn't end");
+                JsonSerializer.Deserialize<int[]>(@"[1 /* comment starts but doesn't end");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -165,7 +165,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                JsonSerializer.Parse<List<int>>(@"[1, bad]");
+                JsonSerializer.Deserialize<List<int>>(@"[1, bad]");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -179,7 +179,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                JsonSerializer.Parse<int[][]>(@"[[1, 2],[3,bad]]");
+                JsonSerializer.Deserialize<int[][]>(@"[[1, 2],[3,bad]]");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -193,7 +193,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                JsonSerializer.Parse<List<List<int>>>(@"[[1, 2],[3,bad]]");
+                JsonSerializer.Deserialize<List<List<int>>>(@"[[1, 2],[3,bad]]");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -207,7 +207,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                JsonSerializer.Parse<RootClass>(@"{""Child"":{""MyInt"":bad]}");
+                JsonSerializer.Deserialize<RootClass>(@"{""Child"":{""MyInt"":bad]}");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -221,7 +221,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                JsonSerializer.Parse<RootClass>(@"{""Child"":{""MyIntArray"":[1, bad]}");
+                JsonSerializer.Deserialize<RootClass>(@"{""Child"":{""MyIntArray"":[1, bad]}");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -235,7 +235,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                JsonSerializer.Parse<RootClass>(@"{""Child"":{""MyDictionary"":{""Key"": bad]");
+                JsonSerializer.Deserialize<RootClass>(@"{""Child"":{""MyDictionary"":{""Key"": bad]");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -249,7 +249,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                JsonSerializer.Parse<RootClass>(@"{""Child"":{""MyDictionary"":{""Key1"":{""Children"":[{""MyDictionary"":{""K.e.y"":""");
+                JsonSerializer.Deserialize<RootClass>(@"{""Child"":{""MyDictionary"":{""Key1"":{""Children"":[{""MyDictionary"":{""K.e.y"":""");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -263,7 +263,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                JsonSerializer.Parse<RootClass>(@"{""Child"":{""Children"":[{}, {""MyDictionary"":{""K.e.y"": {""MyInt"":bad");
+                JsonSerializer.Deserialize<RootClass>(@"{""Child"":{""Children"":[{}, {""MyDictionary"":{""K.e.y"": {""MyInt"":bad");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -277,7 +277,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                ClassWithUnicodeProperty obj = JsonSerializer.Parse<ClassWithUnicodeProperty>(@"{""Aѧ"":bad}");
+                ClassWithUnicodeProperty obj = JsonSerializer.Deserialize<ClassWithUnicodeProperty>(@"{""Aѧ"":bad}");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -292,7 +292,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             try
             {
-                JsonSerializer.Parse<ClassWithExtensionProperty>(@"{""MyNestedClass"":{""UnknownProperty"":bad}}");
+                JsonSerializer.Deserialize<ClassWithExtensionProperty>(@"{""MyNestedClass"":{""UnknownProperty"":bad}}");
                 Assert.True(false, "Expected JsonException was not thrown.");
             }
             catch (JsonException e)
@@ -310,18 +310,18 @@ namespace System.Text.Json.Serialization.Tests
 
             // Baseline (no exception)
             {
-                SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(@"{""myint32"":1}", options);
+                SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(@"{""myint32"":1}", options);
                 Assert.Equal(1, obj.MyInt32);
             }
 
             {
-                SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(@"{""MYINT32"":1}", options);
+                SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(@"{""MYINT32"":1}", options);
                 Assert.Equal(1, obj.MyInt32);
             }
 
             try
             {
-                JsonSerializer.Parse<SimpleTestClass>(@"{""myint32"":bad}", options);
+                JsonSerializer.Deserialize<SimpleTestClass>(@"{""myint32"":bad}", options);
             }
             catch (JsonException e)
             {
@@ -331,7 +331,7 @@ namespace System.Text.Json.Serialization.Tests
 
             try
             {
-                JsonSerializer.Parse<SimpleTestClass>(@"{""MYINT32"":bad}", options);
+                JsonSerializer.Deserialize<SimpleTestClass>(@"{""MYINT32"":bad}", options);
             }
             catch (JsonException e)
             {

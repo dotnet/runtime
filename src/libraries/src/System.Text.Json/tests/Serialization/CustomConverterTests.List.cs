@@ -130,22 +130,22 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new ListConverter(10));
 
             {
-                List<int> list = JsonSerializer.Parse<List<int>>(json, options);
+                List<int> list = JsonSerializer.Deserialize<List<int>>(json, options);
                 Assert.Equal(11, list[0]);
                 Assert.Equal(12, list[1]);
                 Assert.Equal(13, list[2]);
 
-                string jsonSerialized = JsonSerializer.ToString(list, options);
+                string jsonSerialized = JsonSerializer.Serialize(list, options);
                 Assert.Equal(json, jsonSerialized);
             }
 
             {
-                List<long> list = JsonSerializer.Parse<List<long>>(json, options);
+                List<long> list = JsonSerializer.Deserialize<List<long>>(json, options);
                 Assert.Equal(11, list[0]);
                 Assert.Equal(12, list[1]);
                 Assert.Equal(13, list[2]);
 
-                string jsonSerialized = JsonSerializer.ToString(list, options);
+                string jsonSerialized = JsonSerializer.Serialize(list, options);
                 Assert.Equal(json, jsonSerialized);
             }
         }
@@ -158,12 +158,12 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new ListConverter<int>(10));
 
-            List<int> list = JsonSerializer.Parse<List<int>>(json, options);
+            List<int> list = JsonSerializer.Deserialize<List<int>>(json, options);
             Assert.Equal(11, list[0]);
             Assert.Equal(12, list[1]);
             Assert.Equal(13, list[2]);
 
-            string jsonSerialized = JsonSerializer.ToString(list, options);
+            string jsonSerialized = JsonSerializer.Serialize(list, options);
             Assert.Equal(json, jsonSerialized);
         }
 
@@ -221,17 +221,17 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new IListConverter());
 
-            IList list = JsonSerializer.Parse<IList>(json, options);
+            IList list = JsonSerializer.Deserialize<IList>(json, options);
             Assert.Equal(11, list[0]);
             Assert.Equal(12, list[1]);
             Assert.Equal(13, list[2]);
 
-            List<int> contraVariantList = JsonSerializer.Parse<List<int>>(json, options);
+            List<int> contraVariantList = JsonSerializer.Deserialize<List<int>>(json, options);
             Assert.Equal(11, contraVariantList[0]);
             Assert.Equal(12, contraVariantList[1]);
             Assert.Equal(13, contraVariantList[2]);
 
-            string jsonSerialized = JsonSerializer.ToString(list, options);
+            string jsonSerialized = JsonSerializer.Serialize(list, options);
             Assert.Equal(json, jsonSerialized);
         }
     }

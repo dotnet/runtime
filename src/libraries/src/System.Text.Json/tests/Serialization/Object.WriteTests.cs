@@ -12,7 +12,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void VerifyTypeFail()
         {
-            Assert.Throws<ArgumentException>(() => JsonSerializer.ToString(1, typeof(string)));
+            Assert.Throws<ArgumentException>(() => JsonSerializer.Serialize(1, typeof(string)));
         }
 
         [Theory]
@@ -24,11 +24,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 testObj.Initialize();
                 testObj.Verify();
-                json = JsonSerializer.ToString(testObj, testObj.GetType());
+                json = JsonSerializer.Serialize(testObj, testObj.GetType());
             }
 
             {
-                ITestClass obj = (ITestClass)JsonSerializer.Parse(json, testObj.GetType());
+                ITestClass obj = (ITestClass)JsonSerializer.Deserialize(json, testObj.GetType());
                 obj.Verify();
             }
         }
@@ -45,7 +45,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void WriteObjectAsObject()
         {
             var obj = new ObjectObject { Object = new object() };
-            string json = JsonSerializer.ToString(obj);
+            string json = JsonSerializer.Serialize(obj);
             Assert.Equal(@"{""Object"":{}}", json);
         }
 
@@ -60,7 +60,7 @@ namespace System.Text.Json.Serialization.Tests
             var indexer = new Indexer();
             indexer[42] = 42;
             indexer.NonIndexerProp = "Value";
-            Assert.Equal(@"{""NonIndexerProp"":""Value""}", JsonSerializer.ToString(indexer));
+            Assert.Equal(@"{""NonIndexerProp"":""Value""}", JsonSerializer.Serialize(indexer));
         }
 
         private class Indexer

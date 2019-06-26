@@ -420,7 +420,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(element.GetRawText());
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
                     obj.Verify();
                 }
                 else
@@ -469,7 +469,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(element.GetRawText());
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
                     obj.Verify();
                 }
                 else
@@ -520,7 +520,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Parse<SimpleTestClass>(element.GetRawText());
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
                     obj.Verify();
                 }
                 else
