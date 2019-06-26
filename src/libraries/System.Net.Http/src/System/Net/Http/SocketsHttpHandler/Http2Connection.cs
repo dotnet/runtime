@@ -339,11 +339,14 @@ namespace System.Net.Http
 
             _hpackDecoder.CompleteDecode();
 
-            http2Stream?.OnResponseHeadersComplete(endStream);
-
-            if (endStream && http2Stream != null)
+            if (http2Stream != null)
             {
-                RemoveStream(http2Stream);
+                http2Stream.OnResponseHeadersComplete(endStream);
+
+                if (endStream)
+                {
+                    RemoveStream(http2Stream);
+                }
             }
         }
 
@@ -390,10 +393,10 @@ namespace System.Net.Http
             // Note, http2Stream will be null if this is a closed stream.
             // Just ignore the frame in this case.
 
+            ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), hasPad: frameHeader.PaddedFlag, hasPriority: false);
+
             if (http2Stream != null)
             {
-                ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), hasPad: frameHeader.PaddedFlag, hasPriority: false);
-
                 bool endStream = frameHeader.EndStreamFlag;
 
                 http2Stream.OnResponseData(frameData, endStream);
@@ -402,6 +405,11 @@ namespace System.Net.Http
                 {
                     RemoveStream(http2Stream);
                 }
+            }
+
+            if (frameData.Length > 0)
+            {
+                ExtendWindow(frameData.Length);
             }
 
             _incomingBuffer.Discard(frameHeader.Length);
