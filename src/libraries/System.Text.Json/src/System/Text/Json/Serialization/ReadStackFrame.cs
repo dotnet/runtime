@@ -38,7 +38,7 @@ namespace System.Text.Json
 
         // For performance, we order the properties by the first deserialize and PropertyIndex helps find the right slot quicker.
         public int PropertyIndex;
-        public HashSet<PropertyRef> PropertyRefCache;
+        public List<PropertyRef> PropertyRefCache;
 
         // The current JSON data for a property does not match a given POCO, so ignore the property (recursively).
         public bool Drain;
@@ -67,46 +67,52 @@ namespace System.Text.Json
         public bool IsProcessingIDictionaryConstructible => IsIDictionaryConstructible || IsIDictionaryConstructibleProperty;
         public bool IsProcessingEnumerable => IsEnumerable || IsEnumerableProperty;
 
-        public bool IsProcessingValue
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool IsProcessingValue(JsonTokenType tokenType)
         {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
+            if (SkipProperty)
             {
-                if (SkipProperty)
+                return false;
+            }
+
+            // Handle array case.
+            if (CollectionPropertyInitialized)
+            {
+                ClassType elementType;
+
+                if (IsCollectionForClass)
                 {
-                    return false;
-                }
-
-                if (CollectionPropertyInitialized)
-                {
-                    ClassType elementType;
-
-                    if (IsCollectionForProperty)
-                    {
-                        elementType = JsonPropertyInfo.ElementClassInfo.ClassType;
-                    }
-                    else
-                    {
-                        Debug.Assert(IsCollectionForClass);
-                        elementType = JsonClassInfo.ElementClassInfo.ClassType;
-                    }
-
+                    // A custom converter for a class (to handle JSON array).
+                    elementType = JsonClassInfo.ElementClassInfo.ClassType;
                     return (elementType == ClassType.Value || elementType == ClassType.Unknown);
                 }
 
-                ClassType type;
-                if (JsonPropertyInfo == null)
+                Debug.Assert(IsCollectionForProperty);
+
+                if (tokenType == JsonTokenType.StartObject)
                 {
-                    type = JsonClassInfo.ClassType;
+                    elementType = JsonPropertyInfo.ElementClassInfo.ClassType;
+                    return (elementType == ClassType.Value || elementType == ClassType.Unknown);
                 }
                 else
                 {
-                    type = JsonPropertyInfo.ClassType;
+                    // A custom converter for an array element is handled by IsProcessingValueOnStartObject.
+                    return false;
                 }
-
-                // If we're a Value or polymorphic Value (ClassType.Unknown), return true.
-                return type == ClassType.Value || type == ClassType.Unknown;
             }
+
+            // Handle object case.
+            ClassType type;
+            if (JsonPropertyInfo == null)
+            {
+                type = JsonClassInfo.ClassType;
+            }
+            else
+            {
+                type = JsonPropertyInfo.ClassType;
+            }
+
+            return type == ClassType.Value || type == ClassType.Unknown;
         }
 
         public void Initialize(Type type, JsonSerializerOptions options)
@@ -122,7 +128,7 @@ namespace System.Text.Json
                 JsonClassInfo.ClassType == ClassType.Dictionary ||
                 JsonClassInfo.ClassType == ClassType.IDictionaryConstructible)
             {
-                JsonPropertyInfo = JsonClassInfo.GetPolicyProperty();
+                JsonPropertyInfo = JsonClassInfo.PolicyProperty;
             }
         }
 
@@ -162,7 +168,7 @@ namespace System.Text.Json
                 IList converterList;
                 if (jsonPropertyInfo.ElementClassInfo.ClassType == ClassType.Value)
                 {
-                    converterList = jsonPropertyInfo.ElementClassInfo.GetPolicyProperty().CreateConverterList();
+                    converterList = jsonPropertyInfo.ElementClassInfo.PolicyProperty.CreateConverterList();
                 }
                 else
                 {

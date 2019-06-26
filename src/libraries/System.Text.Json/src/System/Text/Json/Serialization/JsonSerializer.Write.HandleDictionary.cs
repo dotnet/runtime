@@ -18,7 +18,7 @@ namespace System.Text.Json
             ref WriteStack state)
         {
             JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
-            if (state.Current.Enumerator == null)
+            if (state.Current.CollectionEnumerator == null)
             {
                 IEnumerable enumerable;
 
@@ -36,37 +36,37 @@ namespace System.Text.Json
 
                 if (enumerable is IDictionary dictionary)
                 {
-                    state.Current.Enumerator = dictionary.GetEnumerator();
+                    state.Current.CollectionEnumerator = dictionary.GetEnumerator();
                 }
                 else
                 {
-                    state.Current.Enumerator = enumerable.GetEnumerator();
+                    state.Current.CollectionEnumerator = enumerable.GetEnumerator();
                 }
 
                 state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer);
             }
 
-            if (state.Current.Enumerator.MoveNext())
+            if (state.Current.CollectionEnumerator.MoveNext())
             {
                 // Check for polymorphism.
                 if (elementClassInfo.ClassType == ClassType.Unknown)
                 {
-                    object currentValue = ((IDictionaryEnumerator)state.Current.Enumerator).Entry.Value;
+                    object currentValue = ((IDictionaryEnumerator)state.Current.CollectionEnumerator).Entry.Value;
                     GetRuntimeClassInfo(currentValue, ref elementClassInfo, options);
                 }
 
                 if (elementClassInfo.ClassType == ClassType.Value)
                 {
-                    elementClassInfo.GetPolicyProperty().WriteDictionary(ref state, writer);
+                    elementClassInfo.PolicyProperty.WriteDictionary(ref state, writer);
                 }
-                else if (state.Current.Enumerator.Current == null)
+                else if (state.Current.CollectionEnumerator.Current == null)
                 {
                     writer.WriteNull(jsonPropertyInfo.Name);
                 }
                 else
                 {
                     // An object or another enumerator requires a new stack frame.
-                    var enumerator = (IDictionaryEnumerator)state.Current.Enumerator;
+                    var enumerator = (IDictionaryEnumerator)state.Current.CollectionEnumerator;
                     object value = enumerator.Value;
                     state.Push(elementClassInfo, value);
                     state.Current.KeyName = (string)enumerator.Key;
@@ -78,7 +78,7 @@ namespace System.Text.Json
             // We are done enumerating.
             writer.WriteEndObject();
 
-            if (state.Current.PopStackOnEnd)
+            if (state.Current.PopStackOnEndCollection)
             {
                 state.Pop();
             }
@@ -101,25 +101,25 @@ namespace System.Text.Json
                 return;
             }
 
-            Debug.Assert(current.Enumerator != null);
+            Debug.Assert(current.CollectionEnumerator != null);
 
             string key;
             TProperty value;
-            if (current.Enumerator is IEnumerator<KeyValuePair<string, TProperty>> enumerator)
+            if (current.CollectionEnumerator is IEnumerator<KeyValuePair<string, TProperty>> enumerator)
             {
                 // Avoid boxing for strongly-typed enumerators such as returned from IDictionary<string, TRuntimeProperty>
                 value = enumerator.Current.Value;
                 key = enumerator.Current.Key;
             }
-            else if (current.Enumerator is IEnumerator<KeyValuePair<string, object>> polymorphicEnumerator)
+            else if (current.CollectionEnumerator is IEnumerator<KeyValuePair<string, object>> polymorphicEnumerator)
             {
                 value = (TProperty)polymorphicEnumerator.Current.Value;
                 key = polymorphicEnumerator.Current.Key;
             }
             else if (current.IsIDictionaryConstructible || current.IsIDictionaryConstructibleProperty)
             {
-                value = (TProperty)((DictionaryEntry)current.Enumerator.Current).Value;
-                key = (string)((DictionaryEntry)current.Enumerator.Current).Key;
+                value = (TProperty)((DictionaryEntry)current.CollectionEnumerator.Current).Value;
+                key = (string)((DictionaryEntry)current.CollectionEnumerator.Current).Key;
             }
             else
             {

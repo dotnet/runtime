@@ -17,7 +17,7 @@ namespace System.Text.Json
         {
             Debug.Assert(state.Current.JsonPropertyInfo.ClassType == ClassType.Enumerable);
 
-            if (state.Current.Enumerator == null)
+            if (state.Current.CollectionEnumerator == null)
             {
                 IEnumerable enumerable = (IEnumerable)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.CurrentValue);
 
@@ -32,25 +32,25 @@ namespace System.Text.Json
                     return true;
                 }
 
-                state.Current.Enumerator = enumerable.GetEnumerator();
+                state.Current.CollectionEnumerator = enumerable.GetEnumerator();
 
                 state.Current.WriteObjectOrArrayStart(ClassType.Enumerable, writer);
             }
 
-            if (state.Current.Enumerator.MoveNext())
+            if (state.Current.CollectionEnumerator.MoveNext())
             {
                 // Check for polymorphism.
                 if (elementClassInfo.ClassType == ClassType.Unknown)
                 {
-                    object currentValue = state.Current.Enumerator.Current;
+                    object currentValue = state.Current.CollectionEnumerator.Current;
                     GetRuntimeClassInfo(currentValue, ref elementClassInfo, options);
                 }
 
                 if (elementClassInfo.ClassType == ClassType.Value)
                 {
-                    elementClassInfo.GetPolicyProperty().WriteEnumerable(ref state, writer);
+                    elementClassInfo.PolicyProperty.WriteEnumerable(ref state, writer);
                 }
-                else if (state.Current.Enumerator.Current == null)
+                else if (state.Current.CollectionEnumerator.Current == null)
                 {
                     // Write a null object or enumerable.
                     writer.WriteNullValue();
@@ -58,7 +58,7 @@ namespace System.Text.Json
                 else
                 {
                     // An object or another enumerator requires a new stack frame.
-                    object nextValue = state.Current.Enumerator.Current;
+                    object nextValue = state.Current.CollectionEnumerator.Current;
                     state.Push(elementClassInfo, nextValue);
                 }
 
@@ -68,7 +68,7 @@ namespace System.Text.Json
             // We are done enumerating.
             writer.WriteEndArray();
 
-            if (state.Current.PopStackOnEnd)
+            if (state.Current.PopStackOnEndCollection)
             {
                 state.Pop();
             }

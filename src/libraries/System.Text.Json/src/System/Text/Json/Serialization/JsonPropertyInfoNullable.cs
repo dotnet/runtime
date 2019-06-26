@@ -85,17 +85,17 @@ namespace System.Text.Json
         {
             if (Converter != null)
             {
-                Debug.Assert(current.Enumerator != null);
+                Debug.Assert(current.CollectionEnumerator != null);
 
                 TProperty? value;
-                if (current.Enumerator is IEnumerator<TProperty?> enumerator)
+                if (current.CollectionEnumerator is IEnumerator<TProperty?> enumerator)
                 {
                     // Avoid boxing for strongly-typed enumerators such as returned from IList<T>.
                     value = enumerator.Current;
                 }
                 else
                 {
-                    value = (TProperty?)current.Enumerator.Current;
+                    value = (TProperty?)current.CollectionEnumerator.Current;
                 }
 
                 if (value == null)

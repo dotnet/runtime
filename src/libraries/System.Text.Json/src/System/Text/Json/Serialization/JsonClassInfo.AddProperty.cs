@@ -10,18 +10,18 @@ namespace System.Text.Json
 {
     internal partial class JsonClassInfo
     {
-        private JsonPropertyInfo AddPolicyProperty(Type propertyType, JsonSerializerOptions options)
+        private void AddPolicyProperty(Type propertyType, JsonSerializerOptions options)
         {
             // A policy property is not a real property on a type; instead it leverages the existing converter
             // logic and generic support to avoid boxing. It is used with values types and elements from collections and
             // dictionaries. Typically it would represent a CLR type such as System.String.
-            return AddProperty(
+            PolicyProperty = AddProperty(
                 propertyType,
                 propertyInfo : null,        // Not a real property so this is null.
                 classType : typeof(object), // A dummy type (not used).
                 options : options);
-
         }
+
         private JsonPropertyInfo AddProperty(Type propertyType, PropertyInfo propertyInfo, Type classType, JsonSerializerOptions options)
         {
             JsonPropertyInfo jsonInfo = CreateProperty(propertyType, propertyType, propertyInfo, classType, options);
@@ -52,16 +52,6 @@ namespace System.Text.Json
                 {
                     jsonInfo = CreateProperty(propertyType, newPropertyType, propertyInfo, classType, options);
                 }
-            }
-
-            if (propertyInfo != null)
-            {
-                _propertyRefs.Add(new PropertyRef(GetKey(jsonInfo.NameUsedToCompare), jsonInfo));
-            }
-            else
-            {
-                // A single property or an IEnumerable
-                _propertyRefs.Add(new PropertyRef(0, jsonInfo));
             }
 
             return jsonInfo;
