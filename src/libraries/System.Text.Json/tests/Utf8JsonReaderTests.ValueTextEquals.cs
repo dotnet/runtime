@@ -628,12 +628,11 @@ namespace System.Text.Json.Tests
             Assert.False(json.ValueTextEquals(lookup));
         }
 
-        [ActiveIssue(38221)]
         [ConditionalFact(nameof(IsX64))]
         [OuterLoop]
         public static void LookupOverflow()
         {
-            char[] jsonString = new char[400_000_002];
+            char[] jsonString = new char[800_000_002];
 
             jsonString.AsSpan().Fill('a');
             jsonString[0] = '"';
