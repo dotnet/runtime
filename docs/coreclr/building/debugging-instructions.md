@@ -33,7 +33,7 @@ For more information on SOS commands click [here](https://github.com/dotnet/diag
 Debugging CoreCLR on Linux and macOS
 ====================================
 
-See the SOS installation instructions [here](https://github.com/dotnet/diagnostics/blob/master/documentation/installing-sos-windows-instructions.md). After SOS is installed, it will automatically be loaded by lldb.
+See the SOS installation instructions [here](https://github.com/dotnet/diagnostics/blob/master/documentation/installing-sos-instructions.md). After SOS is installed, it will automatically be loaded by lldb.
 
 Only lldb is supported by SOS. Gdb can be used to debug the coreclr code but with no SOS support.
 
