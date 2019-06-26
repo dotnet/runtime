@@ -296,9 +296,10 @@ namespace System.Text
                     break;
             }
 
-            // Couldn't decode the buffer. Fallback the buffer instead.
+            // Couldn't decode the buffer. Fallback the buffer instead. See comment in DrainLeftoverDataForGetChars
+            // for more information on why a negative index is provided.
 
-            if (FallbackBuffer.Fallback(combinedBuffer.Slice(0, combinedBufferBytesConsumed).ToArray(), index: 0))
+            if (FallbackBuffer.Fallback(combinedBuffer.Slice(0, combinedBufferBytesConsumed).ToArray(), index: -_leftoverByteCount))
             {
                 charCount = _fallbackBuffer!.DrainRemainingDataForGetCharCount();
                 Debug.Assert(charCount >= 0, "Fallback buffer shouldn't have returned a negative char count.");
@@ -360,9 +361,13 @@ namespace System.Text
                     break;
             }
 
-            // Couldn't decode the buffer. Fallback the buffer instead.
+            // Couldn't decode the buffer. Fallback the buffer instead. The fallback mechanism relies
+            // on a negative index to convey "the start of the invalid sequence was some number of
+            // bytes back before the current buffer." Since we know the invalid sequence must have
+            // started at the beginning of our leftover byte buffer, we can signal to our caller that
+            // they must backtrack that many bytes to find the real start of the invalid sequence.
 
-            if (FallbackBuffer.Fallback(combinedBuffer.Slice(0, combinedBufferBytesConsumed).ToArray(), index: 0)
+            if (FallbackBuffer.Fallback(combinedBuffer.Slice(0, combinedBufferBytesConsumed).ToArray(), index: -_leftoverByteCount)
                 && !_fallbackBuffer!.TryDrainRemainingDataForGetChars(chars, out charsWritten))
             {
                 goto DestinationTooSmall;
