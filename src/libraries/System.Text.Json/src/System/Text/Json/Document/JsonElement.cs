@@ -1303,6 +1303,24 @@ namespace System.Text.Json
         /// <summary>
         ///   Write the element into the provided writer as a named JSON object property.
         /// </summary>
+        /// <param name="propertyName">The pre-encoded name for this value within the JSON object.</param>
+        /// <param name="writer">The writer.</param>
+        /// <exception cref="InvalidOperationException">
+        ///   This value's <see cref="Type"/> is <see cref="JsonValueType.Undefined"/>.
+        /// </exception>
+        /// <exception cref="ObjectDisposedException">
+        ///   The parent <see cref="JsonDocument"/> has been disposed.
+        /// </exception>
+        public void WriteProperty(JsonEncodedText propertyName, Utf8JsonWriter writer)
+        {
+            CheckValidInstance();
+
+            _parent.WriteElementTo(_idx, writer, propertyName);
+        }
+
+        /// <summary>
+        ///   Write the element into the provided writer as a named JSON object property.
+        /// </summary>
         /// <param name="utf8PropertyName">
         ///   The name for this value within the JSON object, as UTF-8 text.
         /// </param>
