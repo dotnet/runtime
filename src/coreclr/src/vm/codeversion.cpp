@@ -2348,6 +2348,7 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
         {
             MODE_ANY;
         }
+        NOTHROW;
     }
     CONTRACTL_END;
 

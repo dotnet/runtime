@@ -659,6 +659,8 @@ protected:
 
     HRESULT EnumJITedFunctionsHelper(ProfilerFunctionEnum ** ppEnum, IJitManager ** ppJitMgr);
 
+    HRESULT SetupThreadForReJIT();
+
 #ifdef _TARGET_X86_
     HRESULT ProfilerEbpWalker(Thread * pThreadToSnapshot, LPCONTEXT pctxSeed, StackSnapshotCallback * callback, void * clientData);
 #endif //_TARGET_X86_

@@ -6805,6 +6805,12 @@ HRESULT ProfToEEInterfaceImpl::RequestReJITWithInliners(
 
     // Remember the profiler is doing this, as that means we must never detach it!
     g_profControlBlock.pProfInterface->SetUnrevertiblyModifiedILFlag();
+
+    HRESULT hr = SetupThreadForReJIT();
+    if (FAILED(hr))
+    {
+        return hr;
+    }
     
     GCX_PREEMP();
     return ReJitManager::RequestReJIT(cFunctions, moduleIds, methodIds, static_cast<COR_PRF_REJIT_FLAGS>(dwRejitFlags));
@@ -8655,6 +8661,27 @@ HRESULT ProfToEEInterfaceImpl::GetReJITIDs(
     return ReJitManager::GetReJITIDs(pMD, cReJitIds, pcReJitIds, reJitIds);
 }
 
+
+HRESULT ProfToEEInterfaceImpl::SetupThreadForReJIT()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    HRESULT hr = S_OK;
+    EX_TRY
+    {
+        if (GetThread() == NULL)
+        {
+            SetupThread();
+        }
+
+        Thread *pThread = GetThread();
+        pThread->SetProfilerCallbackStateFlags(COR_PRF_CALLBACKSTATE_REJIT_WAS_CALLED);
+    }
+    EX_CATCH_HRESULT(hr);
+
+    return hr;
+}
+
 HRESULT ProfToEEInterfaceImpl::RequestReJIT(ULONG       cFunctions,   // in
                                             ModuleID    moduleIds[],  // in
                                             mdMethodDef methodIds[])  // in
@@ -8703,6 +8730,12 @@ HRESULT ProfToEEInterfaceImpl::RequestReJIT(ULONG       cFunctions,   // in
 
     // Remember the profiler is doing this, as that means we must never detach it!
     g_profControlBlock.pProfInterface->SetUnrevertiblyModifiedILFlag();
+    
+    HRESULT hr = SetupThreadForReJIT();
+    if (FAILED(hr))
+    {
+        return hr;
+    }
     
     GCX_PREEMP();
     return ReJitManager::RequestReJIT(cFunctions, moduleIds, methodIds, static_cast<COR_PRF_REJIT_FLAGS>(0));
@@ -8760,6 +8793,12 @@ HRESULT ProfToEEInterfaceImpl::RequestRevert(ULONG       cFunctions,  // in
     {
         memset(rgHrStatuses, 0, sizeof(HRESULT) * cFunctions);
         _ASSERTE(S_OK == rgHrStatuses[0]);
+    }
+    
+    HRESULT hr = SetupThreadForReJIT();
+    if (FAILED(hr))
+    {
+        return hr;
     }
 
     GCX_PREEMP();
