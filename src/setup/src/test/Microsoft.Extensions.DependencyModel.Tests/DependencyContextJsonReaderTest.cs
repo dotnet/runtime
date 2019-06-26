@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         [Fact]
         public void ReadsRuntimeTargetInfoWithCommentsIsInvalid()
         {
-            var exception = Assert.Throws<JsonReaderException>(() => Read(
+            var exception = Assert.ThrowsAny<JsonException>(() => Read(
 @"{
     ""runtimeTarget"": {
         ""name"":"".NETCoreApp,Version=v1.0/osx.10.10-x64"",
