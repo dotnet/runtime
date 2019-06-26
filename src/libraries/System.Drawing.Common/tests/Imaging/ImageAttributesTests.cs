@@ -1511,7 +1511,7 @@ namespace System.Drawing.Imaging.Tests
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.IsDrawingSupported)]
         [MemberData(nameof(ColorAdjustType_InvalidTypes_TestData))]
-        public void GetAdjustedPalette_Disposed_ThrowsArgumentException(ColorAdjustType type)
+        public void GetAdjustedPalette_InvalidTypes_ThrowsArgumentException(ColorAdjustType type)
         {
             using (var bitmap = new Bitmap(_rectangle.Width, _rectangle.Height))
             using (var imageAttr = new ImageAttributes())
