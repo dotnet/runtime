@@ -1230,12 +1230,8 @@ namespace R2RDump
         private void ParseHelper(StringBuilder builder)
         {
             uint helperType = ReadUIntAndEmitInlineSignatureBinary(builder);
-            if ((helperType & (uint)ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD) != 0)
-            {
-                builder.Append("VSD_");
-            }
 
-            switch ((ReadyToRunHelper)(helperType & ~(uint)ReadyToRunHelper.READYTORUN_HELPER_FLAG_VSD))
+            switch ((ReadyToRunHelper)helperType)
             {
                 case ReadyToRunHelper.READYTORUN_HELPER_Invalid:
                     builder.Append("INVALID");
