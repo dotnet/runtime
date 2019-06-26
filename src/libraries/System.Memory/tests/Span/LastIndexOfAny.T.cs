@@ -930,5 +930,27 @@ namespace System.SpanTests
                 Assert.Equal(-1, index);
             }
         }
+
+        [Theory]
+        [MemberData(nameof(TestHelpers.LastIndexOfAnyNullSequenceData), MemberType = typeof(TestHelpers))]
+        public static void LastIndexOfAnyNullSequence_String(string[] spanInput, string[] searchInput, int expected)
+        {
+            Span<string> theStrings = spanInput;
+            Assert.Equal(expected, theStrings.LastIndexOfAny(searchInput));
+            Assert.Equal(expected, theStrings.LastIndexOfAny((ReadOnlySpan<string>)searchInput));
+
+            if (searchInput != null)
+            {
+                if (searchInput.Length >= 3)
+                {
+                    Assert.Equal(expected, theStrings.LastIndexOfAny(searchInput[0], searchInput[1], searchInput[2]));
+                }
+
+                if (searchInput.Length >= 2)
+                {
+                    Assert.Equal(expected, theStrings.LastIndexOfAny(searchInput[0], searchInput[1]));
+                }
+            }
+        }
     }
 }
