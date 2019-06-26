@@ -63,9 +63,10 @@ inline BOOL AreCallbackStateFlagsSet(DWORD dwFlags)
     BOOL fRet;
     BEGIN_GETTHREAD_ALLOWED_IN_NO_THROW_REGION;
     DWORD dwProfilerCallbackFullStateFlags = pThread->GetProfilerCallbackFullState();
-    if ((dwProfilerCallbackFullStateFlags & COR_PRF_CALLBACKSTATE_FORCEGC_WAS_CALLED) != 0)
+    if (((dwProfilerCallbackFullStateFlags & COR_PRF_CALLBACKSTATE_FORCEGC_WAS_CALLED) != 0)
+        || ((dwProfilerCallbackFullStateFlags & COR_PRF_CALLBACKSTATE_REJIT_WAS_CALLED) != 0))
     {
-        // Threads on which ForceGC() was successfully called should be treated just
+        // Threads on which ForceGC() or RequestReJIT() was successfully called should be treated just
         // like native threads.  Profiler can do whatever it wants
         return TRUE;
     }
