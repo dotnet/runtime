@@ -46,7 +46,7 @@ namespace System.Text.Json.Tests
                 NullDecimalRange = null
             };
 
-            string json = JsonSerializer.ToString(initial, new JsonSerializerOptions { WriteIndented = true });
+            string json = JsonSerializer.Serialize(initial, new JsonSerializerOptions { WriteIndented = true });
 
             Assert.Equal(@"{
   ""Id"": ""00000001-0002-0003-0405-060708090a0b"",
@@ -82,9 +82,9 @@ namespace System.Text.Json.Tests
   ""NullDecimalRange"": null
 }";
 
-            JsonSerializer.ToString(json, new JsonSerializerOptions { WriteIndented = true });
+            JsonSerializer.Serialize(json, new JsonSerializerOptions { WriteIndented = true });
 
-            NullInterfaceTestClass deserialized = JsonSerializer.Parse<NullInterfaceTestClass>(json);
+            NullInterfaceTestClass deserialized = JsonSerializer.Deserialize<NullInterfaceTestClass>(json);
 
             Assert.Equal("Company!", deserialized.Company);
             Assert.Equal(new Guid(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11), deserialized.Id);
@@ -104,7 +104,7 @@ namespace System.Text.Json.Tests
   ""NullByteArray"": null
 }";
 
-            ByteArrayClass c = JsonSerializer.Parse<ByteArrayClass>(json);
+            ByteArrayClass c = JsonSerializer.Deserialize<ByteArrayClass>(json);
             Assert.NotNull(c.ByteArray);
             Assert.Equal(4, c.ByteArray.Length);
             Assert.Equal(new byte[] { 0, 1, 2, 3 }, c.ByteArray);
@@ -117,7 +117,7 @@ namespace System.Text.Json.Tests
             byteArrayClass.ByteArray = s_testData;
             byteArrayClass.NullByteArray = null;
 
-            string json = JsonSerializer.ToString(byteArrayClass, new JsonSerializerOptions { WriteIndented = true });
+            string json = JsonSerializer.Serialize(byteArrayClass, new JsonSerializerOptions { WriteIndented = true });
 
             Assert.Equal(@"{
   ""ByteArray"": ""VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ=="",
@@ -133,7 +133,7 @@ namespace System.Text.Json.Tests
   ""NullByteArray"": null
 }";
 
-            ByteArrayClass byteArrayClass = JsonSerializer.Parse<ByteArrayClass>(json);
+            ByteArrayClass byteArrayClass = JsonSerializer.Deserialize<ByteArrayClass>(json);
 
             Assert.Equal(s_testData, byteArrayClass.ByteArray);
             Assert.Equal(null, byteArrayClass.NullByteArray);
@@ -149,7 +149,7 @@ namespace System.Text.Json.Tests
                 Value = "Foo",
                 Thing = new MyThing { Number = 456, }
             };
-            string json = JsonSerializer.ToString(myClass);
+            string json = JsonSerializer.Serialize(myClass);
 
             const string expected = @"{""Value"":""Foo"",""Thing"":{""Number"":456}}";
             Assert.Equal(expected, json);
@@ -166,7 +166,7 @@ namespace System.Text.Json.Tests
 }";
             NotSupportedException e = Assert.Throws<NotSupportedException>(() =>
             {
-                JsonSerializer.Parse<List<MyClass>>(json);
+                JsonSerializer.Deserialize<List<MyClass>>(json);
             });
             Assert.Equal("Deserialization of interface types is not supported. Type 'System.Text.Json.Tests.IThing'", e.Message);
         }

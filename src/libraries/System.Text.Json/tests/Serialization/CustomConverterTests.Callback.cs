@@ -21,7 +21,7 @@ namespace System.Text.Json.Serialization.Tests
             public override Customer Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 // The options are not passed here as that would cause an infinite loop.
-                Customer value = JsonSerializer.ReadValue<Customer>(ref reader);
+                Customer value = JsonSerializer.Deserialize<Customer>(ref reader);
 
                 value.Name = value.Name + "Hello!";
                 return value;
@@ -42,7 +42,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new CustomerCallbackConverter());
 
-            Customer customer = JsonSerializer.Parse<Customer>(json, options);
+            Customer customer = JsonSerializer.Deserialize<Customer>(json, options);
             Assert.Equal("MyNameHello!", customer.Name);
         }
     }

@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Tests
 
             writer.WriteStartObject();
             writer.WriteStartArray("test");
-            JsonSerializer.WriteValue<int>(writer, 1);
+            JsonSerializer.Serialize<int>(writer, 1);
             writer.WriteEndArray();
             writer.WriteEndObject();
             writer.Flush();

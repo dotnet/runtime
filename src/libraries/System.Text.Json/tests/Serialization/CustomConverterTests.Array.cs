@@ -76,12 +76,12 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new LongArrayConverter());
 
-            long[] arr = JsonSerializer.Parse<long[]>(json, options);
+            long[] arr = JsonSerializer.Deserialize<long[]>(json, options);
             Assert.Equal(1, arr[0]);
             Assert.Equal(2, arr[1]);
             Assert.Equal(3, arr[2]);
 
-            string jsonSerialized = JsonSerializer.ToString(arr, options);
+            string jsonSerialized = JsonSerializer.Serialize(arr, options);
             Assert.Equal(json, jsonSerialized);
         }
 
@@ -95,7 +95,7 @@ namespace System.Text.Json.Serialization.Tests
 
             try
             {
-                JsonSerializer.Parse<long[]>(json, options);
+                JsonSerializer.Deserialize<long[]>(json, options);
                 Assert.True(false, "Expected exception");
             }
             catch (JsonException ex)
@@ -120,14 +120,14 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             options.Converters.Add(new LongArrayConverter());
 
-            ClassWithProperty obj = JsonSerializer.Parse<ClassWithProperty>(json, options);
+            ClassWithProperty obj = JsonSerializer.Deserialize<ClassWithProperty>(json, options);
             Assert.Equal(1, obj.Array1[0]);
             Assert.Equal(2, obj.Array1[1]);
             Assert.Equal(3, obj.Array1[2]);
             Assert.Equal(4, obj.Array2[0]);
             Assert.Equal(5, obj.Array2[1]);
 
-            string jsonSerialized = JsonSerializer.ToString(obj, options);
+            string jsonSerialized = JsonSerializer.Serialize(obj, options);
             Assert.Equal(json, jsonSerialized);
         }
     }

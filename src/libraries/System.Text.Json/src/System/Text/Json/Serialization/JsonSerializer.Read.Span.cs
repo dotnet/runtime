@@ -17,7 +17,7 @@ namespace System.Text.Json
         /// <typeparamref name="TValue"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
-        public static TValue Parse<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions options = null)
+        public static TValue Deserialize<TValue>(ReadOnlySpan<byte> utf8Json, JsonSerializerOptions options = null)
         {
             return (TValue)ParseCore(utf8Json, typeof(TValue), options);
         }
@@ -37,7 +37,7 @@ namespace System.Text.Json
         /// <paramref name="returnType"/> is not compatible with the JSON,
         /// or when there is remaining data in the Stream.
         /// </exception>
-        public static object Parse(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions options = null)
+        public static object Deserialize(ReadOnlySpan<byte> utf8Json, Type returnType, JsonSerializerOptions options = null)
         {
             if (returnType == null)
                 throw new ArgumentNullException(nameof(returnType));

@@ -74,11 +74,11 @@ namespace System.Text.Json.Serialization.Tests
 
             byte[] data = Encoding.UTF8.GetBytes(json);
             MemoryStream stream = new MemoryStream(data);
-            ClassWithStringProperties obj = JsonSerializer.ReadAsync<ClassWithStringProperties>(stream, options).Result;
+            ClassWithStringProperties obj = JsonSerializer.DeserializeAsync<ClassWithStringProperties>(stream, options).Result;
 
             VerifyClassWithStringProperties(obj, stringSize);
 
-            string jsonSerialized = JsonSerializer.ToString(obj, options);
+            string jsonSerialized = JsonSerializer.Serialize(obj, options);
             Assert.Equal(json, jsonSerialized);
         }
 
@@ -112,13 +112,13 @@ namespace System.Text.Json.Serialization.Tests
 
             byte[] data = Encoding.UTF8.GetBytes(json);
             MemoryStream stream = new MemoryStream(data);
-            ClassWithNoConverter obj = JsonSerializer.ReadAsync<ClassWithNoConverter>(stream, options).Result;
+            ClassWithNoConverter obj = JsonSerializer.DeserializeAsync<ClassWithNoConverter>(stream, options).Result;
 
             VerifyClassWithStringProperties(obj.Property1, stringSize);
             VerifyClassWithStringProperties(obj.Property2, stringSize);
             VerifyClassWithStringProperties(obj.Property3, stringSize);
 
-            string jsonSerialized = JsonSerializer.ToString(obj, options);
+            string jsonSerialized = JsonSerializer.Serialize(obj, options);
             Assert.Equal(json, jsonSerialized);
         }
 
@@ -153,14 +153,14 @@ namespace System.Text.Json.Serialization.Tests
 
             byte[] data = Encoding.UTF8.GetBytes(json);
             MemoryStream stream = new MemoryStream(data);
-            string[] arr = JsonSerializer.ReadAsync<string[]>(stream, options).Result;
+            string[] arr = JsonSerializer.DeserializeAsync<string[]>(stream, options).Result;
 
             for (int i = 0; i < 10; i++)
             {
                 Assert.Equal(new string(i.ToString()[0], stringSize), arr[i]);
             }
 
-            string jsonSerialized = JsonSerializer.ToString(arr, options);
+            string jsonSerialized = JsonSerializer.Serialize(arr, options);
             Assert.Equal(json, jsonSerialized);
         }
 

@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Tests
             obj.MyIntArray = null;
             obj.MyIntList = null;
 
-            string json = JsonSerializer.ToString(obj);
+            string json = JsonSerializer.Serialize(obj);
             Assert.Contains(@"""MyString"":null", json);
             Assert.Contains(@"""MyInt"":null", json);
             Assert.Contains(@"""MyIntArray"":null", json);
@@ -36,7 +36,7 @@ namespace System.Text.Json.Serialization.Tests
             obj.MyIntArray = null;
             obj.MyIntList = null;
 
-            string json = JsonSerializer.ToString(obj, options);
+            string json = JsonSerializer.Serialize(obj, options);
             Assert.Equal(@"{}", json);
         }
 
@@ -61,7 +61,7 @@ namespace System.Text.Json.Serialization.Tests
             obj.NullableIntArray = null;
             obj.Object = null;
 
-            string json = JsonSerializer.ToString(obj);
+            string json = JsonSerializer.Serialize(obj);
             Assert.Contains(@"""Address"":null", json);
             Assert.Contains(@"""List"":null", json);
             Assert.Contains(@"""Array"":null", json);
@@ -83,26 +83,26 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void NullArrayElement()
         {
-            string json = JsonSerializer.ToString(new ObjectWithObjectProperties[]{ null });
+            string json = JsonSerializer.Serialize(new ObjectWithObjectProperties[]{ null });
             Assert.Equal("[null]", json);
         }
 
         [Fact]
         public static void NullArgumentFail()
         {
-            Assert.Throws<ArgumentNullException>(() => JsonSerializer.ToString("", (Type)null));
+            Assert.Throws<ArgumentNullException>(() => JsonSerializer.Serialize("", (Type)null));
         }
 
         [Fact]
         public static void NullObjectOutput()
         {
             {
-                string output = JsonSerializer.ToString<string>(null);
+                string output = JsonSerializer.Serialize<string>(null);
                 Assert.Equal("null", output);
             }
 
             {
-                string output = JsonSerializer.ToString<string>(null, null);
+                string output = JsonSerializer.Serialize<string>(null, null);
                 Assert.Equal("null", output);
             }
         }

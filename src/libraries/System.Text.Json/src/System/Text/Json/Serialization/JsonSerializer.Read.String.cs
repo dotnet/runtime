@@ -23,7 +23,7 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="System.String"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
-        public static TValue Parse<TValue>(string json, JsonSerializerOptions options = null)
+        public static TValue Deserialize<TValue>(string json, JsonSerializerOptions options = null)
         {
             if (json == null)
                 throw new ArgumentNullException(nameof(json));
@@ -49,7 +49,7 @@ namespace System.Text.Json
         /// <remarks>Using a <see cref="System.String"/> is not as efficient as using the
         /// UTF-8 methods since the implementation natively uses UTF-8.
         /// </remarks>
-        public static object Parse(string json, Type returnType, JsonSerializerOptions options = null)
+        public static object Deserialize(string json, Type returnType, JsonSerializerOptions options = null)
         {
             if (json == null)
                 throw new ArgumentNullException(nameof(json));

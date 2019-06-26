@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void EnumAsStringFail()
         {
             string json = @"{ ""MyEnum"" : ""Two"" }";
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(json));
         }
 
         [Theory]
@@ -45,9 +45,9 @@ namespace System.Text.Json.Serialization.Tests
         public static void Parse_OutOfRange_Throws(object value, string name)
         {
             string json = $"{{ \"{ name }\" : { value } }}";
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(json));
             json = $"{{ \"{ name }\" : \"{ value }\" }}";
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(json));
         }
 
         [Theory]
@@ -55,12 +55,12 @@ namespace System.Text.Json.Serialization.Tests
         public static void Parse_WithinRange_Signed_ReturnsWithCorrectType(Type expectedType, string value, string name)
         {
             string json = $"{{ \"{ name }\" : { value } }}";
-            SimpleTestClass result = JsonSerializer.Parse<SimpleTestClass>(json);
+            SimpleTestClass result = JsonSerializer.Deserialize<SimpleTestClass>(json);
             object expected = Enum.ToObject(expectedType, long.Parse(value));
             Assert.Equal(expected, GetProperty(result, name));
 
             json = $"{{ \"{ name }\" : \"{ value }\" }}";
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(json));
         }
 
         [Theory]
@@ -68,11 +68,11 @@ namespace System.Text.Json.Serialization.Tests
         public static void Parse_WithinRange_ReturnsExpected(object expected, long value, string name)
         {
             string json = $"{{ \"{ name }\" : { value } }}";
-            SimpleTestClass result = JsonSerializer.Parse<SimpleTestClass>(json);
+            SimpleTestClass result = JsonSerializer.Deserialize<SimpleTestClass>(json);
             Assert.Equal(expected, GetProperty(result, name));
 
             json = $"{{ \"{ name }\" : \"{ value }\" }}";
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(json));
         }
 
         [Theory]
@@ -80,12 +80,12 @@ namespace System.Text.Json.Serialization.Tests
         public static void Parse_WithinRange_Unsigned_ReturnsWithCorrectType(Type expectedType, string value, string name)
         {
             string json = $"{{ \"{ name }\" : { value } }}";
-            SimpleTestClass result = JsonSerializer.Parse<SimpleTestClass>(json);
+            SimpleTestClass result = JsonSerializer.Deserialize<SimpleTestClass>(json);
             object expected = Enum.ToObject(expectedType, ulong.Parse(value));
             Assert.Equal(expected, GetProperty(result, name));
 
             json = $"{{ \"{ name }\" : \"{ value }\" }}";
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(json));
         }
 
         [Theory]
@@ -93,11 +93,11 @@ namespace System.Text.Json.Serialization.Tests
         public static void Parse_WithinRange_ReturnsExpected(object expected, ulong value, string name)
         {
             string json = $"{{ \"{ name }\" : { value } }}";
-            SimpleTestClass result = JsonSerializer.Parse<SimpleTestClass>(json);
+            SimpleTestClass result = JsonSerializer.Deserialize<SimpleTestClass>(json);
             Assert.Equal(expected, GetProperty(result, name));
 
             json = $"{{ \"{ name }\" : \"{ value }\" }}";
-            Assert.Throws<JsonException>(() => JsonSerializer.Parse<SimpleTestClass>(json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClass>(json));
         }
 
         private static object GetProperty(SimpleTestClass testClass, string propertyName) 
@@ -107,7 +107,7 @@ namespace System.Text.Json.Serialization.Tests
         [MemberData(nameof(ToString_WithinRange))]
         public static void ToString_WithinRange_ReturnsSameValue(object expected, object enumValue)
         {
-            string json = JsonSerializer.ToString(enumValue);
+            string json = JsonSerializer.Serialize(enumValue);
             Assert.Equal(expected.ToString(), json);
         }
 
@@ -116,7 +116,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void ToString_ExceedMaxCapacity_ResetsBackToMinimum(int timesOverflow, string maxCapacity, Type type, long expected)
         {
             object enumValue = Enum.ToObject(type, long.Parse(maxCapacity) * timesOverflow);
-            string json = JsonSerializer.ToString(enumValue);
+            string json = JsonSerializer.Serialize(enumValue);
             Assert.Equal(expected.ToString(), json);
         }
 

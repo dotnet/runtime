@@ -78,11 +78,11 @@ namespace System.Text.Json.Serialization.Tests
             options.Converters.Add(new DictionaryConverter(10));
 
             {
-                Dictionary<string, long> dictionary = JsonSerializer.Parse<Dictionary<string, long>>(json, options);
+                Dictionary<string, long> dictionary = JsonSerializer.Deserialize<Dictionary<string, long>>(json, options);
                 Assert.Equal(11, dictionary["Key1"]);
                 Assert.Equal(12, dictionary["Key2"]);
 
-                string jsonSerialized = JsonSerializer.ToString(dictionary, options);
+                string jsonSerialized = JsonSerializer.Serialize(dictionary, options);
                 Assert.Equal(json, jsonSerialized);
             }
         }
