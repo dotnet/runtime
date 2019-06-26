@@ -95,14 +95,24 @@ namespace System.Text.Json
                                 propertyInfo.SetMethod?.IsPublic == true)
                             {
                                 JsonPropertyInfo jsonPropertyInfo = AddProperty(propertyInfo.PropertyType, propertyInfo, type, options);
+                                Debug.Assert(jsonPropertyInfo != null);
 
                                 // If the JsonPropertyNameAttribute or naming policy results in collisions, throw an exception.
-                                if (cache.ContainsKey(jsonPropertyInfo.NameAsString))
+                                if (!JsonHelpers.TryAdd(cache, jsonPropertyInfo.NameAsString, jsonPropertyInfo))
                                 {
-                                    ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(this, jsonPropertyInfo);
-                                }
+                                    JsonPropertyInfo other = cache[jsonPropertyInfo.NameAsString];
 
-                                cache.Add(jsonPropertyInfo.NameAsString, jsonPropertyInfo);
+                                    if (other.ShouldDeserialize == false && other.ShouldSerialize == false)
+                                    {
+                                        // Overwrite the one just added since it has [JsonIgnore].
+                                        cache[jsonPropertyInfo.NameAsString] = jsonPropertyInfo;
+                                    }
+                                    else if (jsonPropertyInfo.ShouldDeserialize == true || jsonPropertyInfo.ShouldSerialize == true)
+                                    {
+                                        ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameConflict(this, jsonPropertyInfo);
+                                    }
+                                    // else ignore jsonPropertyInfo since it has [JsonIgnore].
+                                }
                             }
                         }
 
@@ -239,12 +249,7 @@ namespace System.Text.Json
             // We could get here even when hasPropertyCache==true if there is a race condition with different json
             // property ordering and _propertyRefsSorted is re-assigned while in the loop above.
 
-            string stringPropertyName = Encoding.UTF8.GetString(propertyName
-#if netstandard
-                        .ToArray()
-#endif
-            );
-
+            string stringPropertyName = JsonHelpers.Utf8GetString(propertyName);
             if (PropertyCache.TryGetValue(stringPropertyName, out info))
             {
                 // For performance, only add to cache up to a threshold and then just use the dictionary.
