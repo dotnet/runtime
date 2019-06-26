@@ -95,7 +95,7 @@ namespace System.Text.Json.Serialization.Tests
             object[] array = JsonSerializer.Deserialize<object[]>(@"[[]]");
             Assert.Equal(1, array.Length);
             Assert.IsType<JsonElement>(array[0]);
-            Assert.Equal(JsonValueType.Array, ((JsonElement)array[0]).Type);
+            Assert.Equal(JsonValueKind.Array, ((JsonElement)array[0]).ValueKind);
         }
 
         [Fact]
@@ -104,26 +104,26 @@ namespace System.Text.Json.Serialization.Tests
             object[] array = JsonSerializer.Deserialize<object[]>(@"[{}]");
             Assert.Equal(1, array.Length);
             Assert.IsType<JsonElement>(array[0]);
-            Assert.Equal(JsonValueType.Object, ((JsonElement)array[0]).Type);
+            Assert.Equal(JsonValueKind.Object, ((JsonElement)array[0]).ValueKind);
 
             // Scenario described in https://github.com/dotnet/corefx/issues/36169
             array = JsonSerializer.Deserialize<object[]>("[1, false]");
             Assert.Equal(2, array.Length);
             Assert.IsType<JsonElement>(array[0]);
-            Assert.Equal(JsonValueType.Number, ((JsonElement)array[0]).Type);
+            Assert.Equal(JsonValueKind.Number, ((JsonElement)array[0]).ValueKind);
             Assert.Equal(1, ((JsonElement)array[0]).GetInt32());
             Assert.IsType<JsonElement>(array[1]);
-            Assert.Equal(JsonValueType.False, ((JsonElement)array[1]).Type);
+            Assert.Equal(JsonValueKind.False, ((JsonElement)array[1]).ValueKind);
 
             array = JsonSerializer.Deserialize<object[]>(@"[1, false, { ""name"" : ""Person"" }]");
             Assert.Equal(3, array.Length);
             Assert.IsType<JsonElement>(array[0]);
-            Assert.Equal(JsonValueType.Number, ((JsonElement)array[0]).Type);
+            Assert.Equal(JsonValueKind.Number, ((JsonElement)array[0]).ValueKind);
             Assert.Equal(1, ((JsonElement)array[0]).GetInt32());
             Assert.IsType<JsonElement>(array[1]);
-            Assert.Equal(JsonValueType.False, ((JsonElement)array[1]).Type);
+            Assert.Equal(JsonValueKind.False, ((JsonElement)array[1]).ValueKind);
             Assert.IsType<JsonElement>(array[2]);
-            Assert.Equal(JsonValueType.Object, ((JsonElement)array[2]).Type);
+            Assert.Equal(JsonValueKind.Object, ((JsonElement)array[2]).ValueKind);
         }
 
         [Fact]

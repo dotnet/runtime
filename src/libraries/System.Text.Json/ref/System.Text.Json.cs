@@ -39,7 +39,7 @@ namespace System.Text.Json
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
         public System.Text.Json.JsonElement this[int index] { get { throw null; } }
-        public System.Text.Json.JsonValueType Type { get { throw null; } }
+        public System.Text.Json.JsonValueKind ValueKind { get { throw null; } }
         public System.Text.Json.JsonElement Clone() { throw null; }
         public System.Text.Json.JsonElement.ArrayEnumerator EnumerateArray() { throw null; }
         public System.Text.Json.JsonElement.ObjectEnumerator EnumerateObject() { throw null; }
@@ -233,7 +233,7 @@ namespace System.Text.Json
         Null = (byte)10,
         Comment = (byte)11,
     }
-    public enum JsonValueType : byte
+    public enum JsonValueKind : byte
     {
         Undefined = (byte)0,
         Object = (byte)1,
