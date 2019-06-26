@@ -38,8 +38,8 @@
 
         However, there are scenarios when some of these components will not change (e.g. during
         servicing, we may only change HostPolicy but not HostFXR and Dotnet/AppHost). In such cases,
-        set the appropriate "UseShipped*" property below to true so that we will use the last shipped
-        version of the package.
+        set the appropriate "UseShipped*" property below to true and the corresponding "*Version"
+        property to the desired version so that we use the last shipped version of the package.
       -->
 
       <!-- The host/apphost package versions are only updated whenever there is a change in the components -->
