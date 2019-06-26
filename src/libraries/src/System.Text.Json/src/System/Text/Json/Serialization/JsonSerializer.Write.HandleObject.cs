@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace System.Text.Json
@@ -17,18 +18,18 @@ namespace System.Text.Json
             if (!state.Current.StartObjectWritten)
             {
                 state.Current.WriteObjectOrArrayStart(ClassType.Object, writer);
+                state.Current.PropertyEnumerator = state.Current.JsonClassInfo.PropertyCache.GetEnumerator();
+                state.Current.NextProperty();
             }
-
-            if (state.Current.MoveToNextProperty)
+            else if (state.Current.MoveToNextProperty)
             {
                 state.Current.NextProperty();
             }
 
             // Determine if we are done enumerating properties.
-            // If the ClassType is unknown, there will be a policy property applied. There is probably
-            // a better way to identify policy properties- maybe not put them in the normal property bag?
+            // If the ClassType is unknown, there will be a policy property applied
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
-            if (classInfo.ClassType != ClassType.Unknown && state.Current.PropertyIndex != classInfo.PropertyCount)
+            if (classInfo.ClassType != ClassType.Unknown && state.Current.PropertyEnumeratorActive)
             {
                 HandleObject(options, writer, ref state);
                 return false;
@@ -57,7 +58,8 @@ namespace System.Text.Json
                 state.Current.JsonClassInfo.ClassType == ClassType.Object ||
                 state.Current.JsonClassInfo.ClassType == ClassType.Unknown);
 
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(state.Current.PropertyIndex);
+            var kvp = (KeyValuePair<string, JsonPropertyInfo>)state.Current.PropertyEnumerator.Current;
+            JsonPropertyInfo jsonPropertyInfo = kvp.Value;
             if (!jsonPropertyInfo.ShouldSerialize)
             {
                 state.Current.MoveToNextProperty = true;

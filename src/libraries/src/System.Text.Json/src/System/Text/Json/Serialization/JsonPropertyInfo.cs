@@ -30,21 +30,14 @@ namespace System.Text.Json
 
         public ClassType ClassType;
 
-        // After the property is added, clear any state not used later.
-        public void ClearUnusedValuesAfterAdd()
-        {
-            NameAsString = null;
-            NameUsedToCompareAsString = null;
-        }
-
         public abstract JsonConverter ConverterBase { get; set; }
 
         // Copy any settings defined at run-time to the new property.
         public void CopyRuntimeSettingsTo(JsonPropertyInfo other)
         {
-            other.Name = Name;
-            other.NameUsedToCompare = NameUsedToCompare;
             other.EscapedName = EscapedName;
+            other.Name = Name;
+            other.PropertyNameKey = PropertyNameKey;
         }
 
         public abstract IList CreateConverterList();
@@ -112,20 +105,11 @@ namespace System.Text.Json
             // At this point propertyName is valid UTF16, so just call the simple UTF16->UTF8 encoder.
             Name = Encoding.UTF8.GetBytes(NameAsString);
 
-            // Set the compare name.
-            if (Options.PropertyNameCaseInsensitive)
-            {
-                NameUsedToCompareAsString = NameAsString.ToUpperInvariant();
-                NameUsedToCompare = Encoding.UTF8.GetBytes(NameUsedToCompareAsString);
-            }
-            else
-            {
-                NameUsedToCompareAsString = NameAsString;
-                NameUsedToCompare = Name;
-            }
-
             // Cache the escaped name.
             EscapedName = JsonEncodedText.Encode(Name);
+
+            ulong key = JsonClassInfo.GetKey(Name);
+            PropertyNameKey = key;
         }
 
         private void DetermineSerializationCapabilities()
@@ -311,9 +295,8 @@ namespace System.Text.Json
         public byte[] Name { get; private set; }
         public string NameAsString { get; private set; }
 
-        // Used to support case-insensitive comparison
-        public byte[] NameUsedToCompare { get; private set; }
-        public string NameUsedToCompareAsString { get; private set; }
+        // Key for fast property name lookup.
+        public ulong PropertyNameKey { get; set; }
 
         // Options can be referenced here since all JsonPropertyInfos originate from a JsonClassInfo that is cached on JsonSerializerOptions.
         protected JsonSerializerOptions Options { get; set; }
@@ -335,7 +318,7 @@ namespace System.Text.Json
             if (ElementClassInfo != null)
             {
                 // Forward the setter to the value-based JsonPropertyInfo.
-                JsonPropertyInfo propertyInfo = ElementClassInfo.GetPolicyProperty();
+                JsonPropertyInfo propertyInfo = ElementClassInfo.PolicyProperty;
                 propertyInfo.ReadEnumerable(tokenType, ref state, ref reader);
             }
             else
@@ -419,10 +402,10 @@ namespace System.Text.Json
         {
             Debug.Assert(ShouldSerialize);
 
-            if (state.Current.Enumerator != null)
+            if (state.Current.CollectionEnumerator != null)
             {
                 // Forward the setter to the value-based JsonPropertyInfo.
-                JsonPropertyInfo propertyInfo = ElementClassInfo.GetPolicyProperty();
+                JsonPropertyInfo propertyInfo = ElementClassInfo.PolicyProperty;
                 propertyInfo.WriteEnumerable(ref state, writer);
             }
             else
