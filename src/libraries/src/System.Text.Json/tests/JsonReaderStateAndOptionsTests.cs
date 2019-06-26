@@ -13,7 +13,6 @@ namespace System.Text.Json.Tests
         public static void DefaultJsonReaderState()
         {
             JsonReaderState state = default;
-            Assert.Equal(0, state.BytesConsumed);
 
             var expectedOption = new JsonReaderOptions
             {
@@ -27,7 +26,6 @@ namespace System.Text.Json.Tests
         public static void JsonReaderStateDefaultCtor()
         {
             var state = new JsonReaderState();
-            Assert.Equal(0, state.BytesConsumed);
 
             var expectedOption = new JsonReaderOptions
             {
@@ -41,7 +39,6 @@ namespace System.Text.Json.Tests
         public static void JsonReaderStateCtor()
         {
             var state = new JsonReaderState(default);
-            Assert.Equal(0, state.BytesConsumed);
 
             var expectedOption = new JsonReaderOptions
             {
@@ -51,7 +48,6 @@ namespace System.Text.Json.Tests
             Assert.Equal(expectedOption, state.Options);
 
             state = new JsonReaderState(new JsonReaderOptions { CommentHandling = JsonCommentHandling.Disallow, MaxDepth = 0 });
-            Assert.Equal(0, state.BytesConsumed);
             Assert.Equal(expectedOption, state.Options);
 
             expectedOption = new JsonReaderOptions
@@ -60,7 +56,6 @@ namespace System.Text.Json.Tests
                 MaxDepth = 32
             };
             state = new JsonReaderState(new JsonReaderOptions { MaxDepth = 32 });
-            Assert.Equal(0, state.BytesConsumed);
             Assert.Equal(32, state.Options.MaxDepth);
             Assert.Equal(expectedOption, state.Options);
         }

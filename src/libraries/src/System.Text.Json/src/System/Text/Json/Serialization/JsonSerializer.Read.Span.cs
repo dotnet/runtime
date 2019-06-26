@@ -58,8 +58,7 @@ namespace System.Text.Json
 
             if (reader.BytesConsumed != utf8Json.Length)
             {
-                readerState = reader.CurrentState;
-                ThrowHelper.ThrowJsonException_DeserializeDataRemaining(utf8Json.Length, utf8Json.Length - readerState.BytesConsumed);
+                ThrowHelper.ThrowJsonException_DeserializeDataRemaining(utf8Json.Length, utf8Json.Length - reader.BytesConsumed);
             }
 
             return result;
