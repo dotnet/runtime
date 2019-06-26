@@ -28,7 +28,7 @@ namespace Microsoft.NET.HostModel.Bundle
     /// 
     /// 
     ///
-    /// ------------ Manifest Header -------------
+    /// ------------ Bundle Header -------------
     ///     MajorVersion
     ///     MinorVersion
     ///     NumEmbeddedFiles
@@ -40,16 +40,12 @@ namespace Microsoft.NET.HostModel.Bundle
     ///     
     ///     
     /// 
-    /// - - - - - - Manifest Footer - - - - - - - - - - -
-    ///   Manifest header offset
-    ///   Bundle Signature
     /// _________________________________________________
     /// </summary>
     public class Manifest
     {
-        public const string Signature = ".NetCoreBundle";
-        public const uint MajorVersion = 0;
-        public const uint MinorVersion = 1;
+        public const uint MajorVersion = 1;
+        public const uint MinorVersion = 0;
 
         // Bundle ID is a string that is used to uniquely 
         // identify this bundle. It is choosen to be compatible
@@ -82,7 +78,7 @@ namespace Microsoft.NET.HostModel.Bundle
         {
             long startOffset = writer.BaseStream.Position;
 
-            // Write the manifest header
+            // Write the bundle header
             writer.Write(MajorVersion);
             writer.Write(MinorVersion);
             writer.Write(Files.Count());
@@ -94,38 +90,23 @@ namespace Microsoft.NET.HostModel.Bundle
                 entry.Write(writer);
             }
 
-            // Write the manifest footer
-            writer.Write(startOffset);
-            writer.Write(Signature);
-
             return startOffset;
         }
 
-        public static Manifest Read(BinaryReader reader)
+        public static Manifest Read(BinaryReader reader, long headerOffset)
         {
-            // Read the manifest footer
-
-            // signatureSize is one byte longer, for the length encoding.
-            long signatureSize = Signature.Length + 1;
-            reader.BaseStream.Position = reader.BaseStream.Length - signatureSize;
-            string signature = reader.ReadString();
-            if (!signature.Equals(Signature))
-            {
-                throw new BundleException("Extraction failed: Invalid Bundle");
-            }
-
-            // The manifest header offset resides just behind the signature.
-            reader.BaseStream.Position = reader.BaseStream.Length - signatureSize - sizeof(long);
-            long headerOffset = reader.ReadInt64();
-
-            // Read the manifest header
+            // Read the bundle header
             reader.BaseStream.Position = headerOffset;
             uint majorVersion = reader.ReadUInt32();
             uint minorVersion = reader.ReadUInt32();
             int fileCount = reader.ReadInt32();
-            string bundleID = reader.ReadString(); // Bundle ID
+            string bundleID = reader.ReadString();
 
-            if (majorVersion != MajorVersion || minorVersion != MinorVersion)
+            bool isCompatible = 
+                (majorVersion < MajorVersion) ||
+                (majorVersion == MajorVersion && minorVersion <= MinorVersion);
+
+            if (!isCompatible)
             {
                 throw new BundleException("Extraction failed: Invalid Version");
             }
