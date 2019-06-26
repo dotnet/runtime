@@ -282,7 +282,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(-1, indexer[0]);
         }
 
-        [ActiveIssue(38414)]
         [Fact]
         public static void ReadSimpleStructWithSimpleClass()
         {
@@ -294,7 +293,6 @@ namespace System.Text.Json.Serialization.Tests
             obj.Verify();
         }
 
-        [ActiveIssue(38490)]
         [Fact]
         public static void ReadSimpleTestStructWithSimpleTestClass()
         {
@@ -304,7 +302,10 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.ToString(testObject);
             SimpleTestStruct parsedObject = JsonSerializer.Parse<SimpleTestStruct>(json);
+
             parsedObject.Verify();
+            Assert.Equal(3.14, parsedObject.MySimpleTestClass.MyDouble);
+            Assert.Equal("Hello", parsedObject.MySimpleTestClass.MyString);
         }
 
         [Fact]
@@ -316,15 +317,18 @@ namespace System.Text.Json.Serialization.Tests
             
             string json = JsonSerializer.ToString(testObject);
             SimpleTestClass parsedObject = JsonSerializer.Parse<SimpleTestClass>(json);
+
             parsedObject.Verify();
+            Assert.Equal(64, parsedObject.MySimpleTestStruct.MyInt64);
+            Assert.Equal("Hello", parsedObject.MySimpleTestStruct.MyString);
+            Assert.Equal(32, parsedObject.MySimpleTestStruct.MyInt32Array[0]);
         }
 
-        [ActiveIssue(38414)]
         [Fact]
         public static void OuterClassHavingPropertiesDefinedAfterClassWithDictionaryTest()
         {
             OuterClassHavingPropertiesDefinedAfterClassWithDictionary testObject = new OuterClassHavingPropertiesDefinedAfterClassWithDictionary { MyInt = 10, MyIntArray = new int[] { 3 },
-                MyDouble= 3.14, MyList =new List<string> { "Hello" }, MyString = "World",  MyInnerTestClass = new SimpleClassWithDictionary { MyInt = 2 } };
+                MyDouble= 3.14, MyList = new List<string> { "Hello" }, MyString = "World",  MyInnerTestClass = new SimpleClassWithDictionary { MyInt = 2 } };
             string json = JsonSerializer.ToString(testObject);
 
             OuterClassHavingPropertiesDefinedAfterClassWithDictionary parsedObject = JsonSerializer.Parse<OuterClassHavingPropertiesDefinedAfterClassWithDictionary>(json);
@@ -337,12 +341,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(2, parsedObject.MyInnerTestClass.MyInt);
         }
 
-        [ActiveIssue(38435)]
         [Fact]
-        public static void ReadStructWithSimpleClassValueTest()
+        public static void ReadStructWithSimpleClassArrayValueTest()
         {
             string json = "{\"MySimpleTestClass\":{\"MyInt32Array\":[1],\"MyStringToStringDict\":null,\"MyStringToStringIDict\":null},\"MyInt32Array\":[2]}";
-            SimpleTestStruct obj3 = JsonSerializer.Parse<SimpleTestStruct>(json);
+            SimpleTestStruct parsedObject = JsonSerializer.Parse<SimpleTestStruct>(json);
+
+            Assert.Equal(1, parsedObject.MySimpleTestClass.MyInt32Array[0]);
+            Assert.Equal(2, parsedObject.MyInt32Array[0]);
         }
     }
 }
