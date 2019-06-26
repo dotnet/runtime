@@ -29,7 +29,7 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         /// <param name="utf8Json">JSON text to parse.</param>
-        /// <param name="readerOptions">Options to control the reader behavior during parsing.</param>
+        /// <param name="options">Options to control the reader behavior during parsing.</param>
         /// <returns>
         ///   A JsonDocument representation of the JSON value.
         /// </returns>
@@ -37,13 +37,11 @@ namespace System.Text.Json
         ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="readerOptions"/> contains unsupported options.
+        ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
-        public static JsonDocument Parse(ReadOnlyMemory<byte> utf8Json, JsonReaderOptions readerOptions = default)
+        public static JsonDocument Parse(ReadOnlyMemory<byte> utf8Json, JsonDocumentOptions options = default)
         {
-            CheckSupportedOptions(readerOptions);
-
-            return Parse(utf8Json, readerOptions, null);
+            return Parse(utf8Json, options.GetReaderOptions(), null);
         }
 
         /// <summary>
@@ -61,7 +59,7 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         /// <param name="utf8Json">JSON text to parse.</param>
-        /// <param name="readerOptions">Options to control the reader behavior during parsing.</param>
+        /// <param name="options">Options to control the reader behavior during parsing.</param>
         /// <returns>
         ///   A JsonDocument representation of the JSON value.
         /// </returns>
@@ -69,11 +67,11 @@ namespace System.Text.Json
         ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="readerOptions"/> contains unsupported options.
+        ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
-        public static JsonDocument Parse(ReadOnlySequence<byte> utf8Json, JsonReaderOptions readerOptions = default)
+        public static JsonDocument Parse(ReadOnlySequence<byte> utf8Json, JsonDocumentOptions options = default)
         {
-            CheckSupportedOptions(readerOptions);
+            JsonReaderOptions readerOptions = options.GetReaderOptions();
 
             if (utf8Json.IsSingleSegment)
             {
@@ -102,7 +100,7 @@ namespace System.Text.Json
         ///   JsonDocument.  The Stream will be read to completion.
         /// </summary>
         /// <param name="utf8Json">JSON data to parse.</param>
-        /// <param name="readerOptions">Options to control the reader behavior during parsing.</param>
+        /// <param name="options">Options to control the reader behavior during parsing.</param>
         /// <returns>
         ///   A JsonDocument representation of the JSON value.
         /// </returns>
@@ -110,22 +108,20 @@ namespace System.Text.Json
         ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="readerOptions"/> contains unsupported options.
+        ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
-        public static JsonDocument Parse(Stream utf8Json, JsonReaderOptions readerOptions = default)
+        public static JsonDocument Parse(Stream utf8Json, JsonDocumentOptions options = default)
         {
             if (utf8Json == null)
             {
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            CheckSupportedOptions(readerOptions);
-
             ArraySegment<byte> drained = ReadToEnd(utf8Json);
 
             try
             {
-                return Parse(drained.AsMemory(), readerOptions, drained.Array);
+                return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array);
             }
             catch
             {
@@ -141,7 +137,7 @@ namespace System.Text.Json
         ///   JsonDocument.  The Stream will be read to completion.
         /// </summary>
         /// <param name="utf8Json">JSON data to parse.</param>
-        /// <param name="readerOptions">Options to control the reader behavior during parsing.</param>
+        /// <param name="options">Options to control the reader behavior during parsing.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>
         ///   A Task to produce a JsonDocument representation of the JSON value.
@@ -150,11 +146,11 @@ namespace System.Text.Json
         ///   <paramref name="utf8Json"/> does not represent a valid single JSON value.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="readerOptions"/> contains unsupported options.
+        ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
         public static Task<JsonDocument> ParseAsync(
             Stream utf8Json,
-            JsonReaderOptions readerOptions = default,
+            JsonDocumentOptions options = default,
             CancellationToken cancellationToken = default)
         {
             if (utf8Json == null)
@@ -162,21 +158,19 @@ namespace System.Text.Json
                 throw new ArgumentNullException(nameof(utf8Json));
             }
 
-            CheckSupportedOptions(readerOptions);
-
-            return ParseAsyncCore(utf8Json, readerOptions, cancellationToken);
+            return ParseAsyncCore(utf8Json, options, cancellationToken);
         }
 
         private static async Task<JsonDocument> ParseAsyncCore(
             Stream utf8Json,
-            JsonReaderOptions readerOptions = default,
+            JsonDocumentOptions options = default,
             CancellationToken cancellationToken = default)
         {
             ArraySegment<byte> drained = await ReadToEndAsync(utf8Json, cancellationToken).ConfigureAwait(false);
 
             try
             {
-                return Parse(drained.AsMemory(), readerOptions, drained.Array);
+                return Parse(drained.AsMemory(), options.GetReaderOptions(), drained.Array);
             }
             catch
             {
@@ -196,7 +190,7 @@ namespace System.Text.Json
         ///   the object lifetime.
         /// </remarks>
         /// <param name="json">JSON text to parse.</param>
-        /// <param name="readerOptions">Options to control the reader behavior during parsing.</param>
+        /// <param name="options">Options to control the reader behavior during parsing.</param>
         /// <returns>
         ///   A JsonDocument representation of the JSON value.
         /// </returns>
@@ -204,12 +198,10 @@ namespace System.Text.Json
         ///   <paramref name="json"/> does not represent a valid single JSON value.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="readerOptions"/> contains unsupported options.
+        ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
-        public static JsonDocument Parse(ReadOnlyMemory<char> json, JsonReaderOptions readerOptions = default)
+        public static JsonDocument Parse(ReadOnlyMemory<char> json, JsonDocumentOptions options = default)
         {
-            CheckSupportedOptions(readerOptions);
-
             ReadOnlySpan<char> jsonChars = json.Span;
             int expectedByteCount = JsonReaderHelper.GetUtf8ByteCount(jsonChars);
             byte[] utf8Bytes = ArrayPool<byte>.Shared.Rent(expectedByteCount);
@@ -219,7 +211,7 @@ namespace System.Text.Json
                 int actualByteCount = JsonReaderHelper.GetUtf8FromText(jsonChars, utf8Bytes);
                 Debug.Assert(expectedByteCount == actualByteCount);
 
-                return Parse(utf8Bytes.AsMemory(0, actualByteCount), readerOptions, utf8Bytes);
+                return Parse(utf8Bytes.AsMemory(0, actualByteCount), options.GetReaderOptions(), utf8Bytes);
             }
             catch
             {
@@ -234,7 +226,7 @@ namespace System.Text.Json
         ///   Parse text representing a single JSON value into a JsonDocument.
         /// </summary>
         /// <param name="json">JSON text to parse.</param>
-        /// <param name="readerOptions">Options to control the reader behavior during parsing.</param>
+        /// <param name="options">Options to control the reader behavior during parsing.</param>
         /// <returns>
         ///   A JsonDocument representation of the JSON value.
         /// </returns>
@@ -242,18 +234,16 @@ namespace System.Text.Json
         ///   <paramref name="json"/> does not represent a valid single JSON value.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <paramref name="readerOptions"/> contains unsupported options.
+        ///   <paramref name="options"/> contains unsupported options.
         /// </exception>
-        public static JsonDocument Parse(string json, JsonReaderOptions readerOptions = default)
+        public static JsonDocument Parse(string json, JsonDocumentOptions options = default)
         {
             if (json == null)
             {
                 throw new ArgumentNullException(nameof(json));
             }
 
-            CheckSupportedOptions(readerOptions);
-
-            return Parse(json.AsMemory(), readerOptions);
+            return Parse(json.AsMemory(), options);
         }
 
         /// <summary>
@@ -577,7 +567,7 @@ namespace System.Text.Json
                 new JsonReaderState(options: readerOptions));
 
             var database = new MetadataDb(utf8Json.Length);
-            var stack = new StackRowStack(JsonReaderOptions.DefaultMaxDepth * StackRow.Size);
+            var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
 
             try
             {
