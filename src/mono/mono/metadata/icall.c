@@ -9228,11 +9228,11 @@ ves_icall_System_Environment_get_ProcessorCount (void)
 
 #if defined(ENABLE_MONODROID)
 
-G_EXTERN_C gint32 CreateNLSocket (void);
+G_EXTERN_C gpointer CreateNLSocket (void);
 G_EXTERN_C gint32 ReadEvents (gpointer sock, gpointer buffer, gint32 count, gint32 size);
-G_EXTERN_C gint32 CloseNLSocket (gpointer sock);
+G_EXTERN_C gpointer CloseNLSocket (gpointer sock);
 
-gint32
+gpointer
 ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_CreateNLSocket (void)
 {
 	return CreateNLSocket ();
@@ -9244,7 +9244,7 @@ ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_ReadEvents (gpointer 
 	return ReadEvents (sock, buffer, count, size);
 }
 
-gint32
+gpointer
 ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_CloseNLSocket (gpointer sock)
 {
 	return CloseNLSocket (sock);

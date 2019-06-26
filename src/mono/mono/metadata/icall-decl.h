@@ -211,9 +211,9 @@ ICALL_EXPORT gint32 ves_icall_System_IO_Compression_DeflateStreamNative_ReadZStr
 ICALL_EXPORT gint32 ves_icall_System_IO_Compression_DeflateStreamNative_WriteZStream (gpointer stream, gpointer buffer, gint32 length);
 #endif
 #if defined(ENABLE_MONODROID)
-ICALL_EXPORT gint32 ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_CreateNLSocket (void);
+ICALL_EXPORT gpointer ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_CreateNLSocket (void);
 ICALL_EXPORT gint32 ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_ReadEvents (gpointer sock, gpointer buffer, gint32 count, gint32 size);
-ICALL_EXPORT gint32 ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_CloseNLSocket (gpointer sock);
+ICALL_EXPORT gpointer ves_icall_System_Net_NetworkInformation_LinuxNetworkChange_CloseNLSocket (gpointer sock);
 #endif
 
 #endif // __MONO_METADATA_ICALL_H__
