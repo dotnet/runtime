@@ -8,7 +8,7 @@
  /* File created by MIDL compiler version 8.01.0622 */
 /* at Mon Jan 18 19:14:07 2038
  */
-/* Compiler settings for D:/dotnet/coreclr/src/inc/cordebug.idl:
+/* Compiler settings for E:/repos/coreclr2/src/inc/cordebug.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
@@ -362,6 +362,9 @@ MIDL_DEFINE_GUID(IID, IID_ICorDebugObjectValue,0x18AD3D6E,0xB7D2,0x11d2,0xBD,0x0
 
 
 MIDL_DEFINE_GUID(IID, IID_ICorDebugObjectValue2,0x49E4A320,0x4A9B,0x4eca,0xB1,0x05,0x22,0x9F,0xB7,0xD5,0x00,0x9F);
+
+
+MIDL_DEFINE_GUID(IID, IID_ICorDebugDelegateObjectValue,0x3AF70CC7,0x6047,0x47F6,0xA5,0xC5,0x09,0x0A,0x1A,0x62,0x26,0x38);
 
 
 MIDL_DEFINE_GUID(IID, IID_ICorDebugBoxValue,0xCC7BCAFC,0x8A68,0x11d2,0x98,0x3C,0x00,0x00,0xF8,0x08,0x34,0x2D);
