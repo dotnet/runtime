@@ -302,12 +302,18 @@ namespace System.Text
                     }
                     else
                     {
-                        didFallback = FallbackBuffer.Fallback(_charLeftOver, secondChar, index: 0);
+                        // The fallback mechanism relies on a negative index to convey "the start of the invalid
+                        // sequence was some number of chars back before the current buffer." In this block and
+                        // in the block immediately thereafter, we know we have a single leftover high surrogate
+                        // character from a previous operation, so we provide an index of -1 to convey that the
+                        // char immediately before the current buffer was the start of the invalid sequence.
+
+                        didFallback = FallbackBuffer.Fallback(_charLeftOver, secondChar, index: -1);
                     }
                 }
                 else
                 {
-                    didFallback = FallbackBuffer.Fallback(_charLeftOver, index: 0);
+                    didFallback = FallbackBuffer.Fallback(_charLeftOver, index: -1);
                 }
 
                 // Now tally the number of bytes that would've been emitted as part of fallback.
@@ -367,7 +373,7 @@ namespace System.Text
                             break;
 
                         case OperationStatus.InvalidData:
-                            FallbackBuffer.Fallback(_charLeftOver, secondChar, index: 0);
+                            FallbackBuffer.Fallback(_charLeftOver, secondChar, index: -1); // see comment in DrainLeftoverDataForGetByteCount
                             break;
 
                         default:
@@ -377,7 +383,7 @@ namespace System.Text
                 }
                 else
                 {
-                    FallbackBuffer.Fallback(_charLeftOver, index: 0);
+                    FallbackBuffer.Fallback(_charLeftOver, index: -1); // see comment in DrainLeftoverDataForGetByteCount
                 }
             }
 
