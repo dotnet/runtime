@@ -114,9 +114,6 @@
   <data name="TypeDescriptorProviderError" xml:space="preserve">
     <value>The type description provider {0} has returned null from {1} which is illegal.</value>
   </data>
-  <data name="TypeDescriptorUnsupportedRemoteObject" xml:space="preserve">
-    <value>The object {0} is being remoted by a proxy that does not support interface discovery. This type of remoted object is not supported.</value>
-  </data>
   <data name="TypeDescriptorExpectedElementType" xml:space="preserve">
     <value>Expected types in the collection to be of type {0}.</value>
   </data>
