@@ -29,11 +29,6 @@ namespace System.Text.Json.Serialization.Tests
             {
                 throw new SuccessException();
             }
-
-            public override void Write(Utf8JsonWriter writer, Customer value, JsonEncodedText propertyName, JsonSerializerOptions options)
-            {
-                throw new SuccessException();
-            }
         }
 
         [Fact]
@@ -138,11 +133,6 @@ namespace System.Text.Json.Serialization.Tests
             public override void Write(Utf8JsonWriter writer, Level3 value, JsonSerializerOptions options)
             {
                 writer.WriteStartObject();
-            }
-
-            public override void Write(Utf8JsonWriter writer, Level3 value, JsonEncodedText propertyName, JsonSerializerOptions options)
-            {
-                writer.WriteStartObject(propertyName);
             }
         }
 

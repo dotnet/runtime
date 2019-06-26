@@ -8,22 +8,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override decimal Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType != JsonTokenType.Number)
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
             return reader.GetDecimal();
         }
 
         public override void Write(Utf8JsonWriter writer, decimal value, JsonSerializerOptions options)
         {
             writer.WriteNumberValue(value);
-        }
-
-        public override void Write(Utf8JsonWriter writer, decimal value, JsonEncodedText propertyName, JsonSerializerOptions options)
-        {
-            writer.WriteNumber(propertyName, value);
         }
     }
 }

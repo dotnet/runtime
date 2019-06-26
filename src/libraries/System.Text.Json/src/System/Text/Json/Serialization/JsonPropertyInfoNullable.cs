@@ -72,12 +72,10 @@ namespace System.Text.Json
             {
                 if (EscapedName.HasValue)
                 {
-                    Converter.Write(writer, value.GetValueOrDefault(), EscapedName.Value, Options);
+                    writer.WritePropertyName(EscapedName.Value);
                 }
-                else
-                {
-                    Converter.Write(writer, value.GetValueOrDefault(), Options);
-                }
+
+                Converter.Write(writer, value.GetValueOrDefault(), Options);
             }
         }
 

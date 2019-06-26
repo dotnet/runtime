@@ -49,23 +49,6 @@ namespace System.Text.Json.Serialization.Tests
 
                 writer.WriteStringValue(builder.ToString());
             }
-
-            public override void Write(Utf8JsonWriter writer, long[] value, JsonEncodedText propertyName, JsonSerializerOptions options)
-            {
-                var builder = new StringBuilder();
-
-                for (int i = 0; i < value.Length; i++)
-                {
-                    builder.Append(value[i].ToString());
-
-                    if (i != value.Length - 1)
-                    {
-                        builder.Append(",");
-                    }
-                }
-
-                writer.WriteString(propertyName, builder.ToString());
-            }
         }
 
         [Fact]

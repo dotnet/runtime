@@ -134,7 +134,8 @@ namespace System.Text.Json
             else
             {
                 JsonEncodedText escapedKey = JsonEncodedText.Encode(key);
-                converter.Write(writer, value, escapedKey, options);
+                writer.WritePropertyName(escapedKey);
+                converter.Write(writer, value, options);
             }
         }
     }

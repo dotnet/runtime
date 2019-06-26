@@ -24,11 +24,5 @@ namespace System.Text.Json.Serialization.Converters
             // TODO: remove preprocessing when https://github.com/dotnet/corefx/issues/38647 is implemented.
             writer.WriteStringValue(value.ToString());
         }
-
-        public override void Write(Utf8JsonWriter writer, Uri value, JsonEncodedText propertyName, JsonSerializerOptions options)
-        {
-            // TODO: remove preprocessing when https://github.com/dotnet/corefx/issues/38647 is implemented.
-            writer.WriteString(propertyName, value.ToString());
-        }
     }
 }
