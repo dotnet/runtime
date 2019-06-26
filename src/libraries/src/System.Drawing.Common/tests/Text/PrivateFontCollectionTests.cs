@@ -149,19 +149,12 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void AddFontFile_Directory_ThrowsExternalException()
+        public void AddFontFile_Directory_ThrowsFileNotFoundException()
         {
-            // GDI+ on Windows 7 and Windows 8.1 incorrectly does not throw.
-            if (PlatformDetection.IsWindows || PlatformDetection.IsWindows8x)
-            {
-                return;
-            }
-
             using (var fontCollection = new PrivateFontCollection())
             {
-                Assert.Throws<ExternalException>(() => fontCollection.AddFontFile(AppContext.BaseDirectory));
+                AssertExtensions.Throws<FileNotFoundException, ExternalException>(() => fontCollection.AddFontFile(AppContext.BaseDirectory));
             }
         }
 
