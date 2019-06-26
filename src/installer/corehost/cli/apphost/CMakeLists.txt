@@ -22,7 +22,9 @@ set(SOURCES
     ../fxr/fx_ver.cpp
     ./bundle/file_entry.cpp
     ./bundle/manifest.cpp
+    ./bundle/header.cpp
     ./bundle/bundle_runner.cpp
+    ./bundle/marker.cpp
 )
 
 set(HEADERS
@@ -30,7 +32,9 @@ set(HEADERS
     ./bundle/file_type.h
     ./bundle/file_entry.h
     ./bundle/manifest.h
+    ./bundle/header.h
     ./bundle/bundle_runner.h
+    ./bundle/marker.h
 )
 
 include(../exe.cmake)
@@ -42,4 +46,9 @@ if(WIN32)
     set_property(TARGET ${PROJECT_NAME} PROPERTY 
             LINK_FLAGS "/MANIFEST:NO" 
         ) 
+endif()
+
+# Specify non-default Windows libs to be used for Arm/Arm64 builds
+if (WIN32 AND (CLI_CMAKE_PLATFORM_ARCH_ARM OR CLI_CMAKE_PLATFORM_ARCH_ARM64))
+    target_link_libraries(apphost Advapi32.lib)
 endif()

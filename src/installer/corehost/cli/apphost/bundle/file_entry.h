@@ -16,7 +16,7 @@ namespace bundle
     // 
     // The bundle manifest records the following meta-data for each 
     // file embedded in the bundle:
-    // Fixed size portion (represented by file_entry_inner_t)
+    // Fixed size portion (m_data)
     //   - Offset     
     //   - Size       
     //   - File Entry Type       

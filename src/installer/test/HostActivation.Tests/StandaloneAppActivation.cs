@@ -238,7 +238,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         }
 
         [Fact]
-        public void Running_AppHost_with_GUI_Reports_Errors_In_Window()
+        public void Running_AppHost_with_GUI_No_Console()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -255,28 +255,16 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             UseBuiltAppHost(appExe);
             MarkAppHostAsGUI(appExe);
 
-            Command command = Command.Create(appExe)
+            Command.Create(appExe)
                 .CaptureStdErr()
                 .CaptureStdOut()
-                .Start();
-
-            WaitForPopupFromProcess(command.Process);
-
-            // In theory we should close the window - but it's just easier to kill the process.
-            // The popup should be the last thing the process does anyway.
-            command.Process.Kill();
-
-            CommandResult result = command.WaitForExit(true);
-
-            // There should be no output written by the process.
-            Assert.Equal(string.Empty, result.StdOut);
-            Assert.Equal(string.Empty, result.StdErr);
-
-            result.Should().Fail();
+                .Execute()
+                .Should().Fail()
+                .And.HaveStdErrContaining("This executable is not bound to a managed DLL to execute.");
         }
 
         [Fact]
-        public void Running_AppHost_with_GUI_Reports_Errors_In_Window_and_Traces()
+        public void Running_AppHost_with_GUI_Traces()
         {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -294,126 +282,18 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             MarkAppHostAsGUI(appExe);
 
             string traceFilePath;
-            Command command = Command.Create(appExe)
+            Command.Create(appExe)
                 .EnableHostTracingToFile(out traceFilePath)
-                .Start();
-
-            WaitForPopupFromProcess(command.Process);
-
-            // In theory we should close the window - but it's just easier to kill the process.
-            // The popup should be the last thing the process does anyway.
-            command.Process.Kill();
-
-            CommandResult result = command.WaitForExit(true);
-
-            result.Should().Fail()
-                .And.FileExists(traceFilePath)
-                .And.FileContains(traceFilePath, "Creating a GUI message box with")
-                .And.FileContains(traceFilePath, "This executable is not bound to a managed DLL to execute.");
-
-            FileUtils.DeleteFileIfPossible(traceFilePath);
-        }
-
-        [Fact]
-        public void Running_AppHost_with_GUI_Doesnt_Report_Errors_In_Window_When_Disabled()
-        {
-            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                // GUI app host is only supported on Windows.
-                return;
-            }
-
-            var fixture = sharedTestState.StandaloneAppFixture_Published
-                .Copy();
-
-            string appExe = fixture.TestProject.AppExe;
-
-            // Mark the apphost as GUI, but don't bind it to anything - this will cause it to fail
-            UseBuiltAppHost(appExe);
-            MarkAppHostAsGUI(appExe);
-
-            string traceFilePath;
-            Command command = Command.Create(appExe)
-                .EnableHostTracingToFile(out traceFilePath)
-                .CaptureStdOut()
                 .CaptureStdErr()
-                .EnvironmentVariable(Constants.DisableGuiErrors.EnvironmentVariable, "1")
-                .Start();
-
-            CommandResult commandResult = command.WaitForExit(fExpectedToFail: false, timeoutMilliseconds: 30000);
-            if (commandResult.ExitCode == -1)
-            {
-                try
-                {
-                    // Try to kill the process - it may be up with a dialog, or have some other issue.
-                    command.Process.Kill();
-                }
-                catch
-                {
-                    // Ignore exceptions, we don't know what's going on with the process.
-                }
-
-                Assert.True(false, "The process failed to exit in the alloted time, it's possible it has a dialog up which should not be there.");
-            }
-
-            commandResult
+                .CaptureStdOut()
+                .Execute()
                 .Should().Fail()
                 .And.FileExists(traceFilePath)
-                .And.FileContains(traceFilePath, "Gui errors disabled, keeping errors in stderr.")
-                .And.NotFileContains(traceFilePath, "Creating a GUI message box with")
-                .And.FileContains(traceFilePath, "This executable is not bound to a managed DLL to execute.");
+                .And.FileContains(traceFilePath, "This executable is not bound to a managed DLL to execute.")
+                .And.HaveStdErrContaining("This executable is not bound to a managed DLL to execute.");
 
             FileUtils.DeleteFileIfPossible(traceFilePath);
         }
-
-#if WINDOWS
-        private delegate bool EnumThreadWindowsDelegate(IntPtr hWnd, IntPtr lParam);
-
-        [DllImport("user32.dll")]
-        private static extern bool EnumThreadWindows(int dwThreadId, EnumThreadWindowsDelegate plfn, IntPtr lParam);
-
-        private IntPtr WaitForPopupFromProcess(Process process, int timeout = 30000)
-        {
-            IntPtr windowHandle = IntPtr.Zero;
-            StringBuilder diagMessages = new StringBuilder();
-
-            int longTimeout = timeout * 3;
-            int timeRemaining = longTimeout;
-            while (timeRemaining > 0)
-            {
-                foreach (ProcessThread thread in process.Threads)
-                {
-                    // Note we take the last window we find - there really should only be one at most anyway.
-                    EnumThreadWindows(thread.Id,
-                        (hWnd, lParam) => {
-                            diagMessages.AppendLine($"Callback for a window {hWnd} on thread {thread.Id}.");
-                            windowHandle = hWnd;
-                            return true;
-                        },
-                        IntPtr.Zero);
-                }
-
-                if (windowHandle != IntPtr.Zero)
-                {
-                    break;
-                }
-
-                Thread.Sleep(100);
-                timeRemaining -= 100;
-            }
-
-            // Do not fail if the window could be detected, sometimes the check is fragile and doesn't work.
-            // Not worth the trouble trying to figure out why (only happens rarely in the CI system).
-            // We will rely on product tracing in the failure case.
-
-            return windowHandle;
-        }
-#else
-        private IntPtr WaitForPopupFromProcess(Process process, int timeout = 5000)
-        {
-            throw new PlatformNotSupportedException();
-        }
-#endif
 
         private void UseBuiltAppHost(string appExe)
         {

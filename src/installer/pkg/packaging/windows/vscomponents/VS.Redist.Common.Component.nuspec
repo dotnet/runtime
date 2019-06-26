@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>$COMPONENT_NAME$</id>
+    <version>1.0.0</version>
+    <title>$COMPONENT_NAME$</title>
+    <authors>Microsoft</authors>
+    <owners>Microsoft</owners>
+    <licenseUrl>https://www.microsoft.com/net/dotnet_library_license.htm</licenseUrl>
+    <projectUrl>$PROJECT_URL$</projectUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>$FRIENDLY_NAME$ ($ARCH$) Windows Installer MSI as a .nupkg for internal Visual Studio build consumption</description>
+    <copyright>© Microsoft Corporation. All rights reserved.</copyright>
+  </metadata>
+  <files>
+    <file src="$COMPONENT_MSI$" />
+  </files>
+</package>

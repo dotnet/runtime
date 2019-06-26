@@ -7,7 +7,9 @@
 
 
 #include <cstdint>
+#include "header.h"
 #include "manifest.h"
+#include "marker.h"
 #include "error_codes.h"
 
 namespace bundle
@@ -17,10 +19,16 @@ namespace bundle
     public:
         bundle_runner_t(const pal::string_t& bundle_path)
             : m_bundle_stream(nullptr)
+            , m_header(nullptr)
             , m_manifest(nullptr)
-            , m_num_embedded_files(0)
             , m_bundle_path(bundle_path)
         {
+        }
+
+        ~bundle_runner_t()
+        {
+            delete m_header;
+            delete m_manifest;
         }
 
         pal::string_t get_extraction_dir()
@@ -39,8 +47,8 @@ namespace bundle
         void reopen_host_for_reading();
         static void seek(FILE* stream, long offset, int origin);
 
-        bool process_manifest_footer(int64_t& header_offset);
-        void process_manifest_header(int64_t header_offset);
+        int32_t num_embedded_files() { return m_header->num_embedded_files(); }
+        const pal::string_t& bundle_id() { return m_header->bundle_id(); }
 
         void determine_extraction_dir();
         void create_working_extraction_dir();
@@ -50,10 +58,9 @@ namespace bundle
         void extract_file(file_entry_t* entry);
 
         FILE* m_bundle_stream;
+        header_t* m_header;
         manifest_t* m_manifest;
-        int32_t m_num_embedded_files;
         pal::string_t m_bundle_path;
-        pal::string_t m_bundle_id;
         pal::string_t m_extraction_dir;
         pal::string_t m_working_extraction_dir;
     };

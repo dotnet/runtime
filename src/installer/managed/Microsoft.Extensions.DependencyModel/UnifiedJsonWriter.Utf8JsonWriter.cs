@@ -23,18 +23,18 @@ namespace Microsoft.Extensions.DependencyModel
         public void Flush() => _writer.Flush();
 
         public void WriteStartObject(string propertyName, bool escape = true)
-            => _writer.WriteStartObject(propertyName, escape);
+            => _writer.WriteStartObject(propertyName);
 
         public void WriteStartArray(string propertyName, bool escape = true)
-            => _writer.WriteStartArray(propertyName, escape);
+            => _writer.WriteStartArray(propertyName);
 
         public void WriteString(string propertyName, string value, bool escape = true)
-            => _writer.WriteString(propertyName, value, escape);
+            => _writer.WriteString(propertyName, value);
 
         public void WriteBoolean(string propertyName, bool value, bool escape = true)
-            => _writer.WriteBoolean(propertyName, value, escape);
+            => _writer.WriteBoolean(propertyName, value);
 
         public void WriteStringValue(string value, bool escape = true)
-            => _writer.WriteStringValue(value, escape);
+            => _writer.WriteStringValue(value);
     }
 }
