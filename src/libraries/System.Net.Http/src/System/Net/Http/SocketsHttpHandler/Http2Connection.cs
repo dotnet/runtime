@@ -296,7 +296,7 @@ namespace System.Net.Http
         }
 
         private static readonly HPackDecoder.HeaderCallback s_http2StreamOnResponseHeader =
-            (state, name, value) => ((Http2Stream)state).OnResponseHeader(name, value);
+            (state, name, value) => ((Http2Stream)state)?.OnResponseHeader(name, value);
 
         private async Task ProcessHeadersFrame(FrameHeader frameHeader)
         {
@@ -306,14 +306,12 @@ namespace System.Net.Http
 
             int streamId = frameHeader.StreamId;
             Http2Stream http2Stream = GetStream(streamId);
-            if (http2Stream == null)
-            {
-                _incomingBuffer.Discard(frameHeader.Length);
 
-                throw new Http2ProtocolException(Http2ProtocolErrorCode.StreamClosed);
-            }
+            // Note, http2Stream will be null if this is a closed stream.
+            // We will still process the headers, to ensure the header decoding state is up-to-date,
+            // but we will discard the decoded headers.
 
-            http2Stream.OnResponseHeadersStart();
+            http2Stream?.OnResponseHeadersStart();
 
             _hpackDecoder.Decode(
                 GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), frameHeader.PaddedFlag, frameHeader.PriorityFlag),
@@ -341,9 +339,9 @@ namespace System.Net.Http
 
             _hpackDecoder.CompleteDecode();
 
-            http2Stream.OnResponseHeadersComplete(endStream);
+            http2Stream?.OnResponseHeadersComplete(endStream);
 
-            if (endStream)
+            if (endStream && http2Stream != null)
             {
                 RemoveStream(http2Stream);
             }
@@ -388,25 +386,25 @@ namespace System.Net.Http
             Debug.Assert(frameHeader.Type == FrameType.Data);
 
             Http2Stream http2Stream = GetStream(frameHeader.StreamId);
-            if (http2Stream == null)
+
+            // Note, http2Stream will be null if this is a closed stream.
+            // Just ignore the frame in this case.
+
+            if (http2Stream != null)
             {
-                _incomingBuffer.Discard(frameHeader.Length);
+                ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), hasPad: frameHeader.PaddedFlag, hasPriority: false);
 
-                throw new Http2ProtocolException(Http2ProtocolErrorCode.StreamClosed);
+                bool endStream = frameHeader.EndStreamFlag;
+
+                http2Stream.OnResponseData(frameData, endStream);
+
+                if (endStream)
+                {
+                    RemoveStream(http2Stream);
+                }
             }
-
-            ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.Length), hasPad: frameHeader.PaddedFlag, hasPriority: false);
-
-            bool endStream = frameHeader.EndStreamFlag;
-
-            http2Stream.OnResponseData(frameData, endStream);
 
             _incomingBuffer.Discard(frameHeader.Length);
-
-            if (endStream)
-            {
-                RemoveStream(http2Stream);
-            }
         }
 
         private void ProcessSettingsFrame(FrameHeader frameHeader)
@@ -1498,6 +1496,8 @@ namespace System.Net.Http
 
         private void RemoveStream(Http2Stream http2Stream)
         {
+            Debug.Assert(http2Stream != null);
+
             lock (SyncObject)
             {
                 if (!_httpStreams.Remove(http2Stream.StreamId, out Http2Stream removed))
