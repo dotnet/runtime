@@ -140,7 +140,7 @@ namespace System.DirectoryServices.Tests
             Assert.Throws<ObjectDisposedException>(() => entry.CopyTo(disposedEntry, "newName"));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsIoTCore))]
         public void DeleteTree_NoObject_ThrowsCOMException()
         {
             var entry = new DirectoryEntry("path");
