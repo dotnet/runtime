@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{2D694AC8-A12F-4622-9405-74E20EC40C3A}</ProjectGuid>
     <AssemblyName>System.ComponentModel.Composition</AssemblyName>
@@ -142,6 +142,7 @@
     <Compile Include="System\ComponentModel\Composition\Primitives\ImportDefinition.cs" />
     <Compile Include="System\ComponentModel\Composition\Primitives\IPartCreatorImportDefinition.cs" />
     <Compile Include="System\ComponentModel\Composition\Primitives\PrimitivesServices.cs" />
+    <Compile Include="System\ComponentModel\Composition\Primitives\SerializableCompositionElement.cs" />
     <Compile Include="System\ComponentModel\Composition\ReflectionModel\DisposableReflectionComposablePart.cs" />
     <Compile Include="System\ComponentModel\Composition\ReflectionModel\ExportfactoryCreator.cs" />
     <Compile Include="System\ComponentModel\Composition\ReflectionModel\ExportfactoryCreator.LifetimeContext.cs" />

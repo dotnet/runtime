@@ -13,9 +13,11 @@
 =============================================================================*/
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace Windows.UI.Xaml
 {
+    [Serializable]
     public class LayoutCycleException : Exception
     {
         public LayoutCycleException()
@@ -34,6 +36,11 @@ namespace Windows.UI.Xaml
             : base(message, innerException)
         {
             HResult = HResults.E_LAYOUTCYCLE;
+        }
+
+        protected LayoutCycleException(SerializationInfo serializationInfo, StreamingContext streamingContext)
+            : base (serializationInfo, streamingContext)
+        {
         }
     }
 }

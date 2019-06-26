@@ -3,23 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.Serialization;
 
 namespace System.Reflection.Metadata
 {
+    [Serializable]
     public partial class ImageFormatLimitationException : Exception
     {
-        public ImageFormatLimitationException()
-            : base()
-        {
-        }
-
-        public ImageFormatLimitationException(string message)
-            : base(message)
-        {
-        }
-
-        public ImageFormatLimitationException(string message, Exception innerException)
-            : base(message, innerException)
+        protected ImageFormatLimitationException(SerializationInfo info, StreamingContext context)
+            : base(info, context)
         {
         }
     }
