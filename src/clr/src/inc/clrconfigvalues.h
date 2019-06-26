@@ -249,11 +249,6 @@ CONFIG_DWORD_INFO(INTERNAL_SuppressLockViolationsOnReentryFromOS, W("SuppressLoc
 #endif // WIN64EXCEPTIONS
 
 ///
-/// Diagnostics (unsuported general-purpose)
-///
-RETAIL_CONFIG_DWORD_INFO(UNSUPORTED_LTTng, W("LTTng"), 1, "If COMPlus_LTTng is set to 0, this will prevent the LTTng library from being loaded at runtime")
-
-///
 /// Exception Handling
 ///
 CONFIG_DWORD_INFO_DIRECT_ACCESS(INTERNAL_AssertOnFailFast, W("AssertOnFailFast"), "")
@@ -725,6 +720,13 @@ RETAIL_CONFIG_STRING_INFO(INTERNAL_EventPipeConfig, W("EventPipeConfig"), "Confi
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeRundown, W("EventPipeRundown"), 1, "Enable/disable eventpipe rundown.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeCircularMB, W("EventPipeCircularMB"), 1024, "The EventPipe circular buffer size in megabytes.")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_EventPipeProcNumbers, W("EventPipeProcNumbers"), 0, "Enable/disable capturing processor numbers in EventPipe event headers")
+
+//
+// LTTng
+//
+RETAIL_CONFIG_STRING_INFO(INTERNAL_LTTngConfig, W("LTTngConfig"), "Configuration for LTTng.")
+RETAIL_CONFIG_DWORD_INFO(UNSUPORTED_LTTng, W("LTTng"), 1, "If COMPlus_LTTng is set to 0, this will prevent the LTTng library from being loaded at runtime")
+
 
 #ifdef FEATURE_GDBJIT
 ///
