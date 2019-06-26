@@ -9,6 +9,7 @@ using System.Dynamic.Utils;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using static System.Linq.Expressions.CachedReflectionInfo;
 
 using AstUtils = System.Linq.Expressions.Utils;
@@ -195,8 +196,11 @@ namespace System.Linq.Expressions.Interpreter
     /// <summary>
     /// The re-throw instruction will throw this exception
     /// </summary>
+    [Serializable]
     internal sealed class RethrowException : Exception
     {
+        public RethrowException() : base() { }
+        internal RethrowException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 
     internal sealed class DebugInfo

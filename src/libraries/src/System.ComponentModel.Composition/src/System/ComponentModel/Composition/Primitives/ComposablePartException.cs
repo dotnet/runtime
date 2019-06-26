@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.Serialization;
 
 namespace System.ComponentModel.Composition.Primitives
 {
@@ -12,6 +13,7 @@ namespace System.ComponentModel.Composition.Primitives
     /// </summary>
     [DebuggerTypeProxy(typeof(ComposablePartExceptionDebuggerProxy))]
     [DebuggerDisplay("{Message}")]
+    [Serializable]
     public class ComposablePartException : Exception
     {
         private readonly ICompositionElement _element;
@@ -22,6 +24,32 @@ namespace System.ComponentModel.Composition.Primitives
         public ComposablePartException()
             : this((string)null, (ICompositionElement)null, (Exception)null)
         {
+        }
+
+        /// <summary>
+        ///     Initializes a new instance of the <see cref="ComposablePartException"/> class 
+        ///     with the specified serialization data.
+        /// </summary>
+        /// <param name="info">
+        ///     The <see cref="SerializationInfo"/> that holds the serialized object data about the 
+        ///     <see cref="ComposablePartException"/>.
+        /// </param>
+        /// <param name="context">
+        ///     The <see cref="StreamingContext"/> that contains contextual information about the 
+        ///     source or destination.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///     <paramref name="info"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="SerializationException">
+        ///     <paramref name="info"/> is missing a required value.
+        /// </exception>
+        /// <exception cref="InvalidCastException">
+        ///     <paramref name="info"/> contains a value that cannot be cast to the correct type.
+        /// </exception>
+        protected ComposablePartException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            _element = (ICompositionElement)info.GetValue("Element", typeof(ICompositionElement));
         }
 
         /// <summary>
@@ -116,6 +144,26 @@ namespace System.ComponentModel.Composition.Primitives
         public ICompositionElement Element
         {
             get { return _element; }
+        }
+
+        /// <summary>
+        ///     Gets the serialization data of the exception.
+        /// </summary>
+        /// <param name="info">
+        ///     The <see cref="SerializationInfo"/> that holds the serialized object data about the 
+        ///     <see cref="ComposablePartException"/>.
+        /// </param>
+        /// <param name="context">
+        ///     The <see cref="StreamingContext"/> that contains contextual information about the 
+        ///     source or destination.
+        /// </param>
+        /// <exception cref="ArgumentNullException">
+        ///     <paramref name="info"/> is <see langword="null"/>.
+        /// </exception>
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("Element", _element.ToSerializableElement());
         }
     }
 }

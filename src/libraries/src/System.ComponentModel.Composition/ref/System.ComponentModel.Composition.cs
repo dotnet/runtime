@@ -534,10 +534,12 @@ namespace System.ComponentModel.Composition.Primitives
     public partial class ComposablePartException : System.Exception
     {
         public ComposablePartException() { }
+        protected ComposablePartException(Runtime.Serialization.SerializationInfo info, Runtime.Serialization.StreamingContext context) { }
         public ComposablePartException(string message) { }
         public ComposablePartException(string message, System.ComponentModel.Composition.Primitives.ICompositionElement element) { }
         public ComposablePartException(string message, System.ComponentModel.Composition.Primitives.ICompositionElement element, System.Exception innerException) { }
         public ComposablePartException(string message, System.Exception innerException) { }
+        public override void GetObjectData(Runtime.Serialization.SerializationInfo info, Runtime.Serialization.StreamingContext context) { }
         public System.ComponentModel.Composition.Primitives.ICompositionElement Element { get { throw null; } }
     }
     public partial class ContractBasedImportDefinition : System.ComponentModel.Composition.Primitives.ImportDefinition

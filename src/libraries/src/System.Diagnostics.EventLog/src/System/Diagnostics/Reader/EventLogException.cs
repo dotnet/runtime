@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Runtime.Serialization;
 
 namespace System.Diagnostics.Eventing.Reader
 {
     /// <summary>
     /// describes an exception thrown from Event Log related classes.
     /// </summary>
+    [Serializable]
     public class EventLogException : Exception
     {
         internal static void Throw(int errorCode)
@@ -61,17 +63,31 @@ namespace System.Diagnostics.Eventing.Reader
         }
 
         private int _errorCode;
+
+        protected EventLogException(SerializationInfo serializationInfo, StreamingContext streamingContext)
+            : base(serializationInfo, streamingContext)
+        {
+            _errorCode = serializationInfo.GetInt32("errorCode");
+        }
+
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("errorCode", _errorCode, typeof(int));
+        }
     }
 
     /// <summary>
     /// The object requested by the operation is not found.
     /// </summary>
+    [Serializable]
     public class EventLogNotFoundException : EventLogException
     {
         public EventLogNotFoundException() { }
         public EventLogNotFoundException(string message) : base(message) { }
         public EventLogNotFoundException(string message, Exception innerException) : base(message, innerException) { }
         internal EventLogNotFoundException(int errorCode) : base(errorCode) { }
+        protected EventLogNotFoundException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext) { }
     }
 
     /// <summary>
@@ -79,12 +95,14 @@ namespace System.Diagnostics.Eventing.Reader
     /// that the log has been cleared.  User needs to obtain a new reader object if
     /// they wish to continue navigating result set.
     /// </summary>
+    [Serializable]
     public class EventLogReadingException : EventLogException
     {
         public EventLogReadingException() { }
         public EventLogReadingException(string message) : base(message) { }
         public EventLogReadingException(string message, Exception innerException) : base(message, innerException) { }
         internal EventLogReadingException(int errorCode) : base(errorCode) { }
+        protected EventLogReadingException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext) { }
     }
 
     /// <summary>
@@ -92,23 +110,27 @@ namespace System.Diagnostics.Eventing.Reader
     /// Obtain a new ProviderMetadata object, when provider is reinstalled, to continue navigating
     /// provider's metadata.
     /// </summary>
+    [Serializable]
     public class EventLogProviderDisabledException : EventLogException
     {
         public EventLogProviderDisabledException() { }
         public EventLogProviderDisabledException(string message) : base(message) { }
         public EventLogProviderDisabledException(string message, Exception innerException) : base(message, innerException) { }
         internal EventLogProviderDisabledException(int errorCode) : base(errorCode) { }
+        protected EventLogProviderDisabledException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext) { }
     }
 
     /// <summary>
     /// Data obtained from the eventlog service, for the current operation, is invalid .
     /// </summary>
+    [Serializable]
     public class EventLogInvalidDataException : EventLogException
     {
         public EventLogInvalidDataException() { }
         public EventLogInvalidDataException(string message) : base(message) { }
         public EventLogInvalidDataException(string message, Exception innerException) : base(message, innerException) { }
         internal EventLogInvalidDataException(int errorCode) : base(errorCode) { }
+        protected EventLogInvalidDataException(SerializationInfo serializationInfo, StreamingContext streamingContext) : base(serializationInfo, streamingContext) { }
     }
 }
 

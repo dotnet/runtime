@@ -6,6 +6,11 @@ namespace System.ComponentModel.Composition.Primitives
 {
     internal static class CompositionElementExtensions
     {
+        public static ICompositionElement ToSerializableElement(this ICompositionElement element)
+        {
+            return SerializableCompositionElement.FromICompositionElement(element);
+        }
+
         public static ICompositionElement ToElement(this Export export)
         {
             // First try the export

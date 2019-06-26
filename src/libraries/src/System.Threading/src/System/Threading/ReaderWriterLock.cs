@@ -1133,12 +1133,18 @@ namespace System.Threading
         /// <see cref="ReaderWriterLockApplicationException"/> is thrown with the same <see cref="Exception.HResult"/> as
         /// before.
         /// </summary>
+        [Serializable]
         private sealed class ReaderWriterLockApplicationException : ApplicationException
         {
             public ReaderWriterLockApplicationException(int errorHResult, string message)
                 : base(SR.Format(message, SR.Format(SR.ExceptionFromHResult, errorHResult)))
             {
                 HResult = errorHResult;
+            }
+
+            public ReaderWriterLockApplicationException(SerializationInfo info, StreamingContext context)
+                : base(info, context)
+            {
             }
         }
 

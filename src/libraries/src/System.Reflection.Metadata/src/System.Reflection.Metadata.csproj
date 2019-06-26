@@ -57,6 +57,7 @@
     <Compile Include="System\Reflection\Metadata\Ecma335\MetadataBuilder.Heaps.cs" />
     <Compile Include="System\Reflection\Metadata\IL\ILOpCodeExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\ImageFormatLimitationException.cs" />
+    <Compile Include="System\Reflection\Metadata\ImageFormatLimitationException.Serialization.cs" Condition="'$(TargetGroup)' != 'netstandard1.1'" />
     <Compile Include="System\Reflection\Metadata\Internal\HeapSizeFlag.cs" />
     <Compile Include="System\Reflection\Metadata\Internal\MetadataWriterUtilities.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataStreamOptions.cs" />
