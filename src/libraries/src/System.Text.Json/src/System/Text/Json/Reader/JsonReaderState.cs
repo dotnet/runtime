@@ -32,9 +32,6 @@ namespace System.Text.Json
         /// <param name="options">Defines the customized behavior of the <see cref="Utf8JsonReader"/>
         /// that is different from the JSON RFC (for example how to handle comments or maximum depth allowed when reading).
         /// By default, the <see cref="Utf8JsonReader"/> follows the JSON RFC strictly (i.e. comments within the JSON are invalid) and reads up to a maximum depth of 64.</param>
-        /// <exception cref="ArgumentException">
-        /// Thrown when the max depth is set to a non-positive value (&lt; 0)
-        /// </exception>
         /// <remarks>
         /// An instance of this state must be passed to the <see cref="Utf8JsonReader"/> ctor with the JSON data.
         /// Unlike the <see cref="Utf8JsonReader"/>, which is a ref struct, the state can survive
