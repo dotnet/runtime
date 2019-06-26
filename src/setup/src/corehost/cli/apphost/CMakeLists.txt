@@ -22,7 +22,9 @@ set(SOURCES
     ../fxr/fx_ver.cpp
     ./bundle/file_entry.cpp
     ./bundle/manifest.cpp
+    ./bundle/header.cpp
     ./bundle/bundle_runner.cpp
+    ./bundle/marker.cpp
 )
 
 set(HEADERS
@@ -30,7 +32,9 @@ set(HEADERS
     ./bundle/file_type.h
     ./bundle/file_entry.h
     ./bundle/manifest.h
+    ./bundle/header.h
     ./bundle/bundle_runner.h
+    ./bundle/marker.h
 )
 
 include(../exe.cmake)

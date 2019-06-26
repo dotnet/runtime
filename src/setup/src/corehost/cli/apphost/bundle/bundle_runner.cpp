@@ -166,35 +166,6 @@ void bundle_runner_t::reopen_host_for_reading()
     }
 }
 
-// Checks if this host binary has a valid bundle signature.
-// If so, it sets header_offset and returns true.
-// If not, returns false.
-bool bundle_runner_t::process_manifest_footer(int64_t &header_offset)
-{
-    seek(m_bundle_stream, -manifest_footer_t::num_bytes_read(), SEEK_END);
-
-    manifest_footer_t* footer = manifest_footer_t::read(m_bundle_stream);
-
-    if (!footer->is_valid())
-    {
-        trace::info(_X("This executable is not recognized as a .net core bundle."));
-        return false;
-    }
-
-    header_offset = footer->manifest_header_offset();
-    return true;
-}
-
-void bundle_runner_t::process_manifest_header(int64_t header_offset)
-{
-    seek(m_bundle_stream, header_offset, SEEK_SET);
-
-    manifest_header_t* header = manifest_header_t::read(m_bundle_stream);
-
-    m_num_embedded_files = header->num_embedded_files();
-    m_bundle_id = header->bundle_id();
-}
-
 // Compute the final extraction location as:
 // m_extraction_dir = $DOTNET_BUNDLE_EXTRACT_BASE_DIR/<app>/<id>/...
 //
@@ -216,7 +187,7 @@ void bundle_runner_t::determine_extraction_dir()
 
     pal::string_t host_name = strip_executable_ext(get_filename(m_bundle_path));
     append_path(&m_extraction_dir, host_name.c_str());
-    append_path(&m_extraction_dir, m_bundle_id.c_str());
+    append_path(&m_extraction_dir, bundle_id().c_str());
 
     trace::info(_X("Files embedded within the bundled will be extracted to [%s] directory"), m_extraction_dir.c_str());
 }
@@ -302,22 +273,11 @@ StatusCode bundle_runner_t::extract()
 {
     try
     {
-        // Determine if the current executable is a bundle
         reopen_host_for_reading();
 
-        //  If the current AppHost is a bundle, it's layout will be 
-        //    AppHost binary 
-        //    Embedded Files: including the app, its configuration files, 
-        //                    dependencies, and possibly the runtime.
-        //    Bundle Manifest
-
-        int64_t manifest_header_offset;
-
-        if (!process_manifest_footer(manifest_header_offset))
-        {
-            return StatusCode::AppHostExeNotBundle;
-        }
-        process_manifest_header(manifest_header_offset);
+        // Read the bundle header
+        seek(m_bundle_stream, marker_t::header_offset(), SEEK_SET);
+        m_header = header_t::read(m_bundle_stream);
 
         // Determine if embedded files are already extracted, and available for reuse
         determine_extraction_dir();
@@ -345,7 +305,7 @@ StatusCode bundle_runner_t::extract()
         
         create_working_extraction_dir();
 
-        m_manifest = manifest_t::read(m_bundle_stream, m_num_embedded_files);
+        m_manifest = manifest_t::read(m_bundle_stream, num_embedded_files());
 
         for (file_entry_t* entry : m_manifest->files) {
             extract_file(entry);

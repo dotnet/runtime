@@ -12,6 +12,7 @@
 
 #if defined(FEATURE_APPHOST)
 #include "cli/apphost/bundle/bundle_runner.h"
+#include "cli/apphost/bundle/marker.h"
 
 #define CURHOST_TYPE    _X("apphost")
 #define CUREXE_PKG_VER  COMMON_HOST_PKG_VER
@@ -41,7 +42,7 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     constexpr int EMBED_SZ = sizeof(EMBED_HASH_FULL_UTF8) / sizeof(EMBED_HASH_FULL_UTF8[0]);
     constexpr int EMBED_MAX = (EMBED_SZ > 1025 ? EMBED_SZ : 1025); // 1024 DLL name length, 1 NUL
 
-    // Contains the embed hash value at compile time or the managed DLL name replaced by "dotnet build".
+    // Contains the EMBED_HASH_FULL_UTF8 value at compile time or the managed DLL name replaced by "dotnet build".
     // Must not be 'const' because std::string(&embed[0]) below would bind to a const string ctor plus length
     // where length is determined at compile time (=64) instead of the actual length of the string at runtime.
     static char embed[EMBED_MAX] = EMBED_HASH_FULL_UTF8;     // series of NULs followed by embed hash string
@@ -72,6 +73,7 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
     trace::info(_X("The managed DLL bound to this executable is: '%s'"), app_dll->c_str());
     return true;
 }
+
 #elif !defined(FEATURE_LIBHOST)
 #define CURHOST_TYPE    _X("dotnet")
 #define CUREXE_PKG_VER  HOST_PKG_VER
@@ -112,23 +114,22 @@ int exe_start(const int argc, const pal::char_t* argv[])
         requires_v2_hostfxr_interface = true;
     }
 
-    bundle::bundle_runner_t extractor(host_path);
-    StatusCode bundle_status = extractor.extract();
-
-    switch (bundle_status)
+    if (bundle::marker_t::is_bundle())
     {
-    case StatusCode::Success:
+        bundle::bundle_runner_t extractor(host_path);
+        StatusCode bundle_status = extractor.extract();
+
+        if (bundle_status != StatusCode::Success)
+        {
+            trace::error(_X("A fatal error was encountered. Could not extract contents of the bundle"));
+            return bundle_status;
+        }
+
         app_path.assign(extractor.get_extraction_dir());
-        break;
-
-    case StatusCode::AppHostExeNotBundle:
+    }
+    else
+    {
         app_path.assign(get_directory(host_path));
-        break;
-
-    case StatusCode::BundleExtractionFailure:
-    default:
-        trace::error(_X("A fatal error was encountered. Could not extract contents of the bundle"));
-        return StatusCode::AppHostExeNotBoundFailure;
     }
 
     append_path(&app_path, embedded_app_name.c_str());
