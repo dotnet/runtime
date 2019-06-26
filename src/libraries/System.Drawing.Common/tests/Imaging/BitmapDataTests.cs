@@ -106,7 +106,6 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(pixelFormat, bd.PixelFormat);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void PixelFormat_SetInvalid_ThrowsInvalidEnumException()
         {

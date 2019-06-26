@@ -121,6 +121,7 @@
     <Compile Include="System\Drawing\SystemBrushes.cs" />
     <Compile Include="System\Drawing\TextureBrush.cs" />
     <Compile Include="System\Drawing\Drawing2D\CustomLineCapType.cs" />
+    <Compile Include="System\Drawing\Imaging\BitmapData.cs" />
     <Compile Include="System\Drawing\Imaging\EmfPlusFlags.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileHeaderWmf.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileHeaderEmf.cs" />
