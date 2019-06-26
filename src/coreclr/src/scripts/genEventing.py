@@ -273,8 +273,12 @@ def generateClrallEvents(eventNodes,allTemplates):
         clrallEvents.append("inline BOOL EventEnabled")
         clrallEvents.append(eventName)
         clrallEvents.append("() {return ")
-        clrallEvents.append("EventPipeEventEnabled" + eventName + "() || ")
-        clrallEvents.append("(XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabled" + eventName + "());}\n\n")
+        clrallEvents.append("EventPipeEventEnabled" + eventName + "()")
+
+        if os.name == 'posix':
+            clrallEvents.append("|| (XplatEventLogger::IsEventLoggingEnabled() && EventXplatEnabled" + eventName + "());}\n\n")
+        else:
+            clrallEvents.append(";}\n\n")
         #generate FireEtw functions
         fnptype     = []
         fnbody      = []
@@ -550,6 +554,19 @@ typedef struct _EVENTPIPE_TRACE_CONTEXT
 #endif // EVENTPIPE_TRACE_CONTEXT_DEF
 """
 
+    lttng_trace_context_typedef = """
+#if !defined(LTTNG_TRACE_CONTEXT_DEF)
+#define LTTNG_TRACE_CONTEXT_DEF
+typedef struct _LTTNG_TRACE_CONTEXT
+{
+    WCHAR const * Name;
+    UCHAR Level;
+    bool IsEnabled;
+    ULONGLONG EnabledKeywordsBitmask;
+} LTTNG_TRACE_CONTEXT, *PLTTNG_TRACE_CONTEXT;
+#endif // LTTNG_TRACE_CONTEXT_DEF
+"""
+
     dotnet_trace_context_typedef_windows = """
 #if !defined(DOTNET_TRACE_CONTEXT_DEF)
 #define DOTNET_TRACE_CONTEXT_DEF
@@ -567,6 +584,7 @@ typedef struct _DOTNET_TRACE_CONTEXT
 typedef struct _DOTNET_TRACE_CONTEXT
 {
     EVENTPIPE_TRACE_CONTEXT EventPipeProvider;
+    PLTTNG_TRACE_CONTEXT LttngProvider;
 } DOTNET_TRACE_CONTEXT, *PDOTNET_TRACE_CONTEXT;
 #endif // DOTNET_TRACE_CONTEXT_DEF
 """
@@ -582,13 +600,13 @@ EXTERN_C __declspec(selectany) DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNT
 """
 
     trace_context_instdef_unix = """
-EXTERN_C __declspec(selectany) DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context };
+EXTERN_C __declspec(selectany) DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_LTTNG_Context };
 
-EXTERN_C __declspec(selectany) DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context };
+EXTERN_C __declspec(selectany) DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_LTTNG_Context };
 
-EXTERN_C __declspec(selectany) DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context };
+EXTERN_C __declspec(selectany) DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_LTTNG_Context };
 
-EXTERN_C __declspec(selectany) DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context };
+EXTERN_C __declspec(selectany) DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_LTTNG_Context };
 """
 
     # Write the main header for FireETW* functions
@@ -601,13 +619,11 @@ EXTERN_C __declspec(selectany) DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNT
 #include "clreventpipewriteevents.h"
 
 """)
-        Clrallevents.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
 
         # define DOTNET_TRACE_CONTEXT depending on the platform
         if is_windows:
+            Clrallevents.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
             Clrallevents.write(dotnet_trace_context_typedef_windows)
-        else:
-            Clrallevents.write(dotnet_trace_context_typedef_unix)
 
         for providerNode in tree.getElementsByTagName('provider'):
             templateNodes = providerNode.getElementsByTagName('template')
@@ -620,14 +636,13 @@ EXTERN_C __declspec(selectany) DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNT
             providerName = providerNode.getAttribute('name')
             providerSymbol = providerNode.getAttribute('symbol')
 
-            eventpipeProviderCtxName = providerSymbol + "_EVENTPIPE_Context"
-            Clrallevents.write('EXTERN_C __declspec(selectany) EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
+            if is_windows:
+                eventpipeProviderCtxName = providerSymbol + "_EVENTPIPE_Context"
+                Clrallevents.write('EXTERN_C __declspec(selectany) EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
 
         # define and initialize runtime providers' DOTNET_TRACE_CONTEXT depending on the platform
         if is_windows:
             Clrallevents.write(trace_context_instdef_windows)
-        else:
-            Clrallevents.write(trace_context_instdef_unix)
 
     if write_xplatheader:
         clrproviders = os.path.join(incDir, "clrproviders.h")
@@ -639,13 +654,26 @@ EXTERN_C __declspec(selectany) DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNT
         ULONGLONG const Keyword;
     } EVENT_DESCRIPTOR;
     """)
+
+            if not is_windows:
+                Clrproviders.write(eventpipe_trace_context_typedef)  # define EVENTPIPE_TRACE_CONTEXT
+                Clrproviders.write(lttng_trace_context_typedef)  # define LTTNG_TRACE_CONTEXT
+                Clrproviders.write(dotnet_trace_context_typedef_unix)
+
             allProviders = []
+            nbProviders = 0
             for providerNode in tree.getElementsByTagName('provider'):
                 keywords = []
                 keywordsToMask = {}
                 providerName = str(providerNode.getAttribute('name'))
                 providerSymbol = str(providerNode.getAttribute('symbol'))
+                nbProviders += 1
                 nbKeywords = 0
+                if not is_windows:
+                    eventpipeProviderCtxName = providerSymbol + "_EVENTPIPE_Context"
+                    Clrproviders.write('EXTERN_C __declspec(selectany) EVENTPIPE_TRACE_CONTEXT ' + eventpipeProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
+                    lttngProviderCtxName = providerSymbol + "_LTTNG_Context"
+                    Clrproviders.write('EXTERN_C __declspec(selectany) LTTNG_TRACE_CONTEXT ' + lttngProviderCtxName + ' = { W("' + providerName + '"), 0, false, 0 };\n')
 
                 Clrproviders.write("// Keywords\n");
                 for keywordNode in providerNode.getElementsByTagName('keyword'):
@@ -665,7 +693,15 @@ EXTERN_C __declspec(selectany) DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNT
                     level = convertToLevelId(levelName)
                     Clrproviders.write("EXTERN_C __declspec(selectany) EVENT_DESCRIPTOR const " + symbolName + " = { " + str(level) + ", " + hex(getKeywordsMaskCombined(keywords, keywordsToMask)) + " };\n")
 
-                allProviders.append("&" + providerSymbol + "_Context")
+                allProviders.append("&" + providerSymbol + "_LTTNG_Context")
+
+            # define and initialize runtime providers' DOTNET_TRACE_CONTEXT depending on the platform
+            if not is_windows:
+                Clrproviders.write('#define NB_PROVIDERS ' + str(nbProviders) + '\n')
+                Clrproviders.write('EXTERN_C __declspec(selectany) LTTNG_TRACE_CONTEXT * const ALL_LTTNG_PROVIDERS_CONTEXT[NB_PROVIDERS] = { ')
+                Clrproviders.write(', '.join(allProviders))
+                Clrproviders.write(' };\n')
+                Clrproviders.write(trace_context_instdef_unix)
 
 
     clreventpipewriteevents = os.path.join(incDir, "clreventpipewriteevents.h")
