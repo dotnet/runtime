@@ -10,28 +10,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override char Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType != JsonTokenType.String)
-            {
-                ThrowHelper.ThrowJsonException();
-            }
-
             return reader.GetString()[0];
         }
 
         public override void Write(Utf8JsonWriter writer, char value, JsonSerializerOptions options)
         {
             writer.WriteStringValue(
-#if BUILDING_INBOX_LIBRARY
-                MemoryMarshal.CreateSpan(ref value, 1)
-#else
-                value.ToString()
-#endif
-                );
-        }
-
-        public override void Write(Utf8JsonWriter writer, char value, JsonEncodedText propertyName, JsonSerializerOptions options)
-        {
-            writer.WriteString(propertyName,
 #if BUILDING_INBOX_LIBRARY
                 MemoryMarshal.CreateSpan(ref value, 1)
 #else

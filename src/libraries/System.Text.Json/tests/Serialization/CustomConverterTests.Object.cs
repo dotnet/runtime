@@ -42,11 +42,6 @@ namespace System.Text.Json.Serialization.Tests
                 // Write the name of the type.
                 writer.WriteStringValue(value.GetType().ToString());
             }
-
-            public override void Write(Utf8JsonWriter writer, object value, JsonEncodedText propertyName, JsonSerializerOptions options)
-            {
-                writer.WriteString(propertyName, value.GetType().ToString());
-            }
         }
 
         [Fact]
@@ -116,11 +111,6 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             public override void Write(Utf8JsonWriter writer, object value, JsonSerializerOptions options)
-            {
-                throw new InvalidOperationException("Directly writing object not supported");
-            }
-
-            public override void Write(Utf8JsonWriter writer, object value, JsonEncodedText propertyName, JsonSerializerOptions options)
             {
                 throw new InvalidOperationException("Directly writing object not supported");
             }

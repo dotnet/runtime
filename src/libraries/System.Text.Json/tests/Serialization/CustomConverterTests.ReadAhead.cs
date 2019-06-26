@@ -277,25 +277,6 @@ namespace System.Text.Json.Serialization.Tests
 
                 writer.WriteEndObject();
             }
-
-            // todo: remove this method once writer supports setting property name.
-            public override void Write(Utf8JsonWriter writer, ClassWithStringProperties value, JsonEncodedText propertyName, JsonSerializerOptions options)
-            {
-                writer.WriteStartObject(propertyName);
-
-                writer.WriteString("MyString0", value.MyString0);
-                writer.WriteString("MyString1", value.MyString1);
-                writer.WriteString("MyString2", value.MyString2);
-                writer.WriteString("MyString3", value.MyString3);
-                writer.WriteString("MyString4", value.MyString4);
-                writer.WriteString("MyString5", value.MyString5);
-                writer.WriteString("MyString6", value.MyString6);
-                writer.WriteString("MyString7", value.MyString7);
-                writer.WriteString("MyString8", value.MyString8);
-                writer.WriteString("MyString9", value.MyString9);
-
-                writer.WriteEndObject();
-            }
         }
     }
 }

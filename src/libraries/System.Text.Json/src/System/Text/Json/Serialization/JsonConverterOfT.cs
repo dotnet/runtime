@@ -50,15 +50,6 @@ namespace System.Text.Json.Serialization
         /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         public abstract void Write(Utf8JsonWriter writer, T value, JsonSerializerOptions options);
 
-        /// <summary>
-        /// todo: remove this method once the writer supports setting a property name
-        /// </summary>
-        /// <param name="writer"></param>
-        /// <param name="value"></param>
-        /// <param name="propertyName"></param>
-        /// <param name="options"></param>
-        public virtual void Write(Utf8JsonWriter writer, T value, JsonEncodedText propertyName, JsonSerializerOptions options) { throw new NotImplementedException(); }
-
         internal override Type TypeToConvert => typeof(T);
     }
 }

@@ -87,12 +87,10 @@ namespace System.Text.Json.Serialization
             {
                 if (EscapedName.HasValue)
                 {
-                    Converter.Write(writer, value, EscapedName.Value, Options);
+                    writer.WritePropertyName(EscapedName.Value);
                 }
-                else
-                {
-                    Converter.Write(writer, value, Options);
-                }
+
+                Converter.Write(writer, value, Options);
             }
         }
 
