@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Xunit;
@@ -168,6 +169,82 @@ namespace System.Threading.Tasks.Tests
                 Assert.Null(SynchronizationContext.Current);
                 Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
             });
+        }
+
+        public static IEnumerable<object[]> Await_MultipleAwaits_FirstCompletesAccordingToOptions_RestCompleteAsynchronously_MemberData()
+        {
+            foreach (int numContinuations in new[] { 1, 2, 5 })
+                foreach (bool runContinuationsAsynchronously in new[] { false, true })
+                    foreach (bool valueTask in new[] { false, true })
+                        foreach (object scheduler in new object[] { null, new QUWITaskScheduler(), new ValidateCorrectContextSynchronizationContext() })
+                            yield return new object[] { numContinuations, runContinuationsAsynchronously, valueTask, scheduler };
+        }
+
+        [Theory]
+        [MemberData(nameof(Await_MultipleAwaits_FirstCompletesAccordingToOptions_RestCompleteAsynchronously_MemberData))]
+        public async Task Await_MultipleAwaits_FirstCompletesAccordingToOptions_RestCompleteAsynchronously(
+            int numContinuations, bool runContinuationsAsynchronously, bool valueTask, object scheduler)
+        {
+            await Task.Factory.StartNew(async delegate
+            {
+                if (scheduler is SynchronizationContext sc)
+                {
+                    SynchronizationContext.SetSynchronizationContext(sc);
+                }
+
+                var tcs = runContinuationsAsynchronously ? new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously) : new TaskCompletionSource<bool>();
+
+                var tl = new ThreadLocal<int>();
+                var tasks = new List<Task>();
+
+                for (int i = 1; i <= numContinuations; i++)
+                {
+                    bool expectedSync = i == 1 && !runContinuationsAsynchronously;
+
+                    tasks.Add(ThenAsync(tcs.Task, () =>
+                    {
+                        Assert.Equal(expectedSync ? 42 : 0, tl.Value);
+
+                        switch (scheduler)
+                        {
+                            case null:
+                                Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
+                                Assert.Null(SynchronizationContext.Current);
+                                break;
+                            case TaskScheduler ts:
+                                Assert.Same(ts, TaskScheduler.Current);
+                                Assert.Null(SynchronizationContext.Current);
+                                break;
+                            case SynchronizationContext sc:
+                                Assert.Same(sc, SynchronizationContext.Current);
+                                Assert.Same(TaskScheduler.Default, TaskScheduler.Current);
+                                break;
+                        }
+                    }));
+
+                    async Task ThenAsync(Task task, Action action)
+                    {
+                        if (valueTask)
+                        {
+                            await new ValueTask(task);
+                        }
+                        else
+                        {
+                            await task;
+                        }
+                        action();
+                    }
+                }
+
+                Assert.All(tasks, t => Assert.Equal(TaskStatus.WaitingForActivation, t.Status));
+
+                tl.Value = 42;
+                tcs.SetResult(true);
+                tl.Value = 0;
+
+                SynchronizationContext.SetSynchronizationContext(null);
+                await Task.WhenAll(tasks);
+            }, CancellationToken.None, TaskCreationOptions.None, scheduler as TaskScheduler ?? TaskScheduler.Default).Unwrap();
         }
 
         [Fact]
@@ -387,6 +464,7 @@ namespace System.Threading.Tasks.Tests
                 Interlocked.Increment(ref PostCount);
                 Task.Run(() =>
                 {
+                    SetSynchronizationContext(this);
                     try
                     {
                         t_isPostedInContext = true;
@@ -395,6 +473,7 @@ namespace System.Threading.Tasks.Tests
                     finally
                     {
                         t_isPostedInContext = false;
+                        SetSynchronizationContext(null);
                     }
                 });
             }
