@@ -297,7 +297,6 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [ActiveIssue(32710, TestPlatforms.AnyUnix)] 
         [Fact]
         public static void InplaceEncryptTamperTagDecrypt()
         {
@@ -339,7 +338,6 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [ActiveIssue(32710, TestPlatforms.AnyUnix)] 
         [Theory]
         [MemberData(nameof(GetNistCcmTestCases))]
         public static void AesCcmNistTestsTamperTag(AEADTest testCase)
@@ -362,7 +360,6 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [ActiveIssue(32710, TestPlatforms.AnyUnix)] 
         [Theory]
         [MemberData(nameof(GetNistCcmTestCasesWithNonEmptyPT))]
         public static void AesCcmNistTestsTamperCiphertext(AEADTest testCase)
