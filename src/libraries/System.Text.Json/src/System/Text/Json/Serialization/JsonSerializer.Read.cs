@@ -58,7 +58,7 @@ namespace System.Text.Json
                             readStack.Push();
                             readStack.Current.Drain = true;
                         }
-                        else if (readStack.Current.IsProcessingValue)
+                        else if (readStack.Current.IsProcessingValue(tokenType))
                         {
                             if (!HandleObjectAsValue(tokenType, options, ref reader, ref readStack, ref initialState))
                             {
@@ -92,7 +92,7 @@ namespace System.Text.Json
                     }
                     else if (tokenType == JsonTokenType.StartArray)
                     {
-                        if (!readStack.Current.IsProcessingValue)
+                        if (!readStack.Current.IsProcessingValue(tokenType))
                         {
                             HandleStartArray(options, ref reader, ref readStack);
                         }

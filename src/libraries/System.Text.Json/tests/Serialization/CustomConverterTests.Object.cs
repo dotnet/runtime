@@ -88,7 +88,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         /// <summary>
-        /// A converter that converters True and False to a bool.
+        /// A converter that converts "true" and "false" tokens to a bool.
         /// </summary>
         private class ObjectToBoolConverter : JsonConverter<object>
         {

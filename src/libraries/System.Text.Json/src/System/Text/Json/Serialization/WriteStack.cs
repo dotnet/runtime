@@ -48,13 +48,13 @@ namespace System.Text.Json
 
             if (classType == ClassType.Enumerable || nextClassInfo.ClassType == ClassType.Dictionary)
             {
-                Current.PopStackOnEnd = true;
-                Current.JsonPropertyInfo = Current.JsonClassInfo.GetPolicyProperty();
+                Current.PopStackOnEndCollection = true;
+                Current.JsonPropertyInfo = Current.JsonClassInfo.PolicyProperty;
             }
             else if (classType == ClassType.IDictionaryConstructible)
             {
-                Current.PopStackOnEnd = true;
-                Current.JsonPropertyInfo = Current.JsonClassInfo.GetPolicyProperty();
+                Current.PopStackOnEndCollection = true;
+                Current.JsonPropertyInfo = Current.JsonClassInfo.PolicyProperty;
 
                 Current.IsIDictionaryConstructible = true;
             }

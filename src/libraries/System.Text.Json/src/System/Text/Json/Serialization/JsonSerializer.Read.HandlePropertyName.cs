@@ -49,7 +49,7 @@ namespace System.Text.Json
 
                     if (state.Current.IsDictionary || state.Current.IsIDictionaryConstructible)
                     {
-                        state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetPolicyProperty();
+                        state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.PolicyProperty;
                     }
 
                     Debug.Assert(
@@ -73,7 +73,7 @@ namespace System.Text.Json
                     propertyName = GetUnescapedString(propertyName, idx);
                 }
 
-                state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(options, propertyName, ref state.Current);
+                state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(propertyName, ref state.Current);
                 if (state.Current.JsonPropertyInfo == null)
                 {
                     if (state.Current.JsonClassInfo.DataExtensionProperty == null)
