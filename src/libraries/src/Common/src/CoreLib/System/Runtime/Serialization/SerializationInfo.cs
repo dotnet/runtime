@@ -69,13 +69,13 @@ namespace System.Runtime.Serialization
             }
         }
 
-        // Throws a DeserializationBlockedException if dangerous deserialization is currently
+        // Throws a SerializationException if dangerous deserialization is currently
         // in progress
         public static void ThrowIfDeserializationInProgress()
         {
             if (DeserializationInProgress)
             {
-                throw new DeserializationBlockedException();
+                throw new SerializationException(SR.Serialization_DangerousDeserialization);
             }
         }
 
@@ -118,7 +118,7 @@ namespace System.Runtime.Serialization
             {
                 if (DeserializationInProgress)
                 {
-                    throw new DeserializationBlockedException(SR.Format(SR.Serialization_DangerousDeserialization_Switch, SwitchPrefix + switchSuffix));
+                    throw new SerializationException(SR.Format(SR.Serialization_DangerousDeserialization_Switch, SwitchPrefix + switchSuffix));
                 }
             }
             else
