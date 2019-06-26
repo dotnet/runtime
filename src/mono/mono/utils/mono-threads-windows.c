@@ -12,6 +12,7 @@
 
 #if defined(USE_WINDOWS_BACKEND)
 
+#include <glib.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-threads-debug.h>
@@ -179,8 +180,9 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 	g_assert (handle);
 
 	result = SuspendThread (handle);
-	THREADS_SUSPEND_DEBUG ("SUSPEND %p -> %d\n", (void*)id, ret);
+	THREADS_SUSPEND_DEBUG ("SUSPEND %p -> %u\n", GUINT_TO_POINTER (id), result);
 	if (result == (DWORD)-1) {
+		THREADS_SUSPEND_DEBUG ("SUSPEND FAILED, id=%p, err=%u\n", GUINT_TO_POINTER (id), GetLastError ());
 		return FALSE;
 	}
 
@@ -193,6 +195,7 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 	CONTEXT context;
 	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
 	if (!GetThreadContext (handle, &context)) {
+		THREADS_SUSPEND_DEBUG ("SUSPEND FAILED (GetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (id), GetLastError ());
 		return FALSE;
 	}
 
@@ -204,18 +207,18 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 		result = ResumeThread (handle);
 		g_assert (result == 1);
 		info->suspend_can_continue = TRUE;
-		THREADS_SUSPEND_DEBUG ("\tlost race with self suspend %p\n", (void*)id);
+		THREADS_SUSPEND_DEBUG ("\tlost race with self suspend %u\n", id);
 		g_assert (mono_threads_is_hybrid_suspension_enabled ());
 		//XXX interrupt_kernel doesn't make sense in this case as the target is not in a syscall
 		return TRUE;
 	}
 	info->suspend_can_continue = mono_threads_get_runtime_callbacks ()->thread_state_init_from_handle (&info->thread_saved_state [ASYNC_SUSPEND_STATE_INDEX], info, &context);
-	THREADS_SUSPEND_DEBUG ("thread state %p -> %d\n", (void*)id, res);
+	THREADS_SUSPEND_DEBUG ("thread state %p -> %u\n", GUINT_TO_POINTER (id), result);
 	if (info->suspend_can_continue) {
 		if (interrupt_kernel)
 			suspend_abort_syscall (info, handle, id);
 	} else {
-		THREADS_SUSPEND_DEBUG ("FAILSAFE RESUME/2 %p -> %d\n", (void*)info->native_handle, 0);
+		THREADS_SUSPEND_DEBUG ("FAILSAFE RESUME/2 %p -> %u\n", GUINT_TO_POINTER (id), 0);
 	}
 
 	return TRUE;
@@ -274,6 +277,7 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
 
 		if (!GetThreadContext (handle, &context)) {
+			THREADS_SUSPEND_DEBUG ("RESUME FAILED (GetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (id), GetLastError ());
 			return FALSE;
 		}
 
@@ -285,6 +289,7 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 		context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
 		res = SetThreadContext (handle, &context);
 		if (!res) {
+			THREADS_SUSPEND_DEBUG ("RESUME FAILED (SetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (id), GetLastError ());
 			return FALSE;
 		}
 #else
@@ -293,6 +298,7 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 	}
 
 	result = ResumeThread (handle);
+	THREADS_SUSPEND_DEBUG ("RESUME %p -> %u\n", GUINT_TO_POINTER (id), result);
 
 	return result != (DWORD)-1;
 }
