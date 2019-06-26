@@ -27,27 +27,27 @@ namespace System.IO.Compression
         private bool _wroteBytes;
 
         // A specific constructor to allow decompression of Deflate64
-        internal DeflateManagedStream(Stream stream, ZipArchiveEntry.CompressionMethodValues method)
+        internal DeflateManagedStream(Stream stream, ZipArchiveEntry.CompressionMethodValues method, long uncompressedSize)
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
             if (!stream.CanRead)
                 throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-            InitializeInflater(stream, false, null, method);
+            InitializeInflater(stream, false, null, method, uncompressedSize);
         }
 
         /// <summary>
         /// Sets up this DeflateManagedStream to be used for Inflation/Decompression
         /// </summary>
-        internal void InitializeInflater(Stream stream, bool leaveOpen, IFileFormatReader reader = null, ZipArchiveEntry.CompressionMethodValues method = ZipArchiveEntry.CompressionMethodValues.Deflate)
+        internal void InitializeInflater(Stream stream, bool leaveOpen, IFileFormatReader reader = null, ZipArchiveEntry.CompressionMethodValues method = ZipArchiveEntry.CompressionMethodValues.Deflate, long uncompressedSize = -1)
         {
             Debug.Assert(stream != null);
             Debug.Assert(method == ZipArchiveEntry.CompressionMethodValues.Deflate || method == ZipArchiveEntry.CompressionMethodValues.Deflate64);
             if (!stream.CanRead)
                 throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-            _inflater = new InflaterManaged(reader, method == ZipArchiveEntry.CompressionMethodValues.Deflate64 ? true : false);
+            _inflater = new InflaterManaged(reader, method == ZipArchiveEntry.CompressionMethodValues.Deflate64 ? true : false, uncompressedSize);
 
             _stream = stream;
             _mode = CompressionMode.Decompress;

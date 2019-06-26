@@ -23,6 +23,10 @@ namespace System.IO.Compression
         private int _activeAsyncOperation; // 1 == true, 0 == false
         private bool _wroteBytes;
 
+        internal DeflateStream(Stream stream, CompressionMode mode, long uncompressedSize) : this(stream, mode, leaveOpen: false, ZLibNative.Deflate_DefaultWindowBits, uncompressedSize)
+        {
+        }
+
         public DeflateStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false)
         {
         }
@@ -45,7 +49,7 @@ namespace System.IO.Compression
         /// Internal constructor to check stream validity and call the correct initialization function depending on
         /// the value of the CompressionMode given.
         /// </summary>
-        internal DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits)
+        internal DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
         {
             if (stream == null)
                 throw new ArgumentNullException(nameof(stream));
@@ -53,7 +57,7 @@ namespace System.IO.Compression
             switch (mode)
             {
                 case CompressionMode.Decompress:
-                    InitializeInflater(stream, leaveOpen, windowBits);
+                    InitializeInflater(stream, leaveOpen, windowBits, uncompressedSize);
                     break;
 
                 case CompressionMode.Compress:
@@ -79,13 +83,13 @@ namespace System.IO.Compression
         /// <summary>
         /// Sets up this DeflateStream to be used for Zlib Inflation/Decompression
         /// </summary>
-        internal void InitializeInflater(Stream stream, bool leaveOpen, int windowBits)
+        internal void InitializeInflater(Stream stream, bool leaveOpen, int windowBits, long uncompressedSize)
         {
             Debug.Assert(stream != null);
             if (!stream.CanRead)
                 throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
-            _inflater = new Inflater(windowBits);
+            _inflater = new Inflater(windowBits, uncompressedSize);
 
             _stream = stream;
             _mode = CompressionMode.Decompress;
@@ -988,6 +992,10 @@ namespace System.IO.Compression
                     {
                         break;
                     }
+                    if (_deflateStream._inflater.Finished())
+                    {
+                        break;
+                    }
                 }
             }
 
@@ -1020,6 +1028,10 @@ namespace System.IO.Compression
                         _destination.Write(_arrayPoolBuffer, 0, bytesRead);
                     }
                     else
+                    {
+                        break;
+                    }
+                    if (_deflateStream._inflater.Finished())
                     {
                         break;
                     }
