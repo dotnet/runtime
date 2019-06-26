@@ -4163,6 +4163,10 @@ void InitializeEventTracing()
     // Any classes that need some initialization to happen after we've registered the
     // providers can do so now
     ETW::TypeSystemLog::PostRegistrationInit();
+
+#if defined(FEATURE_PAL) && defined (FEATURE_PERFTRACING)
+    XplatEventLogger::InitializeLogger();
+#endif // FEATURE_PAL && FEATURE_PERFTRACING
 }
 
 // Plumbing to funnel event pipe callbacks and ETW callbacks together into a single common
