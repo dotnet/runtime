@@ -350,7 +350,6 @@ namespace System.Threading.Tasks
 
         /// <summary>Throws the exception that caused the <see cref="ValueTask"/> to fail.  If it completed successfully, nothing is thrown.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [StackTraceHidden]
         internal void ThrowIfCompletedUnsuccessfully()
         {
             object? obj = _obj;
