@@ -411,6 +411,34 @@ namespace System
         public static ReadOnlyMemory<T> DangerousCreateReadOnlyMemory<T>(object obj, int offset, int length) =>
             DangerousCreateMemory<T>(obj, offset, length);
 
+        public static TheoryData<string[], bool> ContainsNullData => new TheoryData<string[], bool>()
+        {
+            { new string[] { "1", null, "2" }, true},
+            { new string[] { "1", "3", "2" }, false},
+            { null, false},
+            { new string[] { "1", null, null }, true},
+            { new string[] { null, null, null }, true},
+        };
+
+        public static TheoryData<string[], string[],  bool> SequenceEqualsNullData => new TheoryData<string[], string[], bool>()
+        {
+            { new string[] { "1", null, "2" }, new string[] { "1", null, "2" } , true},
+            { new string[] { "1", null, "2" }, new string[] { "1", "3", "2" } , false},
+            { new string[] { "1", null, "2" }, new string[] { null, "3", "2" } , false},
+            { new string[] { "1", null, "2" }, new string[] { null } , false},
+            { new string[] { "1", null, "2" }, null , false},
+
+            { new string[] { null, "2", "1" }, new string[] { null, "2" } , false},
+
+            { null, new string[] { null }, false},
+            { null, null , true},
+            { null, new string[] { "1", "3", "2" } , false},
+            { null, new string[] { "1", null, "2" } , false},
+
+            { new string[] { "1", null, null }, new string[] { "1", null, null }, true},
+            { new string[] { null, null, null }, new string[] { null, null, null }, true},
+        };
+
         public static TheoryData<string[], int> IndexOfNullData => new TheoryData<string[], int>()
         {
             { new string[] { "1", null, "2" }, 1},
@@ -434,6 +462,33 @@ namespace System
 
             { new string[] { "1", null, null }, new string[] { null, null, "2" }, -1},
             { new string[] { null, null, null }, new string[] { null, null }, 0},
+        };
+
+        public static TheoryData<string[], string[], int> IndexOfAnyNullSequenceData => new TheoryData<string[], string[], int>()
+        {
+            { new string[] { "1", null, "2" }, new string[] { "1", null, "2" }, 0},
+            { new string[] { "1", null, "2" }, new string[] { null, null }, 1},
+
+            { new string[] { "1", null, "2" }, new string[] { "3", null }, 1},
+            { new string[] { "1", null, "2" }, new string[] { "1", "2" }, 0},
+            { new string[] { "1", null, "2" }, new string[] { "3", "4" }, -1},
+
+            { new string[] { null, null, "2" }, new string[] { "3", null }, 0},
+            { new string[] { null, null, "2" }, new string[] { null, "1" }, 0},
+            { new string[] { null, null, "2" }, new string[] { null, "1" }, 0},
+
+            { new string[] { "1", "3", "2" }, new string[] { "1", null, "2" }, 0},
+            { new string[] { "1", "3", "2" }, new string[] { null, null }, -1},
+
+            { new string[] { "1", "3", "2" }, new string[] { null, "1" }, 0},
+
+            { null, new string[] { "1", null, "2" }, -1},
+
+            { new string[] { "1", null, null }, new string[] { null, null, "2" }, 1},
+            { new string[] { null, null, null }, new string[] { null, null }, 0},
+
+            { new string[] { "1", "3", "2" }, null, -1},
+            { new string[] { "1", null, "2" }, null, -1},
         };
 
         public static TheoryData<string[], int> LastIndexOfNullData => new TheoryData<string[], int>()
@@ -461,6 +516,34 @@ namespace System
 
             { new string[] { "1", null, null }, new string[] { null, null, "2" }, -1},
             { new string[] { null, null, null }, new string[] { null, null }, 1},
+        };
+
+        public static TheoryData<string[], string[], int> LastIndexOfAnyNullSequenceData => new TheoryData<string[], string[], int>()
+        {
+            { new string[] { "1", null, "2" }, new string[] { "1", null, "3" }, 1},
+            { new string[] { "1", null, "2" }, new string[] { null, null }, 1},
+            { new string[] { "1", null, "2" }, new string[] { "3", "4" }, -1},
+            { new string[] { "1", null, "2" }, new string[] { "3", null }, 1},
+            { new string[] { "1", null, "2" }, new string[] { "1", null }, 1},
+            { new string[] { "1", null, "2" }, new string[] { null, null }, 1},
+            { new string[] { "1", null, "2" }, new string[] { "1", "2" }, 2},
+            { null, new string[] { "1", null, "2" }, -1},
+
+            { new string[] { null, null, "2" }, new string[] { "3", null }, 1},
+            { new string[] { null, null, "2" }, new string[] { null, "1" }, 1},
+            { new string[] { null, null, "2" }, new string[] { null, "1" }, 1},
+
+            { new string[] { "1", "3", "2" }, new string[] { null, "1" }, 0},
+            { new string[] { "1", "3", "2" }, new string[] { "1", "2", null }, 2},
+            { new string[] { "1", "3", "2" }, new string[] { null, null }, -1},
+
+            { null, new string[] { null, "1" }, -1},
+
+            { new string[] { "1", null, null }, new string[] { null, null, "2" }, 2},
+            { new string[] { null, null, null }, new string[] { null, null }, 2},
+
+            { new string[] { "1", null, "2" }, null, -1},
+            { new string[] { "1", "3", "2" }, null, -1},
         };
     }
 }
