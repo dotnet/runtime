@@ -141,7 +141,7 @@ namespace System.Text.Json.Serialization.Tests
                 // Baseline with missing.
                 ClassWithExtensionProperty obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(jsonMissing);
                 Assert.Equal(1, obj.MyOverflow.Count);
-                Assert.Equal(JsonValueType.Null, obj.MyOverflow["MyNestedClassMissing"].Type);
+                Assert.Equal(JsonValueKind.Null, obj.MyOverflow["MyNestedClassMissing"].ValueKind);
             }
 
             {
@@ -153,7 +153,7 @@ namespace System.Text.Json.Serialization.Tests
                 // Currently we do not ignore nulls in the extension data. The JsonDocument would also need to support this mode
                 // for any lower-level nulls.
                 Assert.Equal(1, obj.MyOverflow.Count);
-                Assert.Equal(JsonValueType.Null, obj.MyOverflow["MyNestedClassMissing"].Type);
+                Assert.Equal(JsonValueKind.Null, obj.MyOverflow["MyNestedClassMissing"].ValueKind);
             }
         }
 
@@ -217,22 +217,22 @@ namespace System.Text.Json.Serialization.Tests
             Assert.IsType<JsonElement>(roundTripObj.MyOverflow["test2"]);
             Assert.IsType<JsonElement>(roundTripObj.MyOverflow["test3"]);
 
-            Assert.Equal(JsonValueType.Object, ((JsonElement)roundTripObj.MyOverflow["test"]).Type);
+            Assert.Equal(JsonValueKind.Object, ((JsonElement)roundTripObj.MyOverflow["test"]).ValueKind);
 
-            Assert.Equal(JsonValueType.Number, ((JsonElement)roundTripObj.MyOverflow["test1"]).Type);
+            Assert.Equal(JsonValueKind.Number, ((JsonElement)roundTripObj.MyOverflow["test1"]).ValueKind);
             Assert.Equal(1, ((JsonElement)roundTripObj.MyOverflow["test1"]).GetInt32());
             Assert.Equal(1, ((JsonElement)roundTripObj.MyOverflow["test1"]).GetInt64());
 
-            Assert.Equal(JsonValueType.String, ((JsonElement)roundTripObj.MyOverflow["test2"]).Type);
+            Assert.Equal(JsonValueKind.String, ((JsonElement)roundTripObj.MyOverflow["test2"]).ValueKind);
             Assert.Equal("text", ((JsonElement)roundTripObj.MyOverflow["test2"]).GetString());
 
-            Assert.Equal(JsonValueType.Object, ((JsonElement)roundTripObj.MyOverflow["test3"]).Type);
+            Assert.Equal(JsonValueKind.Object, ((JsonElement)roundTripObj.MyOverflow["test3"]).ValueKind);
             Assert.Equal("ObjectProp", ((JsonElement)roundTripObj.MyOverflow["test3"]).GetProperty("Prop").GetString());
 
-            Assert.Equal(JsonValueType.Object, ((JsonElement)roundTripObj.MyOverflow["test4"]).Type);
+            Assert.Equal(JsonValueKind.Object, ((JsonElement)roundTripObj.MyOverflow["test4"]).ValueKind);
             Assert.Equal("StructProp", ((JsonElement)roundTripObj.MyOverflow["test4"]).GetProperty("Prop").GetString());
 
-            Assert.Equal(JsonValueType.Object, ((JsonElement)roundTripObj.MyOverflow["test5"]).Type);
+            Assert.Equal(JsonValueKind.Object, ((JsonElement)roundTripObj.MyOverflow["test5"]).ValueKind);
             Assert.Equal("Value", ((JsonElement)roundTripObj.MyOverflow["test5"]).GetProperty("Key").GetString());
             Assert.Equal("Value1", ((JsonElement)roundTripObj.MyOverflow["test5"]).GetProperty("Key1").GetString());
         }

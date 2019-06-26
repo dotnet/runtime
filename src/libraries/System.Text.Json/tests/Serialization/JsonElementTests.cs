@@ -63,27 +63,27 @@ namespace System.Text.Json.Serialization.Tests
 
             public void Verify()
             {
-                Assert.Equal(JsonValueType.Number, Number.Type);
+                Assert.Equal(JsonValueKind.Number, Number.ValueKind);
                 Assert.Equal("1", Number.ToString());
-                Assert.Equal(JsonValueType.True, True.Type);
+                Assert.Equal(JsonValueKind.True, True.ValueKind);
                 Assert.Equal("True", True.ToString());
-                Assert.Equal(JsonValueType.False, False.Type);
+                Assert.Equal(JsonValueKind.False, False.ValueKind);
                 Assert.Equal("False", False.ToString());
-                Assert.Equal(JsonValueType.String, String.Type);
+                Assert.Equal(JsonValueKind.String, String.ValueKind);
                 Assert.Equal("Hello", String.ToString());
-                Assert.Equal(JsonValueType.Array, Array.Type);
+                Assert.Equal(JsonValueKind.Array, Array.ValueKind);
                 JsonElement[] elements = Array.EnumerateArray().ToArray();
-                Assert.Equal(JsonValueType.Number, elements[0].Type);
+                Assert.Equal(JsonValueKind.Number, elements[0].ValueKind);
                 Assert.Equal("2", elements[0].ToString());
-                Assert.Equal(JsonValueType.False, elements[1].Type);
+                Assert.Equal(JsonValueKind.False, elements[1].ValueKind);
                 Assert.Equal("False", elements[1].ToString());
-                Assert.Equal(JsonValueType.True, elements[2].Type);
+                Assert.Equal(JsonValueKind.True, elements[2].ValueKind);
                 Assert.Equal("True", elements[2].ToString());
-                Assert.Equal(JsonValueType.String, elements[3].Type);
+                Assert.Equal(JsonValueKind.String, elements[3].ValueKind);
                 Assert.Equal("Goodbye", elements[3].ToString());
-                Assert.Equal(JsonValueType.Object, Object.Type);
+                Assert.Equal(JsonValueKind.Object, Object.ValueKind);
                 Assert.Equal("{}", Object.ToString());
-                //Assert.Equal(JsonValueType.Null, Null.Type);
+                //Assert.Equal(JsonValueKind.Null, Null.ValueKind);
                 //Assert.Equal("Null", Null.ToString());
             }
         }
@@ -136,13 +136,13 @@ namespace System.Text.Json.Serialization.Tests
 
             public void Verify()
             {
-                Assert.Equal(JsonValueType.Number, Array[0].Type);
+                Assert.Equal(JsonValueKind.Number, Array[0].ValueKind);
                 Assert.Equal("1", Array[0].ToString());
-                Assert.Equal(JsonValueType.True, Array[1].Type);
+                Assert.Equal(JsonValueKind.True, Array[1].ValueKind);
                 Assert.Equal("True", Array[1].ToString());
-                Assert.Equal(JsonValueType.False, Array[2].Type);
+                Assert.Equal(JsonValueKind.False, Array[2].ValueKind);
                 Assert.Equal("False", Array[2].ToString());
-                Assert.Equal(JsonValueType.String, Array[3].Type);
+                Assert.Equal(JsonValueKind.String, Array[3].ValueKind);
                 Assert.Equal("Hello", Array[3].ToString());
             }
         }

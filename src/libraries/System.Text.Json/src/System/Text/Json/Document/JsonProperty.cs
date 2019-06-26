@@ -103,6 +103,6 @@ namespace System.Text.Json
         }
 
         private string DebuggerDisplay
-            => Value.Type == JsonValueType.Undefined ? "<Undefined>" : $"\"{ToString()}\"";
+            => Value.ValueKind == JsonValueKind.Undefined ? "<Undefined>" : $"\"{ToString()}\"";
     }
 }

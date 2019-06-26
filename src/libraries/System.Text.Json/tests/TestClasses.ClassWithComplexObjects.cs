@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization.Tests
             ValidateArray((JsonElement)Array);
             Assert.IsType<JsonElement>(Object);
             JsonElement jsonObject = (JsonElement)Object;
-            Assert.Equal(JsonValueType.Object, jsonObject.Type);
+            Assert.Equal(JsonValueKind.Object, jsonObject.ValueKind);
             JsonElement.ObjectEnumerator enumerator = jsonObject.EnumerateObject();
             JsonProperty property = enumerator.First();
             Assert.Equal("NestedArray", property.Name);
@@ -59,16 +59,16 @@ namespace System.Text.Json.Serialization.Tests
 
             void ValidateArray(JsonElement element)
             {
-                Assert.Equal(JsonValueType.Array, element.Type);
+                Assert.Equal(JsonValueKind.Array, element.ValueKind);
                 JsonElement[] elements = element.EnumerateArray().ToArray();
 
-                Assert.Equal(JsonValueType.Number, elements[0].Type);
+                Assert.Equal(JsonValueKind.Number, elements[0].ValueKind);
                 Assert.Equal("1", elements[0].ToString());
-                Assert.Equal(JsonValueType.String, elements[1].Type);
+                Assert.Equal(JsonValueKind.String, elements[1].ValueKind);
                 Assert.Equal("Hello", elements[1].ToString());
-                Assert.Equal(JsonValueType.True, elements[2].Type);
+                Assert.Equal(JsonValueKind.True, elements[2].ValueKind);
                 Assert.Equal(true, elements[2].GetBoolean());
-                Assert.Equal(JsonValueType.False, elements[3].Type);
+                Assert.Equal(JsonValueKind.False, elements[3].ValueKind);
                 Assert.Equal(false, elements[3].GetBoolean());
             }
 
