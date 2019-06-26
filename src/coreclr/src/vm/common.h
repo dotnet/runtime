@@ -153,6 +153,7 @@ typedef DPTR(class NDirectMethodDesc)   PTR_NDirectMethodDesc;
 typedef VPTR(class Thread)              PTR_Thread;
 typedef DPTR(class Object)              PTR_Object;
 typedef DPTR(PTR_Object)                PTR_PTR_Object;
+typedef DPTR(class DelegateObject)      PTR_DelegateObject;
 typedef DPTR(class ObjHeader)           PTR_ObjHeader;
 typedef DPTR(class Precode)             PTR_Precode;
 typedef VPTR(class ReflectionModule)    PTR_ReflectionModule;

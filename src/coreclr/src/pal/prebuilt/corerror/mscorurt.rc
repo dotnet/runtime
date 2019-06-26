@@ -312,6 +312,7 @@ BEGIN
 	MSG_FOR_URT_HR(CORDBG_E_MISSING_DEBUGGER_EXPORTS) "The debuggee memory space does not have the expected debugging export table."
 	MSG_FOR_URT_HR(CORDBG_E_DATA_TARGET_ERROR) "Failure when calling a data target method."
 	MSG_FOR_URT_HR(CORDBG_E_NO_IMAGE_AVAILABLE) "Couldn't find a native image."
+	MSG_FOR_URT_HR(CORDBG_E_UNSUPPORTED_DELEGATE) "The delegate contains a delegate currently not supported by the API."
 	MSG_FOR_URT_HR(PEFMT_E_64BIT) "File is PE32+."
 	MSG_FOR_URT_HR(PEFMT_E_32BIT) "File is PE32"
 	MSG_FOR_URT_HR(NGEN_E_SYS_ASM_NI_MISSING) "NGen cannot proceed because Mscorlib.dll does not have a native image"
