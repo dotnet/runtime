@@ -2436,26 +2436,13 @@ namespace System
                     return false;
                 }
 
-                if (digit > '5')
-                {
-                    // Values greater than 5 always round up
-                    return true;
-                }
+                // Values greater than or equal to 5 should round up, otherwise we round down. The IEEE
+                // 754 spec actually dictates that ties (exactly 5) should round to the nearest even number
+                // but that can have undesired behavior for custom numeric format strings. This probably
+                // needs further thought for .NET 5 so that we can be spec compliant and so that users
+                // can get the desired rounding behavior for their needs.
 
-                if (digit != '5')
-                {
-                    // Values less than 5 always round down
-                    return false;
-                }
-
-                if (numberKind != NumberBufferKind.FloatingPoint)
-                {
-                    // Non floating-point values always round up for 5
-                    return true;
-                }
-
-                // Floating-point values round up if there is a non-zero tail
-                return (dig[i + 1] != '\0');
+                return (digit >= '5');
             }
         }
 
