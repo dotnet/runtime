@@ -305,8 +305,7 @@ namespace System.Text.Json
 
                 if (newReader.BytesConsumed != length)
                 {
-                    state = newReader.CurrentState;
-                    ThrowHelper.ThrowJsonException_DeserializeDataRemaining(length, length - state.BytesConsumed);
+                    ThrowHelper.ThrowJsonException_DeserializeDataRemaining(length, length - newReader.BytesConsumed);
                 }
             }
             catch (JsonException)

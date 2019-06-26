@@ -29,7 +29,6 @@ namespace System.Text.Json
             _isFinalBlock = isFinalBlock;
             _isInputSequence = true;
 
-            // Note: We do not retain _bytesConsumed or _sequencePosition as they reset with the new input data
             _lineNumber = state._lineNumber;
             _bytePositionInLine = state._bytePositionInLine;
             _inObject = state._inObject;

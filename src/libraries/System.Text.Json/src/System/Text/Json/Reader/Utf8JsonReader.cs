@@ -180,7 +180,6 @@ namespace System.Text.Json
         {
             _lineNumber = _lineNumber,
             _bytePositionInLine = _bytePositionInLine,
-            _bytesConsumed = BytesConsumed,
             _inObject = _inObject,
             _isNotPrimitive = _isNotPrimitive,
             _numberFormat = _numberFormat,
@@ -190,7 +189,6 @@ namespace System.Text.Json
             _previousTokenType = _previousTokenType,
             _readerOptions = _readerOptions,
             _bitStack = _bitStack,
-            _sequencePosition = Position,
         };
 
         /// <summary>
@@ -212,7 +210,6 @@ namespace System.Text.Json
             _isFinalBlock = isFinalBlock;
             _isInputSequence = false;
 
-            // Note: We do not retain _bytesConsumed or _sequencePosition as they reset with the new input data
             _lineNumber = state._lineNumber;
             _bytePositionInLine = state._bytePositionInLine;
             _inObject = state._inObject;
