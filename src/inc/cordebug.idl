@@ -6491,6 +6491,40 @@ interface ICorDebugObjectValue2 : IUnknown
                                     [out] ICorDebugType **ppType);
 };
 
+[
+    object,
+    local,
+    uuid(3AF70CC7-6047-47F6-A5C5-090A1A622638),
+    pointer_default(unique)
+]
+interface ICorDebugDelegateObjectValue : IUnknown
+{
+    /*
+     * GetTarget retrieves the object on which the delegate calls the function.
+     * Returns:
+     *  - S_OK:
+     *      - The ICorDebugReferenceValue object targeted by the function.
+     *      - NULL if the delegate function is a static function or an open delegate
+     *  - HRESULT CORDBG_E_UNSUPPORTED_DELEGATE for curently unsupported delegates.
+     *      In this case, the value of ppObject should not be used. Some of these
+     *      include: Secure wrappers, Open Virual delegates.
+     */
+    HRESULT GetTarget([out] ICorDebugReferenceValue **ppObject);
+
+    /*
+     * GetFunction returns the function that gets run by the delegate.
+    *  - S_OK:
+     *      - The ICorDebugFunction function for the function the delegate would invoke.
+     *      - There are a few cases where the ICorDebugFunction can be different from what's expected,
+     *        such as generic methods, which won't contain the instantiation. 
+     *  - HRESULT CORDBG_E_UNSUPPORTED_DELEGATE for curently unsupported delegates.
+     *      In this case, the value of ppObject should not be used. Some of these
+     *      include: Secure wrappers, Open Virual delegates.
+     */
+    HRESULT GetFunction([out] ICorDebugFunction **ppFunction);
+}
+
+
 /*
  * ICorDebugBoxValue is a subclass of ICorDebugValue which
  * represents a boxed value class object.

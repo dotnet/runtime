@@ -23,7 +23,6 @@ void localCopy(void * dest, MemoryRange source)
 
     memcpy(dest, source.StartAddress(), source.Size());
 }
-
 // for an inheritance graph of the ICDValue types, // See file:./ICorDebugValueTypes.vsd for a diagram of the types.  
 
 /* ------------------------------------------------------------------------- *
@@ -271,6 +270,15 @@ void CordbValue::CreateVCObjOrRefValue(CordbAppDomain *               pAppdomain
 //   vmObj - the remote object to get an ICDValue for
 ICorDebugValue* CordbValue::CreateHeapValue(CordbAppDomain* pAppDomain, VMPTR_Object vmObj)
 {
+    // Create a temporary reference and dereference it to construct the heap value we want.
+    RSSmartPtr<CordbReferenceValue> pRefValue(CordbValue::CreateHeapReferenceValue(pAppDomain, vmObj));
+    ICorDebugValue* pExtValue;
+    IfFailThrow(pRefValue->Dereference(&pExtValue));
+    return pExtValue;
+}
+
+CordbReferenceValue* CordbValue::CreateHeapReferenceValue(CordbAppDomain* pAppDomain, VMPTR_Object vmObj)
+{
     IDacDbiInterface* pDac = pAppDomain->GetProcess()->GetDAC();
 
     TargetBuffer objBuffer = pDac->GetObjectContents(vmObj);
@@ -286,11 +294,8 @@ ICorDebugValue* CordbValue::CreateHeapValue(CordbAppDomain* pAppDomain, VMPTR_Ob
                                            VMPTR_OBJECTHANDLE::NullPtr(),
                                            NULL,
                                            &pRefValue));
-    
-    // Dereference our temporary reference value to construct the heap value we want
-    ICorDebugValue* pExtValue;
-    IfFailThrow(pRefValue->Dereference(&pExtValue));
-    return pExtValue;
+
+    return pRefValue;
 }
 
 // Gets the size om bytes of a value from its type. If the value is complex, we assume it is represented as 
@@ -1730,7 +1735,7 @@ CordbObjectValue::CordbObjectValue(CordbAppDomain *          pAppdomain,
       m_info(*pObjectData),
       m_pObjectCopy(NULL), m_objectLocalVars(NULL), m_stringBuffer(NULL),
       m_valueHome(pAppdomain->GetProcess(), remoteValue), 
-      m_fIsExceptionObject(FALSE), m_fIsRcw(FALSE)
+      m_fIsExceptionObject(FALSE), m_fIsRcw(FALSE), m_fIsDelegate(FALSE)
 {
     _ASSERTE(pAppdomain != NULL);
 
@@ -1754,6 +1759,15 @@ CordbObjectValue::CordbObjectValue(CordbAppDomain *          pAppdomain,
 
     if (hr == S_OK)
         m_fIsRcw = TRUE;
+
+    hr = S_FALSE;
+    ALLOW_DATATARGET_MISSING_MEMORY
+    (
+        hr = IsDelegate();
+    );
+
+    if (hr == S_OK)
+        m_fIsDelegate = TRUE;
 } // CordbObjectValue::CordbObjectValue
 
 // destructor
@@ -1826,6 +1840,10 @@ HRESULT CordbObjectValue::QueryInterface(REFIID id, void **pInterface)
     else if (id == IID_ICorDebugComObjectValue && m_fIsRcw)
     {
         *pInterface = static_cast<ICorDebugComObjectValue*>(this);
+    }
+    else if (id == IID_ICorDebugDelegateObjectValue && m_fIsDelegate)
+    {
+        *pInterface = static_cast<ICorDebugDelegateObjectValue*>(this);
     }
     else if (id == IID_IUnknown)
     {
@@ -2514,6 +2532,166 @@ HRESULT CordbObjectValue::IsRcw()
         }
     }
 
+    return hr;
+}
+
+HRESULT CordbObjectValue::IsDelegate()
+{
+    HRESULT hr = S_OK;
+
+    if (m_info.objTypeData.elementType != ELEMENT_TYPE_CLASS)
+    {
+        hr = S_FALSE;
+    }
+    else
+    {
+        CORDB_ADDRESS objAddr = m_valueHome.GetAddress();
+
+        if (objAddr == NULL)
+        {
+            // object is a literal
+            hr = S_FALSE;
+        }
+        else
+        {
+            IDacDbiInterface *pDAC = GetProcess()->GetDAC();
+
+            VMPTR_Object vmObj = pDAC->GetObject(objAddr);
+            BOOL fIsDelegate = pDAC->IsDelegate(vmObj);
+
+            if (!fIsDelegate)
+                hr = S_FALSE;
+        }
+    }
+
+    return hr;
+}
+
+HRESULT IsSupportedDelegateHelper(IDacDbiInterface::DelegateType delType)
+{
+    switch (delType)
+    {
+    case IDacDbiInterface::DelegateType::kClosedDelegate:
+    case IDacDbiInterface::DelegateType::kOpenDelegate:
+        return S_OK;
+    default:
+        return CORDBG_E_UNSUPPORTED_DELEGATE;
+    }
+}
+
+HRESULT CordbObjectValue::GetTargetHelper(ICorDebugReferenceValue **ppTarget)
+{
+    IDacDbiInterface::DelegateType delType;
+    VMPTR_Object pDelegateObj;
+    VMPTR_Object pDelegateTargetObj;
+    VMPTR_AppDomain pAppDomainOfTarget;
+
+    CORDB_ADDRESS delegateAddr = m_valueHome.GetAddress();
+
+    IDacDbiInterface *pDAC = GetProcess()->GetDAC();
+    pDelegateObj = pDAC->GetObject(delegateAddr);
+
+    HRESULT hr = pDAC->GetDelegateType(pDelegateObj, &delType);
+    if (hr != S_OK)
+        return hr;
+
+    hr = IsSupportedDelegateHelper(delType);
+    if (hr != S_OK)
+        return hr;
+
+    hr = pDAC->GetDelegateTargetObject(delType, pDelegateObj, &pDelegateTargetObj, &pAppDomainOfTarget);
+    if (hr != S_OK || pDelegateTargetObj.IsNull())
+    {
+        *ppTarget = NULL;
+        return hr;
+    }
+
+    RSLockHolder lockHolder(GetProcess()->GetProcessLock());
+    RSSmartPtr<CordbAppDomain> pCordbAppDomForTarget(GetProcess()->LookupOrCreateAppDomain(pAppDomainOfTarget));
+    RSSmartPtr<CordbReferenceValue> targetObjRefVal(CordbValue::CreateHeapReferenceValue(pCordbAppDomForTarget, pDelegateTargetObj));
+    *ppTarget = static_cast<ICorDebugReferenceValue*>(targetObjRefVal.GetValue());
+    targetObjRefVal->ExternalAddRef();
+
+    return S_OK;
+}
+
+HRESULT CordbObjectValue::GetFunctionHelper(ICorDebugFunction **ppFunction)
+{
+    IDacDbiInterface::DelegateType delType;
+    VMPTR_Object pDelegateObj;
+
+    *ppFunction = NULL;
+    CORDB_ADDRESS delegateAddr = m_valueHome.GetAddress();
+
+    IDacDbiInterface *pDAC = GetProcess()->GetDAC();
+    pDelegateObj = pDAC->GetObject(delegateAddr);
+
+    HRESULT hr = pDAC->GetDelegateType(pDelegateObj, &delType);
+    if (hr != S_OK)
+        return hr;
+
+    hr = IsSupportedDelegateHelper(delType);
+    if (hr != S_OK)
+        return hr;
+
+    mdMethodDef functionMethodDef = 0;
+    VMPTR_DomainFile functionDomainFile;
+    NativeCodeFunctionData nativeCodeForDelFunc;
+
+    hr = pDAC->GetDelegateFunctionData(delType, pDelegateObj, &functionDomainFile, &functionMethodDef);
+    if (hr != S_OK)
+        return hr;
+
+    // TODO: How to ensure results are sanitized?
+    // Also, this is expensive. Do we really care that much about this?
+    pDAC->GetNativeCodeInfo(functionDomainFile, functionMethodDef, &nativeCodeForDelFunc);
+
+    RSSmartPtr<CordbModule> funcModule(GetProcess()->LookupOrCreateModule(functionDomainFile));
+    RSSmartPtr<CordbFunction> func;
+    {
+        RSLockHolder lockHolder(GetProcess()->GetProcessLock());
+        func.Assign(funcModule->LookupOrCreateFunction(functionMethodDef, nativeCodeForDelFunc.encVersion));
+    }
+
+    *ppFunction = static_cast<ICorDebugFunction*> (func.GetValue());
+    func->ExternalAddRef();
+
+    return S_OK;
+}
+
+HRESULT CordbObjectValue::GetTarget(ICorDebugReferenceValue **ppObject)
+{
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppObject, ICorDebugReferenceValue **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+    _ASSERTE(m_fIsDelegate);
+
+    HRESULT hr = S_OK;
+
+    EX_TRY
+    {
+        hr = GetTargetHelper(ppObject);
+    }
+    EX_CATCH_HRESULT(hr);
+    return hr;
+}
+
+HRESULT CordbObjectValue::GetFunction(ICorDebugFunction **ppFunction)
+{
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    VALIDATE_POINTER_TO_OBJECT(ppFunction, ICorDebugFunction **);
+    ATT_REQUIRE_STOPPED_MAY_FAIL(GetProcess());
+    _ASSERTE(m_fIsDelegate);
+
+    HRESULT hr = S_OK;
+
+    EX_TRY
+    {
+        hr = GetFunctionHelper(ppFunction);
+    }
+    EX_CATCH_HRESULT(hr)
     return hr;
 }
 

@@ -1617,6 +1617,9 @@ extern "C" void * _ReturnAddress(void);
 FCIMPL3(void, COMDelegate::DelegateConstruct, Object* refThisUNSAFE, Object* targetUNSAFE, PCODE method)
 {
     FCALL_CONTRACT;
+    // If you modify this logic, please update DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateType,
+    // DacDbiInterfaceImpl::GetDelegateFunctionData, and DacDbiInterfaceImpl::GetDelegateTargetObject.
+
 
     struct _gc
     {
@@ -1784,6 +1787,9 @@ MethodDesc *COMDelegate::GetMethodDesc(OBJECTREF orDelegate)
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
+
+    // If you modify this logic, please update DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateType,
+    // DacDbiInterfaceImpl::GetDelegateFunctionData, and DacDbiInterfaceImpl::GetDelegateTargetObject.
 
     MethodDesc *pMethodHandle = NULL;
 
@@ -3060,6 +3066,10 @@ MethodDesc* COMDelegate::GetDelegateCtor(TypeHandle delegateType, MethodDesc *pT
     //
     // Another is to pass a gchandle to the delegate ctor. This is fastest, but only works if we can predict the gc handle at this time. 
     //  We will use this for the non secure variants
+    //
+    // If you modify this logic, please update DacDbiInterfaceImpl::GetDelegateType, DacDbiInterfaceImpl::GetDelegateType,
+    // DacDbiInterfaceImpl::GetDelegateFunctionData, and DacDbiInterfaceImpl::GetDelegateTargetObject.
+
 
     if (invokeArgCount == methodArgCount) 
     {

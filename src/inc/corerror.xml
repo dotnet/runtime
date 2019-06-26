@@ -2183,6 +2183,12 @@
   <Comment>Couldn't find a native image.</Comment>
 </HRESULT>
 
+<HRESULT NumericValue="0x80131c68">
+  <SymbolicName>CORDBG_E_UNSUPPORTED_DELEGATE</SymbolicName>
+  <Message>"The delegate contains a delegate currently not supported by the API."</Message>
+  <Comment>The delegate contains a delegate currently not supported by the API.</Comment>
+</HRESULT>
+
 <HRESULT NumericValue="0x80131d02">
 	<SymbolicName>PEFMT_E_64BIT</SymbolicName>
 	<Message>"File is PE32+."</Message>
