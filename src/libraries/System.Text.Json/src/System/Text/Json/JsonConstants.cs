@@ -29,6 +29,10 @@ namespace System.Text.Json
         public const byte UtcOffsetToken = (byte)'Z';
         public const byte TimePrefix = (byte)'T';
 
+        // \u2028 and \u2029 are considered respectively line and paragraph separators
+        // UTF-8 representation for them is E2, 80, A8/A9
+        public const byte StartingByteOfNonStandardSeparator = 0xE2;
+
         public static ReadOnlySpan<byte> Utf8Bom => new byte[] { 0xEF, 0xBB, 0xBF };
         public static ReadOnlySpan<byte> TrueValue => new byte[] { (byte)'t', (byte)'r', (byte)'u', (byte)'e' };
         public static ReadOnlySpan<byte> FalseValue => new byte[] { (byte)'f', (byte)'a', (byte)'l', (byte)'s', (byte)'e' };
