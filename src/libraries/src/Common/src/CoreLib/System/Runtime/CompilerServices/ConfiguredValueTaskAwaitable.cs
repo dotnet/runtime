@@ -51,7 +51,6 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Gets the result of the ValueTask.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [StackTraceHidden]
             public void GetResult() => _value.ThrowIfCompletedUnsuccessfully();
 
             /// <summary>Schedules the continuation action for the <see cref="ConfiguredValueTaskAwaitable"/>.</summary>
@@ -157,7 +156,6 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Gets the result of the ValueTask.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            [StackTraceHidden]
             public TResult GetResult() => _value.Result;
 
             /// <summary>Schedules the continuation action for the <see cref="ConfiguredValueTaskAwaitable{TResult}"/>.</summary>
