@@ -33,7 +33,7 @@ Note: It is OK to create your PR as "[WIP]" on the upstream repo before the impl
 
 ## PR - CI Process
 
-The [dotnet continuous integration](http://ci.dot.net/) (CI) system will automatically perform the required builds and run tests (including the ones you are expected to run) for PRs. Builds and test runs must be clean.
+The [dotnet continuous integration](https://dev.azure.com/dnceng/public/) (CI) system will automatically perform the required builds and run tests (including the ones you are expected to run) for PRs. Builds and test runs must be clean.
 
 If the CI build fails for any reason, the PR issue will be updated with a link that can be used to determine the cause of the failure.
 
@@ -44,3 +44,14 @@ Microsoft team and community members will provide feedback on your change. Commu
 1 or more Microsoft team members will review every PR prior to merge. They will often reply with "LGTM, modulo comments". That means that the PR will be merged once the feedback is resolved. "LGTM" == "looks good to me".
 
 There are lots of thoughts and [approaches](https://github.com/antlr/antlr4-cpp/blob/master/CONTRIBUTING.md#emoji) for how to efficiently discuss changes. It is best to be clear and explicit with your feedback. Please be patient with people who might not understand the finer details about your approach to feedback.
+
+# Merging Pull Requests (for contributors with write access)
+
+Use ["Squash and Merge"](https://github.com/blog/2141-squash-your-commits) by default for individual contributions unless requested by the PR author.
+  Do so, even if the PR contains only one commit. It creates a simpler history than "Create a Merge Commit".
+  Reasons that PR authors may request "Merge and Commit" may include (but are not limited to):
+
+  - The change is easier to understand as a series of focused commits. Each commit in the series must be buildable so as not to break `git bisect`.
+  - Contributor is using an e-mail address other than the primary GitHub address and wants that preserved in the history. Contributor must be willing to squash
+    the commits manually before acceptance.
+
