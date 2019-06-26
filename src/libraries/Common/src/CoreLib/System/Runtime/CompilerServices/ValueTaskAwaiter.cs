@@ -43,7 +43,6 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Gets the result of the ValueTask.</summary>
-        [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void GetResult() => _value.ThrowIfCompletedUnsuccessfully();
 
@@ -126,7 +125,6 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Gets the result of the ValueTask.</summary>
-        [StackTraceHidden]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TResult GetResult() => _value.Result;
 
