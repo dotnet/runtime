@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using Microsoft.NET.HostModel.AppHost;
 
 namespace Microsoft.NET.HostModel.Bundle
 {
@@ -41,9 +42,15 @@ namespace Microsoft.NET.HostModel.Bundle
                 trace.Log($"Extract from file: {BundlePath}");
                 trace.Log($"Output Directory: {OutputDir}");
 
+                long headerOffset;
+                if (!HostWriter.IsBundle(BundlePath, out headerOffset))
+                {
+                    throw new BundleException("Extraction failed: Bundle Signature not found.");
+                }
+
                 using (BinaryReader reader = new BinaryReader(File.OpenRead(BundlePath)))
                 {
-                    Manifest manifest = Manifest.Read(reader);
+                    Manifest manifest = Manifest.Read(reader, headerOffset);
 
                     foreach (FileEntry entry in manifest.Files)
                     {
