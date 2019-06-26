@@ -73,5 +73,27 @@ namespace System.Net.Http.Unit.Tests.HPack
                 }
             }
         }
+
+        [Theory]
+        [InlineData(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x08 })] // 1 bit too large
+        [InlineData(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F })]
+        [InlineData(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x80 })] // A continuation byte (0x80) where the byte after it would be too large.
+        [InlineData(new byte[] { 0xFF, 0xFF, 0x00 })] // Encoded with 1 byte too many.
+        public void HPack_Integer_TooLarge(byte[] encoded)
+        {
+            Assert.Throws<HPackDecodingException>(() =>
+            {
+                var dec = new IntegerDecoder();
+
+                if (!dec.StartDecode((byte)(encoded[0] & 0x7F), 7))
+                {
+                    for (int i = 1; !dec.Decode(encoded[i]); ++i)
+                    {
+                    }
+                }
+
+                return dec.Value;
+            });
+        }
     }
 }
