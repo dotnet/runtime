@@ -890,6 +890,98 @@ PCODE ReadyToRunInfo::MethodIterator::GetMethodStartAddress()
     return ret;
 }
 
+BOOL ReadyToRunInfo::GenericMethodIterator::Next()
+{
+    m_current = m_enum.GetNext();
+    return !m_current.IsNull();
+}
+
+MethodDesc *ReadyToRunInfo::GenericMethodIterator::GetMethodDesc_NoRestore()
+{
+    _ASSERTE(!m_current.IsNull());
+
+    HRESULT hr = S_OK;
+
+    PCCOR_SIGNATURE pBlob = (PCCOR_SIGNATURE)m_current.GetBlob();
+    SigPointer sig(pBlob);
+
+    DWORD methodFlags = 0;
+    // Skip the signature so we can get to the offset
+    hr = sig.GetData(&methodFlags);
+    if (FAILED(hr))
+    {
+        return NULL;
+    }
+
+    if (methodFlags & ENCODE_METHOD_SIG_OwnerType)
+    {
+        hr = sig.SkipExactlyOne();
+        if (FAILED(hr))
+        {
+            return NULL;
+        }
+    }
+
+    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_SlotInsteadOfToken) == 0);
+    _ASSERTE((methodFlags & ENCODE_METHOD_SIG_MemberRefToken) == 0);
+
+    RID rid;
+    hr = sig.GetData(&rid);
+    if (FAILED(hr))
+    {
+        return NULL;
+    }
+    
+    if (methodFlags & ENCODE_METHOD_SIG_MethodInstantiation)
+    {
+        DWORD numGenericArgs;
+        hr = sig.GetData(&numGenericArgs);
+        if (FAILED(hr))
+        {
+            return NULL;
+        }
+    
+        for (DWORD i = 0; i < numGenericArgs; i++)
+        {
+            hr = sig.SkipExactlyOne();
+            if (FAILED(hr))
+            {
+                return NULL;
+            }
+        }
+    }
+
+    // Now that we have the size of the signature we can grab the offset and decode it
+    PCCOR_SIGNATURE pSigNew;
+    DWORD cbSigNew;
+    sig.GetSignature(&pSigNew, &cbSigNew);
+    uint offset = m_current.GetOffset() + (uint)(pSigNew - pBlob);
+    
+    uint id;
+    offset = m_pInfo->m_nativeReader.DecodeUnsigned(offset, &id);
+
+    if (id & 1)
+    {
+        if (id & 2)
+        {
+            uint val;
+            m_pInfo->m_nativeReader.DecodeUnsigned(offset, &val);
+            offset -= val;
+        }
+
+        id >>= 2;
+    }
+    else
+    {
+        id >>= 1;
+    }
+
+    _ASSERTE(id < m_pInfo->m_nRuntimeFunctions);
+    PCODE pEntryPoint = dac_cast<TADDR>(m_pInfo->m_pLayout->GetBase()) + m_pInfo->m_pRuntimeFunctions[id].BeginAddress;
+
+    return m_pInfo->GetMethodDescForEntryPoint(pEntryPoint);
+}
+
 DWORD ReadyToRunInfo::GetFieldBaseOffset(MethodTable * pMT)
 {
     STANDARD_VM_CONTRACT;
