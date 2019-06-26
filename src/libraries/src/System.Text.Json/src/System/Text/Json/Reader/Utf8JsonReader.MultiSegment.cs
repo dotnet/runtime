@@ -22,7 +22,7 @@ namespace System.Text.Json
         /// Since this type is a ref struct, it is a stack-only type and all the limitations of ref structs apply to it.
         /// This is the reason why the ctor accepts a <see cref="JsonReaderState"/>.
         /// </remarks>
-        public Utf8JsonReader(in ReadOnlySequence<byte> jsonData, bool isFinalBlock, JsonReaderState state)
+        public Utf8JsonReader(ReadOnlySequence<byte> jsonData, bool isFinalBlock, JsonReaderState state)
         {
             _buffer = jsonData.First.Span;
 
@@ -104,7 +104,7 @@ namespace System.Text.Json
         ///     This assumes that the entire JSON payload is passed in (equivalent to <see cref="IsFinalBlock"/> = true)
         ///   </para>
         /// </remarks>
-        public Utf8JsonReader(in ReadOnlySequence<byte> jsonData, JsonReaderOptions options = default)
+        public Utf8JsonReader(ReadOnlySequence<byte> jsonData, JsonReaderOptions options = default)
             : this(jsonData, isFinalBlock: true, new JsonReaderState(options))
         {
         }
