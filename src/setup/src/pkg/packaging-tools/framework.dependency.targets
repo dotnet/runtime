@@ -310,7 +310,6 @@
     <PropertyGroup Condition="'$(OSGroup)' == 'Linux'">
       <_partialCrossgenFlag Condition="'%(_filesToCrossGen.FileName)' == 'System.ComponentModel.TypeConverter'">1</_partialCrossgenFlag>
       <_partialCrossgenFlag Condition="'%(_filesToCrossGen.FileName)' == 'System.Linq.Expressions'">1</_partialCrossgenFlag>
-      <_partialCrossgenFlag Condition="'%(_filesToCrossGen.FileName)' == 'System.Private.DataContractSerialization'">1</_partialCrossgenFlag>
       <_partialCrossgenFlag Condition="'%(_filesToCrossGen.FileName)' == 'System.Private.Xml'">1</_partialCrossgenFlag>
     </PropertyGroup>
 
