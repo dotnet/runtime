@@ -54,6 +54,8 @@
     <BinDir>$(__BinDir)\</BinDir>
     <BinDir Condition="'$(__BinDir)'==''">$(RootBinDir)Product\$(BuildOS).$(BuildArch).$(BuildType)\</BinDir>
 
+    <TestWorkingDir Condition="'$(__TestWorkingDir)'==''">$(RootBinDir)tests\$(BuildOS).$(BuildArch).$(BuildType)\</TestWorkingDir>
+
     <AltJitArch>$(__AltJitArch)</AltJitArch>
   </PropertyGroup>
 
@@ -131,6 +133,14 @@
    -->
   <PropertyGroup>
     <CLRTestPriorityToBuild>0</CLRTestPriorityToBuild>
+  </PropertyGroup>
+
+  <!-- Where to put a "testhost" for running corefx tests -->
+  <PropertyGroup>
+    <TestHostVersion>$(ProductVersion)</TestHostVersion>
+    <TestHostRootPath>$([MSBuild]::NormalizeDirectory('$(TestWorkingDir)', 'testhost'))</TestHostRootPath>
+    <NETCoreAppTestHostFxrPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'host', 'fxr', '$(TestHostVersion)'))</NETCoreAppTestHostFxrPath>
+    <NETCoreAppTestSharedFrameworkPath>$([MSBuild]::NormalizeDirectory('$(TestHostRootPath)', 'shared', 'Microsoft.NETCore.App', '$(TestHostVersion)'))</NETCoreAppTestSharedFrameworkPath>
   </PropertyGroup>
   
 </Project>
