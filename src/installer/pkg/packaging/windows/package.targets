@@ -3,7 +3,10 @@
 <Import Project='package.props' />
 
     <Target Name="GenerateMsis"
-            DependsOnTargets="AcquireWix;GenerateMsiVersionString"
+            DependsOnTargets="
+              AcquireWix;
+              GetInstallerBrandingNames;
+              GenerateMsiVersionString"
             Condition="'$(OSGroup)' == 'Windows_NT' and '$(GenerateMSI)' == 'true'">
       <GenerateGuidFromName Name="$(SharedHostInstallerFile)">
         <Output TaskParameter="GeneratedGuid" PropertyName="SharedHostUpgradeCode" />
@@ -40,7 +43,11 @@
   </Target>
 
   <Target Name="GenerateBundles"
-          DependsOnTargets="AcquireWix;GetBundleDisplayVersion;GenerateMsiVersionString"
+          DependsOnTargets="
+            AcquireWix;
+            GetInstallerBrandingNames;
+            GetBundleDisplayVersion;
+            GenerateMsiVersionString"
           Condition="'$(OSGroup)' == 'Windows_NT' and '$(GenerateMSI)' == 'true'">
      <PropertyGroup>
         <SharedFxBundleScript>$(WindowsScriptRoot)sharedframework\generatebundle.ps1</SharedFxBundleScript>
