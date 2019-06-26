@@ -150,7 +150,8 @@ corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION):
 run-tests-corefx: update-tests-corefx
 	for testdir in corefx/tests/extracted/*; do \
 		$(MAKE) run-tests-corefx-$$(basename $${testdir}); \
-	done
+	done; \
+	$(MAKE) xunit-summary
 
 run-tests-corefx-%: prepare update-tests-corefx
 	echo -n "***************** $* *********************"
@@ -172,6 +173,9 @@ build-test-corefx-%:
 	cd $(COREFX_ROOT)/src/$*/tests && $(DOTNET) msbuild /p:OutputPath=tmp
 	cp $(COREFX_ROOT)/src/$*/tests/tmp/$*.Tests.{dll,pdb} $(CURDIR)/corefx/tests/extracted/$*.Tests/
 	rm -rf $(COREFX_ROOT)/src/$*/tests/tmp
+
+xunit-summary:
+	python xunit-summary.py "corefx/tests"
 
 endif
 
