@@ -143,7 +143,7 @@ void EventPipe::Shutdown()
             {
                 EventPipeSession *pSession = s_pSessions[i].Load();
                 if (pSession)
-                    Disable(static_cast<EventPipeSessionID>(1ULL << i));
+                    Disable(reinterpret_cast<EventPipeSessionID>(pSession));
             }
 
             // dotnet/coreclr: issue 24850: EventPipe shutdown race conditions
@@ -327,7 +327,7 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
     }
     CONTRACTL_END;
 
-    if (!Enabled() || !IsSessionIdInCollection(id))
+    if (!IsSessionIdInCollection(id))
         return;
 
     // If the session was not found, then there is nothing else to do.
