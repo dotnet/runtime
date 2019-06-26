@@ -8,15 +8,12 @@ namespace System.Text.Json.Serialization.Converters
     {
         public override byte Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType != JsonTokenType.Number ||
-                !reader.TryGetInt32(out int rawValue) ||
-                !JsonHelpers.IsInRangeInclusive(rawValue, byte.MinValue, byte.MaxValue))
+            if (reader.TokenType != JsonTokenType.Number)
             {
                 ThrowHelper.ThrowJsonException();
-                return default;
             }
 
-            return (byte)rawValue;
+            return reader.GetByte();
         }
 
         public override void Write(Utf8JsonWriter writer, byte value, JsonSerializerOptions options)
