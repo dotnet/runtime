@@ -2,74 +2,92 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.ComponentModel.Design.Serialization;
 using System.Globalization;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.ComponentModel.Tests
 {
-    public class DateTimeOffsetConverterTests : ConverterTestBase
+    public class DateTimeOffsetConverterTests : TypeConverterTestBase
     {
-        private static TypeConverter s_converter = new DateTimeOffsetConverter();
-        private static DateTimeOffset s_testOffset = new DateTimeOffset(new DateTime(1998, 12, 5));
+        public override TypeConverter Converter => new DateTimeOffsetConverter();
 
-        [Fact]
-        public static void CanConvertFrom_WithContext()
+        public override IEnumerable<ConvertTest> ConvertFromTestData()
         {
-            CanConvertFrom_WithContext(new object[2, 2]
-                {
-                    { typeof(string), true },
-                    { typeof(int), false }
-                },
-                DateTimeOffsetConverterTests.s_converter);
+            DateTimeOffset offset = new DateTimeOffset(new DateTime(1998, 12, 5));
+            yield return ConvertTest.Valid("", DateTimeOffset.MinValue);
+            yield return ConvertTest.Valid("    ", DateTimeOffset.MinValue);
+            yield return ConvertTest.Valid(offset.ToString(), offset);
+            yield return ConvertTest.Valid(offset.ToString(CultureInfo.InvariantCulture.DateTimeFormat), offset, CultureInfo.InvariantCulture);
+            yield return ConvertTest.Valid(" " + offset.ToString(CultureInfo.InvariantCulture.DateTimeFormat) + " ", offset, CultureInfo.InvariantCulture);
+
+            yield return ConvertTest.Throws<FormatException>("invalid");
+
+            yield return ConvertTest.CantConvertFrom(new object());
+            yield return ConvertTest.CantConvertFrom(1);
         }
 
-        [Fact]
-        public static void ConvertFrom_WithContext()
+        public override IEnumerable<ConvertTest> ConvertToTestData()
         {
-            ConvertFrom_WithContext(new object[3, 3]
-                {
-                    { "  ", DateTimeOffset.MinValue, null },
-                    { DateTimeOffsetConverterTests.s_testOffset.ToString(), DateTimeOffsetConverterTests.s_testOffset, null },
-                    { DateTimeOffsetConverterTests.s_testOffset.ToString(CultureInfo.InvariantCulture.DateTimeFormat), DateTimeOffsetConverterTests.s_testOffset, CultureInfo.InvariantCulture }
-                },
-                DateTimeOffsetConverterTests.s_converter);
+            CultureInfo polandCulture = new CultureInfo("pl-PL");
+            DateTimeFormatInfo formatInfo = CultureInfo.CurrentCulture.DateTimeFormat;
+            DateTimeOffset offset = new DateTimeOffset(new DateTime(1998, 12, 5));
+            yield return ConvertTest.Valid(offset, offset.ToString(formatInfo.ShortDatePattern + " zzz"));
+            yield return ConvertTest.Valid(offset, offset.ToString(polandCulture.DateTimeFormat.ShortDatePattern + " zzz", polandCulture.DateTimeFormat))
+                .WithRemoteInvokeCulture(polandCulture);
+            yield return ConvertTest.Valid(offset, offset.ToString("yyyy-MM-dd zzz", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture)
+                .WithRemoteInvokeCulture(polandCulture);
+
+            DateTimeOffset offsetWithTime = new DateTimeOffset(new DateTime(1998, 12, 5, 22, 30, 30));
+            yield return ConvertTest.Valid(offsetWithTime, offsetWithTime.ToString(formatInfo.ShortDatePattern + " " + formatInfo.ShortTimePattern + " zzz"));
+            yield return ConvertTest.Valid(offsetWithTime, offsetWithTime.ToString(polandCulture.DateTimeFormat.ShortDatePattern + " " + polandCulture.DateTimeFormat.ShortTimePattern + " zzz", polandCulture.DateTimeFormat))
+                .WithRemoteInvokeCulture(polandCulture);
+            yield return ConvertTest.Valid(offsetWithTime, offsetWithTime.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture)
+                .WithRemoteInvokeCulture(polandCulture);
+
+            yield return ConvertTest.Valid(DateTimeOffset.MinValue, string.Empty);
+
+            yield return ConvertTest.Valid(
+                new DateTimeOffset(),
+                new InstanceDescriptor(
+                    typeof(DateTimeOffset).GetConstructor(new Type[] { typeof(long) }),
+                    new object[] { (long)0 }
+                )
+            );
+            yield return ConvertTest.Valid(
+                offset,
+                new InstanceDescriptor(
+                    typeof(DateTimeOffset).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int), typeof(int),  typeof(int), typeof(int), typeof(int), typeof(TimeSpan) }),
+                    new object[] { 1998, 12, 5, 0, 0, 0, 0, offset.Offset }
+                )
+            );
+            yield return ConvertTest.Valid(
+                offsetWithTime,
+                new InstanceDescriptor(
+                    typeof(DateTimeOffset).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int), typeof(int),  typeof(int), typeof(int), typeof(int), typeof(TimeSpan) }),
+                    new object[] { 1998, 12, 5, 22, 30, 30, 0, offsetWithTime.Offset }
+                )
+            );
+            yield return ConvertTest.Valid(
+                offsetWithTime,
+                new InstanceDescriptor(
+                    typeof(DateTimeOffset).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int), typeof(int),  typeof(int), typeof(int), typeof(int), typeof(TimeSpan) }),
+                    new object[] { 1998, 12, 5, 22, 30, 30, 0, offsetWithTime.Offset }
+                ),
+                CultureInfo.InvariantCulture
+            );
+
+            yield return ConvertTest.CantConvertTo(new DateTimeOffset(), typeof(DateTimeOffset));
+            yield return ConvertTest.CantConvertTo(new DateTimeOffset(), typeof(int));
         }
 
-        [Fact]
-        public static void ConvertFrom_WithContext_Negative()
+        [Theory]
+        [InlineData(typeof(InstanceDescriptor))]
+        [InlineData(typeof(int))]
+        public void ConvertTo_InvalidValue_ThrowsNotSupportedException(Type destinationType)
         {
-            Assert.Throws<NotSupportedException>(
-                () => DateTimeOffsetConverterTests.s_converter.ConvertFrom(TypeConverterTests.s_context, null, 1));
-
-            Assert.Throws<FormatException>(
-                () => DateTimeOffsetConverterTests.s_converter.ConvertFrom(TypeConverterTests.s_context, null, "aaa"));
-        }
-
-        [Fact]
-        public static void ConvertTo_WithContext()
-        {
-            RemoteExecutor.Invoke(() =>
-            {
-                CultureInfo.CurrentCulture = new CultureInfo("pl-PL");
-
-                DateTimeFormatInfo formatInfo = (DateTimeFormatInfo)CultureInfo.CurrentCulture.GetFormat(typeof(DateTimeFormatInfo));
-                string formatWithTime = formatInfo.ShortDatePattern + " " + formatInfo.ShortTimePattern + " zzz";
-                string format = formatInfo.ShortDatePattern + " zzz";
-                DateTimeOffset testDateAndTime = new DateTimeOffset(new DateTime(1998, 12, 5, 22, 30, 30));
-
-                ConvertTo_WithContext(new object[5, 3]
-                    {
-                    { DateTimeOffsetConverterTests.s_testOffset, DateTimeOffsetConverterTests.s_testOffset.ToString(format, CultureInfo.CurrentCulture), null },
-                    { testDateAndTime, testDateAndTime.ToString(formatWithTime, CultureInfo.CurrentCulture), null },
-                    { DateTimeOffset.MinValue, string.Empty, null },
-                    { DateTimeOffsetConverterTests.s_testOffset, DateTimeOffsetConverterTests.s_testOffset.ToString("yyyy-MM-dd zzz", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture },
-                    { testDateAndTime, testDateAndTime.ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture }
-                    },
-                    DateTimeOffsetConverterTests.s_converter);
-
-                return RemoteExecutor.SuccessExitCode;
-            }).Dispose();
+            Assert.Throws<NotSupportedException>(() => Converter.ConvertTo(new object(), destinationType));
         }
     }
 }
