@@ -583,6 +583,7 @@ namespace System.Runtime.InteropServices
         /// This method takes the given COM object and wraps it in an object
         /// of the specified type. The type must be derived from __ComObject.
         /// </summary>
+        [return: NotNullIfNotNull("o")]
         public static object? CreateWrapperOfType(object? o, Type t)
         {
             if (t is null)
