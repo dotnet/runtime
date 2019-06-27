@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Hosting
         /// Builds and starts the host.
         /// </summary>
         /// <param name="hostBuilder">The <see cref="IHostBuilder"/> to start.</param>
-        /// <param name="cancellationToken"></param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken"/> that can be used to cancel the health check.</param>
         /// <returns>The started <see cref="IHost"/>.</returns>
         public static async Task<IHost> StartAsync(this IHostBuilder hostBuilder, CancellationToken cancellationToken = default)
         {

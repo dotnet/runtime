@@ -48,15 +48,15 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// Overrides the factory used to create the service provider.
         /// </summary>
-        /// <typeparam name="TContainerBuilder"></typeparam>
-        /// <param name="factory"></param>
+        /// <typeparam name="TContainerBuilder">The type of builder.</typeparam>
+        /// <param name="factory">The factory to register/</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory);
 
         /// <summary>
         /// Overrides the factory used to create the service provider.
         /// </summary>
-        /// <typeparam name="TContainerBuilder"></typeparam>
+        /// <typeparam name="TContainerBuilder">The type of builder.</typeparam>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory);
 
@@ -64,15 +64,15 @@ namespace Microsoft.Extensions.Hosting
         /// Enables configuring the instantiated dependency container. This can be called multiple times and
         /// the results will be additive.
         /// </summary>
-        /// <typeparam name="TContainerBuilder"></typeparam>
-        /// <param name="configureDelegate"></param>
+        /// <typeparam name="TContainerBuilder">The type of builder.</typeparam>
+        /// <param name="configureDelegate">The delegate which configures the builder.</param>
         /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
         IHostBuilder ConfigureContainer<TContainerBuilder>(Action<HostBuilderContext, TContainerBuilder> configureDelegate);
 
         /// <summary>
         /// Run the given actions to initialize the host. This can only be called once.
         /// </summary>
-        /// <returns>An initialized <see cref="IHost"/></returns>
+        /// <returns>An initialized <see cref="IHost"/>.</returns>
         IHost Build();
     }
 }

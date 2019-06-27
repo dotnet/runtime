@@ -35,8 +35,8 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Invokes the registered initialization <see cref="Action"/> if the <paramref name="name"/> matches.
         /// </summary>
-        /// <param name="name"></param>
-        /// <param name="options"></param>
+        /// <param name="name">The name of the action to invoke.</param>
+        /// <param name="options">The options to use in initialization.</param>
         public virtual void PostConfigure(string name, TOptions options)
         {
             if (options == null)
