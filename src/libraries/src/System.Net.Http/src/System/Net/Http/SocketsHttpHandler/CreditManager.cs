@@ -11,21 +11,21 @@ namespace System.Net.Http
 {
     internal sealed class CreditManager : IDisposable
     {
-        private struct Waiter
-        {
-            public int Amount;
-            public TaskCompletionSourceWithCancellation<int> TaskCompletionSource;
-        }
-
+        private readonly IHttpTrace _owner;
+        private readonly string _name;
         private int _current;
         private Queue<Waiter> _waiters;
         private bool _disposed;
 
-        public CreditManager(int initialCredit)
+        public CreditManager(IHttpTrace owner, string name, int initialCredit)
         {
+            Debug.Assert(owner != null);
+            Debug.Assert(!string.IsNullOrWhiteSpace(name));
+
+            if (NetEventSource.IsEnabled) owner.Trace($"{name}. {nameof(initialCredit)}={initialCredit}");
+            _owner = owner;
+            _name = name;
             _current = initialCredit;
-            _waiters = null;
-            _disposed = false;
         }
 
         private object SyncObject
@@ -44,7 +44,7 @@ namespace System.Net.Http
             {
                 if (_disposed)
                 {
-                    throw new ObjectDisposedException(nameof(CreditManager));
+                    throw CreateObjectDisposedException(forActiveWaiter: false);
                 }
 
                 if (_current > 0)
@@ -52,25 +52,19 @@ namespace System.Net.Http
                     Debug.Assert(_waiters == null || _waiters.Count == 0, "Shouldn't have waiters when credit is available");
 
                     int granted = Math.Min(amount, _current);
+                    if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, current={_current}, granted={granted}");
                     _current -= granted;
                     return new ValueTask<int>(granted);
                 }
 
-                // Uses RunContinuationsAsynchronously internally.
-                var tcs = new TaskCompletionSourceWithCancellation<int>();
+                if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. requested={amount}, no credit available.");
 
-                if (_waiters == null)
-                {
-                    _waiters = new Queue<Waiter>();
-                }
-
-                Waiter waiter = new Waiter { Amount = amount, TaskCompletionSource = tcs };
-
-                _waiters.Enqueue(waiter);
+                var waiter = new Waiter { Amount = amount };
+                (_waiters ??= new Queue<Waiter>()).Enqueue(waiter);
 
                 return new ValueTask<int>(cancellationToken.CanBeCanceled ?
-                                          tcs.WaitWithCancellationAsync(cancellationToken) :
-                                          tcs.Task);
+                                          waiter.WaitWithCancellationAsync(cancellationToken) :
+                                          waiter.Task);
             }
         }
 
@@ -81,6 +75,8 @@ namespace System.Net.Http
 
             lock (SyncObject)
             {
+                if (NetEventSource.IsEnabled) _owner.Trace($"{_name}. {nameof(amount)}={amount}, current={_current}");
+
                 if (_disposed)
                 {
                     return;
@@ -100,7 +96,7 @@ namespace System.Net.Http
                         int granted = Math.Min(waiter.Amount, _current);
 
                         // Ensure that we grant credit only if the task has not been canceled.
-                        if (waiter.TaskCompletionSource.TrySetResult(granted))
+                        if (waiter.TrySetResult(granted))
                         {
                             _current -= granted;
                         }
@@ -124,10 +120,19 @@ namespace System.Net.Http
                 {
                     while (_waiters.TryDequeue(out Waiter waiter))
                     {
-                        waiter.TaskCompletionSource.TrySetException(new ObjectDisposedException(nameof(CreditManager)));
+                        waiter.TrySetException(CreateObjectDisposedException(forActiveWaiter: true));
                     }
                 }
             }
+        }
+
+        private ObjectDisposedException CreateObjectDisposedException(bool forActiveWaiter) => forActiveWaiter ?
+            new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}", SR.net_http_disposed_while_in_use) :
+            new ObjectDisposedException($"{nameof(CreditManager)}:{_owner.GetType().Name}:{_name}");
+
+        private sealed class Waiter : TaskCompletionSourceWithCancellation<int>
+        {
+            public int Amount;
         }
     }
 }
