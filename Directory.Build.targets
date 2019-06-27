@@ -132,6 +132,16 @@
       <RuntimeDependenciesDebPkgName>$(RuntimeDependenciesDebPkgName.ToLower())</RuntimeDependenciesDebPkgName>
     </PropertyGroup>
 
+    <PropertyGroup>
+      <TargetingPackInstallerFile>$(AssetOutputPath)dotnet-targeting-pack-$(ProductMoniker)$(InstallerExtension)</TargetingPackInstallerFile>
+      <AppHostPackInstallerFile>$(AssetOutputPath)dotnet-apphost-pack-$(ProductMoniker)$(InstallerExtension)</AppHostPackInstallerFile>
+      <NetStandardProductBandVersion>2.1</NetStandardProductBandVersion>
+      <NetStandardProductMoniker>$(NetStandardProductBandVersion).$(PatchVersion)$(ProductVersionSuffix)-$(PackageTargetRid)</NetStandardProductMoniker>
+      <NetStandardTargetingPackInstallerFile>$(AssetOutputPath)netstandard-targeting-pack-$(NetStandardProductMoniker)$(InstallerExtension)</NetStandardTargetingPackInstallerFile>
+      <WindowsDesktopSharedFrameworkInstallerFile>$(AssetOutputPath)windowsdesktop-runtime-$(ProductMoniker)$(InstallerExtension)</WindowsDesktopSharedFrameworkInstallerFile>
+      <WindowsDesktopTargetingPackInstallerFile>$(AssetOutputPath)windowsdesktop-targeting-pack-$(ProductMoniker)$(InstallerExtension)</WindowsDesktopTargetingPackInstallerFile>
+    </PropertyGroup>
+
     <!-- Runtime Deb and Rpm packages are distro version agnostic -->
     <PropertyGroup Condition="'$(InstallerExtension)' == '.deb' or '$(InstallerExtension)' == '.rpm'">
       <SharedHostInstallerFile>$(SharedHostInstallerStart)$(SharedFrameworkNugetVersion)-$(TargetArchitecture)$(InstallerExtension)</SharedHostInstallerFile>
