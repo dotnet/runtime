@@ -528,6 +528,7 @@ namespace System.Runtime.InteropServices
         public static System.IntPtr CreateAggregatedObject(System.IntPtr pOuter, object o) { throw null; }
         public static System.IntPtr CreateAggregatedObject<T>(System.IntPtr pOuter, T o) where T : notnull { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("o")]
         public static object? CreateWrapperOfType(object? o, System.Type t) { throw null; }
         public static TWrapper CreateWrapperOfType<T, TWrapper>([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T o) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
