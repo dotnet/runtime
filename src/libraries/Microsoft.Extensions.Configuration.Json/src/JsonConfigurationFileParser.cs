@@ -24,18 +24,18 @@ namespace Microsoft.Extensions.Configuration.Json
         {
             _data.Clear();
 
-            var jsonReaderOptions = new JsonReaderOptions
+            var jsonDocumentOptions = new JsonDocumentOptions
             {
                 CommentHandling = JsonCommentHandling.Skip,
                 AllowTrailingCommas = true,
             };
 
             using (var reader = new StreamReader(input))
-            using (JsonDocument doc = JsonDocument.Parse(reader.ReadToEnd(), jsonReaderOptions))
+            using (JsonDocument doc = JsonDocument.Parse(reader.ReadToEnd(), jsonDocumentOptions))
             {
-                if (doc.RootElement.Type != JsonValueType.Object)
+                if (doc.RootElement.ValueKind != JsonValueKind.Object)
                 {
-                    throw new FormatException(Resources.FormatError_UnsupportedJSONToken(doc.RootElement.Type));
+                    throw new FormatException(Resources.FormatError_UnsupportedJSONToken(doc.RootElement.ValueKind));
                 }
                 VisitElement(doc.RootElement);
             }
@@ -54,12 +54,12 @@ namespace Microsoft.Extensions.Configuration.Json
 
         private void VisitValue(JsonElement value)
         {
-            switch (value.Type) {
-                case JsonValueType.Object:
+            switch (value.ValueKind) {
+                case JsonValueKind.Object:
                     VisitElement(value);
                     break;
 
-                case JsonValueType.Array:
+                case JsonValueKind.Array:
                     var index = 0;
                     foreach (var arrayElement in value.EnumerateArray()) {
                         EnterContext(index.ToString());
@@ -69,11 +69,11 @@ namespace Microsoft.Extensions.Configuration.Json
                     }
                     break;
 
-                case JsonValueType.Number:
-                case JsonValueType.String:
-                case JsonValueType.True:
-                case JsonValueType.False:
-                case JsonValueType.Null:
+                case JsonValueKind.Number:
+                case JsonValueKind.String:
+                case JsonValueKind.True:
+                case JsonValueKind.False:
+                case JsonValueKind.Null:
                     var key = _currentPath;
                     if (_data.ContainsKey(key))
                     {
@@ -83,7 +83,7 @@ namespace Microsoft.Extensions.Configuration.Json
                     break;
 
                 default:
-                    throw new FormatException(Resources.FormatError_UnsupportedJSONToken(value.Type));
+                    throw new FormatException(Resources.FormatError_UnsupportedJSONToken(value.ValueKind));
             }
         }
 
