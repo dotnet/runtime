@@ -11,10 +11,9 @@ namespace Microsoft.Extensions.Logging.Abstractions
     public class NullLogger<T> : ILogger<T>
     {
         /// <summary>
-        /// Returns an instance of <see cref="NullLogger<T>"/>.
+        /// Returns an instance of <see cref="NullLogger{T}"/>.
         /// </summary>
-        /// <typeparam name="T">The type.</typeparam>
-        /// <returns>An instancce of <see cref="NullLogger<T>"/>.</returns>
+        /// <returns>An instance of <see cref="NullLogger{T}"/>.</returns>
         public static readonly NullLogger<T> Instance = new NullLogger<T>();
 
         /// <inheritdoc />
