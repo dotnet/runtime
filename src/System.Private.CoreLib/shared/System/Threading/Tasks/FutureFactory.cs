@@ -1260,7 +1260,7 @@ namespace System.Threading.Tasks
                 // Grab the relevant state and then null it out so that the task doesn't hold onto the state unnecessarily
                 var thisRef = promise!.m_thisRef; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                 var endMethod = promise.m_endMethod;
-                promise.m_thisRef = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                promise.m_thisRef = default;
                 promise.m_endMethod = null;
                 if (endMethod == null) ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_WrongAsyncResultOrEndCalledMultiple, ExceptionArgument.asyncResult);
 
@@ -1268,6 +1268,7 @@ namespace System.Threading.Tasks
                 // we'll instead complete the promise at the call site.
                 if (!asyncResult.CompletedSynchronously)
                 {
+                    Debug.Assert(thisRef != null);
                     promise.Complete(thisRef, endMethod!, asyncResult, requiresSynchronization: true); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
                 }
             }
