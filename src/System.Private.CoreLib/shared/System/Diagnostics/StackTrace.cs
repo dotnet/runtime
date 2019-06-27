@@ -340,11 +340,11 @@ namespace System.Diagnostics
         {
             Debug.Assert(mb != null);
 
-            if (mb.MethodImplementationFlags.HasFlag(MethodImplAttributes.AggressiveInlining))
+            if ((mb.MethodImplementationFlags & MethodImplAttributes.AggressiveInlining) != 0)
             {
                 // Aggressive Inlines won't normally show in the StackTrace; however for Tier0 Jit and
                 // cross-assembly AoT/R2R these inlines will be blocked until Tier1 Jit re-Jits 
-                // them when they will inline. We don't show them in the StackTrace to bring consitency
+                // them when they will inline. We don't show them in the StackTrace to bring consistency
                 // between this first-pass asm and fully optimized asm.
                 return false;
             }
