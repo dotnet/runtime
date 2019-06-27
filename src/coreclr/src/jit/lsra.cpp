@@ -5849,6 +5849,8 @@ void LinearScan::allocateRegisters()
                     if (ref->RegOptional())
                     {
                         ref->registerAssignment = RBM_NONE;
+                        ref->reload             = false;
+                        ref->spillAfter         = false;
                     }
                     switch (ref->refType)
                     {
