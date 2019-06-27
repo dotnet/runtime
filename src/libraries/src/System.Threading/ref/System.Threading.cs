@@ -165,10 +165,10 @@ namespace System.Threading
         public static int Exchange(ref int location1, int value) { throw null; }
         public static long Exchange(ref long location1, long value) { throw null; }
         public static System.IntPtr Exchange(ref System.IntPtr location1, System.IntPtr value) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
         public static object? Exchange([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref object? location1, object? value) { throw null; }
         public static float Exchange(ref float location1, float value) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("location1")]
         public static T Exchange<T>([System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")] ref T location1, T value) where T : class? { throw null; }
         public static int Increment(ref int location) { throw null; }
         public static long Increment(ref long location) { throw null; }
