@@ -22,6 +22,31 @@ namespace System.Net.Http.Functional.Tests
     {
         public HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
 
+        [Fact]
+        public async Task Dispose_HandlerWithProxy_ProxyNotDisposed()
+        {
+            var proxy = new TrackDisposalProxy();
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using (HttpClientHandler handler = CreateHttpClientHandler())
+                {
+                    handler.UseProxy = true;
+                    handler.Proxy = proxy;
+                    using (HttpClient client = CreateHttpClient(handler))
+                    {
+                        Assert.Equal("hello", await client.GetStringAsync(uri));
+                    }
+                }
+            }, async server =>
+            {
+                await server.HandleRequestAsync(content: "hello");
+            });
+
+            Assert.True(proxy.ProxyUsed);
+            Assert.False(proxy.Disposed);
+        }
+
         [ActiveIssue(32809)]
         [OuterLoop("Uses external server")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -317,6 +342,25 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { new NetworkCredential("username", "password"), wrapCredsInCache };
                 yield return new object[] { new NetworkCredential("username", "password", "domain"), wrapCredsInCache };
             }
+        }
+
+        private sealed class TrackDisposalProxy : IWebProxy, IDisposable
+        {
+            public bool Disposed;
+            public bool ProxyUsed;
+
+            public void Dispose() => Disposed = true;
+            public Uri GetProxy(Uri destination)
+            {
+                ProxyUsed = true;
+                return null;
+            }
+            public bool IsBypassed(Uri host)
+            {
+                ProxyUsed = true;
+                return true;
+            }
+            public ICredentials Credentials { get => null; set { } }
         }
     }
 }
