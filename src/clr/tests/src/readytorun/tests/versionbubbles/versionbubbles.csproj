@@ -15,8 +15,6 @@
     <CLRTestPriority>1</CLRTestPriority>
     <DebugType>PdbOnly</DebugType>
     <Optimize>True</Optimize>
-    <!-- https://github.com/dotnet/coreclr/issues/22245 -->
-    <GCStressIncompatible Condition="'$(Platform)' == 'arm'">true</GCStressIncompatible>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
@@ -40,21 +38,24 @@
     <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <PropertyGroup>
-    <!-- <CLRTestBatchPreCommands><![CDATA[
+    <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
-set COMPLUS_ZAPREQUIRE=1
-set COMPLUS_ZAPREQUIRELIST=helper;versionbubbles
-set _inputFile=versionbubbles.exe
+set COMPlus_ZapRequire=1
+set COMPlus_ZapRequireList=helper%3Bversionbubbles
+set COMPlus_TieredCompilation=0
+set COMPlus_JITMinOpts=0
 %Core_Root%\crossgen /largeversionbubble /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out helper.ni.dll helper.dll
 %Core_Root%\crossgen /largeversionbubble /readytorun /platform_assemblies_paths %Core_Root%%3B%25CD% /out versionbubbles.ni.exe versionbubbles.exe
 ]]></CLRTestBatchPreCommands>
   <BashCLRTestPreCommands><![CDATA[
-export COMPLUS_ZAPREQUIRE=1
-export COMPLUS_ZAPREQUIRELIST=helper;versionbubbles
 $(BashCLRTestPreCommands)
+export COMPlus_ZapRequire=1
+export COMPlus_ZapRequireList="helper%3Bversionbubbles"
+export COMPlus_TieredCompilation=0
+export COMPlus_JITMinOpts=0
 $CORE_ROOT/crossgen -largeversionbubble -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out helper.ni.dll helper.dll
 $CORE_ROOT/crossgen -largeversionbubble -readytorun -platform_assemblies_paths $CORE_ROOT:`pwd` -out versionbubbles.ni.exe versionbubbles.exe
-]]></BashCLRTestPreCommands> -->
+]]></BashCLRTestPreCommands>
   </PropertyGroup>  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
