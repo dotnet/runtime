@@ -1065,7 +1065,6 @@ namespace System.Collections.Generic
 
         ICollection IDictionary.Values => (ICollection)Values;
 
-        [DisallowNull]
         object? IDictionary.this[object key]
         {
             get

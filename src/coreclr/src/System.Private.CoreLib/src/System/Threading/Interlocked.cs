@@ -60,7 +60,7 @@ namespace System.Threading
         public static extern double Exchange(ref double location1, double value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull("location1")]
         public static extern object? Exchange([NotNullIfNotNull("value")] ref object? location1, object? value);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -69,7 +69,7 @@ namespace System.Threading
         // This whole method reduces to a single call to Exchange(ref object, object) but
         // the JIT thinks that it will generate more native code than it actually does.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [return: NotNullIfNotNull("value")]
+        [return: NotNullIfNotNull("location1")]
         public static T Exchange<T>([NotNullIfNotNull("value")] ref T location1, T value) where T : class?
         {
             return Unsafe.As<T>(Exchange(ref Unsafe.As<T, object?>(ref location1), value));
