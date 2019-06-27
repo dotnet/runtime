@@ -473,6 +473,11 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
 #endif
 
+    if (totalSize >= g_pConfig->GetGCLOHThreshold())
+    {
+        bAllocateInLargeHeap = TRUE;
+    }
+
     flags |= (pArrayMT->ContainsPointers() ? GC_ALLOC_CONTAINS_REF : GC_ALLOC_NO_FLAGS);
 
     ArrayBase* orArray = NULL;
@@ -483,7 +488,22 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
     }
     else
     {
-        if ((DATA_ALIGNMENT < sizeof(double)) && (elemType == ELEMENT_TYPE_R8))
+#ifdef FEATURE_64BIT_ALIGNMENT
+        MethodTable* pElementMT = pArrayMT->GetApproxArrayElementTypeHandle().GetMethodTable();
+        if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
+        {
+            // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
+            // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
+            // header that requires alignment we need to be careful. However it just so happens that all the
+            // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
+            // in their headers so the alignment requirements for the header and the payload are the same.
+            _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
+            orArray = (ArrayBase*)AllocAlign8(totalSize, flags);
+        }
+        else
+#else
+        if ((DATA_ALIGNMENT < sizeof(double)) && (elemType == ELEMENT_TYPE_R8) &&
+            (totalSize < g_pConfig->GetGCLOHThreshold() - MIN_OBJECT_SIZE))
         {
             // Creation of an array of doubles, not in the large object heap.
             // We want to align the doubles to 8 byte boundaries, but the GC gives us pointers aligned
@@ -517,24 +537,10 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
             orDummyObject->SetMethodTable(g_pObjectClass);
         }
         else
+#endif  // FEATURE_64BIT_ALIGNMENT
+
         {
-#ifdef FEATURE_64BIT_ALIGNMENT
-            MethodTable* pElementMT = pArrayMT->GetApproxArrayElementTypeHandle().GetMethodTable();
-            if (pElementMT->RequiresAlign8() && pElementMT->IsValueType())
-            {
-                // This platform requires that certain fields are 8-byte aligned (and the runtime doesn't provide
-                // this guarantee implicitly, e.g. on 32-bit platforms). Since it's the array payload, not the
-                // header that requires alignment we need to be careful. However it just so happens that all the
-                // cases we care about (single and multi-dim arrays of value types) have an even number of DWORDs
-                // in their headers so the alignment requirements for the header and the payload are the same.
-                _ASSERTE(((pArrayMT->GetBaseSize() - SIZEOF_OBJHEADER) & 7) == 0);
-                orArray = (ArrayBase*)AllocAlign8(totalSize, flags);
-            }
-            else
-#endif
-            {
-                orArray = (ArrayBase*)Alloc(totalSize, flags);
-            }
+            orArray = (ArrayBase*)Alloc(totalSize, flags);
         }
         orArray->SetArrayMethodTable(pArrayMT);
     }
@@ -544,8 +550,7 @@ OBJECTREF AllocateSzArray(MethodTable* pArrayMT, INT32 cElements, GC_ALLOC_FLAGS
 
     bool bProfilerNotifyLargeAllocation = false;
 
-    if (bAllocateInLargeHeap || 
-        (totalSize >= g_pConfig->GetGCLOHThreshold()))
+    if (bAllocateInLargeHeap)
     {
         GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orArray);
         bProfilerNotifyLargeAllocation = TrackLargeAllocations();
@@ -739,6 +744,11 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
     }
 #endif
 
+    if (totalSize >= g_pConfig->GetGCLOHThreshold())
+    {
+        bAllocateInLargeHeap = TRUE;
+    }
+
     flags |= (pArrayMT->ContainsPointers() ? GC_ALLOC_CONTAINS_REF : GC_ALLOC_NO_FLAGS);
 
     if (bAllocateInLargeHeap)
@@ -773,8 +783,7 @@ OBJECTREF AllocateArrayEx(MethodTable *pArrayMT, INT32 *pArgs, DWORD dwNumArgs, 
 
     bool bProfilerNotifyLargeAllocation = false;
 
-    if (bAllocateInLargeHeap || 
-        (totalSize >= g_pConfig->GetGCLOHThreshold()))
+    if (bAllocateInLargeHeap)
     {
         GCHeapUtilities::GetGCHeap()->PublishObject((BYTE*)orArray);
         bProfilerNotifyLargeAllocation = TrackLargeAllocations();
