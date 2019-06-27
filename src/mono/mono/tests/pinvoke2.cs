@@ -335,6 +335,12 @@ public unsafe class Tests {
 	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_out_unicode", CharSet=CharSet.Unicode)]
 	public static extern void mono_test_marshal_stringbuilder_out_unicode (out StringBuilder sb);
 
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_utf16_tolower", CharSet=CharSet.Unicode)]
+	public static extern void mono_test_marshal_stringbuilder_utf16_tolower (StringBuilder sb, int len);
+
+	[DllImport ("libtest", EntryPoint="mono_test_marshal_stringbuilder_utf16_tolower", CharSet=CharSet.Unicode)]
+	public static extern void mono_test_marshal_stringbuilder_utf16_tolower_in ([In] StringBuilder sb, int len);
+
 	[DllImport ("libtest", EntryPoint="mono_test_asany")]
 	public static extern int mono_test_asany ([MarshalAs (UnmanagedType.AsAny)] object o, int what);
 
@@ -936,6 +942,28 @@ public unsafe class Tests {
 		
 		if (sb.ToString () != "This is my message.  Isn't it nice?")
 			return 2;  
+		return 0;
+	}
+
+	public static int test_0_marshal_stringbuilder_utf16_tolower () {
+		StringBuilder sb = new StringBuilder (3);
+		sb.Append ("ABC").Append ("DEF");
+		
+		mono_test_marshal_stringbuilder_utf16_tolower (sb, sb.Length);
+		if (sb.ToString () != "abcdef")
+			return 1;
+
+		return 0;
+	}
+
+	public static int test_0_marshal_stringbuilder_utf16_tolower_in () {
+		StringBuilder sb = new StringBuilder (3);
+		sb.Append ("ABC").Append ("DEF");
+		
+		mono_test_marshal_stringbuilder_utf16_tolower_in (sb, sb.Length);
+		if (sb.ToString () != "ABCDEF")
+			return 1;
+
 		return 0;
 	}
 

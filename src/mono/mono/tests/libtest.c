@@ -1253,6 +1253,14 @@ mono_test_marshal_stringbuilder_ref (char **s)
 	return 0;
 }
 
+LIBTEST_API void STDCALL  
+mono_test_marshal_stringbuilder_utf16_tolower (short *s, int n)
+{
+	for (int i = 0; i < n; i++)
+		s[i] = tolower(s[i]);
+}
+
+
 #ifdef __GNUC__
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wc++-compat"
