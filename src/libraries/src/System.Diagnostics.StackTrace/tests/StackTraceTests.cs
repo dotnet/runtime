@@ -288,7 +288,8 @@ namespace System.Diagnostics.Tests
                 Assert.EndsWith(Environment.NewLine, toString);
 
                 string[] frames = toString.Split(new string[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
-                Assert.Equal(frames.Length, stackTrace.FrameCount);
+                // StackTrace pretty printer omits uninteresting frames from the formatted stacktrace
+                AssertExtensions.LessThanOrEqualTo(frames.Length, stackTrace.FrameCount);
             }
         }
 
