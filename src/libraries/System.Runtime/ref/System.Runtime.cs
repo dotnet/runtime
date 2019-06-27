@@ -3872,7 +3872,6 @@ namespace System.Collections
     {
         bool IsFixedSize { get; }
         bool IsReadOnly { get; }
-        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         object? this[object key] { get; set; }
         System.Collections.ICollection Keys { get; }
         System.Collections.ICollection Values { get; }

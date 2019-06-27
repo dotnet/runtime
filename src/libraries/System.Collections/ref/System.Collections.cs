@@ -83,7 +83,6 @@ namespace System.Collections.Generic
         object System.Collections.ICollection.SyncRoot { get { throw null; } }
         bool System.Collections.IDictionary.IsFixedSize { get { throw null; } }
         bool System.Collections.IDictionary.IsReadOnly { get { throw null; } }
-        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
         object? System.Collections.IDictionary.this[object key] { get { throw null; } set { } }
         System.Collections.ICollection System.Collections.IDictionary.Keys { get { throw null; } }
         System.Collections.ICollection System.Collections.IDictionary.Values { get { throw null; } }

@@ -214,10 +214,13 @@ namespace System
     public static partial class Convert
     {
         public static readonly object DBNull;
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
         public static object? ChangeType(object? value, System.Type conversionType) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
         public static object? ChangeType(object? value, System.Type conversionType, System.IFormatProvider? provider) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
         public static object? ChangeType(object? value, System.TypeCode typeCode) { throw null; }
+        [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("value")]
         public static object? ChangeType(object? value, System.TypeCode typeCode, System.IFormatProvider? provider) { throw null; }
         public static byte[] FromBase64CharArray(char[] inArray, int offset, int length) { throw null; }
         public static byte[] FromBase64String(string s) { throw null; }
