@@ -209,7 +209,7 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 		result = ResumeThread (handle);
 		g_assert (result == 1);
 		info->suspend_can_continue = TRUE;
-		THREADS_SUSPEND_DEBUG ("\tlost race with self suspend %u\n", id);
+		THREADS_SUSPEND_DEBUG ("\tlost race with self suspend %p\n", GUINT_TO_POINTER (id));
 		g_assert (mono_threads_is_hybrid_suspension_enabled ());
 		//XXX interrupt_kernel doesn't make sense in this case as the target is not in a syscall
 		return TRUE;
