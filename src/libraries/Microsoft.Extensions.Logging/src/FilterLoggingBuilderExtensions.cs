@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Adds a log filter to the factory.
         /// </summary>
-        /// /// <param name="builder">The <see cref="ILoggingBuilder"/> to add the filter to.</param>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to add the filter to.</param>
         /// <param name="categoryLevelFilter">The filter to be added.</param>
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
         public static ILoggingBuilder AddFilter(this ILoggingBuilder builder, Func<string, LogLevel, bool> categoryLevelFilter) =>

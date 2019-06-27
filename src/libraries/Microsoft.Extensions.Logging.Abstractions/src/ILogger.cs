@@ -29,7 +29,6 @@ namespace Microsoft.Extensions.Logging
         /// <returns><c>true</c> if enabled.</returns>
         bool IsEnabled(LogLevel logLevel);
 
-
         /// <summary>
         /// Begins a logical operation scope.
         /// </summary>

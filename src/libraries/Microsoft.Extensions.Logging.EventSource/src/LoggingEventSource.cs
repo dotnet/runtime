@@ -275,7 +275,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// <summary>
         /// Set the filtering specification.  null means turn off all loggers.   Empty string is turn on all providers.
         /// </summary>
-        /// <param name="filterSpec"></param>
+        /// <param name="filterSpec">The filter specification to set.</param>
         [NonEvent]
         private void SetFilterSpec(string filterSpec)
         {
@@ -298,7 +298,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             tcs?.Cancel();
         }
 
-         /// <summary>
+        /// <summary>
         /// Given a set of specifications  Pat1:Level1;Pat1;Level2 ... Where
         /// Pat is a string pattern (a logger Name with a optional trailing wildcard * char)
         /// and Level is a number 0 (Trace) through 5 (Critical).
@@ -314,7 +314,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         {
             if (filterSpec == string.Empty)
             {
-                return new [] { new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, null, defaultLevel, null) };
+                return new[] { new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, null, defaultLevel, null) };
             }
 
             var rules = new List<LoggerFilterRule>();
@@ -335,7 +335,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                         continue;
                     }
 
-                    if (loggerName[loggerName.Length-1] == '*')
+                    if (loggerName[loggerName.Length - 1] == '*')
                     {
                         loggerName = loggerName.Substring(0, loggerName.Length - 1);
                     }
