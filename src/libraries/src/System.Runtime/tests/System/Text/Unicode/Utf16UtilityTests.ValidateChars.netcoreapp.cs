@@ -281,7 +281,7 @@ namespace System.Text.Unicode.Tests
             int idx;
             while ((idx = input.IndexOf('<')) >= 0)
             {
-                input = input[..idx] + (char)ushort.Parse(input.Substring(idx + 1, 4), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture) + input[idx + 6..];
+                input = input[..idx] + (char)ushort.Parse(input.Substring(idx + 1, 4), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture) + input[(idx + 6)..];
             }
 
             return input;
