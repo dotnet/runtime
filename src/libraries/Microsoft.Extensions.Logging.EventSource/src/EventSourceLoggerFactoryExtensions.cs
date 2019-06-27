@@ -18,6 +18,7 @@ namespace Microsoft.Extensions.Logging
         /// Adds an event logger named 'EventSource' to the factory.
         /// </summary>
         /// <param name="builder">The extension method argument.</param>
+        /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
         public static ILoggingBuilder AddEventSourceLogger(this ILoggingBuilder builder)
         {
             if (builder == null)

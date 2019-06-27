@@ -13,6 +13,7 @@ namespace Microsoft.Extensions.Logging.Configuration
         /// <summary>
         /// Adds services required to consume <see cref="ILoggerProviderConfigurationFactory"/> or <see cref="ILoggerProviderConfiguration{T}"/>
         /// </summary>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to register services on.</param>
         public static void AddConfiguration(this ILoggingBuilder builder)
         {
             builder.Services.TryAddSingleton<ILoggerProviderConfigurationFactory, LoggerProviderConfigurationFactory>();

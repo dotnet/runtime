@@ -10,6 +10,13 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     public class LoggerFilterRule
     {
+        /// <summary>
+        /// Creates a new <see cref="LoggerFilterRule"/> instance.
+        /// </summary>
+        /// <param name="providerName">The provider name to use in this filter rule.</param>
+        /// <param name="categoryName">The category name to use in this filter rule.</param>
+        /// <param name="logLevel">The <see cref="LogLevel"/> to use in this filter rule.</param>
+        /// <param name="filter">The filter to apply.</param>
         public LoggerFilterRule(string providerName, string categoryName, LogLevel? logLevel, Func<string, string, LogLevel, bool> filter)
         {
             ProviderName = providerName;
@@ -38,6 +45,7 @@ namespace Microsoft.Extensions.Logging
         /// </summary>
         public Func<string, string, LogLevel, bool> Filter { get; }
 
+        /// <inheritdoc/>
         public override string ToString()
         {
             return $"{nameof(ProviderName)}: '{ProviderName}', {nameof(CategoryName)}: '{CategoryName}', {nameof(LogLevel)}: '{LogLevel}', {nameof(Filter)}: '{Filter}'";
