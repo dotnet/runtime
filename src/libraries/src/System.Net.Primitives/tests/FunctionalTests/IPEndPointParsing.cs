@@ -44,17 +44,17 @@ namespace System.Net.Primitives.Functional.Tests
             int portNumber = 1;
             for (int i = 0; i < 5; i++)
             {
-                var addressAndPort = isIPv4 ? $"{address}:{i}" : $"[{address}]:{i}";
+                var addressAndPort = isIPv4 ? $"{address}:{portNumber}" : $"[{address}]:{portNumber}";
 
                 // TryParse should return true
                 Assert.True(IPEndPoint.TryParse(addressAndPort, out result));
                 Assert.Equal(expectedAddress, result.Address.ToString());
-                Assert.Equal(i, result.Port);
+                Assert.Equal(portNumber, result.Port);
 
                 // Parse should give us the same result
                 result = IPEndPoint.Parse(addressAndPort);
                 Assert.Equal(expectedAddress, result.Address.ToString());
-                Assert.Equal(i, result.Port);
+                Assert.Equal(portNumber, result.Port);
 
                 // i.e.: 1; 12; 123; 1234; 12345
                 portNumber *= 10;
@@ -90,7 +90,7 @@ namespace System.Net.Primitives.Functional.Tests
             int portNumber = 1;
             for (int i = 0; i < 5; i++)
             {
-                string addressAndPort = isIPv4 ? $"{address}:{i}" : $"[{address}]:{i}";
+                string addressAndPort = isIPv4 ? $"{address}:{portNumber}" : $"[{address}]:{portNumber}";
 
                 // TryParse should return false and set result to null
                 result = new IPEndPoint(IPAddress.Parse("0"), 25);
@@ -129,16 +129,16 @@ namespace System.Net.Primitives.Functional.Tests
             int portNumber = 1;
             for (int i = 0; i < 5; i++)
             {
-                InvalidPortHelper(isIPv4 ? $"{address}:a{i}" : $"[{address}]:a{i}");        // character at start of port
-                InvalidPortHelper(isIPv4 ? $"{address}:{i}a" : $"[{address}]:{i}a");        // character at end of port
-                InvalidPortHelper(isIPv4 ? $"{address}]:{i}" : $"[{address}]]:{i}");        // bracket where it should not be
-                InvalidPortHelper(isIPv4 ? $"{address}:]{i}" : $"[{address}]:]{i}");        // bracket after colon
-                InvalidPortHelper(isIPv4 ? $"{address}:{i}]" : $"[{address}]:{i}]");        // trailing bracket
-                InvalidPortHelper(isIPv4 ? $"{address}:{i}:" : $"[{address}]:{i}:");        // trailing colon
-                InvalidPortHelper(isIPv4 ? $"{address}:{i}:{i}" : $"[{address}]:{i}]:{i}"); // double port
-                InvalidPortHelper(isIPv4 ? $"{address}:{i}a{i}" : $"[{address}]:{i}a{i}");  // character in the middle of numbers
+                InvalidPortHelper(isIPv4 ? $"{address}:a{portNumber}" : $"[{address}]:a{portNumber}");        // character at start of port
+                InvalidPortHelper(isIPv4 ? $"{address}:{portNumber}a" : $"[{address}]:{portNumber}a");        // character at end of port
+                InvalidPortHelper(isIPv4 ? $"{address}]:{portNumber}" : $"[{address}]]:{portNumber}");        // bracket where it should not be
+                InvalidPortHelper(isIPv4 ? $"{address}:]{portNumber}" : $"[{address}]:]{portNumber}");        // bracket after colon
+                InvalidPortHelper(isIPv4 ? $"{address}:{portNumber}]" : $"[{address}]:{portNumber}]");        // trailing bracket
+                InvalidPortHelper(isIPv4 ? $"{address}:{portNumber}:" : $"[{address}]:{portNumber}:");        // trailing colon
+                InvalidPortHelper(isIPv4 ? $"{address}:{portNumber}:{portNumber}" : $"[{address}]:{portNumber}]:{portNumber}"); // double port
+                InvalidPortHelper(isIPv4 ? $"{address}:{portNumber}a{portNumber}" : $"[{address}]:{portNumber}a{portNumber}");  // character in the middle of numbers
 
-                string addressAndPort = isIPv4 ? $"{address}::{i}" : $"[{address}]::{i}";   // double delimiter
+                string addressAndPort = isIPv4 ? $"{address}::{portNumber}" : $"[{address}]::{portNumber}";   // double delimiter
                 // Appending two colons to an address may create a valid one (e.g. "0" becomes "0::x").
                 // If and only if the address parsers says it's not valid then we should as well
                 if (!IPAddress.TryParse(addressAndPort, out IPAddress ipAddress))
