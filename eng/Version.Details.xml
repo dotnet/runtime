@@ -3,21 +3,21 @@
   <ProductDependencies>
   </ProductDependencies>
   <ToolsetDependencies>
-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="1.0.0-beta.19326.2">
+    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="1.0.0-beta.19326.44">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>4b3d46cc75969c4e2de5786ec2b10a430b26dd9f</Sha>
+      <Sha>d39a62deaf3aa4e03c0b7dadc320a517e0e00187</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="2.0.0-beta.19326.2">
+    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="2.0.0-beta.19326.44">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>4b3d46cc75969c4e2de5786ec2b10a430b26dd9f</Sha>
+      <Sha>d39a62deaf3aa4e03c0b7dadc320a517e0e00187</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="2.2.0-beta.19326.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Feed" Version="2.2.0-beta.19326.44">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>4b3d46cc75969c4e2de5786ec2b10a430b26dd9f</Sha>
+      <Sha>d39a62deaf3aa4e03c0b7dadc320a517e0e00187</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="1.0.0-beta.19326.2">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="1.0.0-beta.19326.44">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>4b3d46cc75969c4e2de5786ec2b10a430b26dd9f</Sha>
+      <Sha>d39a62deaf3aa4e03c0b7dadc320a517e0e00187</Sha>
     </Dependency>
     <Dependency Name="Microsoft.Private.CoreFx.NETCoreApp" Version="4.6.0-preview7.19326.2">
       <Uri>https://github.com/dotnet/corefx</Uri>
