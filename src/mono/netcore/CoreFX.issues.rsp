@@ -5,16 +5,13 @@
 -notrait category=failing
 
 ####################################################################
-##  Microsoft.Bcl.AsyncInterfaces.Tests
-####################################################################
-
--nomethod System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests.*
-
-####################################################################
 ##  Microsoft.VisualBasic.Core.Tests
 ####################################################################
 
+# https://github.com/mono/mono/issues/14854
 -nomethod Microsoft.VisualBasic.Tests.ErrObjectTests.Clear
+
+# Microsoft.VisualBasic.ApplicationServices.AssemblyInfo.LoadedAssemblies not implemented
 -nomethod Microsoft.VisualBasic.ApplicationServices.Tests.AssemblyInfoTests.LoadedAssemblies
 
 ####################################################################
@@ -37,6 +34,7 @@
 ####################################################################
 
 # Mono currently supports Array.Copy from object[] array containing boxed ints to float[] array with primitive widening
+# https://github.com/mono/mono/issues/14857
 -nomethod System.Collections.Tests.*.ICollection_NonGeneric_CopyTo_ArrayOfEnumType
 
 ####################################################################
@@ -44,22 +42,26 @@
 ####################################################################
 
 # TODO: Wrong exception
+# https://github.com/mono/mono/issues/14858
 -nomethod System.Collections.Specialized.Tests.NameValueCollectionCtorTests.Ctor_NegativeCapacity_ThrowsArgumentOutOfRangeException
 
 ####################################################################
 ##  System.Collections.Tests
 ####################################################################
 
+# tests pass when disabling inline, but fail by default. https://github.com/mono/mono/issues/14859
 -nomethod Generic.Dictionary.DictionaryConcurrentAccessDetectionTests.DictionaryConcurrentAccessDetection_*
--nomethod System.Collections.Generic.Tests.ComparerTests.MostComparisons
 
 ####################################################################
 ##  System.Diagnostics.Process.Tests
 ####################################################################
 
+# test process hangs
 -nomethod System.Diagnostics.Tests.ProcessTests.Kill_EntireProcessTree_True_CalledOnTreeContainingCallingProcess_ThrowsInvalidOperationException
+
+# times out waiting for remote process. Would it require system wide dotnet?
+# https://github.com/mono/mono/issues/14903
 -nomethod System.Diagnostics.Tests.ProcessTests.ProcessStart_UseShellExecute_ExecuteOrder
--nomethod System.Diagnostics.Tests.ProcessTests.GetProcesses_RemoteMachinePath_ReturnsExpected
 
 ####################################################################
 ##  System.Diagnostics.Debug
@@ -73,88 +75,128 @@
 ##  System.Diagnostics.TraceSource.Tests
 ####################################################################
 
--nomethod System.Diagnostics.TraceSourceTests.TraceSourceClassTests.PruneTest
+# Object reference not set to an instance of an object on DefaultTraceListenerClassTests.MakeAssemblyGetEntryAssemblyReturnNull
+# https://github.com/mono/mono/issues/14905
 -nomethod System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.EntryAssemblyName_Null_NotIncludedInTrace
 
 ####################################################################
 ##  System.Diagnostics.Tracing.Tests
 ####################################################################
 
--nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms004.twoprms004.Test.DynamicCSharpRunTest
--nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autoproperty.regclass.regclass007.regclass007.Test.DynamicCSharpRunTest
--nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmethod.regclass.regclass018.regclass018.Test.DynamicCSharpRunTest
--nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.regclass.regclass029.regclass029.Test.DynamicCSharpRunTest
--nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.context.operate.regclass.regstrct029.regstrct029.Test.DynamicCSharpRunTest
+# System.SR needs implemented.
+# https://github.com/mono/mono/issues/14907
+-nomethod BasicEventSourceTests.TestsManifestNegative.Test_GenerateManifest_InvalidEventSources
+
+# Both tests below have a delegate binding error - signature is not compatible with that of the delegate type.
+# https://github.com/mono/mono/issues/14909
+-nomethod BasicEventSourceTests.TestsWrite.Test_Write_T_EventListener
+-nomethod BasicEventSourceTests.TestsWrite.Test_Write_T_EventListener_UseEvents
 
 ####################################################################
 ##  System.Dynamic.Runtime.Tests
 ####################################################################
 
--nomethod BasicEventSourceTests.TestsManifestNegative.Test_GenerateManifest_InvalidEventSources
--nomethod BasicEventSourceTests.TestsWrite.Test_Write_T_EventListener
--nomethod BasicEventSourceTests.TestsWrite.Test_Write_T_EventListener_UseEvents
-
-####################################################################
-##  System.IO.FileSystem.Tests
-####################################################################
-
-# Depends on precise GC
--nomethod System.IO.Tests.FileStream_Dispose.FinalizeFlushesWriteBuffer
--nomethod System.IO.Tests.FileStream_Dispose.NoDispose_CallsVirtualDisposeFalseArg_ThrowsDuringFlushWriteBuffer_FinalizerWontThrow
-# TODO: Hangs
--nomethod System.IO.Tests.Directory_SetCurrentDirectory+Directory_SetCurrentDirectory_SymLink.SetToPathContainingSymLink
+# ambigous methods
+# https://github.com/mono/mono/issues/14906
+-nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms004.twoprms004.Test.DynamicCSharpRunTest
 
 ####################################################################
 ##  System.IO.Tests
 ####################################################################
 
-# Mono allows large arrays (int.MaxValue elements)
--nomethod System.IO.Tests.MemoryStream_ConstructorTests.MemoryStream_Ctor_InvalidCapacities
+# TODO: Hangs
+-nomethod System.IO.Tests.Directory_SetCurrentDirectory+Directory_SetCurrentDirectory_SymLink.SetToPathContainingSymLink
 
 ####################################################################
 ##  System.Linq.Expressions.Tests
 ####################################################################
 
+# OOM Exception gets thrown for the 68 (currently) tests that fail.
+# https://github.com/mono/mono/issues/14912
 -nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.NewArrayBounds*
+
+# Process crashes really hard.
+# https://github.com/mono/mono/issues/14913
 -nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableFloatToULongTest
 -nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedFloatToNullableULongTest
 -nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedFloatToULongTest
 -nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableFloatToNullableULongTest
+
+# Expected exception to be thrown.  None is
+# https://github.com/mono/mono/issues/14917
 -nomethod System.Linq.Expressions.Tests.BindTests.GlobalField
+
+# Exceptions are different.
+# https://github.com/mono/mono/issues/14918
 -nomethod System.Linq.Expressions.Tests.BindTests.ConstantField
+
+# System.Reflection.Emit type load / init exception https://github.com/mono/mono/issues/14919
 -nomethod System.Linq.Expressions.Tests.Return.TailCallThenReturn
--nomethod System.Linq.Expressions.Tests.ArrayAccessTests.ArrayAccess_MultiDimensionalOf1
--nomethod System.Linq.Expressions.Tests.ArrayAccessTests.NonZeroBasedOneDimensionalArrayAccess
--nomethod System.Linq.Expressions.Tests.ArrayAccessTests.ArrayIndex_MultiDimensionalOf1
 -nomethod System.Linq.Expressions.Tests.UnaryArithmeticNegateCheckedNullableTests.VerifyIL_NullableShortNegateChecked
 -noclass System.Linq.Expressions.Tests.StackSpillerTests
--nomethod System.Linq.Expressions.Tests.ExceptionHandlingExpressions.ExceptionThrownInFilter
--nomethod System.Linq.Expressions.Tests.ExceptionHandlingExpressions.ExpressionsUnwrapeExternallyThrownRuntimeWrappedException
+-noclass System.Linq.Expressions.Tests.LambdaTests
+-nomethod System.Linq.Expressions.Tests.BinaryCoalesceTests.VerifyIL_NullableIntCoalesceToNullableInt
+-nomethod System.Linq.Expressions.Tests.UnaryArithmeticNegateCheckedTests.VerifyIL_ShortNegateChecked
+-nomethod System.Linq.Expressions.Tests.BlockTests.InsignificantBlock
+-nomethod System.Linq.Expressions.Tests.CompilerTests.VerifyIL_*
+
+# InvalidOperationException - Sequence contains no matching element
+# https://github.com/mono/mono/issues/14920
+-nomethod System.Linq.Expressions.Tests.ArrayAccessTests.ArrayAccess_MultiDimensionalOf1
+-nomethod System.Linq.Expressions.Tests.ArrayAccessTests.ArrayIndex_MultiDimensionalOf1
 -nomethod System.Linq.Expressions.Tests.MemberAccessTests.Property_NoGetOrSetAccessors_ThrowsArgumentException
+-nomethod System.Linq.Expressions.Tests.IndexExpressionTests.NoAccessorIndexedProperty
+
+# IndexOutOfRangeException
+# https://github.com/mono/mono/issues/14921
+-nomethod System.Linq.Expressions.Tests.ArrayAccessTests.NonZeroBasedOneDimensionalArrayAccess
+
+# System.InvalidOperationException : Operation is not valid due to the current state of the object.
+# https://github.com/mono/mono/issues/14924
+-nomethod System.Linq.Expressions.Tests.ExceptionHandlingExpressions.ExceptionThrownInFilter
+
+# legit test failure... Expected 4 / actual 0
+# https://github.com/mono/mono/issues/14925
+-nomethod System.Linq.Expressions.Tests.ExceptionHandlingExpressions.ExpressionsUnwrapeExternallyThrownRuntimeWrappedException
+
+# Expected exception but none was thrown
+# https://github.com/mono/mono/issues/14927
 -nomethod System.Linq.Expressions.Tests.IndexExpressionTests.IndexedPropertySetterValueTypeNotMatchPropertyType
 -nomethod System.Linq.Expressions.Tests.IndexExpressionTests.IndexedPropertyGetReturnsWrongType
--nomethod System.Linq.Expressions.Tests.IndexExpressionTests.NoAccessorIndexedProperty
+
+# Expected ArgumentException got IndexOutOfRangeException https://github.com/mono/mono/issues/14930
 -nomethod System.Linq.Expressions.Tests.IndexExpressionTests.IndexedPropertySetterNoParams
+-nomethod System.Linq.Expressions.Tests.ArrayIndexTests.NonZeroBasedOneDimensionalArrayIndex
+-nomethod System.Linq.Expressions.Tests.ArrayIndexTests.NonZeroBasedOneDimensionalArrayIndexMethod
+
+# Expected Float to uint to be 2147483648 but got 0... https://github.com/mono/mono/issues/14931
 -nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertFloatToUIntTest
 -nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertNullableFloatToUIntTest
--nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.SingleNegativeBoundErrorMessage
--nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.MultipleNegativeBoundErrorMessage
 -nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertNullableFloatToNullableUIntTest
 -nomethod System.Linq.Expressions.Tests.ConvertTests.ConvertFloatToNullableUIntTest
 -noclass System.Linq.Expressions.Tests.LambdaTests
 -noclass System.Linq.Expressions.Tests.LambdaDivideNullableTests
 -nomethod System.Linq.Expressions.Tests.BinaryCoalesceTests.VerifyIL_NullableIntCoalesceToNullableInt
+
+# OOM Exception.  Weird
+# https://github.com/mono/mono/issues/14933
+-nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.SingleNegativeBoundErrorMessage
+
+# Arithmetic operation resulted in an overflow.
+# https://github.com/mono/mono/issues/14934
+-nomethod System.Linq.Expressions.Tests.ArrayBoundsTests.MultipleNegativeBoundErrorMessage
+
+# float conv.ovf.un opcodes not supported https://github.com/mono/mono/issues/14945
 -nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedDoubleToULongTest
 -nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedDoubleToNullableULongTest
--nomethod System.Linq.Expressions.Tests.UnaryArithmeticNegateCheckedTests.VerifyIL_ShortNegateChecked
 -nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableDoubleToULongTest
 -nomethod System.Linq.Expressions.Tests.ConvertCheckedTests.ConvertCheckedNullableDoubleToNullableULongTest
--nomethod System.Linq.Expressions.Tests.BlockTests.InsignificantBlock
+
+# Delegate creation w/ reflection https://github.com/mono/mono/issues/14950
 -nomethod System.Linq.Expressions.Tests.CallTests.EnumArgAndReturn
+
+# Expected test Assertion fails https://github.com/mono/mono/issues/14951
 -nomethod System.Linq.Expressions.Tests.CallTests.MethodName_TypeArgsDontMatchConstraints_ThrowsArgumentException
--nomethod System.Linq.Expressions.Tests.ArrayIndexTests.NonZeroBasedOneDimensionalArrayIndex
--nomethod System.Linq.Expressions.Tests.ArrayIndexTests.NonZeroBasedOneDimensionalArrayIndexMethod
--nomethod System.Linq.Expressions.Tests.CompilerTests.VerifyIL_*
 
 # flaky tests - Invalid IL code in (wrapper dynamic-method)
 -nomethod System.Linq.Expressions.Tests.LambdaMultiplyTests.LambdaMultiplyFloatTest
@@ -164,6 +206,7 @@
 ##  System.Linq.Parallel.Tests
 ####################################################################
 
+# fails w/ an ArgumentException: Arg_ObjObjEx https://github.com/mono/mono/issues/14956
 -nomethod System.Linq.Parallel.Tests.PlinqModesTests.WithExecutionMode_Multiple
 
 ####################################################################
@@ -185,14 +228,33 @@
 -nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterDouble_P20
 -nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterSingle_F20
 
+# System.BadImageFormatException : Cannot box IsByRefLike type 'System.Span`1'
+# https://github.com/mono/mono/issues/14959
+-nomethod System.SpanTests.SpanTests.MemoryMarshal_GenericStaticReturningSpan
+-nomethod System.SpanTests.SpanTests.Span_Property
+-nomethod System.SpanTests.SpanTests.ReadOnlySpan_Property
+-nomethod System.SpanTests.SpanTests.MemoryExtensions_StaticReturningReadOnlySpan
+-nomethod System.SpanTests.SpanTests.MemoryManager_MethodReturningSpan
+
+# Reflection TargetException: Non-static method requires a target. 
+# https://github.com/mono/mono/issues/14962
 -nomethod System.SpanTests.SpanTests.ReadOnlyMemory_PropertyReturningReadOnlySpan
+
+# Should throw NotSupportedException, but we do not. 
+# https://github.com/mono/mono/issues/14993
 -nomethod System.SpanTests.SpanTests.Span_StaticOperator
 -nomethod System.SpanTests.SpanTests.ReadOnlySpan_Constructor
 -nomethod System.SpanTests.SpanTests.ReadOnlySpan_Operator
 -nomethod System.SpanTests.SpanTests.Span_Constructor
+
+# Should throw NotSupportedException - Non static method requires a target
+# https://github.com/mono/mono/issues/14998
 -nomethod System.SpanTests.SpanTests.Span_InstanceMethod
 -nomethod System.SpanTests.SpanTests.Memory_PropertyReturningSpan
 -nomethod System.SpanTests.SpanTests.ReadOnlySpan_InstanceMethod
+
+# Should throw OutOfMemory Exception, but does not throw
+# https://github.com/mono/mono/issues/15002
 -nomethod System.Buffers.Tests.ArrayBufferWriterTests_String.Invalid_Ctor
 -nomethod System.Buffers.Tests.ArrayBufferWriterTests_Char.Invalid_Ctor
 -nomethod System.Buffers.Tests.ArrayBufferWriterTests_Byte.Invalid_Ctor
@@ -202,13 +264,19 @@
 ####################################################################
 
 # TODO: Crashes runtime inside Interop.Http.MultiPerform (marshalling issue?)
+# https://github.com/mono/mono/issues/15005
 -nomethod *PlatformHandler*
+
 # TODO: Hangs
+# https://github.com/mono/mono/issues/15006
 -nomethod *ExpectedDiagnosticSourceActivityLogging*
 
 # Works, but may trigger UI!
--nomethod System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test.SetDelegate_ConnectionSucceeds
--nomethod System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test.AutomaticOrManual_DoesntFailRegardlessOfWhetherClientCertsAreAvailable
+# NOTE: KEEPING THIS HERE BUT COMMENTED OUT - in the event the UI is shown (wasn't for me)
+#-nomethod System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test.SetDelegate_ConnectionSucceeds
+
+# When test is run, xunit claims it's not a part of the test suite 
+#-nomethod System.Net.Http.Functional.Tests.SocketsHttpHandler_HttpClientHandler_ClientCertificates_Test.AutomaticOrManual_DoesntFailRegardlessOfWhetherClientCertsAreAvailable
 
 ####################################################################
 ##  System.Net.HttpListener.Tests
@@ -221,14 +289,20 @@
 # at System.Delegate.CreateDelegate(Type type, MethodInfo method)
 # at System.Reflection.RuntimeMethodInfo.CreateDelegate(Type delegateType)
 # at System.Net.CookieExtensions.IsRfc2965Variant(Cookie cookie)
+#
+# https://github.com/mono/mono/issues/15008
 -noclass System.Net.Tests.HttpListenerResponseCookiesTests
 
 ####################################################################
 ##  System.Net.Sockets.Tests
 ####################################################################
 
+# Test does not run -> Precise GC not supported.
+# https://github.com/mono/mono/issues/15009
 -nomethod System.Net.Sockets.Tests.UdpClientTest.Finalize_NoExceptionsThrown
-# TODO: Hangs
+
+# TODO: Hangs and fails.
+# https://github.com/mono/mono/issues/15010
 -nomethod System.Net.Sockets.Tests.CreateSocket.CtorAndAccept_SocketNotKeptAliveViaInheritance
 
 # flaky test
@@ -238,6 +312,7 @@
 ##  System.Reflection.Emit.ILGeneration.Tests
 ####################################################################
 
+# System.Reflection implementation to do.
 -noclass System.Reflection.Emit.Tests.CustomAttributeBuilderTests
 -nomethod System.Reflection.Emit.Tests.SignatureHelperAddArgument.*
 -nomethod System.Reflection.Emit.Tests.SignatureHelperGetPropertySigHelper.*
@@ -369,78 +444,119 @@
 ##  System.Reflection.Tests
 ####################################################################
 
-# Invalid argument tests
--nomethod System.Reflection.Tests.AssemblyNameTests.SetProcessorArchitecture_InvalidArchitecture_TakesLowerThreeBitsIfLessThanOrEqualToMax
+# Expected to throw FileLoadException, but we aren't
+# https://github.com/mono/mono/issues/15021
 -nomethod System.Reflection.Tests.AssemblyNameTests.Ctor_String_Invalid
+
+# The right versions are not being returned
+# https://github.com/mono/mono/issues/15022
 -nomethod System.Reflection.Tests.AssemblyNameTests.Version
+
+# Typename string differs 
+# https://github.com/mono/mono/issues/15023
 -nomethod System.Reflection.Tests.GetTypeTests.GetType_EmptyString
+
+# Expected ArgumentException, but none was thrown
+# https://github.com/mono/mono/issues/15024
 -nomethod System.Reflection.Tests.MethodInfoTests.Invoke_OptionalParameterUnassingableFromMissing_WithMissingValue_ThrowsArgumentException
 
 # Static ctors cannot be invoke with one Invoke overload
+# https://github.com/mono/mono/issues/15025
 -nomethod System.Reflection.Tests.ConstructorInfoTests.Invoke_StaticConstructor_ThrowsMemberAccessException
-# Different exception thrown
+
+# Expected MemberAccessException, but we're throwing TargetException
+# https://github.com/mono/mono/issues/15026
 -nomethod System.Reflection.Tests.ConstructorInfoTests.Invoke_AbstractClass_ThrowsMemberAccessException
+
+# Expected TargetParameterCountException, but we have ArgumentException
+# https://github.com/mono/mono/issues/15027
 -nomethod System.Reflection.Tests.PropertyInfoTests.GetValue_Invalid
+
+# Expected empty string, but got enumType instead 
+# https://github.com/mono/mono/issues/15028
 -nomethod System.Reflection.Tests.TypeInfoTests.IsEnumDefined_Invalid
--nomethod System.Reflection.Tests.AssemblyTests.AssemblyLoadFromStringNeg
 
 # Fails because our Object class has extra instance methods
+# https://github.com/mono/mono/issues/15029
 -nomethod System.Reflection.Tests.TypeInfoTests.FindMembers
 -nomethod System.Reflection.Tests.TypeInfoTests.GetMethods
 -nomethod System.Reflection.Tests.TypeInfoTests.GetMembers
 -nomethod System.Reflection.Tests.TypeInfoTests.GetMethod
 
 # CustomConstantAttribute not supported
+# https://github.com/mono/mono/issues/15037
 -nomethod System.Reflection.Tests.ParameterInfoTests.RawDefaultValueFromAttribute
 
-# Not implemented
+# AssemblyLoadContext.InternalLoad not implemented
+# https://github.com/mono/mono/issues/14830
 -nomethod System.Reflection.Tests.AssemblyTests.AssemblyLoadFromBytes
 -nomethod System.Reflection.Tests.AssemblyTests.AssemblyLoadFromBytesWithSymbols
 
-# TODO
+# Need to set ProcessorArchitecture in AssemblyName
+# https://github.com/mono/mono/issues/15068
 -nomethod System.Reflection.Tests.AssemblyNameTests.Ctor_ValidArchitectureName_Succeeds
+
+# SKIPPED
 -nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs__CornerCase_HasElementTypes
+
+# Assertion failed... Not sure why 
+# https://github.com/mono/mono/issues/15069
 -nomethod System.Reflection.Tests.MemberInfoNetCoreAppTests.HasSameMetadataDefinitionAs_GenericTypeParameters
+
+# typeof difference in the assertion 
+# https://github.com/mono/mono/issues/15070
+-nomethod System.Reflection.Tests.MemberInfoTests.GenericMethodsInheritTheReflectedTypeOfTheirTemplate
+
+# Returns byte array when it should return null
+# https://github.com/mono/mono/issues/15072
+-nomethod System.Reflection.Tests.AssemblyNameTests.SetPublicKeyToken_GetPublicKeyToken
+
+# AssemblyName functionality not fully implemented
+# https://github.com/mono/mono/issues/15073
+-nomethod System.Reflection.Tests.AssemblyNameTests.FullName
+
+# Fails b/c it returns the wrong assembly string
+# https://github.com/mono/mono/issues/15074
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFile
+
+# Expects TypeLoadException but none is returned
+# https://github.com/mono/mono/issues/15075
 -nomethod System.Reflection.Tests.AssemblyTests.GetType_DoesntSearchMscorlib
+
+# Returns the same string, but still fails.  
+# https://github.com/mono/mono/issues/15076
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies
+
+# throws a NRE
+# https://github.com/mono/mono/issues/15077
 -nomethod System.Reflection.Tests.GetTypeTests.GetType
+
+# Expects ReflectionTypeLoadException but TypeLoadException is thrown
+# https://github.com/mono/mono/issues/15078
 -nomethod System.Reflection.Tests.AssemblyNetCoreAppTests.AssemblyGetForwardedTypesLoadFailure
+
+# Extra types in the type array are expected. 
+# https://github.com/mono/mono/issues/15079
 -nomethod System.Reflection.Tests.AssemblyNetCoreAppTests.AssemblyGetForwardedTypes
+
+# Assertion expects false, but we return true
+# https://github.com/mono/mono/issues/15080
 -nomethod System.Reflection.Tests.TypeInfoTests.IsAssignableFrom
-
-####################################################################
-##  System.Resources.Extensions.Tests
-####################################################################
-
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ExceptionforReadOnlyStream
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.EmptyResources
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ExceptionforDuplicateKey
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.PrimitiveResources
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ResourceManagerLoadsCorrectReader
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.BinaryFormattedResources
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.TypeConverterByteArrayResources
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.TypeConverterStringResources
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ExceptionforNullResourceId
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.CanReadViaResourceManager
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.EmbeddedResourcesAreUpToDate
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ExceptionforNullStream
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ExceptionForAddAfterGenerate
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.ExceptionforNullFile
--nomethod System.Resources.Extensions.Tests.PreserializedResourceWriterTests.StreamResources
 
 ####################################################################
 ##  System.Resources.ResourceManager.Tests
 ####################################################################
 
 # TODO: Missing assembly resolve events on AppDomain and AssemblyLoadContext
+# https://github.com/mono/mono/issues/15081
 -nomethod System.Resources.Tests.ResourceManagerTests.GetString_ExpectEvents
 
 ####################################################################
 ##  System.Runtime.InteropServices.Tests
 ####################################################################
 
-# Obsolete methods
+# Marshal Methods WILL NOT BE Implemented in MonoVM
+# https://github.com/mono/mono/issues/15085 
 -nomethod System.Runtime.InteropServices.Tests.IntPtrTests.ReadIntPtr_NotReadable_ThrowsArgumentException
 -nomethod System.Runtime.InteropServices.Tests.IntPtrTests.WriteIntPtr_BlittableObject_Roundtrips
 -nomethod System.Runtime.InteropServices.Tests.IntPtrTests.WriteIntPtr_StructWithReferenceTypes_ReturnsExpected
@@ -482,66 +598,106 @@
 -nomethod System.Runtime.InteropServices.Tests.Int64Tests.ReadInt64_NullObject_ThrowsAccessViolationException
 -nomethod System.Runtime.InteropServices.Tests.Int64Tests.ReadInt64_StructWithReferenceTypes_ReturnsExpected
 -nomethod System.Runtime.InteropServices.Tests.GetExceptionCodeTests.*
+-nomethod System.Runtime.InteropServices.Tests.GetExceptionPointersTests.GetExceptionPointers_ReturnsExpected
+
 
 # Not sure what to check
+# Expected ArgumentException to be thrown, but none was
+# https://github.com/mono/mono/issues/15087
 -nomethod System.Runtime.InteropServices.Tests.DestroyStructureTests.DestroyStructure_NonRuntimeType_ThrowsArgumentException
 -nomethod System.Runtime.InteropServices.Tests.OffsetOfTests.OffsetOf_NotMarshallable_ThrowsArgumentException
-
-# Not sure what to check + checks that the name in the argument exception is null
 -nomethod System.Runtime.InteropServices.Tests.SizeOfTests.SizeOf_InvalidType_ThrowsArgumentException
 
 # Check that the name in the argument exception is null or different
+# https://github.com/mono/mono/issues/15090
 -nomethod System.Runtime.InteropServices.Tests.OffsetOfTests.OffsetOf_NullFieldName_ThrowsArgumentNullException
+
+# Returns type instead of expected fieldName 
+# https://github.com/mono/mono/issues/15091
 -nomethod System.Runtime.InteropServices.Tests.OffsetOfTests.OffsetOf_NonRuntimeField_ThrowsArgumentException
 
 # Hardcodes offsets
+# https://github.com/mono/mono/issues/15092
 -nomethod System.Runtime.InteropServices.Tests.OffsetOfTests.OffsetOf_Decimal_ReturnsExpected
 
 # Wants exception messages to be non-empty
+# https://github.com/mono/mono/issues/15093
 -nomethod System.Runtime.InteropServices.Tests.GetExceptionForHRTests.GetExceptionForHR_ErrorInfo_ReturnsValidException
 -nomethod System.Runtime.InteropServices.Tests.GetExceptionForHRTests.GetExceptionForHR_NoErrorInfo_ReturnsValidException
 -nomethod System.Runtime.InteropServices.Tests.ThrowExceptionForHRTests.ThrowExceptionForHR_NoErrorInfo_ReturnsValidException
 -nomethod System.Runtime.InteropServices.Tests.ThrowExceptionForHRTests.ThrowExceptionForHR_ErrorInfo_ReturnsValidException
 
-# Not implemented
--nomethod System.Runtime.InteropServices.Tests.GetExceptionPointersTests.GetExceptionPointers_ReturnsExpected
-
 # Supported on Mono
+# Expected ArgumentException
+# https://github.com/mono/mono/issues/15097
 -nomethod System.Runtime.InteropServices.Tests.GetFunctionPointerForDelegateTests.GetFunctionPointer_GenericDelegate_ThrowsArgumentException
 
-# Causes an unhandled exception in a finalizer
--nomethod *HandleCollectorTests*
-
 # typeof(object).Assembly.ImageRuntimeVersion returns null because the corelib metadata version string is empty
+# https://github.com/mono/mono/issues/15100
 -nomethod System.Runtime.InteropServices.RuntimeEnvironmentTests.RuntimeEnvironmentSysVersion
 
+# AE with The structure must not be a value class;
+# https://github.com/mono/mono/issues/15101
 -nomethod System.Runtime.InteropServices.Tests.PtrToStructureTests.PtrToStructure_ZeroPointer_ThrowsArgumentNullException
--nomethod System.Runtime.InteropServices.Tests.StructureToPtrTests.StructureToPtr_ByValBoolArray_Success
--nomethod System.Runtime.InteropServices.Tests.StructureToPtrTests.StructureToPtr_ByValDateArray_Success
--nomethod System.Runtime.InteropServices.Tests.StructureToPtrTests.StructureToPtr_InvalidLengthByValArrayInStruct_ThrowsArgumentException
 
--nomethod System.Runtime.InteropServices.Tests.GetDelegateForFunctionPointerTests.GetDelegateForFunctionPointer_CantCast_ThrowsInvalidCastException
--nomethod System.Runtime.InteropServices.Tests.GetDelegateForFunctionPointerTests.GetDelegateForFunctionPointer_CollectibleType_ReturnsExpected
+# Expected 255 / Actual 1
+# https://github.com/mono/mono/issues/15102
+-nomethod System.Runtime.InteropServices.Tests.StructureToPtrTests.StructureToPtr_ByValBoolArray_Success
+
+# MarshalDirectiveException
+# https://github.com/mono/mono/issues/15103
+-nomethod System.Runtime.InteropServices.Tests.StructureToPtrTests.StructureToPtr_ByValDateArray_Success
+
+# Expects AE but none was thrown
+# https://github.com/mono/mono/issues/15104
+-nomethod System.Runtime.InteropServices.Tests.StructureToPtrTests.StructureToPtr_InvalidLengthByValArrayInStruct_ThrowsArgumentException
 
 ####################################################################
 ##  System.Runtime.Numerics.Tests
 ####################################################################
 
+# Expected vs Actual are pretty different
+# https://github.com/mono/mono/issues/15106
 -nomethod System.Numerics.Tests.ComplexTests.Sin_Advanced
+
+# Same as above
+# https://github.com/mono/mono/issues/15107
 -nomethod System.Numerics.Tests.ComplexTests.Sinh_Advanced
+
+# Same as above
+# https://github.com/mono/mono/issues/15108
 -nomethod System.Numerics.Tests.ComplexTests.Cos_Advanced
+
+# Same as above
+# https://github.com/mono/mono/issues/15109
 -nomethod System.Numerics.Tests.ComplexTests.Cosh_Advanced
+
+# Same as above
+# https://github.com/mono/mono/issues/15110
 -nomethod System.Numerics.Tests.ComplexTests.Exp
 
 ####################################################################
 ##  System.Runtime.Serialization.Formatters.Tests
 ####################################################################
 
--nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.SerializeHugeObjectGraphs
+# Expected MemberAccessException but none was thrown
+# https://github.com/mono/mono/issues/15111
 -nomethod System.Runtime.Serialization.Formatters.Tests.FormatterServicesTests.GetUninitializedObject_OpenGenericClass_ThrowsMemberAccessException
+
+# NotNull Assertion failure
+# https://github.com/mono/mono/issues/15112
 -nomethod System.Runtime.Serialization.Formatters.Tests.SerializationGuardTests.BlockReflectionDodging
+
+# Expected AE but none thrown
+# https://github.com/mono/mono/issues/15113
 -nomethod System.Runtime.Serialization.Formatters.Tests.FormatterServicesTests.GetUninitializedObject_NotSupportedType_ThrowsArgumentException
+
+# Expected TypeInitializationException but none thrown 
+# https://github.com/mono/mono/issues/15114
 -nomethod System.Runtime.Serialization.Formatters.Tests.FormatterServicesTests.GetUninitializedObject_StaticConstructorThrows_ThrowsTypeInitializationException
+
+# Object reference not set to an instance of an object error
+# https://github.com/mono/mono/issues/15115
 -nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateAgainstBlobs
 -nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.RoundtripManyObjectsInOneStream
 -nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.ValidateBasicObjectsRoundtrip
@@ -551,10 +707,12 @@
 ####################################################################
 
 # https://github.com/mono/mono/issues/14291 incorrect line numbers
+# See https://github.com/mono/mono/issues/15140 and https://github.com/mono/mono/issues/15141
 -nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineSameMethod
 -nomethod System.Tests.ExceptionTests.ThrowStatementDoesNotResetExceptionStackLineOtherMethod
 
 # RuntimeAssembly.IsCollectible is not implemented yet
+# Implementation task https://github.com/mono/mono/issues/15142
 -nomethod System.Reflection.Tests.IsCollectibleTests.MemberInfoGeneric_IsCollectibleFalse_WhenUsingAssemblyLoad
 -nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleTrue_WhenUsingTestAssemblyLoadContext
 -nomethod System.Reflection.Tests.IsCollectibleTests.MemberInfo_IsCollectibleFalse_WhenUsingAssemblyLoad
@@ -562,6 +720,7 @@
 -nomethod System.Reflection.Tests.IsCollectibleTests.Assembly_IsCollectibleFalse_WhenUsingAssemblyLoadContext
 
 # Mono ignores [Optional] attribute defined on parameters in delegates
+# https://github.com/mono/mono/issues/15148
 -nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameterUnassingableFromMissing_WithMissingValue
 -nomethod System.Tests.DelegateTests.DynamicInvoke_OptionalParameter_WithMissingValue
 -nomethod System.Tests.DelegateTests.DynamicInvoke_ParameterSpecification_ArrayOfMissing
@@ -578,6 +737,7 @@
 -nomethod System.Reflection.Tests.InvokeRefReturnNetcoreTests.TestByRefLikeRefReturn
 
 # throws ArgumentException
+# https://github.com/mono/mono/issues/15152
 -nomethod System.Reflection.Tests.PointerTests.PointerPropertyGetValue
 
 # GC.GetTotalAllocatedBytes is not implemented
@@ -589,10 +749,8 @@
 # GCSettings.LatencyMode is not implemented
 -nomethod System.Tests.GCTests.LatencyRoundtrips
 
-# WeakReference.get_TrackResurrection is not implemented
--nomethod System.Tests.WeakReferenceTests.NonGeneric
-
 # Could not load type 'System.Nullable`1[[System.Int32, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]' from assembly 'mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089'
+# https://github.com/mono/mono/issues/15153
 -nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignature
 
 # Disabled in coreclr too: https://github.com/dotnet/coreclr/blob/master/tests/CoreFX/CoreFX.issues.rsp#L68-L71
@@ -615,14 +773,33 @@
 ####################################################################
 
 # Monitor.LockContentionCount is not implemented
+# Implementation https://github.com/mono/mono/issues/15155
+# https://github.com/mono/mono/issues/15156
 -nomethod System.Threading.Tests.MonitorTests.Enter_HasToWait_LockContentionCountTest
 
+# Process hangs and test fails with [ERROR] FATAL UNHANDLED EXCEPTION: System.Threading.WaitHandleCannotBeOpenedException: No handle of the given name exists.
+# https://github.com/mono/mono/issues/15157
 -nomethod System.Threading.Tests.MutexTests.CrossProcess_NamedMutex_ProtectedFileAccessAtomic
--nomethod System.Threading.Tests.SemaphoreSlimTests.RunSemaphoreSlimTest1_WaitAsync_NegativeCases
+
+# Fails with typeof(System.Threading.WaitHandleCannotBeOpenedException): A WaitHandle with system-wide name '' cannot be created. A WaitHandle of a different type might have the same name.
+# Expects an ArgumentException
+# https://github.com/mono/mono/issues/15158
 -nomethod System.Threading.Tests.MutexTests.OpenExisting_InvalidNames
+
+# Expects ArgumentException but none is thrown
+# https://github.com/mono/mono/issues/15159
 -nomethod System.Threading.Tests.MutexTests.Ctor_InvalidNames_Unix
+
+# Expects PlatformNotSupportedException, but we give an ArgumentNullException
+# https://github.com/mono/mono/issues/15160
 -nomethod System.Threading.Tests.SemaphoreTests.OpenExisting_NotSupported_Unix
+
+# Expects PlatformNotSupportedException but none thrown
+# https://github.com/mono/mono/issues/15161
 -nomethod System.Threading.Tests.SemaphoreTests.Ctor_NamesArentSupported_Unix
+
+# There is an attribute on the test itself to skip on Mono 
+# https://github.com/dotnet/corefx/blob/30ca4113ed07fc78060a0c9d3f95eee4fe8f8ee3/src/System.Threading/tests/SynchronizationContextTests.cs#L47
 -nomethod System.Threading.Tests.SynchronizationContextTests.WaitNotificationTest
 
 ####################################################################
@@ -632,26 +809,24 @@
 # Tests for ThreadPool.SetMaxThreads(-1, -1) == true, which only happens to work on CoreCLR because
 # the managed SetMaxThreadsNative prototype uses "int"s while the unmanaged code uses "DWORD"s and
 # thus it interprets it as large positive numbers.
+#
+# https://github.com/mono/mono/issues/15164
 -nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest
 
 # TODO: Differences in behaviour between NetFX and CoreFX
 -nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinThreadsTo0Test
+
+# Explicitly skipped if it's MonoVM (SkipOnTargetFramework)
 -nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.SetMinMaxThreadsTest_ChangedInDotNetCore
 
 # ThreadPool.CompletedWorkItemCount is not implemented
+# https://github.com/mono/mono/issues/14829
 -nomethod System.Threading.ThreadPools.Tests.ThreadPoolTests.MetricsTest
-
-####################################################################
-##  System.Xml.XmlSchemaSet.Tests
-####################################################################
-
--nomethod System.Xml.Tests.TC_SchemaSet_Misc.*
 
 ####################################################################
 ##  System.ComponentModel.Composition.Tests
 ####################################################################
 
--nomethod System.ComponentModel.Composition.MetadataTests.TestOptionalMetadataValueTypeMismatch
 -nomethod System.ComponentModel.Composition.CompositionServicesTests.GetDefaultContractNameTest
 -nomethod System.ComponentModel.Composition.MetadataViewProviderTests.GetMetadataView_InterfaceWithIndexer_ShouldThrowNotSupportedException
 -nomethod Tests.Integration.ExportFactoryTests.ExportFactoryStandardImports_ShouldWorkProperly
@@ -664,6 +839,8 @@
 ##  System.Composition.TypedParts.Tests
 ####################################################################
 
+# Missing assembly Microsoft.VisualStudio.TestPlatform.ObjectModel, Version=15.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a
+# https://github.com/mono/mono/issues/15170
 -nomethod System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssemblies_AssembliesAndConvention_ThrowsCompositionFailedExceptionOnCreation
 -nomethod System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssemblies_Assemblies_ThrowsCompositionFailedExceptionOnCreation
 -nomethod System.Composition.Hosting.Tests.ContainerConfigurationTests.WithAssembly_AssemblyConventions_ThrowsCompositionFailedExceptionOnCreation
@@ -673,39 +850,43 @@
 ##  System.Data.Common.Tests
 ####################################################################
 
--nomethod System.Data.Tests.SqlTypes.SqlCharsTest.ReadWriteXmlTest
+# Invalid IL code in Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderSqlInt32:Read1_int (): IL_00bc: castclass 0x0100000d
+# https://github.com/mono/mono/issues/15174
 -nomethod System.Data.Tests.SqlTypes.SqlInt32Test.ReadWriteXmlTest
+
+# System.InvalidProgramException : Invalid IL code in Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderSqlInt64:Read1_long (): IL_00bc: castclass 0x0100000d
+# https://github.com/mono/mono/issues/15175
 -nomethod System.Data.Tests.SqlTypes.SqlInt64Test.ReadWriteXmlTest
+
+# System.InvalidProgramException : Invalid IL code in Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderSqlDouble:Read1_double (): IL_00bc: castclass 0x0100000d
+# https://github.com/mono/mono/issues/15176
 -nomethod System.Data.Tests.SqlTypes.SqlDoubleTest.ReadWriteXmlTest
+
+# System.InvalidProgramException : Invalid IL code in Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderSqlInt16:Read1_short (): IL_00bc: castclass 0x0100000d
+# https://github.com/mono/mono/issues/15177
 -nomethod System.Data.Tests.SqlTypes.SqlInt16Test.ReadWriteXmlTest
+
+# System.InvalidProgramException : Invalid IL code in Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderSqlDecimal:Read1_decimal (): IL_00bc: castclass 0x0100000d
+# https://github.com/mono/mono/issues/15178
 -nomethod System.Data.Tests.SqlTypes.SqlDecimalTest.ReadWriteXmlTest
+
+# System.InvalidProgramException : Invalid IL code in Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderSqlString:Read1_string (): IL_00bc: castclass 0x0100000d
+# https://github.com/mono/mono/issues/15179
 -nomethod System.Data.Tests.SqlTypes.SqlStringTest.ReadWriteXmlTest
+
+# Assert IsNotNull failure
+# https://github.com/mono/mono/issues/15180
 -nomethod System.Data.Common.Tests.DbConnectionTests.ProviderFactoryTest
 
 ####################################################################
 ##  System.Data.SqlClient.Tests
 ####################################################################
 
+# Test does not run when included 
 -nomethod System.Data.SqlClient.Tests.AADAccessTokenTest.InvalidCombinationOfAccessToken
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.GetEnumerator_Success
--nomethod System.Data.SqlClient.Tests.ExceptionTest.NamedPipeInvalidConnStringTest_ManagedSNI
--nomethod System.Data.SqlClient.Tests.AADAccessTokenTest.InvalidCombinationOfAccessToken
--nomethod System.Data.SqlClient.Tests.AADAccessTokenTest.InvalidCombinationOfAccessToken
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.CopyTo_NonGeneric_Success
--nomethod System.Data.SqlClient.Tests.AADAccessTokenTest.InvalidCombinationOfAccessToken
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.Indexer_Success
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.Indexer_Throws
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.CopyTo_Throws
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.CopyTo_NonGeneric_Throws
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.CopyTo_Success
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.SyncRoot_Success
--nomethod System.Data.SqlClient.Tests.ExceptionTest.IndependentConnectionExceptionTestOpenConnection
--nomethod System.Data.SqlClient.Tests.SqlErrorCollectionTest.IsSynchronized_Success
--nomethod System.Data.SqlClient.Tests.ExceptionTest.IndependentConnectionExceptionTestExecuteReader
--nomethod System.Data.SqlClient.Tests.ExceptionTest.ExceptionTests
--nomethod System.Data.SqlClient.Tests.ExceptionTest.VariousExceptionTests
--nomethod System.Data.SqlClient.Tests.CloneTests.CloneSqlConnection
--nomethod System.Data.SqlClient.Tests.SqlConnectionBasicTests.ConnectionTest
+
+# Hangs and then fails... All async tests display the same failure
+# https://github.com/mono/mono/issues/15181
 -nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteNonQueryAsyncTest
 -nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteReaderAsyncTest
 -nomethod System.Data.SqlClient.Tests.DiagnosticTest.ExecuteNonQueryAsyncErrorTest
@@ -716,17 +897,40 @@
 ##  System.Diagnostics.StackTrace.Tests
 ####################################################################
 
+# ArgumentNullException thrown
+# https://github.com/mono/mono/issues/15182
 -nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames
+
+# Expected -1, but got 0
+# https://github.com/mono/mono/issues/15183
 -nomethod System.Diagnostics.Tests.StackFrameTests.Ctor_SkipFrames
+
+# Assertion differences 
+# https://github.com/mono/mono/issues/15184
 -nomethod System.Diagnostics.Tests.StackFrameTests.Ctor_Filename_LineNumber_ColNumber
+
+# A little off 
+# Assert.Equal() Failure
+#                ↓ (pos 0)
+#      Expected: MoveNext at offset 90 in file:line:column···
+#      Actual:   .ctor at offset 90 in file:line:column Fi···
+# https://github.com/mono/mono/issues/15186
 -nomethod System.Diagnostics.Tests.StackFrameTests.ToString_Invoke_ReturnsExpected
+
+# Assertion differences.  Expects -1, got 0
+# https://github.com/mono/mono/issues/15187
 -nomethod System.Diagnostics.Tests.StackFrameTests.Ctor_SkipFrames_FNeedFileInfo
+
+# ArgumentNullException : Value cannot be null
+# https://github.com/mono/mono/issues/15188
 -nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames_FNeedFileInfo
 
 ####################################################################
 ##  System.Drawing.Common.Tests
 ####################################################################
 
+# Expects OOM, may be large array support?
+# https://github.com/mono/mono/issues/15189
 -nomethod System.Drawing.Drawing2D.Tests.ColorBlendTests.Ctor_LargeCount_ThrowsOutOfMemoryException
 -nomethod System.Drawing.Drawing2D.Tests.BlendTests.Ctor_LargeCount_ThrowsOutOfMemoryException
 
@@ -734,6 +938,8 @@
 ##  System.Numerics.Vectors.Tests
 ####################################################################
 
+# Expects NotSupportedException, but actual was TypeInitializationException
+# https://github.com/mono/mono/issues/15190
 -nomethod System.Numerics.Tests.GenericVectorTests.ConstructorWithUnsupportedTypes_DateTime
 -nomethod System.Numerics.Tests.GenericVectorTests.ConstructorWithUnsupportedTypes_Char
 -nomethod System.Numerics.Tests.GenericVectorTests.ConstructorWithUnsupportedTypes_Guid
@@ -742,6 +948,9 @@
 ##  System.Reflection.Context.Tests
 ####################################################################
 
+# System.ArgumentNullException : Value cannot be null.
+# Parameter name: attributeType
+# https://github.com/mono/mono/issues/15191
 -nomethod System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_MemberAttributes_Success
 -nomethod System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_ParameterAttributes_Success
 -nomethod System.Reflection.Context.Tests.CustomReflectionContextTests.MapType_Interface_Throws
@@ -750,12 +959,16 @@
 ##  System.Reflection.CoreCLR.Tests
 ####################################################################
 
+# FileNotFoundException
+# https://github.com/mono/mono/issues/15192
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFromStream_Location_IsEmpty
 
 ####################################################################
 ##  System.Reflection.Metadata.Tests
 ####################################################################
 
+# Expected null, got a double byte array
+# https://github.com/mono/mono/issues/15193
 -nomethod System.Reflection.Metadata.Tests.AssemblyDefinitionTests.ValidateAssemblyNameWithCultureSet
 -nomethod System.Reflection.Metadata.Tests.AssemblyDefinitionTests.ValidateAssemblyNameForAssemblyDefinition
 
@@ -763,38 +976,64 @@
 ##  System.Reflection.TypeExtensions.CoreCLR.Tests
 ####################################################################
 
+# Assertion... Expected true, got false
+# https://github.com/mono/mono/issues/15194
 -nomethod System.Reflection.Tests.MetadataTokenTests.SuccessImpliesNonNilWithCorrectTable
 
 ####################################################################
 ##  System.Runtime.Loader.DefaultContext.Tests
 ####################################################################
 
+# Expected FileNotFoundException, got none
+# https://github.com/mono/mono/issues/15195
 -nomethod System.Runtime.Loader.Tests.DefaultLoadContextTests.LoadInDefaultContext
 
 ####################################################################
 ##  System.Runtime.Loader.RefEmitLoadContext.Tests
 ####################################################################
 
+# Relies on AssemblyLoadContext.GetLoadContext, which is not implemented
 -nomethod System.Runtime.Loader.Tests.RefEmitLoadContextTests.LoadRefEmitAssembly
 
 ####################################################################
 ##  System.Threading.Overlapped.Tests
 ####################################################################
 
+# Overflow Exception
+# https://github.com/mono/mono/issues/15197
 -nomethod OverlappedTests.PropertyTest2
+
+# NRE in Overlapped.Pack
+# https://github.com/mono/mono/issues/15308
 -nomethod OverlappedTests.PackNegTest
 -nomethod OverlappedTests.PackNegTest1
+
+# NRE at Overlapped.Unpack (similar to pack)
+# https://github.com/mono/mono/issues/15310
 -nomethod OverlappedTests.UnPackTest
+
+# NRE may be similar to above
+# https://github.com/mono/mono/issues/15311
 -nomethod OverlappedTests.PropertyTest3
 -nomethod OverlappedTests.PropertyTest1
+
+# NRE
+# https://github.com/mono/mono/issues/15312
 -nomethod ThreadPoolBoundHandleTests.BindHandle_MinusOneAsHandle_ThrowsArgumentException
+
+# No Exception thrown
+# https://github.com/mono/mono/issues/15313 
 -nomethod ThreadPoolBoundHandleTests.PreAllocatedOverlapped_NonBlittableTypeAsPinData_Throws
 -nomethod ThreadPoolBoundHandleTests.PreAllocatedOverlapped_ObjectArrayWithNonBlittableTypeAsPinData_Throws
 -nomethod ThreadPoolBoundHandleTests.GetNativeOverlappedState_NullAsNativeOverlapped_ThrowsArgumentNullException
+
+# NRE on BindHandle 
+# https://github.com/mono/mono/issues/15314
 -nomethod ThreadPoolBoundHandleTests.BindHandle_ZeroAsHandle_ThrowsArgumentException
 -nomethod ThreadPoolBoundHandleTests.BindHandle_NullAsHandle_ThrowsArgumentNullException
--nomethod ThreadPoolBoundHandsleTests.PreAllocatedOverlapped_NullAsCallback_ThrowsArgumentNullException
 -nomethod ThreadPoolBoundHandleTests.BindHandle_ValidHandle_ThrowsPlatformNotSupportedException
+
+# Test not run
 -nomethod ThreadPoolBoundHandleTests.PreAllocatedOverlapped_NullAsCallback_ThrowsArgumentNullException
 
 ####################################################################
@@ -802,9 +1041,11 @@
 ####################################################################
 
 # GC.GetGCMemoryInfo is not implemented
+# https://github.com/mono/mono/issues/15236
 -nomethod System.Tests.AppDomainTests.MonitoringIsEnabled
 
 # Mono expands generic Types in stacktraces unlike the .NET Core (sounds more like a feature: https://gist.github.com/EgorBo/3abb37d2ff4fc904bc7472c62498f933)
+# https://github.com/mono/mono/issues/15315
 -nomethod System.Tests.EnvironmentStackTrace.StackTraceTest
 
 # AssemblyLoadContext.InternalLoad is not implemented
@@ -825,40 +1066,81 @@
 ##  System.Reflection.TypeExtensions.Tests
 ####################################################################
 
+# Assertion difference.  Expects 2, but got 1
+# https://github.com/mono/mono/issues/15316
 -nomethod System.Reflection.Tests.ConstructorInfoInvokeArrayTests.Invoke_1DArrayConstructor
+
+# Exception difference
+# https://github.com/mono/mono/issues/15317
 -nomethod System.Reflection.Tests.ConstructorInfoTests.Invoke_Invalid
+
+# Large Array support
+# https://github.com/mono/mono/issues/15318
 -nomethod System.Reflection.Tests.ConstructorInfoInvokeArrayTests.Invoke_LargeDimensionalArrayConstructor
+
+# Assertion expects false, but we return true
+# https://github.com/mono/mono/issues/15080
 -nomethod System.Reflection.Tests.TypeTests.IsAssignableFrom
+
+# Throws a lot of different exceptions
+# https://github.com/mono/mono/issues/15319
 -nomethod System.Reflection.Tests.PropertyInfoTests.GetGetMethod_GetSetMethod
+
+# Extra methods 
+# https://github.com/mono/mono/issues/15320
 -nomethod System.Reflection.Tests.TypeTests.GetMethods
 
 ####################################################################
 ##  System.Reflection.Emit.Lightweight.Tests
 ####################################################################
 
+# A different CreateDelegate issue
+# https://github.com/mono/mono/issues/15321
 -nomethod System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Int_Module_CoreclrIgnoresSkipVisibility
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.Test_TwoDimTest
--nomethod System.Reflection.Emit.Tests.DynamicMethodToString.ToStringTest
--nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.ByRefReturnType_DoesNotThrow
 -nomethod System.Reflection.Emit.Tests.DynamicMethodGetILGenerator1.GetILGenerator_Module_CoreclrIgnoresSkipVisibility
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.Test_GenericMethod
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_IntGenerics_Success
+
+# Need to implement System.Reflection.Emit.DynamicILInfo.SetLocalSignature(Byte[] localSignature)
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.Test_TwoDimTest
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.Test_GenericMethod
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_CtorMethodAndField_Success
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_String_Success
--nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NullInput_ThrowsArgumentNullException
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_StringGenerics_Success
--nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.InvalidOwner_ThrowsArgumentException
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.Test_CallGM
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_Exception_Success
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.GetTokenFor_DynamicMethod_Success
+
+# Need to implement System.Reflection.Emit.DynamicILInfo.SetExceptions(Byte* exceptions, Int32 exceptionsSize)
+-nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NullInput_ThrowsArgumentNullException
+-nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.InvalidOwner_ThrowsArgumentException
+
+# Exception string is different (Expect System.String vs actual String)
+# https://github.com/mono/mono/issues/15323
+-nomethod System.Reflection.Emit.Tests.DynamicMethodToString.ToStringTest
+
+# System.ArgumentException : Return type can't be a byref type
+# https://github.com/mono/mono/issues/15324
+-nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.ByRefReturnType_DoesNotThrow
+
+
+
+# Expected: typeof(System.ArgumentOutOfRangeException)
+# Actual:   typeof(System.OverflowException): Arithmetic operation resulted in an overflow.
+# https://github.com/mono/mono/issues/15334
 -nomethod System.Reflection.Emit.Tests.DynamicILInfoTests.SetX_NegativeInputSize_ThrowsArgumentOutOfRangeException
+
+# Expected null, but got parameterTypes
+# https://github.com/mono/mono/issues/15335
 -nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.NullObjectInParameterTypes_ThrowsArgumentException
 
 ####################################################################
 ##  System.Runtime.Loader.Tests
 ####################################################################
 
+# NOTE: Not run
 -nomethod System.Runtime.Loader.Tests.ContextualReflectionTest.*
+
+# relies on AssemblyLoadContext 
 -nomethod System.Runtime.Loader.Tests.SatelliteAssembliesTests.SatelliteLoadsCorrectly
 -nomethod System.Runtime.Loader.Tests.AssemblyLoadContextTest.*
 -nomethod System.Runtime.Loader.Tests.ContextualReflectionTest.*
@@ -870,24 +1152,77 @@
 
 -nomethod System.Reflection.Tests.TypeTests_AmbiguityResolution_NoParameterBinding.*
 -nomethod System.Reflection.Tests.TypeTests_GetInterface.*
+
+# System.InvalidOperationException : System.Reflection.Tests.IdentityTests is not a GenericTypeDefinition. MakeGenericType may only be called on a type for which Type.IsGenericTypeDefinition is true.
+# https://github.com/mono/mono/issues/15336
 -nomethod System.Reflection.Tests.IdentityTests.*
+
+# Assertion... Expected: 1, Actual: 0
+# https://github.com/mono/mono/issues/15337
 -nomethod System.Reflection.Tests.TypeTests_GetMember.*
+
+# Expected: Explicit
+# Actual:   Auto
+# https://github.com/mono/mono/issues/15338
 -nomethod System.Reflection.Tests.TypeTests_StructLayoutAttribute.*
+
+# System.InvalidOperationException : Sequence contains no elements
+# https://github.com/mono/mono/issues/15339
+# 
+# https://github.com/mono/mono/issues/15340
 -nomethod System.Reflection.Tests.CustomAttributeTests.*
+-nomethod System.Reflection.Tests.ParameterTests.TestPseudoCustomAttributes
+-nomethod System.Reflection.Tests.TypeTests.TestExplicitOffsetPseudoCustomAttribute
+
+# Assertion failure: Expected: 4, Actual: 0
+# https://github.com/mono/mono/issues/15341
 -nomethod System.Reflection.Tests.TypeTests_HiddenEvents.GetEventHidesEventsBySimpleNameCompare
+
+# Multiple failures... 
+# System.Reflection.Tests.TypeInfoDeclaredNestedTypeTests.TestNestedTypes10 
+# Expected: typeof(System.Reflection.Tests.TestNestGeneric<>)
+# Actual:   typeof(System.Reflection.Tests.TestNestGeneric<>)
+# https://github.com/mono/mono/issues/15342
 -nomethod System.Reflection.Tests.TypeInfoDeclaredNestedTypeTests.*
--nomethod System.Reflection.Tests.TypeTests_PrefixingOnlyAllowedOnGetMember.TestGetMemberAll
--nomethod System.Reflection.Tests.TypeInvariants.TestInvariantCode
 -nomethod System.Reflection.Tests.TypeInfoPropertyTests.TestIsNested
 -nomethod System.Reflection.Tests.TypeInfoPropertyTests.TestIsNestedPublic
--nomethod System.Reflection.Tests.ParameterTests.TestPseudoCustomAttributes
+
+# Assertion failure: Expected: 5, Actual: 0
+# https://github.com/mono/mono/issues/15343
+-nomethod System.Reflection.Tests.TypeTests_PrefixingOnlyAllowedOnGetMember.TestGetMemberAll
+
+# Assertion failure: Expected: true, Actual: false
+# https://github.com/mono/mono/issues/15344
+-nomethod System.Reflection.Tests.TypeInvariants.TestInvariantCode
+
+# Assertion failure: Expected: 2, Actual: 1
+# https://github.com/mono/mono/issues/15345
 -nomethod System.Reflection.Tests.TypeTests_HiddenMethods.GetMethodDoesNotHideHiddenMethods
+
+# Expected: String[] ["Item", "MyInstanceThenStaticProp", "MyStaticThenInstanceProp", "MyStringThenDoubleProp"]
+# Actual:   String[] []
+# https://github.com/mono/mono/issues/15346
 -nomethod System.Reflection.Tests.TypeTests_HiddenProperties.GetPropertyHidesPropertiesByNameAndSigAndCallingConventionCompare
+
+# Expected: typeof(Outer+Inner)
+# Actual:   typeof(Outer+Inner+ReallyInner)
+# https://github.com/mono/mono/issues/15347
 -nomethod System.Reflection.Tests.AssemblyTests.CrossAssemblyTypeRefToNestedType
+
+# Assertion failure: Expected: 4, Actual: 0
+# https://github.com/mono/mono/issues/15348
 -nomethod System.Reflection.Tests.TypeTests_HiddenFields.GetFieldDoesNotHideHiddenFields
+
+# System.TypeLoadException : Could not find type 'Typ\\W\[t\]S\+r\*n\&e\,haracters' in assembly ''.
+# https://github.com/mono/mono/issues/15349
 -nomethod System.Reflection.Tests.TypeTests.TypesWithStrangeCharacters
--nomethod System.Reflection.Tests.TypeTests.TestExplicitOffsetPseudoCustomAttribute
+
+# System.ArgumentException : Type provided must be an enum.
+# https://github.com/mono/mono/issues/15350
 -nomethod System.Reflection.Tests.TypeTests.GetEnumUnderlyingType
+
+# Assertion failure: Expected: 1, Actual: 0
+# https://github.com/mono/mono/issues/15351
 -nomethod System.Reflection.Tests.TypeTests_HiddenTestingOrder.HideDetectionHappensAfterPrivateInBaseClassChecks
 
 # flaky tests
@@ -897,6 +1232,8 @@
 ##  System.Utf8String.Experimental.Tests
 ####################################################################
 
+# Experimental feature 
+# Will be removed and we can skip for now.
 -nomethod System.Tests.MemoryTests.*
 -nomethod System.Tests.Utf8StringTests.*
 -nomethod System.Tests.Utf8ExtensionsTests.*
@@ -907,7 +1244,11 @@
 ##  System.ComponentModel.Composition.Registration.Tests
 ####################################################################
 
+# All have NRE
+# https://github.com/mono/mono/issues/15352
 -nomethod System.ComponentModel.Composition.Registration.Tests.PartBuilderInheritanceTests.*
+
+# System.ComponentModel.Composition.Registration APIs are not supported on this platform.
 -nomethod System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderTests.*
 -nomethod System.ComponentModel.Composition.Registration.Tests.PartBuilderUnitTests.*
 -nomethod System.ComponentModel.Composition.Registration.Tests.PartBuilderOfTInheritanceTests.*
@@ -926,27 +1267,17 @@
 ##  System.Xml.Xsl.XslTransformApi.Tests
 ####################################################################
 
--nomethod System.Xml.Tests.CTransformResolverTest.TC_AbsolutePath_Transform
+# Xml differences... Looks like the parsing isn't working
+# https://github.com/mono/mono/issues/15353
 -nomethod System.Xml.Tests.CXmlResolverTest.TC_AbsolutePath_Transform
 
 ####################################################################
 ##  System.Globalization.Tests
 ####################################################################
 
+# Assertion failure: Expected: true, Actual: false
+# https://github.com/mono/mono/issues/15354
 -nomethod System.Globalization.Tests.RegionInfoPropertyTests.EnglishName
-
-####################################################################
-##  System.IO.FileSystem.Watcher.Tests
-####################################################################
-
--nomethod System.IO.Tests.File_Move_Tests.File_Move_From_Unwatched_To_Watched
-
-####################################################################
-##  System.IO.MemoryMappedFiles.Tests
-####################################################################
-
--nomethod System.IO.MemoryMappedFiles.Tests.MemoryMappedViewStreamTests.ValidAccessLevelCombinations
--nomethod System.IO.MemoryMappedFiles.Tests.MemoryMappedViewAccessorTests.ValidAccessLevelCombinations
 
 ####################################################################
 ##  System.Net.Requests.Tests
@@ -959,18 +1290,11 @@
 ##  System.Security.Cryptography.X509Certificates.Tests
 ####################################################################
 
+# Passes local, but leaving here because it may be flaky 
 -nomethod System.Security.Cryptography.X509Certificates.Tests.DynamicChainTests.TestInvalidAia
 
 # disabled in CoreCLR too
 -noclass System.Security.Cryptography.X509Certificates.Tests.X509Certificate2UITests
-
-####################################################################
-##  System.Runtime.Serialization.Json.Tests
-####################################################################
-
--nomethod DataContractJsonSerializerTests.DCJS_VerifyDateTimeForDateTimeFormat
--nomethod DataContractJsonSerializerTests.DCJS_VerifyDateTimeForFormatStringDCJsonSerSettings
-
 
 # requires corefx test updates https://github.com/dotnet/corefx/pull/38452
 -nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfAny_ManyInteger
