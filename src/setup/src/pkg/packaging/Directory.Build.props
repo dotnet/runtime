@@ -4,9 +4,6 @@
   <PropertyGroup>
     <PackagingRoot>$(ProjectDir)src/pkg/packaging/</PackagingRoot>
 
-    <!-- Package prebuilt binaries -->
-    <UsePrebuiltPortableBinariesForInstallers>false</UsePrebuiltPortableBinariesForInstallers>
-
     <!-- The runtime package is distro-independent. (Runtime-deps packages vary per distro.) -->
     <BuildRuntimeDebs>$(BuildDistroIndependentInstallers)</BuildRuntimeDebs>
     <BuildRuntimeRpms>$(BuildDistroIndependentInstallers)</BuildRuntimeRpms>

@@ -9,6 +9,7 @@
       GenerateVersionBadge;
       GenerateCompressedFiles;
       GenerateInstallers;
+      GenerateProjectInstallers;
     </PackageTargets>
   </PropertyGroup>
 
@@ -20,14 +21,25 @@
     To build installers, we need shared fx layouts to be built first. Call MSBuild on the
     requirements so that parallel MSBuild does the ordering work.
   -->
-  <Target Name="BuildDependencies">
+  <Target Name="BuildDependencies"
+          Condition="'$(UsePrebuiltPortableBinariesForInstallers)' != 'true'">
     <ItemGroup>
       <SharedFrameworkProject Include="$(SourceDir)pkg\projects\**\*.sfxproj" />
     </ItemGroup>
 
     <MSBuild
-      Projects="@(SharedFrameworkProject)"
-      Targets="Build"/>
+      Projects="
+        @(SharedFrameworkProject)"
+      Targets="Build" />
+  </Target>
+
+  <Target Name="GenerateProjectInstallers" Condition="'$(GenerateProjectInstallers)' == 'true'">
+    <ItemGroup>
+      <InstallerProject Include="$(SourceDir)pkg\projects\**\*.pkgproj" />
+      <InstallerProject Include="$(SourceDir)pkg\projects\**\*.sfxproj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(InstallerProject)" Targets="GenerateInstallers" />
   </Target>
 
   <Target Name="InitPackage">
@@ -71,7 +83,7 @@
 
     <!-- Copy nethost -->
     <PropertyGroup>
-      <_NetHostOutputDir>$(BaseOutputRootPath)corehost\</_NetHostOutputDir>
+      <_NetHostOutputDir>$(BinDir)$(InstallerSourceOSPlatformConfig)\corehost\</_NetHostOutputDir>
     </PropertyGroup>
     <ItemGroup>
       <NetHostFiles Include="$(_NetHostOutputDir)nethost.h" />
@@ -130,7 +142,7 @@
             GetInstallerLocations;
             GenerateZip;
             GenerateTarBall"
-          Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'"/>
+          Condition="'$(UsePrebuiltPortableBinariesForInstallers)' != 'true'"/>
 
   <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(LocalBuildToolsTaskFile)"/>
   <Target Name="GenerateZip"
