@@ -53,8 +53,9 @@
 
     <!-- Run deb tool in the directory of the consumer project. -->
     <Exec
-      Command="$(DotNetTool) deb-tool $(DebToolArgs)"
-      WorkingDirectory="$(DebtoolConsumerDeployDir)" />
+      Command="$(DotNetTool) $(DebtoolAssemblyFile) $(DebToolArgs)"
+      WorkingDirectory="$(DebToolBinDir)"
+      IgnoreStandardErrorWarningFormat="true" />
 
     <!-- Copy package to output. -->
     <ItemGroup>
@@ -68,6 +69,8 @@
           OverwriteReadOnlyFiles="True"
           SkipUnchangedFiles="False"
           UseHardlinksIfPossible="False" />
+
+    <Message Text="$(MSBuildProjectName) -> $(InstallerFile)" Importance="high" />
   </Target>
 
   <Target Name="GetDebInstallerJsonProperties"
@@ -131,6 +134,8 @@
           OverwriteReadOnlyFiles="True"
           SkipUnchangedFiles="False"
           UseHardlinksIfPossible="False" />
+
+    <Message Text="$(MSBuildProjectName) -> $(InstallerFile)" Importance="high" />
   </Target>
 
   <Target Name="GetRpmInstallerJsonProperties"
@@ -149,7 +154,7 @@
           DependsOnTargets="
             GetInstallerProperties;
             RunLightLinker">
-    <Message Text="Created '$(InstallerFile)'" Importance="High" />
+    <Message Text="$(MSBuildProjectName) -> $(InstallerFile)" Importance="high" />
   </Target>
 
   <Target Name="CreateCompressedArchive"
@@ -163,6 +168,8 @@
       SourceDirectory="$(SharedFrameworkArchiveSourceDir)"
       DestinationArchive="$(CompressedArchiveFile)"
       OverwriteDestination="true" />
+
+    <Message Text="$(MSBuildProjectName) -> $(CompressedArchiveFile)" Importance="high" />
   </Target>
 
   <!--
@@ -182,6 +189,8 @@
     </PropertyGroup>
 
     <Exec Command="pkgbuild $(_pkgArgs)" />
+
+    <Message Text="$(MSBuildProjectName) -> $(InstallerFile)" Importance="high" />
   </Target>
 
   <!--
@@ -226,6 +235,8 @@
 
   <Target Name="FixLayoutPermissions"
           Condition="'$(OSGroup)' != 'Windows_NT'">
+    <Error Text="Layout '$(PackLayoutDir)' does not exist." Condition="!Exists('$(PackLayoutDir)')" />
+
     <!-- Fix file permissions in the layout dir. -->
     <!-- Reset everything to user readable/writeable and group and world readable. -->
     <Exec Command='find "$(PackLayoutDir)" -type f -name "*" -exec chmod 644 {} \;' />
