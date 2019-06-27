@@ -20,7 +20,7 @@ namespace System.Diagnostics.Tests
     internal static class RemotelyInvokable
     {
         public static readonly int SuccessExitCode = 42;
-        public const int WaitInMS = 30 * 1000;
+        public const int WaitInMS = 5 * 60 * 1000;
         public const string TestConsoleApp = "System.Diagnostics.Process.Tests";
         public static event EventHandler ClosedEvent;
 
