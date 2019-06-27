@@ -438,7 +438,7 @@ namespace System.Text.Json
                             if (marker == JsonConstants.Slash)
                             {
                                 SequencePosition copy = _currentPosition;
-                                if (!ConsumeCommentMultiSegment())
+                                if (!SkipOrConsumeCommentMultiSegmentWithRollback())
                                 {
                                     _currentPosition = copy;
                                     return false;
@@ -1603,7 +1603,7 @@ namespace System.Text.Json
                 {
                     if (marker == JsonConstants.Slash)
                     {
-                        return ConsumeCommentMultiSegment() ? ConsumeTokenResult.Success : ConsumeTokenResult.NotEnoughDataRollBackState;
+                        return SkipOrConsumeCommentMultiSegmentWithRollback() ? ConsumeTokenResult.Success : ConsumeTokenResult.NotEnoughDataRollBackState;
                     }
                     if (_tokenType == JsonTokenType.Comment)
                     {
@@ -1665,7 +1665,7 @@ namespace System.Text.Json
                 if (_readerOptions.CommentHandling == JsonCommentHandling.Allow && first == JsonConstants.Slash)
                 {
                     _trailingCommaBeforeComment = true;
-                    return ConsumeCommentMultiSegment() ? ConsumeTokenResult.Success : ConsumeTokenResult.NotEnoughDataRollBackState;
+                    return SkipOrConsumeCommentMultiSegmentWithRollback() ? ConsumeTokenResult.Success : ConsumeTokenResult.NotEnoughDataRollBackState;
                 }
 
                 if (_inObject)
@@ -1806,7 +1806,7 @@ namespace System.Text.Json
                 if (first == JsonConstants.Slash)
                 {
                     _trailingCommaBeforeComment = true;
-                    if (ConsumeCommentMultiSegment())
+                    if (SkipOrConsumeCommentMultiSegmentWithRollback())
                     {
                         goto Done;
                     }
@@ -1951,7 +1951,7 @@ namespace System.Text.Json
         {
             while (marker == JsonConstants.Slash)
             {
-                if (SkipCommentMultiSegment(out _))
+                if (SkipOrConsumeCommentMultiSegmentWithRollback())
                 {
                     if (!HasMoreDataMultiSegment())
                     {
@@ -1986,7 +1986,7 @@ namespace System.Text.Json
         {
             while (marker == JsonConstants.Slash)
             {
-                if (SkipCommentMultiSegment(out _))
+                if (SkipOrConsumeCommentMultiSegmentWithRollback())
                 {
                     // The next character must be a start of a property name or value.
                     if (!HasMoreDataMultiSegment(resource))
@@ -2185,35 +2185,42 @@ namespace System.Text.Json
             return ConsumeTokenResult.NotEnoughDataRollBackState;
         }
 
-        private bool ConsumeCommentMultiSegment()
+        private bool SkipOrConsumeCommentMultiSegmentWithRollback()
         {
             long prevTotalConsumed = BytesConsumed;
             SequencePosition start = new SequencePosition(_currentPosition.GetObject(), _currentPosition.GetInteger() + _consumed);
-            bool ret = SkipCommentMultiSegment(out int tailBytesToIgnore);
+            bool skipSucceeded = SkipCommentMultiSegment(out int tailBytesToIgnore);
 
-            if (ret)
+            if (skipSucceeded)
             {
-                SequencePosition end = new SequencePosition(_currentPosition.GetObject(), _currentPosition.GetInteger() + _consumed);
+                Debug.Assert(
+                    _readerOptions.CommentHandling == JsonCommentHandling.Allow ||
+                    _readerOptions.CommentHandling == JsonCommentHandling.Skip);
 
-                ReadOnlySequence<byte> commentSequence = _sequence.Slice(start, end);
-                commentSequence = commentSequence.Slice(2, commentSequence.Length - 2 - tailBytesToIgnore);
-                HasValueSequence = !commentSequence.IsSingleSegment;
-
-                if (HasValueSequence)
+                if (_readerOptions.CommentHandling == JsonCommentHandling.Allow)
                 {
-                    ValueSequence = commentSequence;
-                }
-                else
-                {
-                    ValueSpan = commentSequence.First.Span;
-                }
+                    SequencePosition end = new SequencePosition(_currentPosition.GetObject(), _currentPosition.GetInteger() + _consumed);
 
-                if (_tokenType != JsonTokenType.Comment)
-                {
-                    _previousTokenType = _tokenType;
-                }
+                    ReadOnlySequence<byte> commentSequence = _sequence.Slice(start, end);
+                    commentSequence = commentSequence.Slice(2, commentSequence.Length - 2 - tailBytesToIgnore);
+                    HasValueSequence = !commentSequence.IsSingleSegment;
 
-                _tokenType = JsonTokenType.Comment;
+                    if (HasValueSequence)
+                    {
+                        ValueSequence = commentSequence;
+                    }
+                    else
+                    {
+                        ValueSpan = commentSequence.First.Span;
+                    }
+
+                    if (_tokenType != JsonTokenType.Comment)
+                    {
+                        _previousTokenType = _tokenType;
+                    }
+
+                    _tokenType = JsonTokenType.Comment;
+                }
             }
             else
             {
@@ -2228,7 +2235,7 @@ namespace System.Text.Json
                 _consumed = 0;
             }
 
-            return ret;
+            return skipSucceeded;
         }
 
         private bool SkipCommentMultiSegment(out int tailBytesToIgnore)
