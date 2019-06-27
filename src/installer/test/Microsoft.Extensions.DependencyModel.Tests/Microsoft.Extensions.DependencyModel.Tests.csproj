@@ -21,15 +21,4 @@
     <ProjectReference Include="..\..\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
   </ItemGroup>
 
-  <!--
-    This test project gets internals from the implementation project, which uses the
-    System.Text.Json source package. This results in duplicate types. Resolve this by removing the
-    reference to System.Text.Json here in the test project.
-  -->
-  <Target Name="RemoveSystemTextJsonRef" AfterTargets="ResolveTargetingPacks">
-    <ItemGroup>
-      <Reference Remove="@(Reference)" Condition="'%(Reference.Filename)' == 'System.Text.Json'" />
-    </ItemGroup>
-  </Target>
-
 </Project>
