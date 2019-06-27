@@ -7,6 +7,9 @@
     <DisableImplicitFrameworkDefines>true</DisableImplicitFrameworkDefines>
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 
+    <!-- Workaround for https://github.com/microsoft/msbuild/issues/4474 -->
+    <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
+
     <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
   </PropertyGroup>
 
