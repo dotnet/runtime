@@ -82,8 +82,9 @@ namespace System.ComponentModel
         {
             // logic is exactly as in DateTimeConverter, only the offset pattern ' zzz' is added to the default
             // ConvertToString pattern.
-            if (destinationType == typeof(string) && value is DateTimeOffset dto)
+            if (destinationType == typeof(string) && value is DateTimeOffset)
             {
+                DateTimeOffset dto = (DateTimeOffset)value;
                 if (dto == DateTimeOffset.MinValue)
                 {
                     return string.Empty;
@@ -129,6 +130,23 @@ namespace System.ComponentModel
                 }
 
                 return dto.ToString(format, CultureInfo.CurrentCulture);
+            }
+            if (destinationType == typeof(InstanceDescriptor) && value is DateTimeOffset)
+            {
+                DateTimeOffset dto = (DateTimeOffset)value;
+                if (dto.Ticks == 0)
+                {
+                    // Special case for empty DateTimeOffset
+                    return new InstanceDescriptor(
+                        typeof(DateTimeOffset).GetConstructor(new Type[] { typeof(long) }),
+                        new object[] { dto.Ticks }
+                    );
+                }
+
+                return new InstanceDescriptor(
+                    typeof(DateTimeOffset).GetConstructor(new Type[] { typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(int), typeof(TimeSpan) }),
+                    new object[] { dto.Year, dto.Month, dto.Day, dto.Hour, dto.Minute, dto.Second, dto.Millisecond, dto.Offset }
+                );
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
