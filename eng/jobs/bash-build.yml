@@ -5,7 +5,6 @@ parameters:
   disableCrossgen: false
   displayName: null
   dockerImage: null
-  osGroup: Linux
   packageDistroList: null
   skipTests: $(SkipTests)
   strategy:
@@ -34,62 +33,51 @@ jobs:
     variables:
 
       ${{ if ne(parameters.displayName, 'Build_FreeBSD_x64')}}:
-          RunArguments: docker run --privileged --rm
-            -v "$(Build.SourcesDirectory):/root/coresetup"
-            -w="/root/coresetup"
-            ${{ parameters.additionalRunArgs }}
-            ${{ parameters.dockerImage }}
+        RunArguments: >-
+          docker run --privileged --rm
+          -v "$(Build.SourcesDirectory):/root/coresetup"
+          -w="/root/coresetup"
+          ${{ parameters.additionalRunArgs }}
+          ${{ parameters.dockerImage }}
       
       ${{ if eq(parameters.displayName, 'Build_FreeBSD_x64')}}:
-          RunArguments: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
+        RunArguments: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
 
-      BuildArguments: -OfficialBuildId=$(OfficialBuildId)
-        -ConfigurationGroup=$(_BuildConfig)
-        -CrossBuild=${{ parameters.crossBuild }}
-        -DisableCrossgen=${{ parameters.disableCrossgen }}
-        -PortableBuild=${{ parameters.portableBuild }}
-        -strip-symbols
-        -SkipTests=${{ parameters.skipTests }}
-        -TargetArchitecture=${{ parameters.targetArchitecture }}
-        -- /p:StabilizePackageVersion=$(IsStable)
-        /nr:false
-        /bl:msbuild.binlog
+      CommonMSBuildArgs: >-
+        /p:Configuration=$(_BuildConfig)
+        /p:OfficialBuildId=$(OfficialBuildId)
+        /p:TargetArchitecture=${{ parameters.targetArchitecture }}
+
+      BuildArguments: >-
+        --ci --test
+        /p:CrossBuild=${{ parameters.crossBuild }}
+        /p:DisableCrossgen=${{ parameters.disableCrossgen }}
+        /p:PortableBuild=${{ parameters.portableBuild }}
+        /p:StripSymbols=true
+        /p:SkipTests=${{ parameters.skipTests }}
+        $(CommonMSBuildArgs)
         ${{ parameters.additionalMSBuildArgs }}
 
-      PublishArguments: /p:PublishType=$(_PublishType)
-        /p:ConfigurationGroup=$(_BuildConfig)
-        /p:OSGroup=${{ parameters.osGroup }}
+      PublishArguments: >-
+        /p:PublishType=$(_PublishType)
         /p:PortableBuild=${{ parameters.portableBuild }}
-        /p:StabilizePackageVersion=$(IsStable)
-        /p:TargetArchitecture=${{ parameters.targetArchitecture }}
-        /nr:false
         /bl:msbuild.publish.binlog
+        $(CommonMSBuildArgs)
          ${{ parameters.additionalMSBuildArgs }}
-
-      CommonMSBuildArgs: /p:ConfigurationGroup=$(_BuildConfig)
-        /p:OfficialBuildId=$(OfficialBuildId)
-        /p:OSGroup=${{ parameters.osGroup }}
-        /p:PortableBuild=false
-        /p:StabilizePackageVersion=$(IsStable)
-        /p:TargetArchitecture=${{ parameters.targetArchitecture }}
-        /nr:false
 
       # Tell the build to package up the bits from the portable build.
       PackagePortableBitsArgs: >-
+        /p:PortableBuild=false
         /p:SharedFrameworkPublishDir=/root/sharedFrameworkPublish/
         /p:InstallerSourceOSPlatformConfig=linux-x64.$(_BuildConfig)
 
-      MSBuildScript: /root/coresetup/Tools/msbuild.sh
+      MSBuildScript: /root/coresetup/eng/common/msbuild.sh
       DockerRunMSBuild: >-
         docker run
         -v $(Build.SourcesDirectory):/root/coresetup
         -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/
         -w=/root/coresetup
 
-      # Disable MSBuild node reuse in case this build is running on a persistent agent.
-      # Use environment variable rather than /nr:false to make sure internal Execs that run MSBuild
-      # commands also disable node reuse.
-      MSBUILDDISABLENODEREUSE: 1
     steps:
 
     # Builds don't set user ID, so files might be owned by root and unable to be cleaned up by AzDO.
@@ -132,7 +120,7 @@ jobs:
       - task: CopyFiles@2
         displayName: 'Copy built Portable linux-x64 binaries to staging directory'
         inputs:
-          SourceFolder: '$(Build.SourcesDirectory)/bin/obj/linux-x64.$(_BuildConfig)/sharedFrameworkPublish'
+          SourceFolder: '$(Build.SourcesDirectory)/artifacts/obj/linux-x64.$(_BuildConfig)/sharedFrameworkPublish'
           TargetFolder: '$(Build.StagingDirectory)/sharedFrameworkPublish'
 
       - ${{ each packageBuild in parameters.packageDistroList }}:
@@ -173,10 +161,12 @@ jobs:
     - task: PublishTestResults@2
       displayName: Publish Test Results
       inputs:
-        testResultsFormat: VSTest
-        testResultsFiles: 'bin/tests/**/*.trx'
+        testResultsFormat: 'xUnit'
+        testResultsFiles: '*.xml'
+        searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
         mergeTestResults: true
-        testRunTitle: ${{ parameters.displayName }}
+        testRunTitle: ${{ parameters.displayName }}-$(_BuildConfig)
+      continueOnError: true
       condition: always()
 
     - task: CopyFiles@2
@@ -184,8 +174,8 @@ jobs:
       inputs:
         SourceFolder: '$(Build.SourcesDirectory)'
         Contents: |
-          *.log
-          *.binlog
+          **/*.log
+          **/*.binlog
         TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
         CleanTargetFolder: true
       continueOnError: true
