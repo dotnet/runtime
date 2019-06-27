@@ -15,7 +15,6 @@ namespace System.Collections
         // Interfaces are not serializable
         // The Item property provides methods to read and edit entries 
         // in the Dictionary.
-        [DisallowNull]
         object? this[object key]
         {
             get;
