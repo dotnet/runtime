@@ -13,10 +13,10 @@ namespace System.Net.Http
     // is not supported (i.e. before Win8.1/Win2K12R2) in the WinHttpOpen() function.
     internal class WinInetProxyHelper
     {
-        private bool _useProxy = false;
+        private const int RecentAutoDetectionInterval = 120_000; // 2 minutes in milliseconds.
+        private readonly bool _useProxy = false;
         private bool _autoDetectionFailed;
         private int _lastTimeAutoDetectionFailed; // Environment.TickCount units (milliseconds).
-        private const int _recentAutoDetectionInterval = 120_000; // 2 minutes in milliseconds.
 
         public WinInetProxyHelper()
         {
@@ -57,9 +57,9 @@ namespace System.Net.Http
             }
         }
 
-        public string AutoConfigUrl { get; private set; }
+        public string AutoConfigUrl { get; }
 
-        public bool AutoDetect { get; private set; }
+        public bool AutoDetect { get; }
 
         public bool AutoSettingsUsed => AutoDetect || !string.IsNullOrEmpty(AutoConfigUrl);
 
@@ -67,13 +67,13 @@ namespace System.Net.Http
 
         public bool ManualSettingsOnly => !AutoSettingsUsed && ManualSettingsUsed;
 
-        public string Proxy { get; private set; }
+        public string Proxy { get; }
 
-        public string ProxyBypass { get; private set; }
+        public string ProxyBypass { get; }
 
         public bool RecentAutoDetectionFailure =>
             _autoDetectionFailed &&
-            Environment.TickCount - _lastTimeAutoDetectionFailed <= _recentAutoDetectionInterval;
+            Environment.TickCount - _lastTimeAutoDetectionFailed <= RecentAutoDetectionInterval;
 
         public bool GetProxyForUrl(
             SafeWinHttpHandle sessionHandle,

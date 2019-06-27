@@ -308,11 +308,6 @@ namespace System.Net.Http
             {
                 pool.Value.Dispose();
             }
-
-            if (_proxy is IDisposable obj)
-            {
-                obj.Dispose();
-            }
         }
 
         /// <summary>Sets <see cref="_cleaningTimer"/> and <see cref="_timerIsRunning"/> based on the specified timeout.</summary>
