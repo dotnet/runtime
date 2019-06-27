@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
+    internal class TaskCompletionSourceWithCancellation<T> : TaskCompletionSource<T>
     {
         private CancellationToken _cancellationToken;
 

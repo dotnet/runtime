@@ -180,6 +180,8 @@ namespace System.Net.Http
             {
                 PreAuthCredentials = new CredentialCache();
             }
+
+            if (NetEventSource.IsEnabled) Trace($"{this}");
         }
 
         private static readonly List<SslApplicationProtocol> Http2ApplicationProtocols = new List<SslApplicationProtocol>() { SslApplicationProtocol.Http2, SslApplicationProtocol.Http11 };
@@ -1043,7 +1045,7 @@ namespace System.Net.Http
                 0,                           // connection ID
                 0,                           // request ID
                 memberName,                  // method name
-                ToString() + ":" + message); // message
+                message);                    // message
 
         /// <summary>A cached idle connection and metadata about it.</summary>
         [StructLayout(LayoutKind.Auto)]

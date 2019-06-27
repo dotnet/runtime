@@ -522,4 +522,7 @@
   <data name="net_http_hpack_bad_integer" xml:space="preserve">
     <value>HPACK integer exceeds limits or has an overlong encoding.</value>
   </data>
+  <data name="net_http_disposed_while_in_use" xml:space="preserve">
+    <value>The object was disposed while operations were in progress.</value>
+  </data>
 </root>
