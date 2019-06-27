@@ -5,11 +5,21 @@ using System;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+    /// <summary>
+    /// Options for a <see cref="ConsoleLogger"/>.
+    /// </summary>
     public class ConsoleLoggerOptions
     {
         private ConsoleLoggerFormat _format = ConsoleLoggerFormat.Default;
 
+        /// <summary>
+        /// Includes scopes when <code>true</code>.
+        /// </summary>
         public bool IncludeScopes { get; set; }
+
+        /// <summary>
+        /// Disables colors when <code>true</code>.
+        /// </summary>
         public bool DisableColors { get; set; }
 
         /// <summary>

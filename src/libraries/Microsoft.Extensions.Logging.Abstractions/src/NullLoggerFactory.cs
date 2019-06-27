@@ -9,6 +9,14 @@ namespace Microsoft.Extensions.Logging.Abstractions
     /// </summary>
     public class NullLoggerFactory : ILoggerFactory
     {
+        /// <summary>
+        /// Creates a new <see cref="NullLoggerFactory"/> instance.
+        /// </summary>
+        public NullLoggerFactory() { }
+
+        /// <summary>
+        /// Returns an instance of <see cref="NullLoggerFactory"/>.
+        /// </summary>
         public static readonly NullLoggerFactory Instance = new NullLoggerFactory();
 
         /// <inheritdoc />
@@ -28,6 +36,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         {
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
         }

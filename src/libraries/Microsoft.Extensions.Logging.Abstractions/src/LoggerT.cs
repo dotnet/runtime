@@ -29,16 +29,19 @@ namespace Microsoft.Extensions.Logging
             _logger = factory.CreateLogger(TypeNameHelper.GetTypeDisplayName(typeof(T), includeGenericParameters: false, nestedTypeDelimiter: '.'));
         }
 
+        /// <inheritdoc />
         IDisposable ILogger.BeginScope<TState>(TState state)
         {
             return _logger.BeginScope(state);
         }
 
+        /// <inheritdoc />
         bool ILogger.IsEnabled(LogLevel logLevel)
         {
             return _logger.IsEnabled(logLevel);
         }
 
+        /// <inheritdoc />
         void ILogger.Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
             _logger.Log(logLevel, eventId, state, exception, formatter);
