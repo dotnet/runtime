@@ -39,9 +39,9 @@
     <!-- winforms -->
     <MicrosoftPrivateWinformsPackageVersion>4.8.0-preview7.19325.3</MicrosoftPrivateWinformsPackageVersion>
     <!-- wpf -->
-    <MicrosoftDotNetWpfGitHubPackageVersion>4.8.0-preview7.19326.4</MicrosoftDotNetWpfGitHubPackageVersion>
+    <MicrosoftDotNetWpfGitHubPackageVersion>4.8.0-preview8.19327.1</MicrosoftDotNetWpfGitHubPackageVersion>
     <!-- wpf-int -->
-    <MicrosoftDotNetWpfDncEngPackageVersion>4.8.0-preview8.19326.19</MicrosoftDotNetWpfDncEngPackageVersion>
+    <MicrosoftDotNetWpfDncEngPackageVersion>4.8.0-preview8.19327.5</MicrosoftDotNetWpfDncEngPackageVersion>
   </PropertyGroup>
   <!--Package names-->
   <PropertyGroup>
