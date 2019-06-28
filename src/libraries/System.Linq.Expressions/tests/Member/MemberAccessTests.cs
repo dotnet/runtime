@@ -539,13 +539,13 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        public static void MakeMemberAccess_NullMember_ThrowsArgumentNullExeption()
+        public static void MakeMemberAccess_NullMember_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("member", () => Expression.MakeMemberAccess(Expression.Constant(new PC()), null));
         }
 
         [Fact]
-        public static void MakeMemberAccess_MemberNotFieldOrProperty_ThrowsArgumentExeption()
+        public static void MakeMemberAccess_MemberNotFieldOrProperty_ThrowsArgumentException()
         {
             MemberInfo member = typeof(NonGenericClass).GetEvent("Event");
 

@@ -2361,7 +2361,7 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        public void ReleaseExport_Null_ShouldThrowArugmentNull()
+        public void ReleaseExport_Null_ShouldThrowArgumentNull()
         {
             var container = CreateCompositionContainer();
 

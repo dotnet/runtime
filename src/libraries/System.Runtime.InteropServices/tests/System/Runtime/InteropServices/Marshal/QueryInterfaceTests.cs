@@ -151,7 +151,7 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
-        public void QueryInterface_ZeroPointer_ThrowsArugmentNullException()
+        public void QueryInterface_ZeroPointer_ThrowsArgumentNullException()
         {
             Guid iid = Guid.Empty;
             AssertExtensions.Throws<ArgumentNullException>("pUnk", () => Marshal.QueryInterface(IntPtr.Zero, ref iid, out IntPtr ppv));

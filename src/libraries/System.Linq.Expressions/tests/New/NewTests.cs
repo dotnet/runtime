@@ -285,7 +285,7 @@ namespace System.Linq.Expressions.Tests
 
         [Theory]
         [ClassData(typeof(CompilationTypes))]
-        public static void Compile_AbstractCtor_ThrowsInvalidOperationExeption(bool useInterpretation)
+        public static void Compile_AbstractCtor_ThrowsInvalidOperationException(bool useInterpretation)
         {
             ConstructorInfo ctor = typeof(AbstractCtor).GetTypeInfo().DeclaredConstructors.Single();
             Expression<Func<AbstractCtor>> f = Expression.Lambda<Func<AbstractCtor>>(Expression.New(ctor));
@@ -329,7 +329,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Fact]
-        public static void Arguments_ExpressionNotReadable_ThrowsArgumentExeption()
+        public static void Arguments_ExpressionNotReadable_ThrowsArgumentException()
         {
             ConstructorInfo constructor = typeof(ClassWithCtors).GetConstructor(new Type[] { typeof(string) });
             Expression[] expressions = new Expression[] { Expression.Property(null, typeof(Unreachable<string>), nameof(Unreachable<string>.WriteOnly)) };
