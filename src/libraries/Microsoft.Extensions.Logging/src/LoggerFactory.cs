@@ -94,7 +94,7 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Creates an <see cref="ILogger"/> with the given <paramref name="categoryName"/>.
         /// </summary>
-        /// <param name="categoryName">The categoryName for messages produced by the logger.</param>
+        /// <param name="categoryName">The category name for messages produced by the logger.</param>
         /// <returns>The <see cref="ILogger"/> that was created.</returns>
         public ILogger CreateLogger(string categoryName)
         {

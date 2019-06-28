@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
         public NullLoggerFactory() { }
 
         /// <summary>
-        /// Returns an instance of <see cref="NullLoggerFactory"/>.
+        /// Returns the shared instance of <see cref="NullLoggerFactory"/>.
         /// </summary>
         public static readonly NullLoggerFactory Instance = new NullLoggerFactory();
 

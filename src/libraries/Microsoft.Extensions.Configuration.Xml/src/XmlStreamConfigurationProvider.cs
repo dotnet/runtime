@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Configuration.Xml
         /// </summary>
         /// <param name="stream">The stream of INI data.</param>
         /// <param name="decryptor">The <see cref="XmlDocumentDecryptor"/> to use to decrypt.</param>
-        /// <returns></returns>
+        /// <returns>The <see cref="IDictionary{String, String}"/> which was read from the stream.</returns>
         public static IDictionary<string, string> Read(Stream stream, XmlDocumentDecryptor decryptor)
         {
             var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Configuration.Xml
 
                 SkipUntilRootElement(reader);
 
-                // We process the root element individually since it doesn't contribute to prefix 
+                // We process the root element individually since it doesn't contribute to prefix
                 ProcessAttributes(reader, prefixStack, data, AddNamePrefix);
                 ProcessAttributes(reader, prefixStack, data, AddAttributePair);
 
