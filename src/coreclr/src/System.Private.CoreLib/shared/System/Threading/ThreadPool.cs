@@ -770,11 +770,12 @@ namespace System.Threading
     internal abstract class QueueUserWorkItemCallbackBase : IThreadPoolWorkItem
     {
 #if DEBUG
-        private volatile int executed;
+        private int executed;
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1821:RemoveEmptyFinalizers")]
         ~QueueUserWorkItemCallbackBase()
         {
+            Interlocked.MemoryBarrier(); // ensure that an old cached value is not read below
             Debug.Assert(
                 executed != 0, "A QueueUserWorkItemCallback was never called!");
         }
