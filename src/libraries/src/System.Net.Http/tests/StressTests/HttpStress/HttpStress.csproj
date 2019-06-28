@@ -6,4 +6,8 @@
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine.Experimental" Version="0.3.0-alpha.19317.1" />
+  </ItemGroup>
+
 </Project>
