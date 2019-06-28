@@ -639,6 +639,7 @@ namespace System.Net.Http
             }
 
             var protocolError = (Http2ProtocolErrorCode)BinaryPrimitives.ReadInt32BigEndian(_incomingBuffer.ActiveSpan);
+            if (NetEventSource.IsEnabled) Trace(frameHeader.StreamId, $"{nameof(protocolError)}={protocolError}");
 
             _incomingBuffer.Discard(frameHeader.Length);
 
@@ -763,8 +764,8 @@ namespace System.Net.Http
 
         private async Task SendSettingsAckAsync()
         {
-            if (NetEventSource.IsEnabled) Trace("");
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size).ConfigureAwait(false);
+            if (NetEventSource.IsEnabled) Trace("Started writing.");
 
             FrameHeader frameHeader = new FrameHeader(0, FrameType.Settings, FrameFlags.Ack, 0);
             frameHeader.WriteTo(writeBuffer);
@@ -774,10 +775,10 @@ namespace System.Net.Http
 
         private async Task SendPingAckAsync(ReadOnlyMemory<byte> pingContent)
         {
-            if (NetEventSource.IsEnabled) Trace($"{nameof(pingContent.Length)}={pingContent.Length}");
             Debug.Assert(pingContent.Length == FrameHeader.PingLength);
 
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size + FrameHeader.PingLength).ConfigureAwait(false);
+            if (NetEventSource.IsEnabled) Trace("Started writing.");
 
             FrameHeader frameHeader = new FrameHeader(FrameHeader.PingLength, FrameType.Ping, FrameFlags.Ack, 0);
             frameHeader.WriteTo(writeBuffer);
@@ -790,8 +791,8 @@ namespace System.Net.Http
 
         private async Task SendRstStreamAsync(int streamId, Http2ProtocolErrorCode errorCode)
         {
-            if (NetEventSource.IsEnabled) Trace(streamId, $"{nameof(errorCode)}={errorCode}");
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size + FrameHeader.RstStreamLength).ConfigureAwait(false);
+            if (NetEventSource.IsEnabled) Trace(streamId, $"Started writing. {nameof(errorCode)}={errorCode}");
 
             FrameHeader frameHeader = new FrameHeader(FrameHeader.RstStreamLength, FrameType.RstStream, FrameFlags.None, streamId);
             frameHeader.WriteTo(writeBuffer);
@@ -1022,7 +1023,6 @@ namespace System.Net.Http
 
         private async ValueTask<Http2Stream> SendHeadersAsync(HttpRequestMessage request, CancellationToken cancellationToken, bool mustFlush = false)
         {
-            if (NetEventSource.IsEnabled) Trace("");
             try
             {
                 // Ensure we don't exceed the max concurrent streams setting.
@@ -1072,6 +1072,7 @@ namespace System.Net.Http
 
                 // Note, HEADERS and CONTINUATION frames must be together, so hold the writer lock across sending all of them.
                 Memory<byte> writeBuffer = await StartWriteAsync(totalSize).ConfigureAwait(false);
+                if (NetEventSource.IsEnabled) Trace(streamId, $"Started writing. {nameof(flags)}={flags}, {nameof(totalSize)}={totalSize}");
 
                 FrameHeader frameHeader = new FrameHeader(current.Length, FrameType.Headers, flags, streamId);
                 frameHeader.WriteTo(writeBuffer.Span);
@@ -1121,7 +1122,6 @@ namespace System.Net.Http
 
         private async Task SendStreamDataAsync(int streamId, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
         {
-            if (NetEventSource.IsEnabled) Trace(streamId, $"{nameof(buffer.Length)}={buffer.Length}");
             ReadOnlyMemory<byte> remaining = buffer;
 
             while (remaining.Length > 0)
@@ -1140,6 +1140,7 @@ namespace System.Net.Http
                 try
                 {
                     writeBuffer = await StartWriteAsync(FrameHeader.Size + current.Length, cancellationToken).ConfigureAwait(false);
+                    if (NetEventSource.IsEnabled) Trace(streamId, $"Started writing. {nameof(writeBuffer.Length)}={writeBuffer.Length}");
                 }
                 catch (OperationCanceledException)
                 {
@@ -1162,8 +1163,8 @@ namespace System.Net.Http
 
         private async Task SendEndStreamAsync(int streamId)
         {
-            if (NetEventSource.IsEnabled) Trace(streamId, "");
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size).ConfigureAwait(false);
+            if (NetEventSource.IsEnabled) Trace(streamId, "Started writing.");
 
             FrameHeader frameHeader = new FrameHeader(0, FrameType.Data, FrameFlags.EndStream, streamId);
             frameHeader.WriteTo(writeBuffer);
@@ -1173,11 +1174,11 @@ namespace System.Net.Http
 
         private async Task SendWindowUpdateAsync(int streamId, int amount)
         {
-            if (NetEventSource.IsEnabled) Trace(streamId, $"{nameof(amount)}={amount}");
             Debug.Assert(amount > 0);
 
             // We update both the connection-level and stream-level windows at the same time
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size + FrameHeader.WindowUpdateLength).ConfigureAwait(false);
+            if (NetEventSource.IsEnabled) Trace(streamId, $"Started writing. {nameof(amount)}={amount}");
 
             FrameHeader frameHeader = new FrameHeader(FrameHeader.WindowUpdateLength, FrameType.WindowUpdate, FrameFlags.None, streamId);
             frameHeader.WriteTo(writeBuffer);
@@ -1270,11 +1271,11 @@ namespace System.Net.Http
 
         private void AbortStreams(int lastValidStream, Exception abortException)
         {
-            if (NetEventSource.IsEnabled) Trace($"{nameof(lastValidStream)}={lastValidStream}, {nameof(abortException)}={lastValidStream}={abortException}");
-
             bool shouldInvalidate = false;
             lock (SyncObject)
             {
+                if (NetEventSource.IsEnabled) Trace($"{nameof(lastValidStream)}={lastValidStream}, {nameof(abortException)}={lastValidStream}={abortException}");
+
                 if (!_disposed)
                 {
                     shouldInvalidate = true;
@@ -1291,6 +1292,10 @@ namespace System.Net.Http
                         kvp.Value.OnResponseAbort(abortException);
 
                         _httpStreams.Remove(kvp.Value.StreamId);
+                    }
+                    else if (NetEventSource.IsEnabled)
+                    {
+                        Trace($"Found {nameof(streamId)} {streamId} <= {lastValidStream}.");
                     }
                 }
 
