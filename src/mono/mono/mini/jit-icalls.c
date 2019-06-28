@@ -1523,6 +1523,14 @@ mono_throw_method_access (MonoMethod *caller, MonoMethod *callee)
 }
 
 void
+mono_throw_bad_image ()
+{
+	ERROR_DECL (error);
+	mono_error_set_generic_error (error, "System", "BadImageFormatException", "Bad IL format.");
+	mono_error_set_pending_exception (error);
+}
+
+void
 mono_dummy_jit_icall (void)
 {
 }

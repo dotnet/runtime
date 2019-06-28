@@ -1011,6 +1011,7 @@ TESTS_IL_SRC=			\
 	dim-protected-accessibility2.il \
 	dim-reabstraction.il \
 	dim-reabstraction-generics.il \
+	dim-abstractcall.il \
 	twopassvariance.il \
 	tailcall-generic-cast-conservestack-il.il \
 	tailcall-generic-cast-nocrash-il.il \

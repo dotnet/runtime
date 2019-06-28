@@ -219,6 +219,8 @@ G_EXTERN_C double mono_ckfinite (double d);
 
 G_EXTERN_C void mono_throw_method_access (MonoMethod *caller, MonoMethod *callee);
 
+G_EXTERN_C void mono_throw_bad_image (void);
+
 G_EXTERN_C void mono_dummy_jit_icall (void);
 
 #endif /* __MONO_JIT_ICALLS_H__ */

@@ -882,6 +882,15 @@ interp_generate_mae_throw (TransformData *td, MonoMethod *method, MonoMethod *ta
 	td->sp -= 2;
 }
 
+static void
+interp_generate_bie_throw (TransformData *td)
+{
+	MonoJitICallInfo *info = &mono_get_jit_icall_info ()->mono_throw_bad_image;
+
+	interp_add_ins (td, MINT_ICALL_PP_V);
+	td->last_ins->data [0] = get_data_item_index (td, (gpointer)info->func);
+}
+
 /*
  * These are additional locals that can be allocated as we transform the code.
  * They are allocated past the method locals so they are accessed in the same
@@ -1950,9 +1959,12 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 	if (target_method)
 		mono_class_init_internal (target_method->klass);
 
-	if (!is_virtual && target_method && (target_method->flags & METHOD_ATTRIBUTE_ABSTRACT))
-		/* MS.NET seems to silently convert this to a callvirt */
-		is_virtual = TRUE;
+	if (!is_virtual && target_method && (target_method->flags & METHOD_ATTRIBUTE_ABSTRACT)) {
+		if (!mono_class_is_interface (method->klass))
+			interp_generate_bie_throw (td);
+		else
+			is_virtual = TRUE;
+	}
 
 	if (is_virtual && target_method && (!(target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) ||
 		(MONO_METHOD_IS_FINAL (target_method) &&
