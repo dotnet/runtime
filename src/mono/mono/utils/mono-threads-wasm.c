@@ -83,8 +83,6 @@ mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 {
 }
 
-//----
-
 gboolean
 mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 {
@@ -95,7 +93,11 @@ mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 MonoNativeThreadId
 mono_native_thread_id_get (void)
 {
+#ifdef __EMSCRIPTEN_PTHREADS__
+	return pthread_self ();
+#else
 	return (MonoNativeThreadId)1;
+#endif
 }
 
 MONO_API gboolean
@@ -115,11 +117,14 @@ mono_native_thread_set_name (MonoNativeThreadId tid, const char *name)
 gboolean
 mono_native_thread_join (MonoNativeThreadId tid)
 {
-	g_error ("WASM doesn't support threading");
-	return FALSE;
-}
+#ifdef __EMSCRIPTEN_PTHREADS__
+	void *res;
 
-//----
+	return !pthread_join (tid, &res);
+#else
+	g_assert_not_reached ();
+#endif
+}
 
 gboolean
 mono_threads_platform_yield (void)
@@ -130,16 +135,114 @@ mono_threads_platform_yield (void)
 void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
+#ifdef __EMSCRIPTEN_PTHREADS__
+	pthread_attr_t attr;
+	gint res;
+	int tmp;
+
+	*staddr = NULL;
+	*stsize = (size_t)-1;
+
+	res = pthread_attr_init (&attr);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_attr_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	res = pthread_getattr_np (pthread_self (), &attr);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_getattr_np failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	res = pthread_attr_getstack (&attr, (void**)staddr, stsize);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_attr_getstack failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	res = pthread_attr_destroy (&attr);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_attr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	if (*staddr == NULL) {
+		*staddr = (guint8*)wasm_get_stack_base ();
+		*stsize = wasm_get_stack_size ();
+	}
+
+	g_assert (&tmp > *staddr);
+	g_assert (&tmp < (char*)*staddr + *stsize);
+#else
 	*staddr = (guint8*)wasm_get_stack_base ();
 	*stsize = wasm_get_stack_size ();
+#endif
 }
-
 
 gboolean
 mono_thread_platform_create_thread (MonoThreadStart thread_fn, gpointer thread_data, gsize* const stack_size, MonoNativeThreadId *tid)
 {
-	g_warning ("WASM doesn't support threading");
-	return FALSE;
+#ifdef __EMSCRIPTEN_PTHREADS__
+	pthread_attr_t attr;
+	pthread_t thread;
+	gint res;
+	gsize set_stack_size;
+
+	res = pthread_attr_init (&attr);
+	if (res != 0)
+		g_error ("%s: pthread_attr_init failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
+
+#if 0
+	if (stack_size)
+		set_stack_size = *stack_size;
+	else
+		set_stack_size = 0;
+
+#ifdef HAVE_PTHREAD_ATTR_SETSTACKSIZE
+	if (set_stack_size == 0) {
+#if HAVE_VALGRIND_MEMCHECK_H
+		if (RUNNING_ON_VALGRIND)
+			set_stack_size = 1 << 20;
+		else
+			set_stack_size = (SIZEOF_VOID_P / 4) * 1024 * 1024;
+#else
+		set_stack_size = (SIZEOF_VOID_P / 4) * 1024 * 1024;
+#endif
+	}
+
+#ifdef PTHREAD_STACK_MIN
+	if (set_stack_size < PTHREAD_STACK_MIN)
+		set_stack_size = PTHREAD_STACK_MIN;
+#endif
+
+	res = pthread_attr_setstacksize (&attr, set_stack_size);
+	if (res != 0)
+		g_error ("%s: pthread_attr_setstacksize failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
+#endif /* HAVE_PTHREAD_ATTR_SETSTACKSIZE */
+#endif
+
+	/* Actually start the thread */
+	res = pthread_create (&thread, &attr, (gpointer (*)(gpointer)) thread_fn, thread_data);
+	if (res) {
+		res = pthread_attr_destroy (&attr);
+		if (res != 0)
+			g_error ("%s: pthread_attr_destroy failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
+
+		return FALSE;
+	}
+
+	if (tid)
+		*tid = thread;
+
+#if 0
+	if (stack_size) {
+		res = pthread_attr_getstacksize (&attr, stack_size);
+		if (res != 0)
+			g_error ("%s: pthread_attr_getstacksize failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
+	}
+#endif
+
+	res = pthread_attr_destroy (&attr);
+	if (res != 0)
+		g_error ("%s: pthread_attr_destroy failed, error: \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	return TRUE;
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 void mono_threads_platform_init (void)
@@ -149,7 +252,11 @@ void mono_threads_platform_init (void)
 void
 mono_threads_platform_exit (gsize exit_code)
 {
-	g_error ("WASM doesn't support threading");
+#ifdef __EMSCRIPTEN_PTHREADS__
+	pthread_exit ((gpointer) exit_code);
+#else
+	g_assert_not_reached ();
+#endif
 }
 
 gboolean
