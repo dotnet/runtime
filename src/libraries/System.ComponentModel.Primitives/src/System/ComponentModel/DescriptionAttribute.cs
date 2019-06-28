@@ -51,7 +51,7 @@ namespace System.ComponentModel
             return other != null && other.Description == Description;
         }
 
-        public override int GetHashCode() => Description.GetHashCode();
+        public override int GetHashCode() => Description?.GetHashCode() ?? 0;
 
         public override bool IsDefaultAttribute() => Equals(Default);
     }

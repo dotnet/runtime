@@ -198,16 +198,16 @@ namespace System.ComponentModel
             }
 
             CategoryAttribute other = obj as CategoryAttribute;
-            return other != null && Category.Equals(other.Category);
+            return other != null && Category == other.Category;
         }
 
-        public override int GetHashCode() => Category.GetHashCode();
+        public override int GetHashCode() => Category?.GetHashCode() ?? 0;
 
         /// <summary>
         /// Looks up the localized name of a given category.
         /// </summary>
         protected virtual string GetLocalizedString(string value) => SR.GetResourceString("PropertyCategory" + value, null);
 
-        public override bool IsDefaultAttribute() => Category.Equals(Default.Category);
+        public override bool IsDefaultAttribute() => Category == Default.Category;
     }
 }

@@ -12,34 +12,66 @@ namespace System.ComponentModel.Tests
         [Fact]
         public void Ctor_Default()
         {
-            var attribute = new DescriptionAttribute();
-            Assert.Equal(string.Empty, attribute.Description);
+            var attribute = new SubDescriptionAttribute();
+            Assert.Empty(attribute.Description);
+            Assert.Empty(attribute.DescriptionValue);
             Assert.True(attribute.IsDefaultAttribute());
         }
 
         [Theory]
         [InlineData(null, false)]
         [InlineData("", true)]
-        [InlineData("test description", false)]
-        public void Ctor_Description(string description, bool expectedIsDefaultAttribute)
+        [InlineData("description", false)]
+        public void Ctor_String(string description, bool expectedIsDefaultAttribute)
         {
-            var attribute = new DescriptionAttribute(description);
+            var attribute = new SubDescriptionAttribute(description);
             Assert.Equal(description, attribute.Description);
+            Assert.Equal(description, attribute.DescriptionValue);
             Assert.Equal(expectedIsDefaultAttribute, attribute.IsDefaultAttribute());
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("descriptionValue")]
+        public void DescriptionValue_Set_GetReturnsExpected(string value)
+        {
+            var attribute = new SubDescriptionAttribute("Name")
+            {
+                DescriptionValue = value
+            };
+            Assert.Same(value, attribute.Description);
+            Assert.Same(value, attribute.DescriptionValue);
+
+            // Set same.
+            Assert.Same(value, attribute.Description);
+            Assert.Same(value, attribute.DescriptionValue);
         }
 
         public static IEnumerable<object[]> Equals_TestData()
         {
-            yield return new object[] { new DescriptionAttribute("description"), new DescriptionAttribute("description"), true };
-            yield return new object[] { new DescriptionAttribute("description"), new DescriptionAttribute(""), false };
-            yield return new object[] { DescriptionAttribute.Default, DescriptionAttribute.Default, true };
+            var attribute = new DescriptionAttribute("description");
+            yield return new object[] { attribute, attribute, true };
+            yield return new object[] { attribute, new DescriptionAttribute("description"), true };
+            yield return new object[] { attribute, new DescriptionAttribute("description2"), false };
+            yield return new object[] { attribute, new DescriptionAttribute(""), false };
+            // .NET Framework throws a NullReferenceException.
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { attribute, new DescriptionAttribute(null), false };
+            }
 
-            yield return new object[] { new DescriptionAttribute(null), new DescriptionAttribute(null), true };
-            yield return new object[] { new DescriptionAttribute("description"), new DescriptionAttribute(null), false };
-            yield return new object[] { new DescriptionAttribute(null), new DescriptionAttribute("description"), false };
+            // .NET Framework throws a NullReferenceException.
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { new DescriptionAttribute(null), new DescriptionAttribute(null), true };
+                yield return new object[] { new DescriptionAttribute(null), new DescriptionAttribute("description"), false };
+                yield return new object[] { new DescriptionAttribute(null), new DescriptionAttribute(""), false };
+            }
 
             yield return new object[] { new DescriptionAttribute("description"), new object(), false };
             yield return new object[] { new DescriptionAttribute("description"), null, false };
+            yield return new object[] { new DescriptionAttribute(null), new object(), false };
             yield return new object[] { new DescriptionAttribute(null), null, false };
         }
 
@@ -48,23 +80,57 @@ namespace System.ComponentModel.Tests
         public void Equals_Object_ReturnsExpected(DescriptionAttribute attribute, object other, bool expected)
         {
             Assert.Equal(expected, attribute.Equals(other));
-            if (other is DescriptionAttribute otherAttribute && otherAttribute.Description != null && attribute.Description != null)
+            if (other is DescriptionAttribute otherAttribute)
             {
                 Assert.Equal(expected, attribute.GetHashCode().Equals(other.GetHashCode()));
             }
         }
 
         [Fact]
-        public void GetHashCode_NullDescription_ThrowsNullReferenceException()
+        public void IsDefaultAttribute_Get_CallsEquals()
         {
-            var attribute = new DescriptionAttribute(null);
-            Assert.Throws<NullReferenceException>(() => attribute.GetHashCode());
+            var attribute = new AlwaysEqualAttribute("description");
+            Assert.True(attribute.IsDefaultAttribute());
         }
 
         [Fact]
-        public void DefaultDescriptionAttribute_GetDescription_ReturnsEmptyString()
+        public void Default_Get_ReturnsExpected()
         {
-            Assert.Empty(DescriptionAttribute.Default.Description);
+            DescriptionAttribute attribute = DescriptionAttribute.Default;
+            Assert.Same(attribute, DescriptionAttribute.Default);
+            Assert.Empty(attribute.Description);
+        }
+
+        private class SubDescriptionAttribute : DescriptionAttribute
+        {
+            public SubDescriptionAttribute() : base()
+            {
+            }
+
+            public SubDescriptionAttribute(string description) : base(description)
+            {
+            }
+
+            public new string DescriptionValue
+            {
+                get => base.DescriptionValue;
+                set => base.DescriptionValue = value;
+            }
+        }
+
+        private class AlwaysEqualAttribute : DescriptionAttribute
+        {
+            public AlwaysEqualAttribute() : base()
+            {
+            }
+
+            public AlwaysEqualAttribute(string description) : base(description)
+            {
+            }
+
+            public override bool Equals(object obj) => true;
+
+            public override int GetHashCode() => base.GetHashCode();
         }
     }
 }

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
@@ -48,9 +47,13 @@ namespace System.ComponentModel
         public InvalidEnumArgumentException(string argumentName, int invalidValue, Type enumClass)
             : base(SR.Format(SR.InvalidEnumArgument,
                                 argumentName,
-                                invalidValue.ToString(CultureInfo.CurrentCulture),
-                                enumClass.Name), argumentName)
+                                invalidValue,
+                                enumClass?.Name), argumentName)
         {
+            if (enumClass == null)
+            {
+                throw new ArgumentNullException(nameof(enumClass));
+            }
         }
 
         /// <summary>

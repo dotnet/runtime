@@ -83,9 +83,9 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public void Ctor_NullEnumClass_ThrowsNullReferenceException()
+        public void Ctor_NullEnumClass_ThrowsArgumentNulException()
         {
-            Assert.Throws<NullReferenceException>(() => new InvalidEnumArgumentException("argumentName", 1, null));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("enumClass", () => new InvalidEnumArgumentException("argumentName", 1, null));
         }
 
         [Fact]
