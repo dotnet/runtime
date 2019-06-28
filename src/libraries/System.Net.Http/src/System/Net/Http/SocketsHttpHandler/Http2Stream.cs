@@ -452,6 +452,8 @@ namespace System.Net.Http
                 bool signalWaiter;
                 lock (SyncObject)
                 {
+                    if (NetEventSource.IsEnabled) Trace($"{nameof(abortException)}={abortException}");
+
                     if (_disposed)
                     {
                         return;
