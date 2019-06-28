@@ -8,30 +8,30 @@
   <!--Package versions-->
   <PropertyGroup>
     <!-- corefx -->
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview8.19327.9</MicrosoftNETCorePlatformsPackageVersion>
-    <MicrosoftNETCoreTargetsPackageVersion>3.0.0-preview8.19327.9</MicrosoftNETCoreTargetsPackageVersion>
-    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview8.19327.9</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
-    <MicrosoftWin32RegistryVersion>4.6.0-preview8.19327.9</MicrosoftWin32RegistryVersion>
-    <MicrosoftWin32SystemEventsVersion>4.6.0-preview8.19327.9</MicrosoftWin32SystemEventsVersion>
-    <MicrosoftWindowsCompatibilityPackageVersion>3.0.0-preview8.19327.9</MicrosoftWindowsCompatibilityPackageVersion>
-    <SystemCodeDomVersion>4.6.0-preview8.19327.9</SystemCodeDomVersion>
-    <SystemConfigurationConfigurationManagerVersion>4.6.0-preview8.19327.9</SystemConfigurationConfigurationManagerVersion>
-    <SystemDiagnosticsEventLogVersion>4.6.0-preview8.19327.9</SystemDiagnosticsEventLogVersion>
-    <SystemDirectoryServicesVersion>4.6.0-preview8.19327.9</SystemDirectoryServicesVersion>
-    <SystemDrawingCommonVersion>4.6.0-preview8.19327.9</SystemDrawingCommonVersion>
-    <SystemIOFileSystemAccessControlVersion>4.6.0-preview8.19327.9</SystemIOFileSystemAccessControlVersion>
-    <SystemIOPackagingVersion>4.6.0-preview8.19327.9</SystemIOPackagingVersion>
-    <SystemResourcesExtensionsPackageVersion>4.6.0-preview8.19327.9</SystemResourcesExtensionsPackageVersion>
-    <SystemSecurityAccessControlVersion>4.6.0-preview8.19327.9</SystemSecurityAccessControlVersion>
-    <SystemSecurityCryptographyCngVersion>4.6.0-preview8.19327.9</SystemSecurityCryptographyCngVersion>
-    <SystemSecurityCryptographyPkcsVersion>4.6.0-preview8.19327.9</SystemSecurityCryptographyPkcsVersion>
-    <SystemSecurityCryptographyProtectedDataVersion>4.6.0-preview8.19327.9</SystemSecurityCryptographyProtectedDataVersion>
-    <SystemSecurityCryptographyXmlVersion>4.6.0-preview8.19327.9</SystemSecurityCryptographyXmlVersion>
-    <SystemSecurityPermissionsVersion>4.6.0-preview8.19327.9</SystemSecurityPermissionsVersion>
-    <SystemSecurityPrincipalWindowsVersion>4.6.0-preview8.19327.9</SystemSecurityPrincipalWindowsVersion>
-    <SystemTextJsonVersion>4.6.0-preview8.19327.9</SystemTextJsonVersion>
-    <SystemThreadingAccessControlVersion>4.6.0-preview8.19327.9</SystemThreadingAccessControlVersion>
-    <SystemWindowsExtensionsPackageVersion>4.6.0-preview8.19327.9</SystemWindowsExtensionsPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview8.19328.1</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCoreTargetsPackageVersion>3.0.0-preview8.19328.1</MicrosoftNETCoreTargetsPackageVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppPackageVersion>4.6.0-preview8.19328.1</MicrosoftPrivateCoreFxNETCoreAppPackageVersion>
+    <MicrosoftWin32RegistryVersion>4.6.0-preview8.19328.1</MicrosoftWin32RegistryVersion>
+    <MicrosoftWin32SystemEventsVersion>4.6.0-preview8.19328.1</MicrosoftWin32SystemEventsVersion>
+    <MicrosoftWindowsCompatibilityPackageVersion>3.0.0-preview8.19328.1</MicrosoftWindowsCompatibilityPackageVersion>
+    <SystemCodeDomVersion>4.6.0-preview8.19328.1</SystemCodeDomVersion>
+    <SystemConfigurationConfigurationManagerVersion>4.6.0-preview8.19328.1</SystemConfigurationConfigurationManagerVersion>
+    <SystemDiagnosticsEventLogVersion>4.6.0-preview8.19328.1</SystemDiagnosticsEventLogVersion>
+    <SystemDirectoryServicesVersion>4.6.0-preview8.19328.1</SystemDirectoryServicesVersion>
+    <SystemDrawingCommonVersion>4.6.0-preview8.19328.1</SystemDrawingCommonVersion>
+    <SystemIOFileSystemAccessControlVersion>4.6.0-preview8.19328.1</SystemIOFileSystemAccessControlVersion>
+    <SystemIOPackagingVersion>4.6.0-preview8.19328.1</SystemIOPackagingVersion>
+    <SystemResourcesExtensionsPackageVersion>4.6.0-preview8.19328.1</SystemResourcesExtensionsPackageVersion>
+    <SystemSecurityAccessControlVersion>4.6.0-preview8.19328.1</SystemSecurityAccessControlVersion>
+    <SystemSecurityCryptographyCngVersion>4.6.0-preview8.19328.1</SystemSecurityCryptographyCngVersion>
+    <SystemSecurityCryptographyPkcsVersion>4.6.0-preview8.19328.1</SystemSecurityCryptographyPkcsVersion>
+    <SystemSecurityCryptographyProtectedDataVersion>4.6.0-preview8.19328.1</SystemSecurityCryptographyProtectedDataVersion>
+    <SystemSecurityCryptographyXmlVersion>4.6.0-preview8.19328.1</SystemSecurityCryptographyXmlVersion>
+    <SystemSecurityPermissionsVersion>4.6.0-preview8.19328.1</SystemSecurityPermissionsVersion>
+    <SystemSecurityPrincipalWindowsVersion>4.6.0-preview8.19328.1</SystemSecurityPrincipalWindowsVersion>
+    <SystemTextJsonVersion>4.6.0-preview8.19328.1</SystemTextJsonVersion>
+    <SystemThreadingAccessControlVersion>4.6.0-preview8.19328.1</SystemThreadingAccessControlVersion>
+    <SystemWindowsExtensionsPackageVersion>4.6.0-preview8.19328.1</SystemWindowsExtensionsPackageVersion>
     <!-- standard -->
     <NETStandardLibraryPackageVersion>2.1.0-prerelease.19328.3</NETStandardLibraryPackageVersion>
     <!-- coreclr -->
