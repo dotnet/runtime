@@ -531,14 +531,6 @@
 # https://github.com/mono/mono/issues/15077
 -nomethod System.Reflection.Tests.GetTypeTests.GetType
 
-# Expects ReflectionTypeLoadException but TypeLoadException is thrown
-# https://github.com/mono/mono/issues/15078
--nomethod System.Reflection.Tests.AssemblyNetCoreAppTests.AssemblyGetForwardedTypesLoadFailure
-
-# Extra types in the type array are expected. 
-# https://github.com/mono/mono/issues/15079
--nomethod System.Reflection.Tests.AssemblyNetCoreAppTests.AssemblyGetForwardedTypes
-
 # Assertion expects false, but we return true
 # https://github.com/mono/mono/issues/15080
 -nomethod System.Reflection.Tests.TypeInfoTests.IsAssignableFrom

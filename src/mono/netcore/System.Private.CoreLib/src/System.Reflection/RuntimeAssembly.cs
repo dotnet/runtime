@@ -137,7 +137,43 @@ namespace System.Reflection
 		public override extern Type[] GetExportedTypes ();
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
-		public override extern Type[] GetForwardedTypes ();
+		internal extern Type[] GetTopLevelForwardedTypes ();
+
+		public override Type[] GetForwardedTypes () {
+			Type[] topLevelTypes = GetTopLevelForwardedTypes ();
+			List<Type> forwardedTypes = new List<Type> (topLevelTypes);
+			List<Exception> exceptions = new List<Exception> ();
+
+			foreach (Type t in topLevelTypes)
+				AddPublicNestedTypes (t, forwardedTypes, exceptions);
+
+			if (exceptions.Count > 0) {
+				forwardedTypes.AddRange (new Type [exceptions.Count]); // add one null Type for each exception
+				exceptions.InsertRange (0, new Exception [forwardedTypes.Count]); // align the Exceptions with the null Types
+				throw new ReflectionTypeLoadException (forwardedTypes.ToArray (), exceptions.ToArray ());
+			}
+
+			return forwardedTypes.ToArray ();
+		}
+
+		private static void AddPublicNestedTypes (Type type, List<Type> types, List<Exception> exceptions)
+		{
+			Type[] nestedTypes;
+
+			try {
+				nestedTypes = type.GetNestedTypes (BindingFlags.Public);
+			} 
+			catch (FileLoadException e) { exceptions.Add (e); return; }
+			catch (FileNotFoundException e) { exceptions.Add (e); return; }
+			catch (TypeLoadException e) { exceptions.Add (e); return; }
+			catch (IOException e) { exceptions.Add (e); return; }
+			catch (UnauthorizedAccessException e) { exceptions.Add (e); return; }
+
+			foreach (Type nestedType in nestedTypes) {
+				types.Add(nestedType);
+				AddPublicNestedTypes(nestedType, types, exceptions);
+			}
+		}
 
 		public override ManifestResourceInfo GetManifestResourceInfo (string resourceName)
 		{
