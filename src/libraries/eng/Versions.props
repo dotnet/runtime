@@ -25,6 +25,7 @@
     <WindowsCoreFxOptimizationDataPackageId>optimization.windows_nt-x64.ibc.corefx</WindowsCoreFxOptimizationDataPackageId>
     <LinuxCoreFxOptimizationDataPackageId>optimization.linux-x64.ibc.corefx</LinuxCoreFxOptimizationDataPackageId>
     <MicrosoftDotNetUapTestToolsPackageId>microsoft.dotnet.uap.testtools</MicrosoftDotNetUapTestToolsPackageId>
+    <MicrosoftPrivateIntellisensePackageId>microsoft.private.intellisense</MicrosoftPrivateIntellisensePackageId>
   </PropertyGroup>
   <PropertyGroup>
     <!-- Arcade dependencies -->
