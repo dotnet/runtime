@@ -13,15 +13,17 @@ namespace System.ComponentModel.Tests
         public void Ctor_Default()
         {
             var attribute = new DesignerCategoryAttribute();
-            Assert.Equal(string.Empty, attribute.Category);
+            Assert.Empty(attribute.Category);
             Assert.True(attribute.IsDefaultAttribute());
             Assert.Equal("System.ComponentModel.DesignerCategoryAttribute", attribute.TypeId);
         }
 
         [Theory]
+        [InlineData(null, false, "System.ComponentModel.DesignerCategoryAttribute")]
         [InlineData("", true, "System.ComponentModel.DesignerCategoryAttribute")]
-        [InlineData("test category", false, "System.ComponentModel.DesignerCategoryAttributetest category")]
-        public void Ctor_Category(string category, bool expectedIsDefaultAttribute, string expectedTypeId)
+        [InlineData("category", false, "System.ComponentModel.DesignerCategoryAttributecategory")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws a NullReferenceException")]
+        public void Ctor_String(string category, bool expectedIsDefaultAttribute, string expectedTypeId)
         {
             var attribute = new DesignerCategoryAttribute(category);
             Assert.Equal(category, attribute.Category);
@@ -29,27 +31,30 @@ namespace System.ComponentModel.Tests
             Assert.Equal(expectedTypeId, attribute.TypeId);
         }
 
-        [Fact]
-        public void IsDefaultAttribute_NullCategory_ThrowsNullReferenceException()
-        {
-            var attribute = new CategoryAttribute(null);
-            Assert.Null(attribute.Category);
-            Assert.Equal(typeof(CategoryAttribute), attribute.TypeId);
-            Assert.Throws<NullReferenceException>(() => attribute.IsDefaultAttribute());
-        }
-
         public static IEnumerable<object[]> Equals_TestData()
         {
-            yield return new object[] { new DesignerCategoryAttribute("category"), new DesignerCategoryAttribute("category"), true };
-            yield return new object[] { new DesignerCategoryAttribute("category"), new DesignerCategoryAttribute(""), false };
-            yield return new object[] { DesignerCategoryAttribute.Default, DesignerCategoryAttribute.Default, true };
+            var attribute = new DesignerCategoryAttribute("category");
+            yield return new object[] { attribute, attribute, true };
+            yield return new object[] { attribute, new DesignerCategoryAttribute("category"), true };
+            yield return new object[] { attribute, new DesignerCategoryAttribute("category2"), false };
+            yield return new object[] { attribute, new DesignerCategoryAttribute(string.Empty), false };
+            // .NET Framework throws a NullReferenceException.
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { attribute, new DesignerCategoryAttribute(null), false };
+            }
 
-            yield return new object[] { new DesignerCategoryAttribute(null), new DesignerCategoryAttribute(null), true };
-            yield return new object[] { new DesignerCategoryAttribute("category"), new DesignerCategoryAttribute(null), false };
-            yield return new object[] { new DesignerCategoryAttribute(null), new DesignerCategoryAttribute("category"), false };
+            // .NET Framework throws a NullReferenceException.
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { new DesignerCategoryAttribute(null), new DesignerCategoryAttribute(null), true };
+                yield return new object[] { new DesignerCategoryAttribute(null), new DesignerCategoryAttribute("category"), false };
+                yield return new object[] { new DesignerCategoryAttribute(null), new DesignerCategoryAttribute(string.Empty), false };
+            }
 
             yield return new object[] { new DesignerCategoryAttribute("category"), new object(), false };
             yield return new object[] { new DesignerCategoryAttribute("category"), null, false };
+            yield return new object[] { new DesignerCategoryAttribute(null), new object(), false };
             yield return new object[] { new DesignerCategoryAttribute(null), null, false };
         }
 
@@ -58,31 +63,26 @@ namespace System.ComponentModel.Tests
         public void Equals_Object_ReturnsExpected(DesignerCategoryAttribute attribute, object other, bool expected)
         {
             Assert.Equal(expected, attribute.Equals(other));
-            if (other is DesignerCategoryAttribute otherAttribute && otherAttribute.Category != null && attribute.Category != null)
+            if (other is DesignerCategoryAttribute otherAttribute)
             {
                 Assert.Equal(expected, attribute.GetHashCode().Equals(other.GetHashCode()));
             }
         }
 
-        [Fact]
-        public void GetHashCode_NullCategory_ThrowsNullReferenceException()
+        public static IEnumerable<object[]> Properties_TestData()
         {
-            var attribute = new DesignerCategoryAttribute(null);
-            Assert.Throws<NullReferenceException>(() => attribute.GetHashCode());
-        }
-
-        public static IEnumerable<object[]> DefaultCategories_TestData()
-        {
-            yield return new object[] { DesignerCategoryAttribute.Component, "Component" };
-            yield return new object[] { DesignerCategoryAttribute.Default, string.Empty };
-            yield return new object[] { DesignerCategoryAttribute.Form, "Form" };
-            yield return new object[] { DesignerCategoryAttribute.Generic, "Designer" };
+            yield return new object[] { (Func<DesignerCategoryAttribute>)(() => DesignerCategoryAttribute.Component), "Component" };
+            yield return new object[] { (Func<DesignerCategoryAttribute>)(() => DesignerCategoryAttribute.Default), string.Empty };
+            yield return new object[] { (Func<DesignerCategoryAttribute>)(() => DesignerCategoryAttribute.Form), "Form" };
+            yield return new object[] { (Func<DesignerCategoryAttribute>)(() => DesignerCategoryAttribute.Generic), "Designer" };
         }
 
         [Theory]
-        [MemberData(nameof(DefaultCategories_TestData))]
-        public void DefaultDesignerCategoryAttribute_GetCategory_ReturnsEmptyString(DesignerCategoryAttribute attribute, string expectedCategory)
+        [MemberData(nameof(Properties_TestData))]
+        public void Properties_Get_ReturnsExpected(Func<DesignerCategoryAttribute> attributeThunk, string expectedCategory)
         {
+            DesignerCategoryAttribute attribute = attributeThunk();
+            Assert.Same(attribute, attributeThunk());
             Assert.Equal(expectedCategory, attribute.Category);
         }
     }

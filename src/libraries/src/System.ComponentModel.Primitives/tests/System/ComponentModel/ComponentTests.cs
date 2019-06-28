@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Reflection;
 using Xunit;
 
@@ -10,61 +11,88 @@ namespace System.ComponentModel.Tests
     public class ComponentTests
     {
         [Fact]
-        public void CanRaiseEvents_Get_ReturnsTrueByDefault()
+        public void Ctor_Default()
         {
             var component = new SubComponent();
-            Assert.True(component.GetCanRaiseEvents());
-        }
-
-        [Fact]
-        public void Events_Get_ReturnsSameInstance()
-        {
-            var component = new SubComponent();
-            Assert.Same(component.GetEvents(), component.GetEvents());
-        }
-
-        [Fact]
-        public void Site_Set_GetReturnsExpected()
-        {
-            var component = new SubComponent();
-            Assert.Null(component.Site);
-
-            var site = new MockSite();
-            component.Site = site;
-            Assert.Same(site, component.Site);
-        }
-
-        [Fact]
-        public void Container_Set_GetReturnsExpected()
-        {
-            var component = new SubComponent();
+            Assert.True(component.CanRaiseEvents);
             Assert.Null(component.Container);
+            Assert.False(component.DesignMode);
+            Assert.Same(component.Events, component.Events);
+            Assert.Null(component.Site);
+        }
 
-            var site = new MockSite { Container = new Container() };
-            component.Site = site;
-            Assert.Same(site.Container, component.Container);
+        public static IEnumerable<object[]> Container_Get_TestData()
+        {
+            yield return new object[] { new Container() };
+            yield return new object[] { null };
+        }
+
+        [Theory]
+        [MemberData(nameof(Container_Get_TestData))]
+        public void Container_GetWithSite_ReturnsExpected(Container result)
+        {
+            var site = new MockSite
+            {
+                Container = result
+            };
+            var component = new Component
+            {
+                Site = site
+            };
+            Assert.Same(result, component.Container);
         }
 
         [Fact]
-        public void DesignMode_Set_GetReturnsExpected()
+        public void DesignMode_GetWithCustomSite_ReturnsNull()
         {
-            var component = new SubComponent();
-            Assert.False(component.GetDesignMode());
+            // DesignMode uses the private _site field instead of the Site property.
+            var component = new DifferentSiteComponent();
+            Assert.Null(component.Container);
+        }
 
-            var site = new MockSite { DesignMode = true };
-            component.Site = site;
-            Assert.True(component.GetDesignMode());
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void DesignMode_GetWithSite_ReturnsExpected(bool result)
+        {
+            var site = new MockSite
+            {
+                DesignMode = result
+            };
+            var component = new SubComponent
+            {
+                Site = site
+            };
+            Assert.Equal(result, component.DesignMode);
         }
 
         [Fact]
-        public void GetServiceType_CustomSite_ReturnsExpected()
+        public void DesignMode_GetWithCustomSite_ReturnsFalse()
         {
-            var component = new SubComponent();
-            Assert.Null(component.GetServiceInternal(typeof(int)));
+            // DesignMode uses the private _site field instead of the Site property.
+            var component = new DifferentSiteComponent();
+            Assert.False(component.DesignMode);
+        }
 
-            var site = new MockSite { ServiceType = typeof(bool) };
-            component.Site = site;
-            Assert.Equal(typeof(bool), component.GetServiceInternal(typeof(int)));
+        public static IEnumerable<object[]> Site_Set_TestData()
+        {
+            yield return new object[] { new MockSite() };
+            yield return new object[] { null };
+        }
+
+        [Theory]
+        [MemberData(nameof(Site_Set_TestData))]
+        public void Site_Set_GetReturnsExpected(ISite value)
+        {
+            var component = new Component
+            {
+                Site = value
+            };
+            Assert.Same(value, component.Site);
+
+            // Set same.
+            component.Site = value;
+            Assert.Same(value, component.Site);
         }
 
         [Fact]
@@ -72,115 +100,211 @@ namespace System.ComponentModel.Tests
         {
             var component = new SubComponent();
             component.Dispose();
+            Assert.Null(component.Site);
+
             component.Dispose();
+            Assert.Null(component.Site);
         }
 
         [Fact]
         public void Dispose_NullSiteContainer_Success()
         {
-            var component = new SubComponent()
+            var site = new MockSite
             {
-                Site = new MockSite { Container = null }
+                Container = null
+            };
+            var component = new SubComponent
+            {
+                Site = site
             };
             component.Dispose();
+            Assert.Same(site, component.Site);
+
             component.Dispose();
+            Assert.Same(site, component.Site);
         }
 
         [Fact]
         public void Dispose_NonNullSiteContainer_RemovesComponentFromContainer()
         {
-            var component = new SubComponent()
+            var site = new MockSite
             {
-                Site = new MockSite { Container = new Container() }
+                Container = new Container()
+            };
+            var component = new SubComponent
+            {
+                Site = site
             };
 
             component.Dispose();
             Assert.Null(component.Site);
 
             component.Dispose();
+            Assert.Null(component.Site);
         }
 
         [Fact]
-        public void Dispose_HasDisposedEvent_InvokesEvent()
+        public void Dispose_InvokeWithDisposed_CallsHandler()
         {
             var component = new SubComponent();
-            component.Disposed += Component_Disposed;
+            int callCount = 0;
+            EventHandler handler = (sender, e) =>
+            {
+                Assert.Same(component, sender);
+                Assert.Same(EventArgs.Empty, e);
+                callCount++;
+            };
+            component.Disposed += handler;
 
             component.Dispose();
-            Assert.True(InvokedDisposed);
+            Assert.Equal(1, callCount);
 
-            InvokedDisposed = false;
             component.Dispose();
-            Assert.True(InvokedDisposed);
+            Assert.Equal(2, callCount);
 
-            component.Disposed -= Component_Disposed;
-            InvokedDisposed = false;
+            // Remove handler.
+            component.Disposed -= handler;
             component.Dispose();
-            Assert.False(InvokedDisposed);
+            Assert.Equal(2, callCount);
         }
 
         [Fact]
-        public void Dispose_HasDisposedWithoutEvents_DoesNotnvokesEvent()
+        public void Dispose_InvokeCannotRaiseEvents_DoesNotCallHandler()
         {
-            var component = new SubComponent();
-            component.Disposed += Component_Disposed;
-            component.CanRaiseEventsInternal = false;
+            var component = new NoEventsComponent();
+            int callCount = 0;
+            component.Disposed += (sender, e) => callCount++;
 
             component.Dispose();
-            Assert.False(InvokedDisposed);
+            Assert.Equal(0, callCount);
         }
 
-        [Fact]
-        public void Dispose_NotDisposing_DoesNotInvokeEvent()
+        [Theory]
+        [InlineData(true, 1)]
+        [InlineData(false, 0)]
+        public void Dispose_InvokeBoolWithDisposed_CallsHandlerIfDisposing(bool disposing, int expectedCallCount)
         {
             var component = new SubComponent();
-            component.Disposed += Component_Disposed;
+            int callCount = 0;
+            EventHandler handler = (sender, e) =>
+            {
+                Assert.Same(component, sender);
+                Assert.Same(EventArgs.Empty, e);
+                callCount++;
+            };
+            component.Disposed += handler;
 
-            component.DisposeInternal(false);
-            Assert.False(InvokedDisposed);
+            component.Dispose(disposing);
+            Assert.Equal(expectedCallCount, callCount);
 
-            component.DisposeInternal(true);
-            Assert.True(InvokedDisposed);
+            component.Dispose(disposing);
+            Assert.Equal(expectedCallCount * 2, callCount);
+
+            // Remove handler.
+            component.Disposed -= handler;
+            component.Dispose(disposing);
+            Assert.Equal(expectedCallCount * 2, callCount);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Dispose_InvokeDisposingCannotRaiseEvents_DoesNotCallHandler(bool disposing)
+        {
+            var component = new NoEventsComponent();
+            int callCount = 0;
+            component.Disposed += (sender, e) => callCount++;
+
+            component.Dispose(disposing);
+            Assert.Equal(0, callCount);
         }
 
         [Fact]
         public void Finalize_Invoke_DoesNotCallDisposedEvent()
         {
             var component = new SubComponent();
-            component.Disposed += Component_Disposed;
+            int callCount = 0;
+            component.Disposed += (sender, e) => callCount++;
 
             MethodInfo method = typeof(Component).GetMethod("Finalize", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(method);
             method.Invoke(component, null);
-            Assert.False(InvokedDisposed);
+            Assert.Equal(0, callCount);
         }
-
-        [Fact]
-        public void ToString_HasSite_ReturnsExpected()
+        
+        [Theory]
+        [InlineData(null)]
+        [InlineData(typeof(int))]
+        public void GetService_InvokeWithoutSite_ReturnsNull(Type serviceType)
         {
             var component = new SubComponent();
-            Assert.Equal("System.ComponentModel.Tests.ComponentTests+SubComponent", component.ToString());
-
-            component.Site = new MockSite { Name = "name" };
-            Assert.Equal("name [System.ComponentModel.Tests.ComponentTests+SubComponent]", component.ToString());
+            Assert.Null(component.GetService(serviceType));
         }
 
-        private bool InvokedDisposed { get; set; }
-        private void Component_Disposed(object sender, EventArgs e) => InvokedDisposed = true;
-
-        public class SubComponent : Component
+        [Theory]
+        [InlineData(null, null)]
+        [InlineData(null, typeof(bool))]
+        [InlineData(typeof(int), null)]
+        [InlineData(typeof(int), typeof(bool))]
+        public void GetService_InvokeWithSite_ReturnsExpected(Type serviceType, Type result)
         {
-            public bool GetCanRaiseEvents() => CanRaiseEvents;
+            var site = new MockSite
+            {
+                ServiceType = result
+            };
+            var component = new SubComponent
+            {
+                Site = site
+            };
+            Assert.Same(result, component.GetService(serviceType));
+        }
 
-            public bool? CanRaiseEventsInternal { get; set; }
-            protected override bool CanRaiseEvents => CanRaiseEventsInternal ?? base.CanRaiseEvents;
+        public static IEnumerable<object[]> ToString_TestData()
+        {
+            yield return new object[] { new Component(), "System.ComponentModel.Component" };
+            yield return new object[] { new Component { Site = new MockSite { Name = "name" } }, "name [System.ComponentModel.Component]" };
+            yield return new object[] { new Component { Site = new MockSite { Name = string.Empty } }, " [System.ComponentModel.Component]" };
+            yield return new object[] { new Component { Site = new MockSite { Name = null } }, " [System.ComponentModel.Component]" };
 
-            public bool GetDesignMode() => DesignMode;
-            public EventHandlerList GetEvents() => Events;
+            // ToString uses the private _site field instead of the Site property.
+            yield return new object[] { new DifferentSiteComponent { Site = new MockSite { Name = "Name2" } }, "System.ComponentModel.Tests.ComponentTests+DifferentSiteComponent" };
+        }
 
-            public object GetServiceInternal(Type serviceType) => GetService(serviceType);
+        [Theory]
+        [MemberData(nameof(ToString_TestData))]
+        public void ToString_HasSite_ReturnsExpected(Component component, string expected)
+        {
+            Assert.Equal(expected, component.ToString());
+        }
 
-            public void DisposeInternal(bool disposing) => Dispose(disposing);
+        private class SubComponent : Component
+        {
+            public new bool CanRaiseEvents => base.CanRaiseEvents;
+
+            public new bool DesignMode => base.DesignMode;
+            public new EventHandlerList Events => base.Events;
+
+            public new void Dispose(bool disposing) => base.Dispose(disposing);
+
+            public new object GetService(Type serviceType) => base.GetService(serviceType);
+        }
+
+        private class NoEventsComponent : Component
+        {
+            protected override bool CanRaiseEvents => false;
+
+            public new void Dispose(bool disposing) => base.Dispose(disposing);
+        }
+
+        private class DifferentSiteComponent : Component
+        {
+            public new bool DesignMode => base.DesignMode;
+
+            public override ISite Site
+            {
+                get => new MockSite { Container = new Container(), DesignMode = true, Name = "Name1" };
+                set { }
+            }
         }
     }
 }

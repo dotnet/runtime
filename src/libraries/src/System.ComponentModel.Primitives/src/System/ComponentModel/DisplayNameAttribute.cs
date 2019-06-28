@@ -50,7 +50,7 @@ namespace System.ComponentModel
             return other != null && other.DisplayName == DisplayName;
         }
 
-        public override int GetHashCode() => DisplayName.GetHashCode();
+        public override int GetHashCode() => DisplayName?.GetHashCode() ?? 0;
 
         public override bool IsDefaultAttribute() => Equals(Default);
     }
