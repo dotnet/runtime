@@ -338,7 +338,8 @@ mono_runtime_init_checked (MonoDomain *domain, MonoThreadStartCB start_cb, MonoT
 #endif
 
 #ifdef ENABLE_NETCORE
-	mono_runtime_install_appctx_properties ();
+	if (!mono_runtime_get_no_exec ())
+		mono_runtime_install_appctx_properties ();
 #endif
 
 #ifndef DISABLE_SOCKETS
