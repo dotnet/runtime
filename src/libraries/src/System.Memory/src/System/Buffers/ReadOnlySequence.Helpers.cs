@@ -331,7 +331,7 @@ namespace System.Buffers
             return new SequencePosition(currentSegment, (int)offset);
         }
 
-        private void BoundsCheck(in SequencePosition position)
+        private void BoundsCheck(in SequencePosition position, bool positionIsNotNull)
         {
             uint sliceStartIndex = (uint)GetIndex(position);
 
@@ -354,8 +354,15 @@ namespace System.Buffers
                 // Multi-Segment Sequence
                 // Storing this in a local since it is used twice within InRange()
                 ulong startRange = (ulong)(((ReadOnlySequenceSegment<T>)startObject!).RunningIndex + startIndex);
+                long runningIndex = 0;
+                if (positionIsNotNull)
+                {
+                    Debug.Assert(position.GetObject() != null);
+                    runningIndex = ((ReadOnlySequenceSegment<T>)position.GetObject()!).RunningIndex;
+                }
+
                 if (!InRange(
-                    (ulong)(((ReadOnlySequenceSegment<T>)position.GetObject()!).RunningIndex + sliceStartIndex),
+                    (ulong)(runningIndex + sliceStartIndex),
                     startRange,
                     (ulong)(((ReadOnlySequenceSegment<T>)endObject!).RunningIndex + endIndex)))
                 {
@@ -390,8 +397,18 @@ namespace System.Buffers
                 // This optimization works because we know sliceStartIndex, sliceEndIndex, startIndex, and endIndex are all >= 0
                 Debug.Assert(sliceStartIndex >= 0 && startIndex >= 0 && endIndex >= 0);
 
-                ulong sliceStartRange = (ulong)(((ReadOnlySequenceSegment<T>)sliceStartObject!).RunningIndex + sliceStartIndex);
-                ulong sliceEndRange = (ulong)(((ReadOnlySequenceSegment<T>)sliceEndObject!).RunningIndex + sliceEndIndex);
+                ulong sliceStartRange = sliceStartIndex;
+                ulong sliceEndRange = sliceEndIndex;
+
+                if (sliceStartObject != null)
+                {
+                    sliceStartRange += (ulong)((ReadOnlySequenceSegment<T>)sliceStartObject).RunningIndex;
+                }
+
+                if (sliceEndObject != null)
+                {
+                    sliceEndRange += (ulong)((ReadOnlySequenceSegment<T>)sliceEndObject).RunningIndex;
+                }
 
                 if (sliceStartRange > sliceEndRange)
                     ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
@@ -578,7 +595,7 @@ namespace System.Buffers
 
             // In all other cases, value is valid, and we return true.
 
-            // Equivalent to: return (start <= value && value <= start)
+            // Equivalent to: return (start <= value && value <= end)
             return (value - start) <= (end - start);
         }
 
