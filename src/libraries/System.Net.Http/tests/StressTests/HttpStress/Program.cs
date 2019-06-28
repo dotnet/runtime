@@ -9,7 +9,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using System;
+using System.CommandLine;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -25,40 +27,48 @@ using System.Net;
 
 /// <summary>
 /// Simple HttpClient stress app that launches Kestrel in-proc and runs many concurrent requests of varying types against it.
-/// Usage:
-///     dotnet run -c Release [-t [path]]
-/// e.g.
-///     dotnet run -c Release
-///     dotnet run -c Release -t
-///     dotnet run -c Release -t d:\log.txt
 /// </summary>
 public class Program
 {
     public static void Main(string[] args)
     {
-        // Print out environment information
-        Console.WriteLine("   .NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(object).Assembly.Location)));
-        Console.WriteLine("ASP.NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(WebHost).Assembly.Location)));
+        var cmd = new RootCommand();
+        cmd.AddOption(new Option("-n", "Max number of requests to make concurrently.") { Argument = new Argument<int>("numWorkers", Environment.ProcessorCount) });
+        cmd.AddOption(new Option("-contentLength", "Length of content for request and response bodies.") { Argument = new Argument<int>("numBytes", 1000) });
+        cmd.AddOption(new Option("-http", "HTTP version (1.1 or 2.0)") { Argument = new Argument<Version>("version", HttpVersion.Version20) });
+        cmd.AddOption(new Option("-ops", "Indices of the operations to use") { Argument = new Argument<int[]>("space-delimited indices", null) });
+        cmd.AddOption(new Option("-trace", "Enable Microsoft-System-Net-Http tracing.") { Argument = new Argument<string>("\"console\" or path") });
+        cmd.AddOption(new Option("-aspnetlog", "Enable ASP.NET warning and error logging.") { Argument = new Argument<bool>("enable", false) });
 
-        // Handle command-line arguments.
-        EventListener listener = null;
-        if (args.Length > 0)
+        ParseResult cmdline = cmd.Parse(args);
+        if (cmdline.Errors.Count > 0)
         {
-            switch (args[0])
+            foreach (ParseError error in cmdline.Errors)
             {
-                case "-t":
-                    listener = new HttpEventListener(args.Length > 1 ? new StreamWriter(args[1]) { AutoFlush = true } : null);
-                    break;
+                Console.WriteLine(error);
             }
+            Console.WriteLine();
+            new HelpBuilder(new SystemConsole()).Write(cmd);
+            return;
         }
 
-        // Basic configuration
-        const int ConcurrentRequests = 150;
-        const int AppxContentLength = 1_000;
-        var httpVersion = new Version(2, 0);
-        string content = string.Concat(Enumerable.Repeat("1234567890", AppxContentLength / 10));
-        const int DisplayIntervalMilliseconds = 1000;
+        Run(cmdline.ValueForOption<int>("-n"),
+            cmdline.ValueForOption<int>("-contentLength"),
+            cmdline.ValueForOption<Version>("-http"),
+            cmdline.ValueForOption<int[]>("-ops"),
+            cmdline.HasOption("-trace") ? cmdline.ValueForOption<string>("-trace") : null,
+            cmdline.ValueForOption<bool>("-aspnetlog"));
+    }
 
+    private static void Run(int concurrentRequests, int contentLength, Version httpVersion, int[] opIndices, string logPath, bool aspnetLog)
+    {
+        // Handle command-line arguments.
+        EventListener listener =
+            logPath == null ? null :
+            new HttpEventListener(logPath != "console" ? new StreamWriter(logPath) { AutoFlush = true } : null);
+
+        string content = string.Concat(Enumerable.Repeat("1234567890", contentLength / 10));
+        const int DisplayIntervalMilliseconds = 1000;
         const int HttpsPort = 5001;
         const string LocalhostName = "localhost";
         string serverUri = $"https://{LocalhostName}:{HttpsPort}";
@@ -85,6 +95,61 @@ public class Program
                 {
                     ValidateResponse(m);
                     return await m.Content.ReadAsStringAsync();
+                }
+            }),
+
+            ("GET Headers",
+            async client =>
+            {
+                using (HttpResponseMessage m = await client.GetAsync(serverUri + "/headers"))
+                {
+                    ValidateResponse(m);
+                    return await m.Content.ReadAsStringAsync();
+                }
+            }),
+
+            ("GET Cancellation",
+            async client =>
+            {
+                using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri) { Version = httpVersion })
+                {
+                    var cts = new CancellationTokenSource();
+                    Task<HttpResponseMessage> t = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                    await Task.Delay(1);
+                    cts.Cancel();
+                    try
+                    {
+                        using (HttpResponseMessage m = await t)
+                        {
+                            ValidateResponse(m);
+                            return await m.Content.ReadAsStringAsync();
+                        }
+                    }
+                    catch (OperationCanceledException) { return null; }
+                }
+            }),
+
+            ("GET Aborted",
+            async client =>
+            {
+                try
+                {
+                    await client.GetStringAsync(serverUri + "/abort");
+                    throw new Exception("Completed unexpectedly");
+                }
+                catch (Exception e)
+                {
+                    if (e is HttpRequestException hre && hre.InnerException is IOException)
+                    {
+                        e = hre.InnerException;
+                    }
+
+                    if (e is IOException ioe && e.InnerException?.GetType().Name == "Http2ProtocolException" && e.InnerException.Message.Contains("INTERNAL_ERROR"))
+                    {
+                        return null;
+                    }
+
+                    throw;
                 }
             }),
 
@@ -123,27 +188,6 @@ public class Program
                 }
             }),
 
-            ("GET Cancellation",
-            async client =>
-            {
-                using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri) { Version = httpVersion })
-                {
-                    var cts = new CancellationTokenSource();
-                    Task<HttpResponseMessage> t = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
-                    await Task.Delay(1);
-                    cts.Cancel();
-                    try
-                    {
-                        using (HttpResponseMessage m = await t)
-                        {
-                            ValidateResponse(m);
-                            return await m.Content.ReadAsStringAsync();
-                        }
-                    }
-                    catch (OperationCanceledException) { return null; }
-                }
-            }),
-
             ("POST Cancellation",
             async client =>
             {
@@ -165,12 +209,26 @@ public class Program
                     catch (OperationCanceledException) { return null; }
                 }
             }),
-
         };
+
+        if (opIndices != null)
+        {
+            clientOperations = opIndices.Select(i => clientOperations[i]).ToArray();
+        }
+
+        Console.WriteLine("     .NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(object).Assembly.Location)));
+        Console.WriteLine("  ASP.NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(WebHost).Assembly.Location)));
+        Console.WriteLine("       Tracing: " + (logPath == null ? (object)false : logPath.Length == 0 ? (object)true : logPath));
+        Console.WriteLine("   ASP.NET Log: " + aspnetLog);
+        Console.WriteLine("   Concurrency: " + concurrentRequests);
+        Console.WriteLine("Content Length: " + contentLength);
+        Console.WriteLine("  HTTP Version: " + httpVersion);
+        Console.WriteLine("    Operations: " + string.Join(", ", clientOperations.Select(o => o.Item1)));
+        Console.WriteLine();
 
         // Start the Kestrel web server in-proc.
         Console.WriteLine("Starting server.");
-        WebHost.CreateDefaultBuilder(args)
+        WebHost.CreateDefaultBuilder()
 
             // Use Kestrel, and configure it for HTTPS with a self-signed test certificate.
             .UseKestrel(ko =>
@@ -194,8 +252,8 @@ public class Program
             })
 
             // Output only warnings and errors from Kestrel
-            .ConfigureLogging(log => log.AddFilter("Microsoft.AspNetCore", level => level >= LogLevel.Warning))
-            
+            .ConfigureLogging(log => log.AddFilter("Microsoft.AspNetCore", level => aspnetLog ? level >= LogLevel.Warning : false))
+
             // Set up how each request should be handled by the server.
             .Configure(app =>
             {
@@ -207,12 +265,37 @@ public class Program
                         // Get requests just send back the requested content.
                         await context.Response.WriteAsync(content);
                     });
+                    endpoints.MapGet("/headers", async context =>
+                    {
+                        // Get request but with a bunch of extra headers
+                        for (int i = 0; i < 20; i++)
+                        {
+                            context.Response.Headers.Add(
+                                "CustomHeader" + i,
+                                new StringValues(Enumerable.Range(0, i).Select(id => "value" + id).ToArray()));
+                        }
+                        await context.Response.WriteAsync(content);
+                        if (context.Response.SupportsTrailers())
+                        {
+                            for (int i = 0; i < 10; i++)
+                            {
+                                context.Response.AppendTrailer(
+                                    "CustomTrailer" + i,
+                                    new StringValues(Enumerable.Range(0, i).Select(id => "value" + id).ToArray()));
+                            }
+                        }
+                    });
+                    endpoints.MapGet("/abort", async context =>
+                    {
+                        // Server writes some content, then aborts the connection
+                        await context.Response.WriteAsync(content.Substring(0, content.Length / 2));
+                        context.Abort();
+                    });
                     endpoints.MapPost("/", async context =>
                     {
                         // Post echos back the requested content, first buffering it all server-side, then sending it all back.
                         var s = new MemoryStream();
                         await context.Request.Body.CopyToAsync(s);
-                        await context.Response.StartAsync();
                         s.Position = 0;
                         await s.CopyToAsync(context.Response.Body);
                     });
@@ -227,7 +310,7 @@ public class Program
             .Start();
 
         // Start the client.
-        Console.WriteLine($"Starting {ConcurrentRequests} client workers.");
+        Console.WriteLine($"Starting {concurrentRequests} client workers.");
         var handler = new SocketsHttpHandler()
         {
             SslOptions = new SslClientAuthenticationOptions
@@ -275,10 +358,11 @@ public class Program
                         Console.WriteLine();
                     }
                 }
-            }) { IsBackground = true }.Start();
+            })
+            { IsBackground = true }.Start();
 
             // Start N workers, each of which sits in a loop making requests.
-            Task.WaitAll(Enumerable.Range(0, ConcurrentRequests).Select(taskNum => Task.Run(async () =>
+            Task.WaitAll(Enumerable.Range(0, concurrentRequests).Select(taskNum => Task.Run(async () =>
             {
                 for (long i = taskNum; ; i++)
                 {
