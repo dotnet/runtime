@@ -256,8 +256,6 @@ public:
 
     static HRESULT Setup();
 
-    void *operator new(size_t size);
-
     HRESULT Init();
     HRESULT Cleanup();
 
