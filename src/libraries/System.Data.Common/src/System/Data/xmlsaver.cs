@@ -2221,7 +2221,7 @@ namespace System.Data
                 if (!string.IsNullOrEmpty(result))
                 {
                     // SetAttribute doesn't fail with invalid data, but the final XmlDocument.Save will fail later
-                    // with the ArugmentException when calling the actual XmlWriter.SetAttribute
+                    // with the ArgumentException when calling the actual XmlWriter.SetAttribute
                     root.SetAttribute(Keywords.MSD_DATATYPE, Keywords.MSDNS, result);
                 }
             }

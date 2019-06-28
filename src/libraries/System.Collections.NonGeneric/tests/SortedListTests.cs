@@ -1489,7 +1489,7 @@ namespace System.Collections.Tests
         }
 
         [Fact]
-        public void SetByIndex_InvalidIndex_ThrowsArgumentOutOfRangeExeption()
+        public void SetByIndex_InvalidIndex_ThrowsArgumentOutOfRangeException()
         {
             SortedList sortList1 = Helpers.CreateIntSortedList(100);
             Helpers.PerformActionOnAllSortedListWrappers(sortList1, sortList2 =>
