@@ -630,11 +630,7 @@ void EEStartupHelper(COINITIEE fFlags)
         // This needs to be done before config because config uses SString::Empty()
         SString::Startup();
 
-        // Initialize EEConfig
-        if (!g_pConfig)
-        {
-            IfFailGo(EEConfig::Setup());
-        }
+        IfFailGo(EEConfig::Setup());
 
 #ifndef CROSSGEN_COMPILE
         // Initialize Numa and CPU group information
