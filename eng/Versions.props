@@ -18,8 +18,8 @@
     <MicrosoftDotNetBuildTasksPackagingVersion>1.0.0-beta.19326.44</MicrosoftDotNetBuildTasksPackagingVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.19278.1</MicrosoftDotNetXUnitConsoleRunnerVersion>
     <!-- corefx -->
-    <MicrosoftPrivateCoreFxNETCoreAppVersion>4.6.0-preview8.19326.15</MicrosoftPrivateCoreFxNETCoreAppVersion>
-    <MicrosoftNETCorePlatformsVersion>3.0.0-preview8.19326.15</MicrosoftNETCorePlatformsVersion>
+    <MicrosoftPrivateCoreFxNETCoreAppVersion>4.6.0-preview8.19327.9</MicrosoftPrivateCoreFxNETCoreAppVersion>
+    <MicrosoftNETCorePlatformsVersion>3.0.0-preview8.19327.9</MicrosoftNETCorePlatformsVersion>
     <MicrosoftBclAsyncInterfacesVersion>1.0.0-preview7.19326.2</MicrosoftBclAsyncInterfacesVersion>
     <!-- core-setup -->
     <MicrosoftNETCoreAppVersion>3.0.0-preview7-27826-04</MicrosoftNETCoreAppVersion>
