@@ -16,17 +16,27 @@ jobs:
     jobTemplate: build-job.yml
     buildConfig: checked
     platforms:
+    # TODO: add Windows_NT_arm64, when we have hardware available, and .NET Core supports it. Note: platform-matrix.yml needs to enable a Helix queue for this.
+    - Linux_arm
+    - Linux_arm64
     - Linux_x64
+    # TODO: re-enable Windows_NT_arm when https://github.com/dotnet/corefx/issues/38863 is resolved
     - Windows_NT_x64
+    - Windows_NT_x86
 
 - template: /eng/platform-matrix.yml
   parameters:
     jobTemplate: test-job.yml
     buildConfig: checked
     platforms:
+    # TODO: add Windows_NT_arm64, when we have hardware available, and .NET Core supports it. Note: platform-matrix.yml needs to enable a Helix queue for this.
+    - Linux_arm
+    - Linux_arm64
     - Linux_x64
+    # TODO: re-enable Windows_NT_arm when https://github.com/dotnet/corefx/issues/38863 is resolved
     - Windows_NT_x64
-    helixQueueGroup: pr
+    - Windows_NT_x86
+    helixQueueGroup: corefx
     jobParameters:
       testGroup: jitstress
       corefxTests: true
