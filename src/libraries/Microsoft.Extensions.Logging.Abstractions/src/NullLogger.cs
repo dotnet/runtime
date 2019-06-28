@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Logging.Abstractions
     public class NullLogger : ILogger
     {
         /// <summary>
-        /// Returns an instance of <see cref="NullLogger"/>.
+        /// Returns the shared instance of <see cref="NullLogger"/>.
         /// </summary>
         public static NullLogger Instance { get; } = new NullLogger();
 

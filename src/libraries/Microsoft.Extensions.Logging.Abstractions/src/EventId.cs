@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Indicates whether the current object is equal to another object of the same type.
+        /// Indicates whether the current object is equal to another object of the same type. Two events are equal if they the same Id.
         /// </summary>
         /// <param name="other">An object to compare with this object.</param>
         /// <returns><code>true</code> if the current object is equal to the other parameter; otherwise, <code>false</code>.</returns>

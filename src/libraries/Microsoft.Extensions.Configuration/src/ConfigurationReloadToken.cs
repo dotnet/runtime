@@ -17,11 +17,13 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Indicates if this token will proactively raise callbacks. Callbacks are still guaranteed to be invoked, eventually.
         /// </summary>
+        /// <returns>True if the token will proactively raise callbacks.</returns>
         public bool ActiveChangeCallbacks => true;
 
         /// <summary>
         /// Gets a value that indicates if a change has occurred.
         /// </summary>
+        /// <returns>True if a change has occurred.</returns>
         public bool HasChanged => _cts.IsCancellationRequested;
 
         /// <summary>
@@ -30,7 +32,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="callback">The callback to invoke.</param>
         /// <param name="state">State to be passed into the callback.</param>
-        /// <returns></returns>
+        /// <returns>The <see cref="CancellationToken"/> registration.</returns>
         public IDisposable RegisterChangeCallback(Action<object> callback, object state) => _cts.Token.Register(callback, state);
 
         /// <summary>

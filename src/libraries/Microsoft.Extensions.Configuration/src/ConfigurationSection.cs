@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Returns a <see cref="IChangeToken"/> that can be used to observe when this configuration is reloaded.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The <see cref="IChangeToken"/>.</returns>
         public IChangeToken GetReloadToken() => _root.GetReloadToken();
     }
 }

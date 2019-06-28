@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Logging
     public static class LoggingBuilderExtensions
     {
         /// <summary>
-        /// Sets a minimum <see cref="LogLevel"/> requirement for log messages.
+        /// Sets a minimum <see cref="LogLevel"/> requirement for log messages to be logged.
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to set the minimum level on.</param>
         /// <param name="level">The <see cref="LogLevel"/> to set as the minimum.</param>

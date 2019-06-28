@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Returns a change token if this provider supports change tracking, null otherwise.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The change token.</returns>
         IChangeToken GetReloadToken();
 
         /// <summary>
