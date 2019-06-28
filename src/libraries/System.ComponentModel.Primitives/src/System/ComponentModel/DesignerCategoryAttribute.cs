@@ -67,9 +67,9 @@ namespace System.ComponentModel
             return other != null && other.Category == Category;
         }
 
-        public override int GetHashCode() => Category.GetHashCode();
+        public override int GetHashCode() => Category?.GetHashCode() ?? 0;
 
-        public override bool IsDefaultAttribute() => Category.Equals(Default.Category);
+        public override bool IsDefaultAttribute() => Category == Default.Category;
 
         public override object TypeId => GetType().FullName + Category;
     }

@@ -12,34 +12,65 @@ namespace System.ComponentModel.Tests
         [Fact]
         public void Ctor_Default()
         {
-            var attribute = new DisplayNameAttribute();
-            Assert.Equal(string.Empty, attribute.DisplayName);
+            var attribute = new SubDisplayNameAttribute();
+            Assert.Empty(attribute.DisplayName);
+            Assert.Empty(attribute.DisplayNameValue);
             Assert.True(attribute.IsDefaultAttribute());
         }
 
         [Theory]
         [InlineData(null, false)]
         [InlineData("", true)]
-        [InlineData("test name", false)]
-        public void Ctor_DisplayName(string displayName, bool expectedIsDefaultAttribute)
+        [InlineData("displayName", false)]
+        public void Ctor_String(string displayName, bool expectedIsDefaultAttribute)
         {
-            var attribute = new DisplayNameAttribute(displayName);
+            var attribute = new SubDisplayNameAttribute(displayName);
             Assert.Equal(displayName, attribute.DisplayName);
+            Assert.Equal(displayName, attribute.DisplayNameValue);
             Assert.Equal(expectedIsDefaultAttribute, attribute.IsDefaultAttribute());
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("displayName")]
+        public void DisplayNameValue_Set_GetReturnsExpected(string value)
+        {
+            var attribute = new SubDisplayNameAttribute("Name")
+            {
+                DisplayNameValue = value
+            };
+            Assert.Same(value, attribute.DisplayName);
+            Assert.Same(value, attribute.DisplayNameValue);
+
+            // Set same.
+            Assert.Same(value, attribute.DisplayName);
+            Assert.Same(value, attribute.DisplayNameValue);
         }
 
         public static IEnumerable<object[]> Equals_TestData()
         {
-            yield return new object[] { new DisplayNameAttribute("name"), new DisplayNameAttribute("name"), true };
-            yield return new object[] { new DisplayNameAttribute("name"), new DisplayNameAttribute(""), false };
-            yield return new object[] { DisplayNameAttribute.Default, DisplayNameAttribute.Default, true };
+            var attribute = new DisplayNameAttribute("name");
+            yield return new object[] { attribute, new DisplayNameAttribute("name"), true };
+            yield return new object[] { attribute, new DisplayNameAttribute("name2"), false };
+            yield return new object[] { attribute, new DisplayNameAttribute(""), false };
+            // .NET Framework throws a NullReferenceException.
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { attribute, new DisplayNameAttribute(null), false };
+            }
 
-            yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute(null), true };
-            yield return new object[] { new DisplayNameAttribute("name"), new DisplayNameAttribute(null), false };
-            yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute("name"), false };
+            // .NET Framework throws a NullReferenceException.
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute(null), true };
+                yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute(""), false };
+                yield return new object[] { new DisplayNameAttribute(null), new DisplayNameAttribute("name"), false };
+            }
 
             yield return new object[] { new DisplayNameAttribute("name"), new object(), false };
             yield return new object[] { new DisplayNameAttribute("name"), null, false };
+            yield return new object[] { new DisplayNameAttribute(null), new object(), false };
             yield return new object[] { new DisplayNameAttribute(null), null, false };
         }
 
@@ -55,16 +86,50 @@ namespace System.ComponentModel.Tests
         }
 
         [Fact]
-        public void GetHashCode_NullDisplayName_ThrowsNullReferenceException()
+        public void IsDefaultAttribute_Get_CallsEquals()
         {
-            var attribute = new DisplayNameAttribute(null);
-            Assert.Throws<NullReferenceException>(() => attribute.GetHashCode());
+            var attribute = new AlwaysEqualAttribute("displayName");
+            Assert.True(attribute.IsDefaultAttribute());
         }
 
         [Fact]
-        public void DefaultDisplayNameAttribute_GetDisplayName_ReturnsEmptyString()
+        public void Default_Get_ReturnsExpected()
         {
-            Assert.Empty(DisplayNameAttribute.Default.DisplayName);
+            DisplayNameAttribute attribute = DisplayNameAttribute.Default;
+            Assert.Same(attribute, DisplayNameAttribute.Default);
+            Assert.Empty(attribute.DisplayName);
+        }
+
+        private class SubDisplayNameAttribute : DisplayNameAttribute
+        {
+            public SubDisplayNameAttribute() : base()
+            {
+            }
+
+            public SubDisplayNameAttribute(string displayName) : base(displayName)
+            {
+            }
+
+            public new string DisplayNameValue
+            {
+                get => base.DisplayNameValue;
+                set => base.DisplayNameValue = value;
+            }
+        }
+
+        private class AlwaysEqualAttribute : DisplayNameAttribute
+        {
+            public AlwaysEqualAttribute() : base()
+            {
+            }
+
+            public AlwaysEqualAttribute(string displayName) : base(displayName)
+            {
+            }
+
+            public override bool Equals(object obj) => true;
+
+            public override int GetHashCode() => base.GetHashCode();
         }
     }
 }
