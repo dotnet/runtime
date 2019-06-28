@@ -186,7 +186,7 @@ public class WindowAndCursorProps
 
     [Fact]
     [PlatformSpecific(TestPlatforms.AnyUnix)]  // Expected behavior specific to Unix
-    public static void CursorVisible_GetUnix_ThrowsPlatformNotSupportedExeption()
+    public static void CursorVisible_GetUnix_ThrowsPlatformNotSupportedException()
     {
         Assert.Throws<PlatformNotSupportedException>(() => Console.CursorVisible);
     }

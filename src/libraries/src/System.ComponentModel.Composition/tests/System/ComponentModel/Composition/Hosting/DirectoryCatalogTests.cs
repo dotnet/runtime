@@ -229,14 +229,14 @@ namespace System.ComponentModel.Composition
         }
 
         [Fact]
-        public void AddAssembly1_NullPathArgument_ShouldThrowArugmentNull()
+        public void AddAssembly1_NullPathArgument_ShouldThrowArgumentNull()
         {
             Assert.Throws<ArgumentNullException>(() =>
                 new DirectoryCatalog((string)null));
         }
 
         [Fact]
-        public void AddAssembly1_EmptyPathArgument_ShouldThrowArugment()
+        public void AddAssembly1_EmptyPathArgument_ShouldThrowArgument()
         {
             Assert.Throws<ArgumentException>(() =>
                 new DirectoryCatalog(""));

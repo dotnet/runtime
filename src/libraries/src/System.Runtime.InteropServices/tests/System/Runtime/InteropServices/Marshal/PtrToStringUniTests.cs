@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        public void PtrToStringUni_NegativeLength_ThrowsArgumentOutOfRangeExeption()
+        public void PtrToStringUni_NegativeLength_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException, ArgumentException>("len", null, () => Marshal.PtrToStringUni(new IntPtr(123), -77));
         }

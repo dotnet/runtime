@@ -192,7 +192,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void JoinStringArray_ThrowsArugmentNullException()
+        public void JoinStringArray_ThrowsArgumentNullException()
         {
             Assert.Throws<ArgumentNullException>(() => Path.Join(null));
         }
