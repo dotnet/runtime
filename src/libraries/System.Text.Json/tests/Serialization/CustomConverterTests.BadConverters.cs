@@ -121,28 +121,57 @@ namespace System.Text.Json.Serialization.Tests
 
         private class Level3
         {
+            // If true, read\write too much instead of too little.
+            public bool ReadWriteTooMuch { get; set; }
         }
 
-        private class Level3ConverterThatDoesntReadOrWrite : JsonConverter<Level3>
+        private class Level3ConverterThatsBad: JsonConverter<Level3>
         {
             public override Level3 Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
+                Assert.Equal(JsonTokenType.StartObject, reader.TokenType);
+
+                reader.Read();
+                Assert.Equal(JsonTokenType.PropertyName, reader.TokenType);
+
+                reader.Read();
+                Assert.True(reader.TokenType == JsonTokenType.True || reader.TokenType == JsonTokenType.False);
+
+                // Determine if we should read too much.
+                if (reader.TokenType == JsonTokenType.True)
+                {
+                    // Do the correct read.
+                    reader.Read();
+                    Assert.Equal(JsonTokenType.EndObject, reader.TokenType);
+
+                    // Do an extra read.
+                    reader.Read();
+                    Assert.Equal(JsonTokenType.EndArray, reader.TokenType);
+
+                    // End on EndObject token so it looks good, but wrong depth.
+                    reader.Read();
+                    Assert.Equal(JsonTokenType.EndObject, reader.TokenType);
+                }
+
                 return new Level3();
             }
 
             public override void Write(Utf8JsonWriter writer, Level3 value, JsonSerializerOptions options)
             {
-                writer.WriteStartObject();
+                if (value.ReadWriteTooMuch)
+                {
+                    writer.WriteStartObject();
+                }
             }
         }
 
         [Fact]
         public static void ConverterReadTooLittle()
         {
-            const string json = @"{""Level2"":{""Level3s"":[{}]}}";
+            const string json = @"{""Level2"":{""Level3s"":[{""ReadWriteTooMuch"":false}]}}";
 
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new Level3ConverterThatDoesntReadOrWrite());
+            options.Converters.Add(new Level3ConverterThatsBad());
 
             try
             {
@@ -157,14 +186,48 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ConverterWroteTooLittle()
+        public static void ConverterReadTooMuch()
         {
+            const string json = @"{""Level2"":{""Level3s"":[{""ReadWriteTooMuch"":true}]}}";
+
             var options = new JsonSerializerOptions();
-            options.Converters.Add(new Level3ConverterThatDoesntReadOrWrite());
+            options.Converters.Add(new Level3ConverterThatsBad ());
 
             try
             {
-                JsonSerializer.Serialize(new Level1(), options);
+                JsonSerializer.Deserialize<Level1>(json, options);
+                Assert.True(false, "Expected exception");
+            }
+            catch (JsonException ex)
+            {
+                Assert.Contains("$.Level2.Level3s[1]", ex.ToString());
+                Assert.Equal(ex.Path, "$.Level2.Level3s[1]");
+            }
+        }
+
+        [Fact]
+        public static void ConverterWroteNothing()
+        {
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new Level3ConverterThatsBad());
+
+            // Not writing is allowed.
+            string str = JsonSerializer.Serialize(new Level1(), options);
+            Assert.False(string.IsNullOrEmpty(str));
+        }
+
+        [Fact]
+        public static void ConverterWroteTooMuch()
+        {
+            var options = new JsonSerializerOptions();
+            options.Converters.Add(new Level3ConverterThatsBad());
+
+            try
+            {
+                var l1 = new Level1();
+                l1.Level2.Level3s[0].ReadWriteTooMuch = true;
+
+                JsonSerializer.Serialize(l1, options);
                 Assert.True(false, "Expected exception");
             }
             catch (JsonException ex)
