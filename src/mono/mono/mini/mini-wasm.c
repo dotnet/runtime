@@ -638,6 +638,14 @@ G_BEGIN_DECLS
 #include <pwd.h>
 #include <uuid/uuid.h>
 
+#ifndef __EMSCRIPTEN_PTHREADS__
+int pthread_getschedparam (pthread_t thread, int *policy, struct sched_param *param)
+{
+	g_error ("pthread_getschedparam");
+	return 0;
+}
+#endif
+
 int
 pthread_setschedparam(pthread_t thread, int policy, const struct sched_param *param)
 {
@@ -695,6 +703,15 @@ inotify_add_watch (int fd, const char *pathname, uint32_t mask)
 	g_error ("inotify_add_watch");
 	return 0;
 }
+
+#ifndef __EMSCRIPTEN_PTHREADS__
+int
+sem_timedwait (sem_t *sem, const struct timespec *abs_timeout)
+{
+	g_error ("sem_timedwait");
+	return 0;
+}
+#endif
 
 ssize_t sendfile(int out_fd, int in_fd, off_t *offset, size_t count);
 
