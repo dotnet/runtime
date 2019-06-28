@@ -7,6 +7,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.ComponentModel.Composition.Registration.Tests
 {
@@ -74,6 +75,10 @@ namespace System.ComponentModel.Composition.Registration.Tests
 
         private static void AssertEquivalentAttributes(IEnumerable<object> expected, IEnumerable<object> applied)
         {
+            // Ignore nullable attributes added by the compiler
+            expected = expected.Where(e => e == null || e.GetType().FullName != "System.Runtime.CompilerServices.NullableContextAttribute");
+            applied = applied.Where(e => e == null || e.GetType().FullName != "System.Runtime.CompilerServices.NullableContextAttribute");
+
             var expectedRemaining = expected.ToList();
             var unexpected = new List<object>();
             foreach (var appl in applied)
