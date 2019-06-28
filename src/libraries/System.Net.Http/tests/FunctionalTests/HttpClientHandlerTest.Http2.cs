@@ -1498,62 +1498,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
-        public async Task Dispose_ProcessingResponse_OK()
-        {
-            HttpClient client =  CreateHttpClient();
-            bool diposeCalled = false;
-           int totalSent = 0;
-            int totalReceived = 0;
-
-            await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
-            {
-                var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Version = new Version(2,0);
-                HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-                Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-
-                using (Stream stream = await response.Content.ReadAsStreamAsync())
-                {
-                    // Dispose client after receiving response headers.
-                    client.Dispose();
-                    diposeCalled = true;
-
-                    int readLength;
-                    byte[] buffer = new byte[100];
-                    do {
-                        readLength = await stream.ReadAsync(buffer);
-                        totalReceived += readLength;
-                    } while (readLength != 0);
-                }
-
-                Assert.Equal(totalSent, totalReceived);
-            },
-            async server =>
-            {
-                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
-
-                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : true);
-                await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.OK);
-
-                // Start streaming response and wait for client to be disposed.
-                byte[] responseBody = new byte[100];
-                while (!diposeCalled)
-                {
-                    await connection.SendResponseDataAsync(streamId, responseBody, endStream: false);
-                    totalSent += responseBody.Length;
-                    await Task.Delay(100);
-                }
-
-                // Send final data block.
-                await connection.SendResponseDataAsync(streamId, responseBody, endStream: true);
-                totalSent += responseBody.Length;
-
-                await connection.SendGoAway(streamId);
-                await connection.WaitForConnectionShutdownAsync();
-            });
-        }
-
-        [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Dispose_ProcessingRequest_Throws()
         {
             HttpClient client =  CreateHttpClient();
