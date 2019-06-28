@@ -546,7 +546,7 @@ def generateLttngFiles(etwmanifest,eventprovider_directory, dryRun):
                 lttngimpl_file.write("#include \"" + lttngevntheadershortname + "\"\n\n")
 
                 lttngimpl_file.write("""#ifndef tracepoint_enabled
-#define tracepoint_enabled(provider, name) TRUE
+#define tracepoint_enabled(provider, name) FALSE
 #define do_tracepoint tracepoint
 #endif
 
