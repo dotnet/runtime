@@ -14,9 +14,9 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
         /// <summary>
         /// Creates a deployer instance based on settings in <see cref="DeploymentParameters"/>.
         /// </summary>
-        /// <param name="deploymentParameters"></param>
-        /// <param name="loggerFactory"></param>
-        /// <returns></returns>
+        /// <param name="deploymentParameters">The parameters to set on the deployer.</param>
+        /// <param name="loggerFactory">The factory used to create loggers.</param>
+        /// <returns>The <see cref="ApplicationDeployer"/> that was created.</returns>
         public static ApplicationDeployer Create(DeploymentParameters deploymentParameters, ILoggerFactory loggerFactory)
         {
             if (deploymentParameters == null)
