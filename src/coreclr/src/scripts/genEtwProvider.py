@@ -22,7 +22,14 @@ clrxplat_filename = "clrxplatevents.h"
 etw_dirname = "etw"
 replacements = [
     (r"EventEnabled", "EventXplatEnabled"),
-    (r"\bPVOID\b", "void*")
+    (r"\bPVOID\b", "void*"),
+]
+counted_replacements = [
+    # There is a bug in the MC code generator that miscomputes the size of ETW events
+    # which have variable size arrays of variable size arrays. This occurred in our GCBulkType
+    # event. This workaround replaces the bad size computation with the correct one. See
+    # https://github.com/dotnet/coreclr/pull/25454 for more information"
+    (r"_Arg0 \* _Arg2_Len_", "_Arg2_Len_", 1)
 ]
 
 stdprolog_cpp="""
@@ -53,6 +60,11 @@ def genProviderInterface(manifest, intermediate):
 
     for pattern, replacement in replacements:
         header_text = re.sub(pattern, replacement, header_text)
+
+    for pattern, replacement, expected_count in counted_replacements:
+        (header_text, actual_count) = re.subn(pattern, replacement, header_text)
+        if actual_count != expected_count:
+            raise Exception("The workaround for https://github.com/dotnet/coreclr/pull/25454 in src/scripts/genEtwProvider.py could not be applied. Has the generated code changed or perhaps the underlying issue has been fixed? ")
 
     with open(path.join(provider_dirname, mcheader_filename), 'w') as mcheader_file:
         mcheader_file.write(header_text)
