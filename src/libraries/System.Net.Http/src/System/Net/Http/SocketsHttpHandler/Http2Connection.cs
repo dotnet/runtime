@@ -643,7 +643,14 @@ namespace System.Net.Http
 
             _incomingBuffer.Discard(frameHeader.Length);
 
-            http2Stream.OnResponseAbort(new Http2ProtocolException(protocolError));
+            if (protocolError == Http2ProtocolErrorCode.RefusedStream)
+            {
+                http2Stream.OnRefused();
+            }
+            else
+            {
+                http2Stream.OnAbort(new Http2ProtocolException(protocolError));
+            }
 
             RemoveStream(http2Stream);
         }
@@ -1042,7 +1049,7 @@ namespace System.Net.Http
                     ExceptionDispatchInfo.Throw(_abortException);
                 }
 
-                throw new HttpRequestException(null, null, allowRetry: true);
+                throw CreateRetryException();
             }
 
             Http2Stream http2Stream = null;
@@ -1289,7 +1296,7 @@ namespace System.Net.Http
 
                     if (streamId > lastValidStream)
                     {
-                        kvp.Value.OnResponseAbort(abortException);
+                        kvp.Value.OnAbort(abortException);
 
                         _httpStreams.Remove(kvp.Value.StreamId);
                     }
@@ -1564,7 +1571,7 @@ namespace System.Net.Http
                     // We run out of IDs or we have race condition between receiving GOAWAY and processing requests.
                     // Throw a retryable request exception. This will cause retry logic to kick in
                     // and perform another connection attempt. The user should never see this exception.
-                    throw new HttpRequestException(null, null, allowRetry: true);
+                    throw HttpConnectionBase.CreateRetryException();
                 }
 
                 int streamId = _nextStream;
