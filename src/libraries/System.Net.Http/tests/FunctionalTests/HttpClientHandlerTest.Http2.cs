@@ -2053,7 +2053,8 @@ namespace System.Net.Http.Functional.Tests
                     handler.MaxResponseHeadersLength = 1;
 
                     using HttpClient client = CreateHttpClient(handler);
-                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
                 },
                 async server =>
                 {
@@ -2081,7 +2082,8 @@ namespace System.Net.Http.Functional.Tests
                     handler.MaxResponseHeadersLength = 1;
 
                     using HttpClient client = CreateHttpClient(handler);
-                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
+                    Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
                 },
                 async server =>
                 {
