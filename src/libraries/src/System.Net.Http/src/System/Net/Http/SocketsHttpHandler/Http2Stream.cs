@@ -212,7 +212,7 @@ namespace System.Net.Http
                 _headerBudgetRemaining -= name.Length + value.Length;
                 if (_headerBudgetRemaining < 0)
                 {
-                    throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings._maxResponseHeadersLength));
+                    throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection._pool.Settings._maxResponseHeadersLength * 1024L));
                 }
 
                 // TODO: ISSUE 31309: Optimize HPACK static table decoding
