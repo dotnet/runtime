@@ -4,6 +4,7 @@
 
 using System.Linq;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.IO.Tests

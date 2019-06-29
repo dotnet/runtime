@@ -22,9 +22,6 @@ namespace System.PrivateUri.Tests
         private const string FullBaseUriGetLeftPart_Authority = "http://user:psw@host:9090";
         private const string FullBaseUriGetLeftPart_Query = "http://user:psw@host:9090/path1/path2/path3/fileA?query";
 
-        // A few of these tests depend on bugfixes made in .NET Framework 4.7.2 and must be skipped on older versions.
-        public static bool IsNetCoreOrIsNetfx472OrLater => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx472OrNewer;
-
         [Fact]
         public void Uri_Relative_BaseVsAbsolute_ReturnsFullAbsolute()
         {
@@ -138,7 +135,7 @@ namespace System.PrivateUri.Tests
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
-        [ConditionalFact(nameof(IsNetCoreOrIsNetfx472OrLater))]
+        [Fact]
         public void Uri_Relative_SimplePartialPathWithUnknownScheme_Unicode_ReturnsPartialPathWithScheme()
         {
             string schemeAndRelative = "scheme:\u011E";
@@ -148,7 +145,7 @@ namespace System.PrivateUri.Tests
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
-        [ConditionalFact(nameof(IsNetCoreOrIsNetfx472OrLater))]
+        [Fact]
         public void Uri_Relative_SimplePartialPathWithScheme_Unicode_ReturnsPartialPathWithScheme()
         {
             string schemeAndRelative = "http:\u00C7";
@@ -158,7 +155,7 @@ namespace System.PrivateUri.Tests
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
-        [ConditionalFact(nameof(IsNetCoreOrIsNetfx472OrLater))]
+        [Fact]
         public void Uri_Relative_RightToLeft()
         {
             var loremIpsumArabic = "\u0643\u0644 \u0627\u0644\u0649 \u0627\u0644\u0639\u0627\u0644\u0645";
@@ -170,7 +167,7 @@ namespace System.PrivateUri.Tests
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
-        [ConditionalFact(nameof(IsNetCoreOrIsNetfx472OrLater))]
+        [Fact]
         public void Uri_Relative_Unicode_Glitchy()
         {
             var glitchy = "4\u0308\u0311\u031A\u030B\u0352\u034A\u030D\u036C\u036C\u036B\u0344\u0312\u0322\u0334\u0328\u0319\u0323\u0359\u0317\u0324\u0319\u032D\u0331\u0319\u031F\u0331\u0330\u0347\u0353\u0318\u032F\u032C\u03162\u0303\u0313\u031A\u0368\u036E\u0368\u0301\u0367\u0368\u0306\u0305\u0350\u036A\u036F\u0307\u0328\u035F\u0321\u0361\u0320\u032F\u032B\u034E\u0326\u033B";
@@ -182,7 +179,7 @@ namespace System.PrivateUri.Tests
             Assert.Equal(expectedResult, resolved.ToString());
         }
 
-        [ConditionalFact(nameof(IsNetCoreOrIsNetfx472OrLater))]
+        [Fact]
         public void Uri_Unicode_Format_Character_Combinations_Scheme()
         {
             var combinations = CartesianProductAll(_ => CharUnicodeInfo.GetUnicodeCategory(_) == UnicodeCategory.Format && !UriHelper.IsIriDisallowedBidi(_));

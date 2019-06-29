@@ -1129,7 +1129,6 @@ public static class Test
     <Reference Include=""xunit.core""><HintPath>#HelperAssemblyLocation#xunit.core.dll</HintPath></Reference>
     <Reference Include=""xunit.assert""><HintPath>#HelperAssemblyLocation#xunit.assert.dll</HintPath></Reference>
     <Reference Include=""xunit.abstractions""><HintPath>#HelperAssemblyLocation#xunit.abstractions.dll</HintPath></Reference>
-    <Reference Include=""CoreFx.Private.TestUtilities""><HintPath>#HelperAssemblyLocation#CoreFx.Private.TestUtilities.dll</HintPath></Reference>
     <Reference Include=""System.Runtime.CompilerServices.Unsafe""><HintPath>#HelperAssemblyLocation#System.Runtime.CompilerServices.Unsafe.dll</HintPath></Reference>
     <Reference Include=""Microsoft.DotNet.XUnitExtensions""><HintPath>#HelperAssemblyLocation#Microsoft.DotNet.XUnitExtensions.dll</HintPath></Reference>
     <Reference Include=""#TestAssembly#""><HintPath>#TestAssemblyLocation#</HintPath></Reference>

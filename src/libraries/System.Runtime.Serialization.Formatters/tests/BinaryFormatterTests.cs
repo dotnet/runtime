@@ -112,7 +112,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 var tmpList = new List<TypeSerializableValue>(blobs);
                 tmpList.RemoveAt(1);
 
-                int index = tmpList.FindIndex(b => b.Platform.IsNetfxPlatform());
+                int index = tmpList.FindIndex(b => b.Platform.ToString().StartsWith("netfx"));
                 if (index >= 0)
                     tmpList.RemoveAt(index);
 

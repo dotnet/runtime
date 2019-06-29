@@ -11,8 +11,7 @@ namespace System.Diagnostics.Tests
 {
     partial class ProcessTestBase
     {
-        protected const string NetfxRunnerName = "cmd";
-        protected static readonly string RunnerName = $"{NetfxRunnerName}.exe";
+        protected static readonly string RunnerName = "cmd.exe";
 
         protected Process CreateProcessLong()
         {

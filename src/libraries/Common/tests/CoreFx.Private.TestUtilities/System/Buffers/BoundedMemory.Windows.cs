@@ -13,7 +13,7 @@ namespace System.Buffers
     {
         private static readonly int SystemPageSize = Environment.SystemPageSize;
 
-        private static WindowsImplementation<T> AllocateWithoutDataPopulation<T>(int elementCount, PoisonPagePlacement placement) where T : unmanaged
+        private static WindowsImplementation<T> AllocateWithoutDataPopulationWindows<T>(int elementCount, PoisonPagePlacement placement) where T : unmanaged
         {
             long cb, totalBytesToAllocate;
             checked

@@ -15,9 +15,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     {
         public static bool SupportsRc4 { get; } = ContentEncryptionAlgorithmTests.SupportsRc4;
 
-        public static bool SupportsCngCertificates { get; } = (!PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer);
-
-        [ConditionalFact(nameof(SupportsCngCertificates))]
+        [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void ImportEdgeCase()
         {
@@ -50,7 +48,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsCngCertificates))]
+        [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void ImportEdgeCaseSki()
         {
@@ -130,7 +128,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             ValidateZeroLengthContent(encodedMessage);
         }
 
-        [ConditionalFact(nameof(SupportsCngCertificates))]
+        [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void ZeroLengthContent_FixedValue()
         {
