@@ -256,6 +256,25 @@ namespace System.Security.Cryptography.EcDsa.OpenSsl.Tests
             Assert.Equal(ECDSA_P256_OID_VALUE, param.Curve.Oid.Value);
         }
 
+        [Theory]
+        [InlineData("ECDSA_P521")]
+        [InlineData("ECDSA_P384")]
+        [InlineData("ECDSA_P256")]
+        public void LookupCurveByOidWindowsFriendlyName(string friendlyName)
+        {
+            ECDsaOpenSsl ec = new ECDsaOpenSsl(ECCurve.CreateFromFriendlyName(friendlyName));
+            ECParameters param = ec.ExportParameters(false);
+            param.Validate();
+        }
+
+        [Fact]
+        public void LookupCurveByOidWithInvalidThrowsPlatformNotSupported()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => {
+                new ECDsaOpenSsl(ECCurve.CreateFromFriendlyName("Invalid"));
+            });
+        }
+
         [Fact]
         public void LookupCurveByOidFriendlyName()
         {
