@@ -1,14 +1,16 @@
 <Project>
   <PropertyGroup>
-    <IsReferenceAssembly Condition="'$(IsReferenceAssembly)'=='' AND ($(MSBuildProjectFullPath.Contains('\ref\')) OR $(MSBuildProjectFullPath.Contains('/ref/')))">true</IsReferenceAssembly>
+    <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and ($(MSBuildProjectFullPath.Contains('\ref\')) or $(MSBuildProjectFullPath.Contains('/ref/')))">true</IsReferenceAssembly>
 
     <!-- Create a common root output directory for all reference assemblies -->
-    <ReferenceAssemblyOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$(ArtifactsBinDir)ref/</ReferenceAssemblyOutputPath>
+    <ReferenceAssemblyOutputPath Condition="'$(ReferenceAssemblyOutputPath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</ReferenceAssemblyOutputPath>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(IsReferenceAssembly)'=='true'">
-    <OutputPath>$([MSBuild]::NormalizeDirectory('$(ReferenceAssemblyOutputPath)', '$(MSBuildProjectName)', '$(Configuration)'))</OutputPath>
-    <IntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'ref', '$(MSBuildProjectName)', '$(Configuration)'))</IntermediateOutputPath>
+  <PropertyGroup Condition="'$(IsReferenceAssembly)' == 'true'">
+    <BaseOutputPath>$([MSBuild]::NormalizeDirectory('$(ReferenceAssemblyOutputPath)', '$(MSBuildProjectName)'))</BaseOutputPath>
+    <OutputPath>$(BaseOutputPath)$(Configuration)</OutputPath>
+    <BaseIntermediateOutputPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsObjDir)', 'ref', '$(MSBuildProjectName)'))</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)</IntermediateOutputPath>
 
     <!-- disable warnings about unused fields -->
     <NoWarn>$(NoWarn);CS0169;CS0649;CS8618</NoWarn>
@@ -20,7 +22,7 @@
     <NoWarn>$(NoWarn);CS8625</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(IsReferenceAssembly)'=='true'">
+  <ItemGroup Condition="'$(IsReferenceAssembly)' == 'true'">
     <!-- All reference assemblies should have the 0x70 flag which prevents them from loading
          and the ReferenceAssemblyAttribute. -->
     <AssemblyInfoLines Include="[assembly:System.Runtime.CompilerServices.ReferenceAssembly]" />
