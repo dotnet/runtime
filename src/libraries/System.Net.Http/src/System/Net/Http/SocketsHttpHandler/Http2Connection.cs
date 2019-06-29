@@ -643,7 +643,14 @@ namespace System.Net.Http
 
             _incomingBuffer.Discard(frameHeader.Length);
 
-            http2Stream.OnResponseAbort(new Http2ProtocolException(protocolError));
+            if (protocolError == Http2ProtocolErrorCode.RefusedStream)
+            {
+                http2Stream.OnRefused();
+            }
+            else
+            {
+                http2Stream.OnAbort(new Http2ProtocolException(protocolError));
+            }
 
             RemoveStream(http2Stream);
         }
@@ -1289,7 +1296,7 @@ namespace System.Net.Http
 
                     if (streamId > lastValidStream)
                     {
-                        kvp.Value.OnResponseAbort(abortException);
+                        kvp.Value.OnAbort(abortException);
 
                         _httpStreams.Remove(kvp.Value.StreamId);
                     }
