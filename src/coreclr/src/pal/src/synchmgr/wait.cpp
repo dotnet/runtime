@@ -531,14 +531,18 @@ DWORD CorUnix::InternalWaitForMultipleObjectsEx(
     iSignaledObjIndex = -1;
     for (i=0;i<(int)nCount;i++)
     {
-        bool fValue;
-        palErr = ppISyncWaitCtrlrs[i]->CanThreadWaitWithoutBlocking(&fValue, &fAbandoned);
+        bool fValue, fWaitObjectAbandoned = false;
+        palErr = ppISyncWaitCtrlrs[i]->CanThreadWaitWithoutBlocking(&fValue, &fWaitObjectAbandoned);
         if (NO_ERROR != palErr)
         {
             ERROR("ISynchWaitController::CanThreadWaitWithoutBlocking() failed for "
                   "%d-th object [handle=%p error=%u]\n", i, lpHandles[i], palErr);
             pThread->SetLastError(ERROR_INTERNAL_ERROR);
             goto WFMOExIntReleaseControllers;            
+        }
+        if (fWaitObjectAbandoned)
+        {
+            fAbandoned = true;
         }
         if (fValue)
         {
