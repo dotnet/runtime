@@ -17,7 +17,6 @@
   </ItemGroup>
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
-    <ReferenceFromRuntime Include="CoreFx.Private.TestUtilities" />
     <ReferenceFromRuntime Include="System.Runtime" />
     <ReferenceFromRuntime Include="System.Collections" />
     <ReferenceFromRuntime Include="System.Reflection.Primitives" />

@@ -1,7 +1,0 @@
-<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
-  <Library>
-    <!-- Used in xunit conditional fact/theory -->
-    <Type Name="System.PlatformDetection" Dynamic="Required Public" />
-    <Type Name="System.TestEnvironment" Dynamic="Required Public" />
-  </Library>
-</Directives>

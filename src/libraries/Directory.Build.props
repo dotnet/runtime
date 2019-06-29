@@ -13,6 +13,10 @@
     <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(IsTestProject)' == 'true' AND '$(IsTestSupportProject)' != 'true'">
+    <ProjectReference Include="$(CommonTestPath)\CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
+  </ItemGroup>
+
   <!-- Use msbuild path functions as that property is used in bash scripts. -->
   <ItemGroup>
     <CoverageExcludeFile Include="$([MSBuild]::NormalizePath('$(SourceDir)', 'Common', 'src', 'System', 'SR.*'))" />
@@ -44,14 +48,6 @@
     <CLSCompliant Condition="'$(CLSCompliant)' == '' and '$(IsTestProject)' == 'true'">false</CLSCompliant>
     <CLSCompliant Condition="'$(CLSCompliant)' == ''">true</CLSCompliant>
   </PropertyGroup>
-
-  <ItemGroup>
-    <!-- TODO: Replace with P2P -->
-    <None Include="$(RuntimePath)CoreFx.Private.TestUtilities.dll"
-          Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'"
-          CopyToOutputDirectory="PreserveNewest"
-          Visible="false" />
-  </ItemGroup>
 
   <Import Condition="'$(EnableProjectRestore)' == 'true' and '$(IsSourceProject)' == 'true' and '$(MSBuildProjectExtension)' != '.ilproj'" Project="$(RepositoryEngineeringDir)Analyzers.props" />
 </Project>

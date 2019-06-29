@@ -24,9 +24,6 @@
     
     <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
       <_RestoreProjects Include="$(SourceDir)tests.proj" Build="false" />
-      <!-- Remove when ref and src project restore is enabled. -->
-      <_RestoreProjects Include="$(SourceDir)CoreFx.Private.TestUtilities\ref\CoreFx.Private.TestUtilities.csproj" Build="false" />
-      <_RestoreProjects Include="$(SourceDir)CoreFx.Private.TestUtilities\src\CoreFx.Private.TestUtilities.csproj" Build="false" />
     </ItemGroup>
 
     <MSBuild Projects="@(_RestoreProjects)" Targets="Restore" Properties="$(ProjectProperties)" />
