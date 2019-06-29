@@ -10,7 +10,6 @@ using System.Diagnostics.Tracing;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Reflection;
 
 namespace BasicEventSourceTests
 {
@@ -19,11 +18,11 @@ namespace BasicEventSourceTests
         [EventSource(Name = "SimpleEventSource")]
         private sealed class SimpleEventSource : EventSource
         {
-            private object _mockedCounter;
+            private IncrementingPollingCounter _mockedCounter;
 
-            public SimpleEventSource(Func<double> getMockedCount, Type IncrementingPollingCounterType)
+            public SimpleEventSource(Func<double> getMockedCount)
             {
-                _mockedCounter = Activator.CreateInstance(IncrementingPollingCounterType, "failureCount", this, getMockedCount);    
+                _mockedCounter = new IncrementingPollingCounter("failureCount", this, getMockedCount);    
             }
         }
 
@@ -103,21 +102,7 @@ namespace BasicEventSourceTests
             // Create an EventListener.
             using (SimpleEventListener myListener = new SimpleEventListener("SimpleEventSource", EventLevel.Verbose))
             {
-                 // Reflect over System.Private.CoreLib and get the IncrementingPollingCounter type.
-                Assembly SPC = typeof(System.Diagnostics.Tracing.EventSource).Assembly;
-                if(SPC == null)
-                {
-                    Console.WriteLine("Failed to get System.Private.CoreLib assembly.");
-                    return 1;
-                }
-                Type IncrementingPollingCounterType = SPC.GetType("System.Diagnostics.Tracing.IncrementingPollingCounter");
-                if(IncrementingPollingCounterType == null)
-                {
-                    Console.WriteLine("Failed to get System.Diagnostics.Tracing.IncrementingPollingCounterType type.");
-                    return 1;
-                }
-
-                SimpleEventSource eventSource = new SimpleEventSource(getMockedCount, IncrementingPollingCounterType);
+                SimpleEventSource eventSource = new SimpleEventSource(getMockedCount);
 
                 // Want to sleep for 5000 ms to get some counters piling up.
                 Thread.Sleep(5000);
