@@ -177,6 +177,7 @@ set(VM_HEADERS_DAC_AND_WKS_COMMON
     field.h
     fptrstubs.h
     frames.h
+    gccover.h
     gctoclreventsink.h
     gcheaputilities.h
     generics.h
@@ -465,7 +466,6 @@ set(VM_HEADERS_WKS
     fieldmarshaler.h
     finalizerthread.h
     frameworkexceptionloader.h
-    gccover.h
     gcenv.h
     gcenv.ee.h
     gcenv.os.h

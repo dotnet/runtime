@@ -72,64 +72,27 @@ static MethodDesc* getTargetMethodDesc(PCODE target)
     return nullptr;
 }
 
-
 bool IsGcCoverageInterruptInstruction(PBYTE instrPtr)
 {
+    UINT32 instrVal;
+
 #if defined(_TARGET_ARM64_)
-    UINT32 instrVal = *reinterpret_cast<UINT32*>(instrPtr);
-    switch (instrVal)
-    {
-    case INTERRUPT_INSTR:
-    case INTERRUPT_INSTR_CALL:
-    case INTERRUPT_INSTR_PROTECT_RET:
-        return true;
-    default:
-        return false;
-    }
+    instrVal = *reinterpret_cast<UINT32*>(instrPtr);
 #elif defined(_TARGET_ARM_)
-    
     size_t instrLen = GetARMInstructionLength(instrPtr);
     if (instrLen == 2)
     {
-        UINT16 instrVal = *reinterpret_cast<UINT16*>(instrPtr);
-        switch (instrVal)
-        {
-        case INTERRUPT_INSTR:
-        case INTERRUPT_INSTR_CALL:
-        case INTERRUPT_INSTR_PROTECT_RET:
-            return true;
-        default:
-            return false;
-        }
+        instrVal = *reinterpret_cast<UINT16*>(instrPtr);
     }
     else
     {
-        _ASSERTE(instrLen == 4);
-        UINT32 instrVal = *reinterpret_cast<UINT32*>(instrPtr);
-        switch (instrVal)
-        {
-        case INTERRUPT_INSTR_32:
-        case INTERRUPT_INSTR_CALL_32:
-        case INTERRUPT_INSTR_PROTECT_RET_32:
-            return true;
-        default:
-            return false;
-        }
+        instrVal = *reinterpret_cast<UINT32*>(instrPtr);
     }
 #else // x64 and x86
-    UINT8 instrVal = *reinterpret_cast<UINT8*>(instrPtr);
-    switch (instrVal)
-    {
-    case INTERRUPT_INSTR:
-    case INTERRUPT_INSTR_CALL:
-    case INTERRUPT_INSTR_PROTECT_FIRST_RET:
-    case INTERRUPT_INSTR_PROTECT_SECOND_RET:
-    case INTERRUPT_INSTR_PROTECT_BOTH_RET:
-        return true;
-    default:
-        return false;
-    }
+    instrVal = *instrPtr;
 #endif
+
+    return IsGcCoverageInterruptInstructionVal(instrVal);
 }
 
 bool IsOriginalInstruction(PBYTE instrPtr, GCCoverageInfo* gcCover, DWORD offset)
@@ -876,7 +839,7 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
     {
         instructionIsACallThroughRegister = TRUE;
     }
-#endif
+#endif  // _TARGET_XXXX_
     // safe point must always be after a call instruction 
     // and cannot be both call by register & immediate
     // The safe points are also marked at jump calls( a special variant of 
@@ -893,7 +856,7 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
         *((WORD*)instrPtr - 1) = INTERRUPT_INSTR_CALL;
 #elif defined(_TARGET_ARM64_)
         *((DWORD*)instrPtr - 1) = INTERRUPT_INSTR_CALL;
-#endif
+#endif // _TARGET_XXXX_
     }
     else if(instructionIsACallThroughImmediate)
     {
@@ -946,7 +909,7 @@ void replaceSafePointInstructionWithGcStressInstr(UINT32 safePointOffset, LPVOID
         }
     }
 }
-#endif
+#endif // PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
 
 //Replaces the provided interruptible range with corresponding 2 or 4 byte gcStress illegal instruction
 bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 stopOffset, LPVOID pGCCover)
@@ -997,7 +960,6 @@ bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 sto
         PBYTE instrPtr = rangeStart;
         while(instrPtr < rangeStop)
         {
-
             // The instruction about to be replaced cannot already be a gcstress instruction
             _ASSERTE(!IsGcCoverageInterruptInstruction(instrPtr));
 #if defined(_TARGET_ARM_)
@@ -1018,7 +980,7 @@ bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 sto
             if(!isCallToStopForGCJitHelper(instrPtr))
                 *((DWORD*)instrPtr) = INTERRUPT_INSTR;
             instrPtr += 4;
-#endif
+#endif // TARGET_XXXX_
 
         }
 
@@ -1033,7 +995,7 @@ bool replaceInterruptibleRangesWithGcStressInstr (UINT32 startOffset, UINT32 sto
     }
     return FALSE;
 }
-#endif
+#endif // defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
 
 // Is this a call instruction to JIT_RareDisableHelper()
 // We cannot insert GCStress instruction at this call
@@ -1483,7 +1445,6 @@ void DoGcStress (PCONTEXT regs, MethodDesc *pMD)
     DWORD offset = codeInfo.GetRelOffset();
 
     Thread *pThread = GetThread();
-
 
     if (!IsGcCoverageInterruptInstruction(instrPtr))
     {
