@@ -10,7 +10,6 @@ using System.Diagnostics.Tracing;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Reflection;
 
 namespace BasicEventSourceTests
 {
@@ -19,13 +18,13 @@ namespace BasicEventSourceTests
         [EventSource(Name = "SimpleEventSource")]
         private sealed class SimpleEventSource : EventSource
         {
-            private object _failureCounter;
-            private object _successCounter;
+            private PollingCounter _failureCounter;
+            private PollingCounter _successCounter;
 
-            public SimpleEventSource(Func<double> getMockedCount, Func<double> getSuccessCount, Type PollingCounterType)
+            public SimpleEventSource(Func<double> getMockedCount, Func<double> getSuccessCount)
             {
-                _failureCounter = Activator.CreateInstance(PollingCounterType, "failureCount", this, getSuccessCount);
-                _successCounter = Activator.CreateInstance(PollingCounterType, "successCount", this, getMockedCount);
+                _failureCounter = new PollingCounter("failureCount", this, getSuccessCount);
+                _successCounter = new PollingCounter("successCount", this, getMockedCount);
             }
         }
 
@@ -157,21 +156,7 @@ namespace BasicEventSourceTests
             // Create an EventListener.
             using (SimpleEventListener myListener = new SimpleEventListener("SimpleEventSource", EventLevel.Verbose))
             {
-                 // Reflect over System.Private.CoreLib and get the PollingCounter type.
-                Assembly SPC = typeof(System.Diagnostics.Tracing.EventSource).Assembly;
-                if(SPC == null)
-                {
-                    Console.WriteLine("Failed to get System.Private.CoreLib assembly.");
-                    return 1;
-                }
-                Type PollingCounterType = SPC.GetType("System.Diagnostics.Tracing.PollingCounter");
-                if(PollingCounterType == null)
-                {
-                    Console.WriteLine("Failed to get System.Diagnostics.Tracing.PollingCounter type.");
-                    return 1;
-                }
-
-                SimpleEventSource eventSource = new SimpleEventSource(getMockedCount, getSuccessCount, PollingCounterType);
+                SimpleEventSource eventSource = new SimpleEventSource(getMockedCount, getSuccessCount);
 
                 // Want to sleep for 5000 ms to get some counters piling up.
                 Thread.Sleep(5000);
