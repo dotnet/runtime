@@ -1,45 +1,19 @@
 -notrait category=OuterLoop
 -notrait category=RequiresElevation
 
-# Wrong Microsoft.Bcl.AsyncInterfaces binary (netcoreapp vs. netstandard)
--noclass System.Threading.Tasks.Sources.Tests.ManualResetValueTaskSourceTests
+# System.ComponentModel.Composition.Registration.Tests: test failures
+-noclass System.ComponentModel.Composition.Registration.Tests.RegistrationBuilderAttributedOverrideUnitTests
 
-# Old System.Composition.Runtime
--nomethod System.Composition.Runtime.Tests.CompositionContractTests.Equals_Object_ReturnsExpected
--noclass System.Composition.Hosting.Tests.ContainerConfigurationTests
-
-# Missing OOB dependencies
--nonamespace System.Numerics.Tensors.Tests
--nonamespace System.Numerics.Tensors
--nonamespace System.Resources.Extensions.Tests
+# Timeout on Linux/arm32
 -nonamespace System.Data.SqlClient.Tests
--nonamespace System.Data.SqlClient.ManualTesting.Tests
--nonamespace System.Drawing.Printing.Tests
--nonamespace System.Media.Test
--noclass System.Security.Cryptography.X509Certificates.Tests.X509Certificate2UITests
 
-# Missing OOB dependencies - Disable UTF8 string tests
+# Missing OOB dependencies (System.Utf8String.Experimental) - Disable UTF8 string tests
 -noclass System.Net.Http.Tests.Utf8StringContentTests
 -noclass System.Tests.Char8Tests
 -noclass System.Tests.MemoryTests
 -noclass System.Tests.ReflectionTests
 -noclass System.Tests.Utf8ExtensionsTests
 -noclass System.Tests.Utf8StringTests
-
-# Missing OOB dependencies - Disable Tests from System.ComponentModel entirely
--nonamespace System.ComponentModel.Composition
--nonamespace System.ComponentModel.Composition.AttributedModel
--nonamespace System.ComponentModel.Composition.Extensibility
--nonamespace System.ComponentModel.Composition.Factories
--nonamespace System.ComponentModel.Composition.Hosting
--nonamespace System.ComponentModel.Composition.Primitives
--nonamespace System.ComponentModel.Composition.ReflectionModel
--nonamespace System.ComponentModel.Tests
--nonamespace System.ComponentModel.Design.Tests
--nonamespace System.ComponentModel.Design.Serialization.Tests
--nonamespace System.ComponentModel.Design.Tests
--nonamespace System.ComponentModel.TypeConverterTests
--nonamespace Tests.Integration
 
 # https://github.com/dotnet/corefx/issues/37886
 -nomethod System.Security.Cryptography.Rsa.Tests.RSAXml.FromNonsenseXml
@@ -87,42 +61,3 @@
 
 # Assert: https://github.com/dotnet/coreclr/issues/25050
 -nonamespace System.Data.Common.Tests
-
-# requires corefx test updates
--nomethod System.Data.Tests.Common.DbConnectionStringBuilderTest.Add_Keyword_Invalid
--nomethod System.Data.Tests.Common.DbConnectionStringBuilderTest.Indexer_Keyword_Invalid
-
-# requires corefx test updates https://github.com/dotnet/corefx/pull/38452
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfAny_ManyInteger
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfAny_ManyString
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfMany_Byte
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfMany_Char
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthLastIndexOfAny_Byte_ManyByte
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthLastIndexOfAny_ManyByte
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthLastIndexOfAny_String_ManyByte
--nomethod System.SpanTests.SpanTests.ZeroLengthIndexOfAny_ManyInteger
--nomethod System.SpanTests.SpanTests.ZeroLengthIndexOfAny_ManyString
--nomethod System.SpanTests.SpanTests.ZeroLengthIndexOfMany_Byte
--nomethod System.SpanTests.SpanTests.ZeroLengthIndexOfMany_Char
--nomethod System.SpanTests.SpanTests.ZeroLengthLastIndexOfAny_Byte_ManyByte
--nomethod System.SpanTests.SpanTests.ZeroLengthLastIndexOfAny_ManyByte
--nomethod System.SpanTests.SpanTests.ZeroLengthLastIndexOfAny_String_ManyByte
-
-# requires corefx test updates: https://github.com/dotnet/corefx/pull/38692
--nomethod System.Tests.StringTests.CasingAsSpan_NullCulture_ThrowsArgumentNullException
-
-# requires corefx test updates: https://github.com/dotnet/corefx/pull/38747
--nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_EmptyException_FNeedFileInfo
--nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_EmptyException_GetFramesReturnsNull
--nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_EmptyException_SkipFrames
--nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_EmptyException_SkipFrames_FNeedFileInfo
--nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_LargeSkipFrames
--nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_LargeSkipFrames_FNeedFileInfo
--nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_LargeSkipFrames_GetFramesReturnsNull
--nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_LargeSkipFramesFNeedFileInfo_GetFramesReturnsNull
-
-# requires corefx test updates
--nomethod System.Tests.StringTests.SameSpanToLower
--nomethod System.Tests.StringTests.ToLowerOverlapping
--nomethod System.Tests.StringTests.SameSpanToUpper
--nomethod System.Tests.StringTests.ToUpperOverlapping
