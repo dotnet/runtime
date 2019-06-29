@@ -41,7 +41,7 @@
     <!-- wpf -->
     <MicrosoftDotNetWpfGitHubPackageVersion>4.8.0-preview8.19327.1</MicrosoftDotNetWpfGitHubPackageVersion>
     <!-- wpf-int -->
-    <MicrosoftDotNetWpfDncEngPackageVersion>4.8.0-preview8.19327.5</MicrosoftDotNetWpfDncEngPackageVersion>
+    <MicrosoftDotNetWpfDncEngPackageVersion>4.8.0-preview8.19328.4</MicrosoftDotNetWpfDncEngPackageVersion>
   </PropertyGroup>
   <!--Package names-->
   <PropertyGroup>
