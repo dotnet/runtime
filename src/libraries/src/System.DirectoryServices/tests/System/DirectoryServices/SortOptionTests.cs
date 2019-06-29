@@ -25,11 +25,7 @@ namespace System.DirectoryServices.Tests
         {
             var sortOption = new SortOption(propertyName, direction);
             Assert.Equal(propertyName, sortOption.PropertyName);
-
-            if (PlatformDetection.TargetsNetFx452OrLower)
-                Assert.Equal(SortDirection.Ascending, sortOption.Direction);
-            else
-                Assert.Equal(direction, sortOption.Direction);
+            Assert.Equal(direction, sortOption.Direction);
         }
 
         [Fact]
@@ -43,14 +39,7 @@ namespace System.DirectoryServices.Tests
         [InlineData(SortDirection.Descending + 1)]
         public void Ctor_InvalidDirection_ThrowsInvalidEnumArgumentException(SortDirection direction)
         {
-            if (PlatformDetection.TargetsNetFx452OrLower)
-            {
-                SortOption so = new SortOption("propertyName", direction);
-                Assert.Equal("propertyName", so.PropertyName);
-                Assert.Equal(SortDirection.Ascending, so.Direction);
-            }
-            else
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => new SortOption("propertyName", direction));
+            AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => new SortOption("propertyName", direction));
         }
     }
 }

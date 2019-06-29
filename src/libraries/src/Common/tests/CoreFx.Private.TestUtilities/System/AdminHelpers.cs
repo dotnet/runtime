@@ -3,19 +3,44 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using Microsoft.Win32.SafeHandles;
+using Xunit;
 
 namespace System
 {
-    public static partial class AdminHelpers
+    public static class AdminHelpers
     {
         /// <summary>
-        /// Returns true if the current process is elevated (in Windows).
+        /// Runs the given command as sudo (for Unix).
         /// </summary>
+        /// <param name="commandLine">The command line to run as sudo</param>
+        /// <returns> Returns the process exit code (0 typically means it is successful)</returns>
+        public static int RunAsSudo(string commandLine)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo()
+            {
+                FileName = "sudo",
+                Arguments = commandLine
+            };
+
+            using (Process process = Process.Start(startInfo))
+            {
+                Assert.True(process.WaitForExit(30000));
+                return process.ExitCode;
+            }
+        }
+
         public unsafe static bool IsProcessElevated()
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                uint userId = Interop.Sys.GetEUid();
+                return(userId == 0);
+            }
+
             IntPtr processHandle = Interop.Kernel32.GetCurrentProcess();
             SafeAccessTokenHandle token;
             if (!Interop.Advapi32.OpenProcessToken(processHandle, TokenAccessLevels.Read, out token))
@@ -39,6 +64,5 @@ namespace System
                 return elevation.TokenIsElevated != Interop.BOOL.FALSE;
             }
         }
-
     }
 }

@@ -76,5 +76,17 @@ namespace System.Buffers
                 buffer[i] = (byte)random.Next();
             }
         }
+
+        private static BoundedMemory<T> AllocateWithoutDataPopulation<T>(int elementCount, PoisonPagePlacement placement) where T : unmanaged
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return AllocateWithoutDataPopulationWindows<T>(elementCount, placement);
+            }
+            else
+            {
+                return AllocateWithoutDataPopulationUnix<T>(elementCount, placement);
+            }
+        }
     }
 }

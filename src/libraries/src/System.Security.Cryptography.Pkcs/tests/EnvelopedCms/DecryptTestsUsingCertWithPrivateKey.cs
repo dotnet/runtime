@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
     {
         public DecryptTestsUsingCertWithPrivateKey() : base(false) { }
 
-        [ConditionalFact(nameof(SupportsCngCertificates))]
+        [Fact]
         [OuterLoop(/* Leaks key on disk if interrupted */)]
         public static void DecryptMultipleRecipients()
         {

@@ -18,7 +18,7 @@
     <UseSharedCompilation>true</UseSharedCompilation>
 
     <ToolSetCommonDirectory>$(MSBuildThisFileDirectory)artifacts\toolset\Common\</ToolSetCommonDirectory>
-    <IsSourceProject Condition="'$(MSBuildProjectName)' != 'CoreFx.Private.TestUtilities'">$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
+    <IsSourceProject>$([System.Text.RegularExpressions.Regex]::IsMatch($(MSBuildProjectDirectory), 'src%24'))</IsSourceProject>
   </PropertyGroup>
 
   <!-- Define vNext UAP Moniker -->
@@ -295,9 +295,7 @@
     <RuntimePath Condition="'$(RuntimePath)' == ''">$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'runtime', '$(BuildConfiguration)'))</RuntimePath>
     <RefRootPath>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'ref'))</RefRootPath>
     <BuildConfigurationRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(_bc_TargetGroup)'))</BuildConfigurationRefPath>
-    <BuildConfigurationRefPath Condition="$(_bc_TargetGroup.EndsWith('aot'))">$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(_bc_TargetGroup.TrimEnd('aot'))'))</BuildConfigurationRefPath>
     <RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetGroup)'))</RefPath>
-    <RefPath Condition="$(TargetGroup.EndsWith('aot'))">$([MSBuild]::NormalizeDirectory('$(RefRootPath)', '$(TargetGroup.TrimEnd('aot'))'))</RefPath>
     <NetStandardRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard'))</NetStandardRefPath>
     <NetStandard21RefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netstandard2.1'))</NetStandard21RefPath>
     <NetFxRefPath>$([MSBuild]::NormalizeDirectory('$(RefRootPath)', 'netfx'))</NetFxRefPath>
@@ -343,13 +341,6 @@
     <UAPTestSharedFrameworkPath>$(TestHostRootPath)UAPLayout</UAPTestSharedFrameworkPath>
   </PropertyGroup>
 
-  <!--
-    Remove test-only dependencies during source-build: disable project that brings in XUnit.Runtime
-    dependencies through 'ReferenceFromRuntime' property.
-  -->
-  <ItemGroup Condition="'$(DotNetBuildFromSource)' == 'true' and '$(BuildTests)' != 'true'">
-    <ProjectExclusions Include="$(SourceDir)CoreFx.Private.TestUtilities/**/*.csproj" />
-  </ItemGroup>
   <!-- AOT only asset that we currently don't support. -->
   <ItemGroup>
     <ProjectExclusions Include="$(SourceDir)System.Private.Reflection.Metadata.Ecma335/**/*.csproj" />
