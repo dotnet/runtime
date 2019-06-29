@@ -94,8 +94,6 @@ namespace System.Net.Http
 
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
 
-                _canRetry = false;
-
                 if (NetEventSource.IsEnabled) Trace($"{request}, {nameof(initialWindowSize)}={initialWindowSize}");
             }
 
@@ -513,10 +511,7 @@ namespace System.Net.Http
                 {
                     if (_canRetry)
                     {
-                        // Throw a retryable request exception.
-                        // This will cause retry logic to kick in and perform another connection attempt.
-                        // The user should never see this exception. 
-                        throw new HttpRequestException(null, null, allowRetry: true);
+                        throw CreateRetryException();
                     }
 
                     throw new IOException(SR.net_http_request_aborted, _abortException);
