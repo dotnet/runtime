@@ -1049,7 +1049,7 @@ namespace System.Net.Http
                     ExceptionDispatchInfo.Throw(_abortException);
                 }
 
-                throw new HttpRequestException(null, null, allowRetry: true);
+                throw CreateRetryException();
             }
 
             Http2Stream http2Stream = null;
@@ -1571,7 +1571,7 @@ namespace System.Net.Http
                     // We run out of IDs or we have race condition between receiving GOAWAY and processing requests.
                     // Throw a retryable request exception. This will cause retry logic to kick in
                     // and perform another connection attempt. The user should never see this exception.
-                    throw new HttpRequestException(null, null, allowRetry: true);
+                    throw HttpConnectionBase.CreateRetryException();
                 }
 
                 int streamId = _nextStream;
