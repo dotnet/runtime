@@ -39,6 +39,7 @@ namespace System.Net.Http
             private StreamState _state;
             private bool _disposed;
             private Exception _abortException;
+            private bool _canRetry;             // if _state == Aborted, this indicates the stream was refused and so the request is retryable
 
             /// <summary>
             /// The core logic for the IValueTaskSource implementation.
@@ -92,6 +93,8 @@ namespace System.Net.Http
                 _streamWindow = new CreditManager(this, nameof(_streamWindow), initialWindowSize);
 
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
+
+                _canRetry = false;
 
                 if (NetEventSource.IsEnabled) Trace($"{request}, {nameof(initialWindowSize)}={initialWindowSize}");
             }
@@ -447,19 +450,14 @@ namespace System.Net.Http
                 }
             }
 
-            public void OnResponseAbort(Exception abortException)
+            public void OnAbort(Exception abortException)
             {
                 bool signalWaiter;
                 lock (SyncObject)
                 {
                     if (NetEventSource.IsEnabled) Trace($"{nameof(abortException)}={abortException}");
 
-                    if (_disposed)
-                    {
-                        return;
-                    }
-
-                    if (_state == StreamState.Aborted)
+                    if (_disposed || _state == StreamState.Aborted)
                     {
                         return;
                     }
@@ -477,21 +475,62 @@ namespace System.Net.Http
                 }
             }
 
+            public void OnRefused()
+            {
+                bool signalWaiter;
+                lock (SyncObject)
+                {
+                    if (NetEventSource.IsEnabled) Trace("");
+
+                    if (_disposed || _state == StreamState.Aborted)
+                    {
+                        return;
+                    }
+
+                    _state = StreamState.Aborted;
+                    _canRetry = true;
+
+                    signalWaiter = _hasWaiter;
+                    _hasWaiter = false;
+                }
+
+                if (signalWaiter)
+                {
+                    _waitSource.SetResult(true);
+                }
+            }
+
+            private void CheckIfDisposedOrAborted()
+            {
+                Debug.Assert(Monitor.IsEntered(SyncObject));
+
+                if (_disposed)
+                {
+                    throw new ObjectDisposedException(nameof(Http2Stream));
+                }
+
+                if (_state == StreamState.Aborted)
+                {
+                    if (_canRetry)
+                    {
+                        // Throw a retryable request exception.
+                        // This will cause retry logic to kick in and perform another connection attempt.
+                        // The user should never see this exception. 
+                        throw new HttpRequestException(null, null, allowRetry: true);
+                    }
+
+                    throw new IOException(SR.net_http_request_aborted, _abortException);
+                }
+            }
+
             // Determine if we have enough data to process up to complete final response headers.
             private (bool wait, bool isEmptyResponse) TryEnsureHeaders()
             {
                 lock (SyncObject)
                 {
-                    if (_disposed)
-                    {
-                        throw new ObjectDisposedException(nameof(Http2Stream));
-                    }
+                    CheckIfDisposedOrAborted();
 
-                    if (_state == StreamState.Aborted)
-                    {
-                        throw new IOException(SR.net_http_request_aborted, _abortException);
-                    }
-                    else if (_state == StreamState.ExpectingHeaders || _state == StreamState.ExpectingIgnoredHeaders || _state == StreamState.ExpectingStatus)
+                    if (_state == StreamState.ExpectingHeaders || _state == StreamState.ExpectingIgnoredHeaders || _state == StreamState.ExpectingStatus)
                     {
                         Debug.Assert(!_hasWaiter);
                         _hasWaiter = true;
@@ -568,10 +607,7 @@ namespace System.Net.Http
 
                 lock (SyncObject)
                 {
-                    if (_disposed)
-                    {
-                        throw new ObjectDisposedException(nameof(Http2Stream));
-                    }
+                    CheckIfDisposedOrAborted();
 
                     if (_responseBuffer.ActiveSpan.Length > 0)
                     {
@@ -584,10 +620,6 @@ namespace System.Net.Http
                     else if (_state == StreamState.Complete)
                     {
                         return (false, 0);
-                    }
-                    else if (_state == StreamState.Aborted)
-                    {
-                        throw new IOException(SR.net_http_request_aborted, _abortException);
                     }
 
                     Debug.Assert(_state == StreamState.ExpectingData || _state == StreamState.ExpectingTrailingHeaders);
