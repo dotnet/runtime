@@ -142,7 +142,21 @@ namespace System.Security.Cryptography
 
         private static ECCurve CreateFromValueAndName(string oidValue, string oidFriendlyName)
         {
-            return ECCurve.Create(new Oid(oidValue, oidFriendlyName));
+            Oid oid = null;
+
+            if (oidValue == null && oidFriendlyName != null)
+            {
+                try
+                {
+                    oid = Oid.FromFriendlyName(oidFriendlyName, OidGroup.PublicKeyAlgorithm);
+                }
+                catch (CryptographicException)
+                {
+                }
+            }
+
+            oid ??= new Oid(oidValue, oidFriendlyName);
+            return ECCurve.Create(oid);
         }
 
         public bool IsPrime
