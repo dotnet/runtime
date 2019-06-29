@@ -1,3 +1,25 @@
+# This is a "response file" used to pass fine-grained test exclusions to the
+# corefx xunit test wrapper scripts, RunTests.cmd or RunTests.sh. Lines here
+# should be in a format that xunit understands. Lines beginning with '#' are
+# comment lines and are ignored.
+#
+# The interesting xunit exclusion syntax is (extracted from help screen for
+# "dotnet.exe xunit.console.dll -?"):
+#
+# -------------------------------------------------------------------------
+# -nomethod "name"       : do not run a given test method (can be fully specified or use a wildcard;
+#                        : i.e., 'MyNamespace.MyClass.MyTestMethod' or '*.MyTestMethod')
+#                        : if specified more than once, acts as an AND operation
+# -noclass "name"        : do not run any methods in a given test class (should be fully
+#                        : specified; i.e., 'MyNamespace.MyClass')
+#                        : if specified more than once, acts as an AND operation
+# -nonamespace "name"    : do not run any methods in a given namespace (i.e.,
+#                        : 'MyNamespace.MySubNamespace')
+#                        : if specified more than once, acts as an AND operation
+# -------------------------------------------------------------------------
+#
+# Please list a GitHub issue for every exclusion.
+
 -notrait category=OuterLoop
 -notrait category=RequiresElevation
 
