@@ -111,10 +111,13 @@ namespace System.Text.Json.Tests
                         if (count >= floats.Count)
                             count = 0;
 
-                        var str = string.Format(CultureInfo.InvariantCulture, "{0}", floats[count]);
-                        float expected = float.Parse(str, CultureInfo.InvariantCulture);
+                        string roundTripActual = numberFloat.ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
+                        float actual = float.Parse(roundTripActual, CultureInfo.InvariantCulture);
 
-                        Assert.Equal(expected, numberFloat);
+                        string roundTripExpected = floats[count].ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
+                        float expected = float.Parse(roundTripExpected, CultureInfo.InvariantCulture);
+
+                        Assert.Equal(expected, actual);
                         count++;
                     }
                     else if (key.StartsWith("double"))
@@ -123,23 +126,13 @@ namespace System.Text.Json.Tests
                         if (count >= doubles.Count)
                             count = 0;
 
-                        string roundTripActual = numberDouble.ToString("R", CultureInfo.InvariantCulture);
+                        string roundTripActual = numberDouble.ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture);
                         double actual = double.Parse(roundTripActual, CultureInfo.InvariantCulture);
 
-                        string roundTripExpected = doubles[count].ToString("R", CultureInfo.InvariantCulture);
+                        string roundTripExpected = doubles[count].ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture);
                         double expected = double.Parse(roundTripExpected, CultureInfo.InvariantCulture);
 
-                        // Temporary work around for precision/round-tripping issues with Utf8Parser
-                        // https://github.com/dotnet/corefx/issues/33360
-                        if (expected != actual)
-                        {
-                            double diff = Math.Abs(expected - actual);
-                            Assert.True(diff < 1E-9 || diff > 1E288);
-                        }
-                        else
-                        {
-                            Assert.Equal(expected, actual);
-                        }
+                        Assert.Equal(expected, actual);
                         count++;
                     }
                     else if (key.StartsWith("decimal"))
@@ -247,10 +240,13 @@ namespace System.Text.Json.Tests
                         if (count >= floats.Count)
                             count = 0;
 
-                        var str = string.Format(CultureInfo.InvariantCulture, "{0}", floats[count]);
-                        float expected = float.Parse(str, CultureInfo.InvariantCulture);
+                        string roundTripActual = json.GetSingle().ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
+                        float actual = float.Parse(roundTripActual, CultureInfo.InvariantCulture);
 
-                        Assert.Equal(expected, json.GetSingle());
+                        string roundTripExpected = floats[count].ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
+                        float expected = float.Parse(roundTripExpected, CultureInfo.InvariantCulture);
+
+                        Assert.Equal(expected, actual);
                         count++;
                     }
                     else if (key.StartsWith("double"))
@@ -258,23 +254,13 @@ namespace System.Text.Json.Tests
                         if (count >= doubles.Count)
                             count = 0;
 
-                        string roundTripActual = json.GetDouble().ToString("R", CultureInfo.InvariantCulture);
+                        string roundTripActual = json.GetDouble().ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture);
                         double actual = double.Parse(roundTripActual, CultureInfo.InvariantCulture);
 
-                        string roundTripExpected = doubles[count].ToString("R", CultureInfo.InvariantCulture);
+                        string roundTripExpected = doubles[count].ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture);
                         double expected = double.Parse(roundTripExpected, CultureInfo.InvariantCulture);
 
-                        // Temporary work around for precision/round-tripping issues with Utf8Parser
-                        // https://github.com/dotnet/corefx/issues/33360
-                        if (expected != actual)
-                        {
-                            double diff = Math.Abs(expected - actual);
-                            Assert.True(diff < 1E-9 || diff > 1E288);
-                        }
-                        else
-                        {
-                            Assert.Equal(expected, actual);
-                        }
+                        Assert.Equal(expected, actual);
                         count++;
                     }
                     else if (key.StartsWith("decimal"))
@@ -614,7 +600,6 @@ namespace System.Text.Json.Tests
         [Theory]
         [InlineData("-4.402823E+38", float.NegativeInfinity, -4.402823E+38)] // float.MinValue - 1
         [InlineData("4.402823E+38", float.PositiveInfinity, 4.402823E+38)]  // float.MaxValue + 1
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Utf8Parser does not support parsing really large float and double values to infinity.")]
         public static void TestingTooLargeSingleConversionToInfinity(string jsonString, float expectedFloat, double expectedDouble)
         {
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
@@ -624,12 +609,33 @@ namespace System.Text.Json.Tests
             {
                 if (json.TokenType == JsonTokenType.Number)
                 {
-                    Assert.True(json.TryGetSingle(out float floatValue));
-                    Assert.Equal(expectedFloat, floatValue);
+                    if (PlatformDetection.IsFullFramework)
+                    {
+                        // Full framework throws for overflow rather than returning Infinity
+                        // This was fixed for .NET Core 3.0 in order to be IEEE 754 compliant
+
+                        Assert.False(json.TryGetSingle(out float _));
+
+                        try
+                        {
+                            json.GetSingle();
+                            Assert.True(false, $"Expected {nameof(FormatException)}.");
+                        }
+                        catch (FormatException)
+                        {
+                            /* Expected exception */
+                        }
+                    }
+                    else
+                    {
+                        Assert.True(json.TryGetSingle(out float floatValue));
+                        Assert.Equal(expectedFloat, floatValue);
+
+                        Assert.Equal(expectedFloat, json.GetSingle());
+                    }
+
                     Assert.True(json.TryGetDouble(out double doubleValue));
                     Assert.Equal(expectedDouble, doubleValue);
-
-                    Assert.Equal(expectedFloat, json.GetSingle());
                     Assert.Equal(expectedDouble, json.GetDouble());
                 }
             }
@@ -640,7 +646,6 @@ namespace System.Text.Json.Tests
         [Theory]
         [InlineData("-2.79769313486232E+308", double.NegativeInfinity)] // double.MinValue - 1
         [InlineData("2.79769313486232E+308", double.PositiveInfinity)]  // double.MaxValue + 1
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Utf8Parser does not support parsing really large float and double values to infinity.")]
         public static void TestingTooLargeDoubleConversionToInfinity(string jsonString, double expected)
         {
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
@@ -650,10 +655,30 @@ namespace System.Text.Json.Tests
             {
                 if (json.TokenType == JsonTokenType.Number)
                 {
-                    Assert.True(json.TryGetDouble(out double actual));
-                    Assert.Equal(expected, actual);
+                    if (PlatformDetection.IsFullFramework)
+                    {
+                        // Full framework throws for overflow rather than returning Infinity
+                        // This was fixed for .NET Core 3.0 in order to be IEEE 754 compliant
 
-                    Assert.Equal(expected, json.GetDouble());
+                        Assert.False(json.TryGetDouble(out double _));
+
+                        try
+                        {
+                            json.GetDouble();
+                            Assert.True(false, $"Expected {nameof(FormatException)}.");
+                        }
+                        catch (FormatException)
+                        {
+                            /* Expected exception */
+                        }
+                    }
+                    else
+                    {
+                        Assert.True(json.TryGetDouble(out double actual));
+                        Assert.Equal(expected, actual);
+
+                        Assert.Equal(expected, json.GetDouble());
+                    }
                 }
             }
 

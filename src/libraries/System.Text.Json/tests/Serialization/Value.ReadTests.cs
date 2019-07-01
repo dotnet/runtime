@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -203,41 +204,34 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Skipped since NETFX has different semantics and bugs with floating point.")]
         public static void RangePassFloatingPoint()
         {
             // Verify overflow\underflow.
-            // On NETFX these throw.
-            Assert.True(float.IsNegativeInfinity(JsonSerializer.Deserialize<float>(double.MinValue.ToString(CultureInfo.InvariantCulture))));
-            Assert.True(float.IsPositiveInfinity(JsonSerializer.Deserialize<float>(double.MaxValue.ToString(CultureInfo.InvariantCulture))));
-            Assert.True(float.IsNegativeInfinity(JsonSerializer.Deserialize<float?>(double.MinValue.ToString(CultureInfo.InvariantCulture)).Value));
-            Assert.True(float.IsPositiveInfinity(JsonSerializer.Deserialize<float?>(double.MaxValue.ToString(CultureInfo.InvariantCulture)).Value));
+            AssertFloatingPointBehavior(netcoreExpectedValue: float.NegativeInfinity, () => JsonSerializer.Deserialize<float>(float.MinValue.ToString(CultureInfo.InvariantCulture) + "0"));
+            AssertFloatingPointBehavior(netcoreExpectedValue: float.PositiveInfinity, () => JsonSerializer.Deserialize<float>(float.MaxValue.ToString(CultureInfo.InvariantCulture) + "0"));
+            AssertFloatingPointBehavior(netcoreExpectedValue: float.NegativeInfinity, () => JsonSerializer.Deserialize<float?>(float.MinValue.ToString(CultureInfo.InvariantCulture) + "0").Value);
+            AssertFloatingPointBehavior(netcoreExpectedValue: float.PositiveInfinity, () => JsonSerializer.Deserialize<float?>(float.MaxValue.ToString(CultureInfo.InvariantCulture) + "0").Value);
 
-            Assert.True(double.IsNegativeInfinity(JsonSerializer.Deserialize<double>(double.MinValue.ToString(CultureInfo.InvariantCulture) + "0")));
-            Assert.True(double.IsPositiveInfinity(JsonSerializer.Deserialize<double>(double.MaxValue.ToString(CultureInfo.InvariantCulture) + "0")));
-            Assert.True(double.IsNegativeInfinity(JsonSerializer.Deserialize<double?>(double.MinValue.ToString(CultureInfo.InvariantCulture) + "0").Value));
-            Assert.True(double.IsPositiveInfinity(JsonSerializer.Deserialize<double?>(double.MaxValue.ToString(CultureInfo.InvariantCulture) + "0").Value));
+            AssertFloatingPointBehavior(netcoreExpectedValue: double.NegativeInfinity, () => JsonSerializer.Deserialize<double>(double.MinValue.ToString(CultureInfo.InvariantCulture) + "0"));
+            AssertFloatingPointBehavior(netcoreExpectedValue: double.PositiveInfinity, () => JsonSerializer.Deserialize<double>(double.MaxValue.ToString(CultureInfo.InvariantCulture) + "0"));
+            AssertFloatingPointBehavior(netcoreExpectedValue: double.NegativeInfinity, () => JsonSerializer.Deserialize<double?>(double.MinValue.ToString(CultureInfo.InvariantCulture) + "0").Value);
+            AssertFloatingPointBehavior(netcoreExpectedValue: double.PositiveInfinity, () => JsonSerializer.Deserialize<double?>(double.MaxValue.ToString(CultureInfo.InvariantCulture) + "0").Value);
 
             // Verify sign is correct.
-            // On NETFX a value of -0 does not keep the sign.
-            Assert.Equal(0x0000000000000000ul, (ulong)BitConverter.DoubleToInt64Bits(JsonSerializer.Deserialize<double>("0")));
-            Assert.Equal(0x8000000000000000ul, (ulong)BitConverter.DoubleToInt64Bits(JsonSerializer.Deserialize<double>("-0")));
-            Assert.Equal(0x8000000000000000ul, (ulong)BitConverter.DoubleToInt64Bits(JsonSerializer.Deserialize<double>("-0.0")));
+            AssertFloatingPointBehavior(netfxExpectedValue: 0x00000000u, netcoreExpectedValue: 0x00000000u, () => (uint)SingleToInt32Bits(JsonSerializer.Deserialize<float>("0")));
+            AssertFloatingPointBehavior(netfxExpectedValue: 0x00000000u, netcoreExpectedValue: 0x80000000u, () => (uint)SingleToInt32Bits(JsonSerializer.Deserialize<float>("-0")));
+            AssertFloatingPointBehavior(netfxExpectedValue: 0x00000000u, netcoreExpectedValue: 0x80000000u, () => (uint)SingleToInt32Bits(JsonSerializer.Deserialize<float>("-0.0")));
 
-#if BUILDING_INBOX_LIBRARY
-            // Verify sign is correct; SingleToInt32Bits not available on netfx.
-            Assert.Equal(0x00000000u, (uint)BitConverter.SingleToInt32Bits(JsonSerializer.Deserialize<float>("0")));
-            Assert.Equal(0x80000000u, (uint)BitConverter.SingleToInt32Bits(JsonSerializer.Deserialize<float>("-0")));
-            Assert.Equal(0x80000000u, (uint)BitConverter.SingleToInt32Bits(JsonSerializer.Deserialize<float>("-0.0")));
-#endif
+            AssertFloatingPointBehavior(netfxExpectedValue: 0x0000000000000000ul, netcoreExpectedValue: 0x0000000000000000ul, () => (ulong)BitConverter.DoubleToInt64Bits(JsonSerializer.Deserialize<double>("0")));
+            AssertFloatingPointBehavior(netfxExpectedValue: 0x0000000000000000ul, netcoreExpectedValue: 0x8000000000000000ul, () => (ulong)BitConverter.DoubleToInt64Bits(JsonSerializer.Deserialize<double>("-0")));
+            AssertFloatingPointBehavior(netfxExpectedValue: 0x0000000000000000ul, netcoreExpectedValue: 0x8000000000000000ul, () => (ulong)BitConverter.DoubleToInt64Bits(JsonSerializer.Deserialize<double>("-0.0")));
 
             // Verify Round-tripping.
-            // On NETFX round tripping is not supported.
-            Assert.Equal(float.MaxValue, JsonSerializer.Deserialize<float>(float.MaxValue.ToString(CultureInfo.InvariantCulture)));
-            Assert.Equal(float.MaxValue, JsonSerializer.Deserialize<float?>(float.MaxValue.ToString(CultureInfo.InvariantCulture)));
+            Assert.Equal(float.MaxValue, JsonSerializer.Deserialize<float>(float.MaxValue.ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture)));
+            Assert.Equal(float.MaxValue, JsonSerializer.Deserialize<float?>(float.MaxValue.ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture)));
 
-            Assert.Equal(double.MaxValue, JsonSerializer.Deserialize<double>(double.MaxValue.ToString(CultureInfo.InvariantCulture)));
-            Assert.Equal(double.MaxValue, JsonSerializer.Deserialize<double?>(double.MaxValue.ToString(CultureInfo.InvariantCulture)));
+            Assert.Equal(double.MaxValue, JsonSerializer.Deserialize<double>(double.MaxValue.ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture)));
+            Assert.Equal(double.MaxValue, JsonSerializer.Deserialize<double?>(double.MaxValue.ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture)));
         }
 
         [Fact]
@@ -301,5 +295,38 @@ namespace System.Text.Json.Serialization.Tests
             uri = JsonSerializer.Deserialize<Uri>(@"""~/path""");
             Assert.Equal("~/path", uri.ToString());
         }
-   }
+
+        private static int SingleToInt32Bits(float value)
+        {
+#if BUILDING_INBOX_LIBRARY
+            return BitConverter.SingleToInt32Bits(value);
+#else
+            return Unsafe.As<float, int>(ref value);
+#endif
+        }
+
+        private static void AssertFloatingPointBehavior<T>(T netcoreExpectedValue, Func<T> testCode)
+        {
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Throws<JsonException>(() => testCode());
+            }
+            else
+            {
+                Assert.Equal(netcoreExpectedValue, testCode());
+            }
+        }
+
+        private static void AssertFloatingPointBehavior<T>(T netfxExpectedValue, T netcoreExpectedValue, Func<T> testCode)
+        {
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Equal(netfxExpectedValue, testCode());
+            }
+            else
+            {
+                Assert.Equal(netcoreExpectedValue, testCode());
+            }
+        }
+    }
 }
