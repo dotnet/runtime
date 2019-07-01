@@ -46,6 +46,9 @@ namespace System.Net.Http
         private int _pendingWriters;
 
         private bool _disposed;
+        // anything else than -1 means that connection is being terminated
+        // in which case _lastValidStreamId is the maximum StreamId which can be processed
+        private int _lastValidStreamId = -1;
         private Exception _abortException;
 
         // If an in-progress write is canceled we need to be able to immediately
@@ -1278,17 +1281,26 @@ namespace System.Net.Http
 
         private void AbortStreams(int lastValidStream, Exception abortException)
         {
-            bool shouldInvalidate = false;
+            Debug.Assert(lastValidStream >= 0);
+            bool isAlreadyInvalidated = _disposed;
+
             lock (SyncObject)
             {
-                if (NetEventSource.IsEnabled) Trace($"{nameof(lastValidStream)}={lastValidStream}, {nameof(abortException)}={lastValidStream}={abortException}");
-
-                if (!_disposed)
+                if (_lastValidStreamId == -1)
                 {
-                    shouldInvalidate = true;
-                    _disposed = true;
+                    _lastValidStreamId = lastValidStream;
+                }
+                else
+                {
+                    // We have already received GOAWAY before
+                    // In this case the smaller valid stream is used
+                    _lastValidStreamId = Math.Min(_lastValidStreamId, lastValidStream);
+                    isAlreadyInvalidated = true;
                 }
 
+                if (NetEventSource.IsEnabled) Trace($"{nameof(lastValidStream)}={lastValidStream}, {nameof(abortException)}={lastValidStream}={abortException}, {nameof(_lastValidStreamId)}={_lastValidStreamId}");
+
+                bool hasAnyActiveStream = false;
                 foreach (KeyValuePair<int, Http2Stream> kvp in _httpStreams)
                 {
                     int streamId = kvp.Key;
@@ -1300,16 +1312,23 @@ namespace System.Net.Http
 
                         _httpStreams.Remove(kvp.Value.StreamId);
                     }
-                    else if (NetEventSource.IsEnabled)
+                    else
                     {
-                        Trace($"Found {nameof(streamId)} {streamId} <= {lastValidStream}.");
+                        if (NetEventSource.IsEnabled) Trace($"Found {nameof(streamId)} {streamId} <= {lastValidStream}.");
+
+                        hasAnyActiveStream = true;
                     }
+                }
+
+                if (!hasAnyActiveStream)
+                {
+                    _disposed = true;
                 }
 
                 CheckForShutdown();
             }
 
-            if (shouldInvalidate)
+            if (!isAlreadyInvalidated)
             {
                 // Invalidate outside of lock to avoid race with HttpPool Dispose()
                 // We should not try to grab pool lock while holding connection lock as on disposing pool,
@@ -1320,13 +1339,17 @@ namespace System.Net.Http
 
         private void CheckForShutdown()
         {
-            Debug.Assert(_disposed);
+            Debug.Assert(_disposed || _lastValidStreamId != -1);
             Debug.Assert(Monitor.IsEntered(SyncObject));
 
             // Check if dictionary has become empty
             if (_httpStreams.Count != 0)
             {
                 return;
+            }
+            else
+            {
+                _disposed = true;
             }
 
             // Do shutdown.
@@ -1560,7 +1583,7 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_nextStream == MaxStreamId || _disposed)
+                if (_nextStream == MaxStreamId || _disposed || _lastValidStreamId != -1)
                 {
                     if (_abortException != null)
                     {
@@ -1613,7 +1636,7 @@ namespace System.Net.Http
                     _idleSinceTickCount = Environment.TickCount64;
                 }
 
-                if (_disposed)
+                if (_disposed || _lastValidStreamId != -1)
                 {
                     CheckForShutdown();
                 }
