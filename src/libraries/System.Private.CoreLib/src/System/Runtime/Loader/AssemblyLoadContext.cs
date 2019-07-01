@@ -275,6 +275,7 @@ namespace System.Runtime.Loader
             return null;
         }
 
+#if !CORERT
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
@@ -285,6 +286,7 @@ namespace System.Runtime.Loader
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return Assembly.Load(assemblyName, ref stackMark, this);
         }
+#endif
 
         // These methods load assemblies into the current AssemblyLoadContext
         // They may be used in the implementation of an AssemblyLoadContext derivation
