@@ -92,7 +92,10 @@ namespace System.Net.Http.Functional.Tests
 
                         Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => getAsync);
                         cts.Cancel();
-                        Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                        if (UseSocketsHttpHandler)
+                        {
+                            Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                        }
                         await serverTask;
                     });
                 }
@@ -133,7 +136,10 @@ namespace System.Net.Http.Functional.Tests
                         else
                         {
                             Exception e = await Assert.ThrowsAsync<HttpRequestException>(() => getAsync);
-                            Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                            if (UseSocketsHttpHandler)
+                            {
+                                Assert.Contains((handler.MaxResponseHeadersLength * 1024).ToString(), e.ToString());
+                            }
                             try { await serverTask; } catch { }
                         }
                     });
