@@ -19,6 +19,7 @@ namespace System.Text.Json
             {
                 state.Current.WriteObjectOrArrayStart(ClassType.Object, writer);
                 state.Current.PropertyEnumerator = state.Current.JsonClassInfo.PropertyCache.GetEnumerator();
+                state.Current.PropertyEnumeratorActive = true;
                 state.Current.NextProperty();
             }
             else if (state.Current.MoveToNextProperty)
@@ -31,8 +32,20 @@ namespace System.Text.Json
             JsonClassInfo classInfo = state.Current.JsonClassInfo;
             if (classInfo.ClassType != ClassType.Unknown && state.Current.PropertyEnumeratorActive)
             {
-                HandleObject(options, writer, ref state);
+                var kvp = (KeyValuePair<string, JsonPropertyInfo>)state.Current.PropertyEnumerator.Current;
+                JsonPropertyInfo jsonPropertyInfo = kvp.Value;
+                HandleObject(jsonPropertyInfo, options, writer, ref state);
                 return false;
+            }
+
+            if (state.Current.ExtensionDataStatus == Serialization.ExtensionDataWriteStatus.Writing)
+            {
+                JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.DataExtensionProperty;
+                if (jsonPropertyInfo != null)
+                {
+                    HandleObject(jsonPropertyInfo, options, writer, ref state);
+                    return false;
+                }
             }
 
             writer.WriteEndObject();
@@ -50,6 +63,7 @@ namespace System.Text.Json
         }
 
         private static bool HandleObject(
+                JsonPropertyInfo jsonPropertyInfo,
                 JsonSerializerOptions options,
                 Utf8JsonWriter writer,
                 ref WriteStack state)
@@ -58,8 +72,6 @@ namespace System.Text.Json
                 state.Current.JsonClassInfo.ClassType == ClassType.Object ||
                 state.Current.JsonClassInfo.ClassType == ClassType.Unknown);
 
-            var kvp = (KeyValuePair<string, JsonPropertyInfo>)state.Current.PropertyEnumerator.Current;
-            JsonPropertyInfo jsonPropertyInfo = kvp.Value;
             if (!jsonPropertyInfo.ShouldSerialize)
             {
                 state.Current.MoveToNextProperty = true;

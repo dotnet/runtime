@@ -8,44 +8,54 @@ namespace System.Text.Json
 {
     public static partial class JsonSerializer
     {
-        private static bool HandleNull(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
+        private static bool HandleNull(ref Utf8JsonReader reader, ref ReadStack state)
         {
             if (state.Current.SkipProperty)
             {
                 return false;
             }
 
-            // If null is read at the top level and the type is nullable, then the root is "null" so just return.
-            if (reader.CurrentDepth == 0 && (state.Current.JsonPropertyInfo == null || state.Current.JsonPropertyInfo.CanBeNull))
+            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonPropertyInfo;
+
+            if (jsonPropertyInfo == null || (reader.CurrentDepth == 0 && jsonPropertyInfo.CanBeNull))
             {
                 Debug.Assert(state.IsLastFrame);
                 Debug.Assert(state.Current.ReturnValue == null);
                 return true;
             }
 
-            JsonPropertyInfo propertyInfo = state.Current.JsonPropertyInfo;
-            if (!propertyInfo.CanBeNull)
-            {
-                ThrowHelper.ThrowJsonException_DeserializeCannotBeNull(reader, state.JsonPath);
-            }
+            Debug.Assert(jsonPropertyInfo != null);
 
-            if (state.Current.IsEnumerable || state.Current.IsDictionary || state.Current.IsIDictionaryConstructible)
+            if (state.Current.IsCollectionForClass)
             {
-                ApplyObjectToEnumerable(null, ref state, ref reader);
+                AddNullToCollection(jsonPropertyInfo, ref reader, ref state);
                 return false;
             }
 
-            if (state.Current.IsEnumerableProperty || state.Current.IsDictionaryProperty || state.Current.IsIDictionaryConstructibleProperty)
+            if (state.Current.IsCollectionForProperty)
             {
-                bool setPropertyToNull = !state.Current.CollectionPropertyInitialized;
-                ApplyObjectToEnumerable(null, ref state, ref reader, setPropertyDirectly: setPropertyToNull);
-
-                if (setPropertyToNull)
+                if (state.Current.CollectionPropertyInitialized)
                 {
-                    // The property itself was set to null, in which case we should
-                    // reset so that `Is*Property` no longer returns true
-                    state.Current.ResetProperty();
+                    // Add the element.
+                    AddNullToCollection(jsonPropertyInfo, ref reader, ref state);
                 }
+                else
+                {
+                    // Set the property to null.
+                    ApplyObjectToEnumerable(null, ref state, ref reader, setPropertyDirectly: true);
+
+                    // Reset so that `Is*Property` no longer returns true
+                    state.Current.EndProperty();
+                }
+
+                return false;
+            }
+
+            if (!jsonPropertyInfo.CanBeNull)
+            {
+                // Allow a value type converter to return a null value representation, such as JsonElement.
+                // Most likely this will throw JsonException.
+                jsonPropertyInfo.Read(JsonTokenType.Null, ref state, ref reader);
                 return false;
             }
 
@@ -55,12 +65,31 @@ namespace System.Text.Json
                 return true;
             }
 
-            if (!propertyInfo.IgnoreNullValues)
+            if (!jsonPropertyInfo.IgnoreNullValues)
             {
                 state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value : null);
             }
 
             return false;
+        }
+
+        private static void AddNullToCollection(JsonPropertyInfo jsonPropertyInfo, ref Utf8JsonReader reader, ref ReadStack state)
+        {
+            JsonPropertyInfo elementPropertyInfo = jsonPropertyInfo.ElementClassInfo.PolicyProperty;
+
+            // if elementPropertyInfo == null then this element doesn't need a converter (an object).
+
+            if (elementPropertyInfo?.CanBeNull == false)
+            {
+                // Allow a value type converter to return a null value representation.
+                // Most likely this will throw JsonException unless the converter has special logic (like converter for JsonElement).
+                elementPropertyInfo.ReadEnumerable(JsonTokenType.Null, ref state, ref reader);
+            }
+            else
+            {
+                // Assume collection types are reference types and can have null assigned.
+                ApplyObjectToEnumerable(null, ref state, ref reader);
+            }
         }
     }
 }

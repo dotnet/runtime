@@ -24,6 +24,7 @@
     <Compile Include="System\Text\Json\JsonHelpers.Date.cs" />
     <Compile Include="System\Text\Json\JsonTokenType.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\EnumConverterOptions.cs" />
+    <Compile Include="System\Text\Json\Serialization\ExtensionDataWriteStatus.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonStringEnumConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonDefaultNamingPolicy.cs" />
     <Compile Include="System\Text\Json\ThrowHelper.cs" />

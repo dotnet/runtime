@@ -60,7 +60,7 @@ namespace System.Text.Json
                             readStack.Push();
                             readStack.Current.Drain = true;
                         }
-                        else if (readStack.Current.IsProcessingValue(tokenType))
+                        else if (readStack.Current.IsProcessingValue())
                         {
                             if (!HandleObjectAsValue(tokenType, options, ref reader, ref readStack, ref initialState, initialBytesConsumed))
                             {
@@ -94,7 +94,7 @@ namespace System.Text.Json
                     }
                     else if (tokenType == JsonTokenType.StartArray)
                     {
-                        if (!readStack.Current.IsProcessingValue(tokenType))
+                        if (!readStack.Current.IsProcessingValue())
                         {
                             HandleStartArray(options, ref reader, ref readStack);
                         }
@@ -110,7 +110,7 @@ namespace System.Text.Json
                     }
                     else if (tokenType == JsonTokenType.Null)
                     {
-                        HandleNull(ref reader, ref readStack, options);
+                        HandleNull(ref reader, ref readStack);
                     }
                 }
             }
