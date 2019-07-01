@@ -23,47 +23,32 @@ namespace System.Text.Json
             Debug.Assert(state.Current.ReturnValue != default || state.Current.TempDictionaryValues != default);
             Debug.Assert(state.Current.JsonClassInfo != default);
 
-            if (state.Current.IsProcessingDictionary || state.Current.IsProcessingIDictionaryConstructible)
+            if ((state.Current.IsProcessingDictionary || state.Current.IsProcessingIDictionaryConstructible) &&
+                state.Current.JsonClassInfo.DataExtensionProperty != state.Current.JsonPropertyInfo)
             {
-                if (ReferenceEquals(state.Current.JsonClassInfo.DataExtensionProperty, state.Current.JsonPropertyInfo))
+                string keyName = reader.GetString();
+
+                if (options.DictionaryKeyPolicy != null)
                 {
-                    ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
-
-                    // todo: use a cleaner call to get the unescaped string once https://github.com/dotnet/corefx/issues/35386 is implemented.
-                    if (reader._stringHasEscaping)
-                    {
-                        int idx = propertyName.IndexOf(JsonConstants.BackSlash);
-                        Debug.Assert(idx != -1);
-                        propertyName = GetUnescapedString(propertyName, idx);
-                    }
-
-                    ProcessMissingProperty(propertyName, options, ref reader, ref state);
+                    keyName = options.DictionaryKeyPolicy.ConvertName(keyName);
                 }
-                else
+
+                if (state.Current.IsDictionary || state.Current.IsIDictionaryConstructible)
                 {
-                    string keyName = reader.GetString();
-                    if (options.DictionaryKeyPolicy != null)
-                    {
-                        keyName = options.DictionaryKeyPolicy.ConvertName(keyName);
-                    }
-
-                    if (state.Current.IsDictionary || state.Current.IsIDictionaryConstructible)
-                    {
-                        state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.PolicyProperty;
-                    }
-
-                    Debug.Assert(
-                        state.Current.IsDictionary ||
-                        (state.Current.IsDictionaryProperty && state.Current.JsonPropertyInfo != null) ||
-                        state.Current.IsIDictionaryConstructible ||
-                        (state.Current.IsIDictionaryConstructibleProperty && state.Current.JsonPropertyInfo != null));
-
-                    state.Current.KeyName = keyName;
+                    state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.PolicyProperty;
                 }
+
+                Debug.Assert(
+                    state.Current.IsDictionary ||
+                    (state.Current.IsDictionaryProperty && state.Current.JsonPropertyInfo != null) ||
+                    state.Current.IsIDictionaryConstructible ||
+                    (state.Current.IsIDictionaryConstructibleProperty && state.Current.JsonPropertyInfo != null));
+
+                state.Current.KeyName = keyName;
             }
             else
             {
-                state.Current.ResetProperty();
+                state.Current.EndProperty();
 
                 ReadOnlySpan<byte> propertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
                 if (reader._stringHasEscaping)
@@ -73,27 +58,35 @@ namespace System.Text.Json
                     propertyName = GetUnescapedString(propertyName, idx);
                 }
 
-                state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(propertyName, ref state.Current);
-                if (state.Current.JsonPropertyInfo == null)
+                JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.GetProperty(propertyName, ref state.Current);
+                if (jsonPropertyInfo == null)
                 {
-                    if (state.Current.JsonClassInfo.DataExtensionProperty == null)
+                    JsonPropertyInfo dataExtProperty = state.Current.JsonClassInfo.DataExtensionProperty;
+                    if (dataExtProperty == null)
                     {
                         state.Current.JsonPropertyInfo = JsonPropertyInfo.s_missingProperty;
                     }
                     else
                     {
-                        ProcessMissingProperty(propertyName, options, ref reader, ref state);
+                        state.Current.JsonPropertyInfo = dataExtProperty;
+                        state.Current.JsonPropertyName = propertyName.ToArray();
+                        state.Current.KeyName = JsonHelpers.Utf8GetString(propertyName);
+                        state.Current.CollectionPropertyInitialized = true;
+
+                        CreateDataExtensionProperty(dataExtProperty, ref state);
                     }
                 }
                 else
                 {
                     // Support JsonException.Path.
                     Debug.Assert(
-                        state.Current.JsonPropertyInfo.JsonPropertyName == null ||
+                        jsonPropertyInfo.JsonPropertyName == null ||
                         options.PropertyNameCaseInsensitive ||
-                        propertyName.SequenceEqual(state.Current.JsonPropertyInfo.JsonPropertyName));
+                        propertyName.SequenceEqual(jsonPropertyInfo.JsonPropertyName));
 
-                    if (state.Current.JsonPropertyInfo.JsonPropertyName == null)
+                    state.Current.JsonPropertyInfo = jsonPropertyInfo;
+
+                    if (jsonPropertyInfo.JsonPropertyName == null)
                     {
                         byte[] propertyNameArray = propertyName.ToArray();
                         if (options.PropertyNameCaseInsensitive)
@@ -114,17 +107,10 @@ namespace System.Text.Json
             }
         }
 
-        private static void ProcessMissingProperty(
-            ReadOnlySpan<byte> unescapedPropertyName,
-            JsonSerializerOptions options,
-            ref Utf8JsonReader reader,
+        private static void CreateDataExtensionProperty(
+            JsonPropertyInfo jsonPropertyInfo,
             ref ReadStack state)
         {
-            // Remember the property name to support Path.
-            state.Current.JsonPropertyName = unescapedPropertyName.ToArray();
-
-            JsonPropertyInfo jsonPropertyInfo = state.Current.JsonClassInfo.DataExtensionProperty;
-
             Debug.Assert(jsonPropertyInfo != null);
             Debug.Assert(state.Current.ReturnValue != null);
 
@@ -143,17 +129,7 @@ namespace System.Text.Json
                 jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, extensionData);
             }
 
-            JsonElement jsonElement;
-            using (JsonDocument jsonDocument = JsonDocument.ParseValue(ref reader))
-            {
-                jsonElement = jsonDocument.RootElement.Clone();
-            }
-
-            string keyName = JsonHelpers.Utf8GetString(unescapedPropertyName);
-
-            // Currently we don't apply any naming policy. If we do, we'd have to pass it onto the JsonDocument.
-
-            extensionData.Add(keyName, jsonElement);
+            // We don't add the value to the dictionary here because we need to support the read-ahead functionality for Streams.
         }
     }
 }

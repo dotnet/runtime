@@ -42,12 +42,6 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void ThrowJsonException_DeserializeCannotBeNull(in Utf8JsonReader reader, string path)
-        {
-            ThrowJsonException(SR.DeserializeCannotBeNull, in reader, path);
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_DepthTooLarge(int currentDepth, in WriteStack writeStack, JsonSerializerOptions options)
         {
             var ex = new JsonException(SR.Format(SR.DepthTooLarge, currentDepth, options.EffectiveMaxDepth));

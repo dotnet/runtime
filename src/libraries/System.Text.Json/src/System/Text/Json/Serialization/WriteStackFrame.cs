@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Diagnostics;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -18,6 +19,7 @@ namespace System.Text.Json
 
         // The current IEnumerable or IDictionary.
         public IEnumerator CollectionEnumerator;
+        // Note all bools are kept together for packing:
         public bool PopStackOnEndCollection;
         public bool IsIDictionaryConstructible;
         public bool IsIDictionaryConstructibleProperty;
@@ -28,8 +30,9 @@ namespace System.Text.Json
         public bool MoveToNextProperty;
 
         // The current property.
-        public IEnumerator PropertyEnumerator;
         public bool PropertyEnumeratorActive;
+        public ExtensionDataWriteStatus ExtensionDataStatus;
+        public IEnumerator PropertyEnumerator;
         public JsonPropertyInfo JsonPropertyInfo;
 
         public void Initialize(Type type, JsonSerializerOptions options)
@@ -98,25 +101,29 @@ namespace System.Text.Json
         public void Reset()
         {
             CurrentValue = null;
-            CollectionEnumerator = null;
-            KeyName = null;
-            JsonClassInfo = null;
-            JsonPropertyInfo = null;
-            IsIDictionaryConstructible = false;
-            MoveToNextProperty = false;
-            PopStackOnEndObject = false;
-            PopStackOnEndCollection = false;
-            StartObjectWritten = false;
+            EndObject();
         }
 
         public void EndObject()
         {
-            IsIDictionaryConstructibleProperty = false;
-            JsonPropertyInfo = null;
-            MoveToNextProperty = false;
-            PopStackOnEndObject = false;
+            CollectionEnumerator = null;
+            ExtensionDataStatus = ExtensionDataWriteStatus.NotStarted;
+            IsIDictionaryConstructible = false;
+            JsonClassInfo = null;
             PropertyEnumerator = null;
             PropertyEnumeratorActive = false;
+            PopStackOnEndCollection = false;
+            PopStackOnEndObject = false;
+            StartObjectWritten = false;
+            EndProperty();
+        }
+
+        public void EndProperty()
+        {
+            IsIDictionaryConstructibleProperty = false;
+            JsonPropertyInfo = null;
+            KeyName = null;
+            MoveToNextProperty = false;
         }
 
         public void EndDictionary()
@@ -129,14 +136,28 @@ namespace System.Text.Json
         {
             CollectionEnumerator = null;
             PopStackOnEndCollection = false;
-            JsonPropertyInfo = null;
         }
 
         public void NextProperty()
         {
-            JsonPropertyInfo = null;
-            MoveToNextProperty = false;
-            PropertyEnumeratorActive = PropertyEnumerator.MoveNext();
+            EndProperty();
+
+            if (PropertyEnumeratorActive)
+            {
+                if (PropertyEnumerator.MoveNext())
+                {
+                    PropertyEnumeratorActive = true;
+                }
+                else
+                {
+                    PropertyEnumeratorActive = false;
+                    ExtensionDataStatus = ExtensionDataWriteStatus.Writing;
+                }
+            }
+            else
+            {
+                ExtensionDataStatus = ExtensionDataWriteStatus.Finished;
+            }
         }
     }
 }

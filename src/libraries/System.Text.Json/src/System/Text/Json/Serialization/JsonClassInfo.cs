@@ -116,10 +116,14 @@ namespace System.Text.Json
                             }
                         }
 
+                        if (DetermineExtensionDataProperty(cache))
+                        {
+                            // Remove from cache since it is handled independently.
+                            cache.Remove(DataExtensionProperty.NameAsString);
+                        }
+
                         // Set as a unit to avoid concurrency issues.
                         PropertyCache = cache;
-
-                        DetermineExtensionDataProperty();
                     }
                     break;
                 case ClassType.Enumerable:
@@ -165,9 +169,9 @@ namespace System.Text.Json
             }
         }
 
-        private void DetermineExtensionDataProperty()
+        private bool DetermineExtensionDataProperty(Dictionary<string, JsonPropertyInfo> cache)
         {
-            JsonPropertyInfo jsonPropertyInfo = GetPropertyThatHasAttribute(typeof(JsonExtensionDataAttribute));
+            JsonPropertyInfo jsonPropertyInfo = GetPropertyWithUniqueAttribute(typeof(JsonExtensionDataAttribute), cache);
             if (jsonPropertyInfo != null)
             {
                 Type declaredPropertyType = jsonPropertyInfo.DeclaredPropertyType;
@@ -178,16 +182,17 @@ namespace System.Text.Json
                 }
 
                 DataExtensionProperty = jsonPropertyInfo;
+                return true;
             }
+
+            return false;
         }
 
-        private JsonPropertyInfo GetPropertyThatHasAttribute(Type attributeType)
+        private JsonPropertyInfo GetPropertyWithUniqueAttribute(Type attributeType, Dictionary<string, JsonPropertyInfo> cache)
         {
-            Debug.Assert(PropertyCache != null);
-
             JsonPropertyInfo property = null;
 
-            foreach (JsonPropertyInfo jsonPropertyInfo in PropertyCache.Values)
+            foreach (JsonPropertyInfo jsonPropertyInfo in cache.Values)
             {
                 Attribute attribute = jsonPropertyInfo.PropertyInfo.GetCustomAttribute(attributeType);
                 if (attribute != null)

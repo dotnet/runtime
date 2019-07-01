@@ -38,6 +38,7 @@ namespace System.Text.Json
         {
             other.EscapedName = EscapedName;
             other.Name = Name;
+            other.NameAsString = NameAsString;
             other.PropertyNameKey = PropertyNameKey;
         }
 
