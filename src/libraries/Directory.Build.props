@@ -11,6 +11,7 @@
     <GenerateResourceUsePreserializedResources>false</GenerateResourceUsePreserializedResources>
 
     <CodeAnalysisRuleset>$(MSBuildThisFileDirectory)CodeAnalysis.ruleset</CodeAnalysisRuleset>
+    <DisableXUnitAnalyzer>true</DisableXUnitAnalyzer>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsTestProject)' == 'true' AND '$(IsTestSupportProject)' != 'true'">

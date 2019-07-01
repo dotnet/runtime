@@ -9,32 +9,10 @@
     <IsInterpreting>false</IsInterpreting>
     <DefineConstants Condition=" '$(IsInterpreting)' != 'true' ">$(DefineConstants);FEATURE_COMPILE</DefineConstants>
     <DefineConstants Condition=" '$(FeatureInterpret)' == 'true' ">$(DefineConstants);FEATURE_INTERPRET</DefineConstants>
-    <IncludeDefaultReferences>false</IncludeDefaultReferences>
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusions Include="System.Linq.Expressions" />
     <ReferenceFromRuntime Include="System.Linq.Expressions" />
-  </ItemGroup>
-  <ItemGroup>
-    <ReferenceFromRuntime Include="System.Private.CoreLib" />
-    <ReferenceFromRuntime Include="System.Runtime" />
-    <ReferenceFromRuntime Include="System.Collections" />
-    <ReferenceFromRuntime Include="System.Reflection.Primitives" />
-    <ReferenceFromRuntime Include="Microsoft.CSharp" />
-    <ReferenceFromRuntime Include="System.Runtime.Extensions" />
-    <ReferenceFromRuntime Include="System.Private.Uri" />
-    <ReferenceFromRuntime Include="System.Text.RegularExpressions" />
-    <ReferenceFromRuntime Include="System.Diagnostics.Debug" />
-    <ReferenceFromRuntime Include="System.ObjectModel" />
-    <ReferenceFromRuntime Include="System.Threading.Thread" />
-    <ReferenceFromRuntime Include="System.Threading.Tasks" />
-    <ReferenceFromRuntime Include="System.Linq" />
-    <ReferenceFromRuntime Include="System.Linq.Queryable" />
-    <ReferenceFromRuntime Include="System.Reflection" />
-    <ReferenceFromRuntime Include="System.IO.FileSystem" />
-    <ReferenceFromRuntime Include="System.Runtime.InteropServices.RuntimeInformation" />
-    <ReferenceFromRuntime Include="System.Runtime.InteropServices" />
-    <ReferenceFromRuntime Include="netstandard" />
   </ItemGroup>
   <ItemGroup>
     <AssembliesBeingTested Include="Microsoft.CSharp" />
