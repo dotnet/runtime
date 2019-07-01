@@ -1539,8 +1539,6 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ReadTooPreciseDouble()
         {
-            // If https://github.com/dotnet/corefx/issues/33997 gets resolved as the reader throwing,
-            // this test would need to expect FormatException from GetDouble, and false from TryGet.
             using (JsonDocument doc = JsonDocument.Parse("    1e+100000002"))
             {
                 JsonElement root = doc.RootElement;
@@ -1631,8 +1629,6 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void ReadArrayWithComments()
         {
-            // If https://github.com/dotnet/corefx/issues/33997 gets resolved as the reader throwing,
-            // this test would need to expect FormatException from GetDouble, and false from TryGet.
             var options = new JsonDocumentOptions
             {
                 CommentHandling = JsonCommentHandling.Skip,

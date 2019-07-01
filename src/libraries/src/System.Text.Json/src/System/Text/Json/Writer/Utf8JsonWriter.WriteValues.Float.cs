@@ -5,6 +5,7 @@
 using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace System.Text.Json
 {
@@ -18,7 +19,8 @@ namespace System.Text.Json
         /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
         /// <remarks>
-        /// Writes the <see cref="float"/> using the default <see cref="StandardFormat"/> (i.e. 'G').
+        /// Writes the <see cref="float"/> using the default <see cref="StandardFormat"/> on .NET Core 3 or higher
+        /// and 'G9' on any other framework.
         /// </remarks>
         public void WriteNumberValue(float value)
         {
@@ -88,9 +90,55 @@ namespace System.Text.Json
                 BytesPending += indent;
             }
 
-            bool result = Utf8Formatter.TryFormat(value, output.Slice(BytesPending), out int bytesWritten);
+            bool result = TryFormatSingle(value, output.Slice(BytesPending), out int bytesWritten);
             Debug.Assert(result);
             BytesPending += bytesWritten;
+        }
+
+        private static bool TryFormatSingle(float value, Span<byte> destination, out int bytesWritten)
+        {
+            // Frameworks that are not .NET Core 3.0 or higher do not produce roundtrippable strings by
+            // default. Further, the Utf8Formatter on older frameworks does not support taking a precision
+            // specifier for 'G' nor does it represent other formats such as 'R'. As such, we duplicate
+            // the .NET Core 3.0 logic of forwarding to the UTF16 formatter and transcoding it back to UTF8,
+            // with some additional changes to remove dependencies on Span APIs which don't exist downlevel.
+
+#if BUILDING_INBOX_LIBRARY
+            return Utf8Formatter.TryFormat(value, destination, out bytesWritten);
+#else
+            const string FormatString = "G9";
+
+            string utf16Text = value.ToString(FormatString, CultureInfo.InvariantCulture);
+
+            // Copy the value to the destination, if it's large enough.
+
+            if (utf16Text.Length > destination.Length)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            try
+            {
+                byte[] bytes = Encoding.UTF8.GetBytes(utf16Text);
+
+                if (bytes.Length > destination.Length)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                bytes.CopyTo(destination);
+                bytesWritten = bytes.Length;
+
+                return true;
+            }
+            catch
+            {
+                bytesWritten = 0;
+                return false;
+            }
+#endif
         }
     }
 }
