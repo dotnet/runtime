@@ -29,7 +29,7 @@
 #include <mono/utils/bsearch.h>
 #include <mono/utils/mono-logger-internals.h>
 
-#if defined (HAVE_SYS_ZLIB)
+#if defined (HAVE_SYS_ZLIB) && !defined(HOST_WIN32)
 #include <zlib.h>
 #endif
 
@@ -172,7 +172,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 
 	if (ppdb_data) {
 		/* Embedded PPDB data */
-#if defined (HAVE_SYS_ZLIB)
+#if defined (HAVE_SYS_ZLIB) && !defined(HOST_WIN32)
 		/* ppdb_size is the uncompressed size */
 		guint8 *data = g_malloc0 (ppdb_size);
 		z_stream stream;

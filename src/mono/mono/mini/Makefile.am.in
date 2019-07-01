@@ -243,8 +243,12 @@ else
 LLVMMONOF=$(LLVM_LIBS) $(LLVM_LDFLAGS)
 endif
 
+if !HOST_WIN32
 if HAVE_ZLIB
 Z_LIBS= -lz
+else
+Z_LIBS=
+endif
 else
 Z_LIBS=
 endif
