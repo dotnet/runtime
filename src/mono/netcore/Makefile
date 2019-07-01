@@ -15,7 +15,7 @@ NETCOREAPP_VERSION := 3.0.0-preview7-27826-04
 # Extracted from https://dotnetcli.blob.core.windows.net/dotnet/aspnetcore/Runtime/master/latest.version
 ASPNETCOREAPP_VERSION := 3.0.0-preview-18614-0151
 
-ROSLYN_VERSION := 3.2.0-beta3-19310-04
+ROSLYN_VERSION := 3.3.0-beta2-19351-03
 
 ifeq ($(HOST_PLATFORM),win32)
 PLATFORM_AOT_SUFFIX := .dll
