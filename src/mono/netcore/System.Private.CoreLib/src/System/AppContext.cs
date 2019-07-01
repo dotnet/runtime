@@ -16,14 +16,14 @@ namespace System
 				s_dataStore.Add (new string ((sbyte*)pNames[i]), new string ((sbyte*)pValues[i]));
 		}
 
-		static string? GetBaseDirectoryCore ()
+		static string GetBaseDirectoryCore ()
 		{
 			// Fallback path for hosts that do not set APP_CONTEXT_BASE_DIRECTORY explicitly
 			var directory = Path.GetDirectoryName (Assembly.GetEntryAssembly()?.Location);
 			if (directory != null && !Path.EndsInDirectorySeparator (directory))
 				directory += Path.DirectorySeparatorChar;
 
-			return directory;
+			return directory ?? string.Empty;
 		}
 	}
 }

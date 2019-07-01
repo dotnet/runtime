@@ -154,7 +154,7 @@ icallarray_print (const char *format, ...)
 static GENERATE_GET_CLASS_WITH_CACHE (module, "System.Reflection", "Module")
 
 static void
-array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, gboolean strict, MonoError *error);
+array_set_value_impl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, gboolean strict_enums, gboolean strict_signs, MonoError *error);
 
 static MonoArrayHandle
 type_array_from_modifiers (MonoImage *image, MonoType *type, int optional, MonoError *error);
@@ -269,7 +269,7 @@ ves_icall_System_Array_GetValue (MonoArrayHandle arr, MonoArrayHandle indices, M
 void
 ves_icall_System_Array_SetValueImpl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error)
 {
-	array_set_value_impl (arr, value, pos, FALSE, error);
+	array_set_value_impl (arr, value, pos, FALSE, TRUE, error);
 }
 
 static inline void
@@ -279,8 +279,93 @@ set_invalid_cast (MonoError *error, MonoClass *src_class, MonoClass *dst_class)
 	mono_error_set_invalid_cast (error);
 }
 
+#if ENABLE_NETCORE
+void
+ves_icall_System_Array_SetValueRelaxedImpl (MonoArrayHandle arr, MonoObjectHandle value, guint32 pos, MonoError *error)
+{
+	array_set_value_impl (arr, value, pos, FALSE, FALSE, error);
+}
+
+// Copied from CoreCLR: https://github.com/dotnet/coreclr/blob/d3e39bc2f81e3dbf9e4b96347f62b49d8700336c/src/vm/invokeutil.cpp#L33
+#define PT_Primitive          0x01000000
+
+static const guint32 primitive_conversions [] = {
+	0x00,					// MONO_TYPE_END
+	0x00,					// MONO_TYPE_VOID
+	PT_Primitive | 0x0004,	// MONO_TYPE_BOOLEAN
+	PT_Primitive | 0x3F88,	// MONO_TYPE_CHAR (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
+	PT_Primitive | 0x3550,	// MONO_TYPE_I1   (W = I1, I2, I4, I8, R4, R8) 
+	PT_Primitive | 0x3FE8,	// MONO_TYPE_U1   (W = CHAR, U1, I2, U2, I4, U4, I8, U8, R4, R8)
+	PT_Primitive | 0x3540,	// MONO_TYPE_I2   (W = I2, I4, I8, R4, R8)
+	PT_Primitive | 0x3F88,	// MONO_TYPE_U2   (W = U2, CHAR, I4, U4, I8, U8, R4, R8)
+	PT_Primitive | 0x3500,	// MONO_TYPE_I4   (W = I4, I8, R4, R8)
+	PT_Primitive | 0x3E00,	// MONO_TYPE_U4   (W = U4, I8, R4, R8)
+	PT_Primitive | 0x3400,	// MONO_TYPE_I8   (W = I8, R4, R8)
+	PT_Primitive | 0x3800,	// MONO_TYPE_U8   (W = U8, R4, R8)
+	PT_Primitive | 0x3000,	// MONO_TYPE_R4   (W = R4, R8)
+	PT_Primitive | 0x2000,	// MONO_TYPE_R8   (W = R8) 
+};
+
+// Copied from CoreCLR: https://github.com/dotnet/coreclr/blob/030a3ea9b8dbeae89c90d34441d4d9a1cf4a7de6/src/vm/invokeutil.h#L176
+static 
+gboolean can_primitive_widen (MonoTypeEnum src_type, MonoTypeEnum dest_type)
+{
+	if (dest_type > MONO_TYPE_R8 || src_type > MONO_TYPE_R8) {
+		return (MONO_TYPE_I == dest_type && MONO_TYPE_I == src_type) || (MONO_TYPE_U == dest_type && MONO_TYPE_U == src_type);
+	}
+	return ((1 << dest_type) & primitive_conversions [src_type]) != 0;
+}
+
+// Copied from CoreCLR: https://github.com/dotnet/coreclr/blob/eafa8648ebee92de1380278b15cd5c2b6ef11218/src/vm/array.cpp#L1406
+static MonoTypeEnum
+get_normalized_integral_array_element_type (MonoTypeEnum elementType)
+{
+	// Array Primitive types such as E_T_I4 and E_T_U4 are interchangeable
+	// Enums with interchangeable underlying types are interchangable
+	// BOOL is NOT interchangeable with I1/U1, neither CHAR -- with I2/U2
+
+	switch (elementType) {
+	case MONO_TYPE_U1:
+	case MONO_TYPE_U2:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_U:
+		return (MonoTypeEnum) (elementType - 1); // normalize to signed type
+	}
+
+	return elementType;
+}
+
+MonoBoolean 
+ves_icall_System_Array_CanChangePrimitive (MonoReflectionTypeHandle ref_src_type, MonoReflectionTypeHandle ref_dst_type, MonoBoolean reliable, MonoError *error)
+{
+	MonoType *src_type = MONO_HANDLE_GETVAL (ref_src_type, type);
+	MonoType *dst_type = MONO_HANDLE_GETVAL (ref_dst_type, type);
+
+	g_assert (mono_type_is_primitive (src_type));
+	g_assert (mono_type_is_primitive (dst_type));
+
+	MonoTypeEnum normalized_src_type = get_normalized_integral_array_element_type (src_type->type);
+	MonoTypeEnum normalized_dst_type = get_normalized_integral_array_element_type (dst_type->type);
+
+	// Allow conversions like int <-> uint
+	if (normalized_src_type == normalized_dst_type) {
+		return TRUE;
+	}
+
+	// Widening is not allowed if reliable is true.
+	if (reliable) {
+		return FALSE;
+	}
+
+	// NOTE we don't use normalized types here so int -> ulong will be false
+	// see https://github.com/dotnet/coreclr/pull/25209#issuecomment-505952295
+	return can_primitive_widen (src_type->type, dst_type->type);
+}
+#endif
+
 static void
-array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle, guint32 pos, gboolean strict, MonoError *error)
+array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle, guint32 pos, gboolean strict_enums, gboolean strict_signs, MonoError *error)
 {
 	MonoClass *ac, *vc, *ec;
 	gint32 esize, vsize;
@@ -434,7 +519,7 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 	vt_isenum = vt == MONO_TYPE_VALUETYPE && m_class_is_enumtype (m_class_get_byval_arg (vc)->data.klass);
 
 #if ENABLE_NETCORE
-	if (strict && et_isenum && !vt_isenum) {
+	if (strict_enums && et_isenum && !vt_isenum) {
 		INVALID_CAST;
 		goto leave;
 	}
@@ -445,6 +530,17 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 
 	if (vt_isenum)
 		vt = mono_class_enum_basetype_internal (m_class_get_byval_arg (vc)->data.klass)->type;
+
+#if ENABLE_NETCORE
+	// Treat MONO_TYPE_U/I as MONO_TYPE_U8/I8/U4/I4
+#if SIZEOF_VOID_P == 8
+	vt = vt == MONO_TYPE_U ? MONO_TYPE_U8 : (vt == MONO_TYPE_I ? MONO_TYPE_I8 : vt);
+	et = et == MONO_TYPE_U ? MONO_TYPE_U8 : (et == MONO_TYPE_I ? MONO_TYPE_I8 : et);
+#else
+	vt = vt == MONO_TYPE_U ? MONO_TYPE_U4 : (vt == MONO_TYPE_I ? MONO_TYPE_I4 : vt);
+	et = et == MONO_TYPE_U ? MONO_TYPE_U4 : (et == MONO_TYPE_I ? MONO_TYPE_I4 : et);
+#endif
+#endif
 
 #define ASSIGN_UNSIGNED(etype) G_STMT_START{\
 	switch (vt) { \
@@ -461,6 +557,11 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 	case MONO_TYPE_I2: \
 	case MONO_TYPE_I4: \
 	case MONO_TYPE_I8: \
+		if (!strict_signs) { \
+			CHECK_WIDENING_CONVERSION(0); \
+			*(etype *) ea = (etype) i64; \
+			break; \
+		} \
 	/* You can't assign a floating point number to an integer array. */ \
 	case MONO_TYPE_R4: \
 	case MONO_TYPE_R8: \
@@ -488,7 +589,7 @@ array_set_value_impl (MonoArrayHandle arr_handle, MonoObjectHandle value_handle,
 	case MONO_TYPE_U4: \
 	case MONO_TYPE_U8: \
 	case MONO_TYPE_CHAR: \
-		CHECK_WIDENING_CONVERSION(1); \
+		CHECK_WIDENING_CONVERSION(strict_signs ? 1 : 0); \
 		*(etype *) ea = (etype) u64; \
 		break; \
 	/* You can't assign a floating point number to an integer array. */ \
@@ -688,7 +789,7 @@ ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
 			return;
 		}
 
-		array_set_value_impl (arr, value, idx, TRUE, error);
+		array_set_value_impl (arr, value, idx, TRUE, TRUE, error);
 		return;
 	}
 	
@@ -712,7 +813,7 @@ ves_icall_System_Array_SetValue (MonoArrayHandle arr, MonoObjectHandle value,
 		pos = pos * dim.length + idx - dim.lower_bound;
 	}
 
-	array_set_value_impl (arr, value, pos, TRUE, error);
+	array_set_value_impl (arr, value, pos, TRUE, TRUE, error);
 }
 
 MonoArrayHandle

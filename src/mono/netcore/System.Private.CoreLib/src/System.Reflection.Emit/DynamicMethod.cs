@@ -381,8 +381,9 @@ namespace System.Reflection.Emit {
 
 		public override ParameterInfo ReturnParameter {
 			get {
-				if (deleg == null)
-					return null;
+				if (deleg == null) {
+					return new RuntimeParameterInfo ((ParameterBuilder) null, returnType, this, -1);
+				}
 				return deleg.Method.ReturnParameter;
 			}
 		}

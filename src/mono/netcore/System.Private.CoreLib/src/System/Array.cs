@@ -140,7 +140,8 @@ namespace System
 				dst_type = Enum.GetUnderlyingType (dst_type);
 
 			if (reliable) {
-				if (!dst_type.Equals (src_type)) {
+				if (!dst_type.Equals (src_type) &&
+					!(dst_type.IsPrimitive && src_type.IsPrimitive && CanChangePrimitive(dst_type, src_type, true))) {
 					throw new ArrayTypeMismatchException (SR.ArrayTypeMismatch_CantAssignType);
 				}
 			} else {
@@ -157,7 +158,7 @@ namespace System
 						throw new InvalidCastException ();
 
 					try {
-						destinationArray.SetValueImpl (srcval, dest_pos + i);
+						destinationArray.SetValueRelaxedImpl (srcval, dest_pos + i);
 					} catch (ArgumentException) {
 						throw CreateArrayTypeMismatchException ();
 					}
@@ -167,7 +168,7 @@ namespace System
 					Object srcval = sourceArray.GetValueImpl (source_pos + i);
 
 					try {
-						destinationArray.SetValueImpl (srcval, dest_pos + i);
+						destinationArray.SetValueRelaxedImpl (srcval, dest_pos + i);
 					} catch (ArgumentException) {
 						throw CreateArrayTypeMismatchException ();
 					}
@@ -201,12 +202,8 @@ namespace System
 					return true;
 				} else if (source.IsPrimitive && target.IsPrimitive) {
 					
-					// Special case: normally C# doesn't allow implicit ushort->char cast).
-					if (source == typeof (ushort) && target == typeof (char))
-						return true;
-					
 					// Allow primitive type widening
-					return DefaultBinder.CanChangePrimitive (source, target);
+					return CanChangePrimitive (source, target, false);
 				} else if (!source.IsValueType && !source.IsPointer) {
 					// Source is base class or interface of destination type
 					if (target.IsPointer)
@@ -471,6 +468,9 @@ namespace System
 		extern static Array CreateInstanceImpl (Type elementType, int[] lengths, int[]? bounds);
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		extern static bool CanChangePrimitive (Type srcType, Type dstType, bool reliable);
+
+		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		internal extern static bool FastCopy (Array source, int source_idx, Array dest, int dest_idx, int length);
 
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
@@ -503,6 +503,10 @@ namespace System
 		// CAUTION! No bounds checking!
 		[MethodImplAttribute (MethodImplOptions.InternalCall)]
 		extern void SetValueImpl (object? value, int pos);
+
+		// CAUTION! No bounds checking!
+		[MethodImplAttribute (MethodImplOptions.InternalCall)]
+		extern void SetValueRelaxedImpl (object? value, int pos);
 
 		/*
 		 * These methods are used to implement the implicit generic interfaces 

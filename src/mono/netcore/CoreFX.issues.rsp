@@ -199,6 +199,7 @@
 -nomethod System.Linq.Expressions.Tests.CallTests.MethodName_TypeArgsDontMatchConstraints_ThrowsArgumentException
 
 # flaky tests - Invalid IL code in (wrapper dynamic-method)
+-nomethod System.Linq.Expressions.Tests.LambdaMultiplyNullableTests.LambdaMultiplyNullableFloatTest
 -nomethod System.Linq.Expressions.Tests.LambdaMultiplyTests.LambdaMultiplyFloatTest
 -nomethod System.Linq.Expressions.Tests.LambdaDivideTests.LambdaDivideFloatTest
 
@@ -439,6 +440,12 @@
 
 -nomethod System.Reflection.Emit.Tests.AssemblyTests.DefineDynamicAssembly_AssemblyName_AssemblyBuilderAccess
 -nomethod System.Reflection.Emit.Tests.AssemblyTests.DefineDynamicAssembly_AssemblyName_AssemblyBuilderAccess_CustomAttributeBuilder
+
+# need to reflect https://github.com/dotnet/coreclr/pull/24937 changes
+-nomethod System.Reflection.Emit.Tests.MethodBuilderSetSignature.SetSignature_AllParametersNull
+-nomethod System.Reflection.Emit.Tests.MethodBuilderSetReturnType.SetReturnType_NullReturnType_ReturnsVoid
+-nomethod System.Reflection.Emit.Tests.MethodBuilderGetGenericArguments.GetGenericArguments_NonGenericMethod_ReturnsEmptyArray
+-nomethod System.Reflection.Emit.Tests.MethodBuilderSetSignature.SetSignature_NullReturnType_CustomModifiersSetToWrongTypes
 
 ####################################################################
 ##  System.Reflection.Tests
@@ -760,6 +767,9 @@
 # CoreCLR creates the delegate, but fails to execute it with "System.InvalidOperationException: Instances of abstract classes cannot be created."
 -nomethod System.Text.Json.Serialization.Tests.ValueTests.ValueFail
 
+# The JSON value is not in a supported DateTime format
+-nonamespace System.Text.Json.Serialization.Tests
+
 ####################################################################
 ##  System.Threading.Tests
 ####################################################################
@@ -1050,6 +1060,7 @@
 -nomethod System.Tests.AppDomainTests.AssemblyLoad
 -nomethod System.Tests.AppDomainTests.FirstChanceException_Called
 -nomethod System.Tests.AppDomainTests.AssemblyResolve_FirstChanceException
+-nomethod System.Tests.AppDomainTests.AssemblyResolveInvalidAssemblyName
 
 # AssemblyLoadContext.SetProfileOptimizationRoot is no-op (not implemented)
 -nomethod System.Runtime.Tests.ProfileOptimizationTest.ProfileOptimization_CheckFileExists
@@ -1288,18 +1299,15 @@
 # disabled in CoreCLR too
 -noclass System.Security.Cryptography.X509Certificates.Tests.X509Certificate2UITests
 
-# requires corefx test updates https://github.com/dotnet/corefx/pull/38452
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfAny_ManyInteger
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfAny_ManyString
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfMany_Byte
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthIndexOfMany_Char
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthLastIndexOfAny_Byte_ManyByte
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthLastIndexOfAny_ManyByte
--nomethod System.SpanTests.ReadOnlySpanTests.ZeroLengthLastIndexOfAny_String_ManyByte
--nomethod System.SpanTests.SpanTests.ZeroLengthIndexOfAny_ManyInteger
--nomethod System.SpanTests.SpanTests.ZeroLengthIndexOfAny_ManyString
--nomethod System.SpanTests.SpanTests.ZeroLengthIndexOfMany_Byte
--nomethod System.SpanTests.SpanTests.ZeroLengthIndexOfMany_Char
--nomethod System.SpanTests.SpanTests.ZeroLengthLastIndexOfAny_Byte_ManyByte
--nomethod System.SpanTests.SpanTests.ZeroLengthLastIndexOfAny_ManyByte
--nomethod System.SpanTests.SpanTests.ZeroLengthLastIndexOfAny_String_ManyByte
+# requires changes from coreclr (via mirror)
+-nomethod System.ComponentModel.Tests.ComponentResourceManagerTests.Ctor_Default
+-nomethod WindowAndCursorProps.NonRedirectedCursorVisible
+-nomethod System.Data.Tests.SqlTypes.SqlCharsTest.ReadWriteXmlTest
+-nomethod System.Diagnostics.TraceSourceTests.TraceSourceClassTests.PruneTest
+-nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.context.*
+-nomethod System.IO.Tests.FileStream_Dispose.FinalizeFlushesWriteBuffer
+-nomethod System.IO.Tests.File_Move_Tests.File_Move_From_Unwatched_To_Watched
+-nomethod System.IO.MemoryMappedFiles.Tests.MemoryMappedViewStreamTests.ValidAccessLevelCombinations
+-nomethod System.IO.MemoryMappedFiles.Tests.MemoryMappedViewAccessorTests.ValidAccessLevelCombinations
+-nomethod DataContractJsonSerializerTests.DCJS_VerifyDateTimeForDateTimeFormat
+-nomethod DataContractJsonSerializerTests.DCJS_VerifyDateTimeForFormatStringDCJsonSerSettings
