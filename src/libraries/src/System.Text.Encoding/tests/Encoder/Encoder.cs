@@ -218,6 +218,34 @@ namespace System.Text.Encodings.Tests
             
         }
 
+        [Theory]
+        [InlineData(new char[] { '\ud800' }, new char[] { }, -1)]
+        [InlineData(new char[] { '\ud800' }, new char[] { 'x' }, -1)]
+        [InlineData(new char[] { '\ud800' }, new char[] { '\ud800' }, -1)]
+        [InlineData(new char[] { '\ud800' }, new char[] { '\udfff', '\udfff' }, 1)]
+        public static void EncoderFallbackExceptionIndexTests(char[] firstPayload, char[] secondPayload, int expectedIndex)
+        {
+            UTF8Encoding encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+            // First test GetBytes / GetBytes
+
+            Encoder encoder = encoding.GetEncoder();
+            Assert.Equal(0, encoder.GetBytes(firstPayload, 0, firstPayload.Length, new byte[0], 0, flush: false));
+
+            EncoderFallbackException ex = Assert.Throws<EncoderFallbackException>(
+                () => encoder.GetBytes(secondPayload, 0, secondPayload.Length, new byte[8], 0, flush: true));
+            Assert.Equal(expectedIndex, ex.Index);
+
+            // Then test GetBytes / GetByteCount
+
+            encoder = encoding.GetEncoder();
+            Assert.Equal(0, encoder.GetBytes(firstPayload, 0, firstPayload.Length, new byte[0], 0, flush: false));
+
+            ex = Assert.Throws<EncoderFallbackException>(
+                () => encoder.GetByteCount(secondPayload, 0, secondPayload.Length, flush: true));
+            Assert.Equal(expectedIndex, ex.Index);
+        }
+
         [Fact]
         public static void EncoderReplacementFallbackBufferTest()
         {
