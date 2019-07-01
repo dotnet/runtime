@@ -213,21 +213,6 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal XmlQualifiedName GetStableName(Type clrType)
-        {
-#if SUPPORT_SURROGATE
-            if (_dataContractSurrogate != null)
-            {
-                Type dcType = DataContractSurrogateCaller.GetDataContractType(_dataContractSurrogate, clrType);
-
-                //if (clrType.IsValueType != dcType.IsValueType)
-                //    throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.GetString(SR.ValueTypeMismatchInSurrogatedType, dcType, clrType)));
-                return DataContract.GetStableName(dcType);
-            }
-#endif
-            return DataContract.GetStableName(clrType);
-        }
-
         internal DataContract GetDataContract(Type clrType)
         {
 #if SUPPORT_SURROGATE

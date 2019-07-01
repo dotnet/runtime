@@ -138,7 +138,6 @@ namespace System.Xml.Serialization
             var textOrArrayMembersList = new List<Member>();
             var attributeMembersList = new List<Member>();
 
-            int pLength = p.Length;
             for (int i = 0; i < mappings.Length; i++)
             {
                 int index = i;
@@ -629,7 +628,6 @@ namespace System.Xml.Serialization
                     throw new InvalidOperationException(SR.XmlInternalError);
                 }
 
-                var typeMemberTypeTuple = Tuple.Create(o.GetType(), memberType);
                 MethodInfo getSetMemberValueDelegateWithTypeGenericMi = typeof(ReflectionXmlSerializationReaderHelper).GetMethod("GetSetMemberValueDelegateWithType", BindingFlags.Static | BindingFlags.Public);
                 MethodInfo getSetMemberValueDelegateWithTypeMi = getSetMemberValueDelegateWithTypeGenericMi.MakeGenericMethod(o.GetType(), memberType);
                 var getSetMemberValueDelegateWithType = (Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>)getSetMemberValueDelegateWithTypeMi.CreateDelegate(typeof(Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>));

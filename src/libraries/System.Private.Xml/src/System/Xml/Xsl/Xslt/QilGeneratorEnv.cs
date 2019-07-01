@@ -167,7 +167,6 @@ namespace System.Xml.Xsl.Xslt
                     else if (name == "format-date" || name == "format-time")
                     {
                         FunctionInfo.CheckArity(/*minArg:*/1, /*maxArg:*/3, name, args.Count);
-                        bool fwdCompat = (_xslVersion == XslVersion.ForwardsCompatible);
                         return _f.InvokeMsFormatDateTime(
                             /*datetime:*/_f.ConvertToString(args[0]),
                             /*format:  */1 < args.Count ? _f.ConvertToString(args[1]) : _f.String(string.Empty),

@@ -153,7 +153,6 @@ namespace System.Xml.Schema
             }
             else
             {
-                SchemaInfo xdrSchema = parser.XdrSchema;
                 return Add(ns, parser.XdrSchema, null, true, resolver);
             }
         }

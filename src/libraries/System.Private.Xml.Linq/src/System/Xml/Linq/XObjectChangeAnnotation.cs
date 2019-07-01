@@ -8,9 +8,5 @@ namespace System.Xml.Linq
     {
         internal EventHandler<XObjectChangeEventArgs> changing;
         internal EventHandler<XObjectChangeEventArgs> changed;
-
-        public XObjectChangeAnnotation()
-        {
-        }
     }
 }

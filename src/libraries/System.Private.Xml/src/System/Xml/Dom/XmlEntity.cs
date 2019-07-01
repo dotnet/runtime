@@ -11,7 +11,6 @@ namespace System.Xml
         private string _systemId;
         private string _notationName;
         private string _name;
-        private string _unparsedReplacementStr;
         private string _baseURI;
         private XmlLinkedNode _lastChild;
         private bool _childrenFoliating;
@@ -22,7 +21,6 @@ namespace System.Xml
             _publicId = publicId;
             _systemId = systemId;
             _notationName = notationName;
-            _unparsedReplacementStr = strdata;
             _childrenFoliating = false;
         }
 
