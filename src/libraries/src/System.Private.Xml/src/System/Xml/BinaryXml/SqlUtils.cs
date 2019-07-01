@@ -33,32 +33,11 @@ namespace System.Xml
 
         private static readonly byte s_NUMERIC_MAX_PRECISION = 38;            // Maximum precision of numeric
         private static readonly byte s_maxPrecision = s_NUMERIC_MAX_PRECISION;  // max SS precision
-        private static readonly byte s_maxScale = s_NUMERIC_MAX_PRECISION;      // max SS scale
 
         private static readonly int s_cNumeMax = 4;
         private static readonly long s_lInt32Base = ((long)1) << 32;      // 2**32
-        private static readonly ulong s_ulInt32Base = ((ulong)1) << 32;     // 2**32
-        private static readonly ulong s_ulInt32BaseForMod = s_ulInt32Base - 1;    // 2**32 - 1 (0xFFF...FF)
         internal static readonly ulong x_llMax = long.MaxValue;   // Max of Int64
-        //private static readonly uint x_ulBase10 = 10;
         private static readonly double s_DUINT_BASE = (double)s_lInt32Base;     // 2**32
-        private static readonly double s_DUINT_BASE2 = s_DUINT_BASE * s_DUINT_BASE;  // 2**64
-        private static readonly double s_DUINT_BASE3 = s_DUINT_BASE2 * s_DUINT_BASE; // 2**96
-        //private static readonly double DMAX_NUME = 1.0e+38;                  // Max value of numeric
-        //private static readonly uint DBL_DIG = 17;                       // Max decimal digits of double
-        //private static readonly byte x_cNumeDivScaleMin = 6;     // Minimum result scale of numeric division
-        // Array of multipliers for lAdjust and Ceiling/Floor.
-        private static readonly uint[] s_rgulShiftBase = new uint[9] {
-            10,
-            10 * 10,
-            10 * 10 * 10,
-            10 * 10 * 10 * 10,
-            10 * 10 * 10 * 10 * 10,
-            10 * 10 * 10 * 10 * 10 * 10,
-            10 * 10 * 10 * 10 * 10 * 10 * 10,
-            10 * 10 * 10 * 10 * 10 * 10 * 10 * 10,
-            10 * 10 * 10 * 10 * 10 * 10 * 10 * 10 * 10
-        };
 
         public BinXmlSqlDecimal(byte[] data, int offset, bool trim)
         {
@@ -631,7 +610,6 @@ Error:
         public static readonly int SQLTicksPerSecond = 300;
         public static readonly int SQLTicksPerMinute = SQLTicksPerSecond * 60;
         public static readonly int SQLTicksPerHour = SQLTicksPerMinute * 60;
-        private static readonly int s_SQLTicksPerDay = SQLTicksPerHour * 24;
 
 
         public static string SqlSmallDateTimeToString(short dateticks, ushort timeticks)

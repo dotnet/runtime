@@ -43,10 +43,6 @@ namespace System.Xml
         private int _curIndex;
         private int _endIndex;
 
-        internal IncrementalReadCharsDecoder()
-        {
-        }
-
         internal override int DecodedCount
         {
             get

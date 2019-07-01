@@ -270,7 +270,6 @@ namespace System.Xml
         private int _pos;
         private int _mark;
         private int _end;
-        private long _offset; // how much read and shift out of buffer
         private bool _eof;
         private bool _sniffed;
         private bool _isEmpty; // short-tag element start tag
@@ -363,11 +362,8 @@ namespace System.Xml
             _nodetype = XmlNodeType.None;
             _token = BinXmlToken.Error;
             _elementStack = new ElemInfo[16];
-            //this.elemDepth = 0;
             _attributes = new AttrInfo[8];
             _attrHashTbl = new int[8];
-            //this.attrCount = 0;
-            //this.attrIndex = 0;
             _symbolTables.Init();
             _qnameOther.Clear();
             _qnameElement.Clear();
@@ -398,7 +394,6 @@ namespace System.Xml
 
             _mark = -1;
             _eof = (0 == _end);
-            _offset = 0;
             _closeInput = closeInput;
             switch (settings.ConformanceLevel)
             {
@@ -2034,14 +2029,12 @@ namespace System.Xml
                 }
                 _pos = pos;
                 _mark = 0;
-                _offset += mark;
             }
             else
             {
                 Debug.Assert(_attrCount == 0);
                 _pos -= end;
                 _mark -= end;
-                _offset += end;
                 _tokDataPos -= end;
                 end = 0;
             }
@@ -4484,12 +4477,6 @@ namespace System.Xml
             _state = ScanState.Error;
             return new XmlException(res, (string[])null);
         }
-
-        // not currently used...
-        //Exception ThrowXmlException(string res, string arg1) {
-        //    this.state = ScanState.Error;
-        //    return new XmlException(res, new string[] {arg1} );
-        //}
 
         private Exception ThrowXmlException(string res, string arg1, string arg2)
         {

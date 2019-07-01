@@ -133,8 +133,6 @@ namespace System.Xml.Xsl.XsltOld
 
         private void AnalyzePriority(Compiler compiler)
         {
-            NavigatorInput input = compiler.Input;
-
             if (!double.IsNaN(_priority) || _matchKey == Compiler.InvalidQueryKey)
             {
                 return;

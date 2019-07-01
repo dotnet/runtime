@@ -262,8 +262,6 @@ namespace System.Xml.Xsl.Xslt
             Debug.Assert(_reader.NodeType == XmlNodeType.EndEntity);
             if (_readerLineInfo != null)
             {
-                int line = _readerLineInfo.LineNumber;
-                int pos = _readerLineInfo.LinePosition;
                 rec.end = new Location(_readerLineInfo.LineNumber, _readerLineInfo.LinePosition + 1);
             }
         }

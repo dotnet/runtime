@@ -1019,7 +1019,6 @@ namespace System.Xml.Xsl.XsltOld
             {
                 return;
             }
-            int count = this.containedActions.Count;
             for (int i = 0; i < this.containedActions.Count; i++)
             {
                 ((Action)this.containedActions[i]).ReplaceNamespaceAlias(compiler);
