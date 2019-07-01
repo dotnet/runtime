@@ -18,9 +18,6 @@
     <TextSources>System\Text</TextSources>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonPath)\System\HResults.cs">
-      <Link>Common\System\HResults.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
     </Compile>

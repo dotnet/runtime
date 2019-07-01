@@ -156,8 +156,6 @@ namespace System.Xml.Serialization
 
         private void WriteArrayItems(ElementAccessor[] elements, TextAccessor text, ChoiceIdentifierAccessor choice, TypeDesc arrayTypeDesc, object o)
         {
-            TypeDesc arrayElementTypeDesc = arrayTypeDesc.ArrayElementTypeDesc;
-
             var arr = o as IList;
 
             if (arr != null)
@@ -268,8 +266,6 @@ namespace System.Xml.Serialization
 
                 if (text != null)
                 {
-                    bool useReflection = text.Mapping.TypeDesc.UseReflection;
-                    string fullTypeName = text.Mapping.TypeDesc.CSharpName;
                     WriteText(o, text);
                     return;
                 }

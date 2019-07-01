@@ -30,7 +30,6 @@ namespace System.Xml
         private XmlQualifiedName _qnameCData;
         private bool _outputDocType, _inAttr;
         private string _systemId, _publicId;
-        private XmlStandalone _standalone;
 
         public QueryOutputWriterV1(XmlWriter writer, XmlWriterSettings settings)
         {
@@ -55,7 +54,6 @@ namespace System.Xml
                 if (settings.Standalone == XmlStandalone.Yes)
                 {
                     documentConformance = true;
-                    _standalone = settings.Standalone;
                 }
 
                 if (documentConformance)

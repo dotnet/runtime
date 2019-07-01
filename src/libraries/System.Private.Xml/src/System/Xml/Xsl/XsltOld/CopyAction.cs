@@ -13,14 +13,12 @@ namespace System.Xml.Xsl.XsltOld
     internal class CopyAction : ContainerAction
     {
         // Local execution states
-        private const int CopyText = 4;
         private const int NamespaceCopy = 5;
 
         private const int ContentsCopy = 6;
         private const int ProcessChildren = 7;
         private const int ChildrenOnly = 8;
 
-        private string _useAttributeSets;
         private bool _empty;
 
         internal override void Compile(Compiler compiler)
@@ -42,7 +40,6 @@ namespace System.Xml.Xsl.XsltOld
             string value = compiler.Input.Value;
             if (Ref.Equal(name, compiler.Atoms.UseAttributeSets))
             {
-                _useAttributeSets = value;
                 AddAction(compiler.CreateUseAttributeSetsAction());
             }
             else

@@ -316,7 +316,6 @@ namespace System.Xml.Xsl.XsltOld
 
         private void WriteEndElement(RecordBuilder record)
         {
-            BuilderInfo node = record.MainNode;
             HtmlElementProps htmlProps = record.Manager.CurrentElementScope.HtmlElementProps;
 
             if (htmlProps != null && htmlProps.Empty)

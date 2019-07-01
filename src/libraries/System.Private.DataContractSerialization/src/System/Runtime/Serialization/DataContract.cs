@@ -1158,14 +1158,6 @@ namespace System.Runtime.Serialization
                 }
             }
 
-            internal virtual void WriteRootElement(XmlWriterDelegator writer, XmlDictionaryString name, XmlDictionaryString ns)
-            {
-                if (object.ReferenceEquals(ns, DictionaryGlobals.SerializationNamespace) && !IsPrimitive)
-                    writer.WriteStartElement(Globals.SerPrefix, name, ns);
-                else
-                    writer.WriteStartElement(name, ns);
-            }
-
             internal void SetDataContractName(XmlQualifiedName stableName)
             {
                 XmlDictionary dictionary = new XmlDictionary(2);
