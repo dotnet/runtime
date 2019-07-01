@@ -62,13 +62,6 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
 
-#ifdef TARGET_WIN32
-/* Under windows, the calling convention is never stdcall */
-#define CALLCONV_IS_STDCALL(call_conv) (FALSE)
-#else
-#define CALLCONV_IS_STDCALL(call_conv) ((call_conv) == MONO_CALL_STDCALL)
-#endif
-
 /* This mutex protects architecture specific caches */
 #define mono_mini_arch_lock() mono_os_mutex_lock (&mini_arch_mutex)
 #define mono_mini_arch_unlock() mono_os_mutex_unlock (&mini_arch_mutex)
