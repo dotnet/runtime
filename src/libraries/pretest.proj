@@ -2,14 +2,31 @@
   <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
 
   <PropertyGroup>
-    <!-- Enable GenerateTestSharedFrameworkDepsFile from CoreFxTesting package -->
-    <GenerateTestSharedFrameworkDepsFile Condition="'$(BinplaceTestSharedFramework)' == 'true'">true</GenerateTestSharedFrameworkDepsFile>
+    <BuildDependsOnTargets>FilterProjects;GenerateLaunchSettingsFiles</BuildDependsOnTargets>
+    <BuildDependsOnTargets Condition="'$(BinplaceTestSharedFramework)' == 'true'">$(BuildDependsOnTargets);GenerateTestSharedFrameworkDepsFile</BuildDependsOnTargets>
+    <BuildDependsOnTargets Condition="'$(PlatformManifestFile)' != ''">$(BuildDependsOnTargets);GenerateFileVersionProps</BuildDependsOnTargets>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- This is necessary as inside VS project references that aren't part of the sln aren't built. -->
     <Project Include="$(CommonTestPath)\CoreFx.Private.TestUtilities\CoreFx.Private.TestUtilities.csproj" />
   </ItemGroup>
+
+  <!-- Microsoft.XmlSerializer.Generator should not be marked as a platform item and be copy-local instead. -->
+  <Target Name="CollectSharedFrameworkRuntimeFiles"
+          Condition="'$(PlatformManifestFile)' != ''"
+          BeforeTargets="GenerateFileVersionProps">
+    <ItemGroup Condition="'$(BuildingNETCoreAppVertical)' == 'true'">
+      <_manualSharedFrameworkRuntimeFiles Include="System.Security.Cryptography.Native.OpenSsl.so" />
+      <_manualSharedFrameworkRuntimeFiles Include="System.Security.Cryptography.Native.Apple.dylib" />
+      <_manualSharedFrameworkRuntimeFiles Include="System.Security.Cryptography.Native.OpenSsl.dylib" />
+    </ItemGroup>
+    <ItemGroup>
+      <SharedFrameworkRuntimeFiles Include="$(TestHostRuntimePath)*;@(_manualSharedFrameworkRuntimeFiles->'$(TestHostRuntimePath)%(Identity)')"
+                                   Exclude="$(TestHostRuntimePath)dotnet-Microsoft.XmlSerializer.Generator.*"
+                                   TargetPath="runtimes/" />
+    </ItemGroup>
+  </Target>
 
   <!-- Generate launch settings support files to enable VS debugging. -->
   <Target Name="GenerateLaunchSettingsFiles" Condition="'$(EnableLaunchSettings)' == 'true'">
@@ -31,7 +48,7 @@
 
   <Target Name="Build"
           Condition="'$(SkipPrepareTest)' != 'true'"
-          DependsOnTargets="FilterProjects;GenerateTestSharedFrameworkDepsFile;GenerateLaunchSettingsFiles">
+          DependsOnTargets="$(BuildDependsOnTargets)">
 
     <MSBuild Targets="Build"
              Projects="@(Project)"
