@@ -4,7 +4,7 @@
 namespace Microsoft.Extensions.Logging
 {
     /// <summary>
-    /// Identifies a logging event.
+    /// Identifies a logging event. The primary identifier is the "Id" property, with the "Name" property providing a short description of this type of event.
     /// </summary>
     public readonly struct EventId
     {
@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Checks if two specified <see cref="EventId"/>'s have the same value.
+        /// Checks if two specified <see cref="EventId"/>'s have the same value. They are equal if they have the same Id.
         /// </summary>
         /// <param name="left">The first <see cref="EventId"/>.</param>
         /// <param name="right">The second <see cref="EventId"/>.</param>
@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Indicates whether the current object is equal to another object of the same type. Two events are equal if they the same Id.
+        /// Indicates whether the current object is equal to another object of the same type. Two events are equal if they have the same id.
         /// </summary>
         /// <param name="other">An object to compare with this object.</param>
         /// <returns><code>true</code> if the current object is equal to the other parameter; otherwise, <code>false</code>.</returns>
