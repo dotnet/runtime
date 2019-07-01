@@ -639,16 +639,22 @@ void SystemNative_SysLog(SysLogPriority priority, const char* message, const cha
 int32_t SystemNative_WaitIdAnyExitedNoHangNoWait()
 {
     siginfo_t siginfo;
+    memset(&siginfo, 0, sizeof(siginfo));
     int32_t result;
     while (CheckInterrupted(result = waitid(P_ALL, 0, &siginfo, WEXITED | WNOHANG | WNOWAIT)));
-    if (result == -1 && errno == ECHILD)
+    if (result == 0)
+    {
+        // When there are no waitable children and WNOHANG is specified,
+        // waitid may return zero with si_pid unchanged.
+        assert(siginfo.si_pid == 0 ||        // no waitable child
+               siginfo.si_signo == SIGCHLD); // waitable child
+
+        result = siginfo.si_pid;
+    }
+    else if (errno == ECHILD)
     {
         // The calling process has no existing unwaited-for child processes.
         result = 0;
-    }
-    else if (result == 0 && siginfo.si_signo == SIGCHLD)
-    {
-        result = siginfo.si_pid;
     }
     return result;
 }
