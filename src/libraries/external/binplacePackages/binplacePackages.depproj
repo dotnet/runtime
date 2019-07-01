@@ -18,11 +18,11 @@
   <ItemGroup Condition="'$(TargetsNetStandard)' != 'true'">
     <BinPlaceConfiguration Include="$(Configuration)">
       <ItemName>BinPlaceLib</ItemName>
-      <RuntimePath>$(TestHostRootPath)</RuntimePath>
+      <RuntimePath>$(RuntimePath)</RuntimePath>
     </BinPlaceConfiguration>
     <BinPlaceConfiguration Include="$(Configuration)">
       <ItemName>BinPlaceLib</ItemName>
-      <RuntimePath>$(RuntimePath)</RuntimePath>
+      <RuntimePath>$(TestHostRuntimePath)</RuntimePath>
     </BinPlaceConfiguration>
   </ItemGroup>
 
