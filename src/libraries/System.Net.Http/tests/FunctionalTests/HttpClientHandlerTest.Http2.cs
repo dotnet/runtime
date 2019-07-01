@@ -1466,6 +1466,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(38820)]
         [ConditionalFact(nameof(SupportsAlpn))]
         [OuterLoop("Uses Task.Delay")]
         public async Task Http2_PendingSend_SendsReset()
