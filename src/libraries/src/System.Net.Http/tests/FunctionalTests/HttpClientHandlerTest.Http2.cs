@@ -656,6 +656,120 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        public async Task GoAwayFrame_ServerDisconnect_AbortStreams()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                int streamId = await connection.ReadRequestHeaderAsync();
+
+                await connection.SendGoAway(streamId);
+
+                // wait until GOAWAY received
+                await connection.PingPong();
+
+                // Shutdown the connection unexpectedly
+                await connection.WaitForConnectionShutdownAsync();
+
+                // Expect client to detect that server has disconnected and throw an exception
+                await Assert.ThrowsAnyAsync<HttpRequestException>(() =>
+                    new Task[]
+                    {
+                        sendTask
+                    }.WhenAllOrAnyFailed(TestHelper.PassingTestTimeoutMilliseconds));
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        [ActiveIssue(39013)]
+        public async Task GoAwayFrame_UnprocessedStreamFirstRequestFinishedFirst_RequestRestarted()
+        {
+            // This test case is similar to GoAwayFrame_UnprocessedStreamFirstRequestWaitsUntilSecondFinishes_RequestRestarted
+            // but is easier: we close first connection before we expect retry to happen
+
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                server.AllowMultipleConnections = true;
+
+                Task<HttpResponseMessage> sendTask1 = client.GetAsync(server.Address);
+                Http2LoopbackConnection connection1 = await server.EstablishConnectionAsync();
+                int streamId1 = await connection1.ReadRequestHeaderAsync();
+
+                Task<HttpResponseMessage> sendTask2 = client.GetAsync(server.Address);
+                int streamId2 = await connection1.ReadRequestHeaderAsync();
+
+                // Client should try to restart on new connection when GOAWAY is sent
+                Task<Http2LoopbackConnection> waitForSecondConnection = server.EstablishConnectionAsync();
+
+                await connection1.SendGoAway(streamId1);
+
+                // Wait until GOAWAY received
+                await connection1.PingPong();
+
+                // Complete first request
+                await connection1.SendDefaultResponseAsync(streamId1);
+                HttpResponseMessage response1 = await sendTask1;
+                Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
+                await connection1.WaitForConnectionShutdownAsync();
+
+                // Client should retry connection
+                Http2LoopbackConnection connection2 = await waitForSecondConnection;
+
+                // Complete second request
+                int streamId3 = await connection2.ReadRequestHeaderAsync();
+                await connection2.SendDefaultResponseAsync(streamId3);
+                HttpResponseMessage response2 = await sendTask2;
+                Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+                await connection2.WaitForConnectionShutdownAsync();
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
+        [ActiveIssue(39013)]
+        public async Task GoAwayFrame_UnprocessedStreamFirstRequestWaitsUntilSecondFinishes_RequestRestarted()
+        {
+            using (var server = Http2LoopbackServer.CreateServer())
+            using (HttpClient client = CreateHttpClient())
+            {
+                server.AllowMultipleConnections = true;
+
+                Task<HttpResponseMessage> sendTask1 = client.GetAsync(server.Address);
+                Http2LoopbackConnection connection1 = await server.EstablishConnectionAsync();
+                int streamId1 = await connection1.ReadRequestHeaderAsync();
+
+                Task<HttpResponseMessage> sendTask2 = client.GetAsync(server.Address);
+                int streamId2 = await connection1.ReadRequestHeaderAsync();
+
+                // Client should try to restart on new connection when GOAWAY is sent
+                Task<Http2LoopbackConnection> waitForSecondConnection = server.EstablishConnectionAsync();
+
+                await connection1.SendGoAway(streamId1);
+
+                // Wait until GOAWAY received
+                await connection1.PingPong();
+
+                // Client should retry connection
+                Http2LoopbackConnection connection2 = await waitForSecondConnection;
+
+                // Complete second request
+                int streamId3 = await connection2.ReadRequestHeaderAsync();
+                await connection2.SendDefaultResponseAsync(streamId3);
+                HttpResponseMessage response2 = await sendTask2;
+                Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
+                await connection2.WaitForConnectionShutdownAsync();
+
+                // Complete first request
+                await connection1.SendDefaultResponseAsync(streamId1);
+                HttpResponseMessage response1 = await sendTask1;
+                Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
+                await connection1.WaitForConnectionShutdownAsync();
+            }
+        }
+
+        [ConditionalFact(nameof(SupportsAlpn))]
         public async Task DataFrame_TooLong_ConnectionError()
         {
             using (var server = Http2LoopbackServer.CreateServer())
