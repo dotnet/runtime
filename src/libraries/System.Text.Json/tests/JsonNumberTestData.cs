@@ -175,8 +175,8 @@ namespace System.Text.Json.Tests
                 0.000,
                 1.1234e1,
                 -1.1234e1,
-                1.79769313486231E+308,  // double.MaxValue doesn't round trip
-                -1.79769313486231E+308  // double.MinValue doesn't round trip
+                double.MaxValue,
+                double.MinValue
             };
             for (int i = 0; i < numberOfItems / 2; i++)
             {
@@ -275,19 +275,22 @@ namespace System.Text.Json.Tests
             {
                 // Use InvariantCulture to format the numbers to make sure they retain the decimal point '.'
                 builder.Append("\"double").Append(i).Append("\": ");
-                var str = string.Format(CultureInfo.InvariantCulture, "{0}, ", Doubles[i]);
+                const string Format = "{0:" + JsonTestHelper.DoubleFormatString + "}, ";
+                string str = string.Format(CultureInfo.InvariantCulture, Format, Doubles[i]);
                 builder.AppendFormat(CultureInfo.InvariantCulture, "{0}", str);
             }
             for (int i = 0; i < Floats.Count; i++)
             {
+                // Use InvariantCulture to format the numbers to make sure they retain the decimal point '.'
                 builder.Append("\"float").Append(i).Append("\": ");
-                var str = string.Format(CultureInfo.InvariantCulture, "{0}, ", Floats[i]);
+                const string Format = "{0:" + JsonTestHelper.SingleFormatString + "}, ";
+                string str = string.Format(CultureInfo.InvariantCulture, Format, Floats[i]);
                 builder.AppendFormat(CultureInfo.InvariantCulture, "{0}", str);
             }
             for (int i = 0; i < Decimals.Count; i++)
             {
                 builder.Append("\"decimal").Append(i).Append("\": ");
-                var str = string.Format(CultureInfo.InvariantCulture, "{0}, ", Decimals[i]);
+                string str = string.Format(CultureInfo.InvariantCulture, "{0}, ", Decimals[i]);
                 builder.AppendFormat(CultureInfo.InvariantCulture, "{0}", str);
             }
 
@@ -297,6 +300,5 @@ namespace System.Text.Json.Tests
             string jsonString = builder.ToString();
             JsonData = Encoding.UTF8.GetBytes(jsonString);
         }
-
     }
 }
