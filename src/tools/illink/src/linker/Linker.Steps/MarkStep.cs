@@ -1368,8 +1368,8 @@ namespace Mono.Linker.Steps {
 		void MarkGenericParameter (GenericParameter parameter)
 		{
 			MarkCustomAttributes (parameter);
-			foreach (TypeReference constraint in parameter.Constraints)
-				MarkType (constraint);
+			foreach (var constraint in parameter.Constraints)
+				MarkType (constraint.ConstraintType);
 		}
 
 		bool IsVirtualNeededByTypeDueToPreservedScope (MethodDefinition method)

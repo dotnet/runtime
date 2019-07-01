@@ -150,7 +150,7 @@ namespace Mono.Linker {
 
 			foreach (var genericParameter in provider.GenericParameters) {
 				foreach (var constraint in genericParameter.Constraints)
-					AddIfResolved (set, constraint);
+					AddIfResolved (set, constraint.ConstraintType);
 			}
 		}
 
