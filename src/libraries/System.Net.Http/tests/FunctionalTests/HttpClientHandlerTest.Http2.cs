@@ -1467,6 +1467,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        [OuterLoop("Uses Task.Delay")]
         public async Task Http2_PendingSend_SendsReset()
         {
             var cts = new CancellationTokenSource();
@@ -1573,6 +1574,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalFact(nameof(SupportsAlpn))]
+        [OuterLoop("Uses Task.Delay")]
         public async Task Dispose_ProcessingRequest_Throws()
         {
             HttpClient client =  CreateHttpClient();
@@ -1672,6 +1674,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [OuterLoop("Uses Task.Delay")]
         public async Task PostAsyncExpect100Continue_LateForbiddenResponse_Ok()
         {
             TaskCompletionSource<bool> tsc = new TaskCompletionSource<bool>();
@@ -1722,6 +1725,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(false, HttpStatusCode.Forbidden)]
         [InlineData(true, HttpStatusCode.OK)]
         [InlineData(false, HttpStatusCode.OK)]
+        [OuterLoop("Uses Task.Delay")]
         public async Task SendAsync_ConcurentSendReceive_Ok(bool shouldWait, HttpStatusCode responseCode)
         {
             TaskCompletionSource<bool> tsc = new TaskCompletionSource<bool>();
@@ -1778,6 +1782,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [OuterLoop("Uses Task.Delay")]
         public async Task SendAsync_ConcurentSendReceive_Fail()
         {
             TaskCompletionSource<bool> tsc = new TaskCompletionSource<bool>();
