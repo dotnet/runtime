@@ -223,6 +223,37 @@ namespace System.Text.Encodings.Tests
             Assert.Equal('\u0000', fallbackBuffer.GetNextChar());
         }
 
+        [Theory]
+        [InlineData(new byte[] { 0xF1 }, new byte[] { 0xF1 }, -1)]
+        [InlineData(new byte[] { 0xF1 }, new byte[] { 0x80 }, -1)]
+        [InlineData(new byte[] { 0xF1, 0x80 }, new byte[] { }, -2)]
+        [InlineData(new byte[] { 0xF1, 0x80 }, new byte[] { 0x60 }, -2)]
+        [InlineData(new byte[] { 0xF1, 0x80 }, new byte[] { 0x80 }, -2)]
+        [InlineData(new byte[] { 0xF1, 0x80, 0x80 }, new byte[] { 0x60 }, -3)]
+        [InlineData(new byte[] { 0xF1, 0x80, 0x80 }, new byte[] { 0x80, 0x81 }, 1)]
+        public static void DecoderFallbackExceptionIndexTests(byte[] firstPayload, byte[] secondPayload, int expectedIndex)
+        {
+            UTF8Encoding encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+            // First test GetChars / GetChars
+
+            Decoder decoder = encoding.GetDecoder();
+            Assert.Equal(0, decoder.GetChars(firstPayload, 0, firstPayload.Length, new char[0], 0, flush: false));
+
+            DecoderFallbackException ex = Assert.Throws<DecoderFallbackException>(
+                () => decoder.GetChars(secondPayload, 0, secondPayload.Length, new char[8], 0, flush: true));
+            Assert.Equal(expectedIndex, ex.Index);
+
+            // Then test GetChars / GetCharCount
+
+            decoder = encoding.GetDecoder();
+            Assert.Equal(0, decoder.GetChars(firstPayload, 0, firstPayload.Length, new char[0], 0, flush: false));
+
+            ex = Assert.Throws<DecoderFallbackException>(
+                () => decoder.GetCharCount(secondPayload, 0, secondPayload.Length, flush: true));
+            Assert.Equal(expectedIndex, ex.Index);
+        }
+
         [Fact]
         public static void DecoderReplacementFallbackBufferTest()
         {
