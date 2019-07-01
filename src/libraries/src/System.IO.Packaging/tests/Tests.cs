@@ -3695,6 +3695,7 @@ namespace System.IO.Packaging.Tests
             }
         }
 
+        [ActiveIssue(39075)]
         [Fact]
         [OuterLoop]
         public void VeryLargePart()
