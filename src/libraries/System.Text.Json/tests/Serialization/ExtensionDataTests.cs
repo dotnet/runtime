@@ -34,6 +34,9 @@ namespace System.Text.Json.Serialization.Tests
                 string json = JsonSerializer.Serialize(obj);
                 obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(json);
                 Verify();
+
+                // The json should not contain the dictionary name.
+                Assert.DoesNotContain(nameof(ClassWithExtensionProperty.MyOverflow), json);
             }
 
             void Verify()
@@ -126,7 +129,7 @@ namespace System.Text.Json.Serialization.Tests
         public static void NullValuesIgnored()
         {
             const string json = @"{""MyNestedClass"":null}";
-            const string jsonMissing = @"{ ""MyNestedClassMissing"":null}";
+            const string jsonMissing = @"{""MyNestedClassMissing"":null}";
 
             {
                 // Baseline with no missing.
@@ -157,6 +160,21 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        private class ClassWithInvalidExtensionProperty
+        {
+            [JsonExtensionData]
+            public Dictionary<string, int> MyOverflow { get; set; }
+        }
+
+        private class ClassWithTwoExtensionProperties
+        {
+            [JsonExtensionData]
+            public Dictionary<string, object> MyOverflow1 { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, object> MyOverflow2 { get; set; }
+        }
+
         [Fact]
         public static void InvalidExtensionPropertyFail()
         {
@@ -165,7 +183,16 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(@"{}");
 
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithInvalidExtensionProperty>(@"{}"));
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithTwoExtensionPropertys>(@"{}"));
+            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<ClassWithTwoExtensionProperties>(@"{}"));
+        }
+
+        private class ClassWithIgnoredData
+        {
+            [JsonExtensionData]
+            public Dictionary<string, object> MyOverflow { get; set; }
+
+            [JsonIgnore]
+            public int MyInt { get; set; }
         }
 
         [Fact]
@@ -180,9 +207,72 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ExtensionPropertyObjectValue_Empty()
         {
-            // Baseline
             ClassWithExtensionPropertyAlreadyInstantiated obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAlreadyInstantiated>(@"{}");
-            Assert.Equal(@"{""MyOverflow"":{}}", JsonSerializer.Serialize(obj));
+            Assert.Equal(@"{}", JsonSerializer.Serialize(obj));
+        }
+
+        [Fact]
+        public static void ExtensionPropertyObjectValue_SameAsExtensionPropertyName()
+        {
+            const string json = @"{""MyOverflow"":{""Key1"":""V""}}";
+
+            // Deserializing directly into the overflow is not supported by design.
+            ClassWithExtensionPropertyAsObject obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(json);
+
+            // The JSON is treated as normal overflow.
+            Assert.NotNull(obj.MyOverflow["MyOverflow"]);
+            Assert.Equal(json, JsonSerializer.Serialize(obj));
+        }
+
+        private class ClassWithExtensionPropertyAsObjectAndNameProperty
+        {
+            public string Name { get; set; }
+
+            [JsonExtensionData]
+            public Dictionary<string, object> MyOverflow { get; set; }
+        }
+
+        [Fact]
+        public static void ExtensionPropertyDuplicateNames()
+        {
+            var obj = new ClassWithExtensionPropertyAsObjectAndNameProperty();
+            obj.Name = "Name1";
+
+            obj.MyOverflow = new Dictionary<string, object>();
+            obj.MyOverflow["Name"] = "Name2";
+
+            string json = JsonSerializer.Serialize(obj);
+            Assert.Equal(@"{""Name"":""Name1"",""Name"":""Name2""}", json);
+
+            // The overflow value comes last in the JSOn so it overwrites the original value.
+            obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObjectAndNameProperty>(json);
+            Assert.Equal("Name2", obj.Name);
+
+            // Since there was no overflow, this should be null.
+            Assert.Null(obj.MyOverflow);
+        }
+
+        [Fact]
+        public static void NullAsNullObjectOrJsonValueKindNull()
+        {
+            const string json = @"{""MissingProperty"":null}";
+
+            {
+                ClassWithExtensionPropertyAsObject obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsObject>(json);
+
+                // A null value maps to <object>, so the value is null.
+                object elem = obj.MyOverflow["MissingProperty"];
+                Assert.Null(elem);
+            }
+
+            {
+                ClassWithExtensionPropertyAsJsonElement obj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAsJsonElement>(json);
+
+                // Since JsonElement is a struct, it treats null as JsonValueKind.Null.
+                object elem = obj.MyOverflow["MissingProperty"];
+                Assert.IsType<JsonElement>(elem);
+                Assert.Equal(JsonValueKind.Null, ((JsonElement)elem).ValueKind);
+            }
         }
 
         [Fact]
@@ -193,7 +283,17 @@ namespace System.Text.Json.Serialization.Tests
             obj.MyOverflow.Add("test", new object());
             obj.MyOverflow.Add("test1", 1);
 
-            Assert.Equal(@"{""MyOverflow"":{""test"":{},""test1"":1}}", JsonSerializer.Serialize(obj));
+            Assert.Equal(@"{""test"":{},""test1"":1}", JsonSerializer.Serialize(obj));
+        }
+
+        private class DummyObj
+        {
+            public string Prop { get; set; }
+        }
+
+        private struct DummyStruct
+        {
+            public string Prop { get; set; }
         }
 
         [Fact]
@@ -208,7 +308,8 @@ namespace System.Text.Json.Serialization.Tests
             obj.MyOverflow.Add("test4", new DummyStruct() { Prop = "StructProp" });
             obj.MyOverflow.Add("test5", new Dictionary<string, object>() { { "Key", "Value" }, { "Key1", "Value1" }, });
 
-            ClassWithExtensionPropertyAlreadyInstantiated roundTripObj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAlreadyInstantiated>(JsonSerializer.Serialize(obj));
+            string json = JsonSerializer.Serialize(obj);
+            ClassWithExtensionPropertyAlreadyInstantiated roundTripObj = JsonSerializer.Deserialize<ClassWithExtensionPropertyAlreadyInstantiated>(json);
 
             Assert.Equal(6, roundTripObj.MyOverflow.Count);
 
@@ -237,6 +338,14 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("Value1", ((JsonElement)roundTripObj.MyOverflow["test5"]).GetProperty("Key1").GetString());
         }
 
+        private class ClassWithReference
+        {
+            [JsonExtensionData]
+            public Dictionary<string, JsonElement> MyOverflow { get; set; }
+
+            public ClassWithExtensionProperty MyReference { get; set; }
+        }
+
         [Fact]
         public static void ObjectTree()
         {
@@ -254,6 +363,18 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(3, child.MyOverflow["MyIntMissingChild"].GetInt32());
         }
 
+        private class ClassWithInvalidExtensionPropertyStringString
+        {
+            [JsonExtensionData]
+            public Dictionary<string, string> MyOverflow { get; set; }
+        }
+
+        private class ClassWithInvalidExtensionPropertyObjectString
+        {
+            [JsonExtensionData]
+            public Dictionary<DummyObj, string> MyOverflow { get; set; }
+        }
+
         [Fact]
         public static void ExtensionProperty_InvalidDictionary()
         {
@@ -264,17 +385,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Serialize(obj2));
         }
 
-        public class DummyObj
-        {
-            public string Prop { get; set; }
-        }
-
-        public struct DummyStruct
-        {
-            public string Prop { get; set; }
-        }
-
-        public class ClassWithExtensionPropertyAlreadyInstantiated
+        private class ClassWithExtensionPropertyAlreadyInstantiated
         {
             public ClassWithExtensionPropertyAlreadyInstantiated()
             {
@@ -285,54 +396,16 @@ namespace System.Text.Json.Serialization.Tests
             public Dictionary<string, object> MyOverflow { get; set; }
         }
 
-        public class ClassWithExtensionPropertyAsObject
+        private class ClassWithExtensionPropertyAsObject
         {
             [JsonExtensionData]
             public Dictionary<string, object> MyOverflow { get; set; }
         }
 
-        public class ClassWithIgnoredData
-        {
-            [JsonExtensionData]
-            public Dictionary<string, object> MyOverflow { get; set; }
-
-            [JsonIgnore]
-            public int MyInt { get; set; }
-        }
-
-        public class ClassWithInvalidExtensionProperty
-        {
-            [JsonExtensionData]
-            public Dictionary<string, int> MyOverflow { get; set; }
-        }
-
-        public class ClassWithInvalidExtensionPropertyStringString
-        {
-            [JsonExtensionData]
-            public Dictionary<string, string> MyOverflow { get; set; }
-        }
-
-        public class ClassWithInvalidExtensionPropertyObjectString
-        {
-            [JsonExtensionData]
-            public Dictionary<DummyObj, string> MyOverflow { get; set; }
-        }
-
-        public class ClassWithTwoExtensionPropertys
-        {
-            [JsonExtensionData]
-            public Dictionary<string, object> MyOverflow1 { get; set; }
-
-            [JsonExtensionData]
-            public Dictionary<string, object> MyOverflow2 { get; set; }
-        }
-
-        public class ClassWithReference
+        private class ClassWithExtensionPropertyAsJsonElement
         {
             [JsonExtensionData]
             public Dictionary<string, JsonElement> MyOverflow { get; set; }
-
-            public ClassWithExtensionProperty MyReference { get; set; }
         }
     }
 }

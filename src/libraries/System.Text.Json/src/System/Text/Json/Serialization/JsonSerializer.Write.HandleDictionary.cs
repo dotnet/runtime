@@ -43,7 +43,10 @@ namespace System.Text.Json
                     state.Current.CollectionEnumerator = enumerable.GetEnumerator();
                 }
 
-                state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer);
+                if (state.Current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing)
+                {
+                    state.Current.WriteObjectOrArrayStart(ClassType.Dictionary, writer);
+                }
             }
 
             if (state.Current.CollectionEnumerator.MoveNext())
@@ -76,7 +79,14 @@ namespace System.Text.Json
             }
 
             // We are done enumerating.
-            writer.WriteEndObject();
+            if (state.Current.ExtensionDataStatus == ExtensionDataWriteStatus.Writing)
+            {
+                state.Current.ExtensionDataStatus = ExtensionDataWriteStatus.Finished;
+            }
+            else
+            {
+                writer.WriteEndObject();
+            }
 
             if (state.Current.PopStackOnEndCollection)
             {

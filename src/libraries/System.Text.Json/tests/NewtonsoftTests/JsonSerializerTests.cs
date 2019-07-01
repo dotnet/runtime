@@ -26,7 +26,6 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
 using Xunit;
 
 namespace System.Text.Json.Tests
@@ -41,7 +40,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public void DeserializeBoolean_Null()
         {
-            Assert.Throws<ArgumentNullException>(
+            Assert.Throws<JsonException>(
                 () => JsonSerializer.Deserialize<IList<bool>>(@"[null]"));
         }
 

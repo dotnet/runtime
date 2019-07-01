@@ -51,13 +51,9 @@ namespace System.Text.Json
 
                 state.Push();
                 state.Current.Initialize(elementType, options);
-                state.Current.CollectionPropertyInitialized = true;
-            }
-            else
-            {
-                state.Current.CollectionPropertyInitialized = true;
             }
 
+            state.Current.CollectionPropertyInitialized = true;
             jsonPropertyInfo = state.Current.JsonPropertyInfo;
 
             if (state.Current.JsonClassInfo.ClassType == ClassType.Value)
@@ -122,7 +118,7 @@ namespace System.Text.Json
             else if (state.Current.IsEnumerableProperty)
             {
                 // We added the items to the list already.
-                state.Current.ResetProperty();
+                state.Current.EndProperty();
                 return false;
             }
 

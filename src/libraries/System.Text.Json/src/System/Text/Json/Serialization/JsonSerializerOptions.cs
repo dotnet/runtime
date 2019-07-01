@@ -175,7 +175,9 @@ namespace System.Text.Json
                 VerifyMutable();
 
                 if (value < 0)
+                {
                     throw ThrowHelper.GetArgumentOutOfRangeException_MaxDepthMustBePositive(nameof(value));
+                }
 
                 _maxDepth = value;
                 EffectiveMaxDepth = (value == 0 ? JsonReaderOptions.DefaultMaxDepth : value);

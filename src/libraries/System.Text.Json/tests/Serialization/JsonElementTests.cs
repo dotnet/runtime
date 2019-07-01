@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Tests
             public JsonElement String { get; set; }
             public JsonElement Array { get; set; }
             public JsonElement Object { get; set; }
-            // public JsonElement Null { get; set; }
+            public JsonElement Null { get; set; }
 
             public static readonly string s_json =
                 @"{" +
@@ -43,9 +43,8 @@ namespace System.Text.Json.Serialization.Tests
                     @"""False"" : false," +
                     @"""String"" : ""Hello""," +
                     @"""Array"" : [2, false, true, ""Goodbye""]," +
-                    @"""Object"" : {}" +
-                    // TODO: Null doesn't work yet (but probably should? object gets null in this case)
-                    //@"""Null"" : null" +
+                    @"""Object"" : {}," +
+                    @"""Null"" : null" +
                 @"}";
 
             public static readonly byte[] s_data = Encoding.UTF8.GetBytes(s_json);
@@ -58,7 +57,7 @@ namespace System.Text.Json.Serialization.Tests
                 String = JsonDocument.Parse(@"""Hello""").RootElement.Clone();
                 Array = JsonDocument.Parse(@"[2, false, true, ""Goodbye""]").RootElement.Clone();
                 Object = JsonDocument.Parse(@"{}").RootElement.Clone();
-                // Null = JsonDocument.Parse(@"null").RootElement.Clone();
+                Null = JsonDocument.Parse(@"null").RootElement.Clone();
             }
 
             public void Verify()
@@ -83,8 +82,8 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal("Goodbye", elements[3].ToString());
                 Assert.Equal(JsonValueKind.Object, Object.ValueKind);
                 Assert.Equal("{}", Object.ToString());
-                //Assert.Equal(JsonValueKind.Null, Null.ValueKind);
-                //Assert.Equal("Null", Null.ToString());
+                Assert.Equal(JsonValueKind.Null, Null.ValueKind);
+                Assert.Equal("", Null.ToString()); // JsonElement returns empty string for null.
             }
         }
 
@@ -114,10 +113,9 @@ namespace System.Text.Json.Serialization.Tests
                         @"1, " +
                         @"true, " +
                         @"false, " +
-                        @"""Hello""" +
-                        // TODO: Nested complex objects aren't handled by the collection code yet.
-                        // @"[2, false, true, ""Goodbye""], " +
-                        // @"{}" +
+                        @"""Hello""," +
+                        @"[2, false, true, ""Goodbye""]," +
+                        @"{}" +
                     @"]" +
                 @"}";
 
