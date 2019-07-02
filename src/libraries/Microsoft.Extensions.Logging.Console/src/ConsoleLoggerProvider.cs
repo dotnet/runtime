@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.Extensions.Logging.Console
 {
     /// <summary>
-    /// A provider of <see cref="ConsoleLogger"/>'s.
+    /// A provider of <see cref="ConsoleLogger"/> instances.
     /// </summary>
     [ProviderAlias("Console")]
     public class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <summary>
         /// Creates an instance of <see cref="ConsoleLoggerProvider"/>.
         /// </summary>
-        /// <param name="options">The options to create <see cref="ConsoleLogger"/>'s with.</param>
+        /// <param name="options">The options to create <see cref="ConsoleLogger"/> instances with.</param>
         public ConsoleLoggerProvider(IOptionsMonitor<ConsoleLoggerOptions> options)
         {
             _options = options;
