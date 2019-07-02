@@ -545,7 +545,7 @@ namespace System.Reflection
             if (locale == null)
                 return CultureInfo.InvariantCulture;
 
-            return new CultureInfo(locale);
+            return CultureInfo.GetCultureInfo(locale);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
