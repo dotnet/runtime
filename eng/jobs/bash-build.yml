@@ -17,9 +17,11 @@ parameters:
         _BuildConfig: Release
         _PublishType: blob
   targetArchitecture: x64
+  timeoutInMinutes: 120
 jobs:
   - job: ${{ parameters.displayName }}
     displayName: ${{ parameters.displayName }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     pool:
       ${{ if and(eq(parameters.displayName, 'Build_FreeBSD_x64'), ne(variables['System.TeamProject'], 'public')) }}:
         name: dnceng-freebsd-internal
