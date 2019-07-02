@@ -56,7 +56,6 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
-        [ActiveIssue(30471)]
         public void InvokeComputedLambda(bool useInterpreter)
         {
             ParameterExpression x = Expression.Parameter(typeof(int), "x");
