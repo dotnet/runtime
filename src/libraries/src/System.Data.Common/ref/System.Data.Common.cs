@@ -1916,7 +1916,7 @@ namespace System.Data.Common
         public abstract void ChangeDatabase(string databaseName);
         public virtual System.Threading.Tasks.Task ChangeDatabaseAsync(string databaseName, System.Threading.CancellationToken cancellationToken = default) { throw null; }
         public abstract void Close();
-        public virtual System.Threading.Tasks.Task CloseAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Threading.Tasks.Task CloseAsync() { throw null; }
         public System.Data.Common.DbCommand CreateCommand() { throw null; }
         protected abstract System.Data.Common.DbCommand CreateDbCommand();
         public virtual void EnlistTransaction(System.Transactions.Transaction transaction) { }
@@ -2062,7 +2062,7 @@ namespace System.Data.Common
         public abstract int RecordsAffected { get; }
         public virtual int VisibleFieldCount { get { throw null; } }
         public virtual void Close() { }
-        public virtual System.Threading.Tasks.Task CloseAsync(System.Threading.CancellationToken cancellationToken = default) { throw null; }
+        public virtual System.Threading.Tasks.Task CloseAsync() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public void Dispose() { }
         public virtual System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
