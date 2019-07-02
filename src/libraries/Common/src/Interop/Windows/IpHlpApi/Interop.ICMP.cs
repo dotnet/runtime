@@ -11,6 +11,8 @@ internal static partial class Interop
 {
     internal static partial class IpHlpApi
     {
+        internal const int IP_STATUS_BASE = 11000;
+
         // TODO: #3562 - Replace names with the ones from the Windows SDK.
 
         [StructLayout(LayoutKind.Sequential)]
