@@ -88,13 +88,8 @@ namespace System.Data.Common
 
         public abstract void Close();
 
-        public virtual Task CloseAsync(CancellationToken cancellationToken = default)
+        public virtual Task CloseAsync()
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-
             try
             {
                 Close();
