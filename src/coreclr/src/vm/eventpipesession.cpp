@@ -18,6 +18,7 @@ EventPipeSession::EventPipeSession(
     IpcStream *const pStream,
     EventPipeSessionType sessionType,
     EventPipeSerializationFormat format,
+    bool rundownSwitch,
     uint32_t circularBufferSizeInMB,
     const EventPipeProviderConfiguration *pProviders,
     uint32_t numProviders,
@@ -25,7 +26,8 @@ EventPipeSession::EventPipeSession(
                            m_pProviderList(new EventPipeSessionProviderList(pProviders, numProviders)),
                            m_rundownEnabled(rundownEnabled),
                            m_SessionType(sessionType),
-                           m_format(format)
+                           m_format(format),
+                           m_rundownRequested(rundownSwitch)
 {
     CONTRACTL
     {

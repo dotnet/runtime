@@ -168,6 +168,7 @@ EventPipeSessionID EventPipe::Enable(
     uint32_t numProviders,
     EventPipeSessionType sessionType,
     EventPipeSerializationFormat format,
+    const bool rundownRequested,
     IpcStream *const pStream)
 {
     CONTRACTL
@@ -202,6 +203,7 @@ EventPipeSessionID EventPipe::Enable(
             pStream,
             sessionType,
             format,
+            rundownRequested,
             circularBufferSizeInMB,
             pProviders,
             numProviders);
@@ -344,26 +346,29 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
 
     pSession->Disable(); // Suspend EventPipeBufferManager, and remove providers.
 
-    // Do rundown before fully stopping the session.
-    pSession->EnableRundown(); // Set Rundown provider.
+    // Do rundown before fully stopping the session unless rundown wasn't requested
+    if (pSession->RundownRequested())
+    {
+        pSession->EnableRundown(); // Set Rundown provider.
 
-    EventPipeThread *const pEventPipeThread = EventPipeThread::GetOrCreate();
-    if (pEventPipeThread != nullptr)
-    {
-        pEventPipeThread->SetAsRundownThread(pSession);
+        EventPipeThread *const pEventPipeThread = EventPipeThread::GetOrCreate();
+        if (pEventPipeThread != nullptr)
         {
-            s_config.Enable(*pSession, pEventPipeProviderCallbackDataQueue);
+            pEventPipeThread->SetAsRundownThread(pSession);
             {
-                pSession->ExecuteRundown();
+                s_config.Enable(*pSession, pEventPipeProviderCallbackDataQueue);
+                {
+                    pSession->ExecuteRundown();
+                }
+                s_config.Disable(*pSession, pEventPipeProviderCallbackDataQueue);
             }
-            s_config.Disable(*pSession, pEventPipeProviderCallbackDataQueue);
+            pEventPipeThread->SetAsRundownThread(nullptr);
         }
-        pEventPipeThread->SetAsRundownThread(nullptr);
-    }
-    else
-    {
-        _ASSERTE(!"Failed to get or create the EventPipeThread for rundown events.");
-        return;
+        else
+        {
+            _ASSERTE(!"Failed to get or create the EventPipeThread for rundown events.");
+            return;
+        }
     }
 
     --s_numberOfSessions;
