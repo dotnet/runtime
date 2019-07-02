@@ -1,25 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <VersionPrefix>2.1.0</VersionPrefix>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
     <AssemblyName>dotnet-deb-tool</AssemblyName>
     <OutputType>Exe</OutputType>
-    <PackageId>dotnet-deb-tool</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="tool\**\*" />
     <Compile Include="..\..\..\src\test\TestUtils\ArgumentEscaper.cs" />
 
-    <Content Include="tool\**">
+    <Content Include="tool\**" CopyToOutputDirectory="PreserveNewest">
       <PackagePath>lib/$(TargetFramework)/tool</PackagePath>
       <Pack>true</Pack>
     </Content>
-    <Content Include="prefercliruntime">
+    <Content Include="prefercliruntime" CopyToOutputDirectory="PreserveNewest">
       <Pack>true</Pack>
       <PackagePath></PackagePath>
     </Content>
-</ItemGroup>
+  </ItemGroup>
 
 </Project>

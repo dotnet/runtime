@@ -80,8 +80,9 @@
                          DestinationFile="$(debLayoutDirectory)$(DebianConfigJsonName)"
                          ReplacementItems="@(SharedHostTokenValue)" />
 
-    <Exec Command="$(DotNetTool) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
-          WorkingDirectory="$(DebtoolConsumerDeployDir)" />
+    <Exec Command="$(DotNetTool) $(DebtoolAssemblyFile) -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
+          WorkingDirectory="$(DebToolBinDir)"
+          IgnoreStandardErrorWarningFormat="true" />
 
     <!-- Copy package to output -->
     <ItemGroup>
@@ -159,8 +160,9 @@
                          DestinationFile="$(debLayoutDirectory)$(DebianConfigJsonName)"
                          ReplacementItems="@(HostFxrTokenValue)" />
 
-    <Exec Command="$(DotNetTool) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
-          WorkingDirectory="$(DebtoolConsumerDeployDir)" />
+    <Exec Command="$(DotNetTool) $(DebtoolAssemblyFile) -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
+          WorkingDirectory="$(DebToolBinDir)"
+          IgnoreStandardErrorWarningFormat="true" />
 
     <!-- Copy package to output -->
     <ItemGroup>
@@ -252,8 +254,9 @@
                          DestinationFile="$(debLayoutDirectory)$(DebianConfigJsonName)"
                          ReplacementItems="@(SharedFrameworkTokenValue)" />
 
-    <Exec Command="$(DotNetTool) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
-          WorkingDirectory="$(DebtoolConsumerDeployDir)" />
+    <Exec Command="$(DotNetTool) $(DebtoolAssemblyFile) -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
+          WorkingDirectory="$(DebToolBinDir)"
+          IgnoreStandardErrorWarningFormat="true" />
 
     <!-- Copy package to output -->
     <ItemGroup>
@@ -333,8 +336,9 @@
                          DestinationFile="$(debLayoutDirectory)$(DebianConfigJsonName)"
                          ReplacementItems="@(SharedFrameworkTokenValue)" />
 
-    <Exec Command="$(DotNetTool) deb-tool -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
-          WorkingDirectory="$(DebtoolConsumerDeployDir)" />
+    <Exec Command="$(DotNetTool) $(DebtoolAssemblyFile) -i $(debLayoutDirectory) -o $(debIntermediatesDir) -n $(DebPackageName) -v $(DebPackageVersion)"
+          WorkingDirectory="$(DebToolBinDir)"
+          IgnoreStandardErrorWarningFormat="true" />
 
     <!-- Copy package to output -->
     <ItemGroup>

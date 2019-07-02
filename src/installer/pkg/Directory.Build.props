@@ -34,13 +34,13 @@
 
     <RpmTemplatesDir>$(MSBuildThisFileDirectory)packaging/rpm/templates/</RpmTemplatesDir>
 
-    <DebtoolConsumerProjectName>dotnet-deb-tool-consumer.csproj</DebtoolConsumerProjectName>
-    <DebtoolConsumerProjectFile>$(MSBuildThisFileDirectory)deps/$(DebtoolConsumerProjectName)</DebtoolConsumerProjectFile>
     <!--
-      Intermediate dir the debtool project is copied to. Use this as the working directory for
-      "dotnet deb-tool" commands, after depending on InitializeDotnetDebTool target.
+      Intermediate dir the debtool project is copied to. Use DebtoolAssemblyFile for "dotnet
+      deb-tool" commands, after depending on InitializeDotnetDebTool target.
     -->
-    <DebtoolConsumerDeployDir>$(IntermediateOutputRootPath)$(DebtoolConsumerProjectName)/</DebtoolConsumerDeployDir>
+    <DebToolBinDir>$(BinDir)dotnet-deb-tool\</DebToolBinDir>
+    <DebtoolAssemblyFile>$(DebToolBinDir)$(Configuration)\netcoreapp3.0\dotnet-deb-tool.dll</DebtoolAssemblyFile>
+    <DotnetDebToolSourceDir>$(ProjectDir)tools-local/setuptools/dotnet-deb-tool/</DotnetDebToolSourceDir>
 
     <IsDebianBasedDistro
       Condition="

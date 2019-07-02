@@ -4,9 +4,6 @@
   <PropertyGroup>
     <PackagingRoot>$(ProjectDir)src/pkg/packaging/</PackagingRoot>
 
-    <!-- Package prebuilt binaries -->
-    <UsePrebuiltPortableBinariesForInstallers>false</UsePrebuiltPortableBinariesForInstallers>
-
     <!-- The runtime package is distro-independent. (Runtime-deps packages vary per distro.) -->
     <BuildRuntimeDebs>$(BuildDistroIndependentInstallers)</BuildRuntimeDebs>
     <BuildRuntimeRpms>$(BuildDistroIndependentInstallers)</BuildRuntimeRpms>
@@ -19,13 +16,4 @@
     <NetHostPublishRoot>$(IntermediateOutputRootPath)nethost/</NetHostPublishRoot>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <TargetingPackInstallerFile>$(AssetOutputPath)dotnet-targeting-pack-$(ProductMoniker)$(InstallerExtension)</TargetingPackInstallerFile>
-    <AppHostPackInstallerFile>$(AssetOutputPath)dotnet-apphost-pack-$(ProductMoniker)$(InstallerExtension)</AppHostPackInstallerFile>
-    <NetStandardProductBandVersion>2.1</NetStandardProductBandVersion>
-    <NetStandardProductMoniker>$(NetStandardProductBandVersion).$(PatchVersion)$(ProductVersionSuffix)-$(PackageTargetRid)</NetStandardProductMoniker>
-    <NetStandardTargetingPackInstallerFile>$(AssetOutputPath)netstandard-targeting-pack-$(NetStandardProductMoniker)$(InstallerExtension)</NetStandardTargetingPackInstallerFile>
-    <WindowsDesktopSharedFrameworkInstallerFile>$(AssetOutputPath)windowsdesktop-runtime-$(ProductMoniker)$(InstallerExtension)</WindowsDesktopSharedFrameworkInstallerFile>
-    <WindowsDesktopTargetingPackInstallerFile>$(AssetOutputPath)windowsdesktop-targeting-pack-$(ProductMoniker)$(InstallerExtension)</WindowsDesktopTargetingPackInstallerFile>
-  </PropertyGroup>
 </Project>
