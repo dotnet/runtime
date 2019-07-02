@@ -38,9 +38,9 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Removes all <see cref="ILoggerProvider"/>'s from <paramref name="builder"/>.
+        /// Removes all <see cref="ILoggerProvider"/>s from <paramref name="builder"/>.
         /// </summary>
-        /// <param name="builder">The <see cref="ILoggingBuilder"/> to remove <see cref="ILoggerProvider"/>'s from.</param>
+        /// <param name="builder">The <see cref="ILoggingBuilder"/> to remove <see cref="ILoggerProvider"/>s from.</param>
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
         public static ILoggingBuilder ClearProviders(this ILoggingBuilder builder)
         {

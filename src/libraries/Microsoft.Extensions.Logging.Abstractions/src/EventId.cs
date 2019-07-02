@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Checks if two specified <see cref="EventId"/>'s have the same value. They are equal if they have the same Id.
+        /// Checks if two specified <see cref="EventId"/> instances have the same value. They are equal if they have the same Id.
         /// </summary>
         /// <param name="left">The first <see cref="EventId"/>.</param>
         /// <param name="right">The second <see cref="EventId"/>.</param>
@@ -29,7 +29,7 @@ namespace Microsoft.Extensions.Logging
         }
 
         /// <summary>
-        /// Checks if two specified <see cref="EventId"/>'s have different values.
+        /// Checks if two specified <see cref="EventId"/> instances have different values.
         /// </summary>
         /// <param name="left">The first <see cref="EventId"/>.</param>
         /// <param name="right">The second <see cref="EventId"/>.</param>
