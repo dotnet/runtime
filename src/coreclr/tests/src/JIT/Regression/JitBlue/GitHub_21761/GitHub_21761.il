@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 .assembly extern System.Runtime { }
+.assembly extern System.Numerics.Vectors { }
 .assembly GitHub_21761 { }
 
 // Some basic tests to ensure that the JIT handles non-zero
