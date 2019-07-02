@@ -270,9 +270,10 @@ mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
 	} else {
 #if MONO_DL_NEED_USCORE
 		{
-			char *usname = g_malloc (strlen (name) + 2);
+			const size_t length = strlen (name);
+			char *usname = g_new (char, length + 2);
 			*usname = '_';
-			strcpy (usname + 1, name);
+			memcpy (usname + 1, name, length + 1);
 			sym = mono_dl_lookup_symbol (module, usname);
 			g_free (usname);
 		}
