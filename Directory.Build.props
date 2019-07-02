@@ -75,22 +75,8 @@
     <NETCoreAppFrameworkBrandName>.NET Core $(NETCoreAppFrameworkVersion)</NETCoreAppFrameworkBrandName>
   </PropertyGroup>
 
-  <!--
-    $(OS) is set to Unix/Windows_NT. This comes from an environment variable on Windows and MSBuild on Unix.
-  -->
-  <PropertyGroup>
-    <!-- Temp change to make OS X build behave as a Linux build -->
-    <OsEnvironment Condition="'$(OsEnvironment)'=='' AND '$(OS)'=='OSX'">Unix</OsEnvironment>
-    <OsEnvironment Condition="'$(OsEnvironment)'==''">$(OS)</OsEnvironment>
-  </PropertyGroup>
-
   <!-- Platform detection -->
   <PropertyGroup>
-    <DefaultOSGroup Condition="'$(OS)'=='Unix' AND Exists('/Applications')">OSX</DefaultOSGroup>
-    <DefaultOSGroup Condition="'$(DefaultOSGroup)'=='' AND '$(OS)'=='Unix' AND $([MSBuild]::IsOSPlatform('FREEBSD'))">FreeBSD</DefaultOSGroup>
-    <DefaultOSGroup Condition="'$(DefaultOSGroup)'=='' AND '$(OS)'=='Unix' AND $([MSBuild]::IsOSPlatform('NETBSD'))">NetBSD</DefaultOSGroup>
-    <DefaultOSGroup Condition="'$(DefaultOSGroup)'=='' AND '$(OS)'=='Unix'">Linux</DefaultOSGroup>
-    <DefaultOSGroup Condition="'$(DefaultOSGroup)'==''">$(OS)</DefaultOSGroup>
     <RunningOnUnix Condition="'$(OS)'!='Windows_NT'">true</RunningOnUnix>
 
     <RunningOnCore Condition="'$(MSBuildRuntimeType)' == 'core'">true</RunningOnCore>
@@ -113,7 +99,8 @@
   values for $(ConfigurationGroup) or $(OSGroup) or accept the defaults for them.
   -->
   <PropertyGroup>
-    <OSGroup Condition="'$(OSGroup)' == ''">$(OsEnvironment)</OSGroup>
+    <OSGroup Condition="'$(OS)'=='Unix' AND Exists('/Applications')">OSX</OSGroup>
+    <OSGroup Condition="'$(OSGroup)' == ''">$(OS)</OSGroup>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'==''">

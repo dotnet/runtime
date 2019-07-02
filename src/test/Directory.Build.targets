@@ -1,7 +1,7 @@
 <Project>
 
   <Target Name="RefreshProjectTestAssets"
-          Condition="'$(UsesTestAssets)' == 'true'"
+          Condition="'$(UsesTestAssets)' == 'true' and '$(SkipTests)' != 'true'"
           DependsOnTargets="DetermineTestOutputDirectory"
           BeforeTargets="RunTests">
     <!-- Build PrepareTestAssets once for all tests. -->
@@ -44,6 +44,7 @@
   </Target>
 
   <Target Name="SetupTextFixtureEnvironment"
+          Condition="'$(SkipTests)' != 'true'"
           DependsOnTargets="
             GetProductVersions;
             DetermineTestOutputDirectory"
@@ -58,7 +59,7 @@
 
     <!-- Set properties used inside tests as environment variables. -->
     <ItemGroup>
-      <TestRunnerEnvironmentVariable Include="NUGET_PACKAGES=$(PackagesDir)" />
+      <TestRunnerEnvironmentVariable Include="NUGET_PACKAGES=$(TestRestorePackagesPath)" />
       <TestRunnerEnvironmentVariable Include="TEST_ARTIFACTS=$(SystemPathTestsOutputDir)" />
       <TestRunnerEnvironmentVariable Include="TEST_TARGETRID=$(TestTargetRid)" />
       <TestRunnerEnvironmentVariable Include="BUILDRID=$(OutputRid)" />

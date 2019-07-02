@@ -141,7 +141,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             var buildArgs = new List<string>
             {
-                "--no-restore"
+                "--no-restore",
+                "/bl:BuildProject.binlog"
             };
 
             if (runtime != null)
@@ -156,6 +157,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 buildArgs.Add(framework);
             }
 
+            buildArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");
             buildArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
 
             if (outputDirectory != null)
@@ -260,7 +262,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             var publishArgs = new List<string>
             {
-                "--no-restore"
+                "--no-restore",
+                "/bl:PublishProject.binlog"
             };
 
             if (runtime != null)
@@ -288,6 +291,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 publishArgs.Add(outputDirectory);
             }
 
+            publishArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");
             publishArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
 
             dotnet.Publish(publishArgs.ToArray())
