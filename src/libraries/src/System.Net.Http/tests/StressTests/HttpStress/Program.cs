@@ -144,9 +144,25 @@ public class Program
                         e = hre.InnerException;
                     }
 
-                    if (e is IOException ioe && e.InnerException?.GetType().Name == "Http2ProtocolException" && e.InnerException.Message.Contains("INTERNAL_ERROR"))
+                    if (e is IOException ioe)
                     {
-                        return null;
+                        if (httpVersion < HttpVersion.Version20)
+                        {
+                            return null;
+                        }
+
+                        string name = e.InnerException?.GetType().Name;
+                        switch (name)
+                        {
+                            case "Http2ProtocolException":
+                            case "Http2ConnectionException":
+                            case "Http2StreamException":
+                                if (e.InnerException.Message.Contains("INTERNAL_ERROR"))
+                                {
+                                    return null;
+                                }
+                                break;
+                        }
                     }
 
                     throw;
