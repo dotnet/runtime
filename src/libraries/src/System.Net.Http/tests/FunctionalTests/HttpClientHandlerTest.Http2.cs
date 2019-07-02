@@ -1580,9 +1580,11 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ConditionalFact(nameof(SupportsAlpn))]
+        [ConditionalTheory(nameof(SupportsAlpn))]
         [OuterLoop("Uses Task.Delay")]
-        public async Task Http2_PendingSend_SendsReset()
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task Http2_PendingSend_SendsReset(bool waitForData)
         {
             var cts = new CancellationTokenSource();
 
@@ -1597,6 +1599,12 @@ namespace System.Net.Http.Functional.Tests
                     request.Content = new StreamContent(stream);
 
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.SendAsync(request, cts.Token));
+
+                    // Send another request to verify that connection is still functional.
+                    request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Version = new Version(2,0);
+
+                    await client.SendAsync(request);
                 }
             },
             async server =>
@@ -1604,19 +1612,35 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
 
                 (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync(readBody : false);
-
-                // Cancel client after receiving Headers.
-                cts.Cancel();
+                int frameCount = 0;
                 Frame frame;
                 do
                 {
-                    frame = await connection.ReadFrameAsync(TimeSpan.FromMilliseconds(TestHelper.PassingTestTimeoutMilliseconds)).ConfigureAwait(false);
+                    if (frameCount == (waitForData ? 1 : 0)) {
+                        // Cancel client after receiving Headers or part of request body.
+                        cts.Cancel();
+                    }
+                    frame = await connection.ReadFrameAsync(TimeSpan.FromMilliseconds(TestHelper.PassingTestTimeoutMilliseconds));
                     Assert.NotNull(frame); // We should get Rst before closing connection.
                     Assert.Equal(0, (int)(frame.Flags & FrameFlags.EndStream));
+                    frameCount++;
                  } while (frame.Type != FrameType.RstStream);
 
-                 frame = await connection.ReadFrameAsync(TimeSpan.FromMilliseconds(TestHelper.PassingTestTimeoutMilliseconds)).ConfigureAwait(false);
-                 Assert.Null(frame);    // Make sure we do not get any frames after getting RST.
+                 Assert.Equal(1, frame.StreamId);
+
+                frame = null;
+                (streamId, requestData) = await connection.ReadAndParseRequestHeaderAsync();
+                await connection.SendResponseHeadersAsync(streamId, endStream: false, HttpStatusCode.OK);
+                await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes($"Http2_PendingSend_SendsReset(waitForData: {waitForData})"), isFinal: false);
+                // Wait for any lingering frames or extra reset frames.
+                try
+                {
+                    frame = await connection.ReadFrameAsync(TimeSpan.FromMilliseconds(1000));
+                }
+                catch (System.OperationCanceledException) { };
+                Assert.Null(frame);    // Make sure we do not get any frames after getting Rst.
+                await connection.SendResponseBodyAsync(streamId, Encoding.ASCII.GetBytes("final"), isFinal: true);
+                await connection.WaitForConnectionShutdownAsync();
             });
         }
 
@@ -1651,6 +1675,7 @@ namespace System.Net.Http.Functional.Tests
                             }
                             catch (OperationCanceledException) { };
                         }
+
                         isCanceled = true;
                     }
                 }
@@ -1683,7 +1708,7 @@ namespace System.Net.Http.Functional.Tests
                 Frame frame;
                 do
                 {
-                    frame = await connection.ReadFrameAsync(TimeSpan.FromMilliseconds(TestHelper.PassingTestTimeoutMilliseconds)).ConfigureAwait(false);
+                    frame = await connection.ReadFrameAsync(TimeSpan.FromMilliseconds(TestHelper.PassingTestTimeoutMilliseconds));
                     Assert.NotNull(frame); // We should get Rst before closing connection.
                     Assert.Equal(0, (int)(frame.Flags & FrameFlags.EndStream));
                  } while (frame.Type != FrameType.RstStream);
