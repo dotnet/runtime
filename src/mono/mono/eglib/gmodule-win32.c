@@ -175,7 +175,7 @@ g_module_close (GModule *module)
 gchar *
 g_module_build_path (const gchar *directory, const gchar *module_name)
 {
-	char *lib_prefix = "";
+	const char *lib_prefix = "";
 	
 	if (module_name == NULL)
 		return NULL;
