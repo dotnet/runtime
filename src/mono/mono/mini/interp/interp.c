@@ -5135,8 +5135,9 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			ip += 3;
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_NEWARR)
-			sp [-1].data.p = (MonoObject*) mono_array_new_checked (imethod->domain, (MonoClass*)imethod->data_items[*(guint16 *)(ip + 1)], sp [-1].data.i, error);
+		MINT_IN_CASE(MINT_NEWARR) {
+			MonoVTable *vtable = (MonoVTable*)imethod->data_items[*(guint16 *)(ip + 1)];
+			sp [-1].data.p = (MonoObject*) mono_array_new_specific_checked (vtable, sp [-1].data.i, error);
 			if (!mono_error_ok (error)) {
 				THROW_EX (mono_error_convert_to_exception (error), ip);
 			}
@@ -5149,6 +5150,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			}*/
 
 			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_LDLEN)
 			o = sp [-1].data.o;
 			if (!o)

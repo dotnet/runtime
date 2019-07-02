@@ -4610,6 +4610,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				klass = mini_get_class (method, token, generic_context);
 			CHECK_TYPELOAD (klass);
 
+			MonoClass *array_class = mono_class_create_array (klass, 1);
+			MonoVTable *vtable = mono_class_vtable_checked (domain, array_class, error);
+			goto_if_nok (error, exit);
+
 			unsigned char lentype = (td->sp - 1)->type;
 			if (lentype == STACK_TYPE_I8) {
 				/* mimic mini behaviour */
@@ -4620,7 +4624,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			}
 			SET_SIMPLE_TYPE (td->sp - 1, STACK_TYPE_I4);
 			interp_add_ins (td, MINT_NEWARR);
-			td->last_ins->data [0] = get_data_item_index (td, klass);
+			td->last_ins->data [0] = get_data_item_index (td, vtable);
 			SET_TYPE (td->sp - 1, STACK_TYPE_O, klass);
 			td->ip += 5;
 			break;
