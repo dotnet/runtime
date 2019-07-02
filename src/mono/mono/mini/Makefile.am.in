@@ -398,6 +398,7 @@ darwin_sources = \
 
 windows_sources = \
 	mini-windows.c \
+	mini-windows-tls-callback.c \
 	mini-windows.h \
 	mini-windows-dllmain.c \
 	mini-windows-dlldac.c

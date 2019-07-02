@@ -17,6 +17,7 @@
 #include <conio.h>
 #include <assert.h>
 
+#include <mono/metadata/coree.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/loader.h>
 #include <mono/metadata/tabledefs.h>
@@ -442,5 +443,31 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 	tctx->unwind_data [MONO_UNWIND_DATA_LMF] = lmf;
 	tctx->valid = TRUE;
 
+	return TRUE;
+}
+
+BOOL
+mono_win32_runtime_tls_callback (HMODULE module_handle, DWORD reason, LPVOID reserved, MonoWin32TLSCallbackType callback_type)
+{
+	if (!mono_win32_handle_tls_callback_type (callback_type))
+		return TRUE;
+
+	if (!mono_gc_dllmain (module_handle, reason, reserved))
+		return FALSE;
+
+	switch (reason)
+	{
+	case DLL_PROCESS_ATTACH:
+		mono_install_runtime_load (mini_init);
+		break;
+	case DLL_PROCESS_DETACH:
+		if (coree_module_handle)
+			FreeLibrary (coree_module_handle);
+		break;
+	case DLL_THREAD_DETACH:
+		mono_thread_info_detach ();
+		break;
+
+	}
 	return TRUE;
 }

@@ -7,36 +7,18 @@
  * Licensed under the MIT license. See LICENSE file in the project root for full license information.
  */
 
-#include <mono/metadata/coree.h>
-#include <mono/metadata/gc-internals.h>
-#include <mono/metadata/domain-internals.h>
-#include <mono/utils/mono-threads.h>
-#include "mini.h"
 #include "mini-runtime.h"
 
 #ifdef HOST_WIN32
+#include "mini-windows.h"
 #include <windows.h>
+
+MONO_EXTERN_C
+BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved);
 
 MONO_EXTERN_C
 BOOL APIENTRY DllMain (HMODULE module_handle, DWORD reason, LPVOID reserved)
 {
-	if (!mono_gc_dllmain (module_handle, reason, reserved))
-		return FALSE;
-
-	switch (reason)
-	{
-	case DLL_PROCESS_ATTACH:
-		mono_install_runtime_load (mini_init);
-		break;
-	case DLL_PROCESS_DETACH:
-		if (coree_module_handle)
-			FreeLibrary (coree_module_handle);
-		break;
-	case DLL_THREAD_DETACH:
-		mono_thread_info_detach ();
-		break;
-	
-	}
-	return TRUE;
+	return mono_win32_runtime_tls_callback (module_handle, reason, reserved, MONO_WIN32_TLS_CALLBACK_TYPE_DLL);
 }
 #endif
