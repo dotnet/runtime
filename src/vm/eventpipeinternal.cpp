@@ -46,6 +46,7 @@ UINT64 QCALLTYPE EventPipeInternal::Enable(
             numProviders,
             outputFile != NULL ? EventPipeSessionType::File : EventPipeSessionType::Listener,
             format,
+            true,
             nullptr);
     }
     END_QCALL;

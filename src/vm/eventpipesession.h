@@ -66,6 +66,9 @@ private:
     // irrelevant.
     EventPipeSerializationFormat m_format;
 
+    // For determininig if a particular session needs rundown events
+    const bool m_rundownRequested;
+
     // Start date and time in UTC.
     FILETIME m_sessionStartTime;
 
@@ -99,6 +102,7 @@ public:
         IpcStream *const pStream,
         EventPipeSessionType sessionType,
         EventPipeSerializationFormat format,
+        bool rundownRequested,
         uint32_t circularBufferSizeInMB,
         const EventPipeProviderConfiguration *pProviders,
         uint32_t numProviders,
@@ -129,6 +133,13 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_format;
+    }
+
+    // Get whether rundown was requested by the client.
+    bool RundownRequested() const
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_rundownRequested;
     }
 
     // Determine if rundown is enabled.
