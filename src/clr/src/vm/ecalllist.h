@@ -177,7 +177,6 @@ FCFuncEnd()
 
 FCFuncStart(gExceptionFuncs)
     FCFuncElement("IsImmutableAgileException", ExceptionNative::IsImmutableAgileException)
-    FCFuncElement("nIsTransient", ExceptionNative::IsTransient)
     FCFuncElement("GetMethodFromStackTrace", SystemNative::GetMethodFromStackTrace)
     QCFuncElement("GetMessageFromNativeResources", ExceptionNative::GetMessageFromNativeResources)
     FCFuncElement("PrepareForForeignExceptionRaise", ExceptionNative::PrepareForForeignExceptionRaise)

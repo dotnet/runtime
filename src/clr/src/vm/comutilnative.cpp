@@ -125,15 +125,6 @@ FCIMPL1(FC_BOOL_RET, ExceptionNative::IsImmutableAgileException, Object* pExcept
 }
 FCIMPLEND
 
-FCIMPL1(FC_BOOL_RET, ExceptionNative::IsTransient, INT32 hresult)
-{
-    FCALL_CONTRACT;
-
-    FC_RETURN_BOOL(Exception::IsTransient(hresult));
-}
-FCIMPLEND
-
-
 // This FCall sets a flag against the thread exception state to indicate to
 // IL_Throw and the StackTraceInfo implementation to account for the fact
 // that we have restored a foreign exception dispatch details.

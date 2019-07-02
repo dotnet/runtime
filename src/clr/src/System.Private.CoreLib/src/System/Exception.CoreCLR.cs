@@ -372,14 +372,6 @@ namespace System
         // See src\inc\corexcep.h's EXCEPTION_COMPLUS definition:
         private const int _COMPlusExceptionCode = unchecked((int)0xe0434352);   // Win32 exception code for COM+ exceptions
 
-        internal bool IsTransient
-        {
-            get
-            {
-                return nIsTransient(HResult);
-            }
-        }
-
         private string? SerializationRemoteStackTraceString => _remoteStackTraceString;
 
         private object? SerializationWatsonBuckets => _watsonBuckets;
@@ -398,9 +390,6 @@ namespace System
                 return stackTraceString;
             }
         }
-
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        private static extern bool nIsTransient(int hr);
 
         // This piece of infrastructure exists to help avoid deadlocks 
         // between parts of mscorlib that might throw an exception while 
