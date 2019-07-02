@@ -33,6 +33,7 @@ Volatile<bool> EventPipe::s_tracingInitialized(false);
 EventPipeConfiguration EventPipe::s_config;
 EventPipeEventSource *EventPipe::s_pEventSource = nullptr;
 VolatilePtr<EventPipeSession> EventPipe::s_pSessions[MaxNumberOfSessions];
+Volatile<uint64_t> EventPipe::s_allowWrite = 0;
 #ifndef FEATURE_PAL
 unsigned int * EventPipe::s_pProcGroupOffsets = nullptr;
 #endif
@@ -262,6 +263,7 @@ bool EventPipe::EnableInternal(
         return false;
     }
     s_pSessions[pSession->GetIndex()].Store(pSession);
+    s_allowWrite |= pSession->GetMask();
     ++s_numberOfSessions;
 
     // Enable tracing.
@@ -343,6 +345,8 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
 
     // Disable pSession tracing.
     s_config.Disable(*pSession, pEventPipeProviderCallbackDataQueue);
+
+    s_allowWrite &= ~(pSession->GetMask()); 
 
     pSession->Disable(); // Suspend EventPipeBufferManager, and remove providers.
 
@@ -620,10 +624,7 @@ void EventPipe::WriteEventInternal(
     {
         for (uint32_t i = 0; i < MaxNumberOfSessions; ++i)
         {
-            // This read is OK because we aren't derefencing the pointer and if we observe a value that
-            // isn't up-to-date (whether null or non-null) that is just the natural race timing of trying to
-            // write to a session while it is being concurrently enabled/disabled.
-            if (s_pSessions[i].LoadWithoutBarrier() == nullptr)
+            if ((s_allowWrite & (1ui64 << i)) == 0)
                 continue;
 
             // Now that we know this session is probably live we pay the perf cost of the memory barriers
@@ -635,8 +636,7 @@ void EventPipe::WriteEventInternal(
             {
                 EventPipeSession *const pSession = s_pSessions[i].Load();
 
-                // The NULL check above may make this check below appear redundant but it is not. Disable is
-                // allowed to set s_pSessions[i] = NULL at any time and that may have occured in between
+                // Disable is allowed to set s_pSessions[i] = NULL at any time and that may have occured in between
                 // the check and the load
                 if (pSession != nullptr)
                     pSession->WriteEventBuffered(
