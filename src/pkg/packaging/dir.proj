@@ -216,7 +216,7 @@
 
   <Target Name="GenerateVSNugetPackages"
           Condition="'$(OS)' == 'Windows_NT' AND '$(TargetArchitecture)' != 'arm' AND '$(TargetArchitecture)' != 'arm64'"
-          DependsOnTargets="SetupVSNugetPackages;GenerateInstallers;GenerateProjectInstallers;GenerateCombinedInstallers"
+          DependsOnTargets="SetupVSNugetPackages"
           Inputs="@(SdkMsiComponent->'%(MsiInstallerFile)');
                     $(NuSpecFile);
                     $(GenerateNupkgPowershellScript)"
