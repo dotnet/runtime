@@ -30,13 +30,11 @@
     </PropertyGroup>
   </Target>
 
-  <!-- Create deb tool package and set up the project that consumes it as a CLI tool. -->
+  <!-- Ensure the deb tool is built. -->
   <Target Name="InitializeDotnetDebTool">
-    <!--
-      Build the deb tool and initialize the consumer project. Using an MSBuild task helps this
-      to only happen once if parallel projects depend on this target.
-    -->
-    <MSBuild Projects="$(MSBuildThisFileDirectory)deps\init-deb-tool-consumer.proj" />
+    <MSBuild
+      Projects="$(DotnetDebToolSourceDir)dotnet-deb-tool.csproj"
+      Targets="Restore;Build" />
   </Target>
 
   <!--
@@ -45,7 +43,11 @@
   -->
   <Target Name="TestDebuild">
     <!-- run Debuild -->
-    <Exec Command="/usr/bin/env debuild -h" ContinueOnError="true">
+    <Exec
+      Command="/usr/bin/env debuild -h > /dev/null 2>&amp;1"
+      ContinueOnError="true"
+      IgnoreExitCode="true"
+      IgnoreStandardErrorWarningFormat="true">
       <Output TaskParameter="ExitCode" PropertyName="DebuildExitCode" />
     </Exec>
 
@@ -66,7 +68,11 @@
   -->
   <Target Name="TestFPMTool">
     <!-- run FPM  -->
-    <Exec Command="/usr/bin/env fpm -h" ContinueOnError="true">
+    <Exec
+      Command="/usr/bin/env fpm -h > /dev/null 2>&amp;1"
+      ContinueOnError="true"
+      IgnoreExitCode="true"
+      IgnoreStandardErrorWarningFormat="true">
       <Output TaskParameter="ExitCode" PropertyName="FPMExitCode" />
     </Exec>
 

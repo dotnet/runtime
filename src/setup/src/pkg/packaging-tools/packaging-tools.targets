@@ -89,7 +89,15 @@
       <SharedFrameworkArchiveSourceDir Condition="'$(SharedFrameworkArchiveSourceDir)' == ''">$(SharedFrameworkLayoutDir)shared/</SharedFrameworkArchiveSourceDir>
     </PropertyGroup>
 
-    <!-- Use existing infra for non-Windows shared frameworks for now. -->
+    <!-- Only generate installers for packs and sfxproj. -->
+    <PropertyGroup Condition="'$(FrameworkPackType)' == '' and '$(GenerateSharedFramework)' != 'true'">
+      <GeneratePkg>false</GeneratePkg>
+      <BuildDebPackage>false</BuildDebPackage>
+      <BuildRpmPackage>false</BuildRpmPackage>
+      <GenerateMSI>false</GenerateMSI>
+    </PropertyGroup>
+
+    <!-- Use existing infra for non-Windows shared framework installers. -->
     <PropertyGroup Condition="'$(GenerateSharedFramework)' == 'true'">
       <GeneratePkg>false</GeneratePkg>
       <BuildDebPackage>false</BuildDebPackage>

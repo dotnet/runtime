@@ -120,6 +120,7 @@
       <_jitPackageDir>$(PackagesDir)transport.runtime.$(PackageRID).microsoft.netcore.jit/$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)/</_jitPackageDir>
       <_corefxPackageDir>$(PackagesDir)runtime.$(PackageRID).$(MicrosoftPrivateCoreFxNETCoreAppPackage.ToLowerInvariant())/$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)/</_corefxPackageDir>
       <_winmdPackageDir>$(PackagesDir)$(MicrosoftTargetingPackPrivateWinRTPackage.ToLowerInvariant())/$(MicrosoftTargetingPackPrivateWinRTPackageVersion)/</_winmdPackageDir>
+      <_diaSymReaderPackageDir>$(PackagesDir)microsoft.diasymreader.native/$(MicrosoftDiaSymReaderNativePackageVersion)/</_diaSymReaderPackageDir>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -146,6 +147,7 @@
       <_runtimeJIT Include="$(_jitPackageDir)**/$(LibraryFilePrefix)clrjit$(LibraryFileExtension)" />
       <_fxSystemRuntime Include="$(_corefxPackageDir)**/System.Runtime.dll" />
       <_windowsWinMD Include="$(_winmdPackageDir)**/Windows.winmd" />
+      <_diaSymReaderAssembly Include="$(_diaSymReaderPackageDir)**\Microsoft.DiaSymReader.Native.*.dll" />
     </ItemGroup>
 
     <PropertyGroup Condition="'@(_runtimeCLR)' != ''">
@@ -169,9 +171,13 @@
     <PropertyGroup Condition="'@(_windowsWinMD)' != ''">
       <_windowsWinMDDirectory>%(_windowsWinMD.RootDir)%(_windowsWinMD.Directory)</_windowsWinMDDirectory>
     </PropertyGroup>
-    
+
+    <PropertyGroup Condition="'@(_diaSymReaderAssembly)' != ''">
+      <_diaSymReaderToolDir>%(_diaSymReaderAssembly.RootDir)%(_diaSymReaderAssembly.Directory)</_diaSymReaderToolDir>
+    </PropertyGroup>
+
     <ItemGroup>
-      <_requiredProperty Include="_coreLibDirectory;_crossGenPath;_jitPath;_fxLibDirectory;_windowsWinMDDirectory" />
+      <_requiredProperty Include="_coreLibDirectory;_crossGenPath;_jitPath;_fxLibDirectory;_windowsWinMDDirectory;_diaSymReaderToolDir" />
     </ItemGroup>
 
     <Message Text="%(_requiredProperty.Identity): $(%(_requiredProperty.Identity))" />
@@ -228,7 +234,7 @@
           '%(RidSpecificFilesToPackage.DestinationSubDirectory)' == '' AND
           (
             '%(FileName)' != 'System.Runtime.WindowsRuntime' Or
-            '$(OsEnvironment)'=='Windows_NT'
+            '$(OS)'=='Windows_NT'
           )">
         <CrossGenedDirectory>$(CrossGenOutputPath)%(TargetPath)/</CrossGenedDirectory>
         <CrossGenedPath>$(CrossGenOutputPath)%(TargetPath)/%(FileName)%(Extension)</CrossGenedPath>
@@ -273,7 +279,7 @@
       <_crossGenArgs Include="-in %(_filesToCrossGen.FullPath)" />
       <_crossGenArgs Include="-out %(_filesToCrossGen.CrossGenedPath)" />
       <_crossGenArgs Include="-platform_assemblies_paths $(_crossgenPlatformAssemblies)" />
-      <_crossGenArgs Include="-Platform_Winmd_Paths $(_windowsWinMDDirectory)" Condition="'$(OsEnvironment)'=='Windows_NT'" />
+      <_crossGenArgs Include="-Platform_Winmd_Paths $(_windowsWinMDDirectory)" Condition="'$(OS)'=='Windows_NT'" />
       <_crossGenArgs Include="-JITPath $(_jitPath)" />
     </ItemGroup>
 
@@ -298,7 +304,7 @@
     -->
     <Exec
       Command="$(_crossGenPath) @$(_crossGenResponseFile)"
-      WorkingDirectory="$(_clrDirectory)"
+      WorkingDirectory="$(_diaSymReaderToolDir)"
       EnvironmentVariables="COMPlus_PartialNGen=$(_partialCrossgenFlag)"
       IgnoreStandardErrorWarningFormat="true" />
   </Target>
@@ -318,7 +324,7 @@
     <ItemGroup>
       <_crossGenSymbolsArgs Include="-readytorun" />
       <_crossGenSymbolsArgs Include="-platform_assemblies_paths %(_filesToCrossGen.CrossGenedDirectory)$(_pathSeparatorEscaped)$(_coreLibDirectory)$(_pathSeparatorEscaped)$(_fxLibDirectory)" />
-      <_crossGenSymbolsArgs Include="-Platform_Winmd_Paths $(_windowsWinMDDirectory)" Condition="'$(OsEnvironment)'=='Windows_NT'"/>
+      <_crossGenSymbolsArgs Include="-Platform_Winmd_Paths $(_windowsWinMDDirectory)" Condition="'$(OS)'=='Windows_NT'"/>
       <_crossGenSymbolsArgs Include="-$(_crossGenSymbolsOptionName)" />
       <_crossGenSymbolsArgs Include="$(_crossGenSymbolsOutputDirectory)" />
       <_crossGenSymbolsArgs Include="%(_filesToCrossGen.CrossGenedPath)" />
@@ -331,7 +337,7 @@
 
     <Exec
       Command="$(_crossGenPath) @$(_crossGenSymbolsResponseFile)"
-      WorkingDirectory="$(_clrDirectory)"
+      WorkingDirectory="$(_diaSymReaderToolDir)"
       EnvironmentVariables="COMPlus_PartialNGen=0" />
 
     <Touch Files="%(_filesToCrossGen.CrossGenSymbolSemaphorePath)" AlwaysCreate="true" />

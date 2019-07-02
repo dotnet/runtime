@@ -51,7 +51,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
             Artifacts = Path.Combine(baseBinFolder, osPlatformConfig);
             HostArtifacts = artifacts ?? Path.Combine(Artifacts, "corehost");
 
-            NugetPackages = nugetPackages ?? Path.Combine(RepoRoot, "packages");
+            NugetPackages = nugetPackages ??
+                Environment.GetEnvironmentVariable("NUGET_PACKAGES") ??
+                Path.Combine(RepoRoot, ".packages");
 
             CorehostPackages = corehostPackages ?? Path.Combine(Artifacts, "corehost");
             BuiltDotnet = builtDotnet ?? Path.Combine(baseObjFolder, osPlatformConfig, "sharedFrameworkPublish");

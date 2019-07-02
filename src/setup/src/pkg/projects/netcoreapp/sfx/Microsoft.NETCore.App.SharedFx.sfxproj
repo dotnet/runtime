@@ -20,7 +20,10 @@
   <ItemGroup>
     <PkgProjectReference Include="..\pkg\legacy\Microsoft.NETCore.App.Internal.pkgproj" />
     <PkgProjectReference Include="..\pkg\legacy\Microsoft.NETCore.App.pkgproj" />
+    <PkgProjectReference Include="..\..\Microsoft.NETCore.DotNetAppHost\Microsoft.NETCore.DotNetAppHost.pkgproj" />
     <PkgProjectReference Include="..\..\Microsoft.NETCore.DotNetHost\Microsoft.NETCore.DotNetHost.pkgproj" />
+    <PkgProjectReference Include="..\..\Microsoft.NETCore.DotNetHostPolicy\Microsoft.NETCore.DotNetHostPolicy.pkgproj" />
+    <PkgProjectReference Include="..\..\Microsoft.NETCore.DotNetHostResolver\Microsoft.NETCore.DotNetHostResolver.pkgproj" />
   </ItemGroup>
 
   <!--

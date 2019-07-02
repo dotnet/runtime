@@ -56,7 +56,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             // Change *.dll to *.exe
             var appDll = fixture.TestProject.AppDll;
             var appExe = appDll.Replace(".dll", ".exe");
-            File.Copy(appDll, appExe);
+            File.Copy(appDll, appExe, true);
             File.Delete(appDll);
 
             dotnet.Exec("exec", appExe)
@@ -82,7 +82,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
         }
-        [Fact]
+
+        // https://github.com/dotnet/core-setup/issues/6914
+        [Fact(Skip = "The 3.0 SDK copies NuGet references to the output by default now for executable projects, so this no longer fails.")]
         public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Local_and_RuntimeConfig_Remote_Without_AdditionalProbingPath_Fails()
         {
             var fixture = sharedTestState.PortableAppFixture_Built
@@ -100,7 +102,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Should().Fail();
         }
 
-        [Fact]
+        // https://github.com/dotnet/core-setup/issues/6914
+        [Fact(Skip = "The 3.0 SDK copies NuGet references to the output by default now for executable projects, so this no longer fails.")]
         public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Local_and_RuntimeConfig_Remote_With_AdditionalProbingPath_Succeeds()
         {
             var fixture = sharedTestState.PortableAppFixture_Built
@@ -124,7 +127,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .And.HaveStdOutContaining("Hello World");
         }
 
-        [Fact]
+        // https://github.com/dotnet/core-setup/issues/6914
+        [Fact(Skip = "The 3.0 SDK copies NuGet references to the output by default now for executable projects, so the additional probing path is no longer needed.")]
         public void Muxer_Activation_With_Templated_AdditionalProbingPath_Succeeds()
         {
             var fixture = sharedTestState.PortableAppFixture_Built
