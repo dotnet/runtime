@@ -1121,12 +1121,6 @@
 # https://github.com/mono/mono/issues/15323
 -nomethod System.Reflection.Emit.Tests.DynamicMethodToString.ToStringTest
 
-# System.ArgumentException : Return type can't be a byref type
-# https://github.com/mono/mono/issues/15324
--nomethod System.Reflection.Emit.Tests.DynamicMethodctor1.ByRefReturnType_DoesNotThrow
-
-
-
 # Expected: typeof(System.ArgumentOutOfRangeException)
 # Actual:   typeof(System.OverflowException): Arithmetic operation resulted in an overflow.
 # https://github.com/mono/mono/issues/15334
