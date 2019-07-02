@@ -63,10 +63,6 @@
 # Timeout in System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.SerializeHugeObjectGraphs: https://github.com/dotnet/coreclr/issues/20246
 -nomethod System.Runtime.Serialization.Formatters.Tests.BinaryFormatterTests.SerializeHugeObjectGraphs
 
-# Assert with TieredCompilation=1 JitStress=1/2: https://github.com/dotnet/coreclr/issues/25263
--nomethod Generic.Dictionary.DictionaryConcurrentAccessDetectionTests.DictionaryConcurrentAccessDetection_ReferenceTypeKey
--nomethod Generic.Dictionary.DictionaryConcurrentAccessDetectionTests.DictionaryConcurrentAccessDetection_ValueTypeKey
-
 # Test failure: https://github.com/dotnet/corefx/issues/37989
 -nomethod MonoTests.System.Runtime.Caching.MemoryCacheTest.Contains
 
