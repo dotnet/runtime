@@ -115,6 +115,12 @@ namespace System.Text.Json
             throw new InvalidOperationException(SR.Format(SR.SerializerPropertyNameNull, parentType, jsonPropertyInfo.PropertyInfo.Name));
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_SerializerDictionaryKeyNull(Type policyType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.SerializerDictionaryKeyNull, policyType));
+        }
+
         public static void ThrowJsonException_DeserializeDataRemaining(long length, long bytesRemaining)
         {
             throw new JsonException(SR.Format(SR.DeserializeDataRemaining, length, bytesRemaining), path: null, lineNumber: null, bytePositionInLine: null);
