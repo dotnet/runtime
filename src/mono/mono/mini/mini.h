@@ -1620,6 +1620,7 @@ typedef enum {
 typedef struct {
 	gint32 methods_compiled;
 	gint32 methods_aot;
+	gint32 methods_aot_llvm;
 	gint32 methods_lookups;
 	gint32 allocate_var;
 	gint32 cil_code_size;

@@ -4181,6 +4181,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 	if (mini_debug_options.aot_skip_set && !(method && method->wrapper_type)) {
 		gint32 methods_aot = mono_atomic_load_i32 (&mono_jit_stats.methods_aot);
+		methods_aot += mono_atomic_load_i32 (&mono_jit_stats.methods_aot_llvm);
 		if (methods_aot == mini_debug_options.aot_skip) {
 			if (!method) {
 				method = mono_get_method_checked (image, token, NULL, NULL, error);
@@ -4201,6 +4202,7 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 	if (mono_last_aot_method != -1) {
 		gint32 methods_aot = mono_atomic_load_i32 (&mono_jit_stats.methods_aot);
+		methods_aot += mono_atomic_load_i32 (&mono_jit_stats.methods_aot_llvm);
 		if (methods_aot >= mono_last_aot_method)
 			return NULL;
 		else if (methods_aot == mono_last_aot_method - 1) {
@@ -4264,7 +4266,10 @@ load_method (MonoDomain *domain, MonoAotModule *amodule, MonoImage *image, MonoM
 
 	amodule_lock (amodule);
 
-	mono_atomic_inc_i32 (&mono_jit_stats.methods_aot);
+	if (is_llvm_code (amodule, code))
+		mono_atomic_inc_i32 (&mono_jit_stats.methods_aot_llvm);
+	else
+		mono_atomic_inc_i32 (&mono_jit_stats.methods_aot);
 
 	if (method && method->wrapper_type)
 		g_hash_table_insert (amodule->method_to_code, method, code);
