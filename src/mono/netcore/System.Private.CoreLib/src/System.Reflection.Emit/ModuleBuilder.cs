@@ -721,12 +721,6 @@ namespace System.Reflection.Emit {
 			throw new NotImplementedException (obj.GetType ().FullName);
 		}
 
-		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		private static extern void build_metadata (ModuleBuilder mb);
-
-		[MethodImplAttribute(MethodImplOptions.InternalCall)]
-		private extern void WriteToFile (IntPtr handle);
-
 		internal string FileName {
 			get {
 				return fqname;
