@@ -836,5 +836,53 @@ namespace System.Net.NetworkInformation.Tests
             pingReply = await ping.SendPingAsync(host, TestSettings.PingTimeout, TestSettings.PayloadAsBytesShort, options);
             Assert.NotEqual(IPStatus.Success, pingReply.Status);
         }
-     }
+
+        [Fact]
+        [OuterLoop]
+        public void Ping_TimedOut_Sync_Success()
+        {
+            var sender = new Ping();
+            PingReply reply = sender.Send(TestSettings.UnreachableAddress);
+            Assert.Equal(IPStatus.TimedOut, reply.Status);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public async Task Ping_TimedOut_EAP_Success()
+        {
+            var sender = new Ping();
+            sender.PingCompleted += (s, e) =>
+            {
+                var tcs = (TaskCompletionSource<PingReply>)e.UserState;
+
+                if (e.Cancelled)
+                {
+                    tcs.TrySetCanceled();
+                }
+                else if (e.Error != null)
+                {
+                    tcs.TrySetException(e.Error);
+                }
+                else
+                {
+                    tcs.TrySetResult(e.Reply);
+                }
+            };
+
+            var tcs = new TaskCompletionSource<PingReply>();
+            sender.SendAsync(TestSettings.UnreachableAddress, tcs);
+
+            PingReply reply = await tcs.Task;
+            Assert.Equal(IPStatus.TimedOut, reply.Status);
+        }
+
+        [Fact]
+        [OuterLoop]
+        public async Task Ping_TimedOut_TAP_Success()
+        {
+            var sender = new Ping();
+            PingReply reply = await sender.SendPingAsync(TestSettings.UnreachableAddress);
+            Assert.Equal(IPStatus.TimedOut, reply.Status);
+        }
+    }
 }

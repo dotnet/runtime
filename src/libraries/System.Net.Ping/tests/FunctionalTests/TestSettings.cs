@@ -11,6 +11,7 @@ namespace System.Net.NetworkInformation.Tests
     internal static class TestSettings
     {
         public static readonly string LocalHost = "localhost";
+        public static readonly string UnreachableAddress = "192.0.2.0"; // TEST-NET-1
         public const int PingTimeout = 10 * 1000;
 
         public const string PayloadAsString = "'Post hoc ergo propter hoc'. 'After it, therefore because of it'. It means one thing follows the other, therefore it was caused by the other. But it's not always true. In fact it's hardly ever true.";
