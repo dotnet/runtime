@@ -95,6 +95,7 @@ Areas are tracked by labels area-&#42; (e.g. area-System.Collections). Each area
 | [System.Text.Encoding](https://github.com/dotnet/corefx/labels/area-System.Text.Encoding)     | **[@layomia](https://github.com/layomia)**, [@krwq](https://github.com/krwq), [@tarekgh](https://github.com/tarekgh) |  |
 | [System.Text.Encodings.Web](https://github.com/dotnet/corefx/labels/area-System.Text.Encodings.Web) | **[@GrabYourPitchforks](https://github.com/GrabYourPitchforks)**, [@layomia](https://github.com/layomia), [@tarekgh](https://github.com/tarekgh) |  |
 | [System.Text.Json](https://github.com/dotnet/corefx/labels/area-System.Text.Json)             | **[@ahsonkhan](https://github.com/ahsonkhan)**, [@steveharter](https://github.com/steveharter) |  |
+| [System.Text.Unicode](https://github.com/dotnet/corefx/labels/area-System.Text.Encodings.Web) | **[@GrabYourPitchforks](https://github.com/GrabYourPitchforks)**, [@layomia](https://github.com/layomia), [@tarekgh](https://github.com/tarekgh) |  |
 | [System.Text.RegularExpressions](https://github.com/dotnet/corefx/labels/area-System.Text.RegularExpressions) | **[@ViktorHofer](https://github.com/ViktorHofer)**, [@maryamariyan](https://github.com/maryamariyan) |  |
 | [System.Threading](https://github.com/dotnet/corefx/labels/area-System.Threading)             | **[@kouvel](https://github.com/kouvel)** |  |
 | [System.Threading.Channels](https://github.com/dotnet/corefx/labels/area-System.Threading.Channels) | **[@tarekgh](https://github.com/tarekgh)**, [@stephentoub](https://github.com/stephentoub) |  |
