@@ -35,7 +35,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void Constructor<#=type.Name#>() { TestConstructor<<#=type.Name#>>(); }
+        public void Constructor<#=type.Name#>() { TestConstructor<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -59,7 +59,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void ConstructorWithOffset<#=type.Name#>() { TestConstructorWithOffset<<#=type.Name#>>(); }
+        public void ConstructorWithOffset<#=type.Name#>() { TestConstructorWithOffset<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -82,7 +82,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void ConstructorConstantValue<#=type.Name#>() { TestConstructorConstantValue<<#=type.Name#>>(); }
+        public void ConstructorConstantValue<#=type.Name#>() { TestConstructorConstantValue<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -102,7 +102,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void ConstructorDefault<#=type.Name#>() { TestConstructorDefault<<#=type.Name#>>(); }
+        public void ConstructorDefault<#=type.Name#>() { TestConstructorDefault<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -121,7 +121,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void ConstructorException<#=type.Name#>() { TestConstructorArrayTooSmallException<<#=type.Name#>>(); }
+        public void ConstructorException<#=type.Name#>() { TestConstructorArrayTooSmallException<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -142,7 +142,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void IndexerOutOfRange<#=type.Name#>() { TestIndexerOutOfRange<<#=type.Name#>>(); }
+        public void IndexerOutOfRange<#=type.Name#>() { TestIndexerOutOfRange<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -162,7 +162,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void StaticOneVector<#=type.Name#>() { TestStaticOneVector<<#=type.Name#>>(); }
+        public void StaticOneVector<#=type.Name#>() { TestStaticOneVector<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -182,7 +182,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void StaticZeroVector<#=type.Name#>() { TestStaticZeroVector<<#=type.Name#>>(); }
+        public void StaticZeroVector<#=type.Name#>() { TestStaticZeroVector<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -204,7 +204,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void CopyTo<#=type.Name#>() { TestCopyTo<<#=type.Name#>>(); }
+        public void CopyTo<#=type.Name#>() { TestCopyTo<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -232,7 +232,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void CopyToWithOffset<#=type.Name#>() { TestCopyToWithOffset<<#=type.Name#>>(); }
+        public void CopyToWithOffset<#=type.Name#>() { TestCopyToWithOffset<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -257,7 +257,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void EqualsObject<#=type.Name#>() { TestEqualsObject<<#=type.Name#>>(); }
+        public void EqualsObject<#=type.Name#>() { TestEqualsObject<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -273,15 +273,15 @@ namespace System.Numerics.Tests
             Assert.False(vector1.Equals(dateTimeObject));
             Assert.True(vector1.Equals((object)vector1));
 
-            if (typeof(T) != typeof(Int32))
+            if (typeof(T) != typeof(int))
             {
-                Vector<Int32> intVector = new Vector<Int32>(GenerateRandomValuesForVector<Int32>());
+                Vector<int> intVector = new Vector<int>(GenerateRandomValuesForVector<int>());
                 Assert.False(vector1.Equals(intVector));
                 Assert.False(intVector.Equals(vector1));
             }
             else
             {
-                Vector<Single> floatVector = new Vector<Single>(GenerateRandomValuesForVector<Single>());
+                Vector<float> floatVector = new Vector<float>(GenerateRandomValuesForVector<float>());
                 Assert.False(vector1.Equals(floatVector));
                 Assert.False(floatVector.Equals(vector1));
             }
@@ -292,7 +292,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void EqualsVector<#=type.Name#>() { TestEqualsVector<<#=type.Name#>>(); }
+        public void EqualsVector<#=type.Name#>() { TestEqualsVector<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -322,7 +322,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void GetHashCode<#=type.Name#>() { TestGetHashCode<<#=type.Name#>>(); }
+        public void GetHashCode<#=type.Name#>() { TestGetHashCode<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -350,7 +350,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void ToStringGeneral<#=type.Name#>() { TestToString<<#=type.Name#>>("G", CultureInfo.CurrentCulture); }
+        public void ToStringGeneral<#=type.Name#>() { TestToString<<#=typeAliases[type]#>>("G", CultureInfo.CurrentCulture); }
 <#
     }
 #>
@@ -359,7 +359,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void ToStringCurrency<#=type.Name#>() { TestToString<<#=type.Name#>>("c", CultureInfo.CurrentCulture); }
+        public void ToStringCurrency<#=type.Name#>() { TestToString<<#=typeAliases[type]#>>("c", CultureInfo.CurrentCulture); }
 <#
     }
 #>
@@ -368,7 +368,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void ToStringExponential<#=type.Name#>() { TestToString<<#=type.Name#>>("E3", CultureInfo.CurrentCulture); }
+        public void ToStringExponential<#=type.Name#>() { TestToString<<#=typeAliases[type]#>>("E3", CultureInfo.CurrentCulture); }
 <#
     }
 #>
@@ -398,7 +398,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void Addition<#=type.Name#>() { TestAddition<<#=type.Name#>>(); }
+        public void Addition<#=type.Name#>() { TestAddition<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -421,18 +421,18 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void AdditionOverflow<#=type.Name#>() { TestAdditionOverflow<<#=type.Name#>>(); }
+        public void AdditionOverflow<#=type.Name#>() { TestAdditionOverflow<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
         private void TestAdditionOverflow<T>() where T : struct
         {
-            T maxValue = (T)(dynamic)typeof(T).GetRuntimeField("MaxValue").GetValue(null);
+            T maxValue = GetMaxValueExact<T>();
             Vector<T> maxValueVector = new Vector<T>(maxValue);
             Vector<T> secondVector = new Vector<T>(GenerateRandomValuesForVector<T>());
             Vector<T> sum = maxValueVector + secondVector;
 
-            T minValue = (T)(dynamic)typeof(T).GetRuntimeField("MinValue").GetValue(null);
+            T minValue = GetMinValueExact<T>();
             ValidateVector(sum,
                 (index, val) =>
                 {
@@ -445,7 +445,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void Subtraction<#=type.Name#>() { TestSubtraction<<#=type.Name#>>(); }
+        public void Subtraction<#=type.Name#>() { TestSubtraction<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -468,18 +468,18 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void SubtractionOverflow<#=type.Name#>() { TestSubtractionOverflow<<#=type.Name#>>(); }
+        public void SubtractionOverflow<#=type.Name#>() { TestSubtractionOverflow<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
         private void TestSubtractionOverflow<T>() where T : struct
         {
-            T minValue = (T)(dynamic)typeof(T).GetRuntimeField("MinValue").GetValue(null);
+            T minValue = GetMinValueExact<T>();
             Vector<T> minValueVector = new Vector<T>(minValue);
             Vector<T> secondVector = new Vector<T>(GenerateRandomValuesForVector<T>());
             Vector<T> difference = minValueVector - secondVector;
 
-            T maxValue = (T)(dynamic)typeof(T).GetRuntimeField("MaxValue").GetValue(null);
+            T maxValue = GetMaxValueExact<T>();
             ValidateVector(difference,
                 (index, val) =>
                 {
@@ -492,7 +492,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void Multiplication<#=type.Name#>() { TestMultiplication<<#=type.Name#>>(); }
+        public void Multiplication<#=type.Name#>() { TestMultiplication<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -515,7 +515,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void MultiplicationWithScalar<#=type.Name#>() { TestMultiplicationWithScalar<<#=type.Name#>>(); }
+        public void MultiplicationWithScalar<#=type.Name#>() { TestMultiplicationWithScalar<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -546,7 +546,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void Division<#=type.Name#>() { TestDivision<<#=type.Name#>>(); }
+        public void Division<#=type.Name#>() { TestDivision<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -569,17 +569,17 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
-        public void DivisionByZeroExceptionByte() { TestDivisionByZeroException<Byte>(); }
+        public void DivisionByZeroExceptionByte() { TestDivisionByZeroException<byte>(); }
         [Fact]
-        public void DivisionByZeroExceptionSByte() { TestDivisionByZeroException<SByte>(); }
+        public void DivisionByZeroExceptionSByte() { TestDivisionByZeroException<sbyte>(); }
         [Fact]
-        public void DivisionByZeroExceptionUInt16() { TestDivisionByZeroException<UInt16>(); }
+        public void DivisionByZeroExceptionUInt16() { TestDivisionByZeroException<ushort>(); }
         [Fact]
-        public void DivisionByZeroExceptionInt16() { TestDivisionByZeroException<Int16>(); }
+        public void DivisionByZeroExceptionInt16() { TestDivisionByZeroException<short>(); }
         [Fact]
-        public void DivisionByZeroExceptionInt32() { TestDivisionByZeroException<Int32>(); }
+        public void DivisionByZeroExceptionInt32() { TestDivisionByZeroException<int>(); }
         [Fact]
-        public void DivisionByZeroExceptionInt64() { TestDivisionByZeroException<Int64>(); }
+        public void DivisionByZeroExceptionInt64() { TestDivisionByZeroException<long>(); }
         private void TestDivisionByZeroException<T>() where T : struct
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
@@ -595,7 +595,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void UnaryMinus<#=type.Name#>() { TestUnaryMinus<<#=type.Name#>>(); }
+        public void UnaryMinus<#=type.Name#>() { TestUnaryMinus<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -619,7 +619,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void BitwiseAndOperator<#=type.Name#>() { TestBitwiseAndOperator<<#=type.Name#>>(); }
+        public void BitwiseAndOperator<#=type.Name#>() { TestBitwiseAndOperator<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -641,7 +641,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void BitwiseOrOperator<#=type.Name#>() { TestBitwiseOrOperator<<#=type.Name#>>(); }
+        public void BitwiseOrOperator<#=type.Name#>() { TestBitwiseOrOperator<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -667,7 +667,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void BitwiseXorOperator<#=type.Name#>() { TestBitwiseXorOperator<<#=type.Name#>>(); }
+        public void BitwiseXorOperator<#=type.Name#>() { TestBitwiseXorOperator<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -692,7 +692,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void BitwiseOnesComplementOperator<#=type.Name#>() { TestBitwiseOnesComplementOperator<<#=type.Name#>>(); }
+        public void BitwiseOnesComplementOperator<#=type.Name#>() { TestBitwiseOnesComplementOperator<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -715,7 +715,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void BitwiseAndNot<#=type.Name#>() { TestBitwiseAndNot<<#=type.Name#>>(); }
+        public void BitwiseAndNot<#=type.Name#>() { TestBitwiseAndNot<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -745,7 +745,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void VectorGreaterThan<#=type.Name#>() { TestVectorGreaterThan<<#=type.Name#>>(); }
+        public void VectorGreaterThan<#=type.Name#>() { TestVectorGreaterThan<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -771,7 +771,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void GreaterThanOrEqual<#=type.Name#>() { TestVectorGreaterThanOrEqual<<#=type.Name#>>(); }
+        public void GreaterThanOrEqual<#=type.Name#>() { TestVectorGreaterThanOrEqual<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -797,7 +797,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void GreaterThanAny<#=type.Name#>() { TestVectorGreaterThanAny<<#=type.Name#>>(); }
+        public void GreaterThanAny<#=type.Name#>() { TestVectorGreaterThanAny<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -836,7 +836,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void GreaterThanAll<#=type.Name#>() { TestVectorGreaterThanAll<<#=type.Name#>>(); }
+        public void GreaterThanAll<#=type.Name#>() { TestVectorGreaterThanAll<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -874,7 +874,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void GreaterThanOrEqualAny<#=type.Name#>() { TestVectorGreaterThanOrEqualAny<<#=type.Name#>>(); }
+        public void GreaterThanOrEqualAny<#=type.Name#>() { TestVectorGreaterThanOrEqualAny<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -922,7 +922,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void GreaterThanOrEqualAll<#=type.Name#>() { TestVectorGreaterThanOrEqualAll<<#=type.Name#>>(); }
+        public void GreaterThanOrEqualAll<#=type.Name#>() { TestVectorGreaterThanOrEqualAll<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -969,7 +969,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void LessThan<#=type.Name#>() { TestVectorLessThan<<#=type.Name#>>(); }
+        public void LessThan<#=type.Name#>() { TestVectorLessThan<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -995,7 +995,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void LessThanOrEqual<#=type.Name#>() { TestVectorLessThanOrEqual<<#=type.Name#>>(); }
+        public void LessThanOrEqual<#=type.Name#>() { TestVectorLessThanOrEqual<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1021,7 +1021,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void LessThanAny<#=type.Name#>() { TestVectorLessThanAny<<#=type.Name#>>(); }
+        public void LessThanAny<#=type.Name#>() { TestVectorLessThanAny<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1045,7 +1045,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void LessThanAll<#=type.Name#>() { TestVectorLessThanAll<<#=type.Name#>>(); }
+        public void LessThanAll<#=type.Name#>() { TestVectorLessThanAll<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1082,7 +1082,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void LessThanOrEqualAny<#=type.Name#>() { TestVectorLessThanOrEqualAny<<#=type.Name#>>(); }
+        public void LessThanOrEqualAny<#=type.Name#>() { TestVectorLessThanOrEqualAny<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1125,7 +1125,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void LessThanOrEqualAll<#=type.Name#>() { TestVectorLessThanOrEqualAll<<#=type.Name#>>(); }
+        public void LessThanOrEqualAll<#=type.Name#>() { TestVectorLessThanOrEqualAll<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1167,7 +1167,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void VectorEquals<#=type.Name#>() { TestVectorEquals<<#=type.Name#>>(); }
+        public void VectorEquals<#=type.Name#>() { TestVectorEquals<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1201,7 +1201,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void VectorEqualsAny<#=type.Name#>() { TestVectorEqualsAny<<#=type.Name#>>(); }
+        public void VectorEqualsAny<#=type.Name#>() { TestVectorEqualsAny<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1238,7 +1238,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void VectorEqualsAll<#=type.Name#>() { TestVectorEqualsAll<<#=type.Name#>>(); }
+        public void VectorEqualsAll<#=type.Name#>() { TestVectorEqualsAll<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1270,7 +1270,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void ConditionalSelect<#=type.Name#>() { TestConditionalSelect<<#=type.Name#>>(); }
+        public void ConditionalSelect<#=type.Name#>() { TestConditionalSelect<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1311,7 +1311,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void DotProduct<#=type.Name#>() { TestDotProduct<<#=type.Name#>>(); }
+        public void DotProduct<#=type.Name#>() { TestDotProduct<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1336,7 +1336,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void Max<#=type.Name#>() { TestMax<<#=type.Name#>>(); }
+        public void Max<#=type.Name#>() { TestMax<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1361,7 +1361,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void Min<#=type.Name#>() { TestMin<<#=type.Name#>>(); }
+        public void Min<#=type.Name#>() { TestMin<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1387,7 +1387,7 @@ namespace System.Numerics.Tests
         int precision = type == typeof(float) ? 6 : type == typeof(double) ? 15 : -1;
 #>
         [Fact]
-        public void SquareRoot<#=type.Name#>() { TestSquareRoot<<#=type.Name#>>(<#=precision#>); }
+        public void SquareRoot<#=type.Name#>() { TestSquareRoot<<#=typeAliases[type]#>>(<#=precision#>); }
 <#
     }
 #>
@@ -1410,7 +1410,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void Abs<#=type.Name#>() { TestAbs<<#=type.Name#>>(); }
+        public void Abs<#=type.Name#>() { TestAbs<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1437,7 +1437,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void MultiplicationReflection<#=type.Name#>() { TestMultiplicationReflection<<#=type.Name#>>(); }
+        public void MultiplicationReflection<#=type.Name#>() { TestMultiplicationReflection<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1463,7 +1463,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void AdditionReflection<#=type.Name#>() { TestAdditionReflection<<#=type.Name#>>(); }
+        public void AdditionReflection<#=type.Name#>() { TestAdditionReflection<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1489,7 +1489,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void DivisionReflection<#=type.Name#>() { TestDivisionReflection<<#=type.Name#>>(); }
+        public void DivisionReflection<#=type.Name#>() { TestDivisionReflection<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1519,7 +1519,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void ConstructorSingleValueReflection<#=type.Name#>() { TestConstructorSingleValueReflection<<#=type.Name#>>(); }
+        public void ConstructorSingleValueReflection<#=type.Name#>() { TestConstructorSingleValueReflection<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1544,7 +1544,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void ConstructorArrayReflection<#=type.Name#>() { TestConstructorArrayReflection<<#=type.Name#>>(); }
+        public void ConstructorArrayReflection<#=type.Name#>() { TestConstructorArrayReflection<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1569,7 +1569,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void CopyToReflection<#=type.Name#>() { TestCopyToReflection<<#=type.Name#>>(); }
+        public void CopyToReflection<#=type.Name#>() { TestCopyToReflection<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1594,7 +1594,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void CopyToWithOffsetReflection<#=type.Name#>() { TestCopyToWithOffsetReflection<<#=type.Name#>>(); }
+        public void CopyToWithOffsetReflection<#=type.Name#>() { TestCopyToWithOffsetReflection<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1620,7 +1620,7 @@ namespace System.Numerics.Tests
     {
 #>
         [Fact]
-        public void CountViaReflectionConsistency<#=type.Name#>() { TestCountViaReflectionConsistency<<#=type.Name#>>(); }
+        public void CountViaReflectionConsistency<#=type.Name#>() { TestCountViaReflectionConsistency<<#=typeAliases[type]#>>(); }
 <#
     }
 #>
@@ -1641,12 +1641,12 @@ namespace System.Numerics.Tests
         [Fact]
         public void Convert<#=sourceType.Name#>To<#=targetType.Name#>()
         {
-            <#=sourceType.Name#>[] source = GenerateRandomValuesForVector<<#=sourceType.Name#>>();
-            Vector<<#=sourceType.Name#>> sourceVec = new Vector<<#=sourceType.Name#>>(source);
-            Vector<<#=targetType.Name#>> targetVec = Vector.ConvertTo<#=targetType.Name#>(sourceVec);
-            for (int i = 0; i < Vector<<#=targetType.Name#>>.Count; i++)
+            <#=typeAliases[sourceType]#>[] source = GenerateRandomValuesForVector<<#=typeAliases[sourceType]#>>();
+            Vector<<#=typeAliases[sourceType]#>> sourceVec = new Vector<<#=typeAliases[sourceType]#>>(source);
+            Vector<<#=typeAliases[targetType]#>> targetVec = Vector.ConvertTo<#=targetType.Name#>(sourceVec);
+            for (int i = 0; i < Vector<<#=typeAliases[targetType]#>>.Count; i++)
             {
-                Assert.Equal(unchecked((<#=targetType.Name#>)source[i]), targetVec[i]);
+                Assert.Equal(unchecked((<#=typeAliases[targetType]#>)source[i]), targetVec[i]);
             }
         }
 
@@ -1660,19 +1660,19 @@ namespace System.Numerics.Tests
         [Fact]
         public void Widen<#=widenSource.Name#>()
         {
-            <#=widenSource.Name#>[] source = GenerateRandomValuesForVector<<#=widenSource.Name#>>();
-            Vector<<#=widenSource.Name#>> sourceVec = new Vector<<#=widenSource.Name#>>(source);
-            Vector<<#=widenTarget.Name#>> dest1;
-            Vector<<#=widenTarget.Name#>> dest2;
+            <#=typeAliases[widenSource]#>[] source = GenerateRandomValuesForVector<<#=typeAliases[widenSource]#>>();
+            Vector<<#=typeAliases[widenSource]#>> sourceVec = new Vector<<#=typeAliases[widenSource]#>>(source);
+            Vector<<#=typeAliases[widenTarget]#>> dest1;
+            Vector<<#=typeAliases[widenTarget]#>> dest2;
             Vector.Widen(sourceVec, out dest1, out dest2);
             ValidateVector(dest1, (index, val) =>
             {
-                Assert.Equal((<#=widenTarget.Name#>)source[index], val);
+                Assert.Equal((<#=typeAliases[widenTarget]#>)source[index], val);
             });
 
             ValidateVector(dest2, (index, val) =>
             {
-                Assert.Equal((<#=widenTarget.Name#>)source[index + Vector<<#=widenTarget.Name#>>.Count], val);
+                Assert.Equal((<#=typeAliases[widenTarget]#>)source[index + Vector<<#=typeAliases[widenTarget]#>>.Count], val);
             });
         }
 
@@ -1684,19 +1684,19 @@ namespace System.Numerics.Tests
         [Fact]
         public void Narrow<#=narrowSource.Name#>()
         {
-            <#=narrowSource.Name#>[] source1 = GenerateRandomValuesForVector<<#=narrowSource.Name#>>();
-            <#=narrowSource.Name#>[] source2 = GenerateRandomValuesForVector<<#=narrowSource.Name#>>();
-            Vector<<#=narrowSource.Name#>> sourceVec1 = new Vector<<#=narrowSource.Name#>>(source1);
-            Vector<<#=narrowSource.Name#>> sourceVec2 = new Vector<<#=narrowSource.Name#>>(source2);
-            Vector<<#=narrowTarget.Name#>> dest = Vector.Narrow(sourceVec1, sourceVec2);
+            <#=typeAliases[narrowSource]#>[] source1 = GenerateRandomValuesForVector<<#=typeAliases[narrowSource]#>>();
+            <#=typeAliases[narrowSource]#>[] source2 = GenerateRandomValuesForVector<<#=typeAliases[narrowSource]#>>();
+            Vector<<#=typeAliases[narrowSource]#>> sourceVec1 = new Vector<<#=typeAliases[narrowSource]#>>(source1);
+            Vector<<#=typeAliases[narrowSource]#>> sourceVec2 = new Vector<<#=typeAliases[narrowSource]#>>(source2);
+            Vector<<#=typeAliases[narrowTarget]#>> dest = Vector.Narrow(sourceVec1, sourceVec2);
 
-            for (int i = 0; i < Vector<<#=narrowSource.Name#>>.Count; i++)
+            for (int i = 0; i < Vector<<#=typeAliases[narrowSource]#>>.Count; i++)
             {
-                Assert.Equal(unchecked((<#=narrowTarget.Name#>)source1[i]), dest[i]);
+                Assert.Equal(unchecked((<#=typeAliases[narrowTarget]#>)source1[i]), dest[i]);
             }
-            for (int i = 0; i < Vector<<#=narrowSource.Name#>>.Count; i++)
+            for (int i = 0; i < Vector<<#=typeAliases[narrowSource]#>>.Count; i++)
             {
-                Assert.Equal(unchecked((<#=narrowTarget.Name#>)source2[i]), dest[i + Vector<<#=narrowSource.Name#>>.Count]);
+                Assert.Equal(unchecked((<#=typeAliases[narrowTarget]#>)source2[i]), dest[i + Vector<<#=typeAliases[narrowSource]#>>.Count]);
             }
         }
 
@@ -1801,67 +1801,183 @@ namespace System.Numerics.Tests
 
         internal static int GetMinValue<T>() where T : struct
         {
-            if (typeof(T) == typeof(Int64) || typeof(T) == typeof(Single) || typeof(T) == typeof(Double) || typeof(T) == typeof(UInt32) || typeof(T) == typeof(UInt64))
+            if (typeof(T) == typeof(int) || typeof(T) == typeof(long) || typeof(T) == typeof(float) || typeof(T) == typeof(double) || typeof(T) == typeof(uint) || typeof(T) == typeof(ulong))
             {
                 return int.MinValue;
             }
-            var typeInfo = typeof(T).GetTypeInfo();
-            var field = typeInfo.GetDeclaredField("MinValue");
-            var value = field.GetValue(null);
-            return (int)(dynamic)value;
+            else if (typeof(T) == typeof(byte))
+            {
+                return byte.MinValue;
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                return sbyte.MinValue;
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                return short.MinValue;
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                return ushort.MinValue;
+            }
+            throw new NotSupportedException();
+        }
+
+        internal static T GetMinValueExact<T>() where T : struct
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                return (T)(object)byte.MinValue;
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                return (T)(object)sbyte.MinValue;
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                return (T)(object)ushort.MinValue;
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                return (T)(object)short.MinValue;
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                return (T)(object)int.MinValue;
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                return (T)(object)long.MinValue;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return (T)(object)float.MinValue;
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return (T)(object)double.MinValue;
+            }
+            else if (typeof(T) == typeof(uint))
+            {
+                return (T)(object)uint.MinValue;
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                return (T)(object)ulong.MinValue;
+            }
+            throw new NotSupportedException();
         }
 
         internal static int GetMaxValue<T>() where T : struct
         {
-            if (typeof(T) == typeof(Int64) || typeof(T) == typeof(Single) || typeof(T) == typeof(Double) || typeof(T) == typeof(UInt32) || typeof(T) == typeof(UInt64))
+            if (typeof(T) == typeof(int) || typeof(T) == typeof(long) || typeof(T) == typeof(float) || typeof(T) == typeof(double) || typeof(T) == typeof(uint) || typeof(T) == typeof(ulong))
             {
                 return int.MaxValue;
             }
-            var typeInfo = typeof(T).GetTypeInfo();
-            var field = typeInfo.GetDeclaredField("MaxValue");
-            var value = field.GetValue(null);
-            return (int)(dynamic)value;
+            else if (typeof(T) == typeof(byte))
+            {
+                return byte.MaxValue;
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                return sbyte.MaxValue;
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                return short.MaxValue;
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                return ushort.MaxValue;
+            }
+            throw new NotSupportedException();
+        }
+
+        internal static T GetMaxValueExact<T>() where T : struct
+        {
+            if (typeof(T) == typeof(byte))
+            {
+                return (T)(object)byte.MaxValue;
+            }
+            else if (typeof(T) == typeof(sbyte))
+            {
+                return (T)(object)sbyte.MaxValue;
+            }
+            else if (typeof(T) == typeof(ushort))
+            {
+                return (T)(object)ushort.MaxValue;
+            }
+            else if (typeof(T) == typeof(short))
+            {
+                return (T)(object)short.MaxValue;
+            }
+            else if (typeof(T) == typeof(int))
+            {
+                return (T)(object)int.MaxValue;
+            }
+            else if (typeof(T) == typeof(long))
+            {
+                return (T)(object)long.MaxValue;
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                return (T)(object)float.MaxValue;
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return (T)(object)double.MaxValue;
+            }
+            else if (typeof(T) == typeof(uint))
+            {
+                return (T)(object)uint.MaxValue;
+            }
+            else if (typeof(T) == typeof(ulong))
+            {
+                return (T)(object)ulong.MaxValue;
+            }
+            throw new NotSupportedException();
         }
 
         internal static T GetValueWithAllOnesSet<T>() where T : struct
         {
-            if (typeof(T) == typeof(Byte))
+            if (typeof(T) == typeof(byte))
             {
                 return (T)(object)ConstantHelper.GetByteWithAllBitsSet();
             }
-            else if (typeof(T) == typeof(SByte))
+            else if (typeof(T) == typeof(sbyte))
             {
                 return (T)(object)ConstantHelper.GetSByteWithAllBitsSet();
             }
-            else if (typeof(T) == typeof(UInt16))
+            else if (typeof(T) == typeof(ushort))
             {
                 return (T)(object)ConstantHelper.GetUInt16WithAllBitsSet();
             }
-            else if (typeof(T) == typeof(Int16))
+            else if (typeof(T) == typeof(short))
             {
                 return (T)(object)ConstantHelper.GetInt16WithAllBitsSet();
             }
-            else if (typeof(T) == typeof(Int32))
+            else if (typeof(T) == typeof(int))
             {
                 return (T)(object)ConstantHelper.GetInt32WithAllBitsSet();
             }
-            else if (typeof(T) == typeof(Int64))
+            else if (typeof(T) == typeof(long))
             {
                 return (T)(object)ConstantHelper.GetInt64WithAllBitsSet();
             }
-            else if (typeof(T) == typeof(Single))
+            else if (typeof(T) == typeof(float))
             {
                 return (T)(object)ConstantHelper.GetSingleWithAllBitsSet();
             }
-            else if (typeof(T) == typeof(Double))
+            else if (typeof(T) == typeof(double))
             {
                 return (T)(object)ConstantHelper.GetDoubleWithAllBitsSet();
             }
-            else if (typeof(T) == typeof(UInt32))
+            else if (typeof(T) == typeof(uint))
             {
                 return (T)(object)ConstantHelper.GetUInt32WithAllBitsSet();
             }
-            else if (typeof(T) == typeof(UInt64))
+            else if (typeof(T) == typeof(ulong))
             {
                 return (T)(object)ConstantHelper.GetUInt64WithAllBitsSet();
             }
