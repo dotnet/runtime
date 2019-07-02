@@ -12,8 +12,6 @@
       <Branches Include="Release/3.0.X" Abbr="3.0.X" />
       <Branches Include="Release/2.2.X" Abbr="2.2.X" />
       <Branches Include="Release/2.1.X" Abbr="2.1.X" />
-      <Branches Include="Release/1.1.X" Abbr="1.1.X" />
-      <Branches Include="Release/1.0.X" Abbr="preview" />
 
       <Platforms Include="Windows (x64)" Abbr="win-x64" />
       <Platforms Include="Windows (x86)" Abbr="win-x86" />
@@ -32,8 +30,6 @@
       <Platforms Include="CentOS 7 (x64)" Abbr="centos-7" />
       <Platforms Include="RHEL 6" Abbr="rhel-6" />
       <Platforms Include="RHEL 7.2 (x64)" Abbr="rhel7" />
-      <Platforms Include="Fedora 23 (x64)" Abbr="fedora-23" />
-      <Platforms Include="Fedora 24 (x64)" Abbr="fedora-24" />
       <Platforms Include="Fedora 27 (x64)" Abbr="fedora-27" />
       <Platforms Include="SLES 12 (x64)" Abbr="sles-12" />
       <Platforms Include="OpenSUSE 42 (x64)" Abbr="OpenSUSE-42" />
