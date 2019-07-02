@@ -115,6 +115,50 @@ namespace Microsoft.VisualBasic.Tests
         }
 
         [Theory]
+        [InlineData(0, 0)]
+        [InlineData(33, 33)]
+        [InlineData(172, 172)]
+        [InlineData(255, 255)]
+        public void Asc_Chr_Invariant(int charCode, int expected)
+        {
+            RemoteExecutor.Invoke((charCodeString, expectedString) =>
+            {
+                int charCode = int.Parse(charCodeString);
+                int expected = int.Parse(expectedString);
+
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+                Assert.Equal(1252, CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
+
+                Assert.Equal(expected, Strings.Asc(Strings.Chr(charCode)));
+            }, charCode.ToString(), expected.ToString()).Dispose();
+        }
+
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(33, 33)]
+        [InlineData(172, 0)]
+        [InlineData(255, 255)]
+        [InlineData(256, 1)]
+        [InlineData(0x8141, 0x8141)]
+        [InlineData(0xC8FE, 0xC8FE)]
+        [InlineData(0xFFFF, 0xFF)]
+        public void Asc_Chr_DoubleByte(int charCode, int expected)
+        {
+            RemoteExecutor.Invoke((charCodeString, expectedString) =>
+            {
+                int charCode = int.Parse(charCodeString);
+                int expected = int.Parse(expectedString);
+
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                CultureInfo.CurrentCulture = new CultureInfo("ko-KR");
+                Assert.Equal(949, CultureInfo.CurrentCulture.TextInfo.ANSICodePage);
+
+                Assert.Equal(expected, (ushort)Strings.Asc(Strings.Chr(charCode)));
+            }, charCode.ToString(), expected.ToString()).Dispose();
+        }
+
+        [Theory]
         [InlineData(new string[] { }, null, null)]
         [InlineData(new string[] { }, "", null)]
         public void Filter_WhenNoMatchArgument_ReturnsNull(string[] source, string match, string[] expected)
