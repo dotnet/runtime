@@ -36,7 +36,7 @@
   }
 }
 
-.class private auto ansi beforefieldinit Fooer
+.class private auto ansi sealed beforefieldinit Fooer
        extends [System.Runtime]System.ValueType
        implements IBar, IBaz
 {

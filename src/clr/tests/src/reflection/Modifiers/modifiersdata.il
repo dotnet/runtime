@@ -154,7 +154,7 @@
 {
   .method public static hidebysig object TryAllocWithModifiedArray()
   {
-    newobj void class GenericClass`1<int32 modopt (FooModifier)[]>::.ctor()
+    newobj instance void class GenericClass`1<int32 modopt (FooModifier)[]>::.ctor()
     ret
   }
 
