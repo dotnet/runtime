@@ -207,22 +207,17 @@
   <!-- Import packaging props -->
   <Import Project="$(RepositoryEngineeringDir)Packaging.props" />
 
-  <!-- Set the kind of PDB to Portable and turn on SourceLink (fetching source from GitHub) -->
   <PropertyGroup>
     <!-- Always pass portable to override arcade sdk which uses embedded for local builds -->
     <DebugType>portable</DebugType>
 
     <!-- Empty DebugType when building for netfx and in windows so that it is set to full or pdbonly later -->
     <DebugType Condition="'$(TargetsNetFx)' == 'true' AND '$(OS)' == 'Windows_NT'" />
-
-    <!-- Rhel 6 and FreeBSD doesn't support the source control git package so disable SourceLink -->
-    <EnableSourceLink Condition="$(RuntimeOS.StartsWith('rhel.6')) OR '$(_runtimeOSFamily)' == 'FreeBSD'">false</EnableSourceLink>
-    <!-- is not supported on ARM platforms either. -->
-    <EnableSourceLink Condition="'$(HostArch)' == 'Arm' OR '$(HostArch)' == 'Arm64'">false</EnableSourceLink>
-    <!-- Disable source link on local builds. -->
+    
+    <!-- Workaround for codecov issue https://github.com/tonerdo/coverlet/issues/312 -->
     <EnableSourceLink Condition="'$(ContinuousIntegrationBuild)' != 'true' and '$(OfficialBuildId)' == ''">false</EnableSourceLink>
   </PropertyGroup>
-
+    
   <!-- Set up Default symbol and optimization for Configuration -->
   <Choose>
     <When Condition="'$(ConfigurationGroup)'=='Debug'">
