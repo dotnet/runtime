@@ -143,6 +143,16 @@ namespace System.Text.Json
             }
             else
             {
+                if (options.DictionaryKeyPolicy != null)
+                {
+                    key = options.DictionaryKeyPolicy.ConvertName(key);
+
+                    if (key == null)
+                    {
+                        ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(options.DictionaryKeyPolicy.GetType());
+                    }
+                }
+
                 JsonEncodedText escapedKey = JsonEncodedText.Encode(key);
                 writer.WritePropertyName(escapedKey);
                 converter.Write(writer, value, options);

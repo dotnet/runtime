@@ -688,29 +688,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void CamelCaseOption()
-        {
-            var options = new JsonSerializerOptions();
-            options.DictionaryKeyPolicy = JsonNamingPolicy.CamelCase;
-
-            const string JsonString = @"[{""Key1"":1,""Key2"":2},{""Key1"":3,""Key2"":4}]";
-            Dictionary<string, int>[] obj = JsonSerializer.Deserialize<Dictionary<string, int>[]>(JsonString, options);
-
-            Assert.Equal(2, obj.Length);
-            Assert.Equal(1, obj[0]["key1"]);
-            Assert.Equal(2, obj[0]["key2"]);
-            Assert.Equal(3, obj[1]["key1"]);
-            Assert.Equal(4, obj[1]["key2"]);
-
-            const string JsonCamel = @"[{""key1"":1,""key2"":2},{""key1"":3,""key2"":4}]";
-            string jsonCamel = JsonSerializer.Serialize<object>(obj);
-            Assert.Equal(JsonCamel, jsonCamel);
-
-            jsonCamel = JsonSerializer.Serialize<object>(obj, options);
-            Assert.Equal(JsonCamel, jsonCamel);
-        }
-
-        [Fact]
         public static void UnicodePropertyNames()
         {
             {
