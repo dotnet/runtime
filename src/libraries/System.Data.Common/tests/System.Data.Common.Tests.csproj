@@ -16,6 +16,7 @@
     <Compile Include="System\Data\Common\DataAdapterTest.cs" />
     <Compile Include="System\Data\Common\DataColumnMappingCollectionTest.cs" />
     <Compile Include="System\Data\Common\DataTableMappingCollectionTest.cs" />
+    <Compile Include="System\Data\Common\DataTableMappingCollectionTest2.cs" />
     <Compile Include="System\Data\Common\DbCommandBuilderTest.cs" />
     <Compile Include="System\Data\Common\DbConnectionStringBuilderTest.cs" />
     <Compile Include="System\Data\Common\DbDataAdapterTest.cs" />
@@ -31,6 +32,7 @@
     <Compile Include="System\Data\ConstraintTest.cs" />
     <Compile Include="System\Data\DataColumnCollectionTest.cs" />
     <Compile Include="System\Data\DataColumnCollectionTest2.cs" />
+    <Compile Include="System\Data\DataColumnExpressionTest.cs" />
     <Compile Include="System\Data\DataColumnTest.cs" />
     <Compile Include="System\Data\DataColumnTest2.cs" />
     <Compile Include="System\Data\DataCommonEventSourceTest.cs" />
