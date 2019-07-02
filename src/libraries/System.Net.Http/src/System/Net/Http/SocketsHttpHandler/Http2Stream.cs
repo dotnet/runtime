@@ -139,12 +139,11 @@ namespace System.Net.Http
                 {
                     if (NetEventSource.IsEnabled) Trace($"Failed to send request body: {e}");
 
-                    // Try to notify server if we did not finish sending request body.
-                    IgnoreExceptions(_connection.SendRstStreamAsync(_streamId, Http2ProtocolErrorCode.Cancel));
-
                     // if we decided abandon sending request and we get ObjectDisposed as result of it, just eat exception.
                     if (!_shouldSendRequestBody && (e is ObjectDisposedException || e.InnerException is ObjectDisposedException))
                     {
+                        // Try to notify server if we did not finish sending request body.
+                        IgnoreExceptions(_connection.SendRstStreamAsync(_streamId, Http2ProtocolErrorCode.Cancel));
                         return;
                     }
 
