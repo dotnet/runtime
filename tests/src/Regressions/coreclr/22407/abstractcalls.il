@@ -87,7 +87,7 @@
     call void CallClass()
     leave Fail
   }
-  catch [System.Runtime]System.BadImageFormatException
+  catch [mscorlib]System.BadImageFormatException
   {
     pop
     leave AbstractClassOK
@@ -100,7 +100,7 @@ AbstractClassOK:
     call void CallInterface()
     leave Fail
   }
-  catch [System.Runtime]System.BadImageFormatException
+  catch [mscorlib]System.BadImageFormatException
   {
     pop
     leave AbstractInterfaceOK
