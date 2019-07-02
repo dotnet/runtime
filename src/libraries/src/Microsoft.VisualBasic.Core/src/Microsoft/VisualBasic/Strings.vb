@@ -154,6 +154,10 @@ Namespace Global.Microsoft.VisualBasic
             Return (lcid And &H3FF)
         End Function
 
+        Private Function GetAscChrEncoding() As Encoding
+            Return Encoding.GetEncoding(GetLocaleCodePage())
+        End Function
+
         '============================================================================
         ' Character manipulation functions.
         '============================================================================
@@ -173,7 +177,7 @@ Namespace Global.Microsoft.VisualBasic
                 Dim c() As Char
                 Dim iByteCount As Integer
 
-                enc = GetFileIOEncoding()
+                enc = GetAscChrEncoding()
 
                 c = New Char() {[String]}
 
@@ -241,7 +245,7 @@ Namespace Global.Microsoft.VisualBasic
             Try
                 Dim enc As Encoding
 
-                enc = Encoding.GetEncoding(GetLocaleCodePage())
+                enc = GetAscChrEncoding()
 
                 If enc.IsSingleByte Then
                     If CharCode < 0 OrElse CharCode > 255 Then
