@@ -199,6 +199,7 @@ private:
     static Volatile<bool> s_tracingInitialized;
     static EventPipeConfiguration s_config;
     static VolatilePtr<EventPipeSession> s_pSessions[MaxNumberOfSessions];
+    static Volatile<uint64_t> s_allowWrite;
     static EventPipeEventSource *s_pEventSource;
 
     //! Bitmask tracking EventPipe active sessions.
