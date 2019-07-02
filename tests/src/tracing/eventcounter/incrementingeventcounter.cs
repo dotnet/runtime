@@ -23,7 +23,7 @@ namespace BasicEventSourceTests
 
             public SimpleEventSource(string _displayName, string _displayUnits)
             {
-                _myCounter = new IncrementingEventCounter("test-counter", this) { DisplayName = _displayName, DisplayUnits = _displayUnits };
+                _myCounter = new IncrementingEventCounter("test-counter", this) { DisplayName = _displayName, DisplayUnits = _displayUnits, DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
             }
 
             public void IncrementCounter()
@@ -41,6 +41,7 @@ namespace BasicEventSourceTests
             public int incrementSum;
             public string displayName;
             public string displayUnits;
+            public string displayRateTimeScale;
             
             public SimpleEventListener(string targetSourceName, EventLevel level)
             {
@@ -84,6 +85,10 @@ namespace BasicEventSourceTests
                             {
                                 displayUnits = payload.Value.ToString();
                             }
+                            else if (payload.Key.Equals("DisplayRateTimeScale"))
+                            {
+                                displayRateTimeScale = payload.Value.ToString();
+                            }
                         }
                     }
                 }
@@ -126,8 +131,14 @@ namespace BasicEventSourceTests
                 if (displayUnits != myListener.displayUnits)
                 {
                     Console.WriteLine("Test Failed");
-                    Console.WriteLine($"Expected to see {displayUnits} as DisplayName property in payload - saw {myListener.displayUnits}");
+                    Console.WriteLine($"Expected to see {displayUnits} as DisplayUnits property in payload - saw {myListener.displayUnits}");
                     return 1;
+                }
+
+                if (!myListener.displayRateTimeScale.Equals("00:00:01"))
+                {
+                    Console.WriteLine("Test failed");
+                    Console.WriteLine($"Wrong DisplayRateTimeScale: {myListener.displayRateTimeScale}");
                 }
 
                 Console.WriteLine("Test passed");
