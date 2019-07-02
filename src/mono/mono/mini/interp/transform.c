@@ -4097,7 +4097,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			} else {
 				if (m_class_get_parent (klass) == mono_defaults.array_class) {
 					interp_add_ins (td, MINT_NEWOBJ_ARRAY);
-					td->last_ins->data [0] = get_data_item_index (td, mono_interp_get_imethod (domain, m, error));
+					td->last_ins->data [0] = get_data_item_index (td, m->klass);
 					td->last_ins->data [1] = csignature->param_count;
 				} else if (m_class_get_image (klass) == mono_defaults.corlib &&
 						!strcmp (m_class_get_name (m->klass), "ByReference`1") &&

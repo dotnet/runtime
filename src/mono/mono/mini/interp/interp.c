@@ -4339,7 +4339,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			guint32 token = * (guint16 *)(ip + 1);
 			guint16 param_count = * (guint16 *)(ip + 2);
 
-			newobj_class = ((InterpMethod*) imethod->data_items [token])->method->klass;
+			newobj_class = (MonoClass*) imethod->data_items [token];
 
 			sp -= param_count;
 			sp->data.p = ves_array_create (imethod->domain, newobj_class, param_count, sp, error);
