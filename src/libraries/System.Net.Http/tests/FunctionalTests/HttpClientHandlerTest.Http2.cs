@@ -34,7 +34,7 @@ namespace System.Net.Http.Functional.Tests
                 string text = e.ToString();
                 Assert.Contains(((int)errorCode).ToString("x"), text);
                 Assert.Contains(
-                    Enum.IsDefined(typeof(ProtocolErrors), errorCode) ? errorCode.ToString() : ProtocolErrors.PROTOCOL_ERROR.ToString(),
+                    Enum.IsDefined(typeof(ProtocolErrors), errorCode) ? errorCode.ToString() : "(unknown error)",
                     text);
             }
         }
@@ -462,10 +462,15 @@ namespace System.Net.Http.Functional.Tests
                 (endHeaders ? FrameFlags.EndHeaders : FrameFlags.None) | (endStream ? FrameFlags.EndStream : FrameFlags.None),
                 0, 0, 0, streamId);
 
-        private static Frame MakeSimpleContinuationFrame(int streamId, bool endHeaders = false) =>
-            new ContinuationFrame(new byte[] { 0x88 },       // :status: 200
+        private static Frame MakeSimpleContinuationFrame(int streamId, bool endHeaders = false)
+        {
+            Memory<byte> headerBlock = new byte[Frame.MaxFrameLength];
+            int bytesGenerated = Http2LoopbackConnection.EncodeHeader(new HttpHeaderData("foo", "bar"), headerBlock.Span);
+
+            return new ContinuationFrame(headerBlock.Slice(0, bytesGenerated),
                 (endHeaders ? FrameFlags.EndHeaders : FrameFlags.None),
                 0, 0, 0, streamId);
+        }
 
         private static Frame MakeSimpleDataFrame(int streamId, bool endStream = false) =>
             new DataFrame(new byte[] { 0x00 },
@@ -2071,9 +2076,9 @@ namespace System.Net.Http.Functional.Tests
                         await response.Content.ReadAsStringAsync();
                     });
 
-                    // A Http2ProtocolException will be present somewhere in the inner exceptions.
+                    // A Http2ConnectionException will be present somewhere in the inner exceptions.
                     // Its location depends on which method threw the exception.
-                    while (requestException?.GetType().FullName.Equals("System.Net.Http.Http2ProtocolException") == false)
+                    while (requestException?.GetType().FullName.Equals("System.Net.Http.Http2ConnectionException") == false)
                     {
                         requestException = requestException.InnerException;
                     }
