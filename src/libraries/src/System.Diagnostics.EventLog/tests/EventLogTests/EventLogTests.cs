@@ -124,7 +124,6 @@ namespace System.Diagnostics.Tests
             Assert.Throws<ArgumentException>(() => EventLog.GetEventLogs(""));
             EventLog[] eventLogCollection = EventLog.GetEventLogs();
             Assert.Contains(eventLogCollection, eventlog => eventlog.Log.Equals("Application"));
-            Assert.Contains(eventLogCollection, eventlog => eventlog.Log.Equals("Security"));
             Assert.Contains(eventLogCollection, eventlog => eventlog.Log.Equals("System"));
         }
 
