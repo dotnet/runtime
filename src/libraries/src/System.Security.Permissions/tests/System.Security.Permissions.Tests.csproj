@@ -18,6 +18,8 @@
     <Compile Include="PrincipalPermissionTests.cs" />
     <Compile Include="SecurityElementTests.cs" />
     <Compile Include="TrustManagerContextTests.cs" />
-    <Compile Include="XamlAccessLevelTests.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' And '$(TargetsWindows)' == 'true'">
+    <Compile Include="XamlLoadPermissionTests.cs"/>
   </ItemGroup>
 </Project>
