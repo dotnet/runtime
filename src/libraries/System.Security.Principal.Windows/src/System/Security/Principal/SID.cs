@@ -665,21 +665,6 @@ nameof(binaryForm));
             CreateFromBinaryForm(resultSid, 0);
         }
 
-        internal SecurityIdentifier(SecurityIdentifier domainSid, uint rid)
-        {
-            int i;
-            int[] SubAuthorities = new int[domainSid.SubAuthorityCount + 1];
-
-            for (i = 0; i < domainSid.SubAuthorityCount; i++)
-            {
-                SubAuthorities[i] = domainSid.GetSubAuthority(i);
-            }
-
-            SubAuthorities[i] = (int)rid;
-
-            CreateFromParts(domainSid.IdentifierAuthority, SubAuthorities);
-        }
-
         internal SecurityIdentifier(IdentifierAuthority identifierAuthority, int[] subAuthorities)
         {
             CreateFromParts(identifierAuthority, subAuthorities);

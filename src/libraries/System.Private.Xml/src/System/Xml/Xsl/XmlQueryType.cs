@@ -112,12 +112,6 @@ namespace System.Xml.Xsl
         /// </summary>
         public abstract bool IsDod { get; }
 
-        /// <summary>
-        /// The XmlValueConverter maps each XmlQueryType to various Clr types which are capable of representing it.
-        /// </summary>
-        public abstract XmlValueConverter ClrMapping { get; }
-
-
         //-----------------------------------------------
         // Type Operations
         //-----------------------------------------------

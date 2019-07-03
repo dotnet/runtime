@@ -74,24 +74,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        internal void ReplaceRule(T oldRule, T newRule)
-        {
-            // need a lock to make sure we are replacing the right rule
-            lock (_cacheLock)
-            {
-                int i = Array.IndexOf(_rules, oldRule);
-                if (i >= 0)
-                {
-                    _rules[i] = newRule;
-                    return; // DONE
-                }
-
-                // could not find it.
-                _rules = AddOrInsert(_rules, newRule);
-            }
-        }
-
-
         // Adds to end or inserts items at InsertPosition
         private const int InsertPosition = MaxRules / 2;
 
