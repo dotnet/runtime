@@ -411,6 +411,42 @@ namespace System.Text.Json.Tests
                     GetAwaiter().GetResult());
         }
 
+        [Fact]
+        public static void ParseJson_Stream_ClearRentedBuffer_WhenThrow_CodeCoverage()
+        {
+            using (Stream stream = new ThrowOnReadStream(new byte[] { 1 }))
+            {
+                Assert.Throws<EndOfStreamException>(() => JsonDocument.Parse(stream));
+            }
+        }
+
+        [Fact]
+        public static void ParseJson_Stream_Async_ClearRentedBuffer_WhenThrow_CodeCoverage()
+        {
+            using (Stream stream = new ThrowOnReadStream(new byte[] { 1 }))
+            {
+                Assert.ThrowsAsync<EndOfStreamException>(async () => await JsonDocument.ParseAsync(stream));
+            }
+        }
+
+        [Fact]
+        public static void ParseJson_Stream_ThrowsOn_ArrayPoolRent_CodeCoverage()
+        {
+            using (Stream stream = new ThrowOnCanSeekStream (new byte[] { 1 }))
+            {
+                Assert.Throws<InsufficientMemoryException>(() => JsonDocument.Parse(stream));
+            }
+        }
+
+        [Fact]
+        public static void ParseJson_Stream_Async_ThrowsOn_ArrayPoolRent_CodeCoverage()
+        {
+            using (Stream stream = new ThrowOnCanSeekStream (new byte[] { 1 }))
+            {
+                Assert.ThrowsAsync<InsufficientMemoryException>(async () => await JsonDocument.ParseAsync(stream));
+            }
+        }
+
         [Theory]
         [MemberData(nameof(BadBOMCases))]
         public static void ParseJson_SeekableStream_BadBOM(string json)
@@ -2571,6 +2607,14 @@ namespace System.Text.Json.Tests
                     test++;
                 }
 
+                structEnumerator.Reset();
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal(0, structEnumerator.Current.GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal(1, structEnumerator.Current.GetInt32());
+
                 Assert.True(structEnumerator.MoveNext());
                 Assert.Equal(2, structEnumerator.Current.GetInt32());
 
@@ -2736,6 +2780,16 @@ namespace System.Text.Json.Tests
                     Assert.Equal(test, property.Value.GetInt32());
                     test++;
                 }
+
+                structEnumerator.Reset();
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal("name0", structEnumerator.Current.Name);
+                Assert.Equal(0, structEnumerator.Current.Value.GetInt32());
+
+                Assert.True(structEnumerator.MoveNext());
+                Assert.Equal("name1", structEnumerator.Current.Name);
+                Assert.Equal(1, structEnumerator.Current.Value.GetInt32());
 
                 Assert.True(structEnumerator.MoveNext());
                 Assert.Equal("name2", structEnumerator.Current.Name);
@@ -3686,5 +3740,26 @@ namespace System.Text.Json.Tests
 
             return s_compactJson[testCaseType] = existing;
         }
+    }
+
+    public class ThrowOnReadStream : MemoryStream
+    {
+        public ThrowOnReadStream(byte[] bytes) : base(bytes)
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            throw new EndOfStreamException();
+        }
+    }
+
+    public class ThrowOnCanSeekStream : MemoryStream
+    {
+        public ThrowOnCanSeekStream (byte[] bytes) : base(bytes)
+        {
+        }
+
+        public override bool CanSeek => throw new InsufficientMemoryException();
     }
 }
