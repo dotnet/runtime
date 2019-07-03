@@ -172,7 +172,15 @@ namespace System.Net.Http
                     using (Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync().ConfigureAwait(false))
                     using (var buffer = new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize, (int)headers.ContentLength.GetValueOrDefault()))
                     {
-                        await responseStream.CopyToAsync(buffer).ConfigureAwait(false);
+                        try
+                        {
+                            await responseStream.CopyToAsync(buffer).ConfigureAwait(false);
+                        }
+                        catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
+                        {
+                            throw HttpContent.WrapStreamCopyException(e);
+                        }
+
                         if (buffer.Length > 0)
                         {
                             // Decode and return the data from the buffer.
@@ -220,7 +228,16 @@ namespace System.Net.Http
                             // to which the content will be transferred.  That way, assuming we actually get the exact
                             // amount we were expecting, we can simply return the MemoryStream's underlying buffer.
                             buffer = new HttpContent.LimitMemoryStream(_maxResponseContentBufferSize, (int)contentLength.GetValueOrDefault());
-                            await responseStream.CopyToAsync(buffer).ConfigureAwait(false);
+
+                            try
+                            {
+                                await responseStream.CopyToAsync(buffer).ConfigureAwait(false);
+                            }
+                            catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
+                            {
+                                throw HttpContent.WrapStreamCopyException(e);
+                            }
+
                             if (buffer.Length > 0)
                             {
                                 return ((HttpContent.LimitMemoryStream)buffer).GetSizedBuffer();
@@ -235,7 +252,15 @@ namespace System.Net.Http
                             buffer = new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize);
                             try
                             {
-                                await responseStream.CopyToAsync(buffer).ConfigureAwait(false);
+                                try
+                                {
+                                    await responseStream.CopyToAsync(buffer).ConfigureAwait(false);
+                                }
+                                catch (Exception e) when (HttpContent.StreamCopyExceptionNeedsWrapping(e))
+                                {
+                                    throw HttpContent.WrapStreamCopyException(e);
+                                }
+
                                 if (buffer.Length > 0)
                                 {
                                     return ((HttpContent.LimitArrayPoolWriteStream)buffer).ToArray();
