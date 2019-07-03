@@ -1104,7 +1104,7 @@ namespace System.Drawing
         public void DrawRectangles(Pen pen, RectangleF[] rects)
         {
             if (pen == null)
-                throw new ArgumentNullException("image");
+                throw new ArgumentNullException(nameof(pen));
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
             int status = Gdip.GdipDrawRectangles(NativeGraphics, pen.NativePen, rects, rects.Length);
@@ -1114,7 +1114,7 @@ namespace System.Drawing
         public void DrawRectangles(Pen pen, Rectangle[] rects)
         {
             if (pen == null)
-                throw new ArgumentNullException("image");
+                throw new ArgumentNullException(nameof(pen));
             if (rects == null)
                 throw new ArgumentNullException(nameof(rects));
             int status = Gdip.GdipDrawRectanglesI(NativeGraphics, pen.NativePen, rects, rects.Length);
