@@ -71,6 +71,7 @@
     <Compile Include="System\Media\SoundPlayer.cs" />
     <Compile Include="System\Media\SystemSound.cs" />
     <Compile Include="System\Media\SystemSounds.cs" />
+    <Compile Include="System\Xaml\Permissions\XamlAccessLevel.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Reference Include="System.Buffers" />
