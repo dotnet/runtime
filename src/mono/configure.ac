@@ -2129,7 +2129,6 @@ if test x$host_win32 = xno; then
 		AC_MSG_WARN([No dynamic loading support available])
 	else
 		LIBS="$LIBS $DL_LIB"
-		AC_DEFINE(HAVE_DL_LOADER,1,[dlopen-based dynamic loader available])
 		dnl from glib's configure.ac
 		if test "x$cross_compiling" = "xyes"; then
 		   AC_MSG_RESULT(cross compiling, assuming no)
