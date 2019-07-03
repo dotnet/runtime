@@ -258,7 +258,6 @@
     <LangVersion Condition="'$(Language)' == 'C#'">preview</LangVersion>
     <!-- Enables Strict mode for Roslyn compiler -->
     <Features>strict</Features>
-    <Features Condition="'$(IsTestProject)' != 'true'">$(Features);nullablePublicOnly</Features>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
@@ -380,6 +379,11 @@
   <PropertyGroup Condition="'$(IsSourceProject)' == 'true'">
     <!-- Set the documentation output file globally. -->
     <DocumentationFile Condition="'$(DocumentationFile)' == ''">$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(IsSourceProject)' == 'true' OR '$(IsReferenceAssembly)' == 'true'">
+    <Features Condition="'$(Features)' == ''">nullablePublicOnly</Features>
+    <Features Condition="'$(Features)' != ''">$(Features);nullablePublicOnly</Features>
   </PropertyGroup>
 
   <!-- Additional optimizations -->
