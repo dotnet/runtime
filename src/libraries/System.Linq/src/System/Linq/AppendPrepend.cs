@@ -220,7 +220,7 @@ namespace System.Linq
                             return false;
                         }
 
-                        _enumerator = _appended.GetEnumerator(_appendCount);
+                        _enumerator = ((IEnumerable<TSource>)_appended.ToArray(_appendCount)).GetEnumerator();
                         _state = 4;
                         goto case 4;
                     case 4:
