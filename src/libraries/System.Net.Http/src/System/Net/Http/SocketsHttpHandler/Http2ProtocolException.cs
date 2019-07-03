@@ -15,7 +15,7 @@ namespace System.Net.Http
             ProtocolError = protocolError;
         }
 
-        private Http2ProtocolException(SerializationInfo info, StreamingContext context) : base(info, context)
+        protected Http2ProtocolException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
             ProtocolError = (Http2ProtocolErrorCode)info.GetInt32(nameof(ProtocolError));
         }

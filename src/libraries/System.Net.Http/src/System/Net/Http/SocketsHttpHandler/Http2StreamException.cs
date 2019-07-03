@@ -13,5 +13,7 @@ namespace System.Net.Http
             : base(SR.Format(SR.net_http_http2_stream_error, GetName(protocolError), ((int)protocolError).ToString("x")), protocolError)
         {
         }
+
+        private Http2StreamException(SerializationInfo info, StreamingContext context) : base(info, context) { }
     }
 }
