@@ -62,8 +62,6 @@
       <ILLinkArgs>$(ILLinkArgs) -v true</ILLinkArgs>
       <!-- don't remove the embedded root xml resource since ILLink may run again on the assembly -->
       <ILLinkArgs>$(ILLinkArgs) --strip-resources false</ILLinkArgs>
-      <!-- reflection heuristics to apply -->
-      <ILLinkArgs>$(ILLinkArgs) -h LdtokenTypeMethods,InstanceConstructors</ILLinkArgs>
     </PropertyGroup>
 
     <MakeDir Directories="$(ILLinkTrimInputPath)" />
