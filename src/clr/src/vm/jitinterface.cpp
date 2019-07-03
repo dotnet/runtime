@@ -14263,6 +14263,30 @@ TADDR EECodeInfo::GetStartAddress()
     return m_pJM->JitTokenToStartAddress(m_methodToken);
 }
 
+NativeCodeVersion EECodeInfo::GetNativeCodeVersion()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    PTR_MethodDesc pMD = PTR_MethodDesc(GetMethodDesc());
+    if (pMD == NULL)
+    {
+        return NativeCodeVersion();
+    }
+
+#ifdef FEATURE_CODE_VERSIONING
+    CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
+    CodeVersionManager::TableLockHolder lockHolder(pCodeVersionManager);
+    return pCodeVersionManager->GetNativeCodeVersion(pMD, PINSTRToPCODE(GetStartAddress()));
+#else
+    return NativeCodeVersion(pMD);
+#endif
+}
+
 #if defined(WIN64EXCEPTIONS)
 
 // ----------------------------------------------------------------------------

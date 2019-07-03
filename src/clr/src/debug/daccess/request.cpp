@@ -889,19 +889,32 @@ HRESULT ClrDataAccess::GetMethodDescData(
         if (pcNeededRevertedRejitData != NULL)
             *pcNeededRevertedRejitData = 0;
 
-        methodDescData->requestedIP = ip;
-        methodDescData->bHasNativeCode = pMD->HasNativeCode();
-        methodDescData->bIsDynamic = (pMD->IsLCGMethod()) ? TRUE : FALSE;
-        methodDescData->wSlotNumber = pMD->GetSlot();
-        if (pMD->HasNativeCode())
+        NativeCodeVersion requestedNativeCodeVersion, activeNativeCodeVersion;
+        if (ip != NULL)
         {
-            methodDescData->NativeCodeAddr = TO_CDADDR(pMD->GetNativeCode());
-#ifdef DBG_TARGET_ARM
-            methodDescData->NativeCodeAddr &= ~THUMB_CODE;
-#endif
+            requestedNativeCodeVersion = ExecutionManager::GetNativeCodeVersion(CLRDATA_ADDRESS_TO_TADDR(ip));
         }
         else
         {
+#ifdef FEATURE_CODE_VERSIONING
+            activeNativeCodeVersion = pMD->GetCodeVersionManager()->GetActiveILCodeVersion(pMD).GetActiveNativeCodeVersion(pMD);
+#else
+            activeNativeCodeVersion = NativeCodeVersion(pMD);
+#endif
+            requestedNativeCodeVersion = activeNativeCodeVersion;
+        }
+
+        methodDescData->requestedIP = ip;
+        methodDescData->bIsDynamic = (pMD->IsLCGMethod()) ? TRUE : FALSE;
+        methodDescData->wSlotNumber = pMD->GetSlot();
+        if (!requestedNativeCodeVersion.IsNull() && requestedNativeCodeVersion.GetNativeCode() != NULL)
+        {
+            methodDescData->bHasNativeCode = TRUE;
+            methodDescData->NativeCodeAddr = TO_CDADDR(PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode()));
+        }
+        else
+        {
+            methodDescData->bHasNativeCode = FALSE;
             methodDescData->NativeCodeAddr = (CLRDATA_ADDRESS)-1;
         }
         methodDescData->AddressOfNativeCodeSlot = pMD->HasNativeCodeSlot() ? TO_CDADDR(pMD->GetAddrOfNativeCodeSlot()) : NULL;
@@ -926,29 +939,24 @@ HRESULT ClrDataAccess::GetMethodDescData(
             CodeVersionManager *pCodeVersionManager = pMD->GetCodeVersionManager();
 
             // Current ReJitInfo
-            ILCodeVersion activeILCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
-            NativeCodeVersion activeChild = activeILCodeVersion.GetActiveNativeCodeVersion(pMD);
-            CopyNativeCodeVersionToReJitData(activeChild, activeChild, &methodDescData->rejitDataCurrent);
-            
-            if (!activeChild.IsNull())
+            if (activeNativeCodeVersion.IsNull())
             {
-                // This was already set previously, but MethodDesc::GetNativeCode is potentially not aware of
-                // a new native code version, so this is more accurate.
-                methodDescData->NativeCodeAddr = activeChild.GetNativeCode();
+                ILCodeVersion activeILCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(pMD);
+                activeNativeCodeVersion = activeILCodeVersion.GetActiveNativeCodeVersion(pMD);
             }
-
+            CopyNativeCodeVersionToReJitData(
+                activeNativeCodeVersion,
+                activeNativeCodeVersion,
+                &methodDescData->rejitDataCurrent);
+            
             // Requested ReJitInfo
             _ASSERTE(methodDescData->rejitDataRequested.rejitID == 0);
-            if (methodDescData->requestedIP != NULL)
+            if (ip != NULL && !requestedNativeCodeVersion.IsNull())
             {
-                NativeCodeVersion nativeCodeVersionRequested = pCodeVersionManager->GetNativeCodeVersion(
-                    pMD,
-                    CLRDATA_ADDRESS_TO_TADDR(methodDescData->requestedIP));
-
-                if (!nativeCodeVersionRequested.IsNull())
-                {
-                    CopyNativeCodeVersionToReJitData(nativeCodeVersionRequested, activeChild, &methodDescData->rejitDataRequested);
-                }
+                CopyNativeCodeVersionToReJitData(
+                    requestedNativeCodeVersion,
+                    activeNativeCodeVersion,
+                    &methodDescData->rejitDataRequested);
             }
 
             // Total number of jitted rejit versions
@@ -1000,7 +1008,10 @@ HRESULT ClrDataAccess::GetMethodDescData(
                             }
 
                             NativeCodeVersion activeRejitChild = ilCodeVersion.GetActiveNativeCodeVersion(pMD);
-                            CopyNativeCodeVersionToReJitData(activeRejitChild, activeChild, &rgRevertedRejitData[iRejitDataReverted]);
+                            CopyNativeCodeVersionToReJitData(
+                                activeRejitChild,
+                                activeNativeCodeVersion,
+                                &rgRevertedRejitData[iRejitDataReverted]);
                             iRejitDataReverted++;
                         }
                         // pcNeededRevertedRejitData != NULL as per condition at top of function (cuz rgRevertedRejitData !=
@@ -1017,24 +1028,20 @@ HRESULT ClrDataAccess::GetMethodDescData(
         }
         EX_END_CATCH(SwallowAllExceptions)
         hr = S_OK; // Failure to get rejitids is not fatal
+
 #endif // FEATURE_REJIT
 
-#if defined(HAVE_GCCOVER)
-        if (pMD->m_GcCover)
+#ifdef HAVE_GCCOVER
+        if (!requestedNativeCodeVersion.IsNull())
         {
-            EX_TRY
+            PTR_GCCoverageInfo gcCover = requestedNativeCodeVersion.GetGCCoverageInfo();
+            if (gcCover != NULL)
             {
                 // In certain minidumps, we won't save the gccover information.
                 // (it would be unwise to do so, it is heavy and not a customer scenario).
-                methodDescData->GCStressCodeCopy = HOST_CDADDR(pMD->m_GcCover) + offsetof(GCCoverageInfo, savedCode);
+                methodDescData->GCStressCodeCopy = HOST_CDADDR(gcCover) + offsetof(GCCoverageInfo, savedCode);
             }
-            EX_CATCH
-            {
-                methodDescData->GCStressCodeCopy = 0;
-            }
-            EX_END_CATCH(SwallowAllExceptions)
         }
-        else
 #endif // HAVE_GCCOVER
 
         // Set this above Dario since you know how to tell if dynamic

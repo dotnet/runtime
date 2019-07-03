@@ -1251,6 +1251,8 @@ public:
     // Returns method's start address for a given PC
     static PCODE GetCodeStartAddress(PCODE currentPC);
 
+    static NativeCodeVersion GetNativeCodeVersion(PCODE currentPC);
+
     // Returns methodDesc for given PC
     static MethodDesc * GetCodeMethodDesc(PCODE currentPC);
 
@@ -1804,6 +1806,8 @@ public:
         LIMITED_METHOD_DAC_CONTRACT; 
         return PCODEToPINSTR(m_codeAddress);
     }
+
+    NativeCodeVersion GetNativeCodeVersion();
 
     MethodDesc * GetMethodDesc()
     { 
