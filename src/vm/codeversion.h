@@ -37,8 +37,10 @@ typedef DPTR(class CodeVersionManager) PTR_CodeVersionManager;
 
 #endif
 
-
-
+#ifdef HAVE_GCCOVER
+class GCCoverageInfo;
+typedef DPTR(class GCCoverageInfo) PTR_GCCoverageInfo;
+#endif
 
 class NativeCodeVersion
 {
@@ -54,16 +56,22 @@ public:
     NativeCodeVersion(PTR_NativeCodeVersionNode pVersionNode);
 #endif
     explicit NativeCodeVersion(PTR_MethodDesc pMethod);
+
     BOOL IsNull() const;
     PTR_MethodDesc GetMethodDesc() const;
     NativeCodeVersionId GetVersionId() const;
     BOOL IsDefaultVersion() const;
     PCODE GetNativeCode() const;
+
+#ifdef FEATURE_CODE_VERSIONING
     ILCodeVersion GetILCodeVersion() const;
     ReJITID GetILCodeVersionId() const;
+#endif
+
 #ifndef DACCESS_COMPILE
     BOOL SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected = NULL);
 #endif
+
     enum OptimizationTier
     {
         OptimizationTier0,
@@ -76,8 +84,15 @@ public:
     void SetOptimizationTier(OptimizationTier tier);
 #endif
 #endif // FEATURE_TIERED_COMPILATION
+
+#ifdef HAVE_GCCOVER
+    PTR_GCCoverageInfo GetGCCoverageInfo() const;
+    void SetGCCoverageInfo(PTR_GCCoverageInfo gcCover);
+#endif
+
     bool operator==(const NativeCodeVersion & rhs) const;
     bool operator!=(const NativeCodeVersion & rhs) const;
+
 #if defined(DACCESS_COMPILE) && defined(FEATURE_CODE_VERSIONING)
     // The DAC is privy to the backing node abstraction
     PTR_NativeCodeVersionNode AsNode() const;
@@ -86,7 +101,7 @@ public:
 private:
 
 #ifndef FEATURE_CODE_VERSIONING
-    MethodDesc* m_pMethodDesc;
+    PTR_MethodDesc m_pMethodDesc;
 #else // FEATURE_CODE_VERSIONING
 
 #ifndef DACCESS_COMPILE
@@ -229,13 +244,16 @@ class NativeCodeVersionNode
     friend NativeCodeVersionIterator;
     friend MethodDescVersioningState;
     friend ILCodeVersionNode;
+
 public:
 #ifndef DACCESS_COMPILE
     NativeCodeVersionNode(NativeCodeVersionId id, MethodDesc* pMethod, ReJITID parentId, NativeCodeVersion::OptimizationTier optimizationTier);
 #endif
+
 #ifdef DEBUG
     BOOL LockOwnedByCurrentThread() const;
 #endif
+
     PTR_MethodDesc GetMethodDesc() const;
     NativeCodeVersionId GetVersionId() const;
     PCODE GetNativeCode() const;
@@ -246,12 +264,18 @@ public:
     BOOL SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected);
     void SetActiveChildFlag(BOOL isActive);
 #endif
+
 #ifdef FEATURE_TIERED_COMPILATION
     NativeCodeVersion::OptimizationTier GetOptimizationTier() const;
 #ifndef DACCESS_COMPILE
     void SetOptimizationTier(NativeCodeVersion::OptimizationTier tier);
 #endif
 #endif // FEATURE_TIERED_COMPILATION
+
+#ifdef HAVE_GCCOVER
+    PTR_GCCoverageInfo GetGCCoverageInfo() const;
+    void SetGCCoverageInfo(PTR_GCCoverageInfo gcCover);
+#endif
 
 private:
     //union - could save a little memory?
@@ -265,6 +289,9 @@ private:
     NativeCodeVersionId m_id;
 #ifdef FEATURE_TIERED_COMPILATION
     NativeCodeVersion::OptimizationTier m_optTier;
+#endif
+#ifdef HAVE_GCCOVER
+    PTR_GCCoverageInfo m_gcCover;
 #endif
 
     enum NativeCodeVersionNodeFlags

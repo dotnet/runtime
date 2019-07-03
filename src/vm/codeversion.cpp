@@ -25,17 +25,29 @@
 // versioning information
 //
 
+NativeCodeVersion::NativeCodeVersion() : m_pMethodDesc(PTR_NULL) {};
 NativeCodeVersion::NativeCodeVersion(const NativeCodeVersion & rhs) : m_pMethodDesc(rhs.m_pMethodDesc) {}
 NativeCodeVersion::NativeCodeVersion(PTR_MethodDesc pMethod) : m_pMethodDesc(pMethod) {}
 BOOL NativeCodeVersion::IsNull() const { return m_pMethodDesc == NULL; }
 PTR_MethodDesc NativeCodeVersion::GetMethodDesc() const { return m_pMethodDesc; }
-PCODE NativeCodeVersion::GetNativeCode() const { return m_pMethodDesc->GetNativeCode(); }
 NativeCodeVersionId NativeCodeVersion::GetVersionId() const { return 0; }
-// ReJITID NativeCodeVersion::GetILCodeVersionId() const; { return 0; }
-// ILCodeVersion NativeCodeVersion::GetILCodeVersion() const { return ILCodeVersion(m_pMethodDesc); }
+BOOL NativeCodeVersion::IsDefaultVersion() const { return TRUE; }
+PCODE NativeCodeVersion::GetNativeCode() const { return m_pMethodDesc->GetNativeCode(); }
+
 #ifndef DACCESS_COMPILE
 BOOL NativeCodeVersion::SetNativeCodeInterlocked(PCODE pCode, PCODE pExpected) { return m_pMethodDesc->SetNativeCodeInterlocked(pCode, pExpected); }
 #endif
+
+#ifdef HAVE_GCCOVER
+PTR_GCCoverageInfo NativeCodeVersion::GetGCCoverageInfo() const { return GetMethodDesc()->m_GcCover; }
+void NativeCodeVersion::SetGCCoverageInfo(PTR_GCCoverageInfo gcCover)
+{
+    MethodDesc *pMD = GetMethodDesc();
+    _ASSERTE(gcCover == NULL || pMD->m_GcCover == NULL);
+    *EnsureWritablePages(&pMD->m_GcCover) = gcCover;
+}
+#endif
+
 bool NativeCodeVersion::operator==(const NativeCodeVersion & rhs) const { return m_pMethodDesc == rhs.m_pMethodDesc; }
 bool NativeCodeVersion::operator!=(const NativeCodeVersion & rhs) const { return !operator==(rhs); }
 
@@ -63,6 +75,9 @@ NativeCodeVersionNode::NativeCodeVersionNode(
     m_id(id),
 #ifdef FEATURE_TIERED_COMPILATION
     m_optTier(optimizationTier),
+#endif
+#ifdef HAVE_GCCOVER
+    m_gcCover(PTR_NULL),
 #endif
     m_flags(0)
 {}
@@ -165,6 +180,24 @@ void NativeCodeVersionNode::SetOptimizationTier(NativeCodeVersion::OptimizationT
 #endif
 
 #endif // FEATURE_TIERED_COMPILATION
+
+#ifdef HAVE_GCCOVER
+
+PTR_GCCoverageInfo NativeCodeVersionNode::GetGCCoverageInfo() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return m_gcCover;
+}
+
+void NativeCodeVersionNode::SetGCCoverageInfo(PTR_GCCoverageInfo gcCover)
+{
+    LIMITED_METHOD_CONTRACT;
+    _ASSERTE(gcCover == NULL || m_gcCover == NULL);
+
+    m_gcCover = gcCover;
+}
+
+#endif // HAVE_GCCOVER
 
 NativeCodeVersion::NativeCodeVersion() :
     m_storageKind(StorageKind::Unknown)
@@ -370,6 +403,40 @@ void NativeCodeVersion::SetOptimizationTier(OptimizationTier tier)
 #endif
 
 #endif
+
+#ifdef HAVE_GCCOVER
+
+PTR_GCCoverageInfo NativeCodeVersion::GetGCCoverageInfo() const
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (m_storageKind == StorageKind::Explicit)
+    {
+        return AsNode()->GetGCCoverageInfo();
+    }
+    else
+    {
+        return GetMethodDesc()->m_GcCover;
+    }
+}
+
+void NativeCodeVersion::SetGCCoverageInfo(PTR_GCCoverageInfo gcCover)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (m_storageKind == StorageKind::Explicit)
+    {
+        AsNode()->SetGCCoverageInfo(gcCover);
+    }
+    else
+    {
+        MethodDesc *pMD = GetMethodDesc();
+        _ASSERTE(gcCover == NULL || pMD->m_GcCover == NULL);
+        *EnsureWritablePages(&pMD->m_GcCover) = gcCover;
+    }
+}
+
+#endif // HAVE_GCCOVER
 
 PTR_NativeCodeVersionNode NativeCodeVersion::AsNode() const
 {

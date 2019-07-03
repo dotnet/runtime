@@ -22,7 +22,6 @@ class GCCoverageInfo {
 public:
     IJitManager::MethodRegionInfo methodRegion;    
     BYTE*         curInstr;         // The last instruction that was able to execute 
-    MethodDesc*   lastMD;           // Used to quickly figure out the culprite
 
         // Following 6 variables are for prolog / epilog walking coverage        
     ICodeManager* codeMan;          // CodeMan for this method
@@ -60,6 +59,8 @@ public:
     void SprinkleBreakpoints(BYTE * saveAddr, PCODE codeStart, size_t codeSize, size_t regionOffsetAdj, BOOL fZapped);
 
 };
+
+typedef DPTR(GCCoverageInfo) PTR_GCCoverageInfo; // see code:GCCoverageInfo::savedCode
 
 #ifdef _MSC_VER
 #pragma warning(pop)
