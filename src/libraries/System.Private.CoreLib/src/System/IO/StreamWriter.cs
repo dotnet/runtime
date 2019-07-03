@@ -200,7 +200,7 @@ namespace System.IO
         private void CloseStreamFromDispose(bool disposing)
         {
             // Dispose of our resources if this StreamWriter is closable. 
-            if (!LeaveOpen && !_disposed)
+            if (_closable && !_disposed)
             {
                 try
                 {
@@ -310,16 +310,6 @@ namespace System.IO
         public virtual Stream BaseStream
         {
             get { return _stream; }
-        }
-
-        internal bool LeaveOpen
-        {
-            get { return !_closable; }
-        }
-
-        internal bool HaveWrittenPreamble
-        {
-            set { _haveWrittenPreamble = value; }
         }
 
         public override Encoding Encoding
@@ -676,7 +666,7 @@ namespace System.IO
                 charPos = 0;
             }
 
-            _this.CharPos_Prop = charPos;
+            _this._charPos = charPos;
         }
 
         public override Task WriteAsync(string? value)
@@ -765,7 +755,7 @@ namespace System.IO
                 charPos = 0;
             }
 
-            _this.CharPos_Prop = charPos;
+            _this._charPos = charPos;
         }
 
         public override Task WriteAsync(char[] buffer, int index, int count)
@@ -874,7 +864,7 @@ namespace System.IO
                 charPos = 0;
             }
 
-            _this.CharPos_Prop = charPos;
+            _this._charPos = charPos;
         }
 
         public override Task WriteLineAsync()
@@ -1028,16 +1018,6 @@ namespace System.IO
             return task;
         }
 
-        private int CharPos_Prop
-        {
-            set { _charPos = value; }
-        }
-
-        private bool HaveWrittenPreamble_Prop
-        {
-            set { _haveWrittenPreamble = value; }
-        }
-
         private Task FlushAsyncInternal(bool flushStream, bool flushEncoder,
                                         char[] sCharBuffer, int sCharPos, CancellationToken cancellationToken = default)
         {
@@ -1068,7 +1048,7 @@ namespace System.IO
         {
             if (!haveWrittenPreamble)
             {
-                _this.HaveWrittenPreamble_Prop = true;
+                _this._haveWrittenPreamble = true;
                 byte[] preamble = encoding.GetPreamble();
                 if (preamble.Length > 0)
                 {
