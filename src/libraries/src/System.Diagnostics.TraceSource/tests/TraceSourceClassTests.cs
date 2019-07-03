@@ -69,7 +69,7 @@ namespace System.Diagnostics.TraceSourceTests
             return new WeakReference(new TraceSource("TestTraceSource"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public void PruneTest()
         {
             var strongTrace = new TraceSource("TestTraceSource");

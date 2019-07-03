@@ -200,7 +200,7 @@ namespace System.Runtime.CompilerServices.Tests
             return new WeakReference(value);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void AddRemove_DropValue()
         {
             // Verify that the removed entry is not keeping the value alive
