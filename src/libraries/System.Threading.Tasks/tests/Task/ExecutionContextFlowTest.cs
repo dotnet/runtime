@@ -30,6 +30,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
+        [ActiveIssue(39155, TargetFrameworkMonikers.Uap)]
         [Fact]
         public static async Task TaskDropsExecutionContextUponCompletion()
         {
