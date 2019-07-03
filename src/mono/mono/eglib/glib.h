@@ -212,6 +212,9 @@ typedef guint32 gunichar;
  */
 #define G_N_ELEMENTS(s)      (sizeof(s) / sizeof ((s) [0]))
 
+// e.g. strncmp (foo, G_STRING_CONSTANT_AND_LENGTH ("version"))
+#define G_STRING_CONSTANT_AND_LENGTH(x) (x), G_N_ELEMENTS (x) - 1
+
 #define FALSE                0
 #define TRUE                 1
 
@@ -400,6 +403,7 @@ gchar  *g_stpcpy             (gchar *dest, const char *src);
 gchar   g_ascii_tolower      (gchar c);
 gchar   g_ascii_toupper      (gchar c);
 gchar  *g_ascii_strdown      (const gchar *str, gssize len);
+void    g_ascii_strdown_no_alloc (char* dst, const char* src, gsize len);
 gchar  *g_ascii_strup        (const gchar *str, gssize len);
 gint    g_ascii_strncasecmp  (const gchar *s1, const gchar *s2, gsize n);
 gint    g_ascii_strcasecmp   (const gchar *s1, const gchar *s2);
