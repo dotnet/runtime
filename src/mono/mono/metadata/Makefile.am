@@ -119,7 +119,6 @@ support_sources += \
 	../../support/inftrees.h \
 	../../support/trees.c \
 	../../support/trees.h \
-	../../support/uncompr.c \
 	../../support/zconf.h \
 	../../support/zlib.h \
 	../../support/zutil.c \
