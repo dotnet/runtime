@@ -353,20 +353,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
             End Select
         End Function
 
-        Friend Shared Function CompareObject(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As Integer
-            Dim comparison As CompareClass = CompareObject2(left, right, textCompare)
-
-            Select Case comparison
-                Case CompareClass.Unordered
-                    Return 0
-                Case CompareClass.UserDefined,
-                     CompareClass.Undefined
-                    Throw GetNoValidOperatorException(UserDefinedOperator.IsTrue, left, right)
-                Case Else
-                    Return comparison
-            End Select
-        End Function
-
         Private Shared Function CompareObject2(ByVal left As Object, ByVal right As Object, ByVal textCompare As Boolean) As CompareClass
 
             Dim tc1 As TypeCode = GetTypeCode(left)

@@ -9,22 +9,17 @@ using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
+    // DeflateManagedStream supports decompression of Deflate64 format only.
     internal sealed partial class DeflateManagedStream : Stream
     {
         internal const int DefaultBufferSize = 8192;
 
         private Stream _stream;
-        private CompressionMode _mode;
         private bool _leaveOpen;
         private InflaterManaged _inflater;
-        private DeflaterManaged _deflater;
         private byte[] _buffer;
 
         private int _asyncOperations;
-
-        private IFileFormatWriter _formatWriter;
-        private bool _wroteHeader;
-        private bool _wroteBytes;
 
         // A specific constructor to allow decompression of Deflate64
         internal DeflateManagedStream(Stream stream, ZipArchiveEntry.CompressionMethodValues method, long uncompressedSize)
@@ -43,24 +38,15 @@ namespace System.IO.Compression
         internal void InitializeInflater(Stream stream, bool leaveOpen, IFileFormatReader reader = null, ZipArchiveEntry.CompressionMethodValues method = ZipArchiveEntry.CompressionMethodValues.Deflate, long uncompressedSize = -1)
         {
             Debug.Assert(stream != null);
-            Debug.Assert(method == ZipArchiveEntry.CompressionMethodValues.Deflate || method == ZipArchiveEntry.CompressionMethodValues.Deflate64);
+            Debug.Assert(method == ZipArchiveEntry.CompressionMethodValues.Deflate64);
             if (!stream.CanRead)
                 throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
 
             _inflater = new InflaterManaged(reader, method == ZipArchiveEntry.CompressionMethodValues.Deflate64 ? true : false, uncompressedSize);
 
             _stream = stream;
-            _mode = CompressionMode.Decompress;
             _leaveOpen = leaveOpen;
             _buffer = new byte[DefaultBufferSize];
-        }
-
-        internal void SetFileFormatWriter(IFileFormatWriter writer)
-        {
-            if (writer != null)
-            {
-                _formatWriter = writer;
-            }
         }
 
         public override bool CanRead
@@ -72,7 +58,7 @@ namespace System.IO.Compression
                     return false;
                 }
 
-                return (_mode == CompressionMode.Decompress && _stream.CanRead);
+                return _stream.CanRead;
             }
         }
 
@@ -80,12 +66,7 @@ namespace System.IO.Compression
         {
             get
             {
-                if (_stream == null)
-                {
-                    return false;
-                }
-
-                return (_mode == CompressionMode.Compress && _stream.CanWrite);
+                return false;
             }
         }
 
@@ -127,7 +108,6 @@ namespace System.IO.Compression
 
         public override int Read(byte[] array, int offset, int count)
         {
-            EnsureDecompressionMode();
             ValidateParameters(array, offset, count);
             EnsureNotDisposed();
 
@@ -197,28 +177,6 @@ namespace System.IO.Compression
             throw new ObjectDisposedException(null, SR.ObjectDisposed_StreamClosed);
         }
 
-        private void EnsureDecompressionMode()
-        {
-            if (_mode != CompressionMode.Decompress)
-                ThrowCannotReadFromDeflateManagedStreamException();
-        }
-
-        private static void ThrowCannotReadFromDeflateManagedStreamException()
-        {
-            throw new InvalidOperationException(SR.CannotReadFromDeflateStream);
-        }
-
-        private void EnsureCompressionMode()
-        {
-            if (_mode != CompressionMode.Compress)
-                ThrowCannotWriteToDeflateManagedStreamException();
-        }
-
-        private static void ThrowCannotWriteToDeflateManagedStreamException()
-        {
-            throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
-        }
-
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
             TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
 
@@ -227,8 +185,6 @@ namespace System.IO.Compression
 
         public override Task<int> ReadAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
         {
-            EnsureDecompressionMode();
-
             // We use this checking order for compat to earlier versions:
             if (_asyncOperations != 0)
                 throw new InvalidOperationException(SR.InvalidBeginCall);
@@ -331,62 +287,7 @@ namespace System.IO.Compression
 
         public override void Write(byte[] array, int offset, int count)
         {
-            // Validate the state and the parameters
-            EnsureCompressionMode();
-            ValidateParameters(array, offset, count);
-            EnsureNotDisposed();
-            DoMaintenance(array, offset, count);
-
-            // Write compressed the bytes we already passed to the deflater:
-
-            WriteDeflaterOutput();
-
-            // Pass new bytes through deflater and write them too:
-
-            _deflater.SetInput(array, offset, count);
-            WriteDeflaterOutput();
-        }
-
-
-        private void WriteDeflaterOutput()
-        {
-            while (!_deflater.NeedsInput())
-            {
-                int compressedBytes = _deflater.GetDeflateOutput(_buffer);
-                if (compressedBytes > 0)
-                {
-                    _stream.Write(_buffer, 0, compressedBytes);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Perform deflate-mode maintenance required due to custom header and footer writers
-        /// (e.g. set by GZipStream).
-        /// </summary>
-        private void DoMaintenance(byte[] array, int offset, int count)
-        {
-            // If no bytes written, do nothing:
-            if (count <= 0)
-                return;
-
-            // Note that stream contains more than zero data bytes:
-            _wroteBytes = true;
-
-            // If no header/footer formatter present, nothing else to do:
-            if (_formatWriter == null)
-                return;
-
-            // If formatter has not yet written a header, do it now:
-            if (!_wroteHeader)
-            {
-                byte[] b = _formatWriter.GetHeader();
-                _stream.Write(b, 0, b.Length);
-                _wroteHeader = true;
-            }
-
-            // Inform formatter of the data bytes written:
-            _formatWriter.UpdateWithBytesRead(array, offset, count);
+            throw new InvalidOperationException(SR.CannotWriteToDeflateStream);
         }
 
         // This is called by Dispose:
@@ -399,52 +300,6 @@ namespace System.IO.Compression
                 return;
 
             Flush();
-
-            if (_mode != CompressionMode.Compress)
-                return;
-
-            // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
-            // This round-trips and we should be ok with this, but our legacy managed deflater
-            // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
-            // took dependencies on it. Thus, make sure to only "flush" when we actually had
-            // some input:
-            if (_wroteBytes)
-            {
-                // Compress any bytes left
-                WriteDeflaterOutput();
-
-                // Pull out any bytes left inside deflater:
-                bool finished;
-                do
-                {
-                    int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
-
-                    if (compressedBytes > 0)
-                        _stream.Write(_buffer, 0, compressedBytes);
-                } while (!finished);
-            }
-            else
-            {
-                // In case of zero length buffer, we still need to clean up the native created stream before
-                // the object get disposed because eventually ZLibNative.ReleaseHandle will get called during
-                // the dispose operation and although it frees the stream but it return error code because the
-                // stream state was still marked as in use. The symptoms of this problem will not be seen except
-                // if running any diagnostic tools which check for disposing safe handle objects
-                bool finished;
-                do
-                {
-                    int compressedBytes;
-                    finished = _deflater.Finish(_buffer, out compressedBytes);
-                } while (!finished);
-            }
-
-            // Write format footer:
-            if (_formatWriter != null && _wroteHeader)
-            {
-                byte[] b = _formatWriter.GetFooter();
-                _stream.Write(b, 0, b.Length);
-            }
         }
 
         protected override void Dispose(bool disposing)
@@ -469,53 +324,15 @@ namespace System.IO.Compression
 
                     try
                     {
-                        _deflater?.Dispose();
                         _inflater?.Dispose();
                     }
                     finally
                     {
-                        _deflater = null;
                         _inflater = null;
                         base.Dispose(disposing);
                     }
                 }
             }
         }
-
-        public override Task WriteAsync(byte[] array, int offset, int count, CancellationToken cancellationToken)
-        {
-            EnsureCompressionMode();
-
-            // We use this checking order for compat to earlier versions:
-            if (_asyncOperations != 0)
-                throw new InvalidOperationException(SR.InvalidBeginCall);
-
-            ValidateParameters(array, offset, count);
-            EnsureNotDisposed();
-
-            if (cancellationToken.IsCancellationRequested)
-                return Task.FromCanceled<int>(cancellationToken);
-
-            return WriteAsyncCore(array, offset, count, cancellationToken);
-        }
-
-        private async Task WriteAsyncCore(byte[] array, int offset, int count, CancellationToken cancellationToken)
-        {
-            Interlocked.Increment(ref _asyncOperations);
-            try
-            {
-                await base.WriteAsync(array, offset, count, cancellationToken).ConfigureAwait(false);
-            }
-            finally
-            {
-                Interlocked.Decrement(ref _asyncOperations);
-            }
-        }
-
-        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback asyncCallback, object asyncState) =>
-            TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
-
-        public override void EndWrite(IAsyncResult asyncResult) =>
-            TaskToApm.End(asyncResult);
     }
 }

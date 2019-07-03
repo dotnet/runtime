@@ -50,20 +50,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
         Private Shared ReadOnly s_voidType As Type = System.Type.GetType("System.Void")
         Private Shared s_VBRuntimeAssembly As System.Reflection.Assembly
 
-        '============================================================================
-        ' Shared Error functions
-        '============================================================================
-
-        Private Shared Function IntToHex(ByVal n As Integer) As Char
-            System.Diagnostics.Debug.Assert(n < &H10)
-
-            If n <= 9 Then
-                Return ChrW(n + AscW("0"c))
-            Else
-                Return ChrW(n - 10 + AscW("a"c))
-            End If
-        End Function
-
         '*****************************************************************************
         ';GetResourceString
         '

@@ -236,24 +236,6 @@ namespace System.Runtime.CompilerServices
             return addr;
         }
 
-        /// <summary>
-        /// Clears the rule cache ... used by the call site tests.
-        /// </summary>
-        private void ClearRuleCache()
-        {
-            // make sure it initialized/atomized etc...
-            Binder.GetRuleCache<T>();
-
-            Dictionary<Type, object> cache = Binder.Cache;
-
-            if (cache != null)
-            {
-                lock (cache)
-                {
-                    cache.Clear();
-                }
-            }
-        }
 
         private const int MaxRules = 10;
 
