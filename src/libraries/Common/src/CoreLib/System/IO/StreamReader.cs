@@ -230,7 +230,7 @@ namespace System.IO
             _disposed = true;
 
             // Dispose of our resources if this StreamReader is closable.
-            if (!LeaveOpen)
+            if (_closable)
             {
                 try
                 {
@@ -258,11 +258,6 @@ namespace System.IO
         public virtual Stream BaseStream
         {
             get { return _stream; }
-        }
-
-        internal bool LeaveOpen
-        {
-            get { return !_closable; }
         }
 
         // DiscardBufferedData tells StreamReader to throw away its internal
