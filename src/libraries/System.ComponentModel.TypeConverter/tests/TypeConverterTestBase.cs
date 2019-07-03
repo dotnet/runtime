@@ -187,7 +187,10 @@ namespace System.ComponentModel.Tests
             public CultureInfo RemoteInvokeCulture { get; set; }
 
             public bool CanConvert { get; set; }
-            
+
+            public override string ToString() => // for debugging / xunit test output
+                $"Source='{Source}', Type='{DestinationType}', Culture='{Culture?.Name ?? "(null)"}', RemoteCulture='{RemoteInvokeCulture?.Name ?? "(null)"}'";
+
             public static ConvertTest Valid(object source, object expected, CultureInfo culture = null)
             {
                 return new ConvertTest
