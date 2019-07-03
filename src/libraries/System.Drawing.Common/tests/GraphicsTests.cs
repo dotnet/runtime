@@ -2441,7 +2441,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void DrawRectangles_NullPen_ThrowsArgumentNullException()
         {
