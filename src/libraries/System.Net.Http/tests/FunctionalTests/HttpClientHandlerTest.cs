@@ -745,6 +745,34 @@ namespace System.Net.Http.Functional.Tests
             }, server => server.AcceptConnectionSendCustomResponseAndCloseAsync($"HTTP/1.1 200 OK\r\n{invalidHeader}\r\nContent-Length: 11\r\n\r\nhello world"));
         }
 
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(true, true)]
+        public async Task GetAsync_IncompleteData_ThrowsHttpRequestException(bool failDuringHeaders, bool getString)
+        {
+            if (IsWinHttpHandler || IsUapHandler)
+            {
+                // [ActiveIssue(39136)]
+                return;
+            }
+
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    Task t = getString ? (Task)
+                        client.GetStringAsync(uri) :
+                        client.GetByteArrayAsync(uri);
+                    await Assert.ThrowsAsync<HttpRequestException>(() => t);
+                }
+            }, server =>
+                failDuringHeaders ?
+                   server.AcceptConnectionSendCustomResponseAndCloseAsync("HTTP/1.1 200 OK\r\nContent-Length: 5\r\n") :
+                   server.AcceptConnectionSendCustomResponseAndCloseAsync("HTTP/1.1 200 OK\r\nContent-Length: 5\r\n\r\nhe"));
+        }
+
         [Fact]
         public async Task PostAsync_ManyDifferentRequestHeaders_SentCorrectly()
         {
