@@ -362,7 +362,7 @@ namespace System.Net.Http
             }
             catch (Exception e) when (StreamCopyExceptionNeedsWrapping(e))
             {
-                throw GetStreamCopyException(e);
+                throw WrapStreamCopyException(e);
             }
         }
 
@@ -569,7 +569,7 @@ namespace System.Net.Http
             }
         }
 
-        private static bool StreamCopyExceptionNeedsWrapping(Exception e) => e is IOException || e is ObjectDisposedException;
+        internal static bool StreamCopyExceptionNeedsWrapping(Exception e) => e is IOException || e is ObjectDisposedException;
 
         private static Exception GetStreamCopyException(Exception originalException)
         {
@@ -583,8 +583,14 @@ namespace System.Net.Http
             // ObjectDisposedException is also wrapped, since aborting HWR after a request is complete will result in
             // the response stream being closed.
             return StreamCopyExceptionNeedsWrapping(originalException) ?
-                new HttpRequestException(SR.net_http_content_stream_copy_error, originalException) :
+                WrapStreamCopyException(originalException) :
                 originalException;
+        }
+
+        internal static Exception WrapStreamCopyException(Exception e)
+        {
+            Debug.Assert(StreamCopyExceptionNeedsWrapping(e));
+            return new HttpRequestException(SR.net_http_content_stream_copy_error, e);
         }
 
         private static int GetPreambleLength(ArraySegment<byte> buffer, Encoding encoding)
