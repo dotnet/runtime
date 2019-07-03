@@ -118,14 +118,6 @@ namespace System.Net.WebSockets
             }
         }
 
-        internal static bool LoggingEnabled
-        {
-            get
-            {
-                return NetEventSource.IsEnabled;
-            }
-        }
-
         public override WebSocketState State
         {
             get
@@ -1194,15 +1186,6 @@ namespace System.Net.WebSockets
             uint dataBufferCount)
         {
             _internalBuffer.ValidateNativeBuffers(action, bufferType, dataBuffers, dataBufferCount);
-        }
-
-        internal void ThrowIfClosedOrAborted()
-        {
-            if (State == WebSocketState.Closed || State == WebSocketState.Aborted)
-            {
-                throw new WebSocketException(WebSocketError.InvalidState,
-                    SR.Format(SR.net_WebSockets_InvalidState_ClosedOrAborted, GetType().FullName, State));
-            }
         }
 
         private void ThrowIfAborted(bool aborted, Exception innerException)

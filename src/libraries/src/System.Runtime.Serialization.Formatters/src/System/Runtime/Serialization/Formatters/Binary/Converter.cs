@@ -120,64 +120,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        internal static InternalNameSpaceE GetNameSpaceEnum(InternalPrimitiveTypeE code, Type type, WriteObjectInfo objectInfo, out string typeName)
-        {
-            InternalNameSpaceE nameSpaceEnum = InternalNameSpaceE.None;
-            typeName = null;
-
-            if (code != InternalPrimitiveTypeE.Invalid)
-            {
-                switch (code)
-                {
-                    case InternalPrimitiveTypeE.Boolean:
-                    case InternalPrimitiveTypeE.Char:
-                    case InternalPrimitiveTypeE.Byte:
-                    case InternalPrimitiveTypeE.Double:
-                    case InternalPrimitiveTypeE.Int16:
-                    case InternalPrimitiveTypeE.Int32:
-                    case InternalPrimitiveTypeE.Int64:
-                    case InternalPrimitiveTypeE.SByte:
-                    case InternalPrimitiveTypeE.Single:
-                    case InternalPrimitiveTypeE.UInt16:
-                    case InternalPrimitiveTypeE.UInt32:
-                    case InternalPrimitiveTypeE.UInt64:
-                    case InternalPrimitiveTypeE.DateTime:
-                    case InternalPrimitiveTypeE.TimeSpan:
-                        nameSpaceEnum = InternalNameSpaceE.XdrPrimitive;
-                        typeName = "System." + ToComType(code);
-                        break;
-
-                    case InternalPrimitiveTypeE.Decimal:
-                        nameSpaceEnum = InternalNameSpaceE.UrtSystem;
-                        typeName = "System." + ToComType(code);
-                        break;
-                }
-            }
-
-            if ((nameSpaceEnum == InternalNameSpaceE.None) && type != null)
-            {
-                if (ReferenceEquals(type, s_typeofString))
-                {
-                    nameSpaceEnum = InternalNameSpaceE.XdrString;
-                }
-                else
-                {
-                    if (objectInfo == null)
-                    {
-                        typeName = type.FullName;
-                        nameSpaceEnum = type.Assembly == s_urtAssembly ? InternalNameSpaceE.UrtSystem : InternalNameSpaceE.UrtUser;
-                    }
-                    else
-                    {
-                        typeName = objectInfo.GetTypeFullName();
-                        nameSpaceEnum = objectInfo.GetAssemblyString().Equals(s_urtAssemblyString) ? InternalNameSpaceE.UrtSystem : InternalNameSpaceE.UrtUser;
-                    }
-                }
-            }
-
-            return nameSpaceEnum;
-        }
-
         internal static Type ToArrayType(InternalPrimitiveTypeE code)
         {
             if (s_arrayTypeA == null)

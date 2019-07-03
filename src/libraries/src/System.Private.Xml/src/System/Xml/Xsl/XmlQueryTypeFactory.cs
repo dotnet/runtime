@@ -652,27 +652,6 @@ namespace System.Xml.Xsl
                 get { return this; }
             }
 
-            /// <summary>
-            /// Return the item's converter.
-            /// </summary>
-            public override XmlValueConverter ClrMapping
-            {
-                get
-                {
-                    // Return value converter from XmlSchemaType if type is atomic
-                    if (IsAtomicValue)
-                        return SchemaType.ValueConverter;
-
-                    // Return node converter if item must be a node
-                    if (IsNode)
-                        return XmlNodeConverter.Node;
-
-                    // Otherwise return item converter
-                    return XmlAnyConverter.Item;
-                }
-            }
-
-
             //-----------------------------------------------
             // ListBase implementation
             //-----------------------------------------------
@@ -940,23 +919,6 @@ namespace System.Xml.Xsl
                 get { return this; }
             }
 
-            /// <summary>
-            /// Always return the item converter.
-            /// </summary>
-            public override XmlValueConverter ClrMapping
-            {
-                get
-                {
-                    if (_code == XmlTypeCode.None || _code == XmlTypeCode.Item)
-                        return XmlAnyConverter.Item;
-
-                    if (IsAtomicValue)
-                        return SchemaType.ValueConverter;
-
-                    return XmlNodeConverter.Node;
-                }
-            }
-
             //-----------------------------------------------
             // ListBase implementation
             //-----------------------------------------------
@@ -1145,21 +1107,6 @@ namespace System.Xml.Xsl
             {
                 get { return _prime; }
             }
-
-            /// <summary>
-            /// Return the prime's converter wrapped in a list converter.
-            /// </summary>
-            public override XmlValueConverter ClrMapping
-            {
-                get
-                {
-                    if (_converter == null)
-                        _converter = XmlListConverter.Create(_prime.ClrMapping);
-
-                    return _converter;
-                }
-            }
-
 
             //-----------------------------------------------
             // ListBase implementation

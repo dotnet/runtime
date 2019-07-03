@@ -4,13 +4,6 @@
 
 namespace System.IO.Compression
 {
-    internal interface IFileFormatWriter
-    {
-        byte[] GetHeader();
-        void UpdateWithBytesRead(byte[] buffer, int offset, int bytesToCopy);
-        byte[] GetFooter();
-    }
-
     internal interface IFileFormatReader
     {
         bool ReadHeader(InputBuffer input);

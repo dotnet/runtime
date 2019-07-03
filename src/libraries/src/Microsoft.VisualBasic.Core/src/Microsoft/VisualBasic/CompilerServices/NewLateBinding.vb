@@ -31,56 +31,6 @@ Namespace Microsoft.VisualBasic.CompilerServices
         End Sub
 
         <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
-        Friend Shared Function LateCanEvaluate(
-                ByVal instance As Object,
-                ByVal type As System.Type,
-                ByVal memberName As String,
-                ByVal arguments As Object(),
-                ByVal allowFunctionEvaluation As Boolean,
-                ByVal allowPropertyEvaluation As Boolean) As Boolean
-
-            Dim baseReference As Container
-            If type IsNot Nothing Then
-                baseReference = New Container(type)
-            Else
-                baseReference = New Container(instance)
-            End If
-
-            Dim members As MemberInfo() = baseReference.GetMembers(memberName, False)
-
-            If members.Length = 0 Then
-                Return True
-            End If
-
-            ' This is a field access
-            If members(0).MemberType = MemberTypes.Field Then
-                If arguments.Length = 0 Then
-                    Return True
-                Else
-                    Dim fieldValue As Object = baseReference.GetFieldValue(DirectCast(members(0), FieldInfo))
-                    baseReference = New Container(fieldValue)
-                    If baseReference.IsArray Then
-                        Return True
-                    End If
-                    Return allowPropertyEvaluation
-                End If
-            End If
-
-            ' This is a method invocation
-            If members(0).MemberType = MemberTypes.Method Then
-                Return allowFunctionEvaluation
-            End If
-
-            ' This is a property access
-            If members(0).MemberType = MemberTypes.Property Then
-                Return allowPropertyEvaluation
-            End If
-
-            Return True
-        End Function
-
-
-        <DebuggerHiddenAttribute()> <DebuggerStepThroughAttribute()>
         Public Shared Function LateCall(
                 ByVal Instance As Object,
                 ByVal Type As System.Type,
