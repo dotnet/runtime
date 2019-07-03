@@ -26,7 +26,7 @@ namespace System.Tests
             return new WeakReference<object>(valueFactory(), trackResurrection);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void NonGeneric()
         {
             object o1 = new char[10];
@@ -75,7 +75,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void Generic()
         {
             object o1 = new char[10];

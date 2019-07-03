@@ -519,7 +519,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.property.autopr
             GC.KeepAlive(t);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

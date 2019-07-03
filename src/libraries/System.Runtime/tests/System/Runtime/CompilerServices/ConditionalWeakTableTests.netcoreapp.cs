@@ -114,7 +114,7 @@ namespace System.Runtime.CompilerServices.Tests
             GC.KeepAlive(value1);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void GetEnumerator_CollectedItemsNotEnumerated()
         {
             var cwt = new ConditionalWeakTable<object, object>();
