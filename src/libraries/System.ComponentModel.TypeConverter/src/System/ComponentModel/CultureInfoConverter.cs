@@ -23,12 +23,21 @@ namespace System.ComponentModel
         /// Retrieves the "default" name for our culture.
         /// </summary>
         private string DefaultCultureString => SR.CultureInfoConverterDefaultCultureString;
-        const string DefaultInvariantCultureString = "(Default)";
+
+        private const string DefaultInvariantCultureString = "(Default)";
 
         /// <summary>
         /// Retrieves the Name for a input CultureInfo.
         /// </summary>
-        protected virtual string GetCultureName(CultureInfo culture) => culture.Name;
+        protected virtual string GetCultureName(CultureInfo culture)
+        {
+            if (culture == null)
+            {
+                throw new ArgumentNullException(nameof(culture));
+            }
+
+            return culture.Name;
+        }
 
         /// <summary>
         /// Gets a value indicating whether this converter can convert an object in the given
@@ -36,10 +45,6 @@ namespace System.ComponentModel
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            if (sourceType == typeof(string))
-            {
-                return true;
-            }
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
@@ -63,11 +68,10 @@ namespace System.ComponentModel
             // Otherwise, we just keep the value unchanged.
             if (value is string text)
             {
-                if (GetCultureName(CultureInfo.InvariantCulture).Equals(""))
+                if (GetCultureName(CultureInfo.InvariantCulture).Equals(string.Empty))
                 {
                     text = CultureInfoMapper.GetCultureInfoName((string)value);
                 }
-                CultureInfo retVal = null;
 
                 string defaultCultureString = DefaultCultureString;
                 if (culture != null && culture.Equals(CultureInfo.InvariantCulture))
@@ -76,6 +80,7 @@ namespace System.ComponentModel
                 }
 
                 // Look for the default culture info.
+                CultureInfo retVal = null;
                 if (string.IsNullOrEmpty(text) || string.Equals(text, defaultCultureString, StringComparison.Ordinal))
                 {
                     retVal = CultureInfo.InvariantCulture;
@@ -101,29 +106,30 @@ namespace System.ComponentModel
                     {
                         retVal = new CultureInfo(text);
                     }
-                    catch { }
+                    catch
+                    {
+                    }
                 }
 
                 // Finally, try to find a partial match.
                 if (retVal == null)
                 {
-                    text = text.ToLower(CultureInfo.CurrentCulture);
                     foreach (CultureInfo info in _values)
                     {
-                        if (info != null && GetCultureName(info).ToLower(CultureInfo.CurrentCulture).StartsWith(text))
+                        if (info != null && GetCultureName(info).StartsWith(text, StringComparison.CurrentCulture))
                         {
                             retVal = info;
                             break;
                         }
                     }
-
                 }
 
                 // No good. We can't support it.
                 if (retVal == null)
                 {
-                    throw new ArgumentException(SR.Format(SR.CultureInfoConverterInvalidCulture, (string)value));
+                    throw new ArgumentException(SR.Format(SR.CultureInfoConverterInvalidCulture, (string)value), nameof(value));
                 }
+
                 return retVal;
             }
 
@@ -135,14 +141,8 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
-
             if (destinationType == typeof(string))
             {
-                string retVal;
                 string defaultCultureString = DefaultCultureString;
                 if (culture != null && culture.Equals(CultureInfo.InvariantCulture))
                 {
@@ -151,23 +151,19 @@ namespace System.ComponentModel
 
                 if (value == null || value == CultureInfo.InvariantCulture)
                 {
-                    retVal = defaultCultureString;
+                    return defaultCultureString;
                 }
-                else
+                if (value is CultureInfo c)
                 {
-                    retVal = GetCultureName(((CultureInfo)value));
+                    return GetCultureName(c);
                 }
-
-                return retVal;
             }
-            if (destinationType == typeof(InstanceDescriptor) && value is CultureInfo)
+            if (destinationType == typeof(InstanceDescriptor) && value is CultureInfo cultureValue)
             {
-                CultureInfo c = (CultureInfo)value;
-                ConstructorInfo ctor = typeof(CultureInfo).GetConstructor(new Type[] { typeof(string) });
-                if (ctor != null)
-                {
-                    return new InstanceDescriptor(ctor, new object[] { c.Name });
-                }
+                return new InstanceDescriptor(
+                    typeof(CultureInfo).GetConstructor(new Type[] { typeof(string) }),
+                    new object[] { cultureValue.Name }
+                );
             }
 
             return base.ConvertTo(context, culture, value, destinationType);
@@ -273,10 +269,11 @@ namespace System.ComponentModel
             /// This is to workaround an issue with CultureInfoConverter that serializes DisplayName (fixing it would introduce breaking changes).
             private static readonly Dictionary<string, string> s_cultureInfoNameMap = CreateMap();
 
-            private static Dictionary<string,string> CreateMap()
+            private static Dictionary<string, string> CreateMap()
             {
                 const int Count = 274;
-                var result = new Dictionary<string, string>(Count) {
+                var result = new Dictionary<string, string>(Count)
+                {
                     {"Afrikaans", "af"},
                     {"Afrikaans (South Africa)", "af-ZA"},
                     {"Albanian", "sq"},
@@ -566,4 +563,3 @@ namespace System.ComponentModel
         }
     }
 }
-
