@@ -444,14 +444,11 @@
   <data name="net_http_winhttp_error" xml:space="preserve">
     <value>Error {0} calling {1}, '{2}'.</value>
   </data>
-  <data name="net_http_http2_protocol_error" xml:space="preserve">
-    <value>The HTTP/2 request failed with protocol error '{0}' (0x{1}).</value>
+  <data name="net_http_http2_connection_error" xml:space="preserve">
+    <value>The HTTP/2 server sent invalid data on the connection. HTTP/2 error code '{0}' (0x{1}).</value>
   </data>
-  <data name="net_http_http2_protocol_error_text" xml:space="preserve">
-    <value>The HTTP/2 request failed with protocol error '{0}' ({1}).</value>
-  </data>
-  <data name="net_http_http2_protocol_state" xml:space="preserve">
-    <value>The HTTP/2 request encountered a protocol error, receiving '{0}' while in the state '{1}'.</value>
+  <data name="net_http_http2_stream_error" xml:space="preserve">
+    <value>The HTTP/2 server reset the stream. HTTP/2 error code '{0}' (0x{1}).</value>
   </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>

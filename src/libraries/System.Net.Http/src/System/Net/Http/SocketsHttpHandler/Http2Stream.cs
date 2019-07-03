@@ -230,7 +230,7 @@ namespace System.Net.Http
                         {
                             // Pseudo-headers are allowed only in header block
                             if (NetEventSource.IsEnabled) Trace($"Pseudo-header received in {_state} state.");
-                            throw new Http2ProtocolException(SR.net_http_invalid_response_pseudo_header_in_trailer);
+                            throw new HttpRequestException(SR.net_http_invalid_response_pseudo_header_in_trailer);
                         }
 
                         if (name.SequenceEqual(s_statusHeaderName))
@@ -238,7 +238,7 @@ namespace System.Net.Http
                             if (_state != StreamState.ExpectingStatus)
                             {
                                 if (NetEventSource.IsEnabled) Trace("Received extra status header.");
-                                throw new Http2ProtocolException(SR.Format(SR.net_http_invalid_response_status_code, "duplicate status"));
+                                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, "duplicate status"));
                             }
 
                             byte status1, status2, status3;
@@ -247,7 +247,7 @@ namespace System.Net.Http
                                 !IsDigit(status2 = value[1]) ||
                                 !IsDigit(status3 = value[2]))
                             {
-                                throw new Http2ProtocolException(SR.Format(SR.net_http_invalid_response_status_code, Encoding.ASCII.GetString(value)));
+                                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, Encoding.ASCII.GetString(value)));
                             }
 
                             int statusValue = (100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0'));
@@ -282,7 +282,7 @@ namespace System.Net.Http
                         else
                         {
                             if (NetEventSource.IsEnabled) Trace($"Invalid response pseudo-header '{Encoding.ASCII.GetString(name)}'.");
-                            throw new Http2ProtocolException(SR.net_http_invalid_response);
+                            throw new HttpRequestException(SR.net_http_invalid_response);
                         }
                     }
                     else
@@ -296,13 +296,13 @@ namespace System.Net.Http
                         if (_state != StreamState.ExpectingHeaders && _state != StreamState.ExpectingTrailingHeaders)
                         {
                             if (NetEventSource.IsEnabled) Trace("Received header before status.");
-                            throw new Http2ProtocolException(SR.net_http_invalid_response);
+                            throw new HttpRequestException(SR.net_http_invalid_response);
                         }
 
                         if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
                         {
                             // Invalid header name
-                            throw new Http2ProtocolException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
+                            throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
                         }
 
                         string headerValue = descriptor.GetHeaderValue(value);
@@ -336,7 +336,7 @@ namespace System.Net.Http
 
                     if (_state != StreamState.ExpectingStatus && _state != StreamState.ExpectingData)
                     {
-                        throw new Http2ProtocolException(SR.Format(SR.net_http_http2_protocol_state, "headers", _state));
+                        throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
                     }
 
                     if (_state == StreamState.ExpectingData)
@@ -358,7 +358,7 @@ namespace System.Net.Http
 
                     if (_state != StreamState.ExpectingHeaders && _state != StreamState.ExpectingTrailingHeaders && _state != StreamState.ExpectingIgnoredHeaders)
                     {
-                        throw new Http2ProtocolException(SR.Format(SR.net_http_http2_protocol_state, "headers", _state));
+                        throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
                     }
 
                     if (_state == StreamState.ExpectingHeaders)
@@ -369,8 +369,8 @@ namespace System.Net.Http
                     {
                         if (!endStream)
                         {
-                             if (NetEventSource.IsEnabled) Trace("Trailing headers received without endStream");
-                             throw new Http2ProtocolException(SR.net_http_invalid_response);
+                            if (NetEventSource.IsEnabled) Trace("Trailing headers received without endStream");
+                            throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
                         }
 
                         _state = StreamState.Complete;
@@ -380,7 +380,7 @@ namespace System.Net.Http
                         if (endStream)
                         {
                             // we should not get endStream while processing 1xx response.
-                            throw new Http2ProtocolException(SR.net_http_invalid_response);
+                            throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
                         }
 
                         _state = StreamState.ExpectingStatus;
@@ -419,13 +419,14 @@ namespace System.Net.Http
 
                     if (_state != StreamState.ExpectingData)
                     {
-                        throw new Http2ProtocolException(SR.Format(SR.net_http_http2_protocol_state, "data", _state));
+                        // Flow control messages are not valid in this state.
+                        throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
                     }
 
                     if (_responseBuffer.ActiveSpan.Length + buffer.Length > StreamWindowSize)
                     {
                         // Window size exceeded.
-                        throw new Http2ProtocolException(Http2ProtocolErrorCode.FlowControlError);
+                        throw new Http2ConnectionException(Http2ProtocolErrorCode.FlowControlError);
                     }
 
                     _responseBuffer.EnsureAvailableSpace(buffer.Length);
