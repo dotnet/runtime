@@ -147,12 +147,6 @@ namespace System
             return Parse(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        private static sbyte Parse(string s, NumberStyles style, NumberFormatInfo info)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Parse((ReadOnlySpan<char>)s, style, info);
-        }
-
         private static sbyte Parse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info)
         {
             Number.ParsingStatus status = Number.TryParseInt32(s, style, info, out int i);

@@ -196,15 +196,5 @@ namespace System.Globalization
             return new EraInfo(0, year, month, day, year - 1, 1, 0,
                                 names[0], names[1], names[3]);
         }
-
-        // PAL Layer ends here
-
-        private static readonly string[] s_japaneseErasEnglishNames = new string[] { "M", "T", "S", "H", "R" };
-
-        private static string GetJapaneseEnglishEraName(int era)
-        {
-            Debug.Assert(era > 0);
-            return era <= s_japaneseErasEnglishNames.Length ? s_japaneseErasEnglishNames[era - 1] : " ";
-        }
     }
 }
