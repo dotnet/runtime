@@ -1049,7 +1049,7 @@ namespace System.Net.Http
                 // The user should never see this exception.  Same logic lives in AddStream.
                 if (_abortException != null)
                 {
-                    ExceptionDispatchInfo.Throw(_abortException);
+                    throw new HttpRequestException(SR.net_http_client_execution_error, _abortException);
                 }
 
                 throw CreateRetryException();
@@ -1588,13 +1588,13 @@ namespace System.Net.Http
                     if (_abortException != null)
                     {
                         // Aborted because protocol error or IO.
-                        throw new ObjectDisposedException(nameof(Http2Connection));
+                        throw new ObjectDisposedException(nameof(Http2Connection), _abortException);
                     }
 
                     // We run out of IDs or we have race condition between receiving GOAWAY and processing requests.
                     // Throw a retryable request exception. This will cause retry logic to kick in
                     // and perform another connection attempt. The user should never see this exception.
-                    throw HttpConnectionBase.CreateRetryException();
+                    throw CreateRetryException();
                 }
 
                 int streamId = _nextStream;

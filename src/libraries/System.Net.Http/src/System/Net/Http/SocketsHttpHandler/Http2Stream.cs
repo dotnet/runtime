@@ -903,9 +903,9 @@ namespace System.Net.Http
                     }
 
                     // TODO: until #9071 is fixed
-                    if (http2Stream._abortException is OperationCanceledException)
+                    if (http2Stream._abortException is OperationCanceledException oce)
                     {
-                        ExceptionDispatchInfo.Throw(http2Stream._abortException);
+                        throw new OperationCanceledException(oce.Message, oce, oce.CancellationToken);
                     }
 
                     return new ValueTask(http2Stream.SendDataAsync(buffer, cancellationToken));
