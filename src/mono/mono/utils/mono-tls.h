@@ -38,18 +38,15 @@ g_static_assert (TLS_KEY_DOMAIN == 0);
 
 #include <windows.h>
 
-/*
-* These APIs were added back in Windows SDK 14393. Let's redirect them to
-* Fls* APIs on older SDKs just like Windows 8.1 headers do
-*/
-#if G_HAVE_API_SUPPORT(HAVE_UWP_WINAPI_SUPPORT)
-#if WINDOWS_SDK_BUILD_VERSION < 14393
-#define TlsAlloc() FlsAlloc(NULL)
-#define TlsGetValue FlsGetValue
-#define TlsSetValue FlsSetValue
-#define TlsFree FlsFree
-#endif
-#endif
+// Some Windows SDKs define TLS to be FLS.
+// That is presumably catastrophic when combined with mono_amd64_emit_tls_get / mono_x86_emit_tls_get.
+// It also is not consistent.
+// FLS is a reasonable idea perhaps, but we would need to be consistent and to adjust JIT.
+// And there is __declspec(fiber).
+#undef TlsAlloc
+#undef TlsFree
+#undef TlsGetValue
+#undef TlsSetValue
 
 #define MonoNativeTlsKey DWORD
 #define mono_native_tls_alloc(key,destructor) ((*(key) = TlsAlloc ()) != TLS_OUT_OF_INDEXES && destructor == NULL)
