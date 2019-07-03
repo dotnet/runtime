@@ -197,6 +197,10 @@
     <HelixPreCommand Include="export __TestEnv=$HELIX_WORKITEM_PAYLOAD/$(TestEnvFileName)" />
     <HelixPreCommand Include="export __TestTimeout=$(TimeoutPerTestInMilliseconds)" Condition=" '$(TimeoutPerTestInMilliseconds)' != '' " />
     <HelixPreCommand Include="cat $__TestEnv" />
+
+    <!-- Setup coredumps for linux. Core Dumps are currently not supported   -->
+    <!-- on OSX                                                              -->
+    <HelixPreCommand Include="sudo bash -c 'echo /home/helixbot/dotnetbuild/dumps/core.%u.%p > /proc/sys/kernel/core_pattern'" Condition=" '$(BuildOS)' != 'OSX' " />
   </ItemGroup>
 
   <PropertyGroup>
