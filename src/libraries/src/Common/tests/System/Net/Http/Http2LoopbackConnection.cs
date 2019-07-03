@@ -484,7 +484,7 @@ namespace System.Net.Test.Common
             }
         }
 
-        private static int EncodeHeader(HttpHeaderData headerData, Span<byte> headerBlock)
+        public static int EncodeHeader(HttpHeaderData headerData, Span<byte> headerBlock)
         {
             // Always encode as literal, no indexing.
             int bytesGenerated = EncodeInteger(0, 0, 0b11110000, headerBlock);
