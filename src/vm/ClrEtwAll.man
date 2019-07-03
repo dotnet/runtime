@@ -79,6 +79,8 @@
                              message="$(string.RuntimePublisher.EventSourceKeywordMessage)" symbol="CLR_EVENTSOURCE_KEYWORD" />
                     <keyword name="CompilationKeyword" mask="0x1000000000"
                              message="$(string.RuntimePublisher.CompilationKeywordMessage)" symbol="CLR_COMPILATION_KEYWORD" />
+                    <keyword name="CompilationDiagnosticKeyword" mask="0x2000000000"
+                             message="$(string.RuntimePublisher.CompilationDiagnosticKeywordMessage)" symbol="CLR_COMPILATIONDIAGNOSTIC_KEYWORD" />
                 </keywords>
                 <!--Tasks-->
                 <tasks>
@@ -3081,7 +3083,7 @@
                            symbol="MethodLoad_V2" message="$(string.RuntimePublisher.MethodLoad_V2EventMessage)"/>
 
                     <event value="159" version="0" level="win:Verbose" template="R2RGetEntryPoint"
-                           keywords ="NGenKeyword" opcode="MethodLoad"
+                           keywords ="CompilationDiagnosticKeyword" opcode="MethodLoad"
                            task="CLRMethod"
                            symbol="R2RGetEntryPoint" message="$(string.RuntimePublisher.R2RGetEntryPointEventMessage)"/>
 
@@ -7085,6 +7087,7 @@
                 <string id="RuntimePublisher.CodeSymbolsKeywordMessage" value="CodeSymbols" />
                 <string id="RuntimePublisher.EventSourceKeywordMessage" value="EventSource" />
                 <string id="RuntimePublisher.CompilationKeywordMessage" value="Compilation" />
+                <string id="RuntimePublisher.CompilationDiagnosticKeywordMessage" value="CompilationDiagnostic" />
               
                 <string id="RundownPublisher.LoaderKeywordMessage" value="Loader" />
                 <string id="RundownPublisher.JitKeywordMessage" value="Jit" />
