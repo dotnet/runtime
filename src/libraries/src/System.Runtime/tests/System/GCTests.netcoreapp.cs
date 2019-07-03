@@ -26,7 +26,6 @@ namespace System.Tests
             Assert.True((end - start) < 5 * size, $"Allocated too much: start: {start} end: {end} size: {size}");
         }
 
-        [ActiveIssue(37378)]
         [Fact]
         public static void GetGCMemoryInfo()
         {
@@ -58,11 +57,33 @@ namespace System.Tests
 
                 GCMemoryInfo memoryInfo2 = GC.GetGCMemoryInfo();
 
-                Assert.Equal(memoryInfo2.HighMemoryLoadThresholdBytes, memoryInfo1.HighMemoryLoadThresholdBytes);
-                Assert.InRange(memoryInfo2.MemoryLoadBytes, memoryInfo1.MemoryLoadBytes, long.MaxValue);
-                Assert.Equal(memoryInfo2.TotalAvailableMemoryBytes, memoryInfo1.TotalAvailableMemoryBytes);
-                Assert.InRange(memoryInfo2.HeapSizeBytes, memoryInfo1.HeapSizeBytes + 1, long.MaxValue);
-                Assert.InRange(memoryInfo2.FragmentedBytes, memoryInfo1.FragmentedBytes + 1, long.MaxValue);
+                string scenario = null;
+                try
+                {
+                    scenario = nameof(memoryInfo2.HighMemoryLoadThresholdBytes);
+                    Assert.Equal(memoryInfo2.HighMemoryLoadThresholdBytes, memoryInfo1.HighMemoryLoadThresholdBytes);
+
+                    scenario = nameof(memoryInfo2.MemoryLoadBytes);
+                    Assert.InRange(memoryInfo2.MemoryLoadBytes, memoryInfo1.MemoryLoadBytes, long.MaxValue);
+
+                    scenario = nameof(memoryInfo2.TotalAvailableMemoryBytes);
+                    Assert.Equal(memoryInfo2.TotalAvailableMemoryBytes, memoryInfo1.TotalAvailableMemoryBytes);
+
+                    scenario = nameof(memoryInfo2.HeapSizeBytes);
+                    Assert.InRange(memoryInfo2.HeapSizeBytes, memoryInfo1.HeapSizeBytes + 1, long.MaxValue);
+
+                    scenario = nameof(memoryInfo2.FragmentedBytes);
+                    Assert.InRange(memoryInfo2.FragmentedBytes, memoryInfo1.FragmentedBytes + 1, long.MaxValue);
+
+                    scenario = null;
+                }
+                finally
+                {
+                    if (scenario != null)
+                    {
+                        System.Console.WriteLine("FAILED: " + scenario);
+                    }
+                }
             }).Dispose();
         }
 
