@@ -2153,11 +2153,8 @@ if test x$host_win32 = xno; then
 		  ])
 		fi
 		if test "x$mono_cv_uscore" = "xyes"; then
-			MONO_DL_NEED_USCORE=1
-		else
-			MONO_DL_NEED_USCORE=0
+			AC_DEFINE(MONO_DL_NEED_USCORE, 1, [Does dlsym require leading underscore.])
 		fi
-		AC_SUBST(MONO_DL_NEED_USCORE)
 		AC_CHECK_FUNC(dlerror)
 	fi
 
