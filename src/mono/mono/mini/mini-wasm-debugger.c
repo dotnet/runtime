@@ -784,6 +784,45 @@ describe_async_method_locals (MonoStackFrameInfo *info, MonoContext *ctx, gpoint
 }
 
 static gboolean
+describe_this (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
+{
+	//Async methods are special in the way that local variables can be lifted to generated class fields 
+	FrameDescData *data = (FrameDescData*)ud;
+
+	//skip wrappers
+	if (info->type != FRAME_TYPE_MANAGED && info->type != FRAME_TYPE_INTERP) {
+		return FALSE;
+	}
+
+	if (data->cur_frame < data->target_frame) {
+		++data->cur_frame;
+		return FALSE;
+	}
+
+	InterpFrame *frame = (InterpFrame*)info->interp_frame;
+	g_assert (frame);
+	MonoMethod *method = frame->imethod->method;
+	g_assert (method);
+	gpointer addr = NULL;
+	if (mono_method_signature_internal (method)->hasthis) {
+		addr = mini_get_interp_callbacks ()->frame_get_this (frame);
+		MonoObject *obj = *(MonoObject**)addr;
+		mono_wasm_add_properties_var("this");
+		GString *class_name;
+		class_name = g_string_new ("");
+		if (*(obj->vtable->klass->name_space)) {
+			g_string_append (class_name, obj->vtable->klass->name_space);
+			g_string_append_c (class_name, '.');
+		}
+		g_string_append (class_name, obj->vtable->klass->name);
+		mono_wasm_add_obj_var (class_name->str, get_object_id(obj));
+		g_string_free(class_name, FALSE);
+	}
+	return TRUE;
+}
+
+
+static gboolean
 describe_variable (MonoStackFrameInfo *info, MonoContext *ctx, gpointer ud)
 {
 	ERROR_DECL (error);
@@ -844,6 +883,7 @@ mono_wasm_get_var_info (int scope, int* pos, int len)
 		mono_walk_stack_with_ctx (describe_variable, NULL, MONO_UNWIND_NONE, &data);
 	}
 	mono_walk_stack_with_ctx (describe_async_method_locals, NULL, MONO_UNWIND_NONE, &data);
+	mono_walk_stack_with_ctx (describe_this, NULL, MONO_UNWIND_NONE, &data);
 }
 
 EMSCRIPTEN_KEEPALIVE void
