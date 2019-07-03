@@ -3385,9 +3385,6 @@
   <data name="Serialization_MissingValues" xml:space="preserve">
     <value>The values for this dictionary are missing.</value>
   </data>
-  <data name="Serialization_NonSerType" xml:space="preserve">
-    <value>Type '{0}' in Assembly '{1}' is not marked as serializable.</value>
-  </data>
   <data name="Serialization_NoParameterInfo" xml:space="preserve">
     <value>Serialized member does not have a ParameterInfo.</value>
   </data>

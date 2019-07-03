@@ -45,16 +45,32 @@
       <!-- Methods is used by VS Tasks Window. -->
       <method name="GetActiveTaskFromId" />
     </type>
+    <type fullname="System.Collections.Generic.GenericArraySortHelper`1">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
+    <type fullname="System.Collections.Generic.GenericArraySortHelper`2">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
     <!-- Accessed via private reflection by tracing controller. -->
     <type fullname="System.Diagnostics.Tracing.EventPipe*" />
     <!-- Accessed via private reflection and by native code. -->
     <type fullname="System.Diagnostics.Tracing.RuntimeEventSource" />
+    <type fullname="System.Diagnostics.Tracing.NativeRuntimeEventSource" />
     <!-- Accessed via reflection in TraceLogging-style EventSource events. -->
     <type fullname="*f__AnonymousType*" />
+    <type fullname="System.Diagnostics.Tracing.PropertyValue/ReferenceTypeHelper`1">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
     <!-- Accessed via native code. -->
     <type fullname="System.Runtime.InteropServices.ComTypes.IEnumerable" />
     <type fullname="System.Runtime.InteropServices.CustomMarshalers.*" />
     <!-- Accessed by the WinRT Host -->
     <type fullname="Internal.Runtime.InteropServices.WindowsRuntime.ActivationFactoryLoader" />
+    <!-- Workaround for https://github.com/mono/linker/issues/378 -->
+    <type fullname="System.Runtime.InteropServices.IDispatch" />
+    <type fullname="Internal.Runtime.InteropServices.IClassFactory2" />
   </assembly>
 </linker>
