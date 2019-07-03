@@ -385,7 +385,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.DependencyResolution
                         fixture.BuiltDotnet.GreatestVersionSharedFxPath,
                         RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy"));
 
-                    File.Copy(
+                    FileUtils.CopyIntoDirectory(
                         hostpolicy,
                         Path.GetDirectoryName(fixture.TestProject.AppDll));
                 }

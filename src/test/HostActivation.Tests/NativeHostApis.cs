@@ -368,7 +368,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                         fixture.BuiltDotnet.GreatestVersionHostFxrPath,
                         RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr"));
 
-                    File.Copy(
+                    FileUtils.CopyIntoDirectory(
                         hostfxr, 
                         Path.GetDirectoryName(fixture.TestProject.AppDll));
                 }
