@@ -93,7 +93,15 @@ SAFEHANDLE TypeName::GetSafeHandle()
     GCPROTECT_BEGIN(objSafeHandle);
 
     objSafeHandle = (SAFEHANDLE)AllocateObject(MscorlibBinder::GetClass(CLASS__SAFE_TYPENAMEPARSER_HANDLE));
-    CallDefaultConstructor(objSafeHandle);
+
+    MethodDescCallSite strCtor(METHOD__SAFE_TYPENAMEPARSER_HANDLE__CTOR);
+
+    ARG_SLOT args[1] =
+    {
+        ObjToArgSlot(objSafeHandle)
+    };
+
+    strCtor.Call(args);
 
     this->AddRef();
     objSafeHandle->SetHandle(this);

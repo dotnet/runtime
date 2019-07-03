@@ -752,6 +752,7 @@ DEFINE_METHOD(SAFE_HANDLE,          DISPOSE_BOOL,           Dispose,            
 
 
 DEFINE_CLASS(SAFE_TYPENAMEPARSER_HANDLE,    System,         SafeTypeNameParserHandle)
+DEFINE_METHOD(SAFE_TYPENAMEPARSER_HANDLE,   CTOR,   .ctor,  IM_RetVoid)
 
 DEFINE_CLASS(SECURITY_EXCEPTION,    Security,               SecurityException)
 
