@@ -6849,17 +6849,6 @@ VOID ETW::MethodLog::SendEventsForNgenMethods(Module *pModule, DWORD dwEventOpti
             }
         }
 
-        ReadyToRunInfo::GenericMethodIterator gmi(pModule->GetReadyToRunInfo());
-        while (gmi.Next())
-        {
-            // Call GetMethodDesc_NoRestore instead of GetMethodDesc to avoid restoring methods at shutdown.
-            MethodDesc *hotDesc = (MethodDesc *)gmi.GetMethodDesc_NoRestore();
-            if (hotDesc != NULL)
-            {
-                ETW::MethodLog::SendMethodEvent(hotDesc, dwEventOptions, FALSE);
-            }
-        }
-
         return;
     }
 #endif // FEATURE_READYTORUN
