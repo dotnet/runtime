@@ -24,6 +24,7 @@ using System.Threading.Tasks;
 using System.Diagnostics.Tracing;
 using System.Text;
 using System.Net;
+using System.Net.Sockets;
 
 /// <summary>
 /// Simple HttpClient stress app that launches Kestrel in-proc and runs many concurrent requests of varying types against it.
@@ -339,6 +340,8 @@ public class Program
             // Track all successes and failures
             long total = 0;
             long[] success = new long[clientOperations.Length], fail = new long[clientOperations.Length];
+            long reuseAddressFailure = 0;
+
             void Increment(ref long counter)
             {
                 Interlocked.Increment(ref counter);
@@ -357,6 +360,14 @@ public class Program
                         Console.Write("[" + DateTime.Now + "]");
                         Console.ResetColor();
                         Console.WriteLine(" Total: " + total.ToString("N0"));
+
+                        if (reuseAddressFailure > 0)
+                        {
+                            Console.ForegroundColor = ConsoleColor.DarkRed;
+                            Console.WriteLine("~~ Reuse address failures: " + reuseAddressFailure.ToString("N0") + "~~");
+                            Console.ResetColor();
+                        }
+
                         for (int i = 0; i < clientOperations.Length; i++)
                         {
                             Console.ForegroundColor = ConsoleColor.Cyan;
@@ -398,13 +409,21 @@ public class Program
                     catch (Exception e)
                     {
                         Increment(ref fail[opIndex]);
-                        lock (Console.Out)
+
+                        if (e is HttpRequestException hre && hre.InnerException is SocketException se && se.SocketErrorCode == SocketError.AddressAlreadyInUse)
                         {
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine($"Error from iteration {i} ({operation}) in task {taskNum} with {success.Sum()} successes / {fail.Sum()} fails:");
-                            Console.ResetColor();
-                            Console.WriteLine(e);
-                            Console.WriteLine();
+                            Interlocked.Increment(ref reuseAddressFailure);
+                        }
+                        else
+                        {
+                            lock (Console.Out)
+                            {
+                                Console.ForegroundColor = ConsoleColor.Yellow;
+                                Console.WriteLine($"Error from iteration {i} ({operation}) in task {taskNum} with {success.Sum()} successes / {fail.Sum()} fails:");
+                                Console.ResetColor();
+                                Console.WriteLine(e);
+                                Console.WriteLine();
+                            }
                         }
                     }
                 }
