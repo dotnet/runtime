@@ -39,5 +39,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             {
             }
         }
+
+        /// <summary>
+        /// Copies a file into a directory.
+        ///
+        /// This is a drop-in replacement for File.Copy usages that rely on non-Windows platforms
+        /// allowing a directory as a target path. This behavior was corrected in CoreFX:
+        /// https://github.com/dotnet/corefx/issues/36713
+        /// </summary>
+        public static void CopyIntoDirectory(string filePath, string directoryPath)
+        {
+            File.Copy(
+                filePath,
+                Path.Combine(directoryPath, Path.GetFileName(filePath)));
+        }
     }
 }
