@@ -363,7 +363,7 @@
 
   <PropertyGroup>
     <!-- F5 and debugging support for netcoreapp and netfx inside VS. -->
-    <EnableLaunchSettings Condition="'$(EnableLaunchSettings)' == ''AND '$(DotNetBuildFromSource)' != 'true'">true</EnableLaunchSettings>
+    <EnableLaunchSettings Condition="'$(EnableLaunchSettings)' == '' and '$(DotNetBuildFromSource)' != 'true'">true</EnableLaunchSettings>
   </PropertyGroup>
 
   <!-- Test properties for full build. -->
@@ -381,15 +381,12 @@
     <DocumentationFile Condition="'$(DocumentationFile)' == ''">$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(IsSourceProject)' == 'true' OR '$(IsReferenceAssembly)' == 'true'">
-    <Features Condition="'$(Features)' == ''">nullablePublicOnly</Features>
-    <Features Condition="'$(Features)' != ''">$(Features);nullablePublicOnly</Features>
-  </PropertyGroup>
-
   <!-- Additional optimizations -->
   <PropertyGroup>
     <!-- Clear the init locals flag on all src projects, except those in VB, where we can't use spans. -->
-    <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' AND '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
+    <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' and '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
+
+    <Features Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssembly)' == 'true'">$(Features);nullablePublicOnly</Features>
   </PropertyGroup>
 
 </Project>
