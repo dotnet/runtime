@@ -76,7 +76,6 @@ namespace System.Diagnostics.Tracing
                 fixedCount,
                 null)
         {
-            return;
         }
 
         /// <summary>
@@ -95,7 +94,6 @@ namespace System.Diagnostics.Tracing
                 checked((ushort)(custom == null ? 0 : custom.Length)),
                 custom)
         {
-            return;
         }
 
         private FieldMetadata(
