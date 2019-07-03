@@ -568,6 +568,59 @@ Don't expect these to be pulsed - they're not problematic.
 }
 
 /*
+Abort last step of preemptive suspend in case of failure to async suspend thread.
+This function makes sure state machine reflects current state of thread (running/suspended)
+in case of failure to complete async suspend of thread. NOTE, thread can still have reached
+a suspend state (in case of self-suspend).
+
+Returns TRUE if async suspend request was successfully aborted. Thread should be in STATE_RUNNING.
+Returns FALSE if async suspend request was successfully aborted but thread already reached self-suspended.
+*/
+gboolean
+mono_threads_transition_abort_async_suspend (MonoThreadInfo* info)
+{
+	int raw_state, cur_state, suspend_count;
+	gboolean no_safepoints;
+
+retry_state_change:
+	UNWRAP_THREAD_STATE (raw_state, cur_state, suspend_count, no_safepoints, info);
+	switch (cur_state) {
+	case STATE_SELF_SUSPENDED: //async suspend raced with self suspend and lost
+	case STATE_BLOCKING_SELF_SUSPENDED: //async suspend raced with blocking and lost
+		if (no_safepoints)
+			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
+		trace_state_change_sigsafe ("ABORT_ASYNC_SUSPEND", info, raw_state, cur_state, no_safepoints, 0, "");
+		return FALSE; //thread successfully reached suspend state.
+	case STATE_ASYNC_SUSPEND_REQUESTED:
+	case STATE_BLOCKING_SUSPEND_REQUESTED:
+		if (!(suspend_count > 0))
+			mono_fatal_with_history ("suspend_count = %d, but should be > 0", suspend_count);
+		if (no_safepoints)
+			mono_fatal_with_history ("no_safepoints = TRUE, but should be FALSE");
+		if (suspend_count > 1) {
+			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (cur_state, suspend_count - 1, no_safepoints), raw_state) != raw_state)
+				goto retry_state_change;
+			trace_state_change ("ABORT_ASYNC_SUSPEND", info, raw_state, cur_state, no_safepoints, -1);
+		} else {
+			if (mono_atomic_cas_i32 (&info->thread_state, build_thread_state (STATE_RUNNING, 0, no_safepoints), raw_state) != raw_state)
+				goto retry_state_change;
+			trace_state_change ("ABORT_ASYNC_SUSPEND", info, raw_state, STATE_RUNNING, no_safepoints, -1);
+		}
+		return TRUE; //aborting thread suspend request succeded, thread is running.
+
+/*
+STATE_RUNNING: A thread cannot escape suspension once requested.
+STATE_ASYNC_SUSPENDED: There can be only one suspend initiator at a given time, meaning this state should have been visible on the first stage of suspend.
+STATE_BLOCKING: If a thread is subject to preemptive suspend, there is no race as the resume initiator should have suspended the thread to STATE_BLOCKING_ASYNC_SUSPENDED or STATE_BLOCKING_SELF_SUSPENDED before resuming.
+				With cooperative suspend, there are no finish_async_suspend transitions since there's no path back from asyns_suspend requested to running.
+STATE_BLOCKING_ASYNC_SUSPENDED: There can only be one suspend initiator at a given time, meaning this state should have ben visible on the first stage of suspend.
+*/
+	default:
+		mono_fatal_with_history ("Cannot transition thread %p from %s with ABORT_ASYNC_SUSPEND", mono_thread_info_get_tid (info), state_name (cur_state));
+	}
+}
+
+/*
 This performs the last step of preemptive suspend.
 
 Returns TRUE if the caller should wait for resume.

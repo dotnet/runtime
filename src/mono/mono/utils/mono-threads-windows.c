@@ -182,6 +182,13 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 	result = SuspendThread (handle);
 	THREADS_SUSPEND_DEBUG ("SUSPEND %p -> %u\n", GUINT_TO_POINTER (id), result);
 	if (result == (DWORD)-1) {
+		if (!mono_threads_transition_abort_async_suspend (info)) {
+			/* We raced with self suspend and lost so suspend can continue. */
+			g_assert (mono_threads_is_hybrid_suspension_enabled ());
+			info->suspend_can_continue = TRUE;
+			THREADS_SUSPEND_DEBUG ("\tlost race with self suspend %p\n", mono_thread_info_get_tid (info));
+			return TRUE;
+		}
 		THREADS_SUSPEND_DEBUG ("SUSPEND FAILED, id=%p, err=%u\n", GUINT_TO_POINTER (id), GetLastError ());
 		return FALSE;
 	}
@@ -195,9 +202,16 @@ mono_threads_suspend_begin_async_suspend (MonoThreadInfo *info, gboolean interru
 	CONTEXT context;
 	context.ContextFlags = CONTEXT_INTEGER | CONTEXT_CONTROL;
 	if (!GetThreadContext (handle, &context)) {
-		THREADS_SUSPEND_DEBUG ("SUSPEND FAILED (GetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (id), GetLastError ());
 		result = ResumeThread (handle);
 		g_assert (result == 1);
+		if (!mono_threads_transition_abort_async_suspend (info)) {
+			/* We raced with self suspend and lost so suspend can continue. */
+			g_assert (mono_threads_is_hybrid_suspension_enabled ());
+			info->suspend_can_continue = TRUE;
+			THREADS_SUSPEND_DEBUG ("\tlost race with self suspend %p\n", mono_thread_info_get_tid (info));
+			return TRUE;
+		}
+		THREADS_SUSPEND_DEBUG ("SUSPEND FAILED (GetThreadContext), id=%p, err=%u\n", GUINT_TO_POINTER (id), GetLastError ());
 		return FALSE;
 	}
 
