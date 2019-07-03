@@ -7,7 +7,7 @@ include config.make
 #
 
 # Extracted MicrosoftPrivateCoreFxNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L21
-NETCORETESTS_VERSION := 4.6.0-preview8.19327.9
+NETCORETESTS_VERSION := 4.6.0-preview8.19352.1
 
 # Extracted MicrosoftNETCoreAppVersion from https://github.com/dotnet/coreclr/blob/master/eng/Versions.props#L25
 NETCOREAPP_VERSION := 3.0.0-preview7-27826-04
@@ -15,7 +15,7 @@ NETCOREAPP_VERSION := 3.0.0-preview7-27826-04
 # Extracted from https://dotnetcli.blob.core.windows.net/dotnet/aspnetcore/Runtime/master/latest.version
 ASPNETCOREAPP_VERSION := 3.0.0-preview-18614-0151
 
-ROSLYN_VERSION := 3.3.0-beta2-19351-03
+ROSLYN_VERSION := 3.3.0-beta4-19328-04
 
 ifeq ($(HOST_PLATFORM),win32)
 PLATFORM_AOT_SUFFIX := .dll
@@ -165,7 +165,7 @@ run-tests-corefx-%: prepare update-tests-corefx
 	COMPlus_DebugWriteToStdErr=1 $(CURDIR)/./dotnet --fx-version "$(NETCOREAPP_VERSION)" xunit.console.dll $*.dll \
 		-html ../../TestResult-$*.html -xml ../../TestResult-$*-netcore-xunit.xml \
 		$(XUNIT_FLAGS) @../../../../CoreFX.issues.rsp \
-		$(FIXTURE) || true
+		$(FIXTURE)
 
 # build a test assembly in COREFX_ROOT (path to a fully built corefx repo) and copy it to corefx/tests/extracted
 # e.g. `make build-test-corefx-System.Runtime COREFX_ROOT=/prj/corefx-master`

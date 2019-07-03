@@ -3,6 +3,7 @@
 -notrait category=nonnetcoreapptests
 -notrait category=nonmonotests
 -notrait category=failing
+-notrait category=IgnoreForCI
 
 ####################################################################
 ##  Microsoft.VisualBasic.Core.Tests
@@ -75,6 +76,9 @@
 ##  System.Diagnostics.TraceSource.Tests
 ####################################################################
 
+# requires precise gc (should be ignored in corefx)
+-nomethod System.Diagnostics.TraceSourceTests.TraceSourceClassTests.PruneTest
+
 # Object reference not set to an instance of an object on DefaultTraceListenerClassTests.MakeAssemblyGetEntryAssemblyReturnNull
 # https://github.com/mono/mono/issues/14905
 -nomethod System.Diagnostics.TraceSourceTests.DefaultTraceListenerClassTests.EntryAssemblyName_Null_NotIncludedInTrace
@@ -99,6 +103,9 @@
 # ambigous methods
 # https://github.com/mono/mono/issues/14906
 -nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.overloadResolution.Methods.Oneclass2methods.twoprms004.twoprms004.Test.DynamicCSharpRunTest
+
+# requires precise gc (should be ignored in corefx)
+-nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.context.*
 
 ####################################################################
 ##  System.IO.Tests
@@ -218,16 +225,6 @@
 # https://github.com/mono/mono/blob/18f0bf055eb2bfa8981062bdad3af2fb4bbc9be4/netcore/System.Private.CoreLib/shared/System/String.cs#L790-L800
 # https://github.com/mono/mono/blob/18f0bf055eb2bfa8981062bdad3af2fb4bbc9be4/netcore/System.Private.CoreLib/shared/System/String.cs#L811-L821
 -nomethod System.Tests.StringTests.NormalizationTest
-
-# Hits Debug.Assert in debug configuration for floating point precision on round-tripping
--nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterDouble_C20
--nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterSingle_C20
--nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterSingle_N20
--nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterSingle_P20
--nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterDouble_N20
--nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterDouble_F20
--nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterDouble_P20
--nomethod System.Buffers.Text.Tests.RealFormatterTests.TestFormatterSingle_F20
 
 # System.BadImageFormatException : Cannot box IsByRefLike type 'System.Span`1'
 # https://github.com/mono/mono/issues/14959
@@ -752,12 +749,6 @@
 # https://github.com/mono/mono/issues/15153
 -nomethod System.Tests.ActivatorTests.TestingCreateInstanceObjectHandleFullSignature
 
-# Disabled in coreclr too: https://github.com/dotnet/coreclr/blob/master/tests/CoreFX/CoreFX.issues.rsp#L68-L71
--nomethod System.Tests.StringTests.CasingNegativeTest
--nomethod System.Tests.StringTests.ToLowerNullCulture
--nomethod System.Tests.StringTests.CompareNegativeTest
--nomethod System.Tests.StringTests.ToUpperNullCulture
-
 ####################################################################
 ##  System.Text.Json.Tests
 ####################################################################
@@ -851,6 +842,9 @@
 ####################################################################
 ##  System.Data.Common.Tests
 ####################################################################
+
+# Invalid IL - IL_00bc: castclass 0x0100000d
+-nomethod System.Data.Tests.SqlTypes.SqlCharsTest.ReadWriteXmlTest
 
 # Invalid IL code in Microsoft.Xml.Serialization.GeneratedAssembly.XmlSerializationReaderSqlInt32:Read1_int (): IL_00bc: castclass 0x0100000d
 # https://github.com/mono/mono/issues/15174
@@ -1269,14 +1263,6 @@
 -nomethod System.Xml.Tests.CXmlResolverTest.TC_AbsolutePath_Transform
 
 ####################################################################
-##  System.Globalization.Tests
-####################################################################
-
-# Assertion failure: Expected: true, Actual: false
-# https://github.com/mono/mono/issues/15354
--nomethod System.Globalization.Tests.RegionInfoPropertyTests.EnglishName
-
-####################################################################
 ##  System.Net.Requests.Tests
 ####################################################################
 
@@ -1293,15 +1279,19 @@
 # disabled in CoreCLR too
 -noclass System.Security.Cryptography.X509Certificates.Tests.X509Certificate2UITests
 
-# requires changes from coreclr (via mirror)
--nomethod System.ComponentModel.Tests.ComponentResourceManagerTests.Ctor_Default
--nomethod WindowAndCursorProps.NonRedirectedCursorVisible
--nomethod System.Data.Tests.SqlTypes.SqlCharsTest.ReadWriteXmlTest
--nomethod System.Diagnostics.TraceSourceTests.TraceSourceClassTests.PruneTest
--nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.context.*
+# requires precise gc (should be ignored in corefx)
 -nomethod System.IO.Tests.FileStream_Dispose.FinalizeFlushesWriteBuffer
+
 -nomethod System.IO.Tests.File_Move_Tests.File_Move_From_Unwatched_To_Watched
--nomethod System.IO.MemoryMappedFiles.Tests.MemoryMappedViewStreamTests.ValidAccessLevelCombinations
--nomethod System.IO.MemoryMappedFiles.Tests.MemoryMappedViewAccessorTests.ValidAccessLevelCombinations
+
+# unxpected non-breaking space in strings (char(160) - char(32))
 -nomethod DataContractJsonSerializerTests.DCJS_VerifyDateTimeForDateTimeFormat
 -nomethod DataContractJsonSerializerTests.DCJS_VerifyDateTimeForFormatStringDCJsonSerSettings
+
+# GetCustomAttribute should ignore NullableContextAttribute?
+-nomethod System.Reflection.Tests.GetCustomAttributes_MemberInfo.GetCustomAttributeAll
+-nomethod System.Tests.AttributeGetCustomAttributes.MultipleAttributesTest
+
+# Unexpected IntPtr.Zero from Interop.Mmap
+-nomethod System.IO.MemoryMappedFiles.Tests.MemoryMappedViewAccessorTests.ValidAccessLevelCombinations
+-nomethod System.IO.MemoryMappedFiles.Tests.MemoryMappedViewStreamTests.ValidAccessLevelCombinations
