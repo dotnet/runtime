@@ -273,7 +273,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("obj", () => GC.SuppressFinalize(null)); // Obj is null
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void ReRegisterForFinalize()
         {
             ReRegisterForFinalizeTest.Run();

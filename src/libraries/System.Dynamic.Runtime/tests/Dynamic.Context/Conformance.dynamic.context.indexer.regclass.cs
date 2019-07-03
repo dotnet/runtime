@@ -2268,7 +2268,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.indexer.regclas
             GC.KeepAlive(t);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
         public static void DynamicCSharpRunTest()
         {
             RequireLifetimesEnded();
