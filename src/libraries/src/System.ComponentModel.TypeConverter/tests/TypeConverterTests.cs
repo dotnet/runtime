@@ -71,23 +71,26 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void ConvertFrom_InstanceDescriptor()
         {
-            CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
-            DateTime testDateAndTime = DateTime.UtcNow;
-            ConstructorInfo ctor = typeof(DateTime).GetConstructor(new Type[]
+            RemoteExecutor.Invoke(() =>
             {
-                typeof(int), typeof(int), typeof(int), typeof(int),
-                typeof(int), typeof(int), typeof(int)
-            });
+                CultureInfo.CurrentCulture = CultureInfo.GetCultureInfo("fr-FR");
+                DateTime testDateAndTime = DateTime.UtcNow;
+                ConstructorInfo ctor = typeof(DateTime).GetConstructor(new Type[]
+                {
+                    typeof(int), typeof(int), typeof(int), typeof(int),
+                    typeof(int), typeof(int), typeof(int)
+                });
 
-            InstanceDescriptor descriptor = new InstanceDescriptor(ctor, new object[]
-            {
-                testDateAndTime.Year, testDateAndTime.Month, testDateAndTime.Day, testDateAndTime.Hour,
-                testDateAndTime.Minute, testDateAndTime.Second, testDateAndTime.Millisecond
-            });
+                InstanceDescriptor descriptor = new InstanceDescriptor(ctor, new object[]
+                {
+                    testDateAndTime.Year, testDateAndTime.Month, testDateAndTime.Day, testDateAndTime.Hour,
+                    testDateAndTime.Minute, testDateAndTime.Second, testDateAndTime.Millisecond
+                });
 
-            const string format = "dd MMM yyyy hh:mm";
-            object o = s_converter.ConvertFrom(descriptor);
-            Assert.Equal(testDateAndTime.ToString(format), ((DateTime)o).ToString(format));
+                const string format = "dd MMM yyyy hh:mm";
+                object o = s_converter.ConvertFrom(descriptor);
+                Assert.Equal(testDateAndTime.ToString(format), ((DateTime)o).ToString(format));
+            }).Dispose();
         }
 
         [Fact]
