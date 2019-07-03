@@ -4207,6 +4207,21 @@ PCODE ExecutionManager::GetCodeStartAddress(PCODE currentPC)
 }
 
 //**************************************************************************
+NativeCodeVersion ExecutionManager::GetNativeCodeVersion(PCODE currentPC)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END;
+
+    EECodeInfo codeInfo(currentPC);
+    return codeInfo.IsValid() ? codeInfo.GetNativeCodeVersion() : NativeCodeVersion();
+}
+
+//**************************************************************************
 MethodDesc * ExecutionManager::GetCodeMethodDesc(PCODE currentPC)
 {
     CONTRACTL

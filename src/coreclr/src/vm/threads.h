@@ -168,6 +168,7 @@ class     CRWLock;
 struct    LockEntry;
 class     PendingTypeLoadHolder;
 class     PrepareCodeConfig;
+class     NativeCodeVersion;
 
 struct    ThreadLocalBlock;
 typedef DPTR(struct ThreadLocalBlock) PTR_ThreadLocalBlock;
@@ -3700,7 +3701,7 @@ private:
     friend class NDirect; // Quick access to thread stub creation
 
 #ifdef HAVE_GCCOVER
-    friend void DoGcStress (PT_CONTEXT regs, MethodDesc *pMD);  // Needs to call UnhijackThread
+    friend void DoGcStress (PT_CONTEXT regs, NativeCodeVersion nativeCodeVersion);  // Needs to call UnhijackThread
 #endif // HAVE_GCCOVER
 
     ULONG           m_ExternalRefCount;

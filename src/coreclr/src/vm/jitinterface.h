@@ -1648,10 +1648,10 @@ EXTERN_C void JIT_TailCallHelperStub_ReturnAddress();
 void *GenFastGetSharedStaticBase(bool bCheckCCtor);
 
 #ifdef HAVE_GCCOVER
-void SetupGcCoverage(MethodDesc* pMD, BYTE* nativeCode);
+void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* nativeCode);
 void SetupGcCoverageForNativeImage(Module* module);
 BOOL OnGcCoverageInterrupt(PT_CONTEXT regs);
-void DoGcStress (PT_CONTEXT regs, MethodDesc *pMD);
+void DoGcStress (PT_CONTEXT regs, NativeCodeVersion nativeCodeVersion);
 #endif //HAVE_GCCOVER
 
 EXTERN_C FCDECL2(LPVOID, ArrayStoreCheck, Object** pElement, PtrArray** pArray);
