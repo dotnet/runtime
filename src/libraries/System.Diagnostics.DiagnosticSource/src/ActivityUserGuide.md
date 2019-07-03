@@ -144,7 +144,7 @@ Note that in the [Incoming Request Sample](#starting-and-stopping-activity), we 
             ["StartTime"] = activity.StartTimeUtc,
         }
         //log tags and baggage if needed
-        ...// send document to log storage       
+        //...send document to log storage       
     }
 
     public void LogActivityStop()
@@ -163,7 +163,7 @@ Note that in the [Incoming Request Sample](#starting-and-stopping-activity), we 
             document[kv.Key] = kv.Value;
         foreach (var kv in activity.Baggage)
             document[kv.Key] = kv.Value;
-        ...// send document to log storage
+        //...send document to log storage
     }
 
     public void Log(LogLevel level, string message)
@@ -179,7 +179,7 @@ Note that in the [Incoming Request Sample](#starting-and-stopping-activity), we 
             document["Id"] = activity.Id;
             //add tags, baggage and ParentId if needed
         }
-        ...// send document to log storage
+        //...send document to log storage
     }
 ```
 
