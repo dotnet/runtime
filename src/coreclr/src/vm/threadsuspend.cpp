@@ -5234,7 +5234,7 @@ void Thread::SysResumeFromDebug(AppDomain *pAppDomain)
                      "[0x%x] RESUME: TS_DebugSuspendPending was set, but will be removed\n",
                      thread->GetThreadId()));
 
-#ifdef _TARGET_ARM_
+#ifdef FEATURE_EMULATE_SINGLESTEP
                 if (thread->IsSingleStepEnabled())
                 {
                     if (ISREDIRECTEDTHREAD(thread))
