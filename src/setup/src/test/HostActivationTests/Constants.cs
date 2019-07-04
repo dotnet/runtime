@@ -72,5 +72,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             public const string TraceLevelEnvironmentVariable = "COREHOST_TRACE";
             public const string TraceFileEnvironmentVariable = "COREHOST_TRACEFILE";
         }
+
+        public static class ErrorCode
+        {
+            public const int InvalidArgFailure = unchecked((int)0x80008081);
+            public const int CoreHostLibMissingFailure = unchecked((int)0x80008083);
+        }
     }
 }
