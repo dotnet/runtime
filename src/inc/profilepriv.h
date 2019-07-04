@@ -40,6 +40,7 @@ enum ProfilerStatus
     kProfStatusInitializingForStartupLoad  = 2, // Prof ready for (or in) its Initialize callback
     kProfStatusInitializingForAttachLoad   = 3, // Prof ready for (or in) its InitializeForAttach callback
     kProfStatusActive                      = 4, // Prof completed initialization and is actively running
+    kProfStatusPreInitialize               = 5, // Prof is in LoadProfiler, but initialization has yet to occur
 };
 
 class CurrentProfilerStatus
