@@ -1375,14 +1375,6 @@ namespace System.Xml.Serialization
             return b;
         }
 
-        // 0x6018
-        private static uint s_isTextualNodeBitmap = (1 << (int)XmlNodeType.Text) | (1 << (int)XmlNodeType.CDATA) | (1 << (int)XmlNodeType.Whitespace) | (1 << (int)XmlNodeType.SignificantWhitespace);
-
-        private static bool IsTextualNode(XmlNodeType nodeType)
-        {
-            return 0 != (s_isTextualNodeBitmap & (1 << (int)nodeType));
-        }
-
         protected string ReadString(string value)
         {
             return ReadString(value, false);

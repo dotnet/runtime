@@ -62,7 +62,7 @@ namespace System.Net.Sockets
 
         public static SocketError Set(SafeSocketHandle handle, SocketOptionName optionName, int optionValueSeconds)
         {
-            IOControlKeepAlive ioControlKeepAlive = s_socketKeepAliveTable.GetOrCreateValue(handle);
+            IOControlKeepAlive ioControlKeepAlive = s_socketKeepAliveTable.GetValue(handle, (SafeSocketHandle handle) => new IOControlKeepAlive());
             if (optionName == SocketOptionName.TcpKeepAliveTime)
             {
                 ioControlKeepAlive._timeMs = SecondsToMilliseconds(optionValueSeconds);

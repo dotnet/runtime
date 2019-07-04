@@ -6,6 +6,7 @@
     </type>
     <type fullname="System.Xml.Serialization.XmlSerializer">
       <!-- called via reflection from SGen tool -->
+      <method name="set_Mode" />
       <method name="GenerateSerializer" />
     </type>
   </assembly>

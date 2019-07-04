@@ -49,10 +49,12 @@ namespace System.Net.Sockets
         /// <summary>Cached event args used with Task-based async operations.</summary>
         private CachedEventArgs _cachedTaskEventArgs;
 
+        private CachedEventArgs EventArgs => LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs, () => new CachedEventArgs());
+
         internal Task<Socket> AcceptAsync(Socket acceptSocket)
         {
             // Get any cached SocketAsyncEventArg we may have.
-            TaskSocketAsyncEventArgs<Socket> saea = Interlocked.Exchange(ref LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs).TaskAccept, s_rentedSocketSentinel);
+            TaskSocketAsyncEventArgs<Socket> saea = Interlocked.Exchange(ref EventArgs.TaskAccept, s_rentedSocketSentinel);
             if (saea == s_rentedSocketSentinel)
             {
                 // An instance was once created (or is currently being created elsewhere), but some other
@@ -194,7 +196,7 @@ namespace System.Net.Sockets
                 return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
             }
 
-            AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs).ValueTaskReceive);
+            AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskReceive, () => new AwaitableSocketAsyncEventArgs());
             if (saea.Reserve())
             {
                 Debug.Assert(saea.BufferList == null);
@@ -343,7 +345,7 @@ namespace System.Net.Sockets
                 return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
             }
 
-            AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs).ValueTaskSend);
+            AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskSend, () => new AwaitableSocketAsyncEventArgs());
             if (saea.Reserve())
             {
                 Debug.Assert(saea.BufferList == null);
@@ -367,7 +369,7 @@ namespace System.Net.Sockets
                 return new ValueTask(Task.FromCanceled(cancellationToken));
             }
 
-            AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs).ValueTaskSend);
+            AwaitableSocketAsyncEventArgs saea = LazyInitializer.EnsureInitialized(ref EventArgs.ValueTaskSend, () => new AwaitableSocketAsyncEventArgs());
             if (saea.Reserve())
             {
                 Debug.Assert(saea.BufferList == null);
@@ -644,7 +646,7 @@ namespace System.Net.Sockets
         private Int32TaskSocketAsyncEventArgs RentSocketAsyncEventArgs(bool isReceive)
         {
             // Get any cached SocketAsyncEventArg we may have.
-            CachedEventArgs cea = LazyInitializer.EnsureInitialized(ref _cachedTaskEventArgs);
+            CachedEventArgs cea = EventArgs;
             Int32TaskSocketAsyncEventArgs saea = isReceive ?
                 Interlocked.Exchange(ref cea.TaskReceive, s_rentedInt32Sentinel) :
                 Interlocked.Exchange(ref cea.TaskSend, s_rentedInt32Sentinel);
