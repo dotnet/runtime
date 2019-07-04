@@ -62,9 +62,6 @@ BEGIN
             VALUE "OleSelfRegister", "\0"
 #endif
             VALUE "Comments",        VER_COMMENTS_STR
-#if VER_PRIVATE
-            VALUE "PrivateBuild",    VER_PRIVATEBUILD_STR    
-#endif
 #ifdef VER_EXTRA_VALUES
             VER_EXTRA_VALUES
 #endif
@@ -87,9 +84,6 @@ BEGIN
             VALUE "OleSelfRegister", "\0"
 #endif
             VALUE "Comments",        VER_COMMENTS_STR
-#if VER_PRIVATE
-            VALUE "PrivateBuild",    VER_PRIVATEBUILD_STR    
-#endif
 #ifdef VER_EXTRA_VALUES
             VER_EXTRA_VALUES
 #endif
