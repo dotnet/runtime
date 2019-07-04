@@ -9,7 +9,7 @@ Target framework version | `3.0`
 Target framework moniker | `.NETCoreApp,Version=v3.0`
 Friendly name | .NET Core Application
 NuGet folder name | `netcoreapp3.0`
-NETStandard version supported | `netstandard2.0`
+NETStandard version supported | `netstandard2.1`
 
 ## FAQ
 **Q: What is a .NET Core application?**  
