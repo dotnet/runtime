@@ -104,7 +104,6 @@ if HAVE_ZLIB
 else
 support_sources += \
 	../../support/adler32.c \
-	../../support/compress.c \
 	../../support/crc32.c \
 	../../support/crc32.h \
 	../../support/deflate.c \
