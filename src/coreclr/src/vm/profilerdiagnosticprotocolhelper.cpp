@@ -102,7 +102,7 @@ void ProfilerDiagnosticProtocolHelper::AttachProfiler(DiagnosticsIpc::IpcMessage
         hr = CORPROF_E_RUNTIME_UNINITIALIZED;
         goto ErrExit;
     }
-    
+
     // Certain actions are only allowable during attach, and this flag is how we track it.
     ClrFlsSetThreadType(ThreadType_ProfAPI_Attach);
 

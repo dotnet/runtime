@@ -45,6 +45,19 @@ class SidBuffer;
 //
 class ProfilingAPIUtility
 {
+private:    
+    enum ProfilerCompatibilityFlag
+    {
+        // Default: disable V2 profiler
+        kDisableV2Profiler = 0x0,
+
+        // Enable V2 profilers
+        kEnableV2Profiler  = 0x1,
+
+        // Disable Profiling
+        kPreventLoad       = 0x2,
+    };
+
 public:
     static HRESULT InitializeProfiling();
     static HRESULT LoadProfilerForAttach(
@@ -127,6 +140,13 @@ private:
     ProfilingAPIUtility() {}
 
     static HRESULT PerformDeferredInit();
+    static HRESULT ProfilingAPIUtility::DoPreInitialization(
+        EEToProfInterfaceImpl *pEEProf,
+        const CLSID *pClsid, 
+        LPCWSTR wszClsid, 
+        LPCWSTR wszProfilerDLL, 
+        LoadType loadType, 
+        DWORD dwConcurrentGCWaitTimeoutInMs);
     static HRESULT LoadProfiler(
         LoadType loadType,
         const CLSID * pClsid,
