@@ -96,11 +96,13 @@
 
 #define EXPORT_TAG 
 
-#if OFFICIAL_BUILD
+// Not setting the private build flag until
+// official builds can be detected from native projects
+//#if OFFICIAL_BUILD
 #define VER_PRIVATE                 0
-#else
-#define VER_PRIVATE                 VS_FF_PRIVATEBUILD
-#endif
+//#else
+//#define VER_PRIVATE                 VS_FF_PRIVATEBUILD
+//#endif
 
 #define VER_SPECIALBUILD            0
 
@@ -125,8 +127,6 @@
 #else
 #define VER_COMMENTS_STR        "Flavor=" QUOTE_MACRO(URTBLDENV_FRIENDLY)
 #endif
-
-#define VER_PRIVATEBUILD_STR    QUOTE_MACRO(FX_VER_PRIVATEBUILD_STR)
 
 #if defined(__BUILDMACHINE__)
 #if defined(__BUILDDATE__)
