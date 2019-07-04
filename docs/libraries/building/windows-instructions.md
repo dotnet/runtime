@@ -60,8 +60,6 @@ The following are the minimum requirements:
   * .NET Core cross-platform development
     * All Required Components
 
-Note: If you have both VS 2017 and 2015 installed, you need to copy DIA SDK directory from VS 2015 installation into VS 2017 (VS installer bug).
-
 #### Visual Studio 2017 - 'Individual components' based install
 
 The following are the minimum requirements:
@@ -89,8 +87,6 @@ If you've installed Visual Studio 2017 already, go to `C:\Program Files (x86)\Mi
 This will install all the components needed.
 
 Note that you will need to adjust the install path to reflect your version, "Community", "Professional", "Enterprise" or "Preview"
-
-For the best possible experience make sure to have the latest version of Visual Studio 2017 installed.
 
 ## Building From the Command Line
 
@@ -138,4 +134,4 @@ show up as red squiggles while writing code. Such errors should, however, not af
 
 * Running tests from using the VS test explorer does not currently work after we switched to running on CoreCLR. [We are actively working on enabling full VS test integration](https://github.com/dotnet/corefx/issues/20627) but we don't have an ETA yet. In the meantime, use the steps above to launch/debug the tests using the console runner.
 
-* If your build fails with "[...].dll - Access is denied" errors, it might be because Visual Studio/MSBuild is locking these files. Try shutting down `VBCSCompiler.exe` and `dotnet.exe` from the task manager before building again.
+* If your build fails with "[...].dll - Access is denied" errors, it might be because Visual Studio/MSBuild is locking these files. Run `taskkill /im dotnet.exe /f` to shutdown all currently running dotnet instances.
