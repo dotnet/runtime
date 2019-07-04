@@ -21,10 +21,20 @@ namespace System.Data.OleDb.Tests
                 Assert.Equal(UpdateRowSource.Both, cmd.UpdatedRowSource);
                 cmd.UpdatedRowSource = UpdateRowSource.FirstReturnedRecord;
                 Assert.Equal(UpdateRowSource.FirstReturnedRecord, cmd.UpdatedRowSource);
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(
-                    () => cmd.UpdatedRowSource = (UpdateRowSource)InvalidValue, 
-                    $"The {nameof(UpdateRowSource)} enumeration value, {InvalidValue}, is invalid.\r\nParameter name: {nameof(UpdateRowSource)}"
-                );
+                if (PlatformDetection.IsFullFramework)
+                {
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                        () => cmd.UpdatedRowSource = (UpdateRowSource)InvalidValue, 
+                        $"The {nameof(UpdateRowSource)} enumeration value, {InvalidValue}, is invalid.\r\nParameter name: {nameof(UpdateRowSource)}"
+                    );
+                }
+                else
+                {
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                        () => cmd.UpdatedRowSource = (UpdateRowSource)InvalidValue, 
+                        $"The {nameof(UpdateRowSource)} enumeration value, {InvalidValue}, is invalid. (Parameter \'{nameof(UpdateRowSource)}\')"
+                    );
+                }
             }
         }
 
@@ -34,10 +44,20 @@ namespace System.Data.OleDb.Tests
             const int InvalidValue = -1;
             using (var cmd = new OleDbCommand(default, connection, transaction))
             {
-                AssertExtensions.Throws<ArgumentException>(
-                    () => cmd.CommandTimeout = InvalidValue, 
-                    $"Invalid CommandTimeout value {InvalidValue}; the value must be >= 0.\r\nParameter name: {nameof(cmd.CommandTimeout)}"
-                );
+                if (PlatformDetection.IsFullFramework)
+                {
+                    AssertExtensions.Throws<ArgumentException>(
+                        () => cmd.CommandTimeout = InvalidValue, 
+                        $"Invalid CommandTimeout value {InvalidValue}; the value must be >= 0.\r\nParameter name: {nameof(cmd.CommandTimeout)}"
+                    );
+                }
+                else
+                {
+                    AssertExtensions.Throws<ArgumentException>(
+                        () => cmd.CommandTimeout = InvalidValue, 
+                        $"Invalid CommandTimeout value {InvalidValue}; the value must be >= 0. (Parameter \'{nameof(cmd.CommandTimeout)}\')"
+                    );
+                }
             }
         }
 
@@ -61,10 +81,20 @@ namespace System.Data.OleDb.Tests
             const int InvalidValue = 0;
             using (var cmd = (OleDbCommand)OleDbFactory.Instance.CreateCommand())
             {
-                AssertExtensions.Throws<ArgumentOutOfRangeException>(
-                    () => cmd.CommandType = (CommandType)InvalidValue, 
-                    $"The CommandType enumeration value, {InvalidValue}, is invalid.\r\nParameter name: {nameof(cmd.CommandType)}"
-                );
+                if (PlatformDetection.IsFullFramework)
+                {
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                        () => cmd.CommandType = (CommandType)InvalidValue, 
+                        $"The CommandType enumeration value, {InvalidValue}, is invalid.\r\nParameter name: {nameof(cmd.CommandType)}"
+                    );
+                }
+                else
+                {
+                    AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                        () => cmd.CommandType = (CommandType)InvalidValue, 
+                        $"The CommandType enumeration value, {InvalidValue}, is invalid. (Parameter \'{nameof(cmd.CommandType)}\')"
+                    );
+                }
             }
         }
 
@@ -149,10 +179,20 @@ namespace System.Data.OleDb.Tests
         public void Parameters_AddNullParameter_Throws()
         {
             RunTest((command, tableName) => {
-                AssertExtensions.Throws<ArgumentNullException>(
-                    () => command.Parameters.Add(null), 
-                    $"The {nameof(OleDbParameterCollection)} only accepts non-null {nameof(OleDbParameter)} type objects.\r\nParameter name: value"
-                );
+                if (PlatformDetection.IsFullFramework)
+                {
+                    AssertExtensions.Throws<ArgumentNullException>(
+                        () => command.Parameters.Add(null), 
+                        $"The {nameof(OleDbParameterCollection)} only accepts non-null {nameof(OleDbParameter)} type objects.\r\nParameter name: value"
+                    );
+                }
+                else
+                {
+                    AssertExtensions.Throws<ArgumentNullException>(
+                        () => command.Parameters.Add(null), 
+                        $"The {nameof(OleDbParameterCollection)} only accepts non-null {nameof(OleDbParameter)} type objects. (Parameter \'value\')"
+                    );
+                }
                 command.CommandText = "SELECT * FROM " + tableName + " WHERE NumPlants = ?";
                 command.Parameters.Add(new OleDbParameter("@p1", 7));
                 using (OleDbDataReader reader = command.ExecuteReader())

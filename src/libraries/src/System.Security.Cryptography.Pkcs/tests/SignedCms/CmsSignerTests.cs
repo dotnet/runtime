@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Pkcs.Tests
             CmsSigner signer = new CmsSigner();
 
             AssertExtensions.Throws<ArgumentException>(
-                paramName: null,
+                expectedParamName: null,
                 () => signer.SignerIdentifierType = invalidType);
         }
     }
