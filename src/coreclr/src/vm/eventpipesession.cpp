@@ -319,32 +319,6 @@ bool EventPipeSession::WriteEventBuffered(
         false;
 }
 
-void EventPipeSession::WriteEventUnbuffered(EventPipeEventInstance &instance, EventPipeThread* pThread)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_pFile == nullptr)
-        return;
-    ULONGLONG captureThreadId;
-    uint32_t sequenceNumber;
-    {
-        SpinLockHolder _slh(pThread->GetLock());
-        EventPipeThreadSessionState *const pState = pThread->GetOrCreateSessionState(this);
-        if (pState == nullptr)
-            return;
-        captureThreadId = pThread->GetOSThreadId();
-        sequenceNumber = pState->GetSequenceNumber();
-        pState->IncrementSequenceNumber();
-    }
-    m_pFile->WriteEvent(instance, captureThreadId, sequenceNumber, TRUE);
-}
-
 void EventPipeSession::WriteSequencePointUnbuffered()
 {
     CONTRACTL
@@ -474,11 +448,23 @@ void EventPipeSession::Disable()
     if ((m_SessionType == EventPipeSessionType::IpcStream) && m_ipcStreamingEnabled)
         DisableIpcStreamingThread();
 
+    WriteAllBuffersToFile();
+    m_pProviderList->Clear();
+}
+
+void EventPipeSession::SuspendWriteEvent()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
     // Force all in-progress writes to either finish or cancel
     // This is required to ensure we can safely flush and delete the buffers
     m_pBufferManager->SuspendWriteEvent(GetIndex());
-    WriteAllBuffersToFile();
-    m_pProviderList->Clear();
 }
 
 void EventPipeSession::ExecuteRundown()
