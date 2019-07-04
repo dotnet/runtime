@@ -1208,10 +1208,6 @@
 # https://github.com/mono/mono/issues/15349
 -nomethod System.Reflection.Tests.TypeTests.TypesWithStrangeCharacters
 
-# System.ArgumentException : Type provided must be an enum.
-# https://github.com/mono/mono/issues/15350
--nomethod System.Reflection.Tests.TypeTests.GetEnumUnderlyingType
-
 # Assertion failure: Expected: 1, Actual: 0
 # https://github.com/mono/mono/issues/15351
 -nomethod System.Reflection.Tests.TypeTests_HiddenTestingOrder.HideDetectionHappensAfterPrivateInBaseClassChecks

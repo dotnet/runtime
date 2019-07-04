@@ -244,8 +244,7 @@ namespace System
 				pos ++;
 			}
 
-			if (res.Names.Count == 0)
-				res.Names.Add (name.Substring (name_start, pos - name_start));
+			res.Names.Add (name.Substring (name_start, pos - name_start));
 
 			bool isbyref = false;
 			bool isptr = false;
