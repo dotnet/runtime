@@ -4335,19 +4335,6 @@ namespace System.Net.Sockets
                 return (_intCleanedUp == 1);
             }
         }
-
-        internal TransportType Transport
-        {
-            get
-            {
-                return
-                    _protocolType == Sockets.ProtocolType.Tcp ?
-                        TransportType.Tcp :
-                        _protocolType == Sockets.ProtocolType.Udp ?
-                            TransportType.Udp :
-                            TransportType.All;
-            }
-        }
         #endregion
 
         #region Internal and private methods
