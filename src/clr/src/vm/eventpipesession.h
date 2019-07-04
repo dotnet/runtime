@@ -200,8 +200,6 @@ public:
         Thread *pEventThread = nullptr,
         StackContents *pStack = nullptr);
 
-    void WriteEventUnbuffered(EventPipeEventInstance &instance, EventPipeThread* pThread);
-
     // Write a sequence point into the output stream synchronously
     void WriteSequencePointUnbuffered();
 
@@ -211,7 +209,12 @@ public:
     void Enable();
 
     // Disable a session in the event pipe.
+    // side-effects: writes all buffers to stream/file
     void Disable();
+
+    // Force all in-progress writes to either finish or cancel
+    // This is required to ensure we can safely flush and delete the buffers
+    void SuspendWriteEvent();
 
     void EnableRundown();
     void ExecuteRundown();
