@@ -3757,9 +3757,9 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
     FrameWithCookie<FuncEvalFrame> FEFrame(pDE, GetIP(&pDE->m_context), true);
     FEFrame.Push();
 
-    // On ARM the single step flag is per-thread and not per context.  We need to make sure that the SS flag is cleared
+    // On ARM/ARM64 the single step flag is per-thread and not per context.  We need to make sure that the SS flag is cleared
     // for the funceval, and that the state is back to what it should be after the funceval completes.
-#ifdef _TARGET_ARM_
+#ifdef FEATURE_EMULATE_SINGLESTEP
     bool ssEnabled = pDE->m_thread->IsSingleStepEnabled();
     if (ssEnabled)
         pDE->m_thread->DisableSingleStep();
@@ -3767,7 +3767,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
 
     FuncEvalHijackRealWorker(pDE, pThread, &FEFrame);
 
-#ifdef _TARGET_ARM_
+#ifdef FEATURE_EMULATE_SINGLESTEP
     if (ssEnabled)
         pDE->m_thread->EnableSingleStep();
 #endif
