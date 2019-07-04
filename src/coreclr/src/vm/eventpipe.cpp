@@ -346,9 +346,7 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
     // Disable pSession tracing.
     s_config.Disable(*pSession, pEventPipeProviderCallbackDataQueue);
 
-    s_allowWrite &= ~(pSession->GetMask()); 
-
-    pSession->Disable(); // Suspend EventPipeBufferManager, and remove providers.
+    pSession->Disable(); // WriteAllBuffersToFile, and remove providers.
 
     // Do rundown before fully stopping the session unless rundown wasn't requested
     if (pSession->RundownRequested())
@@ -371,9 +369,12 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
         else
         {
             _ASSERTE(!"Failed to get or create the EventPipeThread for rundown events.");
-            return;
         }
     }
+
+    s_allowWrite &= ~(pSession->GetMask()); 
+    pSession->SuspendWriteEvent();
+    pSession->WriteAllBuffersToFile(); // Flush the buffers to the stream/file
 
     --s_numberOfSessions;
 
@@ -591,22 +592,6 @@ void EventPipe::WriteEventInternal(
         BYTE *pData = payload.GetFlatData();
         if (pThread != nullptr && pRundownSession != nullptr && pData != nullptr)
         {
-            // Write synchronously to the file.
-            // We're under lock and blocking the disabling thread.
-            // This copy occurs here (rather than at file write) because
-            // A) The FastSerializer API would need to change if we waited
-            // B) It is unclear there is a benefit to multiple file write calls
-            //    as opposed a a buffer copy here
-            EventPipeEventInstance instance(
-                event,
-                GetCurrentProcessorNumber(),
-                pEventPipeThread->GetOSThreadId(),
-                pData,
-                payload.GetSize(),
-                pActivityId,
-                pRelatedActivityId);
-            instance.EnsureStack(*pRundownSession);
-
             // EventPipeFile::WriteEvent needs to allocate a metadata event
             // and can therefore throw. In this context we will silently
             // fail rather than disrupt the caller
@@ -614,7 +599,14 @@ void EventPipe::WriteEventInternal(
             {
                 _ASSERTE(pRundownSession != nullptr);
                 if (pRundownSession != nullptr)
-                    pRundownSession->WriteEventUnbuffered(instance, pEventPipeThread);
+                    pRundownSession->WriteEventBuffered(
+                        pThread,
+                        event,
+                        payload,
+                        pActivityId,
+                        pRelatedActivityId,
+                        pEventThread,
+                        pStack);
             }
             EX_CATCH {}
             EX_END_CATCH(SwallowAllExceptions);
