@@ -15,10 +15,10 @@ namespace System
     {
         private static bool IsFullFramework => RuntimeInformation.FrameworkDescription.StartsWith(".NET Framework");
 
-        public static void Throws<T>(Action action, string message)
+        public static void Throws<T>(Action action, string expectedMessage)
             where T : Exception
         {
-            Assert.Equal(Assert.Throws<T>(action).Message, message);
+            Assert.Equal(expectedMessage, Assert.Throws<T>(action).Message);
         }
 
         public static void Throws<T>(string netCoreParamName, string netFxParamName, Action action)
@@ -57,12 +57,12 @@ namespace System
             Assert.Equal(expectedParamName, exception.ParamName);
         }
 
-        public static T Throws<T>(string paramName, Action action)
+        public static T Throws<T>(string expectedParamName, Action action)
             where T : ArgumentException
         {
             T exception = Assert.Throws<T>(action);
 
-            Assert.Equal(paramName, exception.ParamName);
+            Assert.Equal(expectedParamName, exception.ParamName);
 
             return exception;
         }
@@ -75,27 +75,27 @@ namespace System
             return exception;
         }
 
-        public static T Throws<T>(string paramName, Func<object> testCode)
+        public static T Throws<T>(string expectedParamName, Func<object> testCode)
             where T : ArgumentException
         {
             T exception = Assert.Throws<T>(testCode);
 
-            Assert.Equal(paramName, exception.ParamName);
+            Assert.Equal(expectedParamName, exception.ParamName);
 
             return exception;
         }
 
-        public static async Task<T> ThrowsAsync<T>(string paramName, Func<Task> testCode)
+        public static async Task<T> ThrowsAsync<T>(string expectedParamName, Func<Task> testCode)
             where T : ArgumentException
         {
             T exception = await Assert.ThrowsAsync<T>(testCode);
 
-            Assert.Equal(paramName, exception.ParamName);
+            Assert.Equal(expectedParamName, exception.ParamName);
 
             return exception;
         }
 
-        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string paramName, Action action)
+        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string expectedParamName, Action action)
             where TNetCoreExceptionType : ArgumentException
             where TNetFxExceptionType : Exception
         {
@@ -106,7 +106,7 @@ namespace System
                 if (typeof(ArgumentException).IsAssignableFrom(typeof(TNetFxExceptionType)))
                 {
                     Exception exception = Assert.Throws(typeof(TNetFxExceptionType), action);
-                    Assert.Equal(paramName, ((ArgumentException)exception).ParamName);
+                    Assert.Equal(expectedParamName, ((ArgumentException)exception).ParamName);
                 }
                 else
                 {
@@ -115,7 +115,7 @@ namespace System
             }
             else
             {
-                AssertExtensions.Throws<TNetCoreExceptionType>(paramName, action);
+                AssertExtensions.Throws<TNetCoreExceptionType>(expectedParamName, action);
             }
         }
 
