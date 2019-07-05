@@ -738,6 +738,34 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 {
     return ::GetNumaProcessorNodeEx(proc_no, node_no);
 }
+/*static*/ bool NumaNodeInfo::GetNumaInfo(PUSHORT total_nodes, DWORD* max_procs_per_node)
+{
+    if (m_enableGCNumaAware)
+    {
+        DWORD currentProcsOnNode = 0;
+        for (int i = 0; i < m_nNodes; i++)
+        {
+            GROUP_AFFINITY processorMask;
+            if (GetNumaNodeProcessorMaskEx(i, &processorMask))
+            {
+                DWORD procsOnNode = 0;
+                uintptr_t mask = (uintptr_t)processorMask.Mask;
+                while (mask)
+                {
+                    procsOnNode++;
+                    mask &= mask - 1;
+                }
+
+                currentProcsOnNode = max(currentProcsOnNode, procsOnNode);
+            }
+            *max_procs_per_node = currentProcsOnNode;
+            *total_nodes = m_nNodes;
+        }
+        return true;
+    }
+
+    return false;
+}
 #else // !FEATURE_PAL
 /*static*/ BOOL NumaNodeInfo::GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no)
 {
@@ -747,6 +775,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 #endif
 
 /*static*/ BOOL NumaNodeInfo::m_enableGCNumaAware = FALSE;
+/*static*/ uint16_t NumaNodeInfo::m_nNodes = 0;
 /*static*/ BOOL NumaNodeInfo::InitNumaNodeInfoAPI()
 {
 #if !defined(FEATURE_REDHAWK)
@@ -759,6 +788,8 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     // fail to get the highest numa node number
     if (!::GetNumaHighestNodeNumber(&highest) || (highest == 0))
         return FALSE;
+
+    m_nNodes = (USHORT)(highest + 1);
 
     return TRUE;
 #else
@@ -1058,6 +1089,7 @@ retry:
         {
             *group_number = i;
             *group_processor_number = bDiff;
+
             break;
         }
         bDiff = processor_number - bTemp;
@@ -1096,6 +1128,24 @@ retry:
 #else
     return 0;
 #endif
+}
+
+// There can be different numbers of procs in groups. We take the max.
+/*static*/ bool CPUGroupInfo::GetCPUGroupInfo(PUSHORT total_groups, DWORD* max_procs_per_group)
+{
+    if (m_enableGCCPUGroups)
+    {
+        *total_groups = m_nGroups;
+        DWORD currentProcsInGroup = 0;
+        for (WORD i = 0; i < m_nGroups; i++)
+        {
+            currentProcsInGroup = max(currentProcsInGroup, m_CPUGroupInfoArray[i].nr_active);
+        }
+        *max_procs_per_group = currentProcsInGroup;
+        return true;
+    }
+
+    return false;
 }
 
 #if !defined(FEATURE_REDHAWK)
