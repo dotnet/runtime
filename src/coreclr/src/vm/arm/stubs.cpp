@@ -1824,33 +1824,42 @@ void StubLinkerCPU::ThumbEmitCallWithGenericInstantiationParameter(MethodDesc *p
     if (cArgDescriptors > 1)
     {
         // Start by assuming we have all four register destination descriptors.
-        DWORD idxLastRegDesc = min(3, cArgDescriptors - 1);
+        int idxLastRegDesc = min(3, cArgDescriptors - 1);
 
         // Adjust that count to match reality.
-        while (!rgArgDescs[idxLastRegDesc].m_fDstIsReg)
+        while (idxLastRegDesc >= 0 && !rgArgDescs[idxLastRegDesc].m_fDstIsReg)
         {
-            _ASSERTE(idxLastRegDesc > 0);
             idxLastRegDesc--;
         }
-
-        // First move to stack location happens after the last move to register location
-        idxFirstMoveToStack = idxLastRegDesc+1;
-
-        // Calculate how many descriptors we'll need to swap.
-        DWORD cSwaps = (idxLastRegDesc + 1) / 2;
-
-        // Finally we can swap the descriptors.
-        DWORD idxFirstRegDesc = 0;
-        while (cSwaps)
+        
+        if (idxLastRegDesc < 0)
         {
-            ArgDesc sTempDesc = rgArgDescs[idxLastRegDesc];
-            rgArgDescs[idxLastRegDesc] = rgArgDescs[idxFirstRegDesc];
-            rgArgDescs[idxFirstRegDesc] = sTempDesc;
+            // No register is used to pass any of the parameters. No need to reverse the order of the descriptors
+            idxFirstMoveToStack = 0;
+        }
+        else
+        {
+            _ASSERTE(idxLastRegDesc >= 0 && ((DWORD)idxLastRegDesc) < cArgDescriptors);
+            
+            // First move to stack location happens after the last move to register location
+            idxFirstMoveToStack = idxLastRegDesc+1;
 
-            _ASSERTE(idxFirstRegDesc < idxLastRegDesc);
-            idxFirstRegDesc++;
-            idxLastRegDesc--;
-            cSwaps--;
+            // Calculate how many descriptors we'll need to swap.
+            DWORD cSwaps = (idxLastRegDesc + 1) / 2;
+
+            // Finally we can swap the descriptors.
+            int idxFirstRegDesc = 0;
+            while (cSwaps)
+            {
+                ArgDesc sTempDesc = rgArgDescs[idxLastRegDesc];
+                rgArgDescs[idxLastRegDesc] = rgArgDescs[idxFirstRegDesc];
+                rgArgDescs[idxFirstRegDesc] = sTempDesc;
+
+                _ASSERTE(idxFirstRegDesc < idxLastRegDesc);
+                idxFirstRegDesc++;
+                idxLastRegDesc--;
+                cSwaps--;
+            }
         }
     }
 
