@@ -7,8 +7,8 @@ parameters:
   targetArchitecture: null
 
 jobs:
-  - job: ${{ parameters.displayName }}
-    displayName: ${{ parameters.displayName }}
+  - job: ${{ parameters.name }}
+    displayName: ${{ parameters.name }}
     pool:
       # Use a hosted pool when possible.
       ${{ if eq(variables['System.TeamProject'], 'public') }}:
@@ -21,10 +21,8 @@ jobs:
       matrix: 
         debug:
           _BuildConfig: Debug
-          _PublishType: none
         release:
           _BuildConfig: Release
-          _PublishType: blob
     workspace:
       clean: all
     variables: 
@@ -63,45 +61,6 @@ jobs:
         $(MsbuildSigningArguments)
       displayName: Build
 
-    # Publish all build assets
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - script: build.cmd -publishing
-          -- '$(CommonMSBuildArgs)
-          $(_CommonPublishArgs)
-          /p:PublishType=$(_PublishType)
-          /p:PublishRidAgnosticPackages=${{ parameters.publishRidAgnosticPackages }}
-          /p:BuildFullPlatformManifest=${{ parameters.buildFullPlatformManifest }}
-          /bl:$(Build.SourcesDirectory)\publish.binlog'
-        displayName: Publish build assets
-        condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
-
-    - task: PublishTestResults@2
-      displayName: Publish Test Results
-      inputs:
-        testResultsFormat: 'xUnit'
-        testResultsFiles: '*.xml'
-        searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
-        mergeTestResults: true
-        testRunTitle: ${{ parameters.displayName }}-$(_BuildConfig)
-      continueOnError: true
-      condition: always()
-
-    - task: CopyFiles@2
-      displayName: Copy Files to $(Build.StagingDirectory)\BuildLogs
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)'
-        Contents: |
-          **/*.log
-          **/*.binlog
-        TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
-        CleanTargetFolder: true
-      continueOnError: true
-      condition: succeededOrFailed()
-
-    - task: PublishBuildArtifacts@1
-      displayName: Publish Artifact BuildLogs
-      inputs:
-        PathtoPublish: '$(Build.StagingDirectory)\BuildLogs'
-        ArtifactName: ${{ parameters.displayName }}-$(_BuildConfig)
-      continueOnError: true
-      condition: succeededOrFailed()
+    - template: steps/upload-job-artifacts.yml
+      parameters:
+        name: ${{ parameters.name }}
