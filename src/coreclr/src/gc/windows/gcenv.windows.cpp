@@ -37,6 +37,7 @@ typedef BOOL (WINAPI *PQUERY_INFORMATION_JOB_OBJECT)(HANDLE jobHandle, JOBOBJECT
 namespace {
 
 static bool g_fEnableGCNumaAware;
+static uint32_t g_nNodes;
 
 class GroupProcNo
 {
@@ -91,6 +92,7 @@ void InitNumaNodeInfo()
     if (!GetNumaHighestNodeNumber(&highest) || (highest == 0))
         return;
 
+    g_nNodes = highest + 1;
     g_fEnableGCNumaAware = true;
     return;
 }
@@ -659,6 +661,21 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
     return success;
 }
 
+bool GCToOSInterface::GetCurrentThreadIdealProc(uint16_t* procNo)
+{
+    PROCESSOR_NUMBER proc;
+
+    bool success = GetThreadIdealProcessorEx (GetCurrentThread (), &proc);
+
+    if (success)
+    {
+        GroupProcNo groupProcNo(proc.Group, proc.Number);
+        *procNo = groupProcNo.GetCombinedValue();
+    }
+
+    return success;
+}
+
 // Get the number of the current processor
 uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 {
@@ -713,17 +730,26 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 //  size      - size of the virtual memory range
 //  alignment - requested memory alignment, 0 means no specific alignment requested
 //  flags     - flags to control special settings like write watching
+//  node      - the NUMA node to reserve memory on
 // Return:
 //  Starting virtual address of the reserved range
-void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags)
+void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags, uint16_t node)
 {
     // Windows already ensures 64kb alignment on VirtualAlloc. The current CLR
     // implementation ignores it on Windows, other than making some sanity checks on it.
     UNREFERENCED_PARAMETER(alignment);
     assert((alignment & (alignment - 1)) == 0);
     assert(alignment <= 0x10000);
-    DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
-    return ::VirtualAlloc(nullptr, size, memFlags, PAGE_READWRITE);
+
+    if (node == NUMA_NODE_UNDEFINED)
+    {
+        DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
+        return ::VirtualAlloc (nullptr, size, memFlags, PAGE_READWRITE);
+    }
+    else
+    {
+        return ::VirtualAllocExNuma (::GetCurrentProcess (), NULL, size, MEM_RESERVE, PAGE_READWRITE, node);
+    }
 }
 
 // Release virtual memory range previously reserved using VirtualReserve
@@ -1284,6 +1310,57 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
 bool GCToOSInterface::CanEnableGCNumaAware()
 {
     return g_fEnableGCNumaAware;
+}
+
+bool GCToOSInterface::GetNumaInfo(uint16_t* total_nodes, uint32_t* max_procs_per_node)
+{
+    if (g_fEnableGCNumaAware)
+    {
+        DWORD currentProcsOnNode = 0;
+        for (uint32_t i = 0; i < g_nNodes; i++)
+        {
+            GROUP_AFFINITY processorMask;
+            if (GetNumaNodeProcessorMaskEx(i, &processorMask))
+            {
+                DWORD procsOnNode = 0;
+                uintptr_t mask = (uintptr_t)processorMask.Mask;
+                while (mask)
+                {
+                    procsOnNode++;
+                    mask &= mask - 1;
+                }
+
+                currentProcsOnNode = max(currentProcsOnNode, procsOnNode);
+            }
+            *max_procs_per_node = currentProcsOnNode;
+            *total_nodes = g_nNodes;
+        }
+        return true;
+    }
+
+    return false;
+}
+
+bool GCToOSInterface::CanEnableGCCPUGroups()
+{
+    return g_fEnableGCCPUGroups;
+}
+
+bool GCToOSInterface::GetCPUGroupInfo(uint16_t* total_groups, uint32_t* max_procs_per_group)
+{
+    if (g_fEnableGCCPUGroups)
+    {
+        *total_groups = (uint16_t)g_nGroups;
+        DWORD currentProcsInGroup = 0;
+        for (WORD i = 0; i < g_nGroups; i++)
+        {
+            currentProcsInGroup = max(currentProcsInGroup, g_CPUGroupInfoArray[i].nr_active);
+        }
+        *max_procs_per_group = currentProcsInGroup;
+        return true;
+    }
+
+    return false;
 }
 
 // Get processor number and optionally its NUMA node number for the specified heap number

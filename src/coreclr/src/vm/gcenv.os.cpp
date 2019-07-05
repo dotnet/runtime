@@ -38,7 +38,7 @@ class GroupProcNo
 
 public:
 
-    static const uint16_t NoGroup = 0x3ff;
+    static const uint16_t NoGroup = 0;
 
     GroupProcNo(uint16_t groupProc) : m_groupProc(groupProc)
     {
@@ -46,7 +46,8 @@ public:
 
     GroupProcNo(uint16_t group, uint16_t procIndex) : m_groupProc((group << 6) | procIndex)
     {
-        assert(group <= 0x3ff);
+        // Making this the same as the # of NUMA node we support.
+        assert(group < 0x40);
         assert(procIndex <= 0x3f);
     }
 
@@ -208,13 +209,13 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
 #else
     PROCESSOR_NUMBER proc;
 
-    if (dstGroupProcNo.GetGroup() != GroupProcNo::NoGroup)
+    if (CPUGroupInfo::CanEnableGCCPUGroups())
     {
         proc.Group = (WORD)dstGroupProcNo.GetGroup();
         proc.Number = (BYTE)dstGroupProcNo.GetProcIndex();
         proc.Reserved = 0;
 
-        success = !!SetThreadIdealProcessorEx(GetCurrentThread(), &proc, NULL);
+        success = !!SetThreadIdealProcessorEx(GetCurrentThread (), &proc, NULL);
     }
     else
     {
@@ -235,13 +236,38 @@ bool GCToOSInterface::SetCurrentThreadIdealAffinity(uint16_t srcProcNo, uint16_t
 #endif // !FEATURE_PAL
 }
 
+bool GCToOSInterface::GetCurrentThreadIdealProc(uint16_t* procNo)
+{
+    LIMITED_METHOD_CONTRACT;
+    bool success = false;
+#ifndef FEATURE_PAL
+    PROCESSOR_NUMBER proc;
+    success = !!GetThreadIdealProcessorEx(GetCurrentThread(), &proc);
+    if (success)
+    {
+        GroupProcNo groupProcNo(proc.Group, proc.Number);
+        *procNo = groupProcNo.GetCombinedValue();
+    }
+#endif //FEATURE_PAL
+    return success;
+}
+
 // Get the number of the current processor
 uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 {
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(CanGetCurrentProcessorNumber());
+
+#ifndef FEATURE_PAL
+    PROCESSOR_NUMBER proc_no_cpu_group;
+    GetCurrentProcessorNumberEx(&proc_no_cpu_group);
+
+    GroupProcNo groupProcNo(proc_no_cpu_group.Group, proc_no_cpu_group.Number);
+    return groupProcNo.GetCombinedValue();
+#else
     return ::GetCurrentProcessorNumber();
+#endif //!FEATURE_PAL
 }
 
 // Check if the OS supports getting current processor number
@@ -295,25 +321,33 @@ void GCToOSInterface::YieldThread(uint32_t switchCount)
 //  size      - size of the virtual memory range
 //  alignment - requested memory alignment
 //  flags     - flags to control special settings like write watching
+//  node      - the NUMA node to reserve memory on
 // Return:
 //  Starting virtual address of the reserved range
-void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags)
+void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags, uint16_t node)
 {
     LIMITED_METHOD_CONTRACT;
 
-    DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
-
-    // This is not strictly necessary for a correctness standpoint. Windows already guarantees
-    // allocation granularity alignment when using MEM_RESERVE, so aligning the size here has no effect.
-    // However, ClrVirtualAlloc does expect the size to be aligned to the allocation granularity.
-    size_t aligned_size = (size + g_SystemInfo.dwAllocationGranularity - 1) & ~static_cast<size_t>(g_SystemInfo.dwAllocationGranularity - 1);
-    if (alignment == 0)
+    if (node == NUMA_NODE_UNDEFINED)
     {
-        return ::ClrVirtualAlloc(0, aligned_size, memFlags, PAGE_READWRITE);
+        DWORD memFlags = (flags & VirtualReserveFlags::WriteWatch) ? (MEM_RESERVE | MEM_WRITE_WATCH) : MEM_RESERVE;
+
+        // This is not strictly necessary for a correctness standpoint. Windows already guarantees
+        // allocation granularity alignment when using MEM_RESERVE, so aligning the size here has no effect.
+        // However, ClrVirtualAlloc does expect the size to be aligned to the allocation granularity.
+        size_t aligned_size = (size + g_SystemInfo.dwAllocationGranularity - 1) & ~static_cast<size_t>(g_SystemInfo.dwAllocationGranularity - 1);
+        if (alignment == 0)
+        {
+            return ::ClrVirtualAlloc (0, aligned_size, memFlags, PAGE_READWRITE);
+        }
+        else
+        {
+            return ::ClrVirtualAllocAligned (0, aligned_size, memFlags, PAGE_READWRITE, alignment);
+        }
     }
     else
     {
-        return ::ClrVirtualAllocAligned(0, aligned_size, memFlags, PAGE_READWRITE, alignment);
+        return NumaNodeInfo::VirtualAllocExNuma (::GetCurrentProcess (), NULL, size, MEM_RESERVE, PAGE_READWRITE, node);
     }
 }
 
@@ -425,7 +459,7 @@ bool GCToOSInterface::SupportsWriteWatch()
     // check if the OS supports write-watch. 
     // Drawbridge does not support write-watch so we still need to do the runtime detection for them.
     // Otherwise, all currently supported OSes do support write-watch.
-    void* mem = VirtualReserve (g_SystemInfo.dwAllocationGranularity, 0, VirtualReserveFlags::WriteWatch);
+    void* mem = VirtualReserve(g_SystemInfo.dwAllocationGranularity, 0, VirtualReserveFlags::WriteWatch);
     if (mem != NULL)
     {
         VirtualRelease (mem, g_SystemInfo.dwAllocationGranularity);
@@ -493,7 +527,7 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 #ifndef FEATURE_PAL
     GroupProcNo groupProcNo(procNo);
 
-    if (groupProcNo.GetGroup() != GroupProcNo::NoGroup)
+    if (CPUGroupInfo::CanEnableGCCPUGroups())
     {
         GROUP_AFFINITY ga;
         ga.Group = (WORD)groupProcNo.GetGroup();
@@ -935,6 +969,34 @@ bool GCToOSInterface::CanEnableGCNumaAware()
     LIMITED_METHOD_CONTRACT;
 
     return NumaNodeInfo::CanEnableGCNumaAware() != FALSE;
+}
+
+bool GCToOSInterface::GetNumaInfo(uint16_t* total_nodes, uint32_t* max_procs_per_node)
+{
+#ifndef FEATURE_PAL
+    return NumaNodeInfo::GetNumaInfo(total_nodes, (DWORD*)max_procs_per_node);
+#else
+    return false;
+#endif //!FEATURE_PAL
+}
+
+bool GCToOSInterface::GetCPUGroupInfo(uint16_t* total_groups, uint32_t* max_procs_per_group)
+{
+#ifndef FEATURE_PAL
+    return CPUGroupInfo::GetCPUGroupInfo(total_groups, (DWORD*)max_procs_per_group);
+#else
+    return false;
+#endif //!FEATURE_PAL
+}
+
+bool GCToOSInterface::CanEnableGCCPUGroups()
+{
+    LIMITED_METHOD_CONTRACT;
+#ifndef FEATURE_PAL
+    return CPUGroupInfo::CanEnableGCCPUGroups() != FALSE;
+#else
+    return false;
+#endif //!FEATURE_PAL
 }
 
 // Get processor number and optionally its NUMA node number for the specified heap number
