@@ -190,23 +190,32 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> UseCallback_ValidCertificate_ExpectedValuesDuringCallback_Urls()
         {
-            foreach (bool checkRevocation in new[] { true, false })
+            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
             {
-                yield return new object[] { Configuration.Http.SecureRemoteEchoServer, checkRevocation };
-                yield return new object[] {
-                    Configuration.Http.RedirectUriForDestinationUri(
-                        secure:true,
-                        statusCode:302,
-                        destinationUri:Configuration.Http.SecureRemoteEchoServer,
-                        hops:1),
-                    checkRevocation };
+                if (remoteServer.IsSecure)
+                {
+                    foreach (bool checkRevocation in new[] { true, false })
+                    {
+                        yield return new object[] {
+                            remoteServer,
+                            remoteServer.EchoUri,
+                            checkRevocation };
+                        yield return new object[] {
+                            remoteServer,
+                            remoteServer.RedirectUriForDestinationUri(
+                                statusCode:302,
+                                remoteServer.EchoUri,
+                                hops:1),
+                            checkRevocation };
+                    }
+                }
             }
         }
 
         [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(UseCallback_ValidCertificate_ExpectedValuesDuringCallback_Urls))]
-        public async Task UseCallback_ValidCertificate_ExpectedValuesDuringCallback(Uri url, bool checkRevocation)
+        public async Task UseCallback_ValidCertificate_ExpectedValuesDuringCallback(Configuration.Http.RemoteServer remoteServer, Uri url, bool checkRevocation)
         {
             if (!BackendSupportsCustomCertificateHandling)
             {
@@ -215,7 +224,7 @@ namespace System.Net.Http.Functional.Tests
             }
 
             HttpClientHandler handler = CreateHttpClientHandler();
-            using (HttpClient client = CreateHttpClient(handler))
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
                 bool callbackCalled = false;
                 handler.CheckCertificateRevocationList = checkRevocation;
