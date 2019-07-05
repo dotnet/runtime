@@ -116,7 +116,7 @@
     <RuntimeGroup Include="rhel">
       <Parent>linux</Parent>
       <Architectures>x64</Architectures>
-      <Versions>8;8.0</Versions>
+      <Versions>8;8.0;8.1</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="sles">
