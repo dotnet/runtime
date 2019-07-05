@@ -78,6 +78,12 @@ public:
     template<typename T>
     static T ExchangeAdd(T volatile *addend, T value);
 
+    template<typename T>
+    static T ExchangeAdd64(T volatile* addend, T value);
+
+    template<typename T>
+    static T ExchangeAddPtr(T volatile* addend, T value);
+
     // Performs an atomic compare-and-exchange operation on the specified values. 
     // Parameters:
     //  destination - value to be exchanged

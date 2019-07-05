@@ -527,9 +527,10 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
 //  size      - size of the virtual memory range
 //  alignment - requested memory alignment, 0 means no specific alignment requested
 //  flags     - flags to control special settings like write watching
+//  node      - the NUMA node to reserve memory on
 // Return:
 //  Starting virtual address of the reserved range
-void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags)
+void* GCToOSInterface::VirtualReserve(size_t size, size_t alignment, uint32_t flags, uint16_t node)
 {
     return VirtualReserveInner(size, alignment, flags);
 }
@@ -908,6 +909,11 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
 bool GCToOSInterface::CanEnableGCNumaAware()
 {
     return g_numaAvailable;
+}
+
+bool GCToOSInterface::CanEnableGCCPUGroups()
+{
+    return false;
 }
 
 // Get processor number and optionally its NUMA node number for the specified heap number
