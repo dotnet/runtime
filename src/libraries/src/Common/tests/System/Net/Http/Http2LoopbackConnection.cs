@@ -147,7 +147,7 @@ namespace System.Net.Test.Common
 
             if (_ignoredSettingsAckPromise != null && header.Type == FrameType.Settings && header.Flags == FrameFlags.Ack)
             {
-                _ignoredSettingsAckPromise?.TrySetResult(false);
+                _ignoredSettingsAckPromise.TrySetResult(false);
                 _ignoredSettingsAckPromise = null;
                 return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
             }
@@ -198,13 +198,10 @@ namespace System.Net.Test.Common
             // and then filter it out in ReadFrameAsync above.
 
             // In case of a pending settings ack, wait for it or time out
-            var currentTask = _ignoredSettingsAckPromise?.Task;
+            Task currentTask = _ignoredSettingsAckPromise?.Task;
             if (currentTask != null)
             {
-                if (await Task.WhenAny(currentTask, Task.Delay(timeout)) != currentTask)
-                {
-                    throw new TimeoutException("timeout while waiting for a pending settings ack");
-                }
+                await currentTask.TimeoutAfter(timeout);
             }
 
             _ignoredSettingsAckPromise = new TaskCompletionSource<bool>();
