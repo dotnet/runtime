@@ -10,7 +10,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.HPack;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,7 +60,12 @@ namespace System.Net.Http
 
         private static readonly byte[] s_http2ConnectionPreface = Encoding.ASCII.GetBytes("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n");
 
+#if DEBUG
+        // In debug builds, start with a very small buffer to induce buffer growing logic.
+        private const int InitialConnectionBufferSize = 4;
+#else
         private const int InitialConnectionBufferSize = 4096;
+#endif
 
         private const int DefaultInitialWindowSize = 65535;
 
