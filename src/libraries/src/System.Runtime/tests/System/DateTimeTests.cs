@@ -1539,6 +1539,7 @@ namespace System.Tests
             Assert.False(DateTime.TryParseExact(" ", "%t", englishCulture, DateTimeStyles.None, out _));
         }
 
+        [Fact]
         public static void ParseExact_EscapedSingleQuotes()
         {
             var formatInfo = DateTimeFormatInfo.GetInstance(new CultureInfo("mt-MT"));

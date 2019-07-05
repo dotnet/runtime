@@ -862,7 +862,7 @@ namespace System.ComponentModel.Composition
             Assert.Equal(2, importer.MyCollection.Count);
         }
 
-        public void ExpectedErrorOnPartActivate(object importer, ErrorId expectedErrorId)
+        private static void ExpectedErrorOnPartActivate(object importer, ErrorId expectedErrorId)
         {
             var container = ContainerFactory.Create();
             var batch = new CompositionBatch();
@@ -877,7 +877,7 @@ namespace System.ComponentModel.Composition
               });
         }
 
-        public void ExpectedErrorOnSetImport(object importer, ErrorId expectedErrorId)
+        private static void ExpectedErrorOnSetImport(object importer, ErrorId expectedErrorId)
         {
             var container = ContainerFactory.Create();
             var batch = new CompositionBatch();
@@ -892,7 +892,7 @@ namespace System.ComponentModel.Composition
               });
         }
 
-        public void ExpectedChangeRejectedErrorOnSetImport(object importer, ErrorId expectedErrorId)
+        private static void ExpectedChangeRejectedErrorOnSetImport(object importer, ErrorId expectedErrorId)
         {
             var container = ContainerFactory.Create();
             var batch = new CompositionBatch();

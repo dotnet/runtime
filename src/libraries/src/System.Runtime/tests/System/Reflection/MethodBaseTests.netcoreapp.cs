@@ -11,7 +11,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void Test_GetCurrentMethod_ConstructedGenericMethod()
         {
-            MethodInfo mi = typeof(MethodBaseNetcoreTests).GetMethod(nameof(MyFakeGenericMethod));
+            MethodInfo mi = typeof(MethodBaseNetcoreTests).GetMethod(nameof(MyFakeGenericMethod), BindingFlags.NonPublic | BindingFlags.Instance);
             MethodBase m = mi.MakeGenericMethod(typeof(byte));
 
             Assert.Equal(nameof(MyFakeGenericMethod), m.Name);
@@ -26,7 +26,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void Test_GetCurrentMethod_GenericMethodDefinition()
         {
-            MethodBase m = typeof(MethodBaseNetcoreTests).GetMethod(nameof(MyFakeGenericMethod));
+            MethodBase m = typeof(MethodBaseNetcoreTests).GetMethod(nameof(MyFakeGenericMethod), BindingFlags.NonPublic | BindingFlags.Instance);
 
             Assert.Equal(nameof(MyFakeGenericMethod), m.Name);
             Assert.Equal(typeof(MethodBaseNetcoreTests), m.ReflectedType);
@@ -37,7 +37,7 @@ namespace System.Reflection.Tests
             Assert.Equal("T", m.GetGenericArguments()[0].Name);
         }
 
-        public void MyFakeGenericMethod<T>()
+        private void MyFakeGenericMethod<T>()
         {
         }
     }

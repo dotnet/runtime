@@ -169,6 +169,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData(LineCap.NoAnchor)]
         [InlineData(LineCap.SquareAnchor)]
         [InlineData(LineCap.RoundAnchor)]
@@ -176,6 +177,7 @@ namespace System.Drawing.Drawing2D.Tests
         [InlineData(LineCap.Custom)]
         [InlineData(LineCap.Flat - 1)]
         [InlineData(LineCap.Custom + 1)]
+        [ActiveIssue(20884)]
         public void BaseCap_Set_InvalidLineCap_ThrowsArgumentException(LineCap baseCap)
         {
             using (GraphicsPath strokePath = new GraphicsPath())

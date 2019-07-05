@@ -166,7 +166,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
         public async Task ReadAllBytes_ProcFs_Uptime_ContainsTwoNumbers()
         {

@@ -8,7 +8,7 @@ namespace System.IO.Tests
 {
     public class FileInfo_Delete : File_Delete
     {
-        public override void Delete(string path)
+        protected override void Delete(string path)
         {
             new FileInfo(path).Delete();
         }

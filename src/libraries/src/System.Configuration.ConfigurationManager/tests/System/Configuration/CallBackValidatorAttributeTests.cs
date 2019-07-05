@@ -92,6 +92,7 @@ namespace System.Configuration
             Assert.Equal("12345", testCallBackValidatorAttribute.CallbackMethodName);
         }
 
+#pragma warning disable xUnit1013 // Required to be public for CallbackValidatorAttribute to work
         public static void CallBackValidatorTestMethod(object o)
         {
         }
@@ -99,6 +100,7 @@ namespace System.Configuration
         public static void CallBackValidatorTestMethodNumberTwo(object o, object p)
         {
         }
+#pragma warning restore xUnit1013
     }
 }
 

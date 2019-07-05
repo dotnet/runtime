@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.Xml.Tests
             CheckProperties(transform);
         }
 
-        public void CheckProperties(XmlDsigC14NTransform transform)
+        private static void CheckProperties(XmlDsigC14NTransform transform)
         {
             Assert.Null(transform.Context);
             Assert.Equal(new[] { typeof(Stream), typeof(XmlDocument), typeof(XmlNodeList) }, transform.InputTypes);

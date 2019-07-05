@@ -593,8 +593,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        // This causes an AccessViolation in GDI+.
-        // [ConditionalFact(Helpers.GdiplusIsAvailable)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
+        [ActiveIssue(22571)] // PR issue, This causes an AccessViolation in GDI+.
         public void GetHeight_DisposedGraphics_ThrowsArgumentException()
         {
             using (FontFamily family = FontFamily.GenericMonospace)

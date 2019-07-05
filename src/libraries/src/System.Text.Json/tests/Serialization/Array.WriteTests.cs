@@ -181,6 +181,7 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+        [Fact]
         public static void WriteClassWithGenericIEnumerableT()
         {
             string json;

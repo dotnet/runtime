@@ -10,11 +10,12 @@ namespace System.Linq.Tests
 {
     public class GroupByTests : EnumerableBasedTests
     {
-        public static void AssertGroupingCorrect<TKey, TElement>(IQueryable<TKey> keys, IQueryable<TElement> elements, IQueryable<IGrouping<TKey, TElement>> grouping)
+        private static void AssertGroupingCorrect<TKey, TElement>(IQueryable<TKey> keys, IQueryable<TElement> elements, IQueryable<IGrouping<TKey, TElement>> grouping)
         {
             AssertGroupingCorrect<TKey, TElement>(keys, elements, grouping, EqualityComparer<TKey>.Default);
         }
-        public static void AssertGroupingCorrect<TKey, TElement>(IQueryable<TKey> keys, IQueryable<TElement> elements, IQueryable<IGrouping<TKey, TElement>> grouping, IEqualityComparer<TKey> keyComparer)
+
+        private static void AssertGroupingCorrect<TKey, TElement>(IQueryable<TKey> keys, IQueryable<TElement> elements, IQueryable<IGrouping<TKey, TElement>> grouping, IEqualityComparer<TKey> keyComparer)
         {
             if (grouping == null)
             {

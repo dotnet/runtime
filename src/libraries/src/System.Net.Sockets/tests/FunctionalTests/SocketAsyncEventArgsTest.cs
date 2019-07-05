@@ -481,7 +481,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        public void OnAcceptCompleted(object sender, SocketAsyncEventArgs args)
+        private static void OnAcceptCompleted(object sender, SocketAsyncEventArgs args)
         {
             EventWaitHandle handle = (EventWaitHandle)args.UserToken;
             handle.Set();

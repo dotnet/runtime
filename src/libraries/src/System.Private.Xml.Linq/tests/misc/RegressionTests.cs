@@ -36,7 +36,7 @@ namespace System.Xml.Linq.Tests
             Assert.Equal("<x />", e.ToString(SaveOptions.DisableFormatting));
         }
 
-        //[Variation(Desc = "Replace content")]
+        [Fact]
         public void ReplaceContent()
         {
             XElement a = XElement.Parse("<A><B><C/></B></A>");
@@ -44,7 +44,7 @@ namespace System.Xml.Linq.Tests
             XElement x = a;
             foreach (string s in (new string[] { "A", "B", "B" }))
             {
-                TestLog.Compare(x.Name.LocalName, s, s);
+                Assert.Equal(x.Name.LocalName, s);
                 x = x.FirstNode as XElement;
             }
         }

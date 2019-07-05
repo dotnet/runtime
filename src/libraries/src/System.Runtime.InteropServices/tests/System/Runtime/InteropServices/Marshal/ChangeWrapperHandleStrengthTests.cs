@@ -29,7 +29,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new int[][] { new int[] { 10 } } };
             yield return new object[] { new int[,] { { 10 } } };
 
-            MethodInfo method = typeof(ChangeWrapperHandleStrengthTests).GetMethod(nameof(NonGenericMethod));
+            MethodInfo method = typeof(ChangeWrapperHandleStrengthTests).GetMethod(nameof(NonGenericMethod), BindingFlags.Static | BindingFlags.NonPublic);
             Delegate d = method.CreateDelegate(typeof(NonGenericDelegate));
             yield return new object[] { d };
         }
@@ -59,9 +59,9 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.ChangeWrapperHandleStrength(null, fIsWeak: false));
         }
 
-        public static void NonGenericMethod(int i) { }
-        public delegate void NonGenericDelegate(int i);
+        private static void NonGenericMethod(int i) { }
+        private delegate void NonGenericDelegate(int i);
 
-        public enum Int32Enum : int { Value1, Value2 }
+        internal enum Int32Enum : int { Value1, Value2 }
     }
 }

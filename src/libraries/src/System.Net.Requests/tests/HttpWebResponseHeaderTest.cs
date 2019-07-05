@@ -16,7 +16,7 @@ namespace System.Net.Tests
 {
     public class HttpWebResponseHeaderTest
     {
-        public void HttpContinueMethod(int StatusCode, WebHeaderCollection httpHeaders)
+        private static void HttpContinueMethod(int StatusCode, WebHeaderCollection httpHeaders)
         {
         }
 

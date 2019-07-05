@@ -156,7 +156,7 @@ namespace System.Resources.Tests
             }).Dispose();
         }
 
-        public static void Remote_ExpectEvents()
+        private static void Remote_ExpectEvents()
         {
 #if netcoreapp
             System.Runtime.Loader.AssemblyLoadContext.Default.Resolving += AssemblyResolvingEventHandler;

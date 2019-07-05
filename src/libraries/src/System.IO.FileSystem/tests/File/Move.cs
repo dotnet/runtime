@@ -11,7 +11,7 @@ namespace System.IO.Tests
     {
         #region Utilities
 
-        public virtual void Move(string sourceFile, string destFile)
+        protected virtual void Move(string sourceFile, string destFile)
         {
             File.Move(sourceFile, destFile);
         }

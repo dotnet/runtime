@@ -301,7 +301,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        public void VerifyWriteByteArray(byte[] buffer, int offset, int count, SerialPort com1, SerialPort com2)
+        private void VerifyWriteByteArray(byte[] buffer, int offset, int count, SerialPort com1, SerialPort com2)
         {
             VerifyWriteByteArray(buffer, offset, count, com1, com2, DEFAULT_NUM_WRITES);
         }

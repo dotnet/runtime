@@ -8,13 +8,13 @@ namespace System.IO.Tests
 {
     public class DirectoryInfo_GetSetTimes : InfoGetSetTimes<DirectoryInfo>
     {
-        public override DirectoryInfo GetExistingItem() => Directory.CreateDirectory(GetTestFilePath());
+        protected override DirectoryInfo GetExistingItem() => Directory.CreateDirectory(GetTestFilePath());
 
-        public override DirectoryInfo GetMissingItem() => new DirectoryInfo(GetTestFilePath());
+        protected override DirectoryInfo GetMissingItem() => new DirectoryInfo(GetTestFilePath());
 
-        public override string GetItemPath(DirectoryInfo item) => item.FullName;
+        protected override string GetItemPath(DirectoryInfo item) => item.FullName;
 
-        public override void InvokeCreate(DirectoryInfo item) => item.Create();
+        protected override void InvokeCreate(DirectoryInfo item) => item.Create();
 
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)
         {

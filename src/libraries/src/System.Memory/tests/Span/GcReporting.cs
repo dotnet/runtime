@@ -12,24 +12,10 @@ namespace System.SpanTests
         /// This is a simple sanity test to check that GC reporting for Span is not completely broken, it is not meant to be
         /// comprehensive.
         /// </summary>
-        [Fact]
+        [InlineData(100_000, 10_000)]
+        [InlineData(100, 100)]
         [OuterLoop]
-        public static void DelegateTest()
-        {
-            DelegateTest(100000, 10000);
-        }
-
-        /// <summary>
-        /// Intended entry point for stress tests, with counts appropriate for GCStress=3. The counts in
-        /// <see cref="DelegateTest"/> are too high for running that test in a reasonable amount of time. This one runs in a
-        /// reasonable amount of time for a long-duration stress run.
-        /// </summary>
-        public static void DelegateTest_Stress()
-        {
-            DelegateTest(100, 100);
-        }
-
-        private static void DelegateTest(int iterationCount, int objectCount)
+        public static void DelegateTest(int iterationCount, int objectCount)
         {
             object[] objects = new object[objectCount];
             Random rng = new Random();

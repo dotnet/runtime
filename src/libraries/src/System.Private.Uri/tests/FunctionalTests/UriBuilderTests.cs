@@ -387,7 +387,7 @@ namespace System.PrivateUri.Tests
             Assert.Throws<UriFormatException>(() => uriBuilder.ToString()); // Uri has a password but no username
         }
 
-        public static void VerifyUriBuilder(UriBuilder uriBuilder, string scheme, string userName, string password, string host, int port, string path, string query, string fragment)
+        private static void VerifyUriBuilder(UriBuilder uriBuilder, string scheme, string userName, string password, string host, int port, string path, string query, string fragment)
         {
             Assert.Equal(scheme, uriBuilder.Scheme);
             Assert.Equal(userName, uriBuilder.UserName);

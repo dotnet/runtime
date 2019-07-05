@@ -65,7 +65,7 @@ namespace System.Buffers.Text.Tests
             }
         }
 
-        public static void InitalizeBytes(Span<byte> bytes, int seed = 100)
+        internal static void InitalizeBytes(Span<byte> bytes, int seed = 100)
         {
             var rnd = new Random(seed);
             for (int i = 0; i < bytes.Length; i++)
@@ -74,7 +74,7 @@ namespace System.Buffers.Text.Tests
             }
         }
 
-        public static void InitalizeDecodableBytes(Span<byte> bytes, int seed = 100)
+        internal static void InitalizeDecodableBytes(Span<byte> bytes, int seed = 100)
         {
             var rnd = new Random(seed);
             for (int i = 0; i < bytes.Length; i++)

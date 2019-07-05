@@ -213,7 +213,7 @@ namespace System.IO.Ports.Tests
         #endregion
 
         #region Verification for Test Cases
-        public void VerifyInfiniteTimeout(Action<SerialPort> readMethod, bool setInfiniteTimeout)
+        private static void VerifyInfiniteTimeout(Action<SerialPort> readMethod, bool setInfiniteTimeout)
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))

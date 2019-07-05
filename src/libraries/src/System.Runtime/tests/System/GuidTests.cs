@@ -161,12 +161,6 @@ namespace System.Tests
         }
 
         [Theory]
-        public static void Parse_Invalid_NetcoreApp(string input, Type exceptionType)
-        {
-            Parse_Invalid(input, exceptionType);
-        }
-
-        [Theory]
         [MemberData(nameof(GuidStrings_Invalid_TestData))]
         public static void Parse_Invalid(string input, Type exceptionType)
         {

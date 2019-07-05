@@ -10,7 +10,7 @@ namespace System.Buffers.Tests
 {
     public class ArrayBufferWriterTests_Byte : ArrayBufferWriterTests<byte>
     {
-        public override void WriteData(IBufferWriter<byte> bufferWriter, int numBytes)
+        protected override void WriteData(IBufferWriter<byte> bufferWriter, int numBytes)
         {
             Span<byte> outputSpan = bufferWriter.GetSpan(numBytes);
             Assert.True(outputSpan.Length >= numBytes);

@@ -14,7 +14,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void GetFunctionPointerForDelegate_NormalDelegateNonGeneric_ReturnsExpected()
         {
-            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method));
+            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate d = targetMethod.CreateDelegate(typeof(NonGenericDelegate));
 
             IntPtr pointer1 = Marshal.GetFunctionPointerForDelegate(d);
@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void GetFunctionPointerForDelegate_MarshalledDelegateNonGeneric_ReturnsExpected()
         {
-            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method));
+            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate original = targetMethod.CreateDelegate(typeof(NonGenericDelegate));
             IntPtr ptr = Marshal.GetFunctionPointerForDelegate(original);
             Delegate d = Marshal.GetDelegateForFunctionPointer<NonGenericDelegate>(ptr);
@@ -42,7 +42,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void GetFunctionPointerForDelegate_NormalDelegateGeneric_ReturnsExpected()
         {
-            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method));
+            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
             NonGenericDelegate d = (NonGenericDelegate)targetMethod.CreateDelegate(typeof(NonGenericDelegate));
 
             IntPtr pointer1 = Marshal.GetFunctionPointerForDelegate(d);
@@ -54,7 +54,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void GetFunctionPointerForDelegate_MarshalledDelegateGeneric_ReturnsExpected()
         {
-            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method));
+            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate original = targetMethod.CreateDelegate(typeof(NonGenericDelegate));
             IntPtr ptr = Marshal.GetFunctionPointerForDelegate(original);
             NonGenericDelegate d = Marshal.GetDelegateForFunctionPointer<NonGenericDelegate>(ptr);
@@ -83,7 +83,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void GetFunctionPointer_GenericDelegate_ThrowsArgumentException()
         {
-            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method));
+            MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate d = targetMethod.CreateDelegate(typeof(GenericDelegate<string>));
             AssertExtensions.Throws<ArgumentException>("delegate", () => Marshal.GetFunctionPointerForDelegate(d));
         }
@@ -91,6 +91,6 @@ namespace System.Runtime.InteropServices.Tests
         public delegate void GenericDelegate<T>(T t);
         public delegate void NonGenericDelegate(string t);
 
-        public static void Method(string s) { }
+        private static void Method(string s) { }
     }
 }

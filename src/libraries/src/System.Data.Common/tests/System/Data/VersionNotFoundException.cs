@@ -29,7 +29,7 @@ using Xunit;
 
 namespace System.Data.Tests
 {
-    internal class VersionNotFoundExceptionTest
+    public class VersionNotFoundExceptionTest
     {
         [Fact]
         public void Generate1()

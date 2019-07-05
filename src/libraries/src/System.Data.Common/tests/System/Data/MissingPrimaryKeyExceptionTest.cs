@@ -29,7 +29,7 @@ using Xunit;
 
 namespace System.Data.Tests
 {
-    internal class MissingPrimaryKeyExceptionTest
+    public class MissingPrimaryKeyExceptionTest
     {
         [Fact]
         public void Generate1()

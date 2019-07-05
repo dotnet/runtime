@@ -123,7 +123,7 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        [Theory]
+        [Fact]
         [OuterLoop]
         public static void ToLookup_ElementSelector_CustomComparator_Longrunning()
         {

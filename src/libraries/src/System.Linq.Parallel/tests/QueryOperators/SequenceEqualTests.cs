@@ -134,6 +134,7 @@ namespace System.Linq.Parallel.Tests
             SequenceEqual_Unequal(left, right, count, item);
         }
 
+        [Fact]
         public static void SequenceEqual_NotSupportedException()
         {
 #pragma warning disable 618

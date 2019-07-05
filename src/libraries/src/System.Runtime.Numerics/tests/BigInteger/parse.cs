@@ -108,7 +108,7 @@ namespace System.Numerics.Tests
             VerifyFormatParse("123&4567^ <", NumberStyles.Any, nfi, new BigInteger(-1234567));
         }
 
-        public static void VerifyDefaultParse(Random random)
+        private static void VerifyDefaultParse(Random random)
         {
             // BasicTests
             VerifyFailParseToString(null, typeof(ArgumentNullException));
@@ -229,7 +229,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        public static void VerifyNumberStyles(NumberStyles ns, Random random)
+        private static void VerifyNumberStyles(NumberStyles ns, Random random)
         {
             VerifyParseToString(null, ns, false, null);
             VerifyParseToString(string.Empty, ns, false);
@@ -763,7 +763,7 @@ namespace System.Numerics.Tests
             return (ns & NumberStyles.AllowTrailingWhite) != 0;
         }
 
-        public static void Eval(BigInteger x, string expected)
+        private static void Eval(BigInteger x, string expected)
         {
             bool IsPos = (x >= 0);
             if (!IsPos)

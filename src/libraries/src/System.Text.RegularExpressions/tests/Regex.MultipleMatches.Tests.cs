@@ -164,7 +164,7 @@ namespace System.Text.RegularExpressions.Tests
             VerifyMatches(Regex.Match(input, pattern, options), expected);
         }
 
-        public static void VerifyMatches(Match match, CaptureData[] expected)
+        private static void VerifyMatches(Match match, CaptureData[] expected)
         {
             for (int i = 0; match.Success; i++, match = match.NextMatch())
             {
@@ -172,7 +172,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        public static void VerifyMatches(MatchCollection matches, CaptureData[] expected)
+        private static void VerifyMatches(MatchCollection matches, CaptureData[] expected)
         {
             Assert.Equal(expected.Length, matches.Count);
             for (int i = 0; i < matches.Count; i++)
@@ -181,7 +181,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        public static void VerifyMatch(Match match, CaptureData expected)
+        private static void VerifyMatch(Match match, CaptureData expected)
         {
             Assert.True(match.Success);
             Assert.Equal(expected.Value, match.Value);

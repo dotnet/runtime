@@ -63,6 +63,7 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
+        [Fact]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         public void DefaultPageSettings_Null_ReturnsExpected()
         {

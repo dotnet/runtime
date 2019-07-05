@@ -336,7 +336,7 @@ namespace System.IO.Ports.Tests
         #endregion
 
         #region Verification for Test Cases
-        public static void VerifyWriteException(SerialPort com, Type expectedException)
+        private static void VerifyWriteException(SerialPort com, Type expectedException)
         {
             Assert.Throws(expectedException, () => com.Write(DEFAULT_STRING));
         }

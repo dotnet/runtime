@@ -92,7 +92,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             PoolBlockingPeriodAzureTest(connString, policy);
         }
 
-        public void PoolBlockingPeriodNonAzureTest(string connStr, PoolBlockingPeriod? policy)
+        private void PoolBlockingPeriodNonAzureTest(string connStr, PoolBlockingPeriod? policy)
         {
             int firstErrorTimeInSecs = GetConnectionOpenTimeInSeconds(connStr);
             int secondErrorTimeInSecs = GetConnectionOpenTimeInSeconds(connStr);
@@ -108,7 +108,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        public void PoolBlockingPeriodAzureTest(string connStr, PoolBlockingPeriod? policy)
+        private void PoolBlockingPeriodAzureTest(string connStr, PoolBlockingPeriod? policy)
         {
             int firstErrorTimeInSecs = GetConnectionOpenTimeInSeconds(connStr);
             int secondErrorTimeInSecs = GetConnectionOpenTimeInSeconds(connStr);

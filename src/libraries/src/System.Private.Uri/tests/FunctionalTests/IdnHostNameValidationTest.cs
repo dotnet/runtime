@@ -103,7 +103,7 @@ namespace System.PrivateUri.Tests
 
         #region Helpers
 
-        public void CommonSchemesTest(string scheme)
+        private static void CommonSchemesTest(string scheme)
         {
             string unicodeHost = "a\u00FChost.dom\u00FCin.n\u00FCet";
             string punycodeHost = "xn--ahost-kva.xn--domin-mva.xn--net-hoa";
@@ -115,7 +115,7 @@ namespace System.PrivateUri.Tests
             ValidateUri(scheme, punycodeHost, UriHostNameType.Dns, punycodeHost, punycodeHost, punycodeHost);
         }
 
-        public void ValidateUri(
+        private static void ValidateUri(
             string scheme,
             string host,
             UriHostNameType expectedHostType,

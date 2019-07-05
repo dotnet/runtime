@@ -36,7 +36,7 @@ namespace System.ComponentModel.Composition
 
     public class TypeCatalogTests
     {
-        public static void Constructor_NullReflectionContextArgument_ShouldThrowArgumentNull(Func<ReflectionContext, TypeCatalog> catalogCreator)
+        private static void Constructor_NullReflectionContextArgument_ShouldThrowArgumentNull(Func<ReflectionContext, TypeCatalog> catalogCreator)
         {
             Assert.Throws<ArgumentNullException>("reflectionContext", () =>
             {
@@ -44,7 +44,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
-        public static void Constructor_NullDefinitionOriginArgument_ShouldThrowArgumentNull(Func<ICompositionElement, TypeCatalog> catalogCreator)
+        private static void Constructor_NullDefinitionOriginArgument_ShouldThrowArgumentNull(Func<ICompositionElement, TypeCatalog> catalogCreator)
         {
             Assert.Throws<ArgumentNullException>("definitionOrigin", () =>
             {

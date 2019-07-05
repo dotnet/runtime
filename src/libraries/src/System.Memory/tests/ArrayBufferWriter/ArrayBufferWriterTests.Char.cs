@@ -8,7 +8,7 @@ namespace System.Buffers.Tests
 {
     public class ArrayBufferWriterTests_Char : ArrayBufferWriterTests<char>
     {
-        public override void WriteData(IBufferWriter<char> bufferWriter, int numChars)
+        protected override void WriteData(IBufferWriter<char> bufferWriter, int numChars)
         {
             Span<char> outputSpan = bufferWriter.GetSpan(numChars);
             Debug.Assert(outputSpan.Length >= numChars);

@@ -38,13 +38,13 @@ namespace System.Collections.Specialized.Tests
             VerifyCtor(hybridDictionary, caseInsensitive: caseInsensitive);
         }
 
-        public void Ctor_Int_Bool(int initialSize, bool caseInsensitive)
+        private static void Ctor_Int_Bool(int initialSize, bool caseInsensitive)
         {
             HybridDictionary hybridDictionary = new HybridDictionary(initialSize, caseInsensitive);
             VerifyCtor(hybridDictionary, caseInsensitive: caseInsensitive);
         }
 
-        public static void VerifyCtor(HybridDictionary hybridDictionary, bool caseInsensitive)
+        private static void VerifyCtor(HybridDictionary hybridDictionary, bool caseInsensitive)
         {
             Assert.Equal(0, hybridDictionary.Count);
             Assert.Equal(0, hybridDictionary.Keys.Count);

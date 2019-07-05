@@ -9,6 +9,7 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoShortTimePattern
     {
+        [Fact]
         public void ShortTimePattern_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal("HH:mm", DateTimeFormatInfo.InvariantInfo.ShortTimePattern);

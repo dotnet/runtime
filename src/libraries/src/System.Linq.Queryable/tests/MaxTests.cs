@@ -541,6 +541,7 @@ namespace System.Linq.Tests
             AssertExtensions.Throws<ArgumentNullException>("selector", () => Enumerable.Empty<DateTime?>().AsQueryable().Max(selector));
         }
 
+        [Fact]
         public void EmptyStringSourceWithSelector()
         {
             Assert.Null(Enumerable.Empty<string>().AsQueryable().Max(x => x));

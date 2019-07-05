@@ -1891,6 +1891,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue(20844)]
         public void MeasureString_MultlineString_Width()
         {
@@ -2808,18 +2809,21 @@ namespace MonoTests.System.Drawing
             Assert.Throws<ArgumentException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Display));
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue(20844, TestPlatforms.Any)]
         public void DrawImage_ImageRectangleRectangleGraphicsUnit_Document()
         {
             Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Document));
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue(20844)]
         public void DrawImage_ImageRectangleRectangleGraphicsUnit_Inch()
         {
             Assert.Throws<NotImplementedException>(() => DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Inch));
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue(20844, TestPlatforms.Any)]
         public void DrawImage_ImageRectangleRectangleGraphicsUnit_Millimeter()
         {
@@ -2833,6 +2837,7 @@ namespace MonoTests.System.Drawing
             DrawImage_ImageRectangleRectangleGraphicsUnit(GraphicsUnit.Pixel);
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue(20844, TestPlatforms.Any)]
         public void DrawImage_ImageRectangleRectangleGraphicsUnit_Point()
         {

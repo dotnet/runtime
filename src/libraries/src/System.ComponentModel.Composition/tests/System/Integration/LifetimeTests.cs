@@ -666,6 +666,7 @@ namespace Tests.Integration
             }
         }
 
+        [Fact]
         public void GetReleaseExport_NonSharedRoot_ShouldDisposeChain_WithMetadata()
         {
             var container = GetContainer();

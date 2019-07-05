@@ -19,7 +19,8 @@ namespace System.Net.Sockets.Tests
             _log = TestLogging.GetInstance();
             Assert.True(Capability.IPv4Support() || Capability.IPv6Support());
         }
-        public void OnCompleted(object sender, SocketAsyncEventArgs args)
+
+        private static void OnCompleted(object sender, SocketAsyncEventArgs args)
         {
             EventWaitHandle handle = (EventWaitHandle)args.UserToken;
             handle.Set();

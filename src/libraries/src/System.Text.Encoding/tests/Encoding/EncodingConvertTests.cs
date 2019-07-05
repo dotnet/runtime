@@ -28,7 +28,7 @@ namespace System.Text.Tests
             }
         }
 
-        public void Convert(Encoding srcEncoding, Encoding dstEncoding, byte[] bytes, int index, int count, byte[] expected)
+        private static void Convert(Encoding srcEncoding, Encoding dstEncoding, byte[] bytes, int index, int count, byte[] expected)
         {
             if (index == 0 && count == bytes.Length)
             {

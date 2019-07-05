@@ -240,6 +240,8 @@ namespace System.Data.Tests
             }
             Assert.Equal(2, count);
         }
+
+        [Fact]
         public void IndexOf_ByDataTable()
         {
             var ds = new DataSet();
@@ -257,6 +259,7 @@ namespace System.Data.Tests
             Assert.Equal(-1, ds.Tables.IndexOf(dt2));
         }
 
+        [Fact]
         public void IndexOf_ByName()
         {
             var ds = new DataSet();

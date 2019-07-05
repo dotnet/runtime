@@ -720,6 +720,7 @@ namespace System.Data.Tests
             Assert.Equal(2, ds.Tables[0].Columns[2].Ordinal);
         }
 
+        [Fact]
         public void TestSameParentChildName()
         {
             string xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?><resource type=\"parent\">" +
@@ -732,6 +733,7 @@ namespace System.Data.Tests
                 "NewDataSet", 1);
         }
 
+        [Fact]
         public void TestSameColumnName()
         {
             string xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?><resource resource_Id_0=\"parent\">" +

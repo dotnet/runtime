@@ -158,6 +158,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new decimal(bits));
         }
 
+        [Theory]
         [InlineData(int.MinValue)]
         [InlineData(0)]
         [InlineData(int.MaxValue)]

@@ -392,7 +392,7 @@ namespace System.Buffers.Tests
             }
         }
 
-        public abstract void WriteData(IBufferWriter<T> bufferWriter, int numBytes);
+        protected abstract void WriteData(IBufferWriter<T> bufferWriter, int numBytes);
 
         public static IEnumerable<object[]> SizeHints
         {

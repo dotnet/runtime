@@ -56,7 +56,7 @@ namespace System.Text.Tests
             Assert.Throws<NotSupportedException>(() => encoding.WebName);
         }
 
-        public static void VerifyEncoding(Encoding encoding, int codePage, EncoderFallback encoderFallback, DecoderFallback decoderFallback)
+        private static void VerifyEncoding(Encoding encoding, int codePage, EncoderFallback encoderFallback, DecoderFallback decoderFallback)
         {
             if (encoderFallback == null)
             {

@@ -23,13 +23,13 @@ namespace System.Xml.Tests
 
         public bool bErrorCallback;
 
-        public void Initialize()
+        private void Initialize()
         {
             bWarningCallback = bErrorCallback = false;
         }
 
         //hook up validaton callback
-        public void ValidationCallback(object sender, ValidationEventArgs args)
+        private void ValidationCallback(object sender, ValidationEventArgs args)
         {
             if (args.Severity == XmlSeverityType.Warning)
             {

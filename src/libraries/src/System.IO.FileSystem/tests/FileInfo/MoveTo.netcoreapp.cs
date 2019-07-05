@@ -8,7 +8,7 @@ namespace System.IO.Tests
 {
     public partial class FileInfo_MoveTo
     {
-        public override void Move(string sourceFile, string destFile, bool overwrite)
+        protected override void Move(string sourceFile, string destFile, bool overwrite)
         {
             new FileInfo(sourceFile).MoveTo(destFile, overwrite);
         }

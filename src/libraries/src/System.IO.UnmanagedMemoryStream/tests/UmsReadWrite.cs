@@ -10,9 +10,9 @@ namespace System.IO.Tests
 {
     public sealed class ArrayUmsReadWriteTests : UmsReadWriteTests
     {
-        public override int Read(UnmanagedMemoryStream stream, byte[] array, int offset, int count) =>
+        protected override int Read(UnmanagedMemoryStream stream, byte[] array, int offset, int count) =>
             stream.Read(array, offset, count);
-        public override void Write(UnmanagedMemoryStream stream, byte[] array, int offset, int count) =>
+        protected override void Write(UnmanagedMemoryStream stream, byte[] array, int offset, int count) =>
             stream.Write(array, offset, count);
 
         [Fact]
@@ -56,8 +56,8 @@ namespace System.IO.Tests
 
     public abstract class UmsReadWriteTests
     {
-        public abstract int Read(UnmanagedMemoryStream stream, byte[] array, int offset, int count);
-        public abstract void Write(UnmanagedMemoryStream stream, byte[] array, int offset, int count);
+        protected abstract int Read(UnmanagedMemoryStream stream, byte[] array, int offset, int count);
+        protected abstract void Write(UnmanagedMemoryStream stream, byte[] array, int offset, int count);
 
         [Fact]
         public void EmptyStreamRead()

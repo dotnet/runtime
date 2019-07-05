@@ -657,7 +657,7 @@ namespace System.Diagnostics.Tests
         }
 
 
-        public void CleanUp()
+        private void CleanUp()
         {
             Activity.DefaultIdFormat = ActivityIdFormat.Hierarchical;
             Activity.ForceDefaultIdFormat = false;

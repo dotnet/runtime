@@ -1531,6 +1531,7 @@ namespace System.Net.Tests
             Assert.Equal(MediaType, request.MediaType);
         }
 
+        [Fact]
         public async Task HttpWebRequest_EndGetRequestStreamContext_ExpectedValue()
         {
             await LoopbackServer.CreateServerAsync((server, url) =>

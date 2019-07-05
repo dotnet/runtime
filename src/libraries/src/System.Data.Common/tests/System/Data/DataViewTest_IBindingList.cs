@@ -101,7 +101,7 @@ namespace System.Data.Tests
 
         private ListChangedEventArgs _args = null;
 
-        public void OnListChanged(object sender, ListChangedEventArgs args)
+        private void OnListChanged(object sender, ListChangedEventArgs args)
         {
             _args = args;
         }

@@ -551,6 +551,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [MemberData(nameof(ColorAdjustTypeI_TestData))]
         public void SetThreshold_ThresholdTypeI_Success(ColorAdjustType type)
@@ -587,6 +588,8 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]        
         public void ClearThreshold_Success()
         {
             using (var bitmap = new Bitmap(_rectangle.Width, _rectangle.Height))

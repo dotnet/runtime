@@ -85,29 +85,8 @@ namespace CoreXml.Test.XLinq
 			//LoadOutsideDocuments ("c:\\note.xsd", "c:\\note.xml");
 		}
 
-		// Use this method to load data from disk
-		public static void LoadOutsideDocuments(string xsdDocumentPath, string xmlDocumentPath)
-		{
-			// Create a resolver with default credentials.
-			XmlUrlResolver resolver = new XmlUrlResolver();
-			resolver.Credentials = Network.CredentialCache.DefaultCredentials;
-			// Set the reader settings object to use the resolver.
-			XmlReaderSettings settings = new XmlReaderSettings();
-			settings.XmlResolver = resolver;
-
-			// Create the XmlReader object.
-			XmlReader reader = XmlReader.Create(xsdDocumentPath, settings);
-
-			schemaSet = new XmlSchemaSet();
-			schemaSet.Add("", reader);
-
-			reader = XmlReader.Create(xmlDocumentPath, settings);
-			xmlDocument = XDocument.Load(reader);
-			validationSucceded = false;
-		}
-
 		// this gets called when a validation error occurs
-		public void TestValidationHandler(object sender, ValidationEventArgs e)
+		private void TestValidationHandler(object sender, ValidationEventArgs e)
 		{
 			validationSucceded = false;
 		}

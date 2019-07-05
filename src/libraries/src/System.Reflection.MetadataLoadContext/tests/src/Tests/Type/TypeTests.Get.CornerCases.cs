@@ -66,7 +66,7 @@ namespace System.Reflection.Tests
             Assert.Equal(5, members.Length);
         }
 
-        //[Fact]
+        [Fact]
         public static void TestGetMemberEvent()
         {
             Type t = typeof(TestClass).Project();
@@ -76,7 +76,7 @@ namespace System.Reflection.Tests
             Assert.Equal("MyEvent", members[0].Name);
         }
 
-        //[Fact]
+        [Fact]
         public static void TestGetMemberField()
         {
             Type t = typeof(TestClass).Project();
@@ -86,7 +86,7 @@ namespace System.Reflection.Tests
             Assert.Equal("MyField", members[0].Name);
         }
 
-        //[Fact]
+        [Fact]
         public static void TestGetMemberMethod()
         {
             Type t = typeof(TestClass).Project();
@@ -96,7 +96,7 @@ namespace System.Reflection.Tests
             Assert.Equal("MyMethod", members[0].Name);
         }
 
-        //[Fact]
+        [Fact]
         public static void TestGetMemberNestedType()
         {
             Type t = typeof(TestClass).Project();
@@ -106,7 +106,7 @@ namespace System.Reflection.Tests
             Assert.Equal("MyNestedType", members[0].Name);
         }
 
-        //[Fact]
+        [Fact]
         public static void TestGetMemberProperty()
         {
             Type t = typeof(TestClass).Project();

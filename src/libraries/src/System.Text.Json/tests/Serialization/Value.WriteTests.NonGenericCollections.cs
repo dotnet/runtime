@@ -23,6 +23,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
+        [Fact]
         public static void WriteGenericIEnumerableOfIEnumerable()
         {
             IEnumerable<IEnumerable> input = new List<IEnumerable>
@@ -68,6 +69,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
+        [Fact]
         public static void WriteIListGenericOfIList()
         {
             IList<IList> input = new List<IList>
@@ -113,6 +115,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
+        [Fact]
         public static void WriteGenericICollectionOfICollection()
         {
             ICollection<ICollection> input = new List<ICollection>
@@ -156,6 +159,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("[[4,3],[2,1]]", json);
         }
 
+        [Fact]
         public static void WriteGenericStackOfStack()
         {
             Stack<Stack> input = new Stack<Stack>();
@@ -197,6 +201,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("[[1,2],[3,4]]", json);
         }
 
+        [Fact]
         public static void WriteGenericQueueOfQueue()
         {
             Queue<Queue> input = new Queue<Queue>();

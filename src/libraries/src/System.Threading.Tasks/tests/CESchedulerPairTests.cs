@@ -555,7 +555,7 @@ namespace System.Threading.Tasks.Tests
 
         #region Helper Methods
 
-        public static void SelectAPI2Target(string apiType, int taskCount, TaskScheduler scheduler, Action work)
+        private static void SelectAPI2Target(string apiType, int taskCount, TaskScheduler scheduler, Action work)
         {
             switch (apiType)
             {

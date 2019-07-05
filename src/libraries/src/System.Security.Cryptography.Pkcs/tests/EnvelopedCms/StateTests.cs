@@ -200,7 +200,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         // State 3: Called Decode()
         //
 
-        public static void PostDecode_Encode(bool isRunningOnDesktop)
+        private static void PostDecode_Encode(bool isRunningOnDesktop)
         {
             byte[] encodedMessage =
                 ("3082010c06092a864886f70d010703a081fe3081fb0201003181c83081c5020100302e301a311830160603550403130f5253"
@@ -234,7 +234,7 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
             PostDecode_Encode(isRunningOnDesktop: false);
         }
 
-        public static void PostDecode_ContentInfo(bool isRunningOnDesktop)
+        private static void PostDecode_ContentInfo(bool isRunningOnDesktop)
         {
             byte[] encodedMessage =
                 ("3082010c06092a864886f70d010703a081fe3081fb0201003181c83081c5020100302e301a311830160603550403130f5253"

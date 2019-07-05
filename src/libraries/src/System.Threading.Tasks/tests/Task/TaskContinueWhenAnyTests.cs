@@ -215,7 +215,7 @@ namespace System.Threading.Tasks.Tests
             } // end i-loop (antecedentsAreFutures)
         }
 
-        public static void TestContinueWhenAnyException(Task[] antecedents, bool FutureFactory, bool continuationIsFuture)
+        private static void TestContinueWhenAnyException(Task[] antecedents, bool FutureFactory, bool continuationIsFuture)
         {
             bool antecedentsAreFutures = (antecedents as Task<int>[]) != null;
 
@@ -477,7 +477,7 @@ namespace System.Threading.Tasks.Tests
         #region Helper Methods
 
         // used in ContinueWhenAll/ContinueWhenAny tests
-        public static void startTaskArray(Task[] tasks)
+        private static void startTaskArray(Task[] tasks)
         {
             for (int i = 0; i < tasks.Length; i++)
             {
@@ -486,7 +486,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        public static void CheckForCorrectCT(Task canceledTask, CancellationToken correctToken)
+        private static void CheckForCorrectCT(Task canceledTask, CancellationToken correctToken)
         {
             try
             {

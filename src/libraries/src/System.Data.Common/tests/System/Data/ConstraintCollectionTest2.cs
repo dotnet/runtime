@@ -399,7 +399,7 @@ namespace System.Data.Tests
             TestException(new testExceptionMethodCallback(DataProvider.TryToBreakForigenConstraint), arr);
         }
 
-        public void TestException(testExceptionMethodCallback dlg, IList exceptionList)
+        private static void TestException(testExceptionMethodCallback dlg, IList exceptionList)
         {
             Exception ex = Assert.ThrowsAny<Exception>(() => dlg());
             foreach (Exception expectedEx in exceptionList)

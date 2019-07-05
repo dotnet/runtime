@@ -404,7 +404,7 @@ namespace System.Net.Sockets.Tests
             complete.Dispose();
         }
 
-        public void CallbackThatShouldNotBeCalled(object sender, SocketAsyncEventArgs args)
+        private static void CallbackThatShouldNotBeCalled(object sender, SocketAsyncEventArgs args)
         {
             throw new ShouldNotBeInvokedException();
         }

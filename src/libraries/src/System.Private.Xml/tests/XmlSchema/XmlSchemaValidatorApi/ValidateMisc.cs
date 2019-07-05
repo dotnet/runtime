@@ -769,7 +769,7 @@ namespace System.Xml.Tests
  </sub>
 </root>";
 
-        public void CreateSchema1(string testDirectory)
+        private static void CreateSchema1(string testDirectory)
         {
             string commonxsd = @"<?xml version='1.0' encoding='utf-8'?>
 <Schema:schema  elementFormDefault='qualified'
@@ -821,7 +821,7 @@ namespace System.Xml.Tests
             }
         }
 
-        public void CreateSchema2(string testDirectory)
+        private static void CreateSchema2(string testDirectory)
         {
             string sub1 = @"<?xml version='1.0' encoding='utf-8'?>
 <Schema:schema targetNamespace='sub1'

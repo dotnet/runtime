@@ -30,7 +30,7 @@ namespace System.Linq.Tests
             Assert.Equal(q.First(), q.First());
         }
 
-        public void TestEmptyIList<T>()
+        private static void TestEmptyIList<T>()
         {
             T[] source = { };
             
