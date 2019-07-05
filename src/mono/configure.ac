@@ -5088,25 +5088,12 @@ AC_SEARCH_LIBS(sqrtf, m)
 AC_SEARCH_LIBS(nanosleep, rt)
 
 AC_SEARCH_LIBS(dlopen, dl)
-old_ldflags="${LDFLAGS}"
-# GNU specific option, this confuses IBM ld, but do offer alternatives when possible
-if test $lt_cv_prog_gnu_ld = yes; then
-	LDFLAGS="${LDFLAGS} -Wl,-export-dynamic,-Bsymbolic"
-else
-	case $host in
-	*-*-aix*|*-*-os400*)
-		LDFLAGS="${LDFLAGS} -bsymbolic"
-		;;
-	*)
-		dnl Try to use export-dynamic anyways
-		LDFLAGS="${LDFLAGS} -Wl,-export-dynamic,-Bsymbolic"
-		;;
-	esac
-fi
-AC_TRY_LINK(, [int i;], found_export_dynamic=yes, found_export_dynamic=no)
-if test $found_export_dynamic = no; then
-	LDFLAGS="${old_ldflags}"
-fi
+
+# AIX/OS400 -bsymbolic
+# Apple -bind_at_load
+# The rest GNU.
+#
+AX_APPEND_LINK_FLAGS([-Wl,-export-dynamic -Wl,-Bsymbolic -bsymbolic -Wl,-z,now -Wl,-bind_at_load])
 
 AC_CHECK_HEADERS(getopt.h sys/select.h sys/time.h sys/wait.h pwd.h iconv.h sys/types.h sys/resource.h)
 dnl giconv.c will check on HAVE_ICONV_H but we need this for link time
