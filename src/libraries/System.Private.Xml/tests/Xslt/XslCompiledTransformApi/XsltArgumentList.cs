@@ -4524,7 +4524,7 @@ namespace System.Xml.Tests
             _output = output;
         }
 
-        public void SerializeMessage(string outFile, string message)
+        private static void SerializeMessage(string outFile, string message)
         {
             StreamWriter sw = new StreamWriter(new FileStream(outFile, FileMode.Create, FileAccess.Write));
             sw.Write(message);

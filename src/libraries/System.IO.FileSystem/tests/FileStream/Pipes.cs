@@ -41,6 +41,8 @@ namespace System.IO.Tests
             }
         }
 
+        [Fact]
+        [ActiveIssue(39230)]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
         public async Task FifoReadWriteViaFileStream()
         {

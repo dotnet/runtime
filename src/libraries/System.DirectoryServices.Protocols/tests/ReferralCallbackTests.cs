@@ -39,8 +39,8 @@ namespace System.DirectoryServices.Protocols.Tests
             Assert.Equal(QueryForConnection, callback.QueryForConnection);
         }
 
-        public static void DereferenceConnection(LdapConnection primaryConnection, LdapConnection connectionToDereference) { }
-        public static bool NotifyNewConnection(LdapConnection primaryConnection, LdapConnection referralFromConnection, string newDistinguishedName, LdapDirectoryIdentifier identifier, LdapConnection newConnection, NetworkCredential credential, long currentUserToken, int errorCodeFromBind) => true;
-        public static LdapConnection QueryForConnection(LdapConnection primaryConnection, LdapConnection referralFromConnection, string newDistinguishedName, LdapDirectoryIdentifier identifier, NetworkCredential credential, long currentUserToken) => null;
+        internal static void DereferenceConnection(LdapConnection primaryConnection, LdapConnection connectionToDereference) { }
+        internal static bool NotifyNewConnection(LdapConnection primaryConnection, LdapConnection referralFromConnection, string newDistinguishedName, LdapDirectoryIdentifier identifier, LdapConnection newConnection, NetworkCredential credential, long currentUserToken, int errorCodeFromBind) => true;
+        internal static LdapConnection QueryForConnection(LdapConnection primaryConnection, LdapConnection referralFromConnection, string newDistinguishedName, LdapDirectoryIdentifier identifier, NetworkCredential credential, long currentUserToken) => null;
     }
 }

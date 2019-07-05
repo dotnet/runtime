@@ -293,7 +293,7 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        public static void VerifyAssemblyBuilder(AssemblyBuilder assembly, AssemblyName name, IEnumerable<CustomAttributeBuilder> attributes)
+        private static void VerifyAssemblyBuilder(AssemblyBuilder assembly, AssemblyName name, IEnumerable<CustomAttributeBuilder> attributes)
         {
             Assert.StartsWith(name.ToString(), assembly.FullName);
             Assert.StartsWith(name.ToString(), assembly.GetName().ToString());

@@ -20,7 +20,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ActiveIssue(39232)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Dispose_NoSuchEntryPoint_SilentyCatchesException()
         {
             var brush = new SubBrush();

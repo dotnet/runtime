@@ -1643,7 +1643,7 @@ namespace System.Transactions.Tests
             Task.WaitAll(a);
         }
 
-        public static void VerifyTxId(bool requiresNew, string parentTxId, string beforeTxId, string afterTxId)
+        private static void VerifyTxId(bool requiresNew, string parentTxId, string beforeTxId, string afterTxId)
         {
             Assert.Equal(beforeTxId, afterTxId);
             if (requiresNew)
@@ -1659,7 +1659,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        public static void AssertTransaction(string txId)
+        private static void AssertTransaction(string txId)
         {
             if (string.IsNullOrEmpty(txId))
             {
@@ -1670,23 +1670,23 @@ namespace System.Transactions.Tests
                 Assert.Equal(txId, AssertAndGetCurrentTransactionId());
             }
         }
-        public static void AssertTransactionNull()
+        private static void AssertTransactionNull()
         {
             Assert.Equal(null, Transaction.Current);
         }
 
-        public static void AssertTransactionNotNull()
+        private static void AssertTransactionNotNull()
         {
             Assert.NotEqual(null, Transaction.Current);
         }
 
-        public static string AssertAndGetCurrentTransactionId()
+        private static string AssertAndGetCurrentTransactionId()
         {
             AssertTransactionNotNull();
             return Transaction.Current.TransactionInformation.LocalIdentifier;
         }
 
-        public static string AssertAndGetCurrentTransactionId(TransactionScopeOption scopeOption)
+        private static string AssertAndGetCurrentTransactionId(TransactionScopeOption scopeOption)
         {
             if (scopeOption == TransactionScopeOption.Suppress)
             {
@@ -1700,33 +1700,33 @@ namespace System.Transactions.Tests
             }
         }
 
-        public static void AssertTransactionNullAndWaitTask(Task<string> task)
+        private static void AssertTransactionNullAndWaitTask(Task<string> task)
         {
             AssertTransactionNull();
             task.Wait();
             AssertTransactionNull();
         }
 
-        public static void AssertTransactionNullAndWaitTask(Task task)
+        private static void AssertTransactionNullAndWaitTask(Task task)
         {
             AssertTransactionNull();
             task.Wait();
             AssertTransactionNull();
         }
 
-        public static void SetExceptionInjection(bool exceptionDefaultOrBeforeAwait, bool exceptionAfterAwait)
+        private static void SetExceptionInjection(bool exceptionDefaultOrBeforeAwait, bool exceptionAfterAwait)
         {
             s_throwExceptionDefaultOrBeforeAwait = exceptionDefaultOrBeforeAwait;
             s_throwExceptionAfterAwait = exceptionAfterAwait;
         }
 
-        public static void ResetExceptionInjection()
+        private static void ResetExceptionInjection()
         {
             s_throwExceptionDefaultOrBeforeAwait = false;
             s_throwExceptionAfterAwait = false;
         }
 
-        public static void HandleException(bool exceptionDefaultOrBeforeAwait, bool exceptionAfterAwait, Action action)
+        private static void HandleException(bool exceptionDefaultOrBeforeAwait, bool exceptionAfterAwait, Action action)
         {
             bool hasException = false;
 

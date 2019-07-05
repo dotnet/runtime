@@ -666,7 +666,7 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// If the test is being run under the superuser, however, modification of a ReadOnly
         /// file is allowed.
         /// </summary>
-        public void WriteToReadOnlyFile(MemoryMappedFileAccess access, bool succeeds)
+        private void WriteToReadOnlyFile(MemoryMappedFileAccess access, bool succeeds)
         {
             const int Capacity = 4096;
             using (TempFile file = new TempFile(GetTestFilePath(), Capacity))

@@ -41,6 +41,7 @@ namespace System.Net.Tests
             }).Dispose();           
         }
 
+        [Fact]
         public void Register_UnregisterByScheme_ModuleCountUnchanged()
         {
             RemoteExecutor.Invoke(() =>

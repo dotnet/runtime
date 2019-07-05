@@ -240,7 +240,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 
         [Theory, MemberData(nameof(ByteEnumAdditions))]
         [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
-        public void LiftedEnumAddition(ByteEnum? enumVal, byte? integralVal, ByteEnum expected)
+        public void LiftedEnumAdditionByte(ByteEnum? enumVal, byte? integralVal, ByteEnum expected)
         {
             dynamic d = enumVal;
             object result = unchecked(d + integralVal);
@@ -260,7 +260,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 
         [Theory, MemberData(nameof(SByteEnumAdditions))]
         [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
-        public void LiftedEnumAddition(SByteEnum? enumVal, sbyte? integralVal, SByteEnum expected)
+        public void LiftedEnumAdditionSByte(SByteEnum? enumVal, sbyte? integralVal, SByteEnum expected)
         {
             dynamic d = enumVal;
             object result = unchecked(d + integralVal);
@@ -279,7 +279,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(Int16EnumAdditions))]
-        public void LiftedEnumAddition(Int16Enum? enumVal, short? integralVal, Int16Enum expected)
+        public void LiftedEnumAdditionInt16(Int16Enum? enumVal, short? integralVal, Int16Enum expected)
         {
             dynamic d = enumVal;
             object result = unchecked(d + integralVal);
@@ -298,7 +298,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(UInt16EnumAdditions))]
-        public void LiftedEnumAddition(UInt16Enum? enumVal, ushort? integralVal, UInt16Enum expected)
+        public void LiftedEnumAdditionUInt16(UInt16Enum? enumVal, ushort? integralVal, UInt16Enum expected)
         {
             dynamic d = enumVal;
             object result = unchecked(d + integralVal);
@@ -317,7 +317,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(Int32EnumAdditions))]
-        public void LiftedEnumAddition(Int32Enum? enumVal, int? integralVal, Int32Enum expected)
+        public void LiftedEnumAdditionInt32(Int32Enum? enumVal, int? integralVal, Int32Enum expected)
         {
             dynamic d = enumVal;
             object result = unchecked(d + integralVal);
@@ -336,7 +336,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(UInt32EnumAdditions))]
-        public void LiftedEnumAddition(UInt32Enum? enumVal, uint? integralVal, UInt32Enum expected)
+        public void LiftedEnumAdditionUInt32(UInt32Enum? enumVal, uint? integralVal, UInt32Enum expected)
         {
             dynamic d = enumVal;
             object result = unchecked(d + integralVal);
@@ -355,7 +355,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(Int64EnumAdditions))]
-        public void LiftedEnumAddition(Int64Enum? enumVal, long? integralVal, Int64Enum expected)
+        public void LiftedEnumAdditionInt64(Int64Enum? enumVal, long? integralVal, Int64Enum expected)
         {
             dynamic d = enumVal;
             object result = unchecked(d + integralVal);
@@ -374,7 +374,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(UInt64EnumAdditions))]
-        public void LiftedEnumAddition(UInt64Enum? enumVal, ulong? integralVal, UInt64Enum expected)
+        public void LiftedEnumAdditionUInt64(UInt64Enum? enumVal, ulong? integralVal, UInt64Enum expected)
         {
             dynamic d = enumVal;
             object result = unchecked(d + integralVal);
@@ -461,7 +461,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 
         [Theory, MemberData(nameof(SByteEnumSubtractions))]
         [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
-        public void LiftedEnumSubtraction(SByteEnum? enumVal, sbyte? integralVal, SByteEnum? enMinusIn, SByteEnum? inMinusEn)
+        public void LiftedEnumSubtractionSByte(SByteEnum? enumVal, sbyte? integralVal, SByteEnum? enMinusIn, SByteEnum? inMinusEn)
         {
             dynamic d = enumVal;
             object result = unchecked(d - integralVal);
@@ -480,7 +480,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(Int16EnumSubtractions))]
-        public void LiftedEnumSubtraction(Int16Enum? enumVal, short? integralVal, Int16Enum? enMinusIn, Int16Enum? inMinusEn)
+        public void LiftedEnumSubtractionInt16(Int16Enum? enumVal, short? integralVal, Int16Enum? enMinusIn, Int16Enum? inMinusEn)
         {
             dynamic d = enumVal;
             object result = unchecked(d - integralVal);
@@ -499,7 +499,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(UInt16EnumSubtractions))]
-        public void LiftedEnumSubtraction(UInt16Enum? enumVal, ushort? integralVal, UInt16Enum? enMinusIn, UInt16Enum? inMinusEn)
+        public void LiftedEnumSubtractionUInt16(UInt16Enum? enumVal, ushort? integralVal, UInt16Enum? enMinusIn, UInt16Enum? inMinusEn)
         {
             dynamic d = enumVal;
             object result = unchecked(d - integralVal);
@@ -518,7 +518,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(Int32EnumSubtractions))]
-        public void LiftedEnumSubtraction(Int32Enum? enumVal, int? integralVal, Int32Enum? enMinusIn, Int32Enum? inMinusEn)
+        public void LiftedEnumSubtractionInt32(Int32Enum? enumVal, int? integralVal, Int32Enum? enMinusIn, Int32Enum? inMinusEn)
         {
             dynamic d = enumVal;
             object result = unchecked(d - integralVal);
@@ -537,7 +537,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(UInt32EnumSubtractions))]
-        public void LiftedEnumSubtraction(UInt32Enum? enumVal, uint? integralVal, UInt32Enum? enMinusIn, UInt32Enum? inMinusEn)
+        public void LiftedEnumSubtractionUInt32(UInt32Enum? enumVal, uint? integralVal, UInt32Enum? enMinusIn, UInt32Enum? inMinusEn)
         {
             dynamic d = enumVal;
             object result = unchecked(d - integralVal);
@@ -556,7 +556,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(Int64EnumSubtractions))]
-        public void LiftedEnumSubtraction(Int64Enum? enumVal, long? integralVal, Int64Enum? enMinusIn, Int64Enum? inMinusEn)
+        public void LiftedEnumSubtractionInt64(Int64Enum? enumVal, long? integralVal, Int64Enum? enMinusIn, Int64Enum? inMinusEn)
         {
             dynamic d = enumVal;
             object result = unchecked(d - integralVal);
@@ -575,7 +575,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(UInt64EnumSubtractions))]
-        public void LiftedEnumSubtraction(UInt64Enum? enumVal, ulong? integralVal, UInt64Enum? enMinusIn, UInt64Enum? inMinusEn)
+        public void LiftedEnumSubtractionUInt64(UInt64Enum? enumVal, ulong? integralVal, UInt64Enum? enMinusIn, UInt64Enum? inMinusEn)
         {
             dynamic d = enumVal;
             object result = unchecked(d - integralVal);
@@ -595,7 +595,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 
         [Theory, MemberData(nameof(ByteEnumSelfSubtraction))]
         [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
-        public void EnumSubtraction(ByteEnum? x, ByteEnum? y, byte expected, bool overflows)
+        public void EnumSubtractionByte(ByteEnum? x, ByteEnum? y, byte expected, bool overflows)
         {
             dynamic d = x;
             object result = unchecked(d - y);
@@ -615,7 +615,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
 
         [Theory, MemberData(nameof(SByteEnumSelfSubtraction))]
         [ActiveIssue(31032, TargetFrameworkMonikers.NetFramework)]
-        public void EnumSubtraction(SByteEnum? x, SByteEnum? y, sbyte expected, bool overflows)
+        public void EnumSubtractionSByte(SByteEnum? x, SByteEnum? y, sbyte expected, bool overflows)
         {
             dynamic d = x;
             object result = unchecked(d - y);
@@ -634,7 +634,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(Int16EnumSelfSubtraction))]
-        public void EnumSubtraction(Int16Enum? x, Int16Enum? y, short expected, bool overflows)
+        public void EnumSubtractionInt16(Int16Enum? x, Int16Enum? y, short expected, bool overflows)
         {
             dynamic d = x;
             object result = unchecked(d - y);
@@ -653,7 +653,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(UInt16EnumSelfSubtraction))]
-        public void EnumSubtraction(UInt16Enum? x, UInt16Enum? y, ushort expected, bool overflows)
+        public void EnumSubtractionUInt16(UInt16Enum? x, UInt16Enum? y, ushort expected, bool overflows)
         {
             dynamic d = x;
             object result = unchecked(d - y);
@@ -672,7 +672,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(Int32EnumSelfSubtraction))]
-        public void EnumSubtraction(Int32Enum? x, Int32Enum? y, int expected, bool overflows)
+        public void EnumSubtractionInt32(Int32Enum? x, Int32Enum? y, int expected, bool overflows)
         {
             dynamic d = x;
             object result = unchecked(d - y);
@@ -691,7 +691,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(UInt32EnumSelfSubtraction))]
-        public void EnumSubtraction(UInt32Enum? x, UInt32Enum? y, uint expected, bool overflows)
+        public void EnumSubtractionUInt32(UInt32Enum? x, UInt32Enum? y, uint expected, bool overflows)
         {
             dynamic d = x;
             object result = unchecked(d - y);
@@ -710,7 +710,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(Int64EnumSelfSubtraction))]
-        public void EnumSubtraction(Int64Enum? x, Int64Enum? y, long expected, bool overflows)
+        public void EnumSubtractionInt64(Int64Enum? x, Int64Enum? y, long expected, bool overflows)
         {
             dynamic d = x;
             object result = unchecked(d - y);
@@ -729,7 +729,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(UInt64EnumSelfSubtraction))]
-        public void EnumSubtraction(UInt64Enum? x, UInt64Enum? y, ulong expected, bool overflows)
+        public void EnumSubtractionUInt64(UInt64Enum? x, UInt64Enum? y, ulong expected, bool overflows)
         {
             dynamic d = x;
             object result = unchecked(d - y);

@@ -521,19 +521,6 @@ namespace System.Reflection.Tests
             }
         }
 
-        public IEnumerable<object[]> ToString_TestData()
-        {
-            yield return new object[] { Helpers.ExecutingAssembly, "System.Reflection.Tests" };
-            yield return new object[] { Assembly.Load(new AssemblyName(typeof(List<int>).GetTypeInfo().Assembly.FullName)), "PublicKeyToken=" };
-        }
-
-        [Theory]
-        public void ToString(Assembly assembly, string expected)
-        {
-            Assert.Contains(expected, assembly.ToString());
-            Assert.Equal(assembly.ToString(), assembly.FullName);
-        }
-
         public static IEnumerable<object[]> Equality_TestData()
         {
             yield return new object[] { Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName)), Assembly.Load(new AssemblyName(typeof(int).GetTypeInfo().Assembly.FullName)), true };
@@ -656,28 +643,27 @@ namespace System.Reflection.Tests
             Assert.Equal(assembly.FullName, loadedAssembly.FullName);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Assembly.ReflectionOnlyLoad() not supported on UWP")]
+        [Fact]
         public void AssemblyReflectionOnlyLoadFromString()
         {
             AssemblyName an = typeof(AssemblyTests).Assembly.GetName();
-            Assert.Throws<NotSupportedException>(() => Assembly.ReflectionOnlyLoad(an.FullName));
+            Assert.Throws<PlatformNotSupportedException>(() => Assembly.ReflectionOnlyLoad(an.FullName));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Assembly.ReflectionOnlyLoad() not supported on UWP")]
+        [Fact]
         public void AssemblyReflectionOnlyLoadFromBytes()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;
             byte[] aBytes = System.IO.File.ReadAllBytes(assembly.Location);
-            Assert.Throws<NotSupportedException>(() => Assembly.ReflectionOnlyLoad(aBytes));
+            Assert.Throws<PlatformNotSupportedException>(() => Assembly.ReflectionOnlyLoad(aBytes));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Assembly.ReflectionOnlyLoad() not supported on UWP")]
+        [Fact]
         public void AssemblyReflectionOnlyLoadFromNeg()
         {
-            Assert.Throws<ArgumentNullException>(() => Assembly.ReflectionOnlyLoad((string)null));
-            AssertExtensions.Throws<ArgumentException>(null, () => Assembly.ReflectionOnlyLoad(string.Empty));
-
-            Assert.Throws<ArgumentNullException>(() => Assembly.ReflectionOnlyLoad((byte[])null));
+            Assert.Throws<PlatformNotSupportedException>(() => Assembly.ReflectionOnlyLoad((string)null));
+            Assert.Throws<PlatformNotSupportedException>(() => Assembly.ReflectionOnlyLoad(string.Empty));
+            Assert.Throws<PlatformNotSupportedException>(() => Assembly.ReflectionOnlyLoad((byte[])null));
         }
 
         public static IEnumerable<object[]> GetModules_TestData()

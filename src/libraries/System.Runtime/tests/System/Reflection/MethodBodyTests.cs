@@ -15,7 +15,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void Test_MethodBody_ExceptionHandlingClause()
         {
-            MethodInfo mi = typeof(MethodBodyTests).GetMethod("MethodBodyExample");
+            MethodInfo mi = typeof(MethodBodyTests).GetMethod("MethodBodyExample", BindingFlags.NonPublic | BindingFlags.Static);
             MethodBody mb = mi.GetMethodBody();
 
             Assert.True(mb.InitLocals);  // local variables are initialized
@@ -72,7 +72,7 @@ namespace System.Reflection.Tests
             Assert.True(false, "Expected to find CatchType clause.");
         }
     
-        public static void MethodBodyExample(object arg)
+        private static void MethodBodyExample(object arg)
         {
             int var1 = 2;
             string var2 = "I am a string";

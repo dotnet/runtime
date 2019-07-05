@@ -275,7 +275,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void WriteEntryWithoutSource()
         {
             using (EventLog eventLog = new EventLog())
@@ -284,7 +284,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void WriteEntryWithInvalidType()
         {
             using (EventLog eventLog = new EventLog())
@@ -295,7 +295,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void WriteEntryWithNullOrEmptySource()
         {
             Assert.Throws<ArgumentException>(() => EventLog.WriteEntry(null, message));
@@ -355,20 +355,20 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void WriteEventInstanceNull()
         {
             string source = "Source_" + nameof(WriteEventInstanceNull);
-            Assert.Throws<ArgumentNullException>(() => Helpers.RetryOnWin7(() => EventLog.WriteEvent(source, null, insertStrings)));
+            Helpers.RetryOnWin7(() => Assert.Throws<ArgumentNullException>(() => EventLog.WriteEvent(source, null, insertStrings)));
         }
 
-        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void WriteEventMessageValues_OutOfRange()
         {
             string source = "Source_" + nameof(WriteEventMessageValues_OutOfRange);
             string[] message = new string[1];
             message[0] = new string('c', 32767);
-            Assert.Throws<ArgumentException>(() => Helpers.RetryOnWin7(() => EventLog.WriteEvent(source, eventInstance, message)));
+            Helpers.RetryOnWin7(() => Assert.Throws<ArgumentException>(() => EventLog.WriteEvent(source, eventInstance, message)));
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
@@ -386,7 +386,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
-        [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         public void SourceNameMaxLengthExceeded()
         {
             string source = new string('s', 254);

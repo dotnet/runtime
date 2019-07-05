@@ -10,12 +10,12 @@ namespace System.IO.Tests
     {
         #region Utilities
 
-        public virtual void Replace(string source, string dest, string destBackup)
+        protected virtual void Replace(string source, string dest, string destBackup)
         {
             File.Replace(source, dest, destBackup);
         }
 
-        public virtual void Replace(string source, string dest, string destBackup, bool ignoreMetadataErrors)
+        protected virtual void Replace(string source, string dest, string destBackup, bool ignoreMetadataErrors)
         {
             File.Replace(source, dest, destBackup, ignoreMetadataErrors);
         }
@@ -117,7 +117,7 @@ namespace System.IO.Tests
     {
         #region Utilities
 
-        public override void Replace(string source, string dest, string destBackup)
+        protected override void Replace(string source, string dest, string destBackup)
         {
             File.Replace(source, dest, destBackup, false);
         }

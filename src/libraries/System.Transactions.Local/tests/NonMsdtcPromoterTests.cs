@@ -78,7 +78,7 @@ namespace System.Transactions.Tests
             cloneToComplete.Complete();
         }
 
-        public static void Promote(string testCaseDescription, byte[] promotedTokenToCompare, Transaction txToPromote = null)
+        private static void Promote(string testCaseDescription, byte[] promotedTokenToCompare, Transaction txToPromote = null)
         {
             if (txToPromote == null)
             {
@@ -100,7 +100,7 @@ namespace System.Transactions.Tests
             Assert.True(PromotedTokensMatch(promotedToken, NonMsdtcPromoterTests.PromotedToken1));
         }
 
-        public static void Trace(string stringToTrace)
+        private static void Trace(string stringToTrace)
         {
             if (s_traceEnabled)
             {
@@ -108,7 +108,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        public static void NoStressTrace(string stringToTrace)
+        private static void NoStressTrace(string stringToTrace)
         {
             //if (NonMsdtcPromoterTests.loopCount == 1)
             {
@@ -1258,7 +1258,7 @@ namespace System.Transactions.Tests
             TestPassed();
         }
 
-        public static void TestCase_AbortFromVolatile(bool promote, EnlistmentOptions enlistmentOptions = EnlistmentOptions.None)
+        private static void TestCase_AbortFromVolatile(bool promote, EnlistmentOptions enlistmentOptions = EnlistmentOptions.None)
         {
             string testCaseDescription = string.Format(
                 "TestCase_AbortFromVolatile promote={0}; enlistmentOptions = {1}",
@@ -1315,7 +1315,7 @@ namespace System.Transactions.Tests
             TestPassed();
         }
 
-        public static void TestCase_AbortingCloneNotCompleted(bool promote)
+        private static void TestCase_AbortingCloneNotCompleted(bool promote)
         {
             string testCaseDescription = string.Format(
                 "TestCase_AbortingCloneNotCompleted promote={0}",
@@ -1370,7 +1370,7 @@ namespace System.Transactions.Tests
             TestPassed();
         }
 
-        public static void TestCase_BlockingCloneCompletedAfterCommit(bool promote)
+        private static void TestCase_BlockingCloneCompletedAfterCommit(bool promote)
         {
             string testCaseDescription = string.Format(
                 "TestCase_BlockingCloneCompletedAfterCommit promote={0}",
@@ -1430,7 +1430,7 @@ namespace System.Transactions.Tests
             TestPassed(true);
         }
 
-        public static void TestCase_TransactionTimeout(bool promote)
+        private static void TestCase_TransactionTimeout(bool promote)
         {
             string testCaseDescription = string.Format(
                 "TestCase_TransactionTimeout promote={0}",
@@ -1485,7 +1485,7 @@ namespace System.Transactions.Tests
             TestPassed(true);
         }
 
-        public static void TestCase_EnlistDuringPrepare(bool promote,
+        private static void TestCase_EnlistDuringPrepare(bool promote,
             bool beforePromote,
             EnlistmentOptions firstOptions = EnlistmentOptions.None,
             EnlistmentOptions secondOptions = EnlistmentOptions.None,
@@ -1585,7 +1585,7 @@ namespace System.Transactions.Tests
             TestPassed();
         }
 
-        public static void TestCase_GetStatusAndDistributedId()
+        private static void TestCase_GetStatusAndDistributedId()
         {
             string testCaseDescription = "TestCase_GetDistributedId";
 
@@ -1637,7 +1637,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        public static void TestCase_DisposeCommittableTransaction(bool promote)
+        private static void TestCase_DisposeCommittableTransaction(bool promote)
         {
             string testCaseDescription = string.Format(
                 "TestCase_DisposeCommittableTransaction promote={0}",
@@ -1696,7 +1696,7 @@ namespace System.Transactions.Tests
             TestPassed();
         }
 
-        public static void TestCase_OutcomeRegistration(bool promote)
+        private static void TestCase_OutcomeRegistration(bool promote)
         {
             string testCaseDescription = string.Format(
                 "TestCase_OutcomeRegistration promote={0}",
@@ -1779,7 +1779,7 @@ namespace System.Transactions.Tests
             TestPassed();
         }
 
-        public static void TestCase_PromoterType()
+        private static void TestCase_PromoterType()
         {
             string testCaseDescription = "TestCase_PromoterType";
 
@@ -1824,7 +1824,7 @@ namespace System.Transactions.Tests
             TestPassed();
         }
 
-        public static void TestCase_PromoterTypeMSDTC()
+        private static void TestCase_PromoterTypeMSDTC()
         {
             string testCaseDescription = "TestCase_PromoterTypeMSDTC";
 
@@ -1863,7 +1863,7 @@ namespace System.Transactions.Tests
             TestPassed();
         }
 
-        public static void TestCase_FailPromotableSinglePhaseNotificationCalls()
+        private static void TestCase_FailPromotableSinglePhaseNotificationCalls()
         {
             string testCaseDescription = "TestCase_FailPromotableSinglePhaseNotificationCalls";
 
@@ -1973,7 +1973,7 @@ namespace System.Transactions.Tests
             TestPassed();
         }
 
-        public static void TestCase_SetDistributedIdAtWrongTime()
+        private static void TestCase_SetDistributedIdAtWrongTime()
         {
             string testCaseDescription = "TestCase_SetDistributedIdAtWrongTime";
 
@@ -2028,7 +2028,7 @@ namespace System.Transactions.Tests
             TestPassed();
         }
 
-        public static void TestCase_SetDistributedIdWithWrongNotificationObject()
+        private static void TestCase_SetDistributedIdWithWrongNotificationObject()
         {
             string testCaseDescription = "TestCase_SetDistributedIdWithWrongNotificationObject";
 

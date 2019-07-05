@@ -178,7 +178,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, compareInfo.IndexOf(source, value, startIndex, count, options));
         }
 
-        public void IndexOf_Char(CompareInfo compareInfo, string source, char value, int startIndex, int count, CompareOptions options, int expected)
+        private static void IndexOf_Char(CompareInfo compareInfo, string source, char value, int startIndex, int count, CompareOptions options, int expected)
         {
             if (options == CompareOptions.None)
             {

@@ -915,6 +915,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
         public static void X509ChainElementCollection_CopyTo_NonZeroLowerBound_ThrowsIndexOutOfRangeException()
         {
             using (var microsoftDotCom = new X509Certificate2(TestData.MicrosoftDotComSslCertBytes))

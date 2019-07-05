@@ -41,7 +41,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         public void TryGetMemberValue()
         {
             var obj = new DynamicTestObject(new Dictionary<string, object>() { { "F", 1 } });
-            Assert.Equal(1, TryGetMemberValue(obj, "F", ignoreException: false));
+            Assert.Equal(1, TryGetMemberValueImpl(obj, "F", ignoreException: false));
         }
 
         [Fact]
@@ -50,11 +50,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             var obj = new DynamicTestObject(new Dictionary<string, object>());
 
             // ignoreException: true
-            Assert.Null(TryGetMemberValue(obj, "F", ignoreException: true));
+            Assert.Null(TryGetMemberValueImpl(obj, "F", ignoreException: true));
 
             // ignoreException: false
             var exceptionType = GetType("DynamicBindingFailedException");
-            Assert.Throws(exceptionType, () => GetItems(TryGetMemberValue(obj, "F", ignoreException: false)));
+            Assert.Throws(exceptionType, () => GetItems(TryGetMemberValueImpl(obj, "F", ignoreException: false)));
         }
 
         [Fact]
@@ -63,11 +63,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             var obj = new DynamicTestObject(new Dictionary<string, object>(), throwIfMissing: true);
 
             // ignoreException: true
-            string message = (string)TryGetMemberValue(obj, "F", ignoreException: true);
+            string message = (string)TryGetMemberValueImpl(obj, "F", ignoreException: true);
             Assert.NotNull(message);
 
             // ignoreException: false
-            Assert.Throws<MissingMemberException>(() => GetItems(TryGetMemberValue(obj, "F", ignoreException: false)));
+            Assert.Throws<MissingMemberException>(() => GetItems(TryGetMemberValueImpl(obj, "F", ignoreException: false)));
         }
 
         private static Type GetType(string typeName)
@@ -86,7 +86,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             return (object[])InvokeAndUnwrapException(method, debugView, new object[0]);
         }
 
-        private static object TryGetMemberValue(object obj, string name, bool ignoreException)
+        private static object TryGetMemberValueImpl(object obj, string name, bool ignoreException)
         {
             var method = _debugViewType.GetMethod("TryGetMemberValue", BindingFlags.NonPublic | BindingFlags.Static);
             return InvokeAndUnwrapException(method, null, new object[] { obj, name, ignoreException });

@@ -581,7 +581,7 @@ namespace System.ComponentModel.Composition
             SelectiveImportBySTMThroughCatalog1(container);
         }
 
-        public void SelectiveImportBySTMThroughCatalog1(CompositionContainer container)
+        private static void SelectiveImportBySTMThroughCatalog1(CompositionContainer container)
         {
             Assert.NotNull(container.GetExport<IMyExporter, IMetadataView>());
             var result2 = container.GetExports<IMyExporter, IMetadataView>();
@@ -595,7 +595,7 @@ namespace System.ComponentModel.Composition
             SelectiveImportBySTMThroughCatalog2(container);
         }
 
-        public void SelectiveImportBySTMThroughCatalog2(CompositionContainer container)
+        private static void SelectiveImportBySTMThroughCatalog2(CompositionContainer container)
         {
             throw new NotImplementedException();
 

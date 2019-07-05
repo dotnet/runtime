@@ -2419,16 +2419,6 @@ public static partial class DataContractSerializerTests
         Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
     }
 
-    //[Fact]
-    // This also fails without using reflection based fallback
-    public static void DCS_GenericICollectionOfDateTime()
-    {
-        var value = new TypeImplementsGenericICollection<DateTime>() { new DateTime(2000, 1, 2, 3, 4, 5), new DateTime(2011, 2, 3, 4, 5, 6) };
-        var deserialized = DataContractSerializerHelper.SerializeAndDeserialize(value, @"<ArrayOfdateTime xmlns=""http://schemas.microsoft.com/2003/10/Serialization/Arrays"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><dateTime>2000-01-02T03:04:05-08:00</dateTime><dateTime>2011-02-03T04:05:06-08:00</dateTime></ArrayOfdateTime>");
-        Assert.StrictEqual(value.Count, deserialized.Count);
-        Assert.StrictEqual(true, Enumerable.SequenceEqual(value, deserialized));
-    }
-
     [Fact]
     public static void DCS_GenericICollectionOfDecimal()
     {

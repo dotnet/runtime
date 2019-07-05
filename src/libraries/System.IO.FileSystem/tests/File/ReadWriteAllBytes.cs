@@ -153,7 +153,7 @@ namespace System.IO.Tests
             }
         }
 
-        [Theory]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void ReadAllBytes_ProcFs_Uptime_ContainsTwoNumbers()
         {

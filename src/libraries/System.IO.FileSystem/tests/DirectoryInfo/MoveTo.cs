@@ -10,12 +10,12 @@ namespace System.IO.Tests
     {
         #region Utilities
 
-        public override void Move(string sourceDir, string destDir)
+        protected override void Move(string sourceDir, string destDir)
         {
             new DirectoryInfo(sourceDir).MoveTo(destDir);
         }
 
-        public virtual void Move(DirectoryInfo sourceDir, string destDir)
+        protected virtual void Move(DirectoryInfo sourceDir, string destDir)
         {
             sourceDir.MoveTo(destDir);
         }

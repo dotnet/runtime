@@ -349,6 +349,7 @@ namespace System.Text.Json.Serialization.Tests
             TestClassWithGenericICollection obj = JsonSerializer.Deserialize<TestClassWithGenericICollection>(TestClassWithGenericICollection.s_data);
         }
 
+        [Fact]
         public static void ReadClassWithObjectISetT()
         {
             TestClassWithObjectISetT obj = JsonSerializer.Deserialize<TestClassWithObjectISetT>(TestClassWithObjectISetT.s_data);
@@ -411,6 +412,7 @@ namespace System.Text.Json.Serialization.Tests
             obj.Verify();
         }
 
+        [Fact]
         public static void ClassWithNoSetter()
         {
             string json = @"{""MyList"":[1]}";

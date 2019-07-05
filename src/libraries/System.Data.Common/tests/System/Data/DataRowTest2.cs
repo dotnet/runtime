@@ -2419,39 +2419,6 @@ namespace System.Data.Tests
             child.Rows[0].SetParentRow(dr);
         }
 
-        public void checkForLoops()
-        {
-            var ds = new DataSet();
-            //Create tables
-            DataTable dtChild = DataProvider.CreateChildDataTable();
-            DataTable dtParent = DataProvider.CreateParentDataTable();
-            //Add tables to dataset
-            ds.Tables.Add(dtChild);
-            ds.Tables.Add(dtParent);
-
-            dtChild.Rows.Clear();
-            dtParent.Rows.Clear();
-
-            dtParent.ChildRelations.Add(dtParent.Columns[0], dtChild.Columns[0]);
-            dtChild.ChildRelations.Add(dtChild.Columns[0], dtParent.Columns[0]);
-
-            dtChild.Rows[0].SetParentRow(dtParent.Rows[0]);
-            dtParent.Rows[0].SetParentRow(dtChild.Rows[0]);
-        }
-
-        public void checkForLoopsAdvanced()
-        {
-            //Create tables
-            DataTable dtChild = new DataTable();
-            dtChild.Columns.Add("Col1", typeof(int));
-            dtChild.Columns.Add("Col2", typeof(int));
-
-            DataRelation drl = new DataRelation("drl1", dtChild.Columns[0], dtChild.Columns[1]);
-            dtChild.ChildRelations.Add(drl);
-            dtChild.Rows[0].SetParentRow(dtChild.Rows[1]);
-            dtChild.Rows[1].SetParentRow(dtChild.Rows[0]);
-        }
-
         [Fact]
         public void SetParentRow_ByDataRowDataRelation()
         {

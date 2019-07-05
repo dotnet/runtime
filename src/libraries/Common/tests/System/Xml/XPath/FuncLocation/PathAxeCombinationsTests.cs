@@ -44688,6 +44688,7 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Combines namespace axis with following-sibling axis
         /// NS55: namespace::pre2/following-sibling::node()
         /// </summary>
+        [Fact]
         public static void AxesCombinationsTest2138()
         {
             var xml = "ns_prefixes.xml";

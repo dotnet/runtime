@@ -178,7 +178,7 @@ namespace System.Collections.Specialized.Tests
             VerifyCtor_IEqualityComparer(nameValueCollection, equalityComparer, 10);
         }
         
-        public void VerifyCtor_IEqualityComparer(NameValueCollection nameValueCollection, IEqualityComparer equalityComparer, int newCount)
+        private static void VerifyCtor_IEqualityComparer(NameValueCollection nameValueCollection, IEqualityComparer equalityComparer, int newCount)
         {
             Assert.Equal(0, nameValueCollection.Count);
             Assert.Equal(0, nameValueCollection.Keys.Count);

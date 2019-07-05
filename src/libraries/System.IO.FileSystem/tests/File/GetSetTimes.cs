@@ -16,7 +16,7 @@ namespace System.IO.Tests
         // 32bit Unix has time_t up to ~ 2038.
         private static bool SupportsLongMaxDateTime => PlatformDetection.IsWindows || (RuntimeInformation.ProcessArchitecture != Architecture.Arm && RuntimeInformation.ProcessArchitecture != Architecture.X86 && !PlatformDetection.IsOSX);
 
-        public override string GetExistingItem()
+        protected override string GetExistingItem()
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();

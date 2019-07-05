@@ -107,6 +107,7 @@ namespace System.Reflection.Tests
             return x+1;
         }
 
+#pragma warning disable xUnit1013 // Public method should be marked as test
         public static void MyOtherMethod(object arg)
         {
             int var1 = 2;
@@ -117,5 +118,6 @@ namespace System.Reflection.Tests
                 throw new ArgumentNullException("Input arg cannot be null.");
             }
         }
+#pragma warning restore xUnit1013 // Public method should be marked as test
     }
 }

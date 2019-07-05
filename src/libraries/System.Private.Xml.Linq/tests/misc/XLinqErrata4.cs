@@ -182,7 +182,7 @@ namespace System.Xml.Linq.Tests
         /// </summary>
         /// <param name="nodeType">XElement/XAttribute</param>
         /// <param name="name">name to be tested</param>
-        public void RunValidTests(string nodeType, string name)
+        private static void RunValidTests(string nodeType, string name)
         {
             XDocument xDocument = new XDocument();
             XElement element = null;
@@ -220,7 +220,7 @@ namespace System.Xml.Linq.Tests
         /// </summary>
         /// <param name="nodeType">XElement/XAttribute</param>
         /// <param name="name">name to be tested</param>
-        public void RunInValidTests(string nodeType, string name)
+        private static void RunInValidTests(string nodeType, string name)
         {
             XDocument xDocument = new XDocument();
             XElement element = null;
@@ -265,7 +265,7 @@ namespace System.Xml.Linq.Tests
         /// <param name="charType">type from CharType class</param>
         /// <param name="c">character to be used in the name</param>
         /// <returns>name with the character</returns>
-        public string GetName(string charType, char c)
+        private static string GetName(string charType, char c)
         {
             string name = string.Empty;
             switch (charType)

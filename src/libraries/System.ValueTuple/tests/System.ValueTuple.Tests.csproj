@@ -7,7 +7,7 @@
   <ItemGroup>
     <Compile Include="TupleElementNamesTests.cs" />
     <Compile Include="ExtensionsTests.cs" />
-    <Compile Include="TupleTests.cs" />
+    <Compile Include="TupleTests.cs" Condition="'$(TargetsNetCoreApp)' == 'true'" />
     <Compile Include="ValueTupleTests.cs" />
   </ItemGroup>
 </Project>

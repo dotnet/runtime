@@ -168,7 +168,7 @@ namespace System.Globalization.Tests
             GetAscii_Invalid(new IdnMapping() { UseStd3AsciiRules = true }, unicode, index, count, exceptionType);
         }
 
-        public static void GetAscii_Invalid(IdnMapping idnMapping, string unicode, int index, int count, Type exceptionType)
+        private static void GetAscii_Invalid(IdnMapping idnMapping, string unicode, int index, int count, Type exceptionType)
         {
             if (unicode == null || index + count == unicode.Length)
             {

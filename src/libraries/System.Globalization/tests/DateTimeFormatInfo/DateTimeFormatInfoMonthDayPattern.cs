@@ -9,6 +9,7 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoMonthDayPattern
     {
+        [Fact]
         public void LongDayPattern_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal("MMMM dd", DateTimeFormatInfo.InvariantInfo.MonthDayPattern);

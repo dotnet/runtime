@@ -12,28 +12,28 @@ namespace System.CodeDom.Compiler.Tests
 {
     public class CompilerErrorCollectionTests : CodeCollectionTestBase<CompilerErrorCollection, CompilerError>
     {
-        public override CompilerErrorCollection Ctor() => new CompilerErrorCollection();
-        public override CompilerErrorCollection CtorArray(CompilerError[] array) => new CompilerErrorCollection(array);
-        public override CompilerErrorCollection CtorCollection(CompilerErrorCollection collection) => new CompilerErrorCollection(collection);
+        protected override CompilerErrorCollection Ctor() => new CompilerErrorCollection();
+        protected override CompilerErrorCollection CtorArray(CompilerError[] array) => new CompilerErrorCollection(array);
+        protected override CompilerErrorCollection CtorCollection(CompilerErrorCollection collection) => new CompilerErrorCollection(collection);
 
-        public override int Count(CompilerErrorCollection collection) => collection.Count;
+        protected override int Count(CompilerErrorCollection collection) => collection.Count;
 
-        public override CompilerError GetItem(CompilerErrorCollection collection, int index) => collection[index];
-        public override void SetItem(CompilerErrorCollection collection, int index, CompilerError value) => collection[index] = value;
+        protected override CompilerError GetItem(CompilerErrorCollection collection, int index) => collection[index];
+        protected override void SetItem(CompilerErrorCollection collection, int index, CompilerError value) => collection[index] = value;
 
-        public override void AddRange(CompilerErrorCollection collection, CompilerError[] array) => collection.AddRange(array);
-        public override void AddRange(CompilerErrorCollection collection, CompilerErrorCollection value) => collection.AddRange(value);
+        protected override void AddRange(CompilerErrorCollection collection, CompilerError[] array) => collection.AddRange(array);
+        protected override void AddRange(CompilerErrorCollection collection, CompilerErrorCollection value) => collection.AddRange(value);
 
-        public override object Add(CompilerErrorCollection collection, CompilerError obj) => collection.Add(obj);
+        protected override object Add(CompilerErrorCollection collection, CompilerError obj) => collection.Add(obj);
 
-        public override void Insert(CompilerErrorCollection collection, int index, CompilerError value) => collection.Insert(index, value);
+        protected override void Insert(CompilerErrorCollection collection, int index, CompilerError value) => collection.Insert(index, value);
 
-        public override void Remove(CompilerErrorCollection collection, CompilerError value) => collection.Remove(value);
+        protected override void Remove(CompilerErrorCollection collection, CompilerError value) => collection.Remove(value);
 
-        public override int IndexOf(CompilerErrorCollection collection, CompilerError value) => collection.IndexOf(value);
-        public override bool Contains(CompilerErrorCollection collection, CompilerError value) => collection.Contains(value);
+        protected override int IndexOf(CompilerErrorCollection collection, CompilerError value) => collection.IndexOf(value);
+        protected override bool Contains(CompilerErrorCollection collection, CompilerError value) => collection.Contains(value);
 
-        public override void CopyTo(CompilerErrorCollection collection, CompilerError[] array, int index) => collection.CopyTo(array, index);
+        protected override void CopyTo(CompilerErrorCollection collection, CompilerError[] array, int index) => collection.CopyTo(array, index);
 
         [Fact]
         public void HasWarnings_Empty_ReturnsFalse()

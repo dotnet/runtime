@@ -613,22 +613,5 @@ namespace System.Xml.Tests
             }
             Assert.True(false);
         }
-
-        public void RunTest(ArrayList schemaList, string xml)
-        {
-            XmlReaderSettings settings = new XmlReaderSettings();
-            settings.ValidationType = ValidationType.Schema;
-            settings.ValidationFlags = XmlSchemaValidationFlags.ReportValidationWarnings;
-            settings.Schemas.XmlResolver = new XmlUrlResolver();
-
-            for (int i = 0; i < schemaList.Count; ++i)
-            {
-                XmlSchema schema = XmlSchema.Read(new StringReader((string)schemaList[i]), new ValidationEventHandler(ValidationCallback));
-                settings.Schemas.Add(schema);
-            }
-            settings.ValidationEventHandler += new ValidationEventHandler(ValidationCallback);
-            using (XmlReader reader = XmlReader.Create(new StringReader(xml), settings))
-                while (reader.Read()) ;
-        }
     }
 }

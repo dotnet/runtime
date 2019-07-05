@@ -19,7 +19,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(typeof(OtherNonGenericDelegate))]
         public void GetDelegateForFunctionPointer_NonGeneric_ReturnsExpected(Type t)
         {
-            MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method));
+            MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate d = targetMethod.CreateDelegate(typeof(NonGenericDelegate));
             IntPtr ptr = Marshal.GetFunctionPointerForDelegate(d);
 
@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void GetDelegateForFunctionPointer_CollectibleType_ReturnsExpected()
         {
-            MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method));
+            MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate d = targetMethod.CreateDelegate(typeof(NonGenericDelegate));
             IntPtr ptr = Marshal.GetFunctionPointerForDelegate(d);
 
@@ -54,7 +54,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void GetDelegateForFunctionPointer_Generic_ReturnsExpected()
         {
-            MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method));
+            MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate d = targetMethod.CreateDelegate(typeof(NonGenericDelegate));
             IntPtr ptr = Marshal.GetFunctionPointerForDelegate(d);
 
@@ -66,7 +66,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void GetDelegateForFunctionPointer_GenericInvalidType_ReturnsExpected()
         {
-            MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method));
+            MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate d = targetMethod.CreateDelegate(typeof(NonGenericDelegate));
             IntPtr ptr = Marshal.GetFunctionPointerForDelegate(d);
 
@@ -132,7 +132,7 @@ namespace System.Runtime.InteropServices.Tests
         [Fact]
         public void GetDelegateForFunctionPointer_CantCast_ThrowsInvalidCastException()
         {
-            MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method));
+            MethodInfo targetMethod = typeof(GetDelegateForFunctionPointerTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate d = targetMethod.CreateDelegate(typeof(NonGenericDelegate));
             IntPtr ptr = Marshal.GetFunctionPointerForDelegate(d);
 
@@ -144,6 +144,6 @@ namespace System.Runtime.InteropServices.Tests
         public delegate void NonGenericDelegate(string t);
         public delegate void OtherNonGenericDelegate(string t);
 
-        public static void Method(string s) { }
+        private static void Method(string s) { }
     }
 }

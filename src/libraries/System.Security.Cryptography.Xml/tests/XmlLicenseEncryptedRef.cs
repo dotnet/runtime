@@ -17,11 +17,7 @@ namespace System.Security.Cryptography.Xml.Tests
     {
         List<AsymmetricAlgorithm> _asymmetricKeys = new List<AsymmetricAlgorithm>();
 
-        public XmlLicenseEncryptedRef()
-        {
-        }
-
-        public void AddAsymmetricKey(AsymmetricAlgorithm key)
+        internal void AddAsymmetricKey(AsymmetricAlgorithm key)
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
@@ -158,7 +154,7 @@ namespace System.Security.Cryptography.Xml.Tests
             return new MemoryStream(decryptedContent);
         }
 
-        public static void Encrypt(Stream toEncrypt, RSA key, out KeyInfo keyInfo, out EncryptionMethod encryptionMethod, out CipherData cipherData)
+        internal static void Encrypt(Stream toEncrypt, RSA key, out KeyInfo keyInfo, out EncryptionMethod encryptionMethod, out CipherData cipherData)
         {
             using (Aes sessionKey = Aes.Create())
             {

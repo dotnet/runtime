@@ -352,7 +352,7 @@ namespace System.IO.Compression.Tests
             Assert.Equal<byte>(correctUncompressedBytes, decompressedBytes);
         }
 
-        public static void Compress_WithState(ReadOnlySpan<byte> input, Span<byte> output)
+        private static void Compress_WithState(ReadOnlySpan<byte> input, Span<byte> output)
         {
             BrotliEncoder encoder;
             while (!input.IsEmpty && !output.IsEmpty)
@@ -364,7 +364,7 @@ namespace System.IO.Compression.Tests
             encoder.Compress(ReadOnlySpan<byte>.Empty, output, out int bytesConsumed2, out int bytesWritten, isFinalBlock: true);
         }
 
-        public static void Decompress_WithState(ReadOnlySpan<byte> input, Span<byte> output)
+        private static void Decompress_WithState(ReadOnlySpan<byte> input, Span<byte> output)
         {
             BrotliDecoder decoder;
             while (!input.IsEmpty && !output.IsEmpty)
@@ -375,17 +375,17 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        public static void Compress_WithoutState(ReadOnlySpan<byte> input, Span<byte> output)
+        private static void Compress_WithoutState(ReadOnlySpan<byte> input, Span<byte> output)
         {
             BrotliEncoder.TryCompress(input, output, out int bytesWritten);
         }
 
-        public static void Decompress_WithoutState(ReadOnlySpan<byte> input, Span<byte> output)
+        private static void Decompress_WithoutState(ReadOnlySpan<byte> input, Span<byte> output)
         {
             BrotliDecoder.TryDecompress(input, output, out int bytesWritten);
         }
 
-        public static MemoryStream Compress_Stream(ReadOnlySpan<byte> input, CompressionLevel compressionLevel)
+        private static MemoryStream Compress_Stream(ReadOnlySpan<byte> input, CompressionLevel compressionLevel)
         {
             using (var inputStream = new MemoryStream(input.ToArray()))
             {
@@ -397,7 +397,7 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        public static MemoryStream Decompress_Stream(ReadOnlySpan<byte> input)
+        private static MemoryStream Decompress_Stream(ReadOnlySpan<byte> input)
         {
             using (var inputStream = new MemoryStream(input.ToArray()))
             {

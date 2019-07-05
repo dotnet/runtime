@@ -482,6 +482,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             });
         }
 
+        [Fact]
         public void CreateExportDefinition_NullAsMetadata_Allowed()
         {
             PropertyInfo property = typeof(TestPart).GetProperties().First();
@@ -496,7 +497,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             ExportDefinition definition = ReflectionModelServices.CreateExportDefinition(expectedLazyMember, expectedContractName, expectedMetadata.AsLazy(), expectedOrigin);
             Assert.NotNull(definition.Metadata);
-            Assert.Equal(0, definition.Metadata.Count);
+            Assert.Equal(2, definition.Metadata.Count);
         }
 
         [Fact]

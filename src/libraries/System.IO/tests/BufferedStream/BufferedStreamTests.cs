@@ -334,8 +334,9 @@ namespace System.IO.Tests
             return new BufferedStream(new MemoryStream());
         }
 
-        public void EndCallback(IAsyncResult ar)
-        { }
+        private void EndCallback(IAsyncResult ar)
+        {
+        }
 
         [Fact]
         public void BeginEndReadTest()

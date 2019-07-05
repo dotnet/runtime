@@ -220,6 +220,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ConditionalTheory(Helpers.IsDrawingSupported)]
         [InlineData("#G12", typeof(FormatException))]
         [InlineData("#G12345", typeof(FormatException))]
         [InlineData("1,2", typeof(ArgumentException))]
@@ -230,7 +231,6 @@ namespace System.Drawing.Tests
         [InlineData("1,256,3", typeof(ArgumentException))]
         [InlineData("1,2,-1", typeof(ArgumentException))]
         [InlineData("1,2,256", typeof(ArgumentException))]
-
         public void FromHtml_Invalid_Throw(string htmlColor, Type exception)
         {
             using (new ThreadCultureChange(CultureInfo.InvariantCulture))

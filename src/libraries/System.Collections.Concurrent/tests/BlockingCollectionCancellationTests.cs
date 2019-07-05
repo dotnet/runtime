@@ -159,7 +159,7 @@ namespace System.Collections.Concurrent.Tests
 
         #region Helper Methods
 
-        public static void EnsureOperationCanceledExceptionThrown(Action action, CancellationToken token, string message)
+        private static void EnsureOperationCanceledExceptionThrown(Action action, CancellationToken token, string message)
         {
             OperationCanceledException operationCanceledEx =
                 Assert.Throws<OperationCanceledException>(action); // "BlockingCollectionCancellationTests: OperationCanceledException not thrown.");

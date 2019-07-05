@@ -207,7 +207,7 @@ namespace System.Threading.Threads.Tests
         }
 
         // Thread is always initialized as MTA irrespective of the attribute present.
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
         public static void ApartmentState_NoAttributePresent_DefaultState_Nano()
         {
             RemoteExecutor.Invoke(() =>

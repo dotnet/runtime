@@ -25,14 +25,14 @@ namespace System.Xml.Tests
         public int errorCount;
         public int warningCount;
 
-        public void Initialize()
+        private void Initialize()
         {
             bWarningCallback = bErrorCallback = false;
             errorCount = warningCount = 0;
         }
 
         //hook up validaton callback
-        public void ValidationCallback(object sender, ValidationEventArgs args)
+        private void ValidationCallback(object sender, ValidationEventArgs args)
         {
             switch (args.Severity)
             {
@@ -208,6 +208,8 @@ namespace System.Xml.Tests
             return;
         }
 
+        [Theory]
+        [ActiveIssue(39106)]
         //[Variation(Desc = "v5.2- Test Default value of ProhibitDTD for Add(TextReader) for schema with DTD", Priority = 1, Params = new object[] { "bug356711_a.xsd", 0 })]
         [InlineData("bug356711_a.xsd", 0)]
         //[Variation(Desc = "v5.1- Test Default value of ProhibitDTD for Add(TextReader) with an xs:import for schema with DTD", Priority = 1, Params = new object[] { "bug356711.xsd", 0 })]
@@ -232,9 +234,10 @@ namespace System.Xml.Tests
             }
             CError.Compare(warningCount, (int)param1, "Warning Count mismatch");
             CError.Compare(errorCount, 0, "Error Count mismatch");
-            return;
         }
 
+        [Theory]
+        [ActiveIssue(39106)]
         //[Variation(Desc = "v6.2- Test Default value of ProhibitDTD for Add(XmlTextReader) for schema with DTD", Priority = 1, Params = new object[] { "bug356711_a.xsd" })]
         [InlineData("bug356711_a.xsd")]
         //[Variation(Desc = "v6.1- Test Default value of ProhibitDTD for Add(XmlTextReader) with an xs:import for schema with DTD", Priority = 1, Params = new object[] { "bug356711.xsd" })]
@@ -257,7 +260,6 @@ namespace System.Xml.Tests
             // expect a validation warning for unresolvable schema location
             CError.Compare(warningCount, 0, "Warning Count mismatch");
             CError.Compare(errorCount, 0, "Error Count mismatch");
-            return;
         }
 
         //[Variation(Desc = "v7- Test Default value of ProhibitDTD for Add(XmlReader) for schema with DTD", Priority = 1, Params = new object[] { "bug356711_a.xsd" })]

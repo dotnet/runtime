@@ -195,7 +195,7 @@ public class ReadAndWrite
         }
     }
 
-    public static unsafe void ValidateConsoleEncoding(Encoding encoding)
+    private static unsafe void ValidateConsoleEncoding(Encoding encoding)
     {
         Assert.NotNull(encoding);
 

@@ -309,7 +309,7 @@ namespace System.Text.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("bytes", () => encoding.GetString(new byte[1], 0, 2));
         }
 
-        public static unsafe void Encode_Invalid(Encoding encoding, string chars, int index, int count)
+        internal static unsafe void Encode_Invalid(Encoding encoding, string chars, int index, int count)
         {
             Assert.Equal(EncoderFallback.ExceptionFallback, encoding.EncoderFallback);
 
@@ -343,7 +343,7 @@ namespace System.Text.Tests
             }
         }
 
-        public static unsafe void Decode_Invalid(Encoding encoding, byte[] bytes, int index, int count)
+        internal static unsafe void Decode_Invalid(Encoding encoding, byte[] bytes, int index, int count)
         {
             Assert.Equal(DecoderFallback.ExceptionFallback, encoding.DecoderFallback);
 

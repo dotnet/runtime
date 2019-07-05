@@ -89,7 +89,7 @@ namespace System.Collections.Tests
         /// <summary>
         /// Tests the linked list based on the expected items and the given linked list.
         /// </summary>
-        internal LinkedList_T_Tests(LinkedList<T> collection, T[] expectedItems)
+        public LinkedList_T_Tests(LinkedList<T> collection, T[] expectedItems)
         {
             _collection = collection;
             _expectedItems = expectedItems;
@@ -98,7 +98,6 @@ namespace System.Collections.Tests
         /// <summary>
         /// Tests the initial items in the list.
         /// </summary>
-        [Fact]
         public void InitialItems_Tests()
         {
             VerifyState(_collection, _expectedItems);

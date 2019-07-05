@@ -25,7 +25,7 @@ namespace System.Text.Tests
             VerifyUtf7Encoding(encoding, allowOptionals);
         }
 
-        public static void VerifyUtf7Encoding(UTF7Encoding encoding, bool allowOptionals)
+        private static void VerifyUtf7Encoding(UTF7Encoding encoding, bool allowOptionals)
         {
             Assert.Empty(encoding.GetPreamble());
 

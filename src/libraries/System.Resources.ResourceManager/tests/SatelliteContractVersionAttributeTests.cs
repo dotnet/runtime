@@ -19,6 +19,7 @@ namespace System.Resources.Tests
             Assert.Equal(version, scva.Version);
         }
 
+        [Fact]
         public static void ConstructorArgumentNull()
         {
             Assert.Throws<ArgumentNullException>(() => new SatelliteContractVersionAttribute(null));

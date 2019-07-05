@@ -171,7 +171,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.Equal(0, nullableSafe.Value);
         }
 
-        [Theory]
+        [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET Framework doesn't support GetUninitializedObject for subclasses of ContextBoundObject")]
         public void GetUninitializedObject_ContextBoundObjectSubclass_NetCore_InitializesValue()
         {

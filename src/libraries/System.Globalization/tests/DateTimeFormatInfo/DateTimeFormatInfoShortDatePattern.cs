@@ -9,6 +9,7 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoShortDatePattern
     {
+        [Fact]
         public void ShortDatePattern_InvariantInfo()
         {
             Assert.Equal("MM/dd/yyyy", DateTimeFormatInfo.InvariantInfo.ShortDatePattern);

@@ -14,9 +14,9 @@ namespace XPathTests.FunctionalTests.Location.Paths
     /// <summary>
     /// Location Paths - MiscWithEncodings
     /// </summary>
-    public static partial class MiscWithEncodingTests
+    public class MiscWithEncodingTests
     {
-        public static void TestInitialize()
+        public MiscWithEncodingTests()
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
@@ -26,10 +26,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// OrderIDs/CustomerIDs/EmployeeIDs/OrderDates/OrderDate[.="11/16/94"]
         /// </summary>
         [Fact]
-        public static void AbbreviatedSyntaxTest125()
+        public void AbbreviatedSyntaxTest125()
         {
-            TestInitialize();
-
             var xml = "XQL_Orders_j1.xml";
             var testExpression = @"OrderIDs/CustomerIDs/EmployeeIDs/OrderDates/OrderDate[.='11/16/94']";
             var expected = new XPathResult(0);
@@ -41,10 +39,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// Russian: xpath testing problem char, return 1 node
         /// </summary>
         [Fact]
-        public static void GlobalizationTest5612()
+        public void GlobalizationTest5612()
         {
-            TestInitialize();
-
             var xml = "Russian_problem_chars.xml";
             var testExpression = @"//root[contains(text(), ""?? ¤ ?? ?? © ? ® ??"")]";
             var expected = new XPathResult(0,
@@ -66,10 +62,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// OrderIDs/CustomerIDs[CustomerID]/EmployeeIDs[EmployeeID][OrderDates/Freight=12.75]
         /// </summary>
         [Fact]
-        public static void MatchesTest1136()
+        public void MatchesTest1136()
         {
-            TestInitialize();
-
             var xml = "XQL_Orders_j3.xml";
             var startingNodePath = "//EmployeeIDs[1]";
             var testExpression = @"OrderIDs/CustomerIDs[CustomerID]/EmployeeIDs[EmployeeID][OrderDates/Freight=12.75]";
@@ -83,10 +77,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// OrderIDs/CustomerIDs[9999999999999999999999999999999999999999999999999999999999999999999999999999999999999]
         /// </summary>
         [Fact]
-        public static void MatchesTest1137()
+        public void MatchesTest1137()
         {
-            TestInitialize();
-
             var xml = "XQL_Orders_j3.xml";
             var startingNodePath = "//CustomerIDs";
             var testExpression =
@@ -101,10 +93,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// /ROOT/OrderIDs[OrderID/@CollatingOrder>=1033]/OrderID/@CollatingOrder
         /// </summary>
         [Fact]
-        public static void MatchesTest1138()
+        public void MatchesTest1138()
         {
-            TestInitialize();
-
             var xml = "xql_orders-flat-200a.xml";
             var startingNodePath = "/ROOT/OrderIDs[22]/OrderID/@CollatingOrder";
             var testExpression = @"/ROOT/OrderIDs[OrderID/@CollatingOrder>=1033]/OrderID/@CollatingOrder";
@@ -118,10 +108,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// .//OrderIDs[CustomerIDs[EmployeeIDs][//EmployeeID='3']][//OrderDate>='11/16/94']
         /// </summary>
         [Fact]
-        public static void PredicatesTest1038()
+        public void PredicatesTest1038()
         {
-            TestInitialize();
-
             var xml = "XQL_Orders_j3.xml";
             var startingNodePath = "/ROOT";
             var testExpression = @".//OrderIDs[CustomerIDs[EmployeeIDs][//EmployeeID='3']][//OrderDate>='11/16/94']";
@@ -135,9 +123,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// OrderIDs/CustomerIDs[CustomerID]/EmployeeIDs[EmployeeID][OrderDates/Freight=12.75]
         /// </summary>
         [Fact]
-        public static void PredicatesTest1039()
+        public void PredicatesTest1039()
         {
-            TestInitialize();
             var xml = "XQL_Orders_j3.xml";
             var startingNodePath = "/ROOT";
             var testExpression = @"OrderIDs/CustomerIDs[CustomerID]/EmployeeIDs[EmployeeID][OrderDates/Freight=12.75]";
@@ -161,9 +148,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// OrderIDs/CustomerIDs[9999999999999999999999999999999999999999999999999999999999999999999999999999999999999]
         /// </summary>
         [Fact]
-        public static void PredicatesTest1040()
+        public void PredicatesTest1040()
         {
-            TestInitialize();
             var xml = "XQL_Orders_j1.xml";
             var startingNodePath = "/ROOT";
             var testExpression =
@@ -178,9 +164,8 @@ namespace XPathTests.FunctionalTests.Location.Paths
         /// /ROOT/OrderIDs[OrderID/@CollatingOrder>=1033]/OrderID/@CollatingOrder
         /// </summary>
         [Fact]
-        public static void PredicatesTest1041()
+        public void PredicatesTest1041()
         {
-            TestInitialize();
             var xml = "xql_orders-flat-200a.xml";
             var testExpression = @"/ROOT/OrderIDs[OrderID/@CollatingOrder>=1033]/OrderID/@CollatingOrder";
             var expected = new XPathResult(0,

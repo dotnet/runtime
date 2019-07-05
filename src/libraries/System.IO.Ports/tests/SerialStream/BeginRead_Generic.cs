@@ -315,13 +315,13 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        public void VerifyBytesToRead(int numBytesRead)
+        private void VerifyBytesToRead(int numBytesRead)
         {
             VerifyBytesToRead(numBytesRead, new ASCIIEncoding());
         }
 
 
-        public void VerifyBytesToRead(int numBytesRead, Encoding encoding)
+        private void VerifyBytesToRead(int numBytesRead, Encoding encoding)
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             using (var com2 = new SerialPort(TCSupport.LocalMachineSerialInfo.SecondAvailablePortName))

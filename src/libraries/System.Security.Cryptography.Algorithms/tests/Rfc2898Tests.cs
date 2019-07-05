@@ -382,6 +382,7 @@ namespace System.Security.Cryptography.DeriveBytesTests
         }
 #endif
 
+        [Fact]
         public static void CryptDeriveKey_NotSupported()
         {
             using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))

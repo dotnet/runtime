@@ -1182,24 +1182,6 @@ namespace System.Linq.Tests
             Assert.Equal(source.Count(), timesRun);
         }
 
-        // [Theory]
-        [MemberData(nameof(RunSelectorDuringCountData))]
-        public void RunSelectorDuringPartitionCount(IEnumerable<int> source)
-        {
-            int timesRun = 0;
-
-            var selected = source.Select(i => timesRun++);
-
-            if (source.Any())
-            {
-                selected.Skip(1).Count();
-                Assert.Equal(source.Count() - 1, timesRun);
-
-                selected.Take(source.Count() - 1).Count();
-                Assert.Equal(source.Count() * 2 - 2, timesRun);
-            }
-        }
-
         public static IEnumerable<object[]> RunSelectorDuringCountData()
         {
             var transforms = new Func<IEnumerable<int>, IEnumerable<int>>[]

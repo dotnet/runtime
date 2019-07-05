@@ -27,15 +27,8 @@ namespace System.Xml.Tests
         public bool WarningInnerExceptionSet = false;
         public bool ErrorInnerExceptionSet = false;
 
-        public void Initialize()
-        {
-            bWarningCallback = bErrorCallback = false;
-            errorCount = warningCount = 0;
-            WarningInnerExceptionSet = ErrorInnerExceptionSet = false;
-        }
-
         //hook up validaton callback
-        public void ValidationCallback(object sender, ValidationEventArgs args)
+        private void ValidationCallback(object sender, ValidationEventArgs args)
         {
             if (args.Severity == XmlSeverityType.Warning)
             {

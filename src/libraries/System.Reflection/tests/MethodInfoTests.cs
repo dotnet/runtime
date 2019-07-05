@@ -561,12 +561,13 @@ namespace System.Reflection.Tests
             Assert.Equal(expected, methodInfo.ToString());
         }
 
+
         //Methods for Reflection Metadata  
-        public void DummyMethod1(string str, int iValue, long lValue)
+        private void DummyMethod1(string str, int iValue, long lValue)
         {
         }
 
-        public void DummyMethod2()
+        private void DummyMethod2()
         {
         }        
 

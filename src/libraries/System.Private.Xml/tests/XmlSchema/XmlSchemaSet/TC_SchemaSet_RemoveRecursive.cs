@@ -24,7 +24,7 @@ namespace System.Xml.Tests
         public bool bWarningCallback = false;
         public bool bErrorCallback = false;
 
-        public void ValidationCallback(object sender, ValidationEventArgs args)
+        private void ValidationCallback(object sender, ValidationEventArgs args)
         {
             if (args.Severity == XmlSeverityType.Warning)
             {

@@ -8,7 +8,7 @@ namespace System.IO.Tests
 {
     public class DirectoryInfo_Delete : Directory_Delete_str
     {
-        public override void Delete(string path)
+        protected override void Delete(string path)
         {
             new DirectoryInfo(path).Delete();
         }
@@ -30,12 +30,12 @@ namespace System.IO.Tests
 
     public class DirectoryInfo_Delete_bool : Directory_Delete_str_bool
     {
-        public override void Delete(string path)
+        protected override void Delete(string path)
         {
             new DirectoryInfo(path).Delete(false);
         }
 
-        public override void Delete(string path, bool recursive)
+        protected override void Delete(string path, bool recursive)
         {
             new DirectoryInfo(path).Delete(recursive);
         }

@@ -1369,7 +1369,7 @@ namespace System.Threading.Tasks.Tests
             public bool DisposeFalseCalled = false;
         }
 
-        public static void SetSynchronizationContext(SynchronizationContext sc)
+        private static void SetSynchronizationContext(SynchronizationContext sc)
         {
             SynchronizationContext.SetSynchronizationContext(sc);
         }

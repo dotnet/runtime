@@ -55,7 +55,7 @@ namespace System.Net.Tests
             Assert.Equal(serverProtocol, socketContext.WebSocket.SubProtocol);
         }
 
-        [ConditionalTheory(nameof(IsNotWindows7))]
+        [ConditionalFact(nameof(IsNotWindows7))]
         public async Task AcceptWebSocketAsync_ValidWebSocket_SetsUpHeadersInResponse()
         {
             HttpListenerContext context = await GetWebSocketContext(new string[] { "SubProtocol", "SubProtocol2" });

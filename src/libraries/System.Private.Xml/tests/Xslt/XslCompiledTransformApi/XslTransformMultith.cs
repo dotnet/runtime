@@ -46,7 +46,7 @@ namespace System.Xml.Tests
             _output = output;
         }
 
-        public void Load(string _strXslFile, string _strXmlFile)
+        private void Load(string _strXslFile, string _strXmlFile)
         {
             _xrData = XmlReader.Create(Path.Combine(_strPath, _strXmlFile));
             _xd = new XPathDocument(_xrData, XmlSpace.Preserve);
@@ -360,7 +360,7 @@ namespace System.Xml.Tests
             return 1;
         }
 
-        public void Load(string _strXslFile, string _strXmlFile)
+        private void Load(string _strXslFile, string _strXmlFile)
         {
             _xrData = XmlReader.Create(Path.Combine(_strPath, _strXmlFile));
             _xd = new XPathDocument(_xrData, XmlSpace.Preserve);

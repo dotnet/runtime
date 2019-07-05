@@ -151,7 +151,7 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, compareInfo.LastIndexOf(source, value, startIndex, count, options));
         }
 
-        public void LastIndexOf_Char(CompareInfo compareInfo, string source, char value, int startIndex, int count, CompareOptions options, int expected)
+        private static void LastIndexOf_Char(CompareInfo compareInfo, string source, char value, int startIndex, int count, CompareOptions options, int expected)
         {
             if (options == CompareOptions.None)
             {

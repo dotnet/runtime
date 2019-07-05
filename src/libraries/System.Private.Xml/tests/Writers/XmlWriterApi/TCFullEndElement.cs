@@ -3401,7 +3401,7 @@ namespace System.Xml.Tests
                 }
             }
 
-            public void VerifyValue(Type dest, object expVal, int param)
+            private void VerifyValue(Type dest, object expVal, int param)
             {
                 object actual;
 

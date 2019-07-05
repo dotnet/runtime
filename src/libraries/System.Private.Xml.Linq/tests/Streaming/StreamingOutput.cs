@@ -26,13 +26,13 @@ namespace XDocumentTests.Streaming
         private Stream _sourceStream = null;
         private Stream _targetStream = null;
 
-        public void GetFreshStream()
+        private void GetFreshStream()
         {
             _sourceStream = new MemoryStream();
             _targetStream = new MemoryStream();
         }
 
-        public void ResetStreamPos()
+        private void ResetStreamPos()
         {
             if (_sourceStream.CanSeek)
             {

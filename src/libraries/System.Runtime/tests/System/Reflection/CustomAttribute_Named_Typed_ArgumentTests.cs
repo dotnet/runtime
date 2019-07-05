@@ -15,7 +15,7 @@ namespace System.Reflection.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("memberInfo", () => new CustomAttributeNamedArgument(null, null));
 
-            MethodInfo m = typeof(CustomAttribute_Named_Typed_ArgumentTests).GetMethod("MyMethod");
+            MethodInfo m = typeof(CustomAttribute_Named_Typed_ArgumentTests).GetMethod("MyMethod", BindingFlags.Static | BindingFlags.NonPublic);
             foreach (CustomAttributeData cad in CustomAttributeData.GetCustomAttributes(m))
             {
                 foreach (CustomAttributeTypedArgument cata in cad.ConstructorArguments)
@@ -54,7 +54,7 @@ namespace System.Reflection.Tests
         }
         
         [MyAttr(MyKinds.First, Desc = "This is a description on a method")]
-        public static void MyMethod() { }
+        private static void MyMethod() { }
     }
     
     internal enum MyKinds {

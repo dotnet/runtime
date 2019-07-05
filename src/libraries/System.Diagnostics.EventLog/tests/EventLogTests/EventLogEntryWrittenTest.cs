@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tests
         private const string message = "EventLogEntryEventWrittenTestMessage";
         private int eventCounter;
 
-        public void RaisingEvent(string log, string methodName, bool waitOnEvent = true)
+        private void RaisingEvent(string log, string methodName, bool waitOnEvent = true)
         {
             signal = new AutoResetEvent(false);
             eventCounter = 0;

@@ -15,7 +15,7 @@ namespace System.IO.Tests
 
         #region Utilities
 
-        public virtual void Delete(string path)
+        protected virtual void Delete(string path)
         {
             Directory.Delete(path);
         }
@@ -223,12 +223,12 @@ namespace System.IO.Tests
     {
         #region Utilities
 
-        public override void Delete(string path)
+        protected override void Delete(string path)
         {
             Directory.Delete(path, false);
         }
 
-        public virtual void Delete(string path, bool recursive)
+        protected virtual void Delete(string path, bool recursive)
         {
             Directory.Delete(path, recursive);
         }

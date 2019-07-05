@@ -471,7 +471,7 @@ namespace System.ComponentModel.Composition.Hosting
             Assert.True(catalog.Catalogs.Count == 0);
         }
 
-        public void CreateMainAndOtherChildren(
+        private static void CreateMainAndOtherChildren(
                     out AggregateCatalog[] mainChildren,
                     out AggregateCatalog[] otherChildren,
                     out TypeCatalog[] componentCatalogs)

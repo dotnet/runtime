@@ -26,7 +26,7 @@ namespace System.Xml.Tests
         public int warningCount;
         public string testData = null;
 
-        public void Initialize()
+        private void Initialize()
         {
             this.testData = Path.Combine(TestData._Root, "AllowXmlAttributes");
             bWarningCallback = bErrorCallback = false;
@@ -34,7 +34,7 @@ namespace System.Xml.Tests
         }
 
         //hook up validaton callback
-        public void ValidationCallback(object sender, ValidationEventArgs args)
+        private void ValidationCallback(object sender, ValidationEventArgs args)
         {
             if (args.Severity == XmlSeverityType.Warning)
             {

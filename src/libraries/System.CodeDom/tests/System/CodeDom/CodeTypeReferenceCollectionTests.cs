@@ -8,28 +8,28 @@ namespace System.CodeDom.Tests
 {
     public class CodeTypeReferenceCollectionTests : CodeCollectionTestBase<CodeTypeReferenceCollection, CodeTypeReference>
     {
-        public override CodeTypeReferenceCollection Ctor() => new CodeTypeReferenceCollection();
-        public override CodeTypeReferenceCollection CtorArray(CodeTypeReference[] array) => new CodeTypeReferenceCollection(array);
-        public override CodeTypeReferenceCollection CtorCollection(CodeTypeReferenceCollection collection) => new CodeTypeReferenceCollection(collection);
+        protected override CodeTypeReferenceCollection Ctor() => new CodeTypeReferenceCollection();
+        protected override CodeTypeReferenceCollection CtorArray(CodeTypeReference[] array) => new CodeTypeReferenceCollection(array);
+        protected override CodeTypeReferenceCollection CtorCollection(CodeTypeReferenceCollection collection) => new CodeTypeReferenceCollection(collection);
 
-        public override int Count(CodeTypeReferenceCollection collection) => collection.Count;
+        protected override int Count(CodeTypeReferenceCollection collection) => collection.Count;
 
-        public override CodeTypeReference GetItem(CodeTypeReferenceCollection collection, int index) => collection[index];
-        public override void SetItem(CodeTypeReferenceCollection collection, int index, CodeTypeReference value) => collection[index] = value;
+        protected override CodeTypeReference GetItem(CodeTypeReferenceCollection collection, int index) => collection[index];
+        protected override void SetItem(CodeTypeReferenceCollection collection, int index, CodeTypeReference value) => collection[index] = value;
 
-        public override void AddRange(CodeTypeReferenceCollection collection, CodeTypeReference[] array) => collection.AddRange(array);
-        public override void AddRange(CodeTypeReferenceCollection collection, CodeTypeReferenceCollection value) => collection.AddRange(value);
+        protected override void AddRange(CodeTypeReferenceCollection collection, CodeTypeReference[] array) => collection.AddRange(array);
+        protected override void AddRange(CodeTypeReferenceCollection collection, CodeTypeReferenceCollection value) => collection.AddRange(value);
 
-        public override object Add(CodeTypeReferenceCollection collection, CodeTypeReference obj) => collection.Add(obj);
+        protected override object Add(CodeTypeReferenceCollection collection, CodeTypeReference obj) => collection.Add(obj);
 
-        public override void Insert(CodeTypeReferenceCollection collection, int index, CodeTypeReference value) => collection.Insert(index, value);
+        protected override void Insert(CodeTypeReferenceCollection collection, int index, CodeTypeReference value) => collection.Insert(index, value);
 
-        public override void Remove(CodeTypeReferenceCollection collection, CodeTypeReference value) => collection.Remove(value);
+        protected override void Remove(CodeTypeReferenceCollection collection, CodeTypeReference value) => collection.Remove(value);
 
-        public override int IndexOf(CodeTypeReferenceCollection collection, CodeTypeReference value) => collection.IndexOf(value);
-        public override bool Contains(CodeTypeReferenceCollection collection, CodeTypeReference value) => collection.Contains(value);
+        protected override int IndexOf(CodeTypeReferenceCollection collection, CodeTypeReference value) => collection.IndexOf(value);
+        protected override bool Contains(CodeTypeReferenceCollection collection, CodeTypeReference value) => collection.Contains(value);
 
-        public override void CopyTo(CodeTypeReferenceCollection collection, CodeTypeReference[] array, int index) => collection.CopyTo(array, index);
+        protected override void CopyTo(CodeTypeReferenceCollection collection, CodeTypeReference[] array, int index) => collection.CopyTo(array, index);
 
         [Theory]
         [InlineData(null)]
