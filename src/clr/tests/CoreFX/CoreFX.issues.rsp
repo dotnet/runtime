@@ -74,8 +74,5 @@
 # https://github.com/dotnet/coreclr/issues/18912
 -nomethod System.Text.RegularExpressions.Tests.RegexMatchTests.Match_ExcessPrefix
 
-# Assert with JITMinOpts=1: https://github.com/dotnet/coreclr/issues/25070
--nonamespace Microsoft.VisualBasic.Tests
-
 # Assert: https://github.com/dotnet/coreclr/issues/25050
 -nonamespace System.Data.Common.Tests
