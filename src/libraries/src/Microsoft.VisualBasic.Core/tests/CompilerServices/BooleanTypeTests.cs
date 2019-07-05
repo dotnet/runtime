@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Globalization;
 using Microsoft.VisualBasic.CompilerServices;
 using Xunit;
 
@@ -67,7 +68,7 @@ namespace Microsoft.VisualBasic.Tests
             { false, "False"},
             { true, "True"},
             { true, "1"},
-            { true, "1.2"},
+            { true, "1" + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator + "2" },
             { true, "2"},
             { true, "-1"},
             { false, "&H00" },
@@ -84,7 +85,7 @@ namespace Microsoft.VisualBasic.Tests
             { false, false },
             { true, true },
             { true, 1 },
-            { true, 1.2 },
+            { true, "1" + CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator + "2" },
             { true, 2 },
             { true, -1 },
             { false, (byte)0 },
