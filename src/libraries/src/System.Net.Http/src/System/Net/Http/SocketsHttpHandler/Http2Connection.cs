@@ -581,7 +581,8 @@ namespace System.Net.Http
 
             // Send PING ACK
             // Don't wait for completion, which could happen asynchronously.
-            LogExceptions(SendPingAckAsync(_incomingBuffer.ActiveMemory.Slice(0, FrameHeader.PingLength)));
+            byte[] pingContent = _incomingBuffer.ActiveMemory.Slice(0, FrameHeader.PingLength).ToArray();
+            LogExceptions(SendPingAckAsync(pingContent));
 
             _incomingBuffer.Discard(frameHeader.Length);
         }
