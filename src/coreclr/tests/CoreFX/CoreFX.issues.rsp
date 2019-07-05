@@ -76,3 +76,6 @@
 
 # Assert: https://github.com/dotnet/coreclr/issues/25050
 -nonamespace System.Data.Common.Tests
+
+# Test failure: https://github.com/dotnet/corefx/issues/39223
+-nomethod System.ComponentModel.TypeConverterTests.FontConverterTest.TestConvertFrom
