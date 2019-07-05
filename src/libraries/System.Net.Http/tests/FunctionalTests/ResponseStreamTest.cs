@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Test.Common;
 using System.Text;
@@ -19,24 +20,27 @@ namespace System.Net.Http.Functional.Tests
     {
         public ResponseStreamTest(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop("Uses external server")]
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        [InlineData(2)]
-        [InlineData(3)]
-        [InlineData(4)]
-        [InlineData(5)]
-        [InlineData(6)]
-        [InlineData(7)]
-        public async Task GetStreamAsync_ReadToEnd_Success(int readMode)
+        public static IEnumerable<object[]> RemoteServersAndReadModes()
         {
-            using (HttpClient client = CreateHttpClient())
+            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    yield return new object[] { remoteServer, i };
+                }
+            }
+
+        }
+        [OuterLoop("Uses external server")]
+        [Theory, MemberData(nameof(RemoteServersAndReadModes))]
+        public async Task GetStreamAsync_ReadToEnd_Success(Configuration.Http.RemoteServer remoteServer, int readMode)
+        {
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 string customHeaderValue = Guid.NewGuid().ToString("N");
                 client.DefaultRequestHeaders.Add("X-ResponseStreamTest", customHeaderValue);
 
-                using (Stream stream = await client.GetStreamAsync(Configuration.Http.RemoteEchoServer))
+                using (Stream stream = await client.GetStreamAsync(remoteServer.EchoUri))
                 {
                     var ms = new MemoryStream();
                     int bytesRead;
@@ -119,11 +123,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task GetAsync_UseResponseHeadersReadAndCallLoadIntoBuffer_Success(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
-            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead))
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
+            using (HttpResponseMessage response = await client.GetAsync(remoteServer.EchoUri, HttpCompletionOption.ResponseHeadersRead))
             {
                 await response.Content.LoadIntoBufferAsync();
 
@@ -138,11 +142,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task GetAsync_UseResponseHeadersReadAndCopyToMemoryStream_Success(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
-            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead))
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
+            using (HttpResponseMessage response = await client.GetAsync(remoteServer.EchoUri, HttpCompletionOption.ResponseHeadersRead))
             {
                 var memoryStream = new MemoryStream();
                 await response.Content.CopyToAsync(memoryStream);
@@ -162,11 +166,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task GetStreamAsync_ReadZeroBytes_Success()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task GetStreamAsync_ReadZeroBytes_Success(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
-            using (Stream stream = await client.GetStreamAsync(Configuration.Http.RemoteEchoServer))
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
+            using (Stream stream = await client.GetStreamAsync(remoteServer.EchoUri))
             {
                 Assert.Equal(0, stream.Read(new byte[1], 0, 0));
                 Assert.Equal(0, stream.Read(new Span<byte>(new byte[1], 0, 0)));
@@ -175,14 +179,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task ReadAsStreamAsync_Cancel_TaskIsCanceled()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task ReadAsStreamAsync_Cancel_TaskIsCanceled(Configuration.Http.RemoteServer remoteServer)
         {
             var cts = new CancellationTokenSource();
 
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             using (HttpResponseMessage response =
-                    await client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead))
+                    await client.GetAsync(remoteServer.EchoUri, HttpCompletionOption.ResponseHeadersRead))
             using (Stream stream = await response.Content.ReadAsStreamAsync())
             {
                 var buffer = new byte[2048];
