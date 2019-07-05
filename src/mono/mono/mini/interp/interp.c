@@ -1349,7 +1349,7 @@ interp_to_native_trampoline (gpointer addr, gpointer ccontext)
 #pragma optimize ("", off)
 #endif
 static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE void
-ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr, gboolean string_ctor, ThreadContext *context)
+ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr, gboolean string_ctor, ThreadContext *context, gboolean save_last_error)
 {
 	MonoLMFExt ext;
 	gpointer args;
@@ -1381,6 +1381,8 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_pinvoke);
 	entry_func ((gpointer) addr, args);
+	if (save_last_error)
+		mono_marshal_set_last_error ();
 	interp_pop_lmf (&ext);
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
@@ -1878,7 +1880,7 @@ interp_entry (InterpEntryData *data)
 }
 
 static stackval *
-do_icall (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr)
+do_icall (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr, gboolean save_last_error)
 {
 	switch (op) {
 	case MINT_ICALL_V_V: {
@@ -1981,6 +1983,9 @@ do_icall (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gp
 		g_assert_not_reached ();
 	}
 
+	if (save_last_error)
+		mono_marshal_set_last_error ();
+
 	/* convert the native representation to the stackval representation */
 	if (sig)
 		stackval_from_data (sig->ret, &sp [-1], (char*) &sp [-1].data.p, sig->pinvoke);
@@ -1993,12 +1998,12 @@ do_icall (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gp
 #pragma optimize ("", off)
 #endif
 static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE stackval *
-do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr)
+do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr, gboolean save_last_error)
 {
 	MonoLMFExt ext;
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_icall);
 
-	sp = do_icall (frame, sig, op, sp, ptr);
+	sp = do_icall (frame, sig, op, sp, ptr, save_last_error);
 
 	interp_pop_lmf (&ext);
 
@@ -3177,25 +3182,28 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			gpointer target_ip = sp [-1].data.p;
 			MonoMethodSignature *csignature = (MonoMethodSignature*)imethod->data_items [* (guint16 *)(ip + 1)];
 			int opcode = *(guint16 *)(ip + 2);
+			gboolean save_last_error = *(guint16 *)(ip + 3);
 
 			sp--;
 			frame->ip = ip;
 
-			sp = do_icall_wrapper (frame, csignature, opcode, sp, target_ip);
+			sp = do_icall_wrapper (frame, csignature, opcode, sp, target_ip, save_last_error);
 			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
-			ip += 3;
+			ip += 4;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT) {
 			MonoMethodSignature *csignature;
 			stackval *endsp = sp;
 			unsigned char *code = NULL;
+			gboolean save_last_error = FALSE;
 
 			frame->ip = ip;
 			
 			csignature = (MonoMethodSignature*)imethod->data_items [* (guint16 *)(ip + 1)];
-			ip += 2;
+			save_last_error = *(guint16 *)(ip + 2);
+			ip += 3;
 			--sp;
 			--endsp;
 			code = (guchar*)sp->data.p;
@@ -3229,7 +3237,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 				interp_exec_method (&child_frame, context);
 			} else {
-				ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, FALSE, context);
+				ves_pinvoke_method (&child_frame, csignature, (MonoFuncV) code, FALSE, context, save_last_error);
 			}
 
 			CHECK_RESUME_STATE (context);
@@ -5716,7 +5724,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				 * to check the abort threshold. For this to work we use child_frame as a
 				 * dummy frame that is stored in the lmf and serves as the transition frame
 				 */
-				do_icall_wrapper (&child_frame, NULL, MINT_ICALL_V_P, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception);
+				do_icall_wrapper (&child_frame, NULL, MINT_ICALL_V_P, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE);
 
 				MonoException *abort_exc = (MonoException*)tmp_sp.data.p;
 				if (abort_exc)
@@ -5746,7 +5754,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_V)
 		MINT_IN_CASE(MINT_ICALL_PPPPPP_P)
 			frame->ip = ip;
-			sp = do_icall_wrapper (frame, NULL, *ip, sp, imethod->data_items [*(guint16 *)(ip + 1)]);
+			sp = do_icall_wrapper (frame, NULL, *ip, sp, imethod->data_items [*(guint16 *)(ip + 1)], FALSE);
 			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 2;

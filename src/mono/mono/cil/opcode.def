@@ -319,7 +319,7 @@ OPDEF(CEE_MONO_LDPTR_NURSERY_BITS, "mono_ldptr_nursery_bits", Pop0, PushI, Inlin
 OPDEF(CEE_MONO_CALLI_EXTRA_ARG, "mono_calli_extra_arg", VarPop, VarPush, InlineSig, 0, 2, 0xF0, 0x18, CALL)
 OPDEF(CEE_MONO_LDDOMAIN, "mono_lddomain", Pop0, PushI, InlineNone, 0, 2, 0xF0, 0x19, NEXT)
 OPDEF(CEE_MONO_ATOMIC_STORE_I4, "mono_atomic_store_i4", PopI+PopI, Push0, InlineI, 0, 2, 0xF0, 0x1A, NEXT)
-OPDEF(CEE_MONO_GET_LAST_ERROR, "mono_get_last_error", Pop0, PushI, InlineNone, 0, 2, 0xF0, 0x1B, NEXT)
+OPDEF(CEE_MONO_SAVE_LAST_ERROR, "mono_save_last_error", Pop0, Push0, InlineNone, 0, 2, 0xF0, 0x1B, NEXT)
 OPDEF(CEE_MONO_GET_RGCTX_ARG, "mono_get_rgctx_arg", Pop0, PushI, InlineNone, 0, 2, 0xF0, 0x1C, NEXT)
 OPDEF(CEE_MONO_LDPTR_PROFILER_ALLOCATION_COUNT, "mono_ldptr_profiler_allocation_count", Pop0, PushI, InlineNone, 0, 2, 0xF0, 0x1D, NEXT)
 OPDEF(CEE_MONO_LD_DELEGATE_METHOD_PTR, "mono_ld_delegate_method_ptr", Pop1, PushI, InlineNone, 0, 2, 0xF0, 0x1E, NEXT)

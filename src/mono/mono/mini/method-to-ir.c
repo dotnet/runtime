@@ -5920,6 +5920,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	guint32 token, ins_flag;
 	MonoClass *klass;
 	MonoClass *constrained_class = NULL;
+	gboolean save_last_error = FALSE;
 	guchar *ip, *end, *target, *err_pos;
 	MonoMethodSignature *sig;
 	MonoGenericContext *generic_context = NULL;
@@ -7778,6 +7779,21 @@ calli_end:
 					*sp++ = mono_emit_widen_call_res (cfg, ins, fsig);
 				else
 					*sp++ = ins;
+			}
+
+			if (save_last_error) {
+				save_last_error = FALSE;
+#ifdef TARGET_WIN32
+				// Making icalls etc could clobber the value so emit inline code
+				// to read last error on Windows.
+				MONO_INST_NEW (cfg, ins, OP_GET_LAST_ERROR);
+				ins->dreg = alloc_dreg (cfg, STACK_I4);
+				ins->type = STACK_I4;
+				MONO_ADD_INS (cfg->cbb, ins);
+				mono_emit_jit_icall (cfg, mono_marshal_set_last_error_windows, &ins);
+#else
+				mono_emit_jit_icall (cfg, mono_marshal_set_last_error, NULL);
+#endif
 			}
 
 			if (keep_this_alive) {
@@ -10555,15 +10571,11 @@ mono_ldptr:
 			EMIT_NEW_PCONST (cfg, ins, cfg->compile_aot ? NULL : cfg->domain);
 			*sp++ = ins;
 			break;
-		case MONO_CEE_MONO_GET_LAST_ERROR:
+		case MONO_CEE_MONO_SAVE_LAST_ERROR:
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);
 
-			MONO_INST_NEW (cfg, ins, OP_GET_LAST_ERROR);
-			ins->dreg = alloc_dreg (cfg, STACK_I4);
-			ins->type = STACK_I4;
-			MONO_ADD_INS (cfg->cbb, ins);
-
-			*sp++ = ins;
+			// Just an IL prefix, setting this flag, picked up by call instructions.
+			save_last_error = TRUE;
 			break;
 		case MONO_CEE_MONO_GET_RGCTX_ARG:
 			g_assert (method->wrapper_type != MONO_WRAPPER_NONE);

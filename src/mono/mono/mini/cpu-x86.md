@@ -674,3 +674,5 @@ get_sp: dest:i len:6
 set_sp: src1:i len:6
 
 fill_prof_call_ctx: src1:i len:128
+
+get_last_error: dest:i len:32

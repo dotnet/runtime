@@ -1949,10 +1949,18 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 		mono_mb_emit_byte (mb, CEE_LDARG_0);
 		mono_mb_emit_op (mb, CEE_UNBOX, mono_defaults.int_class);
 		mono_mb_emit_byte (mb, CEE_LDIND_I);
+		if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
+		}
 		mono_mb_emit_calli (mb, csig);
 	} else if (MONO_CLASS_IS_IMPORT (mb->method->klass)) {
 #ifndef DISABLE_COM
 		mono_mb_emit_ldloc (mb, gc_safe_transition_builder.coop_cominterop_fnptr);
+		if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
+			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+			mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
+		}
 		mono_mb_emit_cominterop_call_function_pointer (mb, csig);
 #else
 		g_assert_not_reached ();
@@ -1962,37 +1970,18 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 			/* Reuse the ICALL_ADDR opcode for pinvokes too */
 			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 			mono_mb_emit_op (mb, CEE_MONO_ICALL_ADDR, &piinfo->method);
+			if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
+			}
 			mono_mb_emit_calli (mb, csig);
-		} else {			
+		} else {
+			if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
+				mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
+				mono_mb_emit_byte (mb, CEE_MONO_SAVE_LAST_ERROR);
+			}
 			mono_mb_emit_native_call (mb, csig, func);
 		}
-	}
-
-	/* Set LastError if needed */
-	if (piinfo->piflags & PINVOKE_ATTRIBUTE_SUPPORTS_LAST_ERROR) {
-#ifdef TARGET_WIN32
-		if (!aot) {
-			static MonoMethodSignature *get_last_error_sig = NULL;
-			if (!get_last_error_sig) {
-				get_last_error_sig = mono_metadata_signature_alloc (mono_defaults.corlib, 0);
-				get_last_error_sig->ret = int_type;
-				get_last_error_sig->pinvoke = 1;
-			}
-
-			/*
-			 * Have to call GetLastError () early and without a wrapper, since various runtime components could
-			 * clobber its value.
-			 */
-			mono_mb_emit_native_call (mb, get_last_error_sig, GetLastError);
-			mono_mb_emit_icall (mb, mono_marshal_set_last_error_windows);
-		} else {
-			mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
-			mono_mb_emit_byte (mb, CEE_MONO_GET_LAST_ERROR);
-			mono_mb_emit_icall (mb, mono_marshal_set_last_error_windows);
-		}
-#else
-		mono_mb_emit_icall (mb, mono_marshal_set_last_error);
-#endif
 	}
 
 	if (MONO_TYPE_ISSTRUCT (sig->ret)) {
