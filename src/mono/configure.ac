@@ -684,23 +684,32 @@ AC_CHECK_HEADERS(sys/user.h, [], [],
 
 AC_CHECK_HEADERS(linux/serial.h)
 
-AC_CHECK_HEADER(zlib.h, [have_zlib=yes], [have_zlib=no])
-if test x$have_zlib = xyes; then
-   AC_TRY_COMPILE([#include <zlib.h>], [
-   #if defined(ZLIB_VERNUM) && (ZLIB_VERNUM >= 0x1230)
-   #else
-   #error No good zlib found
-   #endif
-   ],[
-	AC_MSG_RESULT(Using system zlib)
-	zlib_msg="system zlib"
-	AC_DEFINE(HAVE_SYS_ZLIB,1,[Have system zlib])
-   ],[
-	AC_MSG_RESULT(Using embedded zlib)
-	have_zlib=no
-	zlib_msg="bundled zlib"
-   ])
-fi
+case "$host" in
+	# Use bundled zlib on Windows to be sure it is static.
+	*-mingw*|*-cygwin*)
+		have_zlib=no
+		zlib_msg="bundled zlib"
+		;;
+	default)
+		AC_CHECK_HEADER(zlib.h, [have_zlib=yes], [have_zlib=no])
+		if test x$have_zlib = xyes; then
+			AC_TRY_COMPILE([#include <zlib.h>], [
+				#if defined(ZLIB_VERNUM) && (ZLIB_VERNUM >= 0x1230)
+				#else
+				#error No good zlib found
+				#endif
+			],[
+				AC_MSG_RESULT(Using system zlib)
+				zlib_msg="system zlib"
+				AC_DEFINE(HAVE_SYS_ZLIB,1,[Have system zlib])
+			],[
+				AC_MSG_RESULT(Using embedded zlib)
+				have_zlib=no
+				zlib_msg="bundled zlib"
+			])
+		fi
+		;;
+esac
 
 AC_ARG_WITH(static-zlib, [  --with-static-zlib=PATH    use the specified static zlib instead of -lz],[STATIC_ZLIB_PATH=$with_static_zlib],[STATIC_ZLIB_PATH=])
 if test "x$STATIC_ZLIB_PATH" != "x"; then

@@ -99,10 +99,10 @@ if ENABLE_MONODROID
 support_sources += \
 	../../support/nl.c \
 	../../support/zlib-helper.c
-if HAVE_ZLIB
-# See libmonoruntime_support_la_LDFLAGS
-else
-support_sources += \
+endif
+endif
+
+zlib_sources = \
 	../../support/adler32.c \
 	../../support/crc32.c \
 	../../support/crc32.h \
@@ -122,7 +122,17 @@ support_sources += \
 	../../support/zlib.h \
 	../../support/zutil.c \
 	../../support/zutil.h
-endif
+
+#
+# Support is a separate library because it is not valid C++.
+#
+if HOST_WIN32
+support_sources += $(zlib_sources)
+else
+if HAVE_ZLIB
+# See libmonoruntime_support_la_LDFLAGS
+else
+support_sources += $(zlib_sources)
 endif
 endif
 
@@ -151,8 +161,7 @@ libmonoruntime_config_la_SOURCES = \
 libmonoruntime_config_la_CPPFLAGS = $(AM_CPPFLAGS) -DMONO_BINDIR=\"$(bindir)/\" -DMONO_ASSEMBLIES=\"$(assembliesdir)\" -DMONO_CFG_DIR=\"$(confdir)\" -DMONO_RELOC_LIBDIR=\"../$(reloc_libdir)\" @CXX_ADD_CFLAGS@
 
 #
-# This library is only used to compile the required support/ sources. We can't use them directly in platform_sources
-# because they aren't C++ compatible.
+# Support is a separate library because it is not valid C++.
 #
 libmonoruntime_support_la_SOURCES = $(support_sources)
 libmonoruntime_support_la_CFLAGS = $(filter-out @CXX_REMOVE_CFLAGS@, @CFLAGS@)
