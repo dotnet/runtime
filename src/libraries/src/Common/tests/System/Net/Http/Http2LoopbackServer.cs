@@ -125,7 +125,7 @@ namespace System.Net.Test.Common
             await connection.WriteFrameAsync(settingsAck).ConfigureAwait(false);
 
             // The client will send us a SETTINGS ACK eventually, but not necessarily right away.
-            connection.ExpectSettingsAck();
+            await connection.ExpectSettingsAckAsync(TimeSpan.FromSeconds(30.0));
 
             return (connection, clientSettingsFrame);
         }
