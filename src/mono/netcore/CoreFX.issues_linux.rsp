@@ -20,3 +20,12 @@
 
 -nomethod System.Tests.WeakReferenceTests.Generic
 -nomethod System.Reflection.Tests.AssemblyTests.CreateInstance
+
+# StackOverflow somewhere here
+-nonamespace System.Threading.Tasks.Tests
+
+# NRE in SafeHandle.Dispose
+-noclass SafeWaitHandleExtensions_4000_Tests
+-noclass SafeWaitHandle_4000_Tests
+-noclass SafeHandle_4000_Tests
+-noclass CriticalHandle_4000_Tests

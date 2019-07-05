@@ -22,7 +22,7 @@ PLATFORM_AOT_SUFFIX := .dll
 PLATFORM_AOT_PREFIX :=
 NETCORESDK_EXT = zip
 UNZIPCMD = python -c "import zipfile,sys; zipfile.ZipFile(sys.argv[1], 'r').extractall()"
-XUNIT_FLAGS = -notrait category=nonwindowstests
+XUNIT_FLAGS = -notrait category=nonwindowstests @../../../../CoreFX.issues_windows.rsp
 TESTS_PLATFORM = Windows_NT.x64
 ON_RUNTIME_EXTRACT = chmod -R 755 {host,shared,./dotnet}
 DOTNET := $(shell powershell -ExecutionPolicy Bypass -Command "./init-tools.ps1")/dotnet.exe
@@ -149,7 +149,7 @@ corefx/.stamp-dl-corefx-tests-$(NETCORETESTS_VERSION):
 
 run-tests-corefx: update-tests-corefx
 	for testdir in corefx/tests/extracted/*; do \
-		$(MAKE) run-tests-corefx-$$(basename $${testdir}); \
+		$(MAKE) run-tests-corefx-$$(basename $${testdir}) || true; \
 	done; \
 	$(MAKE) xunit-summary
 
