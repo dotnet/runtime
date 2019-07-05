@@ -1306,6 +1306,7 @@ class NumaNodeInfo
 {
 private:
     static BOOL m_enableGCNumaAware;
+    static uint16_t m_nNodes;
     static BOOL InitNumaNodeInfoAPI();
 
 public:
@@ -1319,6 +1320,7 @@ public: 	// functions
                                      DWORD allocType, DWORD prot, DWORD node);
 #ifndef FEATURE_PAL
     static BOOL GetNumaProcessorNodeEx(PPROCESSOR_NUMBER proc_no, PUSHORT node_no);
+    static bool GetNumaInfo(PUSHORT total_nodes, DWORD* max_procs_per_node);
 #else // !FEATURE_PAL
     static BOOL GetNumaProcessorNodeEx(USHORT proc_no, PUSHORT node_no);
 #endif // !FEATURE_PAL
@@ -1363,6 +1365,7 @@ public:
     static void GetGroupForProcessor(WORD processor_number, 
 		    WORD *group_number, WORD *group_processor_number);
     static DWORD CalculateCurrentProcessorNumber();
+    static bool GetCPUGroupInfo(PUSHORT total_groups, DWORD* max_procs_per_group);
     //static void PopulateCPUUsageArray(void * infoBuffer, ULONG infoSize);
 
 #if !defined(FEATURE_REDHAWK)

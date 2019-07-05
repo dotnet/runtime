@@ -40,6 +40,13 @@ inline void FATAL_GC_ERROR()
     GCToEEInterface::HandleFatalError((unsigned int)COR_E_EXECUTIONENGINE);
 }
 
+#ifdef MULTIPLE_HEAPS
+// This turns on instrumentation that collects info for heap balancing.
+// Define it and make sure you have HEAP_BALANCE_LOG/HEAP_BALANCE_TEMP_LOG 
+// level logging enabled *only*.
+//#define HEAP_BALANCE_INSTRUMENTATION
+#endif //MULTIPLE_HEAPS
+
 #ifdef _MSC_VER
 #pragma inline_depth(20)
 #endif
@@ -255,6 +262,15 @@ const int policy_expand  = 2;
 #define SPINLOCK_LOG (DT_LOG_0 + 5)
 #define SNOOP_LOG (DT_LOG_0 + 6)
 
+// NOTE! This is for HEAP_BALANCE_INSTRUMENTATION
+// This particular one is special and needs to be well formatted because we 
+// do post processing on it with tools\GCLogParser. If you need to add some 
+// detail to help with investigation that's not 't processed by tooling 
+// prefix it with TEMP so that line will be written to the results as is in
+// the result. I have some already logged with HEAP_BALANCE_TEMP_LOG.
+#define HEAP_BALANCE_LOG (DT_LOG_0 + 7)
+#define HEAP_BALANCE_TEMP_LOG (DT_LOG_0 + 8)
+
 #ifndef DACCESS_COMPILE
 
 #ifdef SIMPLE_DPRINTF
@@ -267,6 +283,7 @@ void GCLog (const char *fmt, ... );
 //#define dprintf(l,x) {if (trace_gc && ((l <= 2) || (l == BGC_LOG) || (l==GTC_LOG))) {GCLog x;}}
 //#define dprintf(l,x) {if ((l == 1) || (l == 2222)) {GCLog x;}}
 #define dprintf(l,x) {if ((l <= 1) || (l == GTC_LOG)) {GCLog x;}}
+//#define dprintf(l,x) {if (l == HEAP_BALANCE_LOG) {GCLog x;}}
 //#define dprintf(l,x) {if ((l==GTC_LOG) || (l <= 1)) {GCLog x;}}
 //#define dprintf(l,x) {if (trace_gc && ((l <= print_level) || (l==GTC_LOG))) {GCLog x;}}
 //#define dprintf(l,x) {if (l==GTC_LOG) {printf ("\n");printf x ; fflush(stdout);}}
@@ -1222,6 +1239,12 @@ public:
                              uint32_t flags);
 
 #ifdef MULTIPLE_HEAPS
+    PER_HEAP_ISOLATED
+    void hb_log_new_allocation();
+
+    PER_HEAP_ISOLATED
+    void hb_log_balance_activities();
+
     static
     void balance_heaps (alloc_context* acontext);
     PER_HEAP
@@ -2965,7 +2988,7 @@ public:
     GCEvent full_gc_end_event;
 
     // Full GC Notification percentages.
-    PER_HEAP_ISOLATED
+    PER_HEAP
     uint32_t fgn_maxgen_percent;
 
     PER_HEAP_ISOLATED
@@ -3025,6 +3048,9 @@ public:
 
     PER_HEAP
     heap_segment* new_heap_segment;
+
+    PER_HEAP_ISOLATED
+    size_t min_gen0_balance_delta;
 
 #define alloc_quantum_balance_units (16)
 
@@ -3091,7 +3117,7 @@ public:
 
     PER_HEAP_ISOLATED
     uint64_t total_physical_mem;
-
+    
     PER_HEAP_ISOLATED
     uint64_t entry_available_physical_mem;
 
@@ -3174,6 +3200,11 @@ public:
 
     PER_HEAP_ISOLATED
     size_t last_gc_index;
+
+#ifdef HEAP_BALANCE_INSTRUMENTATION
+    PER_HEAP_ISOLATED
+    size_t last_gc_end_time_ms;
+#endif //HEAP_BALANCE_INSTRUMENTATION
 
 #ifdef SEG_MAPPING_TABLE
     PER_HEAP_ISOLATED
