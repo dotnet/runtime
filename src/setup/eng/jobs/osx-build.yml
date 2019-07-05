@@ -1,5 +1,8 @@
+parameters:
+  name: ''
+
 jobs:
-- job: Build_OSX
+- job: ${{ parameters.name }}
   pool:
     ${{ if eq(variables['System.TeamProject'], 'public') }}:
       name: Hosted macOS
@@ -9,10 +12,8 @@ jobs:
     matrix: 
       debug:
         _BuildConfig: Debug
-        _PublishType: none
       release:
         _BuildConfig: Release
-        _PublishType: blob
   workspace:
     clean: all
   variables: 
@@ -28,47 +29,6 @@ jobs:
     displayName: Build 
     condition: succeeded()
 
-  - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-    - script: $(Build.SourcesDirectory)/Tools/msbuild.sh
-        $(Build.SourcesDirectory)/publish/publish.proj
-        $(_CommonPublishArgs)
-        /p:PublishType=$(_PublishType)
-        /p:TargetArchitecture=x64
-        /p:ConfigurationGroup=$(_BuildConfig)
-        /p:PortableBuild=true
-        /p:OSGroup=OSX
-        /p:StabilizePackageVersion=$(IsStable)
-        /bl:$(Build.SourcesDirectory)\publish.binlog
-      displayName: Publish 
-      condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
-
-  - task: PublishTestResults@2
-    displayName: Publish Test Results
-    inputs:
-      testResultsFormat: 'xUnit'
-      testResultsFiles: '*.xml'
-      searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
-      mergeTestResults: true
-      testRunTitle: ${{ parameters.displayName }}-$(_BuildConfig)
-    continueOnError: true
-    condition: always()
-
-  - task: CopyFiles@2
-    displayName: Copy logs to stage
-    inputs:
-      SourceFolder: '$(Build.SourcesDirectory)'
-      Contents: |
-        **/*.log
-        **/*.binlog
-      TargetFolder: '$(Build.StagingDirectory)/BuildLogs'
-    continueOnError: true
-    condition: succeededOrFailed()
-
-  - task: PublishBuildArtifacts@1
-    displayName: Publish Artifact BuildLogs
-    inputs:
-      PathtoPublish: '$(Build.StagingDirectory)/BuildLogs'
-      ArtifactName: Build_OSX-$(_BuildConfig)
-    continueOnError: true
-    condition: succeededOrFailed()
-  
+  - template: steps/upload-job-artifacts.yml
+    parameters:
+      name: ${{ parameters.name }}

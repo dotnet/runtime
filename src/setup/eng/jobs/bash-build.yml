@@ -11,18 +11,16 @@ parameters:
     matrix: 
       debug:
         _BuildConfig: Debug
-        _PublishType: none
       release:
         _BuildConfig: Release
-        _PublishType: blob
   targetArchitecture: x64
 jobs:
-  - job: ${{ parameters.displayName }}
-    displayName: ${{ parameters.displayName }}
+  - job: ${{ parameters.name }}
+    displayName: ${{ parameters.name }}
     pool:
-      ${{ if and(eq(parameters.displayName, 'Build_FreeBSD_x64'), ne(variables['System.TeamProject'], 'public')) }}:
+      ${{ if and(eq(parameters.name, 'FreeBSD_x64'), ne(variables['System.TeamProject'], 'public')) }}:
         name: dnceng-freebsd-internal
-      ${{ if ne(parameters.displayName, 'Build_FreeBSD_x64') }}:
+      ${{ if ne(parameters.name, 'FreeBSD_x64') }}:
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           name: NetCorePublic-Pool
           queue: buildpool.ubuntu.1604.amd64.open
@@ -32,7 +30,7 @@ jobs:
     strategy: ${{ parameters.strategy }}
     variables:
 
-      ${{ if ne(parameters.displayName, 'Build_FreeBSD_x64')}}:
+      ${{ if ne(parameters.name, 'FreeBSD_x64')}}:
         RunArguments: >-
           docker run --privileged --rm
           -v "$(Build.SourcesDirectory):/root/coresetup"
@@ -40,7 +38,7 @@ jobs:
           ${{ parameters.additionalRunArgs }}
           ${{ parameters.dockerImage }}
       
-      ${{ if eq(parameters.displayName, 'Build_FreeBSD_x64')}}:
+      ${{ if eq(parameters.name, 'FreeBSD_x64')}}:
         RunArguments: export DotNetBootstrapCliTarPath=/dotnet-sdk-freebsd-x64.tar &&
 
       CommonMSBuildArgs: >-
@@ -48,22 +46,24 @@ jobs:
         /p:OfficialBuildId=$(OfficialBuildId)
         /p:TargetArchitecture=${{ parameters.targetArchitecture }}
 
+      # Don't put additionalMSBuildArgs as the last line. It may or may not have extra args. If the
+      # parameter is empty, AzDO replaces it with empty space without chomping the extra newline.
+      # This causes a newline in the arg string that causes failure.
       BuildArguments: >-
         --ci --test
         /p:CrossBuild=${{ parameters.crossBuild }}
         /p:DisableCrossgen=${{ parameters.disableCrossgen }}
         /p:PortableBuild=${{ parameters.portableBuild }}
-        /p:StripSymbols=true
         /p:SkipTests=${{ parameters.skipTests }}
         $(CommonMSBuildArgs)
         ${{ parameters.additionalMSBuildArgs }}
+        /p:StripSymbols=true
 
       PublishArguments: >-
-        /p:PublishType=$(_PublishType)
         /p:PortableBuild=${{ parameters.portableBuild }}
-        /bl:msbuild.publish.binlog
         $(CommonMSBuildArgs)
-         ${{ parameters.additionalMSBuildArgs }}
+        ${{ parameters.additionalMSBuildArgs }}
+        /bl:msbuild.publish.binlog
 
       # Tell the build to package up the bits from the portable build.
       PackagePortableBitsArgs: >-
@@ -102,21 +102,8 @@ jobs:
         $(RunArguments) ./build.sh $(BuildArguments)
       displayName: Build
 
-    # Publish only if internal and not PR 
-    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-      - script: |
-          set -x
-          df -h
-          $(RunArguments) \
-            ./Tools/msbuild.sh \
-            ./publish/publish.proj \
-            $(PublishArguments) \
-            $(_CommonPublishArgs)
-        displayName: Publish
-        condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
-
     # Only for glibc leg, here we produce RPMs and Debs
-    - ${{ if eq(parameters.displayName, 'Build_Linux_x64_glibc')}}:
+    - ${{ if eq(parameters.name, 'Linux_x64_glibc')}}:
       - task: CopyFiles@2
         displayName: 'Copy built Portable linux-x64 binaries to staging directory'
         inputs:
@@ -158,36 +145,9 @@ jobs:
       continueOnError: true
       condition: succeededOrFailed()
 
-    - task: PublishTestResults@2
-      displayName: Publish Test Results
-      inputs:
-        testResultsFormat: 'xUnit'
-        testResultsFiles: '*.xml'
-        searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
-        mergeTestResults: true
-        testRunTitle: ${{ parameters.displayName }}-$(_BuildConfig)
-      continueOnError: true
-      condition: always()
-
-    - task: CopyFiles@2
-      displayName: Copy logs to stage
-      inputs:
-        SourceFolder: '$(Build.SourcesDirectory)'
-        Contents: |
-          **/*.log
-          **/*.binlog
-        TargetFolder: '$(Build.StagingDirectory)\BuildLogs'
-        CleanTargetFolder: true
-      continueOnError: true
-      condition: succeededOrFailed()
-
-    - task: PublishBuildArtifacts@1
-      displayName: Publish Artifact BuildLogs
-      inputs:
-        PathtoPublish: '$(Build.StagingDirectory)\BuildLogs'
-        ArtifactName: ${{ parameters.displayName }}-$(_BuildConfig)
-      continueOnError: true
-      condition: succeededOrFailed()
+    - template: steps/upload-job-artifacts.yml
+      parameters:
+        name: ${{ parameters.name }}
 
     - script: df -h
       displayName: Check space (df -h)
@@ -195,7 +155,7 @@ jobs:
       continueOnError: true
 
     # Force clean up machine in case any docker images are left behind
-    - ${{ if ne(parameters.displayName, 'Build_FreeBSD_x64')}}:
+    - ${{ if ne(parameters.name, 'FreeBSD_x64')}}:
       - script: docker system prune -af && df -h
         displayName: Run Docker clean up
         condition: succeededOrFailed()
