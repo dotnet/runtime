@@ -57,9 +57,9 @@ namespace System.Net.Http.Functional.Tests
         {
             foreach (string method in methods)
             {
-                foreach (bool secure in new[] { true, false })
+                foreach (Uri serverUri in Configuration.Http.EchoServerList)
                 {
-                    yield return new object[] { method, secure };
+                    yield return new object[] { method, serverUri };
                 }
             }
         }
@@ -2346,13 +2346,13 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(HttpMethods))]
         public async Task SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(
             string method,
-            bool secureServer)
+            Uri serverUri)
         {
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(
                     new HttpMethod(method),
-                    secureServer ? Configuration.Http.SecureRemoteEchoServer : Configuration.Http.RemoteEchoServer) { Version = VersionFromUseHttp2 };
+                    serverUri) { Version = VersionFromUseHttp2 };
 
                 if (PlatformDetection.IsUap && method == "TRACE")
                 {
@@ -2374,13 +2374,13 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(HttpMethodsThatAllowContent))]
         public async Task SendAsync_SendRequestUsingMethodToEchoServerWithContent_Success(
             string method,
-            bool secureServer)
+            Uri serverUri)
         {
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(
                     new HttpMethod(method),
-                    secureServer ? Configuration.Http.SecureRemoteEchoServer : Configuration.Http.RemoteEchoServer) { Version = VersionFromUseHttp2 };
+                    serverUri) { Version = VersionFromUseHttp2 };
                 request.Content = new StringContent(ExpectedContent);
                 using (HttpResponseMessage response = await client.SendAsync(request))
                 {
@@ -2438,7 +2438,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(HttpMethodsThatDontAllowContent))]
         public async Task SendAsync_SendRequestUsingNoBodyMethodToEchoServerWithContent_NoBodySent(
             string method,
-            bool secureServer)
+            Uri serverUri)
         {
             if (PlatformDetection.IsUap && method == "TRACE")
             {
@@ -2452,7 +2452,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 var request = new HttpRequestMessage(
                     new HttpMethod(method),
-                    secureServer ? Configuration.Http.SecureRemoteEchoServer : Configuration.Http.RemoteEchoServer)
+                    serverUri)
                 {
                     Content = new StringContent(ExpectedContent),
                     Version = VersionFromUseHttp2
