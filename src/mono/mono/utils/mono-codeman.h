@@ -9,9 +9,17 @@
 
 typedef struct _MonoCodeManager MonoCodeManager;
 
+#define MONO_CODE_MANAGER_CALLBACKS \
+	MONO_CODE_MANAGER_CALLBACK (void, chunk_new, (void *chunk, int size)) \
+	MONO_CODE_MANAGER_CALLBACK (void, chunk_destroy, (void *chunk)) \
+
 typedef struct {
-	void (*chunk_new) (void *chunk, int size);
-	void (*chunk_destroy) (void *chunk);
+
+#undef MONO_CODE_MANAGER_CALLBACK
+#define MONO_CODE_MANAGER_CALLBACK(ret, name, sig) ret (*name) sig;
+
+    MONO_CODE_MANAGER_CALLBACKS
+
 } MonoCodeManagerCallbacks;
 
 MonoCodeManager* mono_code_manager_new     (void);
@@ -29,7 +37,7 @@ void             mono_code_manager_commit  (MonoCodeManager *cman, void *data, i
 int              mono_code_manager_size    (MonoCodeManager *cman, int *used_size);
 void             mono_code_manager_init (void);
 void             mono_code_manager_cleanup (void);
-void             mono_code_manager_install_callbacks (MonoCodeManagerCallbacks* callbacks);
+void             mono_code_manager_install_callbacks (const MonoCodeManagerCallbacks* callbacks);
 
 /* find the extra block allocated to resolve branches close to code */
 typedef int    (*MonoCodeManagerFunc)      (void *data, int csize, int size, void *user_data);
