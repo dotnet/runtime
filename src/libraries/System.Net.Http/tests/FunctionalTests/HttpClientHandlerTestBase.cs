@@ -2,17 +2,19 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Net.Test.Common;
-
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit.Abstractions;
-using System.Collections.Generic;
-using System.Text;
 
 namespace System.Net.Http.Functional.Tests
 {
+    using Configuration = System.Net.Test.Common.Configuration;
+
     public abstract class HttpClientHandlerTestBase : FileCleanupTestBase
     {
         public readonly ITestOutputHelper _output;
@@ -39,7 +41,13 @@ namespace System.Net.Http.Functional.Tests
         protected HttpClient CreateHttpClient(HttpMessageHandler handler)
         {
             var client = new HttpClient(handler);
-            SetDefaultRequestVersion(client, VersionFromUseHttp2);
+
+            // Always set the default request version to HTTP/2.
+            // The actual version used will be determined by the server (either loopback server or remote server).
+            // Note that if you create the HttpRequestMessage explicitly, you will need to set its Version explicitly
+            // because it defaults to 1.1.
+
+            SetDefaultRequestVersion(client, HttpVersion.Version20);
             return client;
         }
 
@@ -107,5 +115,54 @@ namespace System.Net.Http.Functional.Tests
                 (LoopbackServerFactory)Http2LoopbackServerFactory.Singleton :
 #endif
                 Http11LoopbackServerFactory.Singleton;
+
+        // For use by remote server tests
+
+        public static readonly IEnumerable<object[]> RemoteServersMemberData = Configuration.Http.RemoteServersMemberData;
+
+        protected HttpClient CreateHttpClientForRemoteServer(Configuration.Http.RemoteServer remoteServer)
+        {
+            return CreateHttpClientForRemoteServer(remoteServer, CreateHttpClientHandler());
+        }
+
+        protected HttpClient CreateHttpClientForRemoteServer(Configuration.Http.RemoteServer remoteServer, HttpClientHandler httpClientHandler)
+        {
+            // ActiveIssue #39293: WinHttpHandler will downgrade to 1.1 if you set Transfer-Encoding: chunked.
+            // So, skip this verification if we're not using SocketsHttpHandler.
+            HttpMessageHandler wrappedHandler =
+                IsSocketsHttpHandler(httpClientHandler) ? new VersionCheckerHttpHandler(httpClientHandler, remoteServer.HttpVersion) : (HttpMessageHandler)httpClientHandler;
+
+            var client = new HttpClient(wrappedHandler);
+            SetDefaultRequestVersion(client, remoteServer.HttpVersion);
+            return client;
+        }
+
+        private sealed class VersionCheckerHttpHandler : DelegatingHandler
+        {
+            private readonly Version _expectedVersion;
+
+            public VersionCheckerHttpHandler(HttpMessageHandler innerHandler, Version expectedVersion)
+                : base(innerHandler)
+            {
+                _expectedVersion = expectedVersion;
+            }
+
+            protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                if (request.Version != _expectedVersion)
+                {
+                    throw new Exception($"Unexpected request version: expected {_expectedVersion}, saw {request.Version}");
+                }
+
+                HttpResponseMessage response = await base.SendAsync(request, cancellationToken);
+
+                if (response.Version != _expectedVersion)
+                {
+                    throw new Exception($"Unexpected response version: expected {_expectedVersion}, saw {response.Version}");
+                }
+
+                return response;
+            }
+        }
     }
 }
