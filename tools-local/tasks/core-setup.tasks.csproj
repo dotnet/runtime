@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <Compile Include="*.cs" />
+    <Compile Include="BuildTools.Publish\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,11 +37,6 @@
     <Reference Include="Microsoft.Build" />
     <Reference Include="System.IO.Compression.FileSystem" />
     <Reference Include="System.IO.Compression" />
-  </ItemGroup>
-
-  <!-- TODO: (arcade) Add this back, needed for publishing. Removed because it requires BuildTools to compile. -->
-  <ItemGroup>
-    <Compile Remove="FinalizeBuild.cs" />
   </ItemGroup>
 
 </Project>

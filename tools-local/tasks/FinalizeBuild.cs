@@ -5,16 +5,11 @@
 using Microsoft.Build.Framework;
 using Microsoft.DotNet.Build.CloudTestTasks;
 using System;
-using System.IO;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using Microsoft.Build.Construction;
-using System.Xml;
-using System.Globalization;
-using System.Threading.Tasks;
+using System.IO;
 using System.Linq;
-using System.Diagnostics;
-using System.Threading;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.Build.Tasks
 {
