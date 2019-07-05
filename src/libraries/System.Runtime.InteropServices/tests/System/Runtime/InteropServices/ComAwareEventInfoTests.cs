@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices.Tests
 
         public bool CalledEventHandler { get; set; }
 
-        public void EventHandler(object sender, EventArgs e)
+        private void EventHandler(object sender, EventArgs e)
         {
             Assert.False(CalledEventHandler);
             CalledEventHandler = true;
@@ -101,7 +101,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Null(e);
         }
 
-        public class NonComObject
+        internal class NonComObject
         {
             [ExcludeFromCodeCoverage]
             public event EventHandler Event;

@@ -177,7 +177,7 @@ namespace System.Reflection.Emit.Tests
             }
         }
 
-        public static void VerifyPInvokeMethod(Type type, MethodInfo method, DpmParams p)
+        internal static void VerifyPInvokeMethod(Type type, MethodInfo method, DpmParams p)
         {
             Assert.Equal(type.AsType(), method.DeclaringType);
             Assert.Equal(p.MethodName, method.Name);

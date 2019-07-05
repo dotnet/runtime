@@ -84,7 +84,7 @@ namespace System.Text.Tests
             Encode(source, index, count, GetBytes(source, index, count), valid: false);
         }
 
-        public void Encode(string source, int index, int count, byte[] expected, bool valid)
+        private static void Encode(string source, int index, int count, byte[] expected, bool valid)
         {
             EncodingHelpers.Encode(Encoding.GetEncoding("latin1"), source, index, count, expected);
 

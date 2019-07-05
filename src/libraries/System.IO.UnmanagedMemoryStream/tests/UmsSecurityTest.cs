@@ -73,7 +73,7 @@ public class UmsSecurityTests
         Assert.Throws<NotSupportedException>(() => stream.WriteByte(byte.MaxValue)); // Stream does not support writing.
     }
 
-    public static void CheckStreamIntegrity(UnmanagedMemoryStream stream, byte[] originalData)
+    private static void CheckStreamIntegrity(UnmanagedMemoryStream stream, byte[] originalData)
     {
         stream.Position = 0;
         byte[] streamData = new byte[originalData.Length];

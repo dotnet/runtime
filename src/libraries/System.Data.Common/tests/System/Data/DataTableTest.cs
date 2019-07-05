@@ -2136,12 +2136,12 @@ Assert.False(true);
             _tableInitialized = true;
         }
 
-        public void OnRowChanging(object src, DataRowChangeEventArgs args)
+        private void OnRowChanging(object src, DataRowChangeEventArgs args)
         {
             _rowActionChanging = args.Action;
         }
 
-        public void OnRowChanged(object src, DataRowChangeEventArgs args)
+        private void OnRowChanged(object src, DataRowChangeEventArgs args)
         {
             _rowActionChanged = args.Action;
         }
@@ -4043,8 +4043,9 @@ Assert.False(true);
     }
 
     [Serializable]
-
-    public class AppDomainsAndFormatInfo    {
+    public class AppDomainsAndFormatInfo
+    {
+        [Fact]
         public void Remote()
         {
             int n = (int)Convert.ChangeType("5", typeof(int));

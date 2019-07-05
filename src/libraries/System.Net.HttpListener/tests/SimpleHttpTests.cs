@@ -119,10 +119,8 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        public Task UnknownHeaders_Success_Large() => UnknownHeaders_Success(1000);
-
-        [Theory]
         [InlineData(100)]
+        [InlineData(1000)]
         public async Task UnknownHeaders_Success(int numHeaders)
         {
             Task<HttpListenerContext> server = _listener.GetContextAsync();

@@ -155,8 +155,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(PropertyBadAssigments))]
-        public void PropertyIncompatibleConstantAssigment(object lhs, object rhs, bool _, bool invalidCast)
+        public void PropertyIncompatibleConstantAssigment(object lhs, object rhs, bool overflow, bool invalidCast)
         {
+            // Not used by this test
+            _ = overflow;
+
             CallSite<Func<CallSite, object, object, object>> callSite =
                 CallSite<Func<CallSite, object, object, object>>.Create(
                     Binder.SetMember(
@@ -204,8 +207,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         }
 
         [Theory, MemberData(nameof(PropertyBadCheckedAssigments))]
-        public void PropertyIncompatibleConstantCheckedAssigment(object lhs, object rhs, bool _, bool invalidCast)
+        public void PropertyIncompatibleConstantCheckedAssigment(object lhs, object rhs, bool overflow, bool invalidCast)
         {
+            // Not used by this test
+            _ = overflow;
+
             CallSite<Func<CallSite, object, object, object>> callSite =
                 CallSite<Func<CallSite, object, object, object>>.Create(
                     Binder.SetMember(

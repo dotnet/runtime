@@ -37,7 +37,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             TryOpenConnectionWithIntegratedAuthentication(builder.ConnectionString);
         }
 
-        public static void TryOpenConnectionWithIntegratedAuthentication(string connectionString)
+        private static void TryOpenConnectionWithIntegratedAuthentication(string connectionString)
         {
             using (SqlConnection connection = new SqlConnection(connectionString))
             {

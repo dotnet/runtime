@@ -80,7 +80,6 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, ti.ToTitleCase(actual));
         }
 
-        [Theory]
         public static IEnumerable<object[]> CultureName_TestData()
         {
             yield return new object[] { CultureInfo.InvariantCulture.TextInfo, "" };
@@ -246,7 +245,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        public void TestToLower(string name, string str, string expected)
+        private static void TestToLower(string name, string str, string expected)
         {
             Assert.Equal(expected, new CultureInfo(name).TextInfo.ToLower(str));
             if (str.Length == 1)
@@ -369,7 +368,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        public void TestToUpper(string name, string str, string expected)
+        private static void TestToUpper(string name, string str, string expected)
         {
             Assert.Equal(expected, new CultureInfo(name).TextInfo.ToUpper(str));
             if (str.Length == 1)

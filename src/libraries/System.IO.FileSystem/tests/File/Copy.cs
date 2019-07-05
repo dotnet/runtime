@@ -10,7 +10,7 @@ namespace System.IO.Tests
 {
     public partial class File_Copy_str_str : FileSystemTest
     {
-        public virtual void Copy(string source, string dest)
+        protected virtual void Copy(string source, string dest)
         {
             File.Copy(source, dest);
         }
@@ -237,12 +237,12 @@ namespace System.IO.Tests
 
     public class File_Copy_str_str_b : File_Copy_str_str
     {
-        public override void Copy(string source, string dest)
+        protected override void Copy(string source, string dest)
         {
             File.Copy(source, dest, false);
         }
 
-        public virtual void Copy(string source, string dest, bool overwrite)
+        protected virtual void Copy(string source, string dest, bool overwrite)
         {
             File.Copy(source, dest, overwrite);
         }

@@ -12,12 +12,12 @@ namespace System.IO.Tests
     {
         static bool IsBindMountSupported => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !PlatformDetection.IsInContainer && !PlatformDetection.IsRedHatFamily6;
 
-        public virtual void Delete(string path)
+        protected virtual void Delete(string path)
         {
             File.Delete(path);
         }
 
-        public virtual FileInfo Create(string path)
+        protected virtual FileInfo Create(string path)
         {
             var ret = new FileInfo(path);
             ret.Create().Dispose();

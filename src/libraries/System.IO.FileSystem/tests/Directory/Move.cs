@@ -10,7 +10,7 @@ namespace System.IO.Tests
     {
         #region Utilities
 
-        public virtual void Move(string sourceDir, string destDir)
+        protected virtual void Move(string sourceDir, string destDir)
         {
             Directory.Move(sourceDir, destDir);
         }

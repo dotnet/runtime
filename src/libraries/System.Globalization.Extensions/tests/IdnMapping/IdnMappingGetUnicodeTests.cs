@@ -111,7 +111,7 @@ namespace System.Globalization.Tests
             GetUnicode_Invalid(new IdnMapping() { UseStd3AsciiRules = true }, ascii, index, count, exceptionType);
         }
 
-        public static void GetUnicode_Invalid(IdnMapping idnMapping, string ascii, int index, int count, Type exceptionType)
+        private static void GetUnicode_Invalid(IdnMapping idnMapping, string ascii, int index, int count, Type exceptionType)
         {
             if (ascii == null || index + count == ascii.Length)
             {

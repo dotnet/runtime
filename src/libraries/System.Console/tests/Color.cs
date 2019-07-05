@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 public class Color
@@ -51,7 +52,8 @@ public class Color
         });
     }
 
-    //[Fact] // the CI system redirects stdout, so we can't easily test non-redirected behavior
+    [Fact]
+    [Trait(XunitConstants.Category, XunitConstants.IgnoreForCI)] // the CI system redirects stdout, so we can't easily test non-redirected behavior
     [PlatformSpecific(TestPlatforms.AnyUnix)]
     public static void NonRedirectedOutputDoesUseAnsiSequences()
     {

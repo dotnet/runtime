@@ -496,6 +496,7 @@ namespace System.Collections.Specialized.Tests
             Assert.Equal(left.GetHashCode(), right.GetHashCode());
         }
 
+        [Fact]
         public static void Section_ToStringTest()
         {
             Random random = new Random(-55);

@@ -1515,7 +1515,7 @@ namespace System.Text.Json.Tests
             TryGetGuid_HasValueSequence_RetrievesGuid(testString, expectedString, isFinalBlock: false);
         }
 
-        public static void TryGetGuid_HasValueSequence_RetrievesGuid(string testString, string expectedString, bool isFinalBlock)
+        private static void TryGetGuid_HasValueSequence_RetrievesGuid(string testString, string expectedString, bool isFinalBlock)
         {
             byte[] dataUtf8 = Encoding.UTF8.GetBytes($"\"{testString}\"");
             ReadOnlySequence<byte> sequence = JsonTestHelper.GetSequence(dataUtf8, 1);

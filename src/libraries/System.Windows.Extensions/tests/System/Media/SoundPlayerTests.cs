@@ -228,7 +228,7 @@ namespace System.Media.Test
             soundPlayer.Load();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsSoundPlaySupported))] 
         public void Play_NoSuchFile_ThrowsFileNotFoundException()
         {
             var soundPlayer = new SoundPlayer("noSuchFile");

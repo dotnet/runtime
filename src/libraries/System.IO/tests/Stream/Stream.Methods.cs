@@ -42,7 +42,7 @@ namespace System.IO.Tests
             await StreamTest(ms1, false);
         }
 
-        public static void SeekTest(Stream stream, bool fSuppres)
+        private static void SeekTest(Stream stream, bool fSuppres)
         {
             long lngPos;
             byte btValue;
@@ -108,9 +108,8 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => stream.Seek(-1, SeekOrigin.Current));
         }
 
-        public static async Task StreamTest(Stream stream, bool fSuppress)
+        private static async Task StreamTest(Stream stream, bool fSuppress)
         {
-
             string strValue;
             int iValue;
 
@@ -163,7 +162,6 @@ namespace System.IO.Tests
             {
                 Assert.Equal(i % 256, stream.ReadByte());
             }
-
 
             btArr = new byte[iLength];
             stream.Read(btArr, 0, iLength);

@@ -11,7 +11,7 @@ namespace System.IO.Tests
 {
     public class FileInfo_GetSetTimes : InfoGetSetTimes<FileInfo>
     {
-        public override FileInfo GetExistingItem()
+        protected override FileInfo GetExistingItem()
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
@@ -55,11 +55,11 @@ namespace System.IO.Tests
             return fileinfo;
         }
 
-        public override FileInfo GetMissingItem() => new FileInfo(GetTestFilePath());
+        protected override FileInfo GetMissingItem() => new FileInfo(GetTestFilePath());
 
-        public override string GetItemPath(FileInfo item) => item.FullName;
+        protected override string GetItemPath(FileInfo item) => item.FullName;
 
-        public override void InvokeCreate(FileInfo item) => item.Create();
+        protected override void InvokeCreate(FileInfo item) => item.Create();
 
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)
         {

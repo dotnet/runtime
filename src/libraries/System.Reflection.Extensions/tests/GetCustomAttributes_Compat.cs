@@ -38,7 +38,7 @@ namespace System.Reflection.Tests
             CheckReturnType(attributes);
         }
 
-        public void CheckReturnType(IEnumerable<Attribute> attributes)
+        private static void CheckReturnType(IEnumerable<Attribute> attributes)
         {
             Type expectedType = typeof(MyAttribute[]);
             Type actualType = attributes.GetType();

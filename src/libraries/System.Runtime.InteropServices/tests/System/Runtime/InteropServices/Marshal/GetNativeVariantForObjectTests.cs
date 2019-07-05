@@ -76,7 +76,7 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new object[] { valueType, null }, (VarEnum)8204, (IntPtr)(-1) };
 
             // Delegate.
-            MethodInfo method = typeof(GetNativeVariantForObjectTests).GetMethod(nameof(NonGenericMethod));
+            MethodInfo method = typeof(GetNativeVariantForObjectTests).GetMethod(nameof(NonGenericMethod), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate d = method.CreateDelegate(typeof(NonGenericDelegate));
             yield return new object[] { d, VarEnum.VT_DISPATCH, (IntPtr)(-1) };
         }
@@ -444,7 +444,7 @@ namespace System.Runtime.InteropServices.Tests
         public enum UInt32Enum : uint { Value1, Value2 }
         public enum UInt64Enum : ulong { Value1, Value2 }
 
-        public static void NonGenericMethod(int i) { }
+        private static void NonGenericMethod(int i) { }
         public delegate void NonGenericDelegate(int i);
 
         public class FakeSafeHandle : SafeHandle

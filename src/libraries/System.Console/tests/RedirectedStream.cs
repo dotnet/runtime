@@ -9,6 +9,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 public class RedirectedStream
@@ -41,14 +42,6 @@ public class RedirectedStream
         result = Console.IsInputRedirected;
         result = Console.IsOutputRedirected;
         result = Console.IsErrorRedirected;
-    }
-
-    //[Fact] // the CI system redirects stdout, so we can only really test the redirected behavior.
-    public static void CheckNonRedirectedBehavior()
-    {
-        Assert.False(Console.IsInputRedirected);
-        Assert.False(Console.IsOutputRedirected);
-        Assert.False(Console.IsErrorRedirected);
     }
 
     private static void RunRemote(Func<int> func, ProcessStartInfo psi = null)

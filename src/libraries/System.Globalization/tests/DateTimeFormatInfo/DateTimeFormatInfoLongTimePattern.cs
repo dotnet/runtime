@@ -9,6 +9,7 @@ namespace System.Globalization.Tests
 {
     public class DateTimeFormatInfoLongTimePattern
     {
+        [Fact]
         public void LongTimePattern_GetInvariantInfo_ReturnsExpected()
         {
             Assert.Equal("HH:mm:ss", DateTimeFormatInfo.InvariantInfo.LongTimePattern);

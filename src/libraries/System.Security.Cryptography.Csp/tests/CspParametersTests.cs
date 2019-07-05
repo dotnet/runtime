@@ -46,8 +46,7 @@ namespace System.Security.Cryptography.Csp.Tests
             }
         }
 
-        //Manual test - requires Smart Card - read instructions
-        //[Theory]
+        [Theory(Skip = "Manual test - requires Smart Card - read instructions")]
         [InlineData(true)]
         [InlineData(false)]
         public static void KeyPassword_SmartCard_Manual_Test(bool correctPassword)

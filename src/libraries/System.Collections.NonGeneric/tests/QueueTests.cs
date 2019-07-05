@@ -956,7 +956,7 @@ namespace System.Collections.Tests
             AssertExtensions.Throws<ArgumentNullException>("queue", () => Queue.Synchronized(null)); // Queue is null
         }
 
-        public void StartEnqueueThread()
+        private void StartEnqueueThread()
         {
             int t_age = _threadAge;
             while (t_age > 0)

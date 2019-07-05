@@ -1678,6 +1678,7 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(value.StringValue, deserializedValue.StringValue);
     }
 
+    [Fact]
     public static void DCJS_SerializationEvents()
     {
         var input = new MyType() { Value = "string value" };

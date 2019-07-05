@@ -345,7 +345,7 @@ namespace System.Text.RegularExpressions.Tests
             VerifyMatch(new Regex(pattern, options).Match(input, beginning, length), expectedSuccess, expectedValue);
         }
 
-        public static void VerifyMatch(Match match, bool expectedSuccess, string expectedValue)
+        private static void VerifyMatch(Match match, bool expectedSuccess, string expectedValue)
         {
             Assert.Equal(expectedSuccess, match.Success);
             Assert.Equal(expectedValue, match.Value);
@@ -733,7 +733,7 @@ namespace System.Text.RegularExpressions.Tests
             }
         }
 
-        public static void VerifyMatch(Match match, bool expectedSuccess, CaptureData[] expected)
+        private static void VerifyMatch(Match match, bool expectedSuccess, CaptureData[] expected)
         {
             Assert.Equal(expectedSuccess, match.Success);
 

@@ -11,6 +11,7 @@ namespace System.Text.Json.Serialization.Tests
 {
     public static partial class ValueTests
     {
+        [Fact]
         public static void ReadGenericIEnumerableOfIEnumerable()
         {
             IEnumerable<IEnumerable> result = JsonSerializer.Deserialize<IEnumerable<IEnumerable>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
@@ -77,6 +78,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, count);
         }
 
+        [Fact]
         public static void ReadGenericIListOfIList()
         {
             IList<IList> result = JsonSerializer.Deserialize<IList<IList>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
@@ -143,6 +145,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, count);
         }
 
+        [Fact]
         public static void ReadGenericICollectionOfICollection()
         {
             ICollection<ICollection> result = JsonSerializer.Deserialize<ICollection<ICollection>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
@@ -209,6 +212,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, count);
         }
 
+        [Fact]
         public static void ReadGenericStackOfStack()
         {
             Stack<Stack> result = JsonSerializer.Deserialize<Stack<Stack>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
@@ -277,6 +281,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, count);
         }
 
+        [Fact]
         public static void ReadGenericQueueOfQueue()
         {
             Queue<Queue> result = JsonSerializer.Deserialize<Queue<Queue>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));

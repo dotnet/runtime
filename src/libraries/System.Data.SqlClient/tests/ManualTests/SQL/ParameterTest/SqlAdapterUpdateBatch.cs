@@ -47,7 +47,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
 
-        public class EventInfo
+        private class EventInfo
         {
             public string Level { get; set; }
             public string Message { get; set; }
@@ -59,7 +59,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        public static void ExecuteNonQueries()
+        private static void ExecuteNonQueries()
         {
             List<EventInfo> entities = new List<EventInfo>
             {

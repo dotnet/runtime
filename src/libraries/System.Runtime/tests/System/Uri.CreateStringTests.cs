@@ -982,6 +982,8 @@ namespace System.Tests
             yield return new object[] { @"\\servername\sharename\path\filename", false };
         }
 
+        [Theory]
+        [MemberData(nameof(Relative_TestData))]
         public void Relative(string uriString, bool relativeOrAbsolute)
         {
             PerformAction(uriString, UriKind.Relative, uri =>
@@ -1253,7 +1255,7 @@ namespace System.Tests
             Assert.Null(uri);
         }
 
-        public static void PerformAction(string uriString, UriKind uriKind, Action<Uri> action)
+        private static void PerformAction(string uriString, UriKind uriKind, Action<Uri> action)
         {
             if (uriKind == UriKind.Absolute)
             {
@@ -1269,7 +1271,7 @@ namespace System.Tests
             action(result);
         }
 
-        public static void VerifyRelativeUri(Uri uri, string originalString, string toString)
+        internal static void VerifyRelativeUri(Uri uri, string originalString, string toString)
         {
             Assert.Equal(originalString, uri.OriginalString);
             Assert.Equal(toString, uri.ToString());

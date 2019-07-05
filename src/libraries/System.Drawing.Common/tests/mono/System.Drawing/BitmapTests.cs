@@ -64,6 +64,7 @@ namespace MonoTests.System.Drawing
             Assert.Equal(Color.FromArgb(255, 255, 0, 155), color2);
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue(20884)]
         public void LockBits_IndexedWrite_NonIndexed()
         {
@@ -74,6 +75,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue(20884)]
         public void LockBits_NonIndexedWrite_ToIndexed()
         {
@@ -295,6 +297,7 @@ namespace MonoTests.System.Drawing
             FormatTest(PixelFormat.Format32bppArgb);
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]     
         [ActiveIssue(20884)]
         public void Format32bppRgb()
         {
@@ -669,6 +672,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue(20884)]
         public void LockBitmap_Format32bppArgb_Format32bppRgb_ReadWrite_Whole()
         {
@@ -723,6 +727,7 @@ namespace MonoTests.System.Drawing
             }
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue(20884)]
         public void LockBitmap_Format32bppArgb_Format32bppRgb_ReadWrite_Partial()
         {
@@ -911,6 +916,7 @@ namespace MonoTests.System.Drawing
             return new BinaryFormatter().Deserialize(s);
         }
 
+        [ConditionalFact(Helpers.IsDrawingSupported)]        
         [ActiveIssue(20844)]
         public void Serialize_Icon()
         {

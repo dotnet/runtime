@@ -495,7 +495,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_StringIntPtrRectangleF_Success()
         {
             string fileName = GetPath("newTestImage.wmf");
@@ -579,7 +579,7 @@ namespace System.Drawing.Imaging.Tests
             File.Delete(fileName);
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_StringIntPtrRectangle_Success()
         {
             string fileName = GetPath("newTestImage.wmf");
@@ -788,7 +788,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ConditionalTheory(Helpers.IsDrawingSupported)]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Ctor_StreamIntPtrRectangle_Success()
         {
             using (Bitmap bmp = new Bitmap(10, 10, PixelFormat.Format32bppArgb))

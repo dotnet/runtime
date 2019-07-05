@@ -159,6 +159,7 @@ namespace System.Net.Tests
             Assert.Throws<NotImplementedException>(() => request.Proxy = null);
         }
 
+        [Fact]
         public void GetSystemWebProxy_NoArguments_ExpectNotNull()
         {
             IWebProxy webProxy = WebRequest.GetSystemWebProxy();

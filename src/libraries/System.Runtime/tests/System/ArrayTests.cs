@@ -3137,7 +3137,7 @@ namespace System.Tests
             }
         }
 
-        public static void Reverse(Array array, int index, int length, Array expected)
+        private static void Reverse(Array array, int index, int length, Array expected)
         {
             if (index == array.GetLowerBound(0) && length == array.Length)
             {

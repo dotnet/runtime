@@ -9,27 +9,27 @@ namespace System.CodeDom.Tests
 {
     public abstract class CodeCollectionTestBase<TCollection, TItem> where TCollection: class where TItem : class, new()
     {
-        public abstract TCollection Ctor();
-        public abstract TCollection CtorArray(TItem[] array);
-        public abstract TCollection CtorCollection(TCollection collection);
+        protected abstract TCollection Ctor();
+        protected abstract TCollection CtorArray(TItem[] array);
+        protected abstract TCollection CtorCollection(TCollection collection);
 
-        public abstract int Count(TCollection collection);
+        protected abstract int Count(TCollection collection);
 
-        public abstract TItem GetItem(TCollection collection, int index);
-        public abstract void SetItem(TCollection collection, int index, TItem value);
+        protected abstract TItem GetItem(TCollection collection, int index);
+        protected abstract void SetItem(TCollection collection, int index, TItem value);
 
-        public abstract void AddRange(TCollection collection, TItem[] array);
-        public abstract void AddRange(TCollection collection, TCollection value);
+        protected abstract void AddRange(TCollection collection, TItem[] array);
+        protected abstract void AddRange(TCollection collection, TCollection value);
 
-        public abstract object Add(TCollection collection, TItem seed);
+        protected abstract object Add(TCollection collection, TItem seed);
 
-        public abstract void Insert(TCollection collection, int index, TItem value);
-        public abstract void Remove(TCollection collection, TItem value);
+        protected abstract void Insert(TCollection collection, int index, TItem value);
+        protected abstract void Remove(TCollection collection, TItem value);
 
-        public abstract int IndexOf(TCollection collection, TItem value);
-        public abstract bool Contains(TCollection collection, TItem value);
+        protected abstract int IndexOf(TCollection collection, TItem value);
+        protected abstract bool Contains(TCollection collection, TItem value);
 
-        public abstract void CopyTo(TCollection collection, TItem[] array, int index);
+        protected abstract void CopyTo(TCollection collection, TItem[] array, int index);
 
         [Fact]
         public void Ctor_Empty()

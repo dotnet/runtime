@@ -69,7 +69,7 @@ namespace System.ComponentModel.Composition
     public class AssemblyCatalogConstructorTests : AssemblyCatalogTestsHelper
     {
         // Test Codebase variant of the APIs
-        public static void Constructor_ValueAsCodebaseArgument_ShouldSetAssemblyProperty(Func<string, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_ValueAsCodebaseArgument_ShouldSetAssemblyProperty(Func<string, AssemblyCatalog> catalogCreator)
         {
             var expectations = Expectations.GetAssemblies();
 
@@ -81,7 +81,7 @@ namespace System.ComponentModel.Composition
             }
         }
 
-        public static void Constructor_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad(Func<string, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_LockedFileAsCodeBaseArgument_ShouldThrowFileLoad(Func<string, AssemblyCatalog> catalogCreator)
         {
             string filename = Path.GetTempFileName();
             using (FileStream stream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.None))
@@ -97,27 +97,27 @@ namespace System.ComponentModel.Composition
             }
         }
 
-        public static void Constructor_NullFileNameAsCodeBaseArgument_ShouldThrowArgumentNull(Func<string, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_NullFileNameAsCodeBaseArgument_ShouldThrowArgumentNull(Func<string, AssemblyCatalog> catalogCreator)
         {
             Assert.Throws<ArgumentNullException>("codeBase", () => catalogCreator(null));
         }
 
-        public static void Constructor_EmptyFileNameAsCodeBaseArgument_ShouldThrowArgument(Func<string, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_EmptyFileNameAsCodeBaseArgument_ShouldThrowArgument(Func<string, AssemblyCatalog> catalogCreator)
         {
             Assert.Throws<ArgumentException>("codeBase", () => catalogCreator(""));
         }
 
-        public static void Constructor_InvalidFileNameAsCodeBaseArgument_ShouldThrowArgument(Func<string, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_InvalidFileNameAsCodeBaseArgument_ShouldThrowArgument(Func<string, AssemblyCatalog> catalogCreator)
         {
             Assert.Throws<ArgumentException>(() => catalogCreator("??||>"));
         }
 
-        public static void Constructor_InvalidFileNameAsCodeBaseArgument_ShouldThrowIO(Func<string, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_InvalidFileNameAsCodeBaseArgument_ShouldThrowIO(Func<string, AssemblyCatalog> catalogCreator)
         {
             Assert.ThrowsAny<IOException>(() => catalogCreator("??||>"));
         }
 
-        public static void Constructor_DirectoryAsCodeBaseArgument_ShouldThrowFileLoad(Func<string, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_DirectoryAsCodeBaseArgument_ShouldThrowFileLoad(Func<string, AssemblyCatalog> catalogCreator)
         {
             string directory = Environment.GetFolderPath(Environment.SpecialFolder.System);
             Assert.True(Directory.Exists(directory));
@@ -125,25 +125,25 @@ namespace System.ComponentModel.Composition
             Assert.Throws<FileLoadException>(() => catalogCreator(directory));
         }
 
-        public static void Constructor_TooLongFileNameAsCodeBaseArgument_ShouldThrowPathTooLong(Func<string, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_TooLongFileNameAsCodeBaseArgument_ShouldThrowPathTooLong(Func<string, AssemblyCatalog> catalogCreator)
         {
             Assert.Throws<PathTooLongException>(() =>
                 catalogCreator(@"c:\This is a very long path\And Just to make sure\We will continue to make it very long\This is a very long path\And Just to make sure\We will continue to make it very long\This is a very long path\And Just to make sure\We will continue to make it very long\myassembly.dll"));
         }
 
-        public static void Constructor_NonAssemblyFileNameAsCodeBaseArgument_ShouldThrowBadImageFormat(Func<string, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_NonAssemblyFileNameAsCodeBaseArgument_ShouldThrowBadImageFormat(Func<string, AssemblyCatalog> catalogCreator)
         {
             string filename = Path.GetTempFileName();
             Assert.Throws<BadImageFormatException>(() => catalogCreator(filename));
         }
 
-        public static void Constructor_NonExistentFileNameAsCodeBaseArgument_ShouldThrowFileNotFound(Func<string, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_NonExistentFileNameAsCodeBaseArgument_ShouldThrowFileNotFound(Func<string, AssemblyCatalog> catalogCreator)
         {
             Assert.Throws<FileNotFoundException>(() => catalogCreator(@"FileThat should not ever exist"));
         }
 
         // Test Assembly variant of the APIs
-        public static void Constructor_ValueAsAssemblyArgument_ShouldSetAssemblyProperty(Func<Assembly, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_ValueAsAssemblyArgument_ShouldSetAssemblyProperty(Func<Assembly, AssemblyCatalog> catalogCreator)
         {
             var expectations = Expectations.GetAssemblies();
 
@@ -155,12 +155,12 @@ namespace System.ComponentModel.Composition
             }
         }
 
-        public static void Constructor_NullReflectionContextArgument_ShouldThrowArgumentNull(Func<ReflectionContext, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_NullReflectionContextArgument_ShouldThrowArgumentNull(Func<ReflectionContext, AssemblyCatalog> catalogCreator)
         {
             AssertExtensions.Throws<ArgumentNullException>("reflectionContext", () => catalogCreator(null));
         }
 
-        public static void Constructor_NullDefinitionOriginArgument_ShouldThrowArgumentNull(Func<ICompositionElement, AssemblyCatalog> catalogCreator)
+        internal static void Constructor_NullDefinitionOriginArgument_ShouldThrowArgumentNull(Func<ICompositionElement, AssemblyCatalog> catalogCreator)
         {
             AssertExtensions.Throws<ArgumentNullException>("definitionOrigin", () => catalogCreator(null));
         }

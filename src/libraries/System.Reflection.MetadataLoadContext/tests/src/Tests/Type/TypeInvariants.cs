@@ -64,7 +64,7 @@ namespace System.Reflection.Tests
             openDictionary.TestConstructedGenericTypeInvariants();
         }
 
-        public static void TestTypeInvariants(this Type type)
+        internal static void TestTypeInvariants(this Type type)
         {
             if (type.IsTypeDefinition())
                 type.TestTypeDefinitionInvariants();
@@ -78,7 +78,7 @@ namespace System.Reflection.Tests
                 Assert.True(false, "Type does not identify as any of the known flavors: " + type);
         }
 
-        public static void TestTypeDefinitionInvariants(this Type type)
+        internal static void TestTypeDefinitionInvariants(this Type type)
         {
             Assert.True(type.IsTypeDefinition());
             if (type.IsGenericTypeDefinition)
@@ -91,7 +91,7 @@ namespace System.Reflection.Tests
             }
         }
 
-        public static void TestGenericTypeDefinitionInvariants(this Type type)
+        internal static void TestGenericTypeDefinitionInvariants(this Type type)
         {
             Assert.True(type.IsGenericTypeDefinition);
 
@@ -112,7 +112,7 @@ namespace System.Reflection.Tests
             }
         }
 
-        public static void TestHasElementTypeInvariants(this Type type)
+        internal static void TestHasElementTypeInvariants(this Type type)
         {
             Assert.True(type.HasElementType);
 
@@ -126,7 +126,7 @@ namespace System.Reflection.Tests
                 type.TestPointerInvariants();
         }
 
-        public static void TestArrayInvariants(this Type type)
+        internal static void TestArrayInvariants(this Type type)
         {
             Assert.True(type.IsArray);
 
@@ -149,7 +149,7 @@ namespace System.Reflection.Tests
             Assert.Equal(0, mems.Length);
         }
 
-        public static void TestSzArrayInvariants(this Type type)
+        internal static void TestSzArrayInvariants(this Type type)
         {
             Assert.True(type.IsSZArray());
 
@@ -168,7 +168,7 @@ namespace System.Reflection.Tests
             }
         }
 
-        public static void TestMdArrayInvariants(this Type type)
+        internal static void TestMdArrayInvariants(this Type type)
         {
             Assert.True(type.IsVariableBoundArray());
 
@@ -198,7 +198,7 @@ namespace System.Reflection.Tests
 
         }
 
-        public static void TestByRefInvariants(this Type type)
+        internal static void TestByRefInvariants(this Type type)
         {
             Assert.True(type.IsByRef);
 
@@ -225,7 +225,7 @@ namespace System.Reflection.Tests
             Assert.Equal(0, members.Length);
         }
 
-        public static void TestPointerInvariants(this Type type)
+        internal static void TestPointerInvariants(this Type type)
         {
             Assert.True(type.IsPointer);
 
@@ -252,12 +252,12 @@ namespace System.Reflection.Tests
             Assert.Equal(0, members.Length);
         }
 
-        public static void TestConstructedGenericTypeInvariants(this Type type)
+        internal static void TestConstructedGenericTypeInvariants(this Type type)
         {
             type.TestConstructedGenericTypeCommonInvariants();
         }
 
-        public static void TestGenericParameterInvariants(this Type type)
+        internal static void TestGenericParameterInvariants(this Type type)
         {
             Assert.True(type.IsGenericParameter);
 
@@ -269,7 +269,7 @@ namespace System.Reflection.Tests
             Assert.Equal(0, members.Length);
         }
 
-        public static void TestGenericTypeParameterInvariants(this Type type)
+        internal static void TestGenericTypeParameterInvariants(this Type type)
         {
             Assert.True(type.IsGenericTypeParameter());
 
@@ -285,7 +285,7 @@ namespace System.Reflection.Tests
             Assert.Equal(gps[position], type);
         }
 
-        public static void TestGenericMethodParameterInvariants(this Type type)
+        internal static void TestGenericMethodParameterInvariants(this Type type)
         {
             Assert.True(type.IsGenericMethodParameter());
 

@@ -5,6 +5,8 @@
     <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);Unix</DefineConstants>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <!-- TODO: Should be enabled after all fixes are applied. -->
+    <DisableXUnitAnalyzer>true</DisableXUnitAnalyzer>
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(TargetsNetCoreApp)' == 'true'">

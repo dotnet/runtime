@@ -1167,7 +1167,7 @@ namespace System.Threading.Tasks.Tests
                () => Task.WaitAny(new Task[] { Task.Factory.StartNew(() => { }) }, TimeSpan.FromMilliseconds(-2)));
         }
 
-        public static void CoreWaitAnyTest(int fillerTasks, bool[] finishMeFirst, int nExpectedReturnCode)
+        private static void CoreWaitAnyTest(int fillerTasks, bool[] finishMeFirst, int nExpectedReturnCode)
         {
             // We need to do this test in a local TM with # or threads equal to or greater than
             // the number of tasks requested. Otherwise this test can undeservedly fail on dual proc machines
@@ -1331,7 +1331,7 @@ namespace System.Threading.Tasks.Tests
             RunTaskWaitAllTest(false, 10);
         }
 
-        public static void RunTaskWaitAllTest(bool staThread, int nTaskCount)
+        private static void RunTaskWaitAllTest(bool staThread, int nTaskCount)
         {
             string methodInput = string.Format("RunTaskWaitAllTest:  > WaitAll() Tests for aptState={0}, task count={1}", staThread ? "MTA" : "STA", nTaskCount);
             string excpMsg = "foo";
@@ -1431,7 +1431,7 @@ namespace System.Threading.Tasks.Tests
         // the core function for WaitAll tests. Takes 2 types of actions to create tasks, how many copies of each task type
         // to create, whether to wait for the completion of the first group, etc
         //
-        public static void DoRunTaskWaitAllTest(bool staThread,
+        private static void DoRunTaskWaitAllTest(bool staThread,
                                                     int numTasksType1,
                                                     Action<object> taskAction1,
                                                     bool bWaitOnAct1,
@@ -1495,7 +1495,7 @@ namespace System.Threading.Tasks.Tests
         // the core function for WaitAll tests. Takes 2 types of actions to create tasks, how many copies of each task type
         // to create, whether to wait for the completion of the first group, etc
         //
-        public static void DoRunTaskWaitAllTestWithCancellationToken(bool staThread,
+        private static void DoRunTaskWaitAllTestWithCancellationToken(bool staThread,
                                                     int numTasks,
                                                     bool bWaitOnAct1,
                                                     bool bCancelAct1,

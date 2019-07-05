@@ -741,7 +741,7 @@ namespace System.Tests
             }, size.ToString(), options).Dispose();
         }
 
-        public static void TestWait(bool approach, int timeout)
+        private static void TestWait(bool approach, int timeout)
         {
             GCNotificationStatus result = GCNotificationStatus.Failed;
             Thread cancelProc = null;
@@ -786,7 +786,7 @@ namespace System.Tests
             }
         }
 
-        public static void CancelProc()
+        private static void CancelProc()
         {
             Thread.Sleep(500);
             GC.CancelFullGCNotification();

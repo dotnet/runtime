@@ -377,7 +377,7 @@ namespace System.Xml.Tests
             return path;
         }
 
-        public void verifyXsd(string file)
+        private static void verifyXsd(string file)
         {
             try
             {

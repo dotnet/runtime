@@ -278,11 +278,12 @@ namespace System.Tests
             Assert.Equal(typeCode, Type.GetTypeCode(t));
         }
 
+        [Fact]
         public void ReflectionOnlyGetType()
         {
-            AssertExtensions.Throws<ArgumentNullException>("typeName", () => Type.ReflectionOnlyGetType(null, true, false));
-            Assert.Throws<TypeLoadException>(() => Type.ReflectionOnlyGetType("", true, true));
-            Assert.Throws<NotSupportedException>(() => Type.ReflectionOnlyGetType("System.Tests.TypeTests", false, true));
+            Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType(null, true, false));
+            Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType("", true, true));
+            Assert.Throws<PlatformNotSupportedException>(() => Type.ReflectionOnlyGetType("System.Tests.TypeTests", false, true));
         }
     }
 

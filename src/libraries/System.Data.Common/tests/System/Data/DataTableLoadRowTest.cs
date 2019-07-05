@@ -487,7 +487,7 @@ namespace System.Data.Tests
             Assert.Equal(30, dt.Rows[4][0]);
         }
 
-        public void SubscribeEvents(DataTable dt)
+        private void SubscribeEvents(DataTable dt)
         {
             dt.RowChanging += new DataRowChangeEventHandler(dt_RowChanging);
             dt.RowChanged += new DataRowChangeEventHandler(dt_RowChanged);
@@ -497,7 +497,7 @@ namespace System.Data.Tests
         }
 
 
-        public void UnsubscribeEvents(DataTable dt)
+        private void UnsubscribeEvents(DataTable dt)
         {
             dt.RowChanging -= new DataRowChangeEventHandler(dt_RowChanging);
             dt.RowChanged -= new DataRowChangeEventHandler(dt_RowChanged);
@@ -506,7 +506,7 @@ namespace System.Data.Tests
             //dt.TableNewRow -= new DataTableNewRowEventHandler (dt_TableNewRow);
         }
 
-        public void ResetEventFlags()
+        private void ResetEventFlags()
         {
             _rowChanging = false;
             _rowChanged = false;

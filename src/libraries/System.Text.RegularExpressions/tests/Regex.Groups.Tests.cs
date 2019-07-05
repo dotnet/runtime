@@ -647,7 +647,7 @@ namespace System.Text.RegularExpressions.Tests
             return defaultCulture;
         }
 
-        public void Groups(string pattern, string input, RegexOptions options, string[] expectedGroups)
+        private static void Groups(string pattern, string input, RegexOptions options, string[] expectedGroups)
         {
             Regex regex = new Regex(pattern, options);
             Match match = regex.Match(input);

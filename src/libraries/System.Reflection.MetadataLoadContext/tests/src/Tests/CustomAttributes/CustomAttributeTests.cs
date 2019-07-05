@@ -117,14 +117,14 @@ namespace System.Reflection.Tests
             }
         }
 
-        public static void ValidateCustomAttributesAllocatesFreshObjectsEachTime(Func<IEnumerable<CustomAttributeData>> action)
+        internal static void ValidateCustomAttributesAllocatesFreshObjectsEachTime(Func<IEnumerable<CustomAttributeData>> action)
         {
             IEnumerable<CustomAttributeData> cads1 = action();
             IEnumerable<CustomAttributeData> cads2 = action();
             cads1.ValidateEqualButFreshlyAllocated(cads2);
         }
 
-        public static void ValidateEqualButFreshlyAllocated(this IEnumerable<CustomAttributeData> cads1, IEnumerable<CustomAttributeData> cads2)
+        internal static void ValidateEqualButFreshlyAllocated(this IEnumerable<CustomAttributeData> cads1, IEnumerable<CustomAttributeData> cads2)
         {
             CustomAttributeData[] acads1 = cads1.ToArray();
             CustomAttributeData[] acads2 = cads2.ToArray();

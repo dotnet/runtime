@@ -44,7 +44,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        public void CheckTransportContext(TransportContext context)
+        private static void CheckTransportContext(TransportContext context)
         {
             var cbt1 = context.GetChannelBinding(ChannelBindingKind.Endpoint);
             var cbt2 = context.GetChannelBinding(ChannelBindingKind.Unique);
@@ -68,7 +68,7 @@ namespace System.Net.Security.Tests
             Assert.True(cbt3 == null, "ChannelBindingKind.Unknown token data should not be returned.");
         }
 
-        public void CheckChannelBinding(ChannelBindingKind kind, ChannelBinding channelBinding)
+        private static void CheckChannelBinding(ChannelBindingKind kind, ChannelBinding channelBinding)
         {
             if (channelBinding != null)
             {

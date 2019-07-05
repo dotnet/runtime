@@ -8,7 +8,7 @@ namespace System.IO.Tests
 {
     public class Directory_GetSetTimes : StaticGetSetTimes
     {
-        public override string GetExistingItem() => Directory.CreateDirectory(GetTestFilePath()).FullName;
+        protected override string GetExistingItem() => Directory.CreateDirectory(GetTestFilePath()).FullName;
 
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)
         {

@@ -46,16 +46,6 @@ namespace MonoTests.System.Configuration
             Assert.False(v.CanValidate(typeof(object)));
         }
 
-        public void NullCallback()
-        {
-            CallbackValidator v = new CallbackValidator(typeof(int), null);
-        }
-
-        public void NullType()
-        {
-            CallbackValidator v = new CallbackValidator(null, success);
-        }
-
         bool hit_success;
         bool hit_failure;
 

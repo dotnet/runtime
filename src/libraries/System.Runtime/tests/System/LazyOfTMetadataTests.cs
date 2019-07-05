@@ -82,7 +82,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", () => new Lazy<int, string>(() => 42, "test", LazyThreadSafetyMode.ExecutionAndPublication + 1)); // Invalid mode
         }
 
-        public static void VerifyLazy<T, TMetadata>(Lazy<T, TMetadata> lazy, T expectedValue, TMetadata expectedMetadata)
+        private static void VerifyLazy<T, TMetadata>(Lazy<T, TMetadata> lazy, T expectedValue, TMetadata expectedMetadata)
         {
             // Accessing metadata doesn't create the value
             Assert.False(lazy.IsValueCreated);

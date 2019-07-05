@@ -30,13 +30,13 @@ namespace System.Text.Tests
             Ctor_Bool_Bool_Bool(bigEndian, byteOrderMark, throwOnInvalidBytes: false);
         }
 
-        public void Ctor_Bool_Bool_Bool(bool bigEndian, bool byteOrderMark, bool throwOnInvalidBytes)
+        private static void Ctor_Bool_Bool_Bool(bool bigEndian, bool byteOrderMark, bool throwOnInvalidBytes)
         {
             UnicodeEncoding encoding = new UnicodeEncoding(bigEndian, byteOrderMark, throwOnInvalidBytes);
             VerifyUnicodeEncoding(encoding, bigEndian, byteOrderMark, throwOnInvalidBytes);
         }
 
-        public static void VerifyUnicodeEncoding(UnicodeEncoding encoding, bool bigEndian, bool byteOrderMark, bool throwOnInvalidBytes)
+        private static void VerifyUnicodeEncoding(UnicodeEncoding encoding, bool bigEndian, bool byteOrderMark, bool throwOnInvalidBytes)
         {
             if (byteOrderMark)
             {

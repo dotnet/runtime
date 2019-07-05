@@ -201,7 +201,7 @@ namespace System.Xml.Tests
             }
         }
 
-        public void Init(object objParam)
+        protected void Init(object objParam)
         {
             // FullFilePath and FullHttpPath attempt to normalize file paths, however
             // as an extra step we can normalize them here, when they are first read

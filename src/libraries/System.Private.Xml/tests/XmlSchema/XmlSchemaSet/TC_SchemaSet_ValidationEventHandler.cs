@@ -22,7 +22,7 @@ namespace System.Xml.Tests
 
         private ArrayList _ValidationErrors = new ArrayList();
 
-        public void ValidationCallBack(object sender, ValidationEventArgs args)
+        private void ValidationCallBack(object sender, ValidationEventArgs args)
         {
             _output.WriteLine("***{0}", args.Message);
             _ValidationErrors.Add(args);

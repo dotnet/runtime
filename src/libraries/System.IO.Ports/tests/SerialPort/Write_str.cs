@@ -117,12 +117,12 @@ namespace System.IO.Ports.Tests
 
         #region Verification for Test Cases
 
-        public void VerifyWrite(Encoding encoding, int strSize)
+        private void VerifyWrite(Encoding encoding, int strSize)
         {
             VerifyWrite(encoding, strSize, DEFAULT_NUM_WRITES);
         }
 
-        public void VerifyWrite(Encoding encoding, int strSize, int numWrites)
+        private void VerifyWrite(Encoding encoding, int strSize, int numWrites)
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
             using (SerialPort com2 = TCSupport.InitSecondSerialPort(com1))
@@ -139,12 +139,12 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        public void VerifyWriteStr(SerialPort com1, SerialPort com2, string stringToWrite)
+        private void VerifyWriteStr(SerialPort com1, SerialPort com2, string stringToWrite)
         {
             VerifyWriteStr(com1, com2, stringToWrite, DEFAULT_NUM_WRITES);
         }
 
-        public void VerifyWriteStr(SerialPort com1, SerialPort com2, string stringToWrite, int numWrites)
+        private void VerifyWriteStr(SerialPort com1, SerialPort com2, string stringToWrite, int numWrites)
         {
             char[] actualChars;
             byte[] expectedBytes, actualBytes;

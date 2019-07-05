@@ -8,7 +8,7 @@ namespace System.IO.Tests
 {
     public class FileInfo_CopyTo_str : File_Copy_str_str
     {
-        public override void Copy(string source, string dest)
+        protected override void Copy(string source, string dest)
         {
             new FileInfo(source).CopyTo(dest);
         }
@@ -16,12 +16,12 @@ namespace System.IO.Tests
 
     public class FileInfo_CopyTo_str_b : File_Copy_str_str_b
     {
-        public override void Copy(string source, string dest)
+        protected override void Copy(string source, string dest)
         {
             new FileInfo(source).CopyTo(dest, false);
         }
 
-        public override void Copy(string source, string dest, bool overwrite)
+        protected override void Copy(string source, string dest, bool overwrite)
         {
             new FileInfo(source).CopyTo(dest, overwrite);
         }

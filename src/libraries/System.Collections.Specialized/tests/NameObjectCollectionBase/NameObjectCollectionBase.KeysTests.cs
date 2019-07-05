@@ -121,7 +121,7 @@ namespace System.Collections.Specialized.Tests
             Keys_CopyTo(nameObjectCollection, 0);
         }
 
-        public void Keys_CopyTo(MyNameObjectCollection nameObjectCollection, int index)
+        private static void Keys_CopyTo(MyNameObjectCollection nameObjectCollection, int index)
         {
             ICollection keys = nameObjectCollection.Keys;
             string[] keysArray = new string[index + keys.Count + index];

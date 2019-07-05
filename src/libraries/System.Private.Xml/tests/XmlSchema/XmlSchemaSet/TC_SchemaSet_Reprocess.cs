@@ -23,7 +23,7 @@ namespace System.Xml.Tests
         public bool bWarningCallback = false;
         public bool bErrorCallback = false;
 
-        public void ValidateSchemaSet(XmlSchemaSet ss, int schCount, bool isCompiled, int countGT, int countGE, int countGA, string str)
+        private void ValidateSchemaSet(XmlSchemaSet ss, int schCount, bool isCompiled, int countGT, int countGE, int countGA, string str)
         {
             _output.WriteLine(str);
             Assert.Equal(ss.Count, schCount);
@@ -33,7 +33,7 @@ namespace System.Xml.Tests
             Assert.Equal(ss.GlobalAttributes.Count, countGA);
         }
 
-        public void ValidationCallback(object sender, ValidationEventArgs args)
+        private void ValidationCallback(object sender, ValidationEventArgs args)
         {
             if (args.Severity == XmlSeverityType.Warning)
             {

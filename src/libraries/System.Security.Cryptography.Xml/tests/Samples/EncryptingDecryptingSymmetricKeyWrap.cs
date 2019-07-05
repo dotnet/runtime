@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
-        public static void Decrypt(XmlDocument doc, SymmetricAlgorithm key, string keyName)
+        private static void Decrypt(XmlDocument doc, SymmetricAlgorithm key, string keyName)
         {
             var encrypted = new EncryptedXml(doc);
             encrypted.AddKeyNameMapping(keyName, key);

@@ -806,6 +806,7 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         return simpleType2D;
     }
 
+    [Fact]
     public static void Xml_TypeWithByteArrayAsXmlText()
     {
         var value = new TypeWithByteArrayAsXmlText() { Value = new byte[] { 1, 2, 3 } };

@@ -17,7 +17,7 @@ namespace System.Numerics.Tests
             RunTests(seed);
         }
 
-        public static void RunTests(int seed)
+        private static void RunTests(int seed)
         {
             Random random = new Random(seed);
 
@@ -359,7 +359,7 @@ namespace System.Numerics.Tests
             Assert.Equal(false, BigInteger.Zero.Equals((object)"0"));
         }
 
-        public static void IComparable_Invalid(string paramName)
+        private static void IComparable_Invalid(string paramName)
         {
             IComparable comparable = new BigInteger();
             Assert.Equal(1, comparable.CompareTo(null));

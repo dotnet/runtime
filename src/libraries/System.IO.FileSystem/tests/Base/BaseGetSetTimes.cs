@@ -19,10 +19,10 @@ namespace System.IO.Tests
         protected static bool isHFS => driveFormat != null && driveFormat.Equals(HFS, StringComparison.InvariantCultureIgnoreCase);
         protected static bool isNotHFS => !isHFS;
 
-        public abstract T GetExistingItem();
-        public abstract T GetMissingItem();
+        protected abstract T GetExistingItem();
+        protected abstract T GetMissingItem();
 
-        public abstract string GetItemPath(T item);
+        protected abstract string GetItemPath(T item);
 
         public abstract IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false);
 

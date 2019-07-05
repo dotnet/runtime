@@ -38,4 +38,46 @@
     <!-- Disable analyzer warning 1821 until https://github.com/dotnet/roslyn-analyzers/issues/1804 is resolved -->
     <Rule Id="CA1821" Action="None" />
   </Rules>
+  <Rules AnalyzerId="xunit.analyzers" RuleNamespace="xunit.analyzers">
+    <Rule Id="xUnit1004" Action="Hidden" />
+    <Rule Id="xUnit1005" Action="None" />
+    <Rule Id="xUnit1006" Action="None" />
+    <Rule Id="xUnit1007" Action="None" />
+    <Rule Id="xUnit1008" Action="None" />
+    <Rule Id="xUnit1009" Action="None" />
+    <Rule Id="xUnit1010" Action="None" />
+    <Rule Id="xUnit1011" Action="None" />
+    <Rule Id="xUnit1012" Action="None" />
+    <Rule Id="xUnit1014" Action="None" />
+    <Rule Id="xUnit1015" Action="None" />
+    <Rule Id="xUnit1016" Action="None" />
+    <Rule Id="xUnit1017" Action="None" />
+    <Rule Id="xUnit1018" Action="None" />
+    <Rule Id="xUnit1019" Action="None" />
+    <Rule Id="xUnit1020" Action="None" />
+    <Rule Id="xUnit1021" Action="None" />
+    <Rule Id="xUnit1022" Action="None" />
+    <Rule Id="xUnit1023" Action="None" />
+    <Rule Id="xUnit1024" Action="None" />
+    <Rule Id="xUnit1025" Action="None" />
+    <Rule Id="xUnit1026" Action="None" />
+    <Rule Id="xUnit2000" Action="None" />
+    <Rule Id="xUnit2002" Action="None" />
+    <Rule Id="xUnit2003" Action="None" />
+    <Rule Id="xUnit2004" Action="None" />
+    <Rule Id="xUnit2005" Action="None" />
+    <Rule Id="xUnit2006" Action="None" />
+    <Rule Id="xUnit2007" Action="None" />
+    <Rule Id="xUnit2008" Action="None" />
+    <Rule Id="xUnit2009" Action="None" />
+    <Rule Id="xUnit2010" Action="None" />
+    <Rule Id="xUnit2011" Action="None" />
+    <Rule Id="xUnit2012" Action="None" />
+    <Rule Id="xUnit2013" Action="None" />
+    <Rule Id="xUnit2014" Action="None" />
+    <Rule Id="xUnit2015" Action="None" />
+    <Rule Id="xUnit2016" Action="None" />
+    <Rule Id="xUnit2017" Action="None" />
+    <Rule Id="xUnit2018" Action="None" />
+  </Rules>
 </RuleSet>

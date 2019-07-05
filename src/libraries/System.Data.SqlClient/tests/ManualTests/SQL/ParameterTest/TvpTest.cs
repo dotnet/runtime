@@ -342,7 +342,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        public void QueryHintsTest()
+        private void QueryHintsTest()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
             {

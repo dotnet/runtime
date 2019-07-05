@@ -200,10 +200,10 @@ namespace MonoTests.System.Configuration
             }
         }
 
-        public delegate void TestFunction(SysConfig config, TestLabel label);
-        public delegate void XmlCheckFunction(XPathNavigator nav, TestLabel label);
+        private delegate void TestFunction(SysConfig config, TestLabel label);
+        private delegate void XmlCheckFunction(XPathNavigator nav, TestLabel label);
 
-        public static void Run(string name, TestFunction func)
+        private static void Run(string name, TestFunction func)
         {
             var label = new TestLabel(name);
 
@@ -218,26 +218,26 @@ namespace MonoTests.System.Configuration
             });
         }
 
-        public static void Run<TConfig>(string name, TestFunction func)
+        private static void Run<TConfig>(string name, TestFunction func)
             where TConfig : ConfigProvider, new()
         {
             Run<TConfig>(new TestLabel(name), func, null);
         }
 
-        public static void Run<TConfig>(TestLabel label, TestFunction func)
+        private static void Run<TConfig>(TestLabel label, TestFunction func)
             where TConfig : ConfigProvider, new()
         {
             Run<TConfig>(label, func, null);
         }
 
-        public static void Run<TConfig>(
+        private static void Run<TConfig>(
             string name, TestFunction func, XmlCheckFunction check)
             where TConfig : ConfigProvider, new()
         {
             Run<TConfig>(new TestLabel(name), func, check);
         }
 
-        public static void Run<TConfig>(
+        private static void Run<TConfig>(
             TestLabel label, TestFunction func, XmlCheckFunction check)
             where TConfig : ConfigProvider, new()
         {

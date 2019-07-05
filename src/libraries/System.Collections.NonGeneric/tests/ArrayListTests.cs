@@ -2909,7 +2909,7 @@ namespace System.Collections.Tests
             Assert.Equal(0, _iList.Count);
         }
 
-        public void AddElems(string currThreadName)
+        private void AddElems(string currThreadName)
         {
             int iNumTimesThreadUsed = 0;
 
