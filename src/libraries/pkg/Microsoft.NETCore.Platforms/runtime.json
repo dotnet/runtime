@@ -1060,6 +1060,17 @@
         "rhel.8-x64"
       ]
     },
+    "rhel.8.1": {
+      "#import": [
+        "rhel.8.0"
+      ]
+    },
+    "rhel.8.1-x64": {
+      "#import": [
+        "rhel.8.1",
+        "rhel.8.0-x64"
+      ]
+    },
     "sles": {
       "#import": [
         "linux"
