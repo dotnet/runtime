@@ -19,7 +19,7 @@ namespace System.Net.Test.Common
     {
         private Socket _connectionSocket;
         private Stream _connectionStream;
-        private bool _ignoreSettingsAck;
+        private TaskCompletionSource<bool> _ignoredSettingsAckPromise;
         private bool _ignoreWindowUpdates;
         public static TimeSpan Timeout => Http2LoopbackServer.Timeout;
         private int _lastStreamId;
@@ -145,9 +145,10 @@ namespace System.Net.Test.Common
                 throw new Exception("Connection stream closed while attempting to read frame body.");
             }
 
-            if (_ignoreSettingsAck && header.Type == FrameType.Settings && header.Flags == FrameFlags.Ack)
+            if (_ignoredSettingsAckPromise != null && header.Type == FrameType.Settings && header.Flags == FrameFlags.Ack)
             {
-                _ignoreSettingsAck = false;
+                _ignoredSettingsAckPromise?.TrySetResult(false);
+                _ignoredSettingsAckPromise = null;
                 return await ReadFrameAsync(cancellationToken).ConfigureAwait(false);
             }
 
@@ -185,19 +186,28 @@ namespace System.Net.Test.Common
             Stream oldStream = _connectionStream;
             _connectionSocket = null;
             _connectionStream = null;
-            _ignoreSettingsAck = false;
+            _ignoredSettingsAckPromise = null;
 
             return (oldSocket, oldStream);
         }
 
-        public void ExpectSettingsAck()
+        public async Task ExpectSettingsAckAsync(TimeSpan timeout)
         {
             // The timing of when we receive the settings ack is not guaranteed.
             // To simplify frame processing, just record that we are expecting one,
             // and then filter it out in ReadFrameAsync above.
 
-            Assert.False(_ignoreSettingsAck);
-            _ignoreSettingsAck = true;
+            // In case of a pending settings ack, wait for it or time out
+            var currentTask = _ignoredSettingsAckPromise?.Task;
+            if (currentTask != null)
+            {
+                if (await Task.WhenAny(currentTask, Task.Delay(timeout)) != currentTask)
+                {
+                    throw new TimeoutException("timeout while waiting for a pending settings ack");
+                }
+            }
+
+            _ignoredSettingsAckPromise = new TaskCompletionSource<bool>();
         }
 
         public void IgnoreWindowUpdates()
@@ -231,7 +241,7 @@ namespace System.Net.Test.Common
             _connectionSocket = null;
             _connectionStream = null;
 
-            _ignoreSettingsAck = false;
+            _ignoredSettingsAckPromise = null;
             _ignoreWindowUpdates = false;
         }
 
