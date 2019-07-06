@@ -7,13 +7,6 @@
 #include "opensslshim.h"
 
 /*
-Shims the DSA_new method.
-
-Returns the new DSA instance.
-*/
-DLLEXPORT DSA* CryptoNative_DsaCreate(void);
-
-/*
 Shims the DSA_up_ref method.
 
 Returns 1 upon success, otherwise 0.

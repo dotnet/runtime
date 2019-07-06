@@ -12,9 +12,6 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyGetCurveType")]
-        internal static extern ECCurve.ECCurveType EcKeyGetCurveType(SafeEcKeyHandle key);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EcKeyCreateByKeyParameters", CharSet = CharSet.Ansi)]
         private static extern int EcKeyCreateByKeyParameters(
             out SafeEcKeyHandle key,

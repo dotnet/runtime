@@ -11,17 +11,11 @@ void CryptoNative_EcKeyDestroy(EC_KEY* r)
     EC_KEY_free(r);
 }
 
-// For backwards compatibility
-EC_KEY* CryptoNative_EcKeyCreateByCurveName(int32_t nid)
-{
-    return EC_KEY_new_by_curve_name(nid);
-}
-
 EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid)
 {
     // oid can be friendly name or value
     int nid = OBJ_txt2nid(oid);
-    return CryptoNative_EcKeyCreateByCurveName(nid);
+    return EC_KEY_new_by_curve_name(nid);
 }
 
 int32_t CryptoNative_EcKeyGenerateKey(EC_KEY* eckey)
@@ -54,23 +48,6 @@ int32_t CryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize)
     *keySize = EC_GROUP_get_degree(group);
 
     return 1;
-}
-
-// For backwards compatibility
-int32_t CryptoNative_EcKeyGetCurveName(const EC_KEY* key)
-{
-    if (key == NULL)
-    {
-        return NID_undef;
-    }
-
-    const EC_GROUP* group = EC_KEY_get0_group(key);
-    if (group == NULL)
-    {
-        return NID_undef;
-    }
-
-    return EC_GROUP_get_curve_name(group);
 }
 
 int32_t CryptoNative_EcKeyGetCurveName2(const EC_KEY* key, int32_t* nidName)

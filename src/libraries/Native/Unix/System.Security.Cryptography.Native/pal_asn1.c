@@ -74,16 +74,6 @@ void CryptoNative_Asn1BitStringFree(ASN1_STRING* a)
     ASN1_BIT_STRING_free(a);
 }
 
-ASN1_OCTET_STRING* CryptoNative_DecodeAsn1OctetString(const uint8_t* buf, int32_t len)
-{
-    if (!buf || !len)
-    {
-        return NULL;
-    }
-
-    return d2i_ASN1_OCTET_STRING(NULL, &buf, len);
-}
-
 ASN1_OCTET_STRING* CryptoNative_Asn1OctetStringNew()
 {
     return ASN1_OCTET_STRING_new();

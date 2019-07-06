@@ -10,11 +10,6 @@ void CryptoNative_ErrClearError()
     ERR_clear_error();
 }
 
-uint64_t CryptoNative_ErrGetError()
-{
-    return ERR_get_error();
-}
-
 uint64_t CryptoNative_ErrGetErrorAlloc(int32_t* isAllocFailure)
 {
     unsigned long err = ERR_get_error();

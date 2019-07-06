@@ -66,11 +66,6 @@ Direct shim to ASN1_BIT_STRING_free.
 DLLEXPORT void CryptoNative_Asn1BitStringFree(ASN1_STRING* a);
 
 /*
-Shims the d2i_ASN1_OCTET_STRING method and makes it easier to invoke from managed code.
-*/
-DLLEXPORT ASN1_OCTET_STRING* CryptoNative_DecodeAsn1OctetString(const uint8_t* buf, int32_t len);
-
-/*
 Direct shim to ASN1_OCTET_STRING_new.
 */
 DLLEXPORT ASN1_OCTET_STRING* CryptoNative_Asn1OctetStringNew(void);

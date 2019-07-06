@@ -10,12 +10,6 @@
 #define KEEP_CURRENT_DIRECTION -1
 
 EVP_CIPHER_CTX*
-CryptoNative_EvpCipherCreate(const EVP_CIPHER* type, uint8_t* key, unsigned char* iv, int32_t enc)
-{
-    return CryptoNative_EvpCipherCreate2(type, key, 0, 0, iv, enc);
-}
-
-EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, unsigned char* iv, int32_t enc)
 {
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();

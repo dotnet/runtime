@@ -133,11 +133,6 @@ int32_t CryptoNative_X509CheckPurpose(X509* x, int32_t id, int32_t ca)
     return X509_check_purpose(x, id, ca);
 }
 
-int32_t CryptoNative_X509CheckIssued(X509* issuer, X509* subject)
-{
-    return X509_check_issued(issuer, subject);
-}
-
 uint64_t CryptoNative_X509IssuerNameHash(X509* x)
 {
     return X509_issuer_name_hash(x);
@@ -192,22 +187,12 @@ ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t nid)
     return X509_EXTENSION_get_data(ext);
 }
 
-X509_STORE* CryptoNative_X509StoreCreate()
-{
-    return X509_STORE_new();
-}
-
 void CryptoNative_X509StoreDestory(X509_STORE* v)
 {
     if (v != NULL)
     {
         X509_STORE_free(v);
     }
-}
-
-int32_t CryptoNative_X509StoreAddCert(X509_STORE* ctx, X509* x)
-{
-    return X509_STORE_add_cert(ctx, x);
 }
 
 int32_t CryptoNative_X509StoreAddCrl(X509_STORE* ctx, X509_CRL* x)
