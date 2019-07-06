@@ -147,12 +147,9 @@ namespace System.Net.Http
                         return;
                     }
 
-                    if (_abortException == null)
-                    {
-                        // If we are still processing the response after receiving response headers,
-                        // this will give us a chance to propagate exception up.
-                        Interlocked.CompareExchange(ref _abortException, e, null);
-                    }
+                    // If we are still processing the response after receiving response headers,
+                    // this will give us a chance to propagate exception up.
+                    Interlocked.CompareExchange(ref _abortException, e, null);
 
                     throw;
                 }
@@ -423,7 +420,7 @@ namespace System.Net.Http
                         throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
                     }
 
-                    if (_responseBuffer.ActiveSpan.Length + buffer.Length > StreamWindowSize)
+                    if (_responseBuffer.ActiveLength + buffer.Length > StreamWindowSize)
                     {
                         // Window size exceeded.
                         throw new Http2ConnectionException(Http2ProtocolErrorCode.FlowControlError);
@@ -539,7 +536,7 @@ namespace System.Net.Http
                     else
                     {
                         Debug.Assert(_state == StreamState.Complete);
-                        return (false, _responseBuffer.ActiveSpan.Length == 0);
+                        return (false, _responseBuffer.ActiveLength == 0);
                     }
                 }
             }
@@ -604,9 +601,9 @@ namespace System.Net.Http
                 {
                     CheckIfDisposedOrAborted();
 
-                    if (_responseBuffer.ActiveSpan.Length > 0)
+                    if (_responseBuffer.ActiveLength > 0)
                     {
-                        int bytesRead = Math.Min(buffer.Length, _responseBuffer.ActiveSpan.Length);
+                        int bytesRead = Math.Min(buffer.Length, _responseBuffer.ActiveLength);
                         _responseBuffer.ActiveSpan.Slice(0, bytesRead).CopyTo(buffer);
                         _responseBuffer.Discard(bytesRead);
 
@@ -910,6 +907,26 @@ namespace System.Net.Http
                     }
 
                     return new ValueTask(http2Stream.SendDataAsync(buffer, cancellationToken));
+                }
+
+                public override Task FlushAsync(CancellationToken cancellationToken)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return Task.FromCanceled(cancellationToken);
+                    }
+
+                    Http2Stream http2Stream = _http2Stream;
+
+                    if (http2Stream == null)
+                    {
+                        return Task.CompletedTask;
+                    }
+
+                    // In order to flush this stream's previous writes, we need to flush the connection. We
+                    // really only need to do any work here if the connection's buffer has any pending writes
+                    // from this stream, but we currently lack a good/efficient/safe way of doing that.
+                    return http2Stream._connection.FlushAsync(cancellationToken);
                 }
             }
         }

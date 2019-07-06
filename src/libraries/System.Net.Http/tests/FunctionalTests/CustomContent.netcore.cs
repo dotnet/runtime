@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -29,9 +27,19 @@ namespace System.Net.Http.Functional.Tests
                 _content = content;
             }
 
+            public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
+            {
+                var buffer = new byte[bufferSize];
+                int bytesRead;
+                while ((bytesRead = await ReadAsync(buffer, cancellationToken)) != 0)
+                {
+                    await destination.WriteAsync(buffer, 0, bytesRead, cancellationToken);
+                    await destination.FlushAsync(); // some tests rely on data being written promptly to coordinate between client/server sides of test
+                }
+            }
+
             public async override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
             {
-
                 if (_failException != null)
                 {
                     throw _failException;
@@ -39,7 +47,7 @@ namespace System.Net.Http.Functional.Tests
 
                 if (_delay > 0)
                 {
-                    await Task.Delay(_delay);
+                    await Task.Delay(_delay, cancellationToken);
                 }
 
                 _iteration++;

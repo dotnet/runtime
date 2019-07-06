@@ -116,7 +116,7 @@ namespace System.Net.Http
             return WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
-        public override void Flush() { }
+        public override void Flush() => FlushAsync(default).GetAwaiter().GetResult();
 
         public override Task FlushAsync(CancellationToken cancellationToken) => NopAsync(cancellationToken);
 
