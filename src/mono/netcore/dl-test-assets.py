@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import os
 import subprocess
 import xml.etree.ElementTree as ET
 import zipfile
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import multiprocessing
 
 if len(sys.argv) < 4:
@@ -26,13 +26,13 @@ def downloadAsset(elem):
         return
     id = elem.attrib ["Id"]
     filename = os.path.basename(id)
-    print "Downloading " + filename
+    print("Downloading " + filename)
     try:
-        name, hdrs = urllib.urlretrieve(base_url + "/" + id, outdir + "/" + filename)
-    except IOError, e:
-        print ("Download failed for " + id)
+        name, hdrs = urllib.request.urlretrieve(base_url + "/" + id, outdir + "/" + filename)
+    except IOError as e:
+        print("Download failed for " + id)
         sys.exit (1)
-    print "Extracting " + filename
+    print("Extracting " + filename)
     with zipfile.ZipFile(outdir + "/" + filename) as zf:
         zf.extractall(outdir + "/extracted/" + filename[:-4])
 
