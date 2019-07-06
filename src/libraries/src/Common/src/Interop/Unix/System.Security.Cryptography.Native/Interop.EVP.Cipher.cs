@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -157,15 +156,6 @@ internal static partial class Interop
         internal static void EvpCipherSetGcmTag(SafeEvpCipherCtxHandle ctx, ReadOnlySpan<byte> tag)
         {
             if (!EvpCipherSetGcmTag(ctx, ref MemoryMarshal.GetReference(tag), tag.Length))
-            {
-                throw CreateOpenSslCryptographicException();
-            }
-        }
-
-        internal static void EvpCipherSetGcmTagLength(SafeEvpCipherCtxHandle ctx, int tagLength)
-        {
-            ref byte nullRef = ref MemoryMarshal.GetReference(Span<byte>.Empty);
-            if (!EvpCipherSetGcmTag(ctx, ref nullRef, tagLength))
             {
                 throw CreateOpenSslCryptographicException();
             }

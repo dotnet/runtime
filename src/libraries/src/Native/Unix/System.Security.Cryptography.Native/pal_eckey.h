@@ -22,13 +22,6 @@ Shims the EC_KEY_new_by_curve_name method.
 
 Returns the new EC_KEY instance.
 */
-DLLEXPORT EC_KEY* CryptoNative_EcKeyCreateByCurveName(int32_t nid);
-
-/*
-Shims the EC_KEY_new_by_curve_name method.
-
-Returns the new EC_KEY instance.
-*/
 DLLEXPORT EC_KEY* CryptoNative_EcKeyCreateByOid(const char* oid);
 
 /*
@@ -51,11 +44,6 @@ Gets the key size in bits for the specified EC_KEY.
 Returns 1 upon success, otherwise 0.
 */
 DLLEXPORT int32_t CryptoNative_EcKeyGetSize(const EC_KEY* key, int32_t* keySize);
-
-/*
-Gets the NID of the curve name as an oid value for the specified EC_KEY.
-*/
-DLLEXPORT int32_t CryptoNative_EcKeyGetCurveName(const EC_KEY* key);
 
 /*
 Gets the NID of the curve name as an oid value for the specified EC_KEY.

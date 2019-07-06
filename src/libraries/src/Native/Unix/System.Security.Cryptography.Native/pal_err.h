@@ -12,11 +12,6 @@ Shims the ERR_clear_error method.
 DLLEXPORT void CryptoNative_ErrClearError(void);
 
 /*
-Shims the ERR_get_error method.
-*/
-DLLEXPORT uint64_t CryptoNative_ErrGetError(void);
-
-/*
 Shim to ERR_get_error which also returns whether the error
 was caused by an allocation failure.
 */

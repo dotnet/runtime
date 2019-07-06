@@ -28,9 +28,6 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetPkcs7Certificates")]
         private static extern int GetPkcs7Certificates(SafePkcs7Handle p7, out SafeSharedX509StackHandle certs);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_Pkcs7AddCertificate")]
-        internal static extern bool Pkcs7AddCertificate(SafePkcs7Handle p7, IntPtr x509);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetPkcs7DerSize")]
         internal static extern int GetPkcs7DerSize(SafePkcs7Handle p7);
 

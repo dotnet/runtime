@@ -12,9 +12,6 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaCreate")]
-        internal static extern SafeDsaHandle DsaCreate();
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DsaUpRef")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool DsaUpRef(IntPtr dsa);

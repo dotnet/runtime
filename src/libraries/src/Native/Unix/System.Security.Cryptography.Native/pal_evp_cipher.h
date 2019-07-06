@@ -6,19 +6,6 @@
 #include "pal_compiler.h"
 #include "opensslshim.h"
 
-/*
-Creates and initializes an EVP_CIPHER_CTX with the given args.
-
-Implemented by:
-   1) allocating a new EVP_CIPHER_CTX
-   2) calling EVP_CIPHER_CTX_init on the new EVP_CIPHER_CTX
-   3) calling EVP_CipherInit_ex with the new EVP_CIPHER_CTX and the given args.
-
-Returns new EVP_CIPHER_CTX on success, nullptr on failure.
-*/
-DLLEXPORT EVP_CIPHER_CTX*
-CryptoNative_EvpCipherCreate(const EVP_CIPHER* type, uint8_t* key, unsigned char* iv, int32_t enc);
-
 DLLEXPORT EVP_CIPHER_CTX*
 CryptoNative_EvpCipherCreate2(const EVP_CIPHER* type, uint8_t* key, int32_t keyLength, int32_t effectiveKeyLength, unsigned char* iv, int32_t enc);
 

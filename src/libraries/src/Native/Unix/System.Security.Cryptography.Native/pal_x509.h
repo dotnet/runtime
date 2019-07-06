@@ -152,11 +152,6 @@ Shims the X509_check_purpose method.
 DLLEXPORT int32_t CryptoNative_X509CheckPurpose(X509* x, int32_t id, int32_t ca);
 
 /*
-Shims the X509_check_issued method.
-*/
-DLLEXPORT int32_t CryptoNative_X509CheckIssued(X509* issuer, X509* subject);
-
-/*
 Shims the X509_issuer_name_hash method.
 */
 DLLEXPORT uint64_t CryptoNative_X509IssuerNameHash(X509* x);
@@ -192,19 +187,9 @@ Returns the data portion of the first matched extension.
 DLLEXPORT ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t nid);
 
 /*
-Shims the X509_STORE_new method.
-*/
-DLLEXPORT X509_STORE* CryptoNative_X509StoreCreate(void);
-
-/*
 Shims the X509_STORE_free method.
 */
 DLLEXPORT void CryptoNative_X509StoreDestory(X509_STORE* v);
-
-/*
-Shims the X509_STORE_add_cert method.
-*/
-DLLEXPORT int32_t CryptoNative_X509StoreAddCert(X509_STORE* ctx, X509* x);
 
 /*
 Shims the X509_STORE_add_crl method.

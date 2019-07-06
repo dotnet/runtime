@@ -17,12 +17,6 @@ typedef enum
 
 
 /*
-Returns the ECCurveType given the key.
-*/
-DLLEXPORT ECCurveType CryptoNative_EcKeyGetCurveType(
-    const EC_KEY* key);
-
-/*
 Returns the ECC key parameters.
 */
 DLLEXPORT int32_t CryptoNative_GetECKeyParameters(

@@ -37,7 +37,7 @@ static const EC_METHOD* CurveTypeToMethod(ECCurveType curveType)
     return NULL; //Edwards and others
 }
 
-ECCurveType CryptoNative_EcKeyGetCurveType(
+static ECCurveType EcKeyGetCurveType(
     const EC_KEY* key)
 {
     const EC_GROUP* group = EC_KEY_get0_group(key);
@@ -77,7 +77,7 @@ int32_t CryptoNative_GetECKeyParameters(
     BIGNUM *xBn = NULL;
     BIGNUM *yBn = NULL;
 
-    ECCurveType curveType = CryptoNative_EcKeyGetCurveType(key);
+    ECCurveType curveType = EcKeyGetCurveType(key);
     const EC_POINT* Q = EC_KEY_get0_public_key(key);
     const EC_GROUP* group = EC_KEY_get0_group(key);
     if (curveType == Unspecified || !Q || !group) 
