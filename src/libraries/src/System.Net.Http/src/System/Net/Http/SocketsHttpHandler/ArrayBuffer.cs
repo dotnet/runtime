@@ -53,6 +53,7 @@ namespace System.Net.Http
             }
         }
 
+        public int ActiveLength => _availableStart - _activeStart;
         public Span<byte> ActiveSpan => new Span<byte>(_bytes, _activeStart, _availableStart - _activeStart);
         public int AvailableLength => _bytes.Length - _availableStart;
         public Span<byte> AvailableSpan => new Span<byte>(_bytes, _availableStart, AvailableLength);
@@ -63,7 +64,7 @@ namespace System.Net.Http
 
         public void Discard(int byteCount)
         {
-            Debug.Assert(byteCount <= ActiveSpan.Length, $"Expected {byteCount} <= {ActiveSpan.Length}");
+            Debug.Assert(byteCount <= ActiveLength, $"Expected {byteCount} <= {ActiveLength}");
             _activeStart += byteCount;
 
             if (_activeStart == _availableStart)
@@ -91,15 +92,15 @@ namespace System.Net.Http
             if (byteCount <= totalFree)
             {
                 // We can free up enough space by just shifting the bytes down, so do so.
-                Buffer.BlockCopy(_bytes, _activeStart, _bytes, 0, ActiveSpan.Length);
-                _availableStart = ActiveSpan.Length;
+                Buffer.BlockCopy(_bytes, _activeStart, _bytes, 0, ActiveLength);
+                _availableStart = ActiveLength;
                 _activeStart = 0;
                 Debug.Assert(byteCount <= AvailableLength);
                 return;
             }
 
             // Double the size of the buffer until we have enough space.
-            int desiredSize = ActiveSpan.Length + byteCount;
+            int desiredSize = ActiveLength + byteCount;
             int newSize = _bytes.Length;
             do
             {
@@ -111,12 +112,12 @@ namespace System.Net.Http
                 new byte[newSize];
             byte[] oldBytes = _bytes;
 
-            if (ActiveSpan.Length != 0)
+            if (ActiveLength != 0)
             {
-                Buffer.BlockCopy(oldBytes, _activeStart, newBytes, 0, ActiveSpan.Length);
+                Buffer.BlockCopy(oldBytes, _activeStart, newBytes, 0, ActiveLength);
             }
 
-            _availableStart = ActiveSpan.Length;
+            _availableStart = ActiveLength;
             _activeStart = 0;
 
             _bytes = newBytes;
