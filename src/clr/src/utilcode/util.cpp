@@ -758,9 +758,10 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 
                 currentProcsOnNode = max(currentProcsOnNode, procsOnNode);
             }
-            *max_procs_per_node = currentProcsOnNode;
-            *total_nodes = m_nNodes;
         }
+
+        *max_procs_per_node = currentProcsOnNode;
+        *total_nodes = m_nNodes;
         return true;
     }
 
