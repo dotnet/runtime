@@ -51,7 +51,7 @@ namespace System.Net.Http.Functional.Tests
                         var waitToSend = new TaskCompletionSource<bool>();
                         var contentSending = new TaskCompletionSource<bool>();
                         var req = new HttpRequestMessage(HttpMethod.Post, uri) { Version = VersionFromUseHttp2 };
-                        req.Content = new ByteAtATimeContent(int.MaxValue, waitToSend.Task, contentSending);
+                        req.Content = new ByteAtATimeContent(int.MaxValue, waitToSend.Task, contentSending, millisecondDelayBetweenBytes: 1);
                         req.Headers.TransferEncodingChunked = chunkedTransfer;
 
                         Task<HttpResponseMessage> resp = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
@@ -465,39 +465,5 @@ namespace System.Net.Http.Functional.Tests
             from second in s_bools
             from third in s_bools
             select new object[] { first, second, third };
-
-        private sealed class ByteAtATimeContent : HttpContent
-        {
-            private readonly Task _waitToSend;
-            private readonly TaskCompletionSource<bool> _startedSend;
-            private readonly int _length;
-
-            public ByteAtATimeContent(int length, Task waitToSend, TaskCompletionSource<bool> startedSend)
-            {
-                _length = length;
-                _waitToSend = waitToSend;
-                _startedSend = startedSend;
-            }
-
-            protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
-            {
-                await _waitToSend;
-                _startedSend.SetResult(true);
-
-                var buffer = new byte[1] { 42 };
-                for (int i = 0; i < _length; i++)
-                {
-                    await stream.WriteAsync(buffer);
-                    await stream.FlushAsync();
-                    await Task.Delay(1);
-                }
-            }
-
-            protected override bool TryComputeLength(out long length)
-            {
-                length = _length;
-                return true;
-            }
-        }
     }
 }
