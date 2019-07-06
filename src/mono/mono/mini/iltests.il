@@ -3172,4 +3172,32 @@ L_3:
 		ldind.i4
 		ret
 	 }
+
+  .method public hidebysig static int32  test_10_rconv_to_u8_ovf_un() cil managed
+  {
+    // Code size       20 (0x14)
+    .maxstack  1
+    .locals init (uint64 V_0,
+             float32 V_1,
+             int32 V_2)
+    IL_0000:  nop
+    IL_0001:  ldc.i4.s   10
+    IL_0003:  conv.i8
+    IL_0004:  stloc.0
+    IL_0005:  ldloc.0
+    IL_0006:  conv.r.un
+    IL_0007:  conv.r4
+    IL_0008:  stloc.1
+    IL_0009:  nop
+    IL_000a:  ldloc.1
+    IL_000b:  conv.ovf.u8.un
+    IL_000c:  stloc.0
+    IL_000d:  ldloc.0
+    IL_000e:  conv.ovf.i4.un
+    IL_000f:  stloc.2
+    IL_0010:  br.s       IL_0012
+
+    IL_0012:  ldloc.2
+    IL_0013:  ret
+  } // end of method Tests::test_10_rconv_to_u8_ovf_un
 }

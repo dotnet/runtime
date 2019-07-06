@@ -4554,6 +4554,9 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 			case STACK_TYPE_I4:
 				interp_add_ins (td, MINT_CONV_I8_U4);
 				break;
+			case STACK_TYPE_R4:
+				interp_add_ins (td, MINT_CONV_OVF_I8_UN_R4);
+				break;
 			default:
 				g_assert_not_reached ();
 				break;
