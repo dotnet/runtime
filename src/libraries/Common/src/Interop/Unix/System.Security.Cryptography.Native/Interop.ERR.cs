@@ -6,7 +6,6 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
-using System.Text;
 
 internal static partial class Interop
 {
@@ -14,9 +13,6 @@ internal static partial class Interop
     {
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrClearError")]
         internal static extern ulong ErrClearError();
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetError")]
-        internal static extern ulong ErrGetError();
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ErrGetErrorAlloc")]
         private static extern ulong ErrGetErrorAlloc([MarshalAs(UnmanagedType.Bool)] out bool isAllocFailure);

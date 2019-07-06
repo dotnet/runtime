@@ -71,15 +71,6 @@ internal static partial class Interop
             return result;
         }
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetSslConnectionInfo")]
-        internal static extern bool GetSslConnectionInfo(
-            SafeSslHandle ssl,
-            out int dataCipherAlg,
-            out int keyExchangeAlg,
-            out int dataHashAlg,
-            out int dataKeySize,
-            out int hashKeySize);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite")]
         internal static extern unsafe int SslWrite(SafeSslHandle ssl, byte* buf, int num);
 

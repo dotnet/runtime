@@ -234,7 +234,6 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     LEGACY_FUNCTION(CRYPTO_num_locks) \
     LEGACY_FUNCTION(CRYPTO_set_locking_callback) \
     REQUIRED_FUNCTION(d2i_ASN1_BIT_STRING) \
-    REQUIRED_FUNCTION(d2i_ASN1_OCTET_STRING) \
     REQUIRED_FUNCTION(d2i_BASIC_CONSTRAINTS) \
     REQUIRED_FUNCTION(d2i_EXTENDED_KEY_USAGE) \
     REQUIRED_FUNCTION(d2i_OCSP_RESPONSE) \
@@ -497,7 +496,6 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     RENAMED_FUNCTION(TLS_method, SSLv23_method) \
     REQUIRED_FUNCTION(SSL_write) \
     FALLBACK_FUNCTION(X509_check_host) \
-    REQUIRED_FUNCTION(X509_check_issued) \
     REQUIRED_FUNCTION(X509_check_purpose) \
     REQUIRED_FUNCTION(X509_cmp_current_time) \
     REQUIRED_FUNCTION(X509_cmp_time) \
@@ -622,7 +620,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define CRYPTO_num_locks CRYPTO_num_locks_ptr
 #define CRYPTO_set_locking_callback CRYPTO_set_locking_callback_ptr
 #define d2i_ASN1_BIT_STRING d2i_ASN1_BIT_STRING_ptr
-#define d2i_ASN1_OCTET_STRING d2i_ASN1_OCTET_STRING_ptr
 #define d2i_BASIC_CONSTRAINTS d2i_BASIC_CONSTRAINTS_ptr
 #define d2i_EXTENDED_KEY_USAGE d2i_EXTENDED_KEY_USAGE_ptr
 #define d2i_OCSP_RESPONSE d2i_OCSP_RESPONSE_ptr
@@ -892,7 +889,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_write SSL_write_ptr
 #define TLS_method TLS_method_ptr
 #define X509_check_host X509_check_host_ptr
-#define X509_check_issued X509_check_issued_ptr
 #define X509_check_purpose X509_check_purpose_ptr
 #define X509_cmp_current_time X509_cmp_current_time_ptr
 #define X509_cmp_time X509_cmp_time_ptr

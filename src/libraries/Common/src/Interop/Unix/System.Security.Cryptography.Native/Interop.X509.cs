@@ -86,9 +86,6 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool X509CheckPurpose(SafeX509Handle x, int id, int ca);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509CheckIssued")]
-        internal static extern int X509CheckIssued(SafeX509Handle issuer, SafeX509Handle subject);
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509IssuerNameHash")]
         internal static extern ulong X509IssuerNameHash(SafeX509Handle x);
 
@@ -144,10 +141,6 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreDestory")]
         internal static extern void X509StoreDestory(IntPtr v);
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreAddCert")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool X509StoreAddCert(SafeX509StoreHandle ctx, SafeX509Handle x);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_X509StoreAddCrl")]
         [return: MarshalAs(UnmanagedType.Bool)]
