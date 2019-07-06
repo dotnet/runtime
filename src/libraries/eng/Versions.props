@@ -40,9 +40,9 @@
     <MicrosoftDotNetBuildTasksFeedPackageVersion>2.2.0-beta.19355.2</MicrosoftDotNetBuildTasksFeedPackageVersion>
     <MicrosoftDotNetVersionToolsTasksPackageVersion>1.0.0-beta.19355.2</MicrosoftDotNetVersionToolsTasksPackageVersion>
     <!-- Core-setup dependencies -->
-    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview8-27904-08</MicrosoftNETCoreAppPackageVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview8-27904-08</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview8-27904-08</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview8-27905-12</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview8-27905-12</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview8-27905-12</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <!-- Coreclr dependencies -->
     <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview8.19354.2</MicrosoftNETCoreILAsmPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview8.19354.2</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
