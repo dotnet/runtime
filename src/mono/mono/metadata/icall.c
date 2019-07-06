@@ -7893,6 +7893,7 @@ ves_icall_System_IO_get_temp_path (MonoError *error)
 
 #if defined(ENABLE_MONODROID) || defined(ENABLE_MONOTOUCH) || defined(TARGET_WASM)
 
+// FIXME? Names should start "mono"?
 G_EXTERN_C gpointer CreateZStream (gint32 compress, MonoBoolean gzip, gpointer feeder, gpointer data);
 G_EXTERN_C gint32   CloseZStream (gpointer stream);
 G_EXTERN_C gint32   Flush (gpointer stream);
