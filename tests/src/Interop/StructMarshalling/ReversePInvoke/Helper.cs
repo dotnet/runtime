@@ -38,7 +38,7 @@ public class Helper
     {
         if (s1.f1 != s2.f1 || s1.f2 != s2.f2 || s1.f3 != s2.f3)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintInnerSequential(s1, s1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -78,7 +78,7 @@ public class Helper
     {
         if (inner1.f1 != inner2.f1 || inner1.f2 != inner2.f2 || inner1.f3 != inner2.f3)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintINNER2(inner1, inner1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -118,7 +118,7 @@ public class Helper
     {
         if (inner1.f1 != inner2.f1 || inner1.f2 != inner2.f2 || inner1.f3 != inner2.f3)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintInnerExplicit(inner1, inner1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -171,7 +171,7 @@ public class Helper
                 outer1.arr[i].f2 != outer2.arr[i].f2 ||
                 outer1.arr[i].f3 != outer2.arr[i].f3)
             {
-                Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+                Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
                 Console.WriteLine("\tThe Actual is...");
                 Console.WriteLine("\t{0}.arr[{1}].f1 = {2}", outer1.ToString(), i, outer1.arr[i].f1);
                 Console.WriteLine("\t{0}.arr[{1}].f2 = {2}", outer1.ToString(), i, outer1.arr[i].f2);
@@ -226,7 +226,7 @@ public class Helper
         {
             if (outer1.arr[i].f1 != InnerArrayExplicit.arr[i].f1)
             {
-                Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+                Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
                 Console.WriteLine("\tThe Actual f1 field is...");
                 Console.WriteLine("\t{0}.arr[{1}].f1 = {2}", outer1.ToString(), i, outer1.arr[i].f1);
                 Console.WriteLine("\tThe Expected f1 field is...");
@@ -236,7 +236,7 @@ public class Helper
         }
         if (outer1.f4 != InnerArrayExplicit.f4)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual f4 field is...");
             Console.WriteLine("\t{0}.f4 = {1}", outer1.ToString(), outer1.f4);
             Console.WriteLine("\tThe Expected f4 field is...");
@@ -288,7 +288,7 @@ public class Helper
                 outer1.arr[i].f2 != InnerArrayExplicit.arr[i].f2 ||
                 outer1.arr[i].f3 != InnerArrayExplicit.arr[i].f3)
             {
-                Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+                Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
                 Console.WriteLine("\tThe Actual is...");
                 Console.WriteLine("\t{0}.arr[{1}].f1 = {2}", outer1.ToString(), i, outer1.arr[i].f1);
                 Console.WriteLine("\t{0}.arr[{1}].f2 = {2}", outer1.ToString(), i, outer1.arr[i].f2);
@@ -302,7 +302,7 @@ public class Helper
         }
         if (outer1.f4 != InnerArrayExplicit.f4)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual f4 field is...");
             Console.WriteLine("\t{0}.f4 = {1}", outer1.ToString(), outer1.f4);
             Console.WriteLine("\tThe Expected f4 field is...");
@@ -338,7 +338,7 @@ public class Helper
     {
         if (str1.f1 != str2.f1 || str1.f2 != str2.f2)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintCharSetAnsiSequential(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -377,7 +377,7 @@ public class Helper
     {
         if (str1.f1 != str2.f1 || str1.f2 != str2.f2)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintCharSetUnicodeSequential(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -437,7 +437,7 @@ public class Helper
             str1.ui16 != str2.ui16 || str1.i64 != str2.i64 || str1.ui64 != str2.ui64 ||
             str1.sgl != str2.sgl || str1.d != str2.d)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintNumberSequential(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -492,7 +492,7 @@ public class Helper
         int iflag = 0;
         if (str1.flag != str2.flag || str1.str != str2.str)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual flag field is...");
             Console.WriteLine("\t{0}.flag = {1}", str1.ToString(), str1.flag);
             Console.WriteLine("\t{0}.str = {1}", str1.ToString(), str1.str);
@@ -505,7 +505,7 @@ public class Helper
         {
             if (str1.vals[i] != str2.vals[i])
             {
-                Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+                Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
                 Console.WriteLine("\tThe Actual vals field is...");
                 Console.WriteLine("\t{0}.vals[{1}] = {2}", str1.ToString(), i, str1.vals[i]);
                 Console.WriteLine("\tThe Expected vals field is...");
@@ -549,7 +549,7 @@ public class Helper
     {
         if (str1.s4.age != str2.s4.age || str1.s4.name != str2.s4.name)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual s4 field is...");
             Console.WriteLine("\t{0}.s4.age = {1}", str1.ToString(), str1.s4.age);
             Console.WriteLine("\t{0}.s4.name = {1}", str1.ToString(), str1.s4.name);
@@ -560,7 +560,7 @@ public class Helper
         }
         if (str1.ef != str2.ef)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual ef field is...");
             Console.WriteLine("\t{0}.ef = {1}", str1.ToString(), str1.ef);
             Console.WriteLine("\tThe Expected s4 field is...");
@@ -594,7 +594,7 @@ public class Helper
     {
         if (str1.first != str2.first || str1.last != str2.last)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintStringStructSequentialAnsi(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -631,7 +631,7 @@ public class Helper
     {
         if (str1.first != str2.first || str1.last != str2.last)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintStringStructSequentialUnicode(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -677,7 +677,7 @@ public class Helper
             str1.jobNum != str2.jobNum ||
             str1.i32 != str2.i32 || str1.ui32 != str2.ui32 || str1.mySByte != str2.mySByte)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintS8(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -705,7 +705,7 @@ public class Helper
     {
         if (str1.i32 != str2.i32 || str1.myDelegate1 != str2.myDelegate1)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             Console.WriteLine("\t{0}.i32 = {1}", str1.ToString(), str1.i32);
             Console.WriteLine("\t{0}.myDelegate1 = {1}", str1.ToString(), str1.myDelegate1);
@@ -740,7 +740,7 @@ public class Helper
     {
         if (str1.s.s_int.i != str2.s.s_int.i || str1.s.i != str2.s.i)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintIncludeOuterIntergerStructSequential(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -776,7 +776,7 @@ public class Helper
     {
         if (str1.i32 != str2.i32 || str1.i != str2.i)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintS11(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -833,7 +833,7 @@ public class Helper
             str1.b != str2.b || str1.sb != str2.sb || str1.l != str2.l || str1.ul != str2.ul ||
             str1.f != str2.f || str1.d != str2.d)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintU(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -867,7 +867,7 @@ public class Helper
     {
         if (str1.b1 != str2.b1 || str1.b2 != str2.b2)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintByteStructPack2Explicit(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -904,7 +904,7 @@ public class Helper
     {
         if (str1.s1 != str2.s1 || str1.s2 != str2.s2)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintShortStructPack4Explicit(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -941,7 +941,7 @@ public class Helper
     {
         if (str1.i1 != str2.i1 || str1.i2 != str2.i2)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintIntStructPack8Explicit(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
@@ -978,7 +978,7 @@ public class Helper
     {
         if (str1.l1 != str2.l1 || str1.l2 != str2.l2)
         {
-            Console.WriteLine("\tFAILED! " + methodName + "did not recieve result as expected.");
+            Console.WriteLine("\tFAILED! " + methodName + "did not receive result as expected.");
             Console.WriteLine("\tThe Actual is...");
             PrintLongStructPack16Explicit(str1, str1.ToString());
             Console.WriteLine("\tThe Expected is...");
