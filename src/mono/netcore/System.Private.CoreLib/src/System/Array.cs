@@ -134,9 +134,12 @@ namespace System
 			Type dst_type = destinationArray.GetType ().GetElementType ()!;
 			var dst_type_vt = dst_type.IsValueType && Nullable.GetUnderlyingType (dst_type) == null;
 
-			if (src_type.IsEnum)
+			bool src_is_enum = src_type.IsEnum;
+			bool dst_is_enum = dst_type.IsEnum;
+			
+			if (src_is_enum)
 				src_type = Enum.GetUnderlyingType (src_type);
-			if (dst_type.IsEnum)
+			if (dst_is_enum)
 				dst_type = Enum.GetUnderlyingType (dst_type);
 
 			if (reliable) {
@@ -153,6 +156,9 @@ namespace System
 			if (!Object.ReferenceEquals (sourceArray, destinationArray) || source_pos > dest_pos) {
 				for (int i = 0; i < length; i++) {
 					Object srcval = sourceArray.GetValueImpl (source_pos + i);
+
+					if (!src_type.IsValueType && dst_is_enum)
+						throw new InvalidCastException (SR.InvalidCast_DownCastArrayElement);
 
 					if (dst_type_vt && (srcval == null || (src_type == typeof (object) && srcval.GetType () != dst_type)))
 						throw new InvalidCastException ();
