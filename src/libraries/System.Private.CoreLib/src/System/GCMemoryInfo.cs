@@ -17,7 +17,12 @@ namespace System
         public long MemoryLoadBytes { get; }
 
         /// <summary>
-        /// Total available memory for the GC to use when the last GC ocurred. By default this is the physical memory on the machine, but it may be customized by specifying a HardLimit.
+        /// Total available memory for the GC to use when the last GC ocurred.
+        ///
+        /// If the environment variable COMPlus_GCHeapHardLimit is set,
+        /// or "Server.GC.HeapHardLimit" is in runtimeconfig.json, this will come from that.
+        /// If the program is run in a container, this will be an implementation-defined fraction of the container's size.
+        /// Else, this is the physical memory on the machine that was available for the GC to use when the last GC occurred.
         /// </summary>
         public long TotalAvailableMemoryBytes { get; }
 

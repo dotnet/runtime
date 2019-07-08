@@ -54,26 +54,28 @@ namespace System
     public static class GC
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern void GetMemoryInfo(out uint highMemLoadThreshold,
-                                                  out ulong totalPhysicalMem,
-                                                  out uint lastRecordedMemLoad,
+        internal static extern void GetMemoryInfo(out ulong highMemLoadThresholdBytes,
+                                                  out ulong totalAvailableMemoryBytes,
+                                                  out ulong lastRecordedMemLoadBytes,
+                                                  out uint lastRecordedMemLoadPct,
                                                   // The next two are size_t
-                                                  out UIntPtr lastRecordedHeapSize,
-                                                  out UIntPtr lastRecordedFragmentation);
+                                                  out UIntPtr lastRecordedHeapSizeBytes,
+                                                  out UIntPtr lastRecordedFragmentationBytes);
 
         public static GCMemoryInfo GetGCMemoryInfo()
         {
-            GetMemoryInfo(out uint highMemLoadThreshold,
-                          out ulong totalPhysicalMem,
-                          out uint lastRecordedMemLoad,
-                          out UIntPtr lastRecordedHeapSize,
-                          out UIntPtr lastRecordedFragmentation);
+            GetMemoryInfo(out ulong highMemLoadThresholdBytes,
+                          out ulong totalAvailableMemoryBytes,
+                          out ulong lastRecordedMemLoadBytes,
+                          out uint _,
+                          out UIntPtr lastRecordedHeapSizeBytes,
+                          out UIntPtr lastRecordedFragmentationBytes);
 
-            return new GCMemoryInfo((long)((double)highMemLoadThreshold / 100 * totalPhysicalMem),
-                                    (long)((double)lastRecordedMemLoad / 100 * totalPhysicalMem),
-                                    (long)totalPhysicalMem,
-                                    (long)(ulong)lastRecordedHeapSize,
-                                    (long)(ulong)lastRecordedFragmentation);
+            return new GCMemoryInfo(highMemoryLoadThresholdBytes: (long)highMemLoadThresholdBytes,
+                                    memoryLoadBytes: (long)lastRecordedMemLoadBytes,
+                                    totalAvailableMemoryBytes: (long)totalAvailableMemoryBytes,
+                                    heapSizeBytes: (long)(ulong)lastRecordedHeapSizeBytes,
+                                    fragmentedBytes: (long)(ulong)lastRecordedFragmentationBytes);
         }
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -541,13 +543,14 @@ namespace System
 
         private static float GetMemoryLoad()
         {
-            GetMemoryInfo(out uint _,
+            GetMemoryInfo(out ulong _,
                           out ulong _,
-                          out uint lastRecordedMemLoad,
+                          out ulong _,
+                          out uint lastRecordedMemLoadPct,
                           out UIntPtr _,
                           out UIntPtr _);
 
-            return (float)lastRecordedMemLoad / 100;
+            return (float)lastRecordedMemLoadPct;
         }
 
         private static bool InvokeMemoryLoadChangeNotifications()
