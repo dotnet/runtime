@@ -1775,6 +1775,36 @@ mono_threads_close_thread_handle (MonoThreadHandle *thread_handle)
 	mono_refcount_dec (thread_handle);
 }
 
+/*
+ * mono_threads_open_native_thread_handle:
+ *
+ *  Duplicate the handle. The handle needs to be closed by calling
+ *  mono_threads_close_native_thread_handle () when it is no longer needed.
+ */
+MonoNativeThreadHandle
+mono_threads_open_native_thread_handle (MonoNativeThreadHandle thread_handle)
+{
+#ifdef HOST_WIN32
+	BOOL success = FALSE;
+	HANDLE new_thread_handle = NULL;
+
+	g_assert (thread_handle && thread_handle != INVALID_HANDLE_VALUE);
+	return DuplicateHandle (GetCurrentProcess (), thread_handle, GetCurrentProcess (), &new_thread_handle, 0, FALSE, DUPLICATE_SAME_ACCESS) ? new_thread_handle : NULL;
+#else
+	return MONO_GPOINTER_TO_NATIVE_THREAD_HANDLE (NULL);
+#endif
+}
+
+void
+mono_threads_close_native_thread_handle (MonoNativeThreadHandle thread_handle)
+{
+#ifdef HOST_WIN32
+	g_assert (thread_handle != INVALID_HANDLE_VALUE);
+	if (thread_handle)
+		CloseHandle (thread_handle);
+#endif
+}
+
 static void
 mono_threads_signal_thread_handle (MonoThreadHandle* thread_handle)
 {

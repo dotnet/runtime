@@ -323,19 +323,14 @@ mono_threads_suspend_begin_async_resume (MonoThreadInfo *info)
 void
 mono_threads_suspend_register (MonoThreadInfo *info)
 {
-	BOOL success;
-	HANDLE currentThreadHandle = NULL;
-
-	success = DuplicateHandle (GetCurrentProcess (), GetCurrentThread (), GetCurrentProcess (), &currentThreadHandle, 0, FALSE, DUPLICATE_SAME_ACCESS);
-	g_assertf (success, "Failed to duplicate current thread handle");
-
-	info->native_handle = currentThreadHandle;
+	g_assert (!info->native_handle);
+	info->native_handle = mono_threads_open_native_thread_handle (GetCurrentThread ());
 }
 
 void
 mono_threads_suspend_free (MonoThreadInfo *info)
 {
-	CloseHandle (info->native_handle);
+	mono_threads_close_native_thread_handle (info->native_handle);
 	info->native_handle = NULL;
 }
 

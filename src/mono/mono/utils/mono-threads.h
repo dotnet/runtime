@@ -30,7 +30,7 @@
 #include <windows.h>
 
 typedef DWORD MonoNativeThreadId;
-typedef HANDLE MonoNativeThreadHandle; /* unused */
+typedef HANDLE MonoNativeThreadHandle;
 
 typedef DWORD mono_native_thread_return_t;
 typedef DWORD mono_thread_start_return_t;
@@ -72,6 +72,9 @@ typedef gsize (*MonoThreadStart)(gpointer);
 #endif /* !defined(__HAIKU__) */
 
 #endif /* #ifdef HOST_WIN32 */
+
+#define MONO_NATIVE_THREAD_HANDLE_TO_GPOINTER(handle) ((gpointer)(gsize)(handle))
+#define MONO_GPOINTER_TO_NATIVE_THREAD_HANDLE(handle) ((MonoNativeThreadHandle)(gsize)(handle))
 
 #define MONO_INFINITE_WAIT ((guint32) 0xFFFFFFFF)
 
@@ -535,6 +538,12 @@ mono_threads_open_thread_handle (MonoThreadHandle *handle);
 
 void
 mono_threads_close_thread_handle (MonoThreadHandle *handle);
+
+MonoNativeThreadHandle
+mono_threads_open_native_thread_handle (MonoNativeThreadHandle handle);
+
+void
+mono_threads_close_native_thread_handle (MonoNativeThreadHandle handle);
 
 #if !defined(HOST_WIN32)
 
