@@ -8,11 +8,10 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        [StructLayout(LayoutKind.Sequential)]
-        internal class USEROBJECTFLAGS {
-            public int fInherit = 0;
-            public int fReserved = 0;
-            public int dwFlags = 0;
+        internal struct USEROBJECTFLAGS {
+            public int fInherit;
+            public int fReserved;
+            public int dwFlags;
         }
     }
 }
