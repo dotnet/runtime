@@ -361,6 +361,7 @@ common_sources = \
 	remoting.h		\
 	remoting.c		\
 	runtime.c		\
+	runtime.h		\
 	mono-security.c		\
 	security.h		\
 	security-core-clr.c	\
@@ -492,6 +493,6 @@ libmonoruntimeinclude_HEADERS = \
 	tokentype.h		\
 	verify.h		
 
-EXTRA_DIST = $(null_sources) runtime.h \
+EXTRA_DIST = $(null_sources) \
 		external-only.c \
 		threadpool-io-poll.c threadpool-io-epoll.c threadpool-io-kqueue.c

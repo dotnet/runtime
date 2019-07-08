@@ -16,15 +16,11 @@
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-compiler.h>
 
-MONO_BEGIN_DECLS
-
 gboolean mono_runtime_try_shutdown (void);
 
 void mono_runtime_init_tls (void);
 
 MONO_PROFILER_API char* mono_runtime_get_aotid (void);
-
-MONO_END_DECLS
 
 #endif /* _MONO_METADATA_RUNTIME_H_ */
 
