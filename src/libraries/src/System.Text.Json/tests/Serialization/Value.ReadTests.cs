@@ -291,9 +291,15 @@ namespace System.Text.Json.Serialization.Tests
         {
             Uri uri = JsonSerializer.Deserialize<Uri>(@"""https://domain/path""");
             Assert.Equal("https:\u002f\u002fdomain\u002fpath", uri.ToString());
+            Assert.Equal("https://domain/path", uri.OriginalString);
+
+            uri = JsonSerializer.Deserialize<Uri>(@"""https:\u002f\u002fdomain\u002fpath""");
+            Assert.Equal("https:\u002f\u002fdomain\u002fpath", uri.ToString());
+            Assert.Equal("https://domain/path", uri.OriginalString);
 
             uri = JsonSerializer.Deserialize<Uri>(@"""~/path""");
             Assert.Equal("~/path", uri.ToString());
+            Assert.Equal("~/path", uri.OriginalString);
         }
 
         private static int SingleToInt32Bits(float value)

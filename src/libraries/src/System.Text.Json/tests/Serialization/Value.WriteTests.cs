@@ -62,6 +62,22 @@ namespace System.Text.Json.Serialization.Tests
                 Uri.TryCreate("~/path", UriKind.RelativeOrAbsolute, out Uri uri);
                 Assert.Equal(@"""~\u002fpath""", JsonSerializer.Serialize(uri));
             }
+
+            // The next two scenarios validate that we're NOT using Uri.ToString() for serializing Uri. The serializer
+            // will escape backslashes and ampersands, but otherwise should be the same as the output of Uri.OriginalString.
+
+            {
+                // ToString would collapse the relative segment
+                Uri uri = new Uri("http://a/b/../c");
+                Assert.Equal(@"""http:\u002f\u002fa\u002fb\u002f..\u002fc""", JsonSerializer.Serialize(uri));
+            }
+
+            {
+                // "%20" gets turned into a space by Uri.ToString()
+                // https://coding.abel.nu/2014/10/beware-of-uri-tostring/
+                Uri uri = new Uri("http://localhost?p1=Value&p2=A%20B%26p3%3DFooled!");
+                Assert.Equal(@"""http:\u002f\u002flocalhost?p1=Value\u0026p2=A%20B%26p3%3DFooled!""", JsonSerializer.Serialize(uri));
+            }
         }
     }
 }
