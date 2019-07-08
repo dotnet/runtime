@@ -38,6 +38,9 @@
 static MiniVerifierMode verifier_mode = MONO_VERIFIER_MODE_OFF;
 static gboolean verify_all = FALSE;
 
+#define CTOR_REQUIRED_FLAGS (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_RT_SPECIAL_NAME)
+#define CTOR_INVALID_FLAGS (METHOD_ATTRIBUTE_STATIC)
+
 /*
  * Set the desired level of checks for the verfier.
  * 
@@ -52,6 +55,149 @@ void
 mono_verifier_enable_verify_all ()
 {
 	verify_all = TRUE;
+}
+
+static gboolean
+mono_method_is_constructor (MonoMethod *method)
+{
+	return ((method->flags & CTOR_REQUIRED_FLAGS) == CTOR_REQUIRED_FLAGS &&
+			!(method->flags & CTOR_INVALID_FLAGS) &&
+			!strcmp (".ctor", method->name));
+}
+
+static gboolean
+mono_class_has_default_constructor (MonoClass *klass)
+{
+	MonoMethod *method;
+	int i;
+
+	mono_class_setup_methods (klass);
+	if (mono_class_has_failure (klass))
+		return FALSE;
+
+	int mcount = mono_class_get_method_count (klass);
+	MonoMethod **klass_methods = m_class_get_methods (klass);
+	for (i = 0; i < mcount; ++i) {
+		method = klass_methods [i];
+		if (mono_method_is_constructor (method) &&
+			mono_method_signature_internal (method) &&
+			mono_method_signature_internal (method)->param_count == 0 &&
+			(method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC)
+			return TRUE;
+	}
+	return FALSE;
+}
+
+/*
+ * Returns TURE if @type is VAR or MVAR
+ */
+static gboolean
+mono_type_is_generic_argument (MonoType *type)
+{
+	return type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR;
+}
+
+/*A side note here. We don't need to check if arguments are broken since this
+is only need to be done by the runtime before realizing the type.
+*/
+static gboolean
+is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *context, MonoGenericInst *ginst)
+{
+	ERROR_DECL (error);
+	int i;
+
+	if (ginst->type_argc != gc->type_argc)
+		return FALSE;
+
+	for (i = 0; i < gc->type_argc; ++i) {
+		MonoGenericParamInfo *param_info = mono_generic_container_get_param_info (gc, i);
+		MonoClass *paramClass;
+		MonoClass **constraints;
+		MonoType *param_type = ginst->type_argv [i];
+
+		/*it's not our job to validate type variables*/
+		if (mono_type_is_generic_argument (param_type))
+			continue;
+
+		paramClass = mono_class_from_mono_type_internal (param_type);
+
+
+		/* A GTD can't be a generic argument.
+		 *
+		 * Due to how types are encoded we must check for the case of a genericinst MonoType and GTD MonoClass.
+		 * This happens in cases such as: class Foo<T>  { void X() { new Bar<T> (); } }
+		 *
+		 * Open instantiations can have GTDs as this happens when one type is instantiated with others params
+		 * and the former has an expansion into the later. For example:
+		 * class B<K> {}
+		 * class A<T>: B<K> {}
+		 * The type A <K> has a parent B<K>, that is inflated into the GTD B<>.
+		 * Since A<K> is open, thus not instantiatable, this is valid.
+		 */
+		if (mono_class_is_gtd (paramClass) && param_type->type != MONO_TYPE_GENERICINST && !ginst->is_open)
+			return FALSE;
+
+		/*it's not safe to call mono_class_init_internal from here*/
+		if (mono_class_is_ginst (paramClass) && !m_class_is_inited (paramClass)) {
+			if (!mono_verifier_class_is_valid_generic_instantiation (paramClass))
+				return FALSE;
+		}
+
+		if (!param_info->constraints && !(param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK))
+			continue;
+
+		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) && (!m_class_is_valuetype (paramClass) || mono_class_is_nullable (paramClass)))
+			return FALSE;
+
+		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) && m_class_is_valuetype (paramClass))
+			return FALSE;
+
+		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !m_class_is_valuetype (paramClass) && !mono_class_has_default_constructor (paramClass))
+			return FALSE;
+
+		if (!param_info->constraints)
+			continue;
+
+		for (constraints = param_info->constraints; *constraints; ++constraints) {
+			MonoClass *ctr = *constraints;
+			MonoType *inflated;
+
+			inflated = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (ctr), context, error);
+			if (!mono_error_ok (error)) {
+				mono_error_cleanup (error);
+				return FALSE;
+			}
+			ctr = mono_class_from_mono_type_internal (inflated);
+			mono_metadata_free_type (inflated);
+
+			/*FIXME maybe we need the same this as verifier_class_is_assignable_from*/
+			if (!mono_class_is_assignable_from_slow (ctr, paramClass))
+				return FALSE;
+		}
+	}
+	return TRUE;
+}
+
+gboolean
+mono_verifier_class_is_valid_generic_instantiation (MonoClass *klass)
+{
+	MonoGenericClass *gklass = mono_class_get_generic_class (klass);
+	MonoGenericInst *ginst = gklass->context.class_inst;
+	MonoGenericContainer *gc = mono_class_get_generic_container (gklass->container_class);
+	return is_valid_generic_instantiation (gc, &gklass->context, ginst);
+}
+
+gboolean
+mono_verifier_is_method_valid_generic_instantiation (MonoMethod *method)
+{
+	if (!method->is_inflated)
+		return TRUE;
+	MonoMethodInflated *gmethod = (MonoMethodInflated *)method;
+	MonoGenericInst *ginst = gmethod->context.method_inst;
+	MonoGenericContainer *gc = mono_method_get_generic_container (gmethod->declaring);
+	if (!gc) /*non-generic inflated method - it's part of a generic type  */
+		return TRUE;
+	return is_valid_generic_instantiation (gc, &gmethod->context, ginst);
 }
 
 #ifndef DISABLE_VERIFIER
@@ -410,15 +556,6 @@ mono_type_is_value_type (MonoType *type, const char *namespace_, const char *nam
 }
 
 /*
- * Returns TURE if @type is VAR or MVAR
- */
-static gboolean
-mono_type_is_generic_argument (MonoType *type)
-{
-	return type->type == MONO_TYPE_VAR || type->type == MONO_TYPE_MVAR;
-}
-
-/*
  * mono_type_get_underlying_type_any:
  * 
  * This functions is just like mono_type_get_underlying_type but it doesn't care if the type is byref.
@@ -439,40 +576,6 @@ static G_GNUC_UNUSED const char*
 mono_type_get_stack_name (MonoType *type)
 {
 	return type_names [get_stack_type (type) & TYPE_MASK];
-}
-
-#define CTOR_REQUIRED_FLAGS (METHOD_ATTRIBUTE_SPECIAL_NAME | METHOD_ATTRIBUTE_RT_SPECIAL_NAME)
-#define CTOR_INVALID_FLAGS (METHOD_ATTRIBUTE_STATIC)
-
-static gboolean
-mono_method_is_constructor (MonoMethod *method) 
-{
-	return ((method->flags & CTOR_REQUIRED_FLAGS) == CTOR_REQUIRED_FLAGS &&
-			!(method->flags & CTOR_INVALID_FLAGS) &&
-			!strcmp (".ctor", method->name));
-}
-
-static gboolean
-mono_class_has_default_constructor (MonoClass *klass)
-{
-	MonoMethod *method;
-	int i;
-
-	mono_class_setup_methods (klass);
-	if (mono_class_has_failure (klass))
-		return FALSE;
-
-	int mcount = mono_class_get_method_count (klass);
-	MonoMethod **klass_methods = m_class_get_methods (klass);
-	for (i = 0; i < mcount; ++i) {
-		method = klass_methods [i];
-		if (mono_method_is_constructor (method) &&
-			mono_method_signature_internal (method) &&
-			mono_method_signature_internal (method)->param_count == 0 &&
-			(method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC)
-			return TRUE;
-	}
-	return FALSE;
 }
 
 /*
@@ -552,87 +655,6 @@ verifier_inflate_type (VerifyContext *ctx, MonoType *type, MonoGenericContext *c
 		return NULL;
 	}
 	return result;
-}
-
-/*A side note here. We don't need to check if arguments are broken since this
-is only need to be done by the runtime before realizing the type.
-*/
-static gboolean
-is_valid_generic_instantiation (MonoGenericContainer *gc, MonoGenericContext *context, MonoGenericInst *ginst)
-{
-	ERROR_DECL (error);
-	int i;
-
-	if (ginst->type_argc != gc->type_argc)
-		return FALSE;
-
-	for (i = 0; i < gc->type_argc; ++i) {
-		MonoGenericParamInfo *param_info = mono_generic_container_get_param_info (gc, i);
-		MonoClass *paramClass;
-		MonoClass **constraints;
-		MonoType *param_type = ginst->type_argv [i];
-
-		/*it's not our job to validate type variables*/
-		if (mono_type_is_generic_argument (param_type))
-			continue;
-
-		paramClass = mono_class_from_mono_type_internal (param_type);
-
-
-		/* A GTD can't be a generic argument.
-		 *
-		 * Due to how types are encoded we must check for the case of a genericinst MonoType and GTD MonoClass.
-		 * This happens in cases such as: class Foo<T>  { void X() { new Bar<T> (); } }
-		 *
-		 * Open instantiations can have GTDs as this happens when one type is instantiated with others params
-		 * and the former has an expansion into the later. For example:
-		 * class B<K> {}
-		 * class A<T>: B<K> {}
-		 * The type A <K> has a parent B<K>, that is inflated into the GTD B<>.
-		 * Since A<K> is open, thus not instantiatable, this is valid.
-		 */
-		if (mono_class_is_gtd (paramClass) && param_type->type != MONO_TYPE_GENERICINST && !ginst->is_open)
-			return FALSE;
-
-		/*it's not safe to call mono_class_init_internal from here*/
-		if (mono_class_is_ginst (paramClass) && !m_class_is_inited (paramClass)) {
-			if (!mono_class_is_valid_generic_instantiation (NULL, paramClass))
-				return FALSE;
-		}
-
-		if (!param_info->constraints && !(param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_SPECIAL_CONSTRAINTS_MASK))
-			continue;
-
-		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_VALUE_TYPE_CONSTRAINT) && (!m_class_is_valuetype (paramClass) || mono_class_is_nullable (paramClass)))
-			return FALSE;
-
-		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_REFERENCE_TYPE_CONSTRAINT) && m_class_is_valuetype (paramClass))
-			return FALSE;
-
-		if ((param_info->flags & GENERIC_PARAMETER_ATTRIBUTE_CONSTRUCTOR_CONSTRAINT) && !m_class_is_valuetype (paramClass) && !mono_class_has_default_constructor (paramClass))
-			return FALSE;
-
-		if (!param_info->constraints)
-			continue;
-
-		for (constraints = param_info->constraints; *constraints; ++constraints) {
-			MonoClass *ctr = *constraints;
-			MonoType *inflated;
-
-			inflated = mono_class_inflate_generic_type_checked (m_class_get_byval_arg (ctr), context, error);
-			if (!mono_error_ok (error)) {
-				mono_error_cleanup (error);
-				return FALSE;
-			}
-			ctr = mono_class_from_mono_type_internal (inflated);
-			mono_metadata_free_type (inflated);
-
-			/*FIXME maybe we need the same this as verifier_class_is_assignable_from*/
-			if (!mono_class_is_assignable_from_slow (ctr, paramClass))
-				return FALSE;
-		}
-	}
-	return TRUE;
 }
 
 /**
@@ -842,7 +864,6 @@ mono_method_is_valid_generic_instantiation (VerifyContext *ctx, MonoMethod *meth
 	if (ctx && !is_valid_generic_instantiation_in_context (ctx, ginst, TRUE))
 		return FALSE;
 	return is_valid_generic_instantiation (gc, &gmethod->context, ginst);
-
 }
 
 static gboolean
@@ -6449,20 +6470,6 @@ mono_verifier_verify_class (MonoClass *klass)
 	return TRUE;
 }
 
-gboolean
-mono_verifier_class_is_valid_generic_instantiation (MonoClass *klass)
-{
-	return mono_class_is_valid_generic_instantiation (NULL, klass);
-}
-
-gboolean
-mono_verifier_is_method_valid_generic_instantiation (MonoMethod *method)
-{
-	if (!method->is_inflated)
-		return TRUE;
-	return mono_method_is_valid_generic_instantiation (NULL, method);
-}
-
 #else
 
 gboolean
@@ -6527,19 +6534,5 @@ mono_free_verify_list (GSList *list)
 	/* The verifier was disabled at compile time */
 	/* will always be null if verifier is disabled */
 }
-
-gboolean
-mono_verifier_class_is_valid_generic_instantiation (MonoClass *klass)
-{
-	return TRUE;
-}
-
-gboolean
-mono_verifier_is_method_valid_generic_instantiation (MonoMethod *method)
-{
-	return TRUE;
-}
-
-
 
 #endif
