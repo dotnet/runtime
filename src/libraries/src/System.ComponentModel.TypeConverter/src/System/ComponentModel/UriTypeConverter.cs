@@ -22,12 +22,7 @@ namespace System
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            if (sourceType == null)
-            {
-                throw new ArgumentNullException(nameof(sourceType));
-            }
-
-            return sourceType == typeof(string) || sourceType == typeof(Uri);
+            return sourceType == typeof(string) || sourceType == typeof(Uri) || base.CanConvertFrom(context, sourceType);
         }
 
         /// <summary>
@@ -36,7 +31,7 @@ namespace System
         /// </summary>
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            return destinationType == typeof(string) || destinationType == typeof(Uri) || destinationType == typeof(InstanceDescriptor);
+            return destinationType == typeof(Uri) || destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
 
         /// <summary>
@@ -78,9 +73,9 @@ namespace System
             {
                 if (destinationType == typeof(InstanceDescriptor))
                 {
-                    ConstructorInfo ci = typeof(Uri).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(string), typeof(UriKind) }, null);
-                    Debug.Assert(ci != null, "Couldn't find constructor");
-                    return new InstanceDescriptor(ci, new object[] { uri.OriginalString, uri.IsAbsoluteUri ? UriKind.Absolute : UriKind.Relative });
+                    ConstructorInfo ctor = typeof(Uri).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(string), typeof(UriKind) }, null);
+                    Debug.Assert(ctor != null, "Couldn't find constructor");
+                    return new InstanceDescriptor(ctor, new object[] { uri.OriginalString, uri.IsAbsoluteUri ? UriKind.Absolute : UriKind.Relative });
                 }
 
                 if (destinationType == typeof(string))
