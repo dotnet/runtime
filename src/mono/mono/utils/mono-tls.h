@@ -52,7 +52,24 @@ g_static_assert (TLS_KEY_DOMAIN == 0);
 #define mono_native_tls_alloc(key,destructor) ((*(key) = TlsAlloc ()) != TLS_OUT_OF_INDEXES && destructor == NULL)
 #define mono_native_tls_free TlsFree
 #define mono_native_tls_set_value TlsSetValue
-#define mono_native_tls_get_value TlsGetValue
+
+#include <winternl.h>
+
+// TlsGetValue always writes 0 to LastError. Which can cause problems. This never changes LastError.
+//
+static inline
+void*
+mono_native_tls_get_value (unsigned index)
+{
+	PTEB const teb = NtCurrentTeb ();
+
+	if (index < TLS_MINIMUM_AVAILABLE)
+		return teb->TlsSlots [index];
+
+	void** const p = (void**)teb->TlsExpansionSlots;
+
+	return p ? p [index - TLS_MINIMUM_AVAILABLE] : NULL;
+}
 
 #else
 
