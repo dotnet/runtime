@@ -90,7 +90,7 @@ namespace Microsoft.Win32
         [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private static volatile IntPtr s_processWinStation = IntPtr.Zero;
         private static volatile bool s_isUserInteractive = false;
-        private static bool UserInteractive
+        private unsafe static bool UserInteractive
         {
             get
             {
@@ -106,7 +106,7 @@ namespace Microsoft.Win32
                         int lengthNeeded = 0;
                         Interop.User32.USEROBJECTFLAGS flags = new Interop.User32.USEROBJECTFLAGS();
 
-                        if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, flags, Marshal.SizeOf(flags), ref lengthNeeded))
+                        if (Interop.User32.GetUserObjectInformationW(hwinsta, Interop.User32.UOI_FLAGS, ref flags, sizeof(Interop.User32.USEROBJECTFLAGS), ref lengthNeeded))
                         {
                             if ((flags.dwFlags & Interop.User32.WSF_VISIBLE) == 0)
                             {
