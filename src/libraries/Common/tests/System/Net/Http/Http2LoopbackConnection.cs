@@ -191,16 +191,18 @@ namespace System.Net.Test.Common
             return (oldSocket, oldStream);
         }
 
-        public async Task ExpectSettingsAckAsync(TimeSpan timeout)
+        // Set up loopback server to silently ignore the next inbound settings ack frame.
+        // If there already is a pending ack frame, wait until it has been read.
+        public async Task ExpectSettingsAckAsync(int timeoutMs = 5000)
         {
             // The timing of when we receive the settings ack is not guaranteed.
             // To simplify frame processing, just record that we are expecting one,
             // and then filter it out in ReadFrameAsync above.
 
-            // In case of a pending settings ack, wait for it or time out
             Task currentTask = _ignoredSettingsAckPromise?.Task;
             if (currentTask != null)
             {
+                var timeout = TimeSpan.FromMilliseconds(timeoutMs);
                 await currentTask.TimeoutAfter(timeout);
             }
 
