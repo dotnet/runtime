@@ -188,6 +188,7 @@ namespace Mono.Linker {
 
 			// See https://github.com/mono/linker/issues/612
 			DisabledOptimizations |= CodeOptimizations.UnreachableBodies;
+			DisabledOptimizations |= CodeOptimizations.ClearInitLocals;
 		}
 
 		public TypeDefinition GetType (string fullName)
@@ -420,6 +421,11 @@ namespace Mono.Linker {
 		/// <summary>
 		/// Option to disable delaying marking of instance methods until an instance of that type could exist
 		/// </summary>
-		UnreachableBodies = 1 << 2
+		UnreachableBodies = 1 << 2,
+
+		/// <summary>
+		/// Option to clear the initlocals flag on methods
+		/// </summary>
+		ClearInitLocals = 1 << 3
 	}
 }

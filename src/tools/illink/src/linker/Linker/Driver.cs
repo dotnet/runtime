@@ -408,9 +408,15 @@ namespace Mono.Linker {
 						case "unreachablebodies":
 							context.DisabledOptimizations &= ~CodeOptimizations.UnreachableBodies;
 							break;
+						case "clearinitlocals":
+							context.DisabledOptimizations &= ~CodeOptimizations.ClearInitLocals;
+							break;
 						}
 					}
 				}
+
+				if (context.IsOptimizationEnabled (CodeOptimizations.ClearInitLocals))
+					p.AddStepBefore (typeof (OutputStep), new ClearInitLocalsStep ());
 
 				PreProcessPipeline (p);
 
@@ -574,6 +580,8 @@ namespace Mono.Linker {
 			Console.WriteLine ("                              beforefieldinit: Unused static fields are removed if there is no static ctor");
 			Console.WriteLine ("                              overrideremoval: Overrides of virtual methods on types that are never instantiated are removed");
 			Console.WriteLine ("                              unreachablebodies: Instance methods that are marked but can never be entered are converted to throws");
+			Console.WriteLine ("  --enable-opt <name>       Enable one of the non-default optimizations");
+			Console.WriteLine ("                              clearinitlocals: Remove initlocals");
 			Console.WriteLine ("  --exclude-feature <name>  Any code which has a feature <name> in linked assemblies will be removed");
 			Console.WriteLine ("                              com: Support for COM Interop");
 			Console.WriteLine ("                              etw: Event Tracing for Windows");

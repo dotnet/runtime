@@ -10,8 +10,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil", "external\ceci
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Linker", "src\linker\Mono.Linker.csproj", "{DD28E2B1-057B-4B4D-A04D-B2EBD9E76E46}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILLink.CustomSteps", "src\ILLink.CustomSteps\ILLink.CustomSteps.csproj", "{275C1D10-168A-4AC4-8F3E-AD969F580B9C}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ILLink.Tasks", "src\ILLink.Tasks\ILLink.Tasks.csproj", "{A7A026C4-DEB4-4EF6-963E-17E7B98A6527}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{A879F5FC-D6C9-4ED4-BEAE-03B5CCE3C136}"
@@ -85,18 +83,6 @@ Global
 		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|x64.Build.0 = Release|x64
 		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|x86.ActiveCfg = Release|x86
 		{8559DD7F-A16F-46D0-A05A-9139FAEBA8FD}.Release|x86.Build.0 = Release|x86
-		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Debug|Any CPU.ActiveCfg = illink_Debug|Any CPU
-		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Debug|Any CPU.Build.0 = illink_Debug|Any CPU
-		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Debug|x64.ActiveCfg = illink_Debug|x64
-		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Debug|x64.Build.0 = illink_Debug|x64
-		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Debug|x86.ActiveCfg = illink_Debug|x86
-		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Debug|x86.Build.0 = illink_Debug|x86
-		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Release|Any CPU.ActiveCfg = illink_Release|Any CPU
-		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Release|Any CPU.Build.0 = illink_Release|Any CPU
-		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Release|x64.ActiveCfg = illink_Release|x64
-		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Release|x64.Build.0 = illink_Release|x64
-		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Release|x86.ActiveCfg = illink_Release|x86
-		{275C1D10-168A-4AC4-8F3E-AD969F580B9C}.Release|x86.Build.0 = illink_Release|x86
 		{A7A026C4-DEB4-4EF6-963E-17E7B98A6527}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A7A026C4-DEB4-4EF6-963E-17E7B98A6527}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A7A026C4-DEB4-4EF6-963E-17E7B98A6527}.Debug|x64.ActiveCfg = Debug|Any CPU
