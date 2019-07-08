@@ -15,10 +15,11 @@ namespace System.ComponentModel.Tests
         [Fact]
         public static void CanConvertFrom_WithContext()
         {
-            CanConvertFrom_WithContext(new object[2, 2]
+            CanConvertFrom_WithContext(new object[3, 2]
                 {
                     { typeof(string), true },
-                    { typeof(Uri), true }
+                    { typeof(Uri), true },
+                    { typeof(InstanceDescriptor), true }
                 },
                 UriTypeConverterTests.s_converter);
         }
@@ -30,7 +31,7 @@ namespace System.ComponentModel.Tests
                 {
                     { typeof(string), true },
                     { typeof(Uri), true },
-                    { typeof(InstanceDescriptor), true },
+                    { typeof(InstanceDescriptor), true }
                 },
                 UriTypeConverterTests.s_converter);
         }
