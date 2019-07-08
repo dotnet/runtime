@@ -8,6 +8,11 @@ CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' 
 TypesMustExist : Type 'System.IO.Compression.BrotliDecoder' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Compression.BrotliEncoder' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Compression.BrotliStream' does not exist in the implementation but it does exist in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Data.DataTableReader' does not implement interface 'System.IAsyncDisposable' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Data.Common.DbCommand' does not implement interface 'System.IAsyncDisposable' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Data.Common.DbConnection' does not implement interface 'System.IAsyncDisposable' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Data.Common.DbDataReader' does not implement interface 'System.IAsyncDisposable' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Data.Common.DbTransaction' does not implement interface 'System.IAsyncDisposable' in the implementation but it does in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.AssemblyBuilder.SetEntryPoint(System.Reflection.MethodInfo)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.GetModule()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Reflection.Emit.ConstructorBuilder.GetToken()' does not exist in the implementation but it does exist in the contract.
