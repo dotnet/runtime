@@ -17,7 +17,7 @@ namespace System.Text.Json
         /// <summary>
         /// Returns the naming policy for camel-casing.
         /// </summary>
-        public static JsonNamingPolicy CamelCase { get; } = new JsonCamelCaseNamePolicy();
+        public static JsonNamingPolicy CamelCase { get; } = new JsonCamelCaseNamingPolicy();
 
         internal static JsonNamingPolicy Default { get; } = new JsonDefaultNamingPolicy();
 
