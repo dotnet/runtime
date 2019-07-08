@@ -85,7 +85,7 @@
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterUInt64.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonValueConverterUri.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonAttribute.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonCamelCaseNamePolicy.cs" />
+    <Compile Include="System\Text\Json\Serialization\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonClassInfo.AddProperty.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonConverter.cs" />
