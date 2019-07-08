@@ -83,9 +83,6 @@
                       Condition=" '$(TargetFramework)' == 'netcoreapp2.0' " />
     <ProjectReference Include="../../external/cecil/Mono.Cecil.csproj"
                       PrivateAssets="All" />
-    <ProjectReference Include="../ILLink.CustomSteps/ILLink.CustomSteps.csproj"
-                      PrivateAssets="All"
-                      Condition=" '$(TargetFramework)' == 'netcoreapp2.0' " />
   </ItemGroup>
 
   <ItemGroup>

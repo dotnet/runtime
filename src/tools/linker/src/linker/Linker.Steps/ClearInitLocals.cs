@@ -5,7 +5,7 @@ using Mono.Linker;
 using Mono.Linker.Steps;
 using Mono.Cecil;
 
-namespace ILLink.CustomSteps
+namespace Mono.Linker.Steps
 {
 	public class ClearInitLocalsStep : BaseStep
 	{
