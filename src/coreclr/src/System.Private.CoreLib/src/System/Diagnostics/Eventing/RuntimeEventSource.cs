@@ -53,9 +53,9 @@ namespace System.Diagnostics.Tracing
                 // overhead by at all times even when counters aren't enabled.
 
                 // On disable, PollingCounters will stop polling for values so it should be fine to leave them around.
-                _cpuTimeCounter = _cpuTimeCounter ?? new PollingCounter("cpu-usage", this, () => RuntimeEventSourceHelper.GetCpuUsage()) { DisplayName = "CPU Usage" };
-                _workingSetCounter = _workingSetCounter ?? new PollingCounter("working-set", this, () => (double)(Environment.WorkingSet / 1000000)) { DisplayName = "Working Set" };
-                _gcHeapSizeCounter = _gcHeapSizeCounter ?? new PollingCounter("gc-heap-size", this, () => (double)(GC.GetTotalMemory(false) / 1000000)) { DisplayName = "GC Heap Size" };
+                _cpuTimeCounter = _cpuTimeCounter ?? new PollingCounter("cpu-usage", this, () => RuntimeEventSourceHelper.GetCpuUsage()) { DisplayName = "CPU Usage", DisplayUnits = "%" };
+                _workingSetCounter = _workingSetCounter ?? new PollingCounter("working-set", this, () => (double)(Environment.WorkingSet / 1000000)) { DisplayName = "Working Set", DisplayUnits = "MB" };
+                _gcHeapSizeCounter = _gcHeapSizeCounter ?? new PollingCounter("gc-heap-size", this, () => (double)(GC.GetTotalMemory(false) / 1000000)) { DisplayName = "GC Heap Size", DisplayUnits = "MB" };
                 _gen0GCCounter = _gen0GCCounter ?? new IncrementingPollingCounter("gen-0-gc-count", this, () => GC.CollectionCount(0)) { DisplayName = "Gen 0 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
                 _gen1GCCounter = _gen1GCCounter ?? new IncrementingPollingCounter("gen-1-gc-count", this, () => GC.CollectionCount(1)) { DisplayName = "Gen 1 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
                 _gen2GCCounter = _gen2GCCounter ?? new IncrementingPollingCounter("gen-2-gc-count", this, () => GC.CollectionCount(2)) { DisplayName = "Gen 2 GC Count", DisplayRateTimeScale = new TimeSpan(0, 1, 0) };
@@ -64,12 +64,12 @@ namespace System.Diagnostics.Tracing
                 _monitorContentionCounter = _monitorContentionCounter ?? new IncrementingPollingCounter("monitor-lock-contention-count", this, () => Monitor.LockContentionCount) { DisplayName = "Monitor Lock Contention Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) }; 
                 _threadPoolQueueCounter = _threadPoolQueueCounter ?? new PollingCounter("threadpool-queue-length", this, () => ThreadPool.PendingWorkItemCount) { DisplayName = "ThreadPool Queue Length" };
                 _completedItemsCounter = _completedItemsCounter ?? new IncrementingPollingCounter("threadpool-completed-items-count", this, () => ThreadPool.CompletedWorkItemCount) { DisplayName = "ThreadPool Completed Work Item Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
-                _gcTimeCounter = _gcTimeCounter ?? new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "Time in GC" };
-                _gen0SizeCounter = _gen0SizeCounter ?? new PollingCounter("gen-0-size", this, () => GC.GetGenerationSize(0)) { DisplayName = "Gen 0 Size" };
-                _gen1SizeCounter = _gen1SizeCounter ?? new PollingCounter("gen-1-size", this, () => GC.GetGenerationSize(1)) { DisplayName = "Gen 1 Size" };
-                _gen2SizeCounter = _gen2SizeCounter ?? new PollingCounter("gen-2-size", this, () => GC.GetGenerationSize(2)) { DisplayName = "Gen 2 Size" };
-                _lohSizeCounter = _lohSizeCounter ?? new PollingCounter("loh-size", this, () => GC.GetGenerationSize(3)) { DisplayName = "LOH Size" };
-                _allocRateCounter = _allocRateCounter ?? new IncrementingPollingCounter("alloc-rate", this, () => GC.GetTotalAllocatedBytes()) { DisplayName = "Allocation Rate", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
+                _gcTimeCounter = _gcTimeCounter ?? new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };
+                _gen0SizeCounter = _gen0SizeCounter ?? new PollingCounter("gen-0-size", this, () => GC.GetGenerationSize(0)) { DisplayName = "Gen 0 Size", DisplayUnits="B" };
+                _gen1SizeCounter = _gen1SizeCounter ?? new PollingCounter("gen-1-size", this, () => GC.GetGenerationSize(1)) { DisplayName = "Gen 1 Size", DisplayUnits="B" };
+                _gen2SizeCounter = _gen2SizeCounter ?? new PollingCounter("gen-2-size", this, () => GC.GetGenerationSize(2)) { DisplayName = "Gen 2 Size", DisplayUnits="B" };
+                _lohSizeCounter = _lohSizeCounter ?? new PollingCounter("loh-size", this, () => GC.GetGenerationSize(3)) { DisplayName = "LOH Size", DisplayUnits="B" };
+                _allocRateCounter = _allocRateCounter ?? new IncrementingPollingCounter("alloc-rate", this, () => GC.GetTotalAllocatedBytes()) { DisplayName = "Allocation Rate", DisplayUnits="B", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _assemblyCounter = _assemblyCounter ?? new PollingCounter("assembly-count", this, () => System.Reflection.Assembly.GetAssemblyCount()) { DisplayName = "Number of Assemblies Loaded" };
                 _timerCounter = _timerCounter ?? new PollingCounter("active-timer-count", this, () => Timer.ActiveCount) { DisplayName = "Number of Active Timers" };
             }
