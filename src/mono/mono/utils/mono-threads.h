@@ -21,6 +21,7 @@
 #include <mono/utils/mono-coop-semaphore.h>
 #include <mono/utils/os-event.h>
 #include <mono/utils/refcount.h>
+#include <mono/utils/mono-error-internals.h>
 
 #include <glib.h>
 #include <config.h>
@@ -829,12 +830,12 @@ void
 mono_win32_abort_blocking_io_call (THREAD_INFO_TYPE *info);
 
 #define W32_DEFINE_LAST_ERROR_RESTORE_POINT \
-	DWORD _last_error_restore_point = GetLastError ();
+	const DWORD _last_error_restore_point = GetLastError ();
 
 #define W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT \
 		/* Only restore if changed to prevent unecessary writes. */ \
 		if (GetLastError () != _last_error_restore_point) \
-			SetLastError (_last_error_restore_point);
+			mono_SetLastError (_last_error_restore_point);
 
 #else
 
