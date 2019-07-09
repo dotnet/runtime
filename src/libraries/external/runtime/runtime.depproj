@@ -29,11 +29,16 @@
   </ItemGroup>
 
   <!-- Setup the testing shared framework host -->
-  <Target Name="SetupTestingHost" AfterTargets="AfterResolveReferences" Condition="'$(BinPlaceTestSharedFramework)' == 'true'">
-
+  <Target Name="SetupTestingHost"
+          Condition="'$(BinPlaceTestSharedFramework)' == 'true'"
+          AfterTargets="AfterResolveReferences">
     <PropertyGroup>
-      <HostFxrFileName Condition="'$(OSGroup)'=='Windows_NT'">hostfxr</HostFxrFileName>
-      <HostFxrFileName Condition="'$(OSGroup)'!='Windows_NT'">libhostfxr</HostFxrFileName>
+      <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
+      <DotNetVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetVersion>
+
+      <HostFxrFileName Condition="'$(TargetsWindows)' == 'true'">hostfxr</HostFxrFileName>
+      <HostFxrFileName Condition="'$(TargetsWindows)' != 'true'">libhostfxr</HostFxrFileName>
+      
       <UseHardlink>true</UseHardlink>
       <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
       <UseHardlink Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">false</UseHardlink>
@@ -42,12 +47,13 @@
     <ItemGroup>
       <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == '$(HostFxrFileName)'" />
       <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
+      <HostSdkFile Include="$(DotNetRoot)sdk\$(DotNetVersion)\**\*" />
     </ItemGroup>
 
     <Copy SourceFiles="@(HostFxFile)"
-          DestinationFolder="$(NETCoreAppTestHostFxrPath)"
+          DestinationFolder="$(TestHostRootPath)host\fxr\$(ProductVersion)"
           SkipUnchangedFiles="true"
-          UseHardlinksIfPossible="true" />
+          UseHardlinksIfPossible="$(UseHardlink)" />
 
     <Copy SourceFiles="@(DotnetExe)"
           DestinationFolder="$(TestHostRootPath)"
@@ -55,6 +61,11 @@
           UseHardlinksIfPossible="$(UseHardlink)" />
 
     <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(OS)' != 'Windows_NT'"/>
+
+    <Copy SourceFiles="@(HostSdkFile)"
+          DestinationFolder="$(TestHostRootPath)sdk\$(ProductVersion)\%(RecursiveDir)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)" />
   </Target>
 
   <Target Name="OverrideRuntime"
