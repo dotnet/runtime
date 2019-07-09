@@ -280,7 +280,7 @@ typedef struct {
 #define HEADER_LENGTH 11
 
 #define MAJOR_VERSION 2
-#define MINOR_VERSION 51
+#define MINOR_VERSION 52
 
 typedef enum {
 	CMD_SET_VM = 1,
@@ -3248,6 +3248,18 @@ compute_frame_info (MonoInternalThread *thread, DebuggerTlsData *tls, gboolean f
 		return;
 
 	DEBUG_PRINTF (1, "Frames for %p(tid=%lx):\n", thread, (glong)thread->tid);
+
+	if (CHECK_PROTOCOL_VERSION (2, 52)) {
+		if (tls->restore_state.valid && MONO_CONTEXT_GET_IP (&tls->context.ctx) != MONO_CONTEXT_GET_IP (&tls->restore_state.ctx)) {
+			new_frames = compute_frame_info_from (thread, tls, &tls->restore_state, &new_frame_count);
+			invalidate_frames (tls);
+
+			tls->frames = new_frames;
+			tls->frame_count = new_frame_count;
+			tls->frames_up_to_date = TRUE;
+			return;
+		}
+	}
 
 	user_data.tls = tls;
 	user_data.frames = NULL;
