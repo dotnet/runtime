@@ -67,7 +67,8 @@ bool pal::getcwd(pal::string_t* recv)
         {
             return false;
         }
-        perror("getcwd()");
+
+        trace::error(_X("getcwd() failed: %s"), strerror(errno));
         return false;
     }
     recv->assign(buf);
@@ -730,7 +731,7 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 
         if (!skip_error_logging)
         {
-            perror("realpath()");
+            trace::error(_X("realpath(%s) failed: %s"), path->c_str(), strerror(errno));
         }
 
         return false;
