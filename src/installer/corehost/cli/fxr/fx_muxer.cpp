@@ -216,7 +216,7 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
 {
     pal::string_t probe_path = path;
 
-    if (pal::realpath(&probe_path))
+    if (pal::realpath(&probe_path, true))
     {
         realpaths->push_back(probe_path);
     }
@@ -239,7 +239,7 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
             segment.append(tfm);
             probe_path.replace(pos_placeholder, placeholder.length(), segment);
 
-            if (pal::realpath(&probe_path))
+            if (pal::realpath(&probe_path, true))
             {
                 realpaths->push_back(probe_path);
             }
