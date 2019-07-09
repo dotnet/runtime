@@ -433,9 +433,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	gpointer *orig_vtable_slot, *vtable_slot_to_patch = NULL;
 	MonoJitInfo *ji = NULL;
 	MonoDomain *domain = mono_domain_get ();
-#if LLVM_API_VERSION > 100
 	MonoMethod *orig_method = m;
-#endif
 
 	error_init (error);
 
@@ -742,13 +740,11 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 				 */
 				no_patch = TRUE;
 			}
-#if LLVM_API_VERSION > 100
 			if (!no_patch)
 				mini_patch_llvm_jit_callees (domain, orig_method, addr);
 			/* LLVM code doesn't make direct calls */
 			if (ji && ji->from_llvm)
 				no_patch = TRUE;
-#endif
 			if (!no_patch && mono_method_same_domain (ji, target_ji))
 				mono_arch_patch_callsite ((guint8 *)ji->code_start, code, (guint8 *)addr);
 		}
