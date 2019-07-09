@@ -11,6 +11,28 @@
         "linux-musl-x64"
       ]
     },
+    "alpine.3.10": {
+      "#import": [
+        "alpine.3.9"
+      ]
+    },
+    "alpine.3.10-x64": {
+      "#import": [
+        "alpine.3.10",
+        "alpine.3.9-x64"
+      ]
+    },
+    "alpine.3.11": {
+      "#import": [
+        "alpine.3.10"
+      ]
+    },
+    "alpine.3.11-x64": {
+      "#import": [
+        "alpine.3.11",
+        "alpine.3.10-x64"
+      ]
+    },
     "alpine.3.6": {
       "#import": [
         "alpine"
@@ -429,6 +451,17 @@
       "#import": [
         "freebsd.11.2",
         "freebsd.11.1-x64"
+      ]
+    },
+    "freebsd.11.3": {
+      "#import": [
+        "freebsd.11.2"
+      ]
+    },
+    "freebsd.11.3-x64": {
+      "#import": [
+        "freebsd.11.3",
+        "freebsd.11.2-x64"
       ]
     },
     "gentoo": {
