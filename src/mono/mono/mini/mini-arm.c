@@ -373,7 +373,7 @@ mono_arch_have_fast_tls (void)
 	static gboolean have_fast_tls = FALSE;
         static gboolean inited = FALSE;
 
-	if (mini_get_debug_options ()->use_fallback_tls)
+	if (mini_debug_options.use_fallback_tls)
 		return FALSE;
 
 	if (inited)
@@ -802,11 +802,11 @@ mono_arch_init (void)
 	char *cpu_arch;
 
 #ifdef TARGET_WATCHOS
-	mini_get_debug_options ()->soft_breakpoints = TRUE;
+	mini_debug_options.soft_breakpoints = TRUE;
 #endif
 
 	mono_os_mutex_init_recursive (&mini_arch_mutex);
-	if (mini_get_debug_options ()->soft_breakpoints) {
+	if (mini_debug_options.soft_breakpoints) {
 		if (!mono_aot_only)
 			breakpoint_tramp = mini_get_breakpoint_trampoline ();
 	} else {
@@ -4049,7 +4049,7 @@ mono_arm_emit_load_imm (guint8 *code, int dreg, guint32 val)
 	code += 4;
 	return code;
 #endif
-	if (mini_get_debug_options()->single_imm_size && v7_supported) {
+	if (mini_debug_options.single_imm_size && v7_supported) {
 		ARM_MOVW_REG_IMM (code, dreg, val & 0xffff);
 		ARM_MOVT_REG_IMM (code, dreg, (val >> 16) & 0xffff);
 		return code;
@@ -7206,7 +7206,6 @@ mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 {
 	guint8 *code = ip;
 	guint32 native_offset = ip - (guint8*)ji->code_start;
-	MonoDebugOptions *opt = mini_get_debug_options ();
 
 	if (ji->from_aot) {
 		SeqPointInfo *info = mono_arch_get_seq_point_info (mono_domain_get (), (guint8*)ji->code_start);
@@ -7216,8 +7215,8 @@ mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 
 		g_assert (native_offset % 4 == 0);
 		g_assert (info->bp_addrs [native_offset / 4] == 0);
-		info->bp_addrs [native_offset / 4] = (guint8*)(opt->soft_breakpoints ? breakpoint_tramp : bp_trigger_page);
-	} else if (opt->soft_breakpoints) {
+		info->bp_addrs [native_offset / 4] = (guint8*)(mini_debug_options.soft_breakpoints ? breakpoint_tramp : bp_trigger_page);
+	} else if (mini_debug_options.soft_breakpoints) {
 		code += 4;
 		ARM_BLX_REG (code, ARMREG_LR);
 		mono_arch_flush_icache (code - 4, 4);
@@ -7252,7 +7251,6 @@ mono_arch_set_breakpoint (MonoJitInfo *ji, guint8 *ip)
 void
 mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 {
-	MonoDebugOptions *opt = mini_get_debug_options ();
 	guint8 *code = ip;
 	int i;
 
@@ -7264,9 +7262,9 @@ mono_arch_clear_breakpoint (MonoJitInfo *ji, guint8 *ip)
 			breakpoint_tramp = mini_get_breakpoint_trampoline ();
 
 		g_assert (native_offset % 4 == 0);
-		g_assert (info->bp_addrs [native_offset / 4] == (guint8*)(opt->soft_breakpoints ? breakpoint_tramp : bp_trigger_page));
+		g_assert (info->bp_addrs [native_offset / 4] == (guint8*)(mini_debug_options.soft_breakpoints ? breakpoint_tramp : bp_trigger_page));
 		info->bp_addrs [native_offset / 4] = 0;
-	} else if (opt->soft_breakpoints) {
+	} else if (mini_debug_options.soft_breakpoints) {
 		code += 4;
 		ARM_NOP (code);
 		mono_arch_flush_icache (code - 4, 4);

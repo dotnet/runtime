@@ -2290,7 +2290,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		method = jinfo_get_method (ji);
 		//printf ("M: %s %d.\n", mono_method_full_name (method, TRUE), frame_count);
 
-		if (mini_get_debug_options ()->reverse_pinvoke_exceptions && method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
+		if (mini_debug_options.reverse_pinvoke_exceptions && method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {
 			g_error ("A native frame was found while unwinding the stack after an exception.\n"
 					 "The native frame called the managed method:\n%s\n",
 					 mono_method_full_name (method, TRUE));
@@ -2531,7 +2531,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 
 	mono_ex = (MonoException*)obj;
 
-	if (mini_get_debug_options ()->suspend_on_exception) {
+	if (mini_debug_options.suspend_on_exception) {
 		mono_runtime_printf_err ("Exception thrown, suspending...");
 		while (1)
 			;
@@ -2637,11 +2637,11 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 				throw_exception (obj, TRUE);
 				g_assert_not_reached ();
 			}
-			if (mini_get_debug_options ()->break_on_exc)
+			if (mini_debug_options.break_on_exc)
 				G_BREAKPOINT ();
 			mini_get_dbg_callbacks ()->handle_exception ((MonoException *)obj, ctx, NULL, NULL);
 
-			if (mini_get_debug_options ()->suspend_on_unhandled) {
+			if (mini_debug_options.suspend_on_unhandled) {
 				mono_runtime_printf_err ("Unhandled exception, suspending...");
 				while (1)
 					;
@@ -3305,7 +3305,7 @@ mono_handle_native_crash (const char *signal, MonoContext *mctx, MONO_SIG_HANDLE
 	if (handle_crash_loop)
 		return;
 
-	if (mini_get_debug_options ()->suspend_on_native_crash) {
+	if (mini_debug_options.suspend_on_native_crash) {
 		g_async_safe_printf ("Received %s, suspending...\n", signal);
 		while (1) {
 			// Sleep for 1 second.
@@ -3573,7 +3573,7 @@ mono_set_cast_details (MonoClass *from, MonoClass *to)
 {
 	MonoJitTlsData *jit_tls = NULL;
 
-	if (mini_get_debug_options ()->better_cast_details) {
+	if (mini_debug_options.better_cast_details) {
 		jit_tls = mono_tls_get_jit_tls ();
 		jit_tls->class_cast_from = from;
 		jit_tls->class_cast_to = to;

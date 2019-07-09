@@ -429,7 +429,7 @@ mono_runtime_posix_install_handlers (void)
 
 	sigset_t signal_set;
 	sigemptyset (&signal_set);
-	if (mini_get_debug_options ()->handle_sigint) {
+	if (mini_debug_options.handle_sigint) {
 		add_signal_handler (SIGINT, mono_sigint_signal_handler, SA_RESTART);
 		sigaddset (&signal_set, SIGINT);
 	}
@@ -481,7 +481,7 @@ mono_runtime_install_handlers (void)
 void
 mono_runtime_cleanup_handlers (void)
 {
-	if (mini_get_debug_options ()->handle_sigint)
+	if (mini_debug_options.handle_sigint)
 		remove_signal_handler (SIGINT);
 
 	remove_signal_handler (SIGFPE);
@@ -953,7 +953,7 @@ dump_native_stacktrace (const char *signal, MonoContext *mctx)
 	}
 
 #if !defined(HOST_WIN32) && defined(HAVE_SYS_SYSCALL_H) && (defined(SYS_fork) || HAVE_FORK)
-	if (!mini_get_debug_options ()->no_gdb_backtrace) {
+	if (!mini_debug_options.no_gdb_backtrace) {
 		/* From g_spawn_command_line_sync () in eglib */
 		pid_t pid;
 		int status;
@@ -1173,7 +1173,7 @@ native_stack_with_gdb (pid_t crashed_pid, const char **argv, int commands, char*
 	g_async_safe_fprintf (commands, "attach %ld\n", (long) crashed_pid);
 	g_async_safe_fprintf (commands, "info threads\n");
 	g_async_safe_fprintf (commands, "thread apply all bt\n");
-	if (mini_get_debug_options ()->verbose_gdb) {
+	if (mini_debug_options.verbose_gdb) {
 		for (int i = 0; i < 32; ++i) {
 			g_async_safe_fprintf (commands, "info registers\n");
 			g_async_safe_fprintf (commands, "info frame\n");
@@ -1201,7 +1201,7 @@ native_stack_with_lldb (pid_t crashed_pid, const char **argv, int commands, char
 	g_async_safe_fprintf (commands, "process attach --pid %ld\n", (long) crashed_pid);
 	g_async_safe_fprintf (commands, "thread list\n");
 	g_async_safe_fprintf (commands, "thread backtrace all\n");
-	if (mini_get_debug_options ()->verbose_gdb) {
+	if (mini_debug_options.verbose_gdb) {
 		for (int i = 0; i < 32; ++i) {
 			g_async_safe_fprintf (commands, "reg read\n");
 			g_async_safe_fprintf (commands, "frame info\n");

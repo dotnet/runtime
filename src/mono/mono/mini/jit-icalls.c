@@ -1166,7 +1166,7 @@ mono_object_castclass_unbox (MonoObject *obj, MonoClass *klass)
 	MonoJitTlsData *jit_tls = NULL;
 	MonoClass *oklass;
 
-	if (mini_get_debug_options ()->better_cast_details) {
+	if (mini_debug_options.better_cast_details) {
 		jit_tls = mono_tls_get_jit_tls ();
 		jit_tls->class_cast_from = NULL;
 	}
@@ -1182,7 +1182,7 @@ mono_object_castclass_unbox (MonoObject *obj, MonoClass *klass)
 	if (mono_error_set_pending_exception (error))
 		return NULL;
 
-	if (mini_get_debug_options ()->better_cast_details) {
+	if (mini_debug_options.better_cast_details) {
 		jit_tls->class_cast_from = oklass;
 		jit_tls->class_cast_to = klass;
 	}
@@ -1200,7 +1200,7 @@ mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *c
 	MonoJitTlsData *jit_tls = NULL;
 	gpointer cached_vtable, obj_vtable;
 
-	if (mini_get_debug_options ()->better_cast_details) {
+	if (mini_debug_options.better_cast_details) {
 		jit_tls = mono_tls_get_jit_tls ();
 		jit_tls->class_cast_from = NULL;
 	}
@@ -1221,7 +1221,7 @@ mono_object_castclass_with_cache (MonoObject *obj, MonoClass *klass, gpointer *c
 	if (mono_error_set_pending_exception (error))
 		return NULL;
 
-	if (mini_get_debug_options ()->better_cast_details) {
+	if (mini_debug_options.better_cast_details) {
 		jit_tls->class_cast_from = obj->vtable->klass;
 		jit_tls->class_cast_to = klass;
 	}

@@ -13383,10 +13383,8 @@ mono_compile_assembly (MonoAssembly *ass, guint32 opts, const char *aot_options,
 		acfg->aot_opts.asm_writer = TRUE;
 
 	if (acfg->aot_opts.soft_debug) {
-		MonoDebugOptions *opt = mini_get_debug_options ();
-
-		opt->mdb_optimizations = TRUE;
-		opt->gen_sdb_seq_points = TRUE;
+		mini_debug_options.mdb_optimizations = TRUE;
+		mini_debug_options.gen_sdb_seq_points = TRUE;
 
 		if (!mono_debug_enabled ()) {
 			aot_printerrf (acfg, "The soft-debug AOT option requires the --debug option.\n");

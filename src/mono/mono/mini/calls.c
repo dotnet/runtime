@@ -57,7 +57,7 @@ mini_test_tailcall (MonoCompile *cfg, gboolean tailcall)
 	//
 	// Do not change "tailcalllog" here without changing other places, e.g. tests that search for it.
 	//
-	g_assertf (tailcall || !mini_get_debug_options ()->test_tailcall_require, "tailcalllog fail from %s", cfg->method->name);
+	g_assertf (tailcall || !mini_debug_options.test_tailcall_require, "tailcalllog fail from %s", cfg->method->name);
 	mono_tailcall_print ("tailcalllog %s from %s\n", tailcall ? "success" : "fail", cfg->method->name);
 }
 

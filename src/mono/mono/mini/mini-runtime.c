@@ -4202,7 +4202,7 @@ mini_init (const char *filename, const char *runtime_version)
 
 	mono_unwind_init ();
 
-	if (mini_get_debug_options ()->lldb || g_hasenv ("MONO_LLDB")) {
+	if (mini_debug_options.lldb || g_hasenv ("MONO_LLDB")) {
 		mono_lldb_init ("");
 		mono_dont_free_domains = TRUE;
 	}
@@ -4215,7 +4215,7 @@ mini_init (const char *filename, const char *runtime_version)
 		/* So methods for multiple domains don't have the same address */
 		mono_dont_free_domains = TRUE;
 		mono_using_xdebug = TRUE;
-	} else if (mini_get_debug_options ()->gdb) {
+	} else if (mini_debug_options.gdb) {
 		mono_xdebug_init ((char*)"gdb");
 		mono_dont_free_domains = TRUE;
 		mono_using_xdebug = TRUE;

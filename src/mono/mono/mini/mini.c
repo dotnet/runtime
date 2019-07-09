@@ -3421,7 +3421,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 	/*We must verify the method before doing any IR generation as mono_compile_create_vars can assert.*/
 	if (mono_compile_is_broken (cfg, cfg->method, TRUE)) {
-		if (mini_get_debug_options ()->break_on_unverified)
+		if (mini_debug_options.break_on_unverified)
 			G_BREAKPOINT ();
 		return cfg;
 	}

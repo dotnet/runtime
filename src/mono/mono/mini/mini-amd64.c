@@ -172,7 +172,7 @@ amd64_is_near_call (guint8 *code)
 static inline gboolean
 amd64_use_imm32 (gint64 val)
 {
-	if (mini_get_debug_options()->single_imm_size)
+	if (mini_debug_options.single_imm_size)
 		return FALSE;
 
 	return amd64_is_imm32 (val);
@@ -3690,7 +3690,7 @@ mono_arch_have_fast_tls (void)
 	static gboolean inited = FALSE;
 	guint8 *ins;
 
-	if (mini_get_debug_options ()->use_fallback_tls)
+	if (mini_debug_options.use_fallback_tls)
 		return FALSE;
 
 	if (inited)
@@ -3750,7 +3750,7 @@ mono_arch_have_fast_tls (void)
 #elif defined(TARGET_ANDROID)
 	return FALSE;
 #else
-	if (mini_get_debug_options ()->use_fallback_tls)
+	if (mini_debug_options.use_fallback_tls)
 		return FALSE;
 	return TRUE;
 #endif
@@ -4773,7 +4773,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		case OP_ICONST:
 		case OP_I8CONST:
-			if ((((guint64)ins->inst_c0) >> 32) == 0 && !mini_get_debug_options()->single_imm_size)
+			if ((((guint64)ins->inst_c0) >> 32) == 0 && !mini_debug_options.single_imm_size)
 				amd64_mov_reg_imm_size (code, ins->dreg, ins->inst_c0, 4);
 			else
 				amd64_mov_reg_imm_size (code, ins->dreg, ins->inst_c0, 8);
@@ -7116,7 +7116,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 #endif
 
-	if (mini_get_debug_options ()->init_stacks) {
+	if (mini_debug_options.init_stacks) {
 		/* Fill the stack frame with a dummy value to force deterministic behavior */
 	
 		/* Save registers to the red zone */
