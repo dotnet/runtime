@@ -78,7 +78,7 @@ namespace System.Net.Test.Common
 
             public static readonly RemoteServer RemoteHttp11Server = new RemoteServer(new Uri("http://" + Host + "/"), HttpVersion.Version11);
             public static readonly RemoteServer RemoteSecureHttp11Server = new RemoteServer(new Uri("https://" + SecureHost + "/"), HttpVersion.Version11);
-            public static readonly RemoteServer RemoteHttp2Server = new RemoteServer(new Uri("https://" + Http2Host + "/"), HttpVersion.Version20);
+            public static readonly RemoteServer RemoteHttp2Server = new RemoteServer(new Uri("https://" + Http2Host + "/"), new Version(2, 0));
 
             public static readonly IEnumerable<RemoteServer> RemoteServers = new RemoteServer[] { RemoteHttp11Server, RemoteSecureHttp11Server, RemoteHttp2Server };
 
