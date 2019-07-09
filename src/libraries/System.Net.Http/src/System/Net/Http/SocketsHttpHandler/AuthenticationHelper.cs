@@ -57,6 +57,26 @@ namespace System.Net.Http
             return false;
         }
 
+        // Helper function to determine if response is part of session-based authentication challenge.
+        internal static bool IsSessionAuthenticationChallenge(HttpResponseMessage response)
+        {
+            if (response.StatusCode != HttpStatusCode.Unauthorized)
+            {
+                return false;
+            }
+
+            HttpHeaderValueCollection<AuthenticationHeaderValue> authenticationHeaderValues = GetResponseAuthenticationHeaderValues(response, isProxyAuth: false);
+            foreach (AuthenticationHeaderValue ahv in authenticationHeaderValues)
+            {
+                if (StringComparer.OrdinalIgnoreCase.Equals(NegotiateScheme, ahv.Scheme) || StringComparer.OrdinalIgnoreCase.Equals(NtlmScheme, ahv.Scheme))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static bool TryGetValidAuthenticationChallengeForScheme(string scheme, AuthenticationType authenticationType, Uri uri, ICredentials credentials,
             HttpHeaderValueCollection<AuthenticationHeaderValue> authenticationHeaderValues, out AuthenticationChallenge challenge)
         {
