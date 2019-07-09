@@ -131,10 +131,8 @@ struct _InterpFrame {
 	char           *varargs;
 	stackval       *stack_args; /* parent */
 	stackval       *stack;
-	stackval       *sp; /* For GC stack marking */
 	unsigned char  *locals;
 	/* exception info */
-	unsigned char  invoke_trap;
 	const unsigned short  *ip;
 	MonoException     *ex;
 };
