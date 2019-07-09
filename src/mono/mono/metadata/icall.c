@@ -6392,6 +6392,15 @@ ves_icall_Mono_Runtime_RegisterReportingForNativeLib (const char *path_suffix, c
 }
 
 void
+ves_icall_Mono_Runtime_RegisterReportingForAllNativeLibs ()
+{
+#ifndef DISABLE_CRASH_REPORTING
+	if (mono_get_eh_callbacks ()->mono_allow_all_native_libraries)
+		mono_get_eh_callbacks ()->mono_allow_all_native_libraries ();
+#endif
+}
+
+void
 ves_icall_Mono_Runtime_EnableCrashReportingLog (const char *directory, MonoError *error)
 {
 #ifndef DISABLE_CRASH_REPORTING
