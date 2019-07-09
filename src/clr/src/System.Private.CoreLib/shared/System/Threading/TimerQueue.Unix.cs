@@ -6,6 +6,6 @@ namespace System.Threading
 {
     internal partial class TimerQueue
     {
-        private static int TickCount => Environment.TickCount;
+        private static long TickCount64 => Environment.TickCount64;
     }
 }
