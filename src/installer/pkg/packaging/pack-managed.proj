@@ -1,0 +1,19 @@
+<Project>
+
+  <!--
+    Ensure managed binaries are signed (if necessary) then call the Pack target on them. These
+    packages are used in other parts of the build, so this can't wait for Arcade's Pack stage.
+  -->
+  <Target Name="Build">
+    <MSBuild Projects="$(RepoRoot)signing\SignBinaries.proj" Targets="Build" />
+
+    <ItemGroup>
+      <ManagedProject Include="$(RepoRoot)src\managed\**\*.csproj" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(ManagedProject)" Targets="Pack" />
+  </Target>
+
+  <Target Name="Test" />
+
+</Project>
