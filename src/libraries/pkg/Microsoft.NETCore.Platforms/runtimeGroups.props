@@ -16,7 +16,7 @@
     <RuntimeGroup Include="alpine">
       <Parent>linux-musl</Parent>
       <Architectures>x64</Architectures>
-      <Versions>3.6;3.7;3.8;3.9</Versions>
+      <Versions>3.6;3.7;3.8;3.9;3.10;3.11</Versions>
     </RuntimeGroup>
 
     <RuntimeGroup Include="android">
@@ -98,7 +98,7 @@
     <RuntimeGroup Include="freebsd">
       <Parent>unix</Parent>
       <Architectures>x64</Architectures>
-      <Versions>11;11.0;11.1;11.2</Versions>
+      <Versions>11;11.0;11.1;11.2;11.3</Versions>
     </RuntimeGroup>
 
     <!-- rhel 6 is independent -->
