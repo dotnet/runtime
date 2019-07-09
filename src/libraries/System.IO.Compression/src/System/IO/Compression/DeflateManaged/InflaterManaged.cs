@@ -117,7 +117,7 @@ namespace System.IO.Compression
                 {
                     if (_uncompressedSize > _currentInflatedCount)
                     {
-                        length = Math.Min(length, (int)(_uncompressedSize - _currentInflatedCount));
+                        length = (int)Math.Min(length, _uncompressedSize - _currentInflatedCount);
                         copied = _output.CopyTo(bytes, offset, length);
                         _currentInflatedCount += copied;
                     }

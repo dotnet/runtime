@@ -23,7 +23,7 @@ namespace System.IO.Compression
         private readonly int _diskNumberStart;
         private readonly ZipVersionMadeByPlatform _versionMadeByPlatform;
         private ZipVersionNeededValues _versionMadeBySpecification;
-        private ZipVersionNeededValues _versionToExtract;
+        internal ZipVersionNeededValues _versionToExtract;
         private BitFlagValues _generalPurposeBitFlag;
         private CompressionMethodValues _storedCompressionMethod;
         private DateTimeOffset _lastModified;
