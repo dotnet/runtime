@@ -95,7 +95,7 @@ namespace System.IO.Compression
                 {
                     if (_uncompressedSize > _currentInflatedCount)
                     {
-                        length = Math.Min(length, (int)(_uncompressedSize - _currentInflatedCount));
+                        length = (int)Math.Min(length, _uncompressedSize - _currentInflatedCount);
                         ReadOutput(bufPtr, length, out bytesRead);
                         _currentInflatedCount += bytesRead;
                     }
