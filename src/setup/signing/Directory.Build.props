@@ -1,14 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildThisFileDirectory)..\Directory.Build.props" />
-  <Import Project="$(MSBuildThisFileDirectory)baseline.props" />
-  
-  <PropertyGroup>
-    <SigningValidationRoot>$(BinDir)SigningValidation\</SigningValidationRoot>
-    <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(SigningValidationRoot)artifacts</DownloadDirectory>
-    <LogDirectory Condition="'$(LogDirectory)' == ''">$(SigningValidationRoot)logs\</LogDirectory>
+<Project>
 
-    <BinInspectCommand>$(PackagesDir)microsoft.dotnet.bininspector\1.0.0-alpha-00001\lib\BinInspect.exe</BinInspectCommand>
-    <BinInspectResultsXml>$(LogDirectory)SignResults.xml</BinInspectResultsXml>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
+
+  <!-- Some signing stages check Build.props to find which projects to depend on. -->
+  <Import Project="$(RepositoryEngineeringDir)Build.props" />
+
+  <PropertyGroup>
+    <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
+
+    <!-- Skip signing steps by default for non-official builds. -->
+    <SkipSigning Condition="'$(SkipSigning)' == '' and '$(OfficialBuild)' != 'true'">true</SkipSigning>
   </PropertyGroup>
+
 </Project>

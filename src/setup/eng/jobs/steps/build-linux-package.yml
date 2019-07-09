@@ -31,18 +31,3 @@ steps:
       ${{ parameters.outputRidArg }} \
       /bl:msbuild.${{ parameters.distroRid }}.installers.binlog
   displayName: Package ${{ parameters.packageStepDescription }} - ${{ parameters.distroRid }}
-
-- ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-  - script: |
-      set -x
-      df -h
-      $(DockerRunMSBuild) ${{ parameters.image }} $(MSBuildScript) \
-        /root/coresetup/publish/publish.proj \
-        /p:PublishType=$(_PublishType) \
-        $(PackagePortableBitsArgs) \
-        $(CommonMSBuildArgs) \
-        $(_CommonPublishArgs) \
-        ${{ parameters.outputRidArg }} \
-        /bl:msbuild.${{ parameters.distroRid }}.publish.binlog
-    displayName: -> Publish ${{ parameters.packageStepDescription }} - ${{ parameters.distroRid }}
-    condition: and(succeeded(), eq(variables._BuildConfig, 'Release'))
