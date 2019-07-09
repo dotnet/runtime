@@ -699,7 +699,7 @@ prof_save (MonoProfiler *prof, FILE* file)
 		args [1] = &len;
 		args [2] = extra_arg;
 
-		printf ("aot-profiler | Passing data to '%s': %p %d %s\n", mono_method_full_name (send_method, 1), args [0], len, extra_arg);
+		printf ("aot-profiler | Passing data to '%s': %p %d %s\n", mono_method_full_name (send_method, 1), args [0], len, prof->send_to_arg ? prof->send_to_arg : "(null)");
 		mono_runtime_try_invoke (send_method, NULL, args, &exc, error);
 		mono_error_assert_ok (error);
 		g_assert (exc == NULL);
