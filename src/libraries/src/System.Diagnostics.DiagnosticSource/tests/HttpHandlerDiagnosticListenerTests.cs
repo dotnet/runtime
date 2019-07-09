@@ -334,7 +334,7 @@ namespace System.Diagnostics.Tests
                 using (var client = new HttpClient())
                 {
                     Uri uriWithRedirect =
-                        Configuration.Http.RedirectUriForDestinationUri(true, 302, Configuration.Http.RemoteEchoServer, 10);
+                        Configuration.Http.RemoteSecureHttp11Server.RedirectUriForDestinationUri(302, Configuration.Http.RemoteEchoServer, 10);
                     (await client.GetAsync(uriWithRedirect)).Dispose();
                 }
 
@@ -550,7 +550,7 @@ namespace System.Diagnostics.Tests
                 for (int i = 0; i < 10; i++)
                 {
                     Uri uriWithRedirect =
-                        Configuration.Http.RedirectUriForDestinationUri(true, 302, new Uri($"{Configuration.Http.RemoteEchoServer}?q={i}"), 3);
+                        Configuration.Http.RemoteSecureHttp11Server.RedirectUriForDestinationUri(302, new Uri($"{Configuration.Http.RemoteEchoServer}?q={i}"), 3);
 
                     requestData[uriWithRedirect] = null;
                 }

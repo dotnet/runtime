@@ -30,7 +30,7 @@ namespace System.Net.Http.Functional.Tests
                 // re-POST'd to the server.
                 string username = "testuser";
                 string password = "password";
-                Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);
+                Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(userName: username, password: password);
                 HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
                 handler.Credentials = new NetworkCredential(username, password);
 
@@ -54,7 +54,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 string username = "testuser";
                 string password = "password";
-                Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);            
+                Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(userName: username, password: password);
                 HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
                 handler.Credentials = new NetworkCredential(username, password);
 
@@ -78,7 +78,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 string username = "testuser";
                 string password = "password";
-                Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);            
+                Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(userName: username, password: password);
                 HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
                 handler.Credentials = new NetworkCredential(username, password);
 
@@ -106,7 +106,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 string username = "testuser";
                 string password = "password";
-                Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);            
+                Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(userName: username, password: password);
                 HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
                 handler.Credentials = new NetworkCredential(username, password);
 
@@ -134,7 +134,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 string username = "testuser";
                 string password = "password";
-                Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: username, password: password);            
+                Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(userName: username, password: password);
                 HttpClientHandler handler = CreateHttpClientHandler(useSocketsHttpHandlerString, useHttp2String);
                 handler.Credentials = new NetworkCredential(username, password);
 
