@@ -217,7 +217,8 @@ namespace System.IO
                         && errorCode != Interop.Errors.ERROR_INVALID_PARAMETER
                         && errorCode != Interop.Errors.ERROR_NETWORK_UNREACHABLE
                         && errorCode != Interop.Errors.ERROR_NETWORK_ACCESS_DENIED
-                        && errorCode != Interop.Errors.ERROR_INVALID_HANDLE  // eg from \\.\CON
+                        && errorCode != Interop.Errors.ERROR_INVALID_HANDLE         // eg from \\.\CON
+                        && errorCode != Interop.Errors.ERROR_FILENAME_EXCED_RANGE   // Path is too long
                         )
                     {
                         // Assert so we can track down other cases (if any) to add to our test suite
