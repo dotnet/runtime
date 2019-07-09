@@ -521,7 +521,7 @@ namespace System.Threading.Tasks.Tests
             TaskScheduler.UnobservedTaskException -= handler;
         }
 
-        [ActiveIssue(39155, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(39155)]
         [Fact]
         public static async Task AsyncMethodsDropsStateMachineAndExecutionContextUponCompletion()
         {
