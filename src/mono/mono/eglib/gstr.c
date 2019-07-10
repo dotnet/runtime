@@ -1069,3 +1069,11 @@ g_utf16_len (const gunichar2 *a)
 	return length;
 #endif
 }
+
+gsize
+g_strnlen (const char* s, gsize n)
+{
+	gsize i;
+	for (i = 0; i < n && s [i]; ++i) ;
+	return i;
+}

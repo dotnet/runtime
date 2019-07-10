@@ -103,7 +103,7 @@ write_int (MonoCompile *cfg, int v)
 static void
 write_string (MonoCompile *cfg, const char *str)
 {
-	size_t len = strnlen (str, 0x2000);
+	const size_t len = g_strnlen (str, 0x2000);
 	write_int (cfg, (int) len);
 
 	gunichar2 *u = u8to16 (str);
@@ -163,7 +163,7 @@ add_pool_entry (MonoCompile *cfg, ConstantPoolEntry *entry)
 
 			write_string (cfg, mono_inst_name (insn->opcode));
 			GString *insndesc = mono_print_ins_index_strbuf (-1, insn);
-			int len = strnlen (insndesc->str, 0x2000);
+			const int len = g_strnlen (insndesc->str, 0x2000);
 #define CUTOFF 40
 			if (len > CUTOFF) {
 				insndesc->str[CUTOFF] = '\0';

@@ -190,6 +190,18 @@ test_macros (void)
 	return NULL;
 }
 
+static RESULT
+test_strnlen (void)
+{
+	g_assert (g_strnlen ("abc", 0) == 0);
+	g_assert (g_strnlen ("abc", 1) == 1);
+	g_assert (g_strnlen ("abc", 2) == 2);
+	g_assert (g_strnlen ("abc", 3) == 3);
+	g_assert (g_strnlen ("abc", 4) == 3);
+	g_assert (g_strnlen ("abc", 5) == 3);
+	return NULL;
+}
+
 static Test string_tests [] = {
 	{"append-speed", test_append_speed},
 	{"append_c-speed", test_append_c_speed},
@@ -198,6 +210,7 @@ static Test string_tests [] = {
 	{"truncate", test_truncate },
 	{"append_len", test_appendlen },
 	{"macros", test_macros },
+	{"strnlen", test_strnlen },
 	{NULL, NULL}
 };
 

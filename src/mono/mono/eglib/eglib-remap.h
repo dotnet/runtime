@@ -232,6 +232,7 @@
 #define g_strlcpy monoeg_g_strlcpy
 #define g_strndup monoeg_g_strndup
 #define g_strnfill monoeg_g_strnfill
+#define g_strnlen monoeg_g_strnlen
 #define g_strreverse monoeg_g_strreverse
 #define g_strsplit monoeg_g_strsplit
 #define g_strsplit_set monoeg_g_strsplit_set
