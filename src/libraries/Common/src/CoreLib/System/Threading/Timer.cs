@@ -735,15 +735,15 @@ namespace System.Threading
         {
             long dueTm = (long)dueTime.TotalMilliseconds;
             if (dueTm < -1)
-                throw new ArgumentOutOfRangeException(nameof(dueTm), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (dueTm > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException(nameof(dueTm), SR.ArgumentOutOfRange_TimeoutTooLarge);
+                throw new ArgumentOutOfRangeException(nameof(dueTime), SR.ArgumentOutOfRange_TimeoutTooLarge);
 
             long periodTm = (long)period.TotalMilliseconds;
             if (periodTm < -1)
-                throw new ArgumentOutOfRangeException(nameof(periodTm), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
+                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
             if (periodTm > MAX_SUPPORTED_TIMEOUT)
-                throw new ArgumentOutOfRangeException(nameof(periodTm), SR.ArgumentOutOfRange_PeriodTooLarge);
+                throw new ArgumentOutOfRangeException(nameof(period), SR.ArgumentOutOfRange_PeriodTooLarge);
 
             TimerSetup(callback, state, (uint)dueTm, (uint)periodTm);
         }
@@ -790,7 +790,7 @@ namespace System.Threading
                                 bool flowExecutionContext = true)
         {
             if (callback == null)
-                throw new ArgumentNullException(nameof(TimerCallback));
+                throw new ArgumentNullException(nameof(callback));
 
             _timer = new TimerHolder(new TimerQueueTimer(callback, state, dueTime, period, flowExecutionContext));
         }
