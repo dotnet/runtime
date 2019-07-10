@@ -287,14 +287,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task SendAsync_MultipleRequestsReusingSameClient_Success()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task SendAsync_MultipleRequestsReusingSameClient_Success(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 for (int i = 0; i < 3; i++)
                 {
-                    using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
+                    using (HttpResponseMessage response = await client.GetAsync(remoteServer.EchoUri))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
@@ -303,11 +303,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task GetAsync_ResponseContentAfterClientAndHandlerDispose_Success()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task GetAsync_ResponseContentAfterClientAndHandlerDispose_Success(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
-            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.SecureRemoteEchoServer))
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
+            using (HttpResponseMessage response = await client.GetAsync(remoteServer.EchoUri))
             {
                 client.Dispose();
                 Assert.NotNull(response);
@@ -1236,14 +1236,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 const int NumGets = 5;
                 Task<HttpResponseMessage>[] responseTasks = (from _ in Enumerable.Range(0, NumGets)
-                                                             select client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead)).ToArray();
+                                                             select client.GetAsync(remoteServer.EchoUri, HttpCompletionOption.ResponseHeadersRead)).ToArray();
                 for (int i = responseTasks.Length - 1; i >= 0; i--) // read backwards to increase likelihood that we wait on a different task than has data available
                 {
                     using (HttpResponseMessage response = await responseTasks[i])
@@ -1261,11 +1261,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task SendAsync_HttpRequestMsgResponseHeadersRead_StatusCodeOK()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task SendAsync_HttpRequestMsgResponseHeadersRead_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = VersionFromUseHttp2 };
-            using (HttpClient client = CreateHttpClient())
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, remoteServer.EchoUri) { Version = remoteServer.HttpVersion };
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 using (HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
                 {
