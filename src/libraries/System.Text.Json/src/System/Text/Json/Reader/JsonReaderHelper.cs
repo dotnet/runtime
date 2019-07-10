@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Numerics;
@@ -278,8 +277,7 @@ namespace System.Text.Json
             Debug.Assert(!sourceUnescaped.IsEmpty);
 
             if (sourceUnescaped.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
-                && JsonHelpers.TryParseAsISO(sourceUnescaped, out DateTime tmp, out int bytesConsumed)
-                && sourceUnescaped.Length == bytesConsumed)
+                && JsonHelpers.TryParseAsISO(sourceUnescaped, out DateTime tmp))
             {
                 value = tmp;
                 return true;
@@ -304,8 +302,7 @@ namespace System.Text.Json
             Debug.Assert(!sourceUnescaped.IsEmpty);
 
             if (sourceUnescaped.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
-                && JsonHelpers.TryParseAsISO(sourceUnescaped, out DateTimeOffset tmp, out int bytesConsumed)
-                && sourceUnescaped.Length == bytesConsumed)
+                && JsonHelpers.TryParseAsISO(sourceUnescaped, out DateTimeOffset tmp))
             {
                 value = tmp;
                 return true;
