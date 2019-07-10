@@ -276,26 +276,28 @@ gchar *
 g_strconcat (const gchar *first, ...)
 {
 	va_list args;
-	size_t total = 0;
 	char *s, *ret;
 	g_return_val_if_fail (first != NULL, NULL);
 
-	total += strlen (first);
+	size_t len = strlen (first);
 	va_start (args, first);
 	for (s = va_arg (args, char *); s != NULL; s = va_arg(args, char *)){
-		total += strlen (s);
+		len += strlen (s);
 	}
 	va_end (args);
 	
-	ret = g_malloc (total + 1);
+	ret = (char*)g_malloc (len + 1);
 	if (ret == NULL)
 		return NULL;
 
-	ret [total] = 0;
-	strcpy (ret, first);
+	ret [len] = 0;
+	len = strlen (first);
+	memcpy (ret, first, len);
 	va_start (args, first);
+	first = ret; // repurpose first as cursor
 	for (s = va_arg (args, char *); s != NULL; s = va_arg(args, char *)){
-		strcat (ret, s);
+		first += len;
+		memcpy ((char*)first, s, len = strlen (s));
 	}
 	va_end (args);
 
@@ -512,7 +514,7 @@ g_strjoin (const gchar *separator, ...)
 	if (slen > 0 && len > 0)
 		len -= slen;
 
-	res = g_malloc (len + 1);
+	res = (char*)g_malloc (len + 1);
 	va_start (args, separator);
 	s = va_arg (args, char *);
 	r = g_stpcpy (res, s);
