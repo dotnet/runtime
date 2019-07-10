@@ -105,6 +105,22 @@ namespace System.IO.Compression
             return staticDistanceTreeLength;
         }
 
+        // Reverse 'length' of the bits in code
+        private static uint BitReverse(uint code, int length)
+        {
+            uint new_code = 0;
+
+            Debug.Assert(length > 0 && length <= 16, "Invalid len");
+            do
+            {
+                new_code |= (code & 1);
+                new_code <<= 1;
+                code >>= 1;
+            } while (--length > 0);
+
+            return new_code >> 1;
+        }
+
         // Calculate the huffman code for each character based on the code length for each character.
         // This algorithm is described in standard RFC 1951
         private uint[] CalculateHuffmanCode()
@@ -131,7 +147,7 @@ namespace System.IO.Compression
 
                 if (len > 0)
                 {
-                    code[i] = FastEncoderStatics.BitReverse(nextCode[len], len);
+                    code[i] = BitReverse(nextCode[len], len);
                     nextCode[len]++;
                 }
             }

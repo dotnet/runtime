@@ -223,7 +223,7 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                return FStream() ? _stream : new StreamOnSqlChars(this);
+                return FStream() ? _stream : new SqlStreamChars(this);
             }
             set
             {
@@ -571,10 +571,10 @@ namespace System.Data.SqlTypes
         }
     } // class SqlChars
 
-    // StreamOnSqlChars is a stream build on top of SqlChars, and
+    // SqlStreamChars is a stream build on top of SqlChars, and
     // provides the Stream interface. The purpose is to help users
     // to read/write SqlChars object. 
-    internal sealed class StreamOnSqlChars : SqlStreamChars
+    internal sealed class SqlStreamChars
     {
         // --------------------------------------------------------------
         //	  Data members
@@ -587,7 +587,7 @@ namespace System.Data.SqlTypes
         //	  Constructor(s)
         // --------------------------------------------------------------
 
-        internal StreamOnSqlChars(SqlChars s)
+        internal SqlStreamChars(SqlChars s)
         {
             _sqlchars = s;
             _lPosition = 0;
@@ -597,15 +597,7 @@ namespace System.Data.SqlTypes
         //	  Public properties
         // --------------------------------------------------------------
 
-        public override bool IsNull
-        {
-            get
-            {
-                return _sqlchars == null || _sqlchars.IsNull;
-            }
-        }
-        
-        public override long Length
+        public long Length
         {
             get
             {
@@ -614,7 +606,7 @@ namespace System.Data.SqlTypes
             }
         }
 
-        public override long Position
+        public long Position
         {
             get
             {
@@ -635,7 +627,7 @@ namespace System.Data.SqlTypes
         //	  Public methods
         // --------------------------------------------------------------
 
-        public override long Seek(long offset, SeekOrigin origin)
+        public long Seek(long offset, SeekOrigin origin)
         {
             CheckIfStreamClosed();
 
@@ -671,7 +663,7 @@ namespace System.Data.SqlTypes
         }
 
         // The Read/Write/Readchar/Writechar simply delegates to SqlChars
-        public override int Read(char[] buffer, int offset, int count)
+        public int Read(char[] buffer, int offset, int count)
         {
             CheckIfStreamClosed();
 
@@ -688,7 +680,7 @@ namespace System.Data.SqlTypes
             return icharsRead;
         }
 
-        public override void Write(char[] buffer, int offset, int count)
+        public void Write(char[] buffer, int offset, int count)
         {
             CheckIfStreamClosed();
 
@@ -703,21 +695,13 @@ namespace System.Data.SqlTypes
             _lPosition += count;
         }
 
-        public override void SetLength(long value)
+        public void SetLength(long value)
         {
             CheckIfStreamClosed();
 
             _sqlchars.SetLength(value);
             if (_lPosition > value)
                 _lPosition = value;
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            // When m_sqlchars is null, it means the stream has been closed, and
-            // any opearation in the future should fail.
-            // This is the only case that m_sqlchars is null.
-            _sqlchars = null;
         }
 
         // --------------------------------------------------------------
@@ -734,5 +718,5 @@ namespace System.Data.SqlTypes
             if (FClosed())
                 throw ADP.StreamClosed(methodname);
         }
-    } // class StreamOnSqlChars
+    } // class SqlStreamChars
 } // namespace System.Data.SqlTypes
