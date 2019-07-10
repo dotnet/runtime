@@ -18,8 +18,6 @@ namespace System.Xml.Serialization
 
     public class XmlSerializerFactory
     {
-        private static TempAssemblyCache s_cache = new TempAssemblyCache();
-
         public XmlSerializer CreateSerializer(Type type, XmlAttributeOverrides overrides, Type[] extraTypes, XmlRootAttribute root, string defaultNamespace)
         {
             return CreateSerializer(type, overrides, extraTypes, root, defaultNamespace, null);
