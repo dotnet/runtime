@@ -127,10 +127,14 @@ namespace System.Net.Http.Functional.Tests
 
         protected HttpClient CreateHttpClientForRemoteServer(Configuration.Http.RemoteServer remoteServer, HttpClientHandler httpClientHandler)
         {
+            HttpMessageHandler wrappedHandler = httpClientHandler;
+
             // ActiveIssue #39293: WinHttpHandler will downgrade to 1.1 if you set Transfer-Encoding: chunked.
             // So, skip this verification if we're not using SocketsHttpHandler.
-            HttpMessageHandler wrappedHandler =
-                IsSocketsHttpHandler(httpClientHandler) ? new VersionCheckerHttpHandler(httpClientHandler, remoteServer.HttpVersion) : (HttpMessageHandler)httpClientHandler;
+            if (PlatformDetection.SupportsAlpn && IsSocketsHttpHandler(httpClientHandler))
+            {
+                wrappedHandler = new VersionCheckerHttpHandler(httpClientHandler, remoteServer.HttpVersion);
+            }
 
             var client = new HttpClient(wrappedHandler);
             SetDefaultRequestVersion(client, remoteServer.HttpVersion);
