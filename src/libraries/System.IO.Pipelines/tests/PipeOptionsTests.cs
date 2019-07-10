@@ -3,28 +3,51 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Buffers;
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.IO.Pipelines.Tests
 {
     public class PipeOptionsTests
     {
-        [Fact]
-        public void DefaultPauseWriterThresholdIsSet()
+        public static IEnumerable<object[]> Default_ExpectedValues_MemberData()
         {
-            Assert.Equal(65536, PipeOptions.Default.PauseWriterThreshold);
+            yield return new object[] { PipeOptions.Default };
+            yield return new object[] { new PipeOptions() };
+            yield return new object[] { new PipeOptions(null, null, null, -1, -1, -1, true) };
+        }
+
+        [Theory]
+        [MemberData(nameof(Default_ExpectedValues_MemberData))]
+        public void Default_ExpectedValues(PipeOptions options)
+        {
+            Assert.Equal(65536, options.PauseWriterThreshold);
+            Assert.Equal(32768, options.ResumeWriterThreshold);
+            Assert.Equal(4096, options.MinimumSegmentSize);
+            Assert.True(options.UseSynchronizationContext);
+            Assert.Same(MemoryPool<byte>.Shared, options.Pool);
         }
 
         [Fact]
-        public void DefaultResumeWriterThresholdIsSet()
+        public void InvalidArgs_Throws()
         {
-            Assert.Equal(32768, PipeOptions.Default.ResumeWriterThreshold);
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("pauseWriterThreshold", () => new PipeOptions(pauseWriterThreshold: -2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("resumeWriterThreshold", () => new PipeOptions(resumeWriterThreshold: -2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("resumeWriterThreshold", () => new PipeOptions(pauseWriterThreshold: 50, resumeWriterThreshold: 100));
         }
 
-        [Fact]
-        public void DefaultPoolIsSetToShared()
+        [Theory]
+        [InlineData(-100)]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void InvalidArgs_NoThrow(int minimumSegmentSize)
         {
-            Assert.Equal(MemoryPool<byte>.Shared, PipeOptions.Default.Pool);
+            // There's currently no validation performed on PipeOptions.MinimumSegmentSize.
+            new PipeOptions(minimumSegmentSize: minimumSegmentSize);
+            new PipeOptions(minimumSegmentSize: minimumSegmentSize);
+            new PipeOptions(minimumSegmentSize: minimumSegmentSize);
+            new PipeOptions(minimumSegmentSize: minimumSegmentSize);
         }
     }
 }
