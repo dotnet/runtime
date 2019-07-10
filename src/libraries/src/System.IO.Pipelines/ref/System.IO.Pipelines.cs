@@ -29,7 +29,7 @@ namespace System.IO.Pipelines
     }
     public partial class PipeOptions
     {
-        public PipeOptions(System.Buffers.MemoryPool<byte> pool = null, System.IO.Pipelines.PipeScheduler readerScheduler = null, System.IO.Pipelines.PipeScheduler writerScheduler = null, long pauseWriterThreshold = (long)65536, long resumeWriterThreshold = (long)32768, int minimumSegmentSize = 4096, bool useSynchronizationContext = true) { }
+        public PipeOptions(System.Buffers.MemoryPool<byte> pool = null, System.IO.Pipelines.PipeScheduler readerScheduler = null, System.IO.Pipelines.PipeScheduler writerScheduler = null, long pauseWriterThreshold = -1, long resumeWriterThreshold = -1, int minimumSegmentSize = -1, bool useSynchronizationContext = true) { }
         public static System.IO.Pipelines.PipeOptions Default { get { throw null; } }
         public int MinimumSegmentSize { get { throw null; } }
         public long PauseWriterThreshold { get { throw null; } }
@@ -91,7 +91,7 @@ namespace System.IO.Pipelines
     }
     public partial class StreamPipeReaderOptions
     {
-        public StreamPipeReaderOptions(System.Buffers.MemoryPool<byte> pool = null, int bufferSize = 4096, int minimumReadSize = 1024, bool leaveOpen = false) { }
+        public StreamPipeReaderOptions(System.Buffers.MemoryPool<byte> pool = null, int bufferSize = -1, int minimumReadSize = -1, bool leaveOpen = false) { }
         public int BufferSize { get { throw null; } }
         public int MinimumReadSize { get { throw null; } }
         public System.Buffers.MemoryPool<byte> Pool { get { throw null; } }
@@ -99,7 +99,7 @@ namespace System.IO.Pipelines
     }
     public partial class StreamPipeWriterOptions
     {
-        public StreamPipeWriterOptions(System.Buffers.MemoryPool<byte> pool = null, int minimumBufferSize = 4096, bool leaveOpen = false) { }
+        public StreamPipeWriterOptions(System.Buffers.MemoryPool<byte> pool = null, int minimumBufferSize = -1, bool leaveOpen = false) { }
         public int MinimumBufferSize { get { throw null; } }
         public System.Buffers.MemoryPool<byte> Pool { get { throw null; } }
         public bool LeaveOpen { get { throw null; } }
