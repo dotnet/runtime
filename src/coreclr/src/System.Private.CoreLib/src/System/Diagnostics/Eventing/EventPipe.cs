@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 #if FEATURE_PERFTRACING
 
@@ -85,6 +86,11 @@ namespace System.Diagnostics.Tracing
         NetTrace
     }
 
+    internal sealed class EventPipeWaitHandle : WaitHandle
+    {
+
+    }
+    
     internal sealed class EventPipeConfiguration
     {
         private string m_outputFile;
@@ -251,6 +257,9 @@ namespace System.Diagnostics.Tracing
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         internal static extern unsafe bool GetNextEvent(UInt64 sessionID, EventPipeEventInstanceData* pInstance);
+
+        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
+        internal static extern unsafe IntPtr GetWaitHandle(UInt64 sessionID);
     }
 }
 
