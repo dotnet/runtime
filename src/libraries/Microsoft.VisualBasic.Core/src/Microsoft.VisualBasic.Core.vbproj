@@ -102,6 +102,7 @@
     <Compile Include="Microsoft\VisualBasic\FileIO\SpecialDirectories.vb" />
     <Compile Include="Microsoft\VisualBasic\FileIO\TextFieldParser.vb" />
     <Compile Include="Microsoft\VisualBasic\FileSystem.vb" />
+    <Compile Include="Microsoft\VisualBasic\Financial.vb" />
     <Compile Include="Microsoft\VisualBasic\Globals.vb" />
     <Compile Include="Microsoft\VisualBasic\Helpers\ForEachEnum.vb" />
     <Compile Include="Microsoft\VisualBasic\HideModuleNameAttribute.vb" />
