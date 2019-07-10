@@ -969,8 +969,8 @@ int fx_muxer_t::handle_cli(
     // Did not exececute the app or run other commands, so try the CLI SDK dotnet.dll
     //
 
-    pal::string_t sdk_dotnet;
-    if (!sdk_resolver_t::resolve_sdk_dotnet_path(host_info.dotnet_root, &sdk_dotnet))
+    auto sdk_dotnet = sdk_resolver::from_nearest_global_file().resolve(host_info.dotnet_root);
+    if (sdk_dotnet.empty())
     {
         assert(argc > 1);
         if (pal::strcasecmp(_X("-h"), argv[1]) == 0 ||
@@ -994,7 +994,7 @@ int fx_muxer_t::handle_cli(
 
     if (!pal::file_exists(sdk_dotnet))
     {
-        trace::error(_X("Found dotnet SDK, but did not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
+        trace::error(_X("Found .NET Core SDK, but did not find dotnet.dll at [%s]"), sdk_dotnet.c_str());
         return StatusCode::LibHostSdkFindFailure;
     }
 
@@ -1006,7 +1006,7 @@ int fx_muxer_t::handle_cli(
     new_argv.push_back(sdk_dotnet.c_str());
     new_argv.insert(new_argv.end(), argv + 1, argv + argc);
 
-    trace::verbose(_X("Using dotnet SDK dll=[%s]"), sdk_dotnet.c_str());
+    trace::verbose(_X("Using .NET Core SDK dll=[%s]"), sdk_dotnet.c_str());
 
     int new_argoff;
     pal::string_t app_candidate;
