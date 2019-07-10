@@ -845,8 +845,7 @@ namespace System.Text.Json
             Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
 
             if (span.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
-                && JsonHelpers.TryParseAsISO(span, out DateTime tmp, out int bytesConsumed)
-                && span.Length == bytesConsumed)
+                && JsonHelpers.TryParseAsISO(span, out DateTime tmp))
             {
                 value = tmp;
                 return true;
@@ -910,8 +909,7 @@ namespace System.Text.Json
             Debug.Assert(span.IndexOf(JsonConstants.BackSlash) == -1);
 
             if (span.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
-                && JsonHelpers.TryParseAsISO(span, out DateTimeOffset tmp, out int bytesConsumed)
-                && span.Length == bytesConsumed)
+                && JsonHelpers.TryParseAsISO(span, out DateTimeOffset tmp))
             {
                 value = tmp;
                 return true;
