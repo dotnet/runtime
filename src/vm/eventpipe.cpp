@@ -371,7 +371,8 @@ void EventPipe::DisableInternal(EventPipeSessionID id, EventPipeProviderCallback
 
     s_allowWrite &= ~(pSession->GetMask()); 
     pSession->SuspendWriteEvent();
-    pSession->WriteAllBuffersToFile(); // Flush the buffers to the stream/file
+    bool ignored;
+    pSession->WriteAllBuffersToFile(&ignored); // Flush the buffers to the stream/file
 
     --s_numberOfSessions;
 
@@ -784,6 +785,14 @@ EventPipeEventInstance *EventPipe::GetNextEvent(EventPipeSessionID sessionID)
     // The buffer manager is not disposed until the process is shutdown.
     EventPipeSession *const pSession = GetSession(sessionID);
     return pSession ? pSession->GetNextEvent() : nullptr;
+}
+
+HANDLE EventPipe::GetWaitHandle(EventPipeSessionID sessionID)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    EventPipeSession *const pSession = GetSession(sessionID);
+    return pSession ? pSession->GetWaitEvent()->GetHandleUNHOSTED() : 0;
 }
 
 void EventPipe::InvokeCallback(EventPipeProviderCallbackData eventPipeProviderCallbackData)

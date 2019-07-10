@@ -189,7 +189,7 @@ public:
     // Get the session provider for the specified provider if present.
     EventPipeSessionProvider* GetSessionProvider(const EventPipeProvider *pProvider) const;
 
-    bool WriteAllBuffersToFile();
+    bool WriteAllBuffersToFile(bool *pEventsWritten);
 
     bool WriteEventBuffered(
         Thread *pThread,
@@ -204,6 +204,8 @@ public:
     void WriteSequencePointUnbuffered();
 
     EventPipeEventInstance *GetNextEvent();
+
+    CLREvent *GetWaitEvent();
 
     // Enable a session in the event pipe.
     void Enable();

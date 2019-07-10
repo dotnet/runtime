@@ -1103,6 +1103,7 @@ FCFuncStart(gEventPipeInternalFuncs)
     QCFuncElement("WriteEvent", EventPipeInternal::WriteEvent)
     QCFuncElement("WriteEventData", EventPipeInternal::WriteEventData)
     QCFuncElement("GetNextEvent", EventPipeInternal::GetNextEvent)
+    QCFuncElement("GetWaitHandle", EventPipeInternal::GetWaitHandle)
 FCFuncEnd()
 #endif // FEATURE_PERFTRACING
 
