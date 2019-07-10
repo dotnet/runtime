@@ -31,25 +31,7 @@
   <Target Name="ValidateTestProjectConfigurations"
           BeforeTargets="CoreCompile"
           Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true' and '$(TargetsNetStandard)' == 'true'">
-
     <Error Text="Targeting .NET Standard in a test project isn't supported." />
-    
-  </Target>
-
-  <Target Name="AddConflictResolutionAssetsForTests"
-          BeforeTargets="_HandlePackageFileConflicts"
-          Condition="'$(IsTestProject)' == 'true' and '@(DefaultReferenceExclusions)' != ''">
-    <ItemGroup>
-      <Reference Include="@(DefaultReferenceExclusions->'$(RefPath)%(Identity).dll')" />
-    </ItemGroup>
-  </Target>
-
-  <Target Name="RemoveConflictResolutionAssetsForTests"
-          AfterTargets="_HandlePackageFileConflicts"
-          Condition="'$(IsTestProject)' == 'true' and '@(DefaultReferenceExclusions)' != ''">
-    <ItemGroup>
-      <Reference Remove="@(DefaultReferenceExclusions->'$(RefPath)%(Identity).dll')" />
-    </ItemGroup>
   </Target>
 
   <PropertyGroup>
