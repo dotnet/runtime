@@ -1,21 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{C4D6F1F4-DC7E-4756-9A88-171A8B1F1E26}</ProjectGuid>
-    <!-- Must match version supported by frameworks which support 4.2.* inbox.
-         Can be removed when API is added and this assembly is versioned to 4.3.* -->
-    <AssemblyVersion Condition="'$(TargetsNetFx)' != 'true'">4.2.0.0</AssemblyVersion>
-    <IsPartialFacadeAssembly Condition="'$(TargetsNetFx)' == 'true'">true</IsPartialFacadeAssembly>
-    <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
+    <Configurations>netstandard2.1-Debug;netstandard2.1-Release</Configurations>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.ComponentModel.Annotations.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsNetFx)' == 'true'">
-    <Reference Include="mscorlib" />
-    <Reference Include="System" />
-    <Reference Include="System.ComponentModel.DataAnnotations" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'netcoreapp2.0'">
-    <Reference Include="System.ComponentModel.TypeConverter" />
   </ItemGroup>
 </Project>
