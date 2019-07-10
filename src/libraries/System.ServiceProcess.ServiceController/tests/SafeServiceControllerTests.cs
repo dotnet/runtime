@@ -167,6 +167,7 @@ namespace System.ServiceProcess.Tests
         }
 
         [Fact]
+        [OuterLoop] // The test may fail on individual machines with more than one UI language.
         public static void SetDisplayName_GetServiceName()
         {
             var keyIsoDisplayName = new ServiceController(KeyIsoSvcName).DisplayName;
