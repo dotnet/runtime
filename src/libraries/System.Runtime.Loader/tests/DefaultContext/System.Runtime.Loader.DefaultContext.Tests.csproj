@@ -3,6 +3,8 @@
     <ProjectGuid>{701CB3BC-00DC-435D-BDE4-C5FC29A708A8}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
+    <!-- LoadInDefaultContext test relies on no deps.json -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DefaultLoadContextTest.cs" />

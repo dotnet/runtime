@@ -3,6 +3,8 @@
     <ProjectGuid>{B027C72E-F04E-42E0-A7F7-993AEF8400D2}</ProjectGuid>
     <Configurations>netcoreapp-Debug;netcoreapp-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
+    <!-- LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies test relies on no deps.json -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Reflection\MockParameterInfo.cs">

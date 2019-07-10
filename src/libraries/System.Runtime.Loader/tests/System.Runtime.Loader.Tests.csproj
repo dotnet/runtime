@@ -5,6 +5,8 @@
     <Configurations>netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Debug;uap-Release</Configurations>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <!-- Some tests rely on no deps.json file being present. -->
+    <GenerateDependencyFile>false</GenerateDependencyFile>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyLoadContextTest.cs" />
