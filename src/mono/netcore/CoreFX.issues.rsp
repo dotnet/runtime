@@ -495,10 +495,6 @@
 # https://github.com/mono/mono/issues/15074
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFile
 
-# Expects TypeLoadException but none is returned
-# https://github.com/mono/mono/issues/15075
--nomethod System.Reflection.Tests.AssemblyTests.GetType_DoesntSearchMscorlib
-
 # Returns the same string, but still fails.  
 # https://github.com/mono/mono/issues/15076
 -nomethod System.Reflection.Tests.AssemblyTests.LoadFrom_SameIdentityAsAssemblyWithDifferentPath_ReturnsEqualAssemblies
