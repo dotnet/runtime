@@ -19,7 +19,6 @@
     <Compile Include="System\IO\Compression\DeflateManaged\BlockType.cs" />
     <Compile Include="System\IO\Compression\DeflateManaged\DeflateInput.cs" />
     <Compile Include="System\IO\Compression\DeflateManaged\DeflateManagedStream.cs" />
-    <Compile Include="System\IO\Compression\DeflateManaged\FastEncoderStatus.cs" />
     <Compile Include="System\IO\Compression\DeflateManaged\FileFormats.cs" />
     <Compile Include="System\IO\Compression\DeflateManaged\HuffmanTree.cs" />
     <Compile Include="System\IO\Compression\DeflateManaged\InflaterManaged.cs" />
