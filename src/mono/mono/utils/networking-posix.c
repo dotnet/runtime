@@ -33,6 +33,8 @@
 #include <mono/utils/networking.h>
 #include <mono/utils/mono-threads-coop.h>
 
+#if HAVE_SIOCGIFCONF || HAVE_GETIFADDRS
+
 static void*
 get_address_from_sockaddr (struct sockaddr *sa)
 {
@@ -46,6 +48,8 @@ get_address_from_sockaddr (struct sockaddr *sa)
 	}
 	return NULL;
 }
+
+#endif
 
 #ifdef HAVE_GETADDRINFO
 
