@@ -402,7 +402,28 @@ namespace System.IO.Pipelines.Tests
         public void InvalidMinimumBufferSize_ThrowsArgException()
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new StreamPipeWriterOptions(minimumBufferSize: 0));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new StreamPipeWriterOptions(minimumBufferSize: -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new StreamPipeWriterOptions(minimumBufferSize: -2));
+        }
+
+        [Fact]
+        public void StreamPipeWriterOptions_Ctor_Defaults()
+        {
+            var options = new StreamPipeWriterOptions();
+            Assert.Same(MemoryPool<byte>.Shared, options.Pool);
+            Assert.Equal(4096, options.MinimumBufferSize);
+            Assert.False(options.LeaveOpen);
+        }
+
+        [Fact]
+        public void StreamPipeWriterOptions_Ctor_Roundtrip()
+        {
+            using (var pool = new TestMemoryPool())
+            {
+                var options = new StreamPipeWriterOptions(pool: pool, minimumBufferSize: 1234, leaveOpen: true);
+                Assert.Same(pool, options.Pool);
+                Assert.Equal(1234, options.MinimumBufferSize);
+                Assert.True(options.LeaveOpen);
+            }
         }
 
         [Fact]

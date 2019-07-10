@@ -30,17 +30,25 @@ namespace System.IO.Pipelines
             MemoryPool<byte> pool = null,
             PipeScheduler readerScheduler = null,
             PipeScheduler writerScheduler = null,
-            long pauseWriterThreshold = DefaultPauseWriterThreshold,
-            long resumeWriterThreshold = DefaultResumeWriterThreshold,
-            int minimumSegmentSize = DefaultMinimumSegmentSize,
+            long pauseWriterThreshold = -1,
+            long resumeWriterThreshold = -1,
+            int minimumSegmentSize = -1,
             bool useSynchronizationContext = true)
         {
-            if (pauseWriterThreshold < 0)
+            if (pauseWriterThreshold == -1)
+            {
+                pauseWriterThreshold = DefaultPauseWriterThreshold;
+            }
+            else if (pauseWriterThreshold < 0)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.pauseWriterThreshold);
             }
 
-            if (resumeWriterThreshold < 0 && resumeWriterThreshold > pauseWriterThreshold)
+            if (resumeWriterThreshold == -1)
+            {
+                resumeWriterThreshold = DefaultResumeWriterThreshold;
+            }
+            else if (resumeWriterThreshold < 0 || resumeWriterThreshold > pauseWriterThreshold)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.resumeWriterThreshold);
             }
@@ -50,7 +58,7 @@ namespace System.IO.Pipelines
             WriterScheduler = writerScheduler ?? PipeScheduler.ThreadPool;
             PauseWriterThreshold = pauseWriterThreshold;
             ResumeWriterThreshold = resumeWriterThreshold;
-            MinimumSegmentSize = minimumSegmentSize;
+            MinimumSegmentSize = minimumSegmentSize == -1 ? DefaultMinimumSegmentSize : minimumSegmentSize;
             UseSynchronizationContext = useSynchronizationContext;
         }
 

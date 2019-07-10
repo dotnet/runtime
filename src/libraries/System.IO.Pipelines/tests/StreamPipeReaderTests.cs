@@ -519,15 +519,38 @@ namespace System.IO.Pipelines.Tests
         [Fact]
         public void InvalidBufferSizeThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new StreamPipeReaderOptions(bufferSize: -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new StreamPipeReaderOptions(bufferSize: -2));
             Assert.Throws<ArgumentOutOfRangeException>(() => new StreamPipeReaderOptions(bufferSize: 0));
         }
 
         [Fact]
         public void InvalidMinimumReadSizeThrows()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new StreamPipeReaderOptions(minimumReadSize: -1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new StreamPipeReaderOptions(minimumReadSize: -2));
             Assert.Throws<ArgumentOutOfRangeException>(() => new StreamPipeReaderOptions(minimumReadSize: 0));
+        }
+
+        [Fact]
+        public void StreamPipeReaderOptions_Ctor_Defaults()
+        {
+            var options = new StreamPipeReaderOptions();
+            Assert.Same(MemoryPool<byte>.Shared, options.Pool);
+            Assert.Equal(4096, options.BufferSize);
+            Assert.Equal(1024, options.MinimumReadSize);
+            Assert.False(options.LeaveOpen);
+        }
+
+        [Fact]
+        public void StreamPipeReaderOptions_Ctor_Roundtrip()
+        {
+            using (var pool = new TestMemoryPool())
+            {
+                var options = new StreamPipeReaderOptions(pool: pool, bufferSize: 1234, minimumReadSize: 5678, leaveOpen: true);
+                Assert.Same(pool, options.Pool);
+                Assert.Equal(1234, options.BufferSize);
+                Assert.Equal(5678, options.MinimumReadSize);
+                Assert.True(options.LeaveOpen);
+            }
         }
 
         [Fact]
