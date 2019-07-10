@@ -647,8 +647,7 @@ namespace System.Text.Json
             Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
 
             if (segment.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
-                && JsonHelpers.TryParseAsISO(segment, out DateTime tmp, out int bytesConsumed)
-                && segment.Length == bytesConsumed)
+                && JsonHelpers.TryParseAsISO(segment, out DateTime tmp))
             {
                 value = tmp;
                 return true;
@@ -684,8 +683,7 @@ namespace System.Text.Json
             Debug.Assert(segment.IndexOf(JsonConstants.BackSlash) == -1);
 
             if (segment.Length <= JsonConstants.MaximumDateTimeOffsetParseLength
-                && JsonHelpers.TryParseAsISO(segment, out DateTimeOffset tmp, out int bytesConsumed)
-                && segment.Length == bytesConsumed)
+                && JsonHelpers.TryParseAsISO(segment, out DateTimeOffset tmp))
             {
                 value = tmp;
                 return true;

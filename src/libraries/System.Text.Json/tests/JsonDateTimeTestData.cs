@@ -19,8 +19,8 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07-16T19:20:30.45\"", "1997-07-16T19:20:30.45" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555\"", "1997-07-16T19:20:30.4555555" };
 
-            // Skip test T24:00 till #35830 is fixed.
-            // yield return new object[] { "\"1997-07-16T24:00\"", "1997-07-16T24:00" };
+            // Regression test for https://github.com/dotnet/corefx/issues/39067
+            yield return new object[] { "\"0001-01-01T00:00:00\"", "0001-01-01T00:00:00" };
 
             // Test fractions.
             yield return new object[] { "\"1997-07-16T19:20:30.0\"", "1997-07-16T19:20:30" };
@@ -70,12 +70,7 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07-16T19:20:30.4555555-01:00\"", "1997-07-16T19:20:30.4555555-01:00" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+04:30\"", "1997-07-16T19:20:30.4555555+04:30" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555-04:30\"", "1997-07-16T19:20:30.4555555-04:30" };
-            yield return new object[] { "\"1997-07-16T19:20:30.4555555+0100\"", "1997-07-16T19:20:30.4555555+01:00" };
-            yield return new object[] { "\"1997-07-16T19:20:30.4555555-0100\"", "1997-07-16T19:20:30.4555555-01:00" };
-            yield return new object[] { "\"1997-07-16T19:20:30.4555555+0430\"", "1997-07-16T19:20:30.4555555+04:30" };
-            yield return new object[] { "\"1997-07-16T19:20:30.4555555-0430\"", "1997-07-16T19:20:30.4555555-04:30" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555555555555+01:30\"", "1997-07-16T19:20:30.4555555+01:30" };
-            yield return new object[] { "\"1997-07-16T19:20:30.4555555555555555-0100\"", "1997-07-16T19:20:30.4555555-01:00" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555555555555+01\"", "1997-07-16T19:20:30.4555555+01:00" };
             // Test Non-UTC TZD without minute.
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+01\"", "1997-07-16T19:20:30.4555555+01:00" };
@@ -83,8 +78,6 @@ namespace System.Text.Json.Tests
             // Test Non-UTC TZD with max UTC offset hour.
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+14:00\"", "1997-07-16T19:20:30.4555555+14:00" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555-14:00\"", "1997-07-16T19:20:30.4555555-14:00" };
-            yield return new object[] { "\"1997-07-16T19:20:30.4555555+1400\"", "1997-07-16T19:20:30.4555555+14:00" };
-            yield return new object[] { "\"1997-07-16T19:20:30.4555555-1400\"", "1997-07-16T19:20:30.4555555-14:00" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+14\"", "1997-07-16T19:20:30.4555555+14:00" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555-14\"", "1997-07-16T19:20:30.4555555-14:00" };
             // Test February 29 on a leap year
@@ -131,6 +124,7 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07\"" };
             yield return new object[] { "\"1997-7-06\"" };
             yield return new object[] { "\"1997-07-16T\"" };
+            yield return new object[] { "\"1997-07-16*\"" };
             yield return new object[] { "\"1997-07-6\"" };
             yield return new object[] { "\"1997-07-6T01\"" };
             yield return new object[] { "\"1997-07-16Z\"" };
@@ -143,24 +137,35 @@ namespace System.Text.Json.Tests
             // Invalid YYYY-MM-DDThh:mm
             yield return new object[] { "\"1997-07-16T1\"" };
             yield return new object[] { "\"1997-07-16Ta0:00\"" };
+            yield return new object[] { "\"1997-07-16T.9:20\"" };
             yield return new object[] { "\"1997-07-16T19: 20:30\"" };
             yield return new object[] { "\"1997-07-16 19:20:30\"" };
             yield return new object[] { "\"1997-07-16T19:2030\"" };
+            // 24:00 is not supported per ISO 8601-1:2019
+            yield return new object[] { "\"1997-07-16T24:00\"" };
 
             // Invalid YYYY-MM-DDThh:mm:ss
+            yield return new object[] { "\"1997-07-16T19:20a\"" };
+            yield return new object[] { "\"1997-07-16T19:20:\"" };
+            yield return new object[] { "\"1997-07-16T19:20:a\"" };
             yield return new object[] { "\"1997-07-16T19:20:3a\"" };
             yield return new object[] { "\"1997-07-16T19:20:30a\"" };
             yield return new object[] { "\"1997-07-16T19:20:3045\"" };
             yield return new object[] { "\"1997-07-16T19:20:304555555\"" };
 
             // Invalid fractions.
+            yield return new object[] { "\"1997-07-16T19.45\"" };
+            yield return new object[] { "\"1997-07-16T19:20.45\"" };
+            yield return new object[] { "\"1997-07-16T19:20:30a\"" };
             yield return new object[] { "\"1997-07-16T19:20:30,45\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.\"" };
+            yield return new object[] { "\"1997-07-16T19:20:30.a\"" };
             yield return new object[] { "\"1997-07-16T19:20:30 .\"" };
             yield return new object[] { "\"abc1997-07-16T19:20:30.000\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+\"" };
 
             // Invalid TZD.
+            yield return new object[] { "\"1997-07-16T19:20:30.4555555a\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+-Z\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555Z \"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+01Z\"" };
@@ -180,6 +185,14 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07-16T19:20:30.4555555-14:0\"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555-14:00 \"" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555+14 00\"" };
+            yield return new object[] { "\"1997-07-16T19:20:30.4555555+0100\"" };
+            yield return new object[] { "\"1997-07-16T19:20:30.4555555-0100\"" };
+            yield return new object[] { "\"1997-07-16T19:20:30.4555555+0430\"" };
+            yield return new object[] { "\"1997-07-16T19:20:30.4555555-0430\"" };
+            yield return new object[] { "\"1997-07-16T19:20:30.4555555555555555-0100\"" };
+            yield return new object[] { "\"1997-07-16T19:20:30.4555555+1400\"" };
+            yield return new object[] { "\"1997-07-16T19:20:30.4555555-1400\"" };
+
 
             // Proper format but invalid calendar date, time, or time zone designator fields
             yield return new object[] { "\"1997-00-16T19:20:30.4555555\"" };
