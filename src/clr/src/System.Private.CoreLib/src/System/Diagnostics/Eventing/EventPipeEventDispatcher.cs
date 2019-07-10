@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace System.Diagnostics.Tracing
 {
@@ -32,6 +33,7 @@ namespace System.Diagnostics.Tracing
         private Int64 m_timeQPCFrequency;
 
         private bool m_stopDispatchTask;
+        private EventPipeWaitHandle m_dispatchTaskWaitHandle = new EventPipeWaitHandle();
         private Task? m_dispatchTask = null;
         private object m_dispatchControlLock = new object();
         private Dictionary<EventListener, EventListenerSubscription> m_subscriptions = new Dictionary<EventListener, EventListenerSubscription>();
@@ -42,6 +44,7 @@ namespace System.Diagnostics.Tracing
         {
             // Get the ID of the runtime provider so that it can be used as a filter when processing events.
             m_RuntimeProviderID = EventPipeInternal.GetProvider(NativeRuntimeEventSource.EventSourceName);
+            m_dispatchTaskWaitHandle.SafeWaitHandle = new SafeWaitHandle(IntPtr.Zero, false);
         }
 
         internal void SendCommand(EventListener eventListener, EventCommand command, bool enable, EventLevel level, EventKeywords matchAnyKeywords)
@@ -140,6 +143,9 @@ namespace System.Diagnostics.Tracing
             if (m_dispatchTask == null)
             {
                 m_stopDispatchTask = false;
+                // Create a SafeWaitHandle that won't release the handle when done
+                m_dispatchTaskWaitHandle.SafeWaitHandle = new SafeWaitHandle(EventPipeInternal.GetWaitHandle(m_sessionID), false);
+
                 m_dispatchTask = Task.Factory.StartNew(DispatchEventsToEventListeners, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
             }
         }
@@ -151,6 +157,8 @@ namespace System.Diagnostics.Tracing
             if(m_dispatchTask != null)
             {
                 m_stopDispatchTask = true;
+                Debug.Assert(!m_dispatchTaskWaitHandle.SafeWaitHandle.IsInvalid);
+                Interop.Kernel32.SetEvent(m_dispatchTaskWaitHandle.SafeWaitHandle);
                 m_dispatchTask.Wait();
                 m_dispatchTask = null;
             }
@@ -163,9 +171,12 @@ namespace System.Diagnostics.Tracing
 
             while (!m_stopDispatchTask)
             {
+                bool eventsReceived = false;
                 // Get the next event.
                 while (!m_stopDispatchTask && EventPipeInternal.GetNextEvent(m_sessionID, &instanceData))
                 {
+                    eventsReceived = true;
+
                     // Filter based on provider.
                     if (instanceData.ProviderID == m_RuntimeProviderID)
                     {
@@ -179,6 +190,13 @@ namespace System.Diagnostics.Tracing
                 // Wait for more events.
                 if (!m_stopDispatchTask)
                 {
+                    if (!eventsReceived)
+                    {
+                        // Future TODO: this would make more sense to handle in EventPipeSession/EventPipe native code.
+                        Debug.Assert(!m_dispatchTaskWaitHandle.SafeWaitHandle.IsInvalid);
+                        m_dispatchTaskWaitHandle.WaitOne();
+                    }
+
                     Thread.Sleep(10);
                 }
             }
