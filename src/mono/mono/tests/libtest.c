@@ -5711,6 +5711,18 @@ _mono_test_native_thiscall3 (int arg, int arg2, int arg3)
 	return arg + (arg2^1) + (arg3^2);
 }
 
+typedef int (
+#ifndef _MSC_VER
+__thiscall
+#endif
+*ThiscallFunction)(int arg, int arg2);
+
+LIBTEST_API ThiscallFunction STDCALL
+mono_test_get_native_thiscall2 (void)
+{
+	return _mono_test_native_thiscall2;
+}
+
 LIBTEST_API int STDCALL
 _mono_test_managed_thiscall1 (int (__thiscall*fn)(int), int arg)
 {
