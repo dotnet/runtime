@@ -581,8 +581,7 @@ namespace System.Net.Http
 
             // Send PING ACK
             // Don't wait for completion, which could happen asynchronously.
-            byte[] pingContent = _incomingBuffer.ActiveMemory.Slice(0, FrameHeader.PingLength).ToArray();
-            LogExceptions(SendPingAckAsync(pingContent));
+            LogExceptions(SendPingAckAsync(_incomingBuffer.ActiveMemory.Slice(0, FrameHeader.PingLength)));
 
             _incomingBuffer.Discard(frameHeader.Length);
         }
@@ -792,6 +791,10 @@ namespace System.Net.Http
         {
             Debug.Assert(pingContent.Length == FrameHeader.PingLength);
 
+            // copy pingContent before we go async so the caller can
+            // discard their buffer without waiting for us to complete.
+            long pingContentLong = BitConverter.ToInt64(pingContent.Span);
+
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size + FrameHeader.PingLength).ConfigureAwait(false);
             if (NetEventSource.IsEnabled) Trace("Started writing.");
 
@@ -799,7 +802,7 @@ namespace System.Net.Http
             frameHeader.WriteTo(writeBuffer);
             writeBuffer = writeBuffer.Slice(FrameHeader.Size);
 
-            pingContent.CopyTo(writeBuffer);
+            BitConverter.TryWriteBytes(writeBuffer.Span, pingContentLong);
 
             FinishWrite(mustFlush: false);
         }
