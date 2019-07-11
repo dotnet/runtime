@@ -778,15 +778,15 @@ namespace System.Collections.Generic
                 _index = 0;
                 _version = _sortedList.version;
                 _getEnumeratorRetType = getEnumeratorRetType;
-                _key = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
-                _value = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _key = default;
+                _value = default;
             }
 
             public void Dispose()
             {
                 _index = 0;
-                _key = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
-                _value = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _key = default;
+                _value = default;
             }
 
             object IDictionaryEnumerator.Key
@@ -815,8 +815,8 @@ namespace System.Collections.Generic
                 }
 
                 _index = _sortedList.Count + 1;
-                _key = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
-                _value = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _key = default;
+                _value = default;
                 return false;
             }
 
@@ -882,8 +882,8 @@ namespace System.Collections.Generic
                 }
 
                 _index = 0;
-                _key = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
-                _value = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _key = default;
+                _value = default;
             }
         }
 
@@ -903,7 +903,7 @@ namespace System.Collections.Generic
             public void Dispose()
             {
                 _index = 0;
-                _currentKey = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _currentKey = default;
             }
 
             public bool MoveNext()
@@ -921,7 +921,7 @@ namespace System.Collections.Generic
                 }
 
                 _index = _sortedList.Count + 1;
-                _currentKey = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _currentKey = default;
                 return false;
             }
 
@@ -953,7 +953,7 @@ namespace System.Collections.Generic
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
                 _index = 0;
-                _currentKey = default(TKey)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _currentKey = default;
             }
         }
 
@@ -973,7 +973,7 @@ namespace System.Collections.Generic
             public void Dispose()
             {
                 _index = 0;
-                _currentValue = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _currentValue = default;
             }
 
             public bool MoveNext()
@@ -991,7 +991,7 @@ namespace System.Collections.Generic
                 }
 
                 _index = _sortedList.Count + 1;
-                _currentValue = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _currentValue = default;
                 return false;
             }
 
@@ -1023,7 +1023,7 @@ namespace System.Collections.Generic
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
                 _index = 0;
-                _currentValue = default(TValue)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _currentValue = default;
             }
         }
 

@@ -1082,7 +1082,7 @@ namespace System.Collections.Concurrent
         private sealed class Enumerator : IEnumerator<T>
         {
             private readonly T[] _array;
-            [AllowNull] private T _current = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            [AllowNull] private T _current = default;
             private int _index;
 
             public Enumerator(T[] array)
@@ -1120,7 +1120,7 @@ namespace System.Collections.Concurrent
             public void Reset()
             {
                 _index = 0;
-                _current = default(T)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _current = default;
             }
 
             public void Dispose() { }
