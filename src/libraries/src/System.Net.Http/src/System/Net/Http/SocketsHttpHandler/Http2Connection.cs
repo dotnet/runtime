@@ -792,7 +792,7 @@ namespace System.Net.Http
         {
             Debug.Assert(pingContent.Length == FrameHeader.PingLength);
 
-            // copy pingContent before we go async so the caller can
+            // Copy pingContent before we go async so the caller can
             // discard their buffer without waiting for us to complete.
             long pingContentLong = BitConverter.ToInt64(pingContent.Span);
 
