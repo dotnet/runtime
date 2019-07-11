@@ -30,10 +30,7 @@ namespace System.IO.Pipelines
         private static readonly SendOrPostCallback s_syncContextExecuteWithoutExecutionContextCallback = ExecuteWithoutExecutionContext;
         private static readonly Action<object> s_scheduleWithExecutionContextCallback = ExecuteWithExecutionContext;
 
-        // This sync objects protects the following state:
-        // 1. _commitHead & _commitHeadIndex
-        // 2. _length
-        // 3. _readerAwaitable & _writerAwaitable
+        // This sync objects protects the shared state between the writer and reader (most of this class)
         private readonly object _sync = new object();
 
         private readonly MemoryPool<byte> _pool;
@@ -52,8 +49,11 @@ namespace System.IO.Pipelines
 
         private readonly bool _useSynchronizationContext;
 
-        private long _length;
-        private long _currentWriteLength;
+        // The number of bytes flushed but not consumed by the reader 
+        private long _unconsumedBytes;
+
+        // The number of bytes written but not flushed
+        private long _unflushedBytes;
 
         private PipeAwaitable _readerAwaitable;
         private PipeAwaitable _writerAwaitable;
@@ -65,11 +65,11 @@ namespace System.IO.Pipelines
         // for back pressure management
         private long _lastExaminedIndex = -1;
 
-        // The read head which is the extent of the PipeReader's consumed bytes
+        // The read head which is the start of the PipeReader's consumed bytes
         private BufferSegment _readHead;
         private int _readHeadIndex;
 
-        // The commit head which is the extent of the bytes available to the PipeReader to consume
+        // The extent of the bytes available to the PipeReader to consume
         private BufferSegment _readTail;
         private int _readTailIndex;
 
@@ -78,11 +78,12 @@ namespace System.IO.Pipelines
         private Memory<byte> _writingHeadMemory;
         private int _writingHeadBytesBuffered;
 
+        // Determines what current operation is in flight (reading/writing)
         private PipeOperationState _operationState;
 
         private bool _disposed;
 
-        internal long Length => _length;
+        internal long Length => _unconsumedBytes;
 
         /// <summary>
         /// Initializes the <see cref="Pipe"/> using <see cref="PipeOptions.Default"/> as options.
@@ -131,8 +132,8 @@ namespace System.IO.Pipelines
             _readTailIndex = 0;
             _readHeadIndex = 0;
             _lastExaminedIndex = -1;
-            _currentWriteLength = 0;
-            _length = 0;
+            _unflushedBytes = 0;
+            _unconsumedBytes = 0;
         }
 
         internal Memory<byte> GetMemory(int sizeHint)
@@ -278,7 +279,7 @@ namespace System.IO.Pipelines
         {
             _operationState.EndWrite();
 
-            if (_currentWriteLength == 0)
+            if (_unflushedBytes == 0)
             {
                 // Nothing written to commit
                 return true;
@@ -291,19 +292,19 @@ namespace System.IO.Pipelines
             _readTail = _writingHead;
             _readTailIndex = _writingHead.End;
 
-            long oldLength = _length;
-            _length += _currentWriteLength;
+            long oldLength = _unconsumedBytes;
+            _unconsumedBytes += _unflushedBytes;
 
             // Do not reset if reader is complete
             if (_pauseWriterThreshold > 0 &&
                 oldLength < _pauseWriterThreshold &&
-                _length >= _pauseWriterThreshold &&
+                _unconsumedBytes >= _pauseWriterThreshold &&
                 !_readerCompletion.IsCompleted)
             {
                 _writerAwaitable.SetUncompleted();
             }
 
-            _currentWriteLength = 0;
+            _unflushedBytes = 0;
             _writingHeadBytesBuffered = 0;
 
             return false;
@@ -312,18 +313,21 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Advance(int bytes)
         {
-            if ((uint)bytes > (uint)_writingHeadMemory.Length)
+            lock (_sync)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
-            }
+                if ((uint)bytes > (uint)_writingHeadMemory.Length)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes);
+                }
 
-            AdvanceCore(bytes);
+                AdvanceCore(bytes);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AdvanceCore(int bytesWritten)
         {
-            _currentWriteLength += bytesWritten;
+            _unflushedBytes += bytesWritten;
             _writingHeadBytesBuffered += bytesWritten;
             _writingHeadMemory = _writingHeadMemory.Slice(bytesWritten);
         }
@@ -450,22 +454,22 @@ namespace System.IO.Pipelines
                 if (examinedSegment != null && _lastExaminedIndex >= 0)
                 {
                     long examinedBytes = BufferSegment.GetLength(_lastExaminedIndex, examinedSegment, examinedIndex);
-                    long oldLength = _length;
+                    long oldLength = _unconsumedBytes;
 
                     if (examinedBytes < 0)
                     {
                         ThrowHelper.ThrowInvalidOperationException_InvalidExaminedPosition();
                     }
 
-                    _length -= examinedBytes;
+                    _unconsumedBytes -= examinedBytes;
 
                     // Store the absolute position
                     _lastExaminedIndex = examinedSegment.RunningIndex + examinedIndex;
 
-                    Debug.Assert(_length >= 0, "Length has gone negative");
+                    Debug.Assert(_unconsumedBytes >= 0, "Length has gone negative");
 
                     if (oldLength >= _resumeWriterThreshold &&
-                        _length < _resumeWriterThreshold)
+                        _unconsumedBytes < _resumeWriterThreshold)
                     {
                         _writerAwaitable.Complete(out completionData);
                     }
@@ -482,10 +486,7 @@ namespace System.IO.Pipelines
                     returnStart = _readHead;
                     returnEnd = consumedSegment;
 
-                    // Check if we consumed entire last segment
-                    // if we are going to return commit head we need to check that there is no writing operation that
-                    // might be using tailspace
-                    if (consumedIndex == returnEnd.Length && !_operationState.IsWritingActive)
+                    void MoveReturnEndToNextBlock()
                     {
                         BufferSegment nextBlock = returnEnd.NextSegment;
                         if (_readTail == returnEnd)
@@ -497,18 +498,32 @@ namespace System.IO.Pipelines
                         _readHead = nextBlock;
                         _readHeadIndex = 0;
 
-                        // Reset the writing head to null if it's the return block
-                        // then null it out as we're about to reset that memory
-                        if (_writingHead == returnEnd)
+                        returnEnd = nextBlock;
+                    }
+
+                    if (consumedIndex == returnEnd.Length)
+                    {
+                        // If the writing head isn't block we're about to return, then we can move to the next one
+                        // and return this block safely
+                        if (_writingHead != returnEnd)
                         {
-                            // If we're about to null out the _writingHead then assert the list is empty
-                            Debug.Assert(_readHead == null);
-                            Debug.Assert(_readTail == null);
+                            MoveReturnEndToNextBlock();
+                        }
+                        // If the writing head is the same as the block to be returned, then we need to make sure
+                        // there's no pending write and that there's no buffered data for the writing head
+                        else if (_writingHeadBytesBuffered == 0 && !_operationState.IsWritingActive)
+                        {
+                            // Reset the writing head to null if it's the return block and we've consumed everything
                             _writingHead = null;
                             _writingHeadMemory = default;
-                        }
 
-                        returnEnd = nextBlock;
+                            MoveReturnEndToNextBlock();
+                        }
+                        else
+                        {
+                            _readHead = consumedSegment;
+                            _readHeadIndex = consumedIndex;
+                        }
                     }
                     else
                     {
@@ -670,7 +685,7 @@ namespace System.IO.Pipelines
                     ThrowHelper.ThrowInvalidOperationException_NoReadingAllowed();
                 }
 
-                if (_length > 0 || _readerAwaitable.IsCompleted)
+                if (_unconsumedBytes > 0 || _readerAwaitable.IsCompleted)
                 {
                     GetReadResult(out result);
                     return true;
