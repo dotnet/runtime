@@ -32,9 +32,9 @@ The native host is still required to locate the `hostfxr` or `hostpolicy` librar
 
 
 ## Scope
-This document focuses on easy-to-use hosting which cooperates with the .NET Core SDK and consumes the artifacts produced by building the managed app/libraries directly. It completely ignores the COM-style ABI as it's hard to use from some programming languages.
+This document focuses on hosting which cooperates with the .NET Core SDK and consumes the artifacts produced by building the managed app/libraries directly. It completely ignores the COM-style ABI as it's hard to use from some programming languages.
 
-As such the document explicitly excludes any hosting based on directly loading `coreclr`. The document focuses on using the existing .NET Core hosting layer in new ways. For details on the .NET Core hosting components see [this document](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/host-components.md).
+As such the document explicitly excludes any hosting based on directly loading `coreclr`. Instead it focuses on using the existing .NET Core hosting layer in new ways. For details on the .NET Core hosting components see [this document](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/host-components.md).
 
 
 ## High-level proposal
@@ -46,7 +46,7 @@ In .NET Core 3.0 the hosting layer (see [here](https://github.com/dotnet/core-se
 
 Every one of these hosts serve different scenario and expose different APIs. The one thing they have in common is that their main purpose is to find the right `hostfxr`, load it and call into it to execute the desired scenario. For the most part all these hosts are basically just wrappers around functionality provided by `hostfxr`.
 
-The proposal is to add a new host library `nethost` which can be used by native host to easily host managed components and to easily locate `hostfxr` for more advanced scenarios.
+The proposal is to add a new host library `nethost` which can be used by native host to easily locate `hostfxr`. Going forward the library could also include easy-to-use APIs for common scenarios - basically just a simplification of the `hostfxr` API surface.
 
 At the same time add the ability to pass additional runtime properties when starting the runtime through the hosting entry points (starting app, loading component). This can be used by the native host to:
 * Register startup hook without modifying environment variables (which are inherited by child processes)
@@ -59,9 +59,9 @@ At the same time add the ability to pass additional runtime properties when star
 
 
 ## New host binary for finding `hostfxr`
-Add new library `nethost` which will provide a way to locate the right `hostfxr`.
-The library would be a dynamically loaded library (`.dll`, `.so`, `.dylib`). For ease of use there would be a header file for C/C++ apps as well as `.lib`/`.a` for easy linking.
-Native host would ship this library as part of the app. Unlike the `apphost`, `comhost` and `ijwhost`, the `nethost` will not be directly supported by the .NET Core SDK since it's target usage is not from .NET Core apps.
+New library `nethost` which provides a way to locate the right `hostfxr`.
+This is a dynamically loaded library (`.dll`, `.so`, `.dylib`). For ease of use there is a header file for C/C++ apps as well as `.lib` for easy linking on Windows.
+Native hosts ship this library as part of the app. Unlike the `apphost`, `comhost` and `ijwhost`, the `nethost` will not be directly supported by the .NET Core SDK since it's target usage is not from .NET Core apps.
 
 The `nethost` is part of the `Microsoft.NETCore.DotNetAppHost` package. Users are expected to either download the package directly or rely on .NET SDK to pull it down.
 
