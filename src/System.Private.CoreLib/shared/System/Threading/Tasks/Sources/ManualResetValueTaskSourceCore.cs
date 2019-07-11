@@ -48,7 +48,7 @@ namespace System.Threading.Tasks.Sources
             // Reset/update state for the next use/await of this instance.
             _version++;
             _completed = false;
-            _result = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            _result = default;
             _error = null;
             _executionContext = null;
             _capturedContext = null;

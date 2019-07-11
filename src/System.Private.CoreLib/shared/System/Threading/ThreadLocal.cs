@@ -202,7 +202,7 @@ namespace System.Threading
 
                     // And clear the references from the slot table to the linked slot and the value so that
                     // both can get garbage collected.
-                    slotArray[id].Value!._value = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    slotArray[id].Value!._value = default;
                     slotArray[id].Value = null;
                 }
             }
@@ -675,7 +675,7 @@ namespace System.Threading
             internal volatile LinkedSlotVolatile[]? _slotArray;
 
             // The value for this slot.
-            [AllowNull, MaybeNull] internal T _value = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            [AllowNull, MaybeNull] internal T _value = default;
         }
 
         /// <summary>
