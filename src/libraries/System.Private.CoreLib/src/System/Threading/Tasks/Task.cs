@@ -5208,7 +5208,7 @@ namespace System.Threading.Tasks
         {
             if (!cancellationToken.IsCancellationRequested)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.cancellationToken);
-            return new Task<TResult>(true, default!, TaskCreationOptions.None, cancellationToken); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            return new Task<TResult>(true, default, TaskCreationOptions.None, cancellationToken);
         }
 
         /// <summary>Creates a <see cref="Task"/> that's completed due to cancellation with the specified exception.</summary>
@@ -6694,7 +6694,7 @@ namespace System.Threading.Tasks
                     if (Task.s_asyncDebuggingEnabled)
                         RemoveFromActiveTasks(this);
 
-                    result = TrySetResult(taskTResult != null ? taskTResult.Result : default!); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    result = TrySetResult(taskTResult != null ? taskTResult.Result : default);
                     break;
             }
             return result;

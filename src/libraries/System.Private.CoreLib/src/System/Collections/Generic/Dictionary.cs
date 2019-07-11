@@ -1411,7 +1411,7 @@ namespace System.Collections.Generic
                     _dictionary = dictionary;
                     _version = dictionary._version;
                     _index = 0;
-                    _currentKey = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    _currentKey = default;
                 }
 
                 public void Dispose()
@@ -1437,7 +1437,7 @@ namespace System.Collections.Generic
                     }
 
                     _index = _dictionary._count + 1;
-                    _currentKey = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    _currentKey = default;
                     return false;
                 }
 
@@ -1464,7 +1464,7 @@ namespace System.Collections.Generic
                     }
 
                     _index = 0;
-                    _currentKey = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    _currentKey = default;
                 }
             }
         }
@@ -1594,7 +1594,7 @@ namespace System.Collections.Generic
                     _dictionary = dictionary;
                     _version = dictionary._version;
                     _index = 0;
-                    _currentValue = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    _currentValue = default;
                 }
 
                 public void Dispose()
@@ -1619,7 +1619,7 @@ namespace System.Collections.Generic
                         }
                     }
                     _index = _dictionary._count + 1;
-                    _currentValue = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    _currentValue = default;
                     return false;
                 }
 
@@ -1645,7 +1645,7 @@ namespace System.Collections.Generic
                         ThrowHelper.ThrowInvalidOperationException_InvalidOperation_EnumFailedVersion();
                     }
                     _index = 0;
-                    _currentValue = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    _currentValue = default;
                 }
             }
         }

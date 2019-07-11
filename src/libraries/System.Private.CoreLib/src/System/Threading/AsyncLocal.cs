@@ -63,7 +63,7 @@ namespace System.Threading
             get
             {
                 object? obj = ExecutionContext.GetLocalValue(this);
-                return (obj == null) ? default! : (T)obj; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                return (obj == null) ? default : (T)obj;
             }
             set
             {

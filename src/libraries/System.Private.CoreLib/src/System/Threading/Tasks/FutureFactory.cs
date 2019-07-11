@@ -1324,7 +1324,7 @@ namespace System.Threading.Tasks
         {
             TaskCreationOptions tco;
             Task.CreationOptionsFromContinuationOptions(continuationOptions, out tco, out _);
-            return new Task<TResult>(true, default!, tco, ct); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            return new Task<TResult>(true, default, tco, ct);
         }
 
         //
