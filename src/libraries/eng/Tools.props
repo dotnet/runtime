@@ -1,14 +1,7 @@
 <Project>
   <PropertyGroup>
-    <RestoreSources Condition="'$(DotNetBuildOffline)' != 'true'">
-      https://dotnet.myget.org/F/dotnet-buildtools/api/v3/index.json;
-      https://dotnet.myget.org/F/sourcelink/api/v3/index.json;
-      $(OverridePackageSource);
-      $(RestoreSources)
-    </RestoreSources>
     <MSBuildTreatWarningsAsErrors>false</MSBuildTreatWarningsAsErrors>
     <Language>C#</Language>
-
     <!-- Need to keep in sync with CodeAnalysis.targets file. -->
     <AnalyzerPropsFile>$(ArtifactsToolsetDir)Common\Tools.Analyzers.props</AnalyzerPropsFile>
   </PropertyGroup>
@@ -36,9 +29,6 @@
     <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="$(MicrosoftDotNetApiCompatPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.Feed" Version="$(MicrosoftDotNetBuildTasksFeedPackageVersion)" />
     <PackageReference Include="Microsoft.DotNet.VersionTools.Tasks" Version="$(MicrosoftDotNetVersionToolsTasksPackageVersion)" />
-    
-    <!-- Symbol publishing -->
-    <PackageReference Include="$(PublishSymbolsPackage)" Version="$(PublishSymbolsPackageVersion)" />
 
     <!-- SourceLink -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="$(MicrosoftSourceLinkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />

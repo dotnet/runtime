@@ -11,6 +11,7 @@
     <!-- Opt-in repo features -->
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
     <UsingToolIbcOptimization>true</UsingToolIbcOptimization>
+    <UsingToolSymbolUploader>true</UsingToolSymbolUploader>
     <!-- Opt-out repo features -->
     <UsingToolXliff>false</UsingToolXliff>
     <!-- Paths used during restore -->
@@ -74,9 +75,6 @@
     <!-- Code coverage package version -->
     <CoverletConsolePackageVersion>1.5.0</CoverletConsolePackageVersion>
     <DotNetReportGeneratorGlobalToolPackageVersion>4.1.4</DotNetReportGeneratorGlobalToolPackageVersion>
-    <!-- Publish symbol build task package -->
-    <PublishSymbolsPackage>Microsoft.SymbolUploader.Build.Task</PublishSymbolsPackage>
-    <PublishSymbolsPackageVersion>1.0.0-beta-63604-05</PublishSymbolsPackageVersion>
     <!-- Docs -->
     <MicrosoftPrivateIntellisensePackageVersion>3.0.0-preview3-190305-0</MicrosoftPrivateIntellisensePackageVersion>
     <!-- ILLink -->
