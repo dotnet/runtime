@@ -5,6 +5,14 @@ CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' 
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultPropertyAttribute' exists on 'System.Diagnostics.Process' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Diagnostics.SwitchLevelAttribute' exists on 'System.Diagnostics.TraceSwitch' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.ComponentModel.DefaultEventAttribute' exists on 'System.IO.FileSystemWatcher' in the contract but not the implementation.
+TypesMustExist : Type 'System.Diagnostics.Tracing.DiagnosticCounter' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.Tracing.DiagnosticCounter' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.Tracing.IncrementingEventCounter' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.Tracing.IncrementingEventCounter' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.Tracing.IncrementingPollingCounter' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.Tracing.IncrementingPollingCounter' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.Tracing.PollingCounter' does not exist in the implementation but it does exist in the contract.
+TypesMustExist : Type 'System.Diagnostics.Tracing.PollingCounter' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Compression.BrotliDecoder' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Compression.BrotliEncoder' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.IO.Compression.BrotliStream' does not exist in the implementation but it does exist in the contract.

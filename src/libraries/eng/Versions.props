@@ -40,19 +40,19 @@
     <MicrosoftDotNetBuildTasksFeedPackageVersion>2.2.0-beta.19359.4</MicrosoftDotNetBuildTasksFeedPackageVersion>
     <MicrosoftDotNetVersionToolsTasksPackageVersion>1.0.0-beta.19359.4</MicrosoftDotNetVersionToolsTasksPackageVersion>
     <!-- Core-setup dependencies -->
-    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview8-27907-09</MicrosoftNETCoreAppPackageVersion>
-    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview8-27907-09</MicrosoftNETCoreDotNetHostPackageVersion>
-    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview8-27907-09</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>3.0.0-preview8-27911-01</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreDotNetHostPackageVersion>3.0.0-preview8-27911-01</MicrosoftNETCoreDotNetHostPackageVersion>
+    <MicrosoftNETCoreDotNetHostPolicyPackageVersion>3.0.0-preview8-27911-01</MicrosoftNETCoreDotNetHostPolicyPackageVersion>
     <!-- Coreclr dependencies -->
     <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview8.19360.2</MicrosoftNETCoreILAsmPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview8.19360.2</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- Corefx dependencies -->
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview8.19357.5</MicrosoftNETCorePlatformsPackageVersion>
-    <runtimenativeSystemIOPortsPackageVersion>4.6.0-preview8.19357.5</runtimenativeSystemIOPortsPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview8.19360.10</MicrosoftNETCorePlatformsPackageVersion>
+    <runtimenativeSystemIOPortsPackageVersion>4.6.0-preview8.19360.10</runtimenativeSystemIOPortsPackageVersion>
     <!-- Standard dependencies -->
-    <NETStandardLibraryPackageVersion>2.1.0-prerelease.19358.2</NETStandardLibraryPackageVersion>
+    <NETStandardLibraryPackageVersion>2.1.0-prerelease.19361.3</NETStandardLibraryPackageVersion>
     <!-- dotnet-optimization dependencies -->
-    <optimizationwindows_ntx64IBCCoreFxPackageVersion>99.99.99-master-20190708.1</optimizationwindows_ntx64IBCCoreFxPackageVersion>
+    <optimizationwindows_ntx64IBCCoreFxPackageVersion>99.99.99-master-20190711.1</optimizationwindows_ntx64IBCCoreFxPackageVersion>
     <!-- sni -->
     <RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>
