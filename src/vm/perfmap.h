@@ -82,7 +82,7 @@ class NativeImagePerfMap : PerfMap
 {
 private:
     // Log a pre-compiled method to the map.
-    void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode, SIZE_T baseAddr, const char *optimizationTier);
+    void LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode, PEImageLayout * pLoadedLayout, const char *optimizationTier);
 
 public:
     // Construct a new map for a native image.
