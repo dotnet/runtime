@@ -157,13 +157,31 @@ namespace System.Text.Json
                 return null;
             }
 
-            Type propertyType = state.Current.JsonPropertyInfo.RuntimePropertyType;
+
+            Type propertyType = jsonPropertyInfo.RuntimePropertyType;
             if (typeof(IList).IsAssignableFrom(propertyType))
             {
                 // If IList, add the members as we create them.
-                JsonClassInfo collectionClassInfo = state.Current.JsonPropertyInfo.RuntimeClassInfo;
-                IList collection = (IList)collectionClassInfo.CreateObject();
-                return collection;
+                JsonClassInfo collectionClassInfo;
+                
+                if (jsonPropertyInfo.DeclaredPropertyType == jsonPropertyInfo.ImplementedPropertyType)
+                {
+                    collectionClassInfo = jsonPropertyInfo.RuntimeClassInfo;
+                }
+                else
+                {
+                    collectionClassInfo = jsonPropertyInfo.DeclaredTypeClassInfo;
+                }
+
+                if (collectionClassInfo.CreateObject() is IList collection)
+                {
+                    return collection;
+                }
+                else
+                {
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(jsonPropertyInfo.DeclaredPropertyType, reader, state.JsonPath);
+                    return null;
+                }
             }
             else
             {

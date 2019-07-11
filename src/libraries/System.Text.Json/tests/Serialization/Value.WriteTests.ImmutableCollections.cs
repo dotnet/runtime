@@ -53,6 +53,11 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
+
+            StringIImmutableListWrapper input2 = new StringIImmutableListWrapper(new List<string> { "1", "2" });
+
+            json = JsonSerializer.Serialize(input2);
+            Assert.Equal(@"[""1"",""2""]", json);
         }
 
         [Fact]
@@ -98,6 +103,11 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[2,1]", json);
+
+            StringIImmutableStackWrapper input2 = new StringIImmutableStackWrapper(new List<string> { "1", "2" });
+
+            json = JsonSerializer.Serialize(input2);
+            Assert.Equal(@"[""2"",""1""]", json);
         }
 
         [Fact]
@@ -143,6 +153,11 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
+
+            StringIImmutableQueueWrapper input2 = new StringIImmutableQueueWrapper(new List<string> { "1", "2" });
+
+            json = JsonSerializer.Serialize(input2);
+            Assert.Equal(@"[""1"",""2""]", json);
         }
 
         [Fact]
@@ -190,6 +205,11 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
+
+            StringIImmutableSetWrapper input2 = new StringIImmutableSetWrapper(new List<string> { "1", "2" });
+
+            json = JsonSerializer.Serialize(input2);
+            Assert.True(json == @"[""1"",""2""]" || json == @"[""2"",""1""]");
         }
 
         [Fact]
@@ -392,6 +412,37 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[1,2]", json);
+        }
+
+        [Fact]
+        public static void WriteImmutableCollectionWrappers()
+        {
+            SimpleTestClassWithIImmutableDictionaryWrapper obj1 = new SimpleTestClassWithIImmutableDictionaryWrapper();
+            SimpleTestClassWithImmutableListWrapper obj2 = new SimpleTestClassWithImmutableListWrapper();
+            SimpleTestClassWithImmutableStackWrapper obj3 = new SimpleTestClassWithImmutableStackWrapper();
+            SimpleTestClassWithImmutableQueueWrapper obj4 = new SimpleTestClassWithImmutableQueueWrapper();
+            SimpleTestClassWithImmutableSetWrapper obj5 = new SimpleTestClassWithImmutableSetWrapper();
+
+            obj1.Initialize();
+            obj2.Initialize();
+            obj3.Initialize();
+            obj4.Initialize();
+            obj5.Initialize();
+
+            Assert.Equal(SimpleTestClassWithIImmutableDictionaryWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize(obj1));
+            Assert.Equal(SimpleTestClassWithIImmutableDictionaryWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize<object>(obj1));
+
+            Assert.Equal(SimpleTestClassWithImmutableListWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize(obj2));
+            Assert.Equal(SimpleTestClassWithImmutableListWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize<object>(obj2));
+
+            Assert.Equal(SimpleTestClassWithImmutableStackWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize(obj3));
+            Assert.Equal(SimpleTestClassWithImmutableStackWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize<object>(obj3));
+
+            Assert.Equal(SimpleTestClassWithImmutableQueueWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize(obj4));
+            Assert.Equal(SimpleTestClassWithImmutableQueueWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize<object>(obj4));
+
+            Assert.Equal(SimpleTestClassWithImmutableSetWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize(obj5));
+            Assert.Equal(SimpleTestClassWithImmutableSetWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize<object>(obj5));
         }
     }
 }

@@ -21,6 +21,15 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
+
+            var input2 = new GenericListWrapper<StringListWrapper>
+            {
+                new StringListWrapper() { "1", "2" },
+                new StringListWrapper() { "3", "4" }
+            };
+
+            json = JsonSerializer.Serialize(input2);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -57,7 +66,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void WriteIEnumerableTOfIEnumerableT()
+        public static void WriteGenericIEnumerableOfGenericIEnumerable()
         {
             IEnumerable<IEnumerable<int>> input = new List<List<int>>
             {
@@ -67,6 +76,15 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
+
+            GenericIEnumerableWrapper<StringIEnumerableWrapper> input2 = new GenericIEnumerableWrapper<StringIEnumerableWrapper>
+            {
+                new StringIEnumerableWrapper() { "1", "2" },
+                new StringIEnumerableWrapper() { "3", "4" }
+            };
+
+            json = JsonSerializer.Serialize(input2);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -103,7 +121,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void WriteIListTOfIListT()
+        public static void WriteGenericIListOfGenericIList()
         {
             IList<IList<int>> input = new List<IList<int>>
             {
@@ -113,6 +131,15 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
+
+            GenericIListWrapper<StringIListWrapper> input2 = new GenericIListWrapper<StringIListWrapper>
+            {
+                new StringIListWrapper() { "1", "2" },
+                new StringIListWrapper() { "3", "4" }
+            };
+
+            json = JsonSerializer.Serialize(input2);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -149,7 +176,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void WriteICollectionTOfICollectionT()
+        public static void WriteGenericICollectionOfGenericICollection()
         {
             ICollection<ICollection<int>> input = new List<ICollection<int>>
             {
@@ -159,6 +186,15 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
+
+            GenericICollectionWrapper<StringICollectionWrapper> input2 = new GenericICollectionWrapper<StringICollectionWrapper>
+            {
+                new StringICollectionWrapper() { "1", "2" },
+                new StringICollectionWrapper() { "3", "4" }
+            };
+
+            json = JsonSerializer.Serialize(input2);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -195,7 +231,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void WriteIReadOnlyCollectionTOfIReadOnlyCollectionT()
+        public static void WriteGenericIReadOnlyCollectionOfGenericIReadOnlyCollection()
         {
             IReadOnlyCollection<IReadOnlyCollection<int>> input = new List<List<int>>
             {
@@ -205,6 +241,15 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
+
+            GenericIReadOnlyCollectionWrapper<StringIReadOnlyCollectionWrapper> input2 = new GenericIReadOnlyCollectionWrapper<StringIReadOnlyCollectionWrapper>
+            {
+                new StringIReadOnlyCollectionWrapper() { "1", "2" },
+                new StringIReadOnlyCollectionWrapper() { "3", "4" }
+            };
+
+            json = JsonSerializer.Serialize(input2);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -251,6 +296,15 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
+
+            GenericIReadOnlyListWrapper<StringIReadOnlyListWrapper> input2 = new GenericIReadOnlyListWrapper<StringIReadOnlyListWrapper>
+            {
+                new StringIReadOnlyListWrapper() { "1", "2" },
+                new StringIReadOnlyListWrapper() { "3", "4" }
+            };
+
+            json = JsonSerializer.Serialize(input2);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -309,6 +363,28 @@ namespace System.Text.Json.Serialization.Tests
             {
                 Assert.Equal(new HashSet<int> { 3, 4 }, input.First());
                 Assert.Equal(new HashSet<int> { 1, 2 }, input.Last());
+            }
+
+            GenericISetWrapper<StringISetWrapper> input2 = new GenericISetWrapper<StringISetWrapper>
+            {
+                new StringISetWrapper() { "1", "2" },
+                new StringISetWrapper() { "3", "4" },
+            };
+
+            json = JsonSerializer.Serialize(input2);
+
+            // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
+            input2 = JsonSerializer.Deserialize<GenericISetWrapper<StringISetWrapper>>(json);
+
+            if (input2.First().Contains("1"))
+            {
+                Assert.Equal(new StringISetWrapper() { "1", "2" }, input2.First());
+                Assert.Equal(new StringISetWrapper() { "3", "4" }, input2.Last());
+            }
+            else
+            {
+                Assert.Equal(new StringISetWrapper() { "3", "4" }, input2.First());
+                Assert.Equal(new StringISetWrapper() { "1", "2" }, input2.Last());
             }
         }
 
@@ -413,6 +489,15 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[4,3],[2,1]]", json);
+
+            GenericStackWrapper<StringStackWrapper> input2 = new GenericStackWrapper<StringStackWrapper>(new List<StringStackWrapper>
+            {
+                new StringStackWrapper(new List<string>() { "1", "2" }),
+                new StringStackWrapper(new List<string>() { "3", "4" })
+            });
+
+            json = JsonSerializer.Serialize(input2);
+            Assert.Equal(@"[[""4"",""3""],[""2"",""1""]]", json);
         }
 
         [Fact]
@@ -459,6 +544,15 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
+
+            GenericQueueWrapper<StringQueueWrapper> input2 = new GenericQueueWrapper<StringQueueWrapper>(new List<StringQueueWrapper>
+            {
+                new StringQueueWrapper(new List<string>() { "1", "2" }),
+                new StringQueueWrapper(new List<string>() { "3", "4" })
+            });
+
+            json = JsonSerializer.Serialize(input2);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -518,6 +612,28 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Equal(new HashSet<int> { 3, 4 }, input.First());
                 Assert.Equal(new HashSet<int> { 1, 2 }, input.Last());
             }
+
+            GenericHashSetWrapper<StringHashSetWrapper> input2 = new GenericHashSetWrapper<StringHashSetWrapper>(new List<StringHashSetWrapper>
+            {
+                new StringHashSetWrapper(new List<string>() { "1", "2" }),
+                new StringHashSetWrapper(new List<string>() { "3", "4" })
+            });
+
+            json = JsonSerializer.Serialize(input2);
+
+            // Because order isn't guaranteed, roundtrip data to ensure write was accurate.
+            input2 = JsonSerializer.Deserialize<GenericHashSetWrapper<StringHashSetWrapper>>(json);
+
+            if (input2.First().Contains("1"))
+            {
+                Assert.Equal(new StringHashSetWrapper(new List<string> { "1", "2" }), input2.First());
+                Assert.Equal(new StringHashSetWrapper(new List<string> { "3", "4" }), input2.Last());
+            }
+            else
+            {
+                Assert.Equal(new StringHashSetWrapper(new List<string> { "3", "4" }), input2.First());
+                Assert.Equal(new StringHashSetWrapper(new List<string> { "1", "2" }), input2.Last());
+            }
         }
 
         [Fact]
@@ -569,6 +685,15 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal("[[1,2],[3,4]]", json);
+
+            GenericLinkedListWrapper<StringLinkedListWrapper> input2 = new GenericLinkedListWrapper<StringLinkedListWrapper>(new List<StringLinkedListWrapper>
+            {
+                new StringLinkedListWrapper(new List<string>() { "1", "2" }),
+                new StringLinkedListWrapper(new List<string>() { "3", "4" }),
+            });
+
+            json = JsonSerializer.Serialize(input2);
+            Assert.Equal(@"[[""1"",""2""],[""3"",""4""]]", json);
         }
 
         [Fact]
@@ -663,6 +788,37 @@ namespace System.Text.Json.Serialization.Tests
 
             string json = JsonSerializer.Serialize(input);
             Assert.Equal(@"{""Key"":""Key"",""Value"":{""Key"":""Key"",""Value"":1}}", json);
+        }
+
+        [Fact]
+        public static void WriteGenericCollectionWrappers()
+        {
+            SimpleTestClassWithGenericCollectionWrappers obj1 = new SimpleTestClassWithGenericCollectionWrappers();
+            SimpleTestClassWithStringIEnumerableWrapper obj2 = new SimpleTestClassWithStringIEnumerableWrapper();
+            SimpleTestClassWithStringIReadOnlyCollectionWrapper obj3 = new SimpleTestClassWithStringIReadOnlyCollectionWrapper();
+            SimpleTestClassWithStringIReadOnlyListWrapper obj4 = new SimpleTestClassWithStringIReadOnlyListWrapper();
+            SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper obj5 = new SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper();
+
+            obj1.Initialize();
+            obj2.Initialize();
+            obj3.Initialize();
+            obj4.Initialize();
+            obj5.Initialize();
+
+            Assert.Equal(SimpleTestClassWithGenericCollectionWrappers.s_json.StripWhitespace(), JsonSerializer.Serialize(obj1));
+            Assert.Equal(SimpleTestClassWithGenericCollectionWrappers.s_json.StripWhitespace(), JsonSerializer.Serialize<object>(obj1));
+
+            Assert.Equal(SimpleTestClassWithStringIEnumerableWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize(obj2));
+            Assert.Equal(SimpleTestClassWithStringIEnumerableWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize<object>(obj2));
+
+            Assert.Equal(SimpleTestClassWithStringIReadOnlyCollectionWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize(obj3));
+            Assert.Equal(SimpleTestClassWithStringIReadOnlyCollectionWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize<object>(obj3));
+
+            Assert.Equal(SimpleTestClassWithStringIReadOnlyListWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize(obj4));
+            Assert.Equal(SimpleTestClassWithStringIReadOnlyListWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize<object>(obj4));
+
+            Assert.Equal(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize(obj5));
+            Assert.Equal(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json.StripWhitespace(), JsonSerializer.Serialize<object>(obj5));
         }
     }
 }

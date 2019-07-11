@@ -25,12 +25,13 @@ namespace System.Text.Json
             Type parentClassType,
             Type declaredPropertyType,
             Type runtimePropertyType,
+            Type implementedPropertyType,
             PropertyInfo propertyInfo,
             Type elementType,
             JsonConverter converter,
             JsonSerializerOptions options)
         {
-            base.Initialize(parentClassType, declaredPropertyType, runtimePropertyType, propertyInfo, elementType, converter, options);
+            base.Initialize(parentClassType, declaredPropertyType, runtimePropertyType, implementedPropertyType, propertyInfo, elementType, converter, options);
 
             if (propertyInfo != null)
             {
@@ -122,6 +123,77 @@ namespace System.Text.Json
             return parentType;
         }
 
+        public override IEnumerable CreateDerivedEnumerableInstance(JsonPropertyInfo collectionPropertyInfo, IList sourceList, string jsonPath, JsonSerializerOptions options)
+        {
+            object instance = collectionPropertyInfo.DeclaredTypeClassInfo.CreateObject();
+
+            if (instance is IList instanceOfIList)
+            {
+                foreach (object item in sourceList)
+                {
+                    instanceOfIList.Add(item);
+                }
+                return instanceOfIList;
+            }
+            else if (instance is ICollection<TRuntimeProperty> instanceOfICollection)
+            {
+                foreach (TRuntimeProperty item in sourceList)
+                {
+                    instanceOfICollection.Add(item);
+                }
+                return instanceOfICollection;
+            }
+            else if (instance is Stack<TRuntimeProperty> instanceOfStack)
+            {
+                foreach (TRuntimeProperty item in sourceList)
+                {
+                    instanceOfStack.Push(item);
+                }
+                return instanceOfStack;
+            }
+            else if (instance is Queue<TRuntimeProperty> instanceOfQueue)
+            {
+                foreach (TRuntimeProperty item in sourceList)
+                {
+                    instanceOfQueue.Enqueue(item);
+                }
+                return instanceOfQueue;
+            }
+
+            // TODO: Use reflection to support types implementing Stack or Queue.
+
+            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(collectionPropertyInfo.DeclaredPropertyType, jsonPath);
+            return null;
+        }
+
+        public override object CreateDerivedDictionaryInstance(JsonPropertyInfo collectionPropertyInfo, IDictionary sourceDictionary, string jsonPath, JsonSerializerOptions options)
+        {
+            object instance = collectionPropertyInfo.DeclaredTypeClassInfo.CreateObject();
+
+            if (instance is IDictionary instanceOfIDictionary)
+            {
+                foreach (DictionaryEntry entry in sourceDictionary)
+                {
+                    instanceOfIDictionary.Add((string)entry.Key, entry.Value);
+                }
+                return instanceOfIDictionary;
+            }
+            else if (instance is IDictionary<string, TRuntimeProperty> instanceOfGenericIDictionary)
+            {
+                foreach (DictionaryEntry entry in sourceDictionary)
+                {
+                    instanceOfGenericIDictionary.Add((string)entry.Key, (TRuntimeProperty)entry.Value);
+                }
+                return instanceOfGenericIDictionary;
+            }
+
+            // TODO: Use reflection to support types implementing SortedList and maybe immutable dictionaries.
+
+            // Types implementing SortedList and immutable dictionaries will fail here.
+            ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(collectionPropertyInfo.DeclaredPropertyType, jsonPath);
+            return null;
+        }
+
         public override IEnumerable CreateIEnumerableInstance(Type parentType, IList sourceList, string jsonPath, JsonSerializerOptions options)
         {
             if (parentType.IsGenericType)
@@ -158,7 +230,7 @@ namespace System.Text.Json
                 {
                     return new ArrayList(sourceList);
                 }
-                // Stack and Queue go into this condition, unless we add a ref to System.Collections.NonGeneric.
+                // Stack and Queue go into this condition, until we support with reflection.
                 else
                 {
                     return (IEnumerable)Activator.CreateInstance(parentType, sourceList);
