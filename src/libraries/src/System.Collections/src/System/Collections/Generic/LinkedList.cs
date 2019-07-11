@@ -545,7 +545,7 @@ namespace System.Collections.Generic
                 _list = list;
                 _version = list.version;
                 _node = list.head;
-                _current = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _current = default;
                 _index = 0;
             }
 
@@ -597,7 +597,7 @@ namespace System.Collections.Generic
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
 
-                _current = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _current = default;
                 _node = _list.head;
                 _index = 0;
             }

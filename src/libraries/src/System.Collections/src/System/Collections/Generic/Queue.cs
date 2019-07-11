@@ -404,13 +404,13 @@ namespace System.Collections.Generic
                 _q = q;
                 _version = q._version;
                 _index = -1;
-                _currentElement = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _currentElement = default;
             }
 
             public void Dispose()
             {
                 _index = -2;
-                _currentElement = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _currentElement = default;
             }
 
             public bool MoveNext()
@@ -426,7 +426,7 @@ namespace System.Collections.Generic
                 {
                     // We've run past the last element
                     _index = -2;
-                    _currentElement = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    _currentElement = default;
                     return false;
                 }
 
@@ -478,7 +478,7 @@ namespace System.Collections.Generic
             {
                 if (_version != _q._version) throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 _index = -1;
-                _currentElement = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _currentElement = default;
             }
         }
     }

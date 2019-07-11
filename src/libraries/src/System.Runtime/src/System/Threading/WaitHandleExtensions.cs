@@ -35,7 +35,7 @@ namespace System.Threading
                 throw new ArgumentNullException(nameof(waitHandle));
             }
 
-            waitHandle.SafeWaitHandle = value!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            waitHandle.SafeWaitHandle = value;
         }
     }
 }
