@@ -139,6 +139,7 @@ __PInvokeGenStubFuncName SETS "$__PInvokeGenStubFuncName":CC:"_RetBuffArg"
             str     sp, [r0, #InlinedCallFrame__m_pCallSiteSP]
             str     r11, [r0, #InlinedCallFrame__m_pCalleeSavedFP]
             str     lr, [r0, #InlinedCallFrame__m_pCallerReturnAddress]
+            str     r9, [r0, #InlinedCallFrame__m_pSPAfterProlog]
 
             ;; r1 = GetThread(), TRASHES r2
             INLINE_GETTHREAD r1, r2

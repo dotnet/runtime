@@ -1024,6 +1024,7 @@ typedef unsigned char   regNumberSmall;
   #define RBM_OPT_RSVD             RBM_R10
 
   // We reserve R9 to store SP on entry for stack unwinding when localloc is used
+  // This needs to stay in sync with the ARM version of InlinedCallFrame::UpdateRegDisplay code.
   #define REG_SAVED_LOCALLOC_SP    REG_R9
   #define RBM_SAVED_LOCALLOC_SP    RBM_R9
 

@@ -1813,6 +1813,8 @@ struct CORINFO_EE_INFO
         unsigned    offsetOfCalleeSavedFP;
         unsigned    offsetOfCallTarget;
         unsigned    offsetOfReturnAddress;
+        // This offset is used only for ARM
+        unsigned    offsetOfSPAfterProlog;
     }
     inlinedCallFrameInfo;
 
