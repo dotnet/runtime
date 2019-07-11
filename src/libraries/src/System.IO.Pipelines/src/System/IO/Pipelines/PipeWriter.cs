@@ -16,10 +16,27 @@ namespace System.IO.Pipelines
         private PipeWriterStream _stream;
 
         /// <summary>
-        /// Marks the <see cref="PipeWriter"/> as being complete, meaning no more items will be written to it.
+        /// Marks the <see cref="PipeWriter"/> as being complete, meaning no more data will be written to it.
         /// </summary>
         /// <param name="exception">Optional <see cref="Exception"/> indicating a failure that's causing the pipeline to complete.</param>
         public abstract void Complete(Exception exception = null);
+
+        /// <summary>
+        /// Marks the <see cref="PipeWriter"/> as being complete, meaning no more data will be written to it.
+        /// </summary>
+        /// <param name="exception">Optional <see cref="Exception"/> indicating a failure that's causing the pipeline to complete.</param>
+        public virtual ValueTask CompleteAsync(Exception exception = null)
+        {
+            try
+            {
+                Complete(exception);
+                return default;
+            }
+            catch (Exception ex)
+            {
+                return new ValueTask(Task.FromException(ex));
+            }
+        }
 
         /// <summary>
         /// Cancel the pending <see cref="FlushAsync"/> operation. If there is none, cancels next <see cref="FlushAsync"/> operation, without completing the <see cref="PipeWriter"/>.

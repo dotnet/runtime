@@ -21,7 +21,6 @@ namespace System.IO.Pipelines.Tests
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new InvalidOperationException();
         }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
