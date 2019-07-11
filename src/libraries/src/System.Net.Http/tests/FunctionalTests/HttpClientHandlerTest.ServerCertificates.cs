@@ -223,6 +223,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (!PlatformDetection.IsWindows && remoteServer.HttpVersion == new Version(2, 0))
+            {
+                // ActiveIssue #39372: Certificate validation is asserting against the remote HTTP2 server on Linux
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {

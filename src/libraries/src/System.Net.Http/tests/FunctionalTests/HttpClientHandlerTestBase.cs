@@ -9,6 +9,7 @@ using System.Net.Test.Common;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.PlatformAbstractions;
 using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
@@ -121,6 +122,12 @@ namespace System.Net.Http.Functional.Tests
 
         protected HttpClient CreateHttpClientForRemoteServer(Configuration.Http.RemoteServer remoteServer, HttpClientHandler httpClientHandler)
         {
+            if (!PlatformDetection.IsWindows && remoteServer.HttpVersion == new Version(2, 0))
+            {
+                // ActiveIssue #39372: Certificate validation is asserting against the remote HTTP2 server on Linux
+                httpClientHandler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
+            }
+
             HttpMessageHandler wrappedHandler = httpClientHandler;
 
             // ActiveIssue #39293: WinHttpHandler will downgrade to 1.1 if you set Transfer-Encoding: chunked.
