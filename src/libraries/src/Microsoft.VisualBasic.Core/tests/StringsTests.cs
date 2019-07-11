@@ -1046,6 +1046,6 @@ namespace Microsoft.VisualBasic.Tests
             { "abab", "ab", 3, 1 },
         };
 
-        private static bool IsEnUS() => System.Threading.Thread.CurrentThread.CurrentUICulture.Name == "en-US";
+        private static bool IsEnUS() => System.Threading.Thread.CurrentThread.CurrentCulture.Name == "en-US";
     }
 }
