@@ -167,7 +167,7 @@ public class ReliabilityFramework
         foreach (string arg in args)
         {
             rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, String.Format("Argument: {0}", arg));
-            if (arg[0] == '/' || arg[0] == '-')
+            if (arg[0] == '-')
             {
                 if (String.Compare(arg.Substring(1), "replay", true) == 0)
                 {
@@ -207,14 +207,14 @@ public class ReliabilityFramework
         }
         if (!okToContinue)
         {
-            Console.WriteLine("\r\nWhidbey Host Interface Reliability Harness\r\n");
+            Console.WriteLine("\r\nHost Interface Reliability Harness\r\n");
             Console.WriteLine("Usage: ReliabiltityFramework [options] <test config file>");
             Console.WriteLine("");
             Console.WriteLine("Available options: ");
             Console.WriteLine("");
-            Console.WriteLine(" /replay     -   Replay from log file");
-            Console.WriteLine(" /{0}:<tests>	-	Comma delimited list of tests to run (no spaces)", sTests);
-            Console.WriteLine(" /{0}:<seed>	-	Random Number seed for replays", sSeed);
+            Console.WriteLine(" -replay     -   Replay from log file");
+            Console.WriteLine(" -{0}:<tests>	-	Comma delimited list of tests to run (no spaces)", sTests);
+            Console.WriteLine(" -{0}:<seed>	-	Random Number seed for replays", sSeed);
             rf._logger.WriteToInstrumentationLog(null, LoggingLevels.StartupShutdown, "Not ok to continue.");
 
 #if PROJECTK_BUILD
