@@ -2,115 +2,82 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Threading;
 using Xunit;
 
-public partial class TimerChangeTests
+namespace System.Threading.Tests
 {
-    private void EmptyTimerTarget(object o) { }
-
-    [Fact]
-    public void Timer_Change_NegativeTimeSpan_DueTime_Throws()
+    public class TimerChangeTests
     {
-        using (var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1))
+        private void EmptyTimerTarget(object o) { }
+
+        [Fact]
+        public void Timer_Change_DueTime_OutOfRange_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>t.Change(TimeSpan.FromMilliseconds(-2), new TimeSpan(1) /* not relevant */));
+            using (var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1))
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("dueTime", () => t.Change(-2, 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("dueTime", () => t.Change(-2L, 1L));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("dueTime", () => t.Change(TimeSpan.FromMilliseconds(-2), TimeSpan.FromSeconds(1)));
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("dueTime", () => t.Change(0xFFFFFFFFL, 1));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("dueTime", () => t.Change(TimeSpan.FromMilliseconds(0xFFFFFFFFL), TimeSpan.FromSeconds(1)));
+            }
         }
-    }
 
-    [Fact]
-    public void Timer_Change_NegativeTimeSpan_Period_Throws()
-    {
-        using (var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1))
+        [Fact]
+        public void Timer_Change_Period_OutOfRange_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => t.Change(new TimeSpan(1) /* not relevant */, TimeSpan.FromMilliseconds(-2)));
+            using (var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1))
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => t.Change(1, -2));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => t.Change(1L, -2L));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => t.Change(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(-2)));
+
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => t.Change(1, 0xFFFFFFFFL));
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => t.Change(TimeSpan.FromSeconds(1), TimeSpan.FromMilliseconds(0xFFFFFFFFL)));
+            }
         }
-    }
 
-    [Fact]
-    public void Timer_Change_NegativeInt_DueTime_Throws()
-    {
-        using (var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1))
+        [Fact]
+        public void Timer_Change_AfterDispose_Throws()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => t.Change(-2, 1 /* not relevant */));
+            var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1);
+            t.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => t.Change(1, 1));
+            Assert.Throws<ObjectDisposedException>(() => t.Change(1L, 1L));
+            Assert.Throws<ObjectDisposedException>(() => t.Change(1u, 1u));
+            Assert.Throws<ObjectDisposedException>(() => t.Change(TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1)));
         }
-    }
 
-    [Fact]
-    public void Timer_Change_NegativeInt_Period_Throws()
-    {
-        using (var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1))
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        public void Timer_Change_BeforeDueTime_ChangesWhenTimerWillFire(int mode)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => t.Change(1 /* not relevant */, -2));
+            var are = new AutoResetEvent(false);
+
+            using (var t = new Timer(_ => are.Set(), null, TimeSpan.FromSeconds(500), TimeSpan.FromMilliseconds(50)))
+            {
+                Assert.False(are.WaitOne(TimeSpan.FromMilliseconds(100)), "The reset event should not have been set yet");
+                switch (mode)
+                {
+                    case 0:
+                        t.Change(100, -1);
+                        break;
+                    case 1:
+                        t.Change(100L, -1L);
+                        break;
+                    case 2:
+                        t.Change(100u, uint.MaxValue);
+                        break;
+                    case 3:
+                        t.Change(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(-1));
+                        break;
+                }
+                Assert.True(are.WaitOne(TimeSpan.FromMilliseconds(TimerFiringTests.MaxPositiveTimeoutInMs)), "Should have received a timer event after this new duration");
+            }
         }
-    }
-
-    [Fact]
-    public void Timer_Change_TooLongTimeSpan_DueTime_Throws()
-    {
-        using (var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1))
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => t.Change(TimeSpan.FromMilliseconds((long)0xFFFFFFFF), new TimeSpan(1) /* not relevant */));
-        }
-    }
-
-    [Fact]
-    public void Timer_Change_TooLongTimeSpan_Period_Throws()
-    {
-        using (var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1))
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() => t.Change(new TimeSpan(1) /* not relevant */, TimeSpan.FromMilliseconds((long)0xFFFFFFFF)));
-        }
-    }
-
-    [Fact]
-    public void Timer_Change_TimeSpan_AfterDispose_Throws()
-    {
-        var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1);
-        t.Dispose();
-        Assert.Throws<ObjectDisposedException>(() => t.Change(TimeSpan.FromMilliseconds(1), TimeSpan.FromMilliseconds(1)));
-    }
-
-    [Fact]
-    public void Timer_Change_Int_AfterDispose_Throws()
-    {
-        var t = new Timer(new TimerCallback(EmptyTimerTarget), null, 1, 1);
-        t.Dispose();
-        Assert.Throws<ObjectDisposedException>(() => t.Change(1, 1));
-    }
-
-    [Fact]
-    public void Timer_Change_BeforeDueTime_ChangesWhenTimerWillFire()
-    {
-        AutoResetEvent are = new AutoResetEvent(false);
-
-        using (var t = new Timer(new TimerCallback((object s) =>
-        {
-            are.Set();
-        }), null, TimeSpan.FromSeconds(500), TimeSpan.FromMilliseconds(50)))
-        {
-            Assert.False(are.WaitOne(TimeSpan.FromMilliseconds(100)), "The reset event should not have been set yet");
-            t.Change(TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(-1));
-            Assert.True(are.WaitOne(TimeSpan.FromMilliseconds(TimerFiringTests.MaxPositiveTimeoutInMs)), "Should have received a timer event after this new duration");
-        }
-    }
-
-    [Fact]
-    public void Timer_Change_Int64_Negative()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Timer(EmptyTimerTarget).Change((long)-2, (long)-1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Timer(EmptyTimerTarget).Change((long)-1, (long)-2));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Timer(EmptyTimerTarget).Change((long)0xffffffff, (long)-1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Timer(EmptyTimerTarget).Change((long)-1, (long)0xffffffff));
-    }
-
-    [Fact]
-    public void Timer_Change_UInt32_Int64_AfterDispose_Throws()
-    {
-        var t = new Timer(EmptyTimerTarget);
-        t.Dispose();
-        Assert.Throws<ObjectDisposedException>(() => t.Change(0u, 0u));
-        Assert.Throws<ObjectDisposedException>(() => t.Change(0L, 0L));
     }
 }

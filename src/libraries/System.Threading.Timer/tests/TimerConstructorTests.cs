@@ -2,90 +2,62 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Threading;
+using System.Collections.Generic;
 using Xunit;
 
-public partial class TimerConstructorTests
+namespace System.Threading.Tests
 {
-    private void EmptyTimerTarget(object o) { }
-
-    [Fact]
-    public void Timer_Constructor_NegativeTimeSpan_Period_Throws()
+    public class TimerConstructorTests
     {
-        Assert.Throws<ArgumentOutOfRangeException>(new Action(() =>
+        public static IEnumerable<object[]> CallbacksForPeriodDueTimeOutOfRange()
         {
-            using (var t = new Timer(new TimerCallback(EmptyTimerTarget)/* not relevant */, null /* not relevant */, new TimeSpan(1) /* not relevant */, TimeSpan.FromMilliseconds(-2))) { }
-        }));
-    }
+            yield return new object[] { null };
+            yield return new object[] { new TimerCallback(_ => Assert.False(true, "Callback should not have been invoked.")) };
+        }
 
-    [Fact]
-    public void Timer_Constructor_NegativeInt_Period_Throws()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(new Action(() =>
+        [Theory]
+        [MemberData(nameof(CallbacksForPeriodDueTimeOutOfRange))]
+        public void Timer_Constructor_DueTimeOutOfRange_Throws(TimerCallback callback)
         {
-            using (var t = new Timer(new TimerCallback(EmptyTimerTarget)/* not relevant */, null /* not relevant */, 1 /* not relevant */, -2)) { }
-        }));
-    }
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("dueTime", () => new Timer(callback, null, -2, 1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("dueTime", () => new Timer(callback, null, TimeSpan.FromMilliseconds(-2), new TimeSpan(1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("dueTime", () => new Timer(callback, null, -2L, 1L));
 
-    [Fact]
-    public void Timer_Constructor_NegativeTimeSpan_DueTime_Throws()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(new Action(() =>
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("dueTime", () => new Timer(callback, null, TimeSpan.FromMilliseconds((long)0xFFFFFFFF), new TimeSpan(1)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("dueTime", () => new Timer(callback, null, 0xFFFFFFFFL, 1L));
+        }
+
+        [Theory]
+        [MemberData(nameof(CallbacksForPeriodDueTimeOutOfRange))]
+        public void Timer_Constructor_PeriodOutOfRange_Throws(TimerCallback callback)
         {
-            using (var t = new Timer(new TimerCallback(EmptyTimerTarget)/* not relevant */, null /* not relevant */, TimeSpan.FromMilliseconds(-2), new TimeSpan(1) /* not relevant */)) { }
-        }));
-    }
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => new Timer(callback, null, 1, -2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => new Timer(callback, null, new TimeSpan(1), TimeSpan.FromMilliseconds(-2)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => new Timer(callback, null, 1L, -2L));
 
-    [Fact]
-    public void Timer_Constructor_NegativeInt_DueTime_Throws()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(new Action(() =>
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => new Timer(callback, null, new TimeSpan(1), TimeSpan.FromMilliseconds(0xFFFFFFFF)));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("period", () => new Timer(callback, null, 1L, 0xFFFFFFFFL));
+        }
+
+
+        [Fact]
+        public void Timer_Constructor_NullCallback_Throws()
         {
-            using (var t = new Timer(new TimerCallback(EmptyTimerTarget)/* not relevant */, null /* not relevant */, -2, 1 /* not relevant */)) { }
-        }));
-    }
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => new Timer(null));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => new Timer(null, new object(), 1, 1));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => new Timer(null, new object(), 1L, 1L));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => new Timer(null, new object(), (uint)1, (uint)1));
+            AssertExtensions.Throws<ArgumentNullException>("callback", () => new Timer(null, new object(), TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1)));
+        }
 
-    [Fact]
-    public void Timer_Constructor_TooLongTimeSpan_Period_Throws()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(new Action(() =>
+        [Fact]
+        public void Timer_AllConstructorsCanBeUsedSuccessfully()
         {
-            using (var t = new Timer(new TimerCallback(EmptyTimerTarget)/* not relevant */, null /* not relevant */, new TimeSpan(1) /* not relevant */, TimeSpan.FromMilliseconds((long)0xFFFFFFFF))) { }
-        }));
-    }
-
-    [Fact]
-    public void Timer_Constructor_TooLongTimeSpan_DueTime_Throws()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(new Action(() =>
-        {
-            using (var t = new Timer(new TimerCallback(EmptyTimerTarget)/* not relevant */, null /* not relevant */, TimeSpan.FromMilliseconds((long)0xFFFFFFFF), new TimeSpan(1) /* not relevant */)) { }
-        }));
-    }
-
-    [Fact]
-    public void Timer_Constructor_Null_Callback_Throws()
-    {
-        Assert.Throws<ArgumentNullException>(new Action(() =>
-        {
-            using (var t = new Timer(null, null /* not relevant */, new TimeSpan(1) /* not relevant */, new TimeSpan(1) /* not relevant */)) { }
-        }));
-    }
-
-    [Fact]
-    public void Timer_Constructor_CallbackOnly_Negative()
-    {
-        Assert.Throws<ArgumentNullException>(() => new Timer(null));
-    }
-
-    [Fact]
-    public void Timer_Constructor_Int64_Negative()
-    {
-        Assert.Throws<ArgumentNullException>(() => new Timer(null, null, (long)-1, (long)-1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Timer(EmptyTimerTarget, null, (long)-2, (long)-1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Timer(EmptyTimerTarget, null, (long)-1, (long)-2));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Timer(EmptyTimerTarget, null, (long)0xffffffff, (long)-1));
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Timer(EmptyTimerTarget, null, (long)-1, (long)0xffffffff));
+            const int Timeout = 10_000;
+            new Timer(_ => { }, null, Timeout, Timeout).Dispose();
+            new Timer(_ => { }, null, (long)Timeout, (long)Timeout).Dispose();
+            new Timer(_ => { }, null, (uint)Timeout, (uint)Timeout).Dispose();
+            new Timer(_ => { }, null, TimeSpan.FromMilliseconds(Timeout), TimeSpan.FromMilliseconds(Timeout)).Dispose();
+        }
     }
 }

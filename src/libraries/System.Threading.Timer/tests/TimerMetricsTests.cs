@@ -2,75 +2,75 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tests;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
-public static partial class TimerMetricsTests
+namespace System.Threading.Tests
 {
-    [Fact]
-    public static void CountTest()
+    public class TimerMetricsTests
     {
-        RemoteExecutor.Invoke(() =>
+        [Fact]
+        public void CountTest()
         {
-            const int TimersPerThread = 64;
-            int processorCount = Environment.ProcessorCount;
-            int totalTimerCount = processorCount * TimersPerThread;
-
-            var timers = new List<Timer>(totalTimerCount);
-            TimerCallback timerCallback = _ => { };
-            var startCreateTimerThreads = new ManualResetEvent(false);
-            Action createTimerThreadStart = () =>
+            RemoteExecutor.Invoke(() =>
             {
-                startCreateTimerThreads.WaitOne();
-                for (int i = 0; i < TimersPerThread; ++i)
+                const int TimersPerThread = 64;
+                int processorCount = Environment.ProcessorCount;
+                int totalTimerCount = processorCount * TimersPerThread;
+
+                var timers = new List<Timer>(totalTimerCount);
+                TimerCallback timerCallback = _ => { };
+                var startCreateTimerThreads = new ManualResetEvent(false);
+                Action createTimerThreadStart = () =>
                 {
-                    lock (timers)
+                    startCreateTimerThreads.WaitOne();
+                    for (int i = 0; i < TimersPerThread; ++i)
                     {
-                        timers.Add(
-                            new Timer(
-                                timerCallback,
-                                null,
-                                ThreadTestHelpers.UnexpectedTimeoutMilliseconds,
-                                ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
-                        Assert.True(Timer.ActiveCount >= timers.Count);
+                        lock (timers)
+                        {
+                            timers.Add(
+                                new Timer(
+                                    timerCallback,
+                                    null,
+                                    ThreadTestHelpers.UnexpectedTimeoutMilliseconds,
+                                    ThreadTestHelpers.UnexpectedTimeoutMilliseconds));
+                            Assert.True(Timer.ActiveCount >= timers.Count);
+                        }
+                    }
+                };
+                var waitsForThread = new Action[processorCount];
+                for (int i = 0; i < processorCount; ++i)
+                {
+                    Thread t = ThreadTestHelpers.CreateGuardedThread(out waitsForThread[i], createTimerThreadStart);
+                    t.IsBackground = true;
+                    t.Start();
+                }
+
+                startCreateTimerThreads.Set();
+                foreach (Action waitForThread in waitsForThread)
+                {
+                    waitForThread();
+                }
+
+                // To leave some room for unknown timers to be scheduled and removed, remove a large number of timers at a time and
+                // verify that the timer count has decreased
+                while (timers.Count > 0)
+                {
+                    long timerCountBeforeRemove = Timer.ActiveCount;
+                    int endIndex = timers.Count - processorCount * 8;
+                    for (int i = timers.Count - 1; i >= Math.Max(0, endIndex); --i)
+                    {
+                        timers[i].Dispose();
+                        timers.RemoveAt(i);
+                    }
+
+                    if (endIndex >= 0)
+                    {
+                        Assert.True(Timer.ActiveCount < timerCountBeforeRemove);
                     }
                 }
-            };
-            var waitsForThread = new Action[processorCount];
-            for (int i = 0; i < processorCount; ++i)
-            {
-                Thread t = ThreadTestHelpers.CreateGuardedThread(out waitsForThread[i], createTimerThreadStart);
-                t.IsBackground = true;
-                t.Start();
-            }
-
-            startCreateTimerThreads.Set();
-            foreach (Action waitForThread in waitsForThread)
-            {
-                waitForThread();
-            }
-
-            // To leave some room for unknown timers to be scheduled and removed, remove a large number of timers at a time and
-            // verify that the timer count has decreased
-            while (timers.Count > 0)
-            {
-                long timerCountBeforeRemove = Timer.ActiveCount;
-                int endIndex = timers.Count - processorCount * 8;
-                for (int i = timers.Count - 1; i >= Math.Max(0, endIndex); --i)
-                {
-                    timers[i].Dispose();
-                    timers.RemoveAt(i);
-                }
-
-                if (endIndex >= 0)
-                {
-                    Assert.True(Timer.ActiveCount < timerCountBeforeRemove);
-                }
-            }
-        }).Dispose();
+            }).Dispose();
+        }
     }
 }
