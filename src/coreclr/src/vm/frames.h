@@ -3024,6 +3024,13 @@ public:
     // stubs, since there is no easy way to inline an implementation of GetThread.
     PTR_VOID             m_pThread;
 
+#ifdef _TARGET_ARM_
+    // Store the value of SP after prolog to ensure we can unwind functions that use
+    // stackalloc. In these functions, the m_pCallSiteSP can already be augmented by
+    // the stackalloc size, which is variable.
+    TADDR               m_pSPAfterProlog;
+#endif // _TARGET_ARM_
+
 public:
     //---------------------------------------------------------------
     // Expose key offsets and values for stub generation.
