@@ -18,7 +18,6 @@ namespace System.IO.Pipelines.Tests
 
         public override void Flush()
         {
-            throw new InvalidOperationException();
         }
 
         public override int Read(byte[] buffer, int offset, int count)

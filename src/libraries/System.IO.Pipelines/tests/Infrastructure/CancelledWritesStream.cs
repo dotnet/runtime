@@ -15,7 +15,6 @@ namespace System.IO.Pipelines.Tests
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            throw new NotImplementedException();
         }
 
         public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)

@@ -22,8 +22,43 @@ namespace System.IO.Pipelines.Tests
 
             Assert.Equal(0, stream.Length);
 
-            // This throws
             writer.Complete();
+        }
+
+        [Fact]
+        public void DataFlushedOnComplete()
+        {
+            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            var stream = new MemoryStream();
+            PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
+
+            bytes.AsSpan().CopyTo(writer.GetSpan(bytes.Length));
+            writer.Advance(bytes.Length);
+
+            Assert.Equal(0, stream.Length);
+
+            writer.Complete();
+
+            Assert.Equal(bytes.Length, stream.Length);
+            Assert.Equal("Hello World", Encoding.ASCII.GetString(stream.ToArray()));
+        }
+
+        [Fact]
+        public async Task DataFlushedOnCompleteAsync()
+        {
+            byte[] bytes = Encoding.ASCII.GetBytes("Hello World");
+            var stream = new MemoryStream();
+            PipeWriter writer = PipeWriter.Create(stream, new StreamPipeWriterOptions(leaveOpen: true));
+
+            bytes.AsSpan().CopyTo(writer.GetSpan(bytes.Length));
+            writer.Advance(bytes.Length);
+
+            Assert.Equal(0, stream.Length);
+
+            await writer.CompleteAsync();
+
+            Assert.Equal(bytes.Length, stream.Length);
+            Assert.Equal("Hello World", Encoding.ASCII.GetString(stream.ToArray()));
         }
 
         [Fact]
