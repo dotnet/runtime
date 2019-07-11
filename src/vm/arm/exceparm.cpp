@@ -102,8 +102,10 @@ AdjustContextForVirtualStub(
     PCODE callsite = GetAdjustedCallAddress(GetLR(pContext)); 
 
     // Lr must already have been saved before calling so it should not be necessary to restore Lr
-
-    pExceptionRecord->ExceptionAddress = (PVOID)callsite;
+    if (pExceptionRecord != NULL)
+    {
+        pExceptionRecord->ExceptionAddress = (PVOID)callsite;
+    }
     SetIP(pContext, callsite);
 
     return TRUE;
