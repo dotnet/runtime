@@ -62,7 +62,7 @@ namespace System.Threading.Tasks
     public class Task<TResult> : Task
     {
         // The value itself, if set.
-        [MaybeNull] internal TResult m_result = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+        [MaybeNull] internal TResult m_result = default!;
 
         private static readonly TaskFactory<TResult> s_Factory = new TaskFactory<TResult>();
 

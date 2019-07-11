@@ -80,7 +80,7 @@ namespace System
                 {
                     foreach (string name in environmentKey.GetValueNames())
                     {
-                        string? value = environmentKey.GetValue(name, "")!.ToString(); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                        string? value = environmentKey.GetValue(name, "")!.ToString(); // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
                         try
                         {
                             results.Add(name, value);

@@ -17,9 +17,7 @@ namespace System.Collections.Generic
         public abstract bool Equals([AllowNull] T x, [AllowNull] T y);
         public abstract int GetHashCode([DisallowNull] T obj);
 
-#pragma warning disable CS8617 // TODO-NULLABLE: Covariance in interfaces (https://github.com/dotnet/roslyn/issues/35227)
         int IEqualityComparer.GetHashCode(object? obj)
-#pragma warning restore CS8617
         {
             if (obj == null) return 0;
             if (obj is T) return GetHashCode((T)obj);

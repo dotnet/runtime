@@ -339,7 +339,7 @@ namespace System.Runtime.CompilerServices
                                 _currentIndex++;
                                 if (c.TryGetEntry(_currentIndex, out TKey? key, out TValue value))
                                 {
-                                    _current = new KeyValuePair<TKey, TValue>(key!, value); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                                    _current = new KeyValuePair<TKey, TValue>(key, value);
                                     return true;
                                 }
                             }

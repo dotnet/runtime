@@ -1092,7 +1092,7 @@ namespace System.Collections.Generic
                 _list = list;
                 _index = 0;
                 _version = list._version;
-                _current = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _current = default;
             }
 
             public void Dispose()
@@ -1120,7 +1120,7 @@ namespace System.Collections.Generic
                 }
 
                 _index = _list._size + 1;
-                _current = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _current = default;
                 return false;
             }
 
@@ -1146,7 +1146,7 @@ namespace System.Collections.Generic
                 }
 
                 _index = 0;
-                _current = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                _current = default;
             }
         }
     }
