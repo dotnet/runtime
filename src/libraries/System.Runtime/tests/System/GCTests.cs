@@ -487,6 +487,7 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => GC.WaitForFullGCComplete(-2));
         }
 
+        [ActiveIssue(39374)]
         [Theory]
         [InlineData(true, -1)]
         [InlineData(false, -1)]
