@@ -84,6 +84,8 @@ namespace System.Net.Http
 
 #if HTTP_DLL
         internal override Stream TryCreateContentReadStream() => _content;
+
+        internal override bool AllowDuplex => false;
 #endif
     }
 }

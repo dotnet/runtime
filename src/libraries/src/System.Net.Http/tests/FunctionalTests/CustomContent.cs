@@ -2,36 +2,34 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http.Functional.Tests
 {
-    internal partial class CustomContent : StreamContent
+    internal partial class CustomContent : HttpContent
     {
-        private long _length;
+        private readonly Stream _stream;
 
-        public static CustomContent Create(string data, bool rewindable)
-        {
-            byte[] bytes = Encoding.UTF8.GetBytes(data);
-            Stream stream = new CustomStream(bytes, rewindable);
-            
-            return new CustomContent(stream, bytes.Length);
-        }
+        public CustomContent(Stream stream) => _stream = stream;
 
-        private CustomContent(Stream stream, long length) : base(stream)
-        {
-            _length = length;
-        }
+        protected override Task<Stream> CreateContentReadStreamAsync() =>
+            Task.FromResult(_stream);
 
-        public long Length
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+            _stream.CopyToAsync(stream);
+
+        protected override bool TryComputeLength(out long length)
         {
-            get
+            if (_stream.CanSeek)
             {
-                return _length;
+                length = _stream.Length;
+                return true;
+            }
+            else
+            {
+                length = 0;
+                return false;
             }
         }
 

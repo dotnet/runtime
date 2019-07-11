@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 
 using Xunit;
 using Xunit.Abstractions;
+using System.Collections;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -1601,7 +1602,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var request = new HttpRequestMessage(HttpMethod.Post, url);
                     request.Version = new Version(2,0);
-                    request.Content = new StreamContent(stream);
+                    request.Content = new CustomContent(stream);
 
                     await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await client.SendAsync(request, cts.Token));
 
@@ -1732,7 +1733,7 @@ namespace System.Net.Http.Functional.Tests
                 string content = new string('*', 300);
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Version = new Version(2,0);
-                request.Content = new StreamContent(new CustomContent.SlowTestStream(Encoding.UTF8.GetBytes(content), null, count : 20));
+                request.Content = new CustomContent(new CustomContent.SlowTestStream(Encoding.UTF8.GetBytes(content), null, count : 20));
                 HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -1835,7 +1836,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var request = new HttpRequestMessage(HttpMethod.Post, url);
                     request.Version = new Version(2,0);
-                    request.Content = new StreamContent(stream);
+                    request.Content = new CustomContent(stream);
                     request.Headers.ExpectContinue = true;
                     request.Headers.Add("x-test", "PostAsyncExpect100Continue_LateForbiddenResponse_Ok");
 
@@ -1886,7 +1887,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var request = new HttpRequestMessage(HttpMethod.Post, url);
                     request.Version = new Version(2,0);
-                    request.Content = new StreamContent(stream);
+                    request.Content = new CustomContent(stream);
 
                     HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
                     Assert.Equal(responseCode, response.StatusCode);
@@ -1944,7 +1945,7 @@ namespace System.Net.Http.Functional.Tests
                 {
                     var request = new HttpRequestMessage(HttpMethod.Post, url);
                     request.Version = new Version(2,0);
-                    request.Content = new StreamContent(stream);
+                    request.Content = new CustomContent(stream);
 
                     // This should fail either while getting response headers or while reading response body.
                     HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
@@ -1987,6 +1988,56 @@ namespace System.Net.Http.Functional.Tests
                     await connection.WaitForConnectionShutdownAsync();
                 }
                 catch { };
+            });
+        }
+
+        [Fact]
+        [OuterLoop("Waits for seconds for events that shouldn't happen")]
+        public async Task SendAsync_StreamContentRequestBody_WaitsForRequestBodyToComplete()
+        {
+            var waitToSendRequestBody = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var sendAsyncCompleted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            // Create a content stream that will wait for a signal before it dribbles out some request content.
+            int sent = 0;
+            var stream = new DelegateStream(
+                canReadFunc: () => true,
+                readAsyncFunc: async (buffer, offset, count, token) =>
+                {
+                    await waitToSendRequestBody.Task;
+                    return sent++ < 10 ? 1 : 0;
+                });
+
+            await Http2LoopbackServer.CreateClientAndServerAsync(async url =>
+            {
+                using (HttpClient client = CreateHttpClient())
+                {
+                    // Connect to the server and SendAsync.
+                    var request = new HttpRequestMessage(HttpMethod.Post, url);
+                    request.Version = new Version(2, 0);
+                    request.Content = new StreamContent(stream);
+                    Task<HttpResponseMessage> sendAsyncTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+
+                    // Wait a bit, and confirm SendAsync hasn't completed yet (because the request content can't have finished yet).
+                    await Task.Delay(1000);
+                    Assert.False(sendAsyncTask.IsCompleted);
+
+                    // Now let the request content go.  The SendAsync task should complete quickly.
+                    waitToSendRequestBody.SetResult(true);
+                    using (HttpResponseMessage r = await sendAsyncTask)
+                    {
+                        // Wake up the server.
+                        sendAsyncCompleted.SetResult(true);
+                    }
+                }
+            },
+            async server =>
+            {
+                Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
+                (int streamId, HttpRequestData requestData) = await connection.ReadAndParseRequestHeaderAsync().ConfigureAwait(false);
+                await connection.SendResponseHeadersAsync(streamId);
+                await sendAsyncCompleted.Task;
+                await connection.WaitForConnectionShutdownAsync();
             });
         }
 

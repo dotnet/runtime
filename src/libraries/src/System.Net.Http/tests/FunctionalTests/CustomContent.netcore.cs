@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http.Functional.Tests
 {
-    internal partial class CustomContent : StreamContent
+    internal partial class CustomContent : HttpContent
     {
         internal class SlowTestStream : CustomStream
         {

@@ -70,5 +70,7 @@ namespace System.Net.Http
             null;
 
         internal MemoryStream CreateMemoryStreamForByteArray() => new MemoryStream(_content, _offset, _count, writable: false);
+
+        internal override bool AllowDuplex => false;
     }
 }
