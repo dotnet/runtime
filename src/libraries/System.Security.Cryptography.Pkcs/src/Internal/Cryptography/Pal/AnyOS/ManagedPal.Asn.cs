@@ -26,6 +26,11 @@ namespace Internal.Cryptography.Pal.AnyOS
 
         public override byte[] DecodeOctetString(byte[] encodedOctets)
         {
+            return DecodeOctetStringCore(encodedOctets);
+        }
+
+        public static byte[] DecodeOctetStringCore(byte[] encodedOctets)
+        {
             // Read using BER because the CMS specification says the encoding is BER.
             AsnReader reader = new AsnReader(encodedOctets, AsnEncodingRules.BER);
 

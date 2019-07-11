@@ -13,8 +13,6 @@ namespace Internal.Cryptography.Pal.AnyOS
 {
     internal sealed partial class ManagedPkcsPal : PkcsPal
     {
-        internal new static readonly ManagedPkcsPal Instance = new ManagedPkcsPal();
-
         public override void AddCertsFromStoreForDecryption(X509Certificate2Collection certs)
         {
             certs.AddRange(PkcsHelpers.GetStoreCertificates(StoreName.My, StoreLocation.CurrentUser, openExistingOnly: false));

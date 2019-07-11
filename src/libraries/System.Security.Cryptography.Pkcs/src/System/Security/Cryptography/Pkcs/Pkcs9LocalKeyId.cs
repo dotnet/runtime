@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.Pkcs
                 return null;
             }
 
-            return ManagedPkcsPal.Instance.DecodeOctetString(rawData);
+            return ManagedPkcsPal.DecodeOctetStringCore(rawData);
         }
     }
 }
