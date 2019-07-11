@@ -616,7 +616,7 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, __out_z __inout_e
         W("X7"),
         W("X8"),  W("X9"),  W("X10"), W("X11"), W("X12"), W("X13"), W("X14"), W("X15"), W("X16"), W("X17"), 
         W("X18"), W("X19"), W("X20"), W("X21"), W("X22"), W("X23"), W("X24"), W("X25"), W("X26"), W("X27"), 
-        W("X28"), W("Fp"),  W("Sp"),  W("Lr")
+        W("X28"), W("Fp"),  W("Lr"),  W("Sp")
     };
 #elif defined(_TARGET_X86_)
     static const wchar_t *regs[] = 
