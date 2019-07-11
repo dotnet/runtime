@@ -108,6 +108,7 @@ fi
 
 # run all xunit tests
 if [ "$test" = "true" ]; then
+  make update-tests-corefx
   for testdir in corefx/tests/extracted/*; do
     ../scripts/ci/./run-step.sh --label=$(basename $testdir) --timeout=15m make run-tests-corefx-$(basename $testdir)
   done

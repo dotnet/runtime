@@ -3905,6 +3905,11 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 	if (mono_profiler_coverage_instrumentation_enabled (method))
 		return FALSE;
 
+#if ENABLE_NETCORE
+	if (!cfg->ret_var_set)
+		return FALSE;
+#endif
+		
 	return TRUE;
 }
 

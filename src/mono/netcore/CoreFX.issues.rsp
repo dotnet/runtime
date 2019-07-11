@@ -883,10 +883,6 @@
 ##  System.Diagnostics.StackTrace.Tests
 ####################################################################
 
-# ArgumentNullException thrown
-# https://github.com/mono/mono/issues/15182
--nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames
-
 # Expected -1, but got 0
 # https://github.com/mono/mono/issues/15183
 -nomethod System.Diagnostics.Tests.StackFrameTests.Ctor_SkipFrames
@@ -906,10 +902,6 @@
 # Assertion differences.  Expects -1, got 0
 # https://github.com/mono/mono/issues/15187
 -nomethod System.Diagnostics.Tests.StackFrameTests.Ctor_SkipFrames_FNeedFileInfo
-
-# ArgumentNullException : Value cannot be null
-# https://github.com/mono/mono/issues/15188
--nomethod System.Diagnostics.Tests.StackTraceTests.Ctor_Exception_SkipFrames_FNeedFileInfo
 
 ####################################################################
 ##  System.Drawing.Common.Tests
