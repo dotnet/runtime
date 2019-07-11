@@ -1,7 +1,31 @@
 #!/bin/bash
 
-export CORE_ROOT=`pwd`/bin/tests/Windows_NT.$1.$2/Tests/coreoverlay
-FRAMEWORK_DIR=`pwd`/bin/tests/Windows_NT.$1.$2/GC/Stress/Framework/ReliabilityFramework
+OSName=$(uname -s)
+case $OSName in
+    Darwin)
+        OS=OSX
+        ;;
+
+    FreeBSD)
+        OS=FreeBSD
+        ;;
+
+    Linux)
+        OS=Linux
+        ;;
+
+    NetBSD)
+        OS=NetBSD
+        ;;
+
+    *)
+        echo "Unsupported OS $OSName detected, configuring as if for Linux"
+        OS=Linux
+        ;;
+esac
+
+export CORE_ROOT=`pwd`/bin/tests/$OSName.$1.$2/Tests/Core_Root
+FRAMEWORK_DIR=`pwd`/bin/tests/$OSName.$1.$2/GC/Stress/Framework/ReliabilityFramework
 $CORE_ROOT/corerun $FRAMEWORK_DIR/ReliabilityFramework.exe $FRAMEWORK_DIR/testmix_gc.config
 EXIT_CODE=$?
 if [ $EXIT_CODE -eq 100 ]
