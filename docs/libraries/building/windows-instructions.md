@@ -124,6 +124,13 @@ For more details, or to test an individual project, see the [developer guide top
 4. Select the corresponding launch profile (green arrow, i.e. `.NET Core xUnit Console`)
 5. F5 (Debug)
 
+### Using Test Explorer in Visual Studio
+
+1. Open solution from the build script: `.\build.cmd -vs Microsoft.CSharp`. Alternatively you can also pass in the relative or full path to the solution file.
+2. Navigate to the Test Explorer tab and run/debug tests.
+
+VS Test Explorer support is limited to the .NET Core. To switch between Configurations (Debug / Release), Visual Studio needs to be reopened with the command above together with the additional `--configuration/-c` option.
+
 For advanced debugging using WinDBG see [Debugging CoreFX on Windows](https://github.com/dotnet/corefx/blob/master/Documentation/debugging/windows-instructions.md)
 
 ### Notes
@@ -131,7 +138,5 @@ For advanced debugging using WinDBG see [Debugging CoreFX on Windows](https://gi
 the one used by the installed .NET Core SDK. This means the corefx codebase might
 be using language features that are not understood by the IDE, which might result in errors that
 show up as red squiggles while writing code. Such errors should, however, not affect the actual compilation.
-
-* Running tests from using the VS test explorer does not currently work after we switched to running on CoreCLR. [We are actively working on enabling full VS test integration](https://github.com/dotnet/corefx/issues/20627) but we don't have an ETA yet. In the meantime, use the steps above to launch/debug the tests using the console runner.
 
 * If your build fails with "[...].dll - Access is denied" errors, it might be because Visual Studio/MSBuild is locking these files. Run `taskkill /im dotnet.exe /f` to shutdown all currently running dotnet instances.
