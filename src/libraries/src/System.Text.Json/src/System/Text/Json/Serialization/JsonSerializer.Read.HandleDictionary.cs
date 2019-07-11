@@ -42,7 +42,7 @@ namespace System.Text.Json
 
                 if (state.Current.IsProcessingIDictionaryConstructible)
                 {
-                    state.Current.TempDictionaryValues = (IDictionary)classInfo.CreateObject();
+                    state.Current.TempDictionaryValues = (IDictionary)classInfo.CreateConcreteDictionary();
                 }
                 else
                 {
@@ -61,8 +61,16 @@ namespace System.Text.Json
 
             if (state.Current.IsProcessingIDictionaryConstructible)
             {
-                JsonClassInfo dictionaryClassInfo = options.GetOrAddClass(jsonPropertyInfo.RuntimePropertyType);
-                state.Current.TempDictionaryValues = (IDictionary)dictionaryClassInfo.CreateObject();
+                JsonClassInfo dictionaryClassInfo;
+                if (jsonPropertyInfo.DeclaredPropertyType == jsonPropertyInfo.ImplementedPropertyType)
+                {
+                    dictionaryClassInfo = options.GetOrAddClass(jsonPropertyInfo.RuntimePropertyType);
+                }
+                else
+                {
+                    dictionaryClassInfo = options.GetOrAddClass(jsonPropertyInfo.DeclaredPropertyType);
+                }
+                state.Current.TempDictionaryValues = (IDictionary)dictionaryClassInfo.CreateConcreteDictionary();
             }
             // Else if current property is already set (from a constructor, for example), leave as-is.
             else if (jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue) == null)

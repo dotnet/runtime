@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using Xunit;
 
@@ -19,6 +20,13 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(2, result[0][1]);
             Assert.Equal(3, result[1][0]);
             Assert.Equal(4, result[1][1]);
+
+            GenericListWrapper<StringListWrapper> result2 = JsonSerializer.Deserialize<GenericListWrapper<StringListWrapper>>(@"[[""1"",""2""],[""3"",""4""]]");
+
+            Assert.Equal("1", result2[0][0]);
+            Assert.Equal("2", result2[0][1]);
+            Assert.Equal("3", result2[1][0]);
+            Assert.Equal("4", result2[1][1]);
         }
 
         [Fact]
@@ -30,6 +38,13 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(2, result[0][1]);
             Assert.Equal(3, result[1][0]);
             Assert.Equal(4, result[1][1]);
+
+            GenericListWrapper<string[]> result2 = JsonSerializer.Deserialize<GenericListWrapper<string[]>>(@"[[""1"",""2""],[""3"",""4""]]");
+
+            Assert.Equal("1", result2[0][0]);
+            Assert.Equal("2", result2[0][1]);
+            Assert.Equal("3", result2[1][0]);
+            Assert.Equal("4", result2[1][1]);
         }
 
         [Fact]
@@ -41,10 +56,16 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(2, result[0][1]);
             Assert.Equal(3, result[1][0]);
             Assert.Equal(4, result[1][1]);
+
+            StringListWrapper[] result2 = JsonSerializer.Deserialize<StringListWrapper[]>(@"[[""1"",""2""],[""3"",""4""]]");
+            Assert.Equal("1", result2[0][0]);
+            Assert.Equal("2", result2[0][1]);
+            Assert.Equal("3", result2[1][0]);
+            Assert.Equal("4", result2[1][1]);
         }
 
         [Fact]
-        public static void ReadPrimitiveList()
+        public static void ReadSimpleList()
         {
             List<int> i = JsonSerializer.Deserialize<List<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
             Assert.Equal(1, i[0]);
@@ -52,10 +73,17 @@ namespace System.Text.Json.Serialization.Tests
 
             i = JsonSerializer.Deserialize<List<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, i.Count);
+
+            StringListWrapper i2 = JsonSerializer.Deserialize<StringListWrapper>(@"[""1"",""2""]");
+            Assert.Equal("1", i2[0]);
+            Assert.Equal("2", i2[1]);
+
+            i2 = JsonSerializer.Deserialize<StringListWrapper>(@"[]");
+            Assert.Equal(0, i2.Count);
         }
 
         [Fact]
-        public static void ReadIEnumerableTOfIEnumerableT()
+        public static void ReadGenericIEnumerableOfGenericIEnumerable()
         {
             IEnumerable<IEnumerable<int>> result = JsonSerializer.Deserialize<IEnumerable<IEnumerable<int>>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -67,6 +95,9 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            // No way to populate this collection.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<GenericIEnumerableWrapper<StringIEnumerableWrapper>>(@"[[""1"",""2""],[""3"",""4""]]"));
         }
 
         [Fact]
@@ -82,6 +113,9 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            // No way to populate this collection.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<GenericIEnumerableWrapper<int[]>>(@"[[1,2],[3, 4]]"));
         }
 
         [Fact]
@@ -97,10 +131,13 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            // No way to populate this collection.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIEnumerableWrapper[]>(@"[[""1"",""2""],[""3"",""4""]]"));
         }
 
         [Fact]
-        public static void ReadPrimitiveIEnumerableT()
+        public static void ReadSimpleGenericIEnumerable()
         {
             IEnumerable<int> result = JsonSerializer.Deserialize<IEnumerable<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
             int expected = 1;
@@ -112,6 +149,10 @@ namespace System.Text.Json.Serialization.Tests
 
             result = JsonSerializer.Deserialize<IEnumerable<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
+
+            // There is no way to populate this collection.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIEnumerableWrapper>(@"[""1"",""2""]"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIEnumerableWrapper>(@"[]"));
         }
 
         [Fact]
@@ -127,10 +168,21 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            GenericIListWrapper<StringIListWrapper> result2 = JsonSerializer.Deserialize<GenericIListWrapper<StringIListWrapper>>(@"[[""1"",""2""],[""3"",""4""]]");
+            expected = 1;
+
+            foreach (StringIListWrapper il in result2)
+            {
+                foreach (string str in il)
+                {
+                    Assert.Equal($"{expected++}", str);
+                }
+            }
         }
 
         [Fact]
-        public static void ReadIListTOfArray()
+        public static void ReadGenericIListOfArray()
         {
             IList<int[]> result = JsonSerializer.Deserialize<IList<int[]>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -140,6 +192,17 @@ namespace System.Text.Json.Serialization.Tests
                 foreach (int i in arr)
                 {
                     Assert.Equal(expected++, i);
+                }
+            }
+
+            GenericIListWrapper<string[]> result2 = JsonSerializer.Deserialize<GenericIListWrapper<string[]>>(@"[[""1"",""2""],[""3"",""4""]]");
+            expected = 1;
+
+            foreach (string[] arr in result2)
+            {
+                foreach (string str in arr)
+                {
+                    Assert.Equal($"{expected++}", str);
                 }
             }
         }
@@ -157,10 +220,21 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            StringIListWrapper[] result2 = JsonSerializer.Deserialize<StringIListWrapper[]>(@"[[""1"",""2""],[""3"",""4""]]");
+            expected = 1;
+
+            foreach (StringIListWrapper il in result2)
+            {
+                foreach (string str in il)
+                {
+                    Assert.Equal($"{expected++}", str);
+                }
+            }
         }
 
         [Fact]
-        public static void ReadPrimitiveIListT()
+        public static void ReadSimpleGenericIList()
         {
             IList<int> result = JsonSerializer.Deserialize<IList<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
             int expected = 1;
@@ -172,10 +246,21 @@ namespace System.Text.Json.Serialization.Tests
 
             result = JsonSerializer.Deserialize<IList<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
+
+            StringIListWrapper result2 = JsonSerializer.Deserialize<StringIListWrapper>(@"[""1"",""2""]");
+            expected = 1;
+
+            foreach (string str in result2)
+            {
+                Assert.Equal($"{expected++}", str);
+            }
+
+            result2 = JsonSerializer.Deserialize<StringIListWrapper>(@"[]");
+            Assert.Equal(0, result2.Count());
         }
 
         [Fact]
-        public static void ReadICollectionTOfICollectionT()
+        public static void ReadGenericICollectionOfGenericICollection()
         {
             ICollection<ICollection<int>> result = JsonSerializer.Deserialize<ICollection<ICollection<int>>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -187,10 +272,21 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            GenericICollectionWrapper<StringICollectionWrapper> result2 = JsonSerializer.Deserialize<GenericICollectionWrapper<StringICollectionWrapper>>(@"[[""1"",""2""],[""3"",""4""]]");
+            expected = 1;
+
+            foreach (StringICollectionWrapper ic in result2)
+            {
+                foreach (string str in ic)
+                {
+                    Assert.Equal($"{expected++}", str);
+                }
+            }
         }
 
         [Fact]
-        public static void ReadICollectionTOfArray()
+        public static void ReadGenericICollectionOfArray()
         {
             ICollection<int[]> result = JsonSerializer.Deserialize<ICollection<int[]>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -202,10 +298,21 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            GenericICollectionWrapper<string[]> result2 = JsonSerializer.Deserialize<GenericICollectionWrapper<string[]>>(@"[[""1"",""2""],[""3"",""4""]]");
+            expected = 1;
+
+            foreach (string[] arr in result2)
+            {
+                foreach (string str in arr)
+                {
+                    Assert.Equal($"{expected++}", str);
+                }
+            }
         }
 
         [Fact]
-        public static void ReadArrayOfICollectionT()
+        public static void ReadArrayOfGenericICollection()
         {
             ICollection<int>[] result = JsonSerializer.Deserialize<ICollection<int>[]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -220,7 +327,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadPrimitiveICollectionT()
+        public static void ReadSimpleGenericICollection()
         {
             ICollection<int> result = JsonSerializer.Deserialize<ICollection<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
             int expected = 1;
@@ -232,10 +339,21 @@ namespace System.Text.Json.Serialization.Tests
 
             result = JsonSerializer.Deserialize<ICollection<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
+
+            StringICollectionWrapper result2 = JsonSerializer.Deserialize<StringICollectionWrapper>(@"[""1"",""2""]");
+            expected = 1;
+
+            foreach (string str in result2)
+            {
+                Assert.Equal($"{expected++}", str);
+            }
+
+            result2 = JsonSerializer.Deserialize<StringICollectionWrapper>(Encoding.UTF8.GetBytes(@"[]"));
+            Assert.Equal(0, result2.Count());
         }
 
         [Fact]
-        public static void ReadIReadOnlyCollectionTOfIReadOnlyCollectionT()
+        public static void ReadGenericIReadOnlyCollectionOfGenericIReadOnlyCollection()
         {
             IReadOnlyCollection<IReadOnlyCollection<int>> result = JsonSerializer.Deserialize<IReadOnlyCollection<IReadOnlyCollection<int>>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -247,10 +365,13 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            // There's no way to populate this collection.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<GenericIReadOnlyCollectionWrapper<StringIReadOnlyCollectionWrapper>>(@"[[""1"",""2""],[""3"",""4""]]"));
         }
 
         [Fact]
-        public static void ReadIReadOnlyCollectionTOfArray()
+        public static void ReadGenericIReadOnlyCollectionOfArray()
         {
             IReadOnlyCollection<int[]> result = JsonSerializer.Deserialize<IReadOnlyCollection<int[]>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -262,6 +383,8 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<GenericIReadOnlyCollectionWrapper<int[]>>(@"[[1,2],[3,4]]"));
         }
 
         [Fact]
@@ -277,10 +400,13 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            // No way to populate this collection.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIReadOnlyCollectionWrapper[]>(@"[[""1"",""2""],[""3"",""4""]]"));
         }
 
         [Fact]
-        public static void ReadPrimitiveIReadOnlyCollectionT()
+        public static void ReadGenericSimpleIReadOnlyCollection()
         {
             IReadOnlyCollection<int> result = JsonSerializer.Deserialize<IReadOnlyCollection<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
             int expected = 1;
@@ -292,10 +418,13 @@ namespace System.Text.Json.Serialization.Tests
 
             result = JsonSerializer.Deserialize<IReadOnlyCollection<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
+
+            // No way to populate this collection.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIReadOnlyCollectionWrapper>(@"[""1"",""2""]"));
         }
 
         [Fact]
-        public static void ReadIReadOnlyListTOfIReadOnlyListT()
+        public static void ReadGenericIReadOnlyListOfGenericIReadOnlyList()
         {
             IReadOnlyList<IReadOnlyList<int>> result = JsonSerializer.Deserialize<IReadOnlyList<IReadOnlyList<int>>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -307,10 +436,12 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<GenericIReadOnlyListWrapper<StringIReadOnlyListWrapper>>(@"[[""1"",""2""],[""3"",""4""]]"));
         }
 
         [Fact]
-        public static void ReadIReadOnlyListTOfArray()
+        public static void ReadGenericIReadOnlyListOfArray()
         {
             IReadOnlyList<int[]> result = JsonSerializer.Deserialize<IReadOnlyList<int[]>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -322,10 +453,13 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            // No way to populate this collection.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<GenericIReadOnlyListWrapper<string[]>>(@"[[""1"",""2""],[""3"",""4""]]"));
         }
 
         [Fact]
-        public static void ReadArrayOfIReadOnlyListT()
+        public static void ReadArrayOfGenericIReadOnlyList()
         {
             IReadOnlyList<int>[] result = JsonSerializer.Deserialize<IReadOnlyList<int>[]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -337,10 +471,13 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            // No way to populate this collection.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIReadOnlyListWrapper[]>(@"[[""1"",""2""],[""3"",""4""]]"));
         }
 
         [Fact]
-        public static void ReadPrimitiveIReadOnlyListT()
+        public static void ReadSimpleGenericIReadOnlyList()
         {
             IReadOnlyList<int> result = JsonSerializer.Deserialize<IReadOnlyList<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
             int expected = 1;
@@ -352,10 +489,13 @@ namespace System.Text.Json.Serialization.Tests
 
             result = JsonSerializer.Deserialize<IReadOnlyList<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
+
+            // No way to populate this collection.
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIReadOnlyListWrapper>(@"[""1"",""2""]"));
         }
 
         [Fact]
-        public static void ReadISetTOfISetT_Throws()
+        public static void ReadGenericISetOfGenericISet()
         {
             ISet<ISet<int>> result = JsonSerializer.Deserialize<ISet<ISet<int>>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
 
@@ -368,6 +508,19 @@ namespace System.Text.Json.Serialization.Tests
             {
                 Assert.Equal(new HashSet<int> { 3, 4 }, result.First());
                 Assert.Equal(new HashSet<int> { 1, 2 }, result.Last());
+            }
+
+            GenericISetWrapper<StringISetWrapper> result2 = JsonSerializer.Deserialize<GenericISetWrapper<StringISetWrapper>>(@"[[""1"",""2""],[""3"",""4""]]");
+
+            if (result2.First().Contains("1"))
+            {
+                Assert.Equal(new HashSet<string> { "1", "2" }, (ISet<string>)result2.First());
+                Assert.Equal(new HashSet<string> { "3", "4" }, (ISet<string>)result2.Last());
+            }
+            else
+            {
+                Assert.Equal(new HashSet<string> { "3", "4" }, (ISet<string>)result.First());
+                Assert.Equal(new HashSet<string> { "1", "2" }, (ISet<string>)result.Last());
             }
         }
 
@@ -432,7 +585,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadPrimitiveISetT()
+        public static void ReadSimpleISetT()
         {
             ISet<int> result = JsonSerializer.Deserialize<ISet<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
 
@@ -455,10 +608,21 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected--, i);
                 }
             }
+
+            GenericStackWrapper<StringStackWrapper> result2 = JsonSerializer.Deserialize<GenericStackWrapper<StringStackWrapper>>(@"[[""1"",""2""],[""3"",""4""]]");
+            expected = 4;
+
+            foreach (StringStackWrapper st in result2)
+            {
+                foreach (string str in st)
+                {
+                    Assert.Equal($"{expected--}", str);
+                }
+            }
         }
 
         [Fact]
-        public static void ReadStackTOfArray()
+        public static void ReadGenericStackOfArray()
         {
             Stack<int[]> result = JsonSerializer.Deserialize<Stack<int[]>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 3;
@@ -472,10 +636,23 @@ namespace System.Text.Json.Serialization.Tests
 
                 expected = 1;
             }
+
+            GenericStackWrapper<string[]> result2 = JsonSerializer.Deserialize<GenericStackWrapper<string[]>>(@"[[""1"",""2""],[""3"",""4""]]");
+            expected = 3;
+
+            foreach (string[] arr in result2)
+            {
+                foreach (string str in arr)
+                {
+                    Assert.Equal($"{expected++}", str);
+                }
+
+                expected = 1;
+            }
         }
 
         [Fact]
-        public static void ReadArrayOfStackT()
+        public static void ReadArrayOfGenericStack()
         {
             Stack<int>[] result = JsonSerializer.Deserialize<Stack<int>[]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 2;
@@ -489,10 +666,23 @@ namespace System.Text.Json.Serialization.Tests
 
                 expected = 4;
             }
+
+            StringStackWrapper[] result2 = JsonSerializer.Deserialize<StringStackWrapper[]>(@"[[""1"",""2""],[""3"",""4""]]");
+            expected = 2;
+
+            foreach (StringStackWrapper st in result2)
+            {
+                foreach (string str in st)
+                {
+                    Assert.Equal($"{expected--}", str);
+                }
+
+                expected = 4;
+            }
         }
 
         [Fact]
-        public static void ReadPrimitiveStackT()
+        public static void ReadSimpleGenericStack()
         {
             Stack<int> result = JsonSerializer.Deserialize<Stack<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
             int expected = 2;
@@ -504,6 +694,17 @@ namespace System.Text.Json.Serialization.Tests
 
             result = JsonSerializer.Deserialize<Stack<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
+
+            StringStackWrapper result2 = JsonSerializer.Deserialize<StringStackWrapper>(@"[""1"",""2""]");
+            expected = 2;
+
+            foreach (string str in result2)
+            {
+                Assert.Equal($"{expected--}", str);
+            }
+
+            result2 = JsonSerializer.Deserialize<StringStackWrapper>(@"[]");
+            Assert.Equal(0, result2.Count());
         }
 
         [Fact]
@@ -517,6 +718,17 @@ namespace System.Text.Json.Serialization.Tests
                 foreach (int i in q)
                 {
                     Assert.Equal(expected++, i);
+                }
+            }
+
+            GenericQueueWrapper<StringQueueWrapper> result2 = JsonSerializer.Deserialize<GenericQueueWrapper<StringQueueWrapper>>(@"[[""1"",""2""],[""3"",""4""]]");
+            expected = 1;
+
+            foreach (StringQueueWrapper q in result2)
+            {
+                foreach (string str in q)
+                {
+                    Assert.Equal($"{expected++}", str);
                 }
             }
         }
@@ -552,7 +764,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadPrimitiveQueueT()
+        public static void ReadSimpleQueueT()
         {
             Queue<int> result = JsonSerializer.Deserialize<Queue<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
             int expected = 1;
@@ -577,6 +789,17 @@ namespace System.Text.Json.Serialization.Tests
                 foreach (int i in hs)
                 {
                     Assert.Equal(expected++, i);
+                }
+            }
+
+            GenericHashSetWrapper<StringHashSetWrapper> result2 = JsonSerializer.Deserialize<GenericHashSetWrapper<StringHashSetWrapper>>(@"[[""1"",""2""],[""3"",""4""]]");
+            expected = 1;
+
+            foreach (StringHashSetWrapper hs in result2)
+            {
+                foreach (string str in hs)
+                {
+                    Assert.Equal($"{expected++}", str);
                 }
             }
         }
@@ -612,7 +835,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadPrimitiveHashSetT()
+        public static void ReadSimpleHashSetT()
         {
             HashSet<int> result = JsonSerializer.Deserialize<HashSet<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
             int expected = 1;
@@ -627,7 +850,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadLinkedListTOfLinkedListT()
+        public static void ReadGenericLinkedListOfGenericLinkedList()
         {
             LinkedList<LinkedList<int>> result = JsonSerializer.Deserialize<LinkedList<LinkedList<int>>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -637,6 +860,17 @@ namespace System.Text.Json.Serialization.Tests
                 foreach (int i in l)
                 {
                     Assert.Equal(expected++, i);
+                }
+            }
+
+            GenericLinkedListWrapper<StringLinkedListWrapper> result2 = JsonSerializer.Deserialize<GenericLinkedListWrapper<StringLinkedListWrapper>>(@"[[""1"",""2""],[""3"",""4""]]");
+            expected = 1;
+
+            foreach (StringLinkedListWrapper l in result2)
+            {
+                foreach (string str in l)
+                {
+                    Assert.Equal($"{expected++}", str);
                 }
             }
         }
@@ -672,7 +906,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadPrimitiveLinkedListT()
+        public static void ReadSimpleLinkedListT()
         {
             LinkedList<int> result = JsonSerializer.Deserialize<LinkedList<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
             int expected = 1;
@@ -687,7 +921,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadArrayOfISortedSetT()
+        public static void ReadArrayOfSortedSetT()
         {
             SortedSet<int>[] result = JsonSerializer.Deserialize<SortedSet<int>[]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -699,10 +933,21 @@ namespace System.Text.Json.Serialization.Tests
                     Assert.Equal(expected++, i);
                 }
             }
+
+            StringSortedSetWrapper[] result2 = JsonSerializer.Deserialize<StringSortedSetWrapper[]>(@"[[""1"",""2""],[""3"",""4""]]");
+            expected = 1;
+
+            foreach (StringSortedSetWrapper s in result2)
+            {
+                foreach (string str in s)
+                {
+                    Assert.Equal($"{expected++}", str);
+                }
+            }
         }
 
         [Fact]
-        public static void ReadPrimitiveSortedSetT()
+        public static void ReadSimpleSortedSetT()
         {
             SortedSet<int> result = JsonSerializer.Deserialize<SortedSet<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
             int expected = 1;
@@ -717,7 +962,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadPrimitiveKeyValuePairFail()
+        public static void ReadSimpleKeyValuePairFail()
         {
             // Invalid form: no Value
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<KeyValuePair<string, int>>(@"{""Key"": 123}"));
@@ -775,6 +1020,28 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("Key", input.Key);
             Assert.Equal(1, input.Value.Key);
             Assert.Equal(2, input.Value.Value);
+        }
+
+        [Fact]
+        public static void ReadSimpleTestClass_GenericCollectionWrappers()
+        {
+            SimpleTestClassWithGenericCollectionWrappers obj = JsonSerializer.Deserialize<SimpleTestClassWithGenericCollectionWrappers>(SimpleTestClassWithGenericCollectionWrappers.s_json);
+            obj.Verify();
+        }
+
+        [Fact]
+        public static void ReadSimpleTestClass_GenericWrappers_NoAddMethod_Throws()
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIEnumerableWrapper>(SimpleTestClassWithStringIEnumerableWrapper.s_json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIReadOnlyCollectionWrapper>(SimpleTestClassWithStringIReadOnlyCollectionWrapper.s_json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringIReadOnlyListWrapper>(SimpleTestClassWithStringIReadOnlyListWrapper.s_json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper>(SimpleTestClassWithStringToStringIReadOnlyDictionaryWrapper.s_json));
+        }
+
+        [Fact]
+        public static void ReadPrimitiveStringCollection_Throws()
+        {
+            Assert.Throws<InvalidCastException>(() => JsonSerializer.Deserialize<StringCollection>(@"[""1"", ""2""]"));
         }
     }
 }

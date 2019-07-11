@@ -69,6 +69,9 @@ namespace System.Text.Json.Serialization.Tests
 
             result = JsonSerializer.Deserialize<IImmutableList<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIImmutableListWrapper>(@"[""1"",""2""]"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIImmutableListWrapper>(@"[]"));
         }
 
         [Fact]
@@ -133,6 +136,9 @@ namespace System.Text.Json.Serialization.Tests
 
             result = JsonSerializer.Deserialize<IImmutableStack<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIImmutableStackWrapper>(@"[""1"",""2""]"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIImmutableStackWrapper>(@"[]"));
         }
 
         [Fact]
@@ -166,7 +172,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadArrayOfIIImmutableQueueT()
+        public static void ReadArrayOfIImmutableQueueT()
         {
             IImmutableQueue<int>[] result = JsonSerializer.Deserialize<IImmutableQueue<int>[]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -193,6 +199,9 @@ namespace System.Text.Json.Serialization.Tests
 
             result = JsonSerializer.Deserialize<IImmutableQueue<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIImmutableQueueWrapper>(@"[""1"",""2""]"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIImmutableQueueWrapper>(@"[]"));
         }
 
         [Fact]
@@ -230,7 +239,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadArrayOfIIImmutableSetT()
+        public static void ReadArrayOfIImmutableSetT()
         {
             IImmutableSet<int>[] result = JsonSerializer.Deserialize<IImmutableSet<int>[]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             List<int> expected = new List<int> { 1, 2, 3, 4 };
@@ -261,6 +270,9 @@ namespace System.Text.Json.Serialization.Tests
 
             result = JsonSerializer.Deserialize<IImmutableSet<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
+
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIImmutableSetWrapper>(@"[""1"",""2""]"));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<StringIImmutableSetWrapper>(@"[]"));
         }
 
         [Fact]
@@ -486,7 +498,7 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        public static void ReadArrayOfIImmutableQueueT()
+        public static void ReadArrayOfImmutableQueueT()
         {
             ImmutableQueue<int>[] result = JsonSerializer.Deserialize<ImmutableQueue<int>[]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
             int expected = 1;
@@ -549,6 +561,16 @@ namespace System.Text.Json.Serialization.Tests
         public static void ReadPrimitiveImmutableArrayThrows()
         {
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ImmutableArray<int>>(Encoding.UTF8.GetBytes(@"[1,2]")));
+        }
+
+        [Fact]
+        public static void ReadSimpleTestClass_ImmutableCollectionWrappers_Throws()
+        {
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClassWithIImmutableDictionaryWrapper>(SimpleTestClassWithIImmutableDictionaryWrapper.s_json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClassWithImmutableListWrapper>(SimpleTestClassWithImmutableListWrapper.s_json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClassWithImmutableStackWrapper>(SimpleTestClassWithImmutableStackWrapper.s_json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClassWithImmutableQueueWrapper>(SimpleTestClassWithImmutableQueueWrapper.s_json));
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<SimpleTestClassWithImmutableSetWrapper>(SimpleTestClassWithImmutableSetWrapper.s_json));
         }
     }
 }

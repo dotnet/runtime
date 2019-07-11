@@ -3,38 +3,33 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
-using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
     // This converter returns enumerables in the System.Collections.Immutable namespace.
     internal sealed class DefaultImmutableEnumerableConverter : JsonEnumerableConverter
     {
+        private const string ImmutableArrayTypeName = "System.Collections.Immutable.ImmutableArray";
+        public const string ImmutableArrayGenericTypeName = "System.Collections.Immutable.ImmutableArray`1";
+
         private const string ImmutableListTypeName = "System.Collections.Immutable.ImmutableList";
-        private const string ImmutableListGenericTypeName = "System.Collections.Immutable.ImmutableList`1";
-        private const string ImmutableListGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableList`1";
+        public const string ImmutableListGenericTypeName = "System.Collections.Immutable.ImmutableList`1";
+        public const string ImmutableListGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableList`1";
 
         private const string ImmutableStackTypeName = "System.Collections.Immutable.ImmutableStack";
-        private const string ImmutableStackGenericTypeName = "System.Collections.Immutable.ImmutableStack`1";
-        private const string ImmutableStackGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableStack`1";
+        public const string ImmutableStackGenericTypeName = "System.Collections.Immutable.ImmutableStack`1";
+        public const string ImmutableStackGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableStack`1";
 
         private const string ImmutableQueueTypeName = "System.Collections.Immutable.ImmutableQueue";
-        private const string ImmutableQueueGenericTypeName = "System.Collections.Immutable.ImmutableQueue`1";
-        private const string ImmutableQueueGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableQueue`1";
+        public const string ImmutableQueueGenericTypeName = "System.Collections.Immutable.ImmutableQueue`1";
+        public const string ImmutableQueueGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableQueue`1";
 
-        private const string ImmutableSortedSetTypeName = "System.Collections.Immutable.ImmutableSortedSet";
-        private const string ImmutableSortedSetGenericTypeName = "System.Collections.Immutable.ImmutableSortedSet`1";
+        public const string ImmutableSortedSetTypeName = "System.Collections.Immutable.ImmutableSortedSet";
+        public const string ImmutableSortedSetGenericTypeName = "System.Collections.Immutable.ImmutableSortedSet`1";
 
         private const string ImmutableHashSetTypeName = "System.Collections.Immutable.ImmutableHashSet";
-        private const string ImmutableHashSetGenericTypeName = "System.Collections.Immutable.ImmutableHashSet`1";
-        private const string ImmutableSetGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableSet`1";
-
-        private const string ImmutableDictionaryTypeName = "System.Collections.Immutable.ImmutableDictionary";
-        private const string ImmutableDictionaryGenericTypeName = "System.Collections.Immutable.ImmutableDictionary`2";
-        private const string ImmutableDictionaryGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableDictionary`2";
-
-        private const string ImmutableSortedDictionaryTypeName = "System.Collections.Immutable.ImmutableSortedDictionary";
-        private const string ImmutableSortedDictionaryGenericTypeName = "System.Collections.Immutable.ImmutableSortedDictionary`2";
+        public const string ImmutableHashSetGenericTypeName = "System.Collections.Immutable.ImmutableHashSet`1";
+        public const string ImmutableSetGenericInterfaceTypeName = "System.Collections.Immutable.IImmutableSet`1";
 
         public static string GetDelegateKey(
             Type immutableCollectionType,
@@ -67,12 +62,12 @@ namespace System.Text.Json.Serialization.Converters
                 case ImmutableSetGenericInterfaceTypeName:
                     constructingTypeName = ImmutableHashSetTypeName;
                     break;
-                case ImmutableDictionaryGenericTypeName:
-                case ImmutableDictionaryGenericInterfaceTypeName:
-                    constructingTypeName = ImmutableDictionaryTypeName;
+                case DefaultImmutableDictionaryConverter.ImmutableDictionaryGenericTypeName:
+                case DefaultImmutableDictionaryConverter.ImmutableDictionaryGenericInterfaceTypeName:
+                    constructingTypeName = DefaultImmutableDictionaryConverter.ImmutableDictionaryTypeName;
                     break;
-                case ImmutableSortedDictionaryGenericTypeName:
-                    constructingTypeName = ImmutableSortedDictionaryTypeName;
+                case DefaultImmutableDictionaryConverter.ImmutableSortedDictionaryGenericTypeName:
+                    constructingTypeName = DefaultImmutableDictionaryConverter.ImmutableSortedDictionaryTypeName;
                     break;
                 default:
                     throw ThrowHelper.GetNotSupportedException_SerializationNotSupportedCollection(immutableCollectionType, null, null);

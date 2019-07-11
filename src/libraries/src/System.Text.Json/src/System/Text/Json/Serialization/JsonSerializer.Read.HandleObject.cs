@@ -44,7 +44,7 @@ namespace System.Text.Json
 
             if (state.Current.IsProcessingIDictionaryConstructible)
             {
-                state.Current.TempDictionaryValues = (IDictionary)classInfo.CreateObject();
+                state.Current.TempDictionaryValues = (IDictionary)classInfo.CreateConcreteDictionary();
             }
             else
             {
