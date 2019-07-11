@@ -3662,7 +3662,10 @@ AdjustContextForVirtualStub(
     }
 
     PCODE callsite = GetAdjustedCallAddress(*dac_cast<PTR_PCODE>(GetSP(pContext)));
-    pExceptionRecord->ExceptionAddress = (PVOID)callsite;
+    if (pExceptionRecord != NULL)
+    {
+        pExceptionRecord->ExceptionAddress = (PVOID)callsite;
+    }
     SetIP(pContext, callsite);
 
 #if defined(GCCOVER_TOLERATE_SPURIOUS_AV)

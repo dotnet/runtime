@@ -769,6 +769,16 @@ UINT_PTR Thread::VirtualUnwindToFirstManagedCallFrame(T_CONTEXT* pContext)
 #ifndef FEATURE_PAL
         uControlPc = VirtualUnwindCallFrame(pContext);
 #else // !FEATURE_PAL
+
+#ifdef VSD_STUB_CAN_THROW_AV
+        if (IsIPinVirtualStub(uControlPc))
+        {
+            AdjustContextForVirtualStub(NULL, pContext);
+            uControlPc = GetIP(pContext);
+            break;
+        }
+#endif // VSD_STUB_CAN_THROW_AV
+
         BOOL success = PAL_VirtualUnwind(pContext, NULL);
         if (!success)
         {

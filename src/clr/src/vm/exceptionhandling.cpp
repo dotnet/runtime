@@ -21,10 +21,6 @@
 #define USE_CURRENT_CONTEXT_IN_FILTER
 #endif // _TARGET_X86_
 
-#if defined(_TARGET_ARM_) || defined(_TARGET_X86_)
-#define VSD_STUB_CAN_THROW_AV
-#endif // _TARGET_ARM_ || _TARGET_X86_
-
 #if defined(_TARGET_ARM_) || defined(_TARGET_ARM64_)
 // ARM/ARM64 uses Caller-SP to locate PSPSym in the funclet frame.
 #define USE_CALLER_SP_IN_FUNCLET
@@ -4661,6 +4657,15 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
         // Check whether we are crossing managed-to-native boundary
         while (!ExecutionManager::IsManagedCode(controlPc))
         {
+#ifdef VSD_STUB_CAN_THROW_AV
+            if (IsIPinVirtualStub(controlPc))
+            {
+                AdjustContextForVirtualStub(NULL, frameContext);
+                controlPc = GetIP(frameContext);
+                break;
+            }
+#endif // VSD_STUB_CAN_THROW_AV
+
             UINT_PTR sp = GetSP(frameContext);
 
             BOOL success = PAL_VirtualUnwind(frameContext, NULL);
@@ -5143,39 +5148,6 @@ BOOL IsSafeToCallExecutionManager()
            GCStress<cfg_instr_jit>::IsEnabled() || 
            GCStress<cfg_instr_ngen>::IsEnabled();
 }
-
-#ifdef VSD_STUB_CAN_THROW_AV
-//Return TRUE if pContext->Pc is in VirtualStub
-static BOOL IsIPinVirtualStub(PCODE f_IP)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    Thread * pThread = GetThread();
-
-    // We may not have a managed thread object. Example is an AV on the helper thread.
-    // (perhaps during StubManager::IsStub)
-    if (pThread == NULL)
-    {
-        return FALSE;
-    }
-
-    VirtualCallStubManager::StubKind sk;
-    VirtualCallStubManager::FindStubManager(f_IP, &sk, FALSE /* usePredictStubKind */);
-
-    if (sk == VirtualCallStubManager::SK_DISPATCH)
-    {
-        return TRUE;
-    }
-    else if (sk == VirtualCallStubManager::SK_RESOLVE)
-    {
-        return TRUE;
-    }
-
-    else {
-        return FALSE;
-    }
-}
-#endif // VSD_STUB_CAN_THROW_AV
 
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
 {
