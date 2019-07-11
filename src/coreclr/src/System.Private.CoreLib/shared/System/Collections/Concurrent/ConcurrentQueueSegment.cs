@@ -166,7 +166,7 @@ namespace System.Collections.Concurrent
                             // If we're preserving, though, we don't zero out the slot, as we need it for
                             // enumerations, peeking, ToArray, etc.  And we don't update the sequence number,
                             // so that an enqueuer will see it as full and be forced to move to a new segment.
-                            slots[slotsIndex].Item = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                            slots[slotsIndex].Item = default;
                             Volatile.Write(ref slots[slotsIndex].SequenceNumber, currentHead + slots.Length);
                         }
                         return true;

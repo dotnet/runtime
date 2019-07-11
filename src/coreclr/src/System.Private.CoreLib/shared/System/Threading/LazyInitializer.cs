@@ -272,7 +272,7 @@ namespace System.Threading
                 }
             }
 
-            return target!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            return target!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
         }
 
         /// <summary>
