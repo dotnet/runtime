@@ -216,6 +216,27 @@ public partial class TimerFiringTests
         Assert.Throws<ObjectDisposedException>(() => t.Change(0, 0));
     }
 
+    [OuterLoop("Incurs seconds delay to wait for events that should never happen")]
+    [Fact]
+    public async Task Timer_LongTimersDontFirePrematurely_ShortTimersFireSuccessfully()
+    {
+        var tcsShort1 = new TaskCompletionSource<bool>();
+        var tcsShort2 = new TaskCompletionSource<bool>();
+        var tcsLong1 = new TaskCompletionSource<bool>();
+        var tcsLong2 = new TaskCompletionSource<bool>();
+
+        using (var timerLong1 = new Timer(_ => tcsLong1.SetResult(true), null, TimeSpan.FromDays(30), Timeout.InfiniteTimeSpan))
+        using (var timerLong2 = new Timer(_ => tcsLong2.SetResult(true), null, TimeSpan.FromDays(40), Timeout.InfiniteTimeSpan))
+        using (var timerShort1 = new Timer(_ => tcsShort1.SetResult(true), null, 100, -1))
+        using (var timerShort2 = new Timer(_ => tcsShort2.SetResult(true), null, 200, -1))
+        {
+            await Task.WhenAll(tcsShort1.Task, tcsShort2.Task);
+            await Task.Delay(2_000); // wait a few seconds to see if long timers complete when they shouldn't
+            Assert.Equal(TaskStatus.WaitingForActivation, tcsLong1.Task.Status);
+            Assert.Equal(TaskStatus.WaitingForActivation, tcsLong2.Task.Status);
+        }
+    }
+
     [OuterLoop("Takes several seconds")]
     [Fact]
     public async Task Timer_ManyDifferentSingleDueTimes_AllFireSuccessfully()
