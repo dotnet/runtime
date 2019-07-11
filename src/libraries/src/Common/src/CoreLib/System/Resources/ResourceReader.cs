@@ -1030,9 +1030,7 @@ namespace System.Resources
                 }
             }
 
-#pragma warning disable CS8612 // TODO-NULLABLE: Covariance in interfaces (https://github.com/dotnet/roslyn/issues/35227)
             public object Current => Entry;
-#pragma warning restore CS8612
 
             // Warning: This requires that you call the Key or Entry property FIRST before calling it!
             internal int DataPosition => _dataPosition;

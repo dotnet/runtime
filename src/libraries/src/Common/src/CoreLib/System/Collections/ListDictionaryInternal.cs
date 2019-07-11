@@ -283,9 +283,7 @@ namespace System.Collections
                 current = null;
             }
 
-#pragma warning disable CS8612 // TODO-NULLABLE: Covariance in interfaces (https://github.com/dotnet/roslyn/issues/35227)
             public object Current
-#pragma warning restore CS8612
             {
                 get
                 {
