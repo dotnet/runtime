@@ -63,7 +63,7 @@ namespace System.Drawing.Printing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(Helpers.IsDrawingSupported)]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         public void DefaultPageSettings_Null_ReturnsExpected()
         {
