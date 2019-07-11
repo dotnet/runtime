@@ -3943,13 +3943,6 @@ else
 	], [
 		AC_MSG_RESULT(no)
 	])
-
-	AC_CHECK_DECLS(InterlockedExchange64, [], [], [[#include <windows.h>]])
-	AC_CHECK_DECLS(InterlockedCompareExchange64, [], [], [[#include <windows.h>]])
-	AC_CHECK_DECLS(InterlockedDecrement64, [], [], [[#include <windows.h>]])
-	AC_CHECK_DECLS(InterlockedIncrement64, [], [], [[#include <windows.h>]])
-	AC_CHECK_DECLS(InterlockedAdd, [], [], [[#include <windows.h>]])
-	AC_CHECK_DECLS(InterlockedAdd64, [], [], [[#include <windows.h>]])
 fi
 
 dnl socklen_t check
