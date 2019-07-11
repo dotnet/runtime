@@ -3820,10 +3820,15 @@ mono_class_is_assignable_from_checked (MonoClass *klass, MonoClass *oklass, gboo
 		if (m_class_is_valuetype (eoclass)) {
 			if ((eclass == mono_defaults.enum_class) || 
 			    (eclass == m_class_get_parent (mono_defaults.enum_class)) ||
-			    (eclass == mono_defaults.object_class)) {
+			    (!m_class_is_valuetype (eclass))) {
 				*result = FALSE;
 				return;
 			}
+		}
+
+		if (mono_class_is_nullable (eclass) ^ mono_class_is_nullable (eoclass)) {
+			*result = FALSE;
+			return;
 		}
 
 		mono_class_is_assignable_from_checked (eclass, eoclass, result, error);

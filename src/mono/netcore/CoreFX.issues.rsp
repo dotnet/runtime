@@ -190,6 +190,7 @@
 -nomethod System.Linq.Expressions.Tests.LambdaMultiplyNullableTests.LambdaMultiplyNullableFloatTest
 -nomethod System.Linq.Expressions.Tests.LambdaMultiplyTests.LambdaMultiplyFloatTest
 -nomethod System.Linq.Expressions.Tests.LambdaDivideTests.LambdaDivideFloatTest
+-nomethod System.Linq.Expressions.Tests.OpAssign.AssignmentEquivalentsWithMemberAccess
 
 ####################################################################
 ##  System.Linq.Parallel.Tests
@@ -1064,10 +1065,6 @@
 # https://github.com/mono/mono/issues/15318
 -nomethod System.Reflection.Tests.ConstructorInfoInvokeArrayTests.Invoke_LargeDimensionalArrayConstructor
 
-# Assertion expects false, but we return true
-# https://github.com/mono/mono/issues/15080
--nomethod System.Reflection.Tests.TypeTests.IsAssignableFrom
-
 # Throws a lot of different exceptions
 # https://github.com/mono/mono/issues/15319
 -nomethod System.Reflection.Tests.PropertyInfoTests.GetGetMethod_GetSetMethod
@@ -1130,22 +1127,6 @@
 ##  System.Reflection.MetadataLoadContext.Tests
 ####################################################################
 
--nomethod System.Reflection.Tests.TypeTests_AmbiguityResolution_NoParameterBinding.*
--nomethod System.Reflection.Tests.TypeTests_GetInterface.*
-
-# System.InvalidOperationException : System.Reflection.Tests.IdentityTests is not a GenericTypeDefinition. MakeGenericType may only be called on a type for which Type.IsGenericTypeDefinition is true.
-# https://github.com/mono/mono/issues/15336
--nomethod System.Reflection.Tests.IdentityTests.*
-
-# Assertion... Expected: 1, Actual: 0
-# https://github.com/mono/mono/issues/15337
--nomethod System.Reflection.Tests.TypeTests_GetMember.*
-
-# Expected: Explicit
-# Actual:   Auto
-# https://github.com/mono/mono/issues/15338
--nomethod System.Reflection.Tests.TypeTests_StructLayoutAttribute.*
-
 # System.InvalidOperationException : Sequence contains no elements
 # https://github.com/mono/mono/issues/15339
 # 
@@ -1154,52 +1135,13 @@
 -nomethod System.Reflection.Tests.ParameterTests.TestPseudoCustomAttributes
 -nomethod System.Reflection.Tests.TypeTests.TestExplicitOffsetPseudoCustomAttribute
 
-# Assertion failure: Expected: 4, Actual: 0
-# https://github.com/mono/mono/issues/15341
--nomethod System.Reflection.Tests.TypeTests_HiddenEvents.GetEventHidesEventsBySimpleNameCompare
-
-# Multiple failures... 
-# System.Reflection.Tests.TypeInfoDeclaredNestedTypeTests.TestNestedTypes10 
-# Expected: typeof(System.Reflection.Tests.TestNestGeneric<>)
-# Actual:   typeof(System.Reflection.Tests.TestNestGeneric<>)
-# https://github.com/mono/mono/issues/15342
--nomethod System.Reflection.Tests.TypeInfoDeclaredNestedTypeTests.*
--nomethod System.Reflection.Tests.TypeInfoPropertyTests.TestIsNested
--nomethod System.Reflection.Tests.TypeInfoPropertyTests.TestIsNestedPublic
-
-# Assertion failure: Expected: 5, Actual: 0
-# https://github.com/mono/mono/issues/15343
--nomethod System.Reflection.Tests.TypeTests_PrefixingOnlyAllowedOnGetMember.TestGetMemberAll
-
 # Assertion failure: Expected: true, Actual: false
 # https://github.com/mono/mono/issues/15344
 -nomethod System.Reflection.Tests.TypeInvariants.TestInvariantCode
 
-# Assertion failure: Expected: 2, Actual: 1
-# https://github.com/mono/mono/issues/15345
--nomethod System.Reflection.Tests.TypeTests_HiddenMethods.GetMethodDoesNotHideHiddenMethods
-
-# Expected: String[] ["Item", "MyInstanceThenStaticProp", "MyStaticThenInstanceProp", "MyStringThenDoubleProp"]
-# Actual:   String[] []
-# https://github.com/mono/mono/issues/15346
--nomethod System.Reflection.Tests.TypeTests_HiddenProperties.GetPropertyHidesPropertiesByNameAndSigAndCallingConventionCompare
-
-# Expected: typeof(Outer+Inner)
-# Actual:   typeof(Outer+Inner+ReallyInner)
-# https://github.com/mono/mono/issues/15347
--nomethod System.Reflection.Tests.AssemblyTests.CrossAssemblyTypeRefToNestedType
-
-# Assertion failure: Expected: 4, Actual: 0
-# https://github.com/mono/mono/issues/15348
--nomethod System.Reflection.Tests.TypeTests_HiddenFields.GetFieldDoesNotHideHiddenFields
-
 # System.TypeLoadException : Could not find type 'Typ\\W\[t\]S\+r\*n\&e\,haracters' in assembly ''.
 # https://github.com/mono/mono/issues/15349
 -nomethod System.Reflection.Tests.TypeTests.TypesWithStrangeCharacters
-
-# Assertion failure: Expected: 1, Actual: 0
-# https://github.com/mono/mono/issues/15351
--nomethod System.Reflection.Tests.TypeTests_HiddenTestingOrder.HideDetectionHappensAfterPrivateInBaseClassChecks
 
 # flaky tests
 -nomethod System.Reflection.Tests.TypeInfoDeclaredImplementedInterfacesTests.*
@@ -1290,3 +1232,6 @@
 -nomethod System.Diagnostics.TraceSourceTests.SwitchClassTests.PruneTest
 -nomethod ManagedTests.DynamicCSharp.Conformance.dynamic.context.*
 -nomethod System.Net.Sockets.Tests.DisposedSocket.NonDisposedSocket_SafeHandlesCollected
+
+# Flaky tests https://github.com/mono/mono/issues/15238
+-nonamespace System.Security.Cryptography.Pkcs
