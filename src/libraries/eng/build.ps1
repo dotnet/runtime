@@ -5,12 +5,13 @@ Param(
   [switch] $buildtests,
   [string][Alias('c')]$configuration = "Debug",
   [string][Alias('f')]$framework,
-  [string] $os,
-  [switch] $allconfigurations,
-  [switch] $coverage,
-  [string] $testscope,
-  [string] $arch,
-  [switch] $clean,
+  [string]$vs,
+  [string]$os,
+  [switch]$allconfigurations,
+  [switch]$coverage,
+  [string]$testscope,
+  [string]$arch,
+  [switch]$clean,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -33,6 +34,7 @@ function Get-Help() {
   Write-Host "  -sign                   Sign build outputs"
   Write-Host "  -publish                Publish artifacts (e.g. symbols)"
   Write-Host "  -clean                  Clean the solution"
+  Write-Host "  -vs                     Open the solution with VS for Test Explorer support. Path or solution name (ie -vs Microsoft.CSharp)"
   Write-Host ""
 
   Write-Host "Advanced settings:"
@@ -69,6 +71,29 @@ if ($clean) {
   if (!$actionPassedIn) {
     exit 0
   }
+}
+
+# VS Test Explorer support
+if ($vs) {
+  if (-Not (Test-Path $vs)) {
+    $vs = Join-Path "$PSScriptRoot\..\src" $vs | Join-Path -ChildPath "$vs.sln"
+  }
+
+  $archTestHost = if ($arch) { $arch } else { "x64" }
+
+  # This tells .NET Core to use the same dotnet.exe that build scripts use
+  $env:DOTNET_ROOT="$PSScriptRoot\..\artifacts\bin\testhost\netcoreapp-Windows_NT-$configuration-$archTestHost";
+
+  # This tells .NET Core not to go looking for .NET Core in other places
+  $env:DOTNET_MULTILEVEL_LOOKUP=0;
+
+  # Put our local dotnet.exe on PATH first so Visual Studio knows which one to use
+  $env:PATH=($env:DOTNET_ROOT + ";" + $env:PATH);
+
+  # Launch Visual Studio with the locally defined environment variables
+  ."$vs"
+
+  exit 0
 }
 
 if (!$actionPassedIn) {
