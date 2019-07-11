@@ -449,7 +449,7 @@ namespace System.Threading.Tasks
 
             _obj = task;
 
-            _result = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            _result = default;
             _continueOnCapturedContext = true;
             _token = 0;
         }
@@ -468,7 +468,7 @@ namespace System.Threading.Tasks
             _obj = source;
             _token = token;
 
-            _result = default!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            _result = default;
             _continueOnCapturedContext = true;
         }
 

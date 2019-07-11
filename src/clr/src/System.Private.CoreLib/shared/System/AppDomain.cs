@@ -409,7 +409,7 @@ namespace System
                                 (Func<IPrincipal>)mi.CreateDelegate(typeof(Func<IPrincipal>)));
                         }
 
-                        principal = s_getUnauthenticatedPrincipal!(); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                        principal = s_getUnauthenticatedPrincipal!(); // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
                         break;
 
                     case PrincipalPolicy.WindowsPrincipal:
@@ -425,7 +425,7 @@ namespace System
                                 (Func<IPrincipal>)mi.CreateDelegate(typeof(Func<IPrincipal>)));
                         }
 
-                        principal = s_getWindowsPrincipal!(); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                        principal = s_getWindowsPrincipal!(); // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
                         break;
                 }
             }
