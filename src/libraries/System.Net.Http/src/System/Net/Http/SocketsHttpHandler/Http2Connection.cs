@@ -1535,15 +1535,17 @@ namespace System.Net.Http
             Http2Stream http2Stream = null;
             try
             {
-                // Send headers
+                // Send request headers
                 bool shouldExpectContinue = request.Content != null && request.HasHeaders && request.Headers.ExpectContinue == true;
                 http2Stream = await SendHeadersAsync(request, cancellationToken, mustFlush: shouldExpectContinue).ConfigureAwait(false);
 
-                // Send request body, if any, and read response headers.
+                // Start sending the request body, if any.
                 Task requestBodyTask = 
                     request.Content == null ? Task.CompletedTask :
                     shouldExpectContinue ? http2Stream.SendRequestBodyWithExpect100ContinueAsync(cancellationToken) :
                     http2Stream.SendRequestBodyAsync(cancellationToken);
+
+                // Start receiving the response headers.
                 Task responseHeadersTask = http2Stream.ReadResponseHeadersAsync(cancellationToken);
 
                 // Wait for either task to complete.  The best and most common case is when the request body completes
@@ -1551,12 +1553,17 @@ namespace System.Net.Http
                 // fully process the sending of the response.  WhenAny is not free, so we do a fast-path check to see
                 // if the request body completed synchronously, only progressing to do the WhenAny if it didn't. Then
                 // if the WhenAny completes and either the WhenAny indicated that the request body completed or
-                // both tasks completed, we can proceed to handle the request body as if it completed first.
+                // both tasks completed, we can proceed to handle the request body as if it completed first.  We also
+                // check whether the request content even allows for duplex communication; if it doesn't (none of
+                // our built-in content types do), then we can just proceed to wait for the request body content to
+                // complete before worrying about response headers completing.
                 if (requestBodyTask.IsCompleted ||
+                    request.Content.AllowDuplex == false ||
                     requestBodyTask == await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) ||
                     requestBodyTask.IsCompleted)
                 {
-                    // The sending of the request body completed before receiving all of the request headers.
+                    // The sending of the request body completed before receiving all of the request headers (or we're
+                    // ok waiting for the request body even if it hasn't completed, e.g. because we're not doing duplex).
                     // This is the common and desirable case.
                     try
                     {

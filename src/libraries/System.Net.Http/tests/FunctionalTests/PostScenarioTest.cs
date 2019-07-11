@@ -180,7 +180,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostRewindableContentUsingAuth_NoPreAuthenticate_Success(Uri serverUri)
         {
-            HttpContent content = CustomContent.Create(ExpectedContent, true);
+            HttpContent content = new StreamContent(new CustomContent.CustomStream(Encoding.UTF8.GetBytes(ExpectedContent), true));
             var credential = new NetworkCredential(UserName, Password);
             await PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, false);
         }
@@ -190,7 +190,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(BasicAuthEchoServers))]
         public async Task PostNonRewindableContentUsingAuth_NoPreAuthenticate_ThrowsHttpRequestException(Uri serverUri)
         {
-            HttpContent content = CustomContent.Create(ExpectedContent, false);
+            HttpContent content = new StreamContent(new CustomContent.CustomStream(Encoding.UTF8.GetBytes(ExpectedContent), false));
             var credential = new NetworkCredential(UserName, Password);
             await Assert.ThrowsAsync<HttpRequestException>(() => 
                 PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, preAuthenticate: false));
@@ -207,7 +207,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            HttpContent content = CustomContent.Create(ExpectedContent, false);
+            HttpContent content = new StreamContent(new CustomContent.CustomStream(Encoding.UTF8.GetBytes(ExpectedContent), false));
             var credential = new NetworkCredential(UserName, Password);
             await PostUsingAuthHelper(serverUri, ExpectedContent, content, credential, preAuthenticate: true);
         }

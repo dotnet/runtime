@@ -282,6 +282,8 @@ namespace System.Net.Http
             return new MemoryStream(HttpRuleParser.DefaultHttpEncoding.GetBytes(input), writable: false);
         }
 
+        internal override bool AllowDuplex => false;
+
         protected internal override bool TryComputeLength(out long length)
         {
             int boundaryLength = GetEncodedLength(_boundary);
