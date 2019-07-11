@@ -41,5 +41,7 @@ namespace System.Net.Http
 
         internal override Stream TryCreateContentReadStream() =>
             new ReadOnlyMemoryStream(_content);
+
+        internal override bool AllowDuplex => false;
     }
 }

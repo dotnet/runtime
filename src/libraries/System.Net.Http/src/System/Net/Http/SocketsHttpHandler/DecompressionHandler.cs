@@ -151,6 +151,8 @@ namespace System.Net.Http
                 return false;
             }
 
+            internal override bool AllowDuplex => false;
+
             protected override void Dispose(bool disposing)
             {
                 if (disposing)

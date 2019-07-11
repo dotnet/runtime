@@ -94,6 +94,8 @@ namespace System.Net.Http
             GetType() == typeof(StreamContent) ? new ReadOnlyStream(_content) : // type check ensures we use possible derived type's CreateContentReadStreamAsync override
             null;
 
+        internal override bool AllowDuplex => false;
+
         private void PrepareContent()
         {
             if (_contentConsumed)
