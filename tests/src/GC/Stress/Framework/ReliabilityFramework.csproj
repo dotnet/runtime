@@ -12,7 +12,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <GenerateRunScript>false</GenerateRunScript>
-    <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestPriority>0</CLRTestPriority>
     <DefineConstants>$(DefineConstants);STATIC;PROJECTK_BUILD</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
