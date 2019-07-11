@@ -216,20 +216,34 @@ namespace System.IO.Pipelines
 
             _internalTokenSource?.Dispose();
 
-            BufferSegment segment = _head;
-            while (segment != null)
-            {
-                BufferSegment returnSegment = segment;
-                segment = segment.NextSegment;
-                returnSegment.ResetMemory();
-            }
-
-            _head = null;
-            _tail = null;
+            FlushInternal();
 
             if (!_leaveOpen)
             {
                 InnerStream.Dispose();
+            }
+        }
+
+        public override async ValueTask CompleteAsync(Exception exception = null)
+        {
+            if (_isCompleted)
+            {
+                return;
+            }
+
+            _isCompleted = true;
+
+            _internalTokenSource?.Dispose();
+
+            await FlushAsyncInternal().ConfigureAwait(false);
+
+            if (!_leaveOpen)
+            {
+#if netcoreapp
+                await InnerStream.DisposeAsync().ConfigureAwait(false);
+#else
+                InnerStream.Dispose();
+#endif
             }
         }
 
@@ -264,9 +278,12 @@ namespace System.IO.Pipelines
                 reg = cancellationToken.UnsafeRegister(state => ((StreamPipeWriter)state).Cancel(), this);
             }
 
-            // Update any buffered data
-            _tail.End += _tailBytesBuffered;
-            _tailBytesBuffered = 0;
+            if (_tailBytesBuffered > 0)
+            {
+                // Update any buffered data
+                _tail.End += _tailBytesBuffered;
+                _tailBytesBuffered = 0;
+            }
 
             using (reg)
             {
@@ -279,7 +296,10 @@ namespace System.IO.Pipelines
                         BufferSegment returnSegment = segment;
                         segment = segment.NextSegment;
 
-                        await InnerStream.WriteAsync(returnSegment.Memory, localToken).ConfigureAwait(false);
+                        if (returnSegment.Length > 0)
+                        {
+                            await InnerStream.WriteAsync(returnSegment.Memory, localToken).ConfigureAwait(false);
+                        }
 
                         returnSegment.ResetMemory();
                         ReturnSegmentUnsynchronized(returnSegment);
@@ -288,7 +308,10 @@ namespace System.IO.Pipelines
                         _head = segment;
                     }
 
-                    await InnerStream.FlushAsync(localToken).ConfigureAwait(false);
+                    if (_bytesBuffered > 0)
+                    {
+                        await InnerStream.FlushAsync(localToken).ConfigureAwait(false);
+                    }
 
                     // Mark bytes as written *after* flushing
                     _head = null;
@@ -315,6 +338,50 @@ namespace System.IO.Pipelines
                     throw;
                 }
             }
+        }
+
+        private void FlushInternal()
+        {
+            // Write all completed segments and whatever remains in the current segment
+            // and flush the result.
+            if (_tailBytesBuffered > 0)
+            {
+                // Update any buffered data
+                _tail.End += _tailBytesBuffered;
+                _tailBytesBuffered = 0;
+            }
+
+            BufferSegment segment = _head;
+            while (segment != null)
+            {
+                BufferSegment returnSegment = segment;
+                segment = segment.NextSegment;
+
+                if (returnSegment.Length > 0)
+                {
+#if netcoreapp
+                    InnerStream.Write(returnSegment.Memory.Span);
+#else
+                    InnerStream.Write(returnSegment.Memory);
+#endif
+                }
+
+                returnSegment.ResetMemory();
+                ReturnSegmentUnsynchronized(returnSegment);
+
+                // Update the head segment after we return the current segment
+                _head = segment;
+            }
+
+            if (_bytesBuffered > 0)
+            {
+                InnerStream.Flush();
+            }
+
+            // Mark bytes as written *after* flushing
+            _head = null;
+            _tail = null;
+            _bytesBuffered = 0;
         }
     }
 }

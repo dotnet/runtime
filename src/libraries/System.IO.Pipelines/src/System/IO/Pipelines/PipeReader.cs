@@ -75,15 +75,33 @@ namespace System.IO.Pipelines
         public abstract void CancelPendingRead();
 
         /// <summary>
-        /// Signal to the producer that the consumer is done reading.
+        /// Marks the <see cref="PipeReader"/> as being complete, meaning no more data will be read from it.
         /// </summary>
-        /// <param name="exception">Optional <see cref="Exception"/> indicating a failure that's causing the pipeline to complete.</param>
+        /// <param name="exception">Optional <see cref="Exception"/> indicating a failure that's causing the reader to complete.</param>
         public abstract void Complete(Exception exception = null);
+
+        /// <summary>
+        /// Marks the <see cref="PipeReader"/> as being complete, meaning no more data will be read from it.
+        /// </summary>
+        /// <param name="exception">Optional <see cref="Exception"/> indicating a failure that's causing the reader to complete.</param>
+        public virtual ValueTask CompleteAsync(Exception exception = null)
+        {
+            try
+            {
+                Complete(exception);
+                return default;
+            }
+            catch (Exception ex)
+            {
+                return new ValueTask(Task.FromException(ex));
+            }
+        }
 
         /// <summary>
         /// Registers a callback that gets executed when the <see cref="PipeWriter"/> side of the pipe is completed
         /// </summary>
         public abstract void OnWriterCompleted(Action<Exception, object> callback, object state);
+
 
         /// <summary>
         /// Creates a <see cref="PipeReader"/> wrapping the specified <see cref="Stream"/>.
