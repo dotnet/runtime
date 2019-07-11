@@ -1172,9 +1172,9 @@ struct MSLAYOUT DebuggerREGDISPLAY
     #define DebuggerIPCE_FloatCount 32
 
     SIZE_T  X[29];
-    SIZE_T  SP;
     SIZE_T  FP;
     SIZE_T  LR;
+    SIZE_T  SP;
     SIZE_T  PC;
 #else
     #define DebuggerIPCE_FloatCount 1
