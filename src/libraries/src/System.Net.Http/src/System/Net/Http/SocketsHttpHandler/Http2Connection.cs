@@ -583,6 +583,7 @@ namespace System.Net.Http
             // Don't wait for completion, which could happen asynchronously.
             LogExceptions(SendPingAckAsync(_incomingBuffer.ActiveMemory.Slice(0, FrameHeader.PingLength)));
 
+            // SendPingAckAsync copies the buffer for us, so it is safe to not wait for completion.
             _incomingBuffer.Discard(frameHeader.Length);
         }
 
