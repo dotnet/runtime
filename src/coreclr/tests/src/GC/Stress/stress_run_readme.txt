@@ -18,7 +18,12 @@ The stress framework is built from <REPO_ROOT>\tests\src\GC\Stress\Framework
 
 The tests are built from <REPO_ROOT>\tests\src\GC\Stress\Tests
 
-The config is at <REPO_ROOT>NDP\clr\tests\src\GC\Stress\testmix_gc.config, this will be copied to the output folder of Framework
+The config is at <REPO_ROOT>\tests\src\GC\Stress\testmix_gc.config, this will be copied to the output folder of Framework
+
+The easiest way to build the Framework+Tests is by building all tests - "<REPO_ROOT>\build_test[.bat|.sh]"
+
+Sometimes there is a need (after initial build) to rebuild Framework+Tests. For example when modifying the Framework to add a new scenario or when investigating a failure.
+In such case it is possible to go directly into the the Framework directory and build manually- Ex: "dotnet build -c:debug".
 
 3. Running stress
 
@@ -30,7 +35,7 @@ To run stress:
 
 (or if you copied testmix_gc.config somewhere else you need to tell it so, eg, c:\TestConfigs\testmix_gc.config)
 
-We recommand to run it for 48 hours (see the comments below on maximumExecutionTime in test config for more detail).
+We recommend to run it for 48 hours (see the comments below on maximumExecutionTime in test config for more detail).
 
 4. Test config
 
