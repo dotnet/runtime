@@ -3336,9 +3336,11 @@ GenTree* Lowering::CreateFrameLinkUpdate(FrameLinkAction action)
 //                                                                              localloc and PInvoke in same function)
 //  +30h    +14h    m_pCallerReturnAddress            offsetOfReturnAddress   call site
 //  +38h    +18h    m_pCalleeSavedFP                  offsetOfCalleeSavedFP   not set by JIT
-//          +1Ch    JIT retval spill area (int)                               before call_gc    ???
-//          +20h    JIT retval spill area (long)                              before call_gc    ???
-//          +24h    Saved value of EBP                                        method prolog     ???
+//          +1Ch    m_pThread
+//          +20h    m_pSPAfterProlog                  offsetOfSPAfterProlog   arm only
+//          +20/24h JIT retval spill area (int)                               before call_gc    ???
+//          +24/28h JIT retval spill area (long)                              before call_gc    ???
+//          +28/2Ch Saved value of EBP                                        method prolog     ???
 //
 // Note that in the VM, InlinedCallFrame is a C++ class whose objects have a 'this' pointer that points
 // to the InlinedCallFrame vptr (the 2nd field listed above), and the GS cookie is stored *before*

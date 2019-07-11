@@ -1326,6 +1326,7 @@ Stub *GenerateInitPInvokeFrameHelper()
     ThumbReg regFrame   = ThumbReg(4);
     ThumbReg regThread  = ThumbReg(5);
     ThumbReg regScratch = ThumbReg(6);
+    ThumbReg regR9 = ThumbReg(9);
 
 #ifdef FEATURE_PAL
     // Erect frame to perform call to GetThread
@@ -1356,8 +1357,11 @@ Stub *GenerateInitPInvokeFrameHelper()
     psl->ThumbEmitLoadRegIndirect(regScratch, regThread, offsetof(Thread, m_pFrame));
     psl->ThumbEmitStoreRegIndirect(regScratch, regFrame, FrameInfo.offsetOfFrameLink - negSpace);
 
-    // str FP, [regFrame + FrameInfo.offsetOfCalleeSavedEbp]
+    // str FP, [regFrame + FrameInfo.offsetOfCalleeSavedFP]
     psl->ThumbEmitStoreRegIndirect(thumbRegFp, regFrame, FrameInfo.offsetOfCalleeSavedFP - negSpace);
+
+    // str R9, [regFrame + FrameInfo.offsetOfSPAfterProlog]
+    psl->ThumbEmitStoreRegIndirect(regR9, regFrame, FrameInfo.offsetOfSPAfterProlog - negSpace);
 
     // mov [regFrame + FrameInfo.offsetOfReturnAddress], 0
     psl->ThumbEmitMovConstant(regScratch, 0);
@@ -2374,8 +2378,8 @@ void InlinedCallFrame::UpdateRegDisplay(const PREGDISPLAY pRD)
 
     // This is necessary to unwind methods with alloca. This needs to stay 
     // in sync with definition of REG_SAVED_LOCALLOC_SP in the JIT.
-    pRD->pCurrentContext->R9 = (DWORD) dac_cast<TADDR>(m_pCallSiteSP);
-    pRD->pCurrentContextPointers->R9 = (DWORD *)&m_pCallSiteSP;
+    pRD->pCurrentContext->R9 = (DWORD) dac_cast<TADDR>(m_pSPAfterProlog);
+    pRD->pCurrentContextPointers->R9 = (DWORD *)&m_pSPAfterProlog;
 
     RETURN;
 }
