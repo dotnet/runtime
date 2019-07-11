@@ -446,44 +446,26 @@ mono_native_thread_join (MonoNativeThreadId tid)
 }
 #endif
 
-#if HAVE_DECL___READFSDWORD==0
-static MONO_ALWAYS_INLINE unsigned long long
-__readfsdword (unsigned long offset)
-{
-	unsigned long value;
-	//	__asm__("movl %%fs:%a[offset], %k[value]" : [value] "=q" (value) : [offset] "irm" (offset));
-   __asm__ volatile ("movl    %%fs:%1,%0"
-     : "=r" (value) ,"=m" ((*(volatile long *) offset)));
-	return value;
-}
-#endif
-
 void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
-	MEMORY_BASIC_INFORMATION meminfo;
-#if defined(_WIN64) || defined(_M_ARM)
-	/* win7 apis */
-	NT_TIB* tib = (NT_TIB*)NtCurrentTeb();
-	guint8 *stackTop = (guint8*)tib->StackBase;
-	guint8 *stackBottom = (guint8*)tib->StackLimit;
-#else
-	/* http://en.wikipedia.org/wiki/Win32_Thread_Information_Block */
-	void* tib = (void*)__readfsdword(0x18);
-	guint8 *stackTop = (guint8*)*(int*)((char*)tib + 4);
-	guint8 *stackBottom = (guint8*)*(int*)((char*)tib + 8);
+#if _WIN32_WINNT >= 0x0602 // Windows 8 or newer.
+	ULONG_PTR low;
+	ULONG_PTR high;
+	GetCurrentThreadStackLimits (&low, &high);
+	*staddr = (guint8*)low;
+	*stsize = high - low;
+#else // Win7 and older.
+	MEMORY_BASIC_INFORMATION info;
+	// Windows stacks are commited on demand, one page at time.
+	// teb->StackBase is the top from which it grows down.
+	// teb->StackLimit is commited, the lowest it has gone so far.
+	// info.AllocationBase is reserved, the lowest it can go.
+	//
+	VirtualQuery (&info, &info, sizeof (info));
+	*staddr = (guint8*)info.AllocationBase;
+	*stsize = (size_t)((NT_TIB*)NtCurrentTeb ())->StackBase - (size_t)info.AllocationBase;
 #endif
-	/*
-	Windows stacks are expanded on demand, one page at time. The TIB reports
-	only the currently allocated amount.
-	VirtualQuery will return the actual limit for the bottom, which is what we want.
-	*/
-	if (VirtualQuery (&meminfo, &meminfo, sizeof (meminfo)) == sizeof (meminfo))
-		stackBottom = MIN (stackBottom, (guint8*)meminfo.AllocationBase);
-
-	*staddr = stackBottom;
-	*stsize = stackTop - stackBottom;
-
 }
 
 #if SIZEOF_VOID_P == 4 && HAVE_API_SUPPORT_WIN32_IS_WOW64_PROCESS

@@ -3950,7 +3950,6 @@ else
 	AC_CHECK_DECLS(InterlockedIncrement64, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedAdd, [], [], [[#include <windows.h>]])
 	AC_CHECK_DECLS(InterlockedAdd64, [], [], [[#include <windows.h>]])
-	AC_CHECK_DECLS(__readfsdword, [], [], [[#include <windows.h>]])
 fi
 
 dnl socklen_t check
