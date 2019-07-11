@@ -35,12 +35,13 @@ public class Program
     {
         var cmd = new RootCommand();
         cmd.AddOption(new Option("-n", "Max number of requests to make concurrently.") { Argument = new Argument<int>("numWorkers", Environment.ProcessorCount) });
-        cmd.AddOption(new Option("-contentLength", "Length of content for request and response bodies.") { Argument = new Argument<int>("numBytes", 1000) });
+        cmd.AddOption(new Option("-maxContentLength", "Max content length for request and response bodies.") { Argument = new Argument<int>("numBytes", 1000) });
         cmd.AddOption(new Option("-http", "HTTP version (1.1 or 2.0)") { Argument = new Argument<Version>("version", HttpVersion.Version20) });
         cmd.AddOption(new Option("-ops", "Indices of the operations to use") { Argument = new Argument<int[]>("space-delimited indices", null) });
         cmd.AddOption(new Option("-trace", "Enable Microsoft-System-Net-Http tracing.") { Argument = new Argument<string>("\"console\" or path") });
         cmd.AddOption(new Option("-aspnetlog", "Enable ASP.NET warning and error logging.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-listOps", "List available options.") { Argument = new Argument<bool>("enable", false) });
+        cmd.AddOption(new Option("-seed", "Seed for generating pseudo-random parameters for a given -n argument.") { Argument = new Argument<int?>("seed", null)});
 
         ParseResult cmdline = cmd.Parse(args);
         if (cmdline.Errors.Count > 0)
@@ -54,16 +55,17 @@ public class Program
             return;
         }
 
-        Run(cmdline.ValueForOption<int>("-n"),
-            cmdline.ValueForOption<int>("-contentLength"),
-            cmdline.ValueForOption<Version>("-http"),
-            cmdline.ValueForOption<int[]>("-ops"),
-            cmdline.HasOption("-trace") ? cmdline.ValueForOption<string>("-trace") : null,
-            cmdline.ValueForOption<bool>("-aspnetlog"),
-            cmdline.ValueForOption<bool>("-listOps"));
+        Run(concurrentRequests  : cmdline.ValueForOption<int>("-n"),
+            maxContentLength    : cmdline.ValueForOption<int>("-maxContentLength"),
+            httpVersion         : cmdline.ValueForOption<Version>("-http"),
+            opIndices           : cmdline.ValueForOption<int[]>("-ops"),
+            logPath             : cmdline.HasOption("-trace") ? cmdline.ValueForOption<string>("-trace") : null,
+            aspnetLog           : cmdline.ValueForOption<bool>("-aspnetlog"),
+            listOps             : cmdline.ValueForOption<bool>("-listOps"),
+            seed                : cmdline.ValueForOption<int?>("-seed") ?? new Random().Next());
     }
 
-    private static void Run(int concurrentRequests, int contentLength, Version httpVersion, int[] opIndices, string logPath, bool aspnetLog, bool listOps)
+    private static void Run(int concurrentRequests, int maxContentLength, Version httpVersion, int[] opIndices, string logPath, bool aspnetLog, bool listOps, int seed)
     {
         // Handle command-line arguments.
         EventListener listener =
@@ -86,8 +88,7 @@ public class Program
             }) { IsBackground = true }.Start();
         }
 
-        string content = string.Concat(Enumerable.Repeat("1234567890", contentLength / 10));
-        byte[] contentBytes = Encoding.ASCII.GetBytes(content);
+        string contentSource = string.Concat(Enumerable.Repeat("1234567890", maxContentLength / 10));
         const int DisplayIntervalMilliseconds = 1000;
         const int HttpsPort = 5001;
         const string LocalhostName = "localhost";
@@ -102,39 +103,47 @@ public class Program
             }
         }
 
+        void ValidateContent(string expectedContent, string actualContent)
+        {
+            if (actualContent != expectedContent)
+            {
+                throw new Exception($"Expected response content \"{expectedContent}\", got \"{actualContent}\"");
+            }
+        }
+
         // Set of operations that the client can select from to run.  Each item is a tuple of the operation's name
         // and the delegate to invoke for it, provided with the HttpClient instance on which to make the call and
         // returning asynchronously the retrieved response string from the server.  Individual operations can be
         // commented out from here to turn them off, or additional ones can be added.
-        var clientOperations = new (string, Func<HttpClient, Task<string>>)[]
+        var clientOperations = new (string, Func<ClientContext, Task>)[]
         {
             ("GET",
-            async client =>
+            async ctx =>
             {
-                using (HttpResponseMessage m = await client.GetAsync(serverUri))
+                using (HttpResponseMessage m = await ctx.HttpClient.GetAsync(serverUri))
                 {
                     ValidateResponse(m);
-                    return await m.Content.ReadAsStringAsync();
+                    ValidateContent(contentSource, await m.Content.ReadAsStringAsync());
                 }
             }),
 
             ("GET Headers",
-            async client =>
+            async ctx =>
             {
-                using (HttpResponseMessage m = await client.GetAsync(serverUri + "/headers"))
+                using (HttpResponseMessage m = await ctx.HttpClient.GetAsync(serverUri + "/headers"))
                 {
                     ValidateResponse(m);
-                    return await m.Content.ReadAsStringAsync();
+                    ValidateContent(contentSource, await m.Content.ReadAsStringAsync());
                 }
             }),
 
             ("GET Cancellation",
-            async client =>
+            async ctx =>
             {
                 using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri) { Version = httpVersion })
                 {
                     var cts = new CancellationTokenSource();
-                    Task<HttpResponseMessage> t = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                    Task<HttpResponseMessage> t = ctx.HttpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     await Task.Delay(1);
                     cts.Cancel();
                     try
@@ -142,19 +151,19 @@ public class Program
                         using (HttpResponseMessage m = await t)
                         {
                             ValidateResponse(m);
-                            return await m.Content.ReadAsStringAsync();
+                            ValidateContent(contentSource, await m.Content.ReadAsStringAsync());
                         }
                     }
-                    catch (OperationCanceledException) { return null; }
+                    catch (OperationCanceledException) { }
                 }
             }),
 
             ("GET Aborted",
-            async client =>
+            async ctx =>
             {
                 try
                 {
-                    await client.GetStringAsync(serverUri + "/abort");
+                    await ctx.HttpClient.GetStringAsync(serverUri + "/abort");
                     throw new Exception("Completed unexpectedly");
                 }
                 catch (Exception e)
@@ -168,7 +177,7 @@ public class Program
                     {
                         if (httpVersion < HttpVersion.Version20)
                         {
-                            return null;
+                            return;
                         }
 
                         string name = e.InnerException?.GetType().Name;
@@ -179,7 +188,7 @@ public class Program
                             case "Http2StreamException":
                                 if (e.InnerException.Message.Contains("INTERNAL_ERROR"))
                                 {
-                                    return null;
+                                    return;
                                 }
                                 break;
                         }
@@ -190,57 +199,67 @@ public class Program
             }),
 
             ("POST",
-            async client =>
+            async ctx =>
             {
-                using (HttpResponseMessage m = await client.PostAsync(serverUri, new StringContent(content)))
+                string content = ctx.Random.GetRandomSubstring(contentSource);
+
+                using (HttpResponseMessage m = await ctx.HttpClient.PostAsync(serverUri, new StringContent(content)))
                 {
                     ValidateResponse(m);
-                    return await m.Content.ReadAsStringAsync();
+                    ValidateContent(content, await m.Content.ReadAsStringAsync());;
                 }
             }),
 
             ("POST Duplex",
-            async client =>
+            async ctx =>
             {
-                using (HttpResponseMessage m = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, serverUri + "/duplex") { Content = new StringContent(content), Version = httpVersion }, HttpCompletionOption.ResponseHeadersRead))
+                string content = ctx.Random.GetRandomSubstring(contentSource);
+
+                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(new HttpRequestMessage(HttpMethod.Post, serverUri + "/duplex") { Content = new StringContent(content), Version = httpVersion }, HttpCompletionOption.ResponseHeadersRead))
                 {
                     ValidateResponse(m);
-                    return await m.Content.ReadAsStringAsync();
+                    ValidateContent(content, await m.Content.ReadAsStringAsync());
                 }
             }),
 
             ("POST Duplex Slow",
-            async client =>
+            async ctx =>
             {
-                using (HttpResponseMessage m = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, serverUri + "/duplexSlow") { Content = new ByteAtATimeNoLengthContent(contentBytes), Version = httpVersion }, HttpCompletionOption.ResponseHeadersRead))
+                string content = ctx.Random.GetRandomSubstring(contentSource);
+
+                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(new HttpRequestMessage(HttpMethod.Post, serverUri + "/duplexSlow") { Content = new ByteAtATimeNoLengthContent(Encoding.ASCII.GetBytes(content)), Version = httpVersion }, HttpCompletionOption.ResponseHeadersRead))
                 {
                     ValidateResponse(m);
-                    return await m.Content.ReadAsStringAsync();
+                    ValidateContent(content, await m.Content.ReadAsStringAsync());
                 }
             }),
 
             ("POST ExpectContinue",
-            async client =>
+            async ctx =>
             {
+                string content = ctx.Random.GetRandomSubstring(contentSource);
+
                 using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri) { Content = new StringContent(content), Version = httpVersion })
                 {
                     req.Headers.ExpectContinue = true;
-                    using (HttpResponseMessage m = await client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
+                    using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
                     {
                         ValidateResponse(m);
-                        return await m.Content.ReadAsStringAsync();
+                        ValidateContent(content, await m.Content.ReadAsStringAsync());
                     }
                 }
             }),
 
             ("POST Cancellation",
-            async client =>
+            async ctx =>
             {
-                using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri) { Version = httpVersion })
+                string content = ctx.Random.GetRandomSubstring(contentSource);
+
+                using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri) { Content = new StringContent(content), Version = httpVersion })
                 {
                     var cts = new CancellationTokenSource();
                     req.Content = new CancelableContent(cts.Token);
-                    Task<HttpResponseMessage> t = client.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                    Task<HttpResponseMessage> t = ctx.HttpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                     await Task.Delay(1);
                     cts.Cancel();
                     try
@@ -248,36 +267,38 @@ public class Program
                         using (HttpResponseMessage m = await t)
                         {
                             ValidateResponse(m);
-                            return await m.Content.ReadAsStringAsync();
+                            ValidateContent(content, await m.Content.ReadAsStringAsync());
                         }
                     }
-                    catch (OperationCanceledException) { return null; }
+                    catch (OperationCanceledException) { }
                 }
             }),
 
             ("HEAD",
-            async client =>
+            async ctx =>
             {
-                using (HttpResponseMessage m = await client.SendAsync(new HttpRequestMessage(HttpMethod.Head, serverUri) { Version = httpVersion }))
+                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(new HttpRequestMessage(HttpMethod.Head, serverUri) { Version = httpVersion }))
                 {
                     ValidateResponse(m);
-                    if (m.Content.Headers.ContentLength != contentLength)
+                    if (m.Content.Headers.ContentLength != maxContentLength)
                     {
-                        throw new Exception($"Expected {contentLength}, got {m.Content.Headers.ContentLength}");
+                        throw new Exception($"Expected {maxContentLength}, got {m.Content.Headers.ContentLength}");
                     }
                     string r = await m.Content.ReadAsStringAsync();
-                    return r.Length == 0 ? null : r;
+                    if (r.Length > 0) throw new Exception($"Got unexpected response: {r}");
                 }
             }),
 
             ("PUT",
-            async client =>
+            async ctx =>
             {
-                using (HttpResponseMessage m = await client.PutAsync(serverUri, new StringContent(content)))
+                string content = ctx.Random.GetRandomSubstring(contentSource);
+
+                using (HttpResponseMessage m = await ctx.HttpClient.PutAsync(serverUri, new StringContent(content)))
                 {
                     ValidateResponse(m);
                     string r = await m.Content.ReadAsStringAsync();
-                    return r == "" ? content : throw new Exception("Got unexpected response: {r}");
+                    if (r != "") throw new Exception($"Got unexpected response: {r}");
                 }
             }),
         };
@@ -301,9 +322,10 @@ public class Program
         Console.WriteLine("       Tracing: " + (logPath == null ? (object)false : logPath.Length == 0 ? (object)true : logPath));
         Console.WriteLine("   ASP.NET Log: " + aspnetLog);
         Console.WriteLine("   Concurrency: " + concurrentRequests);
-        Console.WriteLine("Content Length: " + contentLength);
+        Console.WriteLine("Content Length: " + maxContentLength);
         Console.WriteLine("  HTTP Version: " + httpVersion);
         Console.WriteLine("    Operations: " + string.Join(", ", clientOperations.Select(o => o.Item1)));
+        Console.WriteLine("   Random Seed: " + seed);
         Console.WriteLine();
 
         // Start the Kestrel web server in-proc.
@@ -344,7 +366,7 @@ public class Program
                     endpoints.MapGet("/", async context =>
                     {
                         // Get requests just send back the requested content.
-                        await context.Response.WriteAsync(content);
+                        await context.Response.WriteAsync(contentSource);
                     });
                     endpoints.MapGet("/headers", async context =>
                     {
@@ -355,7 +377,7 @@ public class Program
                                 "CustomHeader" + i,
                                 new StringValues(Enumerable.Range(0, i).Select(id => "value" + id).ToArray()));
                         }
-                        await context.Response.WriteAsync(content);
+                        await context.Response.WriteAsync(contentSource);
                         if (context.Response.SupportsTrailers())
                         {
                             for (int i = 0; i < 10; i++)
@@ -369,7 +391,7 @@ public class Program
                     endpoints.MapGet("/abort", async context =>
                     {
                         // Server writes some content, then aborts the connection
-                        await context.Response.WriteAsync(content.Substring(0, content.Length / 2));
+                        await context.Response.WriteAsync(contentSource.Substring(0, contentSource.Length / 2));
                         context.Abort();
                     });
                     endpoints.MapPost("/", async context =>
@@ -396,8 +418,8 @@ public class Program
                     });
                     endpoints.MapMethods("/", head, context =>
                     {
-                        // Just set the content length on the response.
-                        context.Response.Headers.ContentLength = contentLength;
+                        // Just set the max content length on the response.
+                        context.Response.Headers.ContentLength = maxContentLength;
                         return Task.CompletedTask;
                     });
                     endpoints.MapPut("/", async context =>
@@ -475,18 +497,15 @@ public class Program
             // Start N workers, each of which sits in a loop making requests.
             Task.WaitAll(Enumerable.Range(0, concurrentRequests).Select(taskNum => Task.Run(async () =>
             {
+                var clientContext = new ClientContext(client, taskNum: taskNum, seed: seed);
+
                 for (long i = taskNum; ; i++)
                 {
                     long opIndex = i % clientOperations.Length;
-                    (string operation, Func<HttpClient, Task<string>> func) = clientOperations[opIndex];
+                    (string operation, Func<ClientContext, Task> func) = clientOperations[opIndex];
                     try
                     {
-                        string result = await func(client);
-
-                        if (result != null && result != content)
-                        {
-                            throw new Exception("Unexpected response.  Got: " + result);
-                        }
+                        await func(clientContext);
 
                         Increment(ref success[opIndex]);
                     }
@@ -516,6 +535,29 @@ public class Program
 
         // Make sure our EventListener doesn't go away.
         GC.KeepAlive(listener);
+    }
+
+    /// <summary>Client context containing information pertaining to a single worker.</summary>
+    private sealed class ClientContext
+    {
+        public int TaskNum { get; }
+        public HttpClient HttpClient { get; }
+        public Random Random { get; }
+
+        public ClientContext(HttpClient httpClient, int taskNum, int seed)
+        {
+            TaskNum = taskNum;
+            HttpClient = httpClient;
+            // Random instance deriving from global seed and worker number
+            Random = new Random(Combine(seed, taskNum));
+
+            // deterministic hashing copied from System.Runtime.Hashing
+            int Combine(int h1, int h2)
+            {
+                uint rol5 = ((uint)h1 << 5) | ((uint)h1 >> 27);
+                return ((int)rol5 + h1) ^ h2;
+            }
+        }
     }
 
     /// <summary>HttpContent that partially serializes and then waits for cancellation to be requested.</summary>
@@ -611,5 +653,15 @@ public class Program
                 }
             }
         }
+    }
+}
+
+internal static class RandomExtensions
+{
+    public static string GetRandomSubstring(this Random random, string input)
+    {
+        int offset = random.Next(0, input.Length);
+        int length = random.Next(0, input.Length - offset + 1);
+        return input.Substring(offset, length);
     }
 }
