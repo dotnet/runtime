@@ -1530,7 +1530,7 @@ namespace System.Collections.Generic
             {
                 if (root == null)
                 {
-                    return default(T)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    return default(T)!;
                 }
 
                 Node current = root;
@@ -1553,7 +1553,7 @@ namespace System.Collections.Generic
             {
                 if (root == null)
                 {
-                    return default(T)!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    return default(T)!;
                 }
 
                 Node current = root;

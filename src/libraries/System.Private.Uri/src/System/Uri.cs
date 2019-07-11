@@ -2819,7 +2819,7 @@ namespace System
                             if (NotAny(Flags.UserEscaped))
                             {
                                 chars = UriHelper.EscapeString(_string, _info.Offset.User, _info.Offset.Host, chars,
-                                    ref count, true, '?', '#', '%')!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                                    ref count, true, '?', '#', '%')!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
                             }
                             else
                             {
@@ -2986,7 +2986,7 @@ namespace System
                             //Can Assert IsImplicitfile == false
                             if (NotAny(Flags.UserEscaped))
                                 chars = UriHelper.EscapeString(_string, delimiterAwareIndex, _info.Offset.Fragment, chars,
-                                    ref count, true, '#', c_DummyChar, '%')!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                                    ref count, true, '#', c_DummyChar, '%')!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
                             else
                             {
                                 UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.Fragment, chars,
@@ -3039,7 +3039,7 @@ namespace System
                         case UriFormat.UriEscaped:
                             if (NotAny(Flags.UserEscaped))
                                 chars = UriHelper.EscapeString(_string, delimiterAwareIndex, _info.Offset.End, chars,
-                                    ref count, true, c_DummyChar, c_DummyChar, '%')!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                                    ref count, true, c_DummyChar, c_DummyChar, '%')!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
                             else
                             {
                                 UriHelper.UnescapeString(_string, delimiterAwareIndex, _info.Offset.End, chars,
@@ -4794,7 +4794,7 @@ namespace System
                             str = str.Insert(dosPathIdx + _info.Offset.Path - 1, ":");
                         }
                         dest = UriHelper.EscapeString(str, _info.Offset.Path, _info.Offset.Query, dest, ref end, true,
-                            '?', '#', IsImplicitFile ? c_DummyChar : '%')!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                            '?', '#', IsImplicitFile ? c_DummyChar : '%')!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
                     }
                     else
                     {
@@ -4807,7 +4807,7 @@ namespace System
                 if (!IsWindowsSystem && InFact(Flags.BackslashInPath) && _syntax.NotAny(UriSyntaxFlags.ConvertPathSlashes) && _syntax.InFact(UriSyntaxFlags.FileLikeUri) && !IsImplicitFile)
                 {
                     string str = new string(dest, pos, end - pos);
-                    dest = UriHelper.EscapeString(str, 0, str.Length, dest, ref pos, true, '\\', c_DummyChar, '%')!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                    dest = UriHelper.EscapeString(str, 0, str.Length, dest, ref pos, true, '\\', c_DummyChar, '%')!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
                     end = pos;
                 }
             }
@@ -4857,7 +4857,7 @@ namespace System
                     //Note: Flags.UserEscaped check is solely based on trusting the user
                     string srcString = new string(dest, pos, end - pos);
                     dest = UriHelper.EscapeString(srcString, 0, end - pos, dest, ref pos, true, '?', '#',
-                        IsImplicitFile ? c_DummyChar : '%')!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+                        IsImplicitFile ? c_DummyChar : '%')!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
                     end = pos;
                 }
             }

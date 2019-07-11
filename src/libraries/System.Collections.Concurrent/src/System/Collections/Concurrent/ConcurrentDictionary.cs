@@ -339,7 +339,7 @@ namespace System.Collections.Concurrent
         {
             if (key == null) ThrowKeyNullException();
 
-            return TryRemoveInternal(key, out value, false, default(TValue)!); // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            return TryRemoveInternal(key, out value, false, default);
         }
 
         /// <summary>
@@ -2063,9 +2063,7 @@ namespace System.Collections.Concurrent
                 get { return _enumerator.Current.Value; }
             }
 
-#pragma warning disable CS8612 // TODO-NULLABLE: Covariance in interfaces (https://github.com/dotnet/roslyn/issues/35227)
             public object Current
-#pragma warning restore CS8612
             {
                 get { return Entry; }
             }

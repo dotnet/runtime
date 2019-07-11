@@ -86,8 +86,8 @@ namespace System
 
         public UriBuilder(string? schemeName, string? hostName)
         {
-            Scheme = schemeName!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
-            Host = hostName!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            Scheme = schemeName;
+            Host = hostName;
         }
 
         public UriBuilder(string? scheme, string? host, int portNumber) : this(scheme, host)
@@ -101,7 +101,7 @@ namespace System
                           string? pathValue
                           ) : this(scheme, host, port)
         {
-            Path = pathValue!; // TODO-NULLABLE: Remove ! when nullable attributes are respected
+            Path = pathValue;
         }
 
         public UriBuilder(string? scheme,

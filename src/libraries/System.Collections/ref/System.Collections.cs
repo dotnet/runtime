@@ -189,9 +189,7 @@ namespace System.Collections.Generic
         public abstract bool Equals([System.Diagnostics.CodeAnalysis.AllowNullAttribute] T x, [System.Diagnostics.CodeAnalysis.AllowNullAttribute] T y);
         public abstract int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);
         bool System.Collections.IEqualityComparer.Equals(object? x, object? y) { throw null; }
-#pragma warning disable CS8617 // TODO-NULLABLE: Covariant parameter types (https://github.com/dotnet/roslyn/issues/30958)
         int System.Collections.IEqualityComparer.GetHashCode(object? obj) { throw null; }
-#pragma warning restore CS8617
     }
     public partial class HashSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.IEnumerable, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
