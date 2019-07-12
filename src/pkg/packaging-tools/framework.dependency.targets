@@ -22,11 +22,11 @@
       </RidSpecificFilesToPackage>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
+    <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
       <FilesToPackage Include="@(RidSpecificFilesToPackage)" />
     </ItemGroup>
 
-    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
+    <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
       <!-- Not RID-specific: include all reference files. -->
       <FilesToPackage Include="@(Reference)">
         <TargetPath>ref/$(PackageTargetFramework)</TargetPath>
@@ -87,6 +87,73 @@
                        File="$(IntermediateOutputPath)\$(FrameworkPackageName).versions.txt"
                        Overwrite="true"/>
   </Target>
+
+  <Target Name="SetupGenerateFileVersionProps"
+          Condition="'$(FrameworkPackageName)' != ''">
+    <PropertyGroup>
+      <PropsFile>$(IntermediateOutputPath)$(MSBuildProjectName).props</PropsFile>
+      <PlatformManifestFile>$(IntermediateOutputPath)$(MSBuildProjectName).PlatformManifest.txt</PlatformManifestFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <DepprojDataFile Include="$(PropsFile)" PropsFile="true" />
+      <DepprojDataFile Include="$(PlatformManifestFile)" PlatformManifestFile="true" />
+    </ItemGroup>
+  </Target>
+
+  <!--
+    Creates the platform manifest and props file. Set properties "IncludePlatformManifestFile" and
+    "IncludeFileVersionPropsFile" to true to include them, respectively.
+  -->
+  <Target Name="GenerateFileVersionProps"
+          Condition="'$(FrameworkPackageName)' != ''"
+          DependsOnTargets="SetupGenerateFileVersionProps">
+    <PropertyGroup>
+      <!-- During an official build when we can guarantee that all RID-specific dependencies have been built,
+          restore all of those dependencies and gather the prospective content of the RID-specific Core.App
+          packages.  This is needed so that we have a complete platform manifest in the shipping version of
+          the Microsoft.NETCore.App (RID-agnostic/identity package). -->
+      <IncludeAllRuntimePackagesInPlatformManifest
+        Condition="'$(IncludeAllRuntimePackagesInPlatformManifest)' == '' AND
+                   '$(BuildFullPlatformManifest)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
+    </PropertyGroup>
+
+    <ItemGroup >
+      <RuntimeIdentifiers Include="$(RuntimeIdentifiers)" Condition="'$(IncludeAllRuntimePackagesInPlatformManifest)' == 'true'" />
+      <RuntimeIdentifiers Include="$(RuntimeIdentifier)" Condition="'$(IncludeAllRuntimePackagesInPlatformManifest)' != 'true'" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <RidSpecificGetPackageFilesProject
+        Include="$(MSBuildProjectFullPath)"
+        AdditionalProperties="RuntimeIdentifier=%(RuntimeIdentifiers.Identity)" />
+    </ItemGroup>
+
+    <MSBuild Projects="@(RidSpecificGetPackageFilesProject)"
+             Targets="GetFilesToPackage">
+      <Output TaskParameter="TargetOutputs" ItemName="SharedFrameworkRuntimeFiles" />
+    </MSBuild>
+
+    <!--
+      Workaround: zero-versioned Microsoft.VisualBasic.dll in non-Windows CoreFX transport package.
+      See https://github.com/dotnet/corefx/issues/36630
+    -->
+    <PropertyGroup Condition="'$(OSGroup)' != 'Windows_NT'">
+      <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
+    </PropertyGroup>
+
+    <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
+                              PackageId="$(FrameworkPackageName)"
+                              PackageVersion="$(Version)"
+                              PlatformManifestFile="$(PlatformManifestFile)"
+                              PropsFile="$(PropsFile)"
+                              PreferredPackages="$(Id);@(RuntimeDependency)"
+                              PermitDllAndExeFilesLackingFileVersion="$(PermitDllAndExeFilesLackingFileVersion)" />
+  </Target>
+
+  <Target Name="GetDataFiles"
+          DependsOnTargets="SetupGenerateFileVersionProps"
+          Returns="@(DepprojDataFile)" />
 
   <Target Name="AddCrossgenToolPackageReferences"
           BeforeTargets="CollectPackageReferences">
@@ -242,7 +309,7 @@
       </_filesToCrossGen>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
+    <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
       <FilesToPackage Remove="@(_filesToCrossGen)" />
       <FilesToPackage Include="@(_filesToCrossGen->'%(CrossGenedPath)')" />
     </ItemGroup>
@@ -258,7 +325,6 @@
   </Target>
 
   <Target Name="CrossGen"
-          BeforeTargets="Build"
           DependsOnTargets="
             PrepareForCrossGen;
             CreateCrossGenImages;
@@ -368,6 +434,11 @@
 
   <!-- Target overrides (can't be shared with pkgproj) -->
 
-  <Target Name="Build" DependsOnTargets="GenerateHashVersionsFile;GetFilesToPackage" />
+  <Target Name="Build"
+          DependsOnTargets="
+            GetFilesToPackage;
+            CrossGen;
+            GenerateHashVersionsFile;
+            GenerateFileVersionProps" />
 
 </Project>
