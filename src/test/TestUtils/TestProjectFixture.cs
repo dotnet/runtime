@@ -36,9 +36,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
         {
             ValidateRequiredDirectories(repoDirectoriesProvider);
 
-            Framework = framework ?? Environment.GetEnvironmentVariable("MNA_TFM");
-
             RepoDirProvider = repoDirectoriesProvider;
+
+            Framework = framework ?? RepoDirProvider.GetTestContextVariable("MNA_TFM");
 
             SdkDotnet = new DotNetCli(repoDirectoriesProvider.DotnetSDK);
             CurrentRid = repoDirectoriesProvider.TargetRID;
