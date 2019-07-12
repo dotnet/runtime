@@ -146,6 +146,20 @@
       IgnoredTypes="@(IgnoredDuplicateType)" />
   </Target>
 
+  <Target Name="GetBuildRidSpecificPackageProps">
+    <!--
+      If PackageRID should be built for the current package, PackageBuildRID is set to PackageRID.
+      Otherwise, PackageBuildRID is left empty.
+    -->
+    <PropertyGroup>
+      <PackageBuildRID Condition="'%(Identity)' == '$(PackageRID)'">@(BuildRID)</PackageBuildRID>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(BuildRidSpecificPacks)' == 'true'">
+      <RidSpecificPackProperties>BaseId=$(MSBuildProjectName).$(PackageBuildRID);IdPrefix=</RidSpecificPackProperties>
+    </PropertyGroup>
+  </Target>
+
   <!-- Target overrides (can't be shared with other package projects) -->
 
   <!--
@@ -158,6 +172,7 @@
   <Target Name="Build"
           DependsOnTargets="
             BuildRidAgnosticPackage;
+            GetBuildRidSpecificPackageProps;
             BuildRidSpecificPackage;
             GenerateInstallers" />
 
@@ -167,19 +182,13 @@
     <Message Text="$(MSBuildProjectName) -> $(NuSpecPath)" Importance="high" />
   </Target>
 
-  <Target Name="BuildRidSpecificPackage">
-    <!--
-      If PackageRID should be built for the current package, PackageBuildRID is set to PackageRID.
-      Otherwise, PackageBuildRID is left empty.
-    -->
-    <PropertyGroup>
-      <PackageBuildRID Condition="'%(Identity)' == '$(PackageRID)'">@(BuildRID)</PackageBuildRID>
-    </PropertyGroup>
-
-    <PropertyGroup Condition="'$(BuildRidSpecificPacks)' == 'true'">
-      <RidSpecificPackProperties>BaseId=$(MSBuildProjectName).$(PackageBuildRID);IdPrefix=</RidSpecificPackProperties>
-    </PropertyGroup>
-
+  <Target Name="BuildRidSpecificPackage"
+          Condition="
+            '$(PackageBuildRID)' != '' and
+            (
+              '$(BuildRidSpecificPacks)' == 'true' or
+              ('$(FrameworkPackType)' == '' and '$(BuildRuntimePackages)' == 'true')
+            )">
     <!--
       Ensure all project references are built to make sure dependencies (e.g. native build and
       depproj's crossgen) runs first. The global properties mean we can't let the inner build handle
@@ -190,19 +199,13 @@
       Targets="Build" />
 
     <MSBuild
-      Condition="
-        '$(PackageBuildRID)' != '' and
-        (
-          '$(BuildRidSpecificPacks)' == 'true' or
-          ('$(FrameworkPackType)' == '' and '$(BuildRuntimePackages)' == 'true')
-        )"
       Projects="$(MSBuildProjectFullPath)"
       Targets="InnerBuildRidSpecificPackage"
       Properties="
         BuildPackageLibraryReferences=false;
         DisableOrderDependencies=true;
         PackageTargetRuntime=$(PackageBuildRID);
-        NuGetRuntimeIdentifier=$(PackageBuildRID);
+        RuntimeIdentifier=$(PackageBuildRID);
         $(RidSpecificPackProperties)" />
   </Target>
 
