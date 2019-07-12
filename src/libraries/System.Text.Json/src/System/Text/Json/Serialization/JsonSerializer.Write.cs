@@ -14,12 +14,12 @@ namespace System.Text.Json
         // 3) The object is an element in an enumerable.
         private static bool Write(
             Utf8JsonWriter writer,
+            int originalWriterDepth,
             int flushThreshold,
             JsonSerializerOptions options,
             ref WriteStack state)
         {
             bool finishedSerializing;
-            int currentDepth = writer.CurrentDepth;
 
             try
             {
@@ -53,7 +53,7 @@ namespace System.Text.Json
 
                     if (finishedSerializing)
                     {
-                        if (writer.CurrentDepth == 0 || writer.CurrentDepth == currentDepth)
+                        if (writer.CurrentDepth == 0 || writer.CurrentDepth == originalWriterDepth)
                         {
                             break;
                         }

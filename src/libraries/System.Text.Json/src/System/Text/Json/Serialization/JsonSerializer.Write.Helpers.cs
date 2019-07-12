@@ -134,7 +134,7 @@ namespace System.Text.Json
                 state.Current.Initialize(type, options);
                 state.Current.CurrentValue = value;
 
-                Write(writer, -1, options, ref state);
+                Write(writer, writer.CurrentDepth, flushThreshold: -1, options, ref state);
             }
 
             writer.Flush();
