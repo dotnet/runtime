@@ -152,9 +152,9 @@ namespace System.Text.Json
             }
 
             // Allow redirection for generic types or the enum converter.
-            if (converter is JsonConverterFactory binder)
+            if (converter is JsonConverterFactory factory)
             {
-                converter = binder.GetConverterInternal(typeToConvert);
+                converter = factory.GetConverterInternal(typeToConvert);
                 if (converter == null || converter.TypeToConvert == null)
                 {
                     throw new ArgumentNullException("typeToConvert");
