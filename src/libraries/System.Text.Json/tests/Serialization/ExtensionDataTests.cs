@@ -100,7 +100,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(jsonWithProperty, options);
                 Assert.Equal(1, obj.MyOverflow["MyIntMissing"].GetInt32());
-                string json = JsonSerializer.Serialize(obj);
+                string json = JsonSerializer.Serialize(obj, options);
                 Assert.Contains(@"""MyIntMissing"":1", json);
             }
 
@@ -120,7 +120,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 obj = JsonSerializer.Deserialize<ClassWithExtensionProperty>(jsonWithPropertyCamelCased, options);
                 Assert.Equal(1, obj.MyOverflow["myIntMissing"].GetInt32());
-                string json = JsonSerializer.Serialize(obj);
+                string json = JsonSerializer.Serialize(obj, options);
                 Assert.Contains(@"""myIntMissing"":1", json);
             }
         }

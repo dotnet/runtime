@@ -143,7 +143,8 @@ namespace System.Text.Json
             }
             else
             {
-                if (options.DictionaryKeyPolicy != null)
+                if (options.DictionaryKeyPolicy != null && 
+                    current.ExtensionDataStatus != ExtensionDataWriteStatus.Writing) // We do not convert extension data.
                 {
                     key = options.DictionaryKeyPolicy.ConvertName(key);
 
