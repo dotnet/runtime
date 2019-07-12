@@ -12377,13 +12377,13 @@ void gc_heap::send_full_gc_notification (int gen_num, BOOL due_to_alloc_p)
 
 wait_full_gc_status gc_heap::full_gc_wait (GCEvent *event, int time_out_ms)
 {
-    uint32_t maxgen_percent = 0;
 #ifdef MULTIPLE_HEAPS
-    maxgen_percent = g_heaps[0]->fgn_maxgen_percent;
+    gc_heap* hp = gc_heap::g_heaps[0];
 #else
-    maxgen_percent = fgn_maxgen_percent;
+    gc_heap* hp = pGenGCHeap;
 #endif //MULTIPLE_HEAPS
-    if (maxgen_percent == 0)
+
+    if (hp->fgn_maxgen_percent == 0)
     {
         return wait_full_gc_na;
     }
@@ -12392,7 +12392,7 @@ wait_full_gc_status gc_heap::full_gc_wait (GCEvent *event, int time_out_ms)
 
     if ((wait_result == WAIT_OBJECT_0) || (wait_result == WAIT_TIMEOUT))
     {
-        if (maxgen_percent == 0)
+        if (hp->fgn_maxgen_percent == 0)
         {
             return wait_full_gc_cancelled;
         }
@@ -36900,6 +36900,7 @@ bool GCHeap::RegisterForFullGCNotification(uint32_t gen2Percentage,
     }
 #else //MULTIPLE_HEAPS
     pGenGCHeap->fgn_last_alloc = dd_new_allocation (pGenGCHeap->dynamic_data_of (0));
+    pGenGCHeap->fgn_maxgen_percent = gen2Percentage;
 #endif //MULTIPLE_HEAPS
 
     pGenGCHeap->full_gc_approach_event.Reset();
@@ -36913,9 +36914,17 @@ bool GCHeap::RegisterForFullGCNotification(uint32_t gen2Percentage,
 
 bool GCHeap::CancelFullGCNotification()
 {
+#ifdef MULTIPLE_HEAPS
+    for (int hn = 0; hn < gc_heap::n_heaps; hn++)
+    {
+        gc_heap* hp = gc_heap::g_heaps [hn];
+        hp->fgn_maxgen_percent = 0;
+    }
+#else //MULTIPLE_HEAPS
     pGenGCHeap->fgn_maxgen_percent = 0;
-    pGenGCHeap->fgn_loh_percent = 0;
+#endif //MULTIPLE_HEAPS
 
+    pGenGCHeap->fgn_loh_percent = 0;
     pGenGCHeap->full_gc_approach_event.Set();
     pGenGCHeap->full_gc_end_event.Set();
     
