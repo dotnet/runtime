@@ -52,8 +52,6 @@ typedef struct {
 	gint64 tag;
 } MonoStateMem;
 
-MONO_BEGIN_DECLS
-
 // Logging
 gboolean
 mono_summarize_set_timeline_dir (const char *directory);
@@ -119,6 +117,5 @@ mono_state_alloc_mem (MonoStateMem *mem, long tag, size_t size);
 void
 mono_state_free_mem (MonoStateMem *mem);
 
-MONO_END_DECLS
 #endif // DISABLE_CRASH_REPORTING
 #endif // MONO_UTILS_NATIVE_STATE

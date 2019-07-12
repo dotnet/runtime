@@ -12,8 +12,6 @@
 #include <mono/metadata/object-forward.h>
 #include <mono/metadata/profiler.h>
 
-MONO_BEGIN_DECLS
-
 /*
  * The following code is here to maintain compatibility with a few profiler API
  * functions used by Xamarin.{Android,iOS,Mac} so that they keep working
@@ -42,8 +40,5 @@ MONO_DEPRECATED void mono_profiler_set_events (int flags);
 MONO_DEPRECATED void mono_profiler_install_allocation (MonoLegacyProfileAllocFunc callback);
 MONO_DEPRECATED void mono_profiler_install_enter_leave (MonoLegacyProfileMethodFunc enter, MonoLegacyProfileMethodFunc fleave);
 MONO_DEPRECATED void mono_profiler_install_exception (MonoLegacyProfileExceptionFunc throw_callback, MonoLegacyProfileMethodFunc exc_method_leave, MonoLegacyProfileExceptionClauseFunc clause_callback);
-
-MONO_END_DECLS
-
 
 #endif // __MONO_PROFILER_LEGACY_H__
