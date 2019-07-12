@@ -4366,7 +4366,7 @@ void MethodContext::recGetFieldType(CORINFO_FIELD_HANDLE  field,
         // class handle (we use only 'field' and 'memberParent' as keys).
         // Update the value in that case.
         unsigned index = GetFieldType->GetIndex(key);
-        if ((index != -1) && (GetFieldType->GetItem(index).A == 0))
+        if ((index != (unsigned)-1) && (GetFieldType->GetItem(index).A == 0))
         {
             GetFieldType->Update(index, value);
             DEBUG_REC(dmpGetFieldType(key, value));

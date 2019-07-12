@@ -614,7 +614,7 @@ void EventPipe::WriteEventInternal(
     {
         for (uint32_t i = 0; i < MaxNumberOfSessions; ++i)
         {
-            if ((s_allowWrite & (1ui64 << i)) == 0)
+            if ((s_allowWrite & ((uint64_t)1 << i)) == 0)
                 continue;
 
             // Now that we know this session is probably live we pay the perf cost of the memory barriers

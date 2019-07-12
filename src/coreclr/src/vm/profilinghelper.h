@@ -140,7 +140,7 @@ private:
     ProfilingAPIUtility() {}
 
     static HRESULT PerformDeferredInit();
-    static HRESULT ProfilingAPIUtility::DoPreInitialization(
+    static HRESULT DoPreInitialization(
         EEToProfInterfaceImpl *pEEProf,
         const CLSID *pClsid, 
         LPCWSTR wszClsid, 
