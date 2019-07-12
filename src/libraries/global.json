@@ -1,6 +1,7 @@
 {
   "sdk": {
-    "version": "3.0.100-preview7-012630"
+    "version": "3.0.100-preview7-012630",
+    "rollforward": "major"
   },
   "tools": {
     "dotnet": "3.0.100-preview7-012630"
