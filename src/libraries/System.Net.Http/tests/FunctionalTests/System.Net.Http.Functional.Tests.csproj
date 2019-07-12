@@ -139,6 +139,7 @@
     <Compile Include="SyncBlockingContent.cs" />
     <Compile Include="TestHelper.cs" />
     <Compile Include="DefaultCredentialsTest.cs" />
+    <Compile Include="ThrowingContent.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="CustomContent.netcore.cs" />
