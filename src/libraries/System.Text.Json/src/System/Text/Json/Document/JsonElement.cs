@@ -1269,87 +1269,25 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Write the element into the provided writer as a named JSON object property.
-        /// </summary>
-        /// <param name="propertyName">The name for this value within the JSON object.</param>
-        /// <param name="writer">The writer.</param>
-        /// <exception cref="InvalidOperationException">
-        ///   This value's <see cref="ValueKind"/> is <see cref="JsonValueKind.Undefined"/>.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">
-        ///   The parent <see cref="JsonDocument"/> has been disposed.
-        /// </exception>
-        public void WriteProperty(string propertyName, Utf8JsonWriter writer)
-            => WriteProperty(propertyName.AsSpan(), writer);
-
-        /// <summary>
-        ///   Write the element into the provided writer as a named JSON object property.
-        /// </summary>
-        /// <param name="propertyName">The name for this value within the JSON object.</param>
-        /// <param name="writer">The writer.</param>
-        /// <exception cref="InvalidOperationException">
-        ///   This value's <see cref="ValueKind"/> is <see cref="JsonValueKind.Undefined"/>.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">
-        ///   The parent <see cref="JsonDocument"/> has been disposed.
-        /// </exception>
-        public void WriteProperty(ReadOnlySpan<char> propertyName, Utf8JsonWriter writer)
-        {
-            CheckValidInstance();
-
-            _parent.WriteElementTo(_idx, writer, propertyName);
-        }
-
-        /// <summary>
-        ///   Write the element into the provided writer as a named JSON object property.
-        /// </summary>
-        /// <param name="propertyName">The pre-encoded name for this value within the JSON object.</param>
-        /// <param name="writer">The writer.</param>
-        /// <exception cref="InvalidOperationException">
-        ///   This value's <see cref="ValueKind"/> is <see cref="JsonValueKind.Undefined"/>.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">
-        ///   The parent <see cref="JsonDocument"/> has been disposed.
-        /// </exception>
-        public void WriteProperty(JsonEncodedText propertyName, Utf8JsonWriter writer)
-        {
-            CheckValidInstance();
-
-            _parent.WriteElementTo(_idx, writer, propertyName);
-        }
-
-        /// <summary>
-        ///   Write the element into the provided writer as a named JSON object property.
-        /// </summary>
-        /// <param name="utf8PropertyName">
-        ///   The name for this value within the JSON object, as UTF-8 text.
-        /// </param>
-        /// <param name="writer">The writer.</param>
-        /// <exception cref="InvalidOperationException">
-        ///   This value's <see cref="ValueKind"/> is <see cref="JsonValueKind.Undefined"/>.
-        /// </exception>
-        /// <exception cref="ObjectDisposedException">
-        ///   The parent <see cref="JsonDocument"/> has been disposed.
-        /// </exception>
-        public void WriteProperty(ReadOnlySpan<byte> utf8PropertyName, Utf8JsonWriter writer)
-        {
-            CheckValidInstance();
-
-            _parent.WriteElementTo(_idx, writer, utf8PropertyName);
-        }
-
-        /// <summary>
         ///   Write the element into the provided writer as a JSON value.
         /// </summary>
         /// <param name="writer">The writer.</param>
+        /// <exception cref="ArgumentNullException">
+        ///   The <paramref name="writer"/> parameter is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
         ///   This value's <see cref="ValueKind"/> is <see cref="JsonValueKind.Undefined"/>.
         /// </exception>
         /// <exception cref="ObjectDisposedException">
         ///   The parent <see cref="JsonDocument"/> has been disposed.
         /// </exception>
-        public void WriteValue(Utf8JsonWriter writer)
+        public void WriteTo(Utf8JsonWriter writer)
         {
+            if (writer == null)
+            {
+                throw new ArgumentNullException(nameof(writer));
+            }
+
             CheckValidInstance();
 
             _parent.WriteElementTo(_idx, writer);
@@ -1451,11 +1389,11 @@ namespace System.Text.Json
                 case JsonTokenType.Number:
                 case JsonTokenType.StartArray:
                 case JsonTokenType.StartObject:
-                {
-                    // null parent should have hit the None case
-                    Debug.Assert(_parent != null);
-                    return _parent.GetRawValueAsString(_idx);
-                }
+                    {
+                        // null parent should have hit the None case
+                        Debug.Assert(_parent != null);
+                        return _parent.GetRawValueAsString(_idx);
+                    }
                 case JsonTokenType.String:
                     return GetString();
                 case JsonTokenType.Comment:

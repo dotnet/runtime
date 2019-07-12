@@ -16,7 +16,7 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, JsonElement value, JsonSerializerOptions options)
         {
-            value.WriteValue(writer);
+            value.WriteTo(writer);
         }
     }
 }
