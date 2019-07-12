@@ -45,10 +45,17 @@ namespace System.Net.Http
         private int _pendingWriters;
         private bool _lastPendingWriterShouldFlush;
 
+        // This means that the pool has disposed us, but there may still be
+        // requests in flight that will continue to be processed.
         private bool _disposed;
-        // anything else than -1 means that connection is being terminated
-        // in which case _lastValidStreamId is the maximum StreamId which can be processed
-        private int _lastValidStreamId = -1;
+
+        // This will be set when:
+        // (1) We receive GOAWAY -- will be set to the value sent in the GOAWAY frame
+        // (2) A connection IO error occurs -- will be set to int.MaxValue 
+        //     (meaning we must assume all streams have been processed by the server)
+        private int _lastStreamId = -1;
+
+        // This will be set when a connection IO error occurs
         private Exception _abortException;
 
         // If an in-progress write is canceled we need to be able to immediately
@@ -280,7 +287,7 @@ namespace System.Net.Http
             {
                 if (NetEventSource.IsEnabled) Trace($"{nameof(ProcessIncomingFramesAsync)}: {e.Message}");
 
-                if (!_disposed)
+                if (_abortException == null)
                 {
                     Abort(e);
                 }
@@ -360,11 +367,6 @@ namespace System.Net.Http
             if (http2Stream != null)
             {
                 http2Stream.OnResponseHeadersComplete(endStream);
-
-                if (endStream)
-                {
-                    RemoveStream(http2Stream);
-                }
             }
         }
 
@@ -418,11 +420,6 @@ namespace System.Net.Http
                 bool endStream = frameHeader.EndStreamFlag;
 
                 http2Stream.OnResponseData(frameData, endStream);
-
-                if (endStream)
-                {
-                    RemoveStream(http2Stream);
-                }
             }
 
             if (frameData.Length > 0)
@@ -659,14 +656,12 @@ namespace System.Net.Http
 
             if (protocolError == Http2ProtocolErrorCode.RefusedStream)
             {
-                http2Stream.OnAbort(new Http2StreamException(protocolError), canRetry: true);
+                http2Stream.OnReset(new Http2StreamException(protocolError), canRetry: true);
             }
             else
             {
-                http2Stream.OnAbort(new Http2StreamException(protocolError));
+                http2Stream.OnReset(new Http2StreamException(protocolError));
             }
-
-            RemoveStream(http2Stream);
         }
 
         private void ProcessGoAwayFrame(FrameHeader frameHeader)
@@ -799,6 +794,10 @@ namespace System.Net.Http
                         LogExceptions(FlushAsync());
                     }
 
+                    // On cancel, we get TaskCanceledException here instead of OperationCanceledException.
+                    // For consistency, try to ensure we get OperationCanceledException when the cancellationToken has fired.
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     throw;
                 }
 
@@ -806,8 +805,9 @@ namespace System.Net.Http
             }
 
             // If the connection has been aborted, then fail now instead of trying to send more data.
-            if (_disposed)
+            if (_abortException != null)
             {
+                _writerLock.Release();
                 throw new IOException(SR.net_http_request_aborted);
             }
         }
@@ -1095,15 +1095,13 @@ namespace System.Net.Http
                 throw CreateRetryException();
             }
 
-            Http2Stream http2Stream = null;
-
             try
             {
-                http2Stream = AddStream(request);
-                int streamId = http2Stream.StreamId;
-
                 // Generate the entire header block, without framing, into the connection header buffer.
                 WriteHeaders(request);
+
+                Http2Stream http2Stream = AddStream(request);
+                int streamId = http2Stream.StreamId;
 
                 ReadOnlyMemory<byte> remaining = _headerBuffer.ActiveMemory;
                 Debug.Assert(remaining.Length > 0);
@@ -1150,24 +1148,14 @@ namespace System.Net.Http
                 // If this is not the end of the stream, we can put off flushing the buffer
                 // since we know that there are going to be data frames (including end of data) following.
                 FinishWrite(mustFlush || (flags & FrameFlags.EndStream) != 0 ? FlushTiming.AfterPendingWrites : FlushTiming.Eventually);
-            }
-            catch
-            {
-                if (http2Stream != null)
-                {
-                    RemoveStream(http2Stream);
-                    http2Stream.Dispose();
-                }
 
-                throw;
+                return http2Stream;
             }
             finally
             {
                 _headerBuffer.Discard(_headerBuffer.ActiveLength);
                 _headerSerializationLock.Release();
             }
-
-            return http2Stream;
         }
 
         private async Task SendStreamDataAsync(int streamId, ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
@@ -1330,22 +1318,32 @@ namespace System.Net.Http
             // we could hold pool lock while trying to grab connection lock in Dispose().
             _pool.InvalidateHttp2Connection(this);
 
+            List<Http2Stream> streamsToAbort = new List<Http2Stream>();
+
             lock (SyncObject)
             {
                 if (NetEventSource.IsEnabled) Trace($"{nameof(abortException)}={abortException}");
+
+                // Set _lastStreamId to int.MaxValue to indicate that we are shutting down
+                // and we must assume all active streams have been processed by the server
+                _lastStreamId = int.MaxValue;
 
                 foreach (KeyValuePair<int, Http2Stream> kvp in _httpStreams)
                 {
                     int streamId = kvp.Key;
                     Debug.Assert(streamId == kvp.Value.StreamId);
 
-                    kvp.Value.OnAbort(abortException);
+                    streamsToAbort.Add(kvp.Value);
                 }
 
-                _httpStreams.Clear();
-
-                _disposed = true;
                 CheckForShutdown();
+            }
+
+            // Avoid calling OnAbort under the lock, as it may cause the Http2Stream
+            // to call back in to RemoveStream
+            foreach (Http2Stream s in streamsToAbort)
+            {
+                s.OnReset(abortException);
             }
         }
 
@@ -1358,52 +1356,52 @@ namespace System.Net.Http
             // we could hold pool lock while trying to grab connection lock in Dispose().
             _pool.InvalidateHttp2Connection(this);
 
+            List<Http2Stream> streamsToAbort = new List<Http2Stream>();
+
             lock (SyncObject)
             {
-                if (_lastValidStreamId == -1)
+                if (_lastStreamId == -1)
                 {
-                    _lastValidStreamId = lastValidStream;
+                    _lastStreamId = lastValidStream;
                 }
                 else
                 {
                     // We have already received GOAWAY before
                     // In this case the smaller valid stream is used
-                    _lastValidStreamId = Math.Min(_lastValidStreamId, lastValidStream);
+                    _lastStreamId = Math.Min(_lastStreamId, lastValidStream);
                 }
 
-                if (NetEventSource.IsEnabled) Trace($"{nameof(lastValidStream)}={lastValidStream}, {nameof(_lastValidStreamId)}={_lastValidStreamId}");
-
-                bool hasAnyActiveStream = false;
+                if (NetEventSource.IsEnabled) Trace($"{nameof(lastValidStream)}={lastValidStream}, {nameof(_lastStreamId)}={_lastStreamId}");
 
                 foreach (KeyValuePair<int, Http2Stream> kvp in _httpStreams)
                 {
                     int streamId = kvp.Key;
                     Debug.Assert(streamId == kvp.Value.StreamId);
 
-                    if (streamId > _lastValidStreamId)
+                    if (streamId > _lastStreamId)
                     {
-                        kvp.Value.OnAbort(abortException, canRetry: true);
-                        _httpStreams.Remove(streamId);
+                        streamsToAbort.Add(kvp.Value);
                     }
                     else
                     {
-                        if (NetEventSource.IsEnabled) Trace($"Found {nameof(streamId)} {streamId} <= {_lastValidStreamId}.");
-                        hasAnyActiveStream = true;
+                        if (NetEventSource.IsEnabled) Trace($"Found {nameof(streamId)} {streamId} <= {_lastStreamId}.");
                     }
                 }
 
-                if (!hasAnyActiveStream)
-                {
-                    _disposed = true;
-                }
-
                 CheckForShutdown();
+            }
+
+            // Avoid calling OnAbort under the lock, as it may cause the Http2Stream
+            // to call back in to RemoveStream
+            foreach (Http2Stream s in streamsToAbort)
+            {
+                s.OnReset(abortException, canRetry: true);
             }
         }
 
         private void CheckForShutdown()
         {
-            Debug.Assert(_disposed || _lastValidStreamId != -1);
+            Debug.Assert(_disposed || _lastStreamId != -1);
             Debug.Assert(Monitor.IsEntered(SyncObject));
 
             // Check if dictionary has become empty
@@ -1411,16 +1409,12 @@ namespace System.Net.Http
             {
                 return;
             }
-            else
-            {
-                _disposed = true;
-            }
 
             // Do shutdown.
             _stream.Close();
 
-            _connectionWindow.Dispose(_abortException);
-            _concurrentStreams.Dispose(_abortException);
+            _connectionWindow.Dispose();
+            _concurrentStreams.Dispose();
         }
 
         public void Dispose()
@@ -1564,18 +1558,20 @@ namespace System.Net.Http
         {
             if (NetEventSource.IsEnabled) Trace($"{request}");
 
-            Http2Stream http2Stream = null;
             try
             {
                 // Send request headers
                 bool shouldExpectContinue = request.Content != null && request.HasHeaders && request.Headers.ExpectContinue == true;
-                http2Stream = await SendHeadersAsync(request, cancellationToken, mustFlush: shouldExpectContinue).ConfigureAwait(false);
+                Http2Stream http2Stream = await SendHeadersAsync(request, cancellationToken, mustFlush: shouldExpectContinue).ConfigureAwait(false);
 
-                // Start sending the request body, if any.
-                Task requestBodyTask = 
-                    request.Content == null ? Task.CompletedTask :
-                    shouldExpectContinue ? http2Stream.SendRequestBodyWithExpect100ContinueAsync(cancellationToken) :
-                    http2Stream.SendRequestBodyAsync(cancellationToken);
+                bool duplex = request.Content != null && request.Content.AllowDuplex;
+
+                // If we have duplex content, then don't propagate the cancellation to the request body task.
+                // If cancellation occurs before we receive the response headers, then we will cancel the request body anyway.
+                CancellationToken requestBodyCancellationToken = duplex ? CancellationToken.None : cancellationToken;
+
+                // Start sending request body, if any.
+                Task requestBodyTask = http2Stream.SendRequestBodyAsync(requestBodyCancellationToken);
 
                 // Start receiving the response headers.
                 Task responseHeadersTask = http2Stream.ReadResponseHeadersAsync(cancellationToken);
@@ -1590,7 +1586,7 @@ namespace System.Net.Http
                 // our built-in content types do), then we can just proceed to wait for the request body content to
                 // complete before worrying about response headers completing.
                 if (requestBodyTask.IsCompleted ||
-                    request.Content.AllowDuplex == false ||
+                    duplex == false ||
                     requestBodyTask == await Task.WhenAny(requestBodyTask, responseHeadersTask).ConfigureAwait(false) ||
                     requestBodyTask.IsCompleted)
                 {
@@ -1625,39 +1621,14 @@ namespace System.Net.Http
             }
             catch (Exception e)
             {
-                Exception replacementException = null;
-
                 if (e is IOException ||
                     e is ObjectDisposedException ||
                     e is Http2ProtocolException ||
                     e is InvalidOperationException)
                 {
-                    replacementException = new HttpRequestException(SR.net_http_client_execution_error, _abortException ?? e);
-                }
-                else if (e is OperationCanceledException oce)
-                {
-                    // If the operation has been canceled after the stream was allocated an ID, send a RST_STREAM.
-                    if (http2Stream != null && http2Stream.StreamId != 0)
-                    {
-                        http2Stream.Cancel();
-                    }
-
-                    if (cancellationToken.IsCancellationRequested && oce.CancellationToken != cancellationToken)
-                    {
-                        replacementException = new OperationCanceledException(oce.Message, oce, cancellationToken);
-                    }
+                    throw new HttpRequestException(SR.net_http_client_execution_error, e);
                 }
 
-                if (http2Stream != null)
-                {
-                    RemoveStream(http2Stream);
-                    http2Stream.Dispose();
-                }
-
-                if (replacementException != null)
-                {
-                    throw replacementException;
-                }
                 throw;
             }
         }
@@ -1666,15 +1637,9 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                if (_nextStream == MaxStreamId || _disposed || _lastValidStreamId != -1)
+                if (_nextStream == MaxStreamId || _disposed || _lastStreamId != -1)
                 {
-                    if (_abortException != null)
-                    {
-                        // Aborted because protocol error or IO.
-                        throw new ObjectDisposedException(nameof(Http2Connection), _abortException);
-                    }
-
-                    // We run out of IDs or we have race condition between receiving GOAWAY and processing requests.
+                    // We ran out of stream IDs or we raced condition between acquiring the connection from the pool and shutting down.
                     // Throw a retryable request exception. This will cause retry logic to kick in
                     // and perform another connection attempt. The user should never see this exception.
                     throw CreateRetryException();
@@ -1703,9 +1668,7 @@ namespace System.Net.Http
             {
                 if (!_httpStreams.Remove(http2Stream.StreamId, out Http2Stream removed))
                 {
-                    // Stream can be removed from background ProcessIncomingFramesAsync() when endOfStream is set
-                    // or when we hit various error conditions in SendAsync() call.
-                    // Skip logic below if stream was already removed.
+                    Debug.Assert(false, "Stream not found in dictionary during RemoveStream???");
                     return;
                 }
 
@@ -1719,7 +1682,7 @@ namespace System.Net.Http
                     _idleSinceTickCount = Environment.TickCount64;
                 }
 
-                if (_disposed || _lastValidStreamId != -1)
+                if (_disposed || _lastStreamId != -1)
                 {
                     CheckForShutdown();
                 }

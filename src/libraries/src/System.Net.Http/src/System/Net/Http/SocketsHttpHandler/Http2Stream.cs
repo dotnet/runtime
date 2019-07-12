@@ -7,7 +7,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
-using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +16,7 @@ namespace System.Net.Http
 {
     internal sealed partial class Http2Connection
     {
-        private sealed class Http2Stream : IValueTaskSource, IDisposable, IHttpTrace
+        private sealed class Http2Stream : IValueTaskSource, IHttpTrace
         {
             private const int InitialStreamBufferSize =
 #if DEBUG
@@ -39,10 +38,14 @@ namespace System.Net.Http
             private ArrayBuffer _responseBuffer; // mutable struct, do not make this readonly
             private int _pendingWindowUpdate;
 
-            private StreamState _state;
-            private bool _disposed;
-            private Exception _abortException;
-            private bool _canRetry;             // if _state == Aborted, this indicates the stream was refused and so the request is retryable
+            private StreamCompletionState _requestCompletionState;
+            private StreamCompletionState _responseCompletionState;
+            private ResponseProtocolState _responseProtocolState;
+
+            // If this is not null, then we have received a reset from the server
+            // (i.e. RST_STREAM or general IO error processing the connection)
+            private Exception _resetException;
+            private bool _canRetry;             // if _resetException != null, this indicates the stream was refused and so the request is retryable
 
             /// <summary>
             /// The core logic for the IValueTaskSource implementation.
@@ -67,8 +70,8 @@ namespace System.Net.Http
             /// </summary>
             private bool _hasWaiter;
 
-            private TaskCompletionSource<bool> _shouldSendRequestBodyWaiter;
-            private bool _shouldSendRequestBody;
+            private CancellationTokenSource _requestBodyCancellationSource;
+            private TaskCompletionSource<bool> _expect100ContinueWaiter;
 
             private int _headerBudgetRemaining;
 
@@ -82,12 +85,12 @@ namespace System.Net.Http
                 _connection = connection;
                 _streamId = streamId;
 
-                _state = StreamState.ExpectingStatus;
+                _requestCompletionState = StreamCompletionState.InProgress;
+                _responseCompletionState = StreamCompletionState.InProgress;
+
+                _responseProtocolState = ResponseProtocolState.ExpectingStatus;
 
                 _request = request;
-                _shouldSendRequestBody = true;
-
-                _disposed = false;
 
                 _responseBuffer = new ArrayBuffer(InitialStreamBufferSize, usePool: true);
 
@@ -117,60 +120,68 @@ namespace System.Net.Http
 
             public async Task SendRequestBodyAsync(CancellationToken cancellationToken)
             {
-                Debug.Assert(_request.Content != null);
-                if (NetEventSource.IsEnabled) Trace($"{_request.Content}");
-
-                try
+                if (_request.Content != null)
                 {
-                    using (Http2WriteStream writeStream = new Http2WriteStream(this))
+                    if (NetEventSource.IsEnabled)
+                        Trace($"{_request.Content}");
+
+                    // Create a linked cancellation token source so that we can cancel the request in the event of receiving RST_STREAM
+                    // and similiar situations where we need to cancel the request body (see CancelRequestBody).
+                    _requestBodyCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, CancellationToken.None);
+                    cancellationToken = _requestBodyCancellationSource.Token;
+
+                    try
                     {
-                        // TODO: until #9071 is fixed, cancellation on content.CopyToAsync does not apply for most content types,
-                        // because most content types aren't passed the token given to this internal overload of CopyToAsync.
-                        // To work around it, we register to set _abortException as needed; this won't preempt reads issued to
-                        // the source content, but it will at least enable the writes then performed on our write stream to see
-                        // that cancellation was requested and abort, rather than waiting for the whole copy to complete.
-                        using (cancellationToken.UnsafeRegister(stream =>
+                        bool sendRequestContent = true;
+                        if (_request.HasHeaders && _request.Headers.ExpectContinue == true)
                         {
-                            var thisRef = (Http2Stream)stream;
-                            if (thisRef._abortException == null)
-                            {
-                                if (NetEventSource.IsEnabled) thisRef.Trace($"Canceling sending request body.");
-                                Interlocked.CompareExchange(ref thisRef._abortException, new OperationCanceledException(), null);
-                            }
-                        }, this))
-                        {
-                            await _request.Content.CopyToAsync(writeStream, null, cancellationToken).ConfigureAwait(false);
-                            if (NetEventSource.IsEnabled) Trace($"Finished sending request body.");
+                            sendRequestContent = await WaitFor100ContinueAsync(cancellationToken).ConfigureAwait(false);
                         }
+
+                        if (sendRequestContent)
+                        {
+                            using (Http2WriteStream writeStream = new Http2WriteStream(this))
+                            {
+                                await _request.Content.CopyToAsync(writeStream, null, cancellationToken).ConfigureAwait(false);
+                            }
+                        }
+
+                        await _connection.SendEndStreamAsync(_streamId);
+
+                        if (NetEventSource.IsEnabled) Trace($"Finished sending request body.");
                     }
-
-                    // Don't wait for completion, which could happen asynchronously.
-                    _connection.LogExceptions(_connection.SendEndStreamAsync(_streamId));
-                }
-                catch (Exception e)
-                {
-                    if (NetEventSource.IsEnabled) Trace($"Failed to send request body: {e}");
-
-                    // if we decided abandon sending request and we get ObjectDisposed as result of it, just eat exception.
-                    if (!_shouldSendRequestBody && (e is ObjectDisposedException || e.InnerException is ObjectDisposedException))
+                    catch (Exception e)
                     {
-                        // Try to notify server if we did not finish sending request body.
-                        IgnoreExceptions(_connection.SendRstStreamAsync(_streamId, Http2ProtocolErrorCode.Cancel));
-                        return;
+                        if (NetEventSource.IsEnabled) Trace($"Failed to send request body: {e}");
+
+                        lock (SyncObject)
+                        {
+                            Debug.Assert(_requestCompletionState == StreamCompletionState.InProgress, $"Request already completed with state={_requestCompletionState}");
+
+                            _requestCompletionState = StreamCompletionState.Failed;
+                            CheckForCompletion();
+                        }
+
+                        CancelResponseBody();
+
+                        throw;
                     }
+                }
 
-                    // If we are still processing the response after receiving response headers,
-                    // this will give us a chance to propagate exception up.
-                    Interlocked.CompareExchange(ref _abortException, e, null);
+                lock (SyncObject)
+                {
+                    Debug.Assert(_requestCompletionState == StreamCompletionState.InProgress, $"Request already completed with state={_requestCompletionState}");
 
-                    throw;
+                    _requestCompletionState = StreamCompletionState.Completed;
+                    CheckForCompletion();
                 }
             }
 
-            // Process request body if we sent 100Continue. We can either get 100 response from server and send body
+            // Delay sending request body if we sent Expect: 100-continue.
+            // We can either get 100 response from server and send body
             // or we may exceed timeout and send request body anyway.
-            // If we get response > 300, we will try to stop sending and we will send RST_STREAM.
-            public async Task SendRequestBodyWithExpect100ContinueAsync(CancellationToken cancellationToken)
+            // If we get response status >= 300, we will not send the request body.
+            public async Task<bool> WaitFor100ContinueAsync(CancellationToken cancellationToken)
             {
                 Debug.Assert(_request.Content != null);
                 if (NetEventSource.IsEnabled) Trace($"Waiting to send request body content for 100-Continue.");
@@ -182,32 +193,99 @@ namespace System.Net.Http
                 // as we could end up starting the body copy operation on the main event loop thread, which could
                 // then starve the processing of other requests.  So, we make the TCS RunContinuationsAsynchronously.
                 bool sendRequestContent;
-                var waiter = _shouldSendRequestBodyWaiter = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
+                var waiter = _expect100ContinueWaiter = new TaskCompletionSource<bool>(TaskContinuationOptions.RunContinuationsAsynchronously);
                 using (var expect100Timer = new Timer(s =>
-                    {
-                        var thisRef = (Http2Stream)s;
-                        if (NetEventSource.IsEnabled) thisRef.Trace($"100-Continue timer expired.");
-                        thisRef._shouldSendRequestBodyWaiter?.TrySetResult(true);
-                    }, this, _connection._pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan))
+                {
+                    var thisRef = (Http2Stream)s;
+                    if (NetEventSource.IsEnabled)
+                        thisRef.Trace($"100-Continue timer expired.");
+                    thisRef._expect100ContinueWaiter?.TrySetResult(true);
+                }, this, _connection._pool.Settings._expect100ContinueTimeout, Timeout.InfiniteTimeSpan))
                 {
                     sendRequestContent = await waiter.Task.ConfigureAwait(false);
                     // By now, either we got a response from the server or the timer expired.
                 }
 
-                if (sendRequestContent)
+                _expect100ContinueWaiter = null;
+                return sendRequestContent;
+            }
+
+            private void CheckForCompletion()
+            {
+                Debug.Assert(Monitor.IsEntered(SyncObject));
+                Debug.Assert(_requestCompletionState != StreamCompletionState.InProgress || _responseCompletionState != StreamCompletionState.InProgress,
+                    $"CheckForCompletion called but neither request nor response is completed");
+
+                if (_requestCompletionState == StreamCompletionState.InProgress || _responseCompletionState == StreamCompletionState.InProgress)
                 {
-                    // We received a positive response from the server, or we didn't receive a response but our timer expired.
-                    // In either case, start sending the request body.
-                    await SendRequestBodyAsync(cancellationToken).ConfigureAwait(false);
+                    return;
                 }
-                else
+
+                if (NetEventSource.IsEnabled) Trace($"Stream complete.");
+
+                if (_resetException == null &&
+                    (_requestCompletionState == StreamCompletionState.Failed || _responseCompletionState == StreamCompletionState.Failed))
                 {
-                    // We received a negative response from server, so we will not send the request body, and instead we will reset the stream.
-                    if (NetEventSource.IsEnabled) Trace("Avoiding sending 100-Continue request body content.");
-                    _shouldSendRequestBody = false;
-                    _shouldSendRequestBodyWaiter = null;
                     IgnoreExceptions(_connection.SendRstStreamAsync(_streamId, Http2ProtocolErrorCode.Cancel));
                 }
+
+                _connection.RemoveStream(this);
+
+                // Do cleanup.
+                _streamWindow.Dispose();
+
+                if (_requestBodyCancellationSource != null)
+                {
+                    _requestBodyCancellationSource.Dispose();
+                }
+            }
+
+            private void CancelRequestBody()
+            {
+                CancellationTokenSource requestBodyCancellationSource;
+
+                lock (SyncObject)
+                {
+                    if (_requestCompletionState != StreamCompletionState.InProgress)
+                    {
+                        return;
+                    }
+
+                    requestBodyCancellationSource = _requestBodyCancellationSource;
+                }
+
+                if (NetEventSource.IsEnabled) Trace($"Canceling sending request body.");
+                requestBodyCancellationSource.Cancel();
+
+                // When cancellation propagates, SendRequestBodyAsync will set _responseCompletionState to Failed
+            }
+
+            public void CancelResponseBody()
+            {
+                bool signalWaiter;
+
+                lock (SyncObject)
+                {
+                    if (_responseCompletionState != StreamCompletionState.InProgress)
+                    {
+                        return;
+                    }
+
+                    _responseCompletionState = StreamCompletionState.Failed;
+                    CheckForCompletion();
+
+                    _responseProtocolState = ResponseProtocolState.Aborted;
+
+                    signalWaiter = _hasWaiter;
+                    _hasWaiter = false;
+                }
+
+                if (signalWaiter)
+                {
+                    _waitSource.SetResult(true);
+                }
+
+                CancelRequestBody();
             }
 
             public void OnWindowUpdate(int amount) => _streamWindow.AdjustCredit(amount);
@@ -227,7 +305,7 @@ namespace System.Net.Http
 
                 lock (SyncObject)
                 {
-                    if (_state == StreamState.Aborted)
+                    if (_responseProtocolState == ResponseProtocolState.Aborted)
                     {
                         // We could have aborted while processing the header block.
                         return;
@@ -235,16 +313,16 @@ namespace System.Net.Http
 
                     if (name[0] == (byte)':')
                     {
-                        if (_state != StreamState.ExpectingHeaders && _state != StreamState.ExpectingStatus)
+                        if (_responseProtocolState != ResponseProtocolState.ExpectingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingStatus)
                         {
                             // Pseudo-headers are allowed only in header block
-                            if (NetEventSource.IsEnabled) Trace($"Pseudo-header received in {_state} state.");
+                            if (NetEventSource.IsEnabled) Trace($"Pseudo-header received in {_responseProtocolState} state.");
                             throw new HttpRequestException(SR.net_http_invalid_response_pseudo_header_in_trailer);
                         }
 
                         if (name.SequenceEqual(s_statusHeaderName))
                         {
-                            if (_state != StreamState.ExpectingStatus)
+                            if (_responseProtocolState != ResponseProtocolState.ExpectingStatus)
                             {
                                 if (NetEventSource.IsEnabled) Trace("Received extra status header.");
                                 throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_status_code, "duplicate status"));
@@ -268,24 +346,33 @@ namespace System.Net.Http
                                 StatusCode = (HttpStatusCode)statusValue
                             };
 
-                            TaskCompletionSource<bool> shouldSendRequestBodyWaiter = _shouldSendRequestBodyWaiter;
+                            TaskCompletionSource<bool> expect100ContinueWaiter = _expect100ContinueWaiter;
                             if (statusValue < 200)
                             {
-                                if (_response.StatusCode == HttpStatusCode.Continue && shouldSendRequestBodyWaiter != null)
+                                // We do not process headers from 1xx responses.
+                                _responseProtocolState = ResponseProtocolState.ExpectingIgnoredHeaders;
+
+                                if (_response.StatusCode == HttpStatusCode.Continue && expect100ContinueWaiter != null)
                                 {
                                     if (NetEventSource.IsEnabled) Trace("Received 100-Continue status.");
-                                    shouldSendRequestBodyWaiter.TrySetResult(true);
-                                    _shouldSendRequestBodyWaiter = null;
+                                    expect100ContinueWaiter.TrySetResult(true);
+                                    _expect100ContinueWaiter = null;
                                 }
-                                // We do not process headers from 1xx responses.
-                                _state = StreamState.ExpectingIgnoredHeaders;
                             }
                             else
                             {
-                                _state = StreamState.ExpectingHeaders;
-                                // If we tried 100-Continue and got rejected signal that we should not send request body.
-                                _shouldSendRequestBody = (int)_response.StatusCode < 300;
-                                shouldSendRequestBodyWaiter?.TrySetResult(_shouldSendRequestBody);
+                                _responseProtocolState = ResponseProtocolState.ExpectingHeaders;
+
+                                // If we are waiting for a 100-continue response, signal the waiter now.
+                                if (expect100ContinueWaiter != null)
+                                {
+                                    // If the final status code is >= 300, skip sending the body.
+                                    bool shouldSendBody = (statusValue < 300);
+
+                                    if (NetEventSource.IsEnabled) Trace($"Expecting 100 Continue but received final status {statusValue}.");
+                                    expect100ContinueWaiter.TrySetResult(shouldSendBody);
+                                    _expect100ContinueWaiter = null;
+                                }
                             }
                         }
                         else
@@ -296,13 +383,13 @@ namespace System.Net.Http
                     }
                     else
                     {
-                        if (_state == StreamState.ExpectingIgnoredHeaders)
+                        if (_responseProtocolState == ResponseProtocolState.ExpectingIgnoredHeaders)
                         {
                             // for 1xx response we ignore all headers.
                             return;
                         }
 
-                        if (_state != StreamState.ExpectingHeaders && _state != StreamState.ExpectingTrailingHeaders)
+                        if (_responseProtocolState != ResponseProtocolState.ExpectingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingTrailingHeaders)
                         {
                             if (NetEventSource.IsEnabled) Trace("Received header before status.");
                             throw new HttpRequestException(SR.net_http_invalid_response);
@@ -318,7 +405,7 @@ namespace System.Net.Http
 
                         // Note we ignore the return value from TryAddWithoutValidation;
                         // if the header can't be added, we silently drop it.
-                        if (_state == StreamState.ExpectingTrailingHeaders)
+                        if (_responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
                         {
                             Debug.Assert(_trailers != null);
                             _trailers.Add(KeyValuePair.Create(descriptor.HeaderType == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue));
@@ -341,19 +428,19 @@ namespace System.Net.Http
             {
                 lock (SyncObject)
                 {
-                    if (_state == StreamState.Aborted)
+                    if (_responseProtocolState == ResponseProtocolState.Aborted)
                     {
                         return;
                     }
 
-                    if (_state != StreamState.ExpectingStatus && _state != StreamState.ExpectingData)
+                    if (_responseProtocolState != ResponseProtocolState.ExpectingStatus && _responseProtocolState != ResponseProtocolState.ExpectingData)
                     {
                         throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
                     }
 
-                    if (_state == StreamState.ExpectingData)
+                    if (_responseProtocolState == ResponseProtocolState.ExpectingData)
                     {
-                        _state = StreamState.ExpectingTrailingHeaders;
+                        _responseProtocolState = ResponseProtocolState.ExpectingTrailingHeaders;
                         _trailers ??= new List<KeyValuePair<HeaderDescriptor, string>>();
                     }
                 }
@@ -364,21 +451,21 @@ namespace System.Net.Http
                 bool signalWaiter;
                 lock (SyncObject)
                 {
-                    if (_state == StreamState.Aborted)
+                    if (_responseProtocolState == ResponseProtocolState.Aborted)
                     {
                         return;
                     }
 
-                    if (_state != StreamState.ExpectingHeaders && _state != StreamState.ExpectingTrailingHeaders && _state != StreamState.ExpectingIgnoredHeaders)
+                    if (_responseProtocolState != ResponseProtocolState.ExpectingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingTrailingHeaders && _responseProtocolState != ResponseProtocolState.ExpectingIgnoredHeaders)
                     {
                         throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
                     }
 
-                    if (_state == StreamState.ExpectingHeaders)
+                    if (_responseProtocolState == ResponseProtocolState.ExpectingHeaders)
                     {
-                        _state = endStream ? StreamState.Complete : StreamState.ExpectingData;
+                        _responseProtocolState = endStream ? ResponseProtocolState.Complete : ResponseProtocolState.ExpectingData;
                     }
-                    else if (_state == StreamState.ExpectingTrailingHeaders)
+                    else if (_responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
                     {
                         if (!endStream)
                         {
@@ -386,9 +473,9 @@ namespace System.Net.Http
                             throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
                         }
 
-                        _state = StreamState.Complete;
+                        _responseProtocolState = ResponseProtocolState.Complete;
                     }
-                    else if (_state == StreamState.ExpectingIgnoredHeaders)
+                    else if (_responseProtocolState == ResponseProtocolState.ExpectingIgnoredHeaders)
                     {
                         if (endStream)
                         {
@@ -396,13 +483,21 @@ namespace System.Net.Http
                             throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
                         }
 
-                        _state = StreamState.ExpectingStatus;
+                        _responseProtocolState = ResponseProtocolState.ExpectingStatus;
                         // We should wait for final response before signaling to waiter.
                         return;
                     }
                     else
                     {
-                        _state = StreamState.ExpectingData;
+                        _responseProtocolState = ResponseProtocolState.ExpectingData;
+                    }
+
+                    if (endStream)
+                    {
+                        Debug.Assert(_responseCompletionState == StreamCompletionState.InProgress, $"Response already completed with state={_responseCompletionState}");
+
+                        _responseCompletionState = StreamCompletionState.Completed;
+                        CheckForCompletion();
                     }
 
                     signalWaiter = _hasWaiter;
@@ -420,17 +515,12 @@ namespace System.Net.Http
                 bool signalWaiter;
                 lock (SyncObject)
                 {
-                    if (_disposed)
+                    if (_responseProtocolState == ResponseProtocolState.Aborted)
                     {
                         return;
                     }
 
-                    if (_state == StreamState.Aborted)
-                    {
-                        return;
-                    }
-
-                    if (_state != StreamState.ExpectingData)
+                    if (_responseProtocolState != ResponseProtocolState.ExpectingData)
                     {
                         // Flow control messages are not valid in this state.
                         throw new Http2ConnectionException(Http2ProtocolErrorCode.ProtocolError);
@@ -448,7 +538,12 @@ namespace System.Net.Http
 
                     if (endStream)
                     {
-                        _state = StreamState.Complete;
+                        _responseProtocolState = ResponseProtocolState.Complete;
+
+                        Debug.Assert(_responseCompletionState == StreamCompletionState.InProgress, $"Response already completed with state={_responseCompletionState}");
+
+                        _responseCompletionState = StreamCompletionState.Completed;
+                        CheckForCompletion();
                     }
 
                     signalWaiter = _hasWaiter;
@@ -461,54 +556,55 @@ namespace System.Net.Http
                 }
             }
 
-            public void OnAbort(Exception abortException, bool canRetry = false)
+            public void OnReset(Exception resetException, bool canRetry = false)
             {
-                bool signalWaiter;
+                if (NetEventSource.IsEnabled) Trace($"{nameof(resetException)}={resetException}");
+
                 lock (SyncObject)
                 {
-                    if (NetEventSource.IsEnabled) Trace($"{nameof(abortException)}={abortException}");
-
-                    if (_disposed || _state == StreamState.Aborted)
+                    // It's possible we could be called twice, e.g. we receive a RST_STREAM and then the whole connection dies
+                    // before we have a chance to process cancellation and tear everything down. Just ignore this.
+                    if (_resetException != null)
                     {
                         return;
                     }
 
-                    // We should not retry request which have started being processed since the behavior might be unpredictable
-                    // I.e. some action might have been taken based on the received data.
-                    // We will bubble the exception and let user decide what to do.
-                    bool isRetriable = _state == StreamState.ExpectingStatus || _state == StreamState.ExpectingHeaders;
-                    Interlocked.CompareExchange(ref _abortException, abortException, null);
-                    _state = StreamState.Aborted;
-                    _canRetry = canRetry && isRetriable;
+                    // If the server told us the request has not been processed (via Last-Stream-ID on GOAWAY),
+                    // but we've already received some response data from the server, then the server lied to us.
+                    // In this case, don't allow the request to be retried.
+                    if (canRetry && _responseProtocolState != ResponseProtocolState.ExpectingStatus)
+                    {
+                        canRetry = false;
+                    }
 
-                    signalWaiter = _hasWaiter;
-                    _hasWaiter = false;
+                    _resetException = resetException;
+                    _canRetry = canRetry;
                 }
 
-                if (signalWaiter)
-                {
-                    _waitSource.SetResult(true);
-                }
+                CancelRequestBody();
+                CancelResponseBody();
             }
 
-            private void CheckIfDisposedOrAborted()
+            private void CheckResponseBodyState()
             {
                 Debug.Assert(Monitor.IsEntered(SyncObject));
 
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(nameof(Http2Stream));
-                }
-
-                if (_state == StreamState.Aborted)
+                if (_resetException != null)
                 {
                     if (_canRetry)
                     {
-                        throw new HttpRequestException(SR.net_http_request_aborted, _abortException, allowRetry: true);
+                        throw new HttpRequestException(SR.net_http_request_aborted, _resetException, allowRetry: true);
                     }
 
-                    throw new IOException(SR.net_http_request_aborted, _abortException);
+                    throw new IOException(SR.net_http_request_aborted, _resetException);
                 }
+
+                if (_responseCompletionState == StreamCompletionState.Failed)
+                {
+                    throw new IOException(SR.net_http_request_aborted);
+                }
+
+                Debug.Assert(_responseProtocolState != ResponseProtocolState.Aborted);
             }
 
             // Determine if we have enough data to process up to complete final response headers.
@@ -516,22 +612,22 @@ namespace System.Net.Http
             {
                 lock (SyncObject)
                 {
-                    CheckIfDisposedOrAborted();
+                    CheckResponseBodyState();
 
-                    if (_state == StreamState.ExpectingHeaders || _state == StreamState.ExpectingIgnoredHeaders || _state == StreamState.ExpectingStatus)
+                    if (_responseProtocolState == ResponseProtocolState.ExpectingHeaders || _responseProtocolState == ResponseProtocolState.ExpectingIgnoredHeaders || _responseProtocolState == ResponseProtocolState.ExpectingStatus)
                     {
                         Debug.Assert(!_hasWaiter);
                         _hasWaiter = true;
                         _waitSource.Reset();
                         return (true, false);
                     }
-                    else if (_state == StreamState.ExpectingData || _state == StreamState.ExpectingTrailingHeaders)
+                    else if (_responseProtocolState == ResponseProtocolState.ExpectingData || _responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
                     {
                         return (false, false);
                     }
                     else
                     {
-                        Debug.Assert(_state == StreamState.Complete);
+                        Debug.Assert(_responseProtocolState == ResponseProtocolState.Complete);
                         return (false, _responseBuffer.ActiveLength == 0);
                     }
                 }
@@ -539,18 +635,27 @@ namespace System.Net.Http
 
             public async Task ReadResponseHeadersAsync(CancellationToken cancellationToken)
             {
-                // Wait for response headers to be read.
                 bool emptyResponse;
-                bool wait;
-
-                // Process all informational responses if any and wait for final status.
-                (wait, emptyResponse) = TryEnsureHeaders();
-                if (wait)
+                try
                 {
-                    await GetWaiterTask(cancellationToken).ConfigureAwait(false);
+                    // Wait for response headers to be read.
+                    bool wait;
 
+                    // Process all informational responses if any and wait for final status.
                     (wait, emptyResponse) = TryEnsureHeaders();
-                    Debug.Assert(!wait);
+                    if (wait)
+                    {
+                        await GetWaiterTask(cancellationToken).ConfigureAwait(false);
+
+                        (wait, emptyResponse) = TryEnsureHeaders();
+                        Debug.Assert(!wait);
+                    }
+                }
+                catch
+                {
+                    CancelRequestBody();
+                    CancelResponseBody();
+                    throw;
                 }
 
                 // Start to process the response body.
@@ -579,7 +684,7 @@ namespace System.Net.Http
                 Debug.Assert(amount > 0);
                 Debug.Assert(_pendingWindowUpdate < StreamWindowThreshold);
 
-                if (_state != StreamState.ExpectingData)
+                if (_responseProtocolState != ResponseProtocolState.ExpectingData)
                 {
                     // We are not expecting any more data (because we've either completed or aborted).
                     // So no need to send any more WINDOW_UPDATEs.
@@ -604,7 +709,7 @@ namespace System.Net.Http
 
                 lock (SyncObject)
                 {
-                    CheckIfDisposedOrAborted();
+                    CheckResponseBodyState();
 
                     if (_responseBuffer.ActiveLength > 0)
                     {
@@ -614,12 +719,12 @@ namespace System.Net.Http
 
                         return (false, bytesRead);
                     }
-                    else if (_state == StreamState.Complete)
+                    else if (_responseProtocolState == ResponseProtocolState.Complete)
                     {
                         return (false, 0);
                     }
 
-                    Debug.Assert(_state == StreamState.ExpectingData || _state == StreamState.ExpectingTrailingHeaders);
+                    Debug.Assert(_responseProtocolState == ResponseProtocolState.ExpectingData || _responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders);
 
                     Debug.Assert(!_hasWaiter);
                     _hasWaiter = true;
@@ -703,51 +808,42 @@ namespace System.Net.Http
             {
                 ReadOnlyMemory<byte> remaining = buffer;
 
-                while (remaining.Length > 0)
+                // Deal with ActiveIssue #9071:
+                // Custom HttpContent classes do not get passed the cancellationToken.
+                // So, inject the expected CancellationToken here, to ensure we can cancel the request body send if needed.
+                CancellationTokenSource customCancellationSource = null;
+                if (!cancellationToken.CanBeCanceled)
                 {
-                    int sendSize = await _streamWindow.RequestCreditAsync(remaining.Length, cancellationToken).ConfigureAwait(false);
-
-                    ReadOnlyMemory<byte> current;
-                    (current, remaining) = SplitBuffer(remaining, sendSize);
-
-                    await _connection.SendStreamDataAsync(_streamId, current, cancellationToken).ConfigureAwait(false);
+                    cancellationToken = _requestBodyCancellationSource.Token;
                 }
-            }
-
-            public void Dispose()
-            {
-                lock (SyncObject)
+                else if (cancellationToken != _requestBodyCancellationSource.Token)
                 {
-                    if (!_disposed)
+                    // User passed a custom CancellationToken.
+                    // We can't tell if it includes our Token or not, so assume it doesn't.
+                    customCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _requestBodyCancellationSource.Token);
+                    cancellationToken = customCancellationSource.Token;
+                }
+
+                using (customCancellationSource)
+                {
+                    while (remaining.Length > 0)
                     {
-                        _disposed = true;
+                        int sendSize = await _streamWindow.RequestCreditAsync(remaining.Length, cancellationToken).ConfigureAwait(false);
 
-                        _streamWindow.Dispose(_abortException);
-                        _responseBuffer.Dispose();
+                        ReadOnlyMemory<byte> current;
+                        (current, remaining) = SplitBuffer(remaining, sendSize);
 
-                        // TODO: ISSUE 31310: If the stream is not complete, we should send RST_STREAM
+                        await _connection.SendStreamDataAsync(_streamId, current, cancellationToken).ConfigureAwait(false);
                     }
                 }
             }
 
-            public void Cancel()
+            private void CloseResponseBody()
             {
-                bool signalWaiter;
-                lock (SyncObject)
-                {
-                    IgnoreExceptions(_connection.SendRstStreamAsync(_streamId, Http2ProtocolErrorCode.Cancel));
-                    Interlocked.CompareExchange(ref _abortException, new OperationCanceledException(), null);
-                    _state = StreamState.Aborted;
+                // If the response body isn't completed, cancel it now.
+                CancelResponseBody();
 
-                    signalWaiter = _hasWaiter;
-                    _hasWaiter = false;
-                }
-                if (signalWaiter)
-                {
-                    _waitSource.SetResult(true);
-                }
-
-                _connection.RemoveStream(this);
+                _responseBuffer.Dispose();
             }
 
             // This object is itself usable as a backing source for ValueTask.  Since there's only ever one awaiter
@@ -805,7 +901,7 @@ namespace System.Net.Http
             public void Trace(string message, [CallerMemberName] string memberName = null) =>
                 _connection.Trace(_streamId, message, memberName);
 
-            private enum StreamState : byte
+            private enum ResponseProtocolState : byte
             {
                 ExpectingStatus,
                 ExpectingIgnoredHeaders,
@@ -814,6 +910,13 @@ namespace System.Net.Http
                 ExpectingTrailingHeaders,
                 Complete,
                 Aborted
+            }
+
+            private enum StreamCompletionState : byte
+            {
+                InProgress,
+                Completed,
+                Failed
             }
 
             private sealed class Http2ReadStream : HttpBaseStream
@@ -856,13 +959,7 @@ namespace System.Net.Http
                     // disposing of it, we need to a) signal to the server that the stream is being
                     // canceled, and b) clean up the associated state in the Http2Connection.
 
-                    if (http2Stream._state != StreamState.Aborted && http2Stream._state != StreamState.Complete)
-                    {
-                        // If we abort response stream before endOfStream, let server know.
-                        IgnoreExceptions(http2Stream._connection.SendRstStreamAsync(http2Stream._streamId, Http2ProtocolErrorCode.Cancel));
-                    }
-
-                    http2Stream.Dispose();
+                    http2Stream.CloseResponseBody();
 
                     base.Dispose(disposing);
                 }
@@ -873,10 +970,6 @@ namespace System.Net.Http
                 public override int Read(Span<byte> destination)
                 {
                     Http2Stream http2Stream = _http2Stream ?? throw new ObjectDisposedException(nameof(Http2ReadStream));
-                    if (http2Stream._abortException != null)
-                    {
-                        throw new IOException(SR.net_http_client_execution_error, http2Stream._abortException);
-                    }
 
                     return http2Stream.ReadData(destination, _responseMessage);
                 }
@@ -884,14 +977,10 @@ namespace System.Net.Http
                 public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken)
                 {
                     Http2Stream http2Stream = _http2Stream;
+
                     if (http2Stream == null)
                     {
                         return new ValueTask<int>(Task.FromException<int>(new ObjectDisposedException(nameof(Http2ReadStream))));
-                    }
-
-                    if (http2Stream._abortException != null)
-                    {
-                        return new ValueTask<int>(Task.FromException<int>(new IOException(SR.net_http_client_execution_error, http2Stream._abortException)));
                     }
 
                     if (cancellationToken.IsCancellationRequested)
@@ -939,15 +1028,9 @@ namespace System.Net.Http
                 {
                     Http2Stream http2Stream = _http2Stream;
 
-                    if (http2Stream == null || !http2Stream._shouldSendRequestBody)
+                    if (http2Stream == null)
                     {
                         return new ValueTask(Task.FromException(new ObjectDisposedException(nameof(Http2WriteStream))));
-                    }
-
-                    // TODO: until #9071 is fixed
-                    if (http2Stream._abortException is OperationCanceledException oce)
-                    {
-                        throw new OperationCanceledException(oce.Message, oce, oce.CancellationToken);
                     }
 
                     return new ValueTask(http2Stream.SendDataAsync(buffer, cancellationToken));
