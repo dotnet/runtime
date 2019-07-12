@@ -2,29 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.ConstrainedExecution;
+using System.Runtime.InteropServices;
+using System.Threading;
+
 namespace Microsoft.Win32
 {
-    using System;
-    using System.Diagnostics;
-    using System.Security;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.ComponentModel;
-    using System.Diagnostics.CodeAnalysis;
-    using System.Reflection;
-    using System.Runtime.ConstrainedExecution;
-    using System.Runtime.InteropServices;
-    using System.Runtime.Versioning;
-    using System.Text;
-    using System.Threading;
-
-    /// <devdoc>
-    ///    <para> 
-    ///       Provides a
-    ///       set of global system events to callers. This
-    ///       class cannot be inherited.</para>
-    /// </devdoc>
-    [SuppressMessage("Microsoft.Design", "CA1049:TypesThatOwnNativeResourcesShouldBeDisposable")]
+    /// <summary>
+    ///  Provides a set of global system events to callers.
+    /// </summary>
     public sealed class SystemEvents
     {
         // Almost all of our data is static.  We keep a single instance of
@@ -36,11 +27,8 @@ namespace Microsoft.Win32
         private static volatile SystemEvents s_systemEvents;
         private static volatile Thread s_windowThread;
         private static volatile ManualResetEvent s_eventWindowReady;
-        private static Random s_randomTimerId = new Random();
+        private static readonly Random s_randomTimerId = new Random();
         private static volatile bool s_registeredSessionNotification = false;
-        private static volatile int s_domainQualifier;
-        private static volatile Interop.User32.WNDCLASS s_staticwndclass;
-        [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private static volatile IntPtr s_defWindowProc;
 
         private static volatile string s_className = null;
@@ -55,7 +43,7 @@ namespace Microsoft.Win32
         private Interop.User32.WndProc _windowProc;
         private Interop.Kernel32.ConsoleCtrlHandlerRoutine _consoleHandler;
 
-        // The set of events we respond to.  
+        // The set of events we respond to.
         private static readonly object s_onUserPreferenceChangingEvent = new object();
         private static readonly object s_onUserPreferenceChangedEvent = new object();
         private static readonly object s_onSessionEndingEvent = new object();
@@ -71,19 +59,14 @@ namespace Microsoft.Win32
         private static readonly object s_onEventsThreadShutdownEvent = new object();
         private static readonly object s_onSessionSwitchEvent = new object();
 
-
         // Our list of handler information.  This is a lookup of the above keys and objects that
         // match a delegate with a SyncronizationContext so we can fire on the proper thread.
         private static Dictionary<object, List<SystemEventInvokeInfo>> s_handlers;
 
-
-        /// <devdoc>
-        ///     This class is static, there is no need to ever create it.
-        /// </devdoc>
         private SystemEvents()
         {
+            // This class is intended to be static, but predates static classes (which were introduced in C# 2.0).
         }
-
 
         // stole from SystemInformation... if we get SystemInformation moved
         // to somewhere that we can use it... rip this!
@@ -124,10 +107,9 @@ namespace Microsoft.Win32
             }
         }
 
-
-        /// <devdoc>
-        ///    <para>Occurs when the display settings are changing.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Occurs when the display settings are changing.
+        /// </summary>
         public static event EventHandler DisplaySettingsChanging
         {
             add
@@ -140,10 +122,9 @@ namespace Microsoft.Win32
             }
         }
 
-
-        /// <devdoc>
-        ///    <para>Occurs when the user changes the display settings.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Occurs when the user changes the display settings.
+        /// </summary>
         public static event EventHandler DisplaySettingsChanged
         {
             add
@@ -156,11 +137,10 @@ namespace Microsoft.Win32
             }
         }
 
-
-        /// <devdoc>
-        ///    <para>Occurs before the thread that listens for system events is terminated.
-        ///           Delegates will be invoked on the events thread.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Occurs before the thread that listens for system events is terminated.
+        ///  Delegates will be invoked on the events thread.
+        /// </summary>
         public static event EventHandler EventsThreadShutdown
         {
             // Really only here for GDI+ initialization and shut down
@@ -174,10 +154,9 @@ namespace Microsoft.Win32
             }
         }
 
-
-        /// <devdoc>
-        ///    <para>Occurs when the user adds fonts to or removes fonts from the system.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Occurs when the user adds fonts to or removes fonts from the system.
+        /// </summary>
         public static event EventHandler InstalledFontsChanged
         {
             add
@@ -190,17 +169,16 @@ namespace Microsoft.Win32
             }
         }
 
-
-        /// <devdoc>
-        ///    <para>Occurs when the system is running out of available RAM.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Occurs when the system is running out of available RAM.
+        /// </summary>
         [Obsolete("This event has been deprecated. https://go.microsoft.com/fwlink/?linkid=14202")]
         [Browsable(false), EditorBrowsable(EditorBrowsableState.Never)]
         public static event EventHandler LowMemory
         {
             add
             {
-                EnsureSystemEvents(true, true);
+                EnsureSystemEvents(requireHandle: true);
                 AddEventHandler(s_onLowMemoryEvent, value);
             }
             remove
@@ -209,11 +187,10 @@ namespace Microsoft.Win32
             }
         }
 
-
-        /// <devdoc>
-        ///    <para>Occurs when the user switches to an application that uses a different 
-        ///       palette.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Occurs when the user switches to an application that uses a different
+        ///  palette.
+        /// </summary>
         public static event EventHandler PaletteChanged
         {
             add
@@ -227,14 +204,14 @@ namespace Microsoft.Win32
         }
 
 
-        /// <devdoc>
-        ///    <para>Occurs when the user suspends or resumes the system.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Occurs when the user suspends or resumes the system.
+        /// </summary>
         public static event PowerModeChangedEventHandler PowerModeChanged
         {
             add
             {
-                EnsureSystemEvents(true, true);
+                EnsureSystemEvents(requireHandle: true);
                 AddEventHandler(s_onPowerModeChangedEvent, value);
             }
             remove
@@ -243,15 +220,14 @@ namespace Microsoft.Win32
             }
         }
 
-
-        /// <devdoc>
-        ///    <para>Occurs when the user is logging off or shutting down the system.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Occurs when the user is logging off or shutting down the system.
+        /// </summary>
         public static event SessionEndedEventHandler SessionEnded
         {
             add
             {
-                EnsureSystemEvents(true, false);
+                EnsureSystemEvents(requireHandle: true);
                 AddEventHandler(s_onSessionEndedEvent, value);
             }
             remove
@@ -260,15 +236,14 @@ namespace Microsoft.Win32
             }
         }
 
-
-        /// <devdoc>
-        ///    <para>Occurs when the user is trying to log off or shutdown the system.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Occurs when the user is trying to log off or shutdown the system.
+        /// </summary>
         public static event SessionEndingEventHandler SessionEnding
         {
             add
             {
-                EnsureSystemEvents(true, false);
+                EnsureSystemEvents(requireHandle: true);
                 AddEventHandler(s_onSessionEndingEvent, value);
             }
             remove
@@ -277,14 +252,14 @@ namespace Microsoft.Win32
             }
         }
 
-        /// <devdoc>
-        ///    <para>Occurs when a user session switches.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Occurs when a user session switches.
+        /// </summary>
         public static event SessionSwitchEventHandler SessionSwitch
         {
             add
             {
-                EnsureSystemEvents(true, true);
+                EnsureSystemEvents(requireHandle: true);
                 EnsureRegisteredSessionNotification();
                 AddEventHandler(s_onSessionSwitchEvent, value);
             }
@@ -294,15 +269,14 @@ namespace Microsoft.Win32
             }
         }
 
-
-        /// <devdoc>
-        ///    <para>Occurs when the user changes the time on the system clock.</para>
-        /// </devdoc>
+        /// <summary>
+        ///   Occurs when the user changes the time on the system clock.
+        /// </summary>
         public static event EventHandler TimeChanged
         {
             add
             {
-                EnsureSystemEvents(true, false);
+                EnsureSystemEvents(requireHandle: true);
                 AddEventHandler(s_onTimeChangedEvent, value);
             }
             remove
@@ -311,15 +285,14 @@ namespace Microsoft.Win32
             }
         }
 
-
-        /// <devdoc>
-        ///    <para>Occurs when a windows timer interval has expired.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Occurs when a windows timer interval has expired.
+        /// </summary>
         public static event TimerElapsedEventHandler TimerElapsed
         {
             add
             {
-                EnsureSystemEvents(true, false);
+                EnsureSystemEvents(requireHandle: true);
                 AddEventHandler(s_onTimerElapsedEvent, value);
             }
             remove
@@ -329,9 +302,9 @@ namespace Microsoft.Win32
         }
 
 
-        /// <devdoc>
-        ///    <para>Occurs when a user preference has changed.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Occurs when a user preference has changed.
+        /// </summary>
         public static event UserPreferenceChangedEventHandler UserPreferenceChanged
         {
             add
@@ -344,9 +317,9 @@ namespace Microsoft.Win32
             }
         }
 
-        /// <devdoc>
-        ///    <para>Occurs when a user preference is changing.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Occurs when a user preference is changing.
+        /// </summary>
         public static event UserPreferenceChangingEventHandler UserPreferenceChanging
         {
             add
@@ -366,12 +339,10 @@ namespace Microsoft.Win32
                 if (s_handlers == null)
                 {
                     s_handlers = new Dictionary<object, List<SystemEventInvokeInfo>>();
-                    EnsureSystemEvents(false, false);
+                    EnsureSystemEvents(requireHandle: false);
                 }
 
-                List<SystemEventInvokeInfo> invokeItems;
-
-                if (!s_handlers.TryGetValue(key, out invokeItems))
+                if (!s_handlers.TryGetValue(key, out List<SystemEventInvokeInfo> invokeItems))
                 {
                     invokeItems = new List<SystemEventInvokeInfo>();
                     s_handlers[key] = invokeItems;
@@ -385,10 +356,10 @@ namespace Microsoft.Win32
             }
         }
 
-        /// <devdoc>
-        ///      Console handler we add in case we are a console application or a service.
-        ///      Without this we will not get end session events.
-        /// </devdoc>
+        /// <summary>
+        ///  Console handler we add in case we are a console application or a service.
+        ///  Without this we will not get end session events.
+        /// </summary>
         private bool ConsoleHandlerProc(int signalType)
         {
             switch (signalType)
@@ -405,34 +376,6 @@ namespace Microsoft.Win32
             return false;
         }
 
-        private Interop.User32.WNDCLASS WndClass
-        {
-            get
-            {
-                if (s_staticwndclass == null)
-                {
-                    IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
-
-                    s_className = string.Format(
-                        System.Globalization.CultureInfo.InvariantCulture,
-                        ".NET-BroadcastEventWindow.{0:x}.{1}",
-                        AppDomain.CurrentDomain.GetHashCode(),
-                        s_domainQualifier);
-
-                    Interop.User32.WNDCLASS tempwndclass = new Interop.User32.WNDCLASS();
-                    tempwndclass.hbrBackground = (IntPtr)(Interop.User32.COLOR_WINDOW + 1);
-                    tempwndclass.style = 0;
-
-                    _windowProc = new Interop.User32.WndProc(this.WindowProc);
-                    tempwndclass.lpszClassName = s_className;
-                    tempwndclass.lpfnWndProc = _windowProc;
-                    tempwndclass.hInstance = hInstance;
-                    s_staticwndclass = tempwndclass;
-                }
-                return s_staticwndclass;
-            }
-        }
-
         private IntPtr DefWndProc
         {
             get
@@ -445,72 +388,9 @@ namespace Microsoft.Win32
             }
         }
 
-        [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Only called on a single thread")]
-        private void BumpQualifier()
-        {
-            s_staticwndclass = null;
-            s_domainQualifier++;
-        }
-
         /// <summary>
-        /// Goes through the work to register and create a window.
+        ///  Creates a new window timer associated with the system events window.
         /// </summary>
-        private IntPtr CreateBroadcastWindow()
-        {
-            // Register the window class.
-            Interop.User32.WNDCLASS_I wndclassi = new Interop.User32.WNDCLASS_I();
-            IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
-
-            if (!Interop.User32.GetClassInfoW(hInstance, WndClass.lpszClassName, wndclassi))
-            {
-                if (Interop.User32.RegisterClassW(WndClass) == 0)
-                {
-                    _windowProc = null;
-                    Debug.WriteLine("Unable to register broadcast window class: {0}", Marshal.GetLastWin32Error());
-                    return IntPtr.Zero;
-                }
-            }
-            else
-            {
-                // lets double check the wndproc returned by getclassinfo for sentinel value defwndproc.
-                if (wndclassi.lpfnWndProc == DefWndProc)
-                {
-                    // if we are in there, it means className belongs to an unloaded appdomain.
-                    short atom = 0;
-
-                    // try to unregister it.
-                    if (0 != Interop.User32.UnregisterClassW(WndClass.lpszClassName, Interop.Kernel32.GetModuleHandle(null)))
-                    {
-                        atom = Interop.User32.RegisterClassW(WndClass);
-                    }
-
-                    if (atom == 0)
-                    {
-                        do
-                        {
-                            BumpQualifier();
-                            atom = Interop.User32.RegisterClassW(WndClass);
-                        } while (atom == 0 && Marshal.GetLastWin32Error() == Interop.Errors.ERROR_CLASS_ALREADY_EXISTS);
-                    }
-                }
-            }
-
-            // And create an instance of the window.
-            IntPtr hwnd = Interop.User32.CreateWindowExW(
-                                                            0,
-                                                            WndClass.lpszClassName,
-                                                            WndClass.lpszClassName,
-                                                            Interop.User32.WS_POPUP,
-                                                            0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero,
-                                                            hInstance, IntPtr.Zero);
-            return hwnd;
-        }
-
-        /// <internalonly/>
-        /// <devdoc>
-        ///    <para>Creates a new window timer associated with the
-        ///       system events window.</para>
-        /// </devdoc>
         public static IntPtr CreateTimer(int interval)
         {
             if (interval <= 0)
@@ -518,7 +398,7 @@ namespace Microsoft.Win32
                 throw new ArgumentException(SR.Format(SR.InvalidLowBoundArgument, nameof(interval), interval.ToString(System.Threading.Thread.CurrentThread.CurrentCulture), "0"));
             }
 
-            EnsureSystemEvents(true, true);
+            EnsureSystemEvents(requireHandle: true);
             IntPtr timerId = Interop.User32.SendMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle),
                                                         Interop.User32.WM_CREATETIMER, (IntPtr)interval, IntPtr.Zero);
 
@@ -541,12 +421,14 @@ namespace Microsoft.Win32
                 IntPtr handle = _windowHandle;
                 _windowHandle = IntPtr.Zero;
 
-                // we check IsWindow because Application may have rudely destroyed our broadcast window.
-                // if this were true, we want to unregister the class.
+                // We check IsWindow because our broadcast window may have been destroyed.
+
                 if (Interop.User32.IsWindow(handle) && DefWndProc != IntPtr.Zero)
                 {
-                    // set our sentinel value that we will look for upon initialization to indicate
-                    // the window class belongs to an unloaded appdomain and therefore should not be used.
+                    // We used to use this as a sentinel to identify window classes we created on
+                    // other appdomains. We still want to set to the default WNDPROC to prevent
+                    // messages coming back to managed code if our callback gets collected.
+
                     if (IntPtr.Size == 4)
                     {
                         // In a 32-bit process we must call the non-'ptr' version of these APIs
@@ -560,13 +442,11 @@ namespace Microsoft.Win32
                     }
                 }
 
-                // If DestroyWindow failed, it is because we're being
-                // shutdown from another thread.  In this case, locate the
-                // DefWindowProc call in User32, set the window proc to call it,
-                // and post a WM_CLOSE.  This will close the window from 
-                // the correct thread without relying on managed code executing.
                 if (Interop.User32.IsWindow(handle) && !Interop.User32.DestroyWindow(handle))
                 {
+                    // We may not have been able to destroy the window if we're shutdown from another thread.
+                    // Attempt to close the window by posting a WM_CLOSE message instead. (Messages always
+                    // fire on the same thread.)
                     Interop.User32.PostMessageW(handle, Interop.User32.WM_CLOSE, IntPtr.Zero, IntPtr.Zero);
                 }
                 else
@@ -583,31 +463,17 @@ namespace Microsoft.Win32
             }
         }
 
-        /// <devdoc>
-        ///  Creates the static resources needed by 
-        ///  system events.
-        /// </devdoc>
-        private static void EnsureSystemEvents(bool requireHandle, bool throwOnRefusal)
+        /// <summary>
+        ///  Creates the static resources needed by system events.
+        /// </summary>
+        private static void EnsureSystemEvents(bool requireHandle)
         {
-            // The secondary check here is to detect asp.net.  Asp.net uses multiple
-            // app domains to field requests and we do not want to gobble up an 
-            // additional thread per domain.  So under this scenario SystemEvents
-            // becomes a nop.
             if (s_systemEvents == null)
             {
                 lock (s_procLockObject)
                 {
                     if (s_systemEvents == null)
                     {
-                        if (Thread.GetDomain().GetData(".appDomain") != null)
-                        {
-                            if (throwOnRefusal)
-                            {
-                                throw new InvalidOperationException(SR.ErrorSystemEventsNotSupported);
-                            }
-                            return;
-                        }
-
                         // If we are creating system events on a thread declared as STA, then
                         // just share the thread.
                         if (!UserInteractive || Thread.CurrentThread.GetApartmentState() == ApartmentState.STA)
@@ -623,9 +489,11 @@ namespace Microsoft.Win32
                         {
                             s_eventWindowReady = new ManualResetEvent(false);
                             SystemEvents systemEvents = new SystemEvents();
-                            s_windowThread = new Thread(new ThreadStart(systemEvents.WindowThreadProc));
-                            s_windowThread.IsBackground = true;
-                            s_windowThread.Name = ".NET SystemEvents";
+                            s_windowThread = new Thread(new ThreadStart(systemEvents.WindowThreadProc))
+                            {
+                                IsBackground = true,
+                                Name = ".NET SystemEvents"
+                            };
                             s_windowThread.Start();
                             s_eventWindowReady.WaitOne();
 
@@ -793,27 +661,63 @@ namespace Microsoft.Win32
             return pref;
         }
 
-        private void Initialize()
+        private unsafe void Initialize()
         {
             _consoleHandler = new Interop.Kernel32.ConsoleCtrlHandlerRoutine(ConsoleHandlerProc);
+
             if (!Interop.Kernel32.SetConsoleCtrlHandler(_consoleHandler, true))
             {
                 Debug.Fail("Failed to install console handler.");
                 _consoleHandler = null;
             }
 
-            _windowHandle = CreateBroadcastWindow();
-            Debug.WriteLineIf(_windowHandle == IntPtr.Zero, "CreateBroadcastWindow failed");
+            IntPtr hInstance = Interop.Kernel32.GetModuleHandle(null);
 
-            AppDomain.CurrentDomain.ProcessExit += new EventHandler(SystemEvents.Shutdown);
-            AppDomain.CurrentDomain.DomainUnload += new EventHandler(SystemEvents.Shutdown);
+            s_className = string.Format(
+                ".NET-BroadcastEventWindow.{0:x}.0",
+                AppDomain.CurrentDomain.GetHashCode());
+
+            fixed (char* className = s_className)
+            {
+                // It is important that we stash the delegate to ensure it doesn't
+                // get collected by the GC.
+
+                _windowProc = WindowProc;
+
+                Interop.User32.WNDCLASS windowClass = new Interop.User32.WNDCLASS
+                {
+                    hbrBackground = (IntPtr)(Interop.User32.COLOR_WINDOW + 1),
+                    lpfnWndProc = Marshal.GetFunctionPointerForDelegate(_windowProc),
+                    lpszClassName = className,
+                    hInstance = hInstance
+                };
+
+                if (Interop.User32.RegisterClassW(ref windowClass) == 0)
+                {
+                    _windowProc = null;
+                    Debug.WriteLine("Unable to register broadcast window class: {0}", Marshal.GetLastWin32Error());
+                }
+                else
+                {
+                    // And create an instance of the window.
+                    _windowHandle = Interop.User32.CreateWindowExW(
+                        0,
+                        s_className,
+                        s_className,
+                        Interop.User32.WS_POPUP,
+                        0, 0, 0, 0, IntPtr.Zero, IntPtr.Zero,
+                        hInstance, IntPtr.Zero);
+                }
+            }
+
+            AppDomain.CurrentDomain.ProcessExit += new EventHandler(Shutdown);
         }
 
-        /// <devdoc>
-        ///     Called on the control's owning thread to perform the actual callback.
-        ///     This empties this control's callback queue, propagating any exceptions
-        ///     back as needed.
-        /// </devdoc>
+        /// <summary>
+        ///  Called on the control's owning thread to perform the actual callback.
+        ///  This empties this control's callback queue, propagating any exceptions
+        ///  back as needed.
+        /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void InvokeMarshaledCallbacks()
@@ -864,13 +768,13 @@ namespace Microsoft.Win32
             }
         }
 
-        /// <devdoc>
-        ///     Executes the given delegate asynchronously on the thread that listens for system events.  Similar to Control.BeginInvoke().
-        /// </devdoc>
+        /// <summary>
+        ///  Executes the given delegate asynchronously on the thread that listens for system events.  Similar to Control.BeginInvoke().
+        /// </summary>
         public static void InvokeOnEventsThread(Delegate method)
         {
             // This method is really only here for GDI+ initialization/shutdown
-            EnsureSystemEvents(true, true);
+            EnsureSystemEvents(requireHandle: true);
 
 #if DEBUG
             int pid;
@@ -900,13 +804,12 @@ namespace Microsoft.Win32
             Interop.User32.PostMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle), s_threadCallbackMessage, IntPtr.Zero, IntPtr.Zero);
         }
 
-        /// <internalonly/>
-        /// <devdoc>
-        ///    <para>Kills the timer specified by the given id.</para>
-        /// </devdoc>
+        /// <summary>
+        ///  Kills the timer specified by the given id.
+        /// </summary>
         public static void KillTimer(IntPtr timerId)
         {
-            EnsureSystemEvents(true, true);
+            EnsureSystemEvents(requireHandle: true);
             if (s_systemEvents._windowHandle != IntPtr.Zero)
             {
                 int res = (int)Interop.User32.SendMessageW(new HandleRef(s_systemEvents, s_systemEvents._windowHandle),
@@ -917,10 +820,10 @@ namespace Microsoft.Win32
             }
         }
 
-        /// <devdoc>
-        ///      Callback that handles the create timer
-        ///      user message.
-        /// </devdoc>
+        /// <summary>
+        ///  Callback that handles the create timer
+        ///  user message.
+        /// </summary>
         private IntPtr OnCreateTimer(IntPtr wParam)
         {
             IntPtr timerId = (IntPtr)s_randomTimerId.Next();
@@ -928,25 +831,25 @@ namespace Microsoft.Win32
             return (res == IntPtr.Zero ? IntPtr.Zero : timerId);
         }
 
-        /// <devdoc>
-        ///      Handler that raises the DisplaySettings changing event
-        /// </devdoc>
+        /// <summary>
+        ///  Handler that raises the DisplaySettings changing event
+        /// </summary>
         private void OnDisplaySettingsChanging()
         {
             RaiseEvent(s_onDisplaySettingsChangingEvent, this, EventArgs.Empty);
         }
 
-        /// <devdoc>
-        ///      Handler that raises the DisplaySettings changed event
-        /// </devdoc>
+        /// <summary>
+        ///  Handler that raises the DisplaySettings changed event
+        /// </summary>
         private void OnDisplaySettingsChanged()
         {
             RaiseEvent(s_onDisplaySettingsChangedEvent, this, EventArgs.Empty);
         }
 
-        /// <devdoc>
-        ///      Handler for any event that fires a standard EventHandler delegate.
-        /// </devdoc>
+        /// <summary>
+        ///  Handler for any event that fires a standard EventHandler delegate.
+        /// </summary>
         private void OnGenericEvent(object eventKey)
         {
             RaiseEvent(eventKey, this, EventArgs.Empty);
@@ -957,19 +860,18 @@ namespace Microsoft.Win32
             RaiseEvent(false, eventKey, this, EventArgs.Empty);
         }
 
-        /// <devdoc>
-        ///      Callback that handles the KillTimer
-        ///      user message.        
-        /// </devdoc>
+        /// <summary>
+        ///  Callback that handles the KillTimer user message.
+        /// </summary>
         private bool OnKillTimer(IntPtr wParam)
         {
             bool res = Interop.User32.KillTimer(_windowHandle, wParam);
             return res;
         }
 
-        /// <devdoc>
-        ///      Handler for WM_POWERBROADCAST.
-        /// </devdoc>
+        /// <summary>
+        ///  Handler for WM_POWERBROADCAST.
+        /// </summary>
         private void OnPowerModeChanged(IntPtr wParam)
         {
             PowerModes mode;
@@ -1000,9 +902,9 @@ namespace Microsoft.Win32
             RaiseEvent(s_onPowerModeChangedEvent, this, new PowerModeChangedEventArgs(mode));
         }
 
-        /// <devdoc>
-        ///      Handler for WM_ENDSESSION.
-        /// </devdoc>
+        /// <summary>
+        ///  Handler for WM_ENDSESSION.
+        /// </summary>
         private void OnSessionEnded(IntPtr wParam, IntPtr lParam)
         {
             // wParam will be nonzero if the session is actually ending.  If
@@ -1022,9 +924,9 @@ namespace Microsoft.Win32
             }
         }
 
-        /// <devdoc>
-        ///      Handler for WM_QUERYENDSESSION.
-        /// </devdoc>
+        /// <summary>
+        ///  Handler for WM_QUERYENDSESSION.
+        /// </summary>
         private int OnSessionEnding(IntPtr lParam)
         {
             int endOk = 1;
@@ -1052,13 +954,13 @@ namespace Microsoft.Win32
             RaiseEvent(s_onSessionSwitchEvent, this, switchEventArgs);
         }
 
-        /// <devdoc>
-        ///      Handler for WM_THEMECHANGED
-        ///      Whidbey note: Before Whidbey, we used to fire UserPreferenceChanged with category
-        ///      set to Window. In Whidbey, we support visual styles and need a new category Theme 
-        ///      since Window is too general. We fire UserPreferenceChanged with this category, but
-        ///      for backward compat, we also fire it with category set to Window.
-        /// </devdoc>
+        /// <summary>
+        ///  Handler for WM_THEMECHANGED
+        ///  VS 2005 note: Before VS 2005, we used to fire UserPreferenceChanged with category
+        ///  set to Window. In VS 2005, we support visual styles and need a new category Theme
+        ///  since Window is too general. We fire UserPreferenceChanged with this category, but
+        ///  for backward compat, we also fire it with category set to Window.
+        /// </summary>
         private void OnThemeChanged()
         {
             // we need to fire a changing event handler for Themes.
@@ -1074,9 +976,9 @@ namespace Microsoft.Win32
             RaiseEvent(s_onUserPreferenceChangedEvent, this, new UserPreferenceChangedEventArgs(pref));
         }
 
-        /// <devdoc>
-        ///      Handler for WM_SETTINGCHANGE and WM_SYSCOLORCHANGE.
-        /// </devdoc>
+        /// <summary>
+        ///  Handler for WM_SETTINGCHANGE and WM_SYSCOLORCHANGE.
+        /// </summary>
         private void OnUserPreferenceChanged(int msg, IntPtr wParam, IntPtr lParam)
         {
             UserPreferenceCategory pref = GetUserPreferenceCategory(msg, wParam, lParam);
@@ -1091,9 +993,9 @@ namespace Microsoft.Win32
             RaiseEvent(s_onUserPreferenceChangingEvent, this, new UserPreferenceChangingEventArgs(pref));
         }
 
-        /// <devdoc>
-        ///      Handler for WM_TIMER.
-        /// </devdoc>
+        /// <summary>
+        ///  Handler for WM_TIMER.
+        /// </summary>
         private void OnTimerElapsed(IntPtr wParam)
         {
             RaiseEvent(s_onTimerElapsedEvent, this, new TimerElapsedEventArgs(wParam));
@@ -1225,9 +1127,9 @@ namespace Microsoft.Win32
             Shutdown();
         }
 
-        /// <devdoc>
-        ///      A standard Win32 window proc for our broadcast window.
-        /// </devdoc>
+        /// <summary>
+        ///  A standard Win32 window proc for our broadcast window.
+        /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private IntPtr WindowProc(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam)
@@ -1348,12 +1250,12 @@ namespace Microsoft.Win32
             return Interop.User32.DefWindowProcW(hWnd, msg, wParam, lParam);
         }
 
-        /// <devdoc>
-        ///      This is the method that runs our window thread.  This method
-        ///      creates a window and spins up a message loop.  The window
-        ///      is made visible with a size of 0, 0, so that it will trap
-        ///      global broadcast messages.
-        /// </devdoc>
+        /// <summary>
+        ///  This is the method that runs our window thread.  This method
+        ///  creates a window and spins up a message loop.  The window
+        ///  is made visible with a size of 0, 0, so that it will trap
+        ///  global broadcast messages.
+        /// </summary>
         [SuppressMessage("Microsoft.Security", "CA2102:CatchNonClsCompliantExceptionsInGeneralHandlers")]
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         private void WindowThreadProc()

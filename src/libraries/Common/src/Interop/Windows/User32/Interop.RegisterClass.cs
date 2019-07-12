@@ -9,6 +9,6 @@ internal partial class Interop
     internal partial class User32
     {
         [DllImport(Libraries.User32, CharSet = CharSet.Unicode, SetLastError = true, ExactSpelling = true)]
-        public static extern short RegisterClassW(WNDCLASS wc);
+        public static extern short RegisterClassW(ref WNDCLASS wc);
     }
 }
