@@ -18,6 +18,7 @@ namespace System.Net.Http.Tests
         private const string FakeProxyString = "http://proxy.contoso.com";
         private const string insecureProxyUri = "http://proxy.insecure.com";
         private const string secureProxyUri = "http://proxy.secure.com";
+        private const string secureAndInsecureProxyUri = "http://proxy.secure-and-insecure.com";
         private const string fooHttp = "http://foo.com";
         private const string fooHttps = "https://foo.com";
         private const string fooWs = "ws://foo.com";
@@ -29,41 +30,90 @@ namespace System.Net.Http.Tests
         }
 
         [Theory]
-        [InlineData("http://proxy.insecure.com", true, false)]
-        [InlineData("http=proxy.insecure.com", true, false)]
-        [InlineData("http://proxy.insecure.com http://proxy.wrong.com", true, false)]
-        [InlineData("https=proxy.secure.com http=proxy.insecure.com", true, true)]
-        [InlineData("https://proxy.secure.com\nhttp://proxy.insecure.com", true, true)]
-        [InlineData("https=proxy.secure.com\nhttp=proxy.insecure.com", true, true)]
-        [InlineData("https://proxy.secure.com;http://proxy.insecure.com", true, true)]
-        [InlineData("https=proxy.secure.com;http=proxy.insecure.com", true, true)]
-        [InlineData(";http=proxy.insecure.com;;", true, false)]
-        [InlineData("    http=proxy.insecure.com    ", true, false)]
-        [InlineData("http=proxy.insecure.com;http=proxy.wrong.com", true, false)]
-        [InlineData("http=http://proxy.insecure.com", true, false)]
-        [InlineData("https=https://proxy.secure.com", false, true)]
-        public void HttpProxy_WindowsProxy_Loaded(string rawProxyString, bool hasInsecureProxy, bool hasSecureProxy)
+        [MemberData(nameof(ProxyParsingData))]
+        public void HttpProxy_WindowsProxy_Manual_Loaded(string rawProxyString, string rawInsecureUri, string rawSecureUri)
         {
             RemoteExecutor.Invoke((proxyString, insecureProxy, secureProxy) =>
             {
-                IWebProxy p;
-
                 FakeRegistry.Reset();
-                Assert.False(HttpWindowsProxy.TryCreate(out p));
+
+                Assert.False(HttpWindowsProxy.TryCreate(out IWebProxy p));
 
                 FakeRegistry.WinInetProxySettings.Proxy = proxyString;
                 WinInetProxyHelper proxyHelper = new WinInetProxyHelper();
+                Assert.Null(proxyHelper.AutoConfigUrl);
+                Assert.Equal(proxyString, proxyHelper.Proxy);
+                Assert.False(proxyHelper.AutoSettingsUsed);
+                Assert.True(proxyHelper.ManualSettingsUsed);
 
                 Assert.True(HttpWindowsProxy.TryCreate(out p));
                 Assert.NotNull(p);
 
-                Assert.Equal(Boolean.Parse(insecureProxy) ? new Uri(insecureProxyUri) : null, p.GetProxy(new Uri(fooHttp)));
-                Assert.Equal(Boolean.Parse(secureProxy) ? new Uri(secureProxyUri) : null, p.GetProxy(new Uri(fooHttps)));
-                Assert.Equal(Boolean.Parse(insecureProxy) ? new Uri(insecureProxyUri) : null, p.GetProxy(new Uri(fooWs)));
-                Assert.Equal(Boolean.Parse(secureProxy) ? new Uri(secureProxyUri) : null, p.GetProxy(new Uri(fooWss)));
+                Assert.Equal(!string.IsNullOrEmpty(insecureProxy) ? new Uri(insecureProxy) : null, p.GetProxy(new Uri(fooHttp)));
+                Assert.Equal(!string.IsNullOrEmpty(secureProxy) ? new Uri(secureProxy) : null, p.GetProxy(new Uri(fooHttps)));
+                Assert.Equal(!string.IsNullOrEmpty(insecureProxy) ? new Uri(insecureProxy) : null, p.GetProxy(new Uri(fooWs)));
+                Assert.Equal(!string.IsNullOrEmpty(secureProxy) ? new Uri(secureProxy) : null, p.GetProxy(new Uri(fooWss)));
                 return RemoteExecutor.SuccessExitCode;
-            }, rawProxyString, hasInsecureProxy.ToString(), hasSecureProxy.ToString()).Dispose();
+            }, rawProxyString, rawInsecureUri ?? string.Empty, rawSecureUri ?? string.Empty).Dispose();
         }
+
+        [Theory]
+        [MemberData(nameof(ProxyParsingData))]
+        public void HttpProxy_WindowsProxy_PAC_Loaded(string rawProxyString, string rawInsecureUri, string rawSecureUri)
+        {
+            RemoteExecutor.Invoke((proxyString, insecureProxy, secureProxy) =>
+            {
+                TestControl.ResetAll();
+
+                Assert.False(HttpWindowsProxy.TryCreate(out IWebProxy p));
+
+                FakeRegistry.WinInetProxySettings.AutoConfigUrl = "http://127.0.0.1/proxy.pac";
+                WinInetProxyHelper proxyHelper = new WinInetProxyHelper();
+                Assert.Null(proxyHelper.Proxy);
+                Assert.Equal(FakeRegistry.WinInetProxySettings.AutoConfigUrl, proxyHelper.AutoConfigUrl);
+                Assert.False(proxyHelper.ManualSettingsUsed);
+                Assert.True(proxyHelper.AutoSettingsUsed);
+
+                Assert.True(HttpWindowsProxy.TryCreate(out p));
+                Assert.NotNull(p);
+
+                // With a HttpWindowsProxy created configured to use auto-config, now set Proxy so when it
+                // attempts to resolve a proxy, it resolves our string.
+                FakeRegistry.WinInetProxySettings.Proxy = proxyString;
+                proxyHelper = new WinInetProxyHelper();
+                Assert.Equal(proxyString, proxyHelper.Proxy);
+
+                Assert.Equal(!string.IsNullOrEmpty(insecureProxy) ? new Uri(insecureProxy) : null, p.GetProxy(new Uri(fooHttp)));
+                Assert.Equal(!string.IsNullOrEmpty(secureProxy) ? new Uri(secureProxy) : null, p.GetProxy(new Uri(fooHttps)));
+                Assert.Equal(!string.IsNullOrEmpty(insecureProxy) ? new Uri(insecureProxy) : null, p.GetProxy(new Uri(fooWs)));
+                Assert.Equal(!string.IsNullOrEmpty(secureProxy) ? new Uri(secureProxy) : null, p.GetProxy(new Uri(fooWss)));
+                return RemoteExecutor.SuccessExitCode;
+            }, rawProxyString, rawInsecureUri ?? string.Empty, rawSecureUri ?? string.Empty).Dispose();
+        }
+
+        public static TheoryData<string, string, string> ProxyParsingData =>
+            new TheoryData<string, string, string>
+            {
+                { "http://proxy.insecure.com", insecureProxyUri, null },
+                { "http=http://proxy.insecure.com", insecureProxyUri, null },
+                { "http=proxy.insecure.com", insecureProxyUri, null },
+                { "http://proxy.insecure.com http://proxy.wrong.com", insecureProxyUri, null },
+                { "https=proxy.secure.com http=proxy.insecure.com", insecureProxyUri, secureProxyUri },
+                { "https://proxy.secure.com\nhttp://proxy.insecure.com", insecureProxyUri, secureProxyUri },
+                { "https=proxy.secure.com\nhttp=proxy.insecure.com", insecureProxyUri, secureProxyUri },
+                { "https://proxy.secure.com;http://proxy.insecure.com", insecureProxyUri, secureProxyUri },
+                { "https=proxy.secure.com;http=proxy.insecure.com", insecureProxyUri, secureProxyUri },
+                { ";http=proxy.insecure.com;;", insecureProxyUri, null },
+                { "    http=proxy.insecure.com    ", insecureProxyUri, null },
+                { "http=proxy.insecure.com;http=proxy.wrong.com", insecureProxyUri, null },
+                { "http=http://proxy.insecure.com", insecureProxyUri, null },
+                { "https://proxy.secure.com", null, secureProxyUri },
+                { "https=proxy.secure.com", null, secureProxyUri },
+                { "https=https://proxy.secure.com", null, secureProxyUri },
+                { "http=https://proxy.secure.com", null, secureProxyUri },
+                { "https=http://proxy.insecure.com", insecureProxyUri, null },
+                { "proxy.secure-and-insecure.com", secureAndInsecureProxyUri, secureAndInsecureProxyUri },
+            };
 
         [Theory]
         [InlineData("localhost:1234", "http://localhost:1234/")]
