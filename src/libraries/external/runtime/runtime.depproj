@@ -63,7 +63,7 @@
     <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(OS)' != 'Windows_NT'"/>
 
     <Copy SourceFiles="@(HostSdkFile)"
-          DestinationFolder="$(TestHostRootPath)sdk\$(ProductVersion)\%(RecursiveDir)"
+          DestinationFolder="$(TestHostRootPath)sdk\$(DotNetVersion)\%(RecursiveDir)"
           SkipUnchangedFiles="true"
           UseHardlinksIfPossible="$(UseHardlink)" />
   </Target>
