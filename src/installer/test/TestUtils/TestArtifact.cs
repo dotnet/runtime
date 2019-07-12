@@ -10,20 +10,21 @@ namespace Microsoft.DotNet.CoreSetup.Test
 {
     public class TestArtifact : IDisposable
     {
+        private static readonly Lazy<RepoDirectoriesProvider> _repoDirectoriesProvider =
+            new Lazy<RepoDirectoriesProvider>(() => new RepoDirectoriesProvider());
+
+        private static readonly Lazy<bool> _preserveTestRuns = new Lazy<bool>(() =>
+            _repoDirectoriesProvider.Value.GetTestContextVariableOrNull("PRESERVE_TEST_RUNS") == "1");
+
         private static readonly string TestArtifactDirectoryEnvironmentVariable = "TEST_ARTIFACTS";
         private static readonly Lazy<string> _testArtifactsPath = new Lazy<string>(() =>
         {
-            return Environment.GetEnvironmentVariable(TestArtifactDirectoryEnvironmentVariable)
+            return _repoDirectoriesProvider.Value.GetTestContextVariable(TestArtifactDirectoryEnvironmentVariable)
                    ?? Path.Combine(AppContext.BaseDirectory, TestArtifactDirectoryEnvironmentVariable);
         });
 
-        public static string TestArtifactsPath
-        {
-            get
-            {
-                return _testArtifactsPath.Value;
-            }
-        }
+        public static bool PreserveTestRuns() => _preserveTestRuns.Value;
+        public static string TestArtifactsPath => _testArtifactsPath.Value;
 
         public string Location { get; }
         public string Name { get; }
@@ -64,11 +65,6 @@ namespace Microsoft.DotNet.CoreSetup.Test
             }
 
             _copies.Clear();
-        }
-
-        public static bool PreserveTestRuns()
-        {
-            return Environment.GetEnvironmentVariable("PRESERVE_TEST_RUNS") == "1";
         }
 
         protected static string GetNewTestArtifactPath(string artifactName)
