@@ -436,9 +436,15 @@
 
   <Target Name="Build"
           DependsOnTargets="
+            GetSkipBuildProps;
+            BuildDepprojArtifacts" />
+
+  <Target Name="BuildDepprojArtifacts"
+          DependsOnTargets="
             GetFilesToPackage;
             CrossGen;
             GenerateHashVersionsFile;
-            GenerateFileVersionProps" />
+            GenerateFileVersionProps"
+          Condition="'$(SkipBuild)' != 'true'" />
 
 </Project>

@@ -221,11 +221,17 @@
   -->
   <Target Name="Build"
           DependsOnTargets="
+            GetSkipBuildProps;
+            BuildSfxprojArtifacts" />
+
+  <Target Name="BuildSfxprojArtifacts"
+          DependsOnTargets="
             BuildPkgProjectReferences;
             SetPublishDir;
             CleanPackages;
             Restore;
             Publish;
-            GenerateInstallers" />
+            GenerateInstallers"
+          Condition="'$(SkipBuild)' != 'true'" />
 
 </Project>

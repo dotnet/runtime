@@ -171,6 +171,7 @@
   -->
   <Target Name="Build"
           DependsOnTargets="
+            GetSkipBuildProps;
             BuildRidAgnosticPackage;
             GetBuildRidSpecificPackageProps;
             BuildRidSpecificPackage;
@@ -178,12 +179,15 @@
 
   <Target Name="BuildRidAgnosticPackage"
           DependsOnTargets="$(BuildDependsOn)"
-          Condition="'$(BuildLineupPackage)' == 'true'">
+          Condition="
+            '$(SkipBuild)' != 'true' and
+            '$(BuildLineupPackage)' == 'true'">
     <Message Text="$(MSBuildProjectName) -> $(NuSpecPath)" Importance="high" />
   </Target>
 
   <Target Name="BuildRidSpecificPackage"
           Condition="
+            '$(SkipBuild)' != 'true' and
             '$(PackageBuildRID)' != '' and
             (
               '$(BuildRidSpecificPacks)' == 'true' or
