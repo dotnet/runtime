@@ -64,7 +64,7 @@ namespace System.Net.Security
         private object _queuedReadStateRequest;
 
         /// <summary>Set as the _exception when the instance is disposed.</summary>
-        private static readonly ExceptionDispatchInfo s_disposedSentinel = ExceptionDispatchInfo.Capture(new ObjectDisposedException(nameof(SslStream)));
+        private static readonly ExceptionDispatchInfo s_disposedSentinel = ExceptionDispatchInfo.Capture(new ObjectDisposedException(nameof(SslStream), (string)null));
 
         private void ThrowIfExceptional()
         {
