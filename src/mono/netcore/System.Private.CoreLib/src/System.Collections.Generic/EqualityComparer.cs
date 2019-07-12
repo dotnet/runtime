@@ -25,14 +25,15 @@ namespace System.Collections.Generic
 		static EqualityComparer<T> CreateComparer ()
 		{
 			RuntimeType t = (RuntimeType)typeof(T);
-			if (t == typeof(byte)) {
-				return (EqualityComparer<T>)(object)(new ByteEqualityComparer());
-			}
 
 			/////////////////////////////////////////////////
 			// KEEP THIS IN SYNC WITH THE DEVIRT CODE
 			// IN METHOD-TO-IR.C
 			/////////////////////////////////////////////////
+
+			if (t == typeof(byte)) {
+				return (EqualityComparer<T>)(object)(new ByteEqualityComparer());
+			}
 
 			if (typeof(IEquatable<T>).IsAssignableFrom(t)) {
 				return (EqualityComparer<T>)RuntimeType.CreateInstanceForAnotherGenericParameter (typeof(GenericEqualityComparer<>), t);
