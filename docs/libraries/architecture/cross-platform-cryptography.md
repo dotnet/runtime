@@ -10,12 +10,6 @@ libraries are FIPS-validated, of course).
 The biggest con is that not all system libraries offer the same capabilities.
 While the core capabilities are present across the various platforms, there are some rough edges.
 
-### Versioning
-
-In .NET Core 1.0 and .NET Core 1.1 the macOS implementation of the cryptography classes was based on OpenSSL.
-In .NET Core 2.0 the dependency was changed to use Apple's Security.framework.
-Within this document "macOS" should use the values for "Linux" if running .NET Core 1.x, as .NET Core uses OpenSSL in all Linux versions.
-
 ## Hash Algorithms
 
 Hash algorithms, and HMAC algorithms, are very standard bytes-in-bytes-out operations.
@@ -48,6 +42,46 @@ This would result in a `PlatformNotSupportedException` when invoking the `Create
 In the future there is a possibility that new cipher/chaining modes may be added to .NET Core and that these new modes may not apply to all symmetric algorithms.
 This would likely result in a `NotSupportedException` when using the set-accessor of the `Mode` property on the `SymmetricAlgorithm` object, but this prediction is subject to change.
 
+## Authenticated Encryption
+
+Authenticated Encryption (AE) support is provided for AES-CCM and AES-GCM via `System.Security.Cryptography.AesCcm` and `System.Security.Cryptography.AesGcm`, respectively.
+
+On macOS the system libraries do not support AES-CCM or AES-GCM for 3rd party code, so the AesCcm and AesGcm classes use OpenSSL for support.
+Users on macOS need to obtain an appropriate copy of OpenSSL (libcrypto) for these types to function, and it must be in a path that the system would load a library from by default.
+Obtaining OpenSSL from a package manager, such as Homebrew, is recommended (but not required).
+The libcrypto.0.9.7.dylib and libcrypto.0.9.8.dylib libraries included in macOS are from older versions of OpenSSL, and will not be used.
+The libcrypto.35.dylib, libcrypto.41.dylib, and libcrypto.42.dylib are LibreSSL, and will not be used.
+
+On Windows and Linux the implementations of AES-CCM and AES-GCM are provided by the system libraries.
+
+### AES-GCM
+
+#### Key Sizes
+
+AES-GCM works with 128, 192, and 256-bit keys.
+
+#### Nonce Sizes
+
+The AesGcm class only supports 96-bit (12 byte) nonces.
+
+#### Tag Sizes
+
+The AesGcm class supports creating (or processing) 96, 104, 112, 120, and 128-bit (12-16 bytes) tags.
+
+### AES-CCM
+
+#### Key Sizes
+
+AES-CCM works with 128, 192, and 256-bit keys.
+
+#### Nonce Sizes
+
+The AesCcm class supports 56, 64, 72, 80, 88, 96, and 104-bit nonces (7-13 bytes).
+
+#### Tag Sizes
+
+The AesCcm class supports creating (or processing) 32, 48, 64, 80, 96, 112, and 128-bit (4, 8, 10, 12, 14, or 16-byte) tags.
+
 ## Asymmetric Cryptography
 
 ### RSA
@@ -62,10 +96,10 @@ Not all platforms support the same padding options.
 |--------------|---------------|-----------------|-------|----------------|
 | PKCS1 Encryption | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | OAEP - SHA-1 | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
-| OAEP - SHA-2 (SHA256, SHA384, SHA512) | :white_check_mark: | :x: | :x: | :x: |
+| OAEP - SHA-2 (SHA256, SHA384, SHA512) | :white_check_mark: | :white_check_mark: | :white_check_mark: | :x: |
 | PKCS1 Signature (MD5, SHA-1) | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
 | PKCS1 Signature (SHA-2) | :white_check_mark: | :white_check_mark: | :white_check_mark: | :question: |
-| PSS |  :white_check_mark: | :x: | :x: | :x: |
+| PSS | :white_check_mark: | :white_check_mark: | :white_check_mark: | :x: |
 
 Windows CAPI is capable of PKCS1 signature with a SHA-2 algorithm, but the individual RSA object may be loaded in a CSP which does not support it.
 
@@ -126,6 +160,50 @@ The types involved do not translate between platforms, and should only be direct
 | ECDsaOpenSsl | :x: | :white_check_mark: | :question: |
 
 ECDsaOpenSsl on macOS works if OpenSSL is installed in the system and an appropriate libcrypto dylib can be found via dynamic library loading, otherwise exceptions will be raised.
+
+### ECDiffieHellman (ECDH)
+
+ECDH key generation is performed by the system libraries, and is subject to size limitations and performance characteristics thereof.
+
+The ECDiffieHellman class will not return the "raw" value of the ECDH computation, all returned data is done in terms of key derivation functions.
+* HASH(Z)
+* HASH(prepend || Z || append)
+* HMAC(key, Z)
+* HMAC(key, prepend || Z || append)
+* HMAC(Z, Z)
+* HMAC(Z, prepend || Z || append)
+* Tls11Prf(label, seed)
+
+ECDH key curves are defined by the system libraries, and are subject to the limitations thereof.
+
+| EC Curve | Windows 10 | Windows 7 - 8.1 | Linux | macOS |
+|----------|------------|-------|-------|-----------------|
+| NIST P-256 (secp256r1) | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| NIST P-384 (secp384r1) | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| NIST P-521 (secp521r1) | :white_check_mark: | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| brainpool curves (as named curves) | :white_check_mark: | :x: | :question: | :x: |
+| other named curves | :question: | :x: | :question: | :x: |
+| explicit curves | :white_check_mark: | :x: | :white_check_mark: | :x: |
+| Export or import as explicit | :white_check_mark: | :x: | :white_check_mark: | :x: |
+
+Support for named curves was added to Windows CNG in Windows 10, and is not available in prior OSes, with the exception of the three curves which had special support in Windows 7.
+See [CNG Named Elliptic Curves](https://msdn.microsoft.com/en-us/library/windows/desktop/mt632245(v=vs.85).aspx) for the expected support.
+
+Not all Linux distributions have support for the same named curves.
+
+Exporting with explicit curve parameters requires system library support which is not available on macOS or older versions of Windows.
+
+#### Native Interop
+
+.NET Core exposes types to allow programs to interoperate with the system libraries upon which the .NET cryptography code is layered.
+The types involved do not translate between platforms, and should only be directly used when necessary.
+
+| Type | Windows | Linux | macOS |
+|------|---------|-------|-------|
+| ECDiffieHellmanCng | :white_check_mark: | :x: | :x: |
+| ECDiffieHellmanOpenSsl | :x: | :white_check_mark: | :question: |
+
+ECDiffieHellmanOpenSsl on macOS works if OpenSSL is installed in the system and an appropriate libcrypto dylib can be found via dynamic library loading, otherwise exceptions will be raised.
 
 ### DSA
 
@@ -252,5 +330,3 @@ in different locations. The resulting `IntPtr` can be passed to `new X509Store(I
 
 macOS does not support Offline CRL utilization, so `X509RevocationMode.Offline` is treated as `X509RevocationMode.Online`.
 macOS does not support a user-initiated timeout on CRL/OCSP/AIA downloading, so `X509ChainPolicy.UrlRetrievalTimeout` is ignored.
-
-OCSP is not supported on Linux, CRLs are required for `X509RevocationMode.Offline` or `X509RevocationMode.Online`.
