@@ -32,5 +32,9 @@
       <!-- Instantiated via reflection -->
       <method name=".ctor" />
     </type>
+    <type fullname="System.Data.Common.DataTableMapping/DataTableMappingConverter">
+      <!-- Instantiated via reflection -->
+      <method name=".ctor" />
+    </type>
   </assembly>
 </linker>
