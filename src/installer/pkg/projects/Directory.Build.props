@@ -8,7 +8,7 @@
     <!-- This property must be set to the same value as $(PackageOutputPath) for the nuspecs and nupkgs to be binplaced to the intended location. -->
     <OutputPath>$(PackageOutputPath)</OutputPath>
     
-    <PackageTargetRuntime Condition="'$(PackageTargetRuntime)' == '' AND '$(MSBuildProjectExtension)' == '.depproj'">$(NuGetRuntimeIdentifier)</PackageTargetRuntime>
+    <PackageTargetRuntime Condition="'$(PackageTargetRuntime)' == '' AND '$(MSBuildProjectExtension)' == '.depproj'">$(RuntimeIdentifier)</PackageTargetRuntime>
 
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == ''">true</IsLineupPackage>
 
@@ -95,8 +95,6 @@
   <Import Project="$(PackagingToolsDir)packaging-tools.props" />
 
   <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.depproj'">
-    <!-- we intentionally don't want to produce output -->
-    <OutputPath>unused</OutputPath>
     <!--
       we don't want any analyzers by ResolveNuGetPackageAssets
       null-refs when this isn't set and an analyzer is in the packages
@@ -107,7 +105,7 @@
     <PackageTargetFramework>$(NETCoreAppFramework)</PackageTargetFramework>
     <CrossGenOutputPath>$(CrossGenRootPath)$(MSBuildProjectName)\</CrossGenOutputPath>
     <ContainsPackageReferences>true</ContainsPackageReferences>
-    <RidSpecificAssets Condition="'$(NuGetRuntimeIdentifier)' != ''">true</RidSpecificAssets>
+    <RidSpecificAssets Condition="'$(RuntimeIdentifier)' != ''">true</RidSpecificAssets>
     <CrossGenSymbolsOutputPath>$(PackageSymbolsBinDir)/$(MSBuildProjectName)</CrossGenSymbolsOutputPath>
   </PropertyGroup>
 
@@ -165,7 +163,7 @@
       <Platform Condition="'%(Platform)' == ''">x64</Platform>
       <BuildRID>%(Identity)</BuildRID>
       <PackageTargetRuntime>%(BuildRID)</PackageTargetRuntime>
-      <AdditionalProperties>PackageTargetRuntime=%(BuildRID);NuGetRuntimeIdentifier=%(BuildRID);Platform=%(Platform)</AdditionalProperties>
+      <AdditionalProperties>PackageTargetRuntime=%(BuildRID);RuntimeIdentifier=%(BuildRID);Platform=%(Platform)</AdditionalProperties>
     </_project>
 
     <RuntimeProject Include="@(_project->'$(RuntimeProjectFile)')" />
