@@ -26,20 +26,6 @@ namespace System.Text.Json
             if ((state.Current.IsProcessingDictionary || state.Current.IsProcessingIDictionaryConstructible) &&
                 state.Current.JsonClassInfo.DataExtensionProperty != state.Current.JsonPropertyInfo)
             {
-                string keyName = reader.GetString();
-
-                if (options.DictionaryKeyPolicy != null)
-                {
-                    keyName = options.DictionaryKeyPolicy.ConvertName(keyName);
-
-                    if (keyName == null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_SerializerDictionaryKeyNull(options.DictionaryKeyPolicy.GetType());
-                    }
-
-                    keyName = options.DictionaryKeyPolicy.ConvertName(keyName);
-                }
-
                 if (state.Current.IsDictionary || state.Current.IsIDictionaryConstructible)
                 {
                     state.Current.JsonPropertyInfo = state.Current.JsonClassInfo.PolicyProperty;
@@ -51,7 +37,7 @@ namespace System.Text.Json
                     state.Current.IsIDictionaryConstructible ||
                     (state.Current.IsIDictionaryConstructibleProperty && state.Current.JsonPropertyInfo != null));
 
-                state.Current.KeyName = keyName;
+                state.Current.KeyName = reader.GetString();
             }
             else
             {
