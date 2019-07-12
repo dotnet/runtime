@@ -579,11 +579,15 @@ namespace System.Net.Http
                 throw new Http2ConnectionException(Http2ProtocolErrorCode.FrameSizeError);
             }
 
-            // Send PING ACK
-            // Don't wait for completion, which could happen asynchronously.
-            LogExceptions(SendPingAckAsync(_incomingBuffer.ActiveMemory.Slice(0, FrameHeader.PingLength)));
+            // We don't wait for SendPingAckAsync to complete before discarding
+            // the incoming buffer, so we need to take a copy of the data. Read
+            // it as a big-endian integer here to avoid allocating an array.
+            Debug.Assert(sizeof(long) == FrameHeader.PingLength);
+            ReadOnlySpan<byte> pingContent = _incomingBuffer.ActiveSpan.Slice(0, FrameHeader.PingLength);
+            long pingContentLong = BinaryPrimitives.ReadInt64BigEndian(pingContent);
 
-            // SendPingAckAsync copies the buffer for us, so it is safe to not wait for completion.
+            LogExceptions(SendPingAckAsync(pingContentLong));
+
             _incomingBuffer.Discard(frameHeader.Length);
         }
 
@@ -788,14 +792,9 @@ namespace System.Net.Http
             FinishWrite(mustFlush: true);
         }
 
-        private async Task SendPingAckAsync(ReadOnlyMemory<byte> pingContent)
+        /// <param name="pingContent">The 8-byte ping content to send, read as a big-endian integer.</param>
+        private async Task SendPingAckAsync(long pingContent)
         {
-            Debug.Assert(pingContent.Length == FrameHeader.PingLength);
-
-            // Copy pingContent before we go async so the caller can
-            // discard their buffer without waiting for us to complete.
-            long pingContentLong = BitConverter.ToInt64(pingContent.Span);
-
             Memory<byte> writeBuffer = await StartWriteAsync(FrameHeader.Size + FrameHeader.PingLength).ConfigureAwait(false);
             if (NetEventSource.IsEnabled) Trace("Started writing.");
 
@@ -803,7 +802,8 @@ namespace System.Net.Http
             frameHeader.WriteTo(writeBuffer);
             writeBuffer = writeBuffer.Slice(FrameHeader.Size);
 
-            BitConverter.TryWriteBytes(writeBuffer.Span, pingContentLong);
+            Debug.Assert(sizeof(long) == FrameHeader.PingLength);
+            BinaryPrimitives.WriteInt64BigEndian(writeBuffer.Span, pingContent);
 
             FinishWrite(mustFlush: false);
         }
