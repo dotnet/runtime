@@ -747,34 +747,34 @@ namespace System.Net.Http
                 // if it is cancelable, then register for the cancellation callback, allocate a task for the asynchronously
                 // completing case, etc.
                 return cancellationToken.CanBeCanceled ?
-                    new ValueTask(GetWaiterTaskCore()) :
+                    new ValueTask(GetCancelableWaiterTask(cancellationToken)) :
                     new ValueTask(this, _waitSource.Version);
+            }
 
-                async Task GetWaiterTaskCore()
+            private async Task GetCancelableWaiterTask(CancellationToken cancellationToken)
+            {
+                using (cancellationToken.UnsafeRegister(s =>
                 {
-                    using (cancellationToken.UnsafeRegister(s =>
-                    {
-                        var thisRef = (Http2Stream)s;
+                    var thisRef = (Http2Stream)s;
 
-                        bool signalWaiter;
-                        lock (thisRef.SyncObject)
-                        {
-                            signalWaiter = thisRef._hasWaiter;
-                            thisRef._hasWaiter = false;
-                        }
-
-                        if (signalWaiter)
-                        {
-                            // Wake up the wait.  It will then immediately check whether cancellation was requested and throw if it was.
-                            thisRef._waitSource.SetResult(true);
-                        }
-                    }, this))
+                    bool signalWaiter;
+                    lock (thisRef.SyncObject)
                     {
-                        await new ValueTask(this, _waitSource.Version).ConfigureAwait(false);
+                        signalWaiter = thisRef._hasWaiter;
+                        thisRef._hasWaiter = false;
                     }
 
-                    CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
+                    if (signalWaiter)
+                    {
+                        // Wake up the wait.  It will then immediately check whether cancellation was requested and throw if it was.
+                        thisRef._waitSource.SetResult(true);
+                    }
+                }, this))
+                {
+                    await new ValueTask(this, _waitSource.Version).ConfigureAwait(false);
                 }
+
+                CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
             }
 
             public void Trace(string message, [CallerMemberName] string memberName = null) =>
