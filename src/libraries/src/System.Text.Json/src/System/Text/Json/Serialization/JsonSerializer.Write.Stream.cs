@@ -74,13 +74,13 @@ namespace System.Text.Json
                 state.Current.CurrentValue = value;
 
                 bool isFinalBlock;
-
                 int flushThreshold;
+
                 do
                 {
                     flushThreshold = (int)(bufferWriter.Capacity * .9); //todo: determine best value here
 
-                    isFinalBlock = Write(writer, flushThreshold, options, ref state);
+                    isFinalBlock = Write(writer, originalWriterDepth: 0, flushThreshold, options, ref state);
                     writer.Flush();
 
                     await bufferWriter.WriteToStreamAsync(utf8Json, cancellationToken).ConfigureAwait(false);
