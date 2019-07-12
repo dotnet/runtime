@@ -16,17 +16,36 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions
             {
-                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase // e.g. Key1 -> key1.
             };
 
             const string JsonString = @"[{""Key1"":1,""Key2"":2},{""Key1"":3,""Key2"":4}]";
-            Dictionary<string, int>[] obj = JsonSerializer.Deserialize<Dictionary<string, int>[]>(JsonString, options);
+
+            // Without key policy, deserialize keys as they are.
+            Dictionary<string, int>[] obj = JsonSerializer.Deserialize<Dictionary<string, int>[]>(JsonString);
 
             Assert.Equal(2, obj.Length);
-            Assert.Equal(1, obj[0]["key1"]);
-            Assert.Equal(2, obj[0]["key2"]);
-            Assert.Equal(3, obj[1]["key1"]);
-            Assert.Equal(4, obj[1]["key2"]);
+
+            Assert.Equal(2, obj[0].Count);
+            Assert.Equal(1, obj[0]["Key1"]);
+            Assert.Equal(2, obj[0]["Key2"]);
+
+            Assert.Equal(2, obj[1].Count);
+            Assert.Equal(3, obj[1]["Key1"]);
+            Assert.Equal(4, obj[1]["Key2"]);
+
+            // Ensure we ignore key policy and deserialize keys as they are.
+            obj = JsonSerializer.Deserialize<Dictionary<string, int>[]>(JsonString, options);
+
+            Assert.Equal(2, obj.Length);
+
+            Assert.Equal(2, obj[0].Count);
+            Assert.Equal(1, obj[0]["Key1"]);
+            Assert.Equal(2, obj[0]["Key2"]);
+
+            Assert.Equal(2, obj[1].Count);
+            Assert.Equal(3, obj[1]["Key1"]);
+            Assert.Equal(4, obj[1]["Key2"]);
         }
 
         [Fact]
@@ -34,7 +53,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions()
             {
-                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase // e.g. Key1 -> key1.
             };
 
             Dictionary<string, int>[] obj = new Dictionary<string, int>[]
@@ -60,11 +79,17 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions
             {
-                DictionaryKeyPolicy = new UppercaseNamingPolicy()
+                DictionaryKeyPolicy = new UppercaseNamingPolicy() // e.g. myint -> MYINT.
             };
 
-            Dictionary<string, int> obj = JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""myint"":1}", options);
-            Assert.Equal(1, obj["MYINT"]);
+
+            // Without key policy, deserialize keys as they are.
+            Dictionary<string, int> obj = JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""myint"":1}");
+            Assert.Equal(1, obj["myint"]);
+
+            // Ensure we ignore key policy and deserialize keys as they are.
+            obj = JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""myint"":1}", options);
+            Assert.Equal(1, obj["myint"]);
         }
 
         [Fact]
@@ -72,7 +97,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions
             {
-                DictionaryKeyPolicy = new UppercaseNamingPolicy()
+                DictionaryKeyPolicy = new UppercaseNamingPolicy() // e.g. myint -> MYINT.
             };
 
             Dictionary<string, int> obj = new Dictionary<string, int> { { "myint1", 1 }, { "myint2", 2 } };
@@ -97,30 +122,18 @@ namespace System.Text.Json.Serialization.Tests
                 DictionaryKeyPolicy = new NullNamingPolicy()
             };
 
-            // A policy that returns null is not allowed.
-            Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""onlyKey"": 1}", options));
+            // A naming policy that returns null is not allowed.
             Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new Dictionary<string, int> { { "onlyKey", 1 } }, options));
-        }
 
-        [Fact]
-        public static void KeyConflictDeserialize_LastValueWins()
-        {
-            var options = new JsonSerializerOptions
-            {
-                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase
-            };
+            // We don't use policy on deserialize, so we populate dictionary.
+            Dictionary<string, int> obj = JsonSerializer.Deserialize<Dictionary<string, int>>(@"{""onlyKey"": 1}", options);
 
-            // The camel case policy resolves two keys to the same output key.
-            string json = @"{""myInt"":1,""MyInt"":2}";
-            Dictionary<string, int> obj = JsonSerializer.Deserialize<Dictionary<string, int>>(json, options);
-
-            // Check that the last value wins.
-            Assert.Equal(2, obj["myInt"]);
             Assert.Equal(1, obj.Count);
+            Assert.Equal(1, obj["onlyKey"]);
         }
 
         [Fact]
-        public static void KeyConflictSerialize_WriteAll()
+        public static void KeyConflict_Serialize_WriteAll()
         {
             var options = new JsonSerializerOptions
             {
