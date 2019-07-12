@@ -105,6 +105,14 @@
     </PropertyGroup>
   </Target>
 
+  <Target Name="GetSkipBuildProps">
+    <PropertyGroup>
+      <!-- Avoid building a project when none of the possible BuildRIDs is the current RID. -->
+      <_packageRIDInBuildRIDList Condition="'%(BuildRID.Identity)' == '$(PackageRID)'">true</_packageRIDInBuildRIDList>
+      <SkipBuild Condition="'$(_packageRIDInBuildRIDList)' != 'true'">true</SkipBuild>
+    </PropertyGroup>
+  </Target>
+
   <!--
     By default, shared frameworks are generated based on the package. This can be overridden by the
     project, and in the future, the runtime pack is likely to be used to assemble the sfx.
