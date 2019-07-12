@@ -22,7 +22,7 @@
     <MicrosoftNETCorePlatformsVersion>3.0.0-preview8.19360.10</MicrosoftNETCorePlatformsVersion>
     <MicrosoftBclAsyncInterfacesVersion>1.0.0-preview7.19326.2</MicrosoftBclAsyncInterfacesVersion>
     <!-- core-setup -->
-    <MicrosoftNETCoreAppVersion>3.0.0-preview8-27911-01</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreAppVersion>3.0.0-preview8-27912-01</MicrosoftNETCoreAppVersion>
     <!-- dotnet-core-internal-tooling -->
     <IbcMergePackageVersion>5.0.6-beta.19203.1</IbcMergePackageVersion>
     <!-- dotnet-optimization -->
