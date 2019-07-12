@@ -4,9 +4,11 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.DirectoryServices.Protocols;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -404,74 +406,99 @@ namespace System.Net.Http.Functional.Tests
 
         public static IEnumerable<object[]> PostAsync_Cancel_CancellationTokenPassedToContent_MemberData()
         {
-            foreach (CancellationToken expectedToken in new[] { CancellationToken.None, new CancellationTokenSource().Token })
+            // Note: For HTTP2, the actual token will be a linked token and will not be an exact match for the original token.
+            // Verify that it behaves as expected by cancelling it and validating that cancellation propagates.
+
+            // StreamContent
             {
-                // StreamContent
-                {
-                    var actualToken = new StrongBox<CancellationToken>();
-                    bool called = false;
-                    var content = new StreamContent(new DelegateStream(
-                        canReadFunc: () => true,
-                        readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                CancellationTokenSource tokenSource = new CancellationTokenSource();
+                var actualToken = new StrongBox<CancellationToken>();
+                bool called = false;
+                var content = new StreamContent(new DelegateStream(
+                    canReadFunc: () => true,
+                    readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                    {
+                        int result = 1;
+                        if (called)
                         {
-                            actualToken.Value = cancellationToken;
-                            int result = called ? 0 : 1;
-                            called = true;
-                            return Task.FromResult(result);
+                            result = 0;
+                            Assert.False(cancellationToken.IsCancellationRequested);
+                            tokenSource.Cancel();
+                            Assert.True(cancellationToken.IsCancellationRequested);
                         }
-                    ));
-                    yield return new object[] { content, expectedToken, actualToken };
-                }
 
-                // MultipartContent
-                {
-                    var actualToken = new StrongBox<CancellationToken>();
-                    bool called = false;
-                    var content = new MultipartContent();
-                    content.Add(new StreamContent(new DelegateStream(
-                        canReadFunc: () => true,
-                        canSeekFunc: () => true,
-                        lengthFunc: () => 1,
-                        positionGetFunc: () => 0,
-                        positionSetFunc: _ => {},
-                        readAsyncFunc: (buffer, offset, count, cancellationToken) =>
-                        {
-                            actualToken.Value = cancellationToken;
-                            int result = called ? 0 : 1;
-                            called = true;
-                            return Task.FromResult(result);
-                        }
-                    )));
-                    yield return new object[] { content, expectedToken, actualToken };
-                }
+                        called = true;
+                        return Task.FromResult(result);
+                    }
+                ));
+                yield return new object[] { content, tokenSource };
+            }
 
-                // MultipartFormDataContent
-                {
-                    var actualToken = new StrongBox<CancellationToken>();
-                    bool called = false;
-                    var content = new MultipartFormDataContent();
-                    content.Add(new StreamContent(new DelegateStream(
-                        canReadFunc: () => true,
-                        canSeekFunc: () => true,
-                        lengthFunc: () => 1,
-                        positionGetFunc: () => 0,
-                        positionSetFunc: _ => {},
-                        readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+            // MultipartContent
+            {
+                CancellationTokenSource tokenSource = new CancellationTokenSource();
+                var actualToken = new StrongBox<CancellationToken>();
+                bool called = false;
+                var content = new MultipartContent();
+                content.Add(new StreamContent(new DelegateStream(
+                    canReadFunc: () => true,
+                    canSeekFunc: () => true,
+                    lengthFunc: () => 1,
+                    positionGetFunc: () => 0,
+                    positionSetFunc: _ => {},
+                    readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                    {
+                        int result = 1;
+                        if (called)
                         {
-                            actualToken.Value = cancellationToken;
-                            int result = called ? 0 : 1;
-                            called = true;
-                            return Task.FromResult(result);
+                            result = 0;
+                            Assert.False(cancellationToken.IsCancellationRequested);
+                            tokenSource.Cancel();
+                            Assert.True(cancellationToken.IsCancellationRequested);
                         }
-                    )));
-                    yield return new object[] { content, expectedToken, actualToken };
-                }
+
+                        called = true;
+                        return Task.FromResult(result);
+                    }
+                )));
+                yield return new object[] { content, tokenSource };
+            }
+
+            // MultipartFormDataContent
+            {
+                CancellationTokenSource tokenSource = new CancellationTokenSource();
+                var actualToken = new StrongBox<CancellationToken>();
+                bool called = false;
+                var content = new MultipartFormDataContent();
+                content.Add(new StreamContent(new DelegateStream(
+                    canReadFunc: () => true,
+                    canSeekFunc: () => true,
+                    lengthFunc: () => 1,
+                    positionGetFunc: () => 0,
+                    positionSetFunc: _ => {},
+                    readAsyncFunc: (buffer, offset, count, cancellationToken) =>
+                    {
+                        int result = 1;
+                        if (called)
+                        {
+                            result = 0;
+                            Assert.False(cancellationToken.IsCancellationRequested);
+                            tokenSource.Cancel();
+                            Assert.True(cancellationToken.IsCancellationRequested);
+                        }
+
+                        called = true;
+                        return Task.FromResult(result);
+                    }
+                )));
+                yield return new object[] { content, tokenSource };
             }
         }
 
+        [OuterLoop("Uses Task.Delay")]
         [Theory]
         [MemberData(nameof(PostAsync_Cancel_CancellationTokenPassedToContent_MemberData))]
-        public async Task PostAsync_Cancel_CancellationTokenPassedToContent(HttpContent content, CancellationToken expectedToken, StrongBox<CancellationToken> actualToken)
+        public async Task PostAsync_Cancel_CancellationTokenPassedToContent(HttpContent content, CancellationTokenSource cancellationTokenSource)
         {
             if (IsUapHandler)
             {
@@ -484,14 +511,23 @@ namespace System.Net.Http.Functional.Tests
                 {
                     using (var invoker = new HttpMessageInvoker(CreateHttpClientHandler()))
                     using (var req = new HttpRequestMessage(HttpMethod.Post, uri) { Content = content, Version = VersionFromUseHttp2 })
-                    using (HttpResponseMessage resp = await invoker.SendAsync(req, expectedToken))
+                    try
                     {
-                        Assert.Equal("Hello World", await resp.Content.ReadAsStringAsync());
+                        using (HttpResponseMessage resp = await invoker.SendAsync(req, cancellationTokenSource.Token))
+                        {
+                            Assert.Equal("Hello World", await resp.Content.ReadAsStringAsync());
+                        }
                     }
+                    catch (OperationCanceledException) { }
                 },
-                server => server.HandleRequestAsync(content: "Hello World"));
-
-            Assert.Equal(expectedToken, actualToken.Value);
+                async server =>
+                {
+                    try
+                    {
+                        await server.HandleRequestAsync(content: "Hello World");
+                    }
+                    catch (Exception) { }
+                });
         }
 
         private async Task ValidateClientCancellationAsync(Func<Task> clientBodyAsync)
