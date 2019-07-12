@@ -25,6 +25,8 @@ using System.Diagnostics.Tracing;
 using System.Text;
 using System.Net;
 using System.Net.Sockets;
+using System.Web;
+using System.Collections.Specialized;
 
 /// <summary>
 /// Simple HttpClient stress app that launches Kestrel in-proc and runs many concurrent requests of varying types against it.
@@ -43,6 +45,7 @@ public class Program
         cmd.AddOption(new Option("-aspnetlog", "Enable ASP.NET warning and error logging.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-listOps", "List available options.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-seed", "Seed for generating pseudo-random parameters for a given -n argument.") { Argument = new Argument<int?>("seed", null)});
+        cmd.AddOption(new Option("-p", "Max number of query parameters for a request.") { Argument = new Argument<int>("queryParameters", 1) });
 
         ParseResult cmdline = cmd.Parse(args);
         if (cmdline.Errors.Count > 0)
@@ -64,10 +67,11 @@ public class Program
             logPath             : cmdline.HasOption("-trace") ? cmdline.ValueForOption<string>("-trace") : null,
             aspnetLog           : cmdline.ValueForOption<bool>("-aspnetlog"),
             listOps             : cmdline.ValueForOption<bool>("-listOps"),
-            seed                : cmdline.ValueForOption<int?>("-seed") ?? new Random().Next());
+            seed                : cmdline.ValueForOption<int?>("-seed") ?? new Random().Next(),
+            numParameters       : cmdline.ValueForOption<int>("-p"));
     }
 
-    private static void Run(int concurrentRequests, int maxContentLength, Version[] httpVersions, int? connectionLifetime, int[] opIndices, string logPath, bool aspnetLog, bool listOps, int seed)
+    private static void Run(int concurrentRequests, int maxContentLength, Version[] httpVersions, int? connectionLifetime, int[] opIndices, string logPath, bool aspnetLog, bool listOps, int seed, int numParameters)
     {
         // Handle command-line arguments.
         EventListener listener =
@@ -155,6 +159,19 @@ public class Program
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent(contentSource, await m.Content.ReadAsStringAsync());
+                }
+            }),
+
+            ("GET Parameters",
+            async ctx =>
+            {
+                Version httpVersion = ctx.GetRandomVersion(httpVersions);
+                (string query, string expected) variables = GetGetQueryParameters(contentSource, ctx, numParameters);
+                using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri + "/variables" + variables.query) { Version = httpVersion })
+                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req))
+                {
+                    ValidateResponse(m, httpVersion);
+                    ValidateContent(variables.expected, await m.Content.ReadAsStringAsync());
                 }
             }),
 
@@ -355,16 +372,17 @@ public class Program
             clientOperations = opIndices.Select(i => clientOperations[i]).ToArray();
         }
 
-        Console.WriteLine("     .NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(object).Assembly.Location)));
-        Console.WriteLine("  ASP.NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(WebHost).Assembly.Location)));
-        Console.WriteLine("       Tracing: " + (logPath == null ? (object)false : logPath.Length == 0 ? (object)true : logPath));
-        Console.WriteLine("   ASP.NET Log: " + aspnetLog);
-        Console.WriteLine("   Concurrency: " + concurrentRequests);
-        Console.WriteLine("Content Length: " + maxContentLength);
-        Console.WriteLine(" HTTP Versions: " + string.Join<Version>(", ", httpVersions));
-        Console.WriteLine("      Lifetime: " + (connectionLifetime.HasValue ? $"{connectionLifetime}ms" : "(infinite)"));
-        Console.WriteLine("    Operations: " + string.Join(", ", clientOperations.Select(o => o.Item1)));
-        Console.WriteLine("   Random Seed: " + seed);
+        Console.WriteLine("       .NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(object).Assembly.Location)));
+        Console.WriteLine("    ASP.NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(WebHost).Assembly.Location)));
+        Console.WriteLine("         Tracing: " + (logPath == null ? (object)false : logPath.Length == 0 ? (object)true : logPath));
+        Console.WriteLine("     ASP.NET Log: " + aspnetLog);
+        Console.WriteLine("     Concurrency: " + concurrentRequests);
+        Console.WriteLine("  Content Length: " + maxContentLength);
+        Console.WriteLine("   HTTP Versions: " + string.Join<Version>(", ", httpVersions));
+        Console.WriteLine("        Lifetime: " + (connectionLifetime.HasValue ? $"{connectionLifetime}ms" : "(infinite)"));
+        Console.WriteLine("      Operations: " + string.Join(", ", clientOperations.Select(o => o.Item1)));
+        Console.WriteLine("     Random Seed: " + seed);
+        Console.WriteLine("Query Parameters: " + numParameters);
         Console.WriteLine();
 
         // Start the Kestrel web server in-proc.
@@ -435,6 +453,19 @@ public class Program
                                     new StringValues(Enumerable.Range(0, i).Select(id => "value" + id).ToArray()));
                             }
                         }
+                    });
+                    endpoints.MapGet("/variables", async context =>
+                    {
+                        string queryString = context.Request.QueryString.Value;
+                        NameValueCollection nameValueCollection = HttpUtility.ParseQueryString(queryString);
+
+                        StringBuilder sb = new StringBuilder();
+                        for (int i = 0; i < nameValueCollection.Count; i++)
+                        {
+                            sb.Append(nameValueCollection[$"Var{i}"]);
+                        }
+
+                        await context.Response.WriteAsync(sb.ToString());
                     });
                     endpoints.MapGet("/abort", async context =>
                     {
@@ -586,6 +617,25 @@ public class Program
         GC.KeepAlive(listener);
     }
 
+    private static (string, string) GetGetQueryParameters(string contentSource, ClientContext clientContext, int numParameters)
+    {
+        StringBuilder queryString = new StringBuilder();
+        StringBuilder expectedString = new StringBuilder();
+        queryString.Append($"?Var{0}={contentSource}");
+        expectedString.Append(contentSource);
+
+        int num = clientContext.GetRandomInt(numParameters);
+
+        for (int i = 1; i < num; i++)
+        {
+            string vari = clientContext.GetRandomSubstring(contentSource);
+            expectedString.Append(vari);
+            queryString.Append($"&Var{i}={vari}");
+        }
+
+        return (queryString.ToString(), expectedString.ToString());
+    }
+
     /// <summary>Client context containing information pertaining to a single worker.</summary>
     private sealed class ClientContext
     {
@@ -614,6 +664,8 @@ public class Program
             int length = _random.Next(0, input.Length - offset + 1);
             return input.Substring(offset, length);
         }
+
+        public int GetRandomInt(int maxValue) => _random.Next(0, maxValue);
 
         public Version GetRandomVersion(Version[] versions) =>
             versions[_random.Next(0, versions.Length)];
