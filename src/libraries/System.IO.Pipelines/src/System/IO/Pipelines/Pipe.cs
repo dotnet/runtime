@@ -310,7 +310,6 @@ namespace System.IO.Pipelines
             return false;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal void Advance(int bytes)
         {
             lock (_sync)
