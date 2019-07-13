@@ -4821,6 +4821,480 @@ namespace System.Text.Json.Tests
             Assert.Equal(1, jsonUtf8.BytesCommitted);
         }
 
+        [Fact]
+        public static void WriteBase64String_NullPropertyName()
+        {
+            WriteNullPropertyName_Simple(
+                new byte[] { 0x01, 0x00, 0x01 },
+                "\"AQAB\"",
+                (writer, name, value) => writer.WriteBase64String(name, value),
+                (writer, name, value) => writer.WriteBase64String(name, value),
+                (writer, name, value) => writer.WriteBase64String(name, value));
+        }
+
+        [Fact]
+        public static void WriteBoolean_NullPropertyName()
+        {
+            WriteNullPropertyName_Simple(
+                false,
+                "false",
+                (writer, name, value) => writer.WriteBoolean(name, value),
+                (writer, name, value) => writer.WriteBoolean(name, value),
+                (writer, name, value) => writer.WriteBoolean(name, value));
+        }
+
+        [Fact]
+        public static void WriteNull_NullPropertyName()
+        {
+            WriteNullPropertyName_NoValue(
+                "null",
+                cleanupAction: null,
+                (writer, name) => writer.WriteNull(name),
+                (writer, name) => writer.WriteNull(name),
+                (writer, name) => writer.WriteNull(name));
+        }
+
+        [Fact]
+        public static void WriteNumber_NullPropertyName_Decimal()
+        {
+            decimal numericValue = 1.04m;
+
+            WriteNullPropertyName_Simple(
+                numericValue,
+                "1.04",
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value));
+        }
+
+        [Fact]
+        public static void WriteNumber_NullPropertyName_Double()
+        {
+            double numericValue = 1.05d;
+
+            WriteNullPropertyName_Simple(
+                numericValue,
+                "1.05",
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value));
+        }
+
+        [Fact]
+        public static void WriteNumber_NullPropertyName_Int32()
+        {
+            int numericValue = 1048576;
+
+            WriteNullPropertyName_Simple(
+                numericValue,
+                "1048576",
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value));
+        }
+
+        [Fact]
+        public static void WriteNumber_NullPropertyName_Int64()
+        {
+            long numericValue = 0x0100_0000_0000;
+
+            WriteNullPropertyName_Simple(
+                numericValue,
+                "1099511627776",
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value));
+        }
+
+        [Fact]
+        public static void WriteNumber_NullPropertyName_Single()
+        {
+            float numericValue = 1e3f;
+
+            WriteNullPropertyName_Simple(
+                numericValue,
+                "1000",
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value));
+        }
+
+        [Fact]
+        public static void WriteNumber_NullPropertyName_UInt32()
+        {
+            uint numericValue = 0x8000_0000;
+
+            WriteNullPropertyName_Simple(
+                numericValue,
+                "2147483648",
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value));
+        }
+
+        [Fact]
+        public static void WriteNumber_NullPropertyName_UInt64()
+        {
+            ulong numericValue = ulong.MaxValue;
+
+            WriteNullPropertyName_Simple(
+                numericValue,
+                "18446744073709551615",
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value),
+                (writer, name, value) => writer.WriteNumber(name, value));
+        }
+
+        [Fact]
+        public static void WritePropertyName_NullPropertyName()
+        {
+            WriteNullPropertyName_NoValue(
+                "null",
+                writer => writer.WriteNullValue(),
+                (writer, name) => writer.WritePropertyName(name),
+                (writer, name) => writer.WritePropertyName(name),
+                (writer, name) => writer.WritePropertyName(name));
+        }
+
+        [Fact]
+        public static void WriteStartArray_NullPropertyName()
+        {
+            WriteNullPropertyName_NoValue(
+                "[]",
+                writer => writer.WriteEndArray(),
+                (writer, name) => writer.WriteStartArray(name),
+                (writer, name) => writer.WriteStartArray(name),
+                (writer, name) => writer.WriteStartArray(name));
+        }
+
+        [Fact]
+        public static void WriteStartObject_NullPropertyName()
+        {
+            WriteNullPropertyName_NoValue(
+                "{}",
+                writer => writer.WriteEndObject(),
+                (writer, name) => writer.WriteStartObject(name),
+                (writer, name) => writer.WriteStartObject(name),
+                (writer, name) => writer.WriteStartObject(name));
+        }
+
+        [Fact]
+        public static void WriteString_NullPropertyName_DateTime()
+        {
+            WriteNullPropertyName_Simple(
+                DateTime.MinValue,
+                "\"0001-01-01T00:00:00\"",
+                (writer, name, value) => writer.WriteString(name, value),
+                (writer, name, value) => writer.WriteString(name, value),
+                (writer, name, value) => writer.WriteString(name, value));
+        }
+
+        [Fact]
+        public static void WriteString_NullPropertyName_DateTimeOffset()
+        {
+            WriteNullPropertyName_Simple(
+                DateTimeOffset.MinValue,
+                "\"0001-01-01T00:00:00+00:00\"",
+                (writer, name, value) => writer.WriteString(name, value),
+                (writer, name, value) => writer.WriteString(name, value),
+                (writer, name, value) => writer.WriteString(name, value));
+        }
+
+        [Fact]
+        public static void WriteString_NullPropertyName_Guid()
+        {
+            WriteNullPropertyName_Simple(
+                Guid.Empty,
+                "\"00000000-0000-0000-0000-000000000000\"",
+                (writer, name, value) => writer.WriteString(name, value),
+                (writer, name, value) => writer.WriteString(name, value),
+                (writer, name, value) => writer.WriteString(name, value));
+        }
+
+        [Fact]
+        public static void WriteString_NullPropertyName_ReadOnlySpan_Byte()
+        {
+            WriteNullPropertyName_Simple(
+                Encoding.UTF8.GetBytes("utf8"),
+                "\"utf8\"",
+                (writer, name, value) => writer.WriteString(name, value),
+                (writer, name, value) => writer.WriteString(name, value),
+                (writer, name, value) => writer.WriteString(name, value));
+        }
+
+        [Fact]
+        public static void WriteString_NullPropertyName_ReadOnlySpan_Char()
+        {
+            WriteNullPropertyName_Simple(
+                "utf16",
+                "\"utf16\"",
+                (writer, name, value) => writer.WriteString(name, value.AsSpan()),
+                (writer, name, value) => writer.WriteString(name, value.AsSpan()),
+                (writer, name, value) => writer.WriteString(name, value.AsSpan()));
+        }
+
+        [Fact]
+        public static void WriteString_NullPropertyName_String()
+        {
+            WriteNullPropertyName_Simple(
+                "string",
+                "\"string\"",
+                (writer, name, value) => writer.WriteString(name, value),
+                (writer, name, value) => writer.WriteString(name, value),
+                (writer, name, value) => writer.WriteString(name, value));
+        }
+
+        [Fact]
+        public static void WriteString_NullPropertyName_JsonEncodedText()
+        {
+            WriteNullPropertyName_Simple(
+                JsonEncodedText.Encode("jet"),
+                "\"jet\"",
+                (writer, name, value) => writer.WriteString(name, value),
+                (writer, name, value) => writer.WriteString(name, value),
+                (writer, name, value) => writer.WriteString(name, value));
+        }
+
+        [Fact]
+        public static void WriteCommentValue_NullString()
+        {
+            // WriteCommentValue is sufficiently different (no comma after a legal value)
+            // that it doesn't warrant a helper for expansion.
+            var output = new ArrayBufferWriter<byte>(1024);
+            string nullString = null;
+
+            using (var writer = new Utf8JsonWriter(output))
+            {
+                writer.WriteStartArray();
+
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "value",
+                    () => writer.WriteCommentValue(nullString));
+
+                ReadOnlySpan<char> nullStringSpan = nullString.AsSpan();
+                writer.WriteCommentValue(nullStringSpan);
+
+                writer.WriteCommentValue(ReadOnlySpan<byte>.Empty);
+
+                writer.WriteEndArray();
+                writer.Flush();
+            }
+
+            AssertContents("[/**//**/]", output);
+        }
+
+        [Fact]
+        public static void WriteStringValue_NullString()
+        {
+            WriteNullValue_InArray(
+                "\"\"",
+                "null",
+                (writer, value) => writer.WriteStringValue(value),
+                (writer, value) => writer.WriteStringValue(value),
+                (writer, value) => writer.WriteStringValue(value));
+        }
+
+        [Fact]
+        public static void WriteStringValue_StringProperty_NullString()
+        {
+            WriteNullValue_InObject(
+                "\"propStr\":\"\"",
+                "\"propStr\":null",
+                (writer, value) => writer.WriteString("propStr", value),
+                (writer, value) => writer.WriteString("propStr", value),
+                (writer, value) => writer.WriteString("propStr", value));
+        }
+
+        [Fact]
+        public static void WriteStringValue_ReadOnlySpanCharProperty_NullString()
+        {
+            WriteNullValue_InObject(
+                "\"propUtf16\":\"\"",
+                "\"propUtf16\":null",
+                (writer, value) => writer.WriteString("propUtf16".AsSpan(), value),
+                (writer, value) => writer.WriteString("propUtf16".AsSpan(), value),
+                (writer, value) => writer.WriteString("propUtf16".AsSpan(), value));
+        }
+
+        [Fact]
+        public static void WriteStringValue_ReadOnlySpanBytesProperty_NullString()
+        {
+            byte[] propertyName = Encoding.UTF8.GetBytes("propUtf8");
+
+            WriteNullValue_InObject(
+                "\"propUtf8\":\"\"",
+                "\"propUtf8\":null",
+                (writer, value) => writer.WriteString(propertyName, value),
+                (writer, value) => writer.WriteString(propertyName, value),
+                (writer, value) => writer.WriteString(propertyName, value));
+        }
+
+        [Fact]
+        public static void WriteStringValue_JsonEncodedTextProperty_NullString()
+        {
+            JsonEncodedText jet = JsonEncodedText.Encode("propJet");
+
+            WriteNullValue_InObject(
+                "\"propJet\":\"\"",
+                "\"propJet\":null",
+                (writer, value) => writer.WriteString(jet, value),
+                (writer, value) => writer.WriteString(jet, value),
+                (writer, value) => writer.WriteString(jet, value));
+        }
+
+        private delegate void WriteValueSpanAction<T>(
+            Utf8JsonWriter writer,
+            ReadOnlySpan<T> value);
+
+        private delegate void WritePropertySpanAction<T>(
+            Utf8JsonWriter writer,
+            ReadOnlySpan<T> propertyName);
+
+        private delegate void WritePropertySpanAction<T1, T2>(
+            Utf8JsonWriter writer,
+            ReadOnlySpan<T1> propertyName,
+            T2 value);
+
+        private static void WriteNullPropertyName_Simple<T>(
+            T value,
+            string wireValue,
+            Action<Utf8JsonWriter, string, T> stringAction,
+            WritePropertySpanAction<char, T> charSpanAction,
+            WritePropertySpanAction<byte, T> byteSpanAction)
+        {
+            var output = new ArrayBufferWriter<byte>(1024);
+            string nullString = null;
+
+            using (var writer = new Utf8JsonWriter(output))
+            {
+                writer.WriteStartObject();
+
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "propertyName",
+                    () => stringAction(writer, nullString, value));
+
+                writer.WriteEndObject();
+                writer.Flush();
+            }
+
+            AssertContents("{}", output);
+            output.Clear();
+
+            using (var writer = new Utf8JsonWriter(output))
+            {
+                writer.WriteStartObject();
+
+                ReadOnlySpan<char> nullStringSpan = nullString.AsSpan();
+                charSpanAction(writer, nullStringSpan, value);
+            
+                byteSpanAction(writer, ReadOnlySpan<byte>.Empty, value);
+                
+                writer.WriteEndObject();
+                writer.Flush();
+            }
+
+            AssertContents($"{{\"\":{wireValue},\"\":{wireValue}}}", output);
+        }
+
+        private static void WriteNullPropertyName_NoValue(
+            string wireValue,
+            Action<Utf8JsonWriter> cleanupAction,
+            Action<Utf8JsonWriter, string> stringAction,
+            WritePropertySpanAction<char> charSpanAction,
+            WritePropertySpanAction<byte> byteSpanAction)
+        {
+            var output = new ArrayBufferWriter<byte>(1024);
+            string nullString = null;
+
+            using (var writer = new Utf8JsonWriter(output))
+            {
+                writer.WriteStartObject();
+
+                AssertExtensions.Throws<ArgumentNullException>(
+                    "propertyName",
+                    () => stringAction(writer, nullString));
+
+                writer.WriteEndObject();
+                writer.Flush();
+            }
+
+            AssertContents("{}", output);
+            output.Clear();
+
+            using (var writer = new Utf8JsonWriter(output))
+            {
+                writer.WriteStartObject();
+
+                ReadOnlySpan<char> nullStringSpan = nullString.AsSpan();
+                charSpanAction(writer, nullStringSpan);
+                cleanupAction?.Invoke(writer);
+
+                byteSpanAction(writer, ReadOnlySpan<byte>.Empty);
+                cleanupAction?.Invoke(writer);
+
+                writer.WriteEndObject();
+                writer.Flush();
+            }
+
+            AssertContents($"{{\"\":{wireValue},\"\":{wireValue}}}", output);
+        }
+
+        private static void WriteNullValue_InObject(
+            string wireValue,
+            string nullValue,
+            Action<Utf8JsonWriter, string> stringAction,
+            WriteValueSpanAction<char> charSpanAction,
+            WriteValueSpanAction<byte> byteSpanAction)
+        {
+            var output = new ArrayBufferWriter<byte>(1024);
+            string nullString = null;
+
+            using (var writer = new Utf8JsonWriter(output))
+            {
+                writer.WriteStartObject();
+
+                stringAction(writer, nullString);
+
+                ReadOnlySpan<char> nullStringSpan = nullString.AsSpan();
+                charSpanAction(writer, nullStringSpan);
+
+                byteSpanAction(writer, ReadOnlySpan<byte>.Empty);
+
+                writer.WriteEndObject();
+                writer.Flush();
+            }
+
+            AssertContents($"{{{nullValue},{wireValue},{wireValue}}}", output);
+        }
+
+        private static void WriteNullValue_InArray(
+            string wireValue,
+            string nullValue,
+            Action<Utf8JsonWriter, string> stringAction,
+            WriteValueSpanAction<char> charSpanAction,
+            WriteValueSpanAction<byte> byteSpanAction)
+        {
+            var output = new ArrayBufferWriter<byte>(1024);
+            string nullString = null;
+            
+            using (var writer = new Utf8JsonWriter(output))
+            {
+                writer.WriteStartArray();
+
+                stringAction(writer, nullString);
+
+                ReadOnlySpan<char> nullStringSpan = nullString.AsSpan();
+                charSpanAction(writer, nullStringSpan);
+
+                byteSpanAction(writer, ReadOnlySpan<byte>.Empty);
+
+                writer.WriteEndArray();
+                writer.Flush();
+            }
+
+            AssertContents($"[{nullValue},{wireValue},{wireValue}]", output);
+        }
+
         private static string GetHelloWorldExpectedString(bool prettyPrint, string propertyName, string value)
         {
             var ms = new MemoryStream();

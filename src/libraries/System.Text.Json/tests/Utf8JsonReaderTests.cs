@@ -3128,6 +3128,7 @@ namespace System.Text.Json.Tests
                 {
                     case JsonTokenType.Null:
                         Assert.Equal(expectedString, Encoding.UTF8.GetString(json.ValueSpan.ToArray()));
+                        Assert.Null(json.GetString());
                         foundPrimitiveValue = true;
                         break;
                     case JsonTokenType.Number:

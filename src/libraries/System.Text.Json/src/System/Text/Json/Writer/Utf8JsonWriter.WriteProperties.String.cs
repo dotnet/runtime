@@ -42,11 +42,14 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
         public void WritePropertyName(string propertyName)
-            => WritePropertyName(propertyName.AsSpan());
+            => WritePropertyName((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
 
         /// <summary>
         /// Writes the property name (as a JSON string) as the first part of a name/value pair of a JSON object.
@@ -391,11 +394,14 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
         public void WriteString(string propertyName, JsonEncodedText value)
-            => WriteString(propertyName.AsSpan(), value);
+            => WriteString((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), value);
 
         /// <summary>
         /// Writes the property name and string text value (as a JSON string) as part of a name/value pair of a JSON object.
@@ -403,16 +409,39 @@ namespace System.Text.Json
         /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
         /// <param name="value">The value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
+        /// <para>
         /// The property name and value is escaped before writing.
+        /// </para>
+        /// <para>
+        /// If <paramref name="value"/> is <see langword="null"/> the JSON null value is written,
+        /// as if <see cref="WriteNull(System.ReadOnlySpan{byte})"/> were called.
+        /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name or value is too large.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
         public void WriteString(string propertyName, string value)
-            => WriteString(propertyName.AsSpan(), value.AsSpan());
+        {
+            if (propertyName == null)
+            {
+                throw new ArgumentNullException(nameof(propertyName));
+            }
+
+            if (value == null)
+            {
+                WriteNull(propertyName.AsSpan());
+            }
+            else
+            {
+                WriteString(propertyName.AsSpan(), value.AsSpan());
+            }
+        }
 
         /// <summary>
         /// Writes the property name and text value (as a JSON string) as part of a name/value pair of a JSON object.
@@ -468,7 +497,14 @@ namespace System.Text.Json
         /// <param name="propertyName">The JSON encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
         /// <param name="value">The value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
-        /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created. The value is escaped before writing.
+        /// <para>
+        /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created.
+        /// The value is escaped before writing.
+        /// </para>
+        /// <para>
+        /// If <paramref name="value"/> is <see langword="null"/> the JSON null value is written,
+        /// as if <see cref="WriteNull(System.Text.Json.JsonEncodedText)"/> was called.
+        /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified value is too large.
@@ -477,7 +513,16 @@ namespace System.Text.Json
         /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
         public void WriteString(JsonEncodedText propertyName, string value)
-            => WriteString(propertyName, value.AsSpan());
+        {
+            if (value == null)
+            {
+                WriteNull(propertyName);
+            }
+            else
+            {
+                WriteString(propertyName, value.AsSpan());
+            }
+        }
 
         /// <summary>
         /// Writes the pre-encoded property name and text value (as a JSON string) as part of a name/value pair of a JSON object.
@@ -530,11 +575,14 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name or value is too large.
         /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
         public void WriteString(string propertyName, ReadOnlySpan<char> value)
-            => WriteString(propertyName.AsSpan(), value);
+            => WriteString((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), value);
 
         /// <summary>
         /// Writes the UTF-8 property name and text value (as a JSON string) as part of a name/value pair of a JSON object.
@@ -611,11 +659,14 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name or value is too large.
         /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
         public void WriteString(string propertyName, ReadOnlySpan<byte> utf8Value)
-            => WriteString(propertyName.AsSpan(), utf8Value);
+            => WriteString((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), utf8Value);
 
         /// <summary>
         /// Writes the property name and UTF-8 text value (as a JSON string) as part of a name/value pair of a JSON object.
@@ -687,7 +738,13 @@ namespace System.Text.Json
         /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
         /// <param name="value">The value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
-        /// The property name and value is escaped before writing.
+        /// <para>
+        /// The property name and value are escaped before writing.
+        /// </para>
+        /// <para>
+        /// If <paramref name="value"/> is <see langword="null"/> the JSON null value is written,
+        /// as if <see cref="WriteNull(System.ReadOnlySpan{char})"/> was called.
+        /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name or value is too large.
@@ -696,7 +753,16 @@ namespace System.Text.Json
         /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
         public void WriteString(ReadOnlySpan<char> propertyName, string value)
-            => WriteString(propertyName, value.AsSpan());
+        {
+            if (value == null)
+            {
+                WriteNull(propertyName);
+            }
+            else
+            {
+                WriteString(propertyName, value.AsSpan());
+            }
+        }
 
         /// <summary>
         /// Writes the UTF-8 property name and pre-encoded value (as a JSON string) as part of a name/value pair of a JSON object.
@@ -744,7 +810,13 @@ namespace System.Text.Json
         /// <param name="utf8PropertyName">The UTF-8 encoded property name of the JSON object to be written.</param>
         /// <param name="value">The value to be written as a UTF-8 transcoded JSON string as part of the name/value pair.</param>
         /// <remarks>
-        /// The property name and value is escaped before writing.
+        /// <para>
+        /// The property name and value are escaped before writing.
+        /// </para>
+        /// <para>
+        /// If <paramref name="value"/> is <see langword="null"/> the JSON null value is written,
+        /// as if <see cref="WriteNull(System.ReadOnlySpan{byte})"/> was called.
+        /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name or value is too large.
@@ -753,7 +825,16 @@ namespace System.Text.Json
         /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
         public void WriteString(ReadOnlySpan<byte> utf8PropertyName, string value)
-            => WriteString(utf8PropertyName, value.AsSpan());
+        {
+            if (value == null)
+            {
+                WriteNull(utf8PropertyName);
+            }
+            else
+            {
+                WriteString(utf8PropertyName, value.AsSpan());
+            }
+        }
 
         private void WriteStringEscapeValueOnly(ReadOnlySpan<byte> escapedPropertyName, ReadOnlySpan<byte> utf8Value, int firstEscapeIndex)
         {
