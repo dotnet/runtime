@@ -223,7 +223,7 @@ namespace System.Net.Test.Common
         // and ignore any meaningless frames -- i.e. WINDOW_UPDATE or expected SETTINGS ACK --
         // that we see while waiting for the client to close.
         // Only call this after sending a GOAWAY.
-        public async Task WaitForConnectionShutdownAsync()
+        public async Task WaitForConnectionShutdownAsync(bool ignoreUnexpectedFrames = false)
         {
             // Shutdown our send side, so the client knows there won't be any more frames coming.
             ShutdownSend();
@@ -232,7 +232,10 @@ namespace System.Net.Test.Common
             Frame frame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
             if (frame != null)
             {
-                throw new Exception($"Unexpected frame received while waiting for client shutdown: {frame}");
+                if (!ignoreUnexpectedFrames)
+                {
+                    throw new Exception($"Unexpected frame received while waiting for client shutdown: {frame}");
+                }
             }
 
             _connectionStream.Close();
@@ -246,12 +249,12 @@ namespace System.Net.Test.Common
 
         // This is similar to WaitForConnectionShutdownAsync but will send GOAWAY for you
         // and will ignore any errors if client has already shutdown
-        public async Task ShutdownIgnoringErrorsAsync(int lastStreamId)
+        public async Task ShutdownIgnoringErrorsAsync(int lastStreamId, ProtocolErrors errorCode = ProtocolErrors.NO_ERROR)
         {
             try
             {
-                await SendGoAway(lastStreamId).ConfigureAwait(false);
-                await WaitForConnectionShutdownAsync().ConfigureAwait(false);
+                await SendGoAway(lastStreamId, errorCode).ConfigureAwait(false);
+                await WaitForConnectionShutdownAsync(ignoreUnexpectedFrames: true).ConfigureAwait(false);
             }
             catch (IOException)
             {
@@ -274,6 +277,20 @@ namespace System.Net.Test.Common
             Assert.Equal(FrameType.Headers, frame.Type);
             Assert.Equal(FrameFlags.EndHeaders | FrameFlags.EndStream, frame.Flags);
             return frame.StreamId;
+        }
+
+        public async Task<HeadersFrame> ReadRequestHeaderFrameAsync()
+        {
+            // Receive HEADERS frame for request.
+            Frame frame = await ReadFrameAsync(Timeout).ConfigureAwait(false);
+            if (frame == null)
+            {
+                throw new IOException("Failed to read Headers frame.");
+            }
+
+            Assert.Equal(FrameType.Headers, frame.Type);
+            Assert.Equal(FrameFlags.EndHeaders | FrameFlags.EndStream, frame.Flags);
+            return (HeadersFrame)frame;
         }
 
         private static (int bytesConsumed, int value) DecodeInteger(ReadOnlySpan<byte> headerBlock, byte prefixMask)
@@ -585,21 +602,24 @@ namespace System.Net.Test.Common
             return (streamId, requestData);
         }
 
-        public async Task SendGoAway(int lastStreamId)
+        public async Task SendGoAway(int lastStreamId, ProtocolErrors errorCode = ProtocolErrors.NO_ERROR)
         {
-            GoAwayFrame frame = new GoAwayFrame(lastStreamId, 0, new byte[] { }, 0);
+            GoAwayFrame frame = new GoAwayFrame(lastStreamId, (int)errorCode, new byte[] { }, 0);
             await WriteFrameAsync(frame).ConfigureAwait(false);
         }
 
         public async Task PingPong()
         {
-            PingFrame ping = new PingFrame(new byte[8] { 1, 2, 3, 4, 50, 60, 70, 80 }, FrameFlags.None, 0);
+            byte[] pingData = new byte[8] { 1, 2, 3, 4, 50, 60, 70, 80 };
+            PingFrame ping = new PingFrame(pingData, FrameFlags.None, 0);
             await WriteFrameAsync(ping).ConfigureAwait(false);
-            Frame pingAck = await ReadFrameAsync(Timeout).ConfigureAwait(false);
-            if (pingAck.Type != FrameType.Ping || !pingAck.AckFlag)
+            PingFrame pingAck = (PingFrame)await ReadFrameAsync(Timeout).ConfigureAwait(false);
+            if (pingAck == null || pingAck.Type != FrameType.Ping || !pingAck.AckFlag)
             {
                 throw new Exception("Expected PING ACK");
             }
+
+            Assert.Equal(pingData, pingAck.Data);
         }
 
         public async Task SendDefaultResponseHeadersAsync(int streamId)
