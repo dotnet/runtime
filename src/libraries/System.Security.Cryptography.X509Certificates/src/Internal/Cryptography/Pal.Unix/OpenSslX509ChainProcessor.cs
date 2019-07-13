@@ -975,10 +975,13 @@ namespace Internal.Cryptography.Pal
                             return 0;
                         }
 
-                        // We don't report "OK" as an error.
-                        // For compatibility with Windows / .NET Framework, do not report X509_V_CRL_NOT_YET_VALID.
+                        // * We don't report "OK" as an error.
+                        // * For compatibility with Windows / .NET Framework, do not report X509_V_CRL_NOT_YET_VALID.
+                        // * X509_V_ERR_DIFFERENT_CRL_SCOPE will result in X509_V_ERR_UNABLE_TO_GET_CRL
+                        //   which will trigger OCSP, so is ignorable.
                         if (errorCode != Interop.Crypto.X509VerifyStatusCode.X509_V_OK &&
-                            errorCode != Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_NOT_YET_VALID)
+                            errorCode != Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CRL_NOT_YET_VALID &&
+                            errorCode != Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_DIFFERENT_CRL_SCOPE)
                         {
                             if (_errors == null)
                             {
@@ -1015,7 +1018,7 @@ namespace Internal.Cryptography.Pal
 
         private unsafe struct ErrorCollection
         {
-            // As of OpenSSL 1.1.1 there are 74 defined X509_V_ERR values,
+            // As of OpenSSL 1.1.1 there are 75 defined X509_V_ERR values,
             // therefore it fits in a bitvector backed by 3 ints (96 bits available).
             private const int BucketCount = 3;
             private const int OverflowValue = BucketCount * sizeof(int) * 8 - 1;
