@@ -13,14 +13,23 @@ namespace System.Text.Json
         /// <summary>
         /// Parses the current JSON token value from the source, unescaped, and transcoded as a <see cref="string"/>.
         /// </summary>
+        /// <remarks>
+        /// Returns <see langword="null" /> when <see cref="TokenType"/> is <see cref="JsonTokenType.Null"/>.
+        /// </remarks>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of the JSON token that is not a string
-        /// (i.e. other than <see cref="JsonTokenType.String"/> or <see cref="JsonTokenType.PropertyName"/>).
+        /// (i.e. other than <see cref="JsonTokenType.String"/>, <see cref="JsonTokenType.PropertyName"/> or
+        /// <see cref="JsonTokenType.Null"/>).
         /// <seealso cref="TokenType" />
         /// It will also throw when the JSON string contains invalid UTF-8 bytes, or invalid UTF-16 surrogates.
         /// </exception>
         public string GetString()
         {
+            if (TokenType == JsonTokenType.Null)
+            {
+                return null;
+            }
+
             if (TokenType != JsonTokenType.String && TokenType != JsonTokenType.PropertyName)
             {
                 throw ThrowHelper.GetInvalidOperationException_ExpectedString(TokenType);

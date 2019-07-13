@@ -29,6 +29,11 @@ namespace System.Text.Json.Serialization.Tests
             }
 
             {
+                string json = JsonSerializer.Serialize((string)null);
+                Assert.Equal("null", json);
+            }
+
+            {
                 Span<byte> json = JsonSerializer.SerializeToUtf8Bytes(1);
                 Assert.Equal(Encoding.UTF8.GetBytes("1"), json.ToArray());
             }
