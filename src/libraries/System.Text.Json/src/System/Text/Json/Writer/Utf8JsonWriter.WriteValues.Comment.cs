@@ -23,8 +23,11 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified value is too large OR if the given string text value contains a comment delimiter (i.e. */).
         /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="value"/> parameter is <see langword="null"/>.
+        /// </exception>
         public void WriteCommentValue(string value)
-            => WriteCommentValue(value.AsSpan());
+            => WriteCommentValue((value ?? throw new ArgumentNullException(nameof(value))).AsSpan());
 
         /// <summary>
         /// Writes the text value (as a JSON comment).

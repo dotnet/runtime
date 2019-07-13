@@ -43,6 +43,9 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
@@ -51,7 +54,7 @@ namespace System.Text.Json
         /// The property name is escaped before writing.
         /// </remarks>
         public void WriteString(string propertyName, DateTime value)
-            => WriteString(propertyName.AsSpan(), value);
+            => WriteString((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), value);
 
         /// <summary>
         /// Writes the property name and <see cref="DateTime"/> value (as a JSON string) as part of a name/value pair of a JSON object.

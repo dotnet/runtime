@@ -37,7 +37,11 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="value">The value to be written as a UTF-8 transcoded JSON string element of a JSON array.</param>
         /// <remarks>
-        /// The value is escaped before writing.
+        /// <para>The value is escaped before writing.</para>
+        /// <para>
+        /// If <paramref name="value"/> is <see langword="null"/> the JSON null value is written,
+        /// as if <see cref="WriteNullValue"/> was called.
+        /// </para>
         /// </remarks>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified value is too large.
@@ -46,7 +50,16 @@ namespace System.Text.Json
         /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
         public void WriteStringValue(string value)
-           => WriteStringValue(value.AsSpan());
+        {
+            if (value == null)
+            {
+                WriteNullValue();
+            }
+            else
+            {
+                WriteStringValue(value.AsSpan());
+            }
+        }
 
         /// <summary>
         /// Writes the text value (as a JSON string) as an element of a JSON array.

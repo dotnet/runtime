@@ -43,6 +43,9 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
@@ -51,7 +54,7 @@ namespace System.Text.Json
         /// The property name is escaped before writing.
         /// </remarks>
         public void WriteNumber(string propertyName, long value)
-            => WriteNumber(propertyName.AsSpan(), value);
+            => WriteNumber((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), value);
 
         /// <summary>
         /// Writes the property name and <see cref="long"/> value (as a JSON number) as part of a name/value pair of a JSON object.
@@ -126,6 +129,9 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
@@ -134,7 +140,7 @@ namespace System.Text.Json
         /// The property name is escaped before writing.
         /// </remarks>
         public void WriteNumber(string propertyName, int value)
-            => WriteNumber(propertyName.AsSpan(), (long)value);
+            => WriteNumber((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), (long)value);
 
         /// <summary>
         /// Writes the property name and <see cref="int"/> value (as a JSON number) as part of a name/value pair of a JSON object.

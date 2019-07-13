@@ -718,12 +718,15 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
         /// OR if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
         public void WriteStartArray(string propertyName)
-            => WriteStartArray(propertyName.AsSpan());
+            => WriteStartArray((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
 
         /// <summary>
         /// Writes the beginning of a JSON object with a property name as the key.
@@ -735,12 +738,15 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
+        /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
         /// OR if this would result in an invalid JSON to be written (while validation is enabled).
         /// </exception>
         public void WriteStartObject(string propertyName)
-            => WriteStartObject(propertyName.AsSpan());
+            => WriteStartObject((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
 
         /// <summary>
         /// Writes the beginning of a JSON array with a property name as the key.

@@ -722,7 +722,7 @@ namespace System.Text.Json.Tests
         [Fact]
         public static void InvalidConversion()
         {
-            string jsonString = "[\"stringValue\", true, /* Comment within */ 1234] // Comment outside";
+            string jsonString = "[\"stringValue\", true, /* Comment within */ 1234, null] // Comment outside";
             byte[] dataUtf8 = Encoding.UTF8.GetBytes(jsonString);
 
             var state = new JsonReaderState(options: new JsonReaderOptions { CommentHandling = JsonCommentHandling.Allow });
@@ -731,13 +731,14 @@ namespace System.Text.Json.Tests
             {
                 if (json.TokenType != JsonTokenType.String)
                 {
-                    try
+                    if (json.TokenType == JsonTokenType.Null)
                     {
-                        string value = json.GetString();
-                        Assert.True(false, "Expected GetString to throw InvalidOperationException due to mismatch token type.");
+                        Assert.Null(json.GetString());
                     }
-                    catch (InvalidOperationException)
-                    { }
+                    else
+                    {
+                        JsonTestHelper.AssertThrows<InvalidOperationException>(json, (jsonReader) => jsonReader.GetString());
+                    }
 
                     try
                     {
