@@ -31,7 +31,7 @@ namespace System.Net.Http
 
         // This constructor is used internally to indicate that a request was not successfully sent due to an IOException,
         // and the exception occurred early enough so that the request may be retried on another connection.
-        internal HttpRequestException(string message, IOException inner, bool allowRetry)
+        internal HttpRequestException(string message, Exception inner, bool allowRetry)
             : this(message, inner)
         {
             AllowRetry = allowRetry;
