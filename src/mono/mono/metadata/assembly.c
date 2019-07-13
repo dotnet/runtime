@@ -75,8 +75,10 @@ default_path [] = {
 /* Contains the list of directories to be searched for assemblies (MONO_PATH) */
 static char **assemblies_path = NULL;
 
+#ifndef DISABLE_GAC
 /* Contains the list of directories that point to auxiliary GACs */
 static char **extra_gac_paths = NULL;
+#endif
 
 #ifndef DISABLE_DESKTOP_LOADER
 
@@ -488,6 +490,7 @@ check_path_env (void)
 	g_free (path);
 }
 
+#ifndef DISABLE_GAC
 static void
 check_extra_gac_path_env (void) 
 {
@@ -521,6 +524,7 @@ check_extra_gac_path_env (void)
 		splitted++;
 	}
 }
+#endif /* DISABLE_GAC */
 
 static gboolean
 assembly_binding_maps_name (MonoAssemblyBindingInfo *info, MonoAssemblyName *aname)
@@ -1047,7 +1051,9 @@ mono_assemblies_init (void)
 		mono_set_rootdir ();
 
 	check_path_env ();
+#ifndef DISABLE_GAC
 	check_extra_gac_path_env ();
+#endif
 
 	mono_os_mutex_init_recursive (&assemblies_mutex);
 	mono_os_mutex_init (&assembly_binding_mutex);
@@ -3626,8 +3632,6 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoImageOpenSt
 	MonoAssembly *res;
 	MonoAssemblyName *aname, base_name;
 	MonoAssemblyName mapped_aname;
-	gchar *fullname, *gacpath;
-	gchar **paths;
 
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -3659,6 +3663,9 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoImageOpenSt
 		return res;
 	}
 
+#ifndef DISABLE_GAC
+	gchar *fullname, *gacpath;
+	gchar **paths;
 	fullname = g_strdup_printf ("%s.dll", aname->name);
 
 	if (extra_gac_paths) {
@@ -3683,11 +3690,13 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoImageOpenSt
 	g_free (gacpath);
 
 	g_free (fullname);
-	mono_assembly_name_free (aname);
-
 	if (res)
 		res->in_gac = TRUE;
-	else {
+#endif
+
+	mono_assembly_name_free (aname);
+
+	if (!res) {
 		MonoDomain *domain = mono_domain_get ();
 
 		res = mono_try_assembly_resolve (domain, name, NULL, FALSE, error);
@@ -3704,6 +3713,7 @@ mono_assembly_load_with_partial_name_internal (const char *name, MonoImageOpenSt
 static MonoBoolean
 mono_assembly_is_in_gac (const gchar *filename)
 {
+#ifndef DISABLE_GAC
 	const gchar *rootdir;
 	gchar *gp;
 	gchar **paths;
@@ -3760,12 +3770,16 @@ mono_assembly_is_in_gac (const gchar *filename)
 	if (*gp != G_DIR_SEPARATOR)
 		return FALSE;
 	return TRUE;
+#else
+	return FALSE;
+#endif /* DISABLE_GAC */
 }
 
 static MonoImage*
 mono_assembly_load_publisher_policy (MonoAssemblyName *aname)
 {
-	MonoImage *image;
+	MonoImage *image = NULL;
+#ifndef DISABLE_GAC
 	gchar *filename, *pname, *name, *culture, *version, *fullpath, *subpath;
 	gchar **paths;
 	gint32 len;
@@ -3816,6 +3830,7 @@ mono_assembly_load_publisher_policy (MonoAssemblyName *aname)
 	image = mono_image_open (fullpath, NULL);
 	g_free (subpath);
 	g_free (fullpath);
+#endif
 	
 	return image;
 }
@@ -4105,6 +4120,7 @@ exit:
 	HANDLE_FUNCTION_RETURN_VAL (result);
 }
 
+#ifndef DISABLE_GAC
 /**
  * mono_assembly_load_from_gac
  *
@@ -4180,6 +4196,7 @@ mono_assembly_load_from_gac (MonoAssemblyName *aname,  gchar *filename, MonoImag
 
 	return result;
 }
+#endif /* DISABLE_GAC */
 
 MonoAssembly*
 mono_assembly_load_corlib (const MonoRuntimeInfo *runtime, MonoImageOpenStatus *status)
@@ -4415,8 +4432,6 @@ mono_assembly_load_full_gac_base_default (MonoAssemblyName *aname,
 	}
 #endif
 
-	const gboolean refonly = asmctx == MONO_ASMCTX_REFONLY;
-
 	MonoAssemblyOpenRequest req;
 	mono_assembly_request_prepare (&req.request, sizeof (req), asmctx);
 	req.request.predicate = predicate;
@@ -4433,11 +4448,15 @@ mono_assembly_load_full_gac_base_default (MonoAssemblyName *aname,
 			filename = g_strconcat (aname->name, ext, NULL);
 		}
 
+#ifndef DISABLE_GAC
+		const gboolean refonly = asmctx == MONO_ASMCTX_REFONLY;
+
 		result = mono_assembly_load_from_gac (aname, filename, status, refonly);
 		if (result) {
 			g_free (filename);
 			return result;
 		}
+#endif
 
 		if (basedir) {
 			fullpath = g_build_filename (basedir, filename, NULL);
