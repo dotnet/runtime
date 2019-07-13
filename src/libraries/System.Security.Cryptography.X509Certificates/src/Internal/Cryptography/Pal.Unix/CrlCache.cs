@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Buffers;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -28,6 +28,9 @@ namespace Internal.Cryptography.Pal
 
         private const ulong X509_R_CERT_ALREADY_IN_HASH_TABLE = 0x0B07D065;
 
+        [ThreadStatic]
+        private static HashAlgorithm ts_urlHash;
+
         public static void AddCrlForCertificate(
             SafeX509Handle cert,
             SafeX509StoreHandle store,
@@ -42,7 +45,16 @@ namespace Internal.Cryptography.Pal
                 verificationTime = DateTime.MinValue;
             }
 
-            if (AddCachedCrl(cert, store, verificationTime))
+            string url = GetCdpUrl(cert);
+
+            if (url == null)
+            {
+                return;
+            }
+
+            string crlFileName = GetCrlFileName(cert, url);
+
+            if (AddCachedCrl(crlFileName, store, verificationTime))
             {
                 return;
             }
@@ -54,12 +66,12 @@ namespace Internal.Cryptography.Pal
                 return;
             }
 
-            DownloadAndAddCrl(cert, store, ref remainingDownloadTime);
+            DownloadAndAddCrl(url, crlFileName, store, ref remainingDownloadTime);
         }
 
-        private static bool AddCachedCrl(SafeX509Handle cert, SafeX509StoreHandle store, DateTime verificationTime)
+        private static bool AddCachedCrl(string crlFileName, SafeX509StoreHandle store, DateTime verificationTime)
         {
-            string crlFile = GetCachedCrlPath(cert);
+            string crlFile = GetCachedCrlPath(crlFileName);
 
             using (SafeBioHandle bio = Interop.Crypto.BioNewFile(crlFile, "rb"))
             {
@@ -119,17 +131,11 @@ namespace Internal.Cryptography.Pal
         }
 
         private static void DownloadAndAddCrl(
-            SafeX509Handle cert,
+            string url,
+            string crlFileName,
             SafeX509StoreHandle store,
             ref TimeSpan remainingDownloadTime)
         {
-            string url = GetCdpUrl(cert);
-
-            if (url == null)
-            {
-                return;
-            }
-
             // X509_STORE_add_crl will increase the refcount on the CRL object, so we should still
             // dispose our copy.
             using (SafeX509CrlHandle crl = CertificateAssetDownloader.DownloadCrl(url, ref remainingDownloadTime))
@@ -155,7 +161,7 @@ namespace Internal.Cryptography.Pal
                     // the chain as invalid.
                     try
                     {
-                        string crlFile = GetCachedCrlPath(cert, mkDir: true);
+                        string crlFile = GetCachedCrlPath(crlFileName, mkDir: true);
 
                         using (SafeBioHandle bio = Interop.Crypto.BioNewFile(crlFile, "wb"))
                         {
@@ -177,7 +183,7 @@ namespace Internal.Cryptography.Pal
             return s_ocspDir;
         }
 
-        private static string GetCachedCrlPath(SafeX509Handle cert, bool mkDir=false)
+        private static string GetCrlFileName(SafeX509Handle cert, string crlUrl)
         {
             // X509_issuer_name_hash returns "unsigned long", which is marshalled as ulong.
             // But it only sets 32 bits worth of data, so force it down to uint just... in case.
@@ -189,10 +195,35 @@ namespace Internal.Cryptography.Pal
 
             uint persistentHash = unchecked((uint)persistentHashLong);
 
+            if (ts_urlHash == null)
+            {
+                ts_urlHash = SHA256.Create();
+            }
+
+            Span<byte> hash = stackalloc byte[256 >> 3];
+
+            // Endianness isn't important, it just needs to be consistent.
+            // (Even if the same storage was used for two different endianness systems it'd stabilize at two files).
+            ReadOnlySpan<byte> utf16Url = MemoryMarshal.AsBytes(crlUrl.AsSpan());
+
+            if (!ts_urlHash.TryComputeHash(utf16Url, hash, out int written) || written != hash.Length)
+            {
+                Debug.Fail("TryComputeHash failed or produced an incorrect length output");
+                throw new CryptographicException();
+            }
+
+            uint urlHash = MemoryMarshal.Read<uint>(hash);
+
             // OpenSSL's hashed filename algorithm is the 8-character hex version of the 32-bit value
             // of X509_issuer_name_hash (or X509_subject_name_hash, depending on the context).
-            string localFileName = persistentHash.ToString("x8") + ".crl";
+            //
+            // We mix in an 8-character hex version of the "left"-most bytes of a hash of the URL to
+            // disambiguate when one Issuing Authority separates their revocation across independent CRLs.
+            return $"{persistentHash:x8}.{urlHash:x8}.crl";
+        }
 
+        private static string GetCachedCrlPath(string localFileName, bool mkDir=false)
+        {
             if (mkDir)
             {
                 Directory.CreateDirectory(s_crlDir);
