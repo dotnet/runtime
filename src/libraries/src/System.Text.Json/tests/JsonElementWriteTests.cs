@@ -385,21 +385,6 @@ null,
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public static void WriteNullStringAsProperty(bool indented)
-        {
-            WritePropertyValueBothForms(
-                indented,
-                null,
-                "\"\"",
-                @"{
-  """": """"
-}",
-                "{\"\":\"\"}");
-        }
-
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
         public static void WriteNumberAsProperty(bool indented)
         {
             WritePropertyValueBothForms(
