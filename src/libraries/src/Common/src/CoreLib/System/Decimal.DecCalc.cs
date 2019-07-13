@@ -156,6 +156,13 @@ namespace System
                 1e80
             };
 
+            // Used to fill uninitialized stack variables with non-zero pattern in debug builds
+            [Conditional("DEBUG")]
+            private static unsafe void DebugPoison<T>(ref T s) where T: unmanaged
+            {
+                MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref s, 1)).Fill(0xCD);
+            }
+
             #region Decimal Math Helpers
 
             private static unsafe uint GetExponent(float f)
@@ -985,6 +992,8 @@ ThrowOverflow:
                     //
                     Buf24 bufNum;
                     _ = &bufNum; // workaround for CS0165
+                    DebugPoison(ref bufNum);
+
                     bufNum.Low64 = low64;
                     bufNum.Mid64 = tmp64;
                     uint hiProd = 3;
@@ -1333,6 +1342,7 @@ ThrowOverflow:
                 uint hiProd;
                 Buf24 bufProd;
                 _ = &bufProd; // workaround for CS0165
+                DebugPoison(ref bufProd);
 
                 if ((d1.High | d1.Mid) == 0)
                 {
@@ -1391,13 +1401,8 @@ ThrowOverflow:
                                 goto SkipScan;
                             }
                         }
-                        if ((uint)tmp != 0)
-                        {
-                            bufProd.U2 = (uint)tmp;
-                            hiProd = 2;
-                            goto SkipScan;
-                        }
-                        hiProd = 1;
+                        bufProd.U2 = (uint)tmp;
+                        hiProd = 2;
                     }
                 }
                 else if ((d2.High | d2.Mid) == 0)
@@ -1420,13 +1425,8 @@ ThrowOverflow:
                             goto SkipScan;
                         }
                     }
-                    if ((uint)tmp != 0)
-                    {
-                        bufProd.U2 = (uint)tmp;
-                        hiProd = 2;
-                        goto SkipScan;
-                    }
-                    hiProd = 1;
+                    bufProd.U2 = (uint)tmp;
+                    hiProd = 2;
                 }
                 else
                 {
@@ -1501,13 +1501,11 @@ ThrowOverflow:
 
                         hiProd = 5;
                     }
-                    else if (tmp != 0)
+                    else
                     {
                         bufProd.Mid64 = tmp;
                         hiProd = 3;
                     }
-                    else
-                        hiProd = 1;
                 }
 
                 // Check for leading zero uints on the product
@@ -1926,6 +1924,8 @@ ReturnZero:
             {
                 Buf12 bufQuo;
                 _ = &bufQuo; // workaround for CS0165
+                DebugPoison(ref bufQuo);
+
                 uint power;
                 int curScale;
 
@@ -2026,6 +2026,8 @@ ReturnZero:
                     //
                     Buf16 bufRem;
                     _ = &bufRem; // workaround for CS0165
+                    DebugPoison(ref bufRem);
+
                     bufRem.Low64 = d1.Low64 << curScale;
                     bufRem.High64 = (d1.Mid + ((ulong)d1.High << 32)) >> (32 - curScale);
 
@@ -2036,7 +2038,7 @@ ReturnZero:
                         // Have a 64-bit divisor in sdlDivisor.  The remainder
                         // (currently 96 bits spread over 4 uints) will be < divisor.
                         //
-
+                        bufQuo.U2 = 0;
                         bufQuo.U1 = Div96By64(ref *(Buf12*)&bufRem.U1, divisor);
                         bufQuo.U0 = Div96By64(ref *(Buf12*)&bufRem, divisor);
 
@@ -2094,12 +2096,15 @@ ReturnZero:
                         //
                         Buf12 bufDivisor;
                         _ = &bufDivisor; // workaround for CS0165
+                        DebugPoison(ref bufDivisor);
+
                         bufDivisor.Low64 = divisor;
                         bufDivisor.U2 = (uint)((d2.Mid + ((ulong)d2.High << 32)) >> (32 - curScale));
 
                         // The remainder (currently 96 bits spread over 4 uints) will be < divisor.
                         //
                         bufQuo.Low64 = Div128By96(ref bufRem, ref bufDivisor);
+                        bufQuo.U2 = 0;
 
                         for (;;)
                         {
@@ -2244,8 +2249,9 @@ ThrowOverflow:
                         d1.uflags = d2.uflags;
                         // Try to scale up dividend to match divisor.
                         Buf12 bufQuo;
-                        unsafe
-                        { _ = &bufQuo; } // workaround for CS0165
+                        unsafe { _ = &bufQuo; } // workaround for CS0165
+                        DebugPoison(ref bufQuo);
+
                         bufQuo.Low64 = d1.Low64;
                         bufQuo.U2 = d1.High;
                         do
@@ -2305,6 +2311,8 @@ ThrowOverflow:
 
                 Buf28 b;
                 _ = &b; // workaround for CS0165
+                DebugPoison(ref b);
+
                 b.Buf24.Low64 = d1.Low64 << shift;
                 b.Buf24.Mid64 = (d1.Mid + ((ulong)d1.High << 32)) >> (32 - shift);
 
@@ -2359,6 +2367,8 @@ ThrowOverflow:
                 {
                     Buf12 bufDivisor;
                     _ = &bufDivisor; // workaround for CS0165
+                    DebugPoison(ref bufDivisor);
+
                     bufDivisor.Low64 = d2.Low64 << shift;
                     bufDivisor.U2 = (uint)((d2.Mid + ((ulong)d2.High << 32)) >> (32 - shift));
 
