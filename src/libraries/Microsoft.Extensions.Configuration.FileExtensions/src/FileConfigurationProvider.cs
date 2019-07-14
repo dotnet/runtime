@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using System.Threading;
 using Microsoft.Extensions.Primitives;
@@ -68,7 +69,7 @@ namespace Microsoft.Extensions.Configuration
                     {
                         error.Append($" The physical path is '{file.PhysicalPath}'.");
                     }
-                    HandleException(new FileNotFoundException(error.ToString()));
+                    HandleException(ExceptionDispatchInfo.Capture(new FileNotFoundException(error.ToString())));
                 }
             }
             else
@@ -86,7 +87,7 @@ namespace Microsoft.Extensions.Configuration
                     }
                     catch (Exception e)
                     {
-                        HandleException(e);
+                        HandleException(ExceptionDispatchInfo.Capture(e));
                     }
                 }
             }
@@ -110,7 +111,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="stream">The stream to read.</param>
         public abstract void Load(Stream stream);
 
-        private void HandleException(Exception e)
+        private void HandleException(ExceptionDispatchInfo info)
         {
             bool ignoreException = false;
             if (Source.OnLoadException != null)
@@ -118,14 +119,14 @@ namespace Microsoft.Extensions.Configuration
                 var exceptionContext = new FileLoadExceptionContext
                 {
                     Provider = this,
-                    Exception = e
+                    Exception = info.SourceException
                 };
                 Source.OnLoadException.Invoke(exceptionContext);
                 ignoreException = exceptionContext.Ignore;
             }
             if (!ignoreException)
             {
-                throw e;
+                info.Throw();
             }
         }
 

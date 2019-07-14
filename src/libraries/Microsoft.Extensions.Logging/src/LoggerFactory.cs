@@ -9,6 +9,9 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging
 {
+    /// <summary>
+    /// Produces instances of <see cref="ILogger"/> classes based on the given providers.
+    /// </summary>
     public class LoggerFactory : ILoggerFactory
     {
         private static readonly LoggerRuleSelector RuleSelector = new LoggerRuleSelector();
@@ -21,18 +24,35 @@ namespace Microsoft.Extensions.Logging
         private LoggerFilterOptions _filterOptions;
         private LoggerExternalScopeProvider _scopeProvider;
 
+        /// <summary>
+        /// Creates a new <see cref="LoggerFactory"/> instance.
+        /// </summary>
         public LoggerFactory() : this(Enumerable.Empty<ILoggerProvider>())
         {
         }
 
+        /// <summary>
+        /// Creates a new <see cref="LoggerFactory"/> instance.
+        /// </summary>
+        /// <param name="providers">The providers to use in producing <see cref="ILogger"/> instances.</param>
         public LoggerFactory(IEnumerable<ILoggerProvider> providers) : this(providers, new StaticFilterOptionsMonitor(new LoggerFilterOptions()))
         {
         }
 
+        /// <summary>
+        /// Creates a new <see cref="LoggerFactory"/> instance.
+        /// </summary>
+        /// <param name="providers">The providers to use in producing <see cref="ILogger"/> instances.</param>
+        /// <param name="filterOptions">The filter options to use.</param>
         public LoggerFactory(IEnumerable<ILoggerProvider> providers, LoggerFilterOptions filterOptions) : this(providers, new StaticFilterOptionsMonitor(filterOptions))
         {
         }
 
+        /// <summary>
+        /// Creates a new <see cref="LoggerFactory"/> instance.
+        /// </summary>
+        /// <param name="providers">The providers to use in producing <see cref="ILogger"/> instances.</param>
+        /// <param name="filterOption">The filter option to use.</param>
         public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption)
         {
             foreach (var provider in providers)
@@ -47,6 +67,8 @@ namespace Microsoft.Extensions.Logging
         /// <summary>
         /// Creates new instance of <see cref="ILoggerFactory"/> configured using provided <paramref name="configure"/> delegate.
         /// </summary>
+        /// <param name="configure">A delegate to configure the <see cref="ILoggingBuilder"/>.</param>
+        /// <returns>The <see cref="ILoggerFactory"/> that was created.</returns>
         public static ILoggerFactory Create(Action<ILoggingBuilder> configure)
         {
             var serviceCollection = new ServiceCollection();
@@ -69,6 +91,11 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
+        /// <summary>
+        /// Creates an <see cref="ILogger"/> with the given <paramref name="categoryName"/>.
+        /// </summary>
+        /// <param name="categoryName">The category name for messages produced by the logger.</param>
+        /// <returns>The <see cref="ILogger"/> that was created.</returns>
         public ILogger CreateLogger(string categoryName)
         {
             if (CheckDisposed())
@@ -94,6 +121,10 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
+        /// <summary>
+        /// Adds the given provider to those used in creating <see cref="ILogger"/> instances.
+        /// </summary>
+        /// <param name="provider">The <see cref="ILoggerProvider"/> to add.</param>
         public void AddProvider(ILoggerProvider provider)
         {
             if (CheckDisposed())
@@ -189,6 +220,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>True when <see cref="Dispose()"/> as been called</returns>
         protected virtual bool CheckDisposed() => _disposed;
 
+        /// <inheritdoc/>
         public void Dispose()
         {
             if (!_disposed)
@@ -220,7 +252,7 @@ namespace Microsoft.Extensions.Logging
             public bool ShouldDispose;
         }
 
-        private class DisposingLoggerFactory: ILoggerFactory
+        private class DisposingLoggerFactory : ILoggerFactory
         {
             private readonly ILoggerFactory _loggerFactory;
 

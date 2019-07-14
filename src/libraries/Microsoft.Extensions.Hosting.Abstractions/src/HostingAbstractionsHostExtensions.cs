@@ -13,7 +13,7 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// Starts the host synchronously.
         /// </summary>
-        /// <param name="host"></param>
+        /// <param name="host">The <see cref="IHost"/> to start.</param>
         public static void Start(this IHost host)
         {
             host.StartAsync().GetAwaiter().GetResult();
@@ -22,10 +22,10 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// Attempts to gracefully stop the host with the given timeout.
         /// </summary>
-        /// <param name="host"></param>
+        /// <param name="host">The <see cref="IHost"/> to stop.</param>
         /// <param name="timeout">The timeout for stopping gracefully. Once expired the
         /// server may terminate any remaining active connections.</param>
-        /// <returns></returns>
+        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
         public static Task StopAsync(this IHost host, TimeSpan timeout)
         {
             return host.StopAsync(new CancellationTokenSource(timeout).Token);
@@ -54,6 +54,7 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <param name="host">The <see cref="IHost"/> to run.</param>
         /// <param name="token">The token to trigger shutdown.</param>
+        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
         public static async Task RunAsync(this IHost host, CancellationToken token = default)
         {
             try
@@ -83,6 +84,7 @@ namespace Microsoft.Extensions.Hosting
         /// </summary>
         /// <param name="host">The running <see cref="IHost"/>.</param>
         /// <param name="token">The token to trigger shutdown.</param>
+        /// <returns>The <see cref="Task"/> that represents the asynchronous operation.</returns>
         public static async Task WaitForShutdownAsync(this IHost host, CancellationToken token = default)
         {
             var applicationLifetime = host.Services.GetService<IHostApplicationLifetime>();

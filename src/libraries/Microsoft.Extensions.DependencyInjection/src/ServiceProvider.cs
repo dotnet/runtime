@@ -91,8 +91,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Gets the service object of the specified type.
         /// </summary>
-        /// <param name="serviceType"></param>
-        /// <returns></returns>
+        /// <param name="serviceType">The type of the service to get.</param>
+        /// <returns>The service that was produced.</returns>
         public object GetService(Type serviceType) => _engine.GetService(serviceType);
 
         /// <inheritdoc />

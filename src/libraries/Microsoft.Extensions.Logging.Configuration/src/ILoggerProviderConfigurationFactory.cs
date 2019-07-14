@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Logging.Configuration
         /// Return configuration section associated with logger provider
         /// </summary>
         /// <param name="providerType">The logger provider type</param>
+        /// <returns>The <see cref="IConfiguration"/> for the given <paramref name="providerType" />.</returns>
         IConfiguration GetConfiguration(Type providerType);
     }
 }

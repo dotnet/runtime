@@ -8,6 +8,9 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Logging.Console
 {
+    /// <summary>
+    /// A provider of <see cref="ConsoleLogger"/> instances.
+    /// </summary>
     [ProviderAlias("Console")]
     public class ConsoleLoggerProvider : ILoggerProvider, ISupportExternalScope
     {
@@ -18,6 +21,10 @@ namespace Microsoft.Extensions.Logging.Console
         private IDisposable _optionsReloadToken;
         private IExternalScopeProvider _scopeProvider = NullExternalScopeProvider.Instance;
 
+        /// <summary>
+        /// Creates an instance of <see cref="ConsoleLoggerProvider"/>.
+        /// </summary>
+        /// <param name="options">The options to create <see cref="ConsoleLogger"/> instances with.</param>
         public ConsoleLoggerProvider(IOptionsMonitor<ConsoleLoggerOptions> options)
         {
             _options = options;

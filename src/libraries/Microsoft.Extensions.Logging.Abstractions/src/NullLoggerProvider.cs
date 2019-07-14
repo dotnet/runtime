@@ -8,6 +8,9 @@ namespace Microsoft.Extensions.Logging.Abstractions
     /// </summary>
     public class NullLoggerProvider : ILoggerProvider
     {
+        /// <summary>
+        /// Returns an instance of <see cref="NullLoggerProvider"/>.
+        /// </summary>
         public static NullLoggerProvider Instance { get; } = new NullLoggerProvider();
 
         private NullLoggerProvider()

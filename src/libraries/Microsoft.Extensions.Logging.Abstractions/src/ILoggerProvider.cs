@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Logging
         /// Creates a new <see cref="ILogger"/> instance.
         /// </summary>
         /// <param name="categoryName">The category name for messages produced by the logger.</param>
-        /// <returns></returns>
+        /// <returns>The instance of <see cref="ILogger"/> that was created.</returns>
         ILogger CreateLogger(string categoryName);
     }
 }

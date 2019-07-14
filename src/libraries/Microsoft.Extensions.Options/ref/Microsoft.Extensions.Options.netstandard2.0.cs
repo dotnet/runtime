@@ -288,7 +288,7 @@ namespace Microsoft.Extensions.Options
         public System.Collections.Generic.IEnumerable<string> Failures { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]protected set { } }
         public bool Skipped { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]protected set { } }
         public bool Succeeded { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]protected set { } }
-        public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(System.Collections.Generic.IEnumerable<string> failures) { throw null; }        
+        public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(System.Collections.Generic.IEnumerable<string> failures) { throw null; }
         public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(string failureMessage) { throw null; }
     }
     public partial class ValidateOptions<TOptions> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class

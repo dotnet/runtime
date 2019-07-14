@@ -7,11 +7,17 @@ using System.Threading;
 namespace Microsoft.Extensions.Logging
 {
     /// <summary>
-    /// Default implemenation of <see cref="IExternalScopeProvider"/>
+    /// Default implementation of <see cref="IExternalScopeProvider"/>
     /// </summary>
     public class LoggerExternalScopeProvider : IExternalScopeProvider
     {
         private readonly AsyncLocal<Scope> _currentScope = new AsyncLocal<Scope>();
+
+        /// <summary>
+        /// Creates a new <see cref="LoggerExternalScopeProvider"/>.
+        /// </summary>
+        public LoggerExternalScopeProvider()
+        { }
 
         /// <inheritdoc />
         public void ForEachScope<TState>(Action<object, TState> callback, TState state)

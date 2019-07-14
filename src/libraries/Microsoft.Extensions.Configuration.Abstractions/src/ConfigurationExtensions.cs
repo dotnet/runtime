@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         /// <param name="configuration">The configuration.</param>
         /// <param name="name">The connection string key.</param>
-        /// <returns></returns>
+        /// <returns>The connection string.</returns>
         public static string GetConnectionString(this IConfiguration configuration, string name)
         {
             return configuration?.GetSection("ConnectionStrings")?[name];
@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         /// <summary>
-        /// Determines whether the section has a <see cref="IConfigurationSection.Value"/> or has children 
+        /// Determines whether the section has a <see cref="IConfigurationSection.Value"/> or has children
         /// </summary>
         public static bool Exists(this IConfigurationSection section)
         {

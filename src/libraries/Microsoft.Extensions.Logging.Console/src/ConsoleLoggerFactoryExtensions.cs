@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.Logging
         /// Adds a console logger named 'Console' to the factory.
         /// </summary>
         /// <param name="builder">The <see cref="ILoggingBuilder"/> to use.</param>
-        /// <param name="configure"></param>
+        /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/>.</param>
         public static ILoggingBuilder AddConsole(this ILoggingBuilder builder, Action<ConsoleLoggerOptions> configure)
         {
             if (configure == null)

@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
         /// <summary>
         /// Initializes a new instance of the <see cref="TraceSourceLoggerProvider"/> class.
         /// </summary>
-        /// <param name="rootSourceSwitch"></param>
+        /// <param name="rootSourceSwitch">The <see cref="SourceSwitch"/> to use.</param>
         public TraceSourceLoggerProvider(SourceSwitch rootSourceSwitch)
             : this(rootSourceSwitch, null)
         {
@@ -33,8 +33,8 @@ namespace Microsoft.Extensions.Logging.TraceSource
         /// <summary>
         /// Initializes a new instance of the <see cref="TraceSourceLoggerProvider"/> class.
         /// </summary>
-        /// <param name="rootSourceSwitch"></param>
-        /// <param name="rootTraceListener"></param>
+        /// <param name="rootSourceSwitch">The <see cref="SourceSwitch"/> to use.</param>
+        /// <param name="rootTraceListener">The <see cref="TraceListener"/> to use.</param>
         public TraceSourceLoggerProvider(SourceSwitch rootSourceSwitch, TraceListener rootTraceListener)
         {
             if (rootSourceSwitch == null)
@@ -49,8 +49,8 @@ namespace Microsoft.Extensions.Logging.TraceSource
         /// <summary>
         /// Creates a new <see cref="ILogger"/>  for the given component name.
         /// </summary>
-        /// <param name="name"></param>
-        /// <returns></returns>
+        /// <param name="name">The name of the <see cref="TraceSource"/> to add.</param>
+        /// <returns>The <see cref="TraceSourceLogger"/> that was created.</returns>
         public ILogger CreateLogger(string name)
         {
             return new TraceSourceLogger(GetOrAddTraceSource(name));
@@ -114,6 +114,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
                 traceSource.Switch.Level == SourceLevels.Off;
         }
 
+        /// <inheritdoc />
         public void Dispose()
         {
             if (!_disposed)

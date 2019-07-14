@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Configuration.Ini
         /// Read a stream of INI values into a key/value dictionary.
         /// </summary>
         /// <param name="stream">The stream of INI data.</param>
-        /// <returns></returns>
+        /// <returns>The <see cref="IDictionary{String, String}"/> which was read from the stream.</returns>
         public static IDictionary<string, string> Read(Stream stream)
         {
             var data = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Configuration.Ini
                     {
                         continue;
                     }
-                    // [Section:header] 
+                    // [Section:header]
                     if (line[0] == '[' && line[line.Length - 1] == ']')
                     {
                         // remove the brackets

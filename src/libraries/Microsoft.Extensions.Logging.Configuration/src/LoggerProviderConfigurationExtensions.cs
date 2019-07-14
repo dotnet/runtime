@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Logging.Configuration
         /// <summary>
         /// Indicates that settings for <typeparamref name="TProvider"/> should be loaded into <typeparamref name="TOptions"/> type.
         /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to register on.</param>
         /// <typeparam name="TOptions">The options class </typeparam>
         /// <typeparam name="TProvider">The provider class</typeparam>
         public static void RegisterProviderOptions<TOptions, TProvider>(IServiceCollection services) where TOptions : class

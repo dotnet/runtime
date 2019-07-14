@@ -81,13 +81,13 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Gets the immediate children sub-sections.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The children.</returns>
         public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null);
 
         /// <summary>
         /// Returns a <see cref="IChangeToken"/> that can be used to observe when this configuration is reloaded.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The <see cref="IChangeToken"/>.</returns>
         public IChangeToken GetReloadToken() => _changeToken;
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.Configuration
         ///     This method will never return <c>null</c>. If no matching sub-section is found with the specified key,
         ///     an empty <see cref="IConfigurationSection"/> will be returned.
         /// </remarks>
-        public IConfigurationSection GetSection(string key) 
+        public IConfigurationSection GetSection(string key)
             => new ConfigurationSection(this, key);
 
         /// <summary>
