@@ -119,7 +119,7 @@ namespace System.Drawing
             try
             {
 #if DEBUG
-                int status =
+                int status = !Gdip.Initialized ? Gdip.Ok :
 #endif
                 Gdip.GdipDisposeImage(new HandleRef(this, nativeImage));
 #if DEBUG

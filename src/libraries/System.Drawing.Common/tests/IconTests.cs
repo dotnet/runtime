@@ -24,12 +24,9 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization.Formatters.Binary;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -183,7 +180,14 @@ namespace System.Drawing.Tests
             yield return new object[] { new byte[] { 0, 0, 1, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, typeof(ArgumentException) };
 
             // The number of entries specified is negative.
-            yield return new object[] { new byte[] { 0, 0, 1, 0, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }, typeof(Win32Exception) };
+            yield return new object[]
+            {
+                new byte[] { 0, 0, 1, 0, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
+
+                // There is no such thing as a negative number in the native struct, we're throwing ArgumentException
+                // here now as the data size doesn't match what is expected (as other inputs above).
+                PlatformDetection.IsFullFramework ? typeof(Win32Exception) : typeof(ArgumentException)
+            };
 
             // The size of an entry is negative.
             yield return new object[] { new byte[] { 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 0, 0, 0, 0 }, typeof(Win32Exception) };
@@ -195,7 +199,13 @@ namespace System.Drawing.Tests
             yield return new object[] { new byte[] { 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, 0, 0, 12, 0, 0, 0 }, typeof(ArgumentException) };
 
             // The size and offset of an entry overflows.
-            yield return new object[] { new byte[] { 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 127, 255, 255, 255, 127 }, typeof(Win32Exception) };
+            yield return new object[]
+            {
+                new byte[] { 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 127, 255, 255, 255, 127 },
+
+                // Another case where we weren't checking data integrity before invoking.
+                PlatformDetection.IsFullFramework ? typeof(Win32Exception) : typeof(ArgumentException)
+            };
 
             // The offset and the size of the list of entries overflows.
             yield return new object[] { new byte[] { 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 127 }, typeof(ArgumentException) };
@@ -425,9 +435,17 @@ namespace System.Drawing.Tests
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void ExtractAssociatedIcon_NonFilePath_ReturnsNull()
+        public void ExtractAssociatedIcon_NonFilePath_ThrowsFileNotFound()
         {
-            Assert.Null(Icon.ExtractAssociatedIcon("http://microsoft.com"));
+            // Used to return null at the expense of creating a URI
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Null(Icon.ExtractAssociatedIcon("http://microsoft.com"));
+            }
+            else
+            {
+                Assert.Throws<FileNotFoundException>(() => Icon.ExtractAssociatedIcon("http://microsoft.com"));
+            }
         }
 
         [ConditionalFact(Helpers.IsDrawingSupported)]

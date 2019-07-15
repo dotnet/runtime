@@ -257,7 +257,7 @@ namespace System.Drawing.Printing.Tests
                     break;
             }
 
-            Assert.Equal(PrinterResolutionKind.Custom, pageSettings.PrinterResolution.Kind);
+            Assert.True(Enum.IsDefined(typeof(PrinterResolutionKind), pageSettings.PrinterResolution.Kind));
             Assert.True(pageSettings.PrinterSettings.IsDefaultPrinter);
         }
 

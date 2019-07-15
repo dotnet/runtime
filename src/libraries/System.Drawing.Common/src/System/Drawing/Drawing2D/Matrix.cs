@@ -66,7 +66,10 @@ namespace System.Drawing.Drawing2D
         {
             if (NativeMatrix != IntPtr.Zero)
             {
-                Gdip.GdipDeleteMatrix(new HandleRef(this, NativeMatrix));
+                if (Gdip.Initialized)
+                {
+                    Gdip.GdipDeleteMatrix(new HandleRef(this, NativeMatrix));
+                }
                 NativeMatrix = IntPtr.Zero;
             }
         }

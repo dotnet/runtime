@@ -48,7 +48,6 @@ namespace System.Drawing
     public sealed partial class Font
     {
         private const byte DefaultCharSet = 1;
-        private static int CharSetOffset = -1;
 
         private void CreateFont(string familyName, float emSize, FontStyle style, GraphicsUnit unit, byte charSet, bool isVertical)
         {
@@ -210,7 +209,7 @@ namespace System.Drawing
                 newSize = lf.lfHeight;
             }
 
-            return (new Font(newObject, lf.lfFaceName, newStyle, newSize));
+            return (new Font(newObject, lf.lfFaceName.ToString(), newStyle, newSize));
         }
 
         public IntPtr ToHfont()
@@ -353,72 +352,6 @@ namespace System.Drawing
                 {
                     ToLogFont(logFont, g);
                 }
-            }
-        }
-
-        public void ToLogFont(object logFont, Graphics graphics)
-        {
-            if (graphics == null)
-                throw new ArgumentNullException(nameof(graphics));
-
-            if (logFont == null)
-            {
-                throw new AccessViolationException(nameof(logFont));
-            }
-
-            Type st = logFont.GetType();
-            if (!st.GetTypeInfo().IsLayoutSequential)
-                throw new ArgumentException(nameof(logFont), "Layout must be sequential.");
-
-            // note: there is no exception if 'logFont' isn't big enough
-            Type lf = typeof(LOGFONT);
-            int size = Marshal.SizeOf(logFont);
-            if (size >= Marshal.SizeOf(lf))
-            {
-                int status;
-                IntPtr copy = Marshal.AllocHGlobal(size);
-                try
-                {
-                    Marshal.StructureToPtr(logFont, copy, false);
-
-                    status = Gdip.GdipGetLogFontW(new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), logFont);
-                    if (status != Gdip.Ok)
-                    {
-                        // reset to original values
-                        Marshal.PtrToStructure(copy, logFont);
-                    }
-                }
-                finally
-                {
-                    Marshal.FreeHGlobal(copy);
-                }
-
-                if (CharSetOffset == -1)
-                {
-                    // not sure why this methods returns an IntPtr since it's an offset
-                    // anyway there's no issue in downcasting the result into an int32
-                    CharSetOffset = (int)Marshal.OffsetOf(lf, "lfCharSet");
-                }
-
-                // note: Marshal.WriteByte(object,*) methods are unimplemented on Mono
-                GCHandle gch = GCHandle.Alloc(logFont, GCHandleType.Pinned);
-                try
-                {
-                    IntPtr ptr = gch.AddrOfPinnedObject();
-                    // if GDI+ lfCharSet is 0, then we return (S.D.) 1, otherwise the value is unchanged
-                    if (Marshal.ReadByte(ptr, CharSetOffset) == 0)
-                    {
-                        // set lfCharSet to 1 
-                        Marshal.WriteByte(ptr, CharSetOffset, 1);
-                    }
-                }
-                finally
-                {
-                    gch.Free();
-                }
-
-                // now we can throw, if required
-                Gdip.CheckStatus(status);
             }
         }
     }

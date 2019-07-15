@@ -256,7 +256,7 @@ namespace System.Drawing
                         maccontext.Release();
                 }
 
-                status = Gdip.GdipDeleteGraphics(NativeGraphics);
+                status = Gdip.GdipDeleteGraphics(new HandleRef(this, NativeGraphics));
                 NativeGraphics = IntPtr.Zero;
                 Gdip.CheckStatus(status);
                 disposed = true;
@@ -1805,7 +1805,7 @@ namespace System.Drawing
             int status = Gdip.InvalidParameter;
             if (hdc == _nativeHdc)
             {
-                status = Gdip.GdipReleaseDC(NativeGraphics, _nativeHdc);
+                status = Gdip.GdipReleaseDC(new HandleRef(this, NativeGraphics), new HandleRef(this, _nativeHdc));
                 _nativeHdc = IntPtr.Zero;
             }
             Gdip.CheckStatus(status);

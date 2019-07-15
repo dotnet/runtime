@@ -29,7 +29,8 @@ namespace System.Drawing.Drawing2D
             {
                 try
                 {
-                    status = Gdip.GdipDeleteCustomLineCap(new HandleRef(this, handle));
+                    status = !Gdip.Initialized ? Gdip.Ok :
+                        Gdip.GdipDeleteCustomLineCap(new HandleRef(this, handle));
                 }
                 catch (Exception ex)
                 {

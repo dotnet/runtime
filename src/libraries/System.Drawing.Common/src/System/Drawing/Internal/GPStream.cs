@@ -102,15 +102,9 @@ namespace System.Drawing.Internal
             ActualizeVirtualPosition();
 
             // Stream Span API isn't available in 2.0
-#if netcoreapp20
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(checked((int)cb));
-            int read = _dataStream.Read(buffer, 0, checked((int)cb));
-            Marshal.Copy(buffer, 0, (IntPtr)pv, read);
-            ArrayPool<byte>.Shared.Return(buffer);
-#else
             Span<byte> buffer = new Span<byte>(pv, checked((int)cb));
             int read = _dataStream.Read(buffer);
-#endif
+
             if (pcbRead != null)
                 *pcbRead = (uint)read;
         }
