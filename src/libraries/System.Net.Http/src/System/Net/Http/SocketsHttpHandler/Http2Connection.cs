@@ -1277,8 +1277,15 @@ namespace System.Net.Http
         private void Abort(Exception abortException)
         {
             // The connection has failed, e.g. failed IO or a connection-level frame error.
-            Interlocked.CompareExchange(ref _abortException, abortException, null);
-            AbortStreams(abortException);
+            if (Interlocked.CompareExchange(ref _abortException, abortException, null) != null &&
+                NetEventSource.IsEnabled &&
+                !ReferenceEquals(_abortException, abortException))
+            {
+                // Lost the race to set the field to another exception, so just trace this one.
+                Trace($"{nameof(abortException)}=={abortException}");
+            }
+
+            AbortStreams(_abortException);
         }
 
         /// <summary>Gets whether the connection exceeded any of the connection limits.</summary>
