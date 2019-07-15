@@ -29,6 +29,11 @@ namespace System.Text.Json
             Debug.Assert(type != null);
             ConstructorInfo realMethod = type.GetConstructor(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance, binder: null, Type.EmptyTypes, modifiers: null);
 
+            if (type.IsAbstract)
+            {
+                return null;
+            }
+
             if (realMethod == null && !type.IsValueType)
             {
                 return null;
