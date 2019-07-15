@@ -162,6 +162,7 @@ namespace pal
     inline int rename(const pal::char_t* old_name, const pal::char_t* new_name) { return ::_wrename(old_name, new_name); }
     inline int remove(const pal::char_t* path) { return ::_wremove(path); }
     inline int get_pid() { return GetCurrentProcessId(); }
+    inline void sleep(uint32_t milliseconds) { Sleep(milliseconds); }
 
 #else
     #ifdef EXPORT_SHARED_API
@@ -217,6 +218,7 @@ namespace pal
     inline int rename(const pal::char_t* old_name, const pal::char_t* new_name) { return ::rename(old_name, new_name); }
     inline int remove(const pal::char_t* path) { return ::remove(path); }
     inline int get_pid() { return getpid(); }
+    inline void sleep(uint32_t milliseconds) { usleep(milliseconds * 1000); }
 
 #endif
 

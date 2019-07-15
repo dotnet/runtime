@@ -110,18 +110,18 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk(
         working_dir = _X("");
     }
 
-    pal::string_t cli_sdk;
-    if (!sdk_resolver_t::resolve_sdk_dotnet_path(exe_dir, working_dir, &cli_sdk))
+    auto sdk_path = sdk_resolver::from_nearest_global_file(working_dir).resolve(exe_dir);
+    if (sdk_path.empty())
     {
-        // sdk_resolver_t::resolve_sdk_dotnet_path handles tracing for this error case.
+        // sdk_resolver::resolve handles tracing for this error case.
         return 0;
     }
 
     unsigned long non_negative_buffer_size = static_cast<unsigned long>(buffer_size);
-    if (cli_sdk.size() < non_negative_buffer_size)
+    if (sdk_path.size() < non_negative_buffer_size)
     {
-        size_t length = cli_sdk.copy(buffer, non_negative_buffer_size - 1);
-        assert(length == cli_sdk.size());
+        size_t length = sdk_path.copy(buffer, non_negative_buffer_size - 1);
+        assert(length == sdk_path.size());
         assert(length < non_negative_buffer_size);
         buffer[length] = 0;
     }
@@ -130,7 +130,7 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk(
         trace::info(_X("hostfxr_resolve_sdk received a buffer that is too small to hold the located SDK path."));
     }
 
-    return cli_sdk.size() + 1;
+    return sdk_path.size() + 1;
 }
 
 enum hostfxr_resolve_sdk2_flags_t : int32_t
@@ -218,31 +218,26 @@ SHARED_API int32_t HOSTFXR_CALLTYPE hostfxr_resolve_sdk2(
         working_dir = _X("");
     }
 
-    pal::string_t resolved_sdk_dir;
-    pal::string_t global_json_path;
-
-    bool success = sdk_resolver_t::resolve_sdk_dotnet_path(
-        exe_dir,
+    auto resolver = sdk_resolver::from_nearest_global_file(
         working_dir,
-        &resolved_sdk_dir,
-        (flags & hostfxr_resolve_sdk2_flags_t::disallow_prerelease) != 0,
-        &global_json_path);
+        (flags & hostfxr_resolve_sdk2_flags_t::disallow_prerelease) == 0);
 
-    if (success)
+    auto resolved_sdk_dir = resolver.resolve(exe_dir);
+    if (!resolved_sdk_dir.empty())
     {
         result(
             hostfxr_resolve_sdk2_result_key_t::resolved_sdk_dir,
             resolved_sdk_dir.c_str());
     }
 
-    if (!global_json_path.empty())
+    if (!resolver.global_file_path().empty())
     {
         result(
             hostfxr_resolve_sdk2_result_key_t::global_json_path,
-            global_json_path.c_str());
+            resolver.global_file_path().c_str());
     }
 
-    return success
+    return !resolved_sdk_dir.empty()
         ? StatusCode::Success
         : StatusCode::SdkResolverResolveFailure;
 }
