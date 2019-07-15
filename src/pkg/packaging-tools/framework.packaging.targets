@@ -146,28 +146,7 @@
       IgnoredTypes="@(IgnoredDuplicateType)" />
   </Target>
 
-  <!-- Target overrides (can't be shared with other package projects) -->
-
-  <!--
-    Redefine build. The packaging tools require a parameterized build call to use IDs other than the
-    project name such as the runtime pack RID suffix and runtime package RID prefix. Perform a
-    nested build when these runtime-specific packages are necessary.
-
-    Also, generate shared framework layout and installers as appropriate.
-  -->
-  <Target Name="Build"
-          DependsOnTargets="
-            BuildRidAgnosticPackage;
-            BuildRidSpecificPackage;
-            GenerateInstallers" />
-
-  <Target Name="BuildRidAgnosticPackage"
-          DependsOnTargets="$(BuildDependsOn)"
-          Condition="'$(BuildLineupPackage)' == 'true'">
-    <Message Text="$(MSBuildProjectName) -> $(NuSpecPath)" Importance="high" />
-  </Target>
-
-  <Target Name="BuildRidSpecificPackage">
+  <Target Name="GetBuildRidSpecificPackageProps">
     <!--
       If PackageRID should be built for the current package, PackageBuildRID is set to PackageRID.
       Otherwise, PackageBuildRID is left empty.
@@ -179,7 +158,41 @@
     <PropertyGroup Condition="'$(BuildRidSpecificPacks)' == 'true'">
       <RidSpecificPackProperties>BaseId=$(MSBuildProjectName).$(PackageBuildRID);IdPrefix=</RidSpecificPackProperties>
     </PropertyGroup>
+  </Target>
 
+  <!-- Target overrides (can't be shared with other package projects) -->
+
+  <!--
+    Redefine build. The packaging tools require a parameterized build call to use IDs other than the
+    project name such as the runtime pack RID suffix and runtime package RID prefix. Perform a
+    nested build when these runtime-specific packages are necessary.
+
+    Also, generate shared framework layout and installers as appropriate.
+  -->
+  <Target Name="Build"
+          DependsOnTargets="
+            GetSkipBuildProps;
+            BuildRidAgnosticPackage;
+            GetBuildRidSpecificPackageProps;
+            BuildRidSpecificPackage;
+            GenerateInstallers" />
+
+  <Target Name="BuildRidAgnosticPackage"
+          DependsOnTargets="$(BuildDependsOn)"
+          Condition="
+            '$(SkipBuild)' != 'true' and
+            '$(BuildLineupPackage)' == 'true'">
+    <Message Text="$(MSBuildProjectName) -> $(NuSpecPath)" Importance="high" />
+  </Target>
+
+  <Target Name="BuildRidSpecificPackage"
+          Condition="
+            '$(SkipBuild)' != 'true' and
+            '$(PackageBuildRID)' != '' and
+            (
+              '$(BuildRidSpecificPacks)' == 'true' or
+              ('$(FrameworkPackType)' == '' and '$(BuildRuntimePackages)' == 'true')
+            )">
     <!--
       Ensure all project references are built to make sure dependencies (e.g. native build and
       depproj's crossgen) runs first. The global properties mean we can't let the inner build handle
@@ -190,19 +203,13 @@
       Targets="Build" />
 
     <MSBuild
-      Condition="
-        '$(PackageBuildRID)' != '' and
-        (
-          '$(BuildRidSpecificPacks)' == 'true' or
-          ('$(FrameworkPackType)' == '' and '$(BuildRuntimePackages)' == 'true')
-        )"
       Projects="$(MSBuildProjectFullPath)"
       Targets="InnerBuildRidSpecificPackage"
       Properties="
         BuildPackageLibraryReferences=false;
         DisableOrderDependencies=true;
         PackageTargetRuntime=$(PackageBuildRID);
-        NuGetRuntimeIdentifier=$(PackageBuildRID);
+        RuntimeIdentifier=$(PackageBuildRID);
         $(RidSpecificPackProperties)" />
   </Target>
 

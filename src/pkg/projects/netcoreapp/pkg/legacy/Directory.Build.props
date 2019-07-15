@@ -3,9 +3,7 @@
 
   <PropertyGroup>
     <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
-    <BuildTargetPath>build/$(NETCoreAppFramework)</BuildTargetPath>
-    <PlatformManifestTargetPath>$(BuildTargetPath)</PlatformManifestTargetPath>
-    <FileVersionPropsTargetPath>$(BuildTargetPath)</FileVersionPropsTargetPath>
+    <BuildTargetPath>build/$(NETCoreAppFramework)/</BuildTargetPath>
   </PropertyGroup>
 
   <!-- Identity / Reference package content -->

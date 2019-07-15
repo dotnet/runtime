@@ -26,14 +26,13 @@ jobs:
     workspace:
       clean: all
     variables: 
-        # TODO: (arcade) fix up artifacts:
-        # /p:BuildFullPlatformManifest=${{ parameters.buildFullPlatformManifest }}
       CommonMSBuildArgs: >-
         /p:Configuration=$(_BuildConfig)
         /p:OfficialBuildId=$(OfficialBuildId)
         /p:TargetArchitecture=${{ parameters.targetArchitecture }}
         /p:PortableBuild=true
         /p:SkipTests=${{ parameters.skipTests }}
+        /p:BuildFullPlatformManifest=${{ parameters.buildFullPlatformManifest }}
       MsbuildSigningArguments: >-
         /p:CertificateId=400
         /p:DotNetSignType=$(SignType)

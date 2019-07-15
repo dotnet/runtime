@@ -3,6 +3,12 @@
 
   <PropertyGroup>
     <PackageRID Condition="'$(PackageRID)' == ''">$(OutputRid)</PackageRID>
+
+    <!--
+      Only build WindowsDesktop assets if this is on Windows and we know WD assets are available
+      and supported. This lets us skip them on the non-Windows official build legs.
+    -->
+    <BuildOnUnknownPlatforms>false</BuildOnUnknownPlatforms>
   </PropertyGroup>
 
   <ItemGroup>
