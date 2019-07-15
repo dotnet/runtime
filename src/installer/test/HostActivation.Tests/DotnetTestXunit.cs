@@ -85,7 +85,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             if ( ! File.Exists(dotnetTestXunitDll))
             {
                 throw new Exception(
-                    $"Unable to find dotnet-test-xunit.dll, ensure {nameof(DotnetTestXunitVersion)} is updated to the version in Portable/StandaloneTestApp");
+                    $"Unable to find '{dotnetTestXunitDll}', ensure {nameof(DotnetTestXunitVersion)} is updated to the version in Portable/StandaloneTestApp");
             }
 
             return dotnetTestXunitDll;
