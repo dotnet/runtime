@@ -419,7 +419,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ClassWithNoSetter()
         {
-            // We don't attempt to deserialize into collections without a setter.
+            // We replace the contents of this collection; we don't attempt to add items to the existing collection instance.
             string json = @"{""MyList"":[1,2]}";
             ClassWithPopulatedListAndNoSetter obj = JsonSerializer.Deserialize<ClassWithPopulatedListAndNoSetter>(json);
             Assert.Equal(1, obj.MyList.Count);
@@ -433,7 +433,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void ClassWithPopulatedList()
         {
-            // We don't attempt to deserialize into collections without a setter.
+            // We replace the contents of this collection; we don't attempt to add items to the existing collection instance.
             string json = @"{""MyList"":[2,3]}";
             ClassWithPopulatedListAndSetter obj = JsonSerializer.Deserialize<ClassWithPopulatedListAndSetter>(json);
             Assert.Equal(2, obj.MyList.Count);
