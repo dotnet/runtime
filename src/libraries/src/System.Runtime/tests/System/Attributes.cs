@@ -207,6 +207,7 @@ namespace System.Tests
             Assert.Equal("System.Tests.MyCustomAttribute System.Tests.MyCustomAttribute", string.Join(" ", typeof(MultipleAttributes).GetCustomAttributes(inherit: true)));
         }
     }
+
     public static class GetCustomAttribute
     {
 
@@ -220,6 +221,7 @@ namespace System.Tests
             // [System.Diagnostics.DebuggableAttribute((Boolean)True, (Boolean)False)]
             Assert.Equal(4, customAttributes.Count);
         }
+
         [Fact]
         public static void PositiveTest1()
         {

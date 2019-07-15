@@ -115,6 +115,7 @@
     <Compile Include="System\NotFiniteNumberExceptionTests.cs" />
     <Compile Include="System\NotImplementedExceptionTests.cs" />
     <Compile Include="System\NotSupportedExceptionTests.cs" />
+    <Compile Include="System\NullableMetadataTests.cs" />
     <Compile Include="System\NullableTests.cs" />
     <Compile Include="System\NullReferenceExceptionTests.cs" />
     <Compile Include="System\ObjectTests.cs" />

@@ -256,8 +256,7 @@
     <!-- default to allowing all language features -->
     <LangVersion>latest</LangVersion>
     <LangVersion Condition="'$(Language)' == 'C#'">preview</LangVersion>
-    <!-- Enables Strict mode for Roslyn compiler -->
-    <Features>strict</Features>
+    <Features>strict;nullablePublicOnly</Features>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Deterministic>true</Deterministic>
@@ -384,8 +383,6 @@
   <PropertyGroup>
     <!-- Clear the init locals flag on all src projects, except those in VB, where we can't use spans. -->
     <ILLinkClearInitLocals Condition="'$(IsSourceProject)' == 'true' and '$(Language)' != 'VB'">true</ILLinkClearInitLocals>
-
-    <Features Condition="'$(IsSourceProject)' == 'true' or '$(IsReferenceAssembly)' == 'true'">$(Features);nullablePublicOnly</Features>
   </PropertyGroup>
 
 </Project>
