@@ -5,7 +5,7 @@
 # the default owners for everything in the repo.
 * @marek-safar
 
-/src/analyzer @radekdoulik
-/src/ILLink.Tasks @sbomer
-/src/linker @marek-safar @mrvoorhe
-/test @marek-safar @mrvoorhe
+/src/analyzer/ @radekdoulik
+/src/ILLink.Tasks/ @sbomer
+/src/linker/ @marek-safar @mrvoorhe
+/test/ @marek-safar @mrvoorhe
