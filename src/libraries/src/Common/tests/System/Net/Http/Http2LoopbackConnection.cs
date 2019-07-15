@@ -4,9 +4,9 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Http.Functional.Tests;
 using System.Net.Security;
 using System.Net.Sockets;
-using System.Security.Authentication;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -716,10 +716,39 @@ namespace System.Net.Test.Common
             return SendResponseHeadersAsync(streamId, endStream : isFinal, statusCode, isTrailingHeader : false, endHeaders : endHeaders, headers);
         }
 
+        public override Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+        {
+            int streamId = requestId == 0 ? _lastStreamId : requestId;
+            return SendResponseHeadersAsync(streamId, endStream: false, statusCode, isTrailingHeader: false, endHeaders: true, headers);
+        }
+
         public override Task SendResponseBodyAsync(byte[] body, bool isFinal = true, int requestId = 0)
         {
             int streamId = requestId == 0 ? _lastStreamId : requestId;
             return SendResponseBodyAsync(streamId, body, isFinal);
+        }
+
+        public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)
+        {
+            int streamId = requestId == 0 ? _lastStreamId : requestId;
+
+            Frame frame;
+            do
+            {
+                frame = await ReadFrameAsync(TimeSpan.FromMilliseconds(TestHelper.PassingTestTimeoutMilliseconds));
+                Assert.NotNull(frame); // We should get Rst before closing connection.
+                Assert.Equal(0, (int)(frame.Flags & FrameFlags.EndStream));
+                if (ignoreIncomingData)
+                {
+                    Assert.True(frame.Type == FrameType.Data || frame.Type == FrameType.RstStream, $"Expected Data or RstStream, got {frame.Type}");
+                }
+                else
+                {
+                    Assert.Equal(FrameType.RstStream, frame.Type);
+                }
+            } while (frame.Type != FrameType.RstStream);
+
+            Assert.Equal(streamId, frame.StreamId);
         }
     }
 }

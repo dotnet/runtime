@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Security;
@@ -16,11 +15,6 @@ namespace System.Net.Http
 {
     internal static class ConnectHelper
     {
-        /// <summary>Pool of event args to use to establish connections.</summary>
-        private static readonly ConcurrentQueueSegment<ConnectEventArgs> s_connectEventArgs =
-            new ConcurrentQueueSegment<ConnectEventArgs>(
-                ConcurrentQueueSegment<ConnectEventArgs>.RoundUpToPowerOf2(Math.Max(2, Environment.ProcessorCount)));
-
         /// <summary>
         /// Helper type used by HttpClientHandler when wrapping SocketsHttpHandler to map its
         /// certificate validation callback to the one used by SslStream.
@@ -42,13 +36,8 @@ namespace System.Net.Http
         {
             // Rather than creating a new Socket and calling ConnectAsync on it, we use the static
             // Socket.ConnectAsync with a SocketAsyncEventArgs, as we can then use Socket.CancelConnectAsync
-            // to cancel it if needed. Rent or allocate one.
-            ConnectEventArgs saea;
-            if (!s_connectEventArgs.TryDequeue(out saea))
-            {
-                saea = new ConnectEventArgs();
-            }
-
+            // to cancel it if needed.
+            var saea = new ConnectEventArgs();
             try
             {
                 saea.Initialize(cancellationToken);
@@ -87,12 +76,7 @@ namespace System.Net.Http
             }
             finally
             {
-                // Pool the event args, or if the pool is full, dispose of it.
-                saea.Clear();
-                if (!s_connectEventArgs.TryEnqueue(saea))
-                {
-                    saea.Dispose();
-                }
+                saea.Dispose();
             }
         }
 
@@ -109,8 +93,6 @@ namespace System.Net.Http
                 var ignored = b.Task; // force initialization
                 Builder = b;
             }
-
-            public void Clear() => CancellationToken = default;
 
             protected override void OnCompleted(SocketAsyncEventArgs _)
             {

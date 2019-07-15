@@ -48,17 +48,22 @@ namespace System.Net.Test.Common
     {
         public abstract void Dispose();
 
-        // Read request Headers and optionally request body as well.
+        /// <summary>Read request Headers and optionally request body as well.</summary>
         public abstract Task<HttpRequestData> ReadRequestDataAsync(bool readBody = true);
-        // Read complete request body if not done by ReadRequestData.
+        /// <summary>Read complete request body if not done by ReadRequestData.</summary>
         public abstract Task<Byte[]> ReadRequestBodyAsync();
 
-        // Sends Response back with provided statusCode, headers and content. Can be called multiple times on same response if isFinal was set to false before.
+        /// <summary>Sends Response back with provided statusCode, headers and content. Can be called multiple times on same response if isFinal was set to false before.</summary>
         public abstract Task SendResponseAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, string body = null, bool isFinal = true, int requestId = 0);
-        // Sends Response body after SendResponse was called with isFinal: false.
+        /// <summary>Sends response headers.</summary>
+        public abstract Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0);
+        /// <summary>Sends Response body after SendResponse was called with isFinal: false.</summary>
         public abstract Task SendResponseBodyAsync(byte[] data, bool isFinal = true, int requestId = 0);
 
-        // Helper function to make it easier to convert old test with strings.
+        /// <summary>Waits for the client to signal cancellation.</summary>
+        public abstract Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0);
+
+        /// <summary>Helper function to make it easier to convert old test with strings.</summary>
         public async Task SendResponseBodyAsync(string data, bool isFinal = true, int requestId = 0)
         {
             await SendResponseBodyAsync(String.IsNullOrEmpty(data) ? new byte[0] : Encoding.ASCII.GetBytes(data), isFinal, requestId);
