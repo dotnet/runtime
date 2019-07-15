@@ -1613,6 +1613,8 @@ namespace System.Net.Http
 
                 // Wait for the response headers to complete if they haven't already, propagating any exceptions.
                 await responseHeadersTask.ConfigureAwait(false);
+
+                return http2Stream.GetAndClearResponse();
             }
             catch (Exception e)
             {
@@ -1651,8 +1653,6 @@ namespace System.Net.Http
                 }
                 throw;
             }
-
-            return http2Stream.Response;
         }
 
         private Http2Stream AddStream(HttpRequestMessage request)
