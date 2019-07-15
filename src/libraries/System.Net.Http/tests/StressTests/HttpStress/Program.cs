@@ -572,35 +572,36 @@ public class Program
                 {
                     long opIndex = i % clientOperations.Length;
                     (string operation, Func<RequestContext, Task> func) = clientOperations[opIndex];
-                    // request-specific context
-                    var requestContext = new RequestContext(client, random, taskNum, cancellationProbability);
-                    try
+                    using (var requestContext = new RequestContext(client, random, taskNum, cancellationProbability))
                     {
-                        await func(requestContext);
-
-                        Increment(ref success[opIndex]);
-                    }
-                    catch (OperationCanceledException) when (requestContext.CancellationToken.IsCancellationRequested)
-                    {
-                        Increment(ref cancel[opIndex]);
-                    }
-                    catch (Exception e)
-                    {
-                        Increment(ref fail[opIndex]);
-
-                        if (e is HttpRequestException hre && hre.InnerException is SocketException se && se.SocketErrorCode == SocketError.AddressAlreadyInUse)
+                        try
                         {
-                            Interlocked.Increment(ref reuseAddressFailure);
+                            await func(requestContext);
+
+                            Increment(ref success[opIndex]);
                         }
-                        else
+                        catch (OperationCanceledException) when (requestContext.CancellationToken.IsCancellationRequested)
                         {
-                            lock (Console.Out)
+                            Increment(ref cancel[opIndex]);
+                        }
+                        catch (Exception e)
+                        {
+                            Increment(ref fail[opIndex]);
+
+                            if (e is HttpRequestException hre && hre.InnerException is SocketException se && se.SocketErrorCode == SocketError.AddressAlreadyInUse)
                             {
-                                Console.ForegroundColor = ConsoleColor.Yellow;
-                                Console.WriteLine($"Error from iteration {i} ({operation}) in task {taskNum} with {success.Sum()} successes / {fail.Sum()} fails:");
-                                Console.ResetColor();
-                                Console.WriteLine(e);
-                                Console.WriteLine();
+                                Interlocked.Increment(ref reuseAddressFailure);
+                            }
+                            else
+                            {
+                                lock (Console.Out)
+                                {
+                                    Console.ForegroundColor = ConsoleColor.Yellow;
+                                    Console.WriteLine($"Error from iteration {i} ({operation}) in task {taskNum} with {success.Sum()} successes / {fail.Sum()} fails:");
+                                    Console.ResetColor();
+                                    Console.WriteLine(e);
+                                    Console.WriteLine();
+                                }
                             }
                         }
                     }
@@ -655,24 +656,26 @@ public class Program
     }
 
     /// <summary>Client context containing information pertaining to a single request.</summary>
-    private sealed class RequestContext
+    private sealed class RequestContext : IDisposable
     {
         private readonly Random _random;
+        private readonly CancellationTokenSource _cts;
 
         public RequestContext(HttpClient httpClient, Random random, int taskNum, double cancellationProbability)
         {
             _random = random;
             TaskNum = taskNum;
             HttpClient = httpClient;
-            CancellationToken =
-                (GetRandomBoolean(cancellationProbability))
-                ? CreateCancellationTokenWithRandomizedCancellationDelay()
-                : CancellationToken.None;
 
-            CancellationToken CreateCancellationTokenWithRandomizedCancellationDelay(int maxDelayMs = 5)
+            if(GetRandomBoolean(cancellationProbability))
             {
-                var delay = TimeSpan.FromMilliseconds(GetRandomInt(maxDelayMs));
-                return new CancellationTokenSource(delay).Token;
+                var delay = TimeSpan.FromMilliseconds(GetRandomInt(maxValue: 5));
+                _cts = new CancellationTokenSource(delay);
+                CancellationToken = _cts.Token;
+            }
+            else
+            {
+                CancellationToken = CancellationToken.None;
             }
         }
         public int TaskNum { get; }
@@ -700,6 +703,8 @@ public class Program
 
         public Version GetRandomVersion(Version[] versions) =>
             versions[_random.Next(0, versions.Length)];
+
+        public void Dispose() => _cts?.Dispose();
     }
 
     /// <summary>HttpContent that partially serializes and then waits for cancellation to be requested.</summary>
