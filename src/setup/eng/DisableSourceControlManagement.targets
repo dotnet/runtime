@@ -1,4 +1,9 @@
 <Project>
+
+  <PropertyGroup>
+    <DisableSourceControlManagementTargetsImported>true</DisableSourceControlManagementTargetsImported>
+  </PropertyGroup>
+
   <PropertyGroup>
     <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
   </PropertyGroup>
@@ -12,4 +17,5 @@
       <SourceRevisionId>unknown</SourceRevisionId>
     </PropertyGroup>
   </Target>
+
 </Project>
