@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
@@ -50,11 +51,17 @@ namespace System.Net.Http
             SetBuffer(_content, _offset, _count);
         }
 
-        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
-        {
-            Debug.Assert(stream != null);
-            return stream.WriteAsync(_content, _offset, _count);
-        }
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+            SerializeToStreamAsyncCore(stream, default);
+
+        internal override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+            // Only skip the original protected virtual SerializeToStreamAsync if this
+            // isn't a derived type that may have overridden the behavior.
+            GetType() == typeof(ByteArrayContent) ? SerializeToStreamAsyncCore(stream, cancellationToken) :
+            base.SerializeToStreamAsync(stream, context, cancellationToken);
+
+        private protected Task SerializeToStreamAsyncCore(Stream stream, CancellationToken cancellationToken) =>
+            stream.WriteAsync(_content, _offset, _count, cancellationToken);
 
         protected internal override bool TryComputeLength(out long length)
         {
