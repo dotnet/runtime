@@ -88,7 +88,7 @@ namespace System.Text.Json
 
             if (converter is JsonConverterFactory factory)
             {
-                converter = factory.GetConverterInternal(runtimePropertyType);
+                converter = factory.GetConverterInternal(runtimePropertyType, this);
             }
 
             return converter;
@@ -154,7 +154,7 @@ namespace System.Text.Json
             // Allow redirection for generic types or the enum converter.
             if (converter is JsonConverterFactory factory)
             {
-                converter = factory.GetConverterInternal(typeToConvert);
+                converter = factory.GetConverterInternal(typeToConvert, this);
                 if (converter == null || converter.TypeToConvert == null)
                 {
                     throw new ArgumentNullException("typeToConvert");

@@ -35,7 +35,7 @@ namespace System.Text.Json.Serialization.Tests
                     arg == typeof(long);
             }
 
-            protected override JsonConverter CreateConverter(Type type)
+            public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
             {
                 Type elementType = type.GetGenericArguments()[0];
 

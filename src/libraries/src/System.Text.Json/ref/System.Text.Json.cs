@@ -467,7 +467,7 @@ namespace System.Text.Json.Serialization
     public abstract partial class JsonConverterFactory : System.Text.Json.Serialization.JsonConverter
     {
         protected internal JsonConverterFactory() { }
-        protected abstract System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert);
+        public abstract System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
     }
     public abstract partial class JsonConverter<T> : System.Text.Json.Serialization.JsonConverter
     {
@@ -497,6 +497,6 @@ namespace System.Text.Json.Serialization
         public JsonStringEnumConverter() { }
         public JsonStringEnumConverter(System.Text.Json.JsonNamingPolicy namingPolicy = null, bool allowIntegerValues = true) { }
         public override bool CanConvert(System.Type typeToConvert) { throw null; }
-        protected override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert) { throw null; }
+        public override System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
     }
 }
