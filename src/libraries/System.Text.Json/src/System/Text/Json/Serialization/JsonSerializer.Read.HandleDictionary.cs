@@ -70,10 +70,10 @@ namespace System.Text.Json
                 {
                     dictionaryClassInfo = options.GetOrAddClass(jsonPropertyInfo.DeclaredPropertyType);
                 }
+
                 state.Current.TempDictionaryValues = (IDictionary)dictionaryClassInfo.CreateConcreteDictionary();
             }
-            // Else if current property is already set (from a constructor, for example), leave as-is.
-            else if (jsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue) == null)
+            else
             {
                 // Create the dictionary.
                 JsonClassInfo dictionaryClassInfo = jsonPropertyInfo.RuntimeClassInfo;
@@ -96,6 +96,11 @@ namespace System.Text.Json
 
         private static void HandleEndDictionary(JsonSerializerOptions options, ref Utf8JsonReader reader, ref ReadStack state)
         {
+            if (state.Current.SkipProperty)
+            {
+                return;
+            }
+
             if (state.Current.IsDictionaryProperty)
             {
                 // We added the items to the dictionary already.
