@@ -159,13 +159,12 @@ stages:
       parameters:
         PublishRidAgnosticPackagesFromJobName: Windows_x64
 
-  # TODO: (arcade) Turn BAR publish back on.
-  # - stage: Publish_BAR
-  #   dependsOn: Publish
-  #   jobs:
-  #   # Publish to Build Asset Registry
-  #   - template: /eng/common/templates/job/publish-build-assets.yml
-  #     parameters:
-  #       pool:
-  #         name: NetCoreInternal-Int-Pool
-  #         queue: buildpool.windows.10.amd64.vs2017
+  - stage: Publish_BAR
+    dependsOn: Publish
+    jobs:
+    # Publish to Build Asset Registry
+    - template: /eng/common/templates/job/publish-build-assets.yml
+      parameters:
+        pool:
+          name: NetCoreInternal-Int-Pool
+          queue: buildpool.windows.10.amd64.vs2017
