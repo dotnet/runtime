@@ -7,6 +7,7 @@
 
 
 #include <cstdint>
+#include <memory>
 #include "header.h"
 #include "manifest.h"
 #include "marker.h"
@@ -19,16 +20,8 @@ namespace bundle
     public:
         bundle_runner_t(const pal::string_t& bundle_path)
             : m_bundle_stream(nullptr)
-            , m_header(nullptr)
-            , m_manifest(nullptr)
             , m_bundle_path(bundle_path)
         {
-        }
-
-        ~bundle_runner_t()
-        {
-            delete m_header;
-            delete m_manifest;
         }
 
         pal::string_t get_extraction_dir()
@@ -58,8 +51,8 @@ namespace bundle
         void extract_file(file_entry_t* entry);
 
         FILE* m_bundle_stream;
-        header_t* m_header;
-        manifest_t* m_manifest;
+        std::unique_ptr<header_t> m_header;
+        std::unique_ptr<manifest_t> m_manifest;
         pal::string_t m_bundle_path;
         pal::string_t m_extraction_dir;
         pal::string_t m_working_extraction_dir;

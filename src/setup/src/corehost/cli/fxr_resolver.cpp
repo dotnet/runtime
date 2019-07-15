@@ -55,7 +55,6 @@ namespace
 
 bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* out_dotnet_root, pal::string_t* out_fxr_path)
 {
-    pal::string_t fxr_dir;
 #if defined(FEATURE_APPHOST) || defined(FEATURE_LIBHOST)
     // For apphost and libhost, root_path is expected to be a directory.
     // For libhost, it may be empty if app-local search is not desired (e.g. com/ijw/winrt hosts, nethost when no assembly path is specified)
@@ -88,7 +87,7 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
         }
     }
 
-    fxr_dir = *out_dotnet_root;
+    pal::string_t fxr_dir = *out_dotnet_root;
     append_path(&fxr_dir, _X("host"));
     append_path(&fxr_dir, _X("fxr"));
     if (!pal::directory_exists(fxr_dir))
@@ -120,6 +119,8 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
             self_registered_message.c_str());
         return false;
     }
+
+    return get_latest_fxr(std::move(fxr_dir), out_fxr_path);
 #else // !FEATURE_APPHOST && !FEATURE_LIBHOST
     // For non-apphost and non-libhost (i.e. muxer), root_path is expected to be the full path to the host
     pal::string_t host_dir;
@@ -127,7 +128,13 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
 
     out_dotnet_root->assign(host_dir);
 
-    fxr_dir = *out_dotnet_root;
+    return fxr_resolver::try_get_path_from_dotnet_root(*out_dotnet_root, out_fxr_path);
+#endif // !FEATURE_APPHOST && !FEATURE_LIBHOST
+}
+
+bool fxr_resolver::try_get_path_from_dotnet_root(const pal::string_t &dotnet_root, pal::string_t *out_fxr_path)
+{
+    pal::string_t fxr_dir = dotnet_root;
     append_path(&fxr_dir, _X("host"));
     append_path(&fxr_dir, _X("fxr"));
     if (!pal::directory_exists(fxr_dir))
@@ -135,12 +142,8 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
         trace::error(_X("A fatal error occurred. The folder [%s] does not exist"), fxr_dir.c_str());
         return false;
     }
-#endif // !FEATURE_APPHOST && !FEATURE_LIBHOST
 
-    if (!get_latest_fxr(std::move(fxr_dir), out_fxr_path))
-        return false;
-
-    return true;
+    return get_latest_fxr(std::move(fxr_dir), out_fxr_path);
 }
 
 bool fxr_resolver::try_get_existing_fxr(pal::dll_t *out_fxr, pal::string_t *out_fxr_path)
