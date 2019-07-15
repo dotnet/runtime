@@ -62,11 +62,6 @@ static GENERATE_TRY_GET_CLASS_WITH_CACHE (math, "System", "Math")
 
 #define IS_REX(inst) (((inst) >= 0x40) && ((inst) <= 0x4f))
 
-/* This mutex protects architecture specific caches */
-#define mono_mini_arch_lock() mono_os_mutex_lock (&mini_arch_mutex)
-#define mono_mini_arch_unlock() mono_os_mutex_unlock (&mini_arch_mutex)
-static mono_mutex_t mini_arch_mutex;
-
 /* The single step trampoline */
 static gpointer ss_trampoline;
 
@@ -1428,8 +1423,6 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
-	mono_os_mutex_init_recursive (&mini_arch_mutex);
-
 	if (!mono_aot_only)
 		bp_trampoline = mini_get_breakpoint_trampoline ();
 }
@@ -1440,7 +1433,6 @@ mono_arch_init (void)
 void
 mono_arch_cleanup (void)
 {
-	mono_os_mutex_destroy (&mini_arch_mutex);
 }
 
 /*

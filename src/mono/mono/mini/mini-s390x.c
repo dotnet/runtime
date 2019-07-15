@@ -307,9 +307,6 @@ if (ins->inst_true_bb->native_offset) { 					\
 #define JUMP_SIZE	6
 #define ENABLE_WRONG_METHOD_CHECK 0
 
-#define mono_mini_arch_lock() mono_os_mutex_lock (&mini_arch_mutex)
-#define mono_mini_arch_unlock() mono_os_mutex_unlock (&mini_arch_mutex)
-
 /*========================= End of Defines =========================*/
 
 /*------------------------------------------------------------------*/
@@ -451,8 +448,6 @@ static gpointer ss_trigger_page;
 static gpointer bp_trigger_page;
 
 breakpoint_t breakpointCode;
-
-static mono_mutex_t mini_arch_mutex;
 
 static const char * grNames[] = {
 	"s390_r0", "s390_sp", "s390_r2", "s390_r3", "s390_r4",
@@ -831,7 +826,6 @@ mono_arch_init (void)
 	guint8 *code;
 
 	mono_set_partial_sharing_supported (FALSE);
-	mono_os_mutex_init_recursive (&mini_arch_mutex);
 
 	ss_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ, MONO_MEM_ACCOUNT_OTHER);
 	bp_trigger_page = mono_valloc (NULL, mono_pagesize (), MONO_MMAP_READ, MONO_MEM_ACCOUNT_OTHER);
@@ -862,7 +856,6 @@ mono_arch_cleanup (void)
 		mono_vfree (ss_trigger_page, mono_pagesize (), MONO_MEM_ACCOUNT_OTHER);
 	if (bp_trigger_page)
 		mono_vfree (bp_trigger_page, mono_pagesize (), MONO_MEM_ACCOUNT_OTHER);
-	mono_os_mutex_destroy (&mini_arch_mutex);
 }
 
 /*========================= End of Function ========================*/
