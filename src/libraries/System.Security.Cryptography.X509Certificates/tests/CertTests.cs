@@ -98,6 +98,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [ActiveIssue(29779)]
         [ConditionalFact]
         [OuterLoop("May require using the network, to download CRLs and intermediates")]
         public void TestVerify()
@@ -117,11 +118,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 if (!success)
                 {
                     LogVerifyErrors(microsoftDotComIssuer, "MicrosoftDotComIssuerBytes");
-                    if (PlatformDetection.IsMacOsMojaveOrHigher)
-                    {
-                        // ActiveIssue: 29779
-                        throw new SkipTestException("Certificate validation unstable on 10.14");
-                    }
                 }
 
                 Assert.True(success, "MicrosoftDotComIssuerBytes");
