@@ -356,7 +356,7 @@ namespace System.Diagnostics.Tests
             foreach (var eventLog in EventLog.GetEventLogs())
             {
                 // Accessing eventlog properties should not throw.
-                Assert.True(eventLog.Entries.Count >= 0);
+                Assert.True(Helpers.RetryOnWin7(() => eventLog.Entries.Count) >= 0);
             }
         }
     }
