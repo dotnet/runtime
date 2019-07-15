@@ -6,6 +6,7 @@ using System.Buffers;
 using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Encodings.Web;
 
 namespace System.Text.Json
 {
@@ -17,7 +18,8 @@ namespace System.Text.Json
         // and exclude characters that need to be escaped by adding a backslash: '\n', '\r', '\t', '\\', '/', '\b', '\f'
         //
         // non-zero = allowed, 0 = disallowed
-        private static ReadOnlySpan<byte> AllowList => new byte[byte.MaxValue + 1] {
+        public const int LastAsciiCharacter = 0x7F;
+        private static ReadOnlySpan<byte> AllowList => new byte[LastAsciiCharacter + 1] {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0,
@@ -26,27 +28,31 @@ namespace System.Text.Json
             1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1,
             0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
             1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         };
 
-        private const string HexFormatString = "x4";
-        private static readonly StandardFormat s_hexStandardFormat = new StandardFormat('x', 4);
+        private const string HexFormatString = "X4";
+        private static readonly StandardFormat s_hexStandardFormat = new StandardFormat('X', 4);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool NeedsEscaping(byte value) => AllowList[value] == 0;
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool NeedsEscaping(char value) => value > byte.MaxValue || AllowList[value] == 0;
-
-        public static int NeedsEscaping(ReadOnlySpan<byte> value)
+        private static bool NeedsEscapingNoBoundsCheck(byte value)
         {
+            Debug.Assert(value <= LastAsciiCharacter);
+            return AllowList[value] == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool NeedsEscaping(byte value) => value > LastAsciiCharacter || AllowList[value] == 0;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool NeedsEscaping(char value) => value > LastAsciiCharacter || AllowList[value] == 0;
+
+        public static int NeedsEscaping(ReadOnlySpan<byte> value, JavaScriptEncoder encoder = null)
+        {
+            if (encoder != null)
+            {
+                return encoder.FindFirstCharacterToEncodeUtf8(value);
+            }
+
             int idx;
             for (idx = 0; idx < value.Length; idx++)
             {
@@ -86,7 +92,7 @@ namespace System.Text.Json
             return firstIndexToEscape + JsonConstants.MaxExpansionFactorWhileEscaping * (textLength - firstIndexToEscape);
         }
 
-        public static void EscapeString(ReadOnlySpan<byte> value, Span<byte> destination, int indexOfFirstByteToEscape, out int written)
+        public static void EscapeString(ReadOnlySpan<byte> value, Span<byte> destination, int indexOfFirstByteToEscape, JavaScriptEncoder encoder, out int written)
         {
             Debug.Assert(indexOfFirstByteToEscape >= 0 && indexOfFirstByteToEscape < value.Length);
 
@@ -94,31 +100,78 @@ namespace System.Text.Json
             written = indexOfFirstByteToEscape;
             int consumed = indexOfFirstByteToEscape;
 
-            while (consumed < value.Length)
+            if (encoder != null)
             {
-                byte val = value[consumed];
-                if (NeedsEscaping(val))
+                OperationStatus result = encoder.EncodeUtf8(
+                    value.Slice(consumed), destination.Slice(written), out int encoderBytesConsumed, out int encoderBytesWritten);
+
+                Debug.Assert(result != OperationStatus.DestinationTooSmall);
+                Debug.Assert(result != OperationStatus.NeedMoreData);
+                Debug.Assert(encoderBytesConsumed == value.Length - consumed);
+
+                if (result != OperationStatus.Done)
                 {
-                    consumed += EscapeNextBytes(value.Slice(consumed), destination, ref written);
+                    ThrowHelper.ThrowArgumentException_InvalidUTF8(value.Slice(encoderBytesWritten));
                 }
-                else
+
+                written += encoderBytesWritten;
+            }
+            else
+            {
+                // For performance when no encoder is specified, perform escaping here for Ascii and on the
+                // first occurrence of a non-Ascii character, then call into the default encoder.
+                while (consumed < value.Length)
                 {
-                    destination[written] = val;
-                    written++;
-                    consumed++;
+                    byte val = value[consumed];
+                    if (IsAsciiValue(val))
+                    {
+                        if (NeedsEscapingNoBoundsCheck(val))
+                        {
+                            EscapeNextBytes(val, destination, ref written);
+                            consumed++;
+                        }
+                        else
+                        {
+                            destination[written] = val;
+                            written++;
+                            consumed++;
+                        }
+                    }
+                    else
+                    {
+                        // Fall back to default encoder
+                        OperationStatus result = JavaScriptEncoder.Default.EncodeUtf8(
+                            value.Slice(consumed), destination.Slice(written), out int encoderBytesConsumed, out int encoderBytesWritten);
+
+                        Debug.Assert(result != OperationStatus.DestinationTooSmall);
+                        Debug.Assert(result != OperationStatus.NeedMoreData);
+                        Debug.Assert(encoderBytesConsumed == value.Length - consumed);
+
+                        if (result != OperationStatus.Done)
+                        {
+                            ThrowHelper.ThrowArgumentException_InvalidUTF8(value.Slice(encoderBytesConsumed));
+                        }
+
+                        consumed += encoderBytesConsumed;
+                        written += encoderBytesWritten;
+                    }
                 }
             }
         }
 
-        private static int EscapeNextBytes(ReadOnlySpan<byte> value, Span<byte> destination, ref int written)
+        private static void EscapeNextBytes(byte value, Span<byte> destination, ref int written)
         {
-            SequenceValidity status = PeekFirstSequence(value, out int numBytesConsumed, out int scalar);
-            if (status != SequenceValidity.WellFormed)
-                ThrowHelper.ThrowArgumentException_InvalidUTF8(value);
-
             destination[written++] = (byte)'\\';
-            switch (scalar)
+            switch (value)
             {
+                case JsonConstants.Quote:
+                    // Optimize for the common quote case.
+                    destination[written++] = (byte)'u';
+                    destination[written++] = (byte)'0';
+                    destination[written++] = (byte)'0';
+                    destination[written++] = (byte)'2';
+                    destination[written++] = (byte)'2';
+                    break;
                 case JsonConstants.LineFeed:
                     destination[written++] = (byte)'n';
                     break;
@@ -131,6 +184,9 @@ namespace System.Text.Json
                 case JsonConstants.BackSlash:
                     destination[written++] = (byte)'\\';
                     break;
+                case JsonConstants.Slash:
+                    destination[written++] = (byte)'/';
+                    break;
                 case JsonConstants.BackSpace:
                     destination[written++] = (byte)'b';
                     break;
@@ -139,38 +195,16 @@ namespace System.Text.Json
                     break;
                 default:
                     destination[written++] = (byte)'u';
-                    if (scalar < JsonConstants.UnicodePlane01StartValue)
-                    {
-                        bool result = Utf8Formatter.TryFormat(scalar, destination.Slice(written), out int bytesWritten, format: s_hexStandardFormat);
-                        Debug.Assert(result);
-                        Debug.Assert(bytesWritten == 4);
-                        written += bytesWritten;
-                    }
-                    else
-                    {
-                        // Divide by 0x400 to shift right by 10 in order to find the surrogate pairs from the scalar
-                        // High surrogate = ((scalar -  0x10000) / 0x400) + D800
-                        // Low surrogate = ((scalar -  0x10000) % 0x400) + DC00
-                        int quotient = Math.DivRem(scalar - JsonConstants.UnicodePlane01StartValue, JsonConstants.BitShiftBy10, out int remainder);
-                        int firstChar = quotient + JsonConstants.HighSurrogateStartValue;
-                        int nextChar = remainder + JsonConstants.LowSurrogateStartValue;
-                        bool result = Utf8Formatter.TryFormat(firstChar, destination.Slice(written), out int bytesWritten, format: s_hexStandardFormat);
-                        Debug.Assert(result);
-                        Debug.Assert(bytesWritten == 4);
-                        written += bytesWritten;
-                        destination[written++] = (byte)'\\';
-                        destination[written++] = (byte)'u';
-                        result = Utf8Formatter.TryFormat(nextChar, destination.Slice(written), out bytesWritten, format: s_hexStandardFormat);
-                        Debug.Assert(result);
-                        Debug.Assert(bytesWritten == 4);
-                        written += bytesWritten;
-                    }
+
+                    bool result = Utf8Formatter.TryFormat(value, destination.Slice(written), out int bytesWritten, format: s_hexStandardFormat);
+                    Debug.Assert(result);
+                    Debug.Assert(bytesWritten == 4);
+                    written += bytesWritten;
                     break;
             }
-            return numBytesConsumed;
         }
 
-        private static bool IsAsciiValue(byte value) => value < 0x80;
+        private static bool IsAsciiValue(byte value) => value <= LastAsciiCharacter;
 
         /// <summary>
         /// Returns <see langword="true"/> if <paramref name="value"/> is a UTF-8 continuation byte.
@@ -423,6 +457,14 @@ namespace System.Text.Json
             destination[written++] = '\\';
             switch (firstChar)
             {
+                case JsonConstants.Quote:
+                    // Optimize for the common quote case.
+                    destination[written++] = 'u';
+                    destination[written++] = '0';
+                    destination[written++] = '0';
+                    destination[written++] = '2';
+                    destination[written++] = '2';
+                    break;
                 case JsonConstants.LineFeed:
                     destination[written++] = 'n';
                     break;
@@ -434,6 +476,9 @@ namespace System.Text.Json
                     break;
                 case JsonConstants.BackSlash:
                     destination[written++] = '\\';
+                    break;
+                case JsonConstants.Slash:
+                    destination[written++] = '/';
                     break;
                 case JsonConstants.BackSpace:
                     destination[written++] = 'b';

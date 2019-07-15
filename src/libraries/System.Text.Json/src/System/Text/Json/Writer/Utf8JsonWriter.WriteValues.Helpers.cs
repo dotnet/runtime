@@ -60,7 +60,7 @@ namespace System.Text.Json
             else
             {
                 Debug.Assert(destination.Length >= written * JsonConstants.MaxExpansionFactorWhileEscaping);
-                JsonWriterHelper.EscapeString(encodedBytes, destination, firstEscapeIndexVal, out written);
+                JsonWriterHelper.EscapeString(encodedBytes, destination, firstEscapeIndexVal, encoder: null, out written);
                 BytesPending += written;
             }
 

@@ -172,7 +172,7 @@ namespace System.Text.Json
                 stackalloc byte[length] :
                 (propertyArray = ArrayPool<byte>.Shared.Rent(length));
 
-            JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, out int written);
+            JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, encoder: null, out int written);
 
             WriteBase64ByOptions(escapedPropertyName.Slice(0, written), bytes);
 

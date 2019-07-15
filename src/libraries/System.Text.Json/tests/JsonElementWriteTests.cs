@@ -412,9 +412,9 @@ null,
                 propertyName,
                 "42",
                 @"{
-  ""\u00ea" + propertyName.Substring(1) + @""": 42
+  ""\u00EA" + propertyName.Substring(1) + @""": 42
 }",
-                $"{{\"\\u00ea{propertyName.Substring(1)}\":42}}");
+                $"{{\"\\u00EA{propertyName.Substring(1)}\":42}}");
         }
 
         [Theory]
@@ -455,12 +455,12 @@ null,
             WritePropertyValueBothForms(
                 indented,
                 // Arabic "kabir" => "big"
-                "\u0643\u0628\u064a\u0631",
+                "\u0643\u0628\u064A\u0631",
                 "1e400",
                 @"{
-  ""\u0643\u0628\u064a\u0631"": 1e400
+  ""\u0643\u0628\u064A\u0631"": 1e400
 }",
-                "{\"\\u0643\\u0628\\u064a\\u0631\":1e400}");
+                "{\"\\u0643\\u0628\\u064A\\u0631\":1e400}");
         }
 
         [Theory]
@@ -1193,14 +1193,15 @@ null,
 
         private static void AssertContents(string expectedValue, ArrayBufferWriter<byte> buffer)
         {
-            Assert.Equal(
-                expectedValue,
-                Encoding.UTF8.GetString(
+            string value = Encoding.UTF8.GetString(
                     buffer.WrittenSpan
 #if netfx
                         .ToArray()
 #endif
-                    ));
+                    );
+
+            // Temporary hack until we can use the same escape algorithm throughout.
+            Assert.Equal(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
         }
     }
 }
