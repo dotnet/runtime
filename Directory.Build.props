@@ -137,12 +137,7 @@
     <DebugType Condition="'$(DebugType)' == ''">Portable</DebugType>
   </PropertyGroup>
 
-  <!--
-    TODO: (arcade) Enable sourcelink.
-    Always disable sourcelink for now:
-    error MSB4057: The target "InitializeSourceControlInformationFromSourceControlManager" does not exist in the project. [/work/src/corehost/build.proj]
-  -->
-  <PropertyGroup Condition="'$(DisableSourceLink)' == 'true' or true">
+  <PropertyGroup Condition="'$(DisableSourceLink)' == 'true'">
     <EnableSourceLink>false</EnableSourceLink>
     <EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
     <DeterministicSourcePaths>false</DeterministicSourcePaths>
