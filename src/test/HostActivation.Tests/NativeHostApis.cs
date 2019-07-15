@@ -186,7 +186,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             
             var f = new SdkResolutionFixture(sharedTestState);
 
-            // With multi-level lookup (windows onnly): get local and global sdks sorted by ascending version,
+            // With multi-level lookup (windows only): get local and global sdks sorted by ascending version,
             // with global sdk coming before local sdk when versions are equal
             string expectedList = string.Join(';', new[]
             {
