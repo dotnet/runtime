@@ -283,6 +283,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char>("1"));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<char?>("1"));
 
+            // This throws because Enum is an abstract type.
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<Enum>(unexpectedString));
         }
 
