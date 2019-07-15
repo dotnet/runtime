@@ -3,7 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Net.Http.Headers;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
@@ -84,5 +87,11 @@ namespace System.Net.Http
             }
             base.Add(content);
         }
+
+        internal override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+            // Only skip the original protected virtual SerializeToStreamAsync if this
+            // isn't a derived type that may have overridden the behavior.
+            GetType() == typeof(MultipartFormDataContent) ? SerializeToStreamAsyncCore(stream, context, cancellationToken) :
+            base.SerializeToStreamAsync(stream, context, cancellationToken);
     }
 }

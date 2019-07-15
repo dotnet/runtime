@@ -5,6 +5,7 @@
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
@@ -52,6 +53,12 @@ namespace System.Net.Http
 
             return encoding.GetBytes(content);
         }
+
+        internal override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+            // Only skip the original protected virtual SerializeToStreamAsync if this
+            // isn't a derived type that may have overridden the behavior.
+            GetType() == typeof(StringContent) ? SerializeToStreamAsyncCore(stream, cancellationToken) :
+            base.SerializeToStreamAsync(stream, context, cancellationToken);
 
         internal override Stream TryCreateContentReadStream() =>
             GetType() == typeof(StringContent) ? CreateMemoryStreamForByteArray() : // type check ensures we use possible derived type's CreateContentReadStreamAsync override

@@ -169,13 +169,22 @@ namespace System.Net.Http
         // write "--" + boundary + "--"
         // Can't be canceled directly by the user.  If the overall request is canceled 
         // then the stream will be closed an exception thrown.
-        protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext context) =>
+            SerializeToStreamAsyncCore(stream, context, default);
+
+        internal override Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken) =>
+            // Only skip the original protected virtual SerializeToStreamAsync if this
+            // isn't a derived type that may have overridden the behavior.
+            GetType() == typeof(MultipartContent) ? SerializeToStreamAsyncCore(stream, context, cancellationToken) :
+            base.SerializeToStreamAsync(stream, context, cancellationToken);
+
+        private protected async Task SerializeToStreamAsyncCore(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
             Debug.Assert(stream != null);
             try
             {
                 // Write start boundary.
-                await EncodeStringToStreamAsync(stream, "--" + _boundary + CrLf).ConfigureAwait(false);
+                await EncodeStringToStreamAsync(stream, "--" + _boundary + CrLf, cancellationToken).ConfigureAwait(false);
 
                 // Write each nested content.
                 var output = new StringBuilder();
@@ -183,12 +192,12 @@ namespace System.Net.Http
                 {
                     // Write divider, headers, and content.
                     HttpContent content = _nestedContent[contentIndex];
-                    await EncodeStringToStreamAsync(stream, SerializeHeadersToString(output, contentIndex, content)).ConfigureAwait(false);
-                    await content.CopyToAsync(stream).ConfigureAwait(false);
+                    await EncodeStringToStreamAsync(stream, SerializeHeadersToString(output, contentIndex, content), cancellationToken).ConfigureAwait(false);
+                    await content.CopyToAsync(stream, context, cancellationToken).ConfigureAwait(false);
                 }
 
                 // Write footer boundary.
-                await EncodeStringToStreamAsync(stream, CrLf + "--" + _boundary + "--" + CrLf).ConfigureAwait(false);
+                await EncodeStringToStreamAsync(stream, CrLf + "--" + _boundary + "--" + CrLf, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -271,10 +280,10 @@ namespace System.Net.Http
             return scratch.ToString();
         }
 
-        private static ValueTask EncodeStringToStreamAsync(Stream stream, string input)
+        private static ValueTask EncodeStringToStreamAsync(Stream stream, string input, CancellationToken cancellationToken)
         {
             byte[] buffer = HttpRuleParser.DefaultHttpEncoding.GetBytes(input);
-            return stream.WriteAsync(new ReadOnlyMemory<byte>(buffer));
+            return stream.WriteAsync(new ReadOnlyMemory<byte>(buffer), cancellationToken);
         }
 
         private static Stream EncodeStringToNewStream(string input)
