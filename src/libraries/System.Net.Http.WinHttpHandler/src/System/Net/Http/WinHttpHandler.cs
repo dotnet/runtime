@@ -1394,7 +1394,11 @@ namespace System.Net.Http
             {
                 await state.RequestMessage.Content.CopyToAsync(
                     requestStream,
-                    state.TransportContext).ConfigureAwait(false);
+                    state.TransportContext
+#if HTTP_DLL
+                    , state.CancellationToken
+#endif
+                    ).ConfigureAwait(false);
                 await requestStream.EndUploadAsync(state.CancellationToken).ConfigureAwait(false);
             }
         }
