@@ -16,7 +16,7 @@ namespace System.IO.Pipes.Tests
     /// </summary>
     public class NamedPipeTest_CurrentUserOnly_Unix
     {
-        [Theory]
+        [ConditionalTheory]
         [OuterLoop("Needs sudo access")]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         [InlineData(PipeOptions.None, PipeOptions.None)]
@@ -26,6 +26,12 @@ namespace System.IO.Pipes.Tests
         public async Task Connection_UnderDifferentUsers_BehavesAsExpected(
             PipeOptions serverPipeOptions, PipeOptions clientPipeOptions)
         {
+            if (PlatformDetection.IsFedora)
+            {
+                // [ActiveIssue(38834)]
+                throw new SkipTestException("Failing on Fedora by not throwing expected exception");
+            }
+
             // Use an absolute path, otherwise, the test can fail if the remote invoker and test runner have
             // different working and/or temp directories. 
             string pipeName = "/tmp/" + Path.GetRandomFileName(); 
