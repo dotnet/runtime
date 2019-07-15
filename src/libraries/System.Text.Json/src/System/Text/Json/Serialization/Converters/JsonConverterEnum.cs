@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Converters
             return type.IsEnum;
         }
 
-        protected override JsonConverter CreateConverter(Type type)
+        public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
         {
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(
                 typeof(JsonConverterEnum<>).MakeGenericType(type),

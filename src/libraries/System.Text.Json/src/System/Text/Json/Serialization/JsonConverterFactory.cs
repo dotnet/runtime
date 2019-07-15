@@ -19,19 +19,20 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected internal JsonConverterFactory() { }
 
-        internal JsonConverter GetConverterInternal(Type typeToConvert)
+        internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
         {
             Debug.Assert(CanConvert(typeToConvert));
-            return CreateConverter(typeToConvert);
+            return CreateConverter(typeToConvert, options);
         }
 
         /// <summary>
         /// Create a converter for the provided <see cref="Type"/>.
         /// </summary>
-        /// <param name="typeToConvert">The type to convert.</param>
+        /// <param name="typeToConvert">The <see cref="Type"/> being converted.</param>
+        /// <param name="options">The <see cref="JsonSerializerOptions"/> being used.</param>
         /// <returns>
         /// An instance of a <see cref="JsonConverter{T}"/> where T is compatible with <paramref name="typeToConvert"/>.
-        /// </returns>        
-        protected abstract JsonConverter CreateConverter(Type typeToConvert);
+        /// </returns>
+        public abstract JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options);
     }
 }

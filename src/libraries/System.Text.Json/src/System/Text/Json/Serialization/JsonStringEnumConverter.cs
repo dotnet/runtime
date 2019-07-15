@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization
         }
 
         /// <inheritdoc />
-        protected override JsonConverter CreateConverter(Type typeToConvert)
+        public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
         {
             JsonConverter converter = (JsonConverter)Activator.CreateInstance(
                 typeof(JsonConverterEnum<>).MakeGenericType(typeToConvert),
