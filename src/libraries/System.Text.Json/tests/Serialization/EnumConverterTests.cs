@@ -144,5 +144,26 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(DayOfWeek.Friday, week.WorkEnd);
             Assert.Equal(DayOfWeek.Saturday, week.WeekEnd);
         }
+
+        [Fact]
+        public void EnumConverterComposition()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions { Converters = { new NoFlagsStringEnumConverter() } };
+            string json = JsonSerializer.Serialize(DayOfWeek.Monday, options);
+            Assert.Equal(@"""Monday""", json);
+            json = JsonSerializer.Serialize(FileAccess.Read);
+            Assert.Equal(@"1", json);
+        }
+
+        public class NoFlagsStringEnumConverter : JsonConverterFactory
+        {
+            private static JsonStringEnumConverter s_stringEnumConverter = new JsonStringEnumConverter();
+
+            public override bool CanConvert(Type typeToConvert)
+                => typeToConvert.IsEnum && !typeToConvert.IsDefined(typeof(FlagsAttribute), inherit: false);
+
+            public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
+                => s_stringEnumConverter.CreateConverter(typeToConvert, options);
+        }
     }
 }

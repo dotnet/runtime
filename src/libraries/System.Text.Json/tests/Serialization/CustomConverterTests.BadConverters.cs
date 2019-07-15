@@ -87,7 +87,7 @@ namespace System.Text.Json.Serialization.Tests
                 return true;
             }
 
-            protected override JsonConverter CreateConverter(Type typeToConvert)
+            public override JsonConverter CreateConverter(Type typeToConvert, JsonSerializerOptions options)
             {
                 return null;
             }
