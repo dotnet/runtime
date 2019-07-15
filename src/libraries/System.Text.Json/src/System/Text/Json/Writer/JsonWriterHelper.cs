@@ -172,21 +172,38 @@ namespace System.Text.Json
                 return;
             }
 
+            // The non digit character inside the number
             byte val = utf8FormattedNumber[i];
 
             if (val == '.')
             {
                 i++;
+
+                while (i < utf8FormattedNumber.Length && JsonHelpers.IsDigit(utf8FormattedNumber[i]))
+                {
+                    i++;
+                }
+
+                if (utf8FormattedNumber.Length < i)
+                {
+                    throw new ArgumentException(SR.RequiredDigitNotFoundEndOfData, nameof(utf8FormattedNumber));
+                }
             }
-            else if (val == 'e' || val == 'E')
+
+            if (i == utf8FormattedNumber.Length)
+            {
+                return;
+            }
+
+            val = utf8FormattedNumber[i];
+
+            if (val == 'e' || val == 'E')
             {
                 i++;
 
-                if (i >= utf8FormattedNumber.Length)
+                if (utf8FormattedNumber.Length <= i)
                 {
-                    throw new ArgumentException(
-                        SR.RequiredDigitNotFoundEndOfData,
-                        nameof(utf8FormattedNumber));
+                    throw new ArgumentException(SR.RequiredDigitNotFoundEndOfData, nameof(utf8FormattedNumber));
                 }
 
                 val = utf8FormattedNumber[i];
@@ -203,11 +220,9 @@ namespace System.Text.Json
                     nameof(utf8FormattedNumber));
             }
 
-            if (i >= utf8FormattedNumber.Length)
+            if (utf8FormattedNumber.Length <= i)
             {
-                throw new ArgumentException(
-                    SR.RequiredDigitNotFoundEndOfData,
-                    nameof(utf8FormattedNumber));
+                throw new ArgumentException(SR.RequiredDigitNotFoundEndOfData, nameof(utf8FormattedNumber));
             }
 
             while (i < utf8FormattedNumber.Length && JsonHelpers.IsDigit(utf8FormattedNumber[i]))
