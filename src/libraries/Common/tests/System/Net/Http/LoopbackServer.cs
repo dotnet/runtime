@@ -494,7 +494,7 @@ namespace System.Net.Test.Common
                 return totalLength;
             }
 
-            public async Task<int> ReadBlockAsync(char[]  result, int offset, int size)
+            public async Task<int> ReadBlockAsync(char[] result, int offset, int size)
             {
                 byte[] buffer = new byte[size];
                 int readLength = await ReadBlockAsync(buffer, 0, size).ConfigureAwait(false);
@@ -503,7 +503,7 @@ namespace System.Net.Test.Common
 
                 for (int i = 0; i < readLength; i++)
                 {
-                    result[offset + i ] = asString[i];
+                    result[offset + i] = asString[i];
                 }
 
                 return readLength;
@@ -520,7 +520,7 @@ namespace System.Net.Test.Common
                 {
                     bytesRead = await ReadAsync(buffer, offset, buffer.Length - offset).ConfigureAwait(false);
                     totalLength += bytesRead;
-                    offset+=bytesRead;
+                    offset += bytesRead;
 
                     if (bytesRead == buffer.Length)
                     {
@@ -571,7 +571,7 @@ namespace System.Net.Test.Common
                         }
 
                         _readEnd += bytesRead;
-                   }
+                    }
 
                     index = Array.IndexOf(_readBuffer, (byte)'\n', startSearch, _readEnd - startSearch);
                     if (index == -1)
@@ -735,7 +735,7 @@ namespace System.Net.Test.Common
                         int chunkLength = int.Parse(chunkHeader, System.Globalization.NumberStyles.HexNumber);
                         if (chunkLength == 0)
                         {
-                                // Last chunk. Read CRLF and exit.
+                            // Last chunk. Read CRLF and exit.
                             await ReadLineAsync().ConfigureAwait(false);
                             break;
                         }
@@ -786,16 +786,52 @@ namespace System.Net.Test.Common
 
                 if (content != null || isFinal)
                 {
-                    headerString = GetHttpResponseHeaders(statusCode, headerString, contentLength, connectionClose : true);
+                    headerString = GetHttpResponseHeaders(statusCode, headerString, contentLength, connectionClose: true);
                 }
 
                 await SendResponseAsync(headerString).ConfigureAwait(false);
                 await SendResponseAsync(content).ConfigureAwait(false);
             }
 
+            public override async Task SendResponseHeadersAsync(HttpStatusCode statusCode = HttpStatusCode.OK, IList<HttpHeaderData> headers = null, int requestId = 0)
+            {
+                string headerString = null;
+
+                if (headers != null)
+                {
+                    foreach (HttpHeaderData headerData in headers)
+                    {
+                        headerString = headerString + $"{headerData.Name}: {headerData.Value}\r\n";
+                    }
+                }
+
+                headerString = GetHttpResponseHeaders(statusCode, headerString, 0, connectionClose: true);
+
+                await SendResponseAsync(headerString).ConfigureAwait(false);
+            }
+
             public override async Task SendResponseBodyAsync(byte[] body, bool isFinal = true, int requestId = 0)
             {
                 await SendResponseAsync(Encoding.UTF8.GetString(body)).ConfigureAwait(false);
+            }
+
+            public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true, int requestId = 0)
+            {
+                var buffer = new byte[1024];
+                while (true)
+                {
+                    int bytesRead = await ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+
+                    if (!ignoreIncomingData)
+                    {
+                        Assert.Equal(0, bytesRead);
+                    }
+
+                    if (bytesRead == 0)
+                    {
+                        break;
+                    }
+                }
             }
         }
 

@@ -94,17 +94,20 @@
     <Compile Include="FakeDiagnosticSourceListenerObserver.cs" />
     <Compile Include="FormUrlEncodedContentTest.cs" />
     <Compile Include="ByteAtATimeContent.cs" />
+    <Compile Include="HttpClientHandlerTest.cs" />
+    <Compile Include="HttpClientHandlerTest.Asynchrony.cs" />
     <Compile Include="HttpClientHandlerTest.Authentication.cs" />
     <Compile Include="HttpClientHandlerTest.AutoRedirect.cs" />
-    <Compile Include="HttpClientHandlerTest.cs" />
     <Compile Include="HttpClientHandlerTest.Cancellation.cs" />
     <Compile Include="HttpClientHandlerTest.ClientCertificates.cs" />
-    <Compile Include="HttpClientHandlerTest.Asynchrony.cs" />
+    <Compile Include="HttpClientHandlerTest.Cookies.cs" />
     <Compile Include="HttpClientHandlerTest.DefaultProxyCredentials.cs" />
-    <Compile Include="HttpClientHandlerTest.Proxy.cs" />
-    <Compile Include="HttpClientHandlerTest.ResponseDrain.cs" />
+    <Compile Include="HttpClientHandlerTest.Finalization.cs" />
+    <Compile Include="HttpClientHandlerTest.Headers.cs" />
     <Compile Include="HttpClientHandlerTest.MaxConnectionsPerServer.cs" />
     <Compile Include="HttpClientHandlerTest.MaxResponseHeadersLength.cs" />
+    <Compile Include="HttpClientHandlerTest.Proxy.cs" />
+    <Compile Include="HttpClientHandlerTest.ResponseDrain.cs" />
     <Compile Include="HttpClientHandlerTest.ServerCertificates.cs" />
     <Compile Include="HttpClientHandlerTest.ServerCertificates.Unix.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="HttpClientHandlerTest.ServerCertificates.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
@@ -119,8 +122,6 @@
     <Compile Include="HttpContentTest.cs" />
     <Compile Include="HttpMessageInvokerTest.cs" />
     <Compile Include="HttpMethodTest.cs" />
-    <Compile Include="HttpClientHandlerTest.Cookies.cs" />
-    <Compile Include="HttpClientHandlerTest.Headers.cs" />
     <Compile Include="HttpRetryProtocolTests.cs" />
     <Compile Include="IdnaProtocolTests.cs" />
     <Compile Include="HttpProtocolTests.cs" />
