@@ -148,7 +148,8 @@ namespace System.Drawing
         [EditorBrowsable(EditorBrowsableState.Never)]
         public void ReleaseHdcInternal(IntPtr hdc)
         {
-            Gdip.CheckStatus(Gdip.GdipReleaseDC(new HandleRef(this, NativeGraphics), new HandleRef(null, hdc)));
+            Gdip.CheckStatus(!Gdip.Initialized ? Gdip.Ok :
+                Gdip.GdipReleaseDC(new HandleRef(this, NativeGraphics), new HandleRef(null, hdc)));
             _nativeHdc = IntPtr.Zero;
         }
 
@@ -194,7 +195,7 @@ namespace System.Drawing
                     }
 
 #if DEBUG
-                    int status =
+                    int status = !Gdip.Initialized ? Gdip.Ok :
 #endif
                     Gdip.GdipDeleteGraphics(new HandleRef(this, NativeGraphics));
 

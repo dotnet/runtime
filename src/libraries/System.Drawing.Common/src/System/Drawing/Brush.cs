@@ -44,7 +44,7 @@ namespace System.Drawing
                 try
                 {
 #if DEBUG
-                    int status =
+                    int status = !Gdip.Initialized ? Gdip.Ok :
 #endif
                     Gdip.GdipDeleteBrush(new HandleRef(this, _nativeBrush));
 #if DEBUG

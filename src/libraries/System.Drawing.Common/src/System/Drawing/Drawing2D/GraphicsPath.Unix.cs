@@ -121,7 +121,7 @@ namespace System.Drawing.Drawing2D
             int status;
             if (_nativePath != IntPtr.Zero)
             {
-                status = Gdip.GdipDeletePath(_nativePath);
+                status = Gdip.GdipDeletePath(new HandleRef(this, _nativePath));
                 Gdip.CheckStatus(status);
 
                 _nativePath = IntPtr.Zero;

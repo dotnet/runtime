@@ -567,7 +567,7 @@ namespace System.Drawing
         {
             if (nativeImage != IntPtr.Zero)
             {
-                int status = Gdip.GdipDisposeImage(nativeImage);
+                int status = Gdip.GdipDisposeImage(new HandleRef(this, nativeImage));
                 // ... set nativeImage to null before (possibly) throwing an exception
                 nativeImage = IntPtr.Zero;
                 Gdip.CheckStatus(status);

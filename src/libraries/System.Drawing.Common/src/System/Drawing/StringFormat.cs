@@ -83,7 +83,7 @@ namespace System.Drawing
                 try
                 {
 #if DEBUG
-                    int status =
+                    int status = !Gdip.Initialized ? Gdip.Ok :
 #endif
                     Gdip.GdipDeleteStringFormat(new HandleRef(this, nativeFormat));
 #if DEBUG

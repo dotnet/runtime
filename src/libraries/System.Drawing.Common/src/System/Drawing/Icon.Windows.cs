@@ -2,19 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Drawing.Internal;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Text;
 
 namespace System.Drawing
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
 #if netcoreapp
     [TypeConverter("System.Drawing.IconConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
 #endif
@@ -32,13 +33,13 @@ namespace System.Drawing
 
         // Icon data
         private readonly byte[] _iconData;
-        private int _bestImageOffset;
-        private int _bestBitDepth;
-        private int _bestBytesInRes;
+        private uint _bestImageOffset;
+        private uint _bestBitDepth;
+        private uint _bestBytesInRes;
         private bool? _isBestImagePng = null;
         private Size _iconSize = Size.Empty;
         private IntPtr _handle = IntPtr.Zero;
-        private bool _ownHandle = true;
+        private readonly bool _ownHandle = true;
 
         private Icon() { }
 
@@ -159,42 +160,36 @@ namespace System.Drawing
 
         public static Icon ExtractAssociatedIcon(string filePath) => ExtractAssociatedIcon(filePath, 0);
 
-        private static Icon ExtractAssociatedIcon(string filePath, int index)
+        private unsafe static Icon ExtractAssociatedIcon(string filePath, int index)
         {
             if (filePath == null)
             {
                 throw new ArgumentNullException(nameof(filePath));
             }
 
-            Uri uri;
-            try
-            {
-                uri = new Uri(filePath);
-            }
-            catch (UriFormatException)
-            {
-                // It's a relative pathname, get its full path as a file. 
-                filePath = Path.GetFullPath(filePath);
-                uri = new Uri(filePath);
-            }
-
-            if (!uri.IsFile)
-            {
-                return null;
-            }
-
+            filePath = Path.GetFullPath(filePath);
             if (!File.Exists(filePath))
             {
-                throw new FileNotFoundException(filePath);
+                throw new FileNotFoundException(message: null, fileName: filePath);
             }
 
-            var sb = new StringBuilder(NativeMethods.MAX_PATH);
-            sb.Append(filePath);
+            // ExtractAssociatedIcon copies the loaded path into the buffer that it is passed.
+            // It isn't clear what the exact semantics are for copying back the path, a quick
+            // look at the code it might be hard coded to 128 chars for some cases. Leaving the
+            // historical MAX_PATH as a minimum to be safe.
 
-            IntPtr hIcon = SafeNativeMethods.ExtractAssociatedIcon(NativeMethods.NullHandleRef, sb, ref index);
-            if (hIcon != IntPtr.Zero)
+            char[] buffer = ArrayPool<char>.Shared.Rent(Math.Max(NativeMethods.MAX_PATH, filePath.Length));
+            filePath.CopyTo(0, buffer, 0, filePath.Length);
+            buffer[filePath.Length] = '\0';
+
+            fixed (char* b = buffer)
             {
-                return new Icon(hIcon, true);
+                IntPtr hIcon = SafeNativeMethods.ExtractAssociatedIcon(NativeMethods.NullHandleRef, b, ref index);
+                ArrayPool<char>.Shared.Return(buffer);
+                if (hIcon != IntPtr.Zero)
+                {
+                    return new Icon(hIcon, true);
+                }
             }
 
             return null;
@@ -216,26 +211,32 @@ namespace System.Drawing
         [Browsable(false)]
         public int Height => Size.Height;
 
-        public Size Size
+        public unsafe Size Size
         {
             get
             {
                 if (_iconSize.IsEmpty)
                 {
                     var info = new SafeNativeMethods.ICONINFO();
-                    SafeNativeMethods.GetIconInfo(new HandleRef(this, Handle), info);
-                    var bmp = new SafeNativeMethods.BITMAP();
+                    SafeNativeMethods.GetIconInfo(new HandleRef(this, Handle), ref info);
+                    var bitmap = new SafeNativeMethods.BITMAP();
 
                     if (info.hbmColor != IntPtr.Zero)
                     {
-                        SafeNativeMethods.GetObject(new HandleRef(null, info.hbmColor), Marshal.SizeOf(typeof(SafeNativeMethods.BITMAP)), bmp);
+                        SafeNativeMethods.GetObject(
+                            new HandleRef(null, info.hbmColor),
+                            sizeof(SafeNativeMethods.BITMAP),
+                            ref bitmap);
                         SafeNativeMethods.IntDeleteObject(new HandleRef(null, info.hbmColor));
-                        _iconSize = new Size(bmp.bmWidth, bmp.bmHeight);
+                        _iconSize = new Size((int)bitmap.bmWidth, (int)bitmap.bmHeight);
                     }
                     else if (info.hbmMask != IntPtr.Zero)
                     {
-                        SafeNativeMethods.GetObject(new HandleRef(null, info.hbmMask), Marshal.SizeOf(typeof(SafeNativeMethods.BITMAP)), bmp);
-                        _iconSize = new Size(bmp.bmWidth, bmp.bmHeight / 2);
+                        SafeNativeMethods.GetObject(
+                            new HandleRef(null, info.hbmMask),
+                            sizeof(SafeNativeMethods.BITMAP),
+                            ref bitmap);
+                        _iconSize = new Size((int)bitmap.bmWidth, (int)(bitmap.bmHeight / 2));
                     }
 
                     if (info.hbmMask != IntPtr.Zero)
@@ -421,39 +422,6 @@ namespace System.Drawing
 
         public static Icon FromHandle(IntPtr handle) => new Icon(handle);
 
-        private unsafe short GetShort(byte* pb)
-        {
-            int retval = 0;
-            if (0 != (unchecked((byte)pb) & 1))
-            {
-                retval = *pb;
-                pb++;
-                retval = unchecked(retval | (*pb << 8));
-            }
-            else
-            {
-                retval = unchecked(*(short*)pb);
-            }
-            return unchecked((short)retval);
-        }
-
-        private unsafe int GetInt(byte* pb)
-        {
-            int retval = 0;
-            if (0 != (unchecked((byte)pb) & 3))
-            {
-                retval = *pb; pb++;
-                retval = retval | (*pb << 8); pb++;
-                retval = retval | (*pb << 16); pb++;
-                retval = unchecked(retval | (*pb << 24));
-            }
-            else
-            {
-                retval = *(int*)pb;
-            }
-            return retval;
-        }
-
         // Initializes this Image object.  This is identical to calling the image's
         // constructor with picture, but this allows non-constructor initialization,
         // which may be necessary in some instances.
@@ -464,8 +432,7 @@ namespace System.Drawing
                 throw new InvalidOperationException(SR.Format(SR.IllegalState, GetType().Name));
             }
 
-            int icondirSize = Marshal.SizeOf(typeof(SafeNativeMethods.ICONDIR));
-            if (_iconData.Length < icondirSize)
+            if (_iconData.Length < sizeof(SafeNativeMethods.ICONDIR))
             {
                 throw new ArgumentException(SR.Format(SR.InvalidPictureType, "picture", nameof(Icon)));
             }
@@ -497,55 +464,40 @@ namespace System.Drawing
                 }
             }
 
-            fixed (byte* pbIconData = _iconData)
+            fixed (byte* b = _iconData)
             {
-                short idReserved = GetShort(pbIconData);
-                short idType = GetShort(pbIconData + 2);
-                short idCount = GetShort(pbIconData + 4);
+                SafeNativeMethods.ICONDIR* dir = (SafeNativeMethods.ICONDIR*)b;
 
-                if (idReserved != 0 || idType != 1 || idCount == 0)
+                if (dir->idReserved != 0 || dir->idType != 1 || dir->idCount == 0)
                 {
                     throw new ArgumentException(SR.Format(SR.InvalidPictureType, "picture", nameof(Icon)));
                 }
-
-                SafeNativeMethods.ICONDIRENTRY EntryTemp;
 
                 byte bestWidth = 0;
                 byte bestHeight = 0;
 
-                byte* pbIconDirEntry = unchecked(pbIconData + 6);
-                int icondirEntrySize = Marshal.SizeOf(typeof(SafeNativeMethods.ICONDIRENTRY));
-
-                if ((icondirEntrySize * (idCount - 1) + icondirSize) > _iconData.Length)
+                if (sizeof(SafeNativeMethods.ICONDIRENTRY) * (dir->idCount - 1) + sizeof(SafeNativeMethods.ICONDIR)
+                    > _iconData.Length)
                 {
                     throw new ArgumentException(SR.Format(SR.InvalidPictureType, "picture", nameof(Icon)));
                 }
 
-                for (int i = 0; i < idCount; i++)
+                var entries = new ReadOnlySpan<SafeNativeMethods.ICONDIRENTRY>(&dir->idEntries, dir->idCount);
+                foreach (SafeNativeMethods.ICONDIRENTRY entry in entries)
                 {
-                    // Fill in EntryTemp
-                    EntryTemp.bWidth = pbIconDirEntry[0];
-                    EntryTemp.bHeight = pbIconDirEntry[1];
-                    EntryTemp.bColorCount = pbIconDirEntry[2];
-                    EntryTemp.bReserved = pbIconDirEntry[3];
-                    EntryTemp.wPlanes = GetShort(pbIconDirEntry + 4);
-                    EntryTemp.wBitCount = GetShort(pbIconDirEntry + 6);
-                    EntryTemp.dwBytesInRes = GetInt(pbIconDirEntry + 8);
-                    EntryTemp.dwImageOffset = GetInt(pbIconDirEntry + 12);
-
                     bool fUpdateBestFit = false;
-                    int iconBitDepth = 0;
-                    if (EntryTemp.bColorCount != 0)
+                    uint iconBitDepth;
+                    if (entry.bColorCount != 0)
                     {
                         iconBitDepth = 4;
-                        if (EntryTemp.bColorCount < 0x10)
+                        if (entry.bColorCount < 0x10)
                         {
                             iconBitDepth = 1;
                         }
                     }
                     else
                     {
-                        iconBitDepth = EntryTemp.wBitCount;
+                        iconBitDepth = entry.wBitCount;
                     }
 
                     // If it looks like if nothing is specified at this point then set the bits per pixel to 8.
@@ -562,7 +514,6 @@ namespace System.Drawing
                     //  4.  If all icon color depth > display, lowest color depth is chosen.
                     //  5.  color depth of > 8bpp are all equal.
                     //  6.  Never choose an 8bpp icon on an 8bpp system.
-                    //
 
                     if (_bestBytesInRes == 0)
                     {
@@ -571,10 +522,10 @@ namespace System.Drawing
                     else
                     {
                         int bestDelta = Math.Abs(bestWidth - width) + Math.Abs(bestHeight - height);
-                        int thisDelta = Math.Abs(EntryTemp.bWidth - width) + Math.Abs(EntryTemp.bHeight - height);
+                        int thisDelta = Math.Abs(entry.bWidth - width) + Math.Abs(entry.bHeight - height);
 
                         if ((thisDelta < bestDelta) ||
-                            (thisDelta == bestDelta && (iconBitDepth <= s_bitDepth && iconBitDepth > _bestBitDepth || _bestBitDepth > s_bitDepth && iconBitDepth < _bestBitDepth)))
+                            (thisDelta == bestDelta && (0 <= s_bitDepth && 0 > _bestBitDepth || _bestBitDepth > s_bitDepth && 0 < _bestBitDepth)))
                         {
                             fUpdateBestFit = true;
                         }
@@ -582,27 +533,25 @@ namespace System.Drawing
 
                     if (fUpdateBestFit)
                     {
-                        bestWidth = EntryTemp.bWidth;
-                        bestHeight = EntryTemp.bHeight;
-                        _bestImageOffset = EntryTemp.dwImageOffset;
-                        _bestBytesInRes = EntryTemp.dwBytesInRes;
+                        bestWidth = entry.bWidth;
+                        bestHeight = entry.bHeight;
+                        _bestImageOffset = entry.dwImageOffset;
+                        _bestBytesInRes = entry.dwBytesInRes;
                         _bestBitDepth = iconBitDepth;
                     }
-
-                    pbIconDirEntry += icondirEntrySize;
                 }
 
-                if (_bestImageOffset < 0)
+                if (_bestImageOffset > int.MaxValue)
                 {
                     throw new ArgumentException(SR.Format(SR.InvalidPictureType, "picture", nameof(Icon)));
                 }
 
-                if (_bestBytesInRes < 0)
+                if (_bestBytesInRes > int.MaxValue)
                 {
                     throw new Win32Exception(SafeNativeMethods.ERROR_INVALID_PARAMETER);
                 }
 
-                int endOffset;
+                uint endOffset;
                 try
                 {
                     endOffset = checked(_bestImageOffset + _bestBytesInRes);
@@ -621,25 +570,27 @@ namespace System.Drawing
                 if ((_bestImageOffset % IntPtr.Size) != 0)
                 {
                     // Beginning of icon's content is misaligned.
-                    byte[] alignedBuffer = new byte[_bestBytesInRes];
+                    byte[] alignedBuffer = ArrayPool<byte>.Shared.Rent((int)_bestBytesInRes);
                     Array.Copy(_iconData, _bestImageOffset, alignedBuffer, 0, _bestBytesInRes);
 
                     fixed (byte* pbAlignedBuffer = alignedBuffer)
                     {
                         _handle = SafeNativeMethods.CreateIconFromResourceEx(pbAlignedBuffer, _bestBytesInRes, true, 0x00030000, 0, 0, 0);
                     }
+                    ArrayPool<byte>.Shared.Return(alignedBuffer);
                 }
                 else
                 {
                     try
                     {
-                        _handle = SafeNativeMethods.CreateIconFromResourceEx(checked(pbIconData + _bestImageOffset), _bestBytesInRes, true, 0x00030000, 0, 0, 0);
+                        _handle = SafeNativeMethods.CreateIconFromResourceEx(checked(b + _bestImageOffset), _bestBytesInRes, true, 0x00030000, 0, 0, 0);
                     }
                     catch (OverflowException)
                     {
                         throw new Win32Exception(SafeNativeMethods.ERROR_INVALID_PARAMETER);
                     }
                 }
+
                 if (_handle == IntPtr.Zero)
                 {
                     throw new Win32Exception();
@@ -747,7 +698,7 @@ namespace System.Drawing
             return BmpFrame();
         }
 
-        private Bitmap BmpFrame()
+        private unsafe Bitmap BmpFrame()
         {
             Bitmap bitmap = null;
             if (_iconData != null && _bestBitDepth == 32)
@@ -767,7 +718,7 @@ namespace System.Drawing
                         uint* pixelPtr = (uint*)bmpdata.Scan0.ToPointer();
 
                         // jumping the image header
-                        int newOffset = _bestImageOffset + Marshal.SizeOf(typeof(SafeNativeMethods.BITMAPINFOHEADER));
+                        int newOffset = (int)(_bestImageOffset + Marshal.SizeOf(typeof(SafeNativeMethods.BITMAPINFOHEADER)));
                         // there is no color table that we need to skip since we're 32bpp
 
                         int lineLength = Size.Width * 4;
@@ -790,13 +741,13 @@ namespace System.Drawing
             {
                 // This may be a 32bpp icon or an icon without any data.
                 var info = new SafeNativeMethods.ICONINFO();
-                SafeNativeMethods.GetIconInfo(new HandleRef(this, _handle), info);
+                SafeNativeMethods.GetIconInfo(new HandleRef(this, _handle), ref info);
                 var bmp = new SafeNativeMethods.BITMAP();
                 try
                 {
                     if (info.hbmColor != IntPtr.Zero)
                     {
-                        SafeNativeMethods.GetObject(new HandleRef(null, info.hbmColor), Marshal.SizeOf(typeof(SafeNativeMethods.BITMAP)), bmp);
+                        SafeNativeMethods.GetObject(new HandleRef(null, info.hbmColor), sizeof(SafeNativeMethods.BITMAP), ref bmp);
                         if (bmp.bmBitsPixel == 32)
                         {
                             Bitmap tmpBitmap = null;
@@ -898,7 +849,7 @@ namespace System.Drawing
             Debug.Assert(_iconData != null);
             using (var stream = new MemoryStream())
             {
-                stream.Write(_iconData, _bestImageOffset, _bestBytesInRes);
+                stream.Write(_iconData, (int)_bestImageOffset, (int)_bestBytesInRes);
                 return new Bitmap(stream);
             }
         }
@@ -909,8 +860,8 @@ namespace System.Drawing
             {
                 if (_iconData != null && _iconData.Length >= _bestImageOffset + 8)
                 {
-                    int iconSignature1 = BitConverter.ToInt32(_iconData, _bestImageOffset);
-                    int iconSignature2 = BitConverter.ToInt32(_iconData, _bestImageOffset + 4);
+                    int iconSignature1 = BitConverter.ToInt32(_iconData, (int)_bestImageOffset);
+                    int iconSignature2 = BitConverter.ToInt32(_iconData, (int)_bestImageOffset + 4);
                     _isBestImagePng = (iconSignature1 == PNGSignature1) && (iconSignature2 == PNGSignature2);
                 }
                 else

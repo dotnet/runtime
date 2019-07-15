@@ -91,7 +91,7 @@ namespace System.Drawing.Imaging
                 try
                 {
 #if DEBUG
-                    int status =
+                    int status = !Gdip.Initialized ? Gdip.Ok :
 #endif
                     Gdip.GdipDisposeImageAttributes(new HandleRef(this, nativeImageAttributes));
 #if DEBUG
