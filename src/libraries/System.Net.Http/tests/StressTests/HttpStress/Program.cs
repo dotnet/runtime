@@ -131,7 +131,7 @@ public class Program
             {
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
                 using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri) { Version = httpVersion })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, ctx.CancellationToken))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent(contentSource, await m.Content.ReadAsStringAsync());
@@ -143,7 +143,7 @@ public class Program
             {
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
                 using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri + "/slow") { Version = httpVersion })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ctx.CancellationToken))
+                using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
                 {
                     ValidateResponse(m, httpVersion);
                     using (Stream s = await m.Content.ReadAsStreamAsync())
@@ -158,7 +158,7 @@ public class Program
             {
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
                 using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri + "/headers") { Version = httpVersion })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, ctx.CancellationToken))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent(contentSource, await m.Content.ReadAsStringAsync());
@@ -171,7 +171,7 @@ public class Program
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
                 (string query, string expected) variables = GetGetQueryParameters(contentSource, ctx, numParameters);
                 using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri + "/variables" + variables.query) { Version = httpVersion })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, ctx.CancellationToken))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent(variables.expected, await m.Content.ReadAsStringAsync());
@@ -186,7 +186,7 @@ public class Program
                 {
                     using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri + "/abort") { Version = httpVersion })
                     {
-                        await ctx.HttpClient.SendAsync(req, ctx.CancellationToken);
+                        await ctx.SendAsync(req);
                     }
                     throw new Exception("Completed unexpectedly");
                 }
@@ -229,7 +229,7 @@ public class Program
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
 
                 using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri) { Version = httpVersion, Content = new StringDuplexContent(content) })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, ctx.CancellationToken))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent(content, await m.Content.ReadAsStringAsync());;
@@ -243,7 +243,7 @@ public class Program
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
 
                 using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri) { Version = httpVersion, Content = formData.formDataContent })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent($"{formData.expected}", await m.Content.ReadAsStringAsync());;
@@ -257,7 +257,7 @@ public class Program
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
 
                 using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri + "/duplex") { Version = httpVersion, Content = new StringDuplexContent(content) })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ctx.CancellationToken))
+                using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent(content, await m.Content.ReadAsStringAsync());
@@ -271,7 +271,7 @@ public class Program
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
 
                 using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri + "/duplexSlow") { Version = httpVersion, Content = new ByteAtATimeNoLengthContent(Encoding.ASCII.GetBytes(content)) })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ctx.CancellationToken))
+                using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent(content, await m.Content.ReadAsStringAsync());
@@ -287,7 +287,7 @@ public class Program
                 using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri) { Version = httpVersion, Content = new StringContent(content) })
                 {
                     req.Headers.ExpectContinue = true;
-                    using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ctx.CancellationToken))
+                    using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
                     {
                         ValidateResponse(m, httpVersion);
                         ValidateContent(content, await m.Content.ReadAsStringAsync());
@@ -300,7 +300,7 @@ public class Program
             {
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
                 using (var req = new HttpRequestMessage(HttpMethod.Head, serverUri) { Version = httpVersion })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, ctx.CancellationToken))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     if (m.Content.Headers.ContentLength != maxContentLength)
@@ -319,7 +319,7 @@ public class Program
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
 
                 using (var req = new HttpRequestMessage(HttpMethod.Put, serverUri) { Version = httpVersion, Content = new StringContent(content) })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, ctx.CancellationToken))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     string r = await m.Content.ReadAsStringAsync();
@@ -572,36 +572,34 @@ public class Program
                 {
                     long opIndex = i % clientOperations.Length;
                     (string operation, Func<RequestContext, Task> func) = clientOperations[opIndex];
-                    using (var requestContext = new RequestContext(client, random, taskNum, cancellationProbability))
+                    var requestContext = new RequestContext(client, random, taskNum, cancellationProbability);
+                    try
                     {
-                        try
-                        {
-                            await func(requestContext);
+                        await func(requestContext);
 
-                            Increment(ref success[opIndex]);
-                        }
-                        catch (OperationCanceledException) when (requestContext.CancellationToken.IsCancellationRequested)
-                        {
-                            Increment(ref cancel[opIndex]);
-                        }
-                        catch (Exception e)
-                        {
-                            Increment(ref fail[opIndex]);
+                        Increment(ref success[opIndex]);
+                    }
+                    catch (OperationCanceledException) when (requestContext.IsCancellationRequested)
+                    {
+                        Increment(ref cancel[opIndex]);
+                    }
+                    catch (Exception e)
+                    {
+                        Increment(ref fail[opIndex]);
 
-                            if (e is HttpRequestException hre && hre.InnerException is SocketException se && se.SocketErrorCode == SocketError.AddressAlreadyInUse)
+                        if (e is HttpRequestException hre && hre.InnerException is SocketException se && se.SocketErrorCode == SocketError.AddressAlreadyInUse)
+                        {
+                            Interlocked.Increment(ref reuseAddressFailure);
+                        }
+                        else
+                        {
+                            lock (Console.Out)
                             {
-                                Interlocked.Increment(ref reuseAddressFailure);
-                            }
-                            else
-                            {
-                                lock (Console.Out)
-                                {
-                                    Console.ForegroundColor = ConsoleColor.Yellow;
-                                    Console.WriteLine($"Error from iteration {i} ({operation}) in task {taskNum} with {success.Sum()} successes / {fail.Sum()} fails:");
-                                    Console.ResetColor();
-                                    Console.WriteLine(e);
-                                    Console.WriteLine();
-                                }
+                                Console.ForegroundColor = ConsoleColor.Yellow;
+                                Console.WriteLine($"Error from iteration {i} ({operation}) in task {taskNum} with {success.Sum()} successes / {fail.Sum()} fails:");
+                                Console.ResetColor();
+                                Console.WriteLine(e);
+                                Console.WriteLine();
                             }
                         }
                     }
@@ -656,33 +654,54 @@ public class Program
     }
 
     /// <summary>Client context containing information pertaining to a single request.</summary>
-    private sealed class RequestContext : IDisposable
+    private sealed class RequestContext
     {
         private readonly Random _random;
-        private readonly CancellationTokenSource _cts;
+        private readonly HttpClient _client;
+        private readonly double _cancellationProbability;
 
         public RequestContext(HttpClient httpClient, Random random, int taskNum, double cancellationProbability)
         {
             _random = random;
-            TaskNum = taskNum;
-            HttpClient = httpClient;
+            _client = httpClient;
+            _cancellationProbability = cancellationProbability;
 
-            if(GetRandomBoolean(cancellationProbability))
+            TaskNum = taskNum;
+            IsCancellationRequested = false;
+        }
+
+        public int TaskNum { get; }
+        public bool IsCancellationRequested { get; set; }
+
+        // HttpClient.SendAsync() wrapper that wires randomized cancellation
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption httpCompletion = HttpCompletionOption.ResponseContentRead, CancellationToken? token = null)
+        {
+            if (token != null)
             {
-                var delay = TimeSpan.FromMilliseconds(GetRandomInt(maxValue: 5));
-                _cts = new CancellationTokenSource(delay);
-                CancellationToken = _cts.Token;
+                // user-supplied cancellation token overrides random cancellation
+                return await _client.SendAsync(request, httpCompletion, token.Value);
+            }
+            else if (GetRandomBoolean(_cancellationProbability))
+            {
+                // trigger a random cancellation
+                using(var cts = new CancellationTokenSource())
+                {
+                    var delayMs = _random.Next(0, 2);
+                    var task = _client.SendAsync(request, httpCompletion, cts.Token);
+                    if (delayMs > 0)
+                        await Task.Delay(delayMs);
+
+                    cts.Cancel();
+                    IsCancellationRequested = true;
+                    return await task;
+                }
             }
             else
             {
-                CancellationToken = CancellationToken.None;
+                // no cancellation
+                return await _client.SendAsync(request, httpCompletion);
             }
         }
-        public int TaskNum { get; }
-
-        public HttpClient HttpClient { get; }
-
-        public CancellationToken CancellationToken { get; }
 
         public string GetRandomSubstring(string input)
         {
@@ -703,8 +722,6 @@ public class Program
 
         public Version GetRandomVersion(Version[] versions) =>
             versions[_random.Next(0, versions.Length)];
-
-        public void Dispose() => _cts?.Dispose();
     }
 
     /// <summary>HttpContent that partially serializes and then waits for cancellation to be requested.</summary>
