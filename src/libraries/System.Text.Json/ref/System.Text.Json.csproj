@@ -9,12 +9,14 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'netstandard' AND '$(TargetsNetFx)' != 'true'">
     <ProjectReference Include="..\..\System.Memory\ref\System.Memory.csproj" />
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="..\..\System.Text.Encodings.Web\ref\System.Text.Encodings.Web.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard' OR '$(TargetsNetFx)' == 'true'">
     <Reference Include="mscorlib" />
     <Reference Include="netstandard" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Threading.Tasks.Extensions" />
+    <ProjectReference Include="..\..\System.Text.Encodings.Web\ref\System.Text.Encodings.Web.csproj" />
     <ProjectReference Include="..\..\Microsoft.Bcl.AsyncInterfaces\ref\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
 </Project>
