@@ -8,33 +8,33 @@ Native hosting is the ability to host the .NET Core runtime in an arbitrary proc
 * "host context" - state which `hostfxr` creates and maintains and represents a logical operation on the hosting components.
 
 ## Scenarios
-* **Hosting managed components**  
+* **Hosting managed components**
 Native host which wants to load managed assembly and call into it for some functionality. Must support loading multiple such components side by side.
-* **Hosting managed apps**  
+* **Hosting managed apps**
 Native host which wants to run a managed app in-proc. Basically a different implementation of the existing .NET Core hosts (`dotnet.exe` or `apphost`). The intent is the ability to modify how the runtime starts and how the managed app is executed (and where it starts from).
-* **App using other .NET Core hosting services**  
+* **App using other .NET Core hosting services**
 App (native or .NET Core both) which needs to use some of the other services provided by the .NET Core hosting layer. For example the ability to locate available SDKs and so on.
 
 
 ## Existing support
-* **C-style ABI in `coreclr`**  
+* **C-style ABI in `coreclr`**
 `coreclr` exposes ABI to host the .NET Core runtime and run managed code already using C-style APIs. See this [header file](https://github.com/dotnet/coreclr/blob/master/src/coreclr/hosts/inc/coreclrhost.h) for the exposed functions.
 This API requires the native host to locate the runtime and to fully specify all startup parameters for the runtime. There's no inherent interoperability between these APIs and the .NET Core SDK.
-* **COM-style ABI in `coreclr`**  
+* **COM-style ABI in `coreclr`**
 `coreclr` exposes COM-style ABI to host the .NET Core runtime and perform a wide range of operations on it. See this [header file](https://github.com/dotnet/coreclr/blob/master/src/pal/prebuilt/inc/mscoree.h) for more details.
 Similarly to the C-style ABI the COM-style ABI also requires the native host to locate the runtime and to fully specify all startup parameters.
-There's no inherent interoperability between these APIs and the .NET Core SDK.  
+There's no inherent interoperability between these APIs and the .NET Core SDK.
 The COM-style ABI is deprecated and should not be used going forward.
-* **`hostfxr` and `hostpolicy` APIs**  
+* **`hostfxr` and `hostpolicy` APIs**
 The hosting layer of .NET Core already exposes some functionality as C-style ABI on either the `hostfxr` or `hostpolicy` libraries. These can execute application, determine available SDKs, determine native dependency locations, resolve component dependencies and so on.
 Unlike the above `coreclr` based APIs these don't require the caller to fully specify all startup parameters, instead these APIs understand artifacts produced by .NET Core SDK making it much easier to consume SDK produced apps/libraries.
 The native host is still required to locate the `hostfxr` or `hostpolicy` libraries. These APIs are also designed for specific narrow scenarios, any usage outside of these bounds is typically not possible.
 
 
 ## Scope
-This document focuses on easy-to-use hosting which cooperates with the .NET Core SDK and consumes the artifacts produced by building the managed app/libraries directly. It completely ignores the COM-style ABI as it's hard to use from some programming languages.
+This document focuses on hosting which cooperates with the .NET Core SDK and consumes the artifacts produced by building the managed app/libraries directly. It completely ignores the COM-style ABI as it's hard to use from some programming languages.
 
-As such the document explicitly excludes any hosting based on directly loading `coreclr`. The document focuses on using the existing .NET Core hosting layer in new ways. For details on the .NET Core hosting components see [this document](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/host-components.md).
+As such the document explicitly excludes any hosting based on directly loading `coreclr`. Instead it focuses on using the existing .NET Core hosting layer in new ways. For details on the .NET Core hosting components see [this document](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/host-components.md).
 
 
 ## High-level proposal
@@ -46,7 +46,7 @@ In .NET Core 3.0 the hosting layer (see [here](https://github.com/dotnet/core-se
 
 Every one of these hosts serve different scenario and expose different APIs. The one thing they have in common is that their main purpose is to find the right `hostfxr`, load it and call into it to execute the desired scenario. For the most part all these hosts are basically just wrappers around functionality provided by `hostfxr`.
 
-The proposal is to add a new host library `nethost` which can be used by native host to easily host managed components and to easily locate `hostfxr` for more advanced scenarios.
+The proposal is to add a new host library `nethost` which can be used by native host to easily locate `hostfxr`. Going forward the library could also include easy-to-use APIs for common scenarios - basically just a simplification of the `hostfxr` API surface.
 
 At the same time add the ability to pass additional runtime properties when starting the runtime through the hosting entry points (starting app, loading component). This can be used by the native host to:
 * Register startup hook without modifying environment variables (which are inherited by child processes)
@@ -59,9 +59,9 @@ At the same time add the ability to pass additional runtime properties when star
 
 
 ## New host binary for finding `hostfxr`
-Add new library `nethost` which will provide a way to locate the right `hostfxr`.
-The library would be a dynamically loaded library (`.dll`, `.so`, `.dylib`). For ease of use there would be a header file for C/C++ apps as well as `.lib`/`.a` for easy linking.
-Native host would ship this library as part of the app. Unlike the `apphost`, `comhost` and `ijwhost`, the `nethost` will not be directly supported by the .NET Core SDK since it's target usage is not from .NET Core apps.
+New library `nethost` which provides a way to locate the right `hostfxr`.
+This is a dynamically loaded library (`.dll`, `.so`, `.dylib`). For ease of use there is a header file for C/C++ apps as well as `.lib` for easy linking on Windows.
+Native hosts ship this library as part of the app. Unlike the `apphost`, `comhost` and `ijwhost`, the `nethost` will not be directly supported by the .NET Core SDK since it's target usage is not from .NET Core apps.
 
 The `nethost` is part of the `Microsoft.NETCore.DotNetAppHost` package. Users are expected to either download the package directly or rely on .NET SDK to pull it down.
 
@@ -70,19 +70,28 @@ The binary itself should be signed by Microsoft as there will be no support for 
 
 ### Locate `hostfxr`
 ``` C++
+struct get_hostfxr_parameters {
+    size_t size;
+    const char_t * assembly_path;
+    const char_t * dotnet_root;
+};
+
 int get_hostfxr_path(
     char_t * result_buffer,
     size_t * buffer_size,
-    const char_t * assembly_path);
+    const get_hostfxr_parameters * parameters);
 ```
 
-This API locates the `hostfxr` and returns its path by calling the `result` function.
+This API locates the `hostfxr` library and returns its path by populating `result_buffer`.
 
 * `result_buffer` - Buffer that will be populated with the hostfxr path, including a null terminator.
 * `buffer_size` - On input this points to the size of the `result_buffer` in `char_t` units. On output this points to the number of `char_t` units used from the `result_buffer` (including the null terminator). If `result_buffer` is `nullptr` the input value is ignored and only the minimum required size in `char_t` units is set on output.
-* `assembly_path` - Optional. Path to the component's assembly. Whether or not this is specified determines the behavior for locating the hostfxr library.
-  * If `nullptr`, `hostfxr` is located using the environment variable or global registration
-  * If specified, `hostfxr` is located as if the `assembly_path` is an application with `apphost`
+* `parameters` - Optional. Additional parameters that modify the behaviour for locating the `hostfxr` library. If `nullptr`, `hostfxr` is located using the environment variable or global registration
+  * `size` - Size of the structure. This is used for versioning and should be set to `sizeof(get_hostfxr_parameters)`.
+  * `assembly_path` - Optional. Path to the application or to the component's assembly.
+    * If specified, `hostfxr` is located as if the `assembly_path` is an application with `apphost`
+  * `dotnet_root` - Optional. Path to the root of a .NET Core installation (i.e. folder containing the dotnet executable).
+    * If specified, `hostfxr` is located as if an application is started using `dotnet app.dll`, which means it will be searched for under the `dotnet_root` path and the `assembly_path` is ignored.
 
 `nethost` library uses the `__stdcall` calling convention.
 
@@ -205,7 +214,7 @@ The function returns specific return code for the first initialized host context
 
 #### Runtime properties
 These functions allow the native host to inspect and modify runtime properties.
-* If the `host_context_handle` represents the first initialized context in the process, these functions expose all properties from runtime configurations as well as those computed by the hosting layer components. These functions will allow modification of the properties via `hostfxr_set_runtime_property_value`. 
+* If the `host_context_handle` represents the first initialized context in the process, these functions expose all properties from runtime configurations as well as those computed by the hosting layer components. These functions will allow modification of the properties via `hostfxr_set_runtime_property_value`.
 * If the `host_context_handle` represents any other context (so not the first one), these functions expose only properties from runtime configuration. These functions won't allow modification of the properties.
 
 It is possible to access runtime properties of the first initialized context in the process at any time (for reading only), by specifying `nullptr` as the `host_context_handle`.
@@ -294,7 +303,7 @@ Starts the runtime and returns a function pointer to specified functionality of 
   * `hdt_winrt_activation` - WinRT activation entry-point - see [WinRT activation](https://github.com/dotnet/core-setup/blob/master/Documentation/design-docs/WinRT-activation.md) for more details.
 * `delegate` - when successful, the native function pointer to the requested runtime functionality.
 
-Initially the function will only work if `hostfxr_initialize_for_runtime_config` was used to initialize the host context. Later on this could be relaxed to allow being used in combination with `hostfxr_initialize_for_dotnet_command_line`.  
+Initially the function will only work if `hostfxr_initialize_for_runtime_config` was used to initialize the host context. Later on this could be relaxed to allow being used in combination with `hostfxr_initialize_for_dotnet_command_line`.
 
 Initially there might be a limitation of calling this function only once on a given host context to simplify the implementation. Currently we don't have a scenario where it would be absolutely required to support multiple calls.
 
@@ -389,7 +398,7 @@ It should really only happen that `hostfxr` is equal or newer than `hostpolicy`.
 
 The interesting case is 3.0 `hostfxr` using 2.* `hostpolicy`. This will be very common, basically any 2.* app running on a machine with 3.0 installed will be in that situation. This case has two sub-cases:
 * `hostfxr` is invoked using one of the 2.* APIs. In this case the simple solution is to keep using the 2.* `hostpolicy` APIs always.
-* `hostfxr` is invoked using one of the new 3.0 APIs (like `hostfxr_initialize...`). In this case it's not possible to completely support the new APIs, since they require new functionality from `hostpolicy`. For now the `hostfxr` should simply fail.  
+* `hostfxr` is invoked using one of the new 3.0 APIs (like `hostfxr_initialize...`). In this case it's not possible to completely support the new APIs, since they require new functionality from `hostpolicy`. For now the `hostfxr` should simply fail.
 It is in theory possible to support some kind of emulation mode where for some scenarios the new APIs would work even with old `hostpolicy`, but for simplicity it's better to start with just failing.
 
 #### Implementation of existing 2.* APIs in `hostfxr`

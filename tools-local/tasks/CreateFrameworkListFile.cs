@@ -104,6 +104,18 @@ namespace Microsoft.DotNet.Build.Tasks
 
                 string path = Path.Combine(f.TargetPath, f.Filename).Replace('\\', '/');
 
+                if (path.StartsWith("runtimes/"))
+                {
+                    var pathParts = path.Split('/');
+                    if (pathParts.Length > 1 && pathParts[1].Contains("_"))
+                    {
+                        // This file is a runtime file with a "rid" containing "_". This is assumed
+                        // to mean it's a cross-targeting tool and shouldn't be deployed in a
+                        // self-contained app. Leave it off the list.
+                        continue;
+                    }
+                }
+
                 var element = new XElement(
                     "File",
                     new XAttribute("Type", type),
