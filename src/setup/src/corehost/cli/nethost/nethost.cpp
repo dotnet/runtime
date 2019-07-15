@@ -21,7 +21,7 @@ namespace
 NETHOST_API int NETHOST_CALLTYPE get_hostfxr_path(
     char_t * buffer,
     size_t * buffer_size,
-    const char_t * assembly_path)
+    const struct get_hostfxr_parameters *parameters)
 {
     if (buffer_size == nullptr)
         return StatusCode::InvalidArgFailure;
@@ -29,17 +29,34 @@ NETHOST_API int NETHOST_CALLTYPE get_hostfxr_path(
     trace::setup();
     error_writer_scope_t writer_scope(swallow_trace);
 
-    pal::string_t root_path;
-    if (assembly_path != nullptr)
-        root_path = get_directory(assembly_path);
+    size_t min_parameters_size = offsetof(get_hostfxr_parameters, dotnet_root) + sizeof(const char_t*);
+    if (parameters != nullptr && parameters->size < min_parameters_size)
+    {
+        trace::error(_X("Invalid size for get_hostfxr_parameters. Expected at least %d"), min_parameters_size);
+        return StatusCode::InvalidArgFailure;
+    }
 
     pal::dll_t fxr;
     pal::string_t fxr_path;
     if (!fxr_resolver::try_get_existing_fxr(&fxr, &fxr_path))
     {
-        pal::string_t dotnet_root;
-        if(!fxr_resolver::try_get_path(root_path, &dotnet_root, &fxr_path))
-            return StatusCode::CoreHostLibMissingFailure;
+        if (parameters != nullptr && parameters->dotnet_root != nullptr)
+        {
+            pal::string_t dotnet_root = parameters->dotnet_root;
+            trace::info(_X("Using dotnet root parameter [%s] as runtime location."), dotnet_root.c_str());
+            if (!fxr_resolver::try_get_path_from_dotnet_root(dotnet_root, &fxr_path))
+                return StatusCode::CoreHostLibMissingFailure;
+        }
+        else
+        {
+            pal::string_t root_path;
+            if (parameters != nullptr && parameters->assembly_path != nullptr)
+                root_path = get_directory(parameters->assembly_path);
+
+            pal::string_t dotnet_root;
+            if (!fxr_resolver::try_get_path(root_path, &dotnet_root, &fxr_path))
+                return StatusCode::CoreHostLibMissingFailure;
+        }
     }
 
     size_t len = fxr_path.length();
