@@ -244,36 +244,17 @@ namespace System.Drawing.Internal
             {
                 case DeviceContextType.Display:
                     Debug.Assert(disposing, "WARNING: Finalizing a Display DeviceContext.\r\nReleaseDC may fail when not called from the same thread GetDC was called from.");
-
                     ((IDeviceContext)this).ReleaseHdc();
                     break;
-
                 case DeviceContextType.Information:
                 case DeviceContextType.NamedDevice:
-
-                    // CreateDC and CreateIC add an HDC handle to the HandleCollector; to remove it properly we need 
-                    // to call DeleteHDC.
-#if TRACK_HDC
-                    Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("DC.DeleteHDC(hdc=0x{0:x8})", unchecked((int) _hDC))));
-#endif
-
-                    IntUnsafeNativeMethods.DeleteHDC(new HandleRef(this, _hDC));
-
-                    _hDC = IntPtr.Zero;
-                    break;
-
-                case DeviceContextType.Memory:
-
-                    // CreatCompatibleDC adds a GDI handle to HandleCollector, to remove it properly we need to call 
-                    // DeleteDC.
-#if TRACK_HDC
-                    Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("DC.DeleteDC(hdc=0x{0:x8})", unchecked((int) _hDC))));
-#endif
                     IntUnsafeNativeMethods.DeleteDC(new HandleRef(this, _hDC));
-
                     _hDC = IntPtr.Zero;
                     break;
-
+                case DeviceContextType.Memory:
+                    IntUnsafeNativeMethods.DeleteDC(new HandleRef(this, _hDC));
+                    _hDC = IntPtr.Zero;
+                    break;
                 // case DeviceContextType.Metafile: - not yet supported.
                 case DeviceContextType.Unknown:
                 default:
@@ -298,7 +279,7 @@ namespace System.Drawing.Internal
 
                 // Note: for common DCs, GetDC assigns default attributes to the DC each time it is retrieved. 
                 // For example, the default font is System.
-                _hDC = IntUnsafeNativeMethods.GetDC(new HandleRef(this, _hWnd));
+                _hDC = UnsafeNativeMethods.GetDC(new HandleRef(this, _hWnd));
 #if TRACK_HDC
                 Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("hdc[0x{0:x8}]=DC.GetHdc(hWnd=0x{1:x8})", unchecked((int) _hDC), unchecked((int) _hWnd))));
 #endif            
@@ -318,7 +299,7 @@ namespace System.Drawing.Internal
 #if TRACK_HDC
                 int retVal = 
 #endif
-                IntUnsafeNativeMethods.ReleaseDC(new HandleRef(this, _hWnd), new HandleRef(this, _hDC));
+                UnsafeNativeMethods.ReleaseDC(new HandleRef(this, _hWnd), new HandleRef(this, _hDC));
                 // Note: retVal == 0 means it was not released but doesn't necessarily means an error; class or private DCs are never released.
 #if TRACK_HDC
                 Debug.WriteLine( DbgUtil.StackTraceToStr( string.Format("[ret={0}]=DC.ReleaseDC(hDc=0x{1:x8}, hWnd=0x{2:x8})", retVal, unchecked((int) _hDC), unchecked((int) _hWnd))));

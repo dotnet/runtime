@@ -53,7 +53,7 @@ namespace System.Drawing
 
         private static Icon GetIcon(ref Icon icon, int iconId)
         {
-            return icon ?? (icon = new Icon(SafeNativeMethods.LoadIcon(NativeMethods.NullHandleRef, iconId)));
+            return icon ?? (icon = new Icon(SafeNativeMethods.LoadIcon(NativeMethods.NullHandleRef, (IntPtr)iconId)));
         }
     }
 }

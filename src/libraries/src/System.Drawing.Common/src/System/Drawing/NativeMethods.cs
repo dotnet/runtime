@@ -24,9 +24,12 @@ namespace System.Drawing
                          BI_BITFIELDS = 3,
                          BI_RGB = 0,
                          BITMAPINFO_MAX_COLORSIZE = 256,
-                         SPI_GETICONTITLELOGFONT = 0x001F,
-                         SPI_GETNONCLIENTMETRICS = 41,
                          DEFAULT_GUI_FONT = 17;
+
+        internal const uint SPI_GETICONTITLELOGFONT = 0x001F;
+
+        // Gets metrics associated with the nonclient area of nonminimized windows
+        internal const uint SPI_GETNONCLIENTMETRICS = 41;
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct BITMAPINFO_FLAT
@@ -81,39 +84,27 @@ namespace System.Drawing
             public byte rgbReserved;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal class NONCLIENTMETRICS
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        internal struct NONCLIENTMETRICS
         {
-            public int cbSize = Marshal.SizeOf(typeof(NONCLIENTMETRICS));
+            public uint cbSize;
             public int iBorderWidth;
             public int iScrollWidth;
             public int iScrollHeight;
             public int iCaptionWidth;
             public int iCaptionHeight;
-#pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
-            [MarshalAs(UnmanagedType.Struct)]
-#pragma warning restore CS0618
             public SafeNativeMethods.LOGFONT lfCaptionFont;
             public int iSmCaptionWidth;
             public int iSmCaptionHeight;
-#pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
-            [MarshalAs(UnmanagedType.Struct)]
-#pragma warning restore CS0618
             public SafeNativeMethods.LOGFONT lfSmCaptionFont;
             public int iMenuWidth;
             public int iMenuHeight;
-#pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
-            [MarshalAs(UnmanagedType.Struct)]
-#pragma warning restore CS0618
             public SafeNativeMethods.LOGFONT lfMenuFont;
-#pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
-            [MarshalAs(UnmanagedType.Struct)]
-#pragma warning restore CS0618
             public SafeNativeMethods.LOGFONT lfStatusFont;
-#pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
-            [MarshalAs(UnmanagedType.Struct)]
-#pragma warning restore CS0618
             public SafeNativeMethods.LOGFONT lfMessageFont;
+
+            // This is supported on Windows vista and later
+            public int iPaddedBorderWidth;
         }
     }
 }

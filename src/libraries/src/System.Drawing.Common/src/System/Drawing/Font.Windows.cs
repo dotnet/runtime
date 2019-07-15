@@ -12,9 +12,6 @@ namespace System.Drawing
 {
     public sealed partial class Font
     {
-        private const int LogFontCharSetOffset = 23;
-        private const int LogFontNameOffset = 28;
-
         ///<summary>
         /// Creates the GDI+ native font object.
         ///</summary>
@@ -163,25 +160,12 @@ namespace System.Drawing
             Debug.Assert(_nativeFont == IntPtr.Zero, "GDI+ native font already initialized, this will generate a handle leak");
             Debug.Assert(nativeFont != IntPtr.Zero, "nativeFont is null");
 
-            int status = 0;
-            float size = 0;
-            GraphicsUnit unit = GraphicsUnit.Point;
-            FontStyle style = FontStyle.Regular;
-            IntPtr nativeFamily = IntPtr.Zero;
-
             _nativeFont = nativeFont;
 
-            status = Gdip.GdipGetFontUnit(new HandleRef(this, nativeFont), out unit);
-            Gdip.CheckStatus(status);
-
-            status = Gdip.GdipGetFontSize(new HandleRef(this, nativeFont), out size);
-            Gdip.CheckStatus(status);
-
-            status = Gdip.GdipGetFontStyle(new HandleRef(this, nativeFont), out style);
-            Gdip.CheckStatus(status);
-
-            status = Gdip.GdipGetFamily(new HandleRef(this, nativeFont), out nativeFamily);
-            Gdip.CheckStatus(status);
+            Gdip.CheckStatus(Gdip.GdipGetFontUnit(new HandleRef(this, nativeFont), out GraphicsUnit unit));
+            Gdip.CheckStatus(Gdip.GdipGetFontSize(new HandleRef(this, nativeFont), out float size));
+            Gdip.CheckStatus(Gdip.GdipGetFontStyle(new HandleRef(this, nativeFont), out FontStyle style));
+            Gdip.CheckStatus(Gdip.GdipGetFamily(new HandleRef(this, nativeFont), out IntPtr nativeFamily));
 
             SetFontFamily(new FontFamily(nativeFamily));
             Initialize(_fontFamily, size, style, unit, gdiCharSet, gdiVerticalFont);
@@ -238,41 +222,43 @@ namespace System.Drawing
         }
 
         /// <summary>
-        /// Creates a <see cref='System.Drawing.Font'/> from the specified Windows handle.
+        /// Creates a <see cref='Font'/> from the specified Windows handle.
         /// </summary>
         public static Font FromHfont(IntPtr hfont)
         {
-            var lf = new SafeNativeMethods.LOGFONT();
-            SafeNativeMethods.GetObject(new HandleRef(null, hfont), lf);
-            
-            IntPtr screenDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
-            try
+            var logFont = new SafeNativeMethods.LOGFONT();
+            SafeNativeMethods.GetObject(new HandleRef(null, hfont), ref logFont);
+
+            using (ScreenDC dc = ScreenDC.Create())
             {
-                return FromLogFont(lf, screenDC);
-            }
-            finally
-            {
-                UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, screenDC));
+                return FromLogFontInternal(ref logFont, dc);
             }
         }
 
+        /// <summary>
+        /// Creates a <see cref="Font"/> from the given LOGFONT using the screen device context.
+        /// </summary>
+        /// <param name="lf">A boxed LOGFONT.</param>
+        /// <returns>The newly created <see cref="Font"/>.</returns>
         public static Font FromLogFont(object lf)
         {
-            IntPtr screenDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
-            try
+            using (ScreenDC dc = ScreenDC.Create())
             {
-                return FromLogFont(lf, screenDC);
-            }
-            finally
-            {
-                UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, screenDC));
+                return FromLogFont(lf, dc);
             }
         }
 
-        public static Font FromLogFont(object lf, IntPtr hdc)
+        internal static Font FromLogFont(ref SafeNativeMethods.LOGFONT logFont)
         {
-            IntPtr font = IntPtr.Zero;
-            int status = Gdip.GdipCreateFontFromLogfontW(new HandleRef(null, hdc), lf, out font);
+            using (ScreenDC dc = ScreenDC.Create())
+            {
+                return FromLogFont(logFont, dc);
+            }
+        }
+
+        internal static Font FromLogFontInternal(ref SafeNativeMethods.LOGFONT logFont, IntPtr hdc)
+        {
+            int status = Gdip.GdipCreateFontFromLogfontW(new HandleRef(null, hdc), ref logFont, out IntPtr font);
 
             // Special case this incredibly common error message to give more information
             if (status == Gdip.NotTrueTypeFont)
@@ -287,18 +273,63 @@ namespace System.Drawing
             // GDI+ returns font = 0 even though the status is Ok.
             if (font == IntPtr.Zero)
             {
-                throw new ArgumentException(SR.Format(SR.GdiplusNotTrueTypeFont, lf.ToString()));
+                throw new ArgumentException(SR.Format(SR.GdiplusNotTrueTypeFont, logFont.ToString()));
             }
 
-#pragma warning disable 0618
-            bool gdiVerticalFont = (Marshal.ReadInt16(lf, LogFontNameOffset) == (short)'@');
-            return new Font(font, Marshal.ReadByte(lf, LogFontCharSetOffset), gdiVerticalFont);
-#pragma warning restore 0618
+            bool gdiVerticalFont = logFont.lfFaceName[0] == '@';
+            return new Font(font, logFont.lfCharSet, gdiVerticalFont);
         }
 
         /// <summary>
-        /// Creates a Font from the specified Windows handle to a device context.
+        /// Creates a <see cref="Font"/> from the given LOGFONT using the given device context.
         /// </summary>
+        /// <param name="lf">A boxed LOGFONT.</param>
+        /// <param name="hdc">Handle to a device context (HDC).</param>
+        /// <returns>The newly created <see cref="Font"/>.</returns>
+        public unsafe static Font FromLogFont(object lf, IntPtr hdc)
+        {
+            if (lf == null)
+            {
+                throw new ArgumentNullException(nameof(lf));
+            }
+
+            if (lf is SafeNativeMethods.LOGFONT logFont)
+            {
+                // A boxed LOGFONT, just use it to create the font
+                return FromLogFontInternal(ref logFont, hdc);
+            }
+
+            Type type = lf.GetType();
+            int nativeSize = sizeof(SafeNativeMethods.LOGFONT);
+            if (Marshal.SizeOf(type) != nativeSize)
+            {
+                // If we don't actually have an object that is LOGFONT in size, trying to pass
+                // it to GDI+ is likely to cause an AV.
+                throw new ArgumentException();
+            }
+
+            // Now that we know the marshalled size is the same as LOGFONT, copy in the data
+            logFont = new SafeNativeMethods.LOGFONT();
+
+            if (!type.IsValueType)
+            {
+                // Only works with non value types
+                Marshal.StructureToPtr(lf, new IntPtr(&logFont), fDeleteOld: false);
+            }
+            else
+            {
+                GCHandle handle = GCHandle.Alloc(lf, GCHandleType.Pinned);
+                Buffer.MemoryCopy((byte*)handle.AddrOfPinnedObject(), &logFont, nativeSize, nativeSize);
+                handle.Free();
+            }
+
+            return FromLogFontInternal(ref logFont, hdc);
+        }
+
+        /// <summary>
+        /// Creates a <see cref="Font"/> from the specified handle to a device context (HDC).
+        /// </summary>
+        /// <returns>The newly created <see cref="Font"/>.</returns>
         public static Font FromHdc(IntPtr hdc)
         {
             IntPtr font = IntPtr.Zero;
@@ -322,8 +353,7 @@ namespace System.Drawing
         /// </summary>
         public object Clone()
         {
-            IntPtr clonedFont = IntPtr.Zero;
-            int status = Gdip.GdipCloneFont(new HandleRef(this, _nativeFont), out clonedFont);
+            int status = Gdip.GdipCloneFont(new HandleRef(this, _nativeFont), out IntPtr clonedFont);
             Gdip.CheckStatus(status);
 
             return new Font(clonedFont, _gdiCharSet, _gdiVerticalFont);
@@ -333,10 +363,11 @@ namespace System.Drawing
         {
             _fontFamily = family;
 
-            // GDI+ creates ref-counted singleton FontFamily objects based on the family name so all managed 
+            // GDI+ creates ref-counted singleton FontFamily objects based on the family name so all managed
             // objects with same family name share the underlying GDI+ native pointer. The unmanged object is
             // destroyed when its ref-count gets to zero.
-            // Make sure this.fontFamily is not finalized so the underlying singleton object is kept alive.
+            //
+            // Make sure _fontFamily is not finalized so the underlying singleton object is kept alive.
             GC.SuppressFinalize(_fontFamily);
         }
 
@@ -352,56 +383,11 @@ namespace System.Drawing
 
         public void ToLogFont(object logFont)
         {
-            IntPtr screenDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
-            try
+            using (ScreenDC dc = ScreenDC.Create())
+            using (Graphics graphics = Graphics.FromHdcInternal(dc))
             {
-                Graphics graphics = Graphics.FromHdcInternal(screenDC);
-                try
-                {
-                    ToLogFont(logFont, graphics);
-                }
-                finally
-                {
-                    graphics.Dispose();
-                }
+                ToLogFont(logFont, graphics);
             }
-            finally
-            {
-                UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, screenDC));
-            }
-        }
-
-        public unsafe void ToLogFont(object logFont, Graphics graphics)
-        {
-            if (graphics == null)
-            {
-                throw new ArgumentNullException(nameof(graphics));
-            }
-
-            int status = Gdip.GdipGetLogFontW(new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), logFont);
-
-            // Prefix the string with '@' this is a gdiVerticalFont.
-#pragma warning disable 0618
-            if (_gdiVerticalFont)
-            {
-                // Copy the Unicode contents of the name.
-                for (int i = 60; i >= 0; i -= 2)
-                {
-                    Marshal.WriteInt16(logFont,
-                                        LogFontNameOffset + i + 2,
-                                        Marshal.ReadInt16(logFont, LogFontNameOffset + i));
-                }
-
-                // Prefix the name with an '@' sign.
-                Marshal.WriteInt16(logFont, LogFontNameOffset, (short)'@');
-            }
-            if (Marshal.ReadByte(logFont, LogFontCharSetOffset) == 0)
-            {
-                Marshal.WriteByte(logFont, LogFontCharSetOffset, _gdiCharSet);
-            }
-#pragma warning restore 0618
-
-            Gdip.CheckStatus(status);
         }
 
         /// <summary>
@@ -409,31 +395,26 @@ namespace System.Drawing
         /// </summary>
         public IntPtr ToHfont()
         {
-            var lf = new SafeNativeMethods.LOGFONT();
-            ToLogFont(lf);
-
-            IntPtr handle = IntUnsafeNativeMethods.IntCreateFontIndirect(lf);
-            if (handle == IntPtr.Zero)
+            using (ScreenDC dc = ScreenDC.Create())
+            using (Graphics graphics = Graphics.FromHdcInternal(dc))
             {
-                throw new Win32Exception();
-            }
+                SafeNativeMethods.LOGFONT lf = ToLogFontInternal(graphics);
+                IntPtr handle = IntUnsafeNativeMethods.CreateFontIndirect(ref lf);
+                if (handle == IntPtr.Zero)
+                {
+                    throw new Win32Exception();
+                }
 
-            return handle;
+                return handle;
+            }
         }
 
         public float GetHeight()
         {
-            IntPtr screenDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
-            try
+            using (ScreenDC dc = ScreenDC.Create())
+            using (Graphics graphics = Graphics.FromHdcInternal(dc))
             {
-                using (Graphics graphics = Graphics.FromHdcInternal(screenDC))
-                {
-                    return GetHeight(graphics);
-                }
-            }
-            finally
-            {
-                UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, screenDC));
+                return GetHeight(graphics);
             }
         }
 
@@ -450,21 +431,14 @@ namespace System.Drawing
                     return Size;
                 }
 
-                IntPtr screenDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
-                try
+                using (ScreenDC dc = ScreenDC.Create())
+                using (Graphics graphics = Graphics.FromHdcInternal(dc))
                 {
-                    using (Graphics graphics = Graphics.FromHdcInternal(screenDC))
-                    {
-                        float pixelsPerPoint = (float)(graphics.DpiY / 72.0);
-                        float lineSpacingInPixels = GetHeight(graphics);
-                        float emHeightInPixels = lineSpacingInPixels * FontFamily.GetEmHeight(Style) / FontFamily.GetLineSpacing(Style);
+                    float pixelsPerPoint = (float)(graphics.DpiY / 72.0);
+                    float lineSpacingInPixels = GetHeight(graphics);
+                    float emHeightInPixels = lineSpacingInPixels * FontFamily.GetEmHeight(Style) / FontFamily.GetLineSpacing(Style);
 
-                        return emHeightInPixels / pixelsPerPoint;
-                    }
-                }
-                finally
-                {
-                    UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, screenDC));
+                    return emHeightInPixels / pixelsPerPoint;
                 }
             }
         }

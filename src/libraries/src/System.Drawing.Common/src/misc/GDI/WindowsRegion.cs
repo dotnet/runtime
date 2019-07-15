@@ -51,7 +51,6 @@ namespace System.Drawing.Internal
                 if (takeOwnership)
                 {
                     wr._ownHandle = true;
-                    System.Internal.HandleCollector.Add(hRegion, IntSafeNativeMethods.CommonHandles.GDI);
                 }
             }
             return wr;

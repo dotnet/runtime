@@ -385,7 +385,7 @@ namespace System.Drawing.Printing
                 IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(this, modeHandle));
                 SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
 
-                short result = mode.dmDriverExtra;
+                short result = mode?.dmDriverExtra ?? 0;
 
                 SafeNativeMethods.GlobalUnlock(new HandleRef(this, modeHandle));
                 SafeNativeMethods.GlobalFree(new HandleRef(this, modeHandle));

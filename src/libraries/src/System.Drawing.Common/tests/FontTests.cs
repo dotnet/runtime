@@ -664,7 +664,7 @@ namespace System.Drawing.Tests
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        public void FromLogFont_NullLogFont_ThrowsArgumentException()
+        public void FromLogFont_NullLogFont_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
@@ -672,8 +672,16 @@ namespace System.Drawing.Tests
                 IntPtr hdc = graphics.GetHdc();
                 try
                 {
-                    AssertExtensions.Throws<ArgumentException>(null, () => Font.FromLogFont(null));
-                    AssertExtensions.Throws<ArgumentException>(null, () => Font.FromLogFont(null, hdc));
+                    if (PlatformDetection.IsFullFramework)
+                    {
+                        AssertExtensions.Throws<ArgumentException>(null, () => Font.FromLogFont(null));
+                        AssertExtensions.Throws<ArgumentException>(null, () => Font.FromLogFont(null, hdc));
+                    }
+                    else
+                    {
+                        AssertExtensions.Throws<ArgumentNullException>("lf", () => Font.FromLogFont(null));
+                        AssertExtensions.Throws<ArgumentNullException>("lf", () => Font.FromLogFont(null, hdc));
+                    }
                 }
                 finally
                 {
@@ -796,16 +804,16 @@ namespace System.Drawing.Tests
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Exception is wrapped in a TargetInvocationException in the .NET Framework.")]
-        public void ToLogFont_NullLogFont_ThrowsAccessViolationException()
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "AV Exception is wrapped in a TargetInvocationException in the .NET Framework.")]
+        public void ToLogFont_NullLogFont_ThrowsArgumentNullException()
         {
             using (FontFamily family = FontFamily.GenericMonospace)
             using (var font = new Font(family, 10))
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                Assert.Throws<AccessViolationException>(() => font.ToLogFont(null));
-                Assert.Throws<AccessViolationException>(() => font.ToLogFont(null, graphics));
+                Assert.Throws<ArgumentNullException>(() => font.ToLogFont(null));
+                Assert.Throws<ArgumentNullException>(() => font.ToLogFont(null, graphics));
             }
         }
 
