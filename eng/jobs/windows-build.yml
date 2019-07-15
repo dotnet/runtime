@@ -5,10 +5,12 @@ parameters:
   publishRidAgnosticPackages: false
   skipTests: $(SkipTests)
   targetArchitecture: null
+  timeoutInMinutes: 120
 
 jobs:
   - job: ${{ parameters.name }}
     displayName: ${{ parameters.name }}
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
     pool:
       # Use a hosted pool when possible.
       ${{ if eq(variables['System.TeamProject'], 'public') }}:

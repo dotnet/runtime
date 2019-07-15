@@ -36,18 +36,22 @@ int main(const int argc, const pal::char_t *argv[])
     const pal::char_t *command = argv[1];
     if (pal::strcmp(command, _X("get_hostfxr_path")) == 0)
     {
-        // args: ... [<explicit_load>] [<assembly_path>] [<hostfxr_to_load>]
+        // args: ... [<explicit_load>] [<assembly_path>] [<dotnet_root>] [<hostfxr_to_load>]
         bool explicit_load = false;
         if (argc >= 3)
             explicit_load = pal::strcmp(pal::to_lower(pal::string_t{argv[2]}).c_str(), _X("true")) == 0;
 
         const pal::char_t *assembly_path = nullptr;
-        if (argc >= 4)
+        if (argc >= 4 && pal::strcmp(argv[3], _X("nullptr")) != 0)
             assembly_path = argv[3];
 
-        if (argc >= 5)
+        const pal::char_t *dotnet_root = nullptr;
+        if (argc >= 5 && pal::strcmp(argv[4], _X("nullptr")) != 0)
+            dotnet_root = argv[4];
+
+        if (argc >= 6)
         {
-            pal::string_t to_load = argv[4];
+            pal::string_t to_load = argv[5];
             pal::dll_t fxr;
             if (!pal::load_library(&to_load, &fxr))
             {
@@ -88,13 +92,25 @@ int main(const int argc, const pal::char_t *argv[])
             get_hostfxr_path_fn = get_hostfxr_path;
         }
 
+        get_hostfxr_parameters parameters {
+            sizeof(get_hostfxr_parameters),
+            assembly_path,
+            dotnet_root
+        };
+
+        // Make version invalid for error case
+        if (assembly_path != nullptr && pal::strcmp(assembly_path, _X("[error]")) == 0)
+            parameters.size = parameters.size - 1;
+
+        const get_hostfxr_parameters *parameters_ptr = assembly_path != nullptr || dotnet_root != nullptr ? &parameters : nullptr;
+
         pal::string_t fxr_path;
         size_t len = fxr_path.size();
-        int res = get_hostfxr_path_fn(nullptr, &len, assembly_path);
+        int res = get_hostfxr_path_fn(nullptr, &len, parameters_ptr);
         if (static_cast<StatusCode>(res) == StatusCode::HostApiBufferTooSmall)
         {
             fxr_path.resize(len);
-            res = get_hostfxr_path_fn(&fxr_path[0], &len, assembly_path);
+            res = get_hostfxr_path_fn(&fxr_path[0], &len, parameters_ptr);
         }
 
         if (static_cast<StatusCode>(res) == StatusCode::Success)

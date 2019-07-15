@@ -14,6 +14,7 @@
 namespace fxr_resolver
 {
     bool try_get_path(const pal::string_t& root_path, pal::string_t* out_dotnet_root, pal::string_t* out_fxr_path);
+    bool try_get_path_from_dotnet_root(const pal::string_t& dotnet_root, pal::string_t* out_fxr_path);
     bool try_get_existing_fxr(pal::dll_t *out_fxr, pal::string_t *out_fxr_path);
 }
 

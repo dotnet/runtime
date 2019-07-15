@@ -81,10 +81,10 @@ size_t bundle_runner_t::get_path_length(int8_t first_byte, FILE* stream)
 // and transform it to pal::string_t
 void bundle_runner_t::read_string(pal::string_t &str, size_t size, FILE* stream)
 {
-    uint8_t *buffer = new uint8_t[size + 1]; 
-    read(buffer, size, stream);
+    std::unique_ptr<uint8_t[]> buffer{new uint8_t[size + 1]};
+    read(buffer.get(), size, stream);
     buffer[size] = 0; // null-terminator
-    pal::clr_palstring(reinterpret_cast<const char*>(buffer), &str);
+    pal::clr_palstring(reinterpret_cast<const char*>(buffer.get()), &str);
 }
 
 static bool has_dirs_in_path(const pal::string_t& path)
@@ -109,7 +109,7 @@ static void create_directory_tree(const pal::string_t &path)
         create_directory_tree(get_directory(path));
     }
 
-    if (!pal::mkdir(path.c_str(), 0700))
+    if (!pal::mkdir(path.c_str(), 0700)) // Owner - rwx
     {
         if (pal::directory_exists(path))
         {
@@ -133,7 +133,7 @@ static void remove_directory_tree(const pal::string_t& path)
     std::vector<pal::string_t> dirs;
     pal::readdir_onlydirectories(path, &dirs);
 
-    for (pal::string_t dir : dirs)
+    for (const pal::string_t &dir : dirs)
     {
         remove_directory_tree(dir);
     }
@@ -141,7 +141,7 @@ static void remove_directory_tree(const pal::string_t& path)
     std::vector<pal::string_t> files;
     pal::readdir(path, &files);
 
-    for (pal::string_t file : files)
+    for (const pal::string_t &file : files)
     {
         if (!pal::remove(file.c_str()))
         {
@@ -277,7 +277,7 @@ StatusCode bundle_runner_t::extract()
 
         // Read the bundle header
         seek(m_bundle_stream, marker_t::header_offset(), SEEK_SET);
-        m_header = header_t::read(m_bundle_stream);
+        m_header.reset(header_t::read(m_bundle_stream));
 
         // Determine if embedded files are already extracted, and available for reuse
         determine_extraction_dir();
@@ -305,28 +305,45 @@ StatusCode bundle_runner_t::extract()
         
         create_working_extraction_dir();
 
-        m_manifest = manifest_t::read(m_bundle_stream, num_embedded_files());
+        m_manifest.reset(manifest_t::read(m_bundle_stream, num_embedded_files()));
 
         for (file_entry_t* entry : m_manifest->files) {
             extract_file(entry);
         }
 
         // Commit files to the final extraction directory
-        if (pal::rename(m_working_extraction_dir.c_str(), m_extraction_dir.c_str()) != 0)
+        // Retry the move operation with some wait in between the attempts. This is to workaround for possible file locking
+        // caused by AV software. Basically the extraction process above writes a bunch of executable files to disk
+        // and some AV software may decide to scan them on write. If this happens the files will be locked which blocks
+        // our ablity to move them.
+        int retry_count = 500;
+        while (true)
         {
+            if (pal::rename(m_working_extraction_dir.c_str(), m_extraction_dir.c_str()) == 0)
+                break;
+
+            bool should_retry = errno == EACCES;
             if (can_reuse_extraction())
             {
                 // Another process successfully extracted the dependencies
-
-                trace::info(_X("Extraction completed by another process, aborting current extracion."));
+                trace::info(_X("Extraction completed by another process, aborting current extraction."));
 
                 remove_directory_tree(m_working_extraction_dir);
-                return StatusCode::Success;
+                break;
             }
 
-            trace::error(_X("Failure processing application bundle."));
-            trace::error(_X("Failed to commit extracted to files to directory [%s]"), m_extraction_dir.c_str());
-            throw StatusCode::BundleExtractionFailure;
+            if (should_retry && (retry_count--) > 0)
+            {
+                trace::info(_X("Retrying extraction due to EACCES trying to rename the extraction folder to [%s]."), m_extraction_dir.c_str());
+                pal::sleep(100);
+                continue;
+            }
+            else
+            {
+                trace::error(_X("Failure processing application bundle."));
+                trace::error(_X("Failed to commit extracted files to directory [%s]"), m_extraction_dir.c_str());
+                throw StatusCode::BundleExtractionFailure;
+            }
         }
 
         fclose(m_bundle_stream);
