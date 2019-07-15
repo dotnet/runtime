@@ -2743,7 +2743,8 @@ static RuntimeInvokeInfo*
 create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer compiled_method, gboolean callee_gsharedvt, gboolean use_interp, MonoError *error)
 {
 	MonoMethod *invoke;
-	RuntimeInvokeInfo *info;
+	RuntimeInvokeInfo *info = NULL;
+	RuntimeInvokeInfo *ret = NULL;
 
 	info = g_new0 (RuntimeInvokeInfo, 1);
 	info->compiled_method = compiled_method;
@@ -2756,10 +2757,11 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 	invoke = mono_marshal_get_runtime_invoke (method, FALSE);
 	info->vtable = mono_class_vtable_checked (domain, method->klass, error);
 	if (!mono_error_ok (error))
-		return NULL;
+		goto exit;
 	g_assert (info->vtable);
 
-	MonoMethodSignature *sig = info->sig;
+	MonoMethodSignature *sig;
+	sig = info->sig;
 	MonoType *ret_type;
 
 	/*
@@ -2834,8 +2836,11 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 		break;
 	}
 
-	if (info->use_interp)
-		return info;
+	if (info->use_interp) {
+		ret = info;
+		info = NULL;
+		goto exit;
+	}
 
 	if (!info->dyn_call_info) {
 		if (mono_llvm_only) {
@@ -2856,10 +2861,8 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 				g_free (wrapper_sig);
 
 				info->compiled_method = mono_jit_compile_method (wrapper, error);
-				if (!mono_error_ok (error)) {
-					g_free (info);
-					return NULL;
-				}
+				if (!mono_error_ok (error))
+					goto exit;
 			} else {
 				/* Gsharedvt methods can be invoked the same way */
 				/* The out wrapper has the same signature as the compiled gsharedvt method */
@@ -2872,13 +2875,15 @@ create_runtime_invoke_info (MonoDomain *domain, MonoMethod *method, gpointer com
 			}
 		}
 		info->runtime_invoke = mono_jit_compile_method (invoke, error);
-		if (!mono_error_ok (error)) {
-			g_free (info);
-			return NULL;
-		}
+		if (!mono_error_ok (error))
+			goto exit;
 	}
 
-	return info;
+	ret = info;
+	info = NULL;
+exit:
+	g_free (info);
+	return ret;
 }
 
 static MonoObject*
