@@ -128,9 +128,9 @@ namespace System.Text.Json
     {
         private readonly object _dummy;
         public System.ReadOnlySpan<byte> EncodedUtf8Bytes { get { throw null; } }
-        public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<byte> utf8Value) { throw null; }
-        public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<char> value) { throw null; }
-        public static System.Text.Json.JsonEncodedText Encode(string value) { throw null; }
+        public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<byte> utf8Value, System.Text.Encodings.Web.JavaScriptEncoder encoder = null) { throw null; }
+        public static System.Text.Json.JsonEncodedText Encode(System.ReadOnlySpan<char> value, System.Text.Encodings.Web.JavaScriptEncoder encoder = null) { throw null; }
+        public static System.Text.Json.JsonEncodedText Encode(string value, System.Text.Encodings.Web.JavaScriptEncoder encoder = null) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public bool Equals(System.Text.Json.JsonEncodedText other) { throw null; }
         public override int GetHashCode() { throw null; }

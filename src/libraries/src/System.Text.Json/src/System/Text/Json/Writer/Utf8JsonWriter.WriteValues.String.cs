@@ -337,7 +337,7 @@ namespace System.Text.Json
                 stackalloc byte[length] :
                 (valueArray = ArrayPool<byte>.Shared.Rent(length));
 
-            JsonWriterHelper.EscapeString(utf8Value, escapedValue, firstEscapeIndexVal, out int written);
+            JsonWriterHelper.EscapeString(utf8Value, escapedValue, firstEscapeIndexVal, encoder: null, out int written);
 
             WriteStringByOptions(escapedValue.Slice(0, written));
 

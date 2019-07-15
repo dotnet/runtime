@@ -82,7 +82,8 @@ namespace System.Text.Json.Serialization.Tests
 
             // Properties in the exported json will be in the order that they were reflected, doing a quick check to see that
             // we end up with the same length (i.e. same amount of data) to start.
-            Assert.Equal(SimpleTestClassWithObjectArrays.s_json.StripWhitespace().Length, reserialized.Length);
+            string json = SimpleTestClassWithObjectArrays.s_json.StripWhitespace();
+            Assert.Equal(json.Length, reserialized.Length);
 
             // Shoving it back through the parser should validate round tripping.
             obj = JsonSerializer.Deserialize<SimpleTestClassWithObjectArrays>(reserialized);
