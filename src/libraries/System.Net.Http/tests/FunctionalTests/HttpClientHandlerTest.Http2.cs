@@ -1163,7 +1163,6 @@ namespace System.Net.Http.Functional.Tests
             return bytesReceived;
         }
 
-        [ActiveIssue(38799)]
         [OuterLoop("Uses Task.Delay")]
         [ConditionalFact(nameof(SupportsAlpn))]
         public async Task Http2_FlowControl_ClientDoesNotExceedWindows()
@@ -1171,7 +1170,7 @@ namespace System.Net.Http.Functional.Tests
             const int InitialWindowSize = 65535;
             const int ContentSize = 100_000;
 
-            var content = new ByteArrayContent(TestHelper.GenerateRandomContent(ContentSize));
+            var content = new ByteAtATimeContent(ContentSize);
 
             using (var server = Http2LoopbackServer.CreateServer())
             using (HttpClient client = CreateHttpClient())
