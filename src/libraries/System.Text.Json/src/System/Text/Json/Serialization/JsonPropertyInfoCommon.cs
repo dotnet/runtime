@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json
 {
@@ -70,11 +69,6 @@ namespace System.Text.Json
 
                 Converter = (JsonConverter<TConverter>)value;
             }
-        }
-
-        public override void GetPolicies()
-        {
-            base.GetPolicies();
         }
 
         public override object GetValueAsObject(object obj)
