@@ -27,6 +27,7 @@
     <ProjectToBuild Include="$(RepoRoot)src\test\BundleTests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
     <ProjectToBuild Include="$(RepoRoot)src\test\BundleTests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj" />
     <ProjectToBuild Include="$(RepoRoot)src\test\HostActivation.Tests\HostActivation.Tests.csproj" />
+    <ProjectToBuild Include="$(RepoRoot)src\test\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
     <ProjectToBuild Include="$(RepoRoot)src\test\Microsoft.Extensions.DependencyModel.Tests\Microsoft.Extensions.DependencyModel.Tests.csproj" />
   </ItemGroup>
 

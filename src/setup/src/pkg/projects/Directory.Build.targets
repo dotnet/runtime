@@ -196,70 +196,44 @@
     </MSBuild>
   </Target>
 
-  <!--
-    Creates the platform manifest and props file. Set properties "IncludePlatformManifestFile" and
-    "IncludeFileVersionPropsFile" to true to include them, respectively.
-  -->
-  <Target Name="GenerateFileVersionProps">
-    <PropertyGroup>
-      <PropsFile>$(IntermediateOutputPath)$(MSBuildProjectName).props</PropsFile>
-      <PlatformManifestFile>$(IntermediateOutputPath)$(MSBuildProjectName).PlatformManifest.txt</PlatformManifestFile>
-
-      <!-- During an official build when we can guarantee that all RID-specific dependencies have been built,
-          restore all of those dependencies and gather the prospective content of the RID-specific Core.App
-          packages.  This is needed so that we have a complete platform manifest in the shipping version of
-          the Microsoft.NETCore.App (RID-agnostic/identity package). -->
-      <IncludeAllRuntimePackagesInPlatformManifest
-        Condition="'$(IncludeAllRuntimePackagesInPlatformManifest)' == '' AND
-                   '$(BuildFullPlatformManifest)' == 'true'">true</IncludeAllRuntimePackagesInPlatformManifest>
+  <Target Name="GetDependencyDataFileInclusionDefaults">
+    <PropertyGroup Condition="'$(BuildTargetPath)' != ''">
+      <FileVersionPropsTargetPath Condition="'$(FileVersionPropsTargetPath)' == ''">$(BuildTargetPath)$(Id).props</FileVersionPropsTargetPath>
+      <PlatformManifestTargetPath Condition="'$(PlatformManifestTargetPath)' == ''">$(BuildTargetPath)$(Id).props</PlatformManifestTargetPath>
     </PropertyGroup>
+  </Target>
 
-    <MSBuild Projects="@(ProjectReference)"
-             Condition="'%(ProjectReference.PackageTargetRuntime)' == '$(PackageRID)' OR
-                        '%(ProjectReference.BuidOnRID)' == '$(PackageRID)' OR
-                        ('$(IncludeAllRuntimePackagesInPlatformManifest)' == 'true' AND
-                         '%(ProjectReference.PackageTargetRuntime)' != '' AND
-                         '%(ProjectReference.ExcludeFromPlatformManifest)' != 'true')"
-             Targets="GetPackageFiles">
-      <Output TaskParameter="TargetOutputs" ItemName="SharedFrameworkRuntimeFiles" />
+  <!-- Get data files (platform manifest, file version props) from depproj dependencies. -->
+  <Target Name="GetDepprojDependencyDataFiles">
+    <MSBuild
+      Projects="@(ProjectReference)"
+      Targets="GetDataFiles"
+      SkipNonExistentTargets="true">
+      <Output TaskParameter="TargetOutputs" ItemName="_depprojDataFile" />
     </MSBuild>
-
-    <!--
-      Workaround: zero-versioned Microsoft.VisualBasic.dll in non-Windows CoreFX transport package.
-      See https://github.com/dotnet/corefx/issues/36630
-    -->
-    <PropertyGroup Condition="'$(OSGroup)' != 'Windows_NT'">
-      <PermitDllAndExeFilesLackingFileVersion>true</PermitDllAndExeFilesLackingFileVersion>
-    </PropertyGroup>
-
-    <GenerateFileVersionProps Files="@(SharedFrameworkRuntimeFiles)"
-                              PackageId="$(Id)"
-                              PackageVersion="$(Version)"
-                              PlatformManifestFile="$(PlatformManifestFile)"
-                              PropsFile="$(PropsFile)"
-                              PreferredPackages="$(Id);@(RuntimeDependency)"
-                              PermitDllAndExeFilesLackingFileVersion="$(PermitDllAndExeFilesLackingFileVersion)" />
   </Target>
 
   <Target Name="IncludeFileVersionPropsFile"
-          DependsOnTargets="GenerateFileVersionProps"
+          DependsOnTargets="GetDepprojDependencyDataFiles;GetDependencyDataFileInclusionDefaults"
           BeforeTargets="GetFiles"
           Condition="'$(PackageTargetRuntime)' == '' AND '$(FileVersionPropsTargetPath)' != ''">
     <ItemGroup>
-      <File Include="$(PropsFile)">
-        <TargetPath>$(FileVersionPropsTargetPath)</TargetPath>
-      </File>
+      <File
+        Include="@(_depprojDataFile)"
+        Condition="'%(_depprojDataFile.PropsFile)' == 'true'"
+        TargetPath="$(FileVersionPropsTargetPath)" />
     </ItemGroup>
   </Target>
 
   <Target Name="IncludePlatformManifestFile"
-          DependsOnTargets="GenerateFileVersionProps"
+          DependsOnTargets="GetDepprojDependencyDataFiles;GetDependencyDataFileInclusionDefaults"
           BeforeTargets="GetFiles"
           Condition="'$(PackageTargetRuntime)' == '' AND '$(PlatformManifestTargetPath)' != ''">
     <ItemGroup>
-      <File Include="$(PlatformManifestFile)">
-        <TargetPath>$(PlatformManifestTargetPath)</TargetPath>
-      </File>
+      <File
+        Include="@(_depprojDataFile)"
+        Condition="'%(_depprojDataFile.PlatformManifestFile)' == 'true'"
+        TargetPath="$(PlatformManifestTargetPath)" />
     </ItemGroup>
   </Target>
 

@@ -48,7 +48,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         {
             // From the artifacts dir, it's possible to find where the sharedFrameworkPublish folder is. We need
             // to locate it because we'll copy its contents into other folders
-            string artifactsDir = Environment.GetEnvironmentVariable("TEST_ARTIFACTS");
+            string artifactsDir = new RepoDirectoriesProvider().GetTestContextVariable("TEST_ARTIFACTS");
             _builtDotnet = Path.Combine(artifactsDir, "sharedFrameworkPublish");
 
             // The dotnetMultilevelSharedFxLookup dir will contain some folders and files that will be

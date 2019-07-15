@@ -13,7 +13,7 @@
     <PackageReference Include="NETStandard.Library" Version="$(NETStandardLibraryPackageVersion)" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
     <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools,
          Targets for an empty runtime.json to reduce conflicts from 1.x packages -->
     <DependenciesToPackage Include="NETStandard.Library" />
@@ -24,7 +24,7 @@
   <!-- get paths from packages that are needed for cross-gen and other includes,
        only relevant for runtime-specific builds -->
   <Target Name="GetPackagePaths"
-          Condition="'$(NuGetRuntimeIdentifier)' != ''"
+          Condition="'$(PackageTargetRuntime)' != ''"
           DependsOnTargets="GetCorePackagePaths" />
 
   <Target Name="GetDependencyVersionFiles" DependsOnTargets="ResolveReferences;GetPackagePaths">
@@ -35,7 +35,7 @@
         Name="corefx" />
       <_coreClrVersionFile
         Include="$(_runtimePackageDir)version.txt"
-        Condition="'$(NuGetRuntimeIdentifier)' != ''"
+        Condition="'$(PackageTargetRuntime)' != ''"
         Name="coreclr" />
 
       <DependencyVersionFile Include="@(_coreFxVersionFile);@(_coreClrVersionFile)" />
@@ -46,7 +46,7 @@
       Text="Failed to locate corefx version.txt file." />
 
     <Error
-      Condition="'@(_coreClrVersionFile)' == '' AND '$(NuGetRuntimeIdentifier)' != ''"
+      Condition="'@(_coreClrVersionFile)' == '' AND '$(PackageTargetRuntime)' != ''"
       Text="Failed to locate coreclr version.txt file." />
   </Target>
 
@@ -54,7 +54,7 @@
   <Target Name="GetRuntimeFilesFromPackages"
           BeforeTargets="GetRuntimeFilesToPackage"
           DependsOnTargets="GetCorePackagePaths">
-    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
+    <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
       <_ToolsToPackage Include="$(_runtimePackageDir)tools/**/*.*"/>
       <FilesToPackage Include="@(_ToolsToPackage)">
         <NuGetPackageId>$(_runtimePackageId)</NuGetPackageId>
