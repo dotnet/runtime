@@ -32,7 +32,9 @@ namespace System.Text.Json.Serialization.Tests
             var obj = new ClassWithNoSetter();
 
             string json = JsonSerializer.Serialize(obj, options);
-            Assert.Equal(@"{}", json);
+
+            // Collections are always serialized unless they have [JsonIgnore].
+            Assert.Equal(@"{""MyInts"":[1,2]}", json);
         }
 
         [Fact]

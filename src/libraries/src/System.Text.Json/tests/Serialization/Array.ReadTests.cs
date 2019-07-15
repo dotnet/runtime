@@ -168,7 +168,6 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, i.Length);
         }
 
-        [ActiveIssue(38435)]
         [Fact]
         public static void ReadInitializedArrayTest()
         {
@@ -198,7 +197,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<List<int?>>(Encoding.UTF8.GetBytes(@"[1,""a""]")));
 
             // Multidimensional arrays currently not supported
-            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<int[,]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]")));
+            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int[,]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]")));
         }
 
         public static IEnumerable<object[]> ReadNullJson
@@ -412,17 +411,32 @@ namespace System.Text.Json.Serialization.Tests
             obj.Verify();
         }
 
+        public class ClassWithPopulatedListAndNoSetter
+        {
+            public List<int> MyList { get; } = new List<int>() { 1 };
+        }
+
         [Fact]
         public static void ClassWithNoSetter()
         {
-            string json = @"{""MyList"":[1]}";
-            ClassWithListButNoSetter obj = JsonSerializer.Deserialize<ClassWithListButNoSetter>(json);
-            Assert.Equal(1, obj.MyList[0]);
+            // We don't attempt to deserialize into collections without a setter.
+            string json = @"{""MyList"":[1,2]}";
+            ClassWithPopulatedListAndNoSetter obj = JsonSerializer.Deserialize<ClassWithPopulatedListAndNoSetter>(json);
+            Assert.Equal(1, obj.MyList.Count);
         }
 
-        public class ClassWithListButNoSetter
+        public class ClassWithPopulatedListAndSetter
         {
-            public List<int> MyList { get; } = new List<int>();
+            public List<int> MyList { get; set;  } = new List<int>() { 1 };
+        }
+
+        [Fact]
+        public static void ClassWithPopulatedList()
+        {
+            // We don't attempt to deserialize into collections without a setter.
+            string json = @"{""MyList"":[2,3]}";
+            ClassWithPopulatedListAndSetter obj = JsonSerializer.Deserialize<ClassWithPopulatedListAndSetter>(json);
+            Assert.Equal(2, obj.MyList.Count);
         }
     }
 }
