@@ -191,9 +191,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(16000)]
         public static async Task LargeJsonFile(int bufferSize)
         {
+            const int SessionResponseCount = 100;
+
             // Build up a large list to serialize.
             var list = new List<SessionResponse>();
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < SessionResponseCount; i++)
             {
                 SessionResponse response = new SessionResponse
                 {
@@ -238,7 +240,7 @@ namespace System.Text.Json.Serialization.Tests
             // Sync case.
             {
                 List<SessionResponse> deserializedList = JsonSerializer.Deserialize<List<SessionResponse>>(json, options);
-                Assert.Equal(100, deserializedList.Count);
+                Assert.Equal(SessionResponseCount, deserializedList.Count);
 
                 string jsonSerialized = JsonSerializer.Serialize(deserializedList, options);
                 Assert.Equal(json, jsonSerialized);
@@ -253,7 +255,7 @@ namespace System.Text.Json.Serialization.Tests
 
                 memoryStream.Position = 0;
                 List<SessionResponse> deserializedList = await JsonSerializer.DeserializeAsync<List<SessionResponse>>(memoryStream, options);
-                Assert.Equal(100, deserializedList.Count);
+                Assert.Equal(SessionResponseCount, deserializedList.Count);
             }
         }
     }
