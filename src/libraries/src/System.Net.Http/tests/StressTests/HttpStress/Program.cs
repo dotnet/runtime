@@ -534,7 +534,7 @@ public class Program
                             Console.Write(success[i].ToString("N0"));
                             Console.ResetColor();
                             Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.Write("\tCancelled: ");
+                            Console.Write("\tCanceled: ");
                             Console.Write(cancel[i].ToString("N0"));
                             Console.ResetColor();
                             Console.ForegroundColor = ConsoleColor.DarkRed;
