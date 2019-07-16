@@ -10,7 +10,7 @@ One of the techniques that CoreCLR employs is Just in time compilation ("JIT"). 
 
 The actual transformation of IL into native code is handled by the code generator. Code generator is a component of the CoreCLR virtual machine that (with the help of other components of CoreCLR, such as the type system) translates IL into native code. The code generator talks to the rest of the virtual machine over a well-defined interface: this allows code generators to be relatively pluggable. The code generator used by the CoreCLR is [RyuJIT](../botr/ryujit-overview.md). Over the years, CLR has had many other code generators serving different purposes, such as the simplified [fjit](https://github.com/SSCLI/sscli20_20060311/tree/master/clr/src/fjit), LLVM-based [LLIC](https://github.com/dotnet/llilc), or the closed-source jit32 and jit64.
 
-Big advantage of Just in time compilation is that the generated native code can be tailored for the specific physical processor model. RyuJIT currently uses information about the processor to e.g. unlock the use of AVX2 instructions on x64 processors.
+Big advantage of Just in time compilation is that the generated native code can be tailored for the specific physical processor model. RyuJIT currently uses information about the processor to e.g. unlock the use of AVX instructions on x64 processors that support it.
 
 Just in time compilation needs to carefully balance the time it takes to compile the method with the level of code generation optimizations performed.
 
