@@ -188,11 +188,6 @@ namespace System.IO.Pipelines
         }
 
         /// <inheritdoc />
-        public override void OnWriterCompleted(Action<Exception, object> callback, object state)
-        {
-        }
-
-        /// <inheritdoc />
         public override async ValueTask<ReadResult> ReadAsync(CancellationToken cancellationToken = default)
         {
             // TODO ReadyAsync needs to throw if there are overlapping reads.

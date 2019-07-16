@@ -23,7 +23,9 @@ namespace System.IO.Pipelines.Tests
             Stream s = pipe.Writer.AsStream();
 
             var writerCompletedTask = new TaskCompletionSource<bool>();
+#pragma warning disable CS0618 // Type or member is obsolete
             pipe.Reader.OnWriterCompleted(delegate { writerCompletedTask.SetResult(true); }, null);
+#pragma warning restore CS0618 // Type or member is obsolete
 
             // Call Dispose{Async} multiple times; all should succeed.
             for (int i = 0; i < 2; i++)
@@ -212,11 +214,6 @@ namespace System.IO.Pipelines.Tests
                 throw new NotImplementedException();
             }
 
-            public override void OnReaderCompleted(Action<Exception, object> callback, object state)
-            {
-                throw new NotImplementedException();
-            }
-
             public override ValueTask<FlushResult> WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default)
             {
                 WriteAsyncCalled = true;
@@ -236,7 +233,6 @@ namespace System.IO.Pipelines.Tests
             public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default) => throw new NotImplementedException();
             public override Memory<byte> GetMemory(int sizeHint = 0) => throw new NotImplementedException();
             public override Span<byte> GetSpan(int sizeHint = 0) => throw new NotImplementedException();
-            public override void OnReaderCompleted(Action<Exception, object> callback, object state) => throw new NotImplementedException();
         }
 
         public static IEnumerable<object[]> WriteCalls
