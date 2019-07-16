@@ -46,6 +46,7 @@ public class Program
         cmd.AddOption(new Option("-listOps", "List available options.") { Argument = new Argument<bool>("enable", false) });
         cmd.AddOption(new Option("-seed", "Seed for generating pseudo-random parameters for a given -n argument.") { Argument = new Argument<int?>("seed", null)});
         cmd.AddOption(new Option("-numParameters", "Max number of query parameters or form fields for a request.") { Argument = new Argument<int>("queryParameters", 1) });
+        cmd.AddOption(new Option("-cancelRate", "Number between 0 and 1 indicating rate of client-side request cancellation attempts. Defaults to 0.1.") { Argument = new Argument<double>("probability", 0.1) });
 
         ParseResult cmdline = cmd.Parse(args);
         if (cmdline.Errors.Count > 0)
@@ -59,19 +60,20 @@ public class Program
             return;
         }
 
-        Run(concurrentRequests  : cmdline.ValueForOption<int>("-n"),
-            maxContentLength    : cmdline.ValueForOption<int>("-maxContentLength"),
-            httpVersions        : cmdline.ValueForOption<Version[]>("-http"),
-            connectionLifetime  : cmdline.ValueForOption<int?>("-connectionLifetime"),
-            opIndices           : cmdline.ValueForOption<int[]>("-ops"),
-            logPath             : cmdline.HasOption("-trace") ? cmdline.ValueForOption<string>("-trace") : null,
-            aspnetLog           : cmdline.ValueForOption<bool>("-aspnetlog"),
-            listOps             : cmdline.ValueForOption<bool>("-listOps"),
-            seed                : cmdline.ValueForOption<int?>("-seed") ?? new Random().Next(),
-            numParameters       : cmdline.ValueForOption<int>("-numParameters"));
+        Run(concurrentRequests      : cmdline.ValueForOption<int>("-n"),
+            maxContentLength        : cmdline.ValueForOption<int>("-maxContentLength"),
+            httpVersions            : cmdline.ValueForOption<Version[]>("-http"),
+            connectionLifetime      : cmdline.ValueForOption<int?>("-connectionLifetime"),
+            opIndices               : cmdline.ValueForOption<int[]>("-ops"),
+            logPath                 : cmdline.HasOption("-trace") ? cmdline.ValueForOption<string>("-trace") : null,
+            aspnetLog               : cmdline.ValueForOption<bool>("-aspnetlog"),
+            listOps                 : cmdline.ValueForOption<bool>("-listOps"),
+            seed                    : cmdline.ValueForOption<int?>("-seed") ?? new Random().Next(),
+            numParameters           : cmdline.ValueForOption<int>("-numParameters"),
+            cancellationProbability : Math.Max(0, Math.Min(1, cmdline.ValueForOption<double>("-cancelRate"))));
     }
 
-    private static void Run(int concurrentRequests, int maxContentLength, Version[] httpVersions, int? connectionLifetime, int[] opIndices, string logPath, bool aspnetLog, bool listOps, int seed, int numParameters)
+    private static void Run(int concurrentRequests, int maxContentLength, Version[] httpVersions, int? connectionLifetime, int[] opIndices, string logPath, bool aspnetLog, bool listOps, int seed, int numParameters, double cancellationProbability)
     {
         // Handle command-line arguments.
         EventListener listener =
@@ -121,14 +123,14 @@ public class Program
         // and the delegate to invoke for it, provided with the HttpClient instance on which to make the call and
         // returning asynchronously the retrieved response string from the server.  Individual operations can be
         // commented out from here to turn them off, or additional ones can be added.
-        var clientOperations = new (string, Func<ClientContext, Task>)[]
+        var clientOperations = new (string, Func<RequestContext, Task>)[]
         {
             ("GET",
             async ctx =>
             {
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
                 using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri) { Version = httpVersion })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent(contentSource, await m.Content.ReadAsStringAsync());
@@ -140,7 +142,7 @@ public class Program
             {
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
                 using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri + "/slow") { Version = httpVersion })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
+                using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
                 {
                     ValidateResponse(m, httpVersion);
                     using (Stream s = await m.Content.ReadAsStreamAsync())
@@ -155,7 +157,7 @@ public class Program
             {
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
                 using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri + "/headers") { Version = httpVersion })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent(contentSource, await m.Content.ReadAsStringAsync());
@@ -168,32 +170,10 @@ public class Program
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
                 (string query, string expected) variables = GetGetQueryParameters(contentSource, ctx, numParameters);
                 using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri + "/variables" + variables.query) { Version = httpVersion })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent(variables.expected, await m.Content.ReadAsStringAsync());
-                }
-            }),
-
-            ("GET Cancellation",
-            async ctx =>
-            {
-                Version httpVersion = ctx.GetRandomVersion(httpVersions);
-                using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri) { Version = httpVersion })
-                {
-                    var cts = new CancellationTokenSource();
-                    Task<HttpResponseMessage> t = ctx.HttpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
-                    await Task.Delay(1);
-                    cts.Cancel();
-                    try
-                    {
-                        using (HttpResponseMessage m = await t)
-                        {
-                            ValidateResponse(m, httpVersion);
-                            ValidateContent(contentSource, await m.Content.ReadAsStringAsync());
-                        }
-                    }
-                    catch (OperationCanceledException) { }
                 }
             }),
 
@@ -205,7 +185,7 @@ public class Program
                 {
                     using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri + "/abort") { Version = httpVersion })
                     {
-                        await ctx.HttpClient.SendAsync(req);
+                        await ctx.SendAsync(req);
                     }
                     throw new Exception("Completed unexpectedly");
                 }
@@ -248,7 +228,7 @@ public class Program
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
 
                 using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri) { Version = httpVersion, Content = new StringDuplexContent(content) })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent(content, await m.Content.ReadAsStringAsync());;
@@ -262,7 +242,7 @@ public class Program
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
 
                 using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri) { Version = httpVersion, Content = formData.formDataContent })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent($"{formData.expected}", await m.Content.ReadAsStringAsync());;
@@ -276,7 +256,7 @@ public class Program
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
 
                 using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri + "/duplex") { Version = httpVersion, Content = new StringDuplexContent(content) })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
+                using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent(content, await m.Content.ReadAsStringAsync());
@@ -290,7 +270,7 @@ public class Program
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
 
                 using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri + "/duplexSlow") { Version = httpVersion, Content = new ByteAtATimeNoLengthContent(Encoding.ASCII.GetBytes(content)) })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
+                using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
                 {
                     ValidateResponse(m, httpVersion);
                     ValidateContent(content, await m.Content.ReadAsStringAsync());
@@ -306,36 +286,11 @@ public class Program
                 using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri) { Version = httpVersion, Content = new StringContent(content) })
                 {
                     req.Headers.ExpectContinue = true;
-                    using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
+                    using (HttpResponseMessage m = await ctx.SendAsync(req, HttpCompletionOption.ResponseHeadersRead))
                     {
                         ValidateResponse(m, httpVersion);
                         ValidateContent(content, await m.Content.ReadAsStringAsync());
                     }
-                }
-            }),
-
-            ("POST Cancellation",
-            async ctx =>
-            {
-                string content = ctx.GetRandomSubstring(contentSource);
-                Version httpVersion = ctx.GetRandomVersion(httpVersions);
-
-                using (var req = new HttpRequestMessage(HttpMethod.Post, serverUri) { Version = httpVersion, Content = new StringContent(content) })
-                {
-                    var cts = new CancellationTokenSource();
-                    req.Content = new CancelableContent(cts.Token);
-                    Task<HttpResponseMessage> t = ctx.HttpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, cts.Token);
-                    await Task.Delay(1);
-                    cts.Cancel();
-                    try
-                    {
-                        using (HttpResponseMessage m = await t)
-                        {
-                            ValidateResponse(m, httpVersion);
-                            ValidateContent(content, await m.Content.ReadAsStringAsync());
-                        }
-                    }
-                    catch (OperationCanceledException) { }
                 }
             }),
 
@@ -344,7 +299,7 @@ public class Program
             {
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
                 using (var req = new HttpRequestMessage(HttpMethod.Head, serverUri) { Version = httpVersion })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     if (m.Content.Headers.ContentLength != maxContentLength)
@@ -363,7 +318,7 @@ public class Program
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
 
                 using (var req = new HttpRequestMessage(HttpMethod.Put, serverUri) { Version = httpVersion, Content = new StringContent(content) })
-                using (HttpResponseMessage m = await ctx.HttpClient.SendAsync(req))
+                using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
                     string r = await m.Content.ReadAsStringAsync();
@@ -396,6 +351,7 @@ public class Program
         Console.WriteLine("        Lifetime: " + (connectionLifetime.HasValue ? $"{connectionLifetime}ms" : "(infinite)"));
         Console.WriteLine("      Operations: " + string.Join(", ", clientOperations.Select(o => o.Item1)));
         Console.WriteLine("     Random Seed: " + seed);
+        Console.WriteLine("    Cancellation: " + 100 * cancellationProbability + "%");
         Console.WriteLine("Query Parameters: " + numParameters);
         Console.WriteLine();
 
@@ -539,7 +495,7 @@ public class Program
         {
             // Track all successes and failures
             long total = 0;
-            long[] success = new long[clientOperations.Length], fail = new long[clientOperations.Length];
+            long[] success = new long[clientOperations.Length], cancel = new long[clientOperations.Length], fail = new long[clientOperations.Length];
             long reuseAddressFailure = 0;
 
             void Increment(ref long counter)
@@ -575,8 +531,12 @@ public class Program
                             Console.ResetColor();
                             Console.ForegroundColor = ConsoleColor.Green;
                             Console.Write("Success: ");
-                            Console.ResetColor();
                             Console.Write(success[i].ToString("N0"));
+                            Console.ResetColor();
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            Console.Write("\tCanceled: ");
+                            Console.Write(cancel[i].ToString("N0"));
+                            Console.ResetColor();
                             Console.ForegroundColor = ConsoleColor.DarkRed;
                             Console.Write("\tFail: ");
                             Console.ResetColor();
@@ -591,17 +551,36 @@ public class Program
             // Start N workers, each of which sits in a loop making requests.
             Task.WaitAll(Enumerable.Range(0, concurrentRequests).Select(taskNum => Task.Run(async () =>
             {
-                var clientContext = new ClientContext(client, taskNum: taskNum, seed: seed);
+                // Creates a System.Random instance that is specific to the current client job
+                // Generated using the global seed and the task index
+                Random CreateRandomInstance()
+                {
+                    // deterministic hashing copied from System.Runtime.Hashing
+                    int Combine(int h1, int h2)
+                    {
+                        uint rol5 = ((uint)h1 << 5) | ((uint)h1 >> 27);
+                        return ((int)rol5 + h1) ^ h2;
+                    }
+
+                    return new Random(Seed: Combine(taskNum, seed));
+                }
+
+                Random random = CreateRandomInstance();
 
                 for (long i = taskNum; ; i++)
                 {
                     long opIndex = i % clientOperations.Length;
-                    (string operation, Func<ClientContext, Task> func) = clientOperations[opIndex];
+                    (string operation, Func<RequestContext, Task> func) = clientOperations[opIndex];
+                    var requestContext = new RequestContext(client, random, taskNum, cancellationProbability);
                     try
                     {
-                        await func(clientContext);
+                        await func(requestContext);
 
                         Increment(ref success[opIndex]);
+                    }
+                    catch (OperationCanceledException) when (requestContext.IsCancellationRequested)
+                    {
+                        Increment(ref cancel[opIndex]);
                     }
                     catch (Exception e)
                     {
@@ -631,7 +610,7 @@ public class Program
         GC.KeepAlive(listener);
     }
 
-    private static (string, string) GetGetQueryParameters(string contentSource, ClientContext clientContext, int numParameters)
+    private static (string, string) GetGetQueryParameters(string contentSource, RequestContext clientContext, int numParameters)
     {
         StringBuilder queryString = new StringBuilder();
         StringBuilder expectedString = new StringBuilder();
@@ -650,7 +629,7 @@ public class Program
         return (queryString.ToString(), expectedString.ToString());
     }
 
-    private static (string, MultipartContent) GetMultipartContent(string contentSource, ClientContext clientContext, int numFormFields)
+    private static (string, MultipartContent) GetMultipartContent(string contentSource, RequestContext clientContext, int numFormFields)
     {
         var multipartContent = new MultipartContent("prefix" + clientContext.GetRandomSubstring(contentSource), "test_boundary");
         StringBuilder sb = new StringBuilder();
@@ -673,33 +652,69 @@ public class Program
         return (sb.ToString(), multipartContent);
     }
 
-    /// <summary>Client context containing information pertaining to a single worker.</summary>
-    private sealed class ClientContext
+    /// <summary>Client context containing information pertaining to a single request.</summary>
+    private sealed class RequestContext
     {
         private readonly Random _random;
+        private readonly HttpClient _client;
+        private readonly double _cancellationProbability;
 
-        public ClientContext(HttpClient httpClient, int taskNum, int seed)
+        public RequestContext(HttpClient httpClient, Random random, int taskNum, double cancellationProbability)
         {
-            _random = new Random(Combine(seed, taskNum)); // derived from global seed and worker number
-            TaskNum = taskNum;
-            HttpClient = httpClient;
+            _random = random;
+            _client = httpClient;
+            _cancellationProbability = cancellationProbability;
 
-            // deterministic hashing copied from System.Runtime.Hashing
-            int Combine(int h1, int h2)
+            TaskNum = taskNum;
+            IsCancellationRequested = false;
+        }
+
+        public int TaskNum { get; }
+        public bool IsCancellationRequested { get; set; }
+
+        // HttpClient.SendAsync() wrapper that wires randomized cancellation
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, HttpCompletionOption httpCompletion = HttpCompletionOption.ResponseContentRead, CancellationToken? token = null)
+        {
+            if (token != null)
             {
-                uint rol5 = ((uint)h1 << 5) | ((uint)h1 >> 27);
-                return ((int)rol5 + h1) ^ h2;
+                // user-supplied cancellation token overrides random cancellation
+                return await _client.SendAsync(request, httpCompletion, token.Value);
+            }
+            else if (GetRandomBoolean(_cancellationProbability))
+            {
+                // trigger a random cancellation
+                using (var cts = new CancellationTokenSource())
+                {
+                    int delayMs = _random.Next(0, 2);
+                    Task<HttpResponseMessage> task = _client.SendAsync(request, httpCompletion, cts.Token);
+                    if (delayMs > 0)
+                        await Task.Delay(delayMs);
+
+                    cts.Cancel();
+                    IsCancellationRequested = true;
+                    return await task;
+                }
+            }
+            else
+            {
+                // no cancellation
+                return await _client.SendAsync(request, httpCompletion);
             }
         }
-        public int TaskNum { get; }
-
-        public HttpClient HttpClient { get; }
 
         public string GetRandomSubstring(string input)
         {
             int offset = _random.Next(0, input.Length);
             int length = _random.Next(0, input.Length - offset + 1);
             return input.Substring(offset, length);
+        }
+
+        public bool GetRandomBoolean(double probability = 0.5)
+        {
+            if (probability < 0 || probability > 1)
+                throw new ArgumentOutOfRangeException(nameof(probability));
+
+            return _random.NextDouble() < probability;
         }
 
         public int GetRandomInt(int maxValue) => _random.Next(0, maxValue);
