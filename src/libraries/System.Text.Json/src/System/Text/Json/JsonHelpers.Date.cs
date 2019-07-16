@@ -32,9 +32,7 @@ namespace System.Text.Json
         /// <returns>"true" if successfully parsed.</returns>
         public static bool TryParseAsISO(ReadOnlySpan<byte> source, out DateTime value)
         {
-            DateTimeParseData parseData = new DateTimeParseData();
-
-            if (!TryParseDateTimeOffset(source, ref parseData))
+            if (!TryParseDateTimeOffset(source, out DateTimeParseData parseData))
             {
                 value = default;
                 return false;
@@ -42,7 +40,7 @@ namespace System.Text.Json
 
             if (parseData.OffsetToken == JsonConstants.UtcOffsetToken)
             {
-                return TryCreateDateTime(ref parseData, DateTimeKind.Utc, out value);
+                return TryCreateDateTime(parseData, DateTimeKind.Utc, out value);
             }
             else if (parseData.OffsetToken == JsonConstants.Plus || parseData.OffsetToken == JsonConstants.Hyphen)
             {
@@ -56,7 +54,7 @@ namespace System.Text.Json
                 return true;
             }
 
-            return TryCreateDateTime(ref parseData, DateTimeKind.Unspecified, out value);
+            return TryCreateDateTime(parseData, DateTimeKind.Unspecified, out value);
         }
 
         /// <summary>
@@ -67,9 +65,7 @@ namespace System.Text.Json
         /// <returns>"true" if successfully parsed.</returns>
         public static bool TryParseAsISO(ReadOnlySpan<byte> source, out DateTimeOffset value)
         {
-            DateTimeParseData parseData = new DateTimeParseData();
-
-            if (!TryParseDateTimeOffset(source, ref parseData))
+            if (!TryParseDateTimeOffset(source, out DateTimeParseData parseData))
             {
                 value = default;
                 return false;
@@ -82,7 +78,7 @@ namespace System.Text.Json
             }
 
             // No offset, attempt to read as local time.
-            return TryCreateDateTimeOffsetInterpretingDataAsLocalTime(ref parseData, out value);
+            return TryCreateDateTimeOffsetInterpretingDataAsLocalTime(parseData, out value);
         }
 
         /// <summary>
@@ -112,11 +108,12 @@ namespace System.Text.Json
         /// Spaces are not permitted.
         /// </remarks>
         /// <returns>"true" if successfully parsed.</returns>
-        private static bool TryParseDateTimeOffset(ReadOnlySpan<byte> source, ref DateTimeParseData parseData)
+        private static bool TryParseDateTimeOffset(ReadOnlySpan<byte> source, out DateTimeParseData parseData)
         {
             // Source does not have enough characters for YYYY-MM-DD
             if (source.Length < 10)
             {
+                parseData = default;
                 return false;
             }
 
@@ -131,6 +128,8 @@ namespace System.Text.Json
             // Note: 5.2.2.2 "Representations with reduced precision" allows for
             // just [year][“-”][month] (a) and just [year] (b), but we currently
             // don't permit it.
+
+            parseData = new DateTimeParseData();
 
             {
                 uint digit1 = source[0] - (uint)'0';
@@ -427,7 +426,7 @@ namespace System.Text.Json
         /// </summary>
         private static bool TryCreateDateTimeOffset(ref DateTimeParseData parseData, out DateTimeOffset value)
         {
-            if (!TryCreateDateTime(ref parseData, kind: DateTimeKind.Unspecified, out DateTime dateTime))
+            if (!TryCreateDateTime(parseData, kind: DateTimeKind.Unspecified, out DateTime dateTime))
             {
                 value = default;
                 return false;
@@ -445,9 +444,9 @@ namespace System.Text.Json
         /// <summary>
         /// Overflow-safe DateTimeOffset/Local time conversion factory.
         /// </summary>
-        private static bool TryCreateDateTimeOffsetInterpretingDataAsLocalTime(ref DateTimeParseData parseData, out DateTimeOffset value)
+        private static bool TryCreateDateTimeOffsetInterpretingDataAsLocalTime(DateTimeParseData parseData, out DateTimeOffset value)
         {
-            if (!TryCreateDateTime(ref parseData, DateTimeKind.Local, out DateTime dateTime))
+            if (!TryCreateDateTime(parseData, DateTimeKind.Local, out DateTime dateTime))
             {
                 value = default;
                 return false;
@@ -471,7 +470,7 @@ namespace System.Text.Json
         /// <summary>
         /// Overflow-safe DateTime factory.
         /// </summary>
-        private static bool TryCreateDateTime(ref DateTimeParseData parseData, DateTimeKind kind, out DateTime value)
+        private static bool TryCreateDateTime(DateTimeParseData parseData, DateTimeKind kind, out DateTime value)
         {
             if (parseData.Year == 0)
             {
