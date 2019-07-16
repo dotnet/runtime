@@ -293,6 +293,12 @@
         "linux"
       ]
     },
+    "fedora-arm64": {
+      "#import": [
+        "fedora",
+        "linux-arm64"
+      ]
+    },
     "fedora-x64": {
       "#import": [
         "fedora",
@@ -302,6 +308,12 @@
     "fedora.23": {
       "#import": [
         "fedora"
+      ]
+    },
+    "fedora.23-arm64": {
+      "#import": [
+        "fedora.23",
+        "fedora-arm64"
       ]
     },
     "fedora.23-x64": {
@@ -315,6 +327,12 @@
         "fedora"
       ]
     },
+    "fedora.24-arm64": {
+      "#import": [
+        "fedora.24",
+        "fedora-arm64"
+      ]
+    },
     "fedora.24-x64": {
       "#import": [
         "fedora.24",
@@ -324,6 +342,12 @@
     "fedora.25": {
       "#import": [
         "fedora"
+      ]
+    },
+    "fedora.25-arm64": {
+      "#import": [
+        "fedora.25",
+        "fedora-arm64"
       ]
     },
     "fedora.25-x64": {
@@ -337,6 +361,12 @@
         "fedora"
       ]
     },
+    "fedora.26-arm64": {
+      "#import": [
+        "fedora.26",
+        "fedora-arm64"
+      ]
+    },
     "fedora.26-x64": {
       "#import": [
         "fedora.26",
@@ -346,6 +376,12 @@
     "fedora.27": {
       "#import": [
         "fedora"
+      ]
+    },
+    "fedora.27-arm64": {
+      "#import": [
+        "fedora.27",
+        "fedora-arm64"
       ]
     },
     "fedora.27-x64": {
@@ -359,6 +395,12 @@
         "fedora"
       ]
     },
+    "fedora.28-arm64": {
+      "#import": [
+        "fedora.28",
+        "fedora-arm64"
+      ]
+    },
     "fedora.28-x64": {
       "#import": [
         "fedora.28",
@@ -368,6 +410,12 @@
     "fedora.29": {
       "#import": [
         "fedora"
+      ]
+    },
+    "fedora.29-arm64": {
+      "#import": [
+        "fedora.29",
+        "fedora-arm64"
       ]
     },
     "fedora.29-x64": {
@@ -381,6 +429,12 @@
         "fedora"
       ]
     },
+    "fedora.30-arm64": {
+      "#import": [
+        "fedora.30",
+        "fedora-arm64"
+      ]
+    },
     "fedora.30-x64": {
       "#import": [
         "fedora.30",
@@ -390,6 +444,12 @@
     "fedora.31": {
       "#import": [
         "fedora"
+      ]
+    },
+    "fedora.31-arm64": {
+      "#import": [
+        "fedora.31",
+        "fedora-arm64"
       ]
     },
     "fedora.31-x64": {
@@ -966,6 +1026,12 @@
         "linux"
       ]
     },
+    "rhel-arm64": {
+      "#import": [
+        "rhel",
+        "linux-arm64"
+      ]
+    },
     "rhel-x64": {
       "#import": [
         "rhel",
@@ -1076,6 +1142,12 @@
         "rhel"
       ]
     },
+    "rhel.8-arm64": {
+      "#import": [
+        "rhel.8",
+        "rhel-arm64"
+      ]
+    },
     "rhel.8-x64": {
       "#import": [
         "rhel.8",
@@ -1087,6 +1159,12 @@
         "rhel.8"
       ]
     },
+    "rhel.8.0-arm64": {
+      "#import": [
+        "rhel.8.0",
+        "rhel.8-arm64"
+      ]
+    },
     "rhel.8.0-x64": {
       "#import": [
         "rhel.8.0",
@@ -1096,6 +1174,12 @@
     "rhel.8.1": {
       "#import": [
         "rhel.8.0"
+      ]
+    },
+    "rhel.8.1-arm64": {
+      "#import": [
+        "rhel.8.1",
+        "rhel.8.0-arm64"
       ]
     },
     "rhel.8.1-x64": {

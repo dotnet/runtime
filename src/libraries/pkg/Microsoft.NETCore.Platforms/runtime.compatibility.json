@@ -587,6 +587,16 @@
     "any",
     "base"
   ],
+  "fedora-arm64": [
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora-x64": [
     "fedora-x64",
     "fedora",
@@ -601,6 +611,18 @@
     "fedora.23",
     "fedora",
     "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.23-arm64": [
+    "fedora.23-arm64",
+    "fedora.23",
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
     "unix",
     "any",
     "base"
@@ -625,6 +647,18 @@
     "any",
     "base"
   ],
+  "fedora.24-arm64": [
+    "fedora.24-arm64",
+    "fedora.24",
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora.24-x64": [
     "fedora.24-x64",
     "fedora.24",
@@ -641,6 +675,18 @@
     "fedora.25",
     "fedora",
     "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.25-arm64": [
+    "fedora.25-arm64",
+    "fedora.25",
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
     "unix",
     "any",
     "base"
@@ -665,6 +711,18 @@
     "any",
     "base"
   ],
+  "fedora.26-arm64": [
+    "fedora.26-arm64",
+    "fedora.26",
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora.26-x64": [
     "fedora.26-x64",
     "fedora.26",
@@ -681,6 +739,18 @@
     "fedora.27",
     "fedora",
     "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.27-arm64": [
+    "fedora.27-arm64",
+    "fedora.27",
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
     "unix",
     "any",
     "base"
@@ -705,6 +775,18 @@
     "any",
     "base"
   ],
+  "fedora.28-arm64": [
+    "fedora.28-arm64",
+    "fedora.28",
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora.28-x64": [
     "fedora.28-x64",
     "fedora.28",
@@ -721,6 +803,18 @@
     "fedora.29",
     "fedora",
     "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.29-arm64": [
+    "fedora.29-arm64",
+    "fedora.29",
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
     "unix",
     "any",
     "base"
@@ -745,6 +839,18 @@
     "any",
     "base"
   ],
+  "fedora.30-arm64": [
+    "fedora.30-arm64",
+    "fedora.30",
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
   "fedora.30-x64": [
     "fedora.30-x64",
     "fedora.30",
@@ -761,6 +867,18 @@
     "fedora.31",
     "fedora",
     "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "fedora.31-arm64": [
+    "fedora.31-arm64",
+    "fedora.31",
+    "fedora-arm64",
+    "fedora",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
     "unix",
     "any",
     "base"
@@ -2116,6 +2234,16 @@
     "any",
     "base"
   ],
+  "rhel-arm64": [
+    "rhel-arm64",
+    "rhel",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
   "rhel-x64": [
     "rhel-x64",
     "rhel",
@@ -2398,6 +2526,18 @@
     "any",
     "base"
   ],
+  "rhel.8-arm64": [
+    "rhel.8-arm64",
+    "rhel.8",
+    "rhel-arm64",
+    "rhel",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
+    "unix",
+    "any",
+    "base"
+  ],
   "rhel.8-x64": [
     "rhel.8-x64",
     "rhel.8",
@@ -2415,6 +2555,20 @@
     "rhel.8",
     "rhel",
     "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "rhel.8.0-arm64": [
+    "rhel.8.0-arm64",
+    "rhel.8.0",
+    "rhel.8-arm64",
+    "rhel.8",
+    "rhel-arm64",
+    "rhel",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
     "unix",
     "any",
     "base"
@@ -2439,6 +2593,22 @@
     "rhel.8",
     "rhel",
     "linux",
+    "unix",
+    "any",
+    "base"
+  ],
+  "rhel.8.1-arm64": [
+    "rhel.8.1-arm64",
+    "rhel.8.1",
+    "rhel.8.0-arm64",
+    "rhel.8.0",
+    "rhel.8-arm64",
+    "rhel.8",
+    "rhel-arm64",
+    "rhel",
+    "linux-arm64",
+    "linux",
+    "unix-arm64",
     "unix",
     "any",
     "base"
