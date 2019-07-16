@@ -4,8 +4,16 @@
           DependsOnTargets="
             GetProductVersions;
             DetermineTestOutputDirectory">
-    <!-- Ensure installers (and therefore shared framework projects) are built first. -->
-    <MSBuild Projects="$(SourceDir)pkg\packaging\installers.proj" Targets="Build" />
+    <!--
+      Ensure installers (and therefore shared framework projects) are built first. Include used
+      transitive dependenices here in case Subset is defined.
+    -->
+    <MSBuild
+      Projects="
+        @(ManagedProjectToBuild);
+        @(PkgprojProjectToBuild);
+        @(InstallerProjectToBuild)"
+      Targets="Build" />
 
     <PropertyGroup>
       <TempFolderRoot>$(IntermediateOutputPath)temp\</TempFolderRoot>

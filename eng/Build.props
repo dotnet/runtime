@@ -1,44 +1,61 @@
 <Project>
 
   <!--
-    Projects for Arcade to build.
+    Import projects for Arcade to build.
 
-    %(SignPhase): Indicates this project must be built before a certain signing phase. Projects can
-      depend on 'signing/stages/Sign<stage>.proj' to wait until all projects that are part of a
-      stage are complete. This allows the build to perform complex container signing that isn't
-      (can't be?) supported by Arcade's single pass, such as MSIs and bundles:
+    The imported file supports the '/p:Subset=<desired subset string>' dev build argument.
+
+    Each subset has its own '<subset>ProjectToBuild' items so that a project in the build can depend
+    on a whole subset, and the dependency on the subset is disregarded automatically when Subset
+    doesn't contain it.
+
+    %(ProjectToBuild.SignPhase): Indicates this project must be built before a certain signing
+      phase. Projects can depend on 'signing/stages/Sign<stage>.proj' to wait until all projects
+      that are part of a stage are complete. This allows the build to perform complex container
+      signing that isn't (can't be?) supported by Arcade's single pass, such as MSIs and bundles:
       https://github.com/dotnet/arcade/issues/388
   -->
-  <ItemGroup>
-    <ProjectToBuild Include="$(RepoRoot)src\corehost\build.proj" SignPhase="Binaries" />
-    <ProjectToBuild Include="$(RepoRoot)src\managed\**\*.csproj" SignPhase="Binaries" />
+  <Import Project="$(MSBuildThisFileDirectory)..\Subsets.props" />
 
-    <!--
-      Build pkgproj/depproj but not sfxproj. sfxproj requires pkgprojs to build their nupkgs first,
-      before Restore, which doesn't seem supported by Arcade.
-    -->
-    <ProjectToBuild Include="$(RepoRoot)src\pkg\projects\**\*.depproj" SignPhase="Binaries" />
-    <ProjectToBuild Include="$(RepoRoot)src\pkg\projects\**\*.pkgproj" SignPhase="MsiFiles" />
+  <Target Name="CheckSpecifiedSubsetValidity"
+          DependsOnTargets="
+            FindInvalidSpecifiedSubsetNames;
+            ReportValidSubsetList"
+          BeforeTargets="Execute" />
 
-    <ProjectToBuild Include="$(RepoRoot)src\pkg\packaging\installers.proj" />
-    <ProjectToBuild Include="$(RepoRoot)src\pkg\packaging\pack-managed.proj" />
+  <Target Name="FindInvalidSpecifiedSubsetNames">
+    <ItemGroup>
+      <SpecifiedSubsetName Include="$([MSBuild]::Unescape($(Subset.Replace('-', ';'))))" />
 
-    <!-- Test projects. -->
-    <ProjectToBuild Include="$(RepoRoot)src\test\BundleTests\AppHost.Bundle.Tests\AppHost.Bundle.Tests.csproj" />
-    <ProjectToBuild Include="$(RepoRoot)src\test\BundleTests\Microsoft.NET.HostModel.Bundle.Tests\Microsoft.NET.HostModel.Bundle.Tests.csproj" />
-    <ProjectToBuild Include="$(RepoRoot)src\test\HostActivation.Tests\HostActivation.Tests.csproj" />
-    <ProjectToBuild Include="$(RepoRoot)src\test\Microsoft.DotNet.CoreSetup.Packaging.Tests\Microsoft.DotNet.CoreSetup.Packaging.Tests.csproj" />
-    <ProjectToBuild Include="$(RepoRoot)src\test\Microsoft.Extensions.DependencyModel.Tests\Microsoft.Extensions.DependencyModel.Tests.csproj" />
-  </ItemGroup>
+      <!-- MSBuild Exclude is case-insensitive, which matches intended behavior. -->
+      <InvalidSpecifiedSubsetName Include="@(SpecifiedSubsetName)" Exclude="@(SubsetName)" />
+    </ItemGroup>
 
-  <PropertyGroup>
-    <RepoTasksDir>$(RepoRoot)tools-local\tasks\</RepoTasksDir>
-    <RepoTasksOutputFile>$(ArtifactsObjDir)core-setup.tasks\$(Configuration)\build-semaphore.txt</RepoTasksOutputFile>
-  </PropertyGroup>
+    <PropertyGroup>
+      <UserRequestedHelp Condition="'%(InvalidSpecifiedSubsetName.Identity)' == 'help'">true</UserRequestedHelp>
+    </PropertyGroup>
+  </Target>
 
-  <ItemGroup>
-    <RepoTasksSrc Include="$(RepoTasksDir)**\*.cs" />
-  </ItemGroup>
+  <Target Name="ReportValidSubsetList"
+          Condition="'@(InvalidSpecifiedSubsetName)' != ''">
+    <ItemGroup>
+      <SubsetName Text="- %(Identity)" />
+      <SubsetName Text="%(Text) [only runs on demand]" Condition="'%(SubsetName.OnDemand)' == 'true'" />
+      <SubsetName Text="%(Text)%0A    %(Description)" />
+    </ItemGroup>
+
+    <Message
+      Text="%0AAccepted Subset values (see Subsets.props for more info):%0A@(SubsetName->'%(Text)', '%0A')%0A"
+      Importance="High" />
+
+    <Error
+      Text="Subset not recognized: @(InvalidSpecifiedSubsetName, ' ')"
+      Condition="'$(UserRequestedHelp)' != 'true'" />
+
+    <Error
+      Text="Choose a subset to use, or do not specify a subset to perform the full build."
+      Condition="'$(UserRequestedHelp)' == 'true'" />
+  </Target>
 
   <!--
     Use this extensibility point to build custom tasks during Build.proj, before any restoring or
@@ -53,6 +70,7 @@
     isn't particularly accurate, but better than nothing.
   -->
   <Target Name="BuildRepoTasks"
+          DependsOnTargets="GetRepoTasksSrc"
           BeforeTargets="Execute"
           Inputs="@(RepoTasksSrc)"
           Outputs="$(RepoTasksOutputFile)">
@@ -68,6 +86,17 @@
       File="$(RepoTasksOutputFile)"
       Lines="$(RepoTasksOutputFile)"
       Overwrite="true" />
+  </Target>
+
+  <Target Name="GetRepoTasksSrc">
+    <PropertyGroup>
+      <RepoTasksDir>$(RepoRoot)tools-local\tasks\</RepoTasksDir>
+      <RepoTasksOutputFile>$(ArtifactsObjDir)core-setup.tasks\$(Configuration)\build-semaphore.txt</RepoTasksOutputFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <RepoTasksSrc Include="$(RepoTasksDir)**\*.cs" />
+    </ItemGroup>
   </Target>
 
 </Project>

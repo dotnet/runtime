@@ -1,8 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk" DefaultTargets="RegenerateReadmeTable">
+<Project>
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
 
   <UsingTask TaskName="RegenerateReadmeTable" AssemblyFile="$(LocalBuildToolsTaskFile)" />
 
-  <Target Name="RegenerateReadmeTable">
+  <Target Name="Build">
     <!--
       Column and row configuration for the readme table. The abbreviations match up with
       reference-style Markdown links in the readme file to figure out what to put in the cells.
@@ -41,6 +42,9 @@
       ReadmeFile="$(RepoRoot)README.md"
       Branches="@(Branches)"
       Platforms="@(Platforms)" />
+
+    <Message Text="$(MSBuildProjectName) -> $(RepoRoot)README.md" Importance="High" />
   </Target>
 
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.targets))\Directory.Build.targets" />
 </Project>

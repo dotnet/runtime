@@ -2,9 +2,6 @@
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" />
 
-  <!-- Some signing stages check Build.props to find which projects to depend on. -->
-  <Import Project="$(RepositoryEngineeringDir)Build.props" />
-
   <PropertyGroup>
     <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
 

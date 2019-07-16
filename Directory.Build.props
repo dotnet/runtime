@@ -11,6 +11,12 @@
   <Import Project="Sdk.props" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
   <!--
+    Get ProjectToBuild and '<subset>ProjectToBuild' items. Using the items lets projects handle
+    $(Subset) automatically when creating project-to-project dependencies.
+  -->
+  <Import Project="$(RepositoryEngineeringDir)Build.props" />
+
+  <!--
     Before Microsoft.Common.targets, set the extensions path to match the restore dir as Arcade
     sets it, so MSBuild packages with targets files will be found and imported.
   -->
