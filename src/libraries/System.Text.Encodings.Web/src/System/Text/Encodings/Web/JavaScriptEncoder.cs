@@ -71,10 +71,11 @@ namespace System.Text.Encodings.Web
             // so this offers extra protection.
             DefaultHtmlEncoder.ForbidHtmlCharacters(_allowedCharacters);
 
+            // '\' (U+005C REVERSE SOLIDUS) must always be escaped in Javascript / ECMAScript / JSON.
+            // '/' (U+002F SOLIDUS) is not Javascript / ECMAScript / JSON-sensitive so doesn't need to be escaped.
             _allowedCharacters.ForbidCharacter('\\');
-            _allowedCharacters.ForbidCharacter('/');
             
-            // Forbid GRAVE ACCENT \u0060 character.
+            // '`' (U+0060 GRAVE ACCENT) is ECMAScript-sensitive (see ECMA-262).
             _allowedCharacters.ForbidCharacter('`'); 
         }
 
@@ -111,7 +112,6 @@ namespace System.Text.Encodings.Web
         static readonly char[] s_n = new char[] { '\\', 'n' };
         static readonly char[] s_f = new char[] { '\\', 'f' };
         static readonly char[] s_r = new char[] { '\\', 'r' };
-        static readonly char[] s_forward = new char[] { '\\', '/' };
         static readonly char[] s_back = new char[] { '\\', '\\' };
 
         // Writes a scalar value as a JavaScript-escaped character (or sequence of characters).
@@ -125,8 +125,12 @@ namespace System.Text.Encodings.Web
                 throw new ArgumentNullException(nameof(buffer));
             }
             // ECMA-262 allows encoding U+000B as "\v", but ECMA-404 does not.
-            // Both ECMA-262 and ECMA-404 allow encoding U+002F SOLIDUS as "\/".
-            // (In ECMA-262 this character is a NonEscape character.)
+            // Both ECMA-262 and ECMA-404 allow encoding U+002F SOLIDUS as "\/"
+            // (in ECMA-262 this character is a NonEscape character); however, we
+            // don't encode SOLIDUS by default unless the caller has provided an
+            // explicit bitmap which does not contain it. In this case we'll assume
+            // that the caller didn't want a SOLIDUS written to the output at all,
+            // so it should be written using "\u002F" encoding.
             // HTML-specific characters (including apostrophe and quotes) will
             // be written out as numeric entities for defense-in-depth.
             // See UnicodeEncoderBase ctor comments for more info.
@@ -141,7 +145,6 @@ namespace System.Text.Encodings.Web
                 case '\n': toCopy = s_n; break;
                 case '\f': toCopy = s_f; break;
                 case '\r': toCopy = s_r; break;
-                case '/': toCopy = s_forward; break;
                 case '\\': toCopy = s_back; break;
                 default: return TryWriteEncodedScalarAsNumericEntity(unicodeScalar, buffer, bufferLength, out numberOfCharactersWritten); 
             }
