@@ -27,7 +27,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Web;
 using System.Collections.Specialized;
-using Microsoft.AspNetCore.Routing.Constraints;
 
 /// <summary>
 /// Simple HttpClient stress app that launches Kestrel in-proc and runs many concurrent requests of varying types against it.
@@ -48,6 +47,7 @@ public class Program
         cmd.AddOption(new Option("-seed", "Seed for generating pseudo-random parameters for a given -n argument.") { Argument = new Argument<int?>("seed", null)});
         cmd.AddOption(new Option("-numParameters", "Max number of query parameters or form fields for a request.") { Argument = new Argument<int>("queryParameters", 1) });
         cmd.AddOption(new Option("-cancelRate", "Number between 0 and 1 indicating rate of client-side request cancellation attempts. Defaults to 0.1.") { Argument = new Argument<double>("probability", 0.1) });
+        cmd.AddOption(new Option("-httpSys", "Use http.sys instead of Kestrel.") { Argument = new Argument<bool>("enable", false) });
 
         ParseResult cmdline = cmd.Parse(args);
         if (cmdline.Errors.Count > 0)
@@ -61,7 +61,8 @@ public class Program
             return;
         }
 
-        Run(concurrentRequests      : cmdline.ValueForOption<int>("-n"),
+        Run(httpSys                 : cmdline.ValueForOption<bool>("-httpSys"),
+            concurrentRequests      : cmdline.ValueForOption<int>("-n"),
             maxContentLength        : cmdline.ValueForOption<int>("-maxContentLength"),
             httpVersions            : cmdline.ValueForOption<Version[]>("-http"),
             connectionLifetime      : cmdline.ValueForOption<int?>("-connectionLifetime"),
@@ -74,7 +75,7 @@ public class Program
             cancellationProbability : Math.Max(0, Math.Min(1, cmdline.ValueForOption<double>("-cancelRate"))));
     }
 
-    private static void Run(int concurrentRequests, int maxContentLength, Version[] httpVersions, int? connectionLifetime, int[] opIndices, string logPath, bool aspnetLog, bool listOps, int seed, int numParameters, double cancellationProbability)
+    private static void Run(bool httpSys, int concurrentRequests, int maxContentLength, Version[] httpVersions, int? connectionLifetime, int[] opIndices, string logPath, bool aspnetLog, bool listOps, int seed, int numParameters, double cancellationProbability)
     {
         // Handle command-line arguments.
         EventListener listener =
@@ -212,7 +213,8 @@ public class Program
                             case "Http2ProtocolException":
                             case "Http2ConnectionException":
                             case "Http2StreamException":
-                                if (e.InnerException.Message.Contains("INTERNAL_ERROR"))
+                                if (e.InnerException.Message.Contains("INTERNAL_ERROR") || // UseKestrel (https://github.com/aspnet/AspNetCore/issues/12256)
+                                    e.InnerException.Message.Contains("CANCEL")) // UseHttpSys
                                 {
                                     return;
                                 }
@@ -346,6 +348,8 @@ public class Program
 
         Console.WriteLine("       .NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(object).Assembly.Location)));
         Console.WriteLine("    ASP.NET Core: " + Path.GetFileName(Path.GetDirectoryName(typeof(WebHost).Assembly.Location)));
+        Console.WriteLine("          Server: " + (httpSys ? "http.sys" : "Kestrel"));
+        Console.WriteLine("      Server URL: " + serverUri);
         Console.WriteLine("         Tracing: " + (logPath == null ? (object)false : logPath.Length == 0 ? (object)true : logPath));
         Console.WriteLine("     ASP.NET Log: " + aspnetLog);
         Console.WriteLine("     Concurrency: " + concurrentRequests);
@@ -359,15 +363,35 @@ public class Program
         Console.WriteLine();
 
         // Start the Kestrel web server in-proc.
-        Console.WriteLine("Starting server.");
-        WebHost.CreateDefaultBuilder()
-
+        Console.WriteLine($"Starting {(httpSys ? "http.sys" : "Kestrel")} server.");
+        IWebHostBuilder host = WebHost.CreateDefaultBuilder();
+        if (httpSys)
+        {
+            // Use http.sys.  This requires additional manual configuration ahead of time;
+            // see https://docs.microsoft.com/en-us/aspnet/core/fundamentals/servers/httpsys?view=aspnetcore-2.2#configure-windows-server.
+            // In particular, you need to:
+            // 1. Create a self-signed cert and install it into your local personal store, e.g. New-SelfSignedCertificate -DnsName "localhost" -CertStoreLocation "cert:\LocalMachine\My"
+            // 2. Pre-register the URL prefix, e.g. netsh http add urlacl url=https://localhost:5001/ user=Users
+            // 3. Register the cert, e.g. netsh http add sslcert ipport=[::1]:5001 certhash=THUMBPRINTFROMABOVE appid="{some-guid}"
+            host = host.UseHttpSys(hso =>
+            {
+                maxRequestLineSize = 8192;
+                hso.UrlPrefixes.Add(serverUri);
+                hso.Authentication.Schemes = Microsoft.AspNetCore.Server.HttpSys.AuthenticationSchemes.None;
+                hso.Authentication.AllowAnonymous = true;
+                hso.MaxConnections = null;
+                hso.MaxRequestBodySize = null;
+            });
+        }
+        else
+        {
             // Use Kestrel, and configure it for HTTPS with a self-signed test certificate.
-            .UseKestrel(ko =>
+            host = host.UseKestrel(ko =>
             {
                 maxRequestLineSize = ko.Limits.MaxRequestLineSize;
                 ko.ListenLocalhost(HttpsPort, listenOptions =>
                 {
+                    // Create self-signed cert for server.
                     using (RSA rsa = RSA.Create())
                     {
                         var certReq = new CertificateRequest($"CN={LocalhostName}", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
@@ -382,10 +406,11 @@ public class Program
                         listenOptions.UseHttps(cert);
                     }
                 });
-            })
+            });
+        };
 
-            // Output only warnings and errors from Kestrel
-            .ConfigureLogging(log => log.AddFilter("Microsoft.AspNetCore", level => aspnetLog ? level >= LogLevel.Warning : false))
+        // Output only warnings and errors from Kestrel
+        host = host.ConfigureLogging(log => log.AddFilter("Microsoft.AspNetCore", level => aspnetLog ? level >= LogLevel.Warning : false))
 
             // Set up how each request should be handled by the server.
             .Configure(app =>
@@ -481,8 +506,9 @@ public class Program
                         await context.Request.Body.CopyToAsync(Stream.Null);
                     });
                 });
-            })
-            .Build()
+            });
+
+        host.Build()
             .Start();
 
         // Start the client.
