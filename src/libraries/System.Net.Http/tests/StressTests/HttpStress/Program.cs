@@ -565,7 +565,7 @@ public class Program
                     return new Random(Seed: Combine(taskNum, seed));
                 }
 
-                var random = CreateRandomInstance();
+                Random random = CreateRandomInstance();
 
                 for (long i = taskNum; ; i++)
                 {
