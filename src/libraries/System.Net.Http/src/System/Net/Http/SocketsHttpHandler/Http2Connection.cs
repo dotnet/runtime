@@ -1419,8 +1419,8 @@ namespace System.Net.Http
             // Do shutdown.
             _stream.Close();
 
-            _connectionWindow.Dispose();
-            _concurrentStreams.Dispose();
+            _connectionWindow.Dispose(_abortException);
+            _concurrentStreams.Dispose(_abortException);
         }
 
         public void Dispose()
