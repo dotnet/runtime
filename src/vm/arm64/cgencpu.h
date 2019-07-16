@@ -71,6 +71,21 @@ extern PCODE GetPreStubEntryPoint();
 //=======================================================================
 #define MAXFIELDMARSHALERSIZE               40
 
+inline
+ARG_SLOT FPSpillToR8(void* pSpillSlot)
+{
+    LIMITED_METHOD_CONTRACT;
+    return *(SIZE_T*)pSpillSlot;
+}
+
+inline
+void     R8ToFPSpill(void* pSpillSlot, SIZE_T  srcDoubleAsSIZE_T)
+{
+    LIMITED_METHOD_CONTRACT;
+    *(SIZE_T*)pSpillSlot = srcDoubleAsSIZE_T;
+    *((SIZE_T*)pSpillSlot + 1) = 0;
+}
+
 //**********************************************************************
 // Parameter size
 //**********************************************************************
