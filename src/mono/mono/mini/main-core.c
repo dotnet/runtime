@@ -227,6 +227,12 @@ int STDAPICALLTYPE coreclr_initialize (const char* exePath, const char* appDomai
 	if (native_lib_paths != NULL)
 		mono_set_pinvoke_search_directories (native_lib_paths->dir_count, native_lib_paths->dirs);
 
+	/*
+	 * Don't use Mono's legacy assembly name matching behavior - respect
+	 * the requested version and public key token.
+	 */
+	mono_loader_set_strict_strong_names (TRUE);
+
 	return 0;
 }
 
