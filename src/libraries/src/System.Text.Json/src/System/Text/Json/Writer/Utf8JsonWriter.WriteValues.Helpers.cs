@@ -50,19 +50,9 @@ namespace System.Text.Json
             encodedBytes = encodedBytes.Slice(0, written);
             Span<byte> destination = output.Slice(BytesPending);
 
-            int firstEscapeIndexVal = encodedBytes.IndexOfAny(JsonConstants.Plus, JsonConstants.Slash);
-            if (firstEscapeIndexVal == -1)
-            {
-                Debug.Assert(destination.Length >= written);
-                encodedBytes.Slice(0, written).CopyTo(destination);
-                BytesPending += written;
-            }
-            else
-            {
-                Debug.Assert(destination.Length >= written * JsonConstants.MaxExpansionFactorWhileEscaping);
-                JsonWriterHelper.EscapeString(encodedBytes, destination, firstEscapeIndexVal, _options.Encoder, out written);
-                BytesPending += written;
-            }
+            Debug.Assert(destination.Length >= written);
+            encodedBytes.Slice(0, written).CopyTo(destination);
+            BytesPending += written;
 
             if (outputText != null)
             {

@@ -212,11 +212,11 @@ namespace System.Text.Json
         {
             int encodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 
-            Debug.Assert(escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding < int.MaxValue - (encodedLength * JsonConstants.MaxExpansionFactorWhileEscaping) - 6);
+            Debug.Assert(escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding < int.MaxValue - encodedLength - 6);
 
             // All ASCII, 2 quotes for property name, 2 quotes to surround the base-64 encoded string value, and 1 colon => escapedPropertyName.Length + encodedLength + 5
-            // Optionally, 1 list separator, and up to 3x growth when transcoding, with escaping which can by up to 6x.
-            int maxRequired = (escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) + (encodedLength * JsonConstants.MaxExpansionFactorWhileEscaping) + 6;
+            // Optionally, 1 list separator, and up to 3x growth when transcoding.
+            int maxRequired = (escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) + encodedLength + 6;
 
             if (_memory.Length - BytesPending < maxRequired)
             {
@@ -247,11 +247,11 @@ namespace System.Text.Json
         {
             int encodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 
-            Debug.Assert(escapedPropertyName.Length < int.MaxValue - (encodedLength * JsonConstants.MaxExpansionFactorWhileEscaping) - 6);
+            Debug.Assert(escapedPropertyName.Length < int.MaxValue - encodedLength - 6);
 
             // 2 quotes for property name, 2 quotes to surround the base-64 encoded string value, and 1 colon => escapedPropertyName.Length + encodedLength + 5
-            // Optionally, 1 list separator, with escaping which can by up to 6x.
-            int maxRequired = escapedPropertyName.Length + (encodedLength * JsonConstants.MaxExpansionFactorWhileEscaping) + 6;
+            // Optionally, 1 list separator.
+            int maxRequired = escapedPropertyName.Length + encodedLength + 6;
 
             if (_memory.Length - BytesPending < maxRequired)
             {
@@ -286,11 +286,11 @@ namespace System.Text.Json
 
             int encodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 
-            Debug.Assert(escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding < int.MaxValue - indent - (encodedLength * JsonConstants.MaxExpansionFactorWhileEscaping) - 7 - s_newLineLength);
+            Debug.Assert(escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding < int.MaxValue - indent - encodedLength - 7 - s_newLineLength);
 
             // All ASCII, 2 quotes for property name, 2 quotes to surround the base-64 encoded string value, 1 colon, and 1 space => indent + escapedPropertyName.Length + encodedLength + 6
-            // Optionally, 1 list separator, 1-2 bytes for new line, and up to 3x growth when transcoding, with escaping which can by up to 6x.
-            int maxRequired = indent + (escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) + (encodedLength * JsonConstants.MaxExpansionFactorWhileEscaping) + 7 + s_newLineLength;
+            // Optionally, 1 list separator, 1-2 bytes for new line, and up to 3x growth when transcoding.
+            int maxRequired = indent + (escapedPropertyName.Length * JsonConstants.MaxExpansionFactorWhileTranscoding) + encodedLength + 7 + s_newLineLength;
 
             if (_memory.Length - BytesPending < maxRequired)
             {
@@ -336,11 +336,11 @@ namespace System.Text.Json
 
             int encodedLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 
-            Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - (encodedLength * JsonConstants.MaxExpansionFactorWhileEscaping) - 7 - s_newLineLength);
+            Debug.Assert(escapedPropertyName.Length < int.MaxValue - indent - encodedLength - 7 - s_newLineLength);
 
             // 2 quotes for property name, 2 quotes to surround the base-64 encoded string value, 1 colon, and 1 space => indent + escapedPropertyName.Length + encodedLength + 6
-            // Optionally, 1 list separator, and 1-2 bytes for new line, with escaping which can by up to 6x.
-            int maxRequired = indent + escapedPropertyName.Length + (encodedLength * JsonConstants.MaxExpansionFactorWhileEscaping) + 7 + s_newLineLength;
+            // Optionally, 1 list separator, and 1-2 bytes for new line.
+            int maxRequired = indent + escapedPropertyName.Length + encodedLength + 7 + s_newLineLength;
 
             if (_memory.Length - BytesPending < maxRequired)
             {
