@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text.Encodings.Web;
+
 namespace System.Text.Json
 {
     /// <summary>
@@ -13,6 +15,11 @@ namespace System.Text.Json
     public struct JsonWriterOptions
     {
         private int _optionsMask;
+
+        /// <summary>
+        /// The encoder to use when escaping strings, or <see langword="null" /> to use the default encoder.
+        /// </summary>
+        public JavaScriptEncoder Encoder { get; set; }
 
         /// <summary>
         /// Defines whether the <see cref="Utf8JsonWriter"/> should pretty print the JSON which includes:

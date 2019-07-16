@@ -23,7 +23,7 @@ namespace System.Text.Json
         public void WriteStringValue(DateTime value)
         {
             ValidateWritingValue();
-            if (Options.Indented)
+            if (_options.Indented)
             {
                 WriteStringValueIndented(value);
             }

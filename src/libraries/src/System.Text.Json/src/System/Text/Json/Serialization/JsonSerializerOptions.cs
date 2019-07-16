@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using System.Text.Encodings.Web;
 
 namespace System.Text.Json
 {
@@ -25,6 +26,7 @@ namespace System.Text.Json
         private JsonNamingPolicy _dictionayKeyPolicy;
         private JsonNamingPolicy _jsonPropertyNamingPolicy;
         private JsonCommentHandling _readCommentHandling;
+        private JavaScriptEncoder _encoder;
         private int _defaultBufferSize = BufferSizeDefault;
         private int _maxDepth;
         private bool _allowTrailingCommas;
@@ -89,6 +91,23 @@ namespace System.Text.Json
                 }
 
                 _defaultBufferSize = value;
+            }
+        }
+
+        /// <summary>
+        /// The encoder to use when escaping strings, or <see langword="null" /> to use the default encoder.
+        /// </summary>
+        public JavaScriptEncoder Encoder
+        {
+            get
+            {
+                return _encoder;
+            }
+            set
+            {
+                VerifyMutable();
+
+                _encoder = value;
             }
         }
 
@@ -324,6 +343,7 @@ namespace System.Text.Json
         {
             return new JsonWriterOptions
             {
+                Encoder = Encoder,
                 Indented = WriteIndented,
 #if !DEBUG
                 SkipValidation = true

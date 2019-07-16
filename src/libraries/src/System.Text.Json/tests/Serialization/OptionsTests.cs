@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -49,6 +52,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.False(options.AllowTrailingCommas);
             Assert.Equal(16 * 1024, options.DefaultBufferSize);
             Assert.Equal(null, options.DictionaryKeyPolicy);
+            Assert.Null(options.Encoder);
             Assert.False(options.IgnoreNullValues);
             Assert.Equal(0, options.MaxDepth);
             Assert.Equal(false, options.PropertyNameCaseInsensitive);
@@ -69,6 +73,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => options.AllowTrailingCommas = options.AllowTrailingCommas);
             Assert.Throws<InvalidOperationException>(() => options.DefaultBufferSize = options.DefaultBufferSize);
             Assert.Throws<InvalidOperationException>(() => options.DictionaryKeyPolicy = options.DictionaryKeyPolicy);
+            Assert.Throws<InvalidOperationException>(() => options.Encoder = JavaScriptEncoder.Default);
             Assert.Throws<InvalidOperationException>(() => options.IgnoreNullValues = options.IgnoreNullValues);
             Assert.Throws<InvalidOperationException>(() => options.MaxDepth = options.MaxDepth);
             Assert.Throws<InvalidOperationException>(() => options.PropertyNameCaseInsensitive = options.PropertyNameCaseInsensitive);
@@ -234,6 +239,87 @@ namespace System.Text.Json.Serialization.Tests
             options.MaxDepth = 1;
 
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<BasicCompany>(BasicCompany.s_data, options));
+        }
+
+        private class TestClassForEncoding
+        {
+            public string MyString { get; set; }
+        }
+
+        // This is a copy of the test data in System.Text.Json.Tests.JsonEncodedTextTests.JsonEncodedTextStringsCustom
+        public static IEnumerable<object[]> JsonEncodedTextStringsCustom
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] { "age", "\\u0061\\u0067\\u0065" },
+                    new object[] { "éééééêêêêê", "éééééêêêêê" },
+                    new object[] { "ééééé\"êêêêê", "ééééé\\u0022êêêêê" },
+                    new object[] { "ééééé\\u0022êêêêê", "ééééé\\\\\\u0075\\u0030\\u0030\\u0032\\u0032êêêêê" },
+                    new object[] { "ééééé>>>>>êêêêê", "ééééé\\u003E\\u003E\\u003E\\u003E\\u003Eêêêêê" },
+                    new object[] { "ééééé\\u003e\\u003eêêêêê", "ééééé\\\\\\u0075\\u0030\\u0030\\u0033\\u0065\\\\\\u0075\\u0030\\u0030\\u0033\\u0065êêêêê" },
+                    new object[] { "ééééé\\u003E\\u003Eêêêêê", "ééééé\\\\\\u0075\\u0030\\u0030\\u0033\\u0045\\\\\\u0075\\u0030\\u0030\\u0033\\u0045êêêêê" },
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonEncodedTextStringsCustom))]
+        public static void CustomEncoderAllowLatin1Supplement(string message, string expectedMessage)
+        {
+            // Latin-1 Supplement block starts from U+0080 and ends at U+00FF
+            JavaScriptEncoder encoder = JavaScriptEncoder.Create(UnicodeRanges.Latin1Supplement);
+
+            var options = new JsonSerializerOptions();
+            options.Encoder = encoder;
+
+            var obj = new TestClassForEncoding();
+            obj.MyString = message;
+
+            string baselineJson = JsonSerializer.Serialize(obj);
+            Assert.DoesNotContain(expectedMessage, baselineJson);
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(expectedMessage, json);
+
+            obj = JsonSerializer.Deserialize<TestClassForEncoding>(json);
+            Assert.Equal(obj.MyString, message);
+        }
+
+        public static IEnumerable<object[]> JsonEncodedTextStringsCustomAll
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] { "éééééêêêêê", "éééééêêêêê" },
+                    new object[] { "aѧѦa", "aѧѦa" }, // U0467, U0466
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonEncodedTextStringsCustomAll))]
+        public static void JsonEncodedTextStringsCustomAllowAll(string message, string expectedMessage)
+        {
+            // Allow all unicode values (except forbidden characters which we don't have in test data here)
+            JavaScriptEncoder encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
+
+            var options = new JsonSerializerOptions();
+            options.Encoder = encoder;
+
+            var obj = new TestClassForEncoding();
+            obj.MyString = message;
+
+            string baselineJson = JsonSerializer.Serialize(obj);
+            Assert.DoesNotContain(expectedMessage, baselineJson);
+
+            string json = JsonSerializer.Serialize(obj, options);
+            Assert.Contains(expectedMessage, json);
+
+            obj = JsonSerializer.Deserialize<TestClassForEncoding>(json);
+            Assert.Equal(obj.MyString, message);
         }
     }
 }

@@ -202,7 +202,7 @@ namespace System.Text.Json
 
         private void WriteLiteralEscape(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> value)
         {
-            int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName);
+            int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName, _options.Encoder);
 
             Debug.Assert(propertyIdx >= -1 && propertyIdx < propertyName.Length);
 
@@ -218,7 +218,7 @@ namespace System.Text.Json
 
         private void WriteLiteralEscape(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> value)
         {
-            int propertyIdx = JsonWriterHelper.NeedsEscaping(utf8PropertyName);
+            int propertyIdx = JsonWriterHelper.NeedsEscaping(utf8PropertyName, _options.Encoder);
 
             Debug.Assert(propertyIdx >= -1 && propertyIdx < utf8PropertyName.Length);
 
@@ -245,7 +245,7 @@ namespace System.Text.Json
                 stackalloc char[length] :
                 (propertyArray = ArrayPool<char>.Shared.Rent(length));
 
-            JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndexProp, out int written);
+            JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndexProp, _options.Encoder, out int written);
 
             WriteLiteralByOptions(escapedPropertyName.Slice(0, written), value);
 
@@ -268,7 +268,7 @@ namespace System.Text.Json
                 stackalloc byte[length] :
                 (propertyArray = ArrayPool<byte>.Shared.Rent(length));
 
-            JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, encoder: null, out int written);
+            JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, _options.Encoder, out int written);
 
             WriteLiteralByOptions(escapedPropertyName.Slice(0, written), value);
 
@@ -281,7 +281,7 @@ namespace System.Text.Json
         private void WriteLiteralByOptions(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> value)
         {
             ValidateWritingProperty();
-            if (Options.Indented)
+            if (_options.Indented)
             {
                 WriteLiteralIndented(propertyName, value);
             }
@@ -294,7 +294,7 @@ namespace System.Text.Json
         private void WriteLiteralByOptions(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> value)
         {
             ValidateWritingProperty();
-            if (Options.Indented)
+            if (_options.Indented)
             {
                 WriteLiteralIndented(utf8PropertyName, value);
             }
@@ -390,7 +390,7 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
-            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
+            Debug.Assert(_options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
 
             if (_tokenType != JsonTokenType.None)
             {
@@ -435,7 +435,7 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
-            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
+            Debug.Assert(_options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
 
             if (_tokenType != JsonTokenType.None)
             {

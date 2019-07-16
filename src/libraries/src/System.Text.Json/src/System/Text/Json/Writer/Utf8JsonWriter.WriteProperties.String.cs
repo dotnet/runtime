@@ -68,7 +68,7 @@ namespace System.Text.Json
         {
             JsonWriterHelper.ValidateProperty(propertyName);
 
-            int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName);
+            int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName, _options.Encoder);
 
             Debug.Assert(propertyIdx >= -1 && propertyIdx < propertyName.Length && propertyIdx < int.MaxValue / 2);
 
@@ -110,7 +110,7 @@ namespace System.Text.Json
                     }
                 }
 
-                JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndexProp, out int written);
+                JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndexProp, _options.Encoder, out int written);
                 propertyName = escapedPropertyName.Slice(0, written);
             }
 
@@ -125,7 +125,7 @@ namespace System.Text.Json
         private void WriteStringByOptionsPropertyName(ReadOnlySpan<char> propertyName)
         {
             ValidateWritingProperty();
-            if (Options.Indented)
+            if (_options.Indented)
             {
                 WriteStringIndentedPropertyName(propertyName);
             }
@@ -221,7 +221,7 @@ namespace System.Text.Json
         {
             JsonWriterHelper.ValidateProperty(utf8PropertyName);
 
-            int propertyIdx = JsonWriterHelper.NeedsEscaping(utf8PropertyName);
+            int propertyIdx = JsonWriterHelper.NeedsEscaping(utf8PropertyName, _options.Encoder);
 
             Debug.Assert(propertyIdx >= -1 && propertyIdx < utf8PropertyName.Length && propertyIdx < int.MaxValue / 2);
 
@@ -263,7 +263,7 @@ namespace System.Text.Json
                     }
                 }
 
-                JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, encoder: null, out int written);
+                JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, _options.Encoder, out int written);
                 utf8PropertyName = escapedPropertyName.Slice(0, written);
             }
 
@@ -278,7 +278,7 @@ namespace System.Text.Json
         private void WriteStringByOptionsPropertyName(ReadOnlySpan<byte> utf8PropertyName)
         {
             ValidateWritingProperty();
-            if (Options.Indented)
+            if (_options.Indented)
             {
                 WriteStringIndentedPropertyName(utf8PropertyName);
             }
@@ -339,7 +339,7 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
-            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
+            Debug.Assert(_options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
 
             if (_tokenType != JsonTokenType.None)
             {
@@ -547,7 +547,7 @@ namespace System.Text.Json
 
             JsonWriterHelper.ValidateValue(value);
 
-            int valueIdx = JsonWriterHelper.NeedsEscaping(value);
+            int valueIdx = JsonWriterHelper.NeedsEscaping(value, _options.Encoder);
 
             Debug.Assert(valueIdx >= -1 && valueIdx < value.Length && valueIdx < int.MaxValue / 2);
 
@@ -631,7 +631,7 @@ namespace System.Text.Json
 
             JsonWriterHelper.ValidateValue(utf8Value);
 
-            int valueIdx = JsonWriterHelper.NeedsEscaping(utf8Value);
+            int valueIdx = JsonWriterHelper.NeedsEscaping(utf8Value, _options.Encoder);
 
             Debug.Assert(valueIdx >= -1 && valueIdx < utf8Value.Length && valueIdx < int.MaxValue / 2);
 
@@ -715,7 +715,7 @@ namespace System.Text.Json
 
             JsonWriterHelper.ValidateProperty(propertyName);
 
-            int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName);
+            int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName, _options.Encoder);
 
             Debug.Assert(propertyIdx >= -1 && propertyIdx < propertyName.Length && propertyIdx < int.MaxValue / 2);
 
@@ -787,7 +787,7 @@ namespace System.Text.Json
 
             JsonWriterHelper.ValidateProperty(utf8PropertyName);
 
-            int propertyIdx = JsonWriterHelper.NeedsEscaping(utf8PropertyName);
+            int propertyIdx = JsonWriterHelper.NeedsEscaping(utf8PropertyName, _options.Encoder);
 
             Debug.Assert(propertyIdx >= -1 && propertyIdx < utf8PropertyName.Length && propertyIdx < int.MaxValue / 2);
 
@@ -849,7 +849,7 @@ namespace System.Text.Json
                 stackalloc byte[length] :
                 (valueArray = ArrayPool<byte>.Shared.Rent(length));
 
-            JsonWriterHelper.EscapeString(utf8Value, escapedValue, firstEscapeIndex, encoder: null, out int written);
+            JsonWriterHelper.EscapeString(utf8Value, escapedValue, firstEscapeIndex, _options.Encoder, out int written);
 
             WriteStringByOptions(escapedPropertyName, escapedValue.Slice(0, written));
 
@@ -872,7 +872,7 @@ namespace System.Text.Json
                 stackalloc char[length] :
                 (valueArray = ArrayPool<char>.Shared.Rent(length));
 
-            JsonWriterHelper.EscapeString(value, escapedValue, firstEscapeIndex, out int written);
+            JsonWriterHelper.EscapeString(value, escapedValue, firstEscapeIndex, _options.Encoder, out int written);
 
             WriteStringByOptions(escapedPropertyName, escapedValue.Slice(0, written));
 
@@ -895,7 +895,7 @@ namespace System.Text.Json
                 stackalloc char[length] :
                 (propertyArray = ArrayPool<char>.Shared.Rent(length));
 
-            JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndex, out int written);
+            JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndex, _options.Encoder, out int written);
 
             WriteStringByOptions(escapedPropertyName.Slice(0, written), escapedValue);
 
@@ -918,7 +918,7 @@ namespace System.Text.Json
                 stackalloc byte[length] :
                 (propertyArray = ArrayPool<byte>.Shared.Rent(length));
 
-            JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndex, encoder: null, out int written);
+            JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndex, _options.Encoder, out int written);
 
             WriteStringByOptions(escapedPropertyName.Slice(0, written), escapedValue);
 
@@ -930,8 +930,8 @@ namespace System.Text.Json
 
         private void WriteStringEscape(ReadOnlySpan<char> propertyName, ReadOnlySpan<char> value)
         {
-            int valueIdx = JsonWriterHelper.NeedsEscaping(value);
-            int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName);
+            int valueIdx = JsonWriterHelper.NeedsEscaping(value, _options.Encoder);
+            int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName, _options.Encoder);
 
             Debug.Assert(valueIdx >= -1 && valueIdx < value.Length && valueIdx < int.MaxValue / 2);
             Debug.Assert(propertyIdx >= -1 && propertyIdx < propertyName.Length && propertyIdx < int.MaxValue / 2);
@@ -949,8 +949,8 @@ namespace System.Text.Json
 
         private void WriteStringEscape(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> utf8Value)
         {
-            int valueIdx = JsonWriterHelper.NeedsEscaping(utf8Value);
-            int propertyIdx = JsonWriterHelper.NeedsEscaping(utf8PropertyName);
+            int valueIdx = JsonWriterHelper.NeedsEscaping(utf8Value, _options.Encoder);
+            int propertyIdx = JsonWriterHelper.NeedsEscaping(utf8PropertyName, _options.Encoder);
 
             Debug.Assert(valueIdx >= -1 && valueIdx < utf8Value.Length && valueIdx < int.MaxValue / 2);
             Debug.Assert(propertyIdx >= -1 && propertyIdx < utf8PropertyName.Length && propertyIdx < int.MaxValue / 2);
@@ -968,8 +968,8 @@ namespace System.Text.Json
 
         private void WriteStringEscape(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> utf8Value)
         {
-            int valueIdx = JsonWriterHelper.NeedsEscaping(utf8Value);
-            int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName);
+            int valueIdx = JsonWriterHelper.NeedsEscaping(utf8Value, _options.Encoder);
+            int propertyIdx = JsonWriterHelper.NeedsEscaping(propertyName, _options.Encoder);
 
             Debug.Assert(valueIdx >= -1 && valueIdx < utf8Value.Length && valueIdx < int.MaxValue / 2);
             Debug.Assert(propertyIdx >= -1 && propertyIdx < propertyName.Length && propertyIdx < int.MaxValue / 2);
@@ -987,8 +987,8 @@ namespace System.Text.Json
 
         private void WriteStringEscape(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<char> value)
         {
-            int valueIdx = JsonWriterHelper.NeedsEscaping(value);
-            int propertyIdx = JsonWriterHelper.NeedsEscaping(utf8PropertyName);
+            int valueIdx = JsonWriterHelper.NeedsEscaping(value, _options.Encoder);
+            int propertyIdx = JsonWriterHelper.NeedsEscaping(utf8PropertyName, _options.Encoder);
 
             Debug.Assert(valueIdx >= -1 && valueIdx < value.Length && valueIdx < int.MaxValue / 2);
             Debug.Assert(propertyIdx >= -1 && propertyIdx < utf8PropertyName.Length && propertyIdx < int.MaxValue / 2);
@@ -1032,7 +1032,7 @@ namespace System.Text.Json
                     }
                 }
 
-                JsonWriterHelper.EscapeString(value, escapedValue, firstEscapeIndexVal, out int written);
+                JsonWriterHelper.EscapeString(value, escapedValue, firstEscapeIndexVal, _options.Encoder, out int written);
                 value = escapedValue.Slice(0, written);
             }
 
@@ -1056,7 +1056,7 @@ namespace System.Text.Json
                     }
                 }
 
-                JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndexProp, out int written);
+                JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndexProp, _options.Encoder, out int written);
                 propertyName = escapedPropertyName.Slice(0, written);
             }
 
@@ -1101,7 +1101,7 @@ namespace System.Text.Json
                     }
                 }
 
-                JsonWriterHelper.EscapeString(utf8Value, escapedValue, firstEscapeIndexVal, encoder: null, out int written);
+                JsonWriterHelper.EscapeString(utf8Value, escapedValue, firstEscapeIndexVal, _options.Encoder, out int written);
                 utf8Value = escapedValue.Slice(0, written);
             }
 
@@ -1125,7 +1125,7 @@ namespace System.Text.Json
                     }
                 }
 
-                JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, encoder: null, out int written);
+                JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, _options.Encoder, out int written);
                 utf8PropertyName = escapedPropertyName.Slice(0, written);
             }
 
@@ -1170,7 +1170,7 @@ namespace System.Text.Json
                     }
                 }
 
-                JsonWriterHelper.EscapeString(utf8Value, escapedValue, firstEscapeIndexVal, encoder: null, out int written);
+                JsonWriterHelper.EscapeString(utf8Value, escapedValue, firstEscapeIndexVal, _options.Encoder, out int written);
                 utf8Value = escapedValue.Slice(0, written);
             }
 
@@ -1194,7 +1194,7 @@ namespace System.Text.Json
                     }
                 }
 
-                JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndexProp, out int written);
+                JsonWriterHelper.EscapeString(propertyName, escapedPropertyName, firstEscapeIndexProp, _options.Encoder, out int written);
                 propertyName = escapedPropertyName.Slice(0, written);
             }
 
@@ -1239,7 +1239,7 @@ namespace System.Text.Json
                     }
                 }
 
-                JsonWriterHelper.EscapeString(value, escapedValue, firstEscapeIndexVal, out int written);
+                JsonWriterHelper.EscapeString(value, escapedValue, firstEscapeIndexVal, _options.Encoder, out int written);
                 value = escapedValue.Slice(0, written);
             }
 
@@ -1263,7 +1263,7 @@ namespace System.Text.Json
                     }
                 }
 
-                JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, encoder: null, out int written);
+                JsonWriterHelper.EscapeString(utf8PropertyName, escapedPropertyName, firstEscapeIndexProp, _options.Encoder, out int written);
                 utf8PropertyName = escapedPropertyName.Slice(0, written);
             }
 
@@ -1283,7 +1283,7 @@ namespace System.Text.Json
         private void WriteStringByOptions(ReadOnlySpan<char> propertyName, ReadOnlySpan<char> value)
         {
             ValidateWritingProperty();
-            if (Options.Indented)
+            if (_options.Indented)
             {
                 WriteStringIndented(propertyName, value);
             }
@@ -1296,7 +1296,7 @@ namespace System.Text.Json
         private void WriteStringByOptions(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> utf8Value)
         {
             ValidateWritingProperty();
-            if (Options.Indented)
+            if (_options.Indented)
             {
                 WriteStringIndented(utf8PropertyName, utf8Value);
             }
@@ -1309,7 +1309,7 @@ namespace System.Text.Json
         private void WriteStringByOptions(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> utf8Value)
         {
             ValidateWritingProperty();
-            if (Options.Indented)
+            if (_options.Indented)
             {
                 WriteStringIndented(propertyName, utf8Value);
             }
@@ -1322,7 +1322,7 @@ namespace System.Text.Json
         private void WriteStringByOptions(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<char> value)
         {
             ValidateWritingProperty();
-            if (Options.Indented)
+            if (_options.Indented)
             {
                 WriteStringIndented(utf8PropertyName, value);
             }
@@ -1500,7 +1500,7 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
-            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
+            Debug.Assert(_options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
 
             if (_tokenType != JsonTokenType.None)
             {
@@ -1549,7 +1549,7 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
-            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
+            Debug.Assert(_options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
 
             if (_tokenType != JsonTokenType.None)
             {
@@ -1601,7 +1601,7 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
-            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
+            Debug.Assert(_options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
 
             if (_tokenType != JsonTokenType.None)
             {
@@ -1652,7 +1652,7 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
-            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
+            Debug.Assert(_options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
 
             if (_tokenType != JsonTokenType.None)
             {

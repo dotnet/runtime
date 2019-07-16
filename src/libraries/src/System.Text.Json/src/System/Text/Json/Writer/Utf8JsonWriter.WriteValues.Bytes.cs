@@ -36,7 +36,7 @@ namespace System.Text.Json
         {
             ValidateWritingValue();
 
-            if (Options.Indented)
+            if (_options.Indented)
             {
                 WriteBase64Indented(bytes);
             }
