@@ -4,6 +4,7 @@
 
 using Xunit;
 using System.Buffers;
+using System.IO;
 
 namespace System.Text.Json.Tests
 {
@@ -107,6 +108,68 @@ namespace System.Text.Json.Tests
             // PositiveInfinity instead (or throw if using double.Parse on frameworks
             // older than .NET Core 3.0).
             WriteSimpleValue(indented, OneQuarticGoogol);
+        }
+
+        [Theory]
+        [InlineData("6.022e+23", "6,022e+23")]
+        [InlineData("6.022e+23", "6.022f+23")]
+        [InlineData("6.022e+23", "6.022e+ 3")]
+        [InlineData("6.022e+23", "6e022e+23")]
+        [InlineData("6.022e+23", "6.022e+f3")]
+        [InlineData("1", "-")]
+        [InlineData("12", "+2")]
+        [InlineData("12", "1e")]
+        [InlineData("12", "1.")]
+        [InlineData("12", "02")]
+        [InlineData("123", "1e+")]
+        [InlineData("123", "1e-")]
+        [InlineData("0.12", "0.1e")]
+        [InlineData("0.123", "0.1e+")]
+        [InlineData("0.123", "0.1e-")]
+        [InlineData("10", "+0")]
+        [InlineData("101", "-01")]
+        [InlineData("12", "1a")]
+        [InlineData("10", "00")]
+        [InlineData("11", "01")]
+        [InlineData("10.5e-012", "10.5e-0.2")]
+        [InlineData("10.5e012", "10.5.012")]
+        [InlineData("0.123", "0.-23")]
+        [InlineData("12345", "hello")]
+        public static void WriteCorruptedNumber(string parseJson, string overwriteJson)
+        {
+            if (overwriteJson.Length != parseJson.Length)
+            {
+                throw new InvalidOperationException("Invalid test, parseJson and overwriteJson must have the same length");
+            }
+
+            byte[] utf8Data = Encoding.UTF8.GetBytes(parseJson);
+
+            using (JsonDocument document = JsonDocument.Parse(utf8Data))
+            using (MemoryStream stream = new MemoryStream(Array.Empty<byte>()))
+            using (Utf8JsonWriter writer = new Utf8JsonWriter(stream))
+            {
+                // Use fixed and the older version of GetBytes-in-place because of the NetFX build.
+                unsafe
+                {
+                    fixed (byte* dataPtr = utf8Data)
+                    fixed (char* inputPtr = overwriteJson)
+                    {
+                        // Overwrite the number in the memory buffer still referenced by the document.
+                        // If it doesn't hit a 100% overlap then we're not testing what we thought we were.
+                        Assert.Equal(
+                            utf8Data.Length,
+                            Encoding.UTF8.GetBytes(inputPtr, overwriteJson.Length, dataPtr, utf8Data.Length));
+                    }
+                }
+
+                JsonElement rootElement = document.RootElement;
+
+                Assert.Equal(overwriteJson, rootElement.GetRawText());
+                
+                AssertExtensions.Throws<ArgumentException>(
+                    "utf8FormattedNumber",
+                    () => rootElement.WriteTo(writer));
+            }
         }
 
         [Theory]
