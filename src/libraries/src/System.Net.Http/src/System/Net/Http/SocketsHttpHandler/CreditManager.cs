@@ -4,12 +4,13 @@
 
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal sealed class CreditManager : IDisposable
+    internal sealed class CreditManager
     {
         private readonly IHttpTrace _owner;
         private readonly string _name;
@@ -105,7 +106,7 @@ namespace System.Net.Http
             }
         }
 
-        public void Dispose()
+        public void Dispose(Exception abortException)
         {
             lock (SyncObject)
             {
@@ -120,7 +121,9 @@ namespace System.Net.Http
                 {
                     while (_waiters.TryDequeue(out Waiter waiter))
                     {
-                        waiter.TrySetException(CreateObjectDisposedException(forActiveWaiter: true));
+                        waiter.TrySetException(abortException != null ? (Exception)
+                            new IOException(SR.net_http_request_aborted, abortException) :
+                            CreateObjectDisposedException(forActiveWaiter: true));
                     }
                 }
             }
