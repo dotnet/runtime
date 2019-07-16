@@ -1,7 +1,6 @@
 ﻿<Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
   <PropertyGroup>
-    <PackageVersion>3.0.0</PackageVersion>
     <SkipValidatePackage>true</SkipValidatePackage>
     <!-- We don't need to harvest the stable packages to build this -->
     <HarvestStablePackage>false</HarvestStablePackage>

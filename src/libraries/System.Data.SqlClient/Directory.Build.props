@@ -1,8 +1,6 @@
 ﻿<Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <!-- Must be kept in sync with pkg\Microsoft.Windows.Compatibility\Microsoft.Windows.Compatibility.pkgproj -->
-    <PackageVersion>4.7.0</PackageVersion>
     <AssemblyVersion>4.6.0.0</AssemblyVersion>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
     <IsUAP>true</IsUAP>
