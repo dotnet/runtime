@@ -47,7 +47,7 @@ namespace System.Text.Json.Serialization.Tests
                 @"""MyDecimal"" : [3.3]," +
                 @"""MyDateTime"" : [""2019-01-30T12:01:02.0000000Z""]," +
                 @"""MyGuid"" : [""97E9F02C-337E-4615-B26C-0020F5DC28C9""]," +
-                @"""MyUri"" : [""https:\/\/github.com\/dotnet\/corefx""]," +
+                @"""MyUri"" : [""https://github.com/dotnet/corefx""]," +
                 @"""MyEnum"" : [2]" + // int by default
             @"}";
 

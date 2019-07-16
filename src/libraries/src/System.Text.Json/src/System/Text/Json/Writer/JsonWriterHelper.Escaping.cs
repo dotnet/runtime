@@ -15,19 +15,19 @@ namespace System.Text.Json
     {
         // Only allow ASCII characters between ' ' (0x20) and '~' (0x7E), inclusively,
         // but exclude characters that need to be escaped as hex: '"', '\'', '&', '+', '<', '>', '`'
-        // and exclude characters that need to be escaped by adding a backslash: '\n', '\r', '\t', '\\', '/', '\b', '\f'
+        // and exclude characters that need to be escaped by adding a backslash: '\n', '\r', '\t', '\\', '\b', '\f'
         //
         // non-zero = allowed, 0 = disallowed
         public const int LastAsciiCharacter = 0x7F;
         private static ReadOnlySpan<byte> AllowList => new byte[LastAsciiCharacter + 1] {
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1,
-            0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // U+0000..U+000F
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // U+0010..U+001F
+            1, 1, 0, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, // U+0020..U+002F
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, // U+0030..U+003F
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // U+0040..U+004F
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, // U+0050..U+005F
+            0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // U+0060..U+006F
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, // U+0070..U+007F
         };
 
         private const string HexFormatString = "X4";
@@ -183,9 +183,6 @@ namespace System.Text.Json
                     break;
                 case JsonConstants.BackSlash:
                     destination[written++] = (byte)'\\';
-                    break;
-                case JsonConstants.Slash:
-                    destination[written++] = (byte)'/';
                     break;
                 case JsonConstants.BackSpace:
                     destination[written++] = (byte)'b';
@@ -476,9 +473,6 @@ namespace System.Text.Json
                     break;
                 case JsonConstants.BackSlash:
                     destination[written++] = '\\';
-                    break;
-                case JsonConstants.Slash:
-                    destination[written++] = '/';
                     break;
                 case JsonConstants.BackSpace:
                     destination[written++] = 'b';

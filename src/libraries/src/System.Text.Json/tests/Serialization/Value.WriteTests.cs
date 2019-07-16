@@ -60,12 +60,12 @@ namespace System.Text.Json.Serialization.Tests
 
             {
                 Uri uri = new Uri("https://domain/path");
-                Assert.Equal(@"""https:\/\/domain\/path""", JsonSerializer.Serialize(uri));
+                Assert.Equal(@"""https://domain/path""", JsonSerializer.Serialize(uri));
             }
 
             {
                 Uri.TryCreate("~/path", UriKind.RelativeOrAbsolute, out Uri uri);
-                Assert.Equal(@"""~\/path""", JsonSerializer.Serialize(uri));
+                Assert.Equal(@"""~/path""", JsonSerializer.Serialize(uri));
             }
 
             // The next two scenarios validate that we're NOT using Uri.ToString() for serializing Uri. The serializer
@@ -74,14 +74,14 @@ namespace System.Text.Json.Serialization.Tests
             {
                 // ToString would collapse the relative segment
                 Uri uri = new Uri("http://a/b/../c");
-                Assert.Equal(@"""http:\/\/a\/b\/..\/c""", JsonSerializer.Serialize(uri));
+                Assert.Equal(@"""http://a/b/../c""", JsonSerializer.Serialize(uri));
             }
 
             {
                 // "%20" gets turned into a space by Uri.ToString()
                 // https://coding.abel.nu/2014/10/beware-of-uri-tostring/
                 Uri uri = new Uri("http://localhost?p1=Value&p2=A%20B%26p3%3DFooled!");
-                Assert.Equal(@"""http:\/\/localhost?p1=Value\u0026p2=A%20B%26p3%3DFooled!""", JsonSerializer.Serialize(uri));
+                Assert.Equal(@"""http://localhost?p1=Value\u0026p2=A%20B%26p3%3DFooled!""", JsonSerializer.Serialize(uri));
             }
         }
     }

@@ -5,6 +5,7 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
 using Xunit;
@@ -104,7 +105,6 @@ namespace Microsoft.Framework.WebEncoders
         [InlineData("\"", @"\u0022")]
         [InlineData("+", @"\u002B")]
         [InlineData("\\", @"\\")]
-        [InlineData("/", @"\/")]
         [InlineData("\n", @"\n")]
         [InlineData("\t", @"\t")]
         [InlineData("\r", @"\r")]
@@ -143,7 +143,6 @@ namespace Microsoft.Framework.WebEncoders
                     else if (input == "\f") { expected = @"\f"; }
                     else if (input == "\r") { expected = @"\r"; }
                     else if (input == "\\") { expected = @"\\"; }
-                    else if (input == "/") { expected = @"\/"; }
                     else if (input == "`") { expected = @"\u0060"; }
                     else
                     {
@@ -192,6 +191,35 @@ namespace Microsoft.Framework.WebEncoders
                 string retVal = encoder.JavaScriptStringEncode(input);
                 Assert.Equal(expected, retVal);
             }
+        }
+
+        [Fact]
+        public void JavaScriptStringEncode_NoRangesAllowed_EmitsShortFormForCertainCodePoints()
+        {
+            // This test ensures that when we're encoding, we always emit the "\uXXXX" form of the
+            // code point except for very specific code points where we allow a shorter representation.
+
+            // Arrange
+            JavaScriptStringEncoder encoder = new JavaScriptStringEncoder(UnicodeRanges.None); // allow no codepoints
+
+            // "[U+0000][U+0001]...[U+007F]"
+            string input = new string(Enumerable.Range(0, 128).Select(i => (char)i).ToArray());
+
+            // @"\u0000\u0001..\u007F", then replace certain specific code points
+            string expected = string.Concat(Enumerable.Range(0, 128).Select(i => FormattableString.Invariant($@"\u{i:X4}")));
+
+            expected = expected.Replace(@"\u0008", @"\b"); // U+0008 BACKSPACE -> "\b"
+            expected = expected.Replace(@"\u0009", @"\t"); // U+0009 CHARACTER TABULATION -> "\t"
+            expected = expected.Replace(@"\u000A", @"\n"); // U+000A LINE FEED -> "\n"
+            expected = expected.Replace(@"\u000C", @"\f"); // U+000C FORM FEED -> "\f"
+            expected = expected.Replace(@"\u000D", @"\r"); // U+000D CARRIAGE RETURN -> "\n"
+            expected = expected.Replace(@"\u005C", @"\\"); // U+005C REVERSE SOLIDUS -> "\\"
+
+            // Act
+            string retVal = encoder.JavaScriptStringEncode(input);
+
+            // Assert
+            Assert.Equal(expected, retVal);
         }
 
         [Fact]
