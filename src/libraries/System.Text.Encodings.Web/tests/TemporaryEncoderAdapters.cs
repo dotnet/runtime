@@ -77,6 +77,7 @@ namespace Microsoft.Framework.WebEncoders
     {
         System.Text.Encodings.Web.JavaScriptEncoder _encoder;
         static JavaScriptStringEncoder s_default;
+        static JavaScriptStringEncoder s_relaxed;
 
         /// <summary>
         /// A default instance of <see cref="JavaScriptEncoder"/>.
@@ -105,9 +106,36 @@ namespace Microsoft.Framework.WebEncoders
             }
         }
 
-        public JavaScriptStringEncoder()
+        /// <summary>
+        /// A relaxed instance of <see cref="JavaScriptEncoder"/>.
+        /// </summary>
+        /// <remarks>
+        /// This normally corresponds to <see cref="UnicodeRanges.All"/>. However, this property is
+        /// settable so that a developer can change the default implementation application-wide.
+        /// </remarks>
+        public static JavaScriptStringEncoder UnsafeRelaxedJsonEscaping
         {
-            _encoder = System.Text.Encodings.Web.JavaScriptEncoder.Default;
+            get
+            {
+                if (s_relaxed == null)
+                {
+                    s_relaxed = new JavaScriptStringEncoder(relaxed: true);
+                }
+                return s_relaxed;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+                s_relaxed = value;
+            }
+        }
+
+        public JavaScriptStringEncoder(bool relaxed = false)
+        {
+            _encoder = relaxed ? JavaScriptEncoder.UnsafeRelaxedJsonEscaping : JavaScriptEncoder.Default;
         }
         public JavaScriptStringEncoder(TextEncoderSettings filter)
         {
