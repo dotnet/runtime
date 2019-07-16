@@ -19,9 +19,6 @@ namespace System.Text.Json.Tests
             yield return new object[] { "\"1997-07-16T19:20:30.45\"", "1997-07-16T19:20:30.45" };
             yield return new object[] { "\"1997-07-16T19:20:30.4555555\"", "1997-07-16T19:20:30.4555555" };
 
-            // Regression test for https://github.com/dotnet/corefx/issues/39067
-            yield return new object[] { "\"0001-01-01T00:00:00\"", "0001-01-01T00:00:00" };
-
             // Test fractions.
             yield return new object[] { "\"1997-07-16T19:20:30.0\"", "1997-07-16T19:20:30" };
             yield return new object[] { "\"1997-07-16T19:20:30.000\"", "1997-07-16T19:20:30" };
