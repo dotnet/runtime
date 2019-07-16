@@ -685,7 +685,7 @@ public class Program
                 // trigger a random cancellation
                 using(var cts = new CancellationTokenSource())
                 {
-                    var delayMs = _random.Next(0, 2);
+                    int delayMs = _random.Next(0, 2);
                     var task = _client.SendAsync(request, httpCompletion, cts.Token);
                     if (delayMs > 0)
                         await Task.Delay(delayMs);
