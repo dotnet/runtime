@@ -13,7 +13,7 @@ namespace System.Text.Json
     {
         private void ValidateWritingValue()
         {
-            if (!Options.SkipValidation)
+            if (!_options.SkipValidation)
             {
                 if (_inObject)
                 {
@@ -60,7 +60,7 @@ namespace System.Text.Json
             else
             {
                 Debug.Assert(destination.Length >= written * JsonConstants.MaxExpansionFactorWhileEscaping);
-                JsonWriterHelper.EscapeString(encodedBytes, destination, firstEscapeIndexVal, encoder: null, out written);
+                JsonWriterHelper.EscapeString(encodedBytes, destination, firstEscapeIndexVal, _options.Encoder, out written);
                 BytesPending += written;
             }
 

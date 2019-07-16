@@ -38,7 +38,7 @@ namespace System.Text.Json
         public void WriteNumberValue(ulong value)
         {
             ValidateWritingValue();
-            if (Options.Indented)
+            if (_options.Indented)
             {
                 WriteNumberValueIndented(value);
             }

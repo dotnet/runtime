@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -10,6 +10,8 @@ using System.Globalization;
 using System.Threading.Tasks;
 using System.IO.Pipelines;
 using System.Collections.Generic;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
 
 namespace System.Text.Json.Tests
 {
@@ -61,6 +63,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writer.BytesCommitted);
             Assert.Equal(0, writer.BytesPending);
             Assert.Equal(0, writer.CurrentDepth);
+            Assert.Equal(null, writer.Options.Encoder);
             Assert.Equal(formatted, writer.Options.Indented);
             Assert.Equal(skipValidation, writer.Options.SkipValidation);
             Assert.Equal(0, stream.Position);
@@ -70,6 +73,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writer.BytesCommitted);
             Assert.Equal(0, writer.BytesPending);
             Assert.Equal(0, writer.CurrentDepth);
+            Assert.Equal(null, writer.Options.Encoder);
             Assert.Equal(formatted, writer.Options.Indented);
             Assert.Equal(skipValidation, writer.Options.SkipValidation);
             Assert.Equal(0, output.FormattedCount);
@@ -95,6 +99,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writeToStream.BytesCommitted);
             Assert.Equal(0, writeToStream.BytesPending);
             Assert.Equal(0, writeToStream.CurrentDepth);
+            Assert.Equal(null, writeToStream.Options.Encoder);
             Assert.Equal(formatted, writeToStream.Options.Indented);
             Assert.Equal(skipValidation, writeToStream.Options.SkipValidation);
             Assert.True(stream.Position != 0);
@@ -114,6 +119,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writeToIBW.BytesCommitted);
             Assert.Equal(0, writeToIBW.BytesPending);
             Assert.Equal(0, writeToIBW.CurrentDepth);
+            Assert.Equal(null, writeToIBW.Options.Encoder);
             Assert.Equal(formatted, writeToIBW.Options.Indented);
             Assert.Equal(skipValidation, writeToIBW.Options.SkipValidation);
             Assert.True(output.FormattedCount != 0);
@@ -143,6 +149,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writeToStream.BytesCommitted);
             Assert.Equal(0, writeToStream.BytesPending);
             Assert.Equal(0, writeToStream.CurrentDepth);
+            Assert.Equal(null, writeToStream.Options.Encoder);
             Assert.Equal(formatted, writeToStream.Options.Indented);
             Assert.Equal(skipValidation, writeToStream.Options.SkipValidation);
             Assert.True(stream.Position != 0);
@@ -168,6 +175,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writeToIBW.BytesCommitted);
             Assert.Equal(0, writeToIBW.BytesPending);
             Assert.Equal(0, writeToIBW.CurrentDepth);
+            Assert.Equal(null, writeToIBW.Options.Encoder);
             Assert.Equal(formatted, writeToIBW.Options.Indented);
             Assert.Equal(skipValidation, writeToIBW.Options.SkipValidation);
             Assert.True(output.FormattedCount != 0);
@@ -204,6 +212,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writeToStream.BytesCommitted);
             Assert.Equal(0, writeToStream.BytesPending);
             Assert.Equal(0, writeToStream.CurrentDepth);
+            Assert.Equal(null, writeToStream.Options.Encoder);
             Assert.Equal(formatted, writeToStream.Options.Indented);
             Assert.Equal(skipValidation, writeToStream.Options.SkipValidation);
             Assert.True(stream.Position != 0);
@@ -234,6 +243,7 @@ namespace System.Text.Json.Tests
             Assert.Equal(0, writeToIBW.BytesCommitted);
             Assert.Equal(0, writeToIBW.BytesPending);
             Assert.Equal(0, writeToIBW.CurrentDepth);
+            Assert.Equal(null, writeToIBW.Options.Encoder);
             Assert.Equal(formatted, writeToIBW.Options.Indented);
             Assert.Equal(skipValidation, writeToIBW.Options.SkipValidation);
             Assert.True(output.FormattedCount != 0);
@@ -3087,54 +3097,58 @@ namespace System.Text.Json.Tests
             }
         }
 
-        [Theory(Skip = "Update test to match JavaScriptEncoder semantics.")]
-        [InlineData(true, true)]
-        [InlineData(true, false)]
-        [InlineData(false, true)]
-        [InlineData(false, false)]
-        public void InvalidUTF8(bool formatted, bool skipValidation)
-        {
-            var options = new JsonWriterOptions { Indented = formatted, SkipValidation = skipValidation };
+        private const string InvalidUtf8 = "\"\\uFFFD(\"";
+        private const string ValidUtf8 = "\"\\u00F1\"";
 
-            var output = new ArrayBufferWriter<byte>(1024);
-            var jsonUtf8 = new Utf8JsonWriter(output, options);
+        // todo: verify that we should be using replacement char and not throwing here if skipValidation=true
+        [Theory]
+        [InlineData(true,
+            "{" + InvalidUtf8 + ":" + InvalidUtf8 + "}",
+            "{" + InvalidUtf8 + ":" + ValidUtf8 + "}",
+            "{" + ValidUtf8 + ":" + InvalidUtf8 + "}",
+            "{" + ValidUtf8 + ":" + ValidUtf8 + "}")]
+        [InlineData(false,
+            "{" + InvalidUtf8 + ":" + InvalidUtf8 + "}",
+            "{" + InvalidUtf8 + ":" + ValidUtf8 + "}",
+            "{" + ValidUtf8 + ":" + InvalidUtf8 + "}",
+            "{" + ValidUtf8 + ":" + ValidUtf8 + "}")]
+        public void UTF8ReplacementCharacters(bool skipValidation, string expected0, string expected1, string expected2, string expected3)
+        {
+            var options = new JsonWriterOptions { SkipValidation = skipValidation };
 
             var validUtf8 = new byte[2] { 0xc3, 0xb1 }; // 0xF1
             var invalidUtf8 = new byte[2] { 0xc3, 0x28 };
 
-            jsonUtf8.WriteStartObject();
-            for (int i = 0; i < 6; i++)
+            string WriteProperty(byte[] propertyName, byte[] value)
             {
-                switch (i)
-                {
-                    case 0:
-                        Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(invalidUtf8, invalidUtf8));
-                        break;
-                    case 1:
-                        Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(invalidUtf8, validUtf8));
-                        break;
-                    case 2:
-                        Assert.Throws<ArgumentException>(() => jsonUtf8.WriteString(validUtf8, invalidUtf8));
-                        break;
-                    case 3:
-                        jsonUtf8.WriteString(validUtf8, validUtf8);
-                        break;
-                    case 4:
-                        Assert.Throws<ArgumentException>(() => jsonUtf8.WritePropertyName(invalidUtf8));
-                        break;
-                    case 5:
-                        jsonUtf8.WritePropertyName(validUtf8);
-                        Assert.Throws<ArgumentException>(() => jsonUtf8.WriteStringValue(invalidUtf8));
-                        jsonUtf8.WriteStringValue(validUtf8);
-                        break;
-                    case 6:
-                        jsonUtf8.WritePropertyName(validUtf8);
-                        jsonUtf8.WriteStringValue(validUtf8);
-                        break;
-                }
+                var output = new ArrayBufferWriter<byte>(1024);
+                var jsonUtf8 = new Utf8JsonWriter(output, options);
+                jsonUtf8.WriteStartObject();
+                jsonUtf8.WriteString(propertyName, value);
+                jsonUtf8.WriteEndObject();
+                jsonUtf8.Flush();
+                string result = Encoding.UTF8.GetString(
+                        output.WrittenSpan
+#if netfx
+                        .ToArray()
+#endif
+                    );
+                output.Clear();
+                return result;
             }
-            jsonUtf8.WriteEndObject();
-            jsonUtf8.Flush();
+
+            string result;
+            result = WriteProperty(invalidUtf8, invalidUtf8);
+            Assert.Equal(expected0, result);
+
+            result = WriteProperty(invalidUtf8, validUtf8);
+            Assert.Equal(expected1, result);
+
+            result = WriteProperty(validUtf8, invalidUtf8);
+            Assert.Equal(expected2, result);
+
+            result = WriteProperty(validUtf8, validUtf8);
+            Assert.Equal(expected3, result);
         }
 
         [Theory]
@@ -3185,6 +3199,76 @@ namespace System.Text.Json.Tests
             }
             jsonUtf8.WriteEndObject();
             jsonUtf8.Flush();
+        }
+
+        public static IEnumerable<object[]> JsonEncodedTextStringsCustomAll
+        {
+            get
+            {
+                return new List<object[]>
+                {
+                    new object[] { "éééééêêêêê", "{\"Prop\":\"éééééêêêêê\"}" },
+                    new object[] { "aѧѦa", "{\"Prop\":\"aѧѦa\"}" }, // U0467, U0466
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(JsonEncodedTextStringsCustomAll))]
+        public void CustomEscaper(string value, string expectedStr)
+        {
+            const string PropertyName = "Prop";
+
+            // Allow all unicode values (except forbidden characters which we don't have in test data here)
+            JavaScriptEncoder encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
+
+            var options = new JsonWriterOptions();
+            options.Encoder = encoder;
+
+            for (int i = 0; i < 6; i++)
+            {
+                var output = new ArrayBufferWriter<byte>(1024);
+                var jsonUtf8 = new Utf8JsonWriter(output, options);
+
+                jsonUtf8.WriteStartObject();
+
+                switch (i)
+                {
+                    case 0:
+                        jsonUtf8.WriteString(PropertyName, value);
+                        break;
+                    case 1:
+                        jsonUtf8.WriteString(Encoding.UTF8.GetBytes(PropertyName), Encoding.UTF8.GetBytes(value));
+                        break;
+                    case 2:
+                        jsonUtf8.WriteString(JsonEncodedText.Encode(PropertyName), JsonEncodedText.Encode(value, encoder));
+                        break;
+                    case 3:
+                        jsonUtf8.WritePropertyName(PropertyName);
+                        jsonUtf8.WriteStringValue(value);
+                        break;
+                    case 4:
+                        jsonUtf8.WritePropertyName(Encoding.UTF8.GetBytes(PropertyName));
+                        jsonUtf8.WriteStringValue(Encoding.UTF8.GetBytes(value));
+                        break;
+                    case 5:
+                        jsonUtf8.WritePropertyName(JsonEncodedText.Encode(PropertyName, encoder));
+                        jsonUtf8.WriteStringValue(JsonEncodedText.Encode(value, encoder));
+                        break;
+                }
+
+                jsonUtf8.WriteEndObject();
+                jsonUtf8.Flush();
+
+                string result = Encoding.UTF8.GetString(
+                        output.WrittenSpan
+#if netfx
+                        .ToArray()
+#endif
+                    );
+
+                Assert.Equal(expectedStr, result);
+            }
         }
 
         [Theory]
@@ -5828,7 +5912,7 @@ namespace System.Text.Json.Tests
 #endif
                     );
 
-            // Temporary hack until we can use the same escape algorithm throughout.
+            // Temporary hack until we can use the same escape algorithm on both sides and make sure we want uppercase hex.
             Assert.Equal(expectedValue.NormalizeToJsonNetFormat(), value.NormalizeToJsonNetFormat());
         }
 
@@ -5857,7 +5941,7 @@ namespace System.Text.Json.Tests
         {
             var sb = new StringBuilder(json.Length);
             int i = 0;
-            while (i < json.Length - 1)
+            while (i < json.Length)
             {
                 if (json[i] == '\\')
                 {
