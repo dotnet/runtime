@@ -30,8 +30,8 @@ namespace Microsoft.Extensions.Logging.Console
             _options = options;
             _loggers = new ConcurrentDictionary<string, ConsoleLogger>();
 
-            _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
             ReloadLoggerOptions(options.CurrentValue);
+            _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
 
             _messageQueue = new ConsoleLoggerProcessor();
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
