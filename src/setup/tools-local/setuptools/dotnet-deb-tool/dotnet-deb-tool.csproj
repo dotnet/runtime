@@ -6,6 +6,8 @@
     <AssemblyName>dotnet-deb-tool</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>dotnet-deb-tool</PackageId>
+    <!-- Allow SemVer v2 -->
+    <NoWarn>$(NoWarn);NU5105</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

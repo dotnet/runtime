@@ -73,9 +73,20 @@
 
   <!-- Versioning -->
   <PropertyGroup>
+    <BuildNumberMinorTrimmedLeadingZero>$(BuildNumberMinor.TrimStart('0'))</BuildNumberMinorTrimmedLeadingZero>
+    <BuildNumberMinorTrimmedLeadingZero Condition="'$(BuildNumberMinorTrimmedLeadingZero)' == ''">0</BuildNumberMinorTrimmedLeadingZero>
+
     <VersionSuffix></VersionSuffix>
     <VersionSuffix Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">$(PreReleaseLabel)</VersionSuffix>
-    <VersionSuffix Condition="'$(IncludeBuildNumberInPackageVersion)' == 'true'">$(VersionSuffix)-$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
+    <VersionSuffix Condition="'$(IncludeBuildNumberInPackageVersion)' == 'true'">$(VersionSuffix).$(BuildNumberMajor).$(BuildNumberMinorTrimmedLeadingZero)</VersionSuffix>
+    <!--
+      During BuildTools init, VersionSuffix is used even though the build numbers aren't
+      initialized. With SemVer v1, this is benign: dash-dash-zero at the end is valid. (It has not
+      been confirmed that this is the exact version.) With SemVer v2, we get '..0' at the end. The
+      periods make the version invalid, and fails the build. To work around this, replace '..0' at
+      the end of the suffix with nothingness to avoid making an invalid version.
+    -->
+    <VersionSuffix>$(VersionSuffix.Replace('..0', ''))</VersionSuffix>
 
     <ProductVersionSuffix Condition="'$(IncludePreReleaseLabelInPackageVersion)' == 'true'">-$(VersionSuffix)</ProductVersionSuffix>
     <ProductBandVersion Condition="'$(ProductBandVersion)' == ''">$(MajorVersion).$(MinorVersion)</ProductBandVersion>
