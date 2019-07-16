@@ -686,7 +686,7 @@ public class Program
                 using(var cts = new CancellationTokenSource())
                 {
                     int delayMs = _random.Next(0, 2);
-                    var task = _client.SendAsync(request, httpCompletion, cts.Token);
+                    Task<HttpResponseMessage> task = _client.SendAsync(request, httpCompletion, cts.Token);
                     if (delayMs > 0)
                         await Task.Delay(delayMs);
 
