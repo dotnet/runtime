@@ -202,8 +202,8 @@ namespace System.Text.Json.Serialization.Tests
                     Id = i,
                     Abstract = new string('A', i * 2),
                     Title = new string('T', i),
-                    StartTime = new DateTime(i),
-                    EndTime = new DateTime(i * 10000),
+                    StartTime = new DateTime(i, DateTimeKind.Utc),
+                    EndTime = new DateTime(i * 10000, DateTimeKind.Utc),
                     TrackId = i,
                     Track = new Track()
                     {
