@@ -56,7 +56,7 @@ namespace System.Drawing
 
         public static Brush FromSystemColor(Color c)
         {
-            if (!ColorUtil.IsSystemColor(c))
+            if (!c.IsSystemColor)
             {
                 throw new ArgumentException(SR.Format(SR.ColorNotSystemColor, c.ToString()));
             }

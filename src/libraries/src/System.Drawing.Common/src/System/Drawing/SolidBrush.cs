@@ -32,7 +32,7 @@ namespace System.Drawing
             SetNativeBrushInternal(nativeBrush);
 
 #if FEATURE_SYSTEM_EVENTS
-            if (ColorUtil.IsSystemColor(_color))
+            if (_color.IsSystemColor)
             {
                 SystemColorTracker.Add(this);
             }
@@ -106,7 +106,7 @@ namespace System.Drawing
 #if FEATURE_SYSTEM_EVENTS
                     // NOTE: We never remove brushes from the active list, so if someone is
                     // changing their brush colors a lot, this could be a problem.
-                    if (ColorUtil.IsSystemColor(value) && !ColorUtil.IsSystemColor(oldColor))
+                    if (value.IsSystemColor && !oldColor.IsSystemColor)
                     {
                         SystemColorTracker.Add(this);
                     }
