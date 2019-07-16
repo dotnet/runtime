@@ -1461,8 +1461,10 @@ check_whitelisted_module (const char *in_name, const char **out_module)
 #ifndef MONO_PRIVATE_CRASHES
 		return TRUE;
 #else
-	if (allow_all_native_libraries)
+	if (allow_all_native_libraries) {
+		*out_module = in_name;
 		return TRUE;
+	}
 	if (g_str_has_suffix (in_name, "mono-sgen")) {
 		if (out_module)
 			*out_module = "mono";
