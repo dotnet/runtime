@@ -1,7 +1,5 @@
 /**
  * \file
- * PLEASE NOTE: This is a research prototype.
- *
  *
  * interp.c: Interpreter for CIL byte codes
  *
@@ -452,7 +450,7 @@ interp_pop_lmf (MonoLMFExt *ext)
 }
 
 static MONO_NEVER_INLINE InterpMethod*
-get_virtual_method (InterpMethod *imethod, MonoObject *obj)
+get_virtual_method (InterpMethod *imethod, MonoVTable *vtable)
 {
 	MonoMethod *m = imethod->method;
 	MonoDomain *domain = imethod->domain;
@@ -460,7 +458,7 @@ get_virtual_method (InterpMethod *imethod, MonoObject *obj)
 	ERROR_DECL (error);
 
 #ifndef DISABLE_REMOTING
-	if (mono_object_is_transparent_proxy (obj)) {
+	if (mono_class_is_transparent_proxy (vtable->klass)) {
 		MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (m, error);
 		mono_error_assert_ok (error);
 		ret = mono_interp_get_imethod (domain, remoting_invoke_method, error);
@@ -479,17 +477,17 @@ get_virtual_method (InterpMethod *imethod, MonoObject *obj)
 		return ret;
 	}
 
-	mono_class_setup_vtable (obj->vtable->klass);
+	mono_class_setup_vtable (vtable->klass);
 
 	int slot = mono_method_get_vtable_slot (m);
 	if (mono_class_is_interface (m->klass)) {
-		g_assert (obj->vtable->klass != m->klass);
+		g_assert (vtable->klass != m->klass);
 		/* TODO: interface offset lookup is slow, go through IMT instead */
 		gboolean non_exact_match;
-		slot += mono_class_interface_offset_with_variance (obj->vtable->klass, m->klass, &non_exact_match);
+		slot += mono_class_interface_offset_with_variance (vtable->klass, m->klass, &non_exact_match);
 	}
 
-	MonoMethod *virtual_method = m_class_get_vtable (mono_object_class (obj)) [slot];
+	MonoMethod *virtual_method = m_class_get_vtable (vtable->klass) [slot];
 	if (m->is_inflated && mono_method_get_context (m)->method_inst) {
 		MonoGenericContext context = { NULL, NULL };
 
@@ -549,63 +547,62 @@ get_target_imethod (GSList *list, InterpMethod *imethod)
 }
 
 static gpointer*
-get_method_table (MonoObject *obj, int offset)
+get_method_table (MonoVTable *vtable, int offset)
 {
-	if (offset >= 0) {
-		return obj->vtable->interp_vtable;
-	} else {
-		return (gpointer*)obj->vtable;
-	}
+	if (offset >= 0)
+		return vtable->interp_vtable;
+	else
+		return (gpointer*)vtable;
 }
 
 static gpointer*
-alloc_method_table (MonoObject *obj, int offset)
+alloc_method_table (MonoVTable *vtable, int offset)
 {
 	gpointer *table;
 
 	if (offset >= 0) {
-		table = mono_domain_alloc0 (obj->vtable->domain, m_class_get_vtable_size (obj->vtable->klass) * sizeof (gpointer));
-		obj->vtable->interp_vtable = table;
+		table = mono_domain_alloc0 (vtable->domain, m_class_get_vtable_size (vtable->klass) * sizeof (gpointer));
+		vtable->interp_vtable = table;
 	} else {
-		table = (gpointer*)obj->vtable;
+		table = (gpointer*)vtable;
 	}
 
 	return table;
 }
 
 static InterpMethod*
-get_virtual_method_fast (MonoObject *obj, InterpMethod *imethod, int offset)
+get_virtual_method_fast (InterpMethod *imethod, MonoVTable *vtable, int offset)
 {
 	gpointer *table;
 
 #ifndef DISABLE_REMOTING
 	/* FIXME Remoting */
-	if (mono_object_is_transparent_proxy (obj))
-		return get_virtual_method (imethod, obj);
+	if (mono_class_is_transparent_proxy (vtable->klass))
+		return get_virtual_method (imethod, vtable);
 #endif
 
-	table = get_method_table (obj, offset);
+	table = get_method_table (vtable, offset);
 
 	if (!table) {
 		/* Lazily allocate method table */
-		mono_domain_lock (obj->vtable->domain);
-		table = get_method_table (obj, offset);
+		mono_domain_lock (vtable->domain);
+		table = get_method_table (vtable, offset);
 		if (!table)
-			table = alloc_method_table (obj, offset);
-		mono_domain_unlock (obj->vtable->domain);
+			table = alloc_method_table (vtable, offset);
+		mono_domain_unlock (vtable->domain);
 	}
 
 	if (!table [offset]) {
-		InterpMethod *target_imethod = get_virtual_method (imethod, obj);
+		InterpMethod *target_imethod = get_virtual_method (imethod, vtable);
 		/* Lazily initialize the method table slot */
-		mono_domain_lock (obj->vtable->domain);
+		mono_domain_lock (vtable->domain);
 		if (!table [offset]) {
 			if (imethod->method->is_inflated || offset < 0)
-				table [offset] = append_imethod (obj->vtable->domain, NULL, imethod, target_imethod);
+				table [offset] = append_imethod (vtable->domain, NULL, imethod, target_imethod);
 			else
 				table [offset] = (gpointer) ((gsize)target_imethod | 0x1);
 		}
-		mono_domain_unlock (obj->vtable->domain);
+		mono_domain_unlock (vtable->domain);
 	}
 
 	if ((gsize)table [offset] & 0x1) {
@@ -616,11 +613,11 @@ get_virtual_method_fast (MonoObject *obj, InterpMethod *imethod, int offset)
 		InterpMethod *target_imethod = get_target_imethod ((GSList*)table [offset], imethod);
 
 		if (!target_imethod) {
-			target_imethod = get_virtual_method (imethod, obj);
-			mono_domain_lock (obj->vtable->domain);
+			target_imethod = get_virtual_method (imethod, vtable);
+			mono_domain_lock (vtable->domain);
 			if (!get_target_imethod ((GSList*)table [offset], imethod))
-				table [offset] = append_imethod (obj->vtable->domain, (GSList*)table [offset], imethod, target_imethod);
-			mono_domain_unlock (obj->vtable->domain);
+				table [offset] = append_imethod (vtable->domain, (GSList*)table [offset], imethod, target_imethod);
+			mono_domain_unlock (vtable->domain);
 		}
 		return target_imethod;
 	}
@@ -943,7 +940,6 @@ ves_array_create (MonoDomain *domain, MonoClass *klass, int param_count, stackva
 {
 	uintptr_t *lengths;
 	intptr_t *lower_bounds;
-	MonoObject *obj;
 	int i;
 
 	lengths = g_newa (uintptr_t, m_class_get_rank (klass) * 2);
@@ -959,8 +955,7 @@ ves_array_create (MonoDomain *domain, MonoClass *klass, int param_count, stackva
 		lower_bounds = (intptr_t *) lengths;
 		lengths += m_class_get_rank (klass);
 	}
-	obj = (MonoObject*) mono_array_new_full_checked (domain, klass, lengths, lower_bounds, error);
-	return obj;
+	return (MonoObject*) mono_array_new_full_checked (domain, klass, lengths, lower_bounds, error);
 }
 
 static gint32
@@ -1433,7 +1428,7 @@ interp_init_delegate (MonoDelegate *del, MonoError *error)
 			method->flags & METHOD_ATTRIBUTE_VIRTUAL &&
 			method->flags & METHOD_ATTRIBUTE_ABSTRACT &&
 			mono_class_is_abstract (method->klass))
-		del->interp_method = get_virtual_method ((InterpMethod*)del->interp_method, del->target);
+		del->interp_method = get_virtual_method ((InterpMethod*)del->interp_method, del->target->vtable);
 
 	method = ((InterpMethod*)del->interp_method)->method;
 	if (method && m_class_get_parent (method->klass) == mono_defaults.multicastdelegate_class) {
@@ -2877,6 +2872,25 @@ static int opcode_counts[512];
 	} while (0);
 
 /*
+ * GC SAFETY:
+ *
+ *  The interpreter executes in gc unsafe (non-preempt) mode. On wasm, the C stack is
+ * scannable but the wasm stack is not, so to make the code GC safe, the following rules
+ * should be followed:
+ * - every objref handled by the code needs to have a copy stored inside InterpFrame,
+ *   in stackval->data.o. For objrefs which are not yet on the IL stack, they can be stored
+ *   in frame->o. This will ensure the objects are pinned. The 'frame' local is assumed
+ *   to be allocated to the C stack and not to registers.
+ * - minimalize the number of MonoObject* locals/arguments.
+ */
+
+#ifdef TARGET_WASM
+#define frame_objref(frame) (frame)->o
+#else
+#define frame_objref(frame) o
+#endif
+
+/*
  * If EXIT_AT_FINALLY is not -1, exit after exiting the finally clause with that index.
  * If BASE_FRAME is not NULL, copy arguments/locals from BASE_FRAME.
  * The ERROR argument is used to avoid declaring an error object for every interp frame, its not used
@@ -2900,6 +2914,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 	int i32;
 	unsigned char *vt_sp;
 	unsigned char *locals = NULL;
+	// See the comment about GC safety above
 	MonoObject *o = NULL;
 	MonoClass *c;
 #if USE_COMPUTED_GOTO
@@ -3274,7 +3289,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			this_arg = (MonoObject*)sp->data.p;
 			this_class = this_arg->vtable->klass;
 
-			child_frame.imethod = get_virtual_method_fast (this_arg, target_imethod, slot);
+			child_frame.imethod = get_virtual_method_fast (target_imethod, this_arg->vtable, slot);
 			if (m_class_is_valuetype (this_class) && m_class_is_valuetype (child_frame.imethod->method->klass)) {
 				/* unbox */
 				gpointer unboxed = mono_object_unbox_internal (this_arg);
@@ -3348,7 +3363,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 				MonoObject *this_arg = (MonoObject*)sp->data.p;
 				MonoClass *this_class = this_arg->vtable->klass;
 
-				child_frame.imethod = get_virtual_method (child_frame.imethod, this_arg);
+				child_frame.imethod = get_virtual_method (child_frame.imethod, this_arg->vtable);
 				if (m_class_is_valuetype (this_class) && m_class_is_valuetype (child_frame.imethod->method->klass)) {
 					/* unbox */
 					gpointer unboxed = mono_object_unbox_internal (this_arg);
@@ -4349,7 +4364,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			newobj_class = (MonoClass*) imethod->data_items [token];
 
 			sp -= param_count;
-			sp->data.p = ves_array_create (imethod->domain, newobj_class, param_count, sp, error);
+			sp->data.o = ves_array_create (imethod->domain, newobj_class, param_count, sp, error);
 			if (!mono_error_ok (error))
 				THROW_EX (mono_error_convert_to_exception (error), ip);
 
@@ -4394,12 +4409,12 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 					if (!mono_error_ok (error))
 						THROW_EX (mono_error_convert_to_exception (error), ip);
 				}
-				o = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
-				if (G_UNLIKELY (!o)) {
+				frame_objref (frame) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+				if (G_UNLIKELY (!frame_objref (frame))) {
 					mono_error_set_out_of_memory (error, "Could not allocate %i bytes", m_class_get_instance_size (vtable->klass));
 					THROW_EX (mono_error_convert_to_exception (error), ip);
 				}
-				sp->data.p = o;
+				sp->data.o = frame_objref (frame);
 				ip += 4;
 			}
 
@@ -4410,7 +4425,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			if (vt)
 				*sp = valuetype_this;
 			else
-				sp->data.p = o;
+				sp->data.p = frame_objref (frame);
 			++sp;
 			MINT_IN_BREAK;
 		}
@@ -4462,12 +4477,12 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 					MonoVTable *vtable = mono_class_vtable_checked (imethod->domain, newobj_class, error);
 					if (!mono_error_ok (error) || !mono_runtime_class_init_full (vtable, error))
 						THROW_EX (mono_error_convert_to_exception (error), ip);
-					o = mono_object_new_checked (imethod->domain, newobj_class, error);
+					frame_objref (frame) = mono_object_new_checked (imethod->domain, newobj_class, error);
 					mono_error_cleanup (error); /* FIXME: don't swallow the error */
 					EXCEPTION_CHECKPOINT;
-					sp->data.p = o;
+					sp->data.o = frame_objref (frame);
 #ifndef DISABLE_REMOTING
-					if (mono_object_is_transparent_proxy (o)) {
+					if (mono_object_is_transparent_proxy (frame_objref (frame))) {
 						MonoMethod *remoting_invoke_method = mono_marshal_get_remoting_invoke_with_check (child_frame.imethod->method, error);
 						mono_error_assert_ok (error);
 						child_frame.imethod = mono_interp_get_imethod (imethod->domain, remoting_invoke_method, error);
@@ -4492,7 +4507,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			} else if (newobj_class == mono_defaults.string_class) {
 				*sp = retval;
 			} else {
-				sp->data.p = o;
+				sp->data.o = frame_objref (frame);
 			}
 			++sp;
 			MINT_IN_BREAK;
@@ -5103,10 +5118,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			MonoVTable *vtable = (MonoVTable*)imethod->data_items [* (guint16 *)(ip + 1)];
 			guint16 offset = * (guint16 *)(ip + 2);
 
-			MonoObject *obj = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
-			stackval_to_data (m_class_get_byval_arg (vtable->klass), &sp [-1 - offset], mono_object_get_data (obj), FALSE);
+			frame_objref (frame) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+			stackval_to_data (m_class_get_byval_arg (vtable->klass), &sp [-1 - offset], mono_object_get_data (frame_objref (frame)), FALSE);
 
-			sp [-1 - offset].data.p = obj;
+			sp [-1 - offset].data.p = frame_objref (frame);
 
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5119,10 +5134,10 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			offset &= ~BOX_NOT_CLEAR_VT_SP;
 
 			int size = mono_class_value_size (c, NULL);
-			MonoObject *obj = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
-			mono_value_copy_internal (mono_object_get_data (obj), sp [-1 - offset].data.p, c);
+			frame_objref (frame) = mono_gc_alloc_obj (vtable, m_class_get_instance_size (vtable->klass));
+			mono_value_copy_internal (mono_object_get_data (frame_objref (frame)), sp [-1 - offset].data.p, c);
 
-			sp [-1 - offset].data.p = obj;
+			sp [-1 - offset].data.p = frame_objref (frame);
 			size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
 			if (pop_vt_sp)
 				vt_sp -= size;
@@ -5138,7 +5153,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 
 			int size = mono_class_value_size (c, NULL);
 
-			sp [-1 - offset].data.p = mono_nullable_box (sp [-1 - offset].data.p, c, error);
+			sp [-1 - offset].data.o = mono_nullable_box (sp [-1 - offset].data.p, c, error);
 			mono_error_cleanup (error); /* FIXME: don't swallow the error */
 
 			size = ALIGN_TO (size, MINT_VT_ALIGNMENT);
@@ -5150,7 +5165,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 		}
 		MINT_IN_CASE(MINT_NEWARR) {
 			MonoVTable *vtable = (MonoVTable*)imethod->data_items[*(guint16 *)(ip + 1)];
-			sp [-1].data.p = (MonoObject*) mono_array_new_specific_checked (vtable, sp [-1].data.i, error);
+			sp [-1].data.o = (MonoObject*) mono_array_new_specific_checked (vtable, sp [-1].data.i, error);
 			if (!mono_error_ok (error)) {
 				THROW_EX (mono_error_convert_to_exception (error), ip);
 			}
@@ -6006,7 +6021,7 @@ interp_exec_method_full (InterpFrame *frame, ThreadContext *context, FrameClause
 			if (!sp->data.p)
 				THROW_EX (mono_get_exception_null_reference (), ip - 2);
 				
-			sp->data.p = get_virtual_method (m, sp->data.o);
+			sp->data.p = get_virtual_method (m, sp->data.o->vtable);
 			++sp;
 			MINT_IN_BREAK;
 		}
