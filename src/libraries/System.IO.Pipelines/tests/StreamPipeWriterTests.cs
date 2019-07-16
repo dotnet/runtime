@@ -511,7 +511,9 @@ namespace System.IO.Pipelines.Tests
         {
             bool fired = false;
             PipeWriter writer = PipeWriter.Create(Stream.Null);
+#pragma warning disable CS0618 // Type or member is obsolete
             writer.OnReaderCompleted((_, __) => { fired = true; }, null);
+#pragma warning restore CS0618 // Type or member is obsolete
             writer.Complete();
             Assert.False(fired);
         }

@@ -100,7 +100,11 @@ namespace System.IO.Pipelines
         /// <summary>
         /// Registers a callback that gets executed when the <see cref="PipeWriter"/> side of the pipe is completed
         /// </summary>
-        public abstract void OnWriterCompleted(Action<Exception, object> callback, object state);
+        [Obsolete("OnWriterCompleted may not be invoked on all implementations of PipeReader. This will be removed in a future release.")]
+        public virtual void OnWriterCompleted(Action<Exception, object> callback, object state)
+        {
+
+        }
 
 
         /// <summary>

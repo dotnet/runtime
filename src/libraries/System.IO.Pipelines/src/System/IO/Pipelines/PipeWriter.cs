@@ -46,7 +46,11 @@ namespace System.IO.Pipelines
         /// <summary>
         /// Registers a callback that gets executed when the <see cref="PipeReader"/> side of the pipe is completed
         /// </summary>
-        public abstract void OnReaderCompleted(Action<Exception, object> callback, object state);
+        [Obsolete("OnReaderCompleted may not be invoked on all implementations of PipeWriter. This will be removed in a future release.")]
+        public virtual void OnReaderCompleted(Action<Exception, object> callback, object state)
+        {
+
+        }
 
         /// <summary>
         /// Makes bytes written available to <see cref="PipeReader"/> and runs <see cref="PipeReader.ReadAsync"/> continuation.

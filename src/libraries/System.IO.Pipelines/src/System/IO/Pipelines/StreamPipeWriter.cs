@@ -248,11 +248,6 @@ namespace System.IO.Pipelines
         }
 
         /// <inheritdoc />
-        public override void OnReaderCompleted(Action<Exception, object> callback, object state)
-        {
-        }
-
-        /// <inheritdoc />
         public override ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken = default)
         {
             if (_bytesBuffered == 0)
