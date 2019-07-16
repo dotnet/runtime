@@ -48,12 +48,12 @@
     <MicrosoftNETCoreILAsmPackageVersion>3.0.0-preview8.19363.2</MicrosoftNETCoreILAsmPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>3.0.0-preview8.19363.2</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <!-- Corefx dependencies -->
-    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview8.19364.1</MicrosoftNETCorePlatformsPackageVersion>
-    <runtimenativeSystemIOPortsPackageVersion>4.6.0-preview8.19364.1</runtimenativeSystemIOPortsPackageVersion>
+    <MicrosoftNETCorePlatformsPackageVersion>3.0.0-preview8.19365.14</MicrosoftNETCorePlatformsPackageVersion>
+    <runtimenativeSystemIOPortsPackageVersion>4.6.0-preview8.19365.14</runtimenativeSystemIOPortsPackageVersion>
     <!-- Standard dependencies -->
-    <NETStandardLibraryPackageVersion>2.1.0-prerelease.19365.2</NETStandardLibraryPackageVersion>
+    <NETStandardLibraryPackageVersion>2.1.0-prerelease.19366.1</NETStandardLibraryPackageVersion>
     <!-- dotnet-optimization dependencies -->
-    <optimizationwindows_ntx64IBCCoreFxPackageVersion>99.99.99-master-20190714.1</optimizationwindows_ntx64IBCCoreFxPackageVersion>
+    <optimizationwindows_ntx64IBCCoreFxPackageVersion>99.99.99-master-20190716.1</optimizationwindows_ntx64IBCCoreFxPackageVersion>
     <!-- sni -->
     <RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeWinX64RuntimeNativeSystemDataSqlClientSniPackageVersion>
     <RuntimeNativeSystemDataSqlClientSniPackageVersion>4.4.0</RuntimeNativeSystemDataSqlClientSniPackageVersion>

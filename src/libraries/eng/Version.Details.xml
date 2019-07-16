@@ -26,21 +26,21 @@
       <Uri>https://github.com/dotnet/core-setup</Uri>
       <Sha>ad9f7e33fb1a1be7eefb57849e7d71a4f9a488b2</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview8.19364.1">
+    <Dependency Name="Microsoft.NETCore.Platforms" Version="3.0.0-preview8.19365.14">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>c14b80faff694bae4e085bad221e2e83410e5f33</Sha>
+      <Sha>4b348cc28f0ec996322d4d1a62cfae300f77604e</Sha>
     </Dependency>
-    <Dependency Name="runtime.native.System.IO.Ports" Version="4.6.0-preview8.19364.1">
+    <Dependency Name="runtime.native.System.IO.Ports" Version="4.6.0-preview8.19365.14">
       <Uri>https://github.com/dotnet/corefx</Uri>
-      <Sha>c14b80faff694bae4e085bad221e2e83410e5f33</Sha>
+      <Sha>4b348cc28f0ec996322d4d1a62cfae300f77604e</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="1.0.0-beta.19365.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>fb27fd4d8a2b67d4333e33d4b898c65171c9f3c1</Sha>
     </Dependency>
-    <Dependency Name="NETStandard.Library" Version="2.1.0-prerelease.19365.2">
+    <Dependency Name="NETStandard.Library" Version="2.1.0-prerelease.19366.1">
       <Uri>https://github.com/dotnet/standard</Uri>
-      <Sha>2939d5aac57e7cd36613fc381b83410986602c9e</Sha>
+      <Sha>e918199cff541d58c365f0f6d23b23168281fd59</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="2.0.0-beta.19365.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -94,9 +94,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>fb27fd4d8a2b67d4333e33d4b898c65171c9f3c1</Sha>
     </Dependency>
-    <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20190714.1">
+    <Dependency Name="optimization.windows_nt-x64.IBC.CoreFx" Version="99.99.99-master-20190716.1">
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
-      <Sha>f18379d5c3b5662a3aa03f92407e269cb45a9b76</Sha>
+      <Sha>d0bb63d2ec7060714e63ee4082fac48f2e57f3e2</Sha>
     </Dependency>
   </ToolsetDependencies>
 </Dependencies>
