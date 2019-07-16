@@ -98,11 +98,11 @@ namespace System.Diagnostics.Tests
                 using (var listener = new EventLogTraceListener(source))
                 {
                     string message = "A little message for the log";
-                    listener.Write(message);
+                    Helpers.RetryOnWin7(() => listener.Write(message));
                     ValidateLastEntryMessage(listener, message, source);
 
                     message = "One more message for my friend";
-                    listener.WriteLine(message);
+                    Helpers.RetryOnWin7(() => listener.WriteLine(message));
                     ValidateLastEntryMessage(listener, message, source);
                 }
             }
