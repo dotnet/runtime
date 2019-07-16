@@ -118,8 +118,8 @@ namespace System.Buffers
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            _startObject = array!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
-            _endObject = array!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            _startObject = array;
+            _endObject = array;
             _startInteger = ReadOnlySequence.ArrayToSequenceStart(0);
             _endInteger = ReadOnlySequence.ArrayToSequenceEnd(array!.Length); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
         }

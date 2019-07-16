@@ -41,7 +41,7 @@ namespace System.Buffers
                     if (nextSegment == null)
                         ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
 
-                    next = new SequencePosition(nextSegment!, 0); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                    next = new SequencePosition(nextSegment, 0);
                     memory = startSegment.Memory.Slice(startIndex);
                 }
                 else
