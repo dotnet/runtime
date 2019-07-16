@@ -28,6 +28,9 @@
     <PackageReference Include="System.Runtime.Intrinsics.Experimental">
       <Version>$(MicrosoftPrivateCoreFxNETCoreAppVersion)</Version>
     </PackageReference>
+    <PackageReference Include="Microsoft.Diagnostics.Tools.RuntimeClient">
+      <Version>$(MicrosoftDiagnosticsToolsRuntimeClientVersion)</Version>
+    </PackageReference>
   </ItemGroup>
   <PropertyGroup>
     <TargetFramework>netcoreapp3.0</TargetFramework>
