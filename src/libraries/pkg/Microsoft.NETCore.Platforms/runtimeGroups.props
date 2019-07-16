@@ -41,7 +41,7 @@
 
     <RuntimeGroup Include="fedora">
       <Parent>linux</Parent>
-      <Architectures>x64</Architectures>
+      <Architectures>x64;arm64</Architectures>
       <Versions>23;24;25;26;27;28;29;30;31</Versions>
       <TreatVersionsAsCompatible>false</TreatVersionsAsCompatible>
     </RuntimeGroup>
@@ -115,7 +115,7 @@
     </RuntimeGroup>
     <RuntimeGroup Include="rhel">
       <Parent>linux</Parent>
-      <Architectures>x64</Architectures>
+      <Architectures>x64;arm64</Architectures>
       <Versions>8;8.0;8.1</Versions>
     </RuntimeGroup>
 
