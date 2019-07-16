@@ -10,6 +10,40 @@ using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
+    public class SimpleTestClassWithImmutableArray : ITestClass
+    {
+        public ImmutableArray<string> MyStringImmutableArray { get; set; }
+
+        public static readonly string s_json = @"{""MyStringImmutableArray"":[""Hello""]}";
+
+        public void Initialize()
+        {
+            MyStringImmutableArray = ImmutableArray.CreateRange(new List<string> { "Hello" });
+        }
+
+        public void Verify()
+        {
+            Assert.Equal("Hello", MyStringImmutableArray[0]);
+        }
+    }
+
+    public class SimpleTestClassWithObjectImmutableArray : ITestClass
+    {
+        public object MyStringImmutableArray { get; set; }
+
+        public static readonly string s_json = @"{""MyStringImmutableArray"":[""Hello""]}";
+
+        public void Initialize()
+        {
+            MyStringImmutableArray = ImmutableArray.CreateRange(new List<string> { "Hello" });
+        }
+
+        public void Verify()
+        {
+            Assert.Equal("Hello", ((ImmutableArray<string>)MyStringImmutableArray)[0]);
+        }
+    }
+
     public class SimpleTestClassWithIImmutableDictionaryWrapper
     {
         public StringToStringIImmutableDictionaryWrapper MyStringToStringImmutableDictionaryWrapper { get; set; }

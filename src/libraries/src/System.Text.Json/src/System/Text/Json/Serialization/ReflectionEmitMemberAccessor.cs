@@ -55,7 +55,7 @@ namespace System.Text.Json
         }
 
 
-        public override object ImmutableCollectionCreateRange(Type constructingType, Type elementType)
+        public override ImmutableCollectionCreator ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType)
         {
             MethodInfo createRange = ImmutableCollectionCreateRangeMethod(constructingType, elementType);
 
@@ -64,12 +64,38 @@ namespace System.Text.Json
                 return null;
             }
 
-            return createRange.CreateDelegate(
-                typeof(JsonSerializerOptions.ImmutableCreateRangeDelegate<>).MakeGenericType(elementType), null);
+            Type creatorType = typeof(ImmutableEnumerableCreator<,>).MakeGenericType(elementType, collectionType);
+
+            ConstructorInfo realMethod = creatorType.GetConstructor(
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                binder: null,
+                Type.EmptyTypes,
+                modifiers: null);
+
+            Debug.Assert(realMethod != null);
+
+            var dynamicMethod = new DynamicMethod(
+                ConstructorInfo.ConstructorName,
+                typeof(object),
+                Type.EmptyTypes,
+                typeof(ReflectionEmitMemberAccessor).Module,
+                skipVisibility: true);
+
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+            generator.Emit(OpCodes.Newobj, realMethod);
+            generator.Emit(OpCodes.Ret);
+
+            JsonClassInfo.ConstructorDelegate constructor = (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(
+                typeof(JsonClassInfo.ConstructorDelegate));
+
+            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor();
+
+            creator.RegisterCreatorDelegateFromMethod(createRange);
+            return creator;
         }
 
 
-        public override object ImmutableDictionaryCreateRange(Type constructingType, Type elementType)
+        public override ImmutableCollectionCreator ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType)
         {
             MethodInfo createRange = ImmutableDictionaryCreateRangeMethod(constructingType, elementType);
 
@@ -78,8 +104,34 @@ namespace System.Text.Json
                 return null;
             }
 
-            return createRange.CreateDelegate(
-                typeof(JsonSerializerOptions.ImmutableDictCreateRangeDelegate<,>).MakeGenericType(typeof(string), elementType), null);
+            Type creatorType = typeof(ImmutableDictionaryCreator<,>).MakeGenericType(elementType, collectionType);
+
+            ConstructorInfo realMethod = creatorType.GetConstructor(
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
+                binder: null,
+                Type.EmptyTypes,
+                modifiers: null);
+
+            Debug.Assert(realMethod != null);
+
+            var dynamicMethod = new DynamicMethod(
+                ConstructorInfo.ConstructorName,
+                typeof(object),
+                Type.EmptyTypes,
+                typeof(ReflectionEmitMemberAccessor).Module,
+                skipVisibility: true);
+
+            ILGenerator generator = dynamicMethod.GetILGenerator();
+            generator.Emit(OpCodes.Newobj, realMethod);
+            generator.Emit(OpCodes.Ret);
+
+            JsonClassInfo.ConstructorDelegate constructor = (JsonClassInfo.ConstructorDelegate)dynamicMethod.CreateDelegate(
+                typeof(JsonClassInfo.ConstructorDelegate));
+
+            ImmutableCollectionCreator creator = (ImmutableCollectionCreator)constructor();
+
+            creator.RegisterCreatorDelegateFromMethod(createRange);
+            return creator;
         }
 
         public override Func<object, TProperty> CreatePropertyGetter<TClass, TProperty>(PropertyInfo propertyInfo) =>

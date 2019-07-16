@@ -9,7 +9,7 @@ namespace System.Text.Json.Serialization.Converters
     // This converter returns enumerables in the System.Collections.Immutable namespace.
     internal sealed class DefaultImmutableEnumerableConverter : JsonEnumerableConverter
     {
-        private const string ImmutableArrayTypeName = "System.Collections.Immutable.ImmutableArray";
+        public const string ImmutableArrayTypeName = "System.Collections.Immutable.ImmutableArray";
         public const string ImmutableArrayGenericTypeName = "System.Collections.Immutable.ImmutableArray`1";
 
         private const string ImmutableListTypeName = "System.Collections.Immutable.ImmutableList";
@@ -43,6 +43,9 @@ namespace System.Text.Json.Serialization.Converters
 
             switch (underlyingType.FullName)
             {
+                case ImmutableArrayGenericTypeName:
+                    constructingTypeName = ImmutableArrayTypeName;
+                    break;
                 case ImmutableListGenericTypeName:
                 case ImmutableListGenericInterfaceTypeName:
                     constructingTypeName = ImmutableListTypeName;
@@ -91,8 +94,8 @@ namespace System.Text.Json.Serialization.Converters
             Type constructingType = underlyingType.Assembly.GetType(constructingTypeName);
 
             // Create a delegate which will point to the CreateRange method.
-            object createRangeDelegate;
-            createRangeDelegate = options.MemberAccessorStrategy.ImmutableCollectionCreateRange(constructingType, elementType);
+            ImmutableCollectionCreator createRangeDelegate;
+            createRangeDelegate = options.MemberAccessorStrategy.ImmutableCollectionCreateRange(constructingType, immutableCollectionType, elementType);
 
             // Cache the delegate
             options.TryAddCreateRangeDelegate(delegateKey, createRangeDelegate);

@@ -179,7 +179,9 @@ namespace System.Text.Json
                 else
                 {
                     IList list = (IList)state.Current.JsonPropertyInfo.GetValueAsObject(state.Current.ReturnValue);
-                    if (list == null)
+                    if (list == null ||
+                        // ImmutableArray<T> is a struct, so default value won't be null.
+                        state.Current.JsonPropertyInfo.RuntimePropertyType.FullName.StartsWith(DefaultImmutableEnumerableConverter.ImmutableArrayGenericTypeName)) 
                     {
                         state.Current.JsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, value);
                     }
