@@ -43,7 +43,7 @@
 
   <!-- Most packages need the host to be built first. -->
   <ItemGroup Condition="'$(DisableOrderDependencies)' != 'true'">
-    <OrderProjectReference Include="$(SourceDir)corehost\build.proj" />
+    <OrderProjectReference Include="@(CorehostProjectToBuild)" />
     <!-- Pkgproj requires its depproj crossgen outputs to be signed.-->
     <OrderProjectReference
       Condition="'$(MSBuildProjectExtension)' == '.pkgproj'"
