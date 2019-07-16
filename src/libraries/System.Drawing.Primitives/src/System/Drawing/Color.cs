@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Numerics.Hashing;
 using System.Runtime.CompilerServices;
 
@@ -11,7 +10,7 @@ namespace System.Drawing
 {
     [DebuggerDisplay("{NameAndARGBValue}")]
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+    [TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public readonly struct Color : IEquatable<Color>
     {
         public static readonly Color Empty = new Color();
@@ -314,35 +313,29 @@ namespace System.Drawing
         private const short StateNameValid = 0x0008;
         private const long NotDefinedValue = 0;
 
-        /**
-         * Shift count and bit mask for A, R, G, B components in ARGB mode!
-         */
-        private const int ARGBAlphaShift = 24;
-        private const int ARGBRedShift = 16;
-        private const int ARGBGreenShift = 8;
-        private const int ARGBBlueShift = 0;
-        private const uint ARGBAlphaMask = 0xFFu << ARGBAlphaShift;
-        private const uint ARGBRedMask = 0xFFu << ARGBRedShift;
-        private const uint ARGBGreenMask = 0xFFu << ARGBGreenShift;
-        private const uint ARGBBlueMask = 0xFFu << ARGBBlueShift;
+        // Shift counts and bit masks for A, R, G, B components in ARGB mode
 
-        // user supplied name of color. Will not be filled in if
+        internal const int ARGBAlphaShift = 24;
+        internal const int ARGBRedShift = 16;
+        internal const int ARGBGreenShift = 8;
+        internal const int ARGBBlueShift = 0;
+        internal const uint ARGBAlphaMask = 0xFFu << ARGBAlphaShift;
+        internal const uint ARGBRedMask = 0xFFu << ARGBRedShift;
+        internal const uint ARGBGreenMask = 0xFFu << ARGBGreenShift;
+        internal const uint ARGBBlueMask = 0xFFu << ARGBBlueShift;
+
+        // User supplied name of color. Will not be filled in if
         // we map to a "knowncolor"
-        //
         private readonly string name; // Do not rename (binary serialization)
 
-        // will contain standard 32bit sRGB (ARGB)
-        //
+        // Standard 32bit sRGB (ARGB)
         private readonly long value; // Do not rename (binary serialization)
 
-        // ignored, unless "state" says it is valid
-        //
+        // Ignored, unless "state" says it is valid
         private readonly short knownColor; // Do not rename (binary serialization)
 
-        // implementation specific information
-        //
+        // State flags.
         private readonly short state; // Do not rename (binary serialization)
-
 
         internal Color(KnownColor knownColor)
         {
@@ -374,13 +367,15 @@ namespace System.Drawing
 
         public bool IsNamedColor => ((state & StateNameValid) != 0) || IsKnownColor;
 
-        public bool IsSystemColor => IsKnownColor && (((KnownColor)knownColor <= KnownColor.WindowText) || ((KnownColor)knownColor > KnownColor.YellowGreen));
+        public bool IsSystemColor => IsKnownColor && IsKnownColorSystem((KnownColor)knownColor);
 
-        // Not localized because it's only used for the DebuggerDisplayAttribute, and the values are
-        // programmatic items.
-        // Also, don't inline into the attribute for performance reasons.  This way means the debugger
-        // does 1 func-eval instead of 5.
-        [SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters")]
+        internal static bool IsKnownColorSystem(KnownColor knownColor)
+            => (knownColor <= KnownColor.WindowText) || (knownColor > KnownColor.YellowGreen);
+
+        // Used for the [DebuggerDisplay]. Inlining in the attribute is possible, but
+        // against best practices as the current project language parses the string with
+        // language specific heuristics.
+
         private string NameAndARGBValue => $"{{Name={Name}, ARGB=({A}, {R}, {G}, {B})}}";
 
         public string Name
@@ -394,7 +389,7 @@ namespace System.Drawing
 
                 if (IsKnownColor)
                 {
-                    string tablename = KnownColorTable.KnownColorToName((KnownColor)knownColor);
+                    string tablename = KnownColorNames.KnownColorToName((KnownColor)knownColor);
                     Debug.Assert(tablename != null, $"Could not find known color '{(KnownColor)knownColor}' in the KnownColorTable");
 
                     return tablename;
@@ -415,6 +410,7 @@ namespace System.Drawing
                     return value;
                 }
 
+                // This is the only place we have system colors value exposed
                 if (IsKnownColor)
                 {
                     return KnownColorTable.KnownColorToArgb((KnownColor)knownColor);

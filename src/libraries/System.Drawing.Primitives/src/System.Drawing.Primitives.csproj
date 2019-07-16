@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <RootNamespace>System.Drawing</RootNamespace>
@@ -16,8 +16,10 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.ComponentModel.Primitives" />
+    <Reference Include="Microsoft.Win32.SystemEvents" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="System\Drawing\KnownColorNames.cs" />
     <Compile Include="System\Drawing\Point.cs" />
     <Compile Include="System\Drawing\PointF.cs" />
     <Compile Include="System\Drawing\Rectangle.cs" />
@@ -33,9 +35,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Drawing\ColorTranslator.cs">
       <Link>System\Drawing\ColorTranslator.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Drawing\ColorUtil.netcoreapp21.cs">
-      <Link>System\Drawing\ColorUtil.netcoreapp21.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Drawing\KnownColor.cs">
       <Link>System\Drawing\KnownColor.cs</Link>
