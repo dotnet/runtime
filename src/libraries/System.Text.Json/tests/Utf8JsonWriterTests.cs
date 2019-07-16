@@ -2487,7 +2487,7 @@ namespace System.Text.Json.Tests
             jsonUtf8.Flush();
 
             var builder = new StringBuilder();
-            builder.Append("\"ZGRkZPvvvmRkZGRkZGRkABC\\/");
+            builder.Append("\"ZGRkZPvvvmRkZGRkZGRkABC/");
             for (int i = 0; i < 60; i++)
             {
                 builder.Append("ZGRk");
