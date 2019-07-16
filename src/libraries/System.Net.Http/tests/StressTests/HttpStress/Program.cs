@@ -683,7 +683,7 @@ public class Program
             else if (GetRandomBoolean(_cancellationProbability))
             {
                 // trigger a random cancellation
-                using(var cts = new CancellationTokenSource())
+                using (var cts = new CancellationTokenSource())
                 {
                     int delayMs = _random.Next(0, 2);
                     Task<HttpResponseMessage> task = _client.SendAsync(request, httpCompletion, cts.Token);
