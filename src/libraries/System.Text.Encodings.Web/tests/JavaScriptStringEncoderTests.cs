@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Microsoft.Framework.WebEncoders
 {
-    public class JavaScriptStringEncoderTests
+    public partial class JavaScriptStringEncoderTests
     {
         [Fact]
         public void TestSurrogate()

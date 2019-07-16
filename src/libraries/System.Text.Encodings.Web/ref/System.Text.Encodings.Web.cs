@@ -20,6 +20,7 @@ namespace System.Text.Encodings.Web
     {
         protected JavaScriptEncoder() { }
         public static System.Text.Encodings.Web.JavaScriptEncoder Default { get { throw null; } }
+        public static System.Text.Encodings.Web.JavaScriptEncoder UnsafeRelaxedJsonEscaping { get { throw null; } }
         public static System.Text.Encodings.Web.JavaScriptEncoder Create(System.Text.Encodings.Web.TextEncoderSettings settings) { throw null; }
         public static System.Text.Encodings.Web.JavaScriptEncoder Create(params System.Text.Unicode.UnicodeRange[] allowedRanges) { throw null; }
     }

@@ -32,6 +32,7 @@
     <Compile Include="IJavaScriptStringEncoder.cs" />
     <Compile Include="IUrlEncoder.cs" />
     <Compile Include="JavaScriptStringEncoderTests.cs" />
+    <Compile Include="JavaScriptStringEncoderTests.Relaxed.cs" />
     <Compile Include="PerformanceTests.cs" />
     <Compile Include="TemporaryEncoderAdapters.cs" />
     <Compile Include="TemporaryEncoderExtensions.cs" />
