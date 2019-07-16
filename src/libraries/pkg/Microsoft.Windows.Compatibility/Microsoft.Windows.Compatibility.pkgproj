@@ -1,19 +1,16 @@
 ﻿<Project DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
   <PropertyGroup>
-      <!-- We use the PackageVersion property defined in Packaging.props for the Prerelease packages which are using it to be built -->
-    <_PreReleasePackageVersion>$(PackageVersion)</_PreReleasePackageVersion>
-    <PackageVersion>3.0.0</PackageVersion>
     <ServiceModelVersion>4.5.3</ServiceModelVersion>
     <!-- We don't need to harvest the stable packages to build this -->
     <HarvestStablePackage>false</HarvestStablePackage>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <PrereleaseLibraryPackage>
-      <Version>$(_PreReleasePackageVersion)</Version>
+      <Version>$(PackageVersion)</Version>
     </PrereleaseLibraryPackage>
     <NS21PrereleaseLibraryPackage>
-      <Version>$(_PreReleasePackageVersion)</Version>
+      <Version>$(PackageVersion)</Version>
     </NS21PrereleaseLibraryPackage>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -28,10 +25,7 @@
     <PrereleaseLibraryPackage Include="System.Configuration.ConfigurationManager" />
     <PrereleaseLibraryPackage Include="System.Data.Odbc" />
     <PrereleaseLibraryPackage Include="System.Data.OleDb" />
-    <PrereleaseLibraryPackage Include="System.Data.SqlClient">
-      <!-- SQL client defines its own version, higher than rest of master -->
-      <Version>4.7.0</Version>
-    </PrereleaseLibraryPackage>
+    <PrereleaseLibraryPackage Include="System.Data.SqlClient" />
     <PrereleaseLibraryPackage Include="System.Drawing.Common" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.EventLog" />
     <PrereleaseLibraryPackage Include="System.Diagnostics.PerformanceCounter" />
