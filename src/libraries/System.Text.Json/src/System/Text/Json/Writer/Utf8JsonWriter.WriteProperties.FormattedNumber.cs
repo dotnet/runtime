@@ -12,8 +12,8 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the property name and value (as a JSON number) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
-        /// <param name="utf8FormattedNumber">The value to be written as a JSON number as part of the name/value pair.</param>
+        /// <param name="propertyName">The name of the property to write.</param>
+        /// <param name="utf8FormattedNumber">The value to write.</param>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
@@ -21,10 +21,10 @@ namespace System.Text.Json
         /// Thrown when <paramref name="utf8FormattedNumber"/> does not represent a valid JSON number.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         /// <remarks>
-        /// Writes the <see cref="long"/> using the default <see cref="StandardFormat"/> (i.e. 'G'), for example: 32767.
+        /// Writes the <see cref="long"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
         /// The property name is escaped before writing.
         /// </remarks>
         internal void WriteNumber(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> utf8FormattedNumber)
@@ -42,8 +42,8 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the property name and value (as a JSON number) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="utf8PropertyName">The UTF-8 encoded property name of the JSON object to be written.</param>
-        /// <param name="utf8FormattedNumber">The value to be written as a JSON number as part of the name/value pair.</param>
+        /// <param name="utf8PropertyName">The UTF-8 encoded name of the property to write..</param>
+        /// <param name="utf8FormattedNumber">The value to write.</param>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
@@ -51,10 +51,10 @@ namespace System.Text.Json
         /// Thrown when <paramref name="utf8FormattedNumber"/> does not represent a valid JSON number.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         /// <remarks>
-        /// Writes the <see cref="long"/> using the default <see cref="StandardFormat"/> (i.e. 'G'), for example: 32767.
+        /// Writes the <see cref="long"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
         /// The property name is escaped before writing.
         /// </remarks>
         internal void WriteNumber(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> utf8FormattedNumber)
