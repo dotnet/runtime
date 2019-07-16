@@ -51,11 +51,11 @@ namespace System.Text.Json
         {
             int encodingLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 
-            Debug.Assert(encodingLength < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping) - 3);
+            Debug.Assert(encodingLength < int.MaxValue - 3);
 
-            // 2 quotes to surround the base-64 encoded string value, with escaping which can by up to 6x.
+            // 2 quotes to surround the base-64 encoded string value.
             // Optionally, 1 list separator
-            int maxRequired = (encodingLength * JsonConstants.MaxExpansionFactorWhileEscaping) + 3;
+            int maxRequired = encodingLength + 3;
 
             if (_memory.Length - BytesPending < maxRequired)
             {
@@ -83,11 +83,11 @@ namespace System.Text.Json
 
             int encodingLength = Base64.GetMaxEncodedToUtf8Length(bytes.Length);
 
-            Debug.Assert(encodingLength < (int.MaxValue / JsonConstants.MaxExpansionFactorWhileEscaping) - indent - 3 - s_newLineLength);
+            Debug.Assert(encodingLength < int.MaxValue - indent - 3 - s_newLineLength);
 
-            // indentation + 2 quotes to surround the base-64 encoded string value, with escaping which can by up to 6x.
+            // indentation + 2 quotes to surround the base-64 encoded string value.
             // Optionally, 1 list separator, and 1-2 bytes for new line
-            int maxRequired = indent + (encodingLength * JsonConstants.MaxExpansionFactorWhileEscaping) + 3 + s_newLineLength;
+            int maxRequired = indent + encodingLength + 3 + s_newLineLength;
 
             if (_memory.Length - BytesPending < maxRequired)
             {
