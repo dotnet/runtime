@@ -13,12 +13,12 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the <see cref="int"/> value (as a JSON number) as an element of a JSON array.
         /// </summary>
-        /// <param name="value">The value to be written as a JSON number as an element of a JSON array.</param>
+        /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         /// <remarks>
-        /// Writes the <see cref="int"/> using the default <see cref="StandardFormat"/> (i.e. 'G'), for example: 32767.
+        /// Writes the <see cref="int"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
         /// </remarks>
         public void WriteNumberValue(int value)
             => WriteNumberValue((long)value);
@@ -26,12 +26,12 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the <see cref="long"/> value (as a JSON number) as an element of a JSON array.
         /// </summary>
-        /// <param name="value">The value to be written as a JSON number as an element of a JSON array.</param>
+        /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         /// <remarks>
-        /// Writes the <see cref="long"/> using the default <see cref="StandardFormat"/> (i.e. 'G'), for example: 32767.
+        /// Writes the <see cref="long"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
         /// </remarks>
         public void WriteNumberValue(long value)
         {
