@@ -1,7 +1,7 @@
 <Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <PackageVersion>2.1.0</PackageVersion>
+    <PackageVersion>2.2.0</PackageVersion>
     <SkipValidatePackage>true</SkipValidatePackage>
     <AssemblyVersion>2.0.0.0</AssemblyVersion>
     <AssemblyFileVersion>$(AssemblyVersion)</AssemblyFileVersion>
