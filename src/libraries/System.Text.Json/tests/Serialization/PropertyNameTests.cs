@@ -40,6 +40,7 @@ namespace System.Text.Json.Serialization.Tests
             options.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 
             SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(@"{}", options);
+
             string json = JsonSerializer.Serialize(obj, options);
             Assert.Contains(@"""myInt16"":0", json);
             Assert.Contains(@"""myInt32"":0", json);

@@ -11,9 +11,9 @@ namespace System.Text.Json
     {
         public abstract JsonClassInfo.ConstructorDelegate CreateConstructor(Type classType);
 
-        public abstract object ImmutableCollectionCreateRange(Type constructingType, Type elementType);
+        public abstract ImmutableCollectionCreator ImmutableCollectionCreateRange(Type constructingType, Type collectionType, Type elementType);
 
-        public abstract object ImmutableDictionaryCreateRange(Type constructingType, Type elementType);
+        public abstract ImmutableCollectionCreator ImmutableDictionaryCreateRange(Type constructingType, Type collectionType, Type elementType);
 
         protected MethodInfo ImmutableCollectionCreateRangeMethod(Type constructingType, Type elementType)
         {

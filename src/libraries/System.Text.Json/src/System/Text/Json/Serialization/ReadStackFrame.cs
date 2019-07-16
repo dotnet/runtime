@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization.Converters;
 
 namespace System.Text.Json
 {
@@ -155,7 +156,8 @@ namespace System.Text.Json
                 state.Current.TempEnumerableValues = converterList;
 
                 // Clear the value if present to ensure we don't confuse tempEnumerableValues with the collection. 
-                if (!jsonPropertyInfo.IsPropertyPolicy)
+                if (!jsonPropertyInfo.IsPropertyPolicy &&
+                    !state.Current.JsonPropertyInfo.RuntimePropertyType.FullName.StartsWith(DefaultImmutableEnumerableConverter.ImmutableArrayGenericTypeName))
                 {
                     jsonPropertyInfo.SetValueAsObject(state.Current.ReturnValue, null);
                 }

@@ -142,6 +142,7 @@ namespace System.Text.Json.Serialization.Tests
         public object /*HashSet<string>*/ HashSetT { get; set; }
         public object /*LinkedList<string>*/ LinkedListT { get; set; }
         public object /*SortedSet<string>*/ SortedSetT { get; set; }
+        public object /*ImmutableArray<string>*/ ImmutableArrayT { get; set; }
         public object /*IImmutableList<string>*/ IImmutableListT { get; set; }
         public object /*IImmutableStack<string>*/ IImmutableStackT { get; set; }
         public object /*IImmutableQueue<string>*/ IImmutableQueueT { get; set; }
@@ -176,6 +177,7 @@ namespace System.Text.Json.Serialization.Tests
             HashSetT = new HashSet<string>(new List<string> { "Hello", "World" });
             LinkedListT = new LinkedList<string>(new List<string> { "Hello", "World" });
             SortedSetT = new SortedSet<string>(new List<string> { "Hello", "World" });
+            ImmutableArrayT = ImmutableArray.CreateRange(new List<string> { "Hello", "World" });
             IImmutableListT = ImmutableList.CreateRange(new List<string> { "Hello", "World" });
             IImmutableStackT = ImmutableStack.CreateRange(new List<string> { "Hello", "World" });
             IImmutableQueueT = ImmutableQueue.CreateRange(new List<string> { "Hello", "World" });

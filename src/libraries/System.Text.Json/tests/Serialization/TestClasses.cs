@@ -1339,6 +1339,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public class TestClassWithObjectImmutableTypes : ITestClass
     {
+        public ImmutableArray<SimpleTestClass> MyImmutableArray { get; set; }
         public IImmutableList<SimpleTestClass> MyIImmutableList { get; set; }
         public IImmutableStack<SimpleTestClass> MyIImmutableStack { get; set; }
         public IImmutableQueue<SimpleTestClass> MyIImmutableQueue { get; set; }
@@ -1350,6 +1351,10 @@ namespace System.Text.Json.Serialization.Tests
 
         public static readonly byte[] s_data = Encoding.UTF8.GetBytes(
             @"{" +
+                @"""MyImmutableArray"":[" +
+                    SimpleTestClass.s_json + "," +
+                    SimpleTestClass.s_json +
+                @"]," +
                 @"""MyIImmutableList"":[" +
                     SimpleTestClass.s_json + "," +
                     SimpleTestClass.s_json +
@@ -1386,6 +1391,15 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Initialize()
         {
+            {
+                SimpleTestClass obj1 = new SimpleTestClass();
+                obj1.Initialize();
+
+                SimpleTestClass obj2 = new SimpleTestClass();
+                obj2.Initialize();
+
+                MyImmutableArray = ImmutableArray.CreateRange(new List<SimpleTestClass> { obj1, obj2 });
+            }
             {
                 SimpleTestClass obj1 = new SimpleTestClass();
                 obj1.Initialize();
@@ -1462,6 +1476,12 @@ namespace System.Text.Json.Serialization.Tests
 
         public void Verify()
         {
+            Assert.Equal(2, MyImmutableArray.Length);
+            foreach (SimpleTestClass data in MyImmutableArray)
+            {
+                data.Verify();
+            }
+
             Assert.Equal(2, MyIImmutableList.Count);
             foreach (SimpleTestClass data in MyIImmutableList)
             {

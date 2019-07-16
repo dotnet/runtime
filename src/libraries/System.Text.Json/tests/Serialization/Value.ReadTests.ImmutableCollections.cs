@@ -5,12 +5,80 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.Json.Tests;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
     public static partial class ValueTests
     {
+        [Fact]
+        public static void ReadImmutableArrayOfImmutableArray()
+        {
+            ImmutableArray<ImmutableArray<int>> result = JsonSerializer.Deserialize<ImmutableArray<ImmutableArray<int>>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (ImmutableArray<int> l in result)
+            {
+                foreach (int i in l)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadImmutableArrayOfArray()
+        {
+            ImmutableArray<int[]> result = JsonSerializer.Deserialize<ImmutableArray<int[]>>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (int[] arr in result)
+            {
+                foreach (int i in arr)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadArrayOfImmutableArray()
+        {
+            ImmutableArray<int>[] result = JsonSerializer.Deserialize<ImmutableArray<int>[]>(Encoding.UTF8.GetBytes(@"[[1,2],[3,4]]"));
+            int expected = 1;
+
+            foreach (ImmutableArray<int> l in result)
+            {
+                foreach (int i in l)
+                {
+                    Assert.Equal(expected++, i);
+                }
+            }
+        }
+
+        [Fact]
+        public static void ReadSimpleImmutableArray()
+        {
+            ImmutableArray<int> result = JsonSerializer.Deserialize<ImmutableArray<int>>(Encoding.UTF8.GetBytes(@"[1,2]"));
+            int expected = 1;
+
+            foreach (int i in result)
+            {
+                Assert.Equal(expected++, i);
+            }
+
+            result = JsonSerializer.Deserialize<ImmutableArray<int>>(Encoding.UTF8.GetBytes(@"[]"));
+            Assert.Equal(0, result.Count());
+        }
+
+        [Fact]
+        public static void ReadSimpleClassWithImmutableArray()
+        {
+            SimpleTestClassWithImmutableArray obj = JsonSerializer.Deserialize<SimpleTestClassWithImmutableArray>(SimpleTestClassWithImmutableArray.s_json);
+            obj.Verify();
+        }
+
         [Fact]
         public static void ReadIImmutableListTOfIImmutableListT()
         {
@@ -555,12 +623,6 @@ namespace System.Text.Json.Serialization.Tests
 
             result = JsonSerializer.Deserialize<ImmutableSortedSet<int>>(Encoding.UTF8.GetBytes(@"[]"));
             Assert.Equal(0, result.Count());
-        }
-
-        [Fact]
-        public static void ReadPrimitiveImmutableArrayThrows()
-        {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<ImmutableArray<int>>(Encoding.UTF8.GetBytes(@"[1,2]")));
         }
 
         [Fact]

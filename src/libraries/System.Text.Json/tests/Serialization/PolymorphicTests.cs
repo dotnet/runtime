@@ -191,6 +191,13 @@ namespace System.Text.Json.Serialization.Tests
             json = JsonSerializer.Serialize<object>(linkedlist);
             Assert.Equal(ExpectedJson, json);
 
+            ImmutableArray<object> immutablearray = ImmutableArray.CreateRange(new List<object> { 1, true, address, null, "foo" });
+            json = JsonSerializer.Serialize(immutablearray);
+            Assert.Equal(ExpectedJson, json);
+
+            json = JsonSerializer.Serialize<object>(immutablearray);
+            Assert.Equal(ExpectedJson, json);
+
             IImmutableList<object> iimmutablelist = ImmutableList.CreateRange(new List<object> { 1, true, address, null, "foo" });
             json = JsonSerializer.Serialize(iimmutablelist);
             Assert.Equal(ExpectedJson, json);
@@ -306,6 +313,7 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Contains(@"""HashSetT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""LinkedListT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""SortedSetT"":[""Hello"",""World""]", json);
+                Assert.Contains(@"""ImmutableArrayT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""IImmutableListT"":[""Hello"",""World""]", json);
                 Assert.Contains(@"""IImmutableStackT"":[""World"",""Hello""]", json);
                 Assert.Contains(@"""IImmutableQueueT"":[""Hello"",""World""]", json);

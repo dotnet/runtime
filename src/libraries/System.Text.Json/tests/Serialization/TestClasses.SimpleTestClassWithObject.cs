@@ -57,6 +57,7 @@ namespace System.Text.Json.Serialization.Tests
         public object MyStringIImmutableQueueT { get; set; }
         public object MyStringIImmutableSetT { get; set; }
         public object MyStringImmutableHashSetT { get; set; }
+        public object MyStringImmutableArray { get; set; }
         public object MyStringImmutableListT { get; set; }
         public object MyStringImmutableStackT { get; set; }
         public object MyStringImmutablQueueT { get; set; }
