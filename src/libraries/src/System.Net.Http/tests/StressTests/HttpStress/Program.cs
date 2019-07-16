@@ -27,6 +27,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Web;
 using System.Collections.Specialized;
+using Microsoft.AspNetCore.Routing.Constraints;
 
 /// <summary>
 /// Simple HttpClient stress app that launches Kestrel in-proc and runs many concurrent requests of varying types against it.
@@ -101,6 +102,7 @@ public class Program
         const int HttpsPort = 5001;
         const string LocalhostName = "localhost";
         string serverUri = $"https://{LocalhostName}:{HttpsPort}";
+        int maxRequestLineSize = -1;
 
         // Validation of a response message
         void ValidateResponse(HttpResponseMessage m, Version expectedVersion)
@@ -111,11 +113,11 @@ public class Program
             }
         }
 
-        void ValidateContent(string expectedContent, string actualContent)
+        void ValidateContent(string expectedContent, string actualContent, string details = null)
         {
             if (actualContent != expectedContent)
             {
-                throw new Exception($"Expected response content \"{expectedContent}\", got \"{actualContent}\"");
+                throw new Exception($"Expected response content \"{expectedContent}\", got \"{actualContent}\". {details}");
             }
         }
 
@@ -168,12 +170,13 @@ public class Program
             async ctx =>
             {
                 Version httpVersion = ctx.GetRandomVersion(httpVersions);
-                (string query, string expected) variables = GetGetQueryParameters(contentSource, ctx, numParameters);
-                using (var req = new HttpRequestMessage(HttpMethod.Get, serverUri + "/variables" + variables.query) { Version = httpVersion })
+                string uri = serverUri + "/variables";
+                string expectedResponse = GetGetQueryParameters(ref uri, maxRequestLineSize, contentSource, ctx, numParameters);
+                using (var req = new HttpRequestMessage(HttpMethod.Get, uri) { Version = httpVersion })
                 using (HttpResponseMessage m = await ctx.SendAsync(req))
                 {
                     ValidateResponse(m, httpVersion);
-                    ValidateContent(variables.expected, await m.Content.ReadAsStringAsync());
+                    ValidateContent(expectedResponse, await m.Content.ReadAsStringAsync(), $"Uri: {uri}");
                 }
             }),
 
@@ -362,6 +365,7 @@ public class Program
             // Use Kestrel, and configure it for HTTPS with a self-signed test certificate.
             .UseKestrel(ko =>
             {
+                maxRequestLineSize = ko.Limits.MaxRequestLineSize;
                 ko.ListenLocalhost(HttpsPort, listenOptions =>
                 {
                     using (RSA rsa = RSA.Create())
@@ -610,23 +614,43 @@ public class Program
         GC.KeepAlive(listener);
     }
 
-    private static (string, string) GetGetQueryParameters(string contentSource, RequestContext clientContext, int numParameters)
+    private static string GetGetQueryParameters(ref string uri, int maxRequestLineSize, string contentSource, RequestContext clientContext, int numParameters)
     {
-        StringBuilder queryString = new StringBuilder();
-        StringBuilder expectedString = new StringBuilder();
-        queryString.Append($"?Var{0}={contentSource}");
-        expectedString.Append(contentSource);
-
-        int num = clientContext.GetRandomInt(numParameters);
-
-        for (int i = 1; i < num; i++)
+        if (maxRequestLineSize < uri.Length)
         {
-            string vari = clientContext.GetRandomSubstring(contentSource);
-            expectedString.Append(vari);
-            queryString.Append($"&Var{i}={vari}");
+            throw new ArgumentOutOfRangeException(nameof(maxRequestLineSize));
+        }
+        if (numParameters <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(numParameters));
         }
 
-        return (queryString.ToString(), expectedString.ToString());
+        var expectedString = new StringBuilder();
+        var uriSb = new StringBuilder(uri);
+        maxRequestLineSize -= uri.Length;
+
+        int appxMaxValueLength = Math.Max(maxRequestLineSize / numParameters, 1);
+
+        int num = clientContext.GetRandomInt32(1, numParameters + 1);
+        for (int i = 0; i < num; i++)
+        {
+            string key = $"{(i == 0 ? "?" : "&")}Var{i}=";
+
+            int remainingLength = maxRequestLineSize - uriSb.Length - key.Length;
+            if (remainingLength <= 0)
+            {
+                break;
+            }
+
+            uriSb.Append(key);
+
+            string value = clientContext.GetRandomString(Math.Min(appxMaxValueLength, remainingLength));
+            expectedString.Append(value);
+            uriSb.Append(value);
+        }
+
+        uri = uriSb.ToString();
+        return expectedString.ToString();
     }
 
     private static (string, MultipartContent) GetMultipartContent(string contentSource, RequestContext clientContext, int numFormFields)
@@ -634,10 +658,7 @@ public class Program
         var multipartContent = new MultipartContent("prefix" + clientContext.GetRandomSubstring(contentSource), "test_boundary");
         StringBuilder sb = new StringBuilder();
 
-        int num = clientContext.GetRandomInt(numFormFields);
-
-        if (num == 0)
-            return ("--test_boundary\r\n\r\n--test_boundary--\r\n", multipartContent);
+        int num = clientContext.GetRandomInt32(1, numFormFields + 1);
 
         for (int i = 0; i < num; i++)
         {
@@ -702,6 +723,17 @@ public class Program
             }
         }
 
+        public string GetRandomString(int maxLength)
+        {
+            int length = _random.Next(0, maxLength);
+            var sb = new StringBuilder(length);
+            for (int i = 0; i < length; i++)
+            {
+                sb.Append((char)(_random.Next(0, 26) + 'a'));
+            }
+            return sb.ToString();
+        }
+
         public string GetRandomSubstring(string input)
         {
             int offset = _random.Next(0, input.Length);
@@ -717,7 +749,7 @@ public class Program
             return _random.NextDouble() < probability;
         }
 
-        public int GetRandomInt(int maxValue) => _random.Next(0, maxValue);
+        public int GetRandomInt32(int minValueInclusive, int maxValueExclusive) => _random.Next(minValueInclusive, maxValueExclusive);
 
         public Version GetRandomVersion(Version[] versions) =>
             versions[_random.Next(0, versions.Length)];
