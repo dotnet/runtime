@@ -100,7 +100,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="bufferWriter">An instance of <see cref="IBufferWriter{Byte}" /> used as a destination for writing JSON text into.</param>
         /// <param name="options">Defines the customized behavior of the <see cref="Utf8JsonWriter"/>
-        /// By default, the <see cref="Utf8JsonWriter"/> writes JSON minimized (i.e. with no extra whitespace)
+        /// By default, the <see cref="Utf8JsonWriter"/> writes JSON minimized (that is, with no extra whitespace)
         /// and validates that the JSON being written is structurally valid according to JSON RFC.</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown when the instance of <see cref="IBufferWriter{Byte}" /> that is passed in is null.
@@ -131,7 +131,7 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="utf8Json">An instance of <see cref="Stream" /> used as a destination for writing JSON text into.</param>
         /// <param name="options">Defines the customized behavior of the <see cref="Utf8JsonWriter"/>
-        /// By default, the <see cref="Utf8JsonWriter"/> writes JSON minimized (i.e. with no extra whitespace)
+        /// By default, the <see cref="Utf8JsonWriter"/> writes JSON minimized (that is, with no extra whitespace)
         /// and validates that the JSON being written is structurally valid according to JSON RFC.</param>
         /// <exception cref="ArgumentNullException">
         /// Thrown when the instance of <see cref="Stream" /> that is passed in is null.
@@ -433,7 +433,7 @@ namespace System.Text.Json
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
-        /// OR if this would result in an invalid JSON to be written (while validation is enabled).
+        /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartArray()
         {
@@ -446,7 +446,7 @@ namespace System.Text.Json
         /// </summary>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
-        /// OR if this would result in an invalid JSON to be written (while validation is enabled).
+        /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartObject()
         {
@@ -567,13 +567,10 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the beginning of a JSON array with a pre-encoded property name as the key.
         /// </summary>
-        /// <param name="propertyName">The JSON encoded property name of the JSON array to be transcoded and written as UTF-8.</param>
-        /// <remarks>
-        /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created.
-        /// </remarks>
+        /// <param name="propertyName">The JSON-encoded name of the property to write.</param>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
-        /// OR if this would result in an invalid JSON to be written (while validation is enabled).
+        /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartArray(JsonEncodedText propertyName)
         {
@@ -584,13 +581,10 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the beginning of a JSON object with a pre-encoded property name as the key.
         /// </summary>
-        /// <param name="propertyName">The JSON encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
-        /// <remarks>
-        /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created.
-        /// </remarks>
+        /// <param name="propertyName">The JSON-encoded name of the property to write.</param>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
-        /// OR if this would result in an invalid JSON to be written (while validation is enabled).
+        /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartObject(JsonEncodedText propertyName)
         {
@@ -623,7 +617,7 @@ namespace System.Text.Json
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
-        /// OR if this would result in an invalid JSON to be written (while validation is enabled).
+        /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartArray(ReadOnlySpan<byte> utf8PropertyName)
         {
@@ -649,7 +643,7 @@ namespace System.Text.Json
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
-        /// OR if this would result in an invalid JSON to be written (while validation is enabled).
+        /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartObject(ReadOnlySpan<byte> utf8PropertyName)
         {
@@ -719,7 +713,7 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the beginning of a JSON array with a property name as the key.
         /// </summary>
-        /// <param name="propertyName">The property name of the JSON array to be transcoded and written as UTF-8.</param>
+        /// <param name="propertyName">The name of the property to write.</param>
         /// <remarks>
         /// The property name is escaped before writing.
         /// </remarks>
@@ -731,7 +725,7 @@ namespace System.Text.Json
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
-        /// OR if this would result in an invalid JSON to be written (while validation is enabled).
+        /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartArray(string propertyName)
             => WriteStartArray((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
@@ -739,7 +733,7 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the beginning of a JSON object with a property name as the key.
         /// </summary>
-        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="propertyName">The name of the property to write.</param>
         /// <remarks>
         /// The property name is escaped before writing.
         /// </remarks>
@@ -751,7 +745,7 @@ namespace System.Text.Json
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
-        /// OR if this would result in an invalid JSON to be written (while validation is enabled).
+        /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartObject(string propertyName)
             => WriteStartObject((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
@@ -759,7 +753,7 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the beginning of a JSON array with a property name as the key.
         /// </summary>
-        /// <param name="propertyName">The property name of the JSON array to be transcoded and written as UTF-8.</param>
+        /// <param name="propertyName">The name of the property to write.</param>
         /// <remarks>
         /// The property name is escaped before writing.
         /// </remarks>
@@ -768,7 +762,7 @@ namespace System.Text.Json
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
-        /// OR if this would result in an invalid JSON to be written (while validation is enabled).
+        /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartArray(ReadOnlySpan<char> propertyName)
         {
@@ -785,7 +779,7 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the beginning of a JSON object with a property name as the key.
         /// </summary>
-        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
+        /// <param name="propertyName">The name of the property to write.</param>
         /// <remarks>
         /// The property name is escaped before writing.
         /// </remarks>
@@ -794,7 +788,7 @@ namespace System.Text.Json
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// Thrown when the depth of the JSON has exceeded the maximum depth of 1000 
-        /// OR if this would result in an invalid JSON to be written (while validation is enabled).
+        /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartObject(ReadOnlySpan<char> propertyName)
         {
@@ -865,7 +859,7 @@ namespace System.Text.Json
         /// Writes the end of a JSON array.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteEndArray()
         {
@@ -877,7 +871,7 @@ namespace System.Text.Json
         /// Writes the end of a JSON object.
         /// </summary>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteEndObject()
         {

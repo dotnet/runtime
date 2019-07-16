@@ -13,12 +13,12 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the <see cref="uint"/> value (as a JSON number) as an element of a JSON array.
         /// </summary>
-        /// <param name="value">The value to be written as a JSON number as an element of a JSON array.</param>
+        /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         /// <remarks>
-        /// Writes the <see cref="uint"/> using the default <see cref="StandardFormat"/> (i.e. 'G'), for example: 32767.
+        /// Writes the <see cref="uint"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
         /// </remarks>
         [CLSCompliant(false)]
         public void WriteNumberValue(uint value)
@@ -27,12 +27,12 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the <see cref="ulong"/> value (as a JSON number) as an element of a JSON array.
         /// </summary>
-        /// <param name="value">The value to be written as a JSON number as an element of a JSON array.</param>
+        /// <param name="value">The value to write.</param>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         /// <remarks>
-        /// Writes the <see cref="ulong"/> using the default <see cref="StandardFormat"/> (i.e. 'G'), for example: 32767.
+        /// Writes the <see cref="ulong"/> using the default <see cref="StandardFormat"/> (that is, 'G'), for example: 32767.
         /// </remarks>
         [CLSCompliant(false)]
         public void WriteNumberValue(ulong value)

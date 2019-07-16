@@ -13,13 +13,10 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the pre-encoded property name and raw bytes value (as a base 64 encoded JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="propertyName">The JSON encoded property name of the JSON object to be transcoded and written as UTF-8.</param>
-        /// <param name="bytes">The binary data to be written as a base 64 encoded JSON string as part of the name/value pair.</param>
-        /// <remarks>
-        /// The property name should already be escaped when the instance of <see cref="JsonEncodedText"/> was created.
-        /// </remarks>
+        /// <param name="propertyName">The JSON-encoded name of the property to write.</param>
+        /// <param name="bytes">The Base64-encoded data to write.</param>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteBase64String(JsonEncodedText propertyName, ReadOnlySpan<byte> bytes)
             => WriteBase64StringHelper(propertyName.EncodedUtf8Bytes, bytes);
@@ -39,11 +36,8 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the property name and raw bytes value (as a Base64 encoded JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
-        /// <param name="bytes">The binary data to be written as a base 64 encoded JSON string as part of the name/value pair.</param>
-        /// <remarks>
-        /// The property name is escaped before writing.
-        /// </remarks>
+        /// <param name="propertyName">The name of the property to write.</param>
+        /// <param name="bytes">The Base64-encoded data to write.</param>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
@@ -51,25 +45,28 @@ namespace System.Text.Json
         /// The <paramref name="propertyName"/> parameter is <see langword="null"/>.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
         public void WriteBase64String(string propertyName, ReadOnlySpan<byte> bytes)
             => WriteBase64String((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), bytes);
 
         /// <summary>
         /// Writes the property name and raw bytes value (as a base 64 encoded JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="propertyName">The property name of the JSON object to be transcoded and written as UTF-8.</param>
-        /// <param name="bytes">The binary data to be written as a base 64 encoded JSON string as part of the name/value pair.</param>
-        /// <remarks>
-        /// The property name is escaped before writing.
-        /// </remarks>
+        /// <param name="propertyName">The name of the property to write.</param>
+        /// <param name="bytes">The Base64-encoded data to write.</param>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
         public void WriteBase64String(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> bytes)
         {
             JsonWriterHelper.ValidatePropertyAndBytes(propertyName, bytes);
@@ -83,17 +80,17 @@ namespace System.Text.Json
         /// <summary>
         /// Writes the property name and raw bytes value (as a base 64 encoded JSON string) as part of a name/value pair of a JSON object.
         /// </summary>
-        /// <param name="utf8PropertyName">The UTF-8 encoded property name of the JSON object to be written.</param>
-        /// <param name="bytes">The binary data to be written as a base 64 encoded JSON string as part of the name/value pair.</param>
-        /// <remarks>
-        /// The property name is escaped before writing.
-        /// </remarks>
+        /// <param name="utf8PropertyName">The UTF-8 encoded name of the property to write.</param>
+        /// <param name="bytes">The Base64-encoded data to write.</param>
         /// <exception cref="ArgumentException">
         /// Thrown when the specified property name is too large.
         /// </exception>
         /// <exception cref="InvalidOperationException">
-        /// Thrown if this would result in an invalid JSON to be written (while validation is enabled).
+        /// Thrown if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
+        /// <remarks>
+        /// The property name is escaped before writing.
+        /// </remarks>
         public void WriteBase64String(ReadOnlySpan<byte> utf8PropertyName, ReadOnlySpan<byte> bytes)
         {
             JsonWriterHelper.ValidatePropertyAndBytes(utf8PropertyName, bytes);
