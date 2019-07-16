@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace System.Net.Test.Common
@@ -44,9 +46,6 @@ namespace System.Net.Test.Common
             public static string EchoClientCertificateRemoteServer => GetValue("COREFX_HTTPHOST_ECHOCLIENTCERT", "https://corefx-net-tls.azurewebsites.net/EchoClientCertificate.ashx");
             public static string Http2ForceUnencryptedLoopback => GetValue("COREFX_HTTP2_FORCEUNENCRYPTEDLOOPBACK");
 
-            private const string HttpScheme = "http";
-            private const string HttpsScheme = "https";
-
             private const string EchoHandler = "Echo.ashx";
             private const string EmptyContentHandler = "EmptyContent.ashx";
             private const string RedirectHandler = "Redirect.ashx";
@@ -77,67 +76,68 @@ namespace System.Net.Test.Common
             public static readonly object[][] Http2Servers = { new object[] { new Uri("https://" + Http2Host) } };
             public static readonly object[][] Http2NoPushServers = { new object[] { new Uri("https://" + Http2NoPushHost) } };
 
-            public static Uri NegotiateAuthUriForDefaultCreds(bool secure)
-            {
-                return new Uri(
-                    string.Format(
-                        "{0}://{1}/{2}?auth=negotiate",
-                        secure ? HttpsScheme : HttpScheme,
-                        Host,
-                        EchoHandler));
-            }
+            public static readonly RemoteServer RemoteHttp11Server = new RemoteServer(new Uri("http://" + Host + "/"), HttpVersion.Version11);
+            public static readonly RemoteServer RemoteSecureHttp11Server = new RemoteServer(new Uri("https://" + SecureHost + "/"), HttpVersion.Version11);
+            public static readonly RemoteServer RemoteHttp2Server = new RemoteServer(new Uri("https://" + Http2Host + "/"), new Version(2, 0));
 
-            public static Uri BasicAuthUriForCreds(bool secure, string userName, string password)
-            {
-                return new Uri(
-                    string.Format(
-                        "{0}://{1}/{2}?auth=basic&user={3}&password={4}",
-                        secure ? HttpsScheme : HttpScheme,
-                        Host,
-                        EchoHandler,
-                        userName,
-                        password));
-            }
+            public static readonly IEnumerable<RemoteServer> RemoteServers = new RemoteServer[] { RemoteHttp11Server, RemoteSecureHttp11Server, RemoteHttp2Server };
 
-            public static Uri RedirectUriForDestinationUri(bool secure, int statusCode, Uri destinationUri, int hops, bool relative = false)
-            {
-                string uriString;
-                string destination = Uri.EscapeDataString(relative ? destinationUri.PathAndQuery : destinationUri.AbsoluteUri);
+            public static readonly IEnumerable<object[]> RemoteServersMemberData = RemoteServers.Select(s => new object[] { s });
 
-                if (hops > 1)
+            public sealed class RemoteServer
+            {
+                public RemoteServer(Uri baseUri, Version httpVersion)
                 {
-                    uriString = string.Format("{0}://{1}/{2}?statuscode={3}&uri={4}&hops={5}",
-                        secure ? HttpsScheme : HttpScheme,
-                        Host,
-                        RedirectHandler,
-                        statusCode,
-                        destination,
-                        hops);
-                }
-                else
-                {
-                    uriString = string.Format("{0}://{1}/{2}?statuscode={3}&uri={4}",
-                        secure ? HttpsScheme : HttpScheme,
-                        Host,
-                        RedirectHandler,
-                        statusCode,
-                        destination);
+                    BaseUri = baseUri;
+                    HttpVersion = httpVersion;
                 }
 
-                return new Uri(uriString);
-            }
+                public Uri BaseUri { get; }
 
-            public static Uri RedirectUriForCreds(bool secure, int statusCode, string userName, string password)
-            {
-                Uri destinationUri = BasicAuthUriForCreds(secure, userName, password);
-                string destination = Uri.EscapeDataString(destinationUri.AbsoluteUri);
+                public Version HttpVersion { get; }
 
-                return new Uri(string.Format("{0}://{1}/{2}?statuscode={3}&uri={4}",
-                    secure ? HttpsScheme : HttpScheme,
-                    Host,
-                    RedirectHandler,
-                    statusCode,
-                    destination));
+                public bool IsSecure => BaseUri.Scheme == Uri.UriSchemeHttps;
+
+                public Uri EchoUri => new Uri(BaseUri, $"/{EchoHandler}");
+
+                public Uri VerifyUploadUri => new Uri(BaseUri, $"/{VerifyUploadHandler}");
+
+                public Uri GZipUri => new Uri(BaseUri, $"/{GZipHandler}");
+
+                public Uri DeflateUri => new Uri(BaseUri, $"/{DeflateHandler}");
+
+                public Uri NegotiateAuthUriForDefaultCreds =>
+                    new Uri(BaseUri, $"/{EchoHandler}?auth=negotiate");
+
+                public Uri BasicAuthUriForCreds(string userName, string password) =>
+                    new Uri(BaseUri, $"/{EchoHandler}?auth=basic&user={userName}&password={password}");
+
+                public Uri RedirectUriForDestinationUri(int statusCode, Uri destinationUri, int hops, bool relative = false)
+                { 
+                    string destination = Uri.EscapeDataString(relative ? destinationUri.PathAndQuery : destinationUri.AbsoluteUri);
+
+                    if (hops > 1)
+                    {
+                        return new Uri(BaseUri, $"/{RedirectHandler}?statuscode={statusCode}&uri={destination}&hops={hops}");
+                    }
+                    else
+                    {
+                        return new Uri(BaseUri, $"/{RedirectHandler}?statuscode={statusCode}&uri={destination}");
+                    }
+                }
+
+                public Uri RedirectUriForCreds(int statusCode, string userName, string password)
+                {
+                    Uri destinationUri = BasicAuthUriForCreds(userName, password);
+                    string destination = Uri.EscapeDataString(destinationUri.AbsoluteUri);
+
+                    return new Uri(BaseUri, $"/{RedirectHandler}?statuscode={statusCode}&uri={destination}");
+                }
+
+                public override string ToString()
+                {
+                    return $"(BaseUri: {BaseUri}, HttpVersion: {HttpVersion})";
+                }
             }
         }
     }
