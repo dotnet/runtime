@@ -12,7 +12,7 @@ namespace System.Drawing.Primitives.Tests
 {
     public partial class ColorTests
     {
-        public static bool SupportsSystemEvents => PlatformDetection.IsWindows && !PlatformDetection.IsUap && PlatformDetection.IsNotWindowsNanoServer;
+        public static bool SupportsReadingUpdatedSystemColors => PlatformDetection.IsWindows && !PlatformDetection.IsUap && PlatformDetection.IsNotWindowsNanoServer;
 
         public static readonly IEnumerable<object[]> NamedArgbValues =
             new[]
@@ -493,7 +493,7 @@ namespace System.Drawing.Primitives.Tests
             DebuggerAttributes.ValidateDebuggerDisplayReferences(Color.FromArgb(4, 3, 2, 1));
         }
 
-        [ConditionalFact(nameof(SupportsSystemEvents))]
+        [ConditionalFact(nameof(SupportsReadingUpdatedSystemColors))]
         public void UserPreferenceChangingEventTest()
         {
             int element = 12; // Win32SystemColors.AppWorkSpace.
@@ -512,11 +512,7 @@ namespace System.Drawing.Primitives.Tests
             try
             {
                 Assert.Equal(1, SetSysColors(1, new int[] { element }, new int[] { newColorAbgr }));
-
-                RetryHelper.Execute(() =>
-                {
-                    Assert.Equal(newColorArgb, oldColor.ToArgb());
-                });
+                Assert.Equal(newColorArgb, oldColor.ToArgb());
             }
             finally
             {

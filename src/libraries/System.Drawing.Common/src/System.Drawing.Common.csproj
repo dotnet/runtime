@@ -153,24 +153,6 @@
     <Compile Include="System\Drawing\Imaging\ImageCodecInfo.cs" />
     <Compile Include="System\Drawing\Imaging\ImageCodecInfoPrivate.cs" />
     <Compile Include="System\Drawing\Imaging\MetafileFrameUnit.cs" />
-    <Compile Condition="'$(TargetGroup)' == 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\ColorConverterCommon.cs">
-      <Link>System\Drawing\ColorConverterCommon.cs</Link>
-    </Compile>
-    <Compile Condition="'$(TargetGroup)' == 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\ColorTable.cs">
-      <Link>System\Drawing\ColorTable.cs</Link>
-    </Compile>
-    <Compile Condition="'$(TargetGroup)' == 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\ColorTranslator.cs">
-      <Link>System\Drawing\ColorTranslator.cs</Link>
-    </Compile>
-    <Compile Condition="'$(TargetGroup)' == 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\ColorUtil.netcoreapp20.cs">
-      <Link>System\Drawing\ColorUtil.netcoreapp20.cs</Link>
-    </Compile>
-    <Compile Condition="'$(TargetGroup)' != 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\ColorUtil.netcoreapp21.cs">
-      <Link>System\Drawing\ColorUtil.netcoreapp21.cs</Link>
-    </Compile>
-    <Compile Condition="'$(TargetGroup)' == 'netcoreapp2.0'" Include="$(CommonPath)\System\Drawing\KnownColorTable.cs">
-      <Link>System\Drawing\KnownColorTable.cs</Link>
-    </Compile>
     <EmbeddedResource Include="Resources\System\Drawing\DefaultComponent.bmp">
       <LogicalName>System.Drawing.DefaultComponent.bmp</LogicalName>
     </EmbeddedResource>
@@ -252,12 +234,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.GetProcAddress.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetProcAddress.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.GetSysColor.cs">
-      <Link>Common\Interop\Windows\User32\Interop.GetSysColor.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\User32\Interop.Win32SystemColors.cs">
-      <Link>Common\Interop\Windows\User32\Interop.Win32SystemColors.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs">
       <Link>Common\CoreLib\Microsoft\Win32\SafeHandles\SafeLibraryHandle.cs</Link>

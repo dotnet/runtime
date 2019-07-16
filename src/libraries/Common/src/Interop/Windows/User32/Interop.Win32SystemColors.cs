@@ -6,7 +6,7 @@ internal partial class Interop
 {
     internal partial class User32
     {
-        internal enum Win32SystemColors
+        internal enum Win32SystemColors : byte
         {
             ActiveBorder = 0x0A,
             ActiveCaption = 0x02,
