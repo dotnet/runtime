@@ -184,7 +184,9 @@ namespace System.IO.Pipelines.Tests
 
             Assert.Equal(1, pool.CurrentlyRentedBlocks);
 
+#pragma warning disable CS0618 // Type or member is obsolete
             pipe.Reader.OnWriterCompleted((exception, o) => Assert.Equal(0, pool.CurrentlyRentedBlocks), null);
+#pragma warning restore CS0618 // Type or member is obsolete
 
             pipe.Reader.Complete();
             pipe.Writer.Complete();
@@ -200,7 +202,9 @@ namespace System.IO.Pipelines.Tests
 
             Assert.Equal(1, pool.CurrentlyRentedBlocks);
 
+#pragma warning disable CS0618 // Type or member is obsolete
             pipe.Writer.OnReaderCompleted((exception, o) => Assert.Equal(0, pool.CurrentlyRentedBlocks), null);
+#pragma warning restore CS0618 // Type or member is obsolete
 
             pipe.Writer.Complete();
             pipe.Reader.Complete();

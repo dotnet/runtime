@@ -517,12 +517,14 @@ namespace System.IO.Pipelines.Tests
             Task reading = ExecuteOnNonThreadPoolThread(DoRead);
 
             PipeWriter buffer = pipe.Writer;
+#pragma warning disable CS0618 // Type or member is obsolete
             pipe.Writer.OnReaderCompleted((state, exception) =>
             {
                 callbackRan = true;
                 Assert.True(Thread.CurrentThread.IsThreadPoolThread);
             },
             null);
+#pragma warning restore CS0618 // Type or member is obsolete
 
             buffer.Write(Encoding.UTF8.GetBytes("Hello World"));
             await buffer.FlushAsync();
