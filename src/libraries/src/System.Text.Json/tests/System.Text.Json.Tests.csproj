@@ -98,6 +98,7 @@
     <Compile Include="Utf8JsonReaderTests.cs" />
     <Compile Include="Utf8JsonReaderTests.MultiSegment.cs" />
     <Compile Include="Utf8JsonReaderTests.TryGet.cs" />
+    <Compile Include="Utf8JsonReaderTests.TryGet.Date.cs" />
     <Compile Include="Utf8JsonReaderTests.ValueTextEquals.cs" />
     <Compile Include="Utf8JsonWriterTests.cs" />
   </ItemGroup>
