@@ -8386,10 +8386,14 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
     case ICorDebugInfo::VLT_REG_FP:
 #if defined(DBG_TARGET_ARM) // @ARMTODO
         hr = E_NOTIMPL;
-#else  // DBG_TARGET_ARM @ARMTODO
+#elif defined(DBG_TARGET_AMD64)
         hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_AMD64_XMM0,
                                                        type, ppValue);
-
+#elif defined(DBG_TARGET_ARM64)
+        hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_ARM64_V0,
+                                                       type, ppValue);
+#else
+#error Platform not implemented
 #endif  // DBG_TARGET_ARM @ARMTODO
         break;
 #endif // DBG_TARGET_WIN64 || DBG_TARGET_ARM
