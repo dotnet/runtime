@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// When overidden, constructs a new <see cref="JsonConverterFactory"/> instance.
         /// </summary>
-        protected internal JsonConverterFactory() { }
+        protected JsonConverterFactory() { }
 
         internal JsonConverter GetConverterInternal(Type typeToConvert, JsonSerializerOptions options)
         {
