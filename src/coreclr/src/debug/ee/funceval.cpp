@@ -388,7 +388,81 @@ static SIZE_T GetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *re
             ret = FPSpillToR8(&(pDE->m_context.Xmm0) + (reg - REGISTER_AMD64_XMM0));
             break;
 
-#endif // !_TARGET_X86_ && !_TARGET_AMD64_
+#elif defined(_TARGET_ARM64_)
+        // fall through
+        case REGISTER_ARM64_X0:
+        case REGISTER_ARM64_X1:
+        case REGISTER_ARM64_X2:
+        case REGISTER_ARM64_X3:
+        case REGISTER_ARM64_X4:
+        case REGISTER_ARM64_X5:
+        case REGISTER_ARM64_X6:
+        case REGISTER_ARM64_X7:
+        case REGISTER_ARM64_X8:
+        case REGISTER_ARM64_X9:
+        case REGISTER_ARM64_X10:
+        case REGISTER_ARM64_X11:
+        case REGISTER_ARM64_X12:
+        case REGISTER_ARM64_X13:
+        case REGISTER_ARM64_X14:
+        case REGISTER_ARM64_X15:
+        case REGISTER_ARM64_X16:
+        case REGISTER_ARM64_X17:
+        case REGISTER_ARM64_X18:
+        case REGISTER_ARM64_X19:
+        case REGISTER_ARM64_X20:
+        case REGISTER_ARM64_X21:
+        case REGISTER_ARM64_X22:
+        case REGISTER_ARM64_X23:
+        case REGISTER_ARM64_X24:
+        case REGISTER_ARM64_X25:
+        case REGISTER_ARM64_X26:
+        case REGISTER_ARM64_X27:
+        case REGISTER_ARM64_X28:
+            ret = pDE->m_context.X[reg - REGISTER_ARM64_X0];
+            break;
+
+        case REGISTER_ARM64_LR:
+            ret = pDE->m_context.Lr;
+            break;
+
+
+        case REGISTER_ARM64_V0:
+        case REGISTER_ARM64_V1:
+        case REGISTER_ARM64_V2:
+        case REGISTER_ARM64_V3:
+        case REGISTER_ARM64_V4:
+        case REGISTER_ARM64_V5:
+        case REGISTER_ARM64_V6:
+        case REGISTER_ARM64_V7:
+        case REGISTER_ARM64_V8:
+        case REGISTER_ARM64_V9:
+        case REGISTER_ARM64_V10:
+        case REGISTER_ARM64_V11:
+        case REGISTER_ARM64_V12:
+        case REGISTER_ARM64_V13:
+        case REGISTER_ARM64_V14:
+        case REGISTER_ARM64_V15:
+        case REGISTER_ARM64_V16:
+        case REGISTER_ARM64_V17:
+        case REGISTER_ARM64_V18:
+        case REGISTER_ARM64_V19:
+        case REGISTER_ARM64_V20:
+        case REGISTER_ARM64_V21:
+        case REGISTER_ARM64_V22:
+        case REGISTER_ARM64_V23:
+        case REGISTER_ARM64_V24:
+        case REGISTER_ARM64_V25:
+        case REGISTER_ARM64_V26:
+        case REGISTER_ARM64_V27:
+        case REGISTER_ARM64_V28:
+        case REGISTER_ARM64_V29:
+        case REGISTER_ARM64_V30:
+        case REGISTER_ARM64_V31:
+            ret = FPSpillToR8(&pDE->m_context.V[reg - REGISTER_ARM64_V0]);
+            break;
+
+#endif // !_TARGET_X86_ && !_TARGET_AMD64_ && !_TARGET_ARM64_
         default:
             _ASSERT(!"Invalid register number!");
 
@@ -530,7 +604,81 @@ static void SetRegisterValue(DebuggerEval *pDE, CorDebugRegister reg, void *regA
             R8ToFPSpill(&(pDE->m_context.Xmm0) + (reg - REGISTER_AMD64_XMM0), newValue);
             break;
 
-#endif // !_TARGET_X86_ && !_TARGET_AMD64_
+#elif defined(_TARGET_ARM64_)
+        // fall through
+        case REGISTER_ARM64_X0:
+        case REGISTER_ARM64_X1:
+        case REGISTER_ARM64_X2:
+        case REGISTER_ARM64_X3:
+        case REGISTER_ARM64_X4:
+        case REGISTER_ARM64_X5:
+        case REGISTER_ARM64_X6:
+        case REGISTER_ARM64_X7:
+        case REGISTER_ARM64_X8:
+        case REGISTER_ARM64_X9:
+        case REGISTER_ARM64_X10:
+        case REGISTER_ARM64_X11:
+        case REGISTER_ARM64_X12:
+        case REGISTER_ARM64_X13:
+        case REGISTER_ARM64_X14:
+        case REGISTER_ARM64_X15:
+        case REGISTER_ARM64_X16:
+        case REGISTER_ARM64_X17:
+        case REGISTER_ARM64_X18:
+        case REGISTER_ARM64_X19:
+        case REGISTER_ARM64_X20:
+        case REGISTER_ARM64_X21:
+        case REGISTER_ARM64_X22:
+        case REGISTER_ARM64_X23:
+        case REGISTER_ARM64_X24:
+        case REGISTER_ARM64_X25:
+        case REGISTER_ARM64_X26:
+        case REGISTER_ARM64_X27:
+        case REGISTER_ARM64_X28:
+            pDE->m_context.X[reg - REGISTER_ARM64_X0] = newValue;
+            break;
+
+        case REGISTER_ARM64_LR:
+            pDE->m_context.Lr = newValue;
+            break;
+
+
+        case REGISTER_ARM64_V0:
+        case REGISTER_ARM64_V1:
+        case REGISTER_ARM64_V2:
+        case REGISTER_ARM64_V3:
+        case REGISTER_ARM64_V4:
+        case REGISTER_ARM64_V5:
+        case REGISTER_ARM64_V6:
+        case REGISTER_ARM64_V7:
+        case REGISTER_ARM64_V8:
+        case REGISTER_ARM64_V9:
+        case REGISTER_ARM64_V10:
+        case REGISTER_ARM64_V11:
+        case REGISTER_ARM64_V12:
+        case REGISTER_ARM64_V13:
+        case REGISTER_ARM64_V14:
+        case REGISTER_ARM64_V15:
+        case REGISTER_ARM64_V16:
+        case REGISTER_ARM64_V17:
+        case REGISTER_ARM64_V18:
+        case REGISTER_ARM64_V19:
+        case REGISTER_ARM64_V20:
+        case REGISTER_ARM64_V21:
+        case REGISTER_ARM64_V22:
+        case REGISTER_ARM64_V23:
+        case REGISTER_ARM64_V24:
+        case REGISTER_ARM64_V25:
+        case REGISTER_ARM64_V26:
+        case REGISTER_ARM64_V27:
+        case REGISTER_ARM64_V28:
+        case REGISTER_ARM64_V29:
+        case REGISTER_ARM64_V30:
+        case REGISTER_ARM64_V31:
+            R8ToFPSpill(&pDE->m_context.V[reg - REGISTER_ARM64_V0], newValue);
+            break;
+
+#endif // !_TARGET_X86_ && !_TARGET_AMD64_ && !_TARGET_ARM64_
         default:
             _ASSERT(!"Invalid register number!");
 
