@@ -722,7 +722,7 @@ namespace System.Net.Http
                     {
                         _disposed = true;
 
-                        _streamWindow.Dispose();
+                        _streamWindow.Dispose(_abortException);
                         _responseBuffer.Dispose();
 
                         // TODO: ISSUE 31310: If the stream is not complete, we should send RST_STREAM
