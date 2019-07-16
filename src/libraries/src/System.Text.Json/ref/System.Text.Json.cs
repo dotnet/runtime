@@ -466,7 +466,7 @@ namespace System.Text.Json.Serialization
     }
     public abstract partial class JsonConverterFactory : System.Text.Json.Serialization.JsonConverter
     {
-        protected internal JsonConverterFactory() { }
+        protected JsonConverterFactory() { }
         public abstract System.Text.Json.Serialization.JsonConverter CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options);
     }
     public abstract partial class JsonConverter<T> : System.Text.Json.Serialization.JsonConverter
