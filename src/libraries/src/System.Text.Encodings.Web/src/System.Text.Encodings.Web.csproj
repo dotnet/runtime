@@ -11,6 +11,7 @@
     <Compile Include="System\Text\Encodings\Web\JavaScriptEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\TextEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\TextEncoderSettings.cs" />
+    <Compile Include="System\Text\Encodings\Web\UnsafeRelaxedJavaScriptEncoder.cs" />
     <Compile Include="System\Text\Encodings\Web\UrlEncoder.cs" />
     <Compile Include="System\Text\Internal\AllowedCharactersBitmap.cs" />
     <Compile Include="System\Text\Unicode\UnicodeHelpers.cs" />
