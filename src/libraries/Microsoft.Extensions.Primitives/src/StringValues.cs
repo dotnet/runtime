@@ -192,7 +192,7 @@ namespace Microsoft.Extensions.Primitives
 #else
 #pragma warning disable CS0618
                 var sb = new InplaceStringBuilder(length);
-#pragma warning enable CS0618
+#pragma warning restore CS0618
                 var hasAdded = false;
                 // Skip null and empty values
                 for (var i = 0; i < values.Length; i++)
@@ -568,7 +568,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 return Equals(this, (string)obj);
             }
-            
+
             if (obj is string[])
             {
                 return Equals(this, (string[])obj);

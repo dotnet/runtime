@@ -694,7 +694,7 @@ namespace Microsoft.Extensions.Logging.Test
 #if NETCOREAPP
             { "E5JS", (e) => VerifySingleEvent(e, "Logger2", EventTypes.MessageJson, 5, null, LogLevel.Critical,
                 @"""ArgumentsJson"":{""stringParam"":""bar"",""int1Param"":""23"",""int2Param"":""45""",
-                @$"""ExceptionJson"":{{""TypeName"":""System.Exception"",""Message"":""oops"",""HResult"":""-2146233088"",""VerboseMessage"":""System.Exception: oops{EscapedNewline()} ---\u003e System.Exception: inner oops") },
+                @$"""ExceptionJson"":{{""TypeName"":""System.Exception"",""Message"":""oops"",""HResult"":""-2146233088"",""VerboseMessage"":""System.Exception: oops{EscapedNewline()} ---\u003E System.Exception: inner oops") },
 
             { "E5MSG", (e) => VerifySingleEvent(e, "Logger2", EventTypes.Message, 5, null, LogLevel.Critical,
                  @"{""Key"":""stringParam"",""Value"":""bar""}",
@@ -760,7 +760,7 @@ namespace Microsoft.Extensions.Logging.Test
             {
                 if (c == '/')
                 {
-                    output += "\\u" + ((int)c).ToString("x4");
+                    output += "\\/";
                 }
                 else
                 {
