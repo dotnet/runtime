@@ -53,7 +53,7 @@ namespace System.Text.Json
 
         private void WriteCommentByOptions(ReadOnlySpan<char> value)
         {
-            if (Options.Indented)
+            if (_options.Indented)
             {
                 WriteCommentIndented(value);
             }
@@ -152,7 +152,7 @@ namespace System.Text.Json
 
         private void WriteCommentByOptions(ReadOnlySpan<byte> utf8Value)
         {
-            if (Options.Indented)
+            if (_options.Indented)
             {
                 WriteCommentIndented(utf8Value);
             }

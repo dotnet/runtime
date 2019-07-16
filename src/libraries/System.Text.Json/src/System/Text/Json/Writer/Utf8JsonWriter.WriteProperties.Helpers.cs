@@ -35,7 +35,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ValidateWritingProperty()
         {
-            if (!Options.SkipValidation)
+            if (!_options.SkipValidation)
             {
                 if (!_inObject || _tokenType == JsonTokenType.PropertyName)
                 {
@@ -48,7 +48,7 @@ namespace System.Text.Json
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ValidateWritingProperty(byte token)
         {
-            if (!Options.SkipValidation)
+            if (!_options.SkipValidation)
             {
                 if (!_inObject || _tokenType == JsonTokenType.PropertyName)
                 {
@@ -109,7 +109,7 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
-            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
+            Debug.Assert(_options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
 
             if (_tokenType != JsonTokenType.None)
             {
@@ -182,7 +182,7 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
-            Debug.Assert(Options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
+            Debug.Assert(_options.SkipValidation || _tokenType != JsonTokenType.PropertyName);
 
             if (_tokenType != JsonTokenType.None)
             {
