@@ -1002,7 +1002,7 @@ namespace Microsoft.Extensions.Logging.Test
         }
 
         [Fact]
-        public void ConsoleLoggerOptions_DisableColors_IsReloaded()
+        public void ConsoleLoggerOptions_TimeStampFormat_IsReloaded()
         {
             // Arrange
             var monitor = new TestOptionsMonitor(new ConsoleLoggerOptions());
@@ -1029,6 +1029,20 @@ namespace Microsoft.Extensions.Logging.Test
 
             var consoleLoggerProvider = Assert.IsType<ConsoleLoggerProvider>(loggerProvider);
             var logger = (ConsoleLogger)consoleLoggerProvider.CreateLogger("Category");
+            Assert.Equal("yyyyMMddHHmmss", logger.Options.TimestampFormat);
+        }
+
+        [Fact]
+        public void ConsoleLoggerOptions_TimeStampFormat_MultipleReloads()
+        {
+            var monitor = new TestOptionsMonitor(new ConsoleLoggerOptions());
+            var loggerProvider = new ConsoleLoggerProvider(monitor);
+            var logger = (ConsoleLogger)loggerProvider.CreateLogger("Name");
+
+            Assert.Null(logger.Options.TimestampFormat);
+            monitor.Set(new ConsoleLoggerOptions() { TimestampFormat = "yyyyMMdd" });
+            Assert.Equal("yyyyMMdd", logger.Options.TimestampFormat);
+            monitor.Set(new ConsoleLoggerOptions() { TimestampFormat = "yyyyMMddHHmmss" });
             Assert.Equal("yyyyMMddHHmmss", logger.Options.TimestampFormat);
         }
 
