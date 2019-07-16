@@ -12,9 +12,7 @@ using System.Net.Test.Common;
 using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
@@ -37,8 +35,6 @@ namespace System.Net.Http.Functional.Tests
 
         private readonly NetworkCredential _credential = new NetworkCredential(Username, Password);
 
-        public static readonly object[][] EchoServers = Configuration.Http.EchoServers;
-        public static readonly object[][] VerifyUploadServers = Configuration.Http.VerifyUploadServers;
         public static readonly object[][] Http2Servers = Configuration.Http.Http2Servers;
         public static readonly object[][] Http2NoPushServers = Configuration.Http.Http2NoPushServers;
 
@@ -187,7 +183,7 @@ namespace System.Net.Http.Functional.Tests
             handler.UseDefaultCredentials = false;
             using (HttpClient client = CreateHttpClient(handler))
             {
-                Uri uri = Configuration.Http.NegotiateAuthUriForDefaultCreds(secure: false);
+                Uri uri = Configuration.Http.RemoteHttp11Server.NegotiateAuthUriForDefaultCreds;
                 _output.WriteLine("Uri: {0}", uri);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
@@ -224,11 +220,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external servers")]
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task SendAsync_SimpleGet_Success(Uri remoteServer)
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task SendAsync_SimpleGet_Success(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
-            using (HttpResponseMessage response = await client.GetAsync(remoteServer))
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
+            using (HttpResponseMessage response = await client.GetAsync(remoteServer.EchoUri))
             {
                 string responseContent = await response.Content.ReadAsStringAsync();
                 _output.WriteLine(responseContent);
@@ -291,14 +287,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task SendAsync_MultipleRequestsReusingSameClient_Success()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task SendAsync_MultipleRequestsReusingSameClient_Success(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 for (int i = 0; i < 3; i++)
                 {
-                    using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.RemoteEchoServer))
+                    using (HttpResponseMessage response = await client.GetAsync(remoteServer.EchoUri))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     }
@@ -307,11 +303,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task GetAsync_ResponseContentAfterClientAndHandlerDispose_Success()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task GetAsync_ResponseContentAfterClientAndHandlerDispose_Success(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
-            using (HttpResponseMessage response = await client.GetAsync(Configuration.Http.SecureRemoteEchoServer))
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
+            using (HttpResponseMessage response = await client.GetAsync(remoteServer.EchoUri))
             {
                 client.Dispose();
                 Assert.NotNull(response);
@@ -531,14 +527,14 @@ namespace System.Net.Http.Functional.Tests
 
         [ActiveIssue(32647, TargetFrameworkMonikers.Uap)]
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task GetAsync_ServerNeedsBasicAuthAndSetDefaultCredentials_StatusCodeUnauthorized()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task GetAsync_ServerNeedsBasicAuthAndSetDefaultCredentials_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Credentials = CredentialCache.DefaultCredentials;
-            using (HttpClient client = CreateHttpClient(handler))
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
-                Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: Username, password: Password);
+                Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -547,14 +543,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Credentials = _credential;
-            using (HttpClient client = CreateHttpClient(handler))
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
             {
-                Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: Username, password: Password);
+                Uri uri = remoteServer.BasicAuthUriForCreds(userName: Username, password: Password);
                 using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -573,7 +569,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (HttpClient client = CreateHttpClient(useSocketsHttpHandlerString, useHttp2String))
                 {
-                    Uri uri = Configuration.Http.BasicAuthUriForCreds(secure: false, userName: Username, password: Password);
+                    Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(userName: Username, password: Password);
                     using (HttpResponseMessage response = await client.GetAsync(uri))
                     {
                         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -610,8 +606,8 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external server")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap)]
         [Theory]
-        [MemberData(nameof(HeaderEchoUrisMemberData))]
-        public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(Uri uri)
+        [MemberData(nameof(RemoteServersAndHeaderEchoUrisMemberData))]
+        public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
             if (IsWinHttpHandler && !PlatformDetection.IsWindows10Version1709OrGreater)
             {
@@ -620,7 +616,7 @@ namespace System.Net.Http.Functional.Tests
 
             string name = "X-Cust-Header-NoValue";
             string value = "";
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 _output.WriteLine($"name={name}, value={value}");
                 client.DefaultRequestHeaders.Add(name, value);
@@ -635,10 +631,10 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Theory, MemberData(nameof(HeaderValueAndUris))]
-        public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(string name, string value, Uri uri)
+        [Theory, MemberData(nameof(RemoteServersHeaderValuesAndUris))]
+        public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(Configuration.Http.RemoteServer remoteServer, string name, string value, Uri uri)
         {
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 _output.WriteLine($"name={name}, value={value}");
                 client.DefaultRequestHeaders.Add(name, value);
@@ -653,8 +649,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Theory, MemberData(nameof(HeaderEchoUrisMemberData))]
-        public async Task GetAsync_LargeRequestHeader_HeadersAndValuesSent(Uri uri)
+        [Theory, MemberData(nameof(RemoteServersAndHeaderEchoUrisMemberData))]
+        public async Task GetAsync_LargeRequestHeader_HeadersAndValuesSent(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
             // Unfortunately, our remote servers seem to have pretty strict limits (around 16K?)
             // on the total size of the request header.
@@ -664,7 +660,7 @@ namespace System.Net.Http.Functional.Tests
             string headerValue = new string('a', 2048);
             const int headerCount = 6;
 
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 for (int i = 0; i < headerCount; i++)
                 {
@@ -684,12 +680,12 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        public static IEnumerable<object[]> HeaderValueAndUris()
+        public static IEnumerable<object[]> RemoteServersHeaderValuesAndUris()
         {
-            foreach (Uri uri in HeaderEchoUris())
+            foreach ((Configuration.Http.RemoteServer remoteServer, Uri uri) in RemoteServersAndHeaderEchoUris())
             {
-                yield return new object[] { "X-CustomHeader", "x-value", uri };
-                yield return new object[] { "MyHeader", "1, 2, 3", uri };
+                yield return new object[] { remoteServer, "X-CustomHeader", "x-value", uri };
+                yield return new object[] { remoteServer, "MyHeader", "1, 2, 3", uri };
 
                 // Construct a header value with every valid character (except space)
                 string allchars = "";
@@ -701,24 +697,23 @@ namespace System.Net.Http.Functional.Tests
                 // Put a space in the middle so it's not interpreted as insignificant leading/trailing whitespace
                 allchars = allchars + " " + allchars;
 
-                yield return new object[] { "All-Valid-Chars-Header", allchars, uri };
+                yield return new object[] { remoteServer, "All-Valid-Chars-Header", allchars, uri };
             }
         }
 
-        public static IEnumerable<Uri> HeaderEchoUris()
+        public static IEnumerable<(Configuration.Http.RemoteServer remoteServer, Uri uri)> RemoteServersAndHeaderEchoUris()
         {
-            foreach (Uri uri in Configuration.Http.EchoServerList)
+            foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers)
             {
-                yield return uri;
-                yield return Configuration.Http.RedirectUriForDestinationUri(
-                    secure: false,
+                yield return (remoteServer, remoteServer.EchoUri);
+                yield return (remoteServer, remoteServer.RedirectUriForDestinationUri(
                     statusCode: 302,
-                    destinationUri: uri,
-                    hops: 1);
+                    destinationUri: remoteServer.EchoUri,
+                    hops: 1));
             }
         }
 
-        public static IEnumerable<object[]> HeaderEchoUrisMemberData() => HeaderEchoUris().Select(uri => new object[] { uri });
+        public static IEnumerable<object[]> RemoteServersAndHeaderEchoUrisMemberData() => RemoteServersAndHeaderEchoUris().Select(x => new object[] { x.remoteServer, x.uri });
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP HTTP ignores invalid headers")]
         [Theory]
@@ -1241,14 +1236,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 const int NumGets = 5;
                 Task<HttpResponseMessage>[] responseTasks = (from _ in Enumerable.Range(0, NumGets)
-                                                             select client.GetAsync(Configuration.Http.RemoteEchoServer, HttpCompletionOption.ResponseHeadersRead)).ToArray();
+                                                             select client.GetAsync(remoteServer.EchoUri, HttpCompletionOption.ResponseHeadersRead)).ToArray();
                 for (int i = responseTasks.Length - 1; i >= 0; i--) // read backwards to increase likelihood that we wait on a different task than has data available
                 {
                     using (HttpResponseMessage response = await responseTasks[i])
@@ -1266,11 +1261,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Fact]
-        public async Task SendAsync_HttpRequestMsgResponseHeadersRead_StatusCodeOK()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task SendAsync_HttpRequestMsgResponseHeadersRead_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = VersionFromUseHttp2 };
-            using (HttpClient client = CreateHttpClient())
+            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, remoteServer.EchoUri) { Version = remoteServer.HttpVersion };
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 using (HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead))
                 {
@@ -1656,16 +1651,16 @@ namespace System.Net.Http.Functional.Tests
 #region Post Methods Tests
 
         [OuterLoop("Uses external server")]
-        [Theory, MemberData(nameof(VerifyUploadServers))]
-        public async Task PostAsync_CallMethodTwice_StringContent(Uri remoteServer)
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task PostAsync_CallMethodTwice_StringContent(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 string data = "Test String";
                 var content = new StringContent(data, Encoding.UTF8);
                 content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
                 HttpResponseMessage response;
-                using (response = await client.PostAsync(remoteServer, content))
+                using (response = await client.PostAsync(remoteServer.VerifyUploadUri, content))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
@@ -1673,7 +1668,7 @@ namespace System.Net.Http.Functional.Tests
                 // Repeat call.
                 content = new StringContent(data, Encoding.UTF8);
                 content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
-                using (response = await client.PostAsync(remoteServer, content))
+                using (response = await client.PostAsync(remoteServer.VerifyUploadUri, content))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
@@ -1681,16 +1676,16 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Theory, MemberData(nameof(VerifyUploadServers))]
-        public async Task PostAsync_CallMethod_UnicodeStringContent(Uri remoteServer)
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task PostAsync_CallMethod_UnicodeStringContent(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 string data = "\ub4f1\uffc7\u4e82\u67ab4\uc6d4\ud1a0\uc694\uc77c\uffda3\u3155\uc218\uffdb";
                 var content = new StringContent(data, Encoding.UTF8);
                 content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(data);
 
-                using (HttpResponseMessage response = await client.PostAsync(remoteServer, content))
+                using (HttpResponseMessage response = await client.PostAsync(remoteServer.VerifyUploadUri, content))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
@@ -1699,13 +1694,13 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop("Uses external server")]
         [Theory, MemberData(nameof(VerifyUploadServersStreamsAndExpectedData))]
-        public async Task PostAsync_CallMethod_StreamContent(Uri remoteServer, HttpContent content, byte[] expectedData)
+        public async Task PostAsync_CallMethod_StreamContent(Configuration.Http.RemoteServer remoteServer, HttpContent content, byte[] expectedData)
         {
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(expectedData);
 
-                using (HttpResponseMessage response = await client.PostAsync(remoteServer, content))
+                using (HttpResponseMessage response = await client.PostAsync(remoteServer.VerifyUploadUri, content))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                 }
@@ -1746,18 +1741,16 @@ namespace System.Net.Http.Functional.Tests
         {
             get
             {
-                foreach (object[] serverArr in VerifyUploadServers) // target server
+                foreach (Configuration.Http.RemoteServer remoteServer in Configuration.Http.RemoteServers) // target server
                     foreach (bool syncCopy in new[] { true, false }) // force the content copy to happen via Read/Write or ReadAsync/WriteAsync
                     {
-                        Uri server = (Uri)serverArr[0];
-
                         byte[] data = new byte[1234];
                         new Random(42).NextBytes(data);
 
                         // A MemoryStream
                         {
                             var memStream = new MemoryStream(data, writable: false);
-                            yield return new object[] { server, new StreamContentWithSyncAsyncCopy(memStream, syncCopy: syncCopy), data };
+                            yield return new object[] { remoteServer, new StreamContentWithSyncAsyncCopy(memStream, syncCopy: syncCopy), data };
                         }
 
                         // A multipart content that provides its own stream from CreateContentReadStreamAsync
@@ -1766,7 +1759,7 @@ namespace System.Net.Http.Functional.Tests
                             mc.Add(new ByteArrayContent(data));
                             var memStream = new MemoryStream();
                             mc.CopyToAsync(memStream).GetAwaiter().GetResult();
-                            yield return new object[] { server, mc, memStream.ToArray() };
+                            yield return new object[] { remoteServer, mc, memStream.ToArray() };
                         }
 
                         // A stream that provides the data synchronously and has a known length
@@ -1780,7 +1773,7 @@ namespace System.Net.Http.Functional.Tests
                                 positionSetFunc: p => wrappedMemStream.Position = p,
                                 readFunc: (buffer, offset, count) => wrappedMemStream.Read(buffer, offset, count),
                                 readAsyncFunc: (buffer, offset, count, token) => wrappedMemStream.ReadAsync(buffer, offset, count, token));
-                            yield return new object[] { server, new StreamContentWithSyncAsyncCopy(syncKnownLengthStream, syncCopy: syncCopy), data };
+                            yield return new object[] { remoteServer, new StreamContentWithSyncAsyncCopy(syncKnownLengthStream, syncCopy: syncCopy), data };
                         }
 
                         // A stream that provides the data synchronously and has an unknown length
@@ -1801,7 +1794,7 @@ namespace System.Net.Http.Functional.Tests
                                 canSeekFunc: () => false,
                                 readFunc: readFunc,
                                 readAsyncFunc: (buffer, offset, count, token) => Task.FromResult(readFunc(buffer, offset, count)));
-                            yield return new object[] { server, new StreamContentWithSyncAsyncCopy(syncUnknownLengthStream, syncCopy: syncCopy), data };
+                            yield return new object[] { remoteServer, new StreamContentWithSyncAsyncCopy(syncUnknownLengthStream, syncCopy: syncCopy), data };
                         }
 
                         // A stream that provides the data asynchronously
@@ -1826,25 +1819,25 @@ namespace System.Net.Http.Functional.Tests
                                     await Task.Delay(1).ConfigureAwait(false);
                                     return readFunc(buffer, offset, count);
                                 });
-                            yield return new object[] { server, new StreamContentWithSyncAsyncCopy(asyncStream, syncCopy: syncCopy), data };
+                            yield return new object[] { remoteServer, new StreamContentWithSyncAsyncCopy(asyncStream, syncCopy: syncCopy), data };
                         }
 
                         // Providing data from a FormUrlEncodedContent's stream
                         {
                             var formContent = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("key", "val") });
-                            yield return new object[] { server, formContent, Encoding.GetEncoding("iso-8859-1").GetBytes("key=val") };
+                            yield return new object[] { remoteServer, formContent, Encoding.GetEncoding("iso-8859-1").GetBytes("key=val") };
                         }
                     }
             }
         }
 
         [OuterLoop("Uses external server")]
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task PostAsync_CallMethod_NullContent(Uri remoteServer)
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task PostAsync_CallMethod_NullContent(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
-                using (HttpResponseMessage response = await client.PostAsync(remoteServer, null))
+                using (HttpResponseMessage response = await client.PostAsync(remoteServer.EchoUri, null))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -1860,13 +1853,13 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Theory, MemberData(nameof(EchoServers))]
-        public async Task PostAsync_CallMethod_EmptyContent(Uri remoteServer)
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task PostAsync_CallMethod_EmptyContent(Configuration.Http.RemoteServer remoteServer)
         {
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 var content = new StringContent(string.Empty);
-                using (HttpResponseMessage response = await client.PostAsync(remoteServer, content))
+                using (HttpResponseMessage response = await client.PostAsync(remoteServer.EchoUri, content))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
@@ -2215,20 +2208,17 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task PostAsync_Redirect_ResultingGetFormattedCorrectly(bool secure)
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task PostAsync_Redirect_ResultingGetFormattedCorrectly(Configuration.Http.RemoteServer remoteServer)
         {
             const string ContentString = "This is the content string.";
             var content = new StringContent(ContentString);
-            Uri redirectUri = Configuration.Http.RedirectUriForDestinationUri(
-                secure,
+            Uri redirectUri = remoteServer.RedirectUriForDestinationUri(
                 302,
-                secure ? Configuration.Http.SecureRemoteEchoServer : Configuration.Http.RemoteEchoServer,
+                remoteServer.EchoUri,
                 1);
 
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             using (HttpResponseMessage response = await client.PostAsync(redirectUri, content))
             {
                 Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -2240,20 +2230,28 @@ namespace System.Net.Http.Functional.Tests
 
         [ActiveIssue(22191, TargetFrameworkMonikers.Uap)]
         [OuterLoop("Takes several seconds")]
-        [Fact]
-        public async Task PostAsync_RedirectWith307_LargePayload()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task PostAsync_RedirectWith307_LargePayload(Configuration.Http.RemoteServer remoteServer)
         {
-            await PostAsync_Redirect_LargePayload_Helper(307, true);
+            if (remoteServer.HttpVersion == new Version(2, 0))
+            {
+                // This is occasionally timing out in CI with SocketsHttpHandler and HTTP2, particularly on Linux
+                // Likely this is just a very slow test and not a product issue, so just increasing the timeout may be the right fix.
+                // Disable until we can investigate further.
+                return;
+            }
+
+            await PostAsync_Redirect_LargePayload_Helper(remoteServer, 307, true);
         }
 
         [OuterLoop("Takes several seconds")]
-        [Fact]
-        public async Task PostAsync_RedirectWith302_LargePayload()
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
+        public async Task PostAsync_RedirectWith302_LargePayload(Configuration.Http.RemoteServer remoteServer)
         {
-            await PostAsync_Redirect_LargePayload_Helper(302, false);
+            await PostAsync_Redirect_LargePayload_Helper(remoteServer, 302, false);
         }
 
-        public async Task PostAsync_Redirect_LargePayload_Helper(int statusCode, bool expectRedirectToPost)
+        public async Task PostAsync_Redirect_LargePayload_Helper(Configuration.Http.RemoteServer remoteServer, int statusCode, bool expectRedirectToPost)
         {
             using (var fs = new FileStream(
                 Path.Combine(Path.GetTempPath(), Path.GetTempFileName()),
@@ -2269,17 +2267,16 @@ namespace System.Net.Http.Functional.Tests
                 fs.Flush(flushToDisk: true);
                 fs.Position = 0;
 
-                Uri redirectUri = Configuration.Http.RedirectUriForDestinationUri(
-                    secure: false,
+                Uri redirectUri = remoteServer.RedirectUriForDestinationUri(
                     statusCode: statusCode,
-                    destinationUri: Configuration.Http.SecureRemoteVerifyUploadServer,
+                    destinationUri: remoteServer.VerifyUploadUri,
                     hops: 1);
                 var content = new StreamContent(fs);
 
                 // Compute MD5 of request body data. This will be verified by the server when it receives the request.
                 content.Headers.ContentMD5 = TestHelper.ComputeMD5Hash(contentBytes);
 
-                using (HttpClient client = CreateHttpClient())
+                using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
                 using (HttpResponseMessage response = await client.PostAsync(redirectUri, content))
                 {
                     try
@@ -2302,17 +2299,17 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop("Uses external server")]
-        [Theory, MemberData(nameof(EchoServers))]
+        [Theory, MemberData(nameof(RemoteServersMemberData))]
         [ActiveIssue(31104, TestPlatforms.AnyUnix)]
-        public async Task PostAsync_ReuseRequestContent_Success(Uri remoteServer)
+        public async Task PostAsync_ReuseRequestContent_Success(Configuration.Http.RemoteServer remoteServer)
         {
             const string ContentString = "This is the content string.";
-            using (HttpClient client = CreateHttpClient())
+            using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 var content = new StringContent(ContentString);
                 for (int i = 0; i < 2; i++)
                 {
-                    using (HttpResponseMessage response = await client.PostAsync(remoteServer, content))
+                    using (HttpResponseMessage response = await client.PostAsync(remoteServer.EchoUri, content))
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         Assert.Contains(ContentString, await response.Content.ReadAsStringAsync());
@@ -2644,7 +2641,7 @@ namespace System.Net.Http.Functional.Tests
                 }
             });
         }
-        #endregion
+#endregion
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         public async Task GetAsync_InvalidUrl_ExpectedExceptionThrown()
