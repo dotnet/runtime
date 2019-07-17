@@ -21,7 +21,7 @@ namespace System.Collections.ObjectModel
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.list);
             }
-            this.list = list!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            this.list = list;
         }
 
         public int Count
@@ -127,7 +127,7 @@ namespace System.Collections.ObjectModel
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (array!.Rank != 1)  // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (array.Rank != 1)
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
             }
@@ -181,7 +181,7 @@ namespace System.Collections.ObjectModel
                 {
                     for (int i = 0; i < count; i++)
                     {
-                        objects![index++] = list[i]; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                        objects[index++] = list[i];
                     }
                 }
                 catch (ArrayTypeMismatchException)

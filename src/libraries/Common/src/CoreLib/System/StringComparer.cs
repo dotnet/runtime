@@ -302,10 +302,10 @@ namespace System
 
             if (_ignoreCase)
             {
-                return obj!.GetHashCodeOrdinalIgnoreCase(); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                return obj.GetHashCodeOrdinalIgnoreCase();
             }
 
-            return obj!.GetHashCode(); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            return obj.GetHashCode();
         }
 
         // Equals method for the comparer itself. 
@@ -342,7 +342,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
             }
-            return obj!.GetHashCode(); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            return obj.GetHashCode();
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -387,7 +387,7 @@ namespace System
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.obj);
             }
-            return obj!.GetHashCodeOrdinalIgnoreCase(); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            return obj.GetHashCodeOrdinalIgnoreCase();
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)

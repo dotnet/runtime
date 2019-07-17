@@ -43,7 +43,7 @@ namespace System
 
             _array = array;
             _offset = 0;
-            _count = array!.Length; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            _count = array.Length;
         }
 
         public ArraySegment(T[] array, int offset, int count)

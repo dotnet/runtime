@@ -33,7 +33,7 @@ internal partial class Interop
             int dwFlagsAndAttributes,
             IntPtr hTemplateFile)
         {
-            lpFileName = PathInternal.EnsureExtendedPrefixIfNeeded(lpFileName)!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+            lpFileName = PathInternal.EnsureExtendedPrefixIfNeeded(lpFileName);
             return CreateFilePrivate(lpFileName, dwDesiredAccess, dwShareMode, ref securityAttrs, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
         }
     }

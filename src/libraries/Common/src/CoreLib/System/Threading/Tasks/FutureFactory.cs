@@ -661,7 +661,7 @@ namespace System.Threading.Tasks
             // RespectParentCancellation.
             Task t = new Task(new Action<object>(delegate
             {
-                FromAsyncCoreLogic(asyncResult!, endFunction, endAction, promise, requiresSynchronization: true); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                FromAsyncCoreLogic(asyncResult, endFunction, endAction, promise, requiresSynchronization: true);
             }),
                 (object?)null, null,
                 default, TaskCreationOptions.None, InternalTaskOptions.None, null);
@@ -672,9 +672,9 @@ namespace System.Threading.Tasks
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(t);
 
-            if (asyncResult!.IsCompleted) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (asyncResult.IsCompleted)
             {
-                try { t.InternalRunSynchronously(scheduler!, waitForCompletion: false); } // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                try { t.InternalRunSynchronously(scheduler, waitForCompletion: false); }
                 catch (Exception e) { promise.TrySetException(e); } // catch and log any scheduler exceptions
             }
             else
@@ -683,7 +683,7 @@ namespace System.Threading.Tasks
                     asyncResult.AsyncWaitHandle,
                     delegate
                     {
-                        try { t.InternalRunSynchronously(scheduler!, waitForCompletion: false); } // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                        try { t.InternalRunSynchronously(scheduler, waitForCompletion: false); }
                         catch (Exception e) { promise.TrySetException(e); } // catch and log any scheduler exceptions
                     },
                     null,
@@ -766,7 +766,7 @@ namespace System.Threading.Tasks
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod!.Method.Name); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod.Method.Name);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(promise);
@@ -774,7 +774,7 @@ namespace System.Threading.Tasks
             try
             {
                 //if we don't require synchronization, a faster set result path is taken
-                var asyncResult = beginMethod!(iar => // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                var asyncResult = beginMethod(iar =>
                 {
                     if (!iar.CompletedSynchronously)
                         FromAsyncCoreLogic(iar, endFunction, endAction, promise, requiresSynchronization: true);
@@ -883,7 +883,7 @@ namespace System.Threading.Tasks
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod!.Method.Name); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod.Method.Name);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(promise);
@@ -891,7 +891,7 @@ namespace System.Threading.Tasks
             try
             {
                 //if we don't require synchronization, a faster set result path is taken
-                var asyncResult = beginMethod!(arg1, iar => // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                var asyncResult = beginMethod(arg1, iar =>
                 {
                     if (!iar.CompletedSynchronously)
                         FromAsyncCoreLogic(iar, endFunction, endAction, promise, requiresSynchronization: true);
@@ -1008,7 +1008,7 @@ namespace System.Threading.Tasks
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod!.Method.Name); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod.Method.Name);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(promise);
@@ -1016,7 +1016,7 @@ namespace System.Threading.Tasks
             try
             {
                 //if we don't require synchronization, a faster set result path is taken
-                var asyncResult = beginMethod!(arg1, arg2, iar => // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                var asyncResult = beginMethod(arg1, arg2, iar =>
                 {
                     if (!iar.CompletedSynchronously)
                         FromAsyncCoreLogic(iar, endFunction, endAction, promise, requiresSynchronization: true);
@@ -1141,7 +1141,7 @@ namespace System.Threading.Tasks
             Task<TResult> promise = new Task<TResult>(state, creationOptions);
 
             if (AsyncCausalityTracer.LoggingOn)
-                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod!.Method.Name); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                AsyncCausalityTracer.TraceOperationCreation(promise, "TaskFactory.FromAsync: " + beginMethod.Method.Name);
 
             if (Task.s_asyncDebuggingEnabled)
                 Task.AddToActiveTasks(promise);
@@ -1149,7 +1149,7 @@ namespace System.Threading.Tasks
             try
             {
                 //if we don't require synchronization, a faster set result path is taken
-                var asyncResult = beginMethod!(arg1, arg2, arg3, iar => // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                var asyncResult = beginMethod(arg1, arg2, arg3, iar =>
                 {
                     if (!iar.CompletedSynchronously)
                         FromAsyncCoreLogic(iar, endFunction, endAction, promise, requiresSynchronization: true);
@@ -1254,11 +1254,11 @@ namespace System.Threading.Tasks
                 // Validate argument
                 if (asyncResult == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.asyncResult);
 
-                var promise = asyncResult!.AsyncState as FromAsyncTrimPromise<TInstance>; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                var promise = asyncResult.AsyncState as FromAsyncTrimPromise<TInstance>;
                 if (promise == null) ThrowHelper.ThrowArgumentException(ExceptionResource.InvalidOperation_WrongAsyncResultOrEndCalledMultiple, ExceptionArgument.asyncResult);
 
                 // Grab the relevant state and then null it out so that the task doesn't hold onto the state unnecessarily
-                var thisRef = promise!.m_thisRef; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                var thisRef = promise.m_thisRef;
                 var endMethod = promise.m_endMethod;
                 promise.m_thisRef = default;
                 promise.m_endMethod = null;
@@ -1269,7 +1269,7 @@ namespace System.Threading.Tasks
                 if (!asyncResult.CompletedSynchronously)
                 {
                     Debug.Assert(thisRef != null);
-                    promise.Complete(thisRef, endMethod!, asyncResult, requiresSynchronization: true); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                    promise.Complete(thisRef, endMethod, asyncResult, requiresSynchronization: true);
                 }
             }
 
@@ -1612,7 +1612,7 @@ namespace System.Threading.Tasks
             if (scheduler == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
 
             // Check tasks array and make defensive copy
-            Task<TAntecedentResult>[] tasksCopy = TaskFactory.CheckMultiContinuationTasksAndCopy<TAntecedentResult>(tasks!); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            Task<TAntecedentResult>[] tasksCopy = TaskFactory.CheckMultiContinuationTasksAndCopy<TAntecedentResult>(tasks);
 
             // Bail early if cancellation has been requested.
             if (cancellationToken.IsCancellationRequested
@@ -1631,7 +1631,7 @@ namespace System.Threading.Tasks
                 return starter.ContinueWith<TResult>(
                    // use a cached delegate
                    GenericDelegateCache<TAntecedentResult, TResult>.CWAllFuncDelegate,
-                   continuationFunction, scheduler!, cancellationToken, continuationOptions); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                   continuationFunction, scheduler, cancellationToken, continuationOptions);
             }
             else
             {
@@ -1640,7 +1640,7 @@ namespace System.Threading.Tasks
                 return starter.ContinueWith<TResult>(
                    // use a cached delegate
                    GenericDelegateCache<TAntecedentResult, TResult>.CWAllActionDelegate,
-                   continuationAction, scheduler!, cancellationToken, continuationOptions); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                   continuationAction, scheduler, cancellationToken, continuationOptions);
             }
         }
 
@@ -1658,7 +1658,7 @@ namespace System.Threading.Tasks
             if (scheduler == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
 
             // Check tasks array and make defensive copy
-            Task[] tasksCopy = TaskFactory.CheckMultiContinuationTasksAndCopy(tasks!); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            Task[] tasksCopy = TaskFactory.CheckMultiContinuationTasksAndCopy(tasks);
 
             // Bail early if cancellation has been requested.
             if (cancellationToken.IsCancellationRequested
@@ -1684,7 +1684,7 @@ namespace System.Threading.Tasks
                         Debug.Assert(state is Func<Task[], TResult>);
                         return ((Func<Task[], TResult>)state)(completedTasks.Result);
                     },
-                    continuationFunction, scheduler!, cancellationToken, continuationOptions); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                    continuationFunction, scheduler, cancellationToken, continuationOptions);
             }
             else
             {
@@ -1699,7 +1699,7 @@ namespace System.Threading.Tasks
                         Debug.Assert(state is Action<Task[]>);
                        ((Action<Task[]>)state)(completedTasks.Result); return default!;
                    },
-                   continuationAction, scheduler!, cancellationToken, continuationOptions); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                   continuationAction, scheduler, cancellationToken, continuationOptions);
             }
         }
 
@@ -1982,7 +1982,7 @@ namespace System.Threading.Tasks
             // check arguments
             TaskFactory.CheckMultiTaskContinuationOptions(continuationOptions);
             if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-            if (tasks!.Length == 0) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (tasks.Length == 0) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
 
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             Debug.Assert((continuationFunction != null) != (continuationAction != null), "Expected exactly one of endFunction/endAction to be non-null");
@@ -2010,7 +2010,7 @@ namespace System.Threading.Tasks
                          Debug.Assert(state is Func<Task, TResult>);
                          return ((Func<Task, TResult>)state)(completedTask.Result);
                      },
-                     continuationFunction, scheduler!, cancellationToken, continuationOptions); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                     continuationFunction, scheduler, cancellationToken, continuationOptions);
             }
             else
             {
@@ -2024,7 +2024,7 @@ namespace System.Threading.Tasks
                         ((Action<Task>)state)(completedTask.Result);
                         return default!;
                     },
-                    continuationAction, scheduler!, cancellationToken, continuationOptions); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                    continuationAction, scheduler, cancellationToken, continuationOptions);
             }
         }
 
@@ -2038,7 +2038,7 @@ namespace System.Threading.Tasks
             // check arguments
             TaskFactory.CheckMultiTaskContinuationOptions(continuationOptions);
             if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
-            if (tasks!.Length == 0) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (tasks.Length == 0) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_EmptyTaskList, ExceptionArgument.tasks);
             //ArgumentNullException of continuationFunction or continuationAction is checked by the caller
             Debug.Assert((continuationFunction != null) != (continuationAction != null), "Expected exactly one of endFunction/endAction to be non-null");
             if (scheduler == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
@@ -2060,7 +2060,7 @@ namespace System.Threading.Tasks
                 return starter.ContinueWith<TResult>(
                     // Use a cached delegate
                     GenericDelegateCache<TAntecedentResult, TResult>.CWAnyFuncDelegate,
-                    continuationFunction, scheduler!, cancellationToken, continuationOptions); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                    continuationFunction, scheduler, cancellationToken, continuationOptions);
             }
             else
             {
@@ -2068,7 +2068,7 @@ namespace System.Threading.Tasks
                 return starter.ContinueWith<TResult>(
                     // Use a cached delegate
                     GenericDelegateCache<TAntecedentResult, TResult>.CWAnyActionDelegate,
-                    continuationAction, scheduler!, cancellationToken, continuationOptions); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                    continuationAction, scheduler, cancellationToken, continuationOptions);
             }
         }
     }

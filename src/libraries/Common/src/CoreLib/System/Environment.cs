@@ -122,7 +122,7 @@ namespace System
                 {
                     Interlocked.CompareExchange(ref s_osVersion, GetOSVersion(), null);
                 }
-                return s_osVersion!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
+                return s_osVersion;
             }
         }
 
