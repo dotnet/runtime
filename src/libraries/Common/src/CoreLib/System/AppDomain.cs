@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable CS0414 // events are assigned but not used
+#pragma warning disable CS0067 // events are declared but not used
 
 using System.Diagnostics;
 using System.IO;
@@ -41,7 +41,7 @@ namespace System
 
         public PermissionSet PermissionSet => new PermissionSet(PermissionState.Unrestricted);
 
-        public event UnhandledExceptionEventHandler UnhandledException // TODO-NULLABLE: Should all events use nullable delegate types?
+        public event UnhandledExceptionEventHandler? UnhandledException
         {
             add { AppContext.UnhandledException += value; }
             remove { AppContext.UnhandledException -= value; }
@@ -67,15 +67,15 @@ namespace System
 
         public bool IsHomogenous => true;
 
-        public event EventHandler DomainUnload = null!; // TODO-NULLABLE: Should all events use nullable delegate types?
+        public event EventHandler? DomainUnload;
 
-        public event EventHandler<FirstChanceExceptionEventArgs> FirstChanceException // TODO-NULLABLE: Should all events use nullable delegate types?
+        public event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException
         {
             add { AppContext.FirstChanceException += value; }
             remove { AppContext.FirstChanceException -= value; }
         }
 
-        public event EventHandler ProcessExit // TODO-NULLABLE: Should all events use nullable delegate types?
+        public event EventHandler? ProcessExit
         {
             add { AppContext.ProcessExit += value; }
             remove { AppContext.ProcessExit -= value; }
@@ -232,27 +232,27 @@ namespace System
 
         public Assembly[] GetAssemblies() => AssemblyLoadContext.GetLoadedAssemblies();
 
-        public event AssemblyLoadEventHandler AssemblyLoad // TODO-NULLABLE: Should all events use nullable delegate types?
+        public event AssemblyLoadEventHandler? AssemblyLoad
         {
             add { AssemblyLoadContext.AssemblyLoad += value; }
             remove { AssemblyLoadContext.AssemblyLoad -= value; }
         }
 
-        public event ResolveEventHandler AssemblyResolve // TODO-NULLABLE: Should all events use nullable delegate types?
+        public event ResolveEventHandler? AssemblyResolve
         {
             add { AssemblyLoadContext.AssemblyResolve += value; }
             remove { AssemblyLoadContext.AssemblyResolve -= value; }
         }
 
-        public event ResolveEventHandler ReflectionOnlyAssemblyResolve = null!; // TODO-NULLABLE: Should all events use nullable delegate types?
+        public event ResolveEventHandler? ReflectionOnlyAssemblyResolve;
 
-        public event ResolveEventHandler TypeResolve // TODO-NULLABLE: Should all events use nullable delegate types?
+        public event ResolveEventHandler? TypeResolve
         {
             add { AssemblyLoadContext.TypeResolve += value; }
             remove { AssemblyLoadContext.TypeResolve -= value; }
         }
 
-        public event ResolveEventHandler ResourceResolve // TODO-NULLABLE: Should all events use nullable delegate types?
+        public event ResolveEventHandler? ResourceResolve
         {
             add { AssemblyLoadContext.ResourceResolve += value; }
             remove { AssemblyLoadContext.ResourceResolve -= value; }

@@ -703,7 +703,7 @@ namespace System.Diagnostics.Contracts
         /// full trust, because it will inform you of bugs in the appdomain and because the event handler
         /// could allow you to continue execution.
         /// </summary>
-        public static event EventHandler<ContractFailedEventArgs> ContractFailed // TODO-NULLABLE: Should all events use nullable delegate types?
+        public static event EventHandler<ContractFailedEventArgs>? ContractFailed
         {
             add
             {

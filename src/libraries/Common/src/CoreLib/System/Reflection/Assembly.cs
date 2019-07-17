@@ -117,7 +117,7 @@ namespace System.Reflection
             return Activator.CreateInstance(t, bindingAttr, binder, args, culture, activationAttributes);
         }
 
-        public virtual event ModuleResolveEventHandler ModuleResolve { add { throw NotImplemented.ByDesign; } remove { throw NotImplemented.ByDesign; } } // TODO-NULLABLE: Should all events use nullable delegate types?
+        public virtual event ModuleResolveEventHandler? ModuleResolve { add { throw NotImplemented.ByDesign; } remove { throw NotImplemented.ByDesign; } }
 
         public virtual Module ManifestModule { get { throw NotImplemented.ByDesign; } }
         public virtual Module? GetModule(string name) { throw NotImplemented.ByDesign; }

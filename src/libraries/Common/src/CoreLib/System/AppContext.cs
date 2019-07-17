@@ -63,12 +63,12 @@ namespace System
         }
 
 #pragma warning disable CS0067 // events raised by the VM
-        public static event UnhandledExceptionEventHandler UnhandledException; // TODO-NULLABLE: Should all events use nullable delegate types?
+        public static event UnhandledExceptionEventHandler? UnhandledException;
 
-        public static event System.EventHandler<FirstChanceExceptionEventArgs> FirstChanceException; // TODO-NULLABLE: Should all events use nullable delegate types?
+        public static event System.EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
 
-        public static event System.EventHandler ProcessExit; // TODO-NULLABLE: Should all events use nullable delegate types?
+        public static event System.EventHandler? ProcessExit;
 
         internal static void OnProcessExit()
         {
