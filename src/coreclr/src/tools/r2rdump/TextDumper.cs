@@ -203,7 +203,7 @@ namespace R2RDump
                     }
                 }
 
-                if (rtf.Method.GcInfo != null && rtf.Method.GcInfo.Transitions.ContainsKey(codeOffset))
+                if (rtf.Method.GcInfo?.Transitions != null && rtf.Method.GcInfo.Transitions.ContainsKey(codeOffset))
                 {
                     foreach (BaseGcTransition transition in rtf.Method.GcInfo.Transitions[codeOffset])
                     {

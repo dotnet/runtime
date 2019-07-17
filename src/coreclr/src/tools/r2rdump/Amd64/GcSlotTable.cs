@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Xml.Serialization;
@@ -12,7 +13,7 @@ namespace R2RDump.Amd64
 {
     public class GcSlotTable
     {
-        public class GcSlot
+        public class GcSlot : BaseGcSlot
         {
             [XmlAttribute("Index")]
             public int Index { get; set; }
@@ -60,6 +61,16 @@ namespace R2RDump.Amd64
         public uint NumStackSlots { get; set; }
         public uint NumUntracked { get; set; }
         public uint NumSlots { get; set; }
+
+        public uint NumTracked
+        {
+            get
+            {
+                Debug.Assert(NumSlots == GcSlots.Count);
+                return NumSlots - NumUntracked;
+            }
+        }
+
         public List<GcSlot> GcSlots { get; set; }
 
         public GcSlotTable() { }
@@ -85,11 +96,11 @@ namespace R2RDump.Amd64
             {
                 DecodeRegisters(image, gcInfoTypes, ref bitOffset);
             }
-            if ((NumStackSlots > 0) && (GcSlots.Count < gcInfoTypes.MAX_PREDECODED_SLOTS))
+            if (NumStackSlots > 0)
             {
                 DecodeStackSlots(image, machine, gcInfoTypes, NumStackSlots, false, ref bitOffset);
             }
-            if ((NumUntracked > 0) && (GcSlots.Count < gcInfoTypes.MAX_PREDECODED_SLOTS))
+            if (NumUntracked > 0)
             {
                 DecodeStackSlots(image, machine, gcInfoTypes, NumUntracked, true, ref bitOffset);
             }
