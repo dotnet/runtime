@@ -32,6 +32,10 @@ namespace R2RDump
         }
     }
 
+    public abstract class BaseGcSlot
+    {
+    }
+
     public abstract class BaseGcInfo
     {
         public int Size { get; set; }
@@ -39,6 +43,7 @@ namespace R2RDump
         public int CodeLength { get; set; }
         [XmlIgnore]
         public Dictionary<int, List<BaseGcTransition>> Transitions { get; set; }
+        public List<List<BaseGcSlot>> LiveSlotsAtSafepoints { get; set; }
     }
 
     /// <summary>
@@ -221,6 +226,8 @@ namespace R2RDump
                 foreach (Amd64.GcInfo.SafePointOffset safePoint in gcInfo.SafePointOffsets)
                 {
                     writer.WriteLine($@"        Index: {safePoint.Index,2}; Value: 0x{safePoint.Value:X4}");
+                    if (gcInfo.LiveSlotsAtSafepoints != null)
+                        writer.WriteLine($@"        Live slots: {String.Join(", ", gcInfo.LiveSlotsAtSafepoints[safePoint.Index])}");
                 }
 
                 writer.WriteLine($@"    InterruptibleRanges: {gcInfo.InterruptibleRanges.Count}");

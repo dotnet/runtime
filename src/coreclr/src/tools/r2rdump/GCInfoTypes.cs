@@ -93,7 +93,6 @@ namespace R2RDump
         internal int INTERRUPTIBLE_RANGE_DELTA1_ENCBASE { get; } = 6;
         internal int INTERRUPTIBLE_RANGE_DELTA2_ENCBASE { get; } = 6;
 
-        internal int MAX_PREDECODED_SLOTS { get; } = 64;
         internal int NUM_REGISTERS_ENCBASE { get; } = 2;
         internal int NUM_STACK_SLOTS_ENCBASE { get; } = 2;
         internal int NUM_UNTRACKED_SLOTS_ENCBASE { get; } = 1;
