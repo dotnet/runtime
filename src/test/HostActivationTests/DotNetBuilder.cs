@@ -69,11 +69,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         /// Add a mock of the Microsoft.NETCore.App framework with the specified version
         /// </summary>
         /// <param name="version">Version to add</param>
+        /// <param name="customizer">Customizer to customize the framework before it is built</param>
         /// <remarks>
         /// Product runtime binaries are not added. All the added mock framework will contain is hostpolicy,
         /// a mock version of coreclr, and a minimal Microsoft.NETCore.App.deps.json.
         /// </remarks>
-        public DotNetBuilder AddMicrosoftNETCoreAppFrameworkMockCoreClr(string version)
+        public DotNetBuilder AddMicrosoftNETCoreAppFrameworkMockCoreClr(string version, Action<NetCoreAppBuilder> customizer = null)
         {
             // ./shared/Microsoft.NETCore.App/<version> - create a mock of the root framework
             string netCoreAppPath = Path.Combine(_path, "shared", "Microsoft.NETCore.App", version);
@@ -82,8 +83,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             string hostPolicyFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostpolicy");
             string coreclrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("coreclr");
             string mockCoreclrFileName = RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("mockcoreclr");
-
-            string netCoreAppPathDepsJson = Path.Combine(netCoreAppPath, "Microsoft.NETCore.App.deps.json");
 
             string currentRid = _repoDirectories.TargetRID;
 
@@ -101,6 +100,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                         .WithAsset((new NetCoreAppBuilder.RuntimeFileBuilder($"runtimes/{currentRid}/native/{hostPolicyFileName}"))
                             .CopyFromFile(Path.Combine(_repoDirectories.Artifacts, "corehost", hostPolicyFileName))
                             .WithFileOnDiskPath(hostPolicyFileName))))
+                .WithCustomizer(customizer)
                 .Build(new TestApp(netCoreAppPath, "Microsoft.NETCore.App"));
 
             return this;
