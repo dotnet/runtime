@@ -7,7 +7,7 @@
     gsub(/\r/,"", $0);
     
     # Skip empty lines and comment lines starting with semicolon
-    if (NF && !match($0, /^[:space:]*;/))
+    if (NF && !match($0, /^[[:space:]]*;/))
     {
         # Only process the entries that begin with "#"
         if (match($0, /^#.*/))
