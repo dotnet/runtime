@@ -426,7 +426,7 @@ private:
         DebuggerJitInfo        *dji; // used for Slave and native patches, though only when tracking JIT Info
     };
 
-#ifndef _TARGET_ARM_
+#ifndef FEATURE_EMULATE_SINGLESTEP
     // this is shared among all the skippers for this controller. see the comments
     // right before the definition of SharedPatchBypassBuffer for lifetime info.
     SharedPatchBypassBuffer* m_pSharedPatchBypassBuffer;
@@ -530,7 +530,7 @@ public:
     // Is this patch at a position at which it's safe to take a stack?
     bool IsSafeForStackTrace();
 
-#ifndef _TARGET_ARM_
+#ifndef FEATURE_EMULATE_SINGLESTEP
     // gets a pointer to the shared buffer
     SharedPatchBypassBuffer* GetOrCreateSharedPatchBypassBuffer();
 
@@ -1456,7 +1456,7 @@ class DebuggerPatchSkip : public DebuggerController
     CORDB_ADDRESS_TYPE      *m_address;
     int                      m_iOrigDisp;        // the original displacement of a relative call or jump
     InstructionAttribute     m_instrAttrib;      // info about the instruction being skipped over
-#ifndef _TARGET_ARM_
+#ifndef FEATURE_EMULATE_SINGLESTEP
     // this is shared among all the skippers and the controller. see the comments
     // right before the definition of SharedPatchBypassBuffer for lifetime info.
     SharedPatchBypassBuffer *m_pSharedPatchBypassBuffer;

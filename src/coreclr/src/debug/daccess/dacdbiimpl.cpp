@@ -5241,7 +5241,7 @@ void DacDbiInterfaceImpl::Hijack(
     // is automatically turned off.
     //
     // The debugger could always re-enable the single-step flag if it wants to.    
-#ifndef _TARGET_ARM_
+#ifndef FEATURE_EMULATE_SINGLESTEP
     UnsetSSFlag(reinterpret_cast<DT_CONTEXT *>(&ctx)); 
 #endif
 
