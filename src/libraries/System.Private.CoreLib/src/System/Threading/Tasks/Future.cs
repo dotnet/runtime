@@ -339,7 +339,7 @@ namespace System.Threading.Tasks
             }
 
             // Create and schedule the future.
-            Task<TResult> f = new Task<TResult>(function!, parent, cancellationToken, creationOptions, internalOptions | InternalTaskOptions.QueuedByRuntime, scheduler); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            Task<TResult> f = new Task<TResult>(function, parent, cancellationToken, creationOptions, internalOptions | InternalTaskOptions.QueuedByRuntime, scheduler);
 
             f.ScheduleAndStart(false);
             return f;
@@ -359,7 +359,7 @@ namespace System.Threading.Tasks
             }
 
             // Create and schedule the future.
-            Task<TResult> f = new Task<TResult>(function!, state, parent, cancellationToken, creationOptions, internalOptions | InternalTaskOptions.QueuedByRuntime, scheduler); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            Task<TResult> f = new Task<TResult>(function, state, parent, cancellationToken, creationOptions, internalOptions | InternalTaskOptions.QueuedByRuntime, scheduler);
 
             f.ScheduleAndStart(false);
             return f;
@@ -727,13 +727,13 @@ namespace System.Threading.Tasks
                 out internalOptions);
 
             Task continuationTask = new ContinuationTaskFromResultTask<TResult>(
-                this, continuationAction!, null, // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                this, continuationAction, null,
                 creationOptions, internalOptions
             );
 
             // Register the continuation.  If synchronous execution is requested, this may
             // actually invoke the continuation before returning.
-            ContinueWithCore(continuationTask, scheduler!, cancellationToken, continuationOptions); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            ContinueWithCore(continuationTask, scheduler, cancellationToken, continuationOptions);
 
             return continuationTask;
         }
@@ -920,13 +920,13 @@ namespace System.Threading.Tasks
                 out internalOptions);
 
             Task continuationTask = new ContinuationTaskFromResultTask<TResult>(
-                this, continuationAction!, state, // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                this, continuationAction, state,
                 creationOptions, internalOptions
             );
 
             // Register the continuation.  If synchronous execution is requested, this may
             // actually invoke the continuation before returning.
-            ContinueWithCore(continuationTask, scheduler!, cancellationToken, continuationOptions); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            ContinueWithCore(continuationTask, scheduler, cancellationToken, continuationOptions);
 
             return continuationTask;
         }
@@ -1136,13 +1136,13 @@ namespace System.Threading.Tasks
                 out internalOptions);
 
             Task<TNewResult> continuationFuture = new ContinuationResultTaskFromResultTask<TResult, TNewResult>(
-                this, continuationFunction!, null, // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                this, continuationFunction, null,
                 creationOptions, internalOptions
             );
 
             // Register the continuation.  If synchronous execution is requested, this may
             // actually invoke the continuation before returning.
-            ContinueWithCore(continuationFuture, scheduler!, cancellationToken, continuationOptions); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            ContinueWithCore(continuationFuture, scheduler, cancellationToken, continuationOptions);
 
             return continuationFuture;
         }
@@ -1359,13 +1359,13 @@ namespace System.Threading.Tasks
                 out internalOptions);
 
             Task<TNewResult> continuationFuture = new ContinuationResultTaskFromResultTask<TResult, TNewResult>(
-                this, continuationFunction!, state, // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                this, continuationFunction, state,
                 creationOptions, internalOptions
             );
 
             // Register the continuation.  If synchronous execution is requested, this may
             // actually invoke the continuation before returning.
-            ContinueWithCore(continuationFuture, scheduler!, cancellationToken, continuationOptions); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            ContinueWithCore(continuationFuture, scheduler, cancellationToken, continuationOptions);
 
             return continuationFuture;
         }

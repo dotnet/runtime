@@ -99,7 +99,7 @@ namespace System.Runtime.Loader
             _assemblyPaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             foreach (string assemblyPath in assemblyPaths)
             {
-                _assemblyPaths.Add(Path.GetFileNameWithoutExtension(assemblyPath)!, assemblyPath); // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+                _assemblyPaths.Add(Path.GetFileNameWithoutExtension(assemblyPath), assemblyPath);
             }
 
             _nativeSearchPaths = SplitPathsList(nativeSearchPathsList);

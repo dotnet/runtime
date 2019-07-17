@@ -579,7 +579,7 @@ namespace System
         {
             if (target == null)
                 ThrowNullThisInDelegateToInstance();
-            this._target = target!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            this._target = target;
             this._methodPtr = methodPtr;
         }
 

@@ -41,7 +41,7 @@ namespace System
 
         public PermissionSet PermissionSet => new PermissionSet(PermissionState.Unrestricted);
 
-        public event UnhandledExceptionEventHandler UnhandledException
+        public event UnhandledExceptionEventHandler UnhandledException // TODO-NULLABLE: Should all events use nullable delegate types?
         {
             add { AppContext.UnhandledException += value; }
             remove { AppContext.UnhandledException -= value; }
@@ -67,15 +67,15 @@ namespace System
 
         public bool IsHomogenous => true;
 
-        public event EventHandler DomainUnload = null!;
+        public event EventHandler DomainUnload = null!; // TODO-NULLABLE: Should all events use nullable delegate types?
 
-        public event EventHandler<FirstChanceExceptionEventArgs> FirstChanceException
+        public event EventHandler<FirstChanceExceptionEventArgs> FirstChanceException // TODO-NULLABLE: Should all events use nullable delegate types?
         {
             add { AppContext.FirstChanceException += value; }
             remove { AppContext.FirstChanceException -= value; }
         }
 
-        public event EventHandler ProcessExit
+        public event EventHandler ProcessExit // TODO-NULLABLE: Should all events use nullable delegate types?
         {
             add { AppContext.ProcessExit += value; }
             remove { AppContext.ProcessExit -= value; }
@@ -232,27 +232,27 @@ namespace System
 
         public Assembly[] GetAssemblies() => AssemblyLoadContext.GetLoadedAssemblies();
 
-        public event AssemblyLoadEventHandler AssemblyLoad
+        public event AssemblyLoadEventHandler AssemblyLoad // TODO-NULLABLE: Should all events use nullable delegate types?
         {
             add { AssemblyLoadContext.AssemblyLoad += value; }
             remove { AssemblyLoadContext.AssemblyLoad -= value; }
         }
 
-        public event ResolveEventHandler AssemblyResolve
+        public event ResolveEventHandler AssemblyResolve // TODO-NULLABLE: Should all events use nullable delegate types?
         {
             add { AssemblyLoadContext.AssemblyResolve += value; }
             remove { AssemblyLoadContext.AssemblyResolve -= value; }
         }
 
-        public event ResolveEventHandler ReflectionOnlyAssemblyResolve = null!;
+        public event ResolveEventHandler ReflectionOnlyAssemblyResolve = null!; // TODO-NULLABLE: Should all events use nullable delegate types?
 
-        public event ResolveEventHandler TypeResolve
+        public event ResolveEventHandler TypeResolve // TODO-NULLABLE: Should all events use nullable delegate types?
         {
             add { AssemblyLoadContext.TypeResolve += value; }
             remove { AssemblyLoadContext.TypeResolve -= value; }
         }
 
-        public event ResolveEventHandler ResourceResolve
+        public event ResolveEventHandler ResourceResolve // TODO-NULLABLE: Should all events use nullable delegate types?
         {
             add { AssemblyLoadContext.ResourceResolve += value; }
             remove { AssemblyLoadContext.ResourceResolve -= value; }
@@ -409,7 +409,7 @@ namespace System
                                 (Func<IPrincipal>)mi.CreateDelegate(typeof(Func<IPrincipal>)));
                         }
 
-                        principal = s_getUnauthenticatedPrincipal!(); // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+                        principal = s_getUnauthenticatedPrincipal();
                         break;
 
                     case PrincipalPolicy.WindowsPrincipal:
@@ -425,7 +425,7 @@ namespace System
                                 (Func<IPrincipal>)mi.CreateDelegate(typeof(Func<IPrincipal>)));
                         }
 
-                        principal = s_getWindowsPrincipal!(); // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+                        principal = s_getWindowsPrincipal();
                         break;
                 }
             }
