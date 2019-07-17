@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Xml.Serialization;
@@ -186,7 +187,15 @@ namespace R2RDump.Amd64
 
             SlotTable = new GcSlotTable(image, machine, _gcInfoTypes, ref bitOffset);
 
-            Transitions = GetTranstions(image, ref bitOffset);
+            // Try partially interruptible first
+            if (NumSafePoints > 0)
+            {
+                LiveSlotsAtSafepoints = GetLiveSlotsAtSafepoints(image, ref bitOffset);
+            }
+            else
+            {
+                Transitions = GetTransitions(image, ref bitOffset);
+            }
 
             Size = bitOffset - startBitOffset;
         }
@@ -260,6 +269,7 @@ namespace R2RDump.Amd64
             foreach (SafePointOffset offset in SafePointOffsets)
             {
                 sb.AppendLine($"\t\t{offset.Value}");
+                sb.AppendLine($"\t\tLive slots: {String.Join(", ", LiveSlotsAtSafepoints[offset.Index])}");
             }
             sb.AppendLine($"\tInterruptibleRanges:");
             foreach (InterruptibleRange range in InterruptibleRanges)
@@ -346,10 +356,116 @@ namespace R2RDump.Amd64
             return (readyToRunMajorVersion == 1) ? 1 : GCINFO_VERSION;
         }
 
+        private List<List<BaseGcSlot>> GetLiveSlotsAtSafepoints(byte[] image, ref int bitOffset)
+        {
+            // For each safe point, enumerates a list of GC slots that are alive at that point
+            var result = new List<List<BaseGcSlot>>();
+
+            uint numSlots = SlotTable.NumTracked;
+            if (numSlots == 0)
+                return null;
+
+            uint numBitsPerOffset = 0;
+            // Duplicate the encoder's heuristic to determine if we have indirect live
+            // slot table (similar to the chunk pointers)
+            if (NativeReader.ReadBits(image, 1, ref bitOffset) != 0)
+            {
+                numBitsPerOffset = NativeReader.DecodeVarLengthUnsigned(image, _gcInfoTypes.POINTER_SIZE_ENCBASE, ref bitOffset) + 1;
+                Debug.Assert(numBitsPerOffset != 0);
+            }
+
+            uint offsetTablePos = (uint)bitOffset;
+
+            for (uint safePointIndex = 0; safePointIndex < NumSafePoints; safePointIndex++)
+            {
+                bitOffset = (int)offsetTablePos;
+
+                var liveSlots = new List<BaseGcSlot>();
+
+                if (numBitsPerOffset != 0)
+                {
+                    bitOffset += (int)(numBitsPerOffset * safePointIndex);
+
+                    uint liveStatesOffset = (uint)NativeReader.ReadBits(image, (int)numBitsPerOffset, ref bitOffset);
+                    uint liveStatesStart = (uint)((offsetTablePos + NumSafePoints * numBitsPerOffset + 7) & (~7));
+                    bitOffset = (int)(liveStatesStart + liveStatesOffset);
+                    if (NativeReader.ReadBits(image, 1, ref bitOffset) != 0)
+                    {
+                        // RLE encoded
+                        bool skip = NativeReader.ReadBits(image, 1, ref bitOffset) == 0;
+                        bool report = true;
+                        uint readSlots = NativeReader.DecodeVarLengthUnsigned(image,
+                            skip ? _gcInfoTypes.LIVESTATE_RLE_SKIP_ENCBASE : _gcInfoTypes.LIVESTATE_RLE_RUN_ENCBASE, ref bitOffset);
+                        skip = !skip;
+                        while (readSlots < numSlots)
+                        {
+                            uint cnt = NativeReader.DecodeVarLengthUnsigned(image,
+                                skip ? _gcInfoTypes.LIVESTATE_RLE_SKIP_ENCBASE : _gcInfoTypes.LIVESTATE_RLE_RUN_ENCBASE, ref bitOffset) + 1;
+                            if (report)
+                            {
+                                for (uint slotIndex = readSlots; slotIndex < readSlots + cnt; slotIndex++)
+                                {
+                                    int trackedSlotIndex = 0;
+                                    foreach (var slot in SlotTable.GcSlots)
+                                    {
+                                        if (slot.Flags != GcSlotFlags.GC_SLOT_UNTRACKED)
+                                        {
+                                            if (slotIndex == trackedSlotIndex)
+                                            {
+                                                liveSlots.Add(slot);
+                                                break;
+                                            }
+                                            trackedSlotIndex++;
+                                        }
+                                    }
+                                }
+                            }
+                            readSlots += cnt;
+                            skip = !skip;
+                            report = !report;
+                        }
+                        Debug.Assert(readSlots == numSlots);
+                        result.Add(liveSlots);
+                        continue;
+                    }
+                    // Just a normal live state (1 bit per slot), so use the normal decoding loop
+                }
+                else
+                {
+                    bitOffset += (int)(safePointIndex * numSlots);
+                }
+
+                for (uint slotIndex = 0; slotIndex < numSlots; slotIndex++)
+                {
+                    bool isLive = NativeReader.ReadBits(image, 1, ref bitOffset) != 0;
+                    if (isLive)
+                    {
+                        int trackedSlotIndex = 0;
+                        foreach (var slot in SlotTable.GcSlots)
+                        {
+                            if (slot.Flags != GcSlotFlags.GC_SLOT_UNTRACKED)
+                            {
+                                if (slotIndex == trackedSlotIndex)
+                                {
+                                    liveSlots.Add(slot);
+                                    break;
+                                }
+                                trackedSlotIndex++;
+                            }
+                        }
+                    }
+                }
+
+                result.Add(liveSlots);
+            }
+
+            return result;
+        }
+
         /// <summary>
         /// based on end of <a href="https://github.com/dotnet/coreclr/blob/master/src/vm/gcinfodecoder.cpp">GcInfoDecoder::EnumerateLiveSlots and GcInfoEncoder::Build</a>
         /// </summary>
-        public Dictionary<int, List<BaseGcTransition>> GetTranstions(byte[] image, ref int bitOffset)
+        public Dictionary<int, List<BaseGcTransition>> GetTransitions(byte[] image, ref int bitOffset)
         {
             int totalInterruptibleLength = 0;
             if (NumInterruptibleRanges == 0)
@@ -382,7 +498,7 @@ namespace R2RDump.Amd64
             int info2Offset = (int)Math.Ceiling(bitOffset / 8.0) * 8;
 
             List<GcTransition> transitions = new List<GcTransition>();
-            bool[] liveAtEnd = new bool[SlotTable.GcSlots.Count - SlotTable.NumUntracked]; // true if slot is live at the end of the chunk
+            bool[] liveAtEnd = new bool[SlotTable.NumTracked]; // true if slot is live at the end of the chunk
             for (int currentChunk = 0; currentChunk < numChunks; currentChunk++)
             {
                 if (chunkPointers[currentChunk] == 0)
@@ -439,7 +555,7 @@ namespace R2RDump.Amd64
         private uint GetNumCouldBeLiveSlots(byte[] image, ref int bitOffset)
         {
             uint numCouldBeLiveSlots = 0;
-            int numTracked = SlotTable.GcSlots.Count - (int)SlotTable.NumUntracked;
+            uint numTracked = SlotTable.NumTracked;
             if (NativeReader.ReadBits(image, 1, ref bitOffset) != 0)
             {
                 // RLE encoded
