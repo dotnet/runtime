@@ -234,14 +234,14 @@ FILE* bundle_runner_t::create_extraction_file(const pal::string_t& relative_path
 }
 
 // Extract one file from the bundle to disk.
-void bundle_runner_t::extract_file(file_entry_t *entry)
+void bundle_runner_t::extract_file(const file_entry_t& entry)
 {
-    FILE* file = create_extraction_file(entry->relative_path());
+    FILE* file = create_extraction_file(entry.relative_path());
     const int64_t buffer_size = 8 * 1024; // Copy the file in 8KB chunks
     uint8_t buffer[buffer_size];
-    int64_t file_size = entry->size();
+    int64_t file_size = entry.size();
 
-    seek(m_bundle_stream, entry->offset(), SEEK_SET);
+    seek(m_bundle_stream, entry.offset(), SEEK_SET);
     do {
         int64_t copy_size = (file_size <= buffer_size) ? file_size : buffer_size;
         read(buffer, copy_size, m_bundle_stream);
@@ -277,7 +277,7 @@ StatusCode bundle_runner_t::extract()
 
         // Read the bundle header
         seek(m_bundle_stream, marker_t::header_offset(), SEEK_SET);
-        m_header.reset(header_t::read(m_bundle_stream));
+        m_header = header_t::read(m_bundle_stream);
 
         // Determine if embedded files are already extracted, and available for reuse
         determine_extraction_dir();
@@ -305,9 +305,9 @@ StatusCode bundle_runner_t::extract()
         
         create_working_extraction_dir();
 
-        m_manifest.reset(manifest_t::read(m_bundle_stream, num_embedded_files()));
+        m_manifest = manifest_t::read(m_bundle_stream, num_embedded_files());
 
-        for (file_entry_t* entry : m_manifest->files) {
+        for (const file_entry_t & entry : m_manifest.files) {
             extract_file(entry);
         }
 
