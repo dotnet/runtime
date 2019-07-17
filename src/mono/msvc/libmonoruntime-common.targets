@@ -6,6 +6,7 @@
   <ItemGroup Label="common_sources">
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\abi.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\appdomain.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\assembly-load-context.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\domain.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\appdomain-icalls.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\assembly.c" />
@@ -54,6 +55,10 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\image-internals.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\jit-icall-reg.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\jit-info.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loaded-images.c" />
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loaded-images.h" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loaded-images-global.c" />
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loaded-images-netcore.c" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\loader.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\loader-internals.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\locales.c" />

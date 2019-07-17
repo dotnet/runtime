@@ -245,6 +245,7 @@ endif
 common_sources = \
 	$(platform_sources)	\
 	appdomain.c	\
+	assembly-load-context.c	\
 	domain.c	\
 	appdomain-icalls.h	\
 	assembly.c		\
@@ -299,6 +300,10 @@ common_sources = \
 	jit-info.c		\
 	loader.c		\
 	loader-internals.h	\
+	loaded-images.h		\
+	loaded-images.c		\
+	loaded-images-global.c	\
+	loaded-images-netcore.c	\
 	locales.c		\
 	locales.h		\
 	lock-tracer.c		\
@@ -420,6 +425,7 @@ common_sources = \
 	callspec.h	\
 	callspec.c	\
 	abi.c
+
 
 # These source files have compile time dependencies on GC code
 gc_dependent_sources = \

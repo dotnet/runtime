@@ -17,6 +17,7 @@
 #include <mono/metadata/mono-conc-hash.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-internal-hash.h>
+#include <mono/metadata/loader-internals.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/handle-decl.h>
 
@@ -454,6 +455,12 @@ struct _MonoDomain {
 	gboolean throw_unobserved_task_exceptions;
 
 	guint32 execution_context_field_offset;
+
+#ifdef ENABLE_NETCORE
+	GSList *alcs;
+	MonoAssemblyLoadContext *default_alc;
+	MonoCoopMutex alcs_lock; /* Used when accessing 'alcs' */
+#endif
 };
 
 typedef struct  {
@@ -616,7 +623,8 @@ mono_domain_parse_assembly_bindings (MonoDomain *domain, int amajor, int aminor,
 gboolean
 mono_assembly_name_parse (const char *name, MonoAssemblyName *aname);
 
-MonoImage *mono_assembly_open_from_bundle (const char *filename,
+MonoImage *mono_assembly_open_from_bundle (MonoAssemblyLoadContext *alc,
+					   const char *filename,
 					   MonoImageOpenStatus *status,
 					   gboolean refonly);
 
@@ -658,5 +666,13 @@ mono_runtime_install_appctx_properties (void);
 
 gboolean 
 mono_domain_set_fast (MonoDomain *domain, gboolean force);
+
+MonoAssemblyLoadContext *
+mono_domain_default_alc (MonoDomain *domain);
+
+#ifdef ENABLE_NETCORE
+MonoAssemblyLoadContext *
+mono_domain_create_individual_alc (MonoDomain *domain, uint32_t this_gchandle, gboolean collectible, MonoError *error);
+#endif
 
 #endif /* __MONO_METADATA_DOMAIN_INTERNALS_H__ */

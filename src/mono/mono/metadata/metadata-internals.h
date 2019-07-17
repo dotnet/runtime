@@ -435,6 +435,7 @@ struct _MonoImage {
 	 * table, where the module table is a subset of the file table. We track both lists,
 	 * and because we can lazy-load them at different times we reference-increment both.
 	 */
+	/* No netmodules in netcore, but for System.Reflection.Emit support we still use modules */
 	MonoImage **modules;
 	guint32 module_count;
 	gboolean *modules_loaded;
@@ -450,6 +451,13 @@ struct _MonoImage {
 	 * The Assembly this image was loaded from.
 	 */
 	MonoAssembly *assembly;
+
+#ifdef ENABLE_NETCORE
+	/*
+	 * The AssemblyLoadContext that this image was loaded into.
+	 */
+	MonoAssemblyLoadContext *alc;
+#endif
 
 	/*
 	 * Indexed by method tokens and typedef tokens.
@@ -1072,11 +1080,11 @@ gboolean mono_image_load_cli_data (MonoImage *image);
 
 void mono_image_load_names (MonoImage *image);
 
-MonoImage *mono_image_open_raw (const char *fname, MonoImageOpenStatus *status);
+MonoImage *mono_image_open_raw (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status);
 
-MonoImage *mono_image_open_metadata_only (const char *fname, MonoImageOpenStatus *status);
+MonoImage *mono_image_open_metadata_only (MonoAssemblyLoadContext *alc, const char *fname, MonoImageOpenStatus *status);
 
-MonoImage *mono_image_open_from_data_internal (char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, gboolean metadata_only, const char *name);
+MonoImage *mono_image_open_from_data_internal (MonoAssemblyLoadContext *alc, char *data, guint32 data_len, gboolean need_copy, MonoImageOpenStatus *status, gboolean refonly, gboolean metadata_only, const char *name);
 
 MonoException *mono_get_exception_field_access_msg (const char *msg);
 
@@ -1175,5 +1183,16 @@ m_image_has_entry_point (MonoImage *image)
 }
 
 #endif
+
+static inline
+MonoAssemblyLoadContext *
+mono_image_get_alc (MonoImage *image)
+{
+#ifndef ENABLE_NETCORE
+	return NULL;
+#else
+	return image->alc;
+#endif
+}
 
 #endif /* __MONO_METADATA_INTERNALS_H__ */

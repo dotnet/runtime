@@ -49,12 +49,17 @@ typedef gboolean (*MonoAssemblyAsmCtxFromPathFunc) (const char *absfname, MonoAs
 
 void mono_install_assembly_asmctx_from_path_hook (MonoAssemblyAsmCtxFromPathFunc func, gpointer user_data);
 
+typedef MonoAssembly * (*MonoAssemblyPreLoadFuncV2) (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, char **assemblies_path, gboolean refonly, gpointer user_data, MonoError *error);
+
+void mono_install_assembly_preload_hook_v2 (MonoAssemblyPreLoadFuncV2 func, void *user_data, gboolean refonly);
+
 /* If predicate returns true assembly should be loaded, if false ignore it. */
 typedef gboolean (*MonoAssemblyCandidatePredicate)(MonoAssembly *, gpointer);
 
 typedef struct MonoAssemblyLoadRequest {
 	/* Assembly Load context that is requesting an assembly. */
 	MonoAssemblyContextKind asmctx;
+	MonoAssemblyLoadContext *alc;
 	/* Predicate to apply to candidate assemblies. Optional. */
 	MonoAssemblyCandidatePredicate predicate;
 	/* user_data for predicate. Optional. */

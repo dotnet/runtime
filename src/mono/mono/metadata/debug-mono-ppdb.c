@@ -197,9 +197,10 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 #endif
 	}
 
+	MonoAssemblyLoadContext *alc = mono_image_get_alc (image);
 	if (raw_contents) {
 		if (size > 4 && strncmp ((char*)raw_contents, "BSJB", 4) == 0)
-			ppdb_image = mono_image_open_from_data_internal ((char*)raw_contents, size, TRUE, &status, FALSE, TRUE, NULL);
+			ppdb_image = mono_image_open_from_data_internal (alc, (char*)raw_contents, size, TRUE, &status, FALSE, TRUE, NULL);
 	} else {
 		/* ppdb files drop the .exe/.dll extension */
 		filename = mono_image_get_filename (image);
@@ -212,7 +213,7 @@ mono_ppdb_load_file (MonoImage *image, const guint8 *raw_contents, int size)
 			ppdb_filename = g_strdup_printf ("%s.pdb", filename);
 		}
 
-		ppdb_image = mono_image_open_metadata_only (ppdb_filename, &status);
+		ppdb_image = mono_image_open_metadata_only (alc, ppdb_filename, &status);
 		g_free (ppdb_filename);
 	}
 	g_free (to_free);

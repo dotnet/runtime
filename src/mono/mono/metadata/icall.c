@@ -5833,6 +5833,7 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 
 	error_init (error);
 
+	MonoDomain *domain = MONO_HANDLE_DOMAIN (fname);
 	filename = mono_string_handle_to_utf8 (fname, error);
 	return_if_nok (error);
 
@@ -5842,7 +5843,8 @@ ves_icall_System_Reflection_Assembly_InternalGetAssemblyName (MonoStringHandle f
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_ASSEMBLY, "InternalGetAssemblyName (\"%s\")", filename);
 
-	image = mono_image_open_full (filename, &status, TRUE);
+	MonoAssemblyLoadContext *alc = mono_domain_default_alc (domain);
+	image = mono_image_open_a_lot (alc, filename, &status, TRUE, FALSE);
 
 	if (!image){
 		if (status == MONO_IMAGE_IMAGE_INVALID)

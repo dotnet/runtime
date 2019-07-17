@@ -2584,6 +2584,7 @@ mono_main (int argc, char* argv[])
 
 	MonoAssemblyOpenRequest open_req;
 	mono_assembly_request_prepare (&open_req.request, sizeof (open_req), MONO_ASMCTX_DEFAULT);
+	open_req.request.alc = mono_domain_default_alc (mono_get_root_domain ());
 	assembly = mono_assembly_request_open (aname, &open_req, &open_status);
 	if (!assembly && !mono_compile_aot) {
 		fprintf (stderr, "Cannot open assembly '%s': %s.\n", aname, mono_image_strerror (open_status));

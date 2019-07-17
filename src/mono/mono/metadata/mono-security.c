@@ -613,8 +613,9 @@ mono_invoke_protected_memory_method (MonoArrayHandle data, MonoObjectHandle scop
 	const char *method_name, MonoMethod **method, MonoError *error)
 {
 	if (!*method) {
+		MonoDomain *domain = mono_domain_get ();
 		if (system_security_assembly == NULL) {
-			system_security_assembly = mono_image_loaded_internal ("System.Security", FALSE);
+			system_security_assembly = mono_image_loaded_internal (mono_domain_default_alc (domain), "System.Security", FALSE);
 			if (!system_security_assembly) {
 				MonoAssemblyOpenRequest req;
 				mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);

@@ -12,7 +12,6 @@
 #include <glib.h>
 #include "mono/utils/mono-threads-api.h"
 #include "mono/utils/atomic.h"
-#include "mono/metadata/loader-internals.h"
 #include "mono/metadata/icall-internals.h"
 #include "pal-icalls.h"
 

@@ -89,7 +89,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 		file_name = mono_get_module_file_name (hInst);
 
 		if (mono_get_root_domain ()) {
-			image = mono_image_open_from_module_handle (hInst, mono_path_resolve_symlinks (file_name), TRUE, NULL);
+			image = mono_image_open_from_module_handle (mono_domain_default_alc (mono_get_root_domain ()), hInst, mono_path_resolve_symlinks (file_name), TRUE, NULL);
 		} else {
 			init_from_coree = TRUE;
 			mono_runtime_load (file_name, NULL);
@@ -133,7 +133,7 @@ BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst, DWORD dwReason, LPVOID lpRes
 			/* The process is terminating. */
 			return TRUE;
 		file_name = mono_get_module_file_name (hInst);
-		image = mono_image_loaded_internal (file_name, FALSE);
+		image = mono_image_loaded_internal (mono_domain_default_alc (mono_get_root_domain ()), file_name, FALSE);
 		if (image)
 			mono_image_close (image);
 

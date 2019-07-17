@@ -130,6 +130,18 @@ get_runtime_by_version (const char *version);
 MonoAssembly *
 mono_domain_assembly_open_internal (MonoDomain *domain, const char *name);
 
+static void
+mono_domain_alcs_destroy (MonoDomain *domain);
+
+static void
+mono_domain_alcs_lock (MonoDomain *domain);
+
+static void
+mono_domain_alcs_unlock (MonoDomain *domain);
+
+static void
+mono_domain_create_default_alc (MonoDomain *domain);
+
 static LockFreeMempool*
 lock_free_mempool_new (void)
 {
@@ -457,6 +469,10 @@ mono_domain_create (void)
 	mono_os_mutex_init_recursive (&domain->jit_code_hash_lock);
 	mono_os_mutex_init_recursive (&domain->finalizable_objects_hash_lock);
 
+#ifdef ENABLE_NETCORE
+	mono_coop_mutex_init (&domain->alcs_lock);
+#endif
+
 	mono_appdomains_lock ();
 	domain_id_alloc (domain);
 	mono_appdomains_unlock ();
@@ -467,6 +483,10 @@ mono_domain_create (void)
 #endif
 
 	mono_debug_domain_create (domain);
+
+#ifdef ENABLE_NETCORE
+	mono_domain_create_default_alc (domain);
+#endif
 
 	if (create_domain_hook)
 		create_domain_hook (domain);
@@ -565,7 +585,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 		runtimes = get_runtimes_from_exe (exe_filename, &exe_image);
 #ifdef HOST_WIN32
 		if (!exe_image) {
-			exe_image = mono_assembly_open_from_bundle (exe_filename, NULL, FALSE);
+			exe_image = mono_assembly_open_from_bundle (mono_domain_default_alc (domain), exe_filename, NULL, FALSE);
 			if (!exe_image)
 				exe_image = mono_image_open (exe_filename, NULL);
 		}
@@ -1030,6 +1050,7 @@ mono_domain_assembly_open_internal (MonoDomain *domain, const char *name)
 
 	MonoAssemblyOpenRequest req;
 	mono_assembly_request_prepare (&req.request, sizeof (req), MONO_ASMCTX_DEFAULT);
+	req.request.alc = mono_domain_default_alc (domain);
 	if (domain != mono_domain_get ()) {
 		current = mono_domain_get ();
 
@@ -1239,6 +1260,12 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 		g_hash_table_destroy (domain->method_to_dyn_method);
 		domain->method_to_dyn_method = NULL;
 	}
+
+	mono_domain_alcs_destroy (domain);
+
+#ifdef ENABLE_NETCORE
+	mono_coop_mutex_destroy (&domain->alcs_lock);
+#endif
 
 	mono_os_mutex_destroy (&domain->finalizable_objects_hash_lock);
 	mono_os_mutex_destroy (&domain->assemblies_lock);
@@ -1914,7 +1941,7 @@ get_runtimes_from_exe (const char *file, MonoImage **out_image)
 	}
 	
 	/* Look for a runtime with the exact version */
-	image = mono_assembly_open_from_bundle (file, NULL, FALSE);
+	image = mono_assembly_open_from_bundle (mono_domain_default_alc (mono_domain_get ()), file, NULL, FALSE);
 
 	if (image == NULL)
 		image = mono_image_open (file, NULL);
@@ -2004,4 +2031,98 @@ mono_domain_get_assemblies (MonoDomain *domain, gboolean refonly)
 	}
 	mono_domain_assemblies_unlock (domain);
 	return assemblies;
+}
+
+MonoAssemblyLoadContext *
+mono_domain_default_alc (MonoDomain *domain)
+{
+#ifndef ENABLE_NETCORE
+	return NULL;
+#else
+	return domain->default_alc;
+#endif
+}
+
+#ifdef ENABLE_NETCORE
+static inline void
+mono_domain_alcs_lock (MonoDomain *domain)
+{
+	mono_coop_mutex_lock (&domain->alcs_lock);
+}
+
+static inline void
+mono_domain_alcs_unlock (MonoDomain *domain)
+{
+	mono_coop_mutex_unlock (&domain->alcs_lock);
+}
+#endif
+
+
+static MonoAssemblyLoadContext *
+create_alc (MonoDomain *domain, gboolean is_default)
+{
+#ifdef ENABLE_NETCORE
+	MonoAssemblyLoadContext *alc = NULL;
+
+	mono_domain_alcs_lock (domain);
+	if (is_default && domain->default_alc)
+		goto leave;
+
+	alc = g_new0 (MonoAssemblyLoadContext, 1);
+	mono_alc_init (alc, domain);
+
+	domain->alcs = g_slist_prepend (domain->alcs, alc);
+	if (is_default)
+		domain->default_alc = alc;
+leave:
+	mono_domain_alcs_unlock (domain);
+	return alc;
+#else
+	return NULL;
+#endif
+}
+
+void
+mono_domain_create_default_alc (MonoDomain *domain)
+{
+#ifdef ENABLE_NETCORE
+	if (domain->default_alc)
+		return;
+	create_alc (domain, TRUE);
+#endif
+}
+
+#ifdef ENABLE_NETCORE
+MonoAssemblyLoadContext *
+mono_domain_create_individual_alc (MonoDomain *domain, uint32_t this_gchandle, gboolean collectible, MonoError *error)
+{
+	g_assert (!collectible); /* TODO: implement collectible ALCs */
+	MonoAssemblyLoadContext *alc = create_alc (domain, FALSE);
+	return alc;
+}
+#endif
+
+static void
+mono_alc_free (MonoAssemblyLoadContext *alc)
+{
+#ifdef ENABLE_NETCORE
+	mono_alc_cleanup (alc);
+	g_free (alc);
+#endif
+}
+
+void
+mono_domain_alcs_destroy (MonoDomain *domain)
+{
+#ifdef ENABLE_NETCORE
+	mono_domain_alcs_lock (domain);
+	GSList *alcs = domain->alcs;
+	domain->alcs = NULL;
+	domain->default_alc = NULL;
+	mono_domain_alcs_unlock (domain);
+
+	for (GSList *iter = alcs; iter; iter = g_slist_next (iter)) {
+		mono_alc_free ((MonoAssemblyLoadContext*)iter->data);
+	}
+#endif
 }

@@ -74,8 +74,7 @@ namespace System.Reflection
 		internal static Assembly Load (AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext assemblyLoadContext)
 		{
 			// TODO: pass AssemblyName
-			// TODO: pass assemblyLoadContext
-			var assembly = InternalLoad (assemblyRef.FullName, ref stackMark, IntPtr.Zero);
+			var assembly = InternalLoad (assemblyRef.FullName, ref stackMark, assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
 			if (assembly == null)
 				throw new FileNotFoundException (null, assemblyRef.Name);
 			return assembly;
