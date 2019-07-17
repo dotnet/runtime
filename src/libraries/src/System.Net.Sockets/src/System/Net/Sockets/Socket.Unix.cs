@@ -151,6 +151,8 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.Success)
             {
+                UpdateSendSocketErrorForCleanedUp(ref errorCode);
+
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
@@ -189,6 +191,7 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.Success)
             {
+                UpdateSendSocketErrorForCleanedUp(ref errorCode);
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 

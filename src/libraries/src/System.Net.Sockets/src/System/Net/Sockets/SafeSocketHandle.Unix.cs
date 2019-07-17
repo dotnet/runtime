@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -195,12 +196,10 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        private void InnerReleaseHandle()
+        private bool DoReleaseHandle()
         {
-            if (_asyncContext != null)
-            {
-                _asyncContext.Close();
-            }
+            // If we've aborted async operations, return true to cause an abortive close.
+            return _asyncContext?.StopAndAbort() ?? false;
         }
 
         internal sealed partial class InnerSafeCloseSocket : SafeHandleMinusOneIsInvalid
@@ -243,12 +242,12 @@ namespace System.Net.Sockets
             {
                 Interop.Error errorCode = Interop.Error.SUCCESS;
 
-                // If _blockable was set in BlockingRelease, it's safe to block here, which means
+                // If _abortive was set to false in Close, it's safe to block here, which means
                 // we can honor the linger options set on the socket.  It also means closesocket() might return WSAEWOULDBLOCK, in which
                 // case we need to do some recovery.
-                if (_blockable)
+                if (!_abortive)
                 {
-                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle} Following 'blockable' branch.");
+                    if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{handle} Following 'non-abortive' branch.");
 
                     // Close, and if its errno is other than EWOULDBLOCK, there's nothing more to do - we either succeeded or failed.
                     errorCode = CloseHandle(handle);
@@ -268,7 +267,7 @@ namespace System.Net.Sockets
                     // The socket could not be made blocking; fall through to the regular abortive close.
                 }
 
-                // By default or if CloseAsIs() path failed, set linger timeout to zero to get an abortive close (RST).
+                // By default or if the non-abortive path failed, set linger timeout to zero to get an abortive close (RST).
                 var linger = new Interop.Sys.LingerOption
                 {
                     OnOff = 1,
@@ -357,6 +356,46 @@ namespace System.Net.Sockets
                 var res = new InnerSafeCloseSocket();
                 res.SetHandle(acceptedFd);
                 return res;
+            }
+
+            internal unsafe bool TryUnblockSocket(bool abortive)
+            {
+                // Calling 'close' on a socket that has pending blocking calls (e.g. recv, send, accept, ...)
+                // may block indefinitely. This is a best-effort attempt to not get blocked and make those operations return.
+                // We need to ensure we keep the expected TCP behavior that is observed by the socket peer (FIN vs RST close).
+                // What we do here isn't specified by POSIX and doesn't work on all OSes.
+                // On Linux this works well.
+                // On OSX, TCP connections will be closed with a FIN close instead of an abortive RST close.
+                // And, pending TCP connect operations and UDP receive are not abortable.
+
+                // Unless we're doing an abortive close, don't touch sockets which don't have the CLOEXEC flag set.
+                // These may be shared with other processes and we want to avoid disconnecting them.
+                if (!abortive)
+                {
+                    int fdFlags = Interop.Sys.Fcntl.GetFD(this);
+                    if (fdFlags == 0)
+                    {
+                        return false;
+                    }
+                }
+
+                int type = 0;
+                int optLen = sizeof(int);
+                Interop.Error err = Interop.Sys.GetSockOpt(this, SocketOptionLevel.Socket, SocketOptionName.Type, (byte*)&type, &optLen);
+                if (err == Interop.Error.SUCCESS)
+                {
+                    if (type == (int)SocketType.Stream)
+                    {
+                        Interop.Sys.Disconnect(this);
+                    }
+                    else
+                    {
+                        Interop.Sys.Shutdown(this, SocketShutdown.Both);
+                    }
+                }
+
+                // We've cancelled on-going operations, return true to cause an abortive close.
+                return true;
             }
         }
     }
