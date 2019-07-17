@@ -1,9 +1,0 @@
-Version = 1.0
-Section = miscellaneous
-Function = GetDateFormatW
-Name = Positive test for GetDateFormatW to format a date as a date string
-TYPE = DEFAULT
-EXE1 = getdateformatw
-Description
-=test for GetDateFormatW to format a date as a date string
-=for a specified locale
