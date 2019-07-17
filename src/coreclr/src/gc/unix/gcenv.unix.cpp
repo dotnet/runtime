@@ -9,7 +9,7 @@
 #include <pthread.h>
 #include <signal.h>
 
-#include "config.h"
+#include "config.gc.h"
 #include "common.h"
 
 #include "gcenv.structs.h"
