@@ -21,7 +21,7 @@ namespace System.Reflection
         internal RuntimeAssembly() { throw new NotSupportedException(); }
 
         #region private data members
-        private event ModuleResolveEventHandler _ModuleResolve;
+        private event ModuleResolveEventHandler? _ModuleResolve;
         private string? m_fullname;
         private object? m_syncRoot;   // Used to keep collectible types alive and as the syncroot for reflection.emit
 #pragma warning disable 169
@@ -54,7 +54,7 @@ namespace System.Reflection
             }
         }
 
-        public override event ModuleResolveEventHandler ModuleResolve // TODO-NULLABLE: Should all events use nullable delegate types?
+        public override event ModuleResolveEventHandler? ModuleResolve
         {
             add
             {
@@ -602,7 +602,7 @@ namespace System.Reflection
         // This method is called by the VM.
         private RuntimeModule? OnModuleResolveEvent(string moduleName)
         {
-            ModuleResolveEventHandler moduleResolve = _ModuleResolve;
+            ModuleResolveEventHandler? moduleResolve = _ModuleResolve;
             if (moduleResolve == null)
                 return null;
 

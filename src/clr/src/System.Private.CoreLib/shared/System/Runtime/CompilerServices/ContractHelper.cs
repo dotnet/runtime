@@ -17,7 +17,7 @@ namespace System.Runtime.CompilerServices
         /// event handlers sets the Cancel flag in the ContractFailedEventArgs, then the Contract class will
         /// not pop up an assert dialog box or trigger escalation policy.
         /// </summary>
-        internal static event EventHandler<ContractFailedEventArgs> InternalContractFailed; // TODO-NULLABLE: Should all events use nullable delegate types?
+        internal static event EventHandler<ContractFailedEventArgs>? InternalContractFailed;
 
         /// <summary>
         /// Rewriter will call this method on a contract failure to allow listeners to be notified.
@@ -42,7 +42,7 @@ namespace System.Runtime.CompilerServices
             try
             {
                 displayMessage = GetDisplayMessage(failureKind, userMessage, conditionText);
-                EventHandler<ContractFailedEventArgs> contractFailedEventLocal = InternalContractFailed;
+                EventHandler<ContractFailedEventArgs>? contractFailedEventLocal = InternalContractFailed;
                 if (contractFailedEventLocal != null)
                 {
                     eventArgs = new ContractFailedEventArgs(failureKind, displayMessage, conditionText, innerException);
