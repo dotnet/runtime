@@ -349,10 +349,15 @@ public:
 
 typedef const void * pfnIBCAccessCallback;
 
+class ThreadLocalIBCInfo;
 class IBCLoggingDisabler
 {
 public:
     IBCLoggingDisabler()
+    {
+    }
+
+    IBCLoggingDisabler(ThreadLocalIBCInfo*)
     {
     }
 
@@ -369,6 +374,10 @@ public:
     }
 
     ~ThreadLocalIBCInfo()
+    {
+    }
+
+    void FlushDelayedCallbacks()
     {
     }
 };
@@ -595,23 +604,13 @@ public:
     // Methods for enabling/disabling instrumentation.
     void EnableAllInstr();
     void DisableAllInstr();
-#else // IBCLOGGER_ENABLED
-    void EnableAllInstr()
-    {
-    }
 
-    void DisableAllInstr()
-    {
-    }
-#endif // IBCLOGGER_ENABLED
-
-#ifndef DACCESS_COMPILE
     void DisableRidAccessOrderInstr();
     void DisableMethodDescAccessInstr();
 
     inline BOOL InstrEnabled()
     {
-         SUPPORTS_DAC;
+        SUPPORTS_DAC;
         return (dwInstrEnabled != 0);
     }
 
@@ -629,9 +628,28 @@ private:
 
 private:
     DWORD dwInstrEnabled;
-    
+
     static CrstStatic m_sync;
-#endif // DACCESS_COMPILE
+#else // IBCLOGGER_ENABLED
+    void EnableAllInstr()
+    {
+    }
+
+    void DisableAllInstr()
+    {
+    }
+
+    inline BOOL InstrEnabled()
+    {
+        return false;
+    }
+
+    static CrstStatic * GetSync()
+    {
+        _ASSERTE(false);
+        return NULL;
+    }
+#endif // IBCLOGGER_ENABLED
 };
 
 #endif // IBCLOGGER_H
