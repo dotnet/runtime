@@ -9,6 +9,7 @@
 #include "comhost_test.h"
 #include <hostfxr.h>
 #include "host_context_test.h"
+#include "resolve_component_dependencies_test.h"
 #include <utils.h>
 
 namespace
@@ -235,6 +236,42 @@ int main(const int argc, const pal::char_t *argv[])
         bool success = false;
 
         success = host_context_test::load_assembly_and_get_function_pointer(hostfxr_path, app_or_config_path, remaining_argc, remaining_argv, test_output);
+
+        std::cout << tostr(test_output.str()).data() << std::endl;
+        return success ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
+    else if (pal::strcmp(command, _X("resolve_component_dependencies")) == 0)
+    {
+        // args: ... <scenario> <hostfxr_path> <app_path> <component_path>
+        if (argc < 6)
+        {
+            std::cerr << "Invalid arguments" << std::endl;
+            return -1;
+        }
+
+        const pal::char_t *scenario = argv[2];
+        const pal::string_t hostfxr_path = argv[3];
+        const pal::string_t app_path = argv[4];
+        const pal::string_t component_path = argv[5];
+
+        pal::stringstream_t test_output;
+        bool success = false;
+        if (pal::strcmp(scenario, _X("run_app_and_resolve")) == 0)
+        {
+            success = resolve_component_dependencies_test::run_app_and_resolve(hostfxr_path, app_path, component_path, test_output);
+        }
+        else if (pal::strcmp(scenario, _X("run_app_and_resolve_multithreaded")) == 0)
+        {
+            if (argc < 7)
+            {
+                std::cerr << "Invalid arguments" << std::endl;
+                return -1;
+            }
+
+            const pal::string_t component_path_b = argv[6];
+
+            success = resolve_component_dependencies_test::run_app_and_resolve_multithreaded(hostfxr_path, app_path, component_path, component_path_b, test_output);
+        }
 
         std::cout << tostr(test_output.str()).data() << std::endl;
         return success ? EXIT_SUCCESS : EXIT_FAILURE;

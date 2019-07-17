@@ -18,13 +18,28 @@ endif()
 include_directories(${CMAKE_CURRENT_LIST_DIR}/../../nethost)
 
 set(SOURCES
+    ./error_writer_redirector.cpp
+    ./hostfxr_exports.cpp
+    ./hostpolicy_exports.cpp
     ./host_context_test.cpp
+    ./resolve_component_dependencies_test.cpp
     ./nativehost.cpp
+)
+
+set(HEADERS
+    ./error_writer_redirector.h
+    ./hostfxr_exports.h
+    ./hostpolicy_exports.h
+    ./host_context_test.h
+    ./resolve_component_dependencies_test.h
 )
 
 if(WIN32)
     list(APPEND SOURCES
         ./comhost_test.cpp)
+
+    list(APPEND HEADERS
+        ./comhost_test.h)
 
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DELAYLOAD:nethost.dll")
 endif()
