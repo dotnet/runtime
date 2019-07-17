@@ -445,7 +445,7 @@ namespace System.Threading.Tasks
         /// Each handler is passed a <see cref="T:System.Threading.Tasks.UnobservedTaskExceptionEventArgs"/>
         /// instance, which may be used to examine the exception and to mark it as observed.
         /// </remarks>
-        public static event EventHandler<UnobservedTaskExceptionEventArgs> UnobservedTaskException; // TODO-NULLABLE: Should all events use nullable delegate types?
+        public static event EventHandler<UnobservedTaskExceptionEventArgs>? UnobservedTaskException;
 
         ////////////////////////////////////////////////////////////
         //
