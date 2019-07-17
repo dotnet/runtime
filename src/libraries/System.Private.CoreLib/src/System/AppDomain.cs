@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#pragma warning disable CS0067 // events are declared but not used
+#pragma warning disable CS0414 // events are assigned but not used
 
 using System.Diagnostics;
 using System.IO;
@@ -67,7 +67,7 @@ namespace System
 
         public bool IsHomogenous => true;
 
-        public event EventHandler DomainUnload;
+        public event EventHandler DomainUnload = null!;
 
         public event EventHandler<FirstChanceExceptionEventArgs> FirstChanceException
         {
@@ -244,7 +244,7 @@ namespace System
             remove { AssemblyLoadContext.AssemblyResolve -= value; }
         }
 
-        public event ResolveEventHandler ReflectionOnlyAssemblyResolve;
+        public event ResolveEventHandler ReflectionOnlyAssemblyResolve = null!;
 
         public event ResolveEventHandler TypeResolve
         {
