@@ -33,8 +33,13 @@ namespace System.Net.Sockets
                 IntPtr remoteAddr;
 
                 // set the socket context
+                bool refAdded = false;
+                SafeHandle safeHandle = _listenSocket.SafeHandle;
                 try
                 {
+                    safeHandle.DangerousAddRef(ref refAdded);
+                    IntPtr handle = safeHandle.DangerousGetHandle();
+
                     _listenSocket.GetAcceptExSockaddrs(
                         Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0),
                         _buffer.Length - (_addressBufferLength * 2),
@@ -46,8 +51,6 @@ namespace System.Net.Sockets
                         out remoteSocketAddress.InternalSize);
 
                     Marshal.Copy(remoteAddr, remoteSocketAddress.Buffer, 0, remoteSocketAddress.Size);
-
-                    IntPtr handle = _listenSocket.SafeHandle.DangerousGetHandle();
 
                     errorCode = Interop.Winsock.setsockopt(
                         _acceptSocket.SafeHandle,
@@ -66,6 +69,13 @@ namespace System.Net.Sockets
                 catch (ObjectDisposedException)
                 {
                     errorCode = SocketError.OperationAborted;
+                }
+                finally
+                {
+                    if (refAdded)
+                    {
+                        safeHandle.DangerousRelease();
+                    }
                 }
 
                 ErrorCode = (int)errorCode;

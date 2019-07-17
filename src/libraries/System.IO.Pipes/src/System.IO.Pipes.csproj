@@ -191,8 +191,8 @@
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.Pipe.cs">
       <Link>Common\Interop\Unix\Interop.Fcntl.Pipe.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.SetFD.cs">
-      <Link>Common\Interop\Unix\Interop.Fcntl.SetFD.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Fcntl.cs">
+      <Link>Common\Interop\Unix\Interop.Fcntl.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\CoreLib\Interop\Unix\System.Native\Interop.FLock.cs">
       <Link>Common\Interop\Unix\Interop.FLock.cs</Link>

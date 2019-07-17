@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -287,6 +288,63 @@ namespace System.Net.Sockets.Tests
                     await Assert.ThrowsAnyAsync<Exception>(() => accept2);
                 }
             }
+        }
+
+        [Fact]
+        public async Task AcceptGetsCanceledByDispose()
+        {
+            // We try this a couple of times to deal with a timing race: if the Dispose happens
+            // before the operation is started, we won't see a SocketException.
+            int msDelay = 100;
+            await RetryHelper.ExecuteAsync(async () =>
+            {
+                var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                listener.Listen(1);
+
+                Task acceptTask = AcceptAsync(listener);
+
+                // Wait a little so the operation is started.
+                await Task.Delay(msDelay);
+                msDelay *= 2;
+                Task disposeTask = Task.Run(() => listener.Dispose());
+
+                var cts = new CancellationTokenSource();
+                Task timeoutTask = Task.Delay(30000, cts.Token);
+                Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, acceptTask, timeoutTask));
+                cts.Cancel();
+
+                await disposeTask;
+
+                SocketError? localSocketError = null;
+                bool disposedException = false;
+                try
+                {
+                    await acceptTask;
+                }
+                catch (SocketException se)
+                {
+                    localSocketError = se.SocketErrorCode;
+                }
+                catch (ObjectDisposedException)
+                {
+                    disposedException = true;
+                }
+
+                if (UsesApm)
+                {
+                    Assert.Null(localSocketError);
+                    Assert.True(disposedException);
+                }
+                else if (UsesSync)
+                {
+                    Assert.Equal(SocketError.Interrupted, localSocketError);
+                }
+                else
+                {
+                    Assert.Equal(SocketError.OperationAborted, localSocketError);
+                }
+            }, maxAttempts: 10);
         }
     }
 

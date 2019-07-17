@@ -10,10 +10,9 @@ internal static partial class Interop
 {
     internal static partial class Winsock
     {
-        // Blocking call - requires IntPtr instead of SafeSocketHandle.
         [DllImport(Interop.Libraries.Ws2_32, ExactSpelling = true, SetLastError = true)]
         internal static extern SafeSocketHandle.InnerSafeCloseSocket accept(
-            [In] IntPtr socketHandle,
+            SafeSocketHandle socketHandle,
             [Out] byte[] socketAddress,
             [In, Out] ref int socketAddressSize);
     }

@@ -1753,6 +1753,40 @@ static bool TryGetPlatformSocketOption(int32_t socketOptionName, int32_t socketO
     }
 }
 
+static bool TryConvertSocketTypePlatformToPal(int platformSocketType, int32_t* palSocketType)
+{
+    assert(palSocketType != NULL);
+
+    switch (platformSocketType)
+    {
+        case SOCK_STREAM:
+            *palSocketType = SocketType_SOCK_STREAM;
+            return true;
+
+        case SOCK_DGRAM:
+            *palSocketType = SocketType_SOCK_DGRAM;
+            return true;
+
+        case SOCK_RAW:
+            *palSocketType = SocketType_SOCK_RAW;
+            return true;
+
+#ifdef SOCK_RDM
+        case SOCK_RDM:
+            *palSocketType = SocketType_SOCK_RDM;
+            return true;
+#endif
+
+        case SOCK_SEQPACKET:
+            *palSocketType = SocketType_SOCK_SEQPACKET;
+            return true;
+
+        default:
+            *palSocketType = (int32_t)platformSocketType;
+            return false;
+    }
+}
+
 int32_t SystemNative_GetSockOpt(
     intptr_t socket, int32_t socketOptionLevel, int32_t socketOptionName, uint8_t* optionValue, int32_t* optionLen)
 {
@@ -1811,6 +1845,7 @@ int32_t SystemNative_GetSockOpt(
 
     socklen_t optLen = (socklen_t)*optionLen;
     int err = getsockopt(fd, optLevel, optName, optionValue, &optLen);
+
     if (err != 0)
     {
         return SystemNative_ConvertErrorPlatformToPal(errno);
@@ -1826,6 +1861,20 @@ int32_t SystemNative_GetSockOpt(
         }
     }
 #endif
+
+    if (socketOptionLevel == SocketOptionLevel_SOL_SOCKET)
+    {
+        if (socketOptionName == SocketOptionName_SO_TYPE)
+        {
+            if (optLen != sizeof(int) ||             // getsockopt didn't return an int.
+                *optionLen < (int)sizeof(int32_t) || // optionValue can't fit an int32_t.
+                !TryConvertSocketTypePlatformToPal(*(int*)optionValue, (int32_t*)optionValue))
+            {
+                return Error_ENOTSUP;
+            }
+            optLen = sizeof(int32_t);
+        }
+    }
 
     assert(optLen <= (socklen_t)*optionLen);
     *optionLen = (int32_t)optLen;
@@ -2616,6 +2665,31 @@ void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, i
     *pathOffset = offsetof(struct sockaddr_un, sun_path);
     *pathSize = sizeof(domainSocket.sun_path);
     *addressSize = sizeof(domainSocket);
+}
+
+int32_t SystemNative_Disconnect(intptr_t socket)
+{
+    int fd = ToFileDescriptor(socket);
+    int err;
+
+#if defined(__linux__)
+    // On Linux, we can disconnect a socket by connecting to AF_UNSPEC.
+    // For TCP sockets, this causes an abortive close.
+
+    struct sockaddr addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sa_family = AF_UNSPEC;
+
+    err = connect(fd, &addr, sizeof(addr));
+#elif HAVE_DISCONNECTX
+    // disconnectx causes a FIN close on OSX. It's the best we can do.
+    err = disconnectx(fd, SAE_ASSOCID_ANY, SAE_CONNID_ANY);
+#else
+    // best-effort, this may cause a FIN close.
+    err = shutdown(fd, SHUT_RDWR);
+#endif
+
+    return err == 0 ? Error_SUCCESS : SystemNative_ConvertErrorPlatformToPal(errno);
 }
 
 int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, int64_t count, int64_t* sent)

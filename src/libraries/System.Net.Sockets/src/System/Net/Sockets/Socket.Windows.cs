@@ -107,7 +107,7 @@ namespace System.Net.Sockets
             return recvMsg(socketHandle, msg, out bytesTransferred, overlapped, completionRoutine);
         }
 
-        internal SocketError WSARecvMsgBlocking(IntPtr socketHandle, IntPtr msg, out int bytesTransferred, IntPtr overlapped, IntPtr completionRoutine)
+        internal SocketError WSARecvMsgBlocking(SafeSocketHandle socketHandle, IntPtr msg, out int bytesTransferred, IntPtr overlapped, IntPtr completionRoutine)
         {
             EnsureDynamicWinsockMethods();
             WSARecvMsgDelegateBlocking recvMsg_Blocking = _dynamicWinsockMethods.GetDelegate<WSARecvMsgDelegateBlocking>(_handle);
@@ -228,6 +228,8 @@ namespace System.Net.Sockets
 
             if (errorCode != SocketError.Success)
             {
+                UpdateSendSocketErrorForCleanedUp(ref errorCode);
+
                 UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
 
@@ -252,6 +254,7 @@ namespace System.Net.Sockets
             // Check for synchronous exception
             if (!CheckErrorAndUpdateStatus(errorCode))
             {
+                UpdateSendSocketErrorForCleanedUp(ref errorCode);
                 throw new SocketException((int)errorCode);
             }
 
@@ -284,11 +287,12 @@ namespace System.Net.Sockets
                 _remoteEndPoint = null;
             }
 
-            if ((SocketError)castedAsyncResult.ErrorCode != SocketError.Success)
+            SocketError errorCode = (SocketError)castedAsyncResult.ErrorCode;
+            if (errorCode != SocketError.Success)
             {
-                UpdateStatusAfterSocketErrorAndThrowException((SocketError)castedAsyncResult.ErrorCode);
+                UpdateSendSocketErrorForCleanedUp(ref errorCode);
+                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
             }
-
         }
 
         internal ThreadPoolBoundHandle GetOrAllocateThreadPoolBoundHandle() =>
