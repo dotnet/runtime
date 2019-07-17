@@ -166,7 +166,7 @@ namespace System
             return s;
         }
 
-        protected event EventHandler<SafeSerializationEventArgs> SerializeObjectState // TODO-NULLABLE: Should all events use nullable delegate types?
+        protected event EventHandler<SafeSerializationEventArgs>? SerializeObjectState
         {
             add { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
             remove { throw new PlatformNotSupportedException(SR.PlatformNotSupported_SecureBinarySerialization); }
