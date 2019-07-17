@@ -22,13 +22,8 @@ namespace bundle
     struct header_t
     {
     public:
-        header_t()
-            :m_data(), m_bundle_id()
-        {
-        }
-
         bool is_valid();
-        static header_t* read(FILE* stream);
+        static header_t read(FILE* stream);
         const pal::string_t& bundle_id() { return m_bundle_id; }
         int32_t num_embedded_files() { return m_data.num_embedded_files;  }
 
@@ -44,8 +39,8 @@ namespace bundle
 #pragma pack(pop)
         pal::string_t m_bundle_id;
 
-        const uint32_t current_major_version = 1;
-        const uint32_t current_minor_version = 0;
+        static const uint32_t current_major_version = 1;
+        static const uint32_t current_minor_version = 0;
     };
 }
 #endif // __HEADER_H__
