@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Pkcs
             if (rawData == null)
                 return null;
 
-            byte[] octets = PkcsPal.Instance.DecodeOctetString(rawData);
+            byte[] octets = PkcsHelpers.DecodeOctetString(rawData);
             return octets.OctetStringToUnicode();
         }
 
@@ -70,7 +70,7 @@ namespace System.Security.Cryptography.Pkcs
                 throw new ArgumentNullException(nameof(documentName));
 
             byte[] octets = documentName.UnicodeToOctetString();
-            return PkcsPal.Instance.EncodeOctetString(octets);
+            return PkcsHelpers.EncodeOctetString(octets);
         }
 
         private volatile string _lazyDocumentName = null;

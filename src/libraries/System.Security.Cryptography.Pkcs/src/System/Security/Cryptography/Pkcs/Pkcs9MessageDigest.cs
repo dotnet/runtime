@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Pkcs
             if (rawData == null)
                 return null;
 
-            return PkcsPal.Instance.DecodeOctetString(rawData);
+            return PkcsHelpers.DecodeOctetString(rawData);
         }
 
         private volatile byte[] _lazyMessageDigest = null;
