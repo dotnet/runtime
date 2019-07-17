@@ -139,7 +139,7 @@ namespace System.Runtime.Serialization
     //     
     //    2. Add a protected SerializeObjectState event, which passes through to the SafeSerializationManager:
     //  
-    //       protected event EventHandler<SafeSerializationEventArgs> SerializeObjectState
+    //       protected event EventHandler<SafeSerializationEventArgs>? SerializeObjectState
     //       {
     //           add { _safeSerializationManager.SerializeObjectState += value; }
     //           remove { _safeSerializationManager.SerializeObjectState -= value; }
