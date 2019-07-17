@@ -114,7 +114,7 @@ namespace System.Runtime.Loader
         {
             Assembly? resolvedAssembly = null;
 
-            Func<AssemblyLoadContext, AssemblyName, Assembly> assemblyResolveHandler = _resolving;
+            Func<AssemblyLoadContext, AssemblyName, Assembly>? assemblyResolveHandler = _resolving;
 
             if (assemblyResolveHandler != null)
             {
@@ -209,7 +209,7 @@ namespace System.Runtime.Loader
         {
             IntPtr resolvedDll = IntPtr.Zero;
 
-            Func<Assembly, string, IntPtr> dllResolveHandler = _resolvingUnmanagedDll;
+            Func<Assembly, string, IntPtr>? dllResolveHandler = _resolvingUnmanagedDll;
 
             if (dllResolveHandler != null)
             {
@@ -319,7 +319,7 @@ namespace System.Runtime.Loader
             return InvokeResolveEvent(AssemblyResolve, assembly, assemblyFullName);
         }
 
-        private static RuntimeAssembly? InvokeResolveEvent(ResolveEventHandler eventHandler, RuntimeAssembly assembly, string name)
+        private static RuntimeAssembly? InvokeResolveEvent(ResolveEventHandler? eventHandler, RuntimeAssembly assembly, string name)
         {
             if (eventHandler == null)
                 return null;
