@@ -15,7 +15,7 @@
 IpcStream::DiagnosticsIpc::DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress) :
     _serverSocket(serverSocket),
     _pServerAddress(new sockaddr_un),
-    _isUnlinked(false)
+    _isClosed(false)
 {
     _ASSERTE(_pServerAddress != nullptr);
     _ASSERTE(_serverSocket != -1);
@@ -28,15 +28,8 @@ IpcStream::DiagnosticsIpc::DiagnosticsIpc(const int serverSocket, sockaddr_un *c
 
 IpcStream::DiagnosticsIpc::~DiagnosticsIpc()
 {
-    if (_serverSocket != -1)
-    {
-        const int fSuccessClose = ::close(_serverSocket);
-        _ASSERTE(fSuccessClose != -1); // TODO: Add error handling?
-
-        Unlink();
-
-        delete _pServerAddress;
-    }
+    Close();
+    delete _pServerAddress;
 }
 
 IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const pIpcName, ErrorCallback callback)
@@ -56,8 +49,10 @@ IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const p
         _ASSERTE(!"Failed to create diagnostics IPC socket.");
         return nullptr;
     }
+
     sockaddr_un serverAddress{};
     serverAddress.sun_family = AF_UNIX;
+
     const ProcessDescriptor pd = ProcessDescriptor::FromCurrentProcess();
     PAL_GetTransportName(
         sizeof(serverAddress.sun_path),
@@ -134,6 +129,25 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
     return new IpcStream(clientSocket);
 }
 
+void IpcStream::DiagnosticsIpc::Close(ErrorCallback callback)
+{
+    if (_isClosed)
+        return;
+    _isClosed = true;
+
+    if (_serverSocket != -1)
+    {
+        if (::close(_serverSocket) == -1)
+        {
+            if (callback != nullptr)
+                callback(strerror(errno), errno);
+            _ASSERTE(!"Failed to close unix domain socket.");
+        }
+
+        Unlink(callback);
+    }
+}
+
 //! This helps remove the socket from the filesystem when the runtime exits.
 //! From: http://man7.org/linux/man-pages/man7/unix.7.html#NOTES
 //!   Binding to a socket with a filename creates a socket in the
@@ -143,16 +157,12 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
 //!   removed from the filesystem when the last reference to it is closed.
 void IpcStream::DiagnosticsIpc::Unlink(ErrorCallback callback)
 {
-    if (_isUnlinked)
-        return;
-    _isUnlinked = true;
-
     const int fSuccessUnlink = ::unlink(_pServerAddress->sun_path);
     if (fSuccessUnlink == -1)
     {
         if (callback != nullptr)
             callback(strerror(errno), errno);
-        _ASSERTE(fSuccessUnlink == 0);
+        _ASSERTE(!"Failed to unlink server address.");
     }
 }
 
