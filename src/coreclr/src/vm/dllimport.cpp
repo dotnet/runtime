@@ -5569,7 +5569,7 @@ MethodDesc* RestoreNGENedStub(MethodDesc* pStubMD)
 
 #if defined(HAVE_GCCOVER)
         if (GCStress<cfg_instr_ngen>::IsEnabled())
-            SetupGcCoverage(pStubMD, (BYTE*) pCode);
+            SetupGcCoverage(NativeCodeVersion(pStubMD), (BYTE*)pCode);
 #endif // HAVE_GCCOVER
 
     }
