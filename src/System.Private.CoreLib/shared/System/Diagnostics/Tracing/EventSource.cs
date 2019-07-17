@@ -4060,7 +4060,7 @@ namespace System.Diagnostics.Tracing
         /// This event is raised whenever an event has been written by a EventSource for which 
         /// the EventListener has enabled events.  
         /// </summary>
-        public event EventHandler<EventWrittenEventArgs> EventWritten;
+        public event EventHandler<EventWrittenEventArgs> EventWritten = null!;
 
         static EventListener()
         {
