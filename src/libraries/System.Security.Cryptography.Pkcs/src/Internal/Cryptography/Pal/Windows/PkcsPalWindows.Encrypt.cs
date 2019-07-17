@@ -28,15 +28,7 @@ namespace Internal.Cryptography.Pal.Windows
                 byte[] encodedContent;
                 if (contentInfo.ContentType.Value.Equals(Oids.Pkcs7Data, StringComparison.OrdinalIgnoreCase))
                 {
-                    unsafe
-                    {
-                        byte[] content = contentInfo.Content;
-                        fixed (byte* pContent = content)
-                        {
-                            DATA_BLOB blob = new DATA_BLOB((IntPtr)pContent, (uint)(content.Length));
-                            encodedContent = Interop.Crypt32.CryptEncodeObjectToByteArray(CryptDecodeObjectStructType.X509_OCTET_STRING, &blob);
-                        }
-                    }
+                    encodedContent = PkcsHelpers.EncodeOctetString(contentInfo.Content);
                 }
                 else
                 {

@@ -175,7 +175,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 }
                 else
                 {
-                    parameterBytes = EncodeOctetString(alg.IV);
+                    parameterBytes = PkcsHelpers.EncodeOctetString(alg.IV);
                 }
 
                 byte[] toEncrypt = contentInfo.Content;

@@ -33,17 +33,6 @@ namespace Internal.Cryptography
         /// </summary>
         public abstract DecryptorPal Decode(byte[] encodedMessage, out int version, out ContentInfo contentInfo, out AlgorithmIdentifier contentEncryptionAlgorithm, out X509Certificate2Collection originatorCerts, out CryptographicAttributeObjectCollection unprotectedAttributes);
 
-        // 
-        // Encoders and decoders. These should be moved out of the Pal once we have a managed DER encoder/decoder api.
-        //
-        public abstract byte[] EncodeOctetString(byte[] octets);
-        public abstract byte[] DecodeOctetString(byte[] encodedOctets);
-
-        public abstract byte[] EncodeUtcTime(DateTime utcTime);
-        public abstract DateTime DecodeUtcTime(byte[] encodedUtcTime);
-
-        public abstract string DecodeOid(byte[] encodedOid);
-
         /// <summary>
         /// Implements the ContentInfo.GetContentType() behavior.
         /// </summary>
