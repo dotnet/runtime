@@ -34,18 +34,21 @@ public:
         //! Enables the underlaying IPC implementation to accept connection.
         IpcStream *Accept(ErrorCallback callback = nullptr) const;
 
-        //! Used to unlink the socket so it can be removed from the filesystem
-        //! when the last reference to it is closed.
-        void Unlink(ErrorCallback callback = nullptr);
+        //! Closes an open IPC.
+        void Close(ErrorCallback callback = nullptr);
 
     private:
 
 #ifdef FEATURE_PAL
         const int _serverSocket;
         sockaddr_un *const _pServerAddress;
-        bool _isUnlinked = false;
+        bool _isClosed;
 
         DiagnosticsIpc(const int serverSocket, sockaddr_un *const pServerAddress);
+
+        //! Used to unlink the socket so it can be removed from the filesystem
+        //! when the last reference to it is closed.
+        void Unlink(ErrorCallback callback = nullptr);
 #else
         static const uint32_t MaxNamedPipeNameLength = 256;
         char _pNamedPipeName[MaxNamedPipeNameLength]; // https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-createnamedpipea
