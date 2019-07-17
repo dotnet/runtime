@@ -13,6 +13,7 @@ IpcStream::DiagnosticsIpc::DiagnosticsIpc(const char(&namedPipeName)[MaxNamedPip
 
 IpcStream::DiagnosticsIpc::~DiagnosticsIpc()
 {
+    Close();
 }
 
 IpcStream::DiagnosticsIpc *IpcStream::DiagnosticsIpc::Create(const char *const pIpcName, ErrorCallback callback)
@@ -73,7 +74,7 @@ IpcStream *IpcStream::DiagnosticsIpc::Accept(ErrorCallback callback) const
     return new IpcStream(hPipe);
 }
 
-void IpcStream::DiagnosticsIpc::Unlink(ErrorCallback)
+void IpcStream::DiagnosticsIpc::Close(ErrorCallback)
 {
 }
 
