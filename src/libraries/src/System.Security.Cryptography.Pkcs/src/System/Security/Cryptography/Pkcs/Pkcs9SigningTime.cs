@@ -64,12 +64,12 @@ namespace System.Security.Cryptography.Pkcs
             if (rawData == null)
                 return default(DateTime);
 
-            return PkcsPal.Instance.DecodeUtcTime(rawData);
+            return PkcsHelpers.DecodeUtcTime(rawData);
         }
 
         private static byte[] Encode(DateTime signingTime)
         {
-            return PkcsPal.Instance.EncodeUtcTime(signingTime);
+            return PkcsHelpers.EncodeUtcTime(signingTime);
         }
 
         private DateTime? _lazySigningTime = default(DateTime?);

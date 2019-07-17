@@ -458,7 +458,7 @@ namespace Internal.Cryptography
             }
         }
 
-        public static ReadOnlyMemory<byte> DecodeOctetString(ReadOnlyMemory<byte> encodedOctetString)
+        public static ReadOnlyMemory<byte> DecodeOctetStringAsMemory(ReadOnlyMemory<byte> encodedOctetString)
         {
             AsnReader reader = new AsnReader(encodedOctetString, AsnEncodingRules.BER);
 
@@ -481,6 +481,122 @@ namespace Internal.Cryptography
 
             Debug.Fail("TryCopyOctetStringBytes failed with an over-allocated array");
             throw new CryptographicException();
+        }
+
+        public static byte[] DecodeOctetString(ReadOnlyMemory<byte> encodedOctets)
+        {
+            // Read using BER because the CMS specification says the encoding is BER.
+            AsnReader reader = new AsnReader(encodedOctets, AsnEncodingRules.BER);
+
+            const int ArbitraryStackLimit = 256;
+            Span<byte> tmp = stackalloc byte[ArbitraryStackLimit];
+            // Use stackalloc 0 so data can later hold a slice of tmp.
+            ReadOnlySpan<byte> data = stackalloc byte[0];
+            byte[] poolBytes = null;
+
+            try
+            {
+                if (!reader.TryReadPrimitiveOctetStringBytes(out var contents))
+                {
+                    if (reader.TryCopyOctetStringBytes(tmp, out int bytesWritten))
+                    {
+                        data = tmp.Slice(0, bytesWritten);
+                    }
+                    else
+                    {
+                        poolBytes = CryptoPool.Rent(reader.PeekContentBytes().Length);
+
+                        if (!reader.TryCopyOctetStringBytes(poolBytes, out bytesWritten))
+                        {
+                            Debug.Fail("TryCopyOctetStringBytes failed with a provably-large-enough buffer");
+                            throw new CryptographicException();
+                        }
+
+                        data = new ReadOnlySpan<byte>(poolBytes, 0, bytesWritten);
+                    }
+                }
+                else
+                {
+                    data = contents.Span;
+                }
+
+                reader.ThrowIfNotEmpty();
+
+                return data.ToArray();
+            }
+            finally
+            {
+                if (poolBytes != null)
+                {
+                    CryptoPool.Return(poolBytes, data.Length);
+                }
+            }
+        }
+
+        public static byte[] EncodeOctetString(byte[] octets)
+        {
+            // Write using DER to support the most readers.
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.WriteOctetString(octets);
+                return writer.Encode();
+            }
+        }
+
+        private static readonly byte[] s_invalidEmptyOid = { 0x06, 0x00 };
+
+        public static byte[] EncodeUtcTime(DateTime utcTime)
+        {
+            const int maxLegalYear = 2049;
+            // Write using DER to support the most readers.
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                try
+                {
+                    // Sending the DateTime through ToLocalTime here will cause the right normalization
+                    // of DateTimeKind.Unknown.
+                    //
+                    // Unknown => Local (adjust) => UTC (adjust "back", add Z marker; matches Windows)
+                    if (utcTime.Kind == DateTimeKind.Unspecified)
+                    {
+                        writer.WriteUtcTime(utcTime.ToLocalTime(), maxLegalYear);
+                    }
+                    else
+                    {
+                        writer.WriteUtcTime(utcTime, maxLegalYear);
+                    }
+
+                    return writer.Encode();
+                }
+                catch (ArgumentException ex)
+                {
+                    throw new CryptographicException(ex.Message, ex);
+                }
+            }
+        }
+
+        public static DateTime DecodeUtcTime(byte[] encodedUtcTime)
+        {
+            // Read using BER because the CMS specification says the encoding is BER.
+            AsnReader reader = new AsnReader(encodedUtcTime, AsnEncodingRules.BER);
+            DateTimeOffset value = reader.ReadUtcTime();
+            reader.ThrowIfNotEmpty();
+            return value.UtcDateTime;
+        }
+
+        public static string DecodeOid(byte[] encodedOid)
+        {
+            // Windows compat.
+            if (s_invalidEmptyOid.AsSpan().SequenceEqual(encodedOid))
+            {
+                return string.Empty;
+            }
+
+            // Read using BER because the CMS specification says the encoding is BER.
+            AsnReader reader = new AsnReader(encodedOid, AsnEncodingRules.BER);
+            string value = reader.ReadObjectIdentifierAsString();
+            reader.ThrowIfNotEmpty();
+            return value;
         }
 
         public static bool TryGetRsaOaepEncryptionPadding(
