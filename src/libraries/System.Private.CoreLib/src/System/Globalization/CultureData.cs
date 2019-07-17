@@ -1576,22 +1576,11 @@ namespace System.Globalization
                         shortTimes = DeriveShortTimesFromLong();
                     }
 
-                    /* The above logic doesn't make sense on Mac, since the OS can provide us a "short time pattern".
-                     * currently this is the 4th element in the array returned by LongTimes.  We'll add this to our array
-                     * if it doesn't exist.
-                     */
-                    shortTimes = AdjustShortTimesForMac(shortTimes);
-
                     // Found short times, use them
                     _saShortTimes = shortTimes;
                 }
                 return _saShortTimes;
             }
-        }
-
-        private string[] AdjustShortTimesForMac(string[] shortTimes)
-        {
-            return shortTimes;
         }
 
         private string[] DeriveShortTimesFromLong()
