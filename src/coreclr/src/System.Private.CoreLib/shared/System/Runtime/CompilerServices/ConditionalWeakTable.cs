@@ -59,7 +59,7 @@ namespace System.Runtime.CompilerServices
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
 
-            return _container.TryGetValueWorker(key!, out value); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            return _container.TryGetValueWorker(key, out value);
         }
 
         /// <summary>Adds a key to the table.</summary>
@@ -80,13 +80,13 @@ namespace System.Runtime.CompilerServices
 
             lock (_lock)
             {
-                int entryIndex = _container.FindEntry(key!, out _); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                int entryIndex = _container.FindEntry(key, out _);
                 if (entryIndex != -1)
                 {
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_AddingDuplicate);
                 }
 
-                CreateEntry(key!, value); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                CreateEntry(key, value);
             }
         }
 
@@ -102,7 +102,7 @@ namespace System.Runtime.CompilerServices
 
             lock (_lock)
             {
-                int entryIndex = _container.FindEntry(key!, out _); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                int entryIndex = _container.FindEntry(key, out _);
 
                 // if we found a key we should just update, if no we should create a new entry.
                 if (entryIndex != -1)
@@ -111,7 +111,7 @@ namespace System.Runtime.CompilerServices
                 }
                 else
                 {
-                    CreateEntry(key!, value); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                    CreateEntry(key, value);
                 }
             }
         }
@@ -133,7 +133,7 @@ namespace System.Runtime.CompilerServices
 
             lock (_lock)
             {
-                return _container.Remove(key!); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                return _container.Remove(key);
             }
         }
 

@@ -26,7 +26,7 @@ internal partial class Interop
             FileMode dwCreationDisposition,
             ref Kernel32.CREATEFILE2_EXTENDED_PARAMETERS pCreateExParams)
         {
-            lpFileName = PathInternal.EnsureExtendedPrefixIfNeeded(lpFileName)!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+            lpFileName = PathInternal.EnsureExtendedPrefixIfNeeded(lpFileName);
             return CreateFile2Private(lpFileName, dwDesiredAccess, dwShareMode, dwCreationDisposition, ref pCreateExParams);
         }
     }

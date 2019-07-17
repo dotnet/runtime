@@ -18,7 +18,7 @@ namespace System
             return SpanHelpers.IndexOf(
                 ref _firstChar,
                 Length,
-                ref value!._firstChar, // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                ref value._firstChar,
                 value.Length) >= 0;
         }
 
