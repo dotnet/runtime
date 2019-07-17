@@ -479,7 +479,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Fires when a Command (e.g. Enable) comes from a an EventListener.  
         /// </summary>
-        public event EventHandler<EventCommandEventArgs> EventCommandExecuted
+        public event EventHandler<EventCommandEventArgs> EventCommandExecuted // TODO-NULLABLE: Should all events use nullable delegate types?
         {
             add
             {
@@ -4042,7 +4042,7 @@ namespace System.Diagnostics.Tracing
         /// In a multi-threaded environment, it is possible that 'EventSourceEventWrittenCallback' 
         /// events for a particular eventSource to occur BEFORE the EventSourceCreatedCallback is issued.
         /// </summary>
-        public event EventHandler<EventSourceCreatedEventArgs> EventSourceCreated
+        public event EventHandler<EventSourceCreatedEventArgs> EventSourceCreated // TODO-NULLABLE: Should all events use nullable delegate types?
         {
             add
             {
@@ -4060,7 +4060,7 @@ namespace System.Diagnostics.Tracing
         /// This event is raised whenever an event has been written by a EventSource for which 
         /// the EventListener has enabled events.  
         /// </summary>
-        public event EventHandler<EventWrittenEventArgs> EventWritten = null!;
+        public event EventHandler<EventWrittenEventArgs> EventWritten = null!; // TODO-NULLABLE: Should all events use nullable delegate types?
 
         static EventListener()
         {
@@ -4479,7 +4479,7 @@ namespace System.Diagnostics.Tracing
             {
                 if (s_EventSources == null)
                     Interlocked.CompareExchange(ref s_EventSources, new List<WeakReference>(2), null);
-                return s_EventSources!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
+                return s_EventSources;
             }
         }
 

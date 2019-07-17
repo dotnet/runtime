@@ -133,10 +133,10 @@ namespace System.Threading
                 //   2. if IsCancellationRequested = false, then NotifyCancellation will see that the event exists, and will call Set().
                 if (IsCancellationRequested)
                 {
-                    _kernelEvent!.Set(); // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
+                    _kernelEvent.Set();
                 }
 
-                return _kernelEvent!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
+                return _kernelEvent;
             }
         }
 

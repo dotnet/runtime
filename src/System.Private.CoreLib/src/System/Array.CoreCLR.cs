@@ -29,10 +29,10 @@ namespace System
             if (length < 0)
                 ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
 
-            RuntimeType? t = elementType!.UnderlyingSystemType as RuntimeType; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
             if (t == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
-            return InternalCreate((void*)t!.TypeHandle.Value, 1, &length, null); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            return InternalCreate((void*)t.TypeHandle.Value, 1, &length, null);
         }
 
         public static unsafe Array CreateInstance(Type elementType, int length1, int length2)
@@ -44,13 +44,13 @@ namespace System
             if (length2 < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length2, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            RuntimeType? t = elementType!.UnderlyingSystemType as RuntimeType; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
             if (t == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
             int* pLengths = stackalloc int[2];
             pLengths[0] = length1;
             pLengths[1] = length2;
-            return InternalCreate((void*)t!.TypeHandle.Value, 2, pLengths, null); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            return InternalCreate((void*)t.TypeHandle.Value, 2, pLengths, null);
         }
 
         public static unsafe Array CreateInstance(Type elementType, int length1, int length2, int length3)
@@ -64,14 +64,14 @@ namespace System
             if (length3 < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length3, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
-            RuntimeType? t = elementType!.UnderlyingSystemType as RuntimeType; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
             if (t == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
             int* pLengths = stackalloc int[3];
             pLengths[0] = length1;
             pLengths[1] = length2;
             pLengths[2] = length3;
-            return InternalCreate((void*)t!.TypeHandle.Value, 3, pLengths, null); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            return InternalCreate((void*)t.TypeHandle.Value, 3, pLengths, null);
         }
 
         public static unsafe Array CreateInstance(Type elementType, params int[] lengths)
@@ -80,10 +80,10 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
             if (lengths == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
-            if (lengths!.Length == 0) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (lengths.Length == 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
 
-            RuntimeType? t = elementType!.UnderlyingSystemType as RuntimeType; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
             if (t == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
@@ -96,7 +96,7 @@ namespace System
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
             fixed (int* pLengths = &lengths[0])
-                return InternalCreate((void*)t!.TypeHandle.Value, lengths.Length, pLengths, null); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                return InternalCreate((void*)t.TypeHandle.Value, lengths.Length, pLengths, null);
         }
 
         public static unsafe Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
@@ -107,12 +107,12 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
             if (lowerBounds == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lowerBounds);
-            if (lengths!.Length != lowerBounds!.Length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (lengths.Length != lowerBounds!.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RanksAndBounds);
             if (lengths.Length == 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
 
-            RuntimeType? t = elementType!.UnderlyingSystemType as RuntimeType; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
             if (t == null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
@@ -126,7 +126,7 @@ namespace System
 
             fixed (int* pLengths = &lengths[0])
             fixed (int* pLowerBounds = &lowerBounds[0])
-                return InternalCreate((void*)t!.TypeHandle.Value, lengths.Length, pLengths, pLowerBounds); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                return InternalCreate((void*)t.TypeHandle.Value, lengths.Length, pLengths, pLowerBounds);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -142,7 +142,7 @@ namespace System
             if (destinationArray == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
 
-            Copy(sourceArray!, sourceArray!.GetLowerBound(0), destinationArray!, destinationArray!.GetLowerBound(0), length, false); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length, false);
         }
 
         // Copies length elements from sourceArray, starting at sourceIndex, to
@@ -178,7 +178,7 @@ namespace System
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
-            ref byte p = ref GetRawArrayGeometry(array!, out uint numComponents, out uint elementSize, out int lowerBound, out bool containsGCPointers); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            ref byte p = ref GetRawArrayGeometry(array, out uint numComponents, out uint elementSize, out int lowerBound, out bool containsGCPointers);
 
             int offset = index - lowerBound;
 
@@ -202,7 +202,7 @@ namespace System
         {
             if (indices == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
-            if (Rank != indices!.Length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
             TypedReference elemref = new TypedReference();
@@ -293,7 +293,7 @@ namespace System
         {
             if (indices == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
-            if (Rank != indices!.Length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
 
             TypedReference elemref = new TypedReference();

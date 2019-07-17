@@ -272,7 +272,7 @@ namespace System.Threading
                 }
             }
 
-            return target!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+            return target!; // TODO-NULLABLE: Compiler can't infer target's non-nullness (https://github.com/dotnet/roslyn/issues/37300)
         }
 
         /// <summary>
@@ -284,6 +284,6 @@ namespace System.Threading
         private static object EnsureLockInitialized([NotNull] ref object? syncLock) =>
             syncLock ??
             Interlocked.CompareExchange(ref syncLock, new object(), null) ??
-            syncLock!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
+            syncLock;
     }
 }

@@ -346,7 +346,7 @@ namespace System.Collections.Generic
             List<TOutput> list = new List<TOutput>(_size);
             for (int i = 0; i < _size; i++)
             {
-                list._items[i] = converter!(_items[i]); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                list._items[i] = converter(_items[i]);
             }
             list._size = _size;
             return list;
@@ -447,7 +447,7 @@ namespace System.Collections.Generic
             List<T> list = new List<T>();
             for (int i = 0; i < _size; i++)
             {
-                if (match!(_items[i])) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                if (match(_items[i]))
                 {
                     list.Add(_items[i]);
                 }
@@ -543,7 +543,7 @@ namespace System.Collections.Generic
             int endIndex = startIndex - count;
             for (int i = startIndex; i > endIndex; i--)
             {
-                if (match!(_items[i])) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                if (match(_items[i]))
                 {
                     return i;
                 }
@@ -747,7 +747,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                using (IEnumerator<T> en = collection!.GetEnumerator()) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                using (IEnumerator<T> en = collection.GetEnumerator())
                 {
                     while (en.MoveNext())
                     {
@@ -867,7 +867,7 @@ namespace System.Collections.Generic
             int freeIndex = 0;   // the first free slot in items array
 
             // Find the first item which needs to be removed.
-            while (freeIndex < _size && !match!(_items[freeIndex])) freeIndex++; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            while (freeIndex < _size && !match(_items[freeIndex])) freeIndex++;
             if (freeIndex >= _size) return 0;
 
             int current = freeIndex + 1;
@@ -1026,7 +1026,7 @@ namespace System.Collections.Generic
 
             if (_size > 1)
             {
-                ArraySortHelper<T>.Sort(_items, 0, _size, comparison!); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                ArraySortHelper<T>.Sort(_items, 0, _size, comparison);
             }
             _version++;
         }

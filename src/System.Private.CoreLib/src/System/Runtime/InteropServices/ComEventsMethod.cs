@@ -173,7 +173,7 @@ namespace System.Runtime.InteropServices
                 {
                     if (wrapper.Delegate.GetType() == d.GetType())
                     {
-                        wrapper.Delegate = Delegate.Combine(wrapper.Delegate, d)!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+                        wrapper.Delegate = Delegate.Combine(wrapper.Delegate, d);
                         return;
                     }
                 }
