@@ -537,6 +537,7 @@ public class Program
             // Spin up a thread dedicated to outputting stats for each defined interval
             new Thread(() =>
             {
+                long lastTotal = 0;
                 while (true)
                 {
                     Thread.Sleep(DisplayIntervalMilliseconds);
@@ -545,7 +546,14 @@ public class Program
                         Console.ForegroundColor = ConsoleColor.Cyan;
                         Console.Write("[" + DateTime.Now + "]");
                         Console.ResetColor();
+
+                        if (lastTotal == total)
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                        }
+                        lastTotal = total;
                         Console.WriteLine(" Total: " + total.ToString("N0"));
+                        Console.ResetColor();
 
                         if (reuseAddressFailure > 0)
                         {
