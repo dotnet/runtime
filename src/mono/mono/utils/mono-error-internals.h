@@ -214,19 +214,19 @@ mono_error_set_remoting (MonoError *error, const char *message)
 static inline void
 mono_error_set_divide_by_zero (MonoError *error)
 {
-	mono_error_set_generic_error (error, "System", "DivideByZeroException", "");
+	mono_error_set_generic_error (error, "System", "DivideByZeroException", NULL);
 }
 
 static inline void
 mono_error_set_index_out_of_range (MonoError *error)
 {
-	mono_error_set_generic_error (error, "System", "IndexOutOfRangeException", "");
+	mono_error_set_generic_error (error, "System", "IndexOutOfRangeException", NULL);
 }
 
 static inline void
 mono_error_set_overflow (MonoError *error)
 {
-	mono_error_set_generic_error (error, "System", "OverflowException", "");
+	mono_error_set_generic_error (error, "System", "OverflowException", NULL);
 }
 
 static inline void
@@ -238,13 +238,13 @@ mono_error_set_synchronization_lock (MonoError *error, const char *message)
 static inline void
 mono_error_set_thread_interrupted (MonoError *error)
 {
-	mono_error_set_generic_error (error, "System.Threading", "ThreadInterruptedException", "");
+	mono_error_set_generic_error (error, "System.Threading", "ThreadInterruptedException", NULL);
 }
 
 static inline void
 mono_error_set_null_reference (MonoError *error)
 {
-	mono_error_set_generic_error (error, "System", "NullReferenceException", "");
+	mono_error_set_generic_error (error, "System", "NullReferenceException", NULL);
 }
 
 static inline void
