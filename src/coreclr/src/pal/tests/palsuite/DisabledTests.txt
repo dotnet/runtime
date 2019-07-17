@@ -48,40 +48,6 @@ This test will be useful in future versions for testing various
 languages (code pages).  Currently only U.S. English (tested by -
 test1) is supported.
 
-miscellaneous/getcalendarinfow/test2:
-=======================================
-Currently the only calendars that are supported are CAL_GREGORIAN
-and CAL_GREGORIAN_US, which are tested by test1.  This test will
-be useful when full calendar support is implemented.
-
-miscellaneous/getdateformatw/test1:
-===================================
-Currently the only calendars that are supported are CAL_GREGORIAN
-and CAL_GREGORIAN_US.  The GetDateFormatW function will only be 
-called when the calendar is CAL_TAIWAN. Since this calendar is not
-currently supported in this release of the PAL, the GetDateFormatW
-function is not implemented except to return an error. This test
-will be useful when full calendar support is implemented.
-
-miscellaneous/getdateformatw/getdateformatw_neg1:
-================================================
-Currently the only calendars that are supported are CAL_GREGORIAN
-and CAL_GREGORIAN_US.  The GetDateFormatW function will only be 
-called when the calendar is CAL_TAIWAN. Since this calendar is not
-currently supported in this release of the PAL, the GetDateFormatW
-function is not implemented except to return an error. This test
-will be useful when full calendar support is implemented.
-
-miscellaneous/getdateformatw/getdateformatw_neg2:
-================================================
-Currently the only calendars that are supported are CAL_GREGORIAN
-and CAL_GREGORIAN_US.  The GetDateFormatW function will only be 
-called when the calendar is CAL_TAIWAN. Since this calendar is not
-currently supported in this release of the PAL, the GetDateFormatW
-function is not implemented except to return an error. This test
-will be useful when full calendar support is implemented.
-
-
 pal_specific/pal_get_stdin/test1 :
 =======================================
 This test case should be run manually.  Requires user input.
