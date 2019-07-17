@@ -100,7 +100,7 @@ namespace System.Collections.Generic
             // avoid the enumerator allocation and overhead by looping through the entries array directly.
             // We only do this when dictionary is Dictionary<TKey,TValue> and not a subclass, to maintain
             // back-compat with subclasses that may have overridden the enumerator behavior.
-            if (dictionary!.GetType() == typeof(Dictionary<TKey, TValue>)) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (dictionary.GetType() == typeof(Dictionary<TKey, TValue>))
             {
                 Dictionary<TKey, TValue> d = (Dictionary<TKey, TValue>)dictionary;
                 int count = d._count;
@@ -131,7 +131,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
 
-            foreach (KeyValuePair<TKey, TValue> pair in collection!) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            foreach (KeyValuePair<TKey, TValue> pair in collection)
             {
                 Add(pair.Key, pair.Value);
             }
@@ -219,7 +219,7 @@ namespace System.Collections.Generic
                 int i = FindEntry(key);
                 if (i >= 0) return _entries![i].value;
                 ThrowHelper.ThrowKeyNotFoundException(key);
-                return default!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                return default;
             }
             set
             {
@@ -320,7 +320,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if ((uint)index > (uint)array!.Length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if ((uint)index > (uint)array.Length)
             {
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             }
@@ -354,7 +354,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
             }
 
-            info!.AddValue(VersionName, _version); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            info.AddValue(VersionName, _version);
             info.AddValue(ComparerName, _comparer ?? EqualityComparer<TKey>.Default, typeof(IEqualityComparer<TKey>));
             info.AddValue(HashSizeName, _buckets == null ? 0 : _buckets.Length); // This is the length of the bucket array
 
@@ -383,7 +383,7 @@ namespace System.Collections.Generic
                 IEqualityComparer<TKey>? comparer = _comparer;
                 if (comparer == null)
                 {
-                    uint hashCode = (uint)key!.GetHashCode(); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                    uint hashCode = (uint)key.GetHashCode();
                     // Value in _buckets is 1-based
                     i = buckets[hashCode % (uint)buckets.Length] - 1;
                     if (default(TKey)! != null) // TODO-NULLABLE: default(T) == null warning (https://github.com/dotnet/roslyn/issues/34757)
@@ -492,7 +492,7 @@ namespace System.Collections.Generic
             Debug.Assert(entries != null, "expected entries to be non-null");
 
             IEqualityComparer<TKey>? comparer = _comparer;
-            uint hashCode = (uint)((comparer == null) ? key!.GetHashCode() : comparer.GetHashCode(key)); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            uint hashCode = (uint)((comparer == null) ? key.GetHashCode() : comparer.GetHashCode(key));
 
             int collisionCount = 0;
             ref int bucket = ref _buckets[hashCode % (uint)_buckets.Length];
@@ -700,7 +700,7 @@ namespace System.Collections.Generic
                     ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
                 }
 
-                for (int i = 0; i < array!.Length; i++) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                for (int i = 0; i < array.Length; i++)
                 {
                     if (array[i].Key == null)
                     {
@@ -778,7 +778,7 @@ namespace System.Collections.Generic
             if (buckets != null)
             {
                 Debug.Assert(entries != null, "entries should be non-null");
-                uint hashCode = (uint)(_comparer?.GetHashCode(key) ?? key!.GetHashCode()); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                uint hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
                 uint bucket = hashCode % (uint)buckets.Length;
                 int last = -1;
                 // Value in buckets is 1-based
@@ -846,7 +846,7 @@ namespace System.Collections.Generic
             if (buckets != null)
             {
                 Debug.Assert(entries != null, "entries should be non-null");
-                uint hashCode = (uint)(_comparer?.GetHashCode(key) ?? key!.GetHashCode()); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                uint hashCode = (uint)(_comparer?.GetHashCode(key) ?? key.GetHashCode());
                 uint bucket = hashCode % (uint)buckets.Length;
                 int last = -1;
                 // Value in buckets is 1-based
@@ -925,7 +925,7 @@ namespace System.Collections.Generic
         {
             if (array == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-            if (array!.Rank != 1) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (array.Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
             if (array.GetLowerBound(0) != 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NonZeroLowerBound);
@@ -965,7 +965,7 @@ namespace System.Collections.Generic
                     {
                         if (entries![i].next >= -1)
                         {
-                            objects![index++] = new KeyValuePair<TKey, TValue>(entries[i].key, entries[i].value); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                            objects[index++] = new KeyValuePair<TKey, TValue>(entries[i].key, entries[i].value);
                         }
                     }
                 }
@@ -1089,7 +1089,7 @@ namespace System.Collections.Generic
 
                 try
                 {
-                    TKey tempKey = (TKey)key!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                    TKey tempKey = (TKey)key;
                     try
                     {
                         this[tempKey] = (TValue)value!;
@@ -1125,7 +1125,7 @@ namespace System.Collections.Generic
 
             try
             {
-                TKey tempKey = (TKey)key!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                TKey tempKey = (TKey)key;
 
                 try
                 {
@@ -1298,7 +1298,7 @@ namespace System.Collections.Generic
                 {
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dictionary);
                 }
-                _dictionary = dictionary!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                _dictionary = dictionary;
             }
 
             public Enumerator GetEnumerator()
@@ -1311,12 +1311,12 @@ namespace System.Collections.Generic
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
                 }
 
-                if (index < 0 || index > array!.Length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                if (index < 0 || index > array.Length)
                 {
                     ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
                 }
 
-                if (array!.Length - index < _dictionary.Count) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                if (array.Length - index < _dictionary.Count)
                 {
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall);
                 }
@@ -1358,7 +1358,7 @@ namespace System.Collections.Generic
             {
                 if (array == null)
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-                if (array!.Rank != 1) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                if (array.Rank != 1)
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
                 if (array.GetLowerBound(0) != 0)
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NonZeroLowerBound);
@@ -1385,7 +1385,7 @@ namespace System.Collections.Generic
                     {
                         for (int i = 0; i < count; i++)
                         {
-                            if (entries![i].next >= -1) objects![index++] = entries[i].key; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                            if (entries![i].next >= -1) objects[index++] = entries[i].key;
                         }
                     }
                     catch (ArrayTypeMismatchException)
@@ -1481,7 +1481,7 @@ namespace System.Collections.Generic
                 {
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.dictionary);
                 }
-                _dictionary = dictionary!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                _dictionary = dictionary;
             }
 
             public Enumerator GetEnumerator()
@@ -1494,7 +1494,7 @@ namespace System.Collections.Generic
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
                 }
 
-                if ((uint)index > array!.Length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                if ((uint)index > array.Length)
                 {
                     ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
                 }
@@ -1541,7 +1541,7 @@ namespace System.Collections.Generic
             {
                 if (array == null)
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
-                if (array!.Rank != 1) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                if (array.Rank != 1)
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
                 if (array.GetLowerBound(0) != 0)
                     ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NonZeroLowerBound);
@@ -1568,7 +1568,7 @@ namespace System.Collections.Generic
                     {
                         for (int i = 0; i < count; i++)
                         {
-                            if (entries![i].next >= -1) objects![index++] = entries[i].value!; // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                            if (entries![i].next >= -1) objects[index++] = entries[i].value!;
                         }
                     }
                     catch (ArrayTypeMismatchException)

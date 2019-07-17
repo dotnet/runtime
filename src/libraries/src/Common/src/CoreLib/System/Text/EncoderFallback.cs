@@ -23,7 +23,7 @@ namespace System.Text
                 if (s_replacementFallback == null)
                     Interlocked.CompareExchange<EncoderFallback?>(ref s_replacementFallback, new EncoderReplacementFallback(), null);
 
-                return s_replacementFallback!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
+                return s_replacementFallback;
             }
         }
 
@@ -35,7 +35,7 @@ namespace System.Text
                 if (s_exceptionFallback == null)
                     Interlocked.CompareExchange<EncoderFallback?>(ref s_exceptionFallback, new EncoderExceptionFallback(), null);
 
-                return s_exceptionFallback!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
+                return s_exceptionFallback;
             }
         }
 
