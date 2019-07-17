@@ -56,7 +56,7 @@ namespace System
         /// Handlers registered with this event will be invoked on the 
         /// <see cref="System.Threading.SynchronizationContext"/> captured when the instance was constructed.
         /// </remarks>
-        public event EventHandler<T> ProgressChanged;
+        public event EventHandler<T> ProgressChanged = null!;
 
         /// <summary>Reports a progress change.</summary>
         /// <param name="value">The value of the updated progress.</param>
