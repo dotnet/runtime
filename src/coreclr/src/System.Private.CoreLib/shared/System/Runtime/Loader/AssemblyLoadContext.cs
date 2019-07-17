@@ -38,11 +38,11 @@ namespace System.Runtime.Loader
         // synchronization primitive to protect against usage of this instance while unloading
         private readonly object _unloadLock;
 
-        private event Func<Assembly, string, IntPtr> _resolvingUnmanagedDll;
+        private event Func<Assembly, string, IntPtr> _resolvingUnmanagedDll = null!;
 
-        private event Func<AssemblyLoadContext, AssemblyName, Assembly> _resolving;
+        private event Func<AssemblyLoadContext, AssemblyName, Assembly> _resolving = null!;
 
-        private event Action<AssemblyLoadContext> _unloading;
+        private event Action<AssemblyLoadContext> _unloading = null!;
 
         private readonly string? _name;
 
