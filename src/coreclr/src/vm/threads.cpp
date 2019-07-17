@@ -1046,6 +1046,30 @@ DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
 
+#ifdef FEATURE_WRITEBARRIER_COPY
+
+static void* s_barrierCopy = NULL;
+
+BYTE* GetWriteBarrierCodeLocation(VOID* barrier)
+{
+    return (BYTE*)s_barrierCopy + ((BYTE*)barrier - (BYTE*)JIT_PatchedCodeStart);
+}
+
+BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc)
+{
+    return (s_barrierCopy <= (void*)controlPc && (void*)controlPc < ((BYTE*)s_barrierCopy + ((BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart)));
+}
+
+PCODE AdjustWriteBarrierIP(PCODE controlPc)
+{
+    _ASSERTE(IsIPInWriteBarrierCodeCopy(controlPc));
+
+    // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
+    return (PCODE)JIT_PatchedCodeStart + (controlPc - (PCODE)s_barrierCopy);
+}
+
+#endif // FEATURE_WRITEBARRIER_COPY
+
 //---------------------------------------------------------------------------
 // One-time initialization. Called during Dll initialization. So
 // be careful what you do in here!
@@ -1064,6 +1088,19 @@ void InitThreadManager()
     // If you hit this assert on retail build, there is most likely problem with BBT script.
     _ASSERTE_ALL_BUILDS("clr/src/VM/threads.cpp", (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart < (ptrdiff_t)GetOsPageSize());
 
+#ifdef FEATURE_WRITEBARRIER_COPY
+    s_barrierCopy = ClrVirtualAlloc(NULL, g_SystemInfo.dwAllocationGranularity, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+    if (s_barrierCopy == NULL)
+    {
+        _ASSERTE(!"ClrVirtualAlloc of GC barrier code page failed");
+        COMPlusThrowWin32();
+    }
+
+    memcpy(s_barrierCopy, (BYTE*)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
+
+    SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
+#else // FEATURE_WRITEBARRIER_COPY
+
     // I am using virtual protect to cover the entire range that this code falls in.
     // 
 
@@ -1077,6 +1114,7 @@ void InitThreadManager()
         _ASSERTE(!"ClrVirtualProtect of code page failed");
         COMPlusThrowWin32();
     }
+#endif // FEATURE_WRITEBARRIER_COPY
 
 #ifndef FEATURE_PAL
     _ASSERTE(GetThread() == NULL);

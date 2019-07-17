@@ -6765,4 +6765,16 @@ private:
 
 BOOL Debug_IsLockedViaThreadSuspension();
 
+#ifdef FEATURE_WRITEBARRIER_COPY
+
+BYTE* GetWriteBarrierCodeLocation(VOID* barrier);
+BOOL IsIPInWriteBarrierCodeCopy(PCODE controlPc);
+PCODE AdjustWriteBarrierIP(PCODE controlPc);
+
+#else // FEATURE_WRITEBARRIER_COPY
+
+#define GetWriteBarrierCodeLocation(barrier) ((BYTE*)(barrier))
+
+#endif // FEATURE_WRITEBARRIER_COPY
+
 #endif //__threads_h__
