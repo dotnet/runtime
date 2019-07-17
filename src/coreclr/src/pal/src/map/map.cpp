@@ -2157,17 +2157,36 @@ MAPmmapAndRecord(
     _ASSERTE(pPEBaseAddress != NULL);
 
     PAL_ERROR palError = NO_ERROR;
-    LPVOID pvBaseAddress = NULL;
-
     off_t adjust = offset & (GetVirtualPageSize() - 1);
+    LPVOID pvBaseAddress = static_cast<char *>(addr) - adjust;
 
-    pvBaseAddress = mmap(static_cast<char *>(addr) - adjust, len + adjust, prot, flags, fd, offset - adjust);
-    if (MAP_FAILED == pvBaseAddress)
+#ifdef __APPLE__
+    if ((prot & PROT_EXEC) != 0 && IsRunningOnMojaveHardenedRuntime())
     {
-        ERROR_(LOADER)( "mmap failed with code %d: %s.\n", errno, strerror( errno ) );
-        palError = FILEGetLastErrorFromErrno();
+        // Mojave hardened runtime doesn't allow executable mappings of a file. So we have to create an 
+        // anonymous mapping and read the file contents into it instead.
+
+        // Set the requested mapping with forced PROT_WRITE to ensure data from the file can be read there,
+        // read the data in and finally remove the forced PROT_WRITE
+        if ((mprotect(pvBaseAddress, len + adjust, prot | PROT_WRITE) == -1) ||
+            (pread(fd, pvBaseAddress, len + adjust, offset - adjust) == -1) ||
+            (((prot & PROT_WRITE) == 0) && mprotect(pvBaseAddress, len + adjust, prot) == -1))
+        {
+            palError = FILEGetLastErrorFromErrno();
+        }
     }
     else
+#endif
+    {
+        pvBaseAddress = mmap(static_cast<char *>(addr) - adjust, len + adjust, prot, flags, fd, offset - adjust);
+        if (MAP_FAILED == pvBaseAddress)
+        {
+            ERROR_(LOADER)( "mmap failed with code %d: %s.\n", errno, strerror( errno ) );
+            palError = FILEGetLastErrorFromErrno();
+        }
+    }
+
+    if (NO_ERROR == palError)
     {
         palError = MAPRecordMapping(pMappingObject, pPEBaseAddress, pvBaseAddress, len, prot);
         if (NO_ERROR != palError)
@@ -2359,7 +2378,14 @@ void * MAPMapPEFile(HANDLE hFile)
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
         // MAC64 requires we pass MAP_SHARED (or MAP_PRIVATE) flags - otherwise, the call is failed.
         // Refer to mmap documentation at http://www.manpagez.com/man/2/mmap/ for details.
-        loadedBase = mmap(usedBaseAddr, virtualSize, PROT_NONE, MAP_ANON|MAP_PRIVATE, -1, 0);
+        int mapFlags = MAP_ANON|MAP_PRIVATE;
+#ifdef __APPLE__
+        if (IsRunningOnMojaveHardenedRuntime())
+        {
+            mapFlags |= MAP_JIT;
+        }
+#endif // __APPLE__
+        loadedBase = mmap(usedBaseAddr, virtualSize, PROT_NONE, mapFlags, -1, 0);
     }
 
     if (MAP_FAILED == loadedBase)

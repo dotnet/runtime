@@ -4666,6 +4666,15 @@ VOID DECLSPEC_NORETURN UnwindManagedExceptionPass1(PAL_SEHException& ex, CONTEXT
             }
 #endif // VSD_STUB_CAN_THROW_AV
 
+#ifdef FEATURE_WRITEBARRIER_COPY            
+            if (IsIPInWriteBarrierCodeCopy(controlPc))
+            {
+                // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
+                controlPc = AdjustWriteBarrierIP(controlPc);
+                SetIP(frameContext, controlPc);
+            }
+#endif // FEATURE_WRITEBARRIER_COPY
+
             UINT_PTR sp = GetSP(frameContext);
 
             BOOL success = PAL_VirtualUnwind(frameContext, NULL);
@@ -5152,6 +5161,15 @@ BOOL IsSafeToCallExecutionManager()
 BOOL IsSafeToHandleHardwareException(PCONTEXT contextRecord, PEXCEPTION_RECORD exceptionRecord)
 {
     PCODE controlPc = GetIP(contextRecord);
+
+#ifdef FEATURE_WRITEBARRIER_COPY
+    if (IsIPInWriteBarrierCodeCopy(controlPc))
+    {
+        // Pretend we were executing the barrier function at its original location
+        controlPc = AdjustWriteBarrierIP(controlPc);
+    }
+#endif // FEATURE_WRITEBARRIER_COPY
+
     return g_fEEStarted && (
         exceptionRecord->ExceptionCode == STATUS_BREAKPOINT || 
         exceptionRecord->ExceptionCode == STATUS_SINGLE_STEP ||
@@ -5221,6 +5239,16 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         *((&fef)->GetGSCookiePtr()) = GetProcessGSCookie();
         {
             GCX_COOP();     // Must be cooperative to modify frame chain.
+
+#ifdef FEATURE_WRITEBARRIER_COPY
+            if (IsIPInWriteBarrierCodeCopy(controlPc))
+            {
+                // Pretend we were executing the barrier function at its original location so that the unwinder can unwind the frame
+                controlPc = AdjustWriteBarrierIP(controlPc);
+                SetIP(ex->GetContextRecord(), controlPc);
+            }
+#endif // FEATURE_WRITEBARRIER_COPY
+
             if (IsIPInMarkedJitHelper(controlPc))
             {
                 // For JIT helpers, we need to set the frame to point to the
