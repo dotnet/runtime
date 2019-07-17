@@ -4,7 +4,7 @@
     gsub(/\r/,"", $0);
 
     # Skip empty lines and comment lines starting with semicolon
-    if (NF && !match($0, /^[:space:]*;/))
+    if (NF && !match($0, /^[[:space:]]*;/))
     {
         gsub(/^#/,"", $0);
         print "_"  $0;
