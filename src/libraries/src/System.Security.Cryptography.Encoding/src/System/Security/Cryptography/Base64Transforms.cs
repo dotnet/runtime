@@ -5,7 +5,10 @@
 // This file contains two ICryptoTransforms: ToBase64Transform and FromBase64Transform
 // they may be attached to a CryptoStream in either read or write mode
 
-using System.Text;
+using System.Buffers;
+using System.Buffers.Text;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Security.Cryptography
 {
@@ -25,18 +28,33 @@ namespace System.Security.Cryptography
 
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
         {
-            ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
+            // inputCount < InputBlockSize is not allowed
+            ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount, InputBlockSize);
+
+            if (outputBuffer == null)
+                ThrowHelper.ThrowArgumentNull(ThrowHelper.ExceptionArgument.outputBuffer);
 
             // For now, only convert 3 bytes to 4
-            byte[] tempBytes = ConvertToBase64(inputBuffer, inputOffset, 3);
+            Span<byte> input = inputBuffer.AsSpan(inputOffset, InputBlockSize);
+            Span<byte> output = outputBuffer.AsSpan(outputOffset, OutputBlockSize);
 
-            Buffer.BlockCopy(tempBytes, 0, outputBuffer, outputOffset, tempBytes.Length);
-            return tempBytes.Length;
+            OperationStatus status = Base64.EncodeToUtf8(input, output, out int consumed, out int written, isFinalBlock: false);
+
+            if (written != OutputBlockSize)
+            {
+                ThrowHelper.ThrowCryptographicException();
+            }
+
+            Debug.Assert(status == OperationStatus.NeedMoreData);
+            Debug.Assert(consumed == InputBlockSize);
+
+            return written;
         }
 
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
+            // inputCount <= InputBlockSize is allowed
+            ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
 
             // Convert.ToBase64CharArray already does padding, so all we have to check is that
             // the inputCount wasn't 0
@@ -44,28 +62,26 @@ namespace System.Security.Cryptography
             {
                 return Array.Empty<byte>();
             }
+            else if (inputCount > InputBlockSize)
+            {
+                ThrowHelper.ThrowArgumentOutOfRange(ThrowHelper.ExceptionArgument.inputCount);
+            }
 
             // Again, for now only a block at a time
-            return ConvertToBase64(inputBuffer, inputOffset, inputCount);
-        }
+            Span<byte> input = inputBuffer.AsSpan(inputOffset, inputCount);
+            byte[] output = new byte[OutputBlockSize];
 
-        private byte[] ConvertToBase64(byte[] inputBuffer, int inputOffset, int inputCount)
-        {
-            char[] temp = new char[4];
-            Convert.ToBase64CharArray(inputBuffer, inputOffset, inputCount, temp, 0);
-            byte[] tempBytes = Encoding.ASCII.GetBytes(temp);
-            if (tempBytes.Length != 4)
-                throw new CryptographicException(SR.Cryptography_SSE_InvalidDataSize);
+            OperationStatus status = Base64.EncodeToUtf8(input, output, out int consumed, out int written, isFinalBlock: true);
 
-            return tempBytes;
-        }
+            if (written != OutputBlockSize)
+            {
+                ThrowHelper.ThrowCryptographicException();
+            }
 
-        private static void ValidateTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount)
-        {
-            if (inputBuffer == null) throw new ArgumentNullException(nameof(inputBuffer));
-            if (inputOffset < 0) throw new ArgumentOutOfRangeException(nameof(inputOffset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (inputCount < 0 || (inputCount > inputBuffer.Length)) throw new ArgumentException(SR.Argument_InvalidValue);
-            if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(SR.Argument_InvalidOffLen);
+            Debug.Assert(status == OperationStatus.Done);
+            Debug.Assert(consumed == inputCount);
+
+            return output;
         }
 
         // Must implement IDisposable, but in this case there's nothing to do.
@@ -96,16 +112,18 @@ namespace System.Security.Cryptography
     {
         private byte[] _inputBuffer = new byte[4];
         private int _inputIndex;
-        private FromBase64TransformMode _whitespaces;
+        private readonly FromBase64TransformMode _whitespaces;
 
         public FromBase64Transform() : this(FromBase64TransformMode.IgnoreWhiteSpaces) { }
         public FromBase64Transform(FromBase64TransformMode whitespaces)
         {
             _whitespaces = whitespaces;
-            _inputIndex = 0;
         }
 
         // Converting from Base64 generates 3 bytes output from each 4 bytes input block
+        private const int Base64InputBlockSize = 4;
+        // A buffer with size 32 is stack allocated, to cover common cases and benefit from JIT's optimizations.
+        private const int StackAllocSize = 32;
         public int InputBlockSize => 1;
         public int OutputBlockSize => 3;
         public bool CanTransformMultipleBlocks => false;
@@ -113,118 +131,216 @@ namespace System.Security.Cryptography
 
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
         {
-            ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
-            if (_inputBuffer == null) throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
+            // inputCount != InputBlockSize is allowed
+            ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
 
-            int effectiveCount;
-            byte[] temp = GetTempBuffer(inputBuffer, inputOffset, inputCount, out effectiveCount);
+            if (_inputBuffer == null)
+                ThrowHelper.ThrowObjectDisposed();
 
-            if (effectiveCount + _inputIndex < 4)
+            if (outputBuffer == null)
+                ThrowHelper.ThrowArgumentNull(ThrowHelper.ExceptionArgument.outputBuffer);
+
+            // The common case is inputCount = InputBlockSize
+            byte[] tmpBufferArray = null;
+            Span<byte> tmpBuffer = stackalloc byte[StackAllocSize];
+            if (inputCount > StackAllocSize)
             {
-                Buffer.BlockCopy(temp, 0, _inputBuffer, _inputIndex, effectiveCount);
-                _inputIndex += effectiveCount;
+                tmpBuffer = tmpBufferArray = CryptoPool.Rent(inputCount);
+            }
+
+            tmpBuffer = GetTempBuffer(inputBuffer.AsSpan(inputOffset, inputCount), tmpBuffer);
+            int bytesToTransform = _inputIndex + tmpBuffer.Length;
+
+            // Too little data to decode: save data to _inputBuffer, so it can be transformed later
+            if (bytesToTransform < Base64InputBlockSize)
+            {
+                tmpBuffer.CopyTo(_inputBuffer.AsSpan(_inputIndex));
+
+                _inputIndex = bytesToTransform;
+
+                ReturnToCryptoPool(tmpBufferArray, tmpBuffer.Length);
+
                 return 0;
             }
 
-            byte[] result = ConvertFromBase64(temp, effectiveCount);
+            ConvertFromBase64(tmpBuffer, outputBuffer.AsSpan(outputOffset), out _, out int written);
 
-            Buffer.BlockCopy(result, 0, outputBuffer, outputOffset, result.Length);
+            ReturnToCryptoPool(tmpBufferArray, tmpBuffer.Length);
 
-            return result.Length;
+            return written;
         }
 
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
-            if (_inputBuffer == null) throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
+            // inputCount != InputBlockSize is allowed
+            ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
 
-            int effectiveCount;
-            byte[] temp = GetTempBuffer(inputBuffer, inputOffset, inputCount, out effectiveCount);
-
-            if (effectiveCount + _inputIndex < 4)
+            if (_inputBuffer == null)
             {
-                Reset();
+                ThrowHelper.ThrowObjectDisposed();
+            }
+
+            if (inputCount == 0)
+            {
                 return Array.Empty<byte>();
             }
 
-            byte[] result = ConvertFromBase64(temp, effectiveCount);
+            // The common case is inputCount <= Base64InputBlockSize
+            byte[] tmpBufferArray = null;
+            Span<byte> tmpBuffer = stackalloc byte[StackAllocSize];
+            if (inputCount > StackAllocSize)
+            {
+                tmpBuffer = tmpBufferArray = CryptoPool.Rent(inputCount);
+            }
+
+            tmpBuffer = GetTempBuffer(inputBuffer.AsSpan(inputOffset, inputCount), tmpBuffer);
+            int bytesToTransform = _inputIndex + tmpBuffer.Length;
+
+            // Too little data to decode
+            if (bytesToTransform < Base64InputBlockSize)
+            {
+                // reinitialize the transform
+                Reset();
+
+                ReturnToCryptoPool(tmpBufferArray, tmpBuffer.Length);
+
+                return Array.Empty<byte>();
+            }
+
+            int outputSize = GetOutputSize(bytesToTransform, tmpBuffer);
+            byte[] output = new byte[outputSize];
+
+            ConvertFromBase64(tmpBuffer, output, out int consumed, out int written);
+            Debug.Assert(written == outputSize);
+
+            ReturnToCryptoPool(tmpBufferArray, tmpBuffer.Length);
 
             // reinitialize the transform
             Reset();
 
-            return result;
+            return output;
         }
 
-        private byte[] GetTempBuffer(byte[] inputBuffer, int inputOffset, int inputCount, out int effectiveCount)
+        private Span<byte> GetTempBuffer(Span<byte> inputBuffer, Span<byte> tmpBuffer)
         {
-            byte[] temp;
-
-            if (_whitespaces == FromBase64TransformMode.IgnoreWhiteSpaces)
-            {
-                temp = DiscardWhiteSpaces(inputBuffer, inputOffset, inputCount);
-                effectiveCount = temp.Length;
-            }
-            else
-            {
-                temp = new byte[inputCount];
-                Buffer.BlockCopy(inputBuffer, inputOffset, temp, 0, inputCount);
-                effectiveCount = inputCount;
-            }
-
-            return temp;
-        }
-
-        private byte[] ConvertFromBase64(byte[] temp, int effectiveCount)
-        {
-            // Get the number of 4 bytes blocks to transform
-            int numBlocks = (effectiveCount + _inputIndex) / 4;
-
-            byte[] transformBuffer = new byte[_inputIndex + effectiveCount];
-            Buffer.BlockCopy(_inputBuffer, 0, transformBuffer, 0, _inputIndex);
-            Buffer.BlockCopy(temp, 0, transformBuffer, _inputIndex, effectiveCount);
-
-            _inputIndex = (effectiveCount + _inputIndex) % 4;
-            Buffer.BlockCopy(temp, effectiveCount - _inputIndex, _inputBuffer, 0, _inputIndex);
-
-            char[] tempChar = Encoding.ASCII.GetChars(transformBuffer, 0, 4 * numBlocks);
-            byte[] tempBytes = Convert.FromBase64CharArray(tempChar, 0, 4 * numBlocks);
-            return tempBytes;
-        }
-
-        private byte[] DiscardWhiteSpaces(byte[] inputBuffer, int inputOffset, int inputCount)
-        {
-            int i, iCount = 0;
-            for (i = 0; i < inputCount; i++)
-            {
-                if (char.IsWhiteSpace((char)inputBuffer[inputOffset + i])) iCount++;
-            }
-
-            // If there's nothing to do, leave early
-            if (iCount == 0 && inputOffset == 0 &&
-                inputCount == inputBuffer.Length)
+            if (_whitespaces == FromBase64TransformMode.DoNotIgnoreWhiteSpaces)
             {
                 return inputBuffer;
             }
 
-            byte[] rgbOut = new byte[inputCount - iCount];
-            iCount = 0;
-            for (i = 0; i < inputCount; i++)
+            return DiscardWhiteSpaces(inputBuffer, tmpBuffer);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static Span<byte> DiscardWhiteSpaces(Span<byte> inputBuffer, Span<byte> tmpBuffer)
+        {
+            int count = 0;
+
+            for (int i = 0; i < inputBuffer.Length; i++)
             {
-                if (!char.IsWhiteSpace((char)inputBuffer[inputOffset + i]))
+                if (!IsWhitespace(inputBuffer[i]))
                 {
-                    rgbOut[iCount++] = inputBuffer[inputOffset + i];
+                    tmpBuffer[count++] = inputBuffer[i];
                 }
             }
 
-            return rgbOut;
+            return tmpBuffer.Slice(0, count);
         }
 
-        private static void ValidateTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount)
+        private static bool IsWhitespace(byte value)
         {
-            if (inputBuffer == null) throw new ArgumentNullException(nameof(inputBuffer));
-            if (inputOffset < 0) throw new ArgumentOutOfRangeException(nameof(inputOffset), SR.ArgumentOutOfRange_NeedNonNegNum);
-            if (inputCount < 0 || (inputCount > inputBuffer.Length)) throw new ArgumentException(SR.Argument_InvalidValue);
-            if ((inputBuffer.Length - inputCount) < inputOffset) throw new ArgumentException(SR.Argument_InvalidOffLen);
+            // We assume ASCII encoded data. If there is any non-ASCII char, it is invalid
+            // Base64 and will be caught during decoding.
+
+            // SPACE        32
+            // TAB           9
+            // LF           10
+            // VTAB         11
+            // FORM FEED    12
+            // CR           13
+
+            return value == 32 || ((uint)value - 9 <= (13 - 9));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int GetOutputSize(int bytesToTransform, Span<byte> tmpBuffer)
+        {
+            int outputSize = Base64.GetMaxDecodedFromUtf8Length(bytesToTransform);
+
+            const byte padding = (byte)'=';
+            int len = tmpBuffer.Length;
+
+            // In Base64 there are maximum 2 padding chars
+
+            if (tmpBuffer[len - 2] == padding)
+            {
+                outputSize--;
+            }
+
+            if (tmpBuffer[len - 1] == padding)
+            {
+                outputSize--;
+            }
+
+            return outputSize;
+        }
+
+        private void ConvertFromBase64(Span<byte> tmpBuffer, Span<byte> outputBuffer, out int consumed, out int written)
+        {
+            int bytesToTransform = _inputIndex + tmpBuffer.Length;
+            Debug.Assert(bytesToTransform >= 4);
+
+            byte[] transformBufferArray = null;
+            Span<byte> transformBuffer = stackalloc byte[StackAllocSize];
+            if (bytesToTransform > StackAllocSize)
+            {
+                transformBuffer = transformBufferArray = CryptoPool.Rent(bytesToTransform);
+            }
+
+            // Copy _inputBuffer to transformBuffer and append tmpBuffer
+            Debug.Assert(_inputIndex < _inputBuffer.Length);
+            _inputBuffer.AsSpan(0, _inputIndex).CopyTo(transformBuffer);
+            tmpBuffer.CopyTo(transformBuffer.Slice(_inputIndex));
+
+            // Save data that won't be transformed to _inputBuffer, so it can be transformed later
+            _inputIndex = bytesToTransform & 3;     // bit hack for % 4
+            bytesToTransform -= _inputIndex;        // only transform up to the next multiple of 4
+            Debug.Assert(_inputIndex < _inputBuffer.Length);
+            tmpBuffer.Slice(tmpBuffer.Length - _inputIndex).CopyTo(_inputBuffer);
+
+            transformBuffer = transformBuffer.Slice(0, bytesToTransform);
+            OperationStatus status = Base64.DecodeFromUtf8(transformBuffer, outputBuffer, out consumed, out written);
+
+            if (status == OperationStatus.Done)
+            {
+                Debug.Assert(consumed == bytesToTransform);
+            }
+            else
+            {
+                Debug.Assert(status == OperationStatus.InvalidData);
+                ThrowHelper.ThrowBase64FormatException();
+            }
+
+            ReturnToCryptoPool(transformBufferArray, transformBuffer.Length);
+        }
+
+        private void ReturnToCryptoPool(byte[] array, int clearSize)
+        {
+            if (array != null)
+            {
+                CryptoPool.Return(array, clearSize);
+            }
+        }
+
+        public void Clear()
+        {
+            Dispose();
+        }
+
+        // Reset the state of the transform so it can be used again
+        private void Reset()
+        {
+            _inputIndex = 0;
         }
 
         // must implement IDisposable, which in this case means clearing the input buffer
@@ -235,32 +351,66 @@ namespace System.Security.Cryptography
             GC.SuppressFinalize(this);
         }
 
-        // Reset the state of the transform so it can be used again
-        private void Reset()
-        {
-            _inputIndex = 0;
-        }
-
-        public void Clear()
-        {
-            Dispose();
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             // we always want to clear the input buffer
             if (disposing)
             {
                 if (_inputBuffer != null)
-                    Array.Clear(_inputBuffer, 0, _inputBuffer.Length);
-                _inputBuffer = null;
-                _inputIndex = 0;
+                {
+                    CryptographicOperations.ZeroMemory(_inputBuffer);
+                    _inputBuffer = null;
+                }
+
+                Reset();
             }
         }
 
         ~FromBase64Transform()
         {
             Dispose(false);
+        }
+    }
+
+    internal class ThrowHelper
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ValidateTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount)
+        {
+            if (inputBuffer == null)
+                ThrowArgumentNull(ExceptionArgument.inputBuffer);
+
+            if ((uint)inputCount > inputBuffer.Length)
+                ThrowArgumentOutOfRange(ExceptionArgument.inputCount);
+
+            if (inputOffset < 0)
+                ThrowArgumentOutOfRange(ExceptionArgument.inputOffset);
+
+            if ((inputBuffer.Length - inputCount) < inputOffset)
+                ThrowInvalidOffLen();
+        }
+
+        public static void ValidateTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, int inputBlockSize)
+        {
+            ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
+
+            if (inputCount < inputBlockSize)
+                ThrowArgumentOutOfRange(ExceptionArgument.inputCount);
+        }
+
+        public static void ThrowArgumentNull(ExceptionArgument argument) => throw new ArgumentNullException(argument.ToString());
+        public static void ThrowArgumentOutOfRange(ExceptionArgument argument) => throw new ArgumentOutOfRangeException(argument.ToString(), SR.ArgumentOutOfRange_NeedNonNegNum);
+        public static void ThrowInvalidOffLen() => throw new ArgumentException(SR.Argument_InvalidOffLen);
+        public static void ThrowObjectDisposed() => throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);
+        public static void ThrowCryptographicException() => throw new CryptographicException(SR.Cryptography_SSE_InvalidDataSize);
+        public static void ThrowBase64FormatException() => throw new FormatException();
+
+        public enum ExceptionArgument
+        {
+            inputBuffer,
+            outputBuffer,
+            inputOffset,
+            inputCount
         }
     }
 }
