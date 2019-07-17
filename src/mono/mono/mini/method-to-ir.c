@@ -7386,6 +7386,12 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				}
 			}
 
+#ifdef ENABLE_NETCORE
+			if (save_last_error) {
+				mono_emit_jit_icall (cfg, mono_marshal_clear_last_error, NULL);
+			}
+#endif
+
 			/* Tail prefix / tailcall optimization */
 
 			/* FIXME: Enabling TAILC breaks some inlining/stack trace/etc tests.

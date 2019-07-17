@@ -376,6 +376,9 @@ mono_marshal_ftnptr_eh_callback (guint32 gchandle);
 MONO_PAL_API void
 mono_marshal_set_last_error (void);
 
+void
+mono_marshal_clear_last_error (void);
+
 guint
 mono_type_to_ldind (MonoType *type);
 

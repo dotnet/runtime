@@ -1364,6 +1364,12 @@ ves_pinvoke_method (InterpFrame *frame, MonoMethodSignature *sig, MonoFuncV addr
 		mono_memory_barrier ();
 	}
 
+#ifdef ENABLE_NETCORE
+	if (save_last_error) {
+		mono_marshal_clear_last_error ();
+	}
+#endif
+
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	CallContext ccontext;
 	mono_arch_set_native_call_context_args (&ccontext, frame, sig);
@@ -1874,6 +1880,11 @@ interp_entry (InterpEntryData *data)
 static stackval *
 do_icall (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *sp, gpointer ptr, gboolean save_last_error)
 {
+#ifdef ENABLE_NETCORE
+	if (save_last_error)
+		mono_marshal_clear_last_error ();
+#endif
+
 	switch (op) {
 	case MINT_ICALL_V_V: {
 		typedef void (*T)(void);

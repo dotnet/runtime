@@ -234,6 +234,7 @@ MONO_JIT_ICALL (mono_llvmonly_init_delegate) \
 MONO_JIT_ICALL (mono_llvmonly_init_delegate_virtual) \
 MONO_JIT_ICALL (mono_marshal_asany) \
 MONO_JIT_ICALL (mono_marshal_check_domain_image) \
+MONO_JIT_ICALL (mono_marshal_clear_last_error) \
 MONO_JIT_ICALL (mono_marshal_free) \
 MONO_JIT_ICALL (mono_marshal_free_array) \
 MONO_JIT_ICALL (mono_marshal_free_asany) \
