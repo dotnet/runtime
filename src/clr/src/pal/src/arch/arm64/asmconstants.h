@@ -88,8 +88,8 @@
 #define CONTEXT_V29          CONTEXT_V28+16
 #define CONTEXT_V30          CONTEXT_V29+16
 #define CONTEXT_V31          CONTEXT_V30+16
-#define CONTEXT_FLOAT_CONTROL_OFFSET  CONTEXT_V31
+#define CONTEXT_FLOAT_CONTROL_OFFSET  CONTEXT_V31+16
 #define CONTEXT_Fpcr         0
-#define CONTEXT_Fpsr         CONTEXT_Fpcr+4
+#define CONTEXT_Fpsr         CONTEXT_Fpcr+8
 
 #endif
