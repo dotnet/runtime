@@ -433,6 +433,13 @@ DLLEXPORT int32_t SystemNative_Pipe(int32_t pipefd[2], // [out] pipefds[0] gets 
 DLLEXPORT int32_t SystemNative_FcntlSetFD(intptr_t fd, int32_t flags);
 
 /**
+ * Gets the flags on a file descriptor.
+ *
+ * Returns flags for success; -1 for failure. Sets errno for failure.
+ */
+DLLEXPORT int32_t SystemNative_FcntlGetFD(intptr_t fd);
+
+/**
  * Determines if the current platform supports getting and setting pipe capacity.
  *
  * Returns true (non-zero) if supported, false (zero) if not.

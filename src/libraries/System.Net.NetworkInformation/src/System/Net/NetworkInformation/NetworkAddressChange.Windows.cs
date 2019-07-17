@@ -240,7 +240,7 @@ namespace System.Net.NetworkInformation
                                 true);
 
                             SocketError errorCode = Interop.Winsock.WSAIoctl_Blocking(
-                                s_ipv4Socket.Handle,
+                                s_ipv4Socket.SafeHandle,
                                 (int)IOControlCode.AddressListChange,
                                 null, 0, null, 0,
                                 out int length,
@@ -276,7 +276,7 @@ namespace System.Net.NetworkInformation
                                 true);
 
                             SocketError errorCode = Interop.Winsock.WSAIoctl_Blocking(
-                                s_ipv6Socket.Handle,
+                                s_ipv6Socket.SafeHandle,
                                 (int)IOControlCode.AddressListChange,
                                 null, 0, null, 0,
                                 out int length,

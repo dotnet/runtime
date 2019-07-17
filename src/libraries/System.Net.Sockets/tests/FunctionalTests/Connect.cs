@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
@@ -84,6 +85,68 @@ namespace System.Net.Sockets.Tests
                     Assert.Equal(SocketError.IsConnected, se.SocketErrorCode);
                 }
             }
+        }
+
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.OSX)] // Not supported on OSX.
+        public async Task ConnectGetsCanceledByDispose()
+        {
+            bool usesApm = UsesApm ||
+                           (this is ConnectTask); // .NET Core ConnectAsync Task API is implemented using Apm
+
+            // We try this a couple of times to deal with a timing race: if the Dispose happens
+            // before the operation is started, we won't see a SocketException.
+            int msDelay = 100;
+            await RetryHelper.ExecuteAsync(async () =>
+            {
+                var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+                Task connectTask = ConnectAsync(client, new IPEndPoint(IPAddress.Parse("1.1.1.1"), 23));
+
+                // Wait a little so the operation is started.
+                await Task.Delay(msDelay);
+                msDelay *= 2;
+                Task disposeTask = Task.Run(() => client.Dispose());
+
+                var cts = new CancellationTokenSource();
+                Task timeoutTask = Task.Delay(30000, cts.Token);
+                Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, connectTask, timeoutTask));
+                cts.Cancel();
+
+                await disposeTask;
+
+                SocketError? localSocketError = null;
+                bool disposedException = false;
+                try
+                {
+                    await connectTask;
+                }
+                catch (SocketException se)
+                {
+                    // On connection timeout, retry.
+                    Assert.NotEqual(SocketError.TimedOut, se.SocketErrorCode);
+
+                    localSocketError = se.SocketErrorCode;
+                }
+                catch (ObjectDisposedException)
+                {
+                    disposedException = true;
+                }
+
+                if (usesApm)
+                {
+                    Assert.Null(localSocketError);
+                    Assert.True(disposedException);
+                }
+                else if (UsesSync)
+                {
+                    Assert.Equal(SocketError.NotSocket, localSocketError);
+                }
+                else
+                {
+                    Assert.Equal(SocketError.OperationAborted, localSocketError);
+                }
+            }, maxAttempts: 10);
         }
     }
 

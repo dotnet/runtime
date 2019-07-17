@@ -4,16 +4,12 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
     internal static partial class Sys
     {
-        internal static partial class Fcntl
-        {
-            [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlSetFD", SetLastError=true)]
-            internal static extern int SetFD(SafeHandle fd, int flags);
-        }
+        [DllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Disconnect")]
+        internal static extern unsafe Error Disconnect(SafeHandle socket);
     }
 }
