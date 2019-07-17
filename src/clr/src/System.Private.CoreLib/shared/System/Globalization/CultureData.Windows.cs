@@ -432,7 +432,7 @@ namespace System.Globalization
             {
                 for (int i = 0; i < array.Length; i++)
                 {
-                    array[i] = ReescapeWin32String(array[i])!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+                    array[i] = ReescapeWin32String(array[i]);
                 }
             }
 

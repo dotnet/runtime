@@ -658,7 +658,7 @@ namespace System
         public static DateTimeOffset Parse(string input, IFormatProvider? formatProvider)
         {
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
-            return Parse(input!, formatProvider, DateTimeStyles.None); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            return Parse(input, formatProvider, DateTimeStyles.None);
         }
 
         public static DateTimeOffset Parse(string input, IFormatProvider? formatProvider, DateTimeStyles styles)
@@ -689,7 +689,7 @@ namespace System
         {
             if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             if (format == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
-            return ParseExact(input!, format!, formatProvider, DateTimeStyles.None); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            return ParseExact(input, format, formatProvider, DateTimeStyles.None);
         }
 
         // Constructs a DateTimeOffset from a string. The string must specify a

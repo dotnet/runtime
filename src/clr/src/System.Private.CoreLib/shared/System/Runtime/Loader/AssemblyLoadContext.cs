@@ -168,7 +168,7 @@ namespace System.Runtime.Loader
         //
         // Inputs: Invoking assembly, and library name to resolve
         // Returns: A handle to the loaded native library
-        public event Func<Assembly, string, IntPtr> ResolvingUnmanagedDll
+        public event Func<Assembly, string, IntPtr> ResolvingUnmanagedDll // TODO-NULLABLE: Should all events use nullable delegate types?
         {
             add
             {
@@ -186,7 +186,7 @@ namespace System.Runtime.Loader
         //
         // Inputs: The AssemblyLoadContext and AssemblyName to be loaded
         // Returns: The Loaded assembly object.
-        public event Func<AssemblyLoadContext, AssemblyName, Assembly?> Resolving
+        public event Func<AssemblyLoadContext, AssemblyName, Assembly?> Resolving // TODO-NULLABLE: Should all events use nullable delegate types?
         {
             add
             {
@@ -198,7 +198,7 @@ namespace System.Runtime.Loader
             }
         }
 
-        public event Action<AssemblyLoadContext> Unloading
+        public event Action<AssemblyLoadContext> Unloading // TODO-NULLABLE: Should all events use nullable delegate types?
         {
             add
             {
@@ -212,17 +212,17 @@ namespace System.Runtime.Loader
 
 #region AppDomainEvents
         // Occurs when an Assembly is loaded
-        internal static event AssemblyLoadEventHandler AssemblyLoad;
+        internal static event AssemblyLoadEventHandler AssemblyLoad; // TODO-NULLABLE: Should all events use nullable delegate types?
 
         // Occurs when resolution of type fails
-        internal static event ResolveEventHandler TypeResolve;
+        internal static event ResolveEventHandler TypeResolve; // TODO-NULLABLE: Should all events use nullable delegate types?
 
         // Occurs when resolution of resource fails
-        internal static event ResolveEventHandler ResourceResolve;
+        internal static event ResolveEventHandler ResourceResolve; // TODO-NULLABLE: Should all events use nullable delegate types?
 
         // Occurs when resolution of assembly fails
         // This event is fired after resolve events of AssemblyLoadContext fails
-        internal static event ResolveEventHandler AssemblyResolve;
+        internal static event ResolveEventHandler AssemblyResolve; // TODO-NULLABLE: Should all events use nullable delegate types?
 #endregion
 
         public static AssemblyLoadContext Default => DefaultAssemblyLoadContext.s_loadContext;

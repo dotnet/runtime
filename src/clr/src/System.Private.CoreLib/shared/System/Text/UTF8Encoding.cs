@@ -138,7 +138,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException((index < 0) ? ExceptionArgument.index : ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (chars!.Length - index < count) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (chars.Length - index < count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.chars, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
@@ -165,7 +165,7 @@ namespace System.Text
 
             fixed (char* pChars = chars)
             {
-                return GetByteCountCommon(pChars, chars!.Length); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                return GetByteCountCommon(pChars, chars.Length);
             }
         }
 
@@ -275,12 +275,12 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (s!.Length - charIndex < charCount) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (s.Length - charIndex < charCount)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.s, ExceptionResource.ArgumentOutOfRange_IndexCount);
             }
 
-            if ((uint)byteIndex > bytes!.Length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if ((uint)byteIndex > bytes.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_Index);
             }
@@ -325,12 +325,12 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (chars!.Length - charIndex < charCount) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (chars.Length - charIndex < charCount)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.chars, ExceptionResource.ArgumentOutOfRange_IndexCount);
             }
 
-            if ((uint)byteIndex > bytes!.Length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if ((uint)byteIndex > bytes.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_Index);
             }
@@ -443,7 +443,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException((index < 0) ? ExceptionArgument.index : ExceptionArgument.count, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (bytes!.Length - index < count) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (bytes.Length - index < count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
@@ -510,12 +510,12 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (bytes!.Length - byteIndex < byteCount) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (bytes.Length - byteIndex < byteCount)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
 
-            if ((uint)charIndex > (uint)chars!.Length) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if ((uint)charIndex > (uint)chars.Length)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.charIndex, ExceptionResource.ArgumentOutOfRange_Index);
             }
@@ -672,7 +672,7 @@ namespace System.Text
                     resource: ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            if (bytes!.Length - index < count) // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+            if (bytes.Length - index < count)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }

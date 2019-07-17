@@ -152,7 +152,7 @@ namespace System.Threading
                     }
                     Interlocked.CompareExchange(ref s_asyncLocalPrincipal, new AsyncLocal<IPrincipal?>(), null);
                 }
-                s_asyncLocalPrincipal!.Value = value; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
+                s_asyncLocalPrincipal.Value = value;
             }
         }
 

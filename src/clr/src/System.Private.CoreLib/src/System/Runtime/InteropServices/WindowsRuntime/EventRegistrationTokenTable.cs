@@ -243,7 +243,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             {
                 Interlocked.CompareExchange(ref refEventTable, new EventRegistrationTokenTable<T>(), null);
             }
-            return refEventTable!; // TODO-NULLABLE: Remove ! when compiler specially-recognizes CompareExchange for nullability
+            return refEventTable;
         }
     }
 }

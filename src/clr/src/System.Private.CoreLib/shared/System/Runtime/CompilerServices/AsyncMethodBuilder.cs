@@ -132,7 +132,7 @@ namespace System.Runtime.CompilerServices
                 // and decrement its outstanding operation count.
                 try
                 {
-                    System.Threading.Tasks.Task.ThrowAsync(exception!, targetContext: _synchronizationContext); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                    System.Threading.Tasks.Task.ThrowAsync(exception, targetContext: _synchronizationContext);
                 }
                 finally
                 {
@@ -144,7 +144,7 @@ namespace System.Runtime.CompilerServices
                 // Otherwise, queue the exception to be thrown on the ThreadPool.  This will
                 // result in a crash unless legacy exception behavior is enabled by a config
                 // file or a CLR host.
-                System.Threading.Tasks.Task.ThrowAsync(exception!, targetContext: null); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                System.Threading.Tasks.Task.ThrowAsync(exception, targetContext: null);
             }
 
             // The exception was propagated already; we don't need or want to fault the builder, just mark it as completed.
@@ -602,7 +602,7 @@ namespace System.Runtime.CompilerServices
                 if (context == null)
                 {
                     Debug.Assert(StateMachine != null);
-                    StateMachine!.MoveNext(); // TODO-NULLABLE: remove ! when Debug.Assert on fields is respected (https://github.com/dotnet/roslyn/issues/36830)
+                    StateMachine.MoveNext();
                 }
                 else
                 {
@@ -788,7 +788,7 @@ namespace System.Runtime.CompilerServices
             // If the exception represents cancellation, cancel the task.  Otherwise, fault the task.
             bool successfullySet = exception is OperationCanceledException oce ?
                 task.TrySetCanceled(oce.CancellationToken, oce) :
-                task.TrySetException(exception!); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                task.TrySetException(exception);
 
             // Unlike with TaskCompletionSource, we do not need to spin here until _taskAndStateMachine is completed,
             // since AsyncTaskMethodBuilder.SetException should not be immediately followed by any code
@@ -1017,7 +1017,7 @@ namespace System.Runtime.CompilerServices
 
             try
             {
-                stateMachine!.MoveNext(); // TODO-NULLABLE: Remove ! when [DoesNotReturn] respected
+                stateMachine.MoveNext();
             }
             finally
             {

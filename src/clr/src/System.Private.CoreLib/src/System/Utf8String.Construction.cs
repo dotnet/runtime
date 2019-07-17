@@ -49,7 +49,7 @@ namespace System
 
             Utf8String newString = FastAllocate(value.Length);
             Buffer.Memmove(ref newString.DangerousGetMutableReference(), ref MemoryMarshal.GetReference(value), (uint)value.Length);
-            return Utf8Utility.ValidateAndFixupUtf8String(newString)!; // TODO-NULLABLE: Remove ! when [NotNullIfNotNull] respected
+            return Utf8Utility.ValidateAndFixupUtf8String(newString);
         }
 
         /// <summary>
