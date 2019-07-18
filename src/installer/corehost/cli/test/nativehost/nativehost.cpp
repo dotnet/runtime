@@ -300,6 +300,10 @@ int main(const int argc, const pal::char_t *argv[])
         {
             success = comhost_test::concurrent(comhost_path, clsid_str, count);
         }
+        else if (pal::strcmp(scenario, _X("errorinfo")) == 0)
+        {
+            success = comhost_test::errorinfo(comhost_path, clsid_str, count);
+        }
 
         return success ? EXIT_SUCCESS : EXIT_FAILURE;
     }

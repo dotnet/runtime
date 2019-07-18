@@ -9,4 +9,6 @@ namespace comhost_test
     bool synchronous(const pal::string_t &comhost_path, const pal::string_t &clsid_str, int count);
 
     bool concurrent(const pal::string_t &comhost_path, const pal::string_t &clsid_str, int count);
+
+    bool errorinfo(const pal::string_t &comhost_path, const pal::string_t &clsid_str, int count);
 }
